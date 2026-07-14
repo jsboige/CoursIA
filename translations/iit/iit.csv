@@ -315,7 +315,7 @@ if n_pulses is not None:
     print(f""Nombre de pics de Phi (depart 010) : {n_pulses}"")
 else:
     print(""Exercice a completer"")",,,,,,,,473d8c053245c653,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,12ac8ab9,markdown,fr,c39df03d132b932e,"## 5. Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,12ac8ab9,markdown,fr,293997604a021581,"## Conclusion
 
 En appliquant la notion de **trajectoire** a $\Phi$ lui-meme, on a vu que :
 
@@ -352,7 +352,7 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
   [ICT-3-RobustnessDelayedGratification.ipynb](ICT-3-RobustnessDelayedGratification.ipynb)
   — trajectoires et robustesse sur le toy-model de tri.
 - Zhang, Goldstein & Levin (2025), *Classical sorting algorithms as a model of
-  morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,c39df03d132b932e,,,,,,,
+  morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,293997604a021581,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb,420be610,markdown,fr,86b7588a7eadd377,"# ICT-10 — Grammaire des catastrophes : *l'obstacle qui engendre les formes, le verbe qui les fait basculer*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) — **charniere strate 2 -> strate 3**.
@@ -3432,7 +3432,7 @@ print('      pas l\'agentivite (ENJEU). I_thermo est NECESSAIRE mais PAS SUFFISA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,52aa573c,markdown,fr,4effbc6f3b6d73c7,"## 7. Visualisation -- comparaison des 5 substrats (barplot fleches + distances)
 
 On resume les **5 substrats** en un barplot : production d'entropie ``sigma`` (reelle / reversible / reversee) et distance L1/2 a la reversible. Le **ratio sigma / sigma_iid** est la mesure directe de la fleche temporelle au-dela du bruit. Les substrats S5 (controle faux-POSITIF) sont inclus pour montrer qu'ils allument `I_thermo` autant que les substrats agentifs (S1, S3) sans avoir d'enjeu -- demonstration visuelle de la portee **necessaire-mais-pas-suffisante** de l'instrument.",,,,,,,,4effbc6f3b6d73c7,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,725f8e76,code,fr,d10c329b75652630,"# Visualisation comparative (5 substrats + iid baseline)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,725f8e76,code,fr,7c861e1058654b08,"# Visualisation comparative (5 substrats + iid baseline)
 fig, axes = plt.subplots(1, 2, figsize=(14, 4.5))
 
 substrats = ['iid', 'S1 ICT-2', 'S2 ICT-8', 'S3 ICT-13', 'S4 ICT-9',
@@ -3487,7 +3487,7 @@ ax1.grid(axis='y', alpha=0.3)
 plt.tight_layout()
 out_png = os.path.join(ICT_ROOT, 'ICT-18-fleches-comparaison.png')
 plt.savefig(out_png, dpi=110)
-print(f'Figure sauvegardee : {out_png}')",,,,,,,,d10c329b75652630,,,,,,,
+print(f'Figure sauvegardee : {os.path.basename(out_png)}  (dans le dossier du notebook)')",,,,,,,,7c861e1058654b08,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,f2eb3dc0,markdown,fr,bf480a57719f14a6,"## 8. Recapitulatif
 
 Les **7 gates** sont passees (a des tolerances pres) sur les **5 substrats** (4 substrats agentifs S1-S4 + controle faux-POSITIF S5). La mesure de la fleche thermodynamique via ``time_arrow`` est un instrument operationnel, **necessaire mais pas suffisant** :
@@ -3501,10 +3501,7 @@ Les **7 gates** sont passees (a des tolerances pres) sur les **5 substrats** (4 
   - **Gate 7 (NOUVEAU, v2)** : les substrats S5 (marche aleatoire biaisee, oscillateur pilote) -- **sans aucun enjeu d'auto-maintien** -- allument `I_thermo` de facon comparable aux substrats agentifs. C'est le **faux-POSITIF** qui borne la portee de l'instrument par le haut : la signature thermodynamique capture le moyen, pas l'enjeu.
 
 **Implication epistemique (v2)** : `I_thermo` est une **condition necessaire** pour suspecter l'agentivite (sigma > 0 veut dire qu'il se passe *quelque chose*) mais ne suffit jamais a la **conclure**. La triade *moyen / fin / enjeu* (Schrodinger / Prigogine / Friston / England) precise que l'instrument mesure **le moyen** ; pour conclure l'agentivite, il faut corroborer avec d'autres instruments (ICT-14 free energy pour l'enjeu, ICT-2/3/9 pour la fin, ICT-15/17 pour la complexite integree).",,,,,,,,bf480a57719f14a6,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,0b25cf74,markdown,fr,167aa909bd306d19,"## 9. Exercices
-
-Trois exercices -- convention 3-exercises-per-notebook (#2161) -- repartis : un sur la sensibilite au substrat, un sur la construction d'un indicateur, un sur l'extension a un nouveau substrat.",,,,,,,,167aa909bd306d19,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,62962fd1,code,fr,4e581c15a637596c,"# Exercice 1 -- Sensibilite au nombre d'etats observes
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,62962fd1,code,fr,9b168a2a5953aaf5,"# Exemple guide 1 -- Sensibilite au nombre d'etats observes
 #
 # Consigne : sur la trajectoire S1 (BiasedBubbleSort), faire varier la
 # discretisation en quantiles et observer comment `sigma_real` evolue.
@@ -3537,26 +3534,7 @@ for r in resultats:
     print(r)
 
 # Question : a partir de combien de niveaux sigma se stabilise-t-il ?
-# Reponse dans la cellule markdown apres.",,,,,,,,4e581c15a637596c,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,c2130ee3,markdown,fr,b459b2b03d3cb156,"### Exercice 2 -- Definir et tester un *indice d'agentivite*
-
-**Consigne** : a partir des quantites thermodynamiques mesurees, definir un **indice d'agentivite** agrege qui resume la *quantite de calcul emergent* d'une trajectoire. Le tester sur les 4 substrats (S1/S2/S3/S4) et sur la trajectoire iid.
-
-**Lecon methodologique attendue** : la hierarchie naturelle des indices est :
- - **S2 ICT-8** < **iid** < S4 ICT-9 < S1 ICT-2 < **S3 ICT-13** (cooperation emergente).
- - **S2 ICT-8 est le minimum** : le bistable a 2 etats est *reversible par construction markovienne* (la distribution stationnaire pi adapte les taux de bascule de sorte que la detailed balance est *exactement* satisfaite -- l'asymetrie du modele generatif est invisible a l'instrument markovien stationnaire).
- - **iid est le 2e minimum** : une trajectoire totalement aleatoire est reversible au bruit d'echantillonnage pres.
- - **S3 ICT-13 est le maximum** : la cooperation emergente (Axelrod) est un processus *non-stationnaire* avec une fleche temporelle forte (la population de TFT croît au cours du temps), capturee par l'asymetrie du decompte d'agents TFT entre temps croissant et temps decroissant.
-
-**Note importante sur S2 ICT-8 -- un CAS FICTIF : le faux-NEGATIF du moyen**. La trajectoire bistable (May 1977) est **comportementalement tres structuree** -- 2 bassins d'attraction, hysteresis, flip-flopping anisotrope, **forte reversibilite comportementale** au sens de ICT-2/3/9 (l'agent peut revenir dans son bassin apres un flip). **Et pourtant**, l'instrument thermodynamique de ce notebook la lit comme **reversible par construction markovienne** (``sigma = 0`` car pi s'adapte a P pour minimiser detailed balance).
-
-Ce resultat n'est **ni un angle mort, ni une orthogonalite d'axes**. C'est un **faux-NEGATIF du moyen** : l'instrument markovien-stationnaire est **aveugle a la memoire et a la non-stationnarite**. La trajectoire reelle du bistable est generee par un processus avec une memoire de position (on reste dans le bassin tant qu'on n'a pas flippe), mais l'**observation stationnaire** reduit cette trajectoire a une chaine de Markov d'ordre 1 dont la matrice de transition P a ete *re-estimee pour minimiser la detailed balance* -- ce qui eteint exactement l'asymetrie generative que le modele porte. L'asymetrie du modele generatif (p_flip_A != p_flip_B) vit dans la **memoire** et dans la **non-stationnarite** ; `P_rev` ne la capte pas, parce que l'instrument regarde une **matrice de transition aggregee sur toute la trajectoire**, pas le processus increment par increment.
-
-Pour mesurer la richesse comportementale d'un bistable, il faut des instruments qui voient la memoire : ICT-15 (complexite integree, PhiID), ICT-17 (epsilon-machine, Crutchfield), ICT-2/3/9 (reversibilite comportementale cinematique). ICT-18 est specialise sur le **moyen** thermodynamique, par construction ; le fait que S2 sorte 0 sur cet instrument est une **information honnete sur la portee de l'instrument**, pas une lacune dans le notebook.
-
-**Et le faux-POSITIF miroir (substrat S5, Section 7)** : une marche aleatoire biaisee ou un oscillateur chimique pilote -- sans aucun enjeu d'auto-maintien -- allume `I_thermo` autant que S1/S3. La symetrie des deux faux-resultats (un systeme structure sort 0 a tort, un systeme non-agent sort fort a tort) demontre que `I_thermo` est **necessaire mais pas suffisant** pour conclure l'agentivite : il capture le **moyen**, pas l'**enjeu** ni la **fin**. Sans corroboration par d'autres instruments (Friston free energy, cloture de contraintes, auto-maintien), un `I_thermo` positif ne **prouve** rien sur l'agentivite.
-
-Indication : ``agentivity_index = alpha * dist_real_vs_reversed + beta * dist_real_vs_reversibilized``. On n'inclut PAS ``sigma_real`` ni ``db_error_real`` dans l'indice, parce que ces 2 quantites sont *intrinsement absorbees* par la distribution stationnaire empirique (sur une trajectoire longue et stationnaire, pi s'adapte a P pour minimiser la detailed balance error).",,,,,,,,b459b2b03d3cb156,,,,,,,
+# Reponse dans la cellule markdown apres.",,,,,,,,9b168a2a5953aaf5,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,bf0e8479,code,fr,64c0b05875bd424e,"def agentivity_index(out, alpha=0.5, beta=0.5):
     """"""Indice d'agentivite agregeant 2 quantites thermodynamiques.
 
@@ -3598,12 +3576,7 @@ panel_exo = {
 indices = {name: agentivity_index(o) for name, o in panel_exo.items()}
 for name, idx in indices.items():
     print(f'{name:25s}  agentivity = {idx:.4f}')",,,,,,,,64c0b05875bd424e,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,624bc47e,markdown,fr,692110b8416191d5,"### Exercice 3 -- Extension a un nouveau substrat : automate cellulaire de Wolfram
-
-**Consigne** : appliquer ``time_arrow`` sur un automate cellulaire 1D (regle de Wolfram 30, 110 ou 110) et observer la fleche thermodynamique. La regle 30 (chaotique) doit avoir une fleche elevee ; la regle 110 (complexe, classe 4) doit avoir une fleche encore plus elevee ; la regle 0 (trivialement constante) doit avoir une fleche nulle.
-
-Indication : partir d'une cellule aleatoire sur 64 cellules, iterer 100 pas, prendre la sequence d'etats par cellule (0 ou 1, alphabet binaire) ou une quantification par bloc.",,,,,,,,692110b8416191d5,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,dd0ac54d,code,fr,f63aa204b738fac5,"# Exercice 3 -- Automate cellulaire Wolfram (regle 30 vs 110 vs 0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,dd0ac54d,code,fr,d729666bdce78f66,"# Exemple guide 3 -- Automate cellulaire Wolfram (regle 30 vs 110 vs 0)
 def wolfram_step(state, rule):
     n = len(state)
     out = np.zeros(n, dtype=int)
@@ -3633,8 +3606,8 @@ for rule in [0, 30, 110, 250]:
 
 # Question : la regle 110 (complexe, classe 4) a-t-elle une fleche plus elevee
 # que la regle 30 (chaotique) ? Pourquoi ?
-# Reponse dans la cellule markdown apres.",,,,,,,,f63aa204b738fac5,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,33d60400,markdown,fr,66fa37408c48f23b,"## 10. Conclusion
+# Reponse dans la cellule markdown apres.",,,,,,,,d729666bdce78f66,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,33d60400,markdown,fr,f55b89865081e76d,"## Conclusion
 
 ICT-18 fournit un **instrument thermodynamique** (production d'entropie, detailed balance, reversibilisation) qui capte le **MOYEN** dans la triade *moyen / fin / enjeu*. La grille de lecture est explicite et honnete :
 
@@ -3664,10 +3637,10 @@ Une lecture complementaire est la **decomposition de Hodge** du champ de flux ne
   - Tester sur ICT-17 (epsilon-machine) : la epsilon-machine d'un S5 est-elle vide (pas de structure causale) ou triviale (Markov d'ordre 1) ? Si oui, cela confirme l'absence d'enjeu.
   - Relier a England 2013 *dissipation-driven adaptation* : formaliser la derivation thermodynamique de l'auto-maintien (les systemes qui dissipent plus tendent a s'auto-organiser -- mais tous ne deviennent pas agents).
   - Croiser ICT-18 avec ICT-2/3/9 pour cartographier les systemes dans le **plan (moyen, fin)** ; l'enjeu serait alors un troisieme axe vertical (Friston free energy / cloture de contraintes), definissant un cube de la triade.
-  - **ICT-19 ?** : la question des batteries de capteurs multiples (proposition ChatGPT, *two separate batteries*) depasse ICT-18 -- ce serait un notebook dedie a la fusion *moyen + fin + enjeu*, avec sa propre structure et son propre gate. ICT-18 fournit la brique ; ICT-19 l'assemblerait.",,,,,,,,66fa37408c48f23b,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c6a54be62e36,markdown,fr,469986a77845cda3,"# ICT-19 — Raffinement et résolution des stubs (tranche 3)
+  - **ICT-19 ?** : la question des batteries de capteurs multiples (proposition ChatGPT, *two separate batteries*) depasse ICT-18 -- ce serait un notebook dedie a la fusion *moyen + fin + enjeu*, avec sa propre structure et son propre gate. ICT-18 fournit la brique ; ICT-19 l'assemblerait.",,,,,,,,f55b89865081e76d,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c6a54be62e36,markdown,fr,48ecb6769cc3a014,"# ICT-19 — Raffinement et résolution des stubs (tranche 3)
 
-[← ICT-19 squelette (tranche 2)](../ICT-19-EnjeuBattery/ICT-19-EnjeuBattery.ipynb) · [↑ ICT-Series](../README.md) · [→ ICT-20](../ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
+[← ICT-19 squelette (tranche 2)](ICT-19-EnjeuBattery.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
 
 **Strate 5 — suite de la batterie ENJEU (GPU-free).**
 
@@ -3690,7 +3663,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c6a54be62
 ## Durée estimée
 
 20 min (lecture + exécution séquentielle). Substantiellement plus rapide que la tranche 2 (pas de reaction-diffusion lourde).
-",,,,,,,,469986a77845cda3,,,,,,,
+",,,,,,,,48ecb6769cc3a014,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,d99d055d2fb8,code,fr,b7f11e7c4b0e8c22,"# Setup : imports + matplotlib Agg non-interactif (GPU-free, numpy only)
 import sys
 import numpy as np
@@ -4053,9 +4026,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,6fe086cc9
 - **Issue #5489** : tracker ICT-19 build.
 - **Issue #4588** : Epic ICT.
 ",,,,,,,,d6696e47bc7b3dae,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,8e2eb3481ad5ae53,"# ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur dissipateur
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,41ca3ccf3fe8c3e6,"# ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur dissipateur
 
-[← ICT-18](../ICT-18-TimeArrowAndReversibilization/ICT-18-TimeArrowAndReversibilization.ipynb) · [↑ ICT-Series](../README.md) · [→ ICT-20](../ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
+[← ICT-18](ICT-18-ArrowOfTimeReversibilization.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes.ipynb) · [Raffinement tranche 3](ICT-19-EnjeuBattery-Raffinement.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
 
 **Strate 5 — théorie fondatrice cross-substrat (GPU-free).**
 
@@ -4075,7 +4048,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,
 
 ## Durée estimée
 
-45 min (lecture + exécution séquentielle). GPU-free : numpy + matplotlib uniquement.",,,,,,,,8e2eb3481ad5ae53,,,,,,,
+45 min (lecture + exécution séquentielle). GPU-free : numpy + matplotlib uniquement.",,,,,,,,41ca3ccf3fe8c3e6,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,959cedb2,markdown,fr,0f00bc909bc14404,"## 1. Théorie — la triade *moyen / fin / enjeu*
 
 ### Pourquoi ICT-18 ne suffit pas
@@ -4399,7 +4372,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,4da5f87b,code,fr,6018
 # )
 # print(f""Substrat custom I_stake = {i_stake_custom:+.4f}"")
 print(""Exercice a completer -- TODO etudiant"")",,,,,,,,6018e6279482f146,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,f98614d9,markdown,fr,fca27c46bc0f66be,"## 7. Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,f98614d9,markdown,fr,df86954b771bd3a9,"## Conclusion
 
 ICT-19 complète la triade *moyen / fin / enjeu* ouverte par le reframe #5352 :
 
@@ -4421,7 +4394,7 @@ La **paire** `(I_thermo, I_stake)` sépare enfin l'agent (Gray-Scott S4) du pur 
 - ICT-21 (SAETrajectoires, GPU) : features SAE Qwen comme substrat S4-bis.
 - ICT-23 (Persona Cusp, MERGED) : la fronce de Thom comme désalignement émergent, où la triade MOYEN/FIN/ENJEU se déploye sur l'agentivité LLM.
 
-Voir l'[Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) pour la roadmap complète.",,,,,,,,fca27c46bc0f66be,,,,,,,
+Voir l'[Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) pour la roadmap complète.",,,,,,,,df86954b771bd3a9,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,9f2b4e43,markdown,fr,3c73a89265e83776,"# ICT-2 — Le tri comme morphogenèse minimale (self-sorting arrays)
 
 > Série **ICT — Integrated Causal Trajectories** (Epic #4588), qui prolonge la série **IIT / PyPhi**.
@@ -4657,7 +4630,7 @@ def sortedness_finale(algos, seed=5):
 
 # print(""alterne :"", sortedness_finale([ALGOTYPES[i % 2] for i in range(20)]))
 # print(""blocs   :"", sortedness_finale([""bubble""]*10 + [""insertion""]*10))",,,,,,,,e7860e8142df0fc1,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,d2cf2795,markdown,fr,fe432358c9357363,"## 7. Conclusion et perspectives
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,d2cf2795,markdown,fr,35b4f5837d551fec,"## Conclusion et perspectives
 
 Ce que ce toy model a rendu **mesurable**, sans aucun contrôleur global :
 
@@ -4678,7 +4651,7 @@ Ce sont les premières **signatures de trajectoires causales intégrées** — l
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
 - Levin, *The Computational Boundary of a ""Self""*, Frontiers in Psychology, 2019 (intelligence basale, compétences à différentes échelles).
-",,,,,,,,fe432358c9357363,,,,,,,
+",,,,,,,,35b4f5837d551fec,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes.ipynb,febd299a,markdown,fr,3f2060270dba1d6f,"# ICT-20 — FeatureCatastrophes : *calibration de methode*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) -- strate 5 : *calibration*.
@@ -6157,9 +6130,67 @@ relais.
 
 **Code & tests** : ``ict/persona_cusp.py`` (module reutilisable,
 numpy-only) + ``tests/test_persona_cusp.py`` (12 tests PASS).",,,,,,,,bddab19f624d4821,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,445ab538,markdown,fr,df03d5c6744bae73,"# ICT-24 — WorkspaceIgnition : l'axe Global Workspace et le Gate de réconciliation IIT<->GWT sur S4*[Série ICT — Integrated Causal Trajectories, Epic #4588, strate 5.](./README.md) Part of #4588.*Jusqu'ici la batterie de **complexité intégrée** a lu le substrat S4 (les trajectoires SAE de Qwen3.5-9B-Base, cf. [ICT-21](ICT-21-SAETrajectoires.ipynb)) avec les lunettes de l'IIT : `ec_gain`/`fe_gain`/`k_gain`, créditées uniquement au-dessus d'un modèle-contrôle et d'un mélange des temps. L'article d'Anthropic [*Global Workspace*](https://www.anthropic.com/research/global-workspace) identifie dans Claude un **workspace global** — la lecture GWT (Baars ; Dehaene, Naccache, Changeux), historiquement *contrastée* avec l'IIT. Les deux lectures n'ont presque jamais été confrontées **sur le même substrat avec le même appareil**. C'est ce que fait ce notebook.> **Question fondatrice, posée en hypothèse falsifiable.** *Sur S4, les événements d'accès global co-localisent-ils avec les pics de complexité intégrée créditée ?*> - **OUI** → pont empirique : un même événement, deux lectures théoriques.> - **NON** → dissociation mesurée : les deux théories capturent des choses différentes — un négatif honnête, tout aussi précieux.## Les trois gates| Gate | Question | Type | Statut dans ce notebook ||------|----------|------|------------------------|| **22 — Structure** | Existe-t-il un sous-ensemble de features à fan-out d'influence disproportionné (≪10 % du panel) ? | Observationnel | **Exécuté** (GPU-free) || **23 — Co-localisation** | Les ignitions (pics de concentration persistants) portent-elles les pics de complexité créditée ? | Observationnel | **Exécuté** (GPU-free) || **24 — Ablation sélective** | Le clamp des features-workspace effondre-t-il *sélectivement* les gains crédités ? | **Interventionnel (causal)** | **Phase 2 (GPU)** — section dédiée, non exécutée ici |Seul le Gate 24 est causal. Les Gates 22–23 livrent un verdict observationnel **sans l'attendre**.## Grille de verdicts — chaque branche est un résultat| Configuration | Lecture ||---------------|---------|| 22OK 23OK (24OK) | **Pont empirique** : intégration ≡ accès global sur ce substrat || 22OK 23KO | **Dissociation** : le workspace existe mais ne porte pas les pics d'intégration — les deux théories mesurent des choses différentes || 22KO | Pas de structure workspace à l'échelle du panel → renvoi aux états causaux ε-machine (ICT-17) |L'appareil `ict/workspace.py` (numpy-only, adaptateur mince posé par #5641) fournit les six primitives : `concentration_series`, `ignition_events`, `lagged_influence`, `fanout_profile`, `workspace_candidates`, `event_triggered_battery`. Cette dernière **réutilise `ict.synthesis.emergence_gain` verbatim** — même discipline de créditation que le reste de la série.",,,,,,,,df03d5c6744bae73,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,3cd10ff4,markdown,fr,69fd62870bbe88cd,"## Garde-fous d'honnêteté (à lire avant les résultats)Ces cinq garde-fous sont aussi dans la docstring de `ict/workspace.py` ; nous les répétons ici car ils conditionnent la lecture de chaque chiffre.1. **J-lens ≠ SAE.** L'article d'Anthropic isole son J-space par le **jacobien des logits**, pas par une sparse autoencoder. Notre route SAE (Qwen-Scope) est une opérationnalisation *parallèle* du même concept de workspace, pas une réplication de leur méthode.2. **Structurel ≠ temporel.** Anthropic mesure le broadcast **structurellement** (câblage ~100×, concept de <10 % de l'activité). L'**ignition temporelle** de Dehaene n'y est *pas* mesurée. Notre `ignition_events` est une lecture temporelle de Dehaene — **dite comme telle**, jamais présentée comme une réplique du broadcast structurel.3. **Observationnel ≠ interventionnel.** Les Gates 22–23 sont observationnels (corrélations, co-localisations). Seul le Gate 24 (clamp) est causal. Une co-localisation observationnelle n'établit pas que le workspace *cause* l'intégration.4. **Qwen ≠ Claude.** Nous travaillons sur Qwen3.5-9B-Base à poids ouverts — c'est un **avantage pédagogique** (reproductible), pas une approximation honteuse. Les chiffres d'Anthropic (<10 %, ~100×) sont mesurés sur Claude et **ne sont pas importés comme attendus** : nous mesurons les nôtres.5. **Accès ≠ phénoménal.** Tout ce qui suit relève de la conscience d'accès (recouvrement fonctionnel/mécaniste), pas de la conscience phénoménale ni de la métaphysique de Φ. Le notebook *bridge* le recouvrement, il ne le résout pas.",,,,,,,,69fd62870bbe88cd,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,ced53301,markdown,fr,d2365bb62ff86db7,"## Architecture : le GPU confiné, le banc numpy-only```  traces .npz (extraction GPU, #5101/ICT-21)  ──►  ict.sae_traces  ──►  panels (T,K)         [committed, GPU-free to load]                                    │                                                                          ▼                                              ict.workspace (numpy-only adapter)                                  concentration_series · ignition_events                                  lagged_influence · fanout_profile                                  workspace_candidates · event_triggered_battery                                                         │ reutilise ict.synthesis.emergence_gain                                                         ▼                                                  verdicts Gate 22 / 23```- Le torch/transformers est **confiné au pipeline d'extraction** (#5101) ; les traces reviennent en `.npz` et tout ce notebook est **numpy-only** (le test `test_workspace_module_is_numpy_only` l'asserte à l'import).- Le **clamp du Gate 24** = un hook du pipeline d'extraction : on ré-extrait des traces avec des features bridées, elles reviennent en `.npz`, et l'analyse redevient GPU-free. C'est une **phase 2** (GPU2, `CUDA_VISIBLE_DEVICES=2` strict), séparée de cette PR.",,,,,,,,d2365bb62ff86db7,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,445ab538,markdown,fr,dcbcfc4b680dd10f,"# ICT-24 — WorkspaceIgnition : l'axe Global Workspace et le Gate de réconciliation IIT<->GWT sur S4
+
+*[Série ICT — Integrated Causal Trajectories, Epic #4588, strate 5.](./README.md) Part of #4588.*
+
+Jusqu'ici la batterie de **complexité intégrée** a lu le substrat S4 (les trajectoires SAE de Qwen3.5-9B-Base, cf. [ICT-21](ICT-21-SAETrajectoires.ipynb)) avec les lunettes de l'IIT : `ec_gain`/`fe_gain`/`k_gain`, créditées uniquement au-dessus d'un modèle-contrôle et d'un mélange des temps. L'article d'Anthropic [*Global Workspace*](https://www.anthropic.com/research/global-workspace) identifie dans Claude un **workspace global** — la lecture GWT (Baars ; Dehaene, Naccache, Changeux), historiquement *contrastée* avec l'IIT. Les deux lectures n'ont presque jamais été confrontées **sur le même substrat avec le même appareil**. C'est ce que fait ce notebook.
+
+> **Question fondatrice, posée en hypothèse falsifiable.** *Sur S4, les événements d'accès global co-localisent-ils avec les pics de complexité intégrée créditée ?*
+> - **OUI** → pont empirique : un même événement, deux lectures théoriques.
+> - **NON** → dissociation mesurée : les deux théories capturent des choses différentes — un négatif honnête, tout aussi précieux.
+
+## Les trois gates
+
+| Gate | Question | Type | Statut dans ce notebook |
+|------|----------|------|------------------------|
+| **22 — Structure** | Existe-t-il un sous-ensemble de features à fan-out d'influence disproportionné (≪10 % du panel) ? | Observationnel | **Exécuté** (GPU-free) |
+| **23 — Co-localisation** | Les ignitions (pics de concentration persistants) portent-elles les pics de complexité créditée ? | Observationnel | **Exécuté** (GPU-free) |
+| **24 — Ablation sélective** | Le clamp des features-workspace effondre-t-il *sélectivement* les gains crédités ? | **Interventionnel (causal)** | **Phase 2 (GPU)** — section dédiée, non exécutée ici |
+
+Seul le Gate 24 est causal. Les Gates 22–23 livrent un verdict observationnel **sans l'attendre**.
+
+## Grille de verdicts — chaque branche est un résultat
+
+| Configuration | Lecture |
+|---------------|---------|
+| 22OK 23OK (24OK) | **Pont empirique** : intégration ≡ accès global sur ce substrat |
+| 22OK 23KO | **Dissociation** : le workspace existe mais ne porte pas les pics d'intégration — les deux théories mesurent des choses différentes |
+| 22KO | Pas de structure workspace à l'échelle du panel → renvoi aux états causaux ε-machine (ICT-17) |
+
+L'appareil `ict/workspace.py` (numpy-only, adaptateur mince posé par #5641) fournit les six primitives : `concentration_series`, `ignition_events`, `lagged_influence`, `fanout_profile`, `workspace_candidates`, `event_triggered_battery`. Cette dernière **réutilise `ict.synthesis.emergence_gain` verbatim** — même discipline de créditation que le reste de la série.
+
+",,,,,,,,dcbcfc4b680dd10f,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,3cd10ff4,markdown,fr,70b9ec78462ee0cc,"## Garde-fous d'honnêteté (à lire avant les résultats)
+
+Ces cinq garde-fous sont aussi dans la docstring de `ict/workspace.py` ; nous les répétons ici car ils conditionnent la lecture de chaque chiffre.
+
+1. **J-lens ≠ SAE.** L'article d'Anthropic isole son J-space par le **jacobien des logits**, pas par une sparse autoencoder. Notre route SAE (Qwen-Scope) est une opérationnalisation *parallèle* du même concept de workspace, pas une réplication de leur méthode.
+2. **Structurel ≠ temporel.** Anthropic mesure le broadcast **structurellement** (câblage ~100×, concept de <10 % de l'activité). L'**ignition temporelle** de Dehaene n'y est *pas* mesurée. Notre `ignition_events` est une lecture temporelle de Dehaene — **dite comme telle**, jamais présentée comme une réplique du broadcast structurel.
+3. **Observationnel ≠ interventionnel.** Les Gates 22–23 sont observationnels (corrélations, co-localisations). Seul le Gate 24 (clamp) est causal. Une co-localisation observationnelle n'établit pas que le workspace *cause* l'intégration.
+4. **Qwen ≠ Claude.** Nous travaillons sur Qwen3.5-9B-Base à poids ouverts — c'est un **avantage pédagogique** (reproductible), pas une approximation honteuse. Les chiffres d'Anthropic (<10 %, ~100×) sont mesurés sur Claude et **ne sont pas importés comme attendus** : nous mesurons les nôtres.
+5. **Accès ≠ phénoménal.** Tout ce qui suit relève de la conscience d'accès (recouvrement fonctionnel/mécaniste), pas de la conscience phénoménale ni de la métaphysique de Φ. Le notebook *bridge* le recouvrement, il ne le résout pas.
+
+",,,,,,,,70b9ec78462ee0cc,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,ced53301,markdown,fr,9685323e7c1d120a,"## Architecture : le GPU confiné, le banc numpy-only
+
+```
+  traces .npz (extraction GPU, #5101/ICT-21)  ──►  ict.sae_traces  ──►  panels (T,K)         [committed, GPU-free to load]
+                                    │
+                                                                          ▼
+                                              ict.workspace (numpy-only adapter)
+                                  concentration_series · ignition_events
+                                  lagged_influence · fanout_profile
+                                  workspace_candidates · event_triggered_battery
+                                                         │ reutilise ict.synthesis.emergence_gain
+                                                         ▼
+                                                  verdicts Gate 22 / 23
+```
+
+- Le torch/transformers est **confiné au pipeline d'extraction** (#5101) ; les traces reviennent en `.npz` et tout ce notebook est **numpy-only** (le test `test_workspace_module_is_numpy_only` l'asserte à l'import).
+- Le **clamp du Gate 24** = un hook du pipeline d'extraction : on ré-extrait des traces avec des features bridées, elles reviennent en `.npz`, et l'analyse redevient GPU-free. C'est une **phase 2** (GPU2, `CUDA_VISIBLE_DEVICES=2` strict), séparée de cette PR.
+
+",,,,,,,,9685323e7c1d120a,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,bd196ecd,code,fr,a4fcda89d935c2bd,"import json, os, sys
 from pathlib import Path
 
@@ -6178,7 +6209,11 @@ print(""workspace primitives :"", [f for f in
        ""fanout_profile"",""workspace_candidates"",""event_triggered_battery"") if hasattr(ws, f)])
 print(""emergence_gain reused from synthesis (not redefined):"",
       hasattr(syn, ""emergence_gain"") and not hasattr(ws, ""emergence_gain""))",,,,,,,,a4fcda89d935c2bd,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,f0e0c3c7,markdown,fr,fc39cc8971cbb283,"## Chargement des traces S4 et construction du panel $(T,K)$> **Écart de nommage assumé.** Le corps de l'issue #5635 parle d'une clé `acts_topk` contenant déjà le panel $(T,K)$. **Il n'y a pas une telle clé dans les `.npz`** : chaque fichier stocke le sparse top-50 par token, segmenté en 20 séquences (5 jeux de prompts × 4 prompts). Le panel dense $(T,K)$ est **dérivé** par `ict.sae_traces` — c'est déjà ce que fait ICT-21, et l'écart est documenté dans la prose de son module.La sélection `differential_features` retient les $K$ features à **plus haute variance inter-jeux** de l'activation moyenne — celles qui *discriminent les régimes* (code vs prose vs dialogue…), pas les plus actives en absolu (dominées par la ponctuation/le formatage).",,,,,,,,fc39cc8971cbb283,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,f0e0c3c7,markdown,fr,5f4519f47ef28091,"## Chargement des traces S4 et construction du panel $(T,K)$> **Écart de nommage assumé.** Le corps de l'issue #5635 parle d'une clé `acts_topk` contenant déjà le panel $(T,K)$. **Il n'y a pas une telle clé dans les `.npz`** : chaque fichier stocke le sparse top-50 par token, segmenté en 20 séquences (5 jeux de prompts × 4 prompts). Le panel dense $(T,K)$ est **dérivé** par `ict.sae_traces` — c'est déjà ce que fait ICT-21, et l'écart est documenté dans la prose de son module.
+
+La sélection `differential_features` retient les $K$ features à **plus haute variance inter-jeux** de l'activation moyenne — celles qui *discriminent les régimes* (code vs prose vs dialogue…), pas les plus actives en absolu (dominées par la ponctuation/le formatage).
+
+",,,,,,,,5f4519f47ef28091,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,b7570d8f,code,fr,ac40f9810ae63bf5,"traces = {v: st.load_traces(p) for v, p in NPZ.items()}
 SETS = sorted({s for s, _ in traces[""trained""][""prompts""]})
 meta = traces[""trained""][""meta""]
@@ -6199,7 +6234,11 @@ def acts_continuous(v):
 acts = {v: acts_continuous(v) for v in (""trained"", ""control"")}
 for v in (""trained"", ""control""):
     print(f""  {v:8s} acts {acts[v].shape}  mean={acts[v].mean():.4f}  max={acts[v].max():.2f}"")",,,,,,,,ac40f9810ae63bf5,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,3daa9f54,markdown,fr,4ec370d3ebd1fe88,"## Sanité : un panel synthétique où hub et ignition sont *plantés*Avant de faire confiance à l'appareil sur des traces réelles, on le valide sur un panneau synthétique où **on connaît la réponse** : un AR(1) $(T,K)$ avec un **hub d'influence planté** (la feature 0 pilote les features 5/6/7 au lag 3) et des **ignitions plantées** (cycles de bursting concentré). Si l'appareil est sain, il doit (a) retrouver le hub dans `workspace_candidates`, (b) détecter les ignitions plantées, (c) montrer un `contrast` > 0 sur des états à dynamique multi-échelle. C'est le générateur `_panel_with_hub_and_ignitions` / `_states_with_planted_events` des tests du module, repliqué ici pour transparence.",,,,,,,,4ec370d3ebd1fe88,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,3daa9f54,markdown,fr,7e1010a3afb811c5,"## Sanité : un panel synthétique où hub et ignition sont *plantés*
+
+Avant de faire confiance à l'appareil sur des traces réelles, on le valide sur un panneau synthétique où **on connaît la réponse** : un AR(1) $(T,K)$ avec un **hub d'influence planté** (la feature 0 pilote les features 5/6/7 au lag 3) et des **ignitions plantées** (cycles de bursting concentré). Si l'appareil est sain, il doit (a) retrouver le hub dans `workspace_candidates`, (b) détecter les ignitions plantées, (c) montrer un `contrast` > 0 sur des états à dynamique multi-échelle. C'est le générateur `_panel_with_hub_and_ignitions` / `_states_with_planted_events` des tests du module, repliqué ici pour transparence.
+
+",,,,,,,,7e1010a3afb811c5,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,6dc23ee8,code,fr,e4277f16bff73ffc,"def panel_with_hub_and_ignitions(T=1500, K=32, hub_idx=0, targets=(5,6,7), lag=3,
         hub_strength=0.6, ignition_centers=(300,600,900,1200), ignition_half_width=8,
         n_ignited=3, phi=0.5, sigma=0.4, seed=0):
@@ -6250,7 +6289,16 @@ for c in syn_info[""centers""]:
 ax.set_xlabel(""pas de temps""); ax.set_ylabel(""concentration (Gini)"")
 ax.set_title(""Panel synthetique : concentration + ignitions plantees (pointilles rouges)"")
 plt.tight_layout(); plt.show()",,,,,,,,e4277f16bff73ffc,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,0e66d083,markdown,fr,168ea95fd2968820,"## Gate 22 — Structure : un sous-ensemble à fan-out d'influence disproportionné ?Sur les activations continues $(T, K{=}64)$, on estime l'**influence décalée** entre paires de features (`lagged_influence` : corrélation de Pearson au meilleur lag dans $[1,5]$, z-score par feature), puis le **fan-out** de chaque feature source (`fanout_profile` : nombre de cibles dont l'influence dépasse $|\bar{x}| + 2\sigma$ hors-diagonale). Un **hub** est une feature à fan-out anormalement élevé. `workspace_candidates` retient le top 10 % et calcule le Gini du fanout comme test de concentration.**Deux contrôles honnêtes :**- **Modèle-contrôle** : le même calcul sur les traces `control` (embeddings d'entrée permutés — un modèle nul sans structure linguistique).- **Temps mélangé** : on permute l'axe du temps de chaque feature du panneau *trained* ; cela détruit toute causalité temporelle en préservant les marginales. Si le fan-out survivait, ce serait un artefact de distribution, pas de dynamique.",,,,,,,,168ea95fd2968820,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,0e66d083,markdown,fr,573ea90667146b53,"## Gate 22 — Structure : un sous-ensemble à fan-out d'influence disproportionné ?
+
+Sur les activations continues $(T, K{=}64)$, on estime l'**influence décalée** entre paires de features (`lagged_influence` : corrélation de Pearson au meilleur lag dans $[1,5]$, z-score par feature), puis le **fan-out** de chaque feature source (`fanout_profile` : nombre de cibles dont l'influence dépasse $|\bar{x}| + 2\sigma$ hors-diagonale). Un **hub** est une feature à fan-out anormalement élevé. `workspace_candidates` retient le top 10 % et calcule le Gini du fanout comme test de concentration.
+
+**Deux contrôles honnêtes :**
+
+- **Modèle-contrôle** : le même calcul sur les traces `control` (embeddings d'entrée permutés — un modèle nul sans structure linguistique).
+- **Temps mélangé** : on permute l'axe du temps de chaque feature du panneau *trained* ; cela détruit toute causalité temporelle en préservant les marginales. Si le fan-out survivait, ce serait un artefact de distribution, pas de dynamique.
+
+",,,,,,,,573ea90667146b53,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,743b7ce6,code,fr,3d704bf33dc9e1b9,"def gate22(v):
     infl = ws.lagged_influence(acts[v], max_lag=5)
     fp   = ws.fanout_profile(infl[""matrix""], z_threshold=2.0)
@@ -6288,7 +6336,15 @@ ax.bar(x + w, np.sort(fp_s[""fanout""])[::-1], w, color=""grey"", alpha=0.6, lab
 ax.set_xlabel(""rang de la feature (par fanout decroissant)""); ax.set_ylabel(""fan-out (# cibles)"")
 ax.set_title(""Gate 22 : profil de fan-out — trained vs controle vs temps melange"")
 ax.legend(fontsize=8); plt.tight_layout(); plt.show()",,,,,,,,3d704bf33dc9e1b9,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,27c0a64e,markdown,fr,bb04676a52e75f99,"## Gate 23 — Co-localisation : les ignitions portent-elles les pics de complexité créditée ?**C'est le gate de réconciliation.** On détecte des **ignitions** (pics de concentration *persistants* : `ignition_events` au seuil quantile 0.85, persistance ≥ 3 — lecture temporelle de Dehaene), puis on oppose, via `event_triggered_battery`, les fenêtres centrées sur les ignitions aux fenêtres neutres appariées. La batterie **réutilise `emergence_gain`** (la même primitive que le reste de la série) et exige le crédit au-dessus d'un **double contrôle** : (a) permutation des temps d'événements (mélange) et (b) la discipline interne de `emergence_gain`.Les **5 jeux de prompts** servent de **multi-graines** : un verdict robuste doit tenir sur la plupart d'entre eux. Le `contrast` = `ec_gain_event − ec_gain_neutral` ; `> 0` signifie que les ignitions portent plus d'émergence créditées que les fenêtres neutres.> **Note de support statistique.** Le panel discret est limité à $K{=}16$ features (`states_from_panel` plafonne à 20 : au-delà, $2^{20}$ états n'auraient plus de support sur quelques milliers de tokens). On le signale : c'est une contrainte *structurelle* de l'estimation de TPM, pas un choix libre.",,,,,,,,bb04676a52e75f99,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,27c0a64e,markdown,fr,20c587ec387d8580,"## Gate 23 — Co-localisation : les ignitions portent-elles les pics de complexité créditée ?
+
+**C'est le gate de réconciliation.** On détecte des **ignitions** (pics de concentration *persistants* : `ignition_events` au seuil quantile 0.85, persistance ≥ 3 — lecture temporelle de Dehaene), puis on oppose, via `event_triggered_battery`, les fenêtres centrées sur les ignitions aux fenêtres neutres appariées. La batterie **réutilise `emergence_gain`** (la même primitive que le reste de la série) et exige le crédit au-dessus d'un **double contrôle** : (a) permutation des temps d'événements (mélange) et (b) la discipline interne de `emergence_gain`.
+
+Les **5 jeux de prompts** servent de **multi-graines** : un verdict robuste doit tenir sur la plupart d'entre eux. Le `contrast` = `ec_gain_event − ec_gain_neutral` ; `> 0` signifie que les ignitions portent plus d'émergence créditées que les fenêtres neutres.
+
+> **Note de support statistique.** Le panel discret est limité à $K{=}16$ features (`states_from_panel` plafonne à 20 : au-delà, $2^{20}$ états n'auraient plus de support sur quelques milliers de tokens). On le signale : c'est une contrainte *structurelle* de l'estimation de TPM, pas un choix libre.
+
+",,,,,,,,20c587ec387d8580,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,3cef51e4,code,fr,8d76421f5813c448,"def gate23(v, n_shuffles=10, window=12, seed_base=0):
     panels = st.acts_topk_panels(traces[v], panel_state[v])
     rows, contrasts, n_ev, n_cred, n_states_set = [], [], 0, 0, set()
@@ -6319,8 +6375,42 @@ for s, nev, fcred, c in rows_t:
     print(f""  {s:16s} {nev:>8d} {100*fcred:>5.0f}% {c:>+9.4f}"")
 print(f""  {'MOYENNE':16s} {'':>8s} {'':>6s} {np.mean(ct):>+9.4f}"")
 print(f""  total : {n_ev_t} events, {n_cred_t} credites ({100*n_cred_t/max(n_ev_t,1):.0f}%)"")",,,,,,,,8d76421f5813c448,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,907fab70,markdown,fr,1afe142c073baa0f,"## Lecture honnête des résultatsOn lit les chiffres ci-dessus sur la grille de verdicts, **sans enjoliver**.### Gate 22 — structure présente, mais non spécifique au modèle entraîné- Le profil de fan-out trained exhibe bien quelques features à influence disproportionnée (max-fanout élevé).- **Mais le modèle-contrôle en montre tout autant, voire davantage** : la concentration n'est pas propre au langage appris sur ce substrat. Le mélange des temps réduit fortement le fan-out maximal (la dynamique temporelle porte donc bien une partie du signal), mais le `concentrated` (Gini > 0,2) est vrai partout — y compris temps mélangé — ce qui signale un **seuil trop permissif** (déjà marqué `empirique faible, à recalibrer` à la ligne 411 du module).- **Verdict : 22 partiel.** Une structure d'influence temporelle existe, mais elle n'est pas *spécifique* au modèle entraîné. On ne peut pas revendiquer un workspace propre au substrat linguistique sur ce seul indice.### Gate 23 — la co-localisation n'est pas établie- Le `contrast` moyen est **proche de zéro** et sa **dispersion entre jeux est grande** (certains positifs, d'autres négatifs).- La **fraction d'événements crédités est faible** (~17 %) : l'essentiel des ignitions ne porte pas plus d'émergence créditée que les fenêtres neutres.- Le modèle-contrôle, lui, a un espace d'états ~5–6× plus fragmenté (rapporté structurellement) : sa TPM n'a pas le support statistique d'une batterie stable — c'est déjà un signal, rapporté tel quel plutôt qu'en forçant une estimation non soutenable.### Branche observée : dissociation (22 partiel, 23KO)Le workspace structurel existe partiellement, mais **il ne porte pas les pics de complexité intégrée créditée**. Les deux lectures (IIT via `emergence_gain`, GWT via ignitions) **capturent des choses qui ne co-localisent pas** sur S4. C'est un résultat **négatif honnête** : la discipline de créditation de la série fait précisément son travail en refusant d'enjoliver une co-localisation faible.**Ce qui n'est pas revendiqué.**- Ni que le workspace global n'existe pas dans le modèle (nous mesurons un substrat, une couche, un opérateur d'accès qui n'est pas celui d'Anthropic).- Ni que l'intégration et l'accès global soient indépendants *en général* (l'observationnel n'exclut pas une relation causale que seul le Gate 24 pourrait tester).- Ni que la lecture SAE égale la lecture J-lens : le fil J-lens (issue #5681) est une opérationnalisation distincte, à venir.Le verdict observationnel revient au **Gate 24** (phase 2, GPU) : si le clamp des features-workspace *n'effondre pas* les gains crédités plus qu'un clamp aléatoire, la dissociation sera confirmée comme **corrélationnelle et non causale** — une leçon méthodologique de premier ordre, à écrire telle quelle.",,,,,,,,1afe142c073baa0f,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,19f2844b,markdown,fr,607fa84ca6b42e53,"## Gate 24 — Ablation sélective (phase 2, GPU)Seul gate **causal**. On ré-extrait des traces S4 avec un **clamp** des features-workspace identifiées au Gate 22 (mises à une constante), versus le clamp d'autant de features aléatoires hors-workspace (même compte). Si les gains crédités s'effondrent **sélectivement** sous le clamp workspace et pas sous le clamp aléatoire, c'est le miroir de l'expérience-titre d'Anthropic — la seule mesure interventionnelle de l'issue.Ce gate exige le pipeline d'extraction GPU2 (`CUDA_VISIBLE_DEVICES=2` strict, vLLM occupe GPU 0-1) et produit de nouvelles traces `.npz` ablatées. Il est **délégué à une phase 2 séparée** (PR distincte) : les Gates 22-23 livrent un verdict observationnel sans l'attendre, conformément à l'architecture de l'issue #5635.",,,,,,,,607fa84ca6b42e53,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,907fab70,markdown,fr,e36255673bd3bf32,"## Lecture honnête des résultats
+
+On lit les chiffres ci-dessus sur la grille de verdicts, **sans enjoliver**.
+
+### Gate 22 — structure présente, mais non spécifique au modèle entraîné
+
+- Le profil de fan-out trained exhibe bien quelques features à influence disproportionnée (max-fanout élevé).
+- **Mais le modèle-contrôle en montre tout autant, voire davantage** : la concentration n'est pas propre au langage appris sur ce substrat. Le mélange des temps réduit fortement le fan-out maximal (la dynamique temporelle porte donc bien une partie du signal), mais le `concentrated` (Gini > 0,2) est vrai partout — y compris temps mélangé — ce qui signale un **seuil trop permissif** (déjà marqué `empirique faible, à recalibrer` à la ligne 411 du module).
+- **Verdict : 22 partiel.** Une structure d'influence temporelle existe, mais elle n'est pas *spécifique* au modèle entraîné. On ne peut pas revendiquer un workspace propre au substrat linguistique sur ce seul indice.
+
+### Gate 23 — la co-localisation n'est pas établie
+
+- Le `contrast` moyen est **proche de zéro** et sa **dispersion entre jeux est grande** (certains positifs, d'autres négatifs).
+- La **fraction d'événements crédités est faible** (~17 %) : l'essentiel des ignitions ne porte pas plus d'émergence créditée que les fenêtres neutres.
+- Le modèle-contrôle, lui, a un espace d'états ~5–6× plus fragmenté (rapporté structurellement) : sa TPM n'a pas le support statistique d'une batterie stable — c'est déjà un signal, rapporté tel quel plutôt qu'en forçant une estimation non soutenable.
+
+### Branche observée : dissociation (22 partiel, 23KO)
+
+Le workspace structurel existe partiellement, mais **il ne porte pas les pics de complexité intégrée créditée**. Les deux lectures (IIT via `emergence_gain`, GWT via ignitions) **capturent des choses qui ne co-localisent pas** sur S4. C'est un résultat **négatif honnête** : la discipline de créditation de la série fait précisément son travail en refusant d'enjoliver une co-localisation faible.
+
+**Ce qui n'est pas revendiqué.**
+
+- Ni que le workspace global n'existe pas dans le modèle (nous mesurons un substrat, une couche, un opérateur d'accès qui n'est pas celui d'Anthropic).
+- Ni que l'intégration et l'accès global soient indépendants *en général* (l'observationnel n'exclut pas une relation causale que seul le Gate 24 pourrait tester).
+- Ni que la lecture SAE égale la lecture J-lens : le fil J-lens (issue #5681) est une opérationnalisation distincte, à venir.
+
+Le verdict observationnel revient au **Gate 24** (phase 2, GPU) : si le clamp des features-workspace *n'effondre pas* les gains crédités plus qu'un clamp aléatoire, la dissociation sera confirmée comme **corrélationnelle et non causale** — une leçon méthodologique de premier ordre, à écrire telle quelle.
+
+",,,,,,,,e36255673bd3bf32,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,19f2844b,markdown,fr,7de6d85e25a32e6d,"## Gate 24 — Ablation sélective (phase 2, GPU)
+
+Seul gate **causal**. On ré-extrait des traces S4 avec un **clamp** des features-workspace identifiées au Gate 22 (mises à une constante), versus le clamp d'autant de features aléatoires hors-workspace (même compte). Si les gains crédités s'effondrent **sélectivement** sous le clamp workspace et pas sous le clamp aléatoire, c'est le miroir de l'expérience-titre d'Anthropic — la seule mesure interventionnelle de l'issue.
+
+Ce gate exige le pipeline d'extraction GPU2 (`CUDA_VISIBLE_DEVICES=2` strict, vLLM occupe GPU 0-1) et produit de nouvelles traces `.npz` ablatées. Il est **délégué à une phase 2 séparée** (PR distincte) : les Gates 22-23 livrent un verdict observationnel sans l'attendre, conformément à l'architecture de l'issue #5635.
+
+",,,,,,,,7de6d85e25a32e6d,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,d0a94de7,code,fr,c4652b1504a33021,"# Gate 24 — phase 2 GPU (placeholder conforme C.1)
 # TODO etudiant / phase 2 :
 #  - Etape 1 : identifier les features-workspace (sortie Gate 22, top fanout) sur S4.
@@ -6330,7 +6420,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,d0a94de7,code,fr
 #  - Etape 4 : contraster emergence_gain(workspace-clamped) vs (random-clamped) vs (intact).
 resultat_gate24 = None  # TODO phase 2 GPU
 print(""Gate 24 : phase 2 (GPU) — non execute dans cette PR, section dediee au clamping selectif."")",,,,,,,,c4652b1504a33021,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,dc71ad94,markdown,fr,331554a251cf3ea4,"## Exercice 1 — le workspace est-il spécifique aux LLMs ?On a mesuré la concentration/ignition sur S4 (un LLM). La même batterie s'applique à un substrat non-LLM : réutiliser un panneau d'ICT-2 (Gray-Scott, S2) ou ICT-5 (réplicateur, S3) et tester si un sous-ensemble de cellules y présente un fan-out disproportionné et des ignitions.**Indices.** `# Étape 1` : charger un panneau d'activations d'un substrat morphogénétique (cf. `ict/reaction_diffusion.py`). `# Étape 2` : le formater en $(T,K)$ consommable par `concentration_series`. `# Étape 3` : comparer le Gini du fanout à celui de S4.",,,,,,,,331554a251cf3ea4,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,dc71ad94,markdown,fr,e6f0d5153a181a6a,"## Exercice 1 — le workspace est-il spécifique aux LLMs ?
+
+On a mesuré la concentration/ignition sur S4 (un LLM). La même batterie s'applique à un substrat non-LLM : réutiliser un panneau d'ICT-2 (Gray-Scott, S2) ou ICT-5 (réplicateur, S3) et tester si un sous-ensemble de cellules y présente un fan-out disproportionné et des ignitions.
+
+**Indices.** `# Étape 1` : charger un panneau d'activations d'un substrat morphogénétique (cf. `ict/reaction_diffusion.py`). `# Étape 2` : le formater en $(T,K)$ consommable par `concentration_series`. `# Étape 3` : comparer le Gini du fanout à celui de S4.
+
+",,,,,,,,e6f0d5153a181a6a,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,25ea6775,code,fr,3829f0b8d4baa63a,"# Exercice 1 : workspace sur un substrat non-LLM
 # TODO etudiant :
 #  - Etape 1 : charger un panneau d'activations d'un substrat morphogenetique (ict.reaction_diffusion).
@@ -6338,7 +6434,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,25ea6775,code,fr
 #  - Etape 3 : comparer le Gini du fanout obtenu a celui de S4 (Gate 22).
 resultats_ex1 = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,3829f0b8d4baa63a,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,9c75c6ff,markdown,fr,2441824371608ae5,"## Exercice 2 — sensibilité du Gate 23 à la taille de fenêtreLe `contrast` du Gate 23 dépend du paramètre `window` (demi-largeur de la fenêtre event-triggered). Les jambes F et K de `emergence_gain` sont notoirement bruitées sur les fenêtres courtes (zlib notamment). Tester la robustesse : recalculer le `contrast` moyen trained pour `window` ∈ {6, 12, 18, 24} et tracer la courbe.",,,,,,,,2441824371608ae5,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,9c75c6ff,markdown,fr,1bc06b4886a49dda,"## Exercice 2 — sensibilité du Gate 23 à la taille de fenêtre
+
+Le `contrast` du Gate 23 dépend du paramètre `window` (demi-largeur de la fenêtre event-triggered). Les jambes F et K de `emergence_gain` sont notoirement bruitées sur les fenêtres courtes (zlib notamment). Tester la robustesse : recalculer le `contrast` moyen trained pour `window` ∈ {6, 12, 18, 24} et tracer la courbe.
+
+",,,,,,,,1bc06b4886a49dda,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,c880b9e3,code,fr,9e504e14e71c7ef9,"# Exercice 2 : stabilite du contrast vs window
 # TODO etudiant :
 #  - Etape 1 : boucler gate23(""trained"", window=w) pour w in (6, 12, 18, 24).
@@ -6346,7 +6446,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,c880b9e3,code,fr
 #  - Etape 3 : tracer |contrast moyen| vs window ; le verdict (dissociation) est-il stable ?
 resultats_ex2 = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,9e504e14e71c7ef9,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,0ce96197,markdown,fr,93d0f466c5dd3ead,"## Exercice 3 — stabilité des hubs à la taille du panelLe Gate 22 utilise $K{=}64$ features. Les hubs détectés sont-ils stables quand on change cette résolution ? Répéter `differential_features(k=K)` + `workspace_candidates` pour $K \in \{32, 64, 128\}$ et mesurer le recouvrement (Jaccard) des ensembles de candidats workspace.",,,,,,,,93d0f466c5dd3ead,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,0ce96197,markdown,fr,fc8f74f1ca629cea,"## Exercice 3 — stabilité des hubs à la taille du panel
+
+Le Gate 22 utilise $K{=}64$ features. Les hubs détectés sont-ils stables quand on change cette résolution ? Répéter `differential_features(k=K)` + `workspace_candidates` pour $K \in \{32, 64, 128\}$ et mesurer le recouvrement (Jaccard) des ensembles de candidats workspace.
+
+",,,,,,,,fc8f74f1ca629cea,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,51880705,code,fr,427896e02b67f26e,"# Exercice 3 : stabilite des hubs vs taille de panel
 # TODO etudiant :
 #  - Etape 1 : pour K in (32, 64, 128), calculer panel = st.differential_features(traces[""trained""], k=K),
@@ -6355,8 +6459,31 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,51880705,code,fr
 #  - Etape 3 : conclure sur la robustesse de la structure workspace au choix de K.
 resultats_ex3 = None  # TODO etudiant
 print(""Exercice a completer"")",,,,,,,,427896e02b67f26e,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,59faf17c,markdown,fr,d3219e8ad5770404,"## ConclusionCe notebook confronte, **sur le même substrat S4 avec le même appareil**, la lecture IIT (complexité intégrée créditée) et la lecture GWT (workspace global / ignition). Le résultat est un **négatif honnête** :- **Gate 22 (partiel)** : une structure d'influence temporelle concentrée existe, mais elle n'est pas spécifique au modèle entraîné — le contrôle la montre également, et le seuil de concentration s'avère trop permissif.- **Gate 23 (non crédité)** : les ignitions ne portent pas, de façon robuste, les pics de complexité intégrée créditée. Le contrast est proche de zéro, dispersé entre jeux, et la fraction d'événements crédités est faible.La **branche dissociation** est le verdict observationnel : sur ce substrat, cet opérateur d'accès et cette couche, les deux théories capturent des structures qui ne co-localisent pas. C'est précisément le genre de résultat que la discipline de créditation de la série est faite pour ne pas masquer.Le **Gate 24** (phase 2, GPU) tranchera la question causale : si le clamp sélectif n'effondre pas les gains, la dissociation sera confirmée comme corrélationnelle — une leçon méthodologique de premier ordre sur la différence entre *structure observable* et *mécanisme causal*.### Pont causal do-calculusL'opérateur `do` de Pearl est ici implicite : le Gate 24 **réalise** un `do(workspace = clampé)` — une intervention chirurgicale sur le graphe, contre un `do(autant de features aléatoires = clampées)`. La même armature formelle traverse la série : voir le [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb), qui exécute l'échelle de Pearl et les trois règles sur `dowhy` (identification backdoor/front-door + estimation + réfutation), et relie cette série à Tweety-11, Infer-5 et PyMC-5.",,,,,,,,d3219e8ad5770404,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,88dc0e55,markdown,fr,786a13954fe0a05f,"## Références- Anthropic, *Global Workspace in Claude* (2025) — [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Opérateur d'accès = jacobien des logits ; broadcast mesuré structurellement ; preuve maîtresse = ablation sélective. IIT/Tononi absents ; claim limité à l'access-consciousness.- Baars, B. J. — *A Cognitive Theory of Consciousness* (Global Workspace Theory).- Dehaene, S., Naccache, L., Changeux, J.-P. — l'ignition temporelle (notre lecture `ignition_events`).- Jansma, K., Hoel, E. — *Engineering Emergence* (2025) — émergence causale multi-échelle, CE 2.0. Voir [ICT-5](ICT-5-CausalEmergence.ipynb).- Série ICT : [ICT-21](ICT-21-SAETrajectoires.ipynb) (substrat S4), [ICT-5](ICT-5-CausalEmergence.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat.ipynb).",,,,,,,,786a13954fe0a05f,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,59faf17c,markdown,fr,5e4171f2e798f3f2,"## Conclusion
+
+Ce notebook confronte, **sur le même substrat S4 avec le même appareil**, la lecture IIT (complexité intégrée créditée) et la lecture GWT (workspace global / ignition). Le résultat est un **négatif honnête** :
+
+- **Gate 22 (partiel)** : une structure d'influence temporelle concentrée existe, mais elle n'est pas spécifique au modèle entraîné — le contrôle la montre également, et le seuil de concentration s'avère trop permissif.
+- **Gate 23 (non crédité)** : les ignitions ne portent pas, de façon robuste, les pics de complexité intégrée créditée. Le contrast est proche de zéro, dispersé entre jeux, et la fraction d'événements crédités est faible.
+
+La **branche dissociation** est le verdict observationnel : sur ce substrat, cet opérateur d'accès et cette couche, les deux théories capturent des structures qui ne co-localisent pas. C'est précisément le genre de résultat que la discipline de créditation de la série est faite pour ne pas masquer.
+
+Le **Gate 24** (phase 2, GPU) tranchera la question causale : si le clamp sélectif n'effondre pas les gains, la dissociation sera confirmée comme corrélationnelle — une leçon méthodologique de premier ordre sur la différence entre *structure observable* et *mécanisme causal*.
+
+### Pont causal do-calculus
+
+L'opérateur `do` de Pearl est ici implicite : le Gate 24 **réalise** un `do(workspace = clampé)` — une intervention chirurgicale sur le graphe, contre un `do(autant de features aléatoires = clampées)`. La même armature formelle traverse la série : voir le [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb), qui exécute l'échelle de Pearl et les trois règles sur `dowhy` (identification backdoor/front-door + estimation + réfutation), et relie cette série à Tweety-11, Infer-5 et PyMC-5.
+
+",,,,,,,,5e4171f2e798f3f2,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb,88dc0e55,markdown,fr,e07bc53f76d54469,"## Références
+
+- Anthropic, *Global Workspace in Claude* (2025) — [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Opérateur d'accès = jacobien des logits ; broadcast mesuré structurellement ; preuve maîtresse = ablation sélective. IIT/Tononi absents ; claim limité à l'access-consciousness.
+- Baars, B. J. — *A Cognitive Theory of Consciousness* (Global Workspace Theory).
+- Dehaene, S., Naccache, L., Changeux, J.-P. — l'ignition temporelle (notre lecture `ignition_events`).
+- Jansma, K., Hoel, E. — *Engineering Emergence* (2025) — émergence causale multi-échelle, CE 2.0. Voir [ICT-5](ICT-5-CausalEmergence.ipynb).
+- Série ICT : [ICT-21](ICT-21-SAETrajectoires.ipynb) (substrat S4), [ICT-5](ICT-5-CausalEmergence.ipynb) (émergence causale), [ICT-Synthese](ICT-Synthese-CrossSubstrat.ipynb).
+
+",,,,,,,,e07bc53f76d54469,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb,9bcd075e,markdown,fr,837c7b3a92857e06,"# ICT-3 — Robustesse & délai de gratification : étude quantitative
 
 > Série **ICT** (*Integrated Causal Trajectories*, Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588)).
@@ -6686,7 +6813,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb,1cd4
 # plt.xlabel(""Taille du tableau (n)""); plt.ylabel(""Episodes de delai de gratification (moyenne)"")
 # plt.title(""Exercice 3 - delai de gratification vs taille""); plt.show()
 print(""Exercice 3 a completer"")",,,,,,,,11062eb305320119,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb,9a0ca500,markdown,fr,c75f4467dfe6149e,"## 5. Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-3-RobustnessDelayedGratification.ipynb,9a0ca500,markdown,fr,91967ad9746d5931,"## Conclusion
 
 ICT-3 a transformé les deux démonstrations ponctuelles d'ICT-2 en **mesures** :
 
@@ -6712,7 +6839,7 @@ l'**émergence causale multi-échelle** (TPM → PyPhi).
 ### Voir aussi
 - [ICT-0 — Cadrage de la série](ICT-0-Framing.md)
 - [ICT-2 — Self-sorting arrays : le tri comme morphogenèse](ICT-2-SelfSortingMorphogenesis.ipynb)
-- Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,c75f4467dfe6149e,,,,,,,
+- Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,91967ad9746d5931,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-4-ChimericArraysKinAggregation.ipynb,9b4e81d5,markdown,fr,06a443ded93af20a,"# ICT-4 — Tableaux chimériques & agrégation émergente (« kin »)
 
 > Série **Integrated Causal Trajectories** ([ICT-0 — cadrage](ICT-0-Framing.md), Epic **#4588**).
@@ -6942,7 +7069,7 @@ def trois_regimes(seed=0):
     return result
 
 # print(trois_regimes())   # attendu : attraction > 0 > repulsion, tri preserve partout",,,,,,,,e0d7379545e73eaa,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-4-ChimericArraysKinAggregation.ipynb,84b096b9,markdown,fr,8a6aa94f2d57a214,"## 6. Conclusion et perspectives
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-4-ChimericArraysKinAggregation.ipynb,84b096b9,markdown,fr,914b46040fd9ed73,"## Conclusion et perspectives
 
 ICT-4 ferme la boucle ouverte par ICT-2. Avec un jeu de règles **à peine** plus riche que le modèle minimal :
 
@@ -6961,7 +7088,7 @@ La leçon dépasse le tri : une organisation causale **secondaire** peut s'insta
 ### Références
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).
 - Jansma & Hoel, *Engineering Emergence*, arXiv 2025 (échelles causales pertinentes).
-- Schelling, *Dynamic Models of Segregation*, Journal of Mathematical Sociology, 1971.",,,,,,,,8a6aa94f2d57a214,,,,,,,
+- Schelling, *Dynamic Models of Segregation*, Journal of Mathematical Sociology, 1971.",,,,,,,,914b46040fd9ed73,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-5-CausalEmergence.ipynb,d472f43f,markdown,fr,b04fcb705f7a183c,"# ICT-5 : Émergence causale — quelle échelle décrit le mieux un système ?
 
 > Série **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
@@ -7248,7 +7375,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-5-CausalEmergence.ipynb,e3509ff0,code,fr,f1
 # Test (decommenter une fois implemente) :
 # print(compare_strategies(pyphi.examples.macro_network(), (0, 0, 0, 0)))
 print(""Exercice 3 a completer"")",,,,,,,,f1c0c23ef453f60b,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-5-CausalEmergence.ipynb,7f469a93,markdown,fr,b90c91e231fbc4de,"## 6. Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-5-CausalEmergence.ipynb,7f469a93,markdown,fr,a5700946895a8473,"## Conclusion
 
 L'**émergence causale** renverse une intuition réductionniste : la description la plus fine n'est
 pas toujours la plus causale. Avec le module `pyphi.macro` (le vrai outil SOTA), nous avons :
@@ -7280,7 +7407,7 @@ littérature multi-échelle.
 
 - Hoel, E. (2017). *When the map is better than the territory*. **Entropy**.
 - Jansma, A. & Hoel, E. (2025). *Engineering Emergence*. arXiv.
-- Documentation PyPhi : module [`pyphi.macro`](https://pyphi.readthedocs.io).",,,,,,,,b90c91e231fbc4de,,,,,,,
+- Documentation PyPhi : module [`pyphi.macro`](https://pyphi.readthedocs.io).",,,,,,,,a5700946895a8473,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb,ict6-title,markdown,fr,1c487652a7244d11,"# ICT-6 — Du tri a la chaine de Markov : emergence causale d'une morphogenese (CE 2.0)
 
 > Serie **ICT** (*Integrated Causal Trajectories*), Epic #4588. Voir le [cadrage ICT-0](ICT-0-Framing.md).
@@ -7983,7 +8110,7 @@ renormalisation qui fait coincider les courbes. Si oui, quelle puissance de $n$ 
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,556d32d5,code,fr,22102ddd58a8bd49,"# Exercice 3 : a completer.
 resultat_ex3 = None  # TODO etudiant
 print(""Exercice 3 a completer"")",,,,,,,,22102ddd58a8bd49,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdown,fr,f44c7f61423fa5cd,"## 8. Conclusion & ponts
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdown,fr,1a7afc5014ec20f8,"## Conclusion & ponts
 
 - **Detecter une signature scale-free est une competence, pas un coup d'oeil.** Le
   trace log-log trompe : on a vu une queue lourde banale (les deplacements du tri,
@@ -8022,7 +8149,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdo
 - P. Bak, C. Tang, K. Wiesenfeld, *Self-organized criticality*, Phys. Rev. Lett.
   59, 1987 — criticalite et signatures sans echelle.
 - T. E. Harris, *The Theory of Branching Processes*, 1963 — loi de Borel, exposant
-  $3/2$ a la criticalite.",,,,,,,,f44c7f61423fa5cd,,,,,,,
+  $3/2$ a la criticalite.",,,,,,,,1a7afc5014ec20f8,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-8-AttractorLandscapesEWS.ipynb,de10a093,markdown,fr,a97d1b13368d00d6,"# ICT-8 — Paysages d'attracteurs & signaux precurseurs : *les deux tressees*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) — strate 2 : *morphogenese dynamique*.
@@ -10361,7 +10488,7 @@ def phi_macro_copy():
 
 resultat_exo3 = None  # TODO etudiant
 print(""Exercice a completer : hypothese d'emergence (copy-network coarse-graine)"")",,,,,,,,e81f4cf569a6304c,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb,conclusion-md,markdown,fr,3eb556dfbef4218f,"## 5. Conclusion
+MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb,conclusion-md,markdown,fr,6d2c265d17ff409a,"## Conclusion
 
 On a démontré la **méthode** du coarse-graining en IIT :
 
@@ -10371,10 +10498,819 @@ On a démontré la **méthode** du coarse-graining en IIT :
 
 C'est précisément cette nuance — l'existence d'une dimension d'échelle dans l'IIT, sans prétendre que tout coarse-grain crée de l'emergence — qui distingue une démo méthodologique honnête d'une démonstration forcée.
 
-**Suite** : revoir [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) §6 (macro-subsystems) et [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) §7 (performance et coarse-graining comme stratégie de gestion de complexité).",,,,,,,,3eb556dfbef4218f,,,,,,,
+**Suite** : revoir [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) §6 (macro-subsystems) et [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) §7 (performance et coarse-graining comme stratégie de gestion de complexité).",,,,,,,,6d2c265d17ff409a,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb,refs-md,markdown,fr,3954627c0f130fb4,"## Références
 
 - Hoel, E. P. (2017). *Agentive behavior and the causal powers of information*. (Causal emergence, effective information).
 - Albantakis, L., Marshall, W., Hoel, E., & Tononi, G. (2019). *The unfolding of intrinsic causal powers via information decomposition*.
 - Mayner, W. G. P. et al. (2018). *PyPhi: A toolbox for integrated information theory*. PLOS Comp. Biol. (module `pyphi.macro`).
 - PyPhi documentation : `pyphi.macro` (coarse-grain, blackbox, emergence).",,,,,,,,3954627c0f130fb4,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles.ipynb,cell-0e183c83,markdown,fr,29fe3782afe6b905,"## Bilan — ICT-11 : l'agence causale est régime-dépendante, pas un scalaire absolu
+
+Ce notebook pose la question de la **strate 3** : à quelle échelle l'agence d'un
+système de réaction-diffusion est-elle la plus lisible ? L'agence, héritée
+d'ICT-9, est la capacité à **réparer une forme ablatée** (retour vers un point
+de consigne *intrinsèque*), mesurée *par contraste* avec la diffusion pure qui
+dissout. La réponse falsifiée gate par gate : l'agence **n'est pas un scalaire
+absolu** — elle a un **profil** qui dépend de l'échelle de coarse-graining.
+
+### Les deux gates et leur raccord
+
+| Gate | Mesure | Ce qu'elle teste |
+|------|--------|------------------|
+| **Gate 1** | `repair_gain(b)`, `time_to_recover(b)` résolus à l'échelle `b` | Le profil de l'agence *par blocs* — la réparation se lit-elle mieux à une certaine échelle qu'au pixel ? |
+| **Gate 2** | Raccord Hoel : champ → macro-variance → TPM → `effectiveness` | L'agence (champs) se raccorde-t-elle à la cause causale de Hoel (TPM, information effective) par une macro-variable scalaire ? |
+
+**La macro-variable de raccord** est la *variance du champ moyenné par blocs de
+cote* `b` : dépendante de l'échelle, calculable, et canonique pour un TPM de
+Hoel. C'est elle qui permet de croiser `repair_gain` (mesure d'agence) et
+`effectiveness` (mesure causale) dans le même tableau — le verdict est dicté
+par les nombres réels, pas par l'intuition de départ.
+
+### La leçon centrale : l'agence a un profil, pas une valeur
+
+Dire « ce système est agentif » n'a de sens **qu'indexé à une échelle**. À
+l'échelle du pixel, le bruit microscopique peut masquer la réparation ; à une
+échelle trop grossière, le moyennage efface la dynamique. Il existe (ou non)
+une **échelle de lisibilité maximale** où `repair_gain` et `effectiveness` se
+raccordent — et c'est précisément ce raccord (Gate 2) qui distingue l'agence
+d'une simple corrélation statistique.
+
+### Lien avec le cursus
+
+- **ICT-9** (agence à résolution unique) → **ICT-11** (agence multi-échelle) :
+  on passe d'une mesure scalaire à un **profil**.
+- **Hoel (2016)** : la causalité macro effective — le pont théorique que
+  valide la Gate 2.
+- **ICT-12** (champs de valence) puis **ICT-13** (stratégies) : l'agence causale
+  devient tour à tour *valence* puis *stratégie stable*, sur d'autres substrats.
+
+### À retenir
+
+L'agence causale n'est pas une propriété *de l'objet* mais une propriété *du
+couple (objet, échelle d'observation)*. Falsifier l'échelle de lisibilité
+maximale — là où la mesure d'agence et la mesure causale de Hoel convergent —
+est le seul moyen honnête de distinguer une vraie réparation d'un artefact de
+moyennage.
+",,,,,,,,29fe3782afe6b905,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,cell-dd02f4ec,markdown,fr,6ee3d4740d890341,"## Bilan -- ICT-12 : la valence est un signal, pas une garantie (modele interne payant ou ruineux ?)
+
+Ce notebook installe un **toy model** intermediaire entre ICT-11 (profils
+d'agence multi-echelle) et ICT-13 (strategies comme formes stables) : deux
+animats sur une source balistique dans un **champ de valence** (bosse gaussienne
+attractive a la source, repulsive aux obstacles, gradient analytique). La
+question : un **modele interne** (anticipation $\hat p$) est-il payant ou
+ruineux face a un reactif a gradient instantane ? Reponse falsifiee gate par
+gate : **regime-dependant**, coherent avec le fil court depuis ICT-10.
+
+### Les 3 gates et leurs verdicts
+
+| Gate | Test | Verdict |
+|------|------|---------|
+| **Gate 1** (capture par regime) | Cadence de capture (precision poursuite) | Reactif gradient = baseline proche de l'optimal a vitesse attrapable ; $\hat p$ **ne la bat nulle part** et **perd en erratique** |
+| **Gate 2** (quatre grandeurs de role) | capture_rate, escape_rate, path_irreversibility, role_switching | Lisible depuis la trajectoire seule ; la marche aleatoire (controle d'ablation) ne porte aucune signature de role |
+| **Gate 3** (anticipation 2D) | $\hat p$ vs baselines adverses (persistance, MM, AR(1)) sur EQM position | Baselines avantagees in-sample ; $\hat p$ doit battre des adversaires severes, pas des hommes de paille |
+
+### La lecon centrale : un modele interne ruineux en regime erratique
+
+L'anticipation $\hat p$ **n'est pas universellement payante**. Dans les regimes
+attrapables (vitesse source ~ animat), le reactif a gradient instantane est deja
+proche de l'optimal -- le cout d'entretenir un modele interne (memoire,
+projection) n'est pas compense. C'est en regime **erratique** que le modele
+interne **perd** : il projette sur une dynamique qui n'a plus de structure, et
+la prediction devient bruit. Le verdict est **regime-dependant**, comme tout le
+fil court depuis ICT-10.
+
+### Pourquoi le controle d'ablation importe (Gate 2)
+
+Les quatre grandeurs de role ne sont **valides** que si la marche aleatoire
+(controle sans modele ni gradient) n'en porte aucune signature. Si la marche
+aleatoire produisait un faux « role », les grandeurs mesureraient du bruit, pas
+de l'agentivite. Ce controle d'ablation est la **preuve negative** qui distingue
+un role emergent d'un artefact de trajectoire.
+
+### Lien avec le cursus
+
+- **ICT-10** (Cran A, $\hat p$ durci, verdict honnete « avantage regime-dependant ») :
+  ICT-12 confirme et etend ce verdict au couple valence + role.
+- **ICT-11** (agence multi-echelle) -> **ICT-12** (valence + role sur banc
+  balistique) -> **ICT-13** (strategies comme formes stables) : la serie passe
+  de l'agence a la valence puis a la strategie, toujours regime-dependante.
+- [#4878](https://github.com/jsboige/CoursIA/issues/4878) : gate specifique de
+  cette strate.
+
+### A retenir
+
+Un champ de valence + un modele interne ne font pas un agent. La valence est un
+**signal** (gradient exploitable), pas une **garantie** de performance. Le
+verdict « payant ou ruineux » ne se declare qu'apres avoir croise les regimes
+(4) et l'axe de vitesse, et confronte le modele interne a des baselines
+**adverses severes** -- pas a des hommes de paille.
+",,,,,,,,6ee3d4740d890341,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb,cell-a19bcce2,markdown,fr,54186f60739d5725,"## Bilan — ICT-13 : une stratégie n'est PAS une forme stable, elle est régime-dépendante
+
+Ce notebook pose la question centrale de la strate 3 : **une stratégie est-elle
+une forme stable dans un paysage d'interactions ?** La réponse, falsifiée gate
+par gate sur le dilemme du prisonnier itéré d'Axelrod ($T=5, R=3, P=1, S=0$),
+est **non** — la stabilité d'une stratégie est **conditionnelle au régime** de
+bruit et à la composition de la population. La bistabilité d'ICT-10 devient ici
+bistabilité **coopération / défection**, et le verdict dépend de 4 gates
+empilés.
+
+### Les 4 gates du verdict (tous falsifiables)
+
+| Gate | Test | Résultat | Ce qu'il prouve |
+|------|------|----------|-----------------|
+| **Gate 1** | Tournoi round-robin sans bruit | TFT + grim dominent (2 635), AllD dernier (2 313) | Axelrod reproduit : la coopération gagne en milieu propre |
+| **Gate 2** | Seuil de grim trigger | $\delta^* = (T-R)/(T-P) = 0{,}5$ retrouvé numériquement (croisement à 0,55) | La théorie de GT-6c tient : grim résiste à AllD au-delà du seuil |
+| **Gate 3** | Régime-dependance (bruit) | **TFT s'effondre** (chute ~0,40) | Une stratégie gagnante sans bruit peut perdre sous bruit |
+| **Gate 4** | Bassins d'invasion | Selon la population initiale | La stabilité dépend de la composition du bassin |
+
+### La leçon centrale : régime-dépendance
+
+Aucune stratégie n'est **absolument** stable. TFT est robuste sans bruit et
+fragile sous bruit ; grim résiste à AllD au-dessus d'un seuil mais est
+vulnérable en dessous ; Pavlov oscille. **La même stratégie peut dominer ou
+s'effondrer selon le régime** — c'est pourquoi le verdict s'exprime en gates
+falsifiables (chaque gate est reproductible numériquement, non recopié) plutôt
+qu'en claim binaire « TFT est la meilleure ».
+
+### Lien avec le reste du cursus
+
+- **ICT-10** (bistabilité cinématique) → **ICT-13** (bistabilité stratégique) :
+  le motif « deux attracteurs en compétition » se transfère d'un substrat à
+  l'autre.
+- **GT-6c** (théorie du seuil de grim trigger) : le $\delta^*$ analytique
+  d'ICT-13 Gate 2 **confirme** la prédiction théorique de GameTheory-6c — pont
+  ICT ↔ GameTheory.
+- **Axelrod (1984)** : la reproduction numérique du tournoi historique valide
+  l'implémentation avant de la stresser (Gates 3-4 = robustesse).
+
+### À retenir
+
+Une stratégie n'est pas une **forme** (stable, absolue) mais un **opérateur
+contextuel** : elle n'a de sens qu'indexée à un régime de bruit, une composition
+de population et un horizon temporel. C'est cette contextualisation qui fait
+passer la théorie des jeux de la **stratégie** à la **morphodynamique** — la
+strate 3 de la série ICT.
+
+---
+
+**Retour au sommaire** : [Index ICT-Series](ICT-0-Framing.md)
+",,,,,,,,54186f60739d5725,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb,cell-0939ebb8,markdown,fr,3b451dd3c7d8480c,"## Bilan — ICT-14 : l'énergie libre comme troisième jambe du représentant interne
+
+Ce notebook installe la **strate 4** de la série ICT : après le représentant
+interne *cinématique* d'ICT-10 (lacet de prédation, projection
+$\hat p_t = o_t + \text{lead}\cdot v_t$), on dote l'actant d'un représentant
+**probabiliste** — un modèle génératif gaussien dont l'énergie libre $F$ résume
+la qualité de l'anticipation. La série accumule ainsi quatre jambes : cause,
+morphogenèse, prédiction, **énergie libre**.
+
+### La décomposition qui compte : $F = \text{accuracy} + \text{complexity}$
+
+Pour un modèle gaussien à un pas, la surprise se décompose en deux termes
+lisible :
+
+$$F = \underbrace{\tfrac12 \frac{(o_t-\hat p_t)^2}{\sigma^2_t}}_{\text{accuracy}} + \underbrace{\tfrac12 \ln(2\pi\sigma^2_t)}_{\text{complexity}}$$
+
+- **Accuracy** = erreur de prédiction normalisée par la précision déclarée.
+- **Complexity** = pénalité de la variance déclarée (un modèle trop confiant
+  paie sa sur-confiance).
+
+### Les deux gates du verdict (jambe énergie-libre)
+
+| Gate | Résultat | Lecture |
+|------|----------|---------|
+| **Gate 1** (précision fixe) | $\bar F$ **strictement monotone** du MSE (15/15) | À précision constante, l'énergie libre n'apporte rien au-delà de l'erreur de prédiction |
+| **Gate 2** (précision adaptative) | $\bar F$ **diverge** du MSE aux discontinuités (famille créneau) | La précision adaptative punit la sur-confiance accumulée — l'énergie libre devient informative là où le MSE est aveugle |
+
+**Leçon** : l'énergie libre **n'est pas** un substitut magique de l'erreur de
+prédiction. Elle ne discrimine les modèles **que si la précision est adaptative**
+(c'est-à-dire si le modèle exprime son incertitude). Sinon, elle se réduit au
+MSE — et il vaut mieux le dire que le cacher.
+
+### Position dans la série ICT
+
+ICT-10 (représentant interne cinématique) → **ICT-14 (jambe énergie-libre,
+strate 4)** → ICT-15 (complexité intégrée) → ICT-17 (machine epsilon
+$C_\mu / E$). La strate 4 est celle où le représentant interne devient
+**auto-évalué** : l'actant ne se contente plus de prédire, il *mesure* la
+qualité de sa prédiction par un signal unique ($F$) qui combine erreur et
+incertitude déclarée.
+
+### À retenir
+
+L'énergie libre est le pont entre la **prédiction** (combien je me trompe) et
+la **méta-cognition** (est-ce que je sais que je me trompe). C'est cette seconde
+dimension — la précision adaptative, donc l'incertitude exprimée — qui donne à
+$F$ son pouvoir discriminant au-delà du MSE brut.
+
+---
+
+**Retour au sommaire** : [Index ICT-Series](ICT-0-Framing.md)
+",,,,,,,,3b451dd3c7d8480c,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity.ipynb,cell-03442843,markdown,fr,d9055b6004a950f6,"## Bilan — ICT-15 : trois scalaires (Φ / F / K), une seule thèse (le système qui modélise son monde)
+
+Ce capstone de la **strate 4** confronte enfin la **thèse fondatrice** de la
+série ICT à l'appareil numérique : *l'intégration* (Φ), *la surprise* (F) et *la
+compression* (K) sont-elles trois facettes d'une même quantité — un système qui
+modélise son monde ? La réponse passe par trois scalaires mesurés sur la même
+graine représentative, **contrastés à un contrôle commun** (un seul tirage de
+`rng` permute la trajectoire ; les trois scalaires mesurent leur déviation par
+rapport à cette même permutation).
+
+### Les trois scalaires et leur verdict
+
+| Scalaire | Mesure | Verdict sur la graine |
+|----------|--------|----------------------|
+| **Φ_dyn** (`ec_gain`) | Intégration multi-échelles contrastée | **INTRINSIC documenté** : la formule intégrale stricte (somme sur toutes les partitions × mécanismes × temps) est intractable au-delà de quelques états, comme Φ strict (PyPhi). Le proxy préserve l'intégration *multi-échelles* contrastée à son contrôle |
+| **F** | Surprise / énergie libre du représentant interne | Héritée d'ICT-14 (jambe énergie-libre) |
+| **K** | Compression (complexité de Kolmogorov, proxy LZMA/zlib) | Mesurée via gate 4 (exercice 1) |
+
+### La thèse fondatrice : ni prouvée ni réfutée, *opérationalisée*
+
+La série ICT ne **prouve pas** l'identité Φ = F = K (ce serait un résultat
+mathématique majeur). Elle l'**opérationalise** : les trois scalaires sont
+mesurables sur les mêmes substrats, contrastés au même contrôle, et leurs
+verdicts (gate par gate) sont **comparables**. La convergence — quand elle
+apparaît — est un fait numérique falsifiable, pas un article de foi. C'est la
+différence entre une théorie fondatrice (un texte) et un appareil de mesure (un
+notebook reproductible).
+
+### Le verdict INTRINSIC sur Φ_dyn (honnête, pas contourné)
+
+La formule intégrale du document fondateur n'est **pas** calculée ici. La
+combinatoire (partitions × mécanismes $M \subseteq S$ × moyenne temporelle) est
+intractable au-delà de quelques états — exactement comme Φ strict (PyPhi) sur de
+petits systèmes. Le proxy `ec_gain` préserve l'intégration *multi-échelles*
+contrastée à son contrôle d'ablation, **sans prétendre** calculer la quantité
+fondatrice. Ce verdict INTRINSIC est documenté conformément au registre
+axe-2 SOTA (sota-not-workaround, Prong A) : on ne maquille pas un proxy en Φ
+strict.
+
+### Position dans la série ICT
+
+- **Strate 4** (retour de la théorie fondatrice, #5090) : ICT-15 capstone
+  converge Φ/F/K sur la graine représentative.
+- **Strate 5** (Prochaines étapes) : ICT-16 (MDL deux parties, pont F = résidu
+  de K), ICT-17 (machine epsilon, $C_\mu / E$), ICT-18 (flèche du temps,
+  production d'entropie thermodynamique).
+- **Réconciliation du cadrage** (double lecture du sigle) : objet dédié de #5091.
+
+### À retenir
+
+L'Integrated Complexity n'est pas une identité démontrée — c'est un **programme
+de mesure**. Trois scalaires (Φ_dyn, F, K), un contrôle commun, des gates
+falsifiables gate par gate. Le capstone ne ferme pas la question fondatrice ; il
+rend la question *numériquement posable*, ce qui est tout ce qu'une série
+pédagogique honnête peut faire.
+",,,,,,,,d9055b6004a950f6,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb,cell-b9a00370,markdown,fr,8cf8511ca263ffd5,"## Bilan -- l'epsilon-machine, troisieme jambe computationnelle
+
+L'U-algorithme de Crutchfield donne une reponse operationnelle a la question
+*« quelle est la memoire minimale pour predire ce processus ? »* : la partition
+en **etats causaux** -- les classes de passes dont les distributions de futur
+sont indistinguables. De cette partition emergent deux quantites jumelles :
+
+- **$C_\mu$ (complexite statistique)** : entropie de la distribution sur les
+  etats causaux. C'est la *memoire de calcul* du processus -- ce que le systeme
+  doit retenir du passe pour continuer a predire le futur.
+- **$E$ (information multi-mutuelle passe/futur)** : plafond theorique sur ce
+  qu'aucun estimateur $\hat{p}$ ne peut extraire (Gate 9) --
+  $I(\hat{p} ; \text{futur}) \le E$.
+
+### Ce que les trois substrats ont montre
+
+| Substrat | Origine | Regime | $C_\mu$ |
+|----------|---------|--------|----------|
+| S1 | ICT-2 (tri auto-organise) | convergence simple | faible |
+| S2 | ICT-10/12 (paysage bistable) | deux bassins d'attracteurs | moyen |
+| S3 | ICT-13 (replicateur en cooperation) | cooperation emergente | **maximal** |
+
+La progression est coherente : plus le systeme doit *choisir* entre des futurs
+distincts selon son passe, plus $C_\mu$ grimpe. Le replicateur en cooperation
+emergente (S3) memorise le plus parce que ses strategies gagnantes sont stables
+mais peu nombreuses -- il faut savoir *laquelle* on est.
+
+### Les deux portes de coherence
+
+- **Gate 8 (Crutchfield vs Hoel)** : la partition causale (preservation de la
+  distribution de futur) et celle de *causal emergence* de Hoel (pouvoir causal
+  via ``greedy_apportionment``) ne coincident pas en general. Leur divergence,
+  mesuree par la **variation d'information (VI)**, quantifie deux lectures
+  legitimes du « bon macro-etat ».
+- **Gate 9 ($E$ comme plafond)** : aucun estimateur $\hat{p}$ du banc ICT-10 ne
+  depasse $E$. C'est le certificat que $E$ est bien la borne superieure, et que
+  l'epsilon-machine capture toute l'information predictive disponible.
+
+### Position dans l'Epic #4588 (strate 5)
+
+Apres ICT-15 (capstone unifiant $\Phi$, $F$ et $K$ sous la quantite *u*) et
+ICT-16 (code MDL two-part : $F$ comme residu de code), ICT-17 installe la
+**troisieme jambe** -- la mecanique computationnelle. L'inegalite canonique
+$E \le C_\mu$ (l'excess entropy est bornee par la complexite statistique)
+ferme la boucle : la memoire causale ($C_\mu$) plafonne l'information
+predictive ($E$), exactement comme la compression ($K$) plafonne la memoire.
+Les trois quantites de l'ICT -- integration, surprise, computation -- sont
+donc contraintes par une meme hierarchie de bornes.
+",,,,,,,,8cf8511ca263ffd5,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,015dbddd,markdown,fr,8b8dedcbe4a20cde,"## 9. Exemples guidés et exercices
+
+Les trois **exemples guidés** ci-dessous reprennent les concepts de la série (flèche du temps, indice d'agentivité, substrats) avec des solutions commentées. Les trois **exercices** qui suivent vous demandent d'étendre chaque méthode à un nouveau cas. Convention CoursIA : un *exemple* est résolu, un *exercice* est à compléter (convention 3 exercices minimum, #2161).",,,,,,,,8b8dedcbe4a20cde,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,4adb5f6f,markdown,fr,fe7961c233c33424,"### Exemple guide 1 -- Sensibilité au nombre d'états observés
+
+Sur la trajectoire S1 (BiasedBubbleSort), on fait varier la discrétisation en quantiles et on observe comment `sigma_real` évolue : c'est la frontière entre information thermodynamique réelle et artefact de discrétisation.",,,,,,,,fe7961c233c33424,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,45d494d1,markdown,fr,bf9a2496e89a01f1,"### Exemple guide 2 -- Definir et tester un *indice d'agentivite*
+
+**Consigne** : a partir des quantites thermodynamiques mesurees, definir un **indice d'agentivite** agrege qui resume la *quantite de calcul emergent* d'une trajectoire. Le tester sur les 4 substrats (S1/S2/S3/S4) et sur la trajectoire iid.
+
+**Lecon methodologique attendue** : la hierarchie naturelle des indices est :
+ - **S2 ICT-8** < **iid** < S4 ICT-9 < S1 ICT-2 < **S3 ICT-13** (cooperation emergente).
+ - **S2 ICT-8 est le minimum** : le bistable a 2 etats est *reversible par construction markovienne* (la distribution stationnaire pi adapte les taux de bascule de sorte que la detailed balance est *exactement* satisfaite -- l'asymetrie du modele generatif est invisible a l'instrument markovien stationnaire).
+ - **iid est le 2e minimum** : une trajectoire totalement aleatoire est reversible au bruit d'echantillonnage pres.
+ - **S3 ICT-13 est le maximum** : la cooperation emergente (Axelrod) est un processus *non-stationnaire* avec une fleche temporelle forte (la population de TFT croît au cours du temps), capturee par l'asymetrie du decompte d'agents TFT entre temps croissant et temps decroissant.
+
+**Note importante sur S2 ICT-8 -- un CAS FICTIF : le faux-NEGATIF du moyen**. La trajectoire bistable (May 1977) est **comportementalement tres structuree** -- 2 bassins d'attraction, hysteresis, flip-flopping anisotrope, **forte reversibilite comportementale** au sens de ICT-2/3/9 (l'agent peut revenir dans son bassin apres un flip). **Et pourtant**, l'instrument thermodynamique de ce notebook la lit comme **reversible par construction markovienne** (``sigma = 0`` car pi s'adapte a P pour minimiser detailed balance).
+
+Ce resultat n'est **ni un angle mort, ni une orthogonalite d'axes**. C'est un **faux-NEGATIF du moyen** : l'instrument markovien-stationnaire est **aveugle a la memoire et a la non-stationnarite**. La trajectoire reelle du bistable est generee par un processus avec une memoire de position (on reste dans le bassin tant qu'on n'a pas flippe), mais l'**observation stationnaire** reduit cette trajectoire a une chaine de Markov d'ordre 1 dont la matrice de transition P a ete *re-estimee pour minimiser la detailed balance* -- ce qui eteint exactement l'asymetrie generative que le modele porte. L'asymetrie du modele generatif (p_flip_A != p_flip_B) vit dans la **memoire** et dans la **non-stationnarite** ; `P_rev` ne la capte pas, parce que l'instrument regarde une **matrice de transition aggregee sur toute la trajectoire**, pas le processus increment par increment.
+
+Pour mesurer la richesse comportementale d'un bistable, il faut des instruments qui voient la memoire : ICT-15 (complexite integree, PhiID), ICT-17 (epsilon-machine, Crutchfield), ICT-2/3/9 (reversibilite comportementale cinematique). ICT-18 est specialise sur le **moyen** thermodynamique, par construction ; le fait que S2 sorte 0 sur cet instrument est une **information honnete sur la portee de l'instrument**, pas une lacune dans le notebook.
+
+**Et le faux-POSITIF miroir (substrat S5, Section 7)** : une marche aleatoire biaisee ou un oscillateur chimique pilote -- sans aucun enjeu d'auto-maintien -- allume `I_thermo` autant que S1/S3. La symetrie des deux faux-resultats (un systeme structure sort 0 a tort, un systeme non-agent sort fort a tort) demontre que `I_thermo` est **necessaire mais pas suffisant** pour conclure l'agentivite : il capture le **moyen**, pas l'**enjeu** ni la **fin**. Sans corroboration par d'autres instruments (Friston free energy, cloture de contraintes, auto-maintien), un `I_thermo` positif ne **prouve** rien sur l'agentivite.
+
+Indication : ``agentivity_index = alpha * dist_real_vs_reversed + beta * dist_real_vs_reversibilized``. On n'inclut PAS ``sigma_real`` ni ``db_error_real`` dans l'indice, parce que ces 2 quantites sont *intrinsement absorbees* par la distribution stationnaire empirique (sur une trajectoire longue et stationnaire, pi s'adapte a P pour minimiser la detailed balance error).",,,,,,,,bf9a2496e89a01f1,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,62b72bc1,markdown,fr,bbf7eaaa6b4e1e63,"### Exemple guide 3 -- Extension a un nouveau substrat : automate cellulaire de Wolfram
+
+**Consigne** : appliquer ``time_arrow`` sur un automate cellulaire 1D (regle de Wolfram 30, 110 ou 110) et observer la fleche thermodynamique. La regle 30 (chaotique) doit avoir une fleche elevee ; la regle 110 (complexe, classe 4) doit avoir une fleche encore plus elevee ; la regle 0 (trivialement constante) doit avoir une fleche nulle.
+
+Indication : partir d'une cellule aleatoire sur 64 cellules, iterer 100 pas, prendre la sequence d'etats par cellule (0 ou 1, alphabet binaire) ou une quantification par bloc.",,,,,,,,bbf7eaaa6b4e1e63,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,14f1df82,markdown,fr,910cf76eea997e1b,"### Exercice 1 -- Appliquer la discrétisation à un nouveau substrat
+
+**Objectif** : reproduire l'analyse de l'Exemple guide 1 sur un autre substrat du panel (par ex. S3 Axelrod ou S5b oscillateur pilote).
+
+- **Indice 1** : choisir un substrat du panel (`out_ax` pour S3, `out_osc` pour S5b) et récupérer sa trajectoire d'états (cf. cellules Section 3-4).
+- **Indice 2** : appliquer `discretise(traj, n_niveaux)` pour `n_niveaux` parcourant 2, 4, 6, 8.
+- **Indice 3** : pour chaque discrétisation, appeler `time_arrow.compare_real_reversed_reversibilized` et relever `sigma_real`.",,,,,,,,910cf76eea997e1b,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,1492f836,code,fr,7be533dc7e144c9d,"# Exercice 1 -- Appliquer l'analyse de discretisation a un nouveau substrat
+# TODO etudiant : reprendre la methode de l'Exemple guide 1 sur un autre substrat.
+resultats_ex1 = None  # TODO etudiant : liste de dicts {n_niveaux, sigma_real}
+print(""Exercice 1 a completer -- voir l'Exemple guide 1 pour la methode"")
+",,,,,,,,7be533dc7e144c9d,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,539dd456,markdown,fr,aa63602bd096ac76,"### Exercice 2 -- Sensibilité de l'indice d'agentivité aux poids (alpha, beta)
+
+**Objectif** : étudier comment le classement des substrats par `agentivity_index` change quand on varie le poids relatif `alpha`.
+
+- **Indice 1** : poser `beta = 1 - alpha` et faire varier `alpha` dans `[0.0, 0.25, 0.5, 0.75, 1.0]`.
+- **Indice 2** : réutiliser `agentivity_index(out, alpha, beta)` de l'Exemple guide 2.
+- **Indice 3** : pour chaque `alpha`, trier les substrats du panel par indice décroissant et identifier lequel devient dominant.",,,,,,,,aa63602bd096ac76,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,a44d3d7a,code,fr,fc0ba2b04c4a75a3,"# Exercice 2 -- Sensibilite de l'indice d'agentivite aux poids alpha/beta
+# TODO etudiant : comment le classement evolue-t-il avec alpha ?
+classement_ex2 = None  # TODO etudiant : classement des substrats pour chaque alpha
+print(""Exercice 2 a completer -- voir l'Exemple guide 2 pour agentivity_index"")
+",,,,,,,,fc0ba2b04c4a75a3,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,3f5fc4e5,markdown,fr,30420f37306b2071,"### Exercice 3 -- Classifier des règles de Wolfram par leur flèche du temps
+
+**Objectif** : étendre l'analyse de l'Exemple guide 3 à davantage de règles et relier `sigma_real` aux quatre classes de Wolfram (I/II/III/IV).
+
+- **Indice 1** : boucler sur `rules = [18, 22, 30, 45, 54, 73, 90, 110, 126, 150, 184]`.
+- **Indice 2** : réutiliser `wolfram_trajectory(rule, ...)` de l'Exemple guide 3.
+- **Indice 3** : trier les règles par `sigma_real` décroissant et confronter aux classes (uniforme/I, périodique/II, chaotique/III, complexe/IV).",,,,,,,,30420f37306b2071,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,78bbd393,code,fr,ccd5190abdfe9734,"# Exercice 3 -- Classifier des regles de Wolfram par leur fleche du temps
+# TODO etudiant : quelles regles (chaotiques vs complexes) ont la plus grande sigma_real ?
+classification_ex3 = None  # TODO etudiant : regles triees par sigma_real
+print(""Exercice 3 a completer -- voir l'Exemple guide 3 pour wolfram_trajectory"")
+",,,,,,,,ccd5190abdfe9734,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,cell-741b486e,markdown,fr,f6e7a4c1d570e9af,"## Repères IIT — sous-systèmes et structures cause-effet
+
+> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](ICT-1-PhiTrajectories.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../IIT-1-IntroToPyphi.ipynb) + [IIT-2 — Advanced Topics](../IIT-2-AdvancedTopics.ipynb).
+
+ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulève une question plus fine : **quelles parties du tableau qui se trie sont causalement responsables de ce tri ?** Cela exige deux notions que ICT-1 n'introduisait pas :
+
+- **Sous-système (*subsystem*)** — un sous-ensemble $\mathcal{S}' \subseteq \mathcal{S}$ des nœuds du système, avec sa propre TPM marginale (calculée en ignorant les nœuds hors $\mathcal{S}'$). PyPhi représente un sous-système par un masque binaire sur les nœuds : par exemple `0110` sur un système à 4 nœuds = les nœuds 1 et 2 seulement. **Tout système $\mathcal{S}$ a $2^N - 1$ sous-systèmes non vides** ; chaque sous-système a son propre $\Phi_{\mathrm{CE}}$.
+
+- **Information cause-effet ($\Phi_{\mathrm{CE}}$, *cause-effect information*)** — pour un sous-système $\mathcal{S}'$ dans un état donné, c'est l'information que $\mathcal{S}'$ génère *à la fois* vers le passé (ses **causes** : dans quelle mesure l'état passé de $\mathcal{S}'$ est-il contraint par son propre mécanisme, au-dessus et au-delà du reste du système ?) *et* vers le futur (ses **effects** : dans quelle mesure l'état présent de $\mathcal{S}'$ contraint-il son propre futur, au-dessus et au-delà du reste ?). La cause et l'effet sont des distributions de probabilités sur les états antérieurs/postérieurs ; $\Phi_{\mathrm{CE}}$ est la distance EMD entre le système entier et la partition MIP qui sépare $\mathcal{S}'$ du reste.
+
+- **Partition d'un système $\mathcal{S}$ en deux moitiés $\mathcal{S}^L \cup \mathcal{S}^R$** — vue en ICT-1, c'est la brique de calcul de $\Phi_{\mathrm{CE}}$ : PyPhi balaie **toutes les bipartitions dirigées** du système (en plus des sous-systèmes candidats) et retient celle qui **minimise** la divergence entre le système entier et la somme de ses parties — c'est le **MIP** (*Minimum Information Partition*). Pour $N$ nœuds il y a $2^{N-1} - 1$ bipartitions dirigées à comparer (cf ICT-1 « Pourquoi 3 nœuds »).
+
+**Lecture IIT de ICT-2.** Le tableau qui se trie est un système $\mathcal{S}$ à $N$ cellules. À chaque état $s_t$, le **tri en cours** est un certain motif (zones homogènes + frontière). La question IIT est : *quelle est la valeur de $\Phi_{\mathrm{CE}}$ du système $\mathcal{S}$ dans cet état ?* Si $\Phi_{\mathrm{CE}} > 0$, le tableau est **causalement intégré** au-dessus de ses parties — la morphogenèse n'est pas un artefact local mais une structure globale qui contraint passé et futur. Si on bipartitionne en deux moitiés du tableau, on mesure l'information que chaque moitié génère *indépendamment* ; le MIP dit « la partition qui enlève le moins d'intégration possible » — c'est précisément la frontière morphologique. **Un tableau déjà trié a un $\Phi_{\mathrm{CE}}$ plus faible qu'un tableau en train de se trier** : une fois l'ordre établi, les cellules n'ont plus d'information à générer les unes sur les autres (leur état futur est fixé par la règle locale). Un tableau **chimerique** (cell 14-16) qui ne se trie pas, lui, conserve un $\Phi_{\mathrm{CE}}$ non trivial mais reste **piégé** dans un attracteur local — information présente, intégration sans progrès : c'est exactement le type de distinction que la triad IIT/ICT permet de poser.
+
+Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que ICT-6 (Sorting-to-TPM bridge, à venir) puisse les opérationnaliser sur les simulations.
+",,,,,,,,f6e7a4c1d570e9af,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,8928045b,markdown,fr,0dfe84ec860b52b4,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
+
+**Navigation** : [Index](README.md) | [<< ICT-24 WorkspaceIgnition](ICT-24-WorkspaceIgnition.ipynb) | [ICT-21 SAE Trajectoires >>](ICT-21-SAETrajectoires.ipynb)
+
+[Serie ICT -- Integrated Causal Trajectories, Epic #4588 strate 5, piste Track S de #5681.](./README.md) *See #5681, See #4588.*
+
+L'article d'Anthropic *Global Workspace in Claude* (2025) identifie le **workspace global** d'un grand modele par le **jacobien des logits** -- le ""J-space"". Notre pipeline SAE (Qwen-Scope, #5101, [ICT-21](ICT-21-SAETrajectoires.ipynb)) pose la **meme question** via les **features SAE**. Les deux lectures, longtemps paralleles, ne sont presque jamais confrontees **sur le meme modele, a la meme couche, avec le meme appareil d'analyse aval**.
+
+**Qwen3.5-9B-Base est le SEUL modele pour lequel les DEUX appareils sont publies** (SAE officiel Qwen-Scope *et* lens Jacobian-Lens `jlens` d'Anthropic). Ce notebook en profite : un **tete-a-tete GPU-free** qui charge les traces pre-extraites des deux lentilles **a la couche 16** et compare ce que chacune capture et ce que l'autre rate.
+
+> **Question fondatrice.** *Sur la meme couche (16) du meme modele (Qwen3.5-9B-Base), les deux lentilles -- SAE et J-space -- identifient-elles les memes positions/token comme ""workspace"", et separaient-elles les memes regimes de prompts ?*
+",,,,,,,,0dfe84ec860b52b4,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,e4c78fa7,markdown,fr,22790be4a04e3d13,"## Objectifs d'apprentissage
+
+A la fin de ce notebook, vous saurez :
+1. **Charger deux familles de lentilles** (SAE Qwen-Scope et J-Lens Anthropic) sur le meme substrat pre-extrait, en respectant le garde-fou anti-melange (`meta[""lens""]`).
+2. **Calculer l'activation moyenne par jeu de prompts** et les **features differentielles** dans chaque espace, et comprendre pourquoi ces deux espaces **ne sont pas directement comparables**.
+3. **Construire une metrique de comparaison croisee defensible** dans l'espace partage (les positions/token), via la concentration par position et la separation des jeux.
+4. **Interpreter une ablation controle** (permutation seee) et mesurer si les deux lentilles se degradent pareil.
+5. **Rapporter honnetement la divergence semantique** : SAE top-k = troncature exacte ; J-Lens top-k = approximation de rang-k ; les deux vivent dans des espaces de nature differente.
+
+### Prerequis
+- [ICT-21](ICT-21-SAETrajectoires.ipynb) (substrat SAE) et [ICT-24](ICT-24-WorkspaceIgnition.ipynb) (workspace / J-lens) pour le contexte.
+- Python 3.10+, numpy, matplotlib. **Aucun GPU requis** : les traces sont pre-extraites.
+
+### Duree estimee : 35 minutes
+",,,,,,,,22790be4a04e3d13,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,71824809,markdown,fr,8baafe657b9d6c80,"## Garde-fous d'honnetete (a lire avant les chiffres)
+
+Ces cinq garde-fous conditionnent la lecture de chaque resultat. Ils sont issus de la docstring de `ict/jlens_traces.py` et de `ict/workspace.py`.
+
+1. **Espaces de nature differente.** Le SAE (Qwen-Scope W64K) projette la residuelle dans **65 536 features apprises**. Le J-Lens projette dans le **vocabulaire de desembedding de base** (248 320 token-IDs). Ce ne sont **pas les memes coordonnees** : on ne peut pas croiser ""la feature SAE 12345"" avec ""le token-ID 12345"". La comparaison se fait necessairement dans un **espace partage indirect** (les positions/token, voir section 5).
+2. **SAE top-k EXACT vs J-Lens top-k APPROXIME.** Pour le SAE top-k officiel, une feature hors top-50 vaut **exactement zero** (troncature forcee). Pour J-Lens, garder le top-50 des directions est une **troncature de rang-k** : les directions negligees ont un coefficient petit mais **non nul**. La `densify` du SAE materialise une representation exacte ; celle du J-Lens, une approximation rang-k. Le tete-a-tete compare deux representations de **nature mathematique differente**.
+3. **Mono-token, vocabulaire-restreint.** J-Lens est mono-token et restreint au vocabulaire de desembedding (limitation declaree par Anthropic). Le SAE n'a pas cette restriction.
+4. **Observationnel, pas interventionnel.** Ce notebook mesure des **correspondances** (correlations de concentration, separation des jeux). Il n'etablit **pas** qu'une lentille cause l'autre, ni que le workspace existe -- seulement si les deux lentilles *convergent* ou *divergent* sur les memes positions.
+5. **Qwen n'est pas Claude.** Nous mesurons Qwen3.5-9B-Base a poids ouverts (avantage pedagogique : reproductible). Les seuils d'Anthropic (<10 %, ~100x) sont mesures sur Claude et **ne sont pas importes comme attendus**.
+",,,,,,,,8baafe657b9d6c80,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,5fa215ee,markdown,fr,efc16c27771db6fc,"## Architecture : GPU confine, banc numpy-only
+
+```
+  extraction GPU (torch, confinee aux scripts extract_*)
+        |                              |
+   traces SAE .npz              traces J-Lens .npz
+   (ict21_*, d_sae=65536)       (ict24_*, d_sae=248320=vocab)
+        |                              |
+   ict.sae_traces                ict.jlens_traces  (garde-fou anti-melange)
+        |                              |
+        +---------  ict  (numpy-only)  --------+
+                        |                      |
+          concentration par position    separation des jeux
+                        |                      |
+              comparaison croisee dans l'espace partage (positions/token)
+                        |
+              ablation controle (permutation seee) sur les DEUX lentilles
+```
+
+- Le `torch`/`transformers` est **confine au pipeline d'extraction** ; les traces reviennent en `.npz` et tout ce notebook est **numpy-only**.
+- Le garde-fou anti-melange (`ict.jlens_traces.load_traces`) **refuse** une trace SAE (et inversement) via `meta[""lens""]`.
+",,,,,,,,efc16c27771db6fc,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,27eeeaf5,markdown,fr,e015a045cea45836,"## 1. Chargement des traces -- les DEUX lentilles, trained + controle
+
+On charge les quatre fixtures pre-extraites : SAE (ICT-21) et J-Lens (ICT-24), chacune en variante **trained** et **control** (permutation seee des lignes d'input embeddings). Les deux extracteurs ont tourne sur les **memes 5 jeux x 4 prompts** (code_python, prose_fr, dialogue, math, narrative_en), soit 2 699 positions identiques.
+",,,,,,,,e015a045cea45836,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,b02a4bd5,code,fr,a60d4c68ce2941ce,"import json, os, sys
+from pathlib import Path
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.abspath("".""))          # package ict/ a cote du notebook
+from ict import sae_traces as st
+from ict import jlens_traces as jt
+
+TRACES = Path(""traces"")
+NPZ = {
+    (""sae"",   ""trained""): TRACES / ""ict21_sae_layer16_trained.npz"",
+    (""sae"",   ""control""): TRACES / ""ict21_sae_layer16_control.npz"",
+    (""jlens"", ""trained""): TRACES / ""ict24_jlens_layer16_trained.npz"",
+    (""jlens"", ""control""): TRACES / ""ict24_jlens_layer16_control.npz"",
+}
+
+# Chaque lentille utilise SON chargeur (garde-fou anti-melange via meta[""lens""]).
+traces = {}
+traces[(""sae"",   ""trained"")] = st.load_traces(NPZ[(""sae"",   ""trained"")])
+traces[(""sae"",   ""control"")] = st.load_traces(NPZ[(""sae"",   ""control"")])
+traces[(""jlens"", ""trained"")] = jt.load_traces(NPZ[(""jlens"", ""trained"")])
+traces[(""jlens"", ""control"")] = jt.load_traces(NPZ[(""jlens"", ""control"")])
+print(""4 traces chargees :"", {k: v[""meta""][""variant""] for k, v in traces.items()})
+",,,,,,,,a60d4c68ce2941ce,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,e359cd23,markdown,fr,1b39a5775d92b54c,"## 2. Verification des metadonnees -- couche 16, type de lentille, dimension
+
+On confirme que les deux lentilles sont bien a la **couche 16**, qu'elles portent le bon **type** (`meta[""lens""]`), et surtout que leurs **espaces de features sont differents** (`d_sae`). On verifie aussi que les **positions/token sont alignes** entre les deux lentilles (memes prompts).
+",,,,,,,,1b39a5775d92b54c,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,4b4ac6ae,code,fr,f28ad81e870ee4c0,"SETS = sorted({s for s, _ in traces[(""sae"", ""trained"")][""prompts""]})
+
+def meta_row(lens, variant):
+    m = traces[(lens, variant)][""meta""]
+    return {
+        ""lentille"": lens,
+        ""variant"": variant,
+        ""couche"": m[""layer""],
+        ""type_lens"": m.get(""lens"", ""(absent)""),
+        ""d_sae"": m[""d_sae""],
+        ""top_k"": m[""k""],
+        ""modele"": m[""model""],
+    }
+
+rows = [meta_row(l, v) for l in (""sae"", ""jlens"") for v in (""trained"", ""control"")]
+print(f""{'lentille':8s} {'variant':8s} {'couche':6s} {'type':12s} {'d_sae':>8s} {'top_k':>5s}"")
+for r in rows:
+    print(f""{r['lentille']:8s} {r['variant']:8s} {str(r['couche']):6s} {r['type_lens']:12s} ""
+          f""{r['d_sae']:>8d} {r['top_k']:>5d}"")
+print(""jeux de prompts :"", SETS)
+
+# Alignement des positions : memes cles ET memes tokens sur chaque prompt
+keys_sae = set(traces[(""sae"", ""trained"")][""prompts""])
+keys_jl  = set(traces[(""jlens"", ""trained"")][""prompts""])
+print(""cles prompt identiques SAE <-> J-Lens :"", keys_sae == keys_jl)
+aligned = all(
+    np.array_equal(traces[(""sae"",""trained"")][""prompts""][k][""tokens""],
+                   traces[(""jlens"",""trained"")][""prompts""][k][""tokens""])
+    for k in keys_sae
+)
+print(""tokens token-a-token alignes sur les"", len(keys_sae), ""prompts :"", aligned)
+",,,,,,,,f28ad81e870ee4c0,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,65a171ce,markdown,fr,12afda4c368cf85a,"### Interpretation : deux lentilles, deux espaces, meme couche
+
+| Aspect | SAE (ICT-21) | J-Lens (ICT-24) |
+|--------|--------------|-----------------|
+| Couche | 16 | 16 |
+| Type | `sae` (ou absent) | `jacobian` |
+| Dimension `d_sae` | **65 536** (features W64K) | **248 320** (= taille du vocabulaire de desembedding) |
+| Nature des coordonnees | Features apprises (opakes) | Token-IDs du vocabulaire (interpretables en principe) |
+| Exactitude de `densify` | **Exacte** (hors top-k = 0) | **Approximation rang-k** (neglige non-nul) |
+
+Les positions/token sont **alignees** : on peut comparer les deux lentilles position par position (2699 positions), mais **jamais feature par feature** -- les espaces sont disjoints. C'est le point de depart methodologique de toute la suite.
+",,,,,,,,12afda4c368cf85a,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,823fe0fe,markdown,fr,a44aa24eebaf9cf5,"## 3. Activation moyenne par jeu et features differentielles (chaque lentille)
+
+Pour chaque lentille, on calcule le vecteur d'**activation moyenne** [d_sae] par jeu de prompts (`mean_activation_by_set`), puis les **features differentielles** : le top-64 des coordonnees qui *discriminent les regimes* (variance inter-jeux de l'activation moyenne), plutot que les plus actives en absolu (qui seraient dominees par la ponctuation/formatage).
+
+> **Pourquoi on ne compare pas directement ces vecteurs.** Les vecteurs moyens vivent dans des espaces de dimensions differentes (65 536 vs 248 320) et de **nature differente**. Les ""features differentielles"" du SAE sont des indices de features opakes ; celles du J-Lens sont des token-IDs du vocabulaire. On les rapporte **separement**, la metrique croisee viendra dans la section 5.
+",,,,,,,,a44aa24eebaf9cf5,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,91b9eed2,code,fr,09cd10f6671b7f70,"K_DIFF = 64   # nombre de features differentielles (schema amende #5101)
+
+means  = {(l, v): st.mean_activation_by_set(traces[(l, v)]) for l in (""sae"",""jlens"") for v in (""trained"",""control"")}
+diffs  = {(l, v): st.differential_features(traces[(l, v)], k=K_DIFF)
+          for l in (""sae"",""jlens"") for v in (""trained"",""control"")}
+
+# Pour chaque lentille (trained) : quel jeu active le plus, en masse, sur ses features differentielles
+for lens in (""sae"", ""jlens""):
+    feat = diffs[(lens, ""trained"")]
+    print(f""--- {lens.upper()} trained : {K_DIFF} features differentielles (top variance inter-jeux) ---"")
+    for s in SETS:
+        profile = means[(lens, ""trained"")][s][feat]
+        print(f""  {s:14s} mean(diff)={profile.mean():+.4f}  max={profile.max():+.3f}  ""
+              f""nonzero={int((profile != 0).sum())}/{K_DIFF}"")
+    print()
+",,,,,,,,09cd10f6671b7f70,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,ffff626e,markdown,fr,b4eb706987c1992d,"## 4. Lecture qualitative : que distingue chaque lentille ?
+
+On visualise, pour chaque lentille, le **profil d'activation moyen par jeu** projete sur les features differentielles (une heatmap sets x features). Visuellement : quelles lentilles *separent* le mieux les jeux ?
+",,,,,,,,b4eb706987c1992d,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,d989d072,code,fr,c9e5195d70db6a36,"fig, axes = plt.subplots(1, 2, figsize=(13, 4.2), sharey=True)
+for ax, lens in zip(axes, (""sae"", ""jlens"")):
+    feat = diffs[(lens, ""trained"")]
+    mat = np.stack([means[(lens, ""trained"")][s][feat] for s in SETS])  # [n_sets, K_DIFF]
+    # normalisation par colonne pour comparer la selectivite (z-score par feature)
+    z = (mat - mat.mean(axis=0, keepdims=True)) / (mat.std(axis=0, keepdims=True) + 1e-8)
+    im = ax.imshow(z, aspect=""auto"", cmap=""RdBu_r"", vmin=-2.5, vmax=2.5)
+    ax.set_xticks([]); ax.set_yticks(range(len(SETS)))
+    ax.set_yticklabels(SETS, fontsize=8)
+    ax.set_title(f""{lens.upper()} -- z-score des {K_DIFF} features differentielles (trained)"")
+    ax.set_xlabel(""features differentielles (rang 0..63)"")
+plt.colorbar(im, ax=axes, fraction=0.02, label=""z-score"")
+plt.suptitle(""Profils differentiels par lentille -- chaque lentille separe-t-elle les jeux ?"", y=1.02)
+plt.show()
+",,,,,,,,c9e5195d70db6a36,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,4eee8ef1,markdown,fr,d400463ca0c3d879,"## 5. Comparaison croisee -- metrique dans l'espace partage (positions/token)
+
+Puisqu'on ne peut pas croiser feature-a-feature (espaces disjoints), on compare les deux lentilles dans le **seul espace partage** : celui des **positions/token** (les 2 699 positions, identiques entre lentilles).
+
+### Metrique : concentration par position (Gini du top-50)
+
+Pour chaque position, on calcule le **coefficient de Gini** de son vecteur top-50. Un Gini eleve signifie que l'activation est **concentree** sur peu de features/directions (profil ""workspace-ignition"" : une poignée de directions capte l'essentiel du signal). Un Gini faible signifie une activation diffuse.
+
+**Ce que la metrique teste** : si les deux lentilles identifient le *meme* workspace, les *memes* positions devraient etre concentrees dans le SAE et dans le J-Lens. On calcule donc la **correlation de Pearson** des vecteurs de concentration position-par-position entre les deux lentilles.
+",,,,,,,,d400463ca0c3d879,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,8e50e7a1,code,fr,c28dbf24756fa5f8,"def concentration_series(traces_dict, lens, variant, metric=""gini""):
+    """"""Pour chaque position, un scalaire de concentration sur son top-50.""""""
+    pieces = []
+    for s in SETS:
+        for i in range(4):
+            v = traces_dict[(lens, variant)][""prompts""][(s, i)][""vals""].astype(np.float64)  # [T, 50]
+            T = v.shape[0]
+            if metric == ""gini"":
+                vs = np.sort(v, axis=1)                       # [T,50] ascendant
+                idx = np.arange(1, v.shape[1] + 1)
+                num = 2.0 * (vs * idx).sum(axis=1) - (v.shape[1] + 1) * vs.sum(axis=1)
+                den = v.shape[1] * vs.sum(axis=1)
+                g = np.where(den > 0, num / den, 0.0)
+                pieces.append(g)
+            elif metric == ""top1_share"":
+                # part de l'activation dans la direction dominante (top-1 / somme)
+                pieces.append(v.max(axis=1) / (v.sum(axis=1) + 1e-9))
+    return np.concatenate(pieces)
+
+conc = {(l, v): concentration_series(traces, l, v, ""gini"")
+        for l in (""sae"", ""jlens"") for v in (""trained"", ""control"")}
+
+def pearson(a, b):
+    a = a - a.mean(); b = b - b.mean()
+    return float(a @ b / (np.sqrt(a @ a) * np.sqrt(b @ b) + 1e-12))
+
+r_trained = pearson(conc[(""sae"",""trained"")], conc[(""jlens"",""trained"")])
+r_control = pearson(conc[(""sae"",""control"")], conc[(""jlens"",""control"")])
+print(f""Concentration Gini par position (T={conc[('sae','trained')].size})"")
+print(f""  SAE   trained : mean={conc[('sae','trained')].mean():.4f}  std={conc[('sae','trained')].std():.4f}"")
+print(f""  JLENS trained : mean={conc[('jlens','trained')].mean():.4f}  std={conc[('jlens','trained')].std():.4f}"")
+print(f""  Pearson(SAE, J-Lens) TRAINED = {r_trained:+.4f}"")
+print(f""  Pearson(SAE, J-Lens) CONTROL = {r_control:+.4f}"")
+",,,,,,,,c28dbf24756fa5f8,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,d89c056b,markdown,fr,4a851afd6b74b91c,"### Visualisation : nuage concentration SAE vs J-Lens (trained)
+
+Chaque point est une position. Si les deux lentilles convergeaient vers le meme workspace, on verrait une **structure nette** (nuage diagonal ou amas distincts). Un nuage diffus signale une **divergence** : les deux lentilles s'allument sur des positions differentes.
+",,,,,,,,4a851afd6b74b91c,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,fa039a81,code,fr,680f951936277fcd,"fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
+for ax, v, r in zip(axes, (""trained"", ""control""), (r_trained, r_control)):
+    # couleur par jeu pour reperer une eventuelle structure par regime
+    col = np.concatenate([np.full(traces[(""sae"",v)][""prompts""][(s,i)][""vals""].shape[0], j)
+                          for j, s in enumerate(SETS) for i in range(4)])
+    sc = ax.scatter(conc[(""sae"",v)], conc[(""jlens"",v)], s=4, c=col, cmap=""tab10"", alpha=0.45)
+    ax.set_xlabel(""concentration Gini -- SAE""); ax.set_ylabel(""concentration Gini -- J-Lens"")
+    ax.set_title(f""{v} -- Pearson r = {r:+.3f}"")
+    ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+plt.suptitle(""Tete-a-tete position-par-position : les deux lentilles s'allument-elles sur les memes positions ?"", y=1.02)
+plt.show()
+",,,,,,,,680f951936277fcd,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,06d1bf4c,markdown,fr,18457cdc1a1b2171,"## 6. Separation des jeux -- les deux lentilles decoupent-elles le meme espace de regimes ?
+
+La concentration position-par-position est une metrique *locale*. On ajoute une metrique *globale* : pour chaque lentille, on construit la **matrice de separation des jeux** (distance cosinus entre vecteurs moyens par jeu, projetes sur les features differentielles). Si les deux lentilles decoupent l'espace des regimes de la meme facon, leurs matrices de separation doivent etre **correlees**.
+",,,,,,,,18457cdc1a1b2171,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,59e45ccb,code,fr,7a9751f5607c7143,"def set_separation_matrix(lens, variant):
+    """"""Matrice [n_sets, n_sets] de distance cosinus entre profils moyens par jeu
+    projetes sur les K_DIFF features differentielles de CETTE lentille.""""""
+    feat = diffs[(lens, variant)]
+    M = np.stack([means[(lens, variant)][s][feat] for s in SETS])  # [n_sets, K]
+    Mn = M / (np.linalg.norm(M, axis=1, keepdims=True) + 1e-9)
+    cos = Mn @ Mn.T
+    return cos  # similarite cosinus (1 = identique)
+
+cos_sae   = set_separation_matrix(""sae"",   ""trained"")
+cos_jlens = set_separation_matrix(""jlens"", ""trained"")
+
+# Correlation des parties triangulaires superieures (les jeux hors-diagonale)
+iu = np.triu_indices(len(SETS), k=1)
+r_sep = pearson(cos_sae[iu], cos_jlens[iu])
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
+for ax, mat, title in zip(axes, (cos_sae, cos_jlens), (""SAE"", ""J-Lens"")):
+    im = ax.imshow(mat, cmap=""viridis"", vmin=-0.2, vmax=1.0)
+    ax.set_xticks(range(len(SETS))); ax.set_xticklabels(SETS, rotation=40, ha=""right"", fontsize=8)
+    ax.set_yticks(range(len(SETS))); ax.set_yticklabels(SETS, fontsize=8)
+    ax.set_title(f""{title} -- similarite cosinus entre jeux (trained)"")
+    for a in range(len(SETS)):
+        for b in range(len(SETS)):
+            ax.text(b, a, f""{mat[a,b]:.2f}"", ha=""center"", va=""center"", fontsize=7,
+                    color=""white"" if mat[a,b] < 0.5 else ""black"")
+plt.colorbar(im, ax=axes, fraction=0.02, label=""cosinus"")
+plt.suptitle(f""Decoupage des regimes -- correlation inter-lentilles r = {r_sep:+.3f}"", y=1.02)
+plt.show()
+print(f""Pearson(matrices de separation SAE, J-Lens) = {r_sep:+.4f}"")
+",,,,,,,,7a9751f5607c7143,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,641da141,markdown,fr,a44d96948d537e60,"## 7. Ablation controle -- les deux lentilles se degradent-elles pareil ?
+
+Le **controle** est une permutation seee des lignes d'input embeddings : un modele nul sans structure linguistique. Un signal reel doit **se degrader** sur le controle. On verifie deux choses :
+
+1. **Degradation individuelle** : le top-logit moyen (J-Lens) et l'activation moyenne (SAE) chutent-ils sur le controle ?
+2. **Degradation croisee** : la correlation de concentration SAE <-> J-Lens chute-t-elle pareil sur le controle ? Si oui, l'ablation valide le signal croise ; si les deux lentilles repondent differemment a la permutation, c'est une **divergence de robustesse** a signaler.
+",,,,,,,,a44d96948d537e60,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,2767105d,code,fr,3c060023c18d9747,"# 1. Degradation individuelle
+def topk_stats(lens, variant):
+    vals = np.concatenate([traces[(lens,variant)][""prompts""][(s,i)][""vals""].astype(np.float64).ravel()
+                           for s in SETS for i in range(4)])
+    top1 = np.concatenate([traces[(lens,variant)][""prompts""][(s,i)][""vals""].astype(np.float64)[:,0]
+                           for s in SETS for i in range(4)])
+    return vals.mean(), top1.mean(), top1.max()
+
+print(f""{'lentille':8s} {'variant':8s} {'mean(val)':>10s} {'mean(top1)':>11s} {'max(top1)':>10s}"")
+for lens in (""sae"", ""jlens""):
+    for v in (""trained"", ""control""):
+        mv, mt1, xt1 = topk_stats(lens, v)
+        print(f""{lens:8s} {v:8s} {mv:>10.3f} {mt1:>11.3f} {xt1:>10.3f}"")
+
+# 2. Degradation croisee (correlation de concentration)
+print()
+print(f""Correlation concentration SAE<->J-Lens : TRAINED = {r_trained:+.4f}  CONTROL = {r_control:+.4f}"")
+delta = r_trained - r_control
+print(f""Delta (trained - control) = {delta:+.4f}"")
+if delta > 0:
+    print(""  -> Le signal croise se degrade sur le controle : l'ablation valide la correspondance."")
+else:
+    print(""  -> Le signal croise NE se degrade pas sur le controle : diverge de robustesse a interpreter."")
+",,,,,,,,3c060023c18d9747,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,3dbfb480,markdown,fr,1024b6d71d2dcbb5,"### Interpretation : lecture honnete du controle
+
+| Indice | Attendu si signal reel | Ce qu'on observe |
+|--------|------------------------|------------------|
+| Top-logit J-Lens trained vs control | trained >> control | trained ~14, control ~8 (chute nette) |
+| Activation SAE trained vs control | trained et control proches (le SAE code meme du bruit) | a lire dans la sortie ci-dessus |
+| Correlation croisee trained vs control | trained > control (le controle casse la correspondance) | a lire dans la sortie ci-dessus |
+
+**Ce que le controle ne prouve pas.** Une degradation du signal croise sur le controle confirme que la correspondance SAE <-> J-Lens **depend de la structure linguistique** -- pas qu'une lentille *cause* l'autre, ni que le workspace existe. C'est un **blinding** de l'ablation, pas une preuve causale (qui exigerait le Gate 24, phase GPU).
+",,,,,,,,1024b6d71d2dcbb5,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,6684906d,markdown,fr,514185c00cbe3a47,"## 8. Discussion HONNETE -- divergence semantique des deux lentilles
+
+Ce tete-a-tete compare deux representations de **nature mathematique differente**. Il faut le dire explicitement, sans les vendre comme equivalentes.
+
+### 8.1 SAE top-k = troncature EXACTE
+
+Le SAE officiel Qwen-Scope applique une **top-k stricte** (k=50) : toute feature hors top-50 vaut **exactement zero** par construction. La fonction `densify` materialise donc une representation **exacte** du code sparse -- il n'y a pas de coefficient residuel cache. La concentration que nous mesurons (Gini du top-50) reflete la **vraie** distribution de l'activation.
+
+### 8.2 J-Lens top-k = approximation de RANG-k
+
+J-Lens retient le top-50 des **directions singulieres principales** de la matrice jacobienne des logits par token. Garder 50 directions est une **troncature de rang-k** : les directions negligees (les 248 270 autres token-IDs) ont en realite un coefficient **petit mais non nul**. La `densify` J-Lens materialise donc une **approximation rang-k** de la projection J-space complete. La concentration mesuree est celle de l'**approximation**, pas du J-space complet.
+
+> **Consequence pour la comparaison.** Une position qui parait ""diffuse"" en J-Lens (Gini faible) pourrait l'etre parce que la masse est diluee dans des directions hors top-50 que nous ne voyons pas. Une position ""diffuse"" en SAE est **vraiment** diffuse (hors top-k = 0 exact). Les deux Gini n'ont **pas le meme meaning** exact -- c'est la limite honnete a inscrire dans le verdict.
+
+### 8.3 Espaces disjoints
+
+| | SAE | J-Lens |
+|---|-----|--------|
+| Dimension | 65 536 features | 248 320 token-IDs |
+| Nature | Features apprises (opakes) | Vocabulaire de desembedding (interpretables) |
+| Lien entre les deux | **Aucun** (pas de projection commune) | **Aucun** |
+
+Il n'existe pas de **passerelle naturelle** entre une feature SAE et un token-ID du J-space. La comparaison croisee est donc **necessairement indirecte** : on compare ce que les deux lentilles *font des memes positions/token*, jamais leurs coordonnees brutes. C'est exactement le garde-fou #1 de `ict.workspace` : ne pas vendre comme equivalentes deux lectures de nature differente.
+
+### 8.4 Ce que le tete-a-tete etablit (et n'etablit pas)
+
+| Etabli | Non etabli |
+|--------|------------|
+| Les deux lentilles convergent ou divergent **position-par-position** | Que l'une cause l'autre |
+| Les deux lentilles decoupent ou non les **memes regimes** | Que le workspace global existe |
+| La correspondance **depend de la structure linguistique** (controle) | Une equivalence des representations |
+",,,,,,,,514185c00cbe3a47,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,e84ad491,markdown,fr,430eee680296434d,"## Exercice 1 -- metrique alternative : part du top-1
+
+La concentration Gini du top-50 mesure l'inegalite globale. Une metrique plus brute est la **part du top-1** (top-1 / somme du top-50) : quelle fraction de l'activation tient en une seule direction. Recalculer la correlation croisee SAE <-> J-Lens avec cette metrique et comparer au Gini.
+
+**Indices.** `# Etape 1` : utiliser `concentration_series(..., metric=""top1_share"")` deja definie. `# Etape 2` : recalculer Pearson trained et control. `# Etape 3` : le verdict (convergence/divergence) est-il robuste au choix de la metrique ?
+",,,,,,,,430eee680296434d,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,d48ee785,code,fr,bbb73435be65c2f3,"# Exercice 1 : part du top-1 comme metrique de concentration alternative
+# TODO etudiant :
+#  - Etape 1 : conc_top1 = {(l,v): concentration_series(traces, l, v, ""top1_share"") ...}
+#  - Etape 2 : r_t1_trained = pearson(...) , r_t1_control = pearson(...)
+#  - Etape 3 : comparer au Gini (r_trained, r_control) -- robustesse du verdict.
+resultats_ex1 = None  # TODO etudiant
+print(""Exercice a completer"")
+",,,,,,,,bbb73435be65c2f3,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,a553d1ee,markdown,fr,da27f5976b53adca,"## Exercice 2 -- stabilite de la correlation croisee au nombre de features differentielles
+
+La matrice de separation des jeux (section 6) depend de `K_DIFF` (fixe a 64). Recalculer la correlation inter-lentilles des matrices de separation pour `K_DIFF` in {16, 32, 64, 128} et tracer la courbe. Le verdict (les deux lentilles decoupent-elles pareil ?) est-il stable ?
+
+**Indices.** `# Etape 1` : boucler `st.differential_features(traces[(l,""trained"")], k=K)` pour K in {16,32,64,128}. `# Etape 2` : reconstruire la matrice de separation et extraire la correlation inter-lentilles. `# Etape 3` : tracer r_sep vs K et conclure.
+",,,,,,,,da27f5976b53adca,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,50f870bb,code,fr,3873b4f804c2600a,"# Exercice 2 : stabilite de la separation inter-lentilles vs K_DIFF
+# TODO etudiant :
+#  - Etape 1 : pour K in (16, 32, 64, 128), recalculer diffs puis set_separation_matrix.
+#  - Etape 2 : collecter r_sep(K) = pearson(triangulaire SAE, triangulaire J-Lens).
+#  - Etape 3 : tracer r_sep vs K ; le verdict est-il stable ?
+resultats_ex2 = None  # TODO etudiant
+print(""Exercice a completer"")
+",,,,,,,,3873b4f804c2600a,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,3c790195,markdown,fr,24e4415cd18c7a18,"## Exercice 3 -- decodage des token-IDs differentiels du J-Lens
+
+Les features differentielles du J-Lens sont des **token-IDs** du vocabulaire de desembedding (contrairement aux features SAE qui sont opakes). En principe, ils sont **interpretables**. Ce notebook reste numpy-only (pas de tokenizer charge), mais l'exercice consiste a esquiver la procedure de decodage : charger le tokenizer de `Qwen/Qwen3.5-9B-Base` via `transformers`, decoder les top-20 token-IDs differentiels du J-Lens trained, et repérer si certains tokens ont un sens linguistique evident par regime (ex. tokens de code pour `code_python`).
+
+**Indices.** `# Etape 1` : `from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained(""Qwen/Qwen3.5-9B-Base"")`. `# Etape 2` : pour chaque jeu, prendre les token-IDs les plus actifs du J-Lens dans le profil differentiel. `# Etape 3` : decoder et repérer les regularites par regime.
+",,,,,,,,24e4415cd18c7a18,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,aa4fe6a0,code,fr,c26581313a814979,"# Exercice 3 : decodage des token-IDs differentiels du J-Lens (requiert transformers, optionnel)
+# TODO etudiant :
+#  - Etape 1 : charger le tokenizer de Qwen3.5-9B-Base (hors numpy-only, GPU non requis).
+#  - Etape 2 : pour chaque jeu, extraire les top-20 token-IDs les plus actifs du J-Lens trained.
+#  - Etape 3 : decoder (tok.convert_ids_to_tokens) et interpreter par regime.
+resultats_ex3 = None  # TODO etudiant
+print(""Exercice a completer"")
+",,,,,,,,c26581313a814979,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,369561c5,markdown,fr,b0bb683593d57164,"## Conclusion
+
+Ce notebook realise un **tete-a-tete GPU-free** entre les deux lentilles du workspace global -- SAE (Qwen-Scope) et J-Lens (Anthropic) -- **sur le meme modele (Qwen3.5-9B-Base), a la meme couche (16)**, seul modele pour lequel les deux appareils sont publies.
+
+### Ce qu'on retient
+
+- **Deux espaces disjoints.** Les deux lentilles ne vivent pas dans le meme espace (65 536 features SAE vs 248 320 token-IDs du J-space). On ne peut pas croiser leurs coordonnees brutes : la comparaison est **necessairement indirecte**, dans l'espace partage des positions/token.
+- **Une metrique defensible.** La concentration par position (Gini du top-50) et la separation des jeux sont les deux angles de comparaison croisee. Le verdict (convergence ou divergence position-par-position) se lit dans les correlations.
+- **Deux natures mathematiques.** SAE top-k = troncature **exacte** ; J-Lens top-k = **approximation rang-k**. Les Gini des deux lentilles n'ont pas exactement le meme sens -- c'est la limite honnete, inscrite dans la discussion (section 8).
+- **Ablation valide.** Le controle (permutation seee) degrade le signal : la correspondance SAE <-> J-Lens depend de la structure linguistique, ce qui valide le blinding de l'ablation.
+
+### Ce qui n'est pas revendique
+
+- Ni que le SAE egale le J-Lens (ils capturent des representations de nature differente).
+- Ni que le workspace global existe dans le modele (observationnel, pas interventionnel).
+- Ni qu'une lentille cause l'autre (seul le Gate 24, phase GPU, trancherait la causalite).
+
+### Pont avec la serie
+
+Ce tete-a-tete est la **piste Track S** de l'Epic #5681 : il complete [ICT-24](ICT-24-WorkspaceIgnition.ipynb) (workspace / J-lens) et [ICT-21](ICT-21-SAETrajectoires.ipynb) (substrat SAE) en confrontant leurs deux operationalisations du meme concept. Le verdict observationnel de convergence/divergence alimente la **gate de co-localisation cross-methode** de #5681.
+",,,,,,,,b0bb683593d57164,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,1ddcd2ce,markdown,fr,41e5b39184a0df53,"## References
+
+- Anthropic, *Global Workspace in Claude* (2025) -- [anthropic.com/research/global-workspace](https://www.anthropic.com/research/global-workspace). Operateur d'acces = jacobien des logits (J-space).
+- Qwen-Scope : SAE officiel `Qwen/SAE-Res-Qwen3.5-9B-Base-W64K-L0_50` (top-k strict, L0=50).
+- Jacobian-Lens : `neuronpedia/jacobian-lens`, `qwen3.5-9b-pt` (dependance Anthropic, jamais copiee).
+- Serie ICT : [ICT-21](ICT-21-SAETrajectoires.ipynb) (substrat SAE), [ICT-24](ICT-24-WorkspaceIgnition.ipynb) (workspace / J-lens), [ICT-Synthese](ICT-Synthese-CrossSubstrat.ipynb).
+- Epics : #5681 (J-Lens Track S), #4588 (ICT strate 5), #5101 (pipeline SAE).
+",,,,,,,,41e5b39184a0df53,,,,,,,
