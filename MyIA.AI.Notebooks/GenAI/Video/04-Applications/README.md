@@ -31,20 +31,20 @@ Ce niveau met en oeuvre les workflows complets : génération automatique de con
 **[04-1](04-1-Educational-Video-Generation.ipynb) — Contenu éducatif.** Le notebook génère automatiquement une vidéo pédagogique à partir d'un script textuel : le panorama de frames ci-dessous atteste que la chaîne (script → prompts → frames → vidéo) produit un rendu visuellement cohérent :
 
 <p align="center">
-  <a href="04-1-Educational-Video-Generation.ipynb"><img src="assets/readme/vid4-educational.png" alt="Génération vidéo éducative — aperçu des frames" width="500"/></a><br>
-  <em>Sortie du notebook <a href="04-1-Educational-Video-Generation.ipynb">04-1</a> : panorama des frames d'une vidéo éducative générée à partir d'un script.</em>
+  <a href="04-1-Educational-Video-Generation.ipynb"><img src="assets/readme/vid4-educational.png" alt="Panorama des 4 premiers slides d'un deck pédagogique « Introduction au Machine Learning » — Slide 1 (titre), Slide 2 (définition + 4 bullets), Slide 3 (types d'apprentissage supervisé/non-supervisé/renforcement), Slide 4 (pipeline typique ML en 4 étapes)" width="500"/></a><br>
+  <em>Sortie du notebook <a href="04-1-Educational-Video-Generation.ipynb">04-1</a> : les 4 premiers slides du deck pédagogique « Introduction au Machine Learning » (titre/définition/types/pipeline) — la chaîne script → prompts → slides → vidéo a produit ce rendu visuellement cohérent à partir d'un script textuel.</em>
 </p>
 
 **[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (ComfyUI).** Deux compositions illustrant la souplesse du workflow créatif : une séquence narrative complète, puis une variante explorant une composition différente à partir des mêmes briques ComfyUI :
 
 <p align="center">
-  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Workflow créatif vidéo — séquence générée" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : séquence vidéo narrative générée via ComfyUI.</em>
+  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Grille 2×3 « Effets synchronisés sur les beats (120 BPM) » — frames originales (haut, beat 1/2/3 à frame 0/12/24) vs frames transformées par effet audio-réactif (bas), carré cyan et cercle orange se déplaçant sur fond dégradé bleu-violet-rose" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : effets audio-réactifs synchronisés sur les battements à 120 BPM — ComfyUI orchestre le déplacement des formes géométriques (carré + cercle) à chaque beat, transformant le clip original en version réactive.</em>
 </p>
 
 <p align="center">
-  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative2.png" alt="Workflow créatif — variante de composition" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : variante de composition — même workflow, composition alternative.</em>
+  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative2.png" alt="Collage vidéo 2×2 « Original / Aquarelle / Dessin / Teal & Orange » à 3 timestamps t=0/3/6s — comparaison de 4 styles visuels (Original bleu/violet, Aquarelle vert/olive pastel, Dessin simplifié sur fond clair, Teal & Orange grade cinématique)" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : mosaïque 2×2×3 comparant 4 styles visuels (Original / Aquarelle / Dessin / Teal & Orange) appliqués au même clip à 3 timestamps — illustre la flexibilité du pipeline ComfyUI pour explorer rapidement des directions artistiques différentes sur un même contenu.</em>
 </p>
 
 **[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis :
@@ -55,15 +55,15 @@ Ce niveau met en oeuvre les workflows complets : génération automatique de con
 </p>
 
 <p align="center">
-  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Simulation Sora — aperçu alternatif" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : seconde séquence <strong>simulée</strong>, aperçu alternatif.</em>
+  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Séquence « Image → Video (effet Ken Burns) » — 5 frames d'un zoom progressif sur une image source statique (montagnes + soleil + horizon herbe) entre t=0.0s et t=5.0s : la caméra se rapproche graduellement sans aucun objet en mouvement interne au clip" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : zoom progressif de type <strong>Ken Burns</strong> sur une image fixe (montagnes + soleil + horizon herbe) — illustre un autre mode de génération à partir d'images, complémentaire à la simulation text→vidéo illustrée par vid4-sora.png.</em>
 </p>
 
 **[04-4](04-4-Production-Video-Pipeline.ipynb) — Pipeline de production.** Le notebook assemble la chaîne bout-en-bout : le panorama ci-dessous montre les frames issues du pipeline orchestré complet, aboutissement de la série :
 
 <p align="center">
-  <a href="04-4-Production-Video-Pipeline.ipynb"><img src="assets/readme/vid4-pipeline.png" alt="Pipeline vidéo production — orchestration" width="520"/></a><br>
-  <em>Sortie du notebook <a href="04-4-Production-Video-Pipeline.ipynb">04-4</a> : frames issues du pipeline de production orchestré bout-en-bout.</em>
+  <a href="04-4-Production-Video-Pipeline.ipynb"><img src="assets/readme/vid4-pipeline.png" alt="« Images des scènes du pipeline » — 5 vignettes côte-à-côte des scènes vidéo générées bout-en-bout : Scene 1 Introduction (bulles bleues sur fond bleu), Scene 2 Origines historiques (bulles ocres sur fond marron), Scene 3 Fonctionnement (bulles vertes sur fond vert forêt), Scene 4 Applications (bulles magenta sur fond violet), Scene 5 Perspectives (bulles bleues pâles sur fond bleu nuit). Chaque scène porte une constellation filaire reliant ses bulles." width="520"/></a><br>
+  <em>Sortie du notebook <a href="04-4-Production-Video-Pipeline.ipynb">04-4</a> : les 5 scènes générées par le pipeline bout-en-bout — Introduction / Origines historiques / Fonctionnement / Applications / Perspectives, chacune avec fond coloré distinct + constellation filaire reliant ses bulles.</em>
 </p>
 
 ## Prérequis
