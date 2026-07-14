@@ -71,7 +71,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Build**: `lake build CooperativeGames` — SUCCESS (0 sorry, no added axiom)
 
-**Status: COMPLETE (0 sorry).** `bondareva_shapley` (`Core.Nonempty ↔ Balanced`) is fully proved. The backward direction's attainment crux `hb_witness` (formerly tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`) was closed by PR #3954 via a compact-slice Weierstrass argument — bypassing the missing Mathlib `ProperCone.hyperplane_separation` without any added axiom. Lineage: #3933 (cone kernel) → #3941 (bridge) → #3945 (decoding) → #3951 (`hb_strict`) → #3954 (attainment). See [`cooperative_games_lean/FORMAL_STATUS.md`](cooperative_games_lean/FORMAL_STATUS.md).
+**Status: COMPLETE (0 sorry).** `bondareva_shapley` (`Core.Nonempty ↔ Balanced`) is fully proved. The backward direction's attainment crux `hb_witness` (formerly tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`) was closed by PR #3954 via a compact-slice Weierstrass argument — bypassing the missing Mathlib `ProperCone.hyperplane_separation` without any added axiom. Lineage: #3933 (cone kernel) → #3941 (bridge) → #3945 (decoding) → #3951 (`hb_strict`) → #3954 (attainment). **Lake standalone supprimé (rm #6587)** — modules (Basic/ConeKernel/Shapley, FR+EN) absorbés byte-identique dans `game_theory_lean/CooperativeGames/` ; ce status y est préservé.
 
 ---
 
