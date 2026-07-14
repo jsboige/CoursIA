@@ -1,32 +1,29 @@
 /-
-Knots.Basic — Fondations combinatoires de la theorie des noeuds
-=============================================================
+  Knots.Basic — Combinatorial foundations of knot theory
+  =====================================================
 
-Scaffolding pour la theorie des noeuds en Lean 4, inspire par :
-- shua/leanknot (https://github.com/shua/leanknot, branche Lean 4)
-- Prathamesh (2015), Formalising Knot Theory in Isabelle/HOL
+  Scaffolding for knot theory in Lean 4, inspired by:
+  - shua/leanknot (https://github.com/shua/leanknot, Lean 4 branch)
+  - Prathamesh (2015), Formalising Knot Theory in Isabelle/HOL
 
-Convention : namespace `Knots`, theoremes commentes avec references.
-Epic #2874, Phase 1.
+  Convention: namespace `Knots`, sorry commentés avec références.
+  Epic #2874, Phase 1.
 
-Prerequis Mathlib necessaires :
-- Representations combinatoires des diagrammes planaires (PD-codes)
-- Codes de Gauss / notation Dowker-Thistlethwaite
-- Theorie des graphes de base pour les graphes de croisements
+  Mathlib prerequisites needed:
+  - Combinatorial representations of planar diagrams (PD-codes)
+  - Gauss codes / Dowker-Thistlethwaite notation
+  - Basic graph theory for crossing graphs
 -/
-
-import Mathlib.Tactic
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Basic_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `Basic.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Knots
+namespace Knots_en
 
 /-! ## 1. Crossing and CrossingType
 
@@ -290,4 +287,4 @@ theorem figureEight_wf : figureEightDiagram.wf = true := by
   -- 4 crossings, labels {1,..,8} each appearing exactly twice.
   decide
 
-end Knots
+end Knots_en
