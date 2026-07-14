@@ -544,4 +544,196 @@ lemma separatingFunctional_none_neg (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t
   rw [hId, map_add, map_smul, smul_eq_mul] at hfSep
   nlinarith [ht, huniv]
 
+/-- `some i` coordinate of the `S`-generator: the incidence indicator `1` if
+    `i ∈ S`, else `0`. Generalizes the grand-coalition special case to any `S`. -/
+lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
+    (phiAugCont v (Pi.single S 1)) (some i) = if i ∈ S then (1 : ℝ) else 0 := by
+  -- defeq: `(phiAugCont v (Pi.single S 1)) (some i)` reduces to the `some` branch,
+  -- a filtered incidence sum (previous defeq cycle 18).
+  show ∑ T ∈ Finset.univ.filter (fun T => i ∈ T),
+      (Pi.single S 1 : Finset N → ℝ) T = if i ∈ S then 1 else 0
+  by_cases hs : i ∈ S
+  · -- `i ∈ S`: the unique term `T = S` (which is in the filter) contributes `1`.
+    simp only [hs, if_true]
+    rw [Finset.sum_eq_single S
+        (fun T _ hT => by rw [Pi.single_apply, if_neg hT])
+        (fun h => (h (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hs⟩)).elim),
+        Pi.single_eq_same]
+  · -- `i ∉ S`: `S` is not in the filter, and every `T` in the filter satisfies `T ≠ S`,
+    -- so `(Pi.single S 1) T = 0`; the sum vanishes.
+    simp only [hs, if_false]
+    rw [Finset.sum_eq_zero]
+    intro T hT
+    have hiT : i ∈ T := (Finset.mem_filter.mp hT).2
+    -- `T ≠ S`: if `T = S`, then `i ∈ T` would give `i ∈ S`, contradicting `hs`.
+    -- (Pin `hTS : T = S` via `intro` so that `▸` sees its type — the anonymous
+    -- lambda leaves the binder as a metavar at `▸` elaboration.)
+    have hTneS : T ≠ S := by intro hTS; exact hs (hTS ▸ hiT)
+    rw [Pi.single_apply, if_neg hTneS]
+
+/-- `none` coordinate of the `S`-generator: the coalition value `v S`.
+    Generalizes the grand-coalition special case to any `S`. -/
+lemma gen_apply_none (v : Finset N → ℝ) (S : Finset N) :
+    (phiAugCont v (Pi.single S 1)) none = v S := by
+  -- defeq: the `none` branch is `∑ T, w T * v T` with `w = Pi.single S 1`.
+  have hsum : ∑ T : Finset N, (Pi.single S 1 : Finset N → ℝ) T * v T =
+      (Pi.single S 1 : Finset N → ℝ) S * v S :=
+    Finset.sum_eq_single S
+      (fun T _ hT => by rw [Pi.single_apply, if_neg hT]; ring)
+      (fun h => by simp at h)
+  show ∑ T : Finset N, (Pi.single S 1 : Finset N → ℝ) T * v T = v S
+  rw [hsum, Pi.single_eq_same, one_mul]
+
+/-! ### Generator decomposition (linearity key)
+
+The `S`-generator `phiAugCont v (Pi.single S 1)` decomposes, as a vector of
+`Option N → ℝ`, into the incidence combination `∑ i ∈ S, Pi.single (some i) 1`
+plus the value multiple `v S • Pi.single none 1`. Applying any linear functional
+`f` then yields the *linearity identity* that the witness decoding exploits:
+`f (generator S) = ∑ i ∈ S, f (base-some i) + v S * f (base-none)`. This identity
+is the load-bearing algebraic step of the decoding lemma below: it converts the
+dual cone inequality `0 ≤ f (generator S)` (from `augCone_dual_iff`) into the
+coalitional rationality inequality `v S ≤ ∑_{i ∈ S} x i` for the candidate
+witness `x i := f (base-some i) / (-f (base-none))`. -/
+
+/-- **Generator decomposition (vector form)** — the `S`-generator equals the
+    incidence combination over `S` (one `some i` basis vector per `i ∈ S`) plus
+    the value multiple `v S • Pi.single none 1` along the `none` axis. -/
+lemma gen_decomp (v : Finset N → ℝ) (S : Finset N) :
+    phiAugCont v (Pi.single S 1) =
+      (∑ i ∈ S, (Pi.single (some i) 1 : (Option N) → ℝ)) + v S • Pi.single none 1 := by
+  -- Mirror of the `funext`/`cases` pattern of the grand-coalition identity proved
+  -- in `separatingFunctional_none_neg`; here for an arbitrary coalition `S`.
+  funext j
+  cases j with
+  | none =>
+    -- LHS: `v S` (`gen_apply_none`). RHS: every `some i` basis vector is `0` at
+    -- `none`; only the value multiple contributes `v S`.
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Finset.sum_apply]
+    rw [gen_apply_none]
+    -- Each `(Pi.single (some x) 1) none = 0` since `none ≠ some x`.
+    have hzero : ∀ x ∈ S, (Pi.single (some x) 1 : (Option N) → ℝ) none = 0 := by
+      intro x _; rw [Pi.single_apply, if_neg (Option.some_ne_none x).symm]
+    rw [Finset.sum_eq_zero hzero, Pi.single_eq_same, mul_one, zero_add]
+  | some i =>
+    -- LHS: incidence indicator (`gen_apply_some`). RHS: at `some i`, only the
+    -- i-th `some` basis vector can contribute `1` (and only if `i ∈ S`); the
+    -- value multiple is `0` off the `none` axis.
+    have hne : (some i : Option N) ≠ none := Option.some_ne_none i
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Finset.sum_apply,
+      Pi.single_apply, hne, if_false]
+    rw [gen_apply_some]
+    -- Reduce the `some i = some i'` conditions to `i = i'`, then isolate `i`.
+    have hsum : ∑ i' ∈ S, (if some i = some (i' : N) then (1 : ℝ) else 0) =
+        if i ∈ S then 1 else 0 := by
+      by_cases hs : i ∈ S
+      · simp only [hs, if_true, Option.some.injEq]
+        -- `if_neg` needs `¬(i = i')`; the provided `hi' : i' ≠ i` is symmetric.
+        rw [Finset.sum_eq_single i
+            (fun i' _ hi' => by rw [if_neg hi'.symm])
+            (fun hi => (hi hs).elim)]
+        simp only [if_true]
+      · simp only [hs, if_false, Option.some.injEq]
+        rw [Finset.sum_eq_zero]
+        intro i' hi'
+        -- `i ≠ i'`: if `i = i'`, then `i' ∈ S` would give `i ∈ S`, contradicting `hs`.
+        have hne : i ≠ i' := by intro hss; exact hs (hss ▸ hi')
+        rw [if_neg hne]
+    rw [hsum]
+    ring
+
+/-- **Linearity identity on the `S`-generator** — for any linear functional
+    `f`, `f (generator S) = ∑ i ∈ S, f (base-some i) + v S * f (base-none)`.
+    This is the algebraic form that the witness decoding consumes (apply `f`
+    to `gen_decomp`). -/
+lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
+    (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
+    f (phiAugCont v (Pi.single S 1)) =
+      ∑ i ∈ S, f (Pi.single (some i) 1) + v S * f (Pi.single none 1) := by
+  rw [gen_decomp, map_add, map_sum, map_smul, smul_eq_mul]
+
+/-! ### Witness construction (separator → pre-imputation)
+
+The core of the witness decoding: a separating functional `f` (nonnegative on
+`augCone v`, strictly negative on `balancedUnit (v(N)+t)`) yields a
+pre-imputation `x : N → ℝ` that is coalitionally rational
+(`∀ S, v S ≤ ∑_{i ∈ S} x i`) and within the strict budget (`∑ x ≤ v(N) + t`).
+This is the heart of the TUGame-free decoding: the balanced-game hypothesis
+enters only later (in `Basic.lean`, via the bridge `balancedUnit_notIn_augCone`,
+which *produces* such an `f` via `hyperplane_separation_point`). The candidate
+witness is `x i := f (base-some i) / (-f (base-none))`, well-defined thanks to
+the sign lemma giving `f (base-none) < 0`; coalitional rationality is read off
+the dual cone inequality `0 ≤ f (generator S)` via the linearity identity
+`gen_apply_linear`. -/
+
+/-- **Decomposition of `balancedUnit`** — `balancedUnit (v(N)+t)` equals the
+    grand-coalition generator plus `t` times the `none` basis vector. Under a
+    separating functional, this identity yields the strict budget
+    `∑ x ≤ v(N) + t`. -/
+lemma balancedUnit_decomp (v : Finset N → ℝ) (t : ℝ) :
+    balancedUnit (v Finset.univ + t) =
+      phiAugCont v (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
+  funext j
+  cases j with
+  | none =>
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
+    rw [gen_apply_none, Pi.single_eq_same]
+    ring
+  | some i =>
+    have hne : (some i : Option N) ≠ none := Option.some_ne_none i
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
+    rw [gen_apply_some, Pi.single_apply, if_neg hne]
+    simp only [Finset.mem_univ, if_true]
+    ring
+
+/-- **Witness decoding (TUGame-free core)** — a separating functional `f`
+    (nonnegative on `augCone v`, negative on `balancedUnit (v(N)+t)`) yields a
+    pre-imputation `x` that is coalitionally rational and within the budget
+    `∑ x ≤ v(N) + t`. The balanced-game hypothesis enters only later, in
+    `Basic.lean`, via the bridge that *produces* such an `f`. -/
+lemma exists_preimputation_strict_core (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
+    (f : ((Option N) → ℝ) →L[ℝ] ℝ)
+    (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
+    (hfSep : f (balancedUnit (v Finset.univ + t)) < 0) :
+    ∃ x : N → ℝ,
+      (∀ S : Finset N, v S ≤ ∑ i ∈ S, x i) ∧
+      ∑ i : N, x i ≤ v Finset.univ + t := by
+  -- (A) Sign: `f (base-none) < 0`, hence `den := -f(base-none) > 0`.
+  have hfneg : f (Pi.single none 1) < 0 :=
+    separatingFunctional_none_neg v ht f hfCone hfSep
+  set den : ℝ := -f (Pi.single none 1) with hden_def
+  have hden_pos : 0 < den := by rw [hden_def]; exact neg_pos.mpr hfneg
+  have hfnone_eq : f (Pi.single none 1) = -den := by linarith
+  refine ⟨fun i => f (Pi.single (some i) 1) / den, ⟨?_, ?_⟩⟩
+  · -- (B) Coalitional rationality: `v S ≤ ∑_{i ∈ S} x i`.
+    intro S
+    have hfS : 0 ≤ f (phiAugCont v (Pi.single S 1)) :=
+      (augCone_dual_iff v f).mp hfCone S
+    rw [gen_apply_linear] at hfS
+    -- Factor the divided sum, then clear the (positive) denominator.
+    have hfactor : ∑ i ∈ S, f (Pi.single (some i) 1) / den =
+        (∑ i ∈ S, f (Pi.single (some i) 1)) / den := by rw [Finset.sum_div]
+    rw [hfactor, le_div_iff₀ hden_pos]
+    -- `0 ≤ ∑ f(g_i) + v S * f(none)` and `f(none) = -den` ⟹ `v S * den ≤ ∑ f(g_i)`.
+    nlinarith [hfS, hfnone_eq]
+  · -- (C) Budget: `∑ x i ≤ v(N) + t`.
+    -- Grand-coalition linearity identity.
+    have hGuniv : f (phiAugCont v (Pi.single Finset.univ 1)) =
+        ∑ i : N, f (Pi.single (some i) 1) + v Finset.univ * f (Pi.single none 1) :=
+      gen_apply_linear v Finset.univ f
+    -- Separation + `balancedUnit_decomp` ⟹ `f(univ generator) + t * f(none) < 0`.
+    have hsep_eq : f (balancedUnit (v Finset.univ + t)) =
+        f (phiAugCont v (Pi.single Finset.univ 1)) + t * f (Pi.single none 1) := by
+      rw [balancedUnit_decomp, map_add, map_smul, smul_eq_mul]
+    have hfGuniv : f (phiAugCont v (Pi.single Finset.univ 1)) < t * den := by
+      have key : f (phiAugCont v (Pi.single Finset.univ 1)) +
+          t * f (Pi.single none 1) < 0 := by rw [← hsep_eq]; exact hfSep
+      linarith
+    have hfactor : (∑ i : N, f (Pi.single (some i) 1) / den) =
+        (∑ i : N, f (Pi.single (some i) 1)) / den := by rw [Finset.sum_div]
+    rw [hfactor, div_le_iff₀ hden_pos]
+    -- `∑ f(g_i) = f(univ generator) + v(N) * den` (hGuniv + f(none) = -den);
+    -- `f(univ generator) < t * den` (hfGuniv) ⟹ `∑ f(g_i) ≤ (v(N) + t) * den`.
+    nlinarith [hfGuniv, hGuniv, hfnone_eq]
+
 end BondarevaCone_en
