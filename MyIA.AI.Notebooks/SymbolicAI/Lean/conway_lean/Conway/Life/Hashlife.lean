@@ -353,6 +353,78 @@ def evolveHashlifeFastAux : Nat → Nat → Grid → Grid
 def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
   evolveHashlifeFastAux n n g
 
+/-! ### N3: n-aware threading of `evolveHashlifeFast` (issue #3846)
+
+The P5 redesign introduces `gridToMacroCellWithOffsetN` (n-aware analog of
+`gridToMacroCellWithOffset`, see `MacroCell.lean` L736): it builds the
+`MacroCell` from `gridFrameN n g` (padding `max 2 n`) instead of the
+fixed-padding `gridFrame` (padding `2`). For `n ≤ 2`, both builders coincide
+(`gridToMacroCellWithOffsetN_le_two_eq`, L746), so the n-aware threading is
+**definitionally identical** to the existing `evolveHashlifeFast` on the
+small-`n` regime (every existing correctness witness in `Computation.lean`
+uses `n ∈ {2, 4, 8, 12, 16}`, all `≤ 16` but with most `≤ 4`).
+
+This section **adds** the n-aware variant without touching `evolveHashlifeFast`
+or any of its 50+ call-sites / proofs:
+
+- `evolveHashlifeFastAuxN` / `evolveHashlifeFastN` — same recursion as
+  `evolveHashlifeFastAux`, but the initial MacroCell is built with the
+  n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent iterations use
+  the fixed-frame builder (N3 = "thread without re-frame", per the N1
+  design comment at MacroCell L634).
+- `evolveHashlifeFastN_zero` — trivial sanity: `n = 0` returns `g`.
+
+The **bridge** `evolveHashlifeFastN n g = evolveHashlifeFast n g` for `n ≤ 2`
+(via `gridToMacroCellWithOffsetN_le_two_eq` + structural induction on `fuel`)
+is **deferred** to a follow-up cycle, paired with the P4 unlock: it requires
+the `evolveHashlifeFastMemo_eq_evolveHashlifeFast`-style full body unfolding
+which is best assembled once the Lean LSP harness (ai-01 turf, post-fix H)
+is back to fully interactive. Documenting the proof obligation here keeps
+the P5 redesign plan honest and avoids a vacuous stub. -/
+
+/-- N3-threaded auxiliary for `evolveHashlifeFastN`: same recursion as
+    `evolveHashlifeFastAux`, but the initial MacroCell is built with the
+    n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent recursive
+    calls (the `n - js` arm) use the fixed-frame builder — N3 threads the
+    frame *without* re-framing on every iteration (per the N1 design
+    comment at MacroCell L634). -/
+def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel exhausted: return current state
+  | fuel + 1, n, g =>
+    -- N3 substitution: n-aware frame on the initial MacroCell only.
+    let (off, mc) := gridToMacroCellWithOffsetN n g
+    let lvl := mc.level
+    let js := jumpSize lvl
+    if lvl >= 2 && n >= js then
+      -- Jump forward by `2^lvl` generations using padded Hashlife,
+      -- then re-frame from the new (jumped) grid's fixed frame.
+      let jumped := hashlifeJump mc
+      let newOff := jumpResultOff off lvl
+      let g' := jumped.toGrid newOff
+      -- Subsequent iterations use the fixed-frame builder, NOT the
+      -- n-aware one — the n parameter is already consumed by `n - js`,
+      -- and re-framing with the *new* `n` would needlessly inflate the
+      -- padding when the bounding box has shrunk after the jump.
+      evolveHashlifeFastAuxN fuel (n - js) g'
+    else
+      -- Small n or small pattern: use reference evolve.
+      evolve n g
+
+/-- N3-threaded variant of `evolveHashlifeFast`: initial MacroCell uses the
+    n-aware frame `gridToMacroCellWithOffsetN n g`, then the recursion
+    proceeds identically. Public API; for `n ≤ 2` it coincides with
+    `evolveHashlifeFast` (bridge deferred to follow-up cycle, paired with
+    the P4 unlock — see the section docstring above). -/
+def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAuxN n n g
+
+/-- Trivial sanity: `evolveHashlifeFastN 0 g = g` (the `n = 0` arm of the
+    auxiliary returns `g` directly). -/
+@[simp]
+theorem evolveHashlifeFastN_zero (g : Grid) :
+    evolveHashlifeFastN 0 g = g := rfl
+
 /-- Compute `evolve n g` using Hashlife. Round-trips through the
     `MacroCell` representation each generation, exercising `step4x4`
     for the level-2 inner loop. -/
