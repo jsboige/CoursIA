@@ -1,42 +1,43 @@
 /-
-  Knots.Lidman - Le nombre de denouement de 11n102 vaut 2
-  =======================================================
+  Knots.Lidman — The unknotting number of 11n102 is 2
+  ===================================================
 
-  Tye Lidman (2026) a demontre que le nombre de denouement u(11n102) = 2.
-  Il etait prealablement connu que u(11n102) appartient a {1, 2}.
+  Tye Lidman (2026) proved that the unknotting number u(11n102) = 2.
+  It was previously known that u(11n102) ∈ {1, 2}.
 
-  La preuve tient en une page mais extraordinairement profonde, utilisant :
-  1. Astuce de Montesinos : revetement ramifie double <-> chirurgie demi-entiere
-  2. Espaces fibres de Seifert et leurs descriptions par plomberie
-  3. Homologie de Heegaard Floer (d-invariants, HFred)
-  4. Formule de Ni-Wu pour les chirurgies cosmetiques
-  5. Formule du cone de Gainullin
+  The proof is one page but extraordinarily deep, using:
+  1. Montesinos trick: branched double cover ↔ half-integral surgery
+  2. Seifert fibered spaces and their plumbing descriptions
+  3. Heegaard Floer homology (d-invariants, HFred)
+  4. Ni-Wu formula for cosmetic surgeries
+  5. Gainullin's mapping cone formula
 
-  Reference : Lidman (2026), arXiv:2606.12431
+  Reference: Lidman (2026), arXiv:2606.12431
 
-  Epic #2874, Phase 1 (scaffolding only - sorry permanent).
+  Epic #2874, Phase 1 (scaffolding only — sorry permanent).
 
-  Prerequis Mathlib necessaires (TRES LOINTAIN) :
-  - Topologie des 3-varietes (revetements ramifies, espaces fibres de Seifert)
-  - Homologie de Heegaard Floer (d-invariants, HFred)
-  - Chirurgie sur les noeuds (chirurgie de Dehn, entiere/demi-entiere)
-  - Diagrammes de plomberie pour les 4-varietes
-  - Algorithme de Nemethi pour le calcul de HF des varietes plomberie
+  Mathlib prerequisites needed (VERY FAR):
+  - 3-manifold topology (branched covers, Seifert fibered spaces)
+  - Heegaard Floer homology (d-invariants, HFred)
+  - Surgery on knots (Dehn surgery, integral/half-integral)
+  - Plumbing diagrams for 4-manifolds
+  - Némethi's algorithm for computing HF of plumbed manifolds
 -/
 
 import Knots.Basic
 import Knots.Invariant
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Lidman_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compatibilite Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete
-  different entre les deux fichiers.
+  English mirror of `Lidman.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` paragraphe Lean i18n): distinct FR + EN sibling
+  files - no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Knots
+open Knots
+
+namespace Knots_en
 
 /-! ## 1. The knot 11n102
 
@@ -142,4 +143,4 @@ theorem unknotting_11n102 : Knot.unknottingNumber knot_11n102 = 2 := by
   -- Estimated difficulty: **decades** away from formalization.
   -- This sorry is effectively permanent.
 
-end Knots
+end Knots_en
