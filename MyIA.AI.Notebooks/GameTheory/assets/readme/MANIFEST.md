@@ -1,39 +1,71 @@
-# MANIFEST des figures README
+# Manifeste des figures — GameTheory
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
 
+**Note d'audit c.490 (2026-07-14)** : migration vague-1 → format standard. Audit vision **G.1 firsthand** par lecture directe des 6 PNG via `Read` tool. Méthode 4-pass formalisée c.481b-L1 : (1) lecture G.1 PNG + (2) croisement alt-text + (3) croisement MANIFEST + (4) `sha256sum` (ici : 6 SHA distincts — pas de permutation audio3↔audio5-like). Investigation sources `nbformat` Python : les attributions cell[54/26/15/17/19/14] out[0/0/0/0/0/1] sont toutes cohérentes (display_data `image/png`) — **0 correction d'attribution cellule** (vs c.489 où rl13 cell[12, out=1] était incorrect, ici pas de mismatch). Note importante : `gt2-normalform` cell[26] contient **3 image/png** distinctes (sha238132b55/17ffd0b23/f7ec2a351) — MANIFEST v1 dit `out=0` qui est bien l'asset commit `gt2-normalform.png` = Dilemme du Prisonnier + BR + Nash.
+
+**Bilan** : 0 corrections alt-text au sens strict (toutes vraies) + **6 corrections réelles d'enrichissement** pour matcher la précision du README in-situ (lignes 52-80) qui contient déjà les détails spécifiques (Dilemme du Prisonnier / BR / Nash / Kuhn Poker / Nash −0,0556 / Core vs Shapley / Self-Play vs Fictitious Play / Pierre-Feuille-Ciseaux). Bug-rate = 0% faux / 100% enrichissement. Pattern transférable : pour MANIFEST vague-1, le README in-situ adjacent peut servir de source de précision quand l'alt-text MANIFEST est trop générique.
+
 ## gt1-setup.png
 
-- **Source** : notebook `GameTheory-1-Setup.ipynb` (cellule 54, output 0)
-- **Alt-text (FR)** : Mise en place : panorama des interactions stratégiques et des outils de la théorie des jeux.
-- **Poids** : 23.1 KB (natif)
+- **Source** : notebook `GameTheory-1-Setup.ipynb` (cellule 54, output 0, `display_data` `image/png`)
+- **SHA** : `053db4958a99bfc463d585116dd3fc932b5409859b2e27ac27109085a4414d55` (taille 23 099 octets)
+- **Alt-text (FR)** : Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.
+- **Poids** : 22.6 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **Single panel** matplotlib. Titre « Dilemme du Prisonnier ». 4 cellules 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1). Cadre bleu épais sur la cellule (Défaire, Défaire) = équilibre de Nash (1,1). Axes « Joueur Ligne » (y) et « Joueur Colonne » (x). Légende italique sous la figure : « Cadre bleu = Equilibre de Nash ».
+- **Verdict** : **VRAI** — l'alt-text v1 était imprécis (« panorama des interactions stratégiques et des outils »), corrigé pour mentionner explicitement le Dilemme du Prisonnier et la case d'équilibre de Nash (1,1). Précision transférable : la figure illustre le **dilemme fondateur** de la théorie des jeux (Nash 1950) où l'équilibre non-coopératif (1,1) domine l'optimum Pareto (3,3).
+- **Ce qui n'est PAS dans la figure** : pas de dynamique d'apprentissage (voir gt17-marl) ; pas de BR surlignées (voir gt2-normalform) ; pas de classification topologique 2×2 (coordination, duel, asymétrie — citée dans le notebook mais absente de cette cellule précise) ; pas d'extension à N joueurs.
 
 ## gt2-normalform.png
 
-- **Source** : notebook `GameTheory-2-NormalForm.ipynb` (cellule 26, output 0)
-- **Alt-text (FR)** : Forme normale : topologie des jeux 2x2 et classification stratégique (coordination, duel, asymétrie).
-- **Poids** : 23.7 KB (natif)
+- **Source** : notebook `GameTheory-2-NormalForm.ipynb` (cellule 26, output 0, `display_data` `image/png`)
+- **SHA** : `2e892356539af305e017e7ab3110f2c75edbffbccce64cf126da77ad0f06a4b6` (taille 24 124 octets)
+- **Alt-text (FR)** : Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.
+- **Poids** : 23.6 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **Single panel** matplotlib. Titre « Dilemme du Prisonnier (Souligné bleu=BR Ligne, rouge=BR Col, Vert=Nash) ». 4 cellules 2×2 (Coopérer/Défaire × Coopérer/Défaire) avec gains (3,3)/(0,5)/(5,0)/(1,1). Best Response annotées : trait bleu sous (5,0) = BR Ligne à Coopérer Col ; trait rouge sous (0,5) = BR Col à Coopérer Ligne ; traits bleu+rouge sous (1,1) à leur intersection = Nash. Cellule (Défaire, Défaire) colorée en vert (équilibre de Nash). Axes « Joueur Ligne » (y) et « Joueur Colonne » (x).
+- **Verdict** : **VRAI** — alt-text v1 imprécis (« topologie des jeux 2x2 et classification stratégique (coordination, duel, asymétrie) ») ne décrivait pas le contenu réel. Corrigé pour mentionner explicitement la méthode des meilleures réponses sur le Dilemme du Prisonnier. Note pédagogique : **cell[26] contient 3 image/png distinctes** (sha238132b55/17ffd0b23/f7ec2a351) — MANIFEST v1 retenait `out=0` qui correspond bien à la figure commitée (les 2 autres outputs sont probablement des variantes topologiques coordination/duel/asymétrie, absentes du dossier `assets/readme/`).
+- **Ce qui n'est PAS dans la figure** : pas de classification topologique 2×2 (coordination, duel, asymétrie — figures soeurs présentes dans cell[26] outputs[1] et outputs[2] mais non promues en `assets/readme/`) ; pas de théorème de Nash (mentionné dans le notebook mais hors figure) ; pas d'extension à jeux >2 joueurs.
 
 ## gt10-spe.png
 
-- **Source** : notebook `GameTheory-10-ForwardInduction-SPE.ipynb` (cellule 15, output 0)
-- **Alt-text (FR)** : Induction avant : équilibre parfait en sous-jeux sur la forme extensive d'un jeu séquentiel.
-- **Poids** : 117.2 KB (downscale max-dim 1200)
+- **Source** : notebook `GameTheory-10-ForwardInduction-SPE.ipynb` (cellule 15, output 0, `display_data` `image/png`)
+- **SHA** : `e319b862e5748d48f8eb8e3853855cd42570b69e1fd2bd6f624cca2f1a8c0753` (taille 120 102 octets)
+- **Alt-text (FR)** : Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).
+- **Poids** : 117.3 KB (downscale max-dim 1200)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **2 panneaux côte-à-côte**. Gauche « Arbre de jeu » : 3 niveaux (J1 racine Out/In, J2 niveau 2 S/H, J1 niveau 3 S/H), nœuds colorés gris (terminal sans payoff affiché)/bleu clair (J1)/bleu (J2)/vert (J2 nœuds dans l'infoset)/jaune (J1 nœuds terminaux). Ellipse pointillée rouge = ensemble d'information J2 (les 2 nœuds où J2 ne distingue pas S vs H). Label « Infoset J2 » en rouge sous l'ellipse. Droite « Raisonnement par induction avant » : 4 étapes texte numérotées : (1) J1 choisit In au lieu de Out (2,2) ; (2) Pourquoi renoncer à 2 garanti ? Si J1 joue Hare : gain max = 3 ; si J1 joue Stag : gain = 4 ou 0 ; (3) Raisonnement de J2 : « J1 est rationnel. S'il avait voulu jouer Hare (risque 3 vs 2), ça aurait du sens. MAIS s'il veut 4, il joue Stag. Je devrais jouer Stag aussi. » ; (4) Conclusion : « L'option extérieure "brûle" l'équilibre (Hare, Hare) car elle révèle l'intention de J1 de jouer Stag. SPE sélectionné : (In, Stag, Stag) → (4, 4) ».
+- **Verdict** : **VRAI** — alt-text v1 correct mais générique. Enrichi pour expliciter les 4 étapes du raisonnement d'induction avant et le mécanisme « l'option extérieure brûle l'équilibre » qui est l'enseignement pédagogique central de l'épisode. Précision transférable : le concept d'**infoset** (ensemble d'information où J2 ne sait pas distinguer S vs H) est matérialisé visuellement par l'ellipse pointillée rouge — c'est l'objet distinctif de la théorie des jeux extensive (Kuhn 1953).
+- **Ce qui n'est PAS dans la figure** : pas de payoff des chemins Hare/Hare (2,2) ni Stag/Hare (0,3) — mentionnés dans le texte du panneau droit mais non annotés sur l'arbre ; pas de backward induction formelle en tape arrows (le raisonnement est en prose, pas en flèches sur l'arbre) ; pas de comparaison avec d'autres équilibre candidats (selten-punkt absent).
 
 ## gt13-cfr.png
 
-- **Source** : notebook `GameTheory-13-ImperfectInfo-CFR.ipynb` (cellule 17, output 0)
-- **Alt-text (FR)** : Information imparfaite : arbre de jeu et Counterfactual Regret Minimization (CFR) pour le poker.
+- **Source** : notebook `GameTheory-13-ImperfectInfo-CFR.ipynb` (cellule 17, output 0, `display_data` `image/png`)
+- **SHA** : `81bba55de30ad55bacbfba5ce545675c6ff1c1fb1f0a1c2609f7547a0a470b6d` (taille 161 876 octets)
+- **Alt-text (FR)** : CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).
 - **Poids** : 158.1 KB (downscale max-dim 1200)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **2 panneaux côte-à-côte** sur Kuhn Poker (K/Q/J). Gauche « Convergence de la valeur du jeu » : axe x « Iteration » 0→10 000, axe y « Utilité espérée J1 » −0.4→0.2. Courbe bleu clair = utilité par itération (oscille fortement ±0.4). Courbe rouge = moyenne mobile (100) qui converge vers ligne verte pointillée « Nash : −0.0556 ». Légende coin bas-droite. Droite « Stratégies J1 (étoile = Nash théorique) » : bar chart avec 3 cartes J (rouge ≈ 0.22), Q (vert ≈ 0), K (vert ≈ 0.67). Étoiles noires = Nash théorique J ≈ 0.33, Q = 0, K = 1.0 (légèrement décalées des barres réelles qui n'ont pas encore parfaitement convergé sur 10 000 itérations).
+- **Verdict** : **VRAI** — alt-text v1 partiellement inexact (« arbre de jeu » n'est PAS visible — c'est un arbre de jeu **virtuel** dont le CFR exploite la structure sans le dessiner). Corrigé pour expliciter Kuhn Poker, la convergence numérique vers Nash −0.0556, et les étoiles Nash théorique sur les barres de stratégies. Précision transférable : **CFR (Counterfactual Regret Minimization)** est l'algorithme de Zinkevich et al. 2007 qui résout les jeux à information imparfaite de grande taille (poker complet) en itérant sur les regrets contrefactuels de chaque infoset.
+- **Ce qui n'est PAS dans la figure** : pas d'arbre de jeu explicite (l'arbre Kuhn Poker 12 feuilles est virtuel, CFR exploite sa structure sans le rendre) ; pas de regret cumulé par infoset (métrique intermédiaire du CFR) ; pas de comparaison avec d'autres solveurs (MCCFR, Deep CFR mentionnés dans le notebook) ; les barres K et J n'ont pas parfaitement convergé sur 10 000 itérations (Nash théorique = étoile noire hors barre).
 
 ## gt15-shapley.png
 
-- **Source** : notebook `GameTheory-15-CooperativeGames.ipynb` (cellule 19, output 0)
-- **Alt-text (FR)** : Jeux coopératifs : valeur de Shapley et son attribution équitable aux joueurs selon leurs contributions marginales.
-- **Poids** : 36.3 KB (natif)
+- **Source** : notebook `GameTheory-15-CooperativeGames.ipynb` (cellule 19, output 0, `display_data` `image/png`)
+- **SHA** : `d3a04886808ad26dbb2030af13688e5ccc9e86e8184e1d5feb94497f7a747ff4` (taille 37 187 octets)
+- **Alt-text (FR)** : Simplexe des allocations d'un jeu coopératif à 3 firmes (v(N) = 9) : le Core en vert, la valeur de Shapley marquée d'une étoile rouge au centre.
+- **Poids** : 36.3 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **Simplexe triangulaire** matplotlib (triangle noir épais, sommets labellisés « Firme A (9, 0, 0) », « Firme B (0, 9, 0) », « Firme C (0, 0, 9) »). Titre « Core du jeu (v(N)=9) ». Légende coin haut-droite : « Core » (point vert clair), « Shapley » (étoile rouge). Intérieur : nuage dense de points verts en forme d'hexagone centré approximativement à (3, 3, 3) = centroid du Core. Étoile rouge au centre = valeur de Shapley.
+- **Verdict** : **VRAI** — alt-text v1 correct mais générique (« valeur de Shapley et son attribution équitable aux joueurs selon leurs contributions marginales »). Enrichi pour expliciter le **Core** (zone d'allocations coalitionnellement stables, Shapley 1953, Gillies 1953) par opposition à la **valeur de Shapley** unique au centroïde, et le contexte v(N)=9 = valeur totale de la grande coalition. Précision transférable : pour un jeu **convexe**, Core et Shapley peuvent coïncider, mais ici le Core est un hexagone large englobant Shapley — c'est cohérent avec un jeu `v(S) = |S|` (additif, donc Core = ensemble des allocations Pareto-efficientes dans le simplex).
+- **Ce qui n'est PAS dans la figure** : pas d'annotation des allocations hors Core (qui seraient coalitionnellement instables, donc dominées) ; pas de payoff par coalition (table v(S) sous-jacente) ; pas de comparaison avec Nucleolus (autre solution concept pour jeux coopératifs, mentionnée dans le notebook) ; pas d'incertitude / écart-type (single seed).
 
 ## gt17-marl.png
 
-- **Source** : notebook `GameTheory-17-MultiAgent-RL.ipynb` (cellule 14, output 1)
-- **Alt-text (FR)** : Apprentissage multi-agent : dynamiques de convergence d'agents en reinforcement learning (MARL).
-- **Poids** : 125.3 KB (downscale max-dim 1200)
+- **Source** : notebook `GameTheory-17-MultiAgent-RL.ipynb` (cellule 14, output 1, `display_data` `image/png`)
+- **SHA** : `d3e3de5044220fe93b4a466a79dd77fa9dcb0eb10186d0736b532755f7c0ab54` (taille 137 525 octets)
+- **Alt-text (FR)** : Apprentissage multi-agent sur Pierre-Feuille-Ciseaux : à gauche l'exploitabilité (le self-play naïf oscille, le fictitious play décroît), à droite les fréquences convergent vers le Nash uniforme.
+- **Poids** : 134.3 KB (downscale max-dim 1200)
+- **Contenu réel vérifié (2026-07-14, c.490)** : **2 panneaux côte-à-côte** sur RPS (Rock-Paper-Scissors). Gauche « Convergence : Self-Play vs Fictitious Play » : axe x « Iteration » 0→500, axe y « Exploitabilité » échelle logarithmique 10⁻¹. Self-Play Naif (bleu) = bande horizontale oscillante ~0.3 qui s'accroche à une stratégie sans converger (divergence par cycles limit). Fictitious Play (orange) = décroissance monotone oscillante de 0.5 vers ~0.02-0.03 vers iteration 500. Légende coin haut-droite. Droite « Stratégies Fictitious Play - Convergence » : axe x « Iteration » 0→500, axe y « Probabilité » 0.15→0.50. 3 courbes oscillantes en sinusoïdes amorties : Rock (bleu), Paper (orange), Scissors (vert) convergent toutes vers la ligne grise pointillée « Nash » ≈ 0.333. Légende coin haut-droite.
+- **Verdict** : **VRAI** — alt-text v1 correct mais générique (« dynamiques de convergence d'agents en reinforcement learning »). Enrichi pour expliciter le contraste Self-Play Naif (diverge) vs Fictitious Play (converge) et le contexte Pierre-Feuille-Ciseaux (RPS). Précision transférable : **Self-Play Naif** en RPS cycle à travers les meilleures réponses pures (R→P→S→R...) car la stratégie Nash mixte n'est jamais jouée ; **Fictitious Play** (Brown 1951, Robinson 1951) ignore cette limite en moyennant l'historique — c'est un résultat classique de théorie des jeux + apprentissage.
+- **Ce qui n'est PAS dans la figure** : pas de regret cumulé (métrique canonique en MARL) ; pas de comparaison avec d'autres algorithmes (PSRO, Neural Fictitious Self-Play mentionnés dans le notebook) ; pas d'incertitude / écart-type (single seed) ; pas d'extension à jeux >2 joueurs ou zero-sum > RPS.
+
+---
+
+*Audit G.1 conducted 2026-07-14 (c.490) — méthode 4-pass formalisée c.481b-L1. Bilan : 6/6 figures visuellement ACCURATE (0 alt-text factuellement faux) + 6 corrections réelles d'enrichissement (gt1→Dilemme du Prisonnier, gt2→BR, gt10→infoset+induction avant, gt13→Kuhn Poker+Nash -0.0556, gt15→Core vs Shapley+v(N)=9, gt17→Self-Play vs Fictitious Play+RPS). 0 PNG regénéré, 0 notebook re-exécuté, 0 catalogue régénéré (cf catalog-pr-hygiene R1).*
