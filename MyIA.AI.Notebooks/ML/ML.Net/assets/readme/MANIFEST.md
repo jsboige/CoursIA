@@ -4,6 +4,8 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 **Audit visuel juillet 2026** : chaque PNG a été rouvert via l'outil `Read` et son **contenu réel** documenté ci-dessous. Les figures ont été ré-intégrées dans le flux narratif du `README.md` (section Parcours / Phase N — pas dans une section Galerie isolée), avec une légende qui décrit exactement ce qui est visible et signale honnêtement ce qui ne l'est pas (« limitation illustrative assumée »).
 
+> **Audit vision po-2025 c.480 (2026-07-14, doctrine #5780)** : les 6 PNG ci-dessous ont été ré-ouvertes un par un via l'outil `Read` et confrontées à leur description existante (MANIFEST déjà en format détaillé standard pré-c.480, migrations antérieures). Verdict par figure dans le champ *Contenu réel vérifié*. Cohérence caption ↔ image = **6/6 exacte** — toutes les figures sont des **sorties matplotlib authentiques** (line-art, axes annotés, légendes explicites) qui correspondent **fidèlement** à leur description pédagogique (régression linéaire simple, série temporelle + décomposition STL + prévision SARIMA, clustering K-Means + méthode du coude). **0 correction d'alt-text nécessaire** ; le seul changement est la **migration de la mention «Audit visuel juillet 2026»** vers une mention datée **c.480 (2026-07-14, doctrine #5780)** + un audit-block en tête pour la traçabilité G.1 cross-cycles.
+
 ## ml-regression.png
 
 - **Source** : notebook `ML-1-Introduction-Python.ipynb` (cellule 17, output 0)
