@@ -32,15 +32,15 @@ Chaque notebook de l'arc rend visible un geste décisionnel distinct, dans une f
 
 **[2 — Décider, ce n'est pas maximiser l'espérance.](DecPyMC-2-Utility-Money.ipynb)** Devant trois actifs aux rendements incertains, l'espérance seule ne tranche pas : c'est toute la *distribution* postérieure des rendements qui décide. Un agent aversif au risque replie son choix sur la queue gauche ; un agent neutre regarde la moyenne. Les distributions superposées rendent visible pourquoi deux décideurs rationnels peuvent choisir différemment.
 
-<p align="center"><a href="DecPyMC-2-Utility-Money.ipynb"><img src="assets/readme/dt2-investment.png" width="540" alt="Choix d'investissement : distributions postérieures de rendement comparées entre trois actifs."></a></p>
+<p align="center"><a href="DecPyMC-2-Utility-Money.ipynb"><img src="assets/readme/dt2-investment.png" width="540" alt="Choix d'investissement sous aversion au risque : distributions postérieures de rendement (Obligations, Actions, Crypto) et utilité espérée en fonction du coefficient d'aversion CRRA."></a></p>
 
 **[3 — Le compromis multi-attributs sous incertitude.](DecPyMC-3-Multi-Attribute.ipynb)** Aucun critère unique ne résume une décision réelle : coût, qualité, délai, risque sont en compétition. Une simulation de Monte Carlo sur chaque critère, pondérée par des *swing weights*, expose les trade-offs et la zone de non-dominance — là où aucune option ne bat toutes les autres sur tous les axes.
 
-<p align="center"><a href="DecPyMC-3-Multi-Attribute.ipynb"><img src="assets/readme/dt3-multiattribute.png" width="540" alt="Décision multi-attributs sous incertitude : Monte Carlo sur plusieurs critères en compétition."></a></p>
+<p align="center"><a href="DecPyMC-3-Multi-Attribute.ipynb"><img src="assets/readme/dt3-multiattribute.png" width="540" alt="Décision multi-attributs sous incertitude : distributions d'utilité de deux projets (Projet A E[U]=0.509, Projet B E[U]=0.482) et nuage de points rendement-risque illustrant la zone de non-dominance stochastique."></a></p>
 
 **[5 — Combien vaut l'information parfaite ?](DecPyMC-5-Value-Information.ipynb)** L'EVPI (Expected Value of Perfect Information) mesure le gain espéré si l'on levait toute l'incertitude avant de décider. La carte de chaleur, selon la probabilité d'un gisement et le gain associé, révèle les régions où acheter l'information paie et celles où elle est sans valeur — le pont entre incertitude et valeur monétaire.
 
-<p align="center"><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-evpi-heatmap.png" width="540" alt="Valeur de l'information (EVPI) : carte de chaleur selon la probabilité de pétrole et le gain."></a></p>
+<p align="center"><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-evpi-heatmap.png" width="540" alt="Carte de chaleur EVPI selon la probabilité a priori de pétrole et le gain si pétrole trouvé, avec frontière de décision et scénario actuel (P=0.30, G=1000k) tombant en zone d'information peu précieuse."></a></p>
 
 **[5 — La convergence de l'estimateur Monte Carlo.](DecPyMC-5-Value-Information.ipynb)** L'EVPI n'a pas toujours de forme analytique fermée : on l'approche par Monte Carlo. La courbe de convergence montre l'estimateur se stabiliser vers la valeur analytique à mesure que croît le nombre d'échantillons — la preuve empirique que la simulation rejoint la théorie, et la quantité d'échantillons nécessaire pour s'y fier.
 
@@ -52,7 +52,9 @@ Chaque notebook de l'arc rend visible un geste décisionnel distinct, dans une f
 
 **[7 — Thompson Sampling : le bandit qui apprend.](DecPyMC-7-Sequential.ipynb)** Face à des bras aux récompenses inconnues, Thompson Sampling échantillonne une action selon la probabilité qu'elle soit optimale, puis met à jour son posterior après chaque essai. La courbe de regret, qui croît puis s'aplatit, est la signature d'un apprentissage bayésien réussi : on exploite de plus en plus les meilleurs bras tout en continuant d'explorer.
 
-<p align="center"><a href="DecPyMC-7-Sequential.ipynb"><img src="assets/readme/dt7-thompson.png" width="560" alt="Thompson Sampling bayésien : courbes de regret et convergence des bandits MCMC."></a></p>
+<p align="center"><a href="DecPyMC-7-Sequential.ipynb"><img src="assets/readme/dt7-thompson.png" width="560" alt="Thompson Sampling bayésien sur 4 bandits (vrais means 0.3/0.5/0.7/0.4) : regret cumulé comparé à Greedy, ε-greedy et UCB1, et posterior Beta final pour chaque bras après 2000 pas."></a></p>
+
+> **Note d'audit c.486 (2026-07-14, doctrine #5780).** Audit vision G.1 firsthand des 6 PNG `assets/readme/` sur cette lane `CoursIA-2` (vision MiniMax M3) : **3 figures ACCURATE sans correction** (`dt5-mc-convergence.png`, `dt6-expert-graph.png`, `dt7-thompson.png`), **2 corrections réelles alt-texts sur-vendeurs** (`dt2-investment.png` — l'alt-text v1 omettait le 4ᵉ panneau « EU vs aversion CRRA » qui est précisément le panneau décisionnel de la figure ; `dt3-multiattribute.png` — l'alt-text v1 mentionnait « Monte Carlo » sans rendre visible la zone de non-dominance stochastique ni l'écart E[U] 0.027 non significatif), **1 enrichissement alt-text** (`dt5-evpi-heatmap.png` — ajout de la frontière de décision bleue et du scenario actuel ★ (P=0.30, G=1000k)). Investigation `nbformat` Python confirme les attributions source (cells 31/38/29/54/40/49 des notebooks `DecPyMC-{2,3,5,5,6,7}-*.ipynb`). 0 PNG modifié, 0 notebook ré-exécuté (C.3 strict), 0 catalogue régénéré (catalog-pr-hygiene R1). Pattern transférable : pour les MANIFEST matplotlib `Probas/DecisionTheory/PyMC/` le panneau décisif est souvent un sous-graphe périphérique (panneau 4 sur 4, ou scatter latéral) qui complète le tableau principal et que l'alt-text générique omet.
 
 ## Progression Pédagogique
 
