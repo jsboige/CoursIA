@@ -24,8 +24,8 @@
   - Némethi's algorithm for computing HF of plumbed manifolds
 -/
 
-import Knots.Basic
-import Knots.Invariant
+import Knots.Basic_en
+import Knots.Invariant_en
 
 /-
   English mirror of `Lidman.lean` (FR canonical). Convention EPIC #4980
@@ -35,7 +35,7 @@ import Knots.Invariant
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-open Knots
+open Knots_en
 
 namespace Knots_en
 

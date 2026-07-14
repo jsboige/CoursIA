@@ -33,10 +33,10 @@
   remain byte-identical between the two files (anti-§D byte-identity invariant).
 -/
 
-import Knots.Basic
-import Knots.Invariant
+import Knots.Basic_en
+import Knots.Invariant_en
 
-open Knots
+open Knots_en
 
 namespace Knots_en
 
