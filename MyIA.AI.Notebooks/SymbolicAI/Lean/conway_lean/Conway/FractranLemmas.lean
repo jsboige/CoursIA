@@ -1,65 +1,72 @@
 /-
-Conway's FRACTRAN — companion lemmas
+FRACTRAN de Conway — lemmes compagnons
 John Horton Conway (1937-2020)
 
-These lemmas sit on top of `Conway.Fractran` (the FRACTRAN universal machine) and
-form a calibration ladder over its step/run semantics, parallel to the existing
-`Conway.DoomsdayLemmas` and `Conway.LookAndSayLemmas` companion files. Until now
-`Fractran.lean` was the only Conway module with definitions but no companion theorems.
+Ces lemmes se construisent par-dessus `Conway.Fractran` (la machine universelle FRACTRAN)
+et forment une échelle de calibration sur sa sémantique step/run, en parallèle des fichiers
+compagnons `Conway.DoomsdayLemmas` et `Conway.LookAndSayLemmas` déjà migrés vers sibling pair.
+Jusqu'ici `Fractran.lean` était le seul module Conway avec des définitions mais sans
+théorèmes compagnons.
 
   - `fractranStep_empty` / `fractranRun_zero`
-        : definitionally-true base cases (halt on empty program; 0-step run)   -> rfl
+        : cas de base définitionnellement vrais (halt sur programme vide ; exécution 0-pas) -> rfl
   - `fracMulNat_den_one`
-        : a fraction num/1 is a whole multiplier, hence always applicable      -> simp + omega
+        : une fraction num/1 est un multiplicateur entier, donc toujours applicable       -> simp + omega
   - `fracMulNat_six_halves` / `fracMulNat_seven_not_halves`
-        : closed applicability checks (6 divisible by 2; 7 not)                -> decide
+        : vérifications fermées d'applicabilité (6 divisible par 2 ; 7 non)               -> decide
   - `fractranStep_single_two_to_three` / `fractranStep_single_halts_at_three`
-        : the single-fraction program {3/2} sends 2 → 3, then halts at 3       -> decide
+        : le programme à une fraction {3/2} envoie 2 → 3, puis s'arrête à 3              -> decide
   - `fractranRun_single_trace`
-        : the bounded trace 2 → 3 (halt) of {3/2}                               -> decide
+        : la trace bornée 2 → 3 (arrêt) de {3/2}                                          -> decide
 
-All proofs discharged with no stubs. These facts are pure core Lean 4 (no Mathlib needed) — FRACTRAN's
-step/run are structural recursions over Nat/List, decidable on concrete inputs.
-See #2162 (Conway family).
+Toutes les preuves sont déchargées sans stubs. Ces faits sont en Lean 4 noyau pur (pas de
+Mathlib nécessaire) — les step/run FRACTRAN sont des récursions structurelles sur Nat/List,
+décidables sur entrées concrètes. Voir #2162 (famille Conway).
+
+Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
+avec son miroir anglais dans le fichier sibling `FractranLemmas_en.lean` (modèle sibling pair
+ratifié 2026-07-04, cf `code-style.md` §Lean i18n). Les énoncés de théorèmes, les tactiques
+Lean, les noms de lemmes et les références Mathlib restent en anglais (compat Mathlib 4) ;
+seules les docstrings de théorème et ce bloc d'en-tête diffèrent entre les deux fichiers.
 -/
 
 import Conway.Fractran
 
 namespace Conway
 
-/-- BASE (rfl): an empty FRACTRAN program halts immediately — no fraction applies. -/
+/-- BASE (rfl) : un programme FRACTRAN vide s'arrête immédiatement — aucune fraction ne s'applique. -/
 theorem fractranStep_empty (n : Nat) : fractranStep [] n = none := rfl
 
-/-- BASE (rfl): running any program for 0 steps yields just the starting value. -/
+/-- BASE (rfl) : exécuter un programme quelconque pour 0 pas donne juste la valeur de départ. -/
 theorem fractranRun_zero (prog : List Frac) (n : Nat) : fractranRun prog n 0 = [n] := rfl
 
-/-- STEP (simp+omega): a fraction num/1 is an integer multiplier, hence always
-    applicable (`n * num` is divisible by 1 trivially). -/
+/-- PAS (simp+omega) : une fraction num/1 est un multiplicateur entier, donc toujours
+    applicable (`n * num` est divisible par 1 trivialement). -/
 theorem fracMulNat_den_one (n : Nat) (f : Frac) (h : f.den = 1) :
     fracMulNat n f = true := by
   simp [fracMulNat, h, Nat.mod_one]
 
-/-- CALIBRATION (decide): 6 is divisible by 2, so the fraction {3/2} applies at 6. -/
+/-- CALIBRATION (decide) : 6 est divisible par 2, donc la fraction {3/2} s'applique à 6. -/
 theorem fracMulNat_six_halves : fracMulNat 6 (frac 3 2 (by omega)) = true := by
   decide
 
-/-- CALIBRATION (decide): 7 is NOT divisible by 2, so {3/2} does not apply at 7. -/
+/-- CALIBRATION (decide) : 7 n'est PAS divisible par 2, donc {3/2} ne s'applique pas à 7. -/
 theorem fracMulNat_seven_not_halves : fracMulNat 7 (frac 3 2 (by omega)) = false := by
   decide
 
-/-- STEP (decide): the single-fraction program {3/2} sends 2 → 3 (2 · 3 / 2 = 3). -/
+/-- PAS (decide) : le programme à une fraction {3/2} envoie 2 → 3 (2 · 3 / 2 = 3). -/
 theorem fractranStep_single_two_to_three :
     fractranStep [frac 3 2 (by omega)] 2 = some 3 := by
   decide
 
-/-- HALT (decide): the single-fraction program {3/2} halts at 3 (3 · 3 = 9 is not
-    divisible by 2, so no fraction applies). -/
+/-- ARRÊT (decide) : le programme à une fraction {3/2} s'arrête à 3 (3 · 3 = 9 n'est
+    pas divisible par 2, donc aucune fraction ne s'applique). -/
 theorem fractranStep_single_halts_at_three :
     fractranStep [frac 3 2 (by omega)] 3 = none := by
   decide
 
-/-- RUN (decide): running {3/2} from 2 for 5 steps yields the trace [2, 3]
-    (2 → 3, then halt at 3). -/
+/-- EXÉCUTION (decide) : exécuter {3/2} depuis 2 pendant 5 pas donne la trace [2, 3]
+    (2 → 3, puis arrêt à 3). -/
 theorem fractranRun_single_trace :
     fractranRun [frac 3 2 (by omega)] 2 5 = [2, 3] := by
   decide
