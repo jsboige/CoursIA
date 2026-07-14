@@ -15,6 +15,7 @@ Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lea
 - **Sorry** : **0** — chaque preuve est close
 - **Build** : `lake build Sensitivity` — SUCCESS
 - **Dépendances** : Mathlib4
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 4 modules `.lean` livrés en FR canonique + 4 siblings `*_en.lean` miroirs sur `main` (`Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
 
 ## Ce qui est formalisé
 
@@ -81,13 +82,13 @@ flowchart TD
 
 ## Modules
 
-| Fichier | Lignes | sorry | Contenu |
-|---------|-------:|------:|---------|
-| `Sensitivity.lean` | 1 | 0 | Ombrelle d'import racine |
-| `Sensitivity/Hypercube.lean` | 124 | 0 | Hypercube booléen `Q n`, sommets, adjacence |
-| `Sensitivity/VectorSpace.lean` | 132 | 0 | Espace vectoriel réel des fonctions booléennes, base `ℝ^{2^n}` |
-| `Sensitivity/Operator.lean` | 100 | 0 | Opérateurs de sensibilité et de sensibilité par blocs |
-| `Sensitivity/MainTheorem.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
+| Fichier | `_en` | Lignes | sorry | Contenu |
+|---------|-------|-------:|------:|---------|
+| `Sensitivity.lean` | — | 1 | 0 | Ombrelle d'import racine |
+| `Sensitivity/Hypercube.lean` | `Hypercube_en.lean` | 124 | 0 | Hypercube booléen `Q n`, sommets, adjacence |
+| `Sensitivity/VectorSpace.lean` | `VectorSpace_en.lean` | 132 | 0 | Espace vectoriel réel des fonctions booléennes, base `ℝ^{2^n}` |
+| `Sensitivity/Operator.lean` | `Operator_en.lean` | 100 | 0 | Opérateurs de sensibilité et de sensibilité par blocs |
+| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
 
 ## Résultats clés
 
