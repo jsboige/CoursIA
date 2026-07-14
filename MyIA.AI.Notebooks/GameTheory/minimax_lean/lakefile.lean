@@ -39,4 +39,4 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Minimax» where
-  globs := #[.submodules `Minimax]
+  globs := #[.submodules `Minimax, `Minimax_en]
