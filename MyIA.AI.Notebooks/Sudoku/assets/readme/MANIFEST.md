@@ -4,9 +4,10 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## sudoku1-backtracking.png
 
-- **Source** : notebook `Sudoku-1-Backtracking-Python.ipynb` (cellule 23, output 0)
-- **Alt-text (FR)** : Backtracking : visualisation d'une grille de Sudoku avec code couleur distinguant les valeurs initiales des valeurs trouvées par le solveur exhaustif.
-- **Poids** : 17.2 KB (natif)
+- **Source** : notebook `Sudoku-1-Backtracking-Python.ipynb` (cellule `7c13432e`, output 1 — `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)`)
+- **Alt-text (FR)** : Backtracking : grille 9×9 résolue par le solveur MRV, code couleur distinguant les valeurs initiales (noir) des valeurs trouvées (bleu).
+- **Poids** : 29.2 KB (natif)
+- **Audit juillet 2026 (PR c.431, EPIC #5780)** : régénéré depuis l'output 1 de la cellule `7c13432e` (la cellule produit 2 figures : output 0 = `plot_sudoku(initial_grid, "Puzzle Initial")` = grille non résolue, output 1 = `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)` = grille résolue avec overlay). L'asset précédent correspondait à l'output 0 alors que le README et le MANIFEST décrivaient l'output 1 — défaut d'alt-text (mismatch légende/image) corrigé en régénérant l'asset depuis l'output 1, qui correspond exactement à la légende.
 
 ## sudoku3-genetic.png
 
