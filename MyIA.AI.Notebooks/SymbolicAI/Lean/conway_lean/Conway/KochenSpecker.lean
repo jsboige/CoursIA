@@ -130,6 +130,16 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Fin.Basic
 import Mathlib.Tactic
 
+
+/-
+  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `KochenSpecker_en.lean` (modèle sibling
+  pair ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de
+  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent en
+  anglais (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
+  diffèrent entre les deux fichiers.
+-/
+
 namespace Conway
 
 namespace KochenSpecker
@@ -344,6 +354,7 @@ theorem kochen_specker : ¬ ∃ c : Coloring, IsValidColoring c := by
   omega
 
 end KochenSpecker
+
 
 /-!
 ## Connection to Free Will Theorem (Pilier 2)

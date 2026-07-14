@@ -39,22 +39,22 @@ Ce module pose les fondamentaux : génération via API cloud (DALL-E 3), génér
 **[01-4](01-4-Forge-SD-XL-Turbo.ipynb) — Génération locale via Forge.** Mêmes prompts, mais sur GPU auto-hébergé via Stable Diffusion XL Turbo : le mode 4-steps produit un rendu acceptable en ~18 s, et fixer la seed garantit la reproductibilité :
 
 <p align="center">
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen.webp" alt="Paysage de montagne serein au coucher de soleil, éclairage golden hour, photoréaliste, généré par SDXL Turbo via Forge" width="320"/></a>
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen2.webp" alt="Ville futuriste la nuit, lumières néon, style cyberpunk, générée en 4 steps SDXL Turbo" width="320"/></a><br>
-  <em>SDXL Turbo : paysage de montagne « golden hour » (gauche) et ville cyberpunk en mode 4-steps (droite) — premier exemple de génération locale via Forge.</em>
+  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen.webp" alt="Paysage de montagne serein au coucher de soleil (vallée herbeuse, chaînes de montagnes bleutées, éclairage golden hour), photoréaliste, généré par SDXL Turbo via Forge" width="320"/></a>
+  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen2.webp" alt="Ville futuriste industrielle (ruelle verticale entre tours, fenêtres éclairées, brume cyan/orange) générée en 4 steps SDXL Turbo cfg=2.0" width="320"/></a><br>
+  <em>SDXL Turbo : paysage de montagne « golden hour » (gauche) et ville futuriste industrielle en mode 4-steps cfg=2.0 (droite) — premier exemple de génération locale via Forge.</em>
 </p>
 
 <p align="center">
-  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen3.webp" alt="Forêt mystique aux champignons lumineux générée avec seed fixe 42 pour reproductibilité" width="340"/></a><br>
-  <em>SDXL Turbo : forêt mystique (seed fixe 42) — la seed garantit le même résultat à chaque exécution.</em>
+  <a href="01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/img1-forge-gen3.webp" alt="Forêt brumeuse aux troncs verticaux et mousses orangées, générée avec seed fixe 42 pour reproductibilité" width="340"/></a><br>
+  <em>SDXL Turbo : forêt brumeuse reproductible (seed fixe 42) — la seed garantit le même résultat à chaque exécution.</em>
 </p>
 
 **[01-5](01-5-Qwen-Image-Edit.ipynb) — Édition via ComfyUI.** Qwen Image Edit (workflow Phase 29 : VAE 16 canaux + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift=3.0 + CFGNorm 1.0) : le hello-world atteste que le service est joignable (~277 s, ~29 GB VRAM), puis le workflow image-to-image édite un visuel existant (~170 s) :
 
 <p align="center">
-  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit.png" alt="Génération hello-world de Qwen Image Edit (modèle Qwen 2.5-VL) via workflow ComfyUI" width="320"/></a>
-  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Workflow image-to-image Qwen (VAE 16 canaux + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift 3.0 + CFGNorm 1.0) sur image placeholder" width="320"/></a><br>
-  <em>Qwen Image Edit : hello-world (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~170 s).</em>
+  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit.png" alt="Chat tigré domestique sur appui de fenêtre en bois — première génération hello-world du workflow ComfyUI Qwen Image Edit 2509 (~277 s, ~29 GB VRAM)" width="320"/></a>
+  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Panneau avant/après Qwen Image Edit Phase 29 — limitation illustrée : deux blocs bleus plats identiques (sortie de cellule sans image source fournie au pipeline)" width="320"/></a><br>
+  <em>Qwen Image Edit : hello-world chat tigré (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~170 s) — limitation disclosed : le rendu de droite illustre un cas de pipeline sans image source (deux blocs bleus plats identiques, voir MANIFEST).</em>
 </p>
 
 ## Prérequis

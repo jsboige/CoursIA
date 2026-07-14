@@ -4,7 +4,7 @@
 series: GenAI-CaseStudies
 pedagogical_count: 4
 breakdown: CaseStudies=4
-maturity: PRODUCTION=3, BETA=1
+maturity: BETA=4
 -->
 
 [← GenAI](../README.md)

@@ -155,49 +155,7 @@ preuve hétérogènes.
 
 Suit : hommage MathOverflow + Mathlib i18n convention #4980 ratifiée
 2026-07-04 (option A pragmatique : deux blocs `/` top-level distincts,
-sans séparateur `---` interne).
--/
-
-/-
-Copyright (c) 2026 CoursIA. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-
-## Light-cone geometry coupled to Game-of-Life semantics (Conway GoL)
-
-Sorry-free bridge lemmas that connect the **pure Chebyshev lattice geometry**
-(defined in the sibling base module `Conway.Life.ConeGeometry`) to the
-Game-of-Life semantics — `evolve`, `isAlive`, `candidates`, `mooreNeighbors`,
-and the `manhattan` / `lightCone` machinery (defined in
-`Conway.Life.HashlifeCorrectness`). These are NOT new locality results (the
-fundamental locality theorem `step_light_cone` is proven in
-`HashlifeCorrectness`), but the elementary set/arithmetic relationships between
-cones of different radii, between Manhattan and per-coordinate bounds, and the
-tight Chebyshev reach wired into the B3/S23 `evolve` recursion.
-
-The central fact formalized here is the **Game-of-Life speed-of-light
-principle** (commented in `HashlifeCorrectness` P2 §, L497-504, but not
-previously stated as a theorem): over `t` generations information travels at
-Chebyshev radius `t` (one Moore-neighborhood step per generation), and the
-Chebyshev ball of radius `t` is contained in the Manhattan ball of radius
-`2*t` (the corner cell `(p.1 ± t, p.2 ± t)` is at Manhattan distance `2*t`).
-This containment is exactly why `step_light_cone` demands agreement on
-`lightCone p (2 * t)` — that radius is the *tight* GoL influence bound, not a
-loose over-approximation.
-
-**Module split (EPIC #3846 cycle-break, ai-01 design-gate msg-...338lw8,
-2026-07-11).** The pure Chebyshev facts that depend on no GoL semantics —
-`chebDist` and its metric lemmas, plus the tight `window_cheb_cone_in_domain`
-cone-in-domain bound — now live in `ConeGeometry` (Mathlib only). They were
-extracted out of this module so that `HashlifeCorrectness` can import
-`ConeGeometry` to reach `window_cheb_cone_in_domain` for the P5
-`p5_large_n_jump` wire WITHOUT the circular reverse-import (this module imports
-`HashlifeCorrectness`). This module keeps everything that couples to
-`evolve` / `lightCone` / `manhattan` / `mooreNeighbors` / `Grid`. The pure
-facts are re-exported here by the `import Conway.Life.ConeGeometry` below, so
-all existing call sites resolve unchanged.
-
-Epic #3846 (Hashlife correctness infrastructure). All `sorry`s eliminated at
-creation.
+sans séparateur `---` interne, EN miroir dans `LightCone_en.lean`).
 -/
 
 import Conway.Life.ConeGeometry

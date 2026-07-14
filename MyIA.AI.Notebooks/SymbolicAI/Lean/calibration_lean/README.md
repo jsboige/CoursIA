@@ -18,12 +18,15 @@ régression du prouveur.
 - **Compte de sorry** : 0 en production (les 4 cibles de calibration sont prouvées ; un ancien compte de « 4 sorry » correspondait à du texte de docstring à l'intérieur de blocs `/-- ... -/`, pas à des termes `sorry` réels)
 - **Build** : `lake build Calibration` -- SUCCESS
 - **Dépendances** : Mathlib4
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 3 modules `.lean` livrés en FR canonique + 3 siblings `*_en.lean` miroirs sur `main` (`Calibration/Doomsday_en.lean`, `Calibration/Nash_en.lean`, `Calibration/Nim_en.lean`, ajoutés par PR #5543 étape 2). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
 
 ## Modules
 
-| Fichier | sorry | Description |
-|---------|-------|-------------|
-| `Calibration/Nash.lean` | 0 | Cibles de calibration du prouveur (C/D/E/F) |
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Calibration/Doomsday.lean` | `Doomsday_en.lean` | 0 | Algorithme Doomsday (calcul du jour de la semaine, anchor calendar) |
+| `Calibration/Nash.lean` | `Nash_en.lean` | 0 | Cibles de calibration du prouveur sur le Dilemme du Prisonnier 2×2 (C/D/E/F) |
+| `Calibration/Nim.lean` | `Nim_en.lean` | 0 | Théorie du jeu de Nim (stratégie gagnante Nim-somme) |
 
 ## Cibles de calibration
 

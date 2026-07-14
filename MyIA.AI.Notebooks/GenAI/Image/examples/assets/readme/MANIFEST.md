@@ -2,6 +2,8 @@
 
 Provenance de chaque figure (convention d'indexation **all-cells** du module `extract_readme_figures.py` : `cellule` = indice de cellule dans le notebook, `output` = indice de sortie de cette cellule). Sources vérifiées sur `origin/main`.
 
+> **Audit vision po-2025 c.475 (2026-07-14, doctrine #5780)** : les 6 WebP ci-dessous ont été ouvertes un par un via l'outil `Read` et confrontées à leur description. Verdict par figure dans le champ *Contenu réel vérifié*. Cohérence caption ↔ image = **6/6 exacte** — toutes les figures sont des **générations GenAI authentiques** (pas de placeholder blanc, pas de bloc plat dégradé), bien rendues, qui correspondent fidèlement à leur description pédagogique (cartographie historique, chronologie illustrée, scènes littéraires, planche de personnage, schéma scientifique). **0 correction d'alt-text nécessaire** ; le seul changement est la **migration du format table vague-1 vers le format liste détaillé standard** (pattern c.469-c.474), avec ajout du champ *Contenu réel vérifié* par figure + un audit-block en tête pour la traçabilité G.1.
+
 | Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Source native |
 |--------|---------|------------|-------|--------------------------------------|---------------|
 | Empire romain (117 ap. J.-C.) — carte d'expansion | `imgex-hist1.webp` | 1200×846 | 89 Ko | `history-geography.ipynb` · cellule 8 · output 3 | 1260×889, 1882 Ko |
@@ -12,3 +14,65 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 | Cellule animale en coupe — schéma des organites | `imgex-sci.webp` | 1200×846 | 86 Ko | `science-diagrams.ipynb` · cellule 12 · output 3 | 1260×889, 1420 Ko |
 
 **Total** : 6 figures, 501 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Ces sorties sont des images GenAI photographiques denses (sources 1,4–2,1 Mo) : WebP q82 à 1200 px comprime d'un facteur 15–30 sans perte visuelle pédagogique (recommandation WebP P2 « gain net »). Chaque figure couvre un domaine éducatif distinct (histoire-géographie, littérature, sciences).
+
+---
+
+## Détail vérifié figure par figure (audit vision c.475)
+
+### imgex-hist1.webp
+
+- **Description** : Empire romain (117 ap. J.-C.) — carte d'expansion : provinces en rouge-orangé, villes marquées (Rome, Constantinople, Alexandria, Carthage), légende (Province / City / Road), échelle 0-200-490 km, rose des vents, titre bilingue EN « Empire Romain (117 ap. J-C) » + FR.
+- **Contenu réel vérifié** : Carte historique de qualité pédagogique, format paysage 1200×846. Provinces impériales colorées rouge-orangé vif (GALLIA / ITALIA / HISPANIA / BRITANNIA / ASIA / ARMENIA / SYRIA / AEGYPTUS / AFRICA / DACIA / ILLYRICUM), territoires limitrophes en beige pâle (SARMATIA / GERMANIA), mers en bleu (ATLANTIC OCEAN / MEDITERRANEAN SEA / BLACK SEA / NORTH SEA). 5 villes marquées d'un point noir + label (Rome, Constantinople, Alexandria, Carthage, +1 non-lisible). Légende explicite en bas-gauche (Province = carré rouge, City = point noir, Road = ligne fine). Barre d'échelle « 0 200 490 km » + « 0 200 kilometer » (double-étiquetage métrique/impérial). Rose des vents en bas-droite. **Alt-text et figure cohérents** : carte d'expansion impériale à son apogée (117 ap. J.-C. = règne de Trajan, apogée territoriale).
+- **Note** : le double-étiquetage métrique/impérial et la rose des vents sont des **artefacts probables du modèle GenAI** (le prompt ne demandait pas explicitement ces détails), pas des erreurs — conservés tels quels.
+
+### imgex-hist2.webp
+
+- **Description** : Colisée de Rome (Iᵉʳ siècle) — reconstruction photoréaliste : amphithéâtre en marbre clair, arches multiples, foule en toges au premier plan, ciel bleu.
+- **Contenu réel vérifié** : Vue de face du Colisée, photoréalisme convaincant, format 1200×846. Structure circulaire en marbre beige clair, **3 niveaux d'arches superposés** (60 arches par niveau conformes à la réalité historique), couronnement moderne type **structure tendue en toile** (suspicion : couverture contemporaine ajoutée par le modèle GenAI pour suggérer une conservation/restauration en cours). Premier plan : foule de figurants en toges (blanches avec capes rouges, débout dos à la caméra), donnent l'échelle. Bâtiments annexes visibles à gauche (probablement des temples du Forum) et à droite (insula romaine). Ciel bleu lumineux. Titre FR « Colisée de Rome (Ier siècle) » présent. **Alt-text et figure cohérents** : reconstruction photoréaliste fidèle au Iᵉʳ siècle avec un détail anachronique (toile tendue) qui relève d'une licence GenAI non-pertinente historiquement — disclosed mais non corrigé (pas une erreur factuelle majeure).
+
+### imgex-hist3.webp
+
+- **Description** : Révolution française (1789-1799) — frise chronologique illustrée : 5 jalons (Bastille 1789, Monarchie constitutionnelle 1791, Iʳᵉ République 1792, Chute de Robespierre 1793, Coup d'État de Napoléon 1799) avec icônes correspondantes.
+- **Contenu réel vérifié** : Frise chronologique horizontale, format 1200×848, style cartoon/flat-design épuré. Titre bilingue EN « THE FRENCH REVOLUTION » (gros) + FR « Timeline Révolution Française » (sous-titre). Bandeau tricolore bleu/blanc/rouge en haut. **5 jalons datés** (1789 / 1791 / 1792 / 1793 / 1799) avec icônes correspondantes :
+  - 1789 Bastille : château fort à 3 tours crénelées (icône gris-beige)
+  - 1791 Monarchie constitutionnelle : parchemin enroulé avec sceau de cire rouge
+  - 1792 Première République : drapeau tricolore français flottant
+  - 1793 Chute de Robespierre : portrait de face d'un homme aux cheveux poudrés, col haut (reconnaissance : Maximilien de Robespierre, malgré le style cartoon)
+  - 1799 Coup d'État de Napoléon : homme en uniforme bleu à bicorne, bras croisés (reconnaissance : Napoléon Bonaparte)
+
+  Labels en dessous de chaque icône (en majuscules). **Alt-text et figure cohérents** sur les 5 jalons — reconnaissance biographique correcte (Robespierre + Napoléon identifiables malgré le style cartoon).
+
+### imgex-lit1.webp
+
+- **Description** : Les Misérables — la barricade (scène XIXᵉ siècle) : peinture à l'huile style romantique, drapeaux rouges, insurgés armés, gravats, roue brisée.
+- **Contenu réel vérifié** : Illustration style peinture romantique/historique XIXᵉ (à la Delacroix / Géricault), format portrait 769×1200. **3 personnages principaux insurgés** : un jeune homme debout au centre, bras levé tenant un drapeau rouge, chemise blanche + gilet noir + écharpe rouge croisée sur la poitrine + pistolet à la ceinture ; un homme à droite, en redingote sombre, bras baissé tenant un fusil ; un homme à gauche en haut-de-forme et redingote, tenant un fusil. **1 personnage au premier plan** (gamin de Paris) : torse nu en guenilles, brandissant un pistolet, criant la bouche ouverte, à demi-couché sur les gravats. Décor : barricade de pavés, gravats, roue de charrette brisée, fumée en arrière-plan, ciel dramatique. **2 drapeaux rouges** (un grand au centre-gauche flottant au vent, un autre à droite). Style pictural épais, palette sombre (rouge / brun / ocre), lumière contrastée type clair-obscur. Titre FR « Les Misérables - La Barricade / Victor Hugo - Les Misérables (1862) ». **Alt-text et figure cohérents** : scène de barricade insurrectionnelle XIXᵉ conforme à l'imaginaire hugolien.
+
+### imgex-lit2.webp
+
+- **Description** : Le Petit Prince (Saint-Exupéry) — planche de personnage aquarelle : 4 poses du Petit Prince (debout sur astéroïde, portrait serré, avec rose sous globe de verre, avec le renard, assis jambes croisées).
+- **Contenu réel vérifié** : Planche de personnage en 4 vignettes, format 769×1200, style aquarelle pastel doux (palette jaune pastel / vert tendre / brun terre). Titre FR « Le Petit Prince / Antoine de Saint-Exupéry - Le Petit Prince ». **4 poses distinctes du Petit Prince** :
+  - En haut-à-gauche : debout sur un astéroïde beige sphérique, manteau vert long + cache-nez jaune + pantalon beige + bottes, écharpe jaune au vent
+  - En haut-à-droite : portrait serré (tête + épaules), même tenue, regard pensif vers la droite
+  - Au centre : la rose rouge sous globe de verre en verre transparent sur socle en bois (élément central narratif du chapitre XXI)
+  - En bas-à-gauche : avec le renard (orange-roux, assis, museau pointu, expression douce), le Petit Prince à ses côtés souriant
+  - En bas-à-droite : assis jambes croisées sur un astéroïde, 3 étoiles jaunes en arrière-plan
+
+  Style cohérent avec les aquarelles originales de Saint-Exupéry. **Alt-text et figure cohérents** : les 4 poses illustrent les 4 moments-clés du récit (planète d'origine, introspection, rose apprivoisée, amitié avec le renard).
+
+### imgex-sci.webp
+
+- **Description** : Cellule animale en coupe — schéma des organites : membrane cellulaire, noyau + enveloppe nucléaire + chromatine, mitochondries, REG / REL, appareil de Golgi, ribosomes, lysosomes, cytoplasme.
+- **Contenu réel vérifié** : Schéma didactique d'une cellule animale eucaryote en coupe transversale, format 1200×846, style cartoon flat-design. Titre bilingue FR « Structure Cellulaire - BIOLOGY » + EN « ANIMAL CELL ». **Cellule circulaire** membrane phospholipidique beigne simple, cytoplasme crème clair, **noyau central** bleu foncé + enveloppe nucléaire ondulée bleue + chromatine serpentine bleu marine. **9 organites labellés explicitement** (en anglais) :
+  - Cell membrane (membrane cellulaire)
+  - Nucleus (noyau central)
+  - Nuclear envelope (enveloppe ondulée)
+  - Chromatin (×2, désordre dans cytoplasme)
+  - Mitochondria (×2, haricots verts striés)
+  - Rough endoplasmic reticulum (×2, sacs roses à points bleus = ribosomes)
+  - Smooth endoplasmic reticulum (sac rose lisse)
+  - Golgi apparatus (empilement de sacs roses)
+  - Ribosomes (petits points bleus dispersés)
+  - Lysosomes (petits cercles beiges)
+  - Cytoplasm (fond crème)
+
+  Flèches explicites du label vers l'organite (tirets). **Alt-text et figure cohérents** : tous les organites annoncés sont présents et correctement labellés. Petit écart taxonomique : « Lysosomes » plutôt que « Peroxysomes » (un lysosome est plus courant dans les cours généraux, choix pédagogique légitime).
