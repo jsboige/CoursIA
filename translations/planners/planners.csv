@@ -13698,9 +13698,9 @@ Ce notebook a explore la **planification temporelle** en etendant le modele clas
 La planification temporelle repond a une limitation fondamentale de la planification classique : l'hypothese d'actions instantanees et sequentielles. En autorisant le parallelisme, elle exploite pleinement les ressources disponibles et reduit le makespan, comme l'a illustre le gain de 1.83x sur l'exemple d'ordonnancement (11 unites sequentiel vs 6 en parallele). La detection et la resolution des conflits temporels (ressource, precondition, effet) sont au coeur de la complexite algorithmique, et les mutex temporels jouent un role analogue aux mutex classiques dans la planification parallele. La gestion des invariants `over all` est particulierement critique : un invariant viole pendant l'execution d'une action rend le plan invalide.
 
 Le notebook suivant, [Planners-9-HTN](Planners-9-HTN.ipynb), aborde la **planification hierarchique** (Hierarchical Task Networks), un paradigme complementaire qui structure le probleme en taches decomposables recursivement, offrant une alternative a la recherche dans l'espace d'etats.",,,,,,,,f24ef011f2d33bfe,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb,714647de-9b71-463b-a1c2-adfec91b4814,markdown,fr,ec60b24e95d54c1f,"# Planners-9-HTN (C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb,714647de-9b71-463b-a1c2-adfec91b4814,markdown,fr,29d03325a73886b3,"# Planners-9-HTN (C#)
 
-**Navigation** : [<< 8-Temporal](Planners-8-Temporal.ipynb) | [Index](../README.md) | [10-LLM-Planning >>](Planners-10-LLM-Planning.ipynb)
+**Navigation** : [<< 8-Temporal](Planners-8-Temporal.ipynb) | [Index](../README.md) | [10-LLM-Planning >>](../04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb)
 
 **Twin C# (.NET Interactive)** de [Planners-9-HTN.ipynb](Planners-9-HTN.ipynb) — marathon **#4956** (parite .NET <-> Python).
 
@@ -13716,7 +13716,7 @@ La **planification hierarchique** (HTN, Hierarchical Task Network) est un change
 6. **Exercices**
 
 > **Parite #4956** : la version Python deroule un solveur HTN from-scratch (§4) ET le compare au planificateur SOTA `unified_planning` (§5.2). Ce twin C# (BCL .NET 9, **0 NuGet**) traduit le solveur from-scratch (le coeur pedagogique) ; la comparaison SOTA `unified_planning` (Python-only, pas d'equivalent C# du meme niveau) devient une note documentee honnete (RECOVERABLE-MACHINE — l'outil SOTA n'est pas rebranchable en C# pedagogique, mais le from-scratch solver EST la substance).
-",,,,,,,,ec60b24e95d54c1f,,,,,,,
+",,,,,,,,29d03325a73886b3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb,a921b736-546d-4121-8652-01facd716b15,markdown,fr,e18004dcefa5f7f4,"## 1. Etat et predicats
 
 Un **etat** est un ensemble de predicats groundes (faits vrais au moment courant). Un predicat est un symbole + des arguments : `at(truck1, paris)`, `in(package1, truck1)`. Les operateurs et methodes manipulent l'etat via leurs **preconditions** (predicats requis) et **effets** (predicats ajoutes / retires).",,,,,,,,e18004dcefa5f7f4,,,,,,,
@@ -14019,7 +14019,7 @@ static List<string>? PlanOmelette()
 
 ""Exercice a completer"".Display();
 ",,,,,,,,89b3aee096727deb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb,ebc0c47b-3bfd-4519-b8fc-18c4566bb021,markdown,fr,45099ad2cc5c6d4e,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb,ebc0c47b-3bfd-4519-b8fc-18c4566bb021,markdown,fr,cea7c6fbafbb761b,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -14035,11 +14035,11 @@ La version Python ([Planners-9-HTN.ipynb](Planners-9-HTN.ipynb)) deroule un solv
 
 ### Parite #4956
 
-Twin de parite legitime : les deux langages deroulent le solveur HTN from-scratch. L'interet est la traduction du coeur recursif (decomposition + backtracking) et la confirmation sur les domaines canoniques (Logistics, Cafe). Le notebook [Planners-3-State-Space](Planners-3-State-Space.ipynb) couvre la planification state-space classique (point de contraste : HTN decompose, state-space cherche).
+Twin de parite legitime : les deux langages deroulent le solveur HTN from-scratch. L'interet est la traduction du coeur recursif (decomposition + backtracking) et la confirmation sur les domaines canoniques (Logistics, Cafe). Le notebook [Planners-3-State-Space](../01-Foundation/Planners-3-State-Space.ipynb) couvre la planification state-space classique (point de contraste : HTN decompose, state-space cherche).
 
 ---
 *Marathon #4956 (parite .NET <-> Python).*
-",,,,,,,,45099ad2cc5c6d4e,,,,,,,
+",,,,,,,,cea7c6fbafbb761b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb,cell-0,markdown,fr,0c1810f878f0e67e,"# Planners-9-HTN - Planification Hierarchique
 
 **Navigation** : [Index](../../README.md) | [<< Temporal](Planners-8-Temporal.ipynb) | [LLM-Planning >>](../04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb)
