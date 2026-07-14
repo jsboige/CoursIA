@@ -1,6 +1,6 @@
 # Série Z3-Python - Résolution de contraintes SMT en Python
 
-[← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3/README.md)
+[← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3-Linq2Z3/README.md)
 
 ## Série en quelques mots
 
@@ -16,7 +16,7 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 
 ### Python (z3-py) vs C# (Z3.Linq)
 
-Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le binding **Z3.Linq** qui traduit des expressions LINQ en formules SMT. La série Python présentée ici va plus loin : z3-py n'impose **aucune couche déclarative restrictive**, ce qui donne accès à l'API complète (tactiques, `Optimize`, théories de bas niveau).
+Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md), basée sur le binding **Z3.Linq** qui traduit des expressions LINQ en formules SMT. La série Python présentée ici va plus loin : z3-py n'impose **aucune couche déclarative restrictive**, ce qui donne accès à l'API complète (tactiques, `Optimize`, théories de bas niveau).
 
 | Aspect | Z3.Linq (C#) | z3-py (Python, cette série) |
 |--------|--------------|------------------------------|
@@ -171,7 +171,7 @@ Le pattern « décrire les contraintes, laisser le solveur résoudre » s'appliq
 - [Z3 Guide (officiel)](https://microsoft.github.io/z3guide/) — documentation et tutoriels
 - [Z3 Python API](https://z3prover.github.io/api/html/namespacez3py.html) — référence de l'API z3-py
 - [PyPI : z3-solver](https://pypi.org/project/z3-solver/) — package pip
-- [Série Z3 C# (Z3.Linq)](../Z3/README.md) — série sœur en .NET 9
+- [Série Z3 C# (Z3.Linq)](../Z3-Linq2Z3/README.md) — série sœur en .NET 9
 - [Série Sudoku](../../../Sudoku/README.md) — compare Z3 à 10 autres approches algorithmiques
 
 ## Références académiques
@@ -225,7 +225,7 @@ Le diagramme ci-dessus situe les deux postures du solveur — **décider** (`Sol
 
 ### Prochaines étapes
 
-- **Série sœur Z3 C# (Z3.Linq)** : [Z3](../Z3/README.md) propose la même idée — décrire des contraintes, laisser le solveur résoudre — mais via le binding LINQ en .NET 9. C'est le miroir de cette série pour les développeurs C# : plus restrictif (pas de tactiques ni de `BitVec` exposés directement) mais plus idiomatique en C#. Comparer les deux fait saisir le compromis entre abstraction déclarative et contrôle de bas niveau.
+- **Série sœur Z3 C# (Z3.Linq)** : [Z3-Linq2Z3](../Z3-Linq2Z3/README.md) propose la même idée — décrire des contraintes, laisser le solveur résoudre — mais via le binding LINQ en .NET 9. C'est le miroir de cette série pour les développeurs C# : plus restrictif (pas de tactiques ni de `BitVec` exposés directement) mais plus idiomatique en C#. Comparer les deux fait saisir le compromis entre abstraction déclarative et contrôle de bas niveau.
 - **Comparaison multi-paradigmes** : la [série Sudoku](../../../Sudoku/README.md) compare Z3 à **10 autres approches algorithmiques** (backtracking, DLX, CP-SAT, métaheuristiques, inférence probabiliste, réseaux de neurones) sur un même problème NP-complet — le terrain idéal pour situer Z3 dans le spectre des solveurs.
 - **Regex symbolique à l'échelle** : la théorie des chaînes du notebook 04 (`Re`/`InRe`, génération de témoin) trouve son aboutissement dans [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) (Epic **#2978**), qui met en scène la distinction reconnaissance (RE#, temps linéaire) vs résolution (Z3, production de témoin) sur une grille de Sudoku.
 - **Programmation par contraintes industrielle** : la série [Search](../../../Search/README.md) (Part 2-CSP, OR-Tools CP-SAT) généralise la modélisation par contraintes à une famille plus large de problèmes d'optimisation, avec un solveur (CP-SAT) dont le compromis performance/expressivité diffère de Z3.
