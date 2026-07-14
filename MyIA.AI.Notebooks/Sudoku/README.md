@@ -295,9 +295,9 @@ Le solveur exhaustif remplit la grille case par case en revenant sur ses pas à 
 - Ils ne garantissent pas la solution mais sont souvent très efficaces
 - Le paramétrage (taux de mutation, température, etc.) est crucial et délicat
 
-L'algorithme génétique fait évoluer une population de grilles par croisement et mutation, mesurant la qualité par le **nombre d'erreurs** (conflits de ligne/colonne/bloc). La courbe ci-dessous trace cette fitness au fil des générations — elle descend vers zéro quand la population converge vers une grille valide.
+L'algorithme génétique fait évoluer une population de grilles par croisement et mutation, mesurant la qualité par le **nombre d'erreurs** (conflits de ligne/colonne/bloc). Les deux courbes ci-dessous comparent cette fitness au fil des générations pour deux représentations du génome : **Cellules** (chaque gène encode une case) et **Permutations** (les gènes sont des permutations valides par bloc). La courbe Cellules stagne vers 19 erreurs après 300 générations ; la courbe Permutations converge vers zéro en une trentaine de générations — l'encodage par permutations garantit une structure légale qui accélère dramatiquement la recherche.
 
-[![Algorithme génétique : nombre d'erreurs par grille en fonction du numéro de génération, décroissant vers zéro](assets/readme/sudoku3-genetic.png)](Sudoku-3-Genetic-Python.ipynb)
+[![Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (rouge, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (bleu, ~30 générations, convergence vers 0 erreurs)](assets/readme/sudoku3-genetic.png)](Sudoku-3-Genetic-Python.ipynb)
 
 **Pièges courants** :
 - Attendre une garantie de solution

@@ -12,7 +12,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## sudoku3-genetic.png
 
 - **Source** : notebook `Sudoku-3-Genetic-Python.ipynb` (cellule 16, output 3)
-- **Alt-text (FR)** : Algorithme génétique : courbe de convergence du meilleur fitness au fil des générations.
+- **Alt-text (FR)** : Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (300 générations, plateau à 19 erreurs) et l'approche "Permutations" (~30 générations, convergence vers 0 erreurs).
 - **Poids** : 25.5 KB (natif)
 
 ## sudoku11-choco.png
