@@ -27,11 +27,14 @@ package «conway_cgt» where
     ⟨`autoImplicit, false⟩
   ]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
-
+-- Order matters per Lake's diagnostic: mathlib last so its transitive
+-- versions take precedence over CombinatorialGames' pins on Batteries / Aesop /
+-- Plausible (fixes #6419: mathlib: failed to fetch cache).
 require CombinatorialGames from git
   "https://github.com/vihdzp/combinatorial-games.git"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git"
 
 @[default_target]
 lean_lib «CGTTour» where
