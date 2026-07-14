@@ -53,7 +53,7 @@ import Mathlib.CategoryTheory.Sites.MayerVietorisSquare
 
 universe w v v' u u'
 
-namespace Grothendieck_en.MayerVietorisSquare_en
+namespace Grothendieck_en.MayerVietorisSquare
 
 open CategoryTheory Category Opposite Limits
 
@@ -201,4 +201,4 @@ noncomputable def glue_sections
     P.obj (op S.X₄) :=
   CategoryTheory.GrothendieckTopology.MayerVietorisSquare.SheafCondition.glue h u v huv
 
-end Grothendieck_en.MayerVietorisSquare_en
+end Grothendieck_en.MayerVietorisSquare

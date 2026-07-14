@@ -46,7 +46,7 @@ import Mathlib.CategoryTheory.Sites.Point.Conservative
 
 universe v v' u u' w
 
-namespace Grothendieck_en.Conservative_en
+namespace Grothendieck_en.Conservative
 
 open CategoryTheory Category Opposite Limits
 
@@ -232,4 +232,4 @@ noncomputable def skyscraper_adjunction_bridge {A : Type u'} [Category.{v'} A]
     Φ.sheafFiber (A := A) ⊣ Φ.skyscraperSheafFunctor :=
   Φ.skyscraperSheafAdjunction
 
-end Grothendieck_en.Conservative_en
+end Grothendieck_en.Conservative

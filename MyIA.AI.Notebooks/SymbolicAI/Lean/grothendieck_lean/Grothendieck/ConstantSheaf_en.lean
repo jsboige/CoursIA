@@ -38,7 +38,7 @@ import Mathlib.CategoryTheory.Sites.ConstantSheaf
 
 universe v v' u u'
 
-namespace Grothendieck_en.ConstantSheaf_en
+namespace Grothendieck_en.ConstantSheaf
 
 open CategoryTheory Category Opposite Limits Functor Sheaf Adjunction
 
@@ -191,4 +191,4 @@ theorem isConstant_congr_bridge [HasWeakSheafify J D]
     Sheaf.IsConstant J G := by
   exact CategoryTheory.Sheaf.isConstant_congr J i
 
-end Grothendieck_en.ConstantSheaf_en
+end Grothendieck_en.ConstantSheaf
