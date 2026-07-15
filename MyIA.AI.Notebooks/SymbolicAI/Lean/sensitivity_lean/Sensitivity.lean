@@ -10,12 +10,8 @@ Théorème de sensibilité de Huang : dans l'hypercube de dimension n ≥ 1, si 
 colorie plus de la moitié des sommets, alors au moins un sommet possède au moins
 √n voisins coloriés.
 
----
-English:
-Port of mathlib4/Archive/Sensitivity.lean to standalone Lake workspace.
-Huang's sensitivity theorem: in the hypercube of dimension n >= 1, if one
-colors more than half the vertices then at least one vertex has at least
-sqrt(n) colored neighbors.
+Convention i18n #4980 (sibling pair) : cette racine est FR-seule canonique,
+le jumeau anglais agrégateur est `Sensitivity_en.lean`.
 -/
 import Sensitivity.Hypercube
 import Sensitivity.VectorSpace
