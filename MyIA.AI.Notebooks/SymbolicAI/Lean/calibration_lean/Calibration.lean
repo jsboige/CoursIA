@@ -8,16 +8,8 @@
 
   Difficulté cible : 3-10 itérations du prouveur (zone de Goldilocks).
 
-  ---
-  English:
-  Calibration targets for the multi-agent Lean prover (Epic #1452).
-
-  Each theorem exercises a specific harness path:
-  - P1: no-progress detection (stuck agents)
-  - P2: distant-error diagnosis
-  - P3: phantom-identifier blocklist (searches for nonexistent Mathlib lemmas)
-
-  Target difficulty: 3-10 prover iterations (Goldilocks zone).
+  Convention i18n #4980 (sibling pair) : cette racine est FR-seule canonique,
+  le jumeau anglais agrégateur est `Calibration_en.lean`.
 -/
 import Calibration.Nash
 import Calibration.Nim
