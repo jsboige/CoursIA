@@ -10172,7 +10172,7 @@ Ce notebook explore les **approches hybrides modernes** en resolution de problem
 - Package NuGet `Google.OrTools` (9.15.x tel que deploye par po-2024)
 - **Verdict SOTA-OK EPIC #3801** : OR-Tools est un solveur SOTA (Google, CP-SAT = CDCL + CP), l'API .NET est officielle Google, l'execution est en-kernel via le bridge NuGet natif .NET -- PAS de workaround degrade (pas de stub, pas de reimplementation jouet, pas d'ASCII maquille, pas de sortie fabriquee).
 ",,,,,,,,b2e88752b035652b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb,4c10d946,code,fr,575e99eaef5032fb,"// Configuration du repertoire de travail (cherche Part2-CSP par recherche montante)
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb,4c10d946,code,fr,0928681338724b3f,"// Configuration du repertoire de travail (cherche Part2-CSP par recherche montante)
 using System;
 using System.IO;
 
@@ -10191,8 +10191,8 @@ string FindCspDir()
 }
 var cspDir = FindCspDir();
 Directory.SetCurrentDirectory(cspDir);
-Console.WriteLine($""cwd = {cspDir}"");
-",,,,,,,,575e99eaef5032fb,,,,,,,
+Console.WriteLine($""cwd = {Path.GetFileName(cspDir)}"");  // #3436 basename
+",,,,,,,,0928681338724b3f,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb,db9b79a7,markdown,fr,403e7d46638285c1,"## Configuration OR-Tools CP-SAT (solveur natif .NET)
 
 ### Approche : NuGet natif (pas de bridge IKVM)
@@ -15967,7 +15967,7 @@ L'algebre d'Allen offre un **cadre qualitatif** pour raisonner sur les relations
 
 **Suite** : [CSP-9 - Contraintes distribuees](CSP-9-Distributed.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,0f2e751ec12756af,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,51c388f5,markdown,fr,0a213a7674df1c5d,"# CSP-9-Distributed : CSP Distribués (DisCSP)**Navigation** : [<< CSP-8-Temporal](CSP-8-Temporal.ipynb) | [Index](../README.md) | [App-1-NQueens >>](../Applications/CSP/App-1-NQueens.ipynb)> **Durée estimée** : 2h00## Objectifs d'apprentissageÀ la fin de ce notebook, vous saurez :1. **Comprendre** les défis de la résolution distribuée de CSP2. **Implémenter** l'algorithme Asynchronous Backtracking (ABT)3. **Découvrir** Asynchronous Weak-Commitment (AWC) et ses améliorations4. **Appliquer** les techniques de privacy-preserving CSP5. **Résoudre** des problèmes de coordination multi-agents## Prérequis- [CSP-1-Fundamentals-Csharp.ipynb](CSP-1-Fundamentals-Csharp.ipynb) — notions CSP (variables, domaines, contraintes)- [CSP-2-Consistency-Csharp.ipynb](CSP-2-Consistency-Csharp.ipynb) — propagation de contraintes## Lien avec EPIC #4956Ce notebook est le **binôme .NET** du [CSP-9-Distributed.ipynb](CSP-9-Distributed.ipynb) (Python). L'algorithme distribué Yokoo 1992 est implémenté **from scratch en C#** (pas de solver externe : l'ABT n'a pas de ""moteur SOTA centralisé"", c'est l'**algorithme** qui est le sujet).",,,,,,,,0a213a7674df1c5d,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,93379df9,code,fr,5e4ad63b47e78389,"
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,93379df9,code,fr,1f9bdf4a19734f2d,"
 // === Verification de l'environnement .NET Interactive ===
 using System;
 using System.Collections.Generic;
@@ -15975,9 +15975,9 @@ using System.Linq;
 using System.IO;
 
 Console.WriteLine("".NET Version : "" + Environment.Version);
-Console.WriteLine(""Repertoire courant : "" + Directory.GetCurrentDirectory());
+Console.WriteLine(""Repertoire courant : "" + Path.GetFileName(Directory.GetCurrentDirectory()));  // #3436 basename
 Console.WriteLine(""Environnement DisCSP pret (System.* imports)"");
-",,,,,,,,5e4ad63b47e78389,,,,,,,
+",,,,,,,,1f9bdf4a19734f2d,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c2017647,markdown,fr,c23ebf4fdcbdf589,"## 1. Formalisation du DisCSP### DéfinitionUn **DisCSP** (Distributed Constraint Satisfaction Problem) est défini par :- **Agents** : $A = \{a_1, a_2, ..., a_n\}$- **Variables** : Chaque agent $a_i$ contrôle un sous-ensemble $X_i \subset X$- **Domaines** : Chaque variable $x_j$ a un domaine $D_j$- **Contraintes** : $C = C_{interne} \cup C_{externe}$  - $C_{interne}$ : contraintes entre variables d'un même agent  - $C_{externe}$ : contraintes entre variables d'agents différents### Hypothèses classiques1. **Un agent = une variable** (simplification courante)2. **Communication asynchrone** par envoi de messages3. **Pas de mémoire partagée** entre agents4. **Échec détecté localement** par chaque agent### Pourquoi distribuer ?- **Scalabilité** : pas de solveur centralisé- **Confidentialité** : chaque agent garde ses contraintes locales- **Robustesse** : pas de point unique de défaillance- **Réalisme** : correspond à de nombreux scénarios multi-agents",,,,,,,,c23ebf4fdcbdf589,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c7e87141,code,fr,740f213f01e635b6,"
 // === Classes Message et Nogood ===
