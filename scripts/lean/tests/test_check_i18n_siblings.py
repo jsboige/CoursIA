@@ -26,6 +26,10 @@ CONWAY_DIR = (
     REPO_ROOT
     / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "conway_lean" / "Conway"
 )
+CONEKERNEL_EN = (
+    REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "game_theory_lean"
+    / "CooperativeGames" / "ConeKernel_en.lean"
+)
 
 
 def test_strip_comments_removes_block_line_and_docstring():
@@ -212,6 +216,60 @@ def test_consumer_pattern_still_flags_novel_en_block(tmp_path):
     assert "no FR counterpart" in detail
 
 
+def test_check_pair_reordered_blocks_ok(tmp_path):
+    # C521-L3 / ConeKernel #6727 repro: declaring the same top-level blocks in
+    # a different order (the EN port inserted a lemma at a different site) is a
+    # legitimate structural divergence, not drift — reordering to match FR has
+    # already broken the build once (commit 6788d1d1f).
+    fr = tmp_path / "Pair.lean"
+    en = tmp_path / "Pair_en.lean"
+    fr.write_text(
+        "namespace Pair\n"
+        "theorem a : True := trivial\n"
+        "theorem b : True := trivial\n"
+        "theorem c : True := trivial\n"
+        "end Pair\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Pair_en\n"
+        "theorem a : True := trivial\n"
+        "theorem c : True := trivial\n"
+        "theorem b : True := trivial\n"
+        "end Pair_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "OK-REORDERED", detail
+    assert "3 declaration block(s)" in detail
+
+
+def test_check_pair_real_drift_lists_unique_blocks(tmp_path):
+    # A genuinely changed block is NOT OK-REORDERED; the detail lists the
+    # blocks unique to each side (the changed block appears on both sides as
+    # an old/new counterpart) — actionable diagnostic, cf #6727 step 3.
+    fr = tmp_path / "Drift.lean"
+    en = tmp_path / "Drift_en.lean"
+    fr.write_text(
+        "namespace Drift\n"
+        "theorem a : True := trivial\n"
+        "theorem b : True := trivial\n"
+        "end Drift\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Drift_en\n"
+        "theorem a : True := trivial\n"
+        "theorem b : Nat := 1\n"
+        "end Drift_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT"
+    assert "only in FR" in detail
+    assert "only in EN" in detail
+
+
 def test_split_decls_attribute_line_starts_block():
     body = (
         "def f : Nat := 1\n"
@@ -260,6 +318,18 @@ def test_real_conway_pairs_are_byte_identical():
         if status == "DRIFT":
             failures.append(f"DRIFT {en.name}\n{detail}")
     assert not failures, "\n".join(failures)
+
+
+def test_real_conekernel_pair_is_reordered_not_drift():
+    """ConeKernel #6727 regression guard: the EN mirror declares the same 18
+    blocks as the FR canonical in a different order (lemma inserted at a
+    different site by port #6575). Must classify as OK-REORDERED, not DRIFT."""
+    en = CONEKERNEL_EN
+    fr = fr_sibling(en)
+    if not en.is_file() or not fr.is_file():
+        return  # tree not present in this checkout; skip silently
+    status, detail = check_pair(fr, en)
+    assert status == "OK-REORDERED", detail
 
 
 def _run_direct() -> int:

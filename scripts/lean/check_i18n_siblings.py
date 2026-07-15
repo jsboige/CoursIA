@@ -53,7 +53,6 @@ missing).
 from __future__ import annotations
 
 import argparse
-import difflib
 import re
 import sys
 from collections import Counter
@@ -213,11 +212,15 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
 
 def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
     """Compare an FR/EN sibling pair. Returns ``(status, detail)`` where
-    ``status`` is ``"OK"`` (bodies identical after normalization),
+    ``status`` is ``"OK"`` (bodies identical after normalization, same order),
     ``"OK-CONSUMER"`` (the EN file imports the FR module and every declaration
     block it does state matches an FR block — the rest is reused via the
-    import, not missing), or ``"DRIFT"`` (detail carries a short diff or the
-    offending blocks)."""
+    import, not missing), ``"OK-REORDERED"`` (the two files declare the same
+    multiset of top-level blocks but in a different order — a legitimate
+    structural divergence, doctrine C521-L3 / #6725, not repairable at zero
+    cost because lemma order can affect elaboration), or ``"DRIFT"`` (detail
+    lists the declaration blocks unique to each side — more actionable than a
+    text diff)."""
     fr_src = fr_path.read_text(encoding="utf-8")
     en_src = en_path.read_text(encoding="utf-8")
     fr_body = normalize_body(fr_src)
@@ -242,11 +245,36 @@ def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
         return "DRIFT", (
             f"consumer pattern, but {len(unmatched)} EN block(s) have no FR "
             f"counterpart:\n{preview}")
-    diff = difflib.unified_diff(
-        fr_body.splitlines(), en_body.splitlines(),
-        fromfile=str(fr_path), tofile=str(en_path), lineterm="",
-    )
-    return "DRIFT", "\n".join(list(diff)[:40])
+    # Order-insensitive comparison (#6727): the two files may declare the same
+    # top-level blocks in a different order — a legitimate structural divergence
+    # (C521-L3, ConeKernel #6725) that the ordered `fr_body == en_body` check
+    # above reports as DRIFT. Reordering the EN file to match FR has already
+    # broken the build once (commit 6788d1d1f), so it is recognized as OK.
+    fr_blocks = split_decls(fr_body)
+    en_blocks = split_decls(en_body)
+    if sorted(fr_blocks) == sorted(en_blocks):
+        moved = sum(1 for a, b in zip(fr_blocks, en_blocks) if a != b)
+        return "OK-REORDERED", (
+            f"{len(fr_blocks)} declaration block(s), identical order-"
+            f"insensitive ({moved} position(s) differ in order)")
+    # Genuine drift (#6727 step 3): list the declaration blocks unique to each
+    # side — a changed/removed/added block surfaces as a counterpart pair,
+    # which is more actionable than a textual unified diff.
+    fr_counter = Counter(fr_blocks)
+    en_counter = Counter(en_blocks)
+    fr_only = list(fr_counter - en_counter)
+    en_only = list(en_counter - fr_counter)
+    parts: list[str] = []
+    if fr_only:
+        preview_fr = "\n---\n".join(
+            "\n".join(b.splitlines()[:4]) for b in fr_only[:3])
+        parts.append(f"{len(fr_only)} block(s) only in FR:\n{preview_fr}")
+    if en_only:
+        preview_en = "\n---\n".join(
+            "\n".join(b.splitlines()[:4]) for b in en_only[:3])
+        parts.append(f"{len(en_only)} block(s) only in EN:\n{preview_en}")
+    detail = "; ".join(parts) if parts else "declaration bodies differ"
+    return "DRIFT", detail
 
 
 def _excluded(path: Path) -> bool:
@@ -302,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = 0
+    passed = consumer = reordered = failed = orphan = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -316,13 +344,17 @@ def main(argv: list[str] | None = None) -> int:
         elif status == "OK-CONSUMER":
             consumer += 1
             print(f"OK-CONSUMER  {en}  ({detail})")
+        elif status == "OK-REORDERED":
+            reordered += 1
+            print(f"OK-REORDERED  {en}  ({detail})")
         else:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
-    total = passed + consumer + failed + orphan
+    total = passed + consumer + reordered + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
-          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan")
+          f" | {consumer} consumer-pattern | {reordered} reordered"
+          f" | {failed} drift | {orphan} orphan")
     return 0 if (failed == 0 and orphan == 0) else 1
 
 
