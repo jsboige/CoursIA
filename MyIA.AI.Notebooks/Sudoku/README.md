@@ -9,7 +9,7 @@ maturity: PRODUCTION=30, BETA=5, ALPHA=1
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (36 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
 >
-> **17 C# + 18 Python + 1 Lean 4 = 36 notebooks canoniques ✓** (44 fichiers `*.ipynb` au total sur disque = 36 canoniques + 8 `_output.ipynb` artefacts Papermill commités couvrant 8 notebooks Python : Choco 11, Infer 15, NN 16, LLM 17, DancingLinks 2, Genetic 3, PSO 5, GraphColoring 9).
+> **17 C# + 18 Python + 1 Lean 4 = 36 notebooks canoniques ✓** (36 fichiers `*.ipynb` canoniques au total dans le dépôt — les artefacts Papermill `_output.ipynb` sont gitignored, locaux à la machine d'exécution et non commités).
 >
 > Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (14 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 16 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
 >
