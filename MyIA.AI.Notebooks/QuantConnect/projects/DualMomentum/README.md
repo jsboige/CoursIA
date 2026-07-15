@@ -29,7 +29,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente l'analyse du dual momen
   <em>Drawdown — comparaison entre configurations.</em>
 </p>
 
-**H2 — robustesse au *lookback*, ou la stabilité du signal.** La deuxième hypothèse teste si la performance tient quand on改变 la fenêtre de momentum (*lookback period*). Une courbe plate signe un signal robuste ; une courbe qui s'effondre révèle un sur-ajustement à une fenêtre unique.
+**H2 — robustesse au *lookback*, ou la stabilité du signal.** La deuxième hypothèse teste si la performance tient quand on change la fenêtre de momentum (*lookback period*). Une courbe plate signe un signal robuste ; une courbe qui s'effondre révèle un sur-ajustement à une fenêtre unique.
 
 <p align="center">
   <img src="assets/readme/dm-h2-lookback.png" alt="H2 robustesse lookback" width="420"/><br>
