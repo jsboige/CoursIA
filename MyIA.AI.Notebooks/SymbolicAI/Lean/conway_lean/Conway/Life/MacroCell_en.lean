@@ -55,9 +55,10 @@ import Conway.Life
 
 namespace Conway_en
 
-open Conway_en
+open Conway
 
 namespace Life_en
+open Life
 
 /-! ## The quadtree data structure -/
 
@@ -73,7 +74,7 @@ inductive MacroCell where
   -- proofs in `Conway.Life.HashlifeMemo` rely on.
   deriving DecidableEq, Repr, Inhabited
 
-namespace MacroCell_en
+namespace MacroCell
 
 /-- The level of a `MacroCell`: 0 for `leaf`, `1 + nw.level` for `node`.
     By construction, a well-formed `MacroCell` has all four subtrees at the
@@ -136,7 +137,7 @@ def toCellsAux (r0 c0 : Int) : MacroCell -> List (Int × Int)
 def toGrid (offset : Int × Int) (c : MacroCell) : Grid :=
   sortDedup (c.toCellsAux offset.1 offset.2)
 
-end MacroCell_en
+end MacroCell
 
 /-! ## Conversion: Grid -> MacroCell
 
@@ -154,7 +155,7 @@ The construction is straightforward but a little tedious:
    appropriate quadrant.
 -/
 
-namespace MacroCell_en
+namespace MacroCell
 
 /-- Smallest `n` such that `2 ^ n >= k`. -/
 def ceilLog2 (k : Nat) : Nat :=
@@ -347,7 +348,7 @@ theorem mem_toCellsAux_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
     refine ⟨(p.1 - r0, p.2 - c0), hq, ?_⟩
     ext <;> omega
 
-end MacroCell_en
+end MacroCell
 
 /-! ## High-level Grid -> MacroCell
 

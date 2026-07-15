@@ -65,7 +65,9 @@ import Conway.Life
 import Conway.Life.MacroCell
 
 namespace Conway_en
+open Conway
 namespace Life_en
+open Life
 
 open MacroCell
 

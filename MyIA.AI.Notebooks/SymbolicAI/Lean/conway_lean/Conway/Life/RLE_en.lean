@@ -56,7 +56,9 @@ import Conway.Life.Spaceships
 import Conway.Life.Oscillators
 
 namespace Conway_en
+open Conway
 namespace Life_en
+open Life
 namespace RLE_en
 
 /-! ## Internal parser state -/

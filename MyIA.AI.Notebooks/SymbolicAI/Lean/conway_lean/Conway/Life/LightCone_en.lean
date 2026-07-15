@@ -23,7 +23,9 @@ import Conway.Life.ConeGeometry
 import Conway.Life.HashlifeCorrectness
 
 namespace Conway_en
+open Conway
 namespace Life_en
+open Life
 
 /-! ## Monotonicity: larger radius → larger cone
 
