@@ -29,6 +29,7 @@ Epic #1646, Phase 8 (#2159). Tous les `sorry`s éliminés à la création.
 import Mathlib.CategoryTheory.Sites.Grothendieck
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 import Mathlib.CategoryTheory.Sites.Sheafification
+import Mathlib.CategoryTheory.Sites.ConcreteSheafification
 import Mathlib.CategoryTheory.Sites.LeftExact
 
 universe v u
@@ -157,8 +158,8 @@ même résultat qu'une seule fois, à isomorphismes canoniques près.
     HasMultiequalizer). -/
 noncomputable def plusPlusSheafIsoPresheafToSheaf {C : Type u} [Category.{v} C]
     (J : GrothendieckTopology C) :
-    J.plusPlusSheaf (Type (max u v)) ≅ presheafToSheaf J (Type (max u v)) :=
-  CategoryTheory.GrothendieckTopology.plusPlusSheafIsoPresheafToSheaf J _
+    CategoryTheory.plusPlusSheaf J (Type (max u v)) ≅ presheafToSheaf J (Type (max u v)) :=
+  CategoryTheory.plusPlusSheafIsoPresheafToSheaf J _
 
 /-!
 ### 2. `plusPlusFunctorIsoSheafification` — double-plus ≅ faisceautisation
@@ -176,7 +177,7 @@ donnent le même résultat que la **construction classique** `sheafification J D
 noncomputable def plusPlusFunctorIsoSheafification {C : Type u} [Category.{v} C]
     (J : GrothendieckTopology C) :
     J.sheafification (Type (max u v)) ≅ sheafification J (Type (max u v)) :=
-  CategoryTheory.GrothendieckTopology.plusPlusFunctorIsoSheafification J _
+  CategoryTheory.plusPlusFunctorIsoSheafification J _
 
 /-!
 ### 3. `plusPlusIsoSheafify` — foncteur induit sur les préfaisceaux
@@ -194,7 +195,7 @@ noncomputable def plusPlusIsoSheafify {C : Type u} [Category.{v} C]
     (J : GrothendieckTopology C)
     (P : Cᵒᵖ ⥤ Type (max u v)) :
     J.sheafify P ≅ sheafify J P :=
-  CategoryTheory.GrothendieckTopology.plusPlusIsoSheafify J _ P
+  CategoryTheory.plusPlusIsoSheafify J _ P
 
 /-!
 ### 4. `toSheafify_plusPlusIsoSheafify_hom` — naturalité du morphisme unité
@@ -213,6 +214,6 @@ theorem toSheafify_plusPlusIsoSheafify_hom {C : Type u} [Category.{v} C]
     (J : GrothendieckTopology C)
     (P : Cᵒᵖ ⥤ Type (max u v)) :
     J.toSheafify P ≫ (plusPlusIsoSheafify J P).hom = toSheafify J P :=
-  CategoryTheory.GrothendieckTopology.toSheafify_plusPlusIsoSheafify_hom J _ P
+  CategoryTheory.toSheafify_plusPlusIsoSheafify_hom J _ P
 
 end Grothendieck
