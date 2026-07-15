@@ -1679,7 +1679,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb,537482c0,markdo
 À précision fixe, l'énergie libre moyenne $\bar F$ est une transformation **strictement monotone** du MSE : les rangs des quatre estimateurs coïncident **exactement** sur les 15 combinaisons famille × graine. *L'énergie libre à précision fixe n'est qu'un habillage du MSE.* Il fallait le démontrer plutôt que le cacher : invoquer Friston ne crédite rien tant que $\sigma^2$ est constant.
 
 La question devient : **où la précision adaptative restaure-t-elle un contenu prédictif propre à $F$ ?**",,,,,,,,f940635e39a2384d,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb,4e2bebf4,code,fr,7c4fa3508d435874,"# GATE 2 — precision adaptative : les rangs par F divergent-ils des rangs par MSE ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb,4e2bebf4,code,fr,f38779d4e552b97e,"# GATE 2 — precision adaptative : les rangs par F divergent-ils des rangs par MSE ?
 # Balayage bruit x famille x 5 graines. On mesure le TAUX DE DIVERGENCE
 # (argmin F adaptatif != argmin MSE) par famille. Prediction falsifiable :
 # la divergence est concentree aux discontinuites (creneau).
@@ -1700,11 +1700,26 @@ for fam in FAMILLES:
 
 print(""Taux de divergence argmin(F adaptatif) != argmin(MSE), par famille :"")
 for fam in FAMILLES:
-    bar = ""#"" * int(round(table[fam] * 40))
-    print(f""  {fam:<10} {table[fam]*100:5.1f}%  {bar}"")
+    print(f""  {fam:<10} {table[fam]*100:5.1f}%"")
+
+# Visualisation des taux de divergence par famille (matplotlib, SOTA #3801 : vrai rendu)
+fams = list(table.keys())
+vals = [table[f] * 100 for f in fams]
+# Code couleur : vert (<5%, F redondant MSE), orange (5-25%, divergence moderee),
+# rouge (>25%, divergence marquee aux discontinuites).
+colors = [""#27ae60"" if v < 5 else (""#f39c12"" if v < 25 else ""#c0392b"") for v in vals]
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.bar(fams, vals, color=colors, alpha=0.85)
+ax.set_ylabel(""Taux de divergence (%)"")
+ax.set_title(""Divergence argmin(F adaptatif) != argmin(MSE), par famille"")
+ax.set_ylim(0, max(vals) * 1.25 + 1)
+for i, v in enumerate(vals):
+    ax.text(i, v + 1, f""{v:.1f}%"", ha=""center"")
+plt.tight_layout()
+plt.show()
 print(""\nVerdict : la divergence se concentre sur la famille 'creneau' (discontinuites) —"")
 print(""la ou le p_hat a vitesse constante reste sur-confiant (sigma petit accumule en rampe)"")
-print(""puis se plante au saut : la penalite de precision punit. Ailleurs, F redondant avec le MSE."")",,,,,,,,7c4fa3508d435874,,,,,,,
+print(""puis se plante au saut : la penalite de precision punit. Ailleurs, F redondant avec le MSE."")",,,,,,,,f38779d4e552b97e,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb,636c8af3,markdown,fr,c67e5c9cae5bd40a,"### Gate 2 — verdict : avantage régime-dépendant
 
 La précision **adaptative** restaure un contenu prédictif propre à $F$ **exactement là** prédit : aux discontinuités (famille *créneau*), où le classement par $\bar F$ diverge du classement par MSE. Le mécanisme est lisible : en rampe, le $\hat p$ à vitesse constante réussit, la précision $\sigma^2_t$ (EMA causale des erreurs) décroît — le modèle devient *sur-confiant* ; au saut du créneau, la grosse erreur est rapportée à un $\sigma^2_t$ devenu petit, et la surprise explose bien plus que ne le suggère le MSE brut. Sur trajectoires lisses ou de bruit pur, la précision ne varie presque pas, et $F$ redonne le classement du MSE (Gate 1).
