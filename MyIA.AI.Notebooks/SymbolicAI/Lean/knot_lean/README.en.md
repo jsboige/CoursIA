@@ -5,42 +5,50 @@ strategic commented sorries (paper references + Mathlib prerequisites).
 
 Epic #2874 (Phase 5 in progress). Toolchain `v4.31.0-rc1`.
 
-## Sorry-state (verified 2026-07-06, re-confirmed 2026-07-12, 16 real — 14 + 2 from the PARTIAL backward transfer #3124, `num` proven)
+## Sorry-state (verified 2026-07-06, re-confirmed 2026-07-12, **17 real** — 15 + 2 from the PARTIAL backward transfer #3124, `num` proven)
 
 Two counts, depending on the filter:
 
 | File | real sorries | sorry (prose, CI) |
 |------|-------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
-| `Knots/Reidemeister.lean` | 1 | 2 |
+| `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | 5 | 6 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **16** | **26** |
+| **Total** | **17** | **26** |
 
 - **real sorries** (`exact sorry`, `:= sorry`, `:= by sorry`) = what's actually
-  missing as a proof. **16** total — 14 stable + **2 from the PARTIAL backward
+  missing as a proof. **17** total — 15 stable + **2 from the PARTIAL backward
   transfer `tricolorable_backward` (#3124)**: sub-goals `fox`/`col` left in
   sorry after decomposition (`num` PROVEN by `wf` parity, cf. § Phase 5;
   core `hcolPres` proven). A Lidman scaffolding sorry (diagram L39) was
   eliminated by **#4899** (PD-code 11n102 from KnotInfo, MERGED 2026-07-02):
   Lidman goes from 3 to 2 real sorries.
-- **`Reidemeister.lean` at 1 real sorry** (recounted firsthand 2026-07-06:
-  stable at 1 since June — single `exact sorry` at L549; the previous
-  version of the README overcounted at 2).
+- **`Reidemeister.lean` at 2 real sorries** (recounted firsthand 2026-07-15
+  with the CI real-mode awk: `sorry -- ambient_isotopic k₁ k₂` at L554 *and*
+  `exact sorry` at L558; the word-bounded `\bsorry\b` count includes the
+  line where only the `-- ...` suffix is stripped, so the bare `sorry` at
+  L554 still counts as a real-mode sorry. The previous README recount
+  (2026-07-06) predated the CI prose-header→real switch of 2026-07-11 and
+  undercounted by 1).
 - **prose sorries** (any line containing `sorry`, CI filter `prose-header`) =
-  **26** currently. The CI `lean-knot.yml` gate is set to
-  `sorry-baseline: "28"` (prose-header mode): margin of 2 after #3163
-  (`num`) and #4899 (Lidman), the baseline having not yet been tightened.
-  This count includes occurrences in diagnostic comments (e.g. the comment
-  on `KnotDiagram.wf` in `Basic.lean`).
+  **26** currently. The CI `lean-knot.yml` switched to **`real` mode**
+  (`sorry-baseline: "17"`) on 2026-07-11 (previously prose-header baseline
+  28); the real mode strips `--` line comments and `/- -/` block comments,
+  then counts the word-bounded `\bsorry\b` — it is now the sole official
+  CI mode for knot_lean. The 26 count is preserved as a raw/any-line
+  indicator. This count includes occurrences in diagnostic comments
+  (e.g. the comment on `KnotDiagram.wf` in `Basic.lean`).
 
-The CI `.github/workflows/lean-knot.yml` gate is on the **prose-header
-baseline 28** (history: bump 25→28 in #3124 for the backward transfer
-decomposition, lowered to 27 after the `num` proof #3163, then re-bumped
-to 28 by the GF(3) follow-up #3003): any PR adding a real sorry raises
-both counts and fails CI, unless justified in the PR body.
+The CI `.github/workflows/lean-knot.yml` gate is on the **real-mode baseline
+17** since the 2026-07-11 switch (history: prose-header 25→28 in #3124 for
+the backward transfer decomposition, lowered to 27 after the `num` proof
+#3163, re-bumped to 28 by the GF(3) follow-up #3003; then prose-header→real
+switch to baseline 17 on 2026-07-11 when the raw count diverged from the
+real count): any PR adding a real sorry raises the real count and fails
+CI, unless justified in the PR body.
 
 ## Results by real status (verified against the code)
 
@@ -274,10 +282,11 @@ initially open (`fox`/`num`/`col`), `num` is **proven** and
    requires the color-symmetry / proper-arc construction (#3003,
    `Invariant.lean` L1354).
 
-These **2 §9.1 residuals** sit under the **CI baseline 28** (history:
-bump 25→28 in #3124, lowered to 27 after the `num` proof #3163,
-re-bumped to 28 by the GF(3) follow-up #3003); the current real count
-is **26** after #4899 (margin of 2).
+These **2 §9.1 residuals** sit under the **CI baseline 17** (real-mode,
+prose-header→real switch on 2026-07-11; prose-header history: bump 25→28
+in #3124, lowered to 27 after the `num` proof #3163, re-bumped to 28 by
+the GF(3) follow-up #3003); the current real count is **17** (consistent
+with the baseline, margin of 0 — any new real sorry will FAIL CI).
 
 The marquee `tricolorable_invariant` remains gated on the **completion
 of the 2 §9.1 backward residuals** (then forward + backward composition
@@ -294,7 +303,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | File | Contents | real sorries |
 |------|----------|-------------|
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
-| `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 1 |
+| `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
 | `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, unknotting number, PR1 counter-example, R1 forward transfer (#3000) + backward PARTIAL (#3124) | 5 |
 | `Knots/Conway.lean` | Conway knot (11n34), Piccirillo, smooth/topological dichotomy | 8 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
@@ -366,7 +375,7 @@ The marquee `tricolorable_invariant` remains **gated** on two
 §9.1 residual sub-goals of the backward: the symmetry of colors on the
 modified crossing `Y` (`fox`) and the all-distinct lift outside the
 source diagram range (`col`). Their completion would compose forward +
-backward into a connected R1 bi-implication (**16 real sorries** in
+backward into a connected R1 bi-implication (**17 real sorries** in
 total). The "distant" results — Conway non-slice (Piccirillo), Lidman's
 unknotting number, Reidemeister theorem ↔ ambient isotopy — remain
 **permanent scaffolding**: they exceed the current scope of Mathlib
