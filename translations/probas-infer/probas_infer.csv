@@ -7510,25 +7510,47 @@ lisibilité), les trois séries. Les **observations** (`.`) oscillent fortement 
 la vraie trajectoire (`|`) à cause du capteur bruité ($R = 4$). L'**estimation filtrée**
 (`#`, espérance du postérieur) lisse ce bruit et suit fidèlement la trajectoire cachée.
 ",,,,,,,,eb365400ef1c8096,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,4ad73b83,code,fr,bdb8bcb673d8583c,"// --- Visualisation ASCII + metriques honnetes ---
-// Axe horizontal = position. On cale l'echelle sur l'ensemble des series.
-double lo = Math.Min(trueState.Min(), obs.Min()) - 2;
-double hi = Math.Max(trueState.Max(), obs.Max()) + 2;
-int W = 60;
+MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,4ad73b83,code,fr,5e8a2551ad37d1b1,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
+// (Zero `#r ""nuget:""` sur une charting-lib : les charting libs pinent une vieille beta
+//  de Microsoft.DotNet.Interactive et font timeout le restore, cluster-wide. Le formatter
+//  ci-dessous emet du HTML Plotly brut, sans dependence. Cf #6599 / C548-L2.)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
 
-string Bar(double v, char c) {
-    int n = (int)Math.Round((v - lo) / (hi - lo) * W);
-    if (n < 0) n = 0; if (n > W) n = W;
-    return new string(c, n);
-}
+// --- Trajectoire : vrai etat, observations bruitees, estimation filtree ---
+var tAxis = Enumerable.Range(0, T).Select(i => (double)i).ToArray();
+// Ecart-type posterior a chaque pas (incertitude du filtre) -> barres d'erreur sur FILT.
+var filtStd = filtVar.Select(v => Math.Sqrt(v)).ToArray();
 
-Console.WriteLine($""Echelle : {lo:F1} (gauche) -> {hi:F1} (droite), {W} colonnes"");
-Console.WriteLine(""  VRAI = |   OBS = .   FILT = #"");
-for (int t = 0; t < T; t += 2) {
-    Console.WriteLine($""t={t,2} VRAI {Bar(trueState[t], '|')}"");
-    Console.WriteLine($""     OBS  {Bar(obs[t], '.')}"");
-    Console.WriteLine($""     FILT {Bar(filtMean[t], '#')}  (+-{Math.Sqrt(filtVar[t]):F2})"");
-}
+string Trace(string name, double[] y, string mode, string color) =>
+    System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""name""] = name, [""x""] = tAxis, [""y""] = y,
+                                         [""type""] = ""scatter"", [""mode""] = mode,
+                                         [""line""] = new { color = color } });
+
+var filtTrace = new Dictionary<string, object> {
+    [""name""] = ""FILT (estimee)"", [""x""] = tAxis, [""y""] = filtMean,
+    [""type""] = ""scatter"", [""mode""] = ""lines+markers"",
+    [""line""] = new { color = ""#DD8452"" },
+    [""error_y""] = new { type = ""data"", array = filtStd, visible = true,
+                        color = ""rgba(221,132,82,0.35)"", thickness = 1.0 } };
+string filtJson = System.Text.Json.JsonSerializer.Serialize(filtTrace);
+
+var layout = ""{\""title\"":{\""text\"":\""Filtre de Kalman : vrai etat, observations, estimation\""},"" +
+             ""\""xaxis\"":{\""title\"":{\""text\"":\""t (pas)\""}},"" +
+             ""\""yaxis\"":{\""title\"":{\""text\"":\""position\""}},"" +
+             ""\""showlegend\"":true}"";
+var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+             ""<script>Plotly.newPlot('"" + divId + ""',["" +
+             Trace(""VRAI (etat cache)"", trueState, ""lines"", ""#4C72B0"") + "","" +
+             Trace(""OBS (mesure)"", obs, ""markers"", ""#888888"") + "","" +
+             filtJson + ""],"" + layout + "")</script>"";
+display(new PlotlyHtml(markup));
 
 // --- Metriques : MSE filtree vs MSE brute (par rapport a la VRAIE trajectoire) ---
 double rawMSE = 0.0, filtMSE = 0.0;
@@ -7544,7 +7566,7 @@ Console.WriteLine($""MSE observations brutes : {rawMSE:F3}   (variance de capteu
 Console.WriteLine($""MSE estimation filtree  : {filtMSE:F3}"");
 Console.WriteLine($""Reduction d'erreur      : {(1.0 - filtMSE / rawMSE) * 100:F1}%   (filtre vs brut)"");
 Console.WriteLine($""Variance post. finale   : {filtVar[T - 1]:F3}   (vs R = {obsVar:F1})"");
-",,,,,,,,bdb8bcb673d8583c,,,,,,,
+",,,,,,,,5e8a2551ad37d1b1,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,46ac2fd4,markdown,fr,ab0bd2a293e576af,"### Lecture du résultat
 
 Le filtre **réduit fortement l'erreur** : la MSE filtrée est nettement inférieure à la MSE
@@ -7783,15 +7805,48 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,5cb6e2d0,markdown,fr,
 et les moyennes de segment doivent approcher 2 et 7. Si le signal est fort (`|mu2 − mu1| ≫ sigma`),
 le postérieur se concentre sur **quelques indices** ; s'il est faible, il s'étale. Examinons la
 forme exacte de ce postérieur discret.",,,,,,,,df4b92ee3000af04,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,e72abe1e,code,fr,0e26609bc80f08e8,"// --- Visualisation : postérieur discret sur la localisation de la rupture ---
+MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,e72abe1e,code,fr,6437d3589f55149b,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
+// (Zero `#r ""nuget:""` sur une charting-lib : les charting libs pinent une vieille beta
+//  de Microsoft.DotNet.Interactive et font timeout le restore, cluster-wide. Le formatter
+//  ci-dessous emet du HTML Plotly brut, sans dependence. Cf #6599 / C548-L2.)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// --- Visualisation : postérieur discret sur la localisation de la rupture ---
 double pmax = 0.0;
 for (int i = 0; i < N; i++) pmax = Math.Max(pmax, cpPost[i]);
+
+// Masses > 0.1% (la masse utile), en valeurs relatives au pic.
 Console.WriteLine(""Postérieur sur cp (masses > 0.1%, normalisees au pic) :"");
 for (int i = 0; i < N; i++) {
-    if (cpPost[i] < 0.001) continue;                                // on n'affiche que la masse utile
-    int barLen = (int)Math.Round(cpPost[i] / pmax * 50.0);
-    Console.WriteLine($""  t={i,3}  {new string('#', barLen),-50}  {cpPost[i],7:F4}"");
-}",,,,,,,,0e26609bc80f08e8,,,,,,,
+    if (cpPost[i] < 0.001) continue;
+    Console.WriteLine($""  t={i,3}  {cpPost[i] / pmax,5:F2}  (masse {cpPost[i],7:F4})"");
+}
+
+// Histogramme Plotly : le postérieur complet sur cp, avec le mode (argmax) marque.
+int mode = 0; double modeMass = 0.0;
+for (int i = 0; i < N; i++) if (cpPost[i] > modeMass) { modeMass = cpPost[i]; mode = i; }
+var cpAxis = Enumerable.Range(0, N).Select(i => (double)i).ToArray();
+var barTrace = System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = ""P(cp = t)"", [""x""] = cpAxis, [""y""] = cpPost,
+                                     [""type""] = ""bar"", [""marker""] = new { color = ""#4C72B0"" } });
+var vlineTrace = System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = ""vrai point de rupture"", [""x""] = new[] { (double)mode },
+                                     [""y""] = new[] { modeMass }, [""type""] = ""scatter"", [""mode""] = ""markers"",
+                                     [""marker""] = new { color = ""#C44E52"", size = 12, symbol = ""triangle-up"" } });
+var layout = ""{\""title\"":{\""text\"":\""Postérieur sur la localisation de la rupture cp\""},"" +
+             ""\""xaxis\"":{\""title\"":{\""text\"":\""t (indice de rupture)\""}},"" +
+             ""\""yaxis\"":{\""title\"":{\""text\"":\""P(cp = t)\""}},"" +
+             ""\""showlegend\"":true,\""bargap\"":0.05}"";
+var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+             ""<script>Plotly.newPlot('"" + divId + ""',["" + barTrace + "","" + vlineTrace + ""],"" + layout + "")</script>"";
+display(new PlotlyHtml(markup));
+",,,,,,,,6437d3589f55149b,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,dbba2a95,markdown,fr,336c01752462eb4d,"## 3. Le cas canonique : les catastrophes minières (loi de Poisson)
 
 Le jeu de données historique du change-point bayésien est la série annuelle des **catastrophes
@@ -8126,26 +8181,45 @@ Pas besoin d'echantillonner : pour chaque `t`, on branche les moments du postieu
 obtient `S(t)` **exactement**, avec son incertitude qui decroit quand le postieur se concentre.
 On trace `S(t)` sur `t ∈ [0, 3000]` et on le compare a la courbe empirique (Kaplan-Meier simplifiee,
 ici sans censure : fraction d'observations superieures a `t`).",,,,,,,,b907b561fcc38c21,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,3358bca7,code,fr,0c2a9e0464ea9a8a,"// Survie predictive (forme fermee) + comparaison empirique.
+MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,3358bca7,code,fr,c2f8edca5cd48552,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
+// On evite `#r ""nuget:""` sur une charting-lib : XPlot.Plotly.Interactive / Plotly.NET
+// pinent une vieille beta de Microsoft.DotNet.Interactive et font timeout le restore
+// (cluster-wide). Le formatter ci-dessous emet du HTML Plotly brut, sans dependence.
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// Survie predictive (forme fermee) + comparaison empirique.
 double A = lambdaPost.Shape, B = lambdaPost.Rate;
 double Sbayes(double t) => Math.Pow(B / (B + t), A);
-
-// Courbe empirique : fraction de durees > t.
 double Semp(double t, double[] data) => data.Count(d => d > t) / (double)data.Length;
 
+// Tableau : S(t) bayesienne vs empirique a des horizons choisis.
 Console.WriteLine(""=== Fonction de survie S(t) : bayesienne vs empirique ==="");
 Console.WriteLine($""{""t (h)"",8}  {""S_bayes"",8}  {""S_empir"",8}"");
 foreach (var t in new[] { 0.0, 250, 500, 1000, 1500, 2000, 3000 })
     Console.WriteLine($""{t,8:F0}  {Sbayes(t),8:F3}  {Semp(t, lifetimesExp),8:F3}"");
 
-// Trace ASCII leger de S(t) bayesienne.
-Console.WriteLine(""\nS(t) bayesienne (modele exponentiel) :"");
-const int W = 50;
-foreach (var t in Enumerable.Range(0, W + 1).Select(j => j * 3000.0 / W))
-{
-    int bar = (int)Math.Round(Sbayes(t) * 40);
-    Console.WriteLine($""{t,6:F0}h |{new string('#', bar)}"");
-}",,,,,,,,0c2a9e0464ea9a8a,,,,,,,
+// Courbe continue S(t) : trace Plotly comparant le modele bayesien aux donnees empiriques.
+int NP = 80;
+var tGrid = Enumerable.Range(0, NP + 1).Select(j => j * 3000.0 / NP).ToArray();
+string BuildTrace(string name, double[] ys) => System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = name, [""x""] = tGrid, [""y""] = ys,
+                                     [""type""] = ""scatter"", [""mode""] = ""lines"" });
+var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+var layout = ""{\""title\"":{\""text\"":\""Fonction de survie S(t) : bayesienne vs empirique\""},"" +
+             ""\""xaxis\"":{\""title\"":{\""text\"":\""t (heures)\""}},"" +
+             ""\""yaxis\"":{\""title\"":{\""text\"":\""S(t)\""},\""range\"":[0,1.05]}}"";
+var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+             ""<script>Plotly.newPlot('"" + divId + ""',["" +
+             BuildTrace(""Bayesienne (modele exponentiel)"", tGrid.Select(Sbayes).ToArray()) + "","" +
+             BuildTrace(""Empirique (donnees)"", tGrid.Select(t => Semp(t, lifetimesExp)).ToArray()) +
+             ""],"" + layout + "")</script>"";
+display(new PlotlyHtml(markup));
+",,,,,,,,c2f8edca5cd48552,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,d5f897c1,markdown,fr,149f3aaf879e6228,"### Lecture : la question de l'ingenieur a maintenant une reponse quantifiee
 
 La question *« probabilite qu'un composant survive au-dela de 1500 h »* admet la reponse
