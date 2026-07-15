@@ -177,11 +177,11 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |
 | 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch (do-operator, contrefactuel) | 35 min  | C# PROD |
 
-**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **29 notebooks principaux** (12 Python + 16 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
+**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **31 notebooks principaux** (12 Python + 18 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
 
 ## En quoi chaque notebook est unique
 
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **27 notebooks principaux** (12 Python + 14 C#/.NET + 1 Lean companion) :
+Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **25 notebooks principaux** (12 Python + 12 C#/.NET + 1 Lean companion) :
 
 | #  | Notebook                      | Concept clé enseigné                                                    |
 |----|-------------------------------|--------------------------------------------------------------------------|
