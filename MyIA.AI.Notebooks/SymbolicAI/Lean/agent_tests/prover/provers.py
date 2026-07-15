@@ -893,6 +893,12 @@ class MultiAgentSorryProver:
         trace_name = f"multi_{demo['name']}_{self.provider}"
         self.trace.save(trace_name)
 
+        # FX-10 (#1453 forensic): normalize the never-updated best_sorry_count
+        # sentinel (999, tools.py:681) -- see the autonomous path for rationale.
+        _raw_best = tactic_tools.best_sorry_count
+        _best_reported = (_raw_best if _raw_best is not None and _raw_best < 900
+                          else min(original_sorry_count, final_sorry))
+
         return {
             "success": success,
             "proof": state.final_proof,
@@ -912,7 +918,7 @@ class MultiAgentSorryProver:
             "total_s": round(total_s, 1),
             "config": f"multi-{self.provider}",
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
-            "best_sorry": tactic_tools.best_sorry_count,
+            "best_sorry": _best_reported,
             # P6 (#1453 forensic): surface the structural-progress flag so a
             # build-OK / sorry_delta==0 outcome ("proof restructured", e.g. one
             # sorry decomposed into N compiling sub-sorries) is distinguishable
@@ -1741,6 +1747,16 @@ class AutonomousProver:
         trace_name = f"auto_{demo['name']}_{self.provider}"
         self.trace.save(trace_name)
 
+        # FX-10 (#1453 forensic): _best_sorry_count defaults to 999 (tools.py:681)
+        # and is only lowered on a build-verified improvement. With 0 verified
+        # tactics it stays 999, polluting forensic stats (analyze_traces reads it
+        # as a real count). When unset, report the session floor min(original,
+        # final) -- never the sentinel. Verified: autonomous_*_HashlifeCorrectness_L2536
+        # (sorry 4->4, iter 3, best_sorry 999 -> should report 4).
+        _raw_best = tactic_tools.best_sorry_count
+        _best_reported = (_raw_best if _raw_best is not None and _raw_best < 900
+                          else min(original_sorry_count, final_sorry))
+
         return {
             "success": success,
             "proof": state.final_proof,
@@ -1749,7 +1765,7 @@ class AutonomousProver:
             "total_s": round(total_s, 1),
             "config": self.config_label,
             "sorry_evolution": f"{original_sorry_count} -> {final_sorry}",
-            "best_sorry": tactic_tools.best_sorry_count,
+            "best_sorry": _best_reported,
             # P6 (#1453 forensic): same flag as MultiAgentSorryProver — already
             # computed by _autonomous_success_gate, now surfaced so a build-OK /
             # sorry_delta>=0 "proof restructured" outcome is distinguishable
