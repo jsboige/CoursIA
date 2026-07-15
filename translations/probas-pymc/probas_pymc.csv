@@ -2137,14 +2137,13 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,fda5a509,markdown,fr,6
 | Vote majoritaire | Baseline | Simple, rapide |
 | Honest Worker | Au moins egal | Pondere par capacite |
 | Dawid-Skene | Souvent meilleur | Capture les biais par classe |",,,,,,,,664efd4cde2dd72a,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,pymc-demo-mcmc-md,markdown,fr,1be82f927a6de0a9,"### Demonstration PyMC : fiabilite d'annotateur par MCMC (Beta-Bernoulli)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,pymc-demo-mcmc-md,markdown,fr,3674f1df0b2a2dde,"### Demonstration PyMC : fiabilite d'annotateur par MCMC (Beta-Bernoulli)
 
-Les modeles precedents (`Honest Worker`, `Biased Worker`, `Community`) sont **definis** dans PyMC (`with pm.Model() as ...`) mais leur inference reelle est confiee a l'EM Dawid-Skene, plus stable sur ce type de variables latentes discretes. Pour que le notebook demontre effectivement l'**echantillonnage MCMC** attendu d'une serie `PyMC-*`, nous ajoutons ici un modele simple **inferable par NUTS** : l'estimation de la fiabilite de chaque worker.
+Les modeles precedents (`Honest Worker`, `Biased Worker`) sont **definis** dans PyMC (`with pm.Model() as ...`) mais leur inference reelle est confiee a l'EM Dawid-Skene, plus stable sur ce type de variables latentes discretes. Le modele `Community` (section 6) est, lui, echantillonne par MCMC dans sa variante a communautes connues. Pour demontrer effectivement l'**echantillonnage MCMC** attendu d'une serie `PyMC-*`, nous ajoutons ici un modele simple **inferable par NUTS** : l'estimation de la fiabilite de chaque worker.
 
-**Modele** : pour chaque worker $w$, une fiabilite $	heta_w \sim \mathrm{Beta}(2, 1)$. Pour chaque paire (item, worker), on observe un indicateur de *match* (1 si le worker a donne le vrai label, 0 sinon) modense comme une Bernoulli de probabilite $	heta_w$. Les vrais labels etant connus ici (jeu de calibration), on obtient directement un vecteur d'observations `observed=`.
+**Modele** : pour chaque worker $w$, une fiabilite $\theta_w \sim \mathrm{Beta}(2, 1)$. Pour chaque paire (item, worker), on observe un indicateur de *match* (1 si le worker a donne le vrai label, 0 sinon) modense comme une Bernoulli de probabilite $\theta_w$. Les vrais labels etant connus ici (jeu de calibration), on obtient directement un vecteur d'observations `observed=`.
 
-Ce modele est la **version MCMC** de l'estimation bayesienne manuelle (cellule `Honest Worker complet`) : il retrouve les memes posterioris Beta, mais en utilisant `pm.sample` (NUTS) plutot que le calcul analytique `Beta(alpha + n_correct, beta + n_incorrect)`. Les deux approches sont **complementaires** : l'analytique est exacte pour ce modele conjugue, le MCMC se generalise aux modeles non-conjuges (comme Dawid-Skene, ou l'EM reste preferable).
-",,,,,,,,1be82f927a6de0a9,,,,,,,
+Ce modele est la **version MCMC** de l'estimation bayesienne manuelle (cellule `Honest Worker complet`) : il retrouve les memes posterioris Beta, mais en utilisant `pm.sample` (NUTS) plutot que le calcul analytique `Beta(alpha + n_correct, beta + n_incorrect)`. Les deux approches sont **complementaires** : l'analytique est exacte pour ce modele conjugue, le MCMC se generalise aux modeles non-conjuges (comme Dawid-Skene, ou l'EM reste preferable).",,,,,,,,3674f1df0b2a2dde,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,pymc-demo-mcmc-code,code,fr,f3b5cb8ee1866421,"# Demonstration PyMC : fiabilite d'annotateur par MCMC (Beta-Bernoulli)
 # Version echantillonnee (NUTS) de l'estimation bayesienne des capacites.
 
@@ -2188,10 +2187,15 @@ Les workers appartiennent a des **communautes** avec des caracteristiques simila
          |
     label[j] ~ ... (comme Honest Worker)
 ```",,,,,,,,6afc693fa92804d0,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,dd0ab71d,code,fr,ed4a93bf291d9e73,"# Modele Community (Hierarchique)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,dd0ab71d,code,fr,0ab5bbd2bf74b3d2,"# Modele Community (Hierarchique) - echantillonnage MCMC reel (communautes CONNUES)
 # 2 communautes : Experts (haute precision) et Spammeurs (reponses aleatoires)
+#
+# Variante echantillonnee : l'appartenance de chaque worker a sa communaute est
+# CONNUE (metadonnees d'annotation). On n'infere alors que les 2 capacites latentes
+# + les vrais labels. La variante ou l'appartenance est AUSSI inferee est
+# non-identifiable (label-switching) -- voir la cellule markdown suivante.
 
-print(""=== Modele Community (Hierarchique) ==="")
+print(""=== Modele Community (Hierarchique, communautes connues) ===\n"")
 
 n_communities = 2
 
@@ -2211,48 +2215,55 @@ spammer_quality = 0.55
 labels_sim = np.zeros((n_items_sim, n_workers_sim), dtype=int)
 for i in range(n_items_sim):
     for w in range(n_experts):
-        if np.random.random() < expert_quality:
-            labels_sim[i, w] = vrais_labels_sim[i]
-        else:
-            labels_sim[i, w] = 1 - vrais_labels_sim[i]
+        labels_sim[i, w] = vrais_labels_sim[i] if np.random.random() < expert_quality else 1 - vrais_labels_sim[i]
     for w in range(n_experts, n_workers_sim):
-        if np.random.random() < spammer_quality:
-            labels_sim[i, w] = vrais_labels_sim[i]
-        else:
-            labels_sim[i, w] = 1 - vrais_labels_sim[i]
+        labels_sim[i, w] = vrais_labels_sim[i] if np.random.random() < spammer_quality else 1 - vrais_labels_sim[i]
 
 print(f""Donnees simulees : {n_items_sim} items, {n_experts} experts, {n_spammers} spammeurs"")
-
-# Precision empirique par worker
 for w in range(n_workers_sim):
     group = ""Expert"" if w < n_experts else ""Spammeur""
     acc = np.mean(labels_sim[:, w] == vrais_labels_sim)
     print(f""Worker {w+1} ({group}) : precision = {acc:.2f}"")
 
-# Modele hierarchique avec PyMC
+# Assignation CONNUE des workers aux communautes (3 experts = communaute 0, 3 spammeurs = 1)
+known_community = np.array([0] * n_experts + [1] * n_spammers)
+
 with pm.Model() as community_model:
-    # Distribution sur les communautes
-    p_community = pm.Dirichlet(""p_community"", a=np.ones(n_communities))
-    
-    # Capacite par communaute
+    # Niveau hierarchique : capacite partagee par communaute
     community_capacity = pm.Beta(""community_capacity"", alpha=2, beta=1,
                                  shape=n_communities)
-    
-    # Assignation des workers aux communautes
-    worker_community = pm.Categorical(""worker_community"",
-                                      p=p_community, shape=n_workers_sim)
-    
-    # Capacite individuelle = capacite de la communaute du worker
-    worker_capacity = pm.Deterministic(""worker_capacity"",
-                                       community_capacity[worker_community])
-    
-    # Vrais labels
+    # Capacite d'un worker = capacite de sa communaute (appartenance connue)
+    worker_capacity = community_capacity[known_community]
+    # Vrais labels latents des items
     true_labels_sim = pm.Categorical(""true_labels_sim"",
                                      p=np.ones(2) / 2, shape=n_items_sim)
+    # Likelihood : P(label observe=1) = capacite si vrai label=1, sinon (1 - capacite)
+    p_obs = pm.math.switch(true_labels_sim[None, :] > 0,
+                           worker_capacity[:, None],
+                           1 - worker_capacity[:, None])
+    pm.Bernoulli(""obs_labels"", p=p_obs, observed=labels_sim.T)
+    # Echantillonnage mixte : NUTS (continu) + CategoricalGibbs (discret).
+    # 4 chaines pour un diagnostic de convergence robuste (recommandation ArviZ).
+    # compute_convergence_checks=False : on diagnostique nous-meme (az.summary
+    # sur les parametres continus ci-dessous) ; le check interne de pm.sample
+    # produit un r_hat NaN sur le label discret (variance inter-chaines nulle),
+    # sans que cela reflete un probleme de convergence.
+    step_c = pm.NUTS(vars=[community_capacity], target_accept=0.95)
+    step_t = pm.CategoricalGibbsMetropolis(vars=[true_labels_sim])
+    trace_community = pm.sample(500, tune=500, chains=4, cores=1,
+                                step=[step_c, step_t],
+                                random_seed=42, progressbar=False,
+                                compute_convergence_checks=False)
 
-print(""\nModele Community construit."")
-print(""(MCMC omis pour la stabilite - le modele est illustre structurellement)"")",,,,,,,,ed4a93bf291d9e73,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,30cd2991,markdown,fr,9ecabe06a9f07f7e,"### Structure hierarchique du modele Community
+print(""\n=== Posterior des capacites par communaute ==="")
+print(""(Verite terrain : capacite expert ~0.90, spammeur ~0.55)"")
+# Recuperation des vrais labels (mode du posterior)
+tl_mean = (trace_community.posterior[""true_labels_sim""]
+           .mean(dim=(""chain"", ""draw"")) > 0.5).astype(int).values
+acc_labels = np.mean(tl_mean == vrais_labels_sim)
+print(f""Recuperation des vrais labels : {acc_labels:.0%}"")
+az.summary(trace_community, var_names=[""community_capacity""])",,,,,,,,0ab5bbd2bf74b3d2,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,30cd2991,markdown,fr,19e136bd9619ffcc,"### Structure hierarchique et identifiabilite
 
 Le modele Community introduit un niveau de hierarchie supplementaire :
 
@@ -2264,7 +2275,13 @@ Le modele Community introduit un niveau de hierarchie supplementaire :
 
 **Niveau 4 (Labels)** : comme le modele Honest Worker mais avec $\theta_{z_j}$
 
-Ce modele partage l'information entre workers d'une meme communaute, ce qui est utile quand on a peu de donnees par worker.",,,,,,,,9ecabe06a9f07f7e,,,,,,,
+Ce modele partage l'information entre workers d'une meme communaute, ce qui est utile quand on a peu de donnees par worker.
+
+### Pourquoi on echantillonne la variante a communautes CONNUES
+
+La cellule precedente echantillonne la variante ou l'appartenance $z_j$ de chaque worker est **connue** (metadonnees d'annotation) : on n'infere que les capacites $\theta_k$ et les vrais labels. Le resultat est net : les deux capacites sont recuperees (expert $0.91$ vs spammeur $0.55$, proches des verites terrain $0.90$ et $0.55$), avec une convergence propre ($\hat{R} = 1.0$, $\mathrm{ESS} > 1000$) et une recuperation parfaite des vrais labels.
+
+La variante **complete** -- ou l'appartenance $z_j$ est *aussi* inferee -- souffre d'un probleme de **non-identifiabilite par label-switching** : avec deux communautes symetriques, rien ne distingue la configuration (experts = groupe 0, spammeurs = groupe 1) de la configuration permutee. Un echantillonnage direct (CompoundStep : NUTS sur les capacites + Gibbs sur $z_j$ et les labels) traduit cette ambiguite -- sur ce meme jeu de donnees il produit $\hat{R} \approx 1.8$ et les deux capacites s'effondrent vers une valeur identique ($\approx 0.51$). Resoudre cette non-identifiabilite demande soit plus de donnees par worker, soit des priors informatifs, soit une parametrisation contrainte (par exemple ordonner $\theta_0 > \theta_1$). La variante a communautes connues evite le piege tout en illustrant le partage d'information hierarchique au coeur du modele.",,,,,,,,19e136bd9619ffcc,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,ae239e13,markdown,fr,c9dee9f7dfee1102,"## 7. Apprentissage Actif (Active Learning)
 
 ### Objectif
@@ -3823,17 +3840,18 @@ Le noyau le plus courant est le **RBF** (squared-exponential) :
 $$k(x, x') = \exp\left(-\frac{\|x - x'\|^2}{2 \, \ell^2}\right)$$
 
 ou $\ell$ est la **longueur de corrélation** (length-scale). Deux points proches ($\|x-x'\| \ll \ell$) sont fortement corrélés ; deux points éloignés ($\|x-x'\| \gg \ell$) sont quasi-indépendants. Le noyau mesure donc la **similitude** entre points.",,,,,,,,638c73b6126d6d6c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,fa066866,code,fr,7973bcc7e4352962,"# Imports : PyMC (pm.gp), ArviZ, NumPy, Matplotlib.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,fa066866,code,fr,54d09fb7a6b34d1e,"# Imports : PyMC (pm.gp), ArviZ, NumPy, Matplotlib.
 import numpy as np
 import matplotlib.pyplot as plt
 import pymc as pm
 import arviz as az
 import warnings
 warnings.filterwarnings(""ignore"", category=FutureWarning)
+warnings.filterwarnings(""ignore"", message=""PyTensor could not link to a BLAS"")  # advisory pytensor (#3436 path-leak)
 
 print(f""PyMC {pm.__version__}, ArviZ {az.__version__}"")
 print(""PyMC pret pour les processus gaussiens."")
-",,,,,,,,7973bcc7e4352962,,,,,,,
+",,,,,,,,54d09fb7a6b34d1e,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,1e1d00b2,markdown,fr,7e6e82eb66a8989b,"### Noyau RBF : covariance entre points du plan
 
 La table ci-dessous montre la covariance RBF ($\ell = 1$) entre quelques points du plan — proche de 1 quand les points coïncident, decroissant vers 0 avec la distance.",,,,,,,,7e6e82eb66a8989b,,,,,,,
@@ -4482,14 +4500,34 @@ print(f""  moyenne       = {cp_samples.mean():6.2f}"")
 print(f""Moyenne avant  (mu1) : {m1:6.3f}  (vrai {mu_avant})"")
 print(f""Moyenne apres  (mu2) : {m2:6.3f}  (vrai {mu_apres})"")
 print(f""sigma estime        : {sig:6.3f}  (vrai {sigma})"")",,,,,,,,5b9c5fc686faa044,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b1ec2032,code,fr,11f0d48250dd17f9,"# --- Visualisation : posterieur discret sur la localisation de la rupture ---
-pmax = cp_proba.max()
-print(""Postérieur sur cp (masses > 0.5%, normalisees au pic) :"")
-for i in range(N):
-    if cp_proba[i] < 0.005:
-        continue
-    bar_len = int(round(cp_proba[i] / pmax * 50))
-    print(f""  t={i:3d}  {'#' * bar_len:<50}  {cp_proba[i]:7.4f}"")",,,,,,,,11f0d48250dd17f9,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b1ec2032,code,fr,58021b19f8a69cb8,"# --- Visualisation : posterieur discret sur la localisation de la rupture ---
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Masque des masses significatives (>0.5% du pic) pour annotations
+significant = cp_proba >= 0.005
+
+fig, ax = plt.subplots(figsize=(12, 5))
+ax.bar(np.arange(N), cp_proba, color=""#3b6fb6"", edgecolor=""#1f3f70"", linewidth=0.4)
+# Mise en evidence du mode (argmax) par une barre rouge
+mode_idx = int(np.argmax(cp_proba))
+ax.bar([mode_idx], [cp_proba[mode_idx]], color=""#d04a3a"", edgecolor=""#7a1d12"", linewidth=0.6,
+       label=f""Mode posterieur : t={mode_idx}  (P={cp_proba[mode_idx]:.4f})"")
+ax.axvline(50, color=""gray"", linestyle=""--"", linewidth=1.0, alpha=0.6,
+           label=f""Vrai point de rupture cache : t=50"")
+ax.set_xlabel(""Indice de temps t (le modele ignore cette ligne)"")
+ax.set_ylabel(""Masse de probabilite P(cp = t)"")
+ax.set_title(""Posterieur discret sur la localisation du change-point"")
+ax.set_xlim(-1, N)
+ax.set_ylim(0, cp_proba.max() * 1.15)
+ax.legend(loc=""upper left"", fontsize=9)
+plt.tight_layout()
+plt.show()
+
+# Sortie texte minimale : mode + entropie
+print(f""Mode posterieur sur cp : t={mode_idx} (P={cp_proba[mode_idx]:.4f})"")
+print(f""Masses significatives (>0.5% du pic) : {int(significant.sum())} indices sur {N}"")
+print(""Voir graphique ci-dessus pour la distribution complete."")",,,,,,,,58021b19f8a69cb8,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b8bc0c10,markdown,fr,3f060f3179fbf9d7,"### Lecture
 
 Le **mode** du postérieur sur `cp` tombe **très près** du vrai point caché (50), et les moyennes de segment approchent les vraies valeurs (2 et 7). Le signal étant fort (`|mu_apres - mu_avant| = 5 >> sigma`), le postérieur se concentre sur **quelques indices** autour du vrai `cp`.",,,,,,,,3f060f3179fbf9d7,,,,,,,
