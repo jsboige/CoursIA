@@ -5641,12 +5641,17 @@ probabilité $\epsilon$ que l'adversaire joue **Tit-for-Tat** (TFT), alors la co
 pendant la majeure partie du jeu, même fini. ""A small amount of incomplète information can have a large effect
 on the equilibrium of a game.""
 ",,,,,,,,cf5e5e81a47a8993,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,5aaea3f65cbcfc4d,"#nullable enable
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,b353dc6f4b061535,"#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
 
 const int T = 20;
 const double Epsilon = 0.05;
@@ -5738,13 +5743,35 @@ for (int t = 0; t < T; t += 4)
     double avg = 0; int cnt = 0;
     for (int i = t; i < end; i++) { avg += coopRate[i]; cnt++; }
     avg /= cnt;
-    string bar = new string('#', (int)Math.Round(avg * 20));
-    sb2.AppendLine($""    tours {t + 1,2}-{end,2}: {avg * 100,5:F1}%  {bar}"");
+    sb2.AppendLine($""    tours {t + 1,2}-{end,2}: {avg * 100,5:F1}%"");
 }
 sb2.AppendLine();
 sb2.Append(""  -> Cooperation elevee en debut de jeu, effondrement sur la fin (effet horizon fini)."");
 sb2.ToString().Display();
-",,,,,,,,5aaea3f65cbcfc4d,,,,,,,
+
+// Line chart Plotly : taux de cooperation mutuelle (C,C) par tour.
+// La courbe en hockey-stick -- cooperation elevee en debut, effondrement sur la fin --
+// est la signature de KMRW : avec un peu d'incertitude sur le type (TFT), les joueurs
+// cooperent jusqu'a l'approche de l'horizon fini ou la defection retro-propage.
+{
+    var xs = Enumerable.Range(1, T).Select(t => (object)t).ToArray();
+    var ys = coopRate.Select(v => (object)Math.Round(v * 100.0, 1)).ToArray();
+    var trace = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = xs, [""y""] = ys, [""type""] = ""scatter"", [""mode""] = ""lines+markers"",
+                                         [""name""] = ""Cooperation mutuelle (C,C)"",
+                                         [""line""] = new Dictionary<string,object>{ [""color""] = ""#2a6dba"", [""width""] = 2 } });
+    var layout = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""KMRW : taux de cooperation par tour (effet horizon fini)"" },
+                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Tour"" }, [""dtick""] = 1 },
+                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Cooperation mutuelle (%"" }, [""range""] = new object[] { 0, 100 } },
+                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 50, [""r""] = 30, [""b""] = 50 } });
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
+}
+",,,,,,,,b353dc6f4b061535,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,9292a753,markdown,fr,638dec1c7218a9dc,"## Équilibre bayésien parfait (PBE)
 
 Un PBE precise, pour chaque ensemble d'information :
@@ -8851,7 +8878,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,0fdcec
 
 > **Implication (Dixit 1980)** : si le leader peut s'engager de maniere credible, il a toujours interet a le faire. Mais du point de vue collectif, Cournot Pareto-domine Stackelberg.
 ",,,,,,,,aac909521937922e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,dcdf764b,markdown,fr,b49fdcab664da791,"## 6. Poursuite-evasion : jeu differentiel a somme nulle (Isaacs)
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,dcdf764b,markdown,fr,0602b06c3d1ca353,"## 6. Poursuite-evasion : jeu differentiel a somme nulle (Isaacs)
 
 Le twin Python laisse la poursuite-evasion en **exercice non resolu**. Ce jumeau la modelise et la simule en RK4 -- c'est l'illustration canonique (Isaacs 1965) d'un jeu differentiel a somme nulle.
 
@@ -8870,8 +8897,14 @@ Si $E$ fuit **droit devant** le long de l'axe $P \to E$, toute sa vitesse $v_e$ 
 $P$ vise a chaque instant la position de $E$ (pure pursuit) ; $E$ fuit **perpendiculairement** a la ligne de visee. La vitesse de $E$ est alors orthogonale a la ligne $P \to E$ : sa **composante radiale est nulle**, donc $E$ ne contribue pas a etirer la distance. Celle-ci se ferme a la vitesse $v_p$ seule : $t^* = d_0 / v_p = 5 < 10$. $E$ gaspille toute sa vitesse en pure perte laterale.
 
 > **Lecon (Isaacs)** : contre un poursuivant en pure pursuit, la meilleure evasion est de **fuir droit devant** (maximiser la composante radiale anti-$P$), jamais de fuir perpendiculairement. Cela semble contre-intuitif (on croit souvent qu'esquiver lateralement aide) mais la geometrie est sans appel : seule la composante de vitesse **le long de la ligne de visee** compte pour le temps de capture.
-",,,,,,,,b49fdcab664da791,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,802df408,code,fr,0c557a78d8d4afd6,"// --- Poursuite-evasion 2D en RK4 (from-scratch) ---
+
+### 6.4 Evasion vers un refuge — cas non resoluble analytiquement
+
+Les cas radial et perpendiculaire sont **verifiables analytiquement** (formules $d_0/(v_p-v_e)$ et $d_0/v_p$) : le simulateur RK4 s'y contente de confirmer une formule connue. Pour **exercer reellement l'integrateur** sur un cas ou aucune formule close n'existe, considerons une evasion vers un **refuge** : $E$ ne fuit pas $P$ directement, mais file vers une zone sure $R$ situee **hors de l'axe $P \to E$** (ex. $R = (10, 8)$, au-dessus de l'axe).
+
+La trajectoire de $E$ n'est alors ni radiale ni perpendiculaire (composantes melangees), et celle de $P$ (pure pursuit) devient **courbe**. Le temps de capture $t^*$ n'admet plus de formule analytique simple : seule l'integration numerique (RK4) le donne. Ce scenario est central en jeux differentiels (Isaacs : *escape to a target set*).
+",,,,,,,,0602b06c3d1ca353,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,802df408,code,fr,327fd6f0fc0fd804,"// --- Poursuite-evasion 2D en RK4 (from-scratch) ---
 // Etat x = [px, py, ex, ey]. Strategie de P = pure pursuit (vers E).
 // Strategie de E : (a) radiale : fuit droit devant P ; (b) perpendiculaire.
 public static double Distance(double[] p, double[] e)
@@ -8916,6 +8949,46 @@ var e0 = new double[] { 10.0, 0.0 };
 
 SimulatePursuit(vp, ve, p0, e0, ""radial"", dt: 0.001, eps: 0.05, tMax: 50.0, out double tRad);
 SimulatePursuit(vp, ve, p0, e0, ""perpendiculaire"", dt: 0.001, eps: 0.05, tMax: 200.0, out double tPerp);
+
+// --- Cas 3 : evasion vers un refuge (zone sure) ---
+// E ne fuie pas P directement : il file vers un point de refuge R hors de l'axe P->E.
+// Sa trajectoire n'est alors NI radiale NI perpendiculaire (composantes melangees),
+// et celle de P (pure pursuit) devient courbe. Le temps de capture/echappement n'admet
+// PLUS de formule analytique simple (d0/(vp-ve) ou d0/vp) : seule l'integration RK4 le donne.
+double[] refuge = new double[] { 10.0, 8.0 };  // au-dessus de l'axe P->E
+public static double SimulatePursuitRefuge(double vp, double ve, double[] startP, double[] startE,
+                                           double[] refuge, double dt, double eps, double tMax,
+                                           out bool escaped)
+{
+    double[] x = { startP[0], startP[1], startE[0], startE[1] };
+    double t = 0.0;
+    double[] Dyn(double tt, double[] s)
+    {
+        double dpx = s[2] - s[0], dpy = s[3] - s[1];   // P -> E
+        double d = Math.Sqrt(dpx * dpx + dpy * dpy);
+        if (d < 1e-12) return new double[4];
+        double ux = dpx / d, uy = dpy / d;              // P : pure pursuit vers E
+        double drx = refuge[0] - s[2], dry = refuge[1] - s[3];  // E -> refuge
+        double dr = Math.Sqrt(drx * drx + dry * dry);
+        if (dr < 1e-12) return new double[] { vp * ux, vp * uy, 0, 0 };
+        double wx = drx / dr, wy = dry / dr;            // E : file vers le refuge
+        return new double[] { vp * ux, vp * uy, ve * wx, ve * wy };
+    }
+    while (t < tMax)
+    {
+        x = Rk4Step(Dyn, t, x, dt);
+        t += dt;
+        double dPE = Distance(new double[] { x[0], x[1] }, new double[] { x[2], x[3] });
+        double dER = Distance(new double[] { x[2], x[3] }, refuge);
+        if (dPE < eps) { escaped = false; return t; }      // P capture E
+        if (dER < eps) { escaped = true;  return t; }      // E atteint le refuge (echappe)
+    }
+    escaped = true;
+    return tMax;
+}
+
+double tRefuge = SimulatePursuitRefuge(vp, ve, p0, e0, refuge, dt: 0.001, eps: 0.05, tMax: 200.0, out bool eRefugeEscaped);
+double dRefuge = Distance(e0, refuge);  // distance E0 -> refuge (borne inferieure du temps d'E : dRefuge/ve)
 double tRadTheory = 10.0 / (vp - ve);  // d0 / (vp - ve) = 10
 
 var sb7 = new StringBuilder();
@@ -8923,21 +8996,24 @@ sb7.AppendLine(""Poursuite-evasion (vp=2, ve=1, d0=10, eps=0.05) en RK4"");
 sb7.AppendLine(new string('=', 60));
 sb7.AppendLine($""  evasion radiale        : t* = {tRad:F3}  (theorie d0/(vp-ve) = {tRadTheory:F3})  <- meilleur cas pour E"");
 sb7.AppendLine($""  evasion perpendiculaire: t* = {tPerp:F3}  (theorie d0/vp      = {10.0/vp:F3})  <- pire cas pour E"");
+sb7.AppendLine($""  evasion vers refuge   : t* = {tRefuge:F3}  (E atteint refuge a {dRefuge:F1}, borne dRefuge/ve = {dRefuge/ve:F3})  {(eRefugeEscaped ? ""<- E ECHAPPE (atteint le refuge)"" : ""<- P capture E en chemin"")}"");
+sb7.AppendLine($""  (refuge hors axe P->E : trajectoire courbe, PAS de formule analytique -> RK4 necessaire)"");
 sb7.AppendLine();
 sb7.AppendLine($""  ecart radial vs theorie : {Math.Abs(tRad - tRadTheory):F4}"");
 sb7.AppendLine(""  -> vp > ve garantit la capture en temps fini (Isaacs 1965)."");
 sb7.AppendLine(""  -> radial maximise t* (E oppose toute sa vitesse) ; perpendiculaire le minimise (E gaspille sa vitesse)."");
 Show(sb7.ToString());
-",,,,,,,,0c557a78d8d4afd6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,df0970aa,markdown,fr,87ac2fea90aebf71,"### 6.4 Interpretation : theoreme d'Isaacs
+",,,,,,,,327fd6f0fc0fd804,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,df0970aa,markdown,fr,05ec1707fd3a7484,"### 6.5 Interpretation : theoreme d'Isaacs
 
 1. **Capture garantie** : des que $v_p > v_e$, le poursuivant capture l'evasif en temps fini, quelle que soit la strategie d'evasion. C'est le resultat fondamental d'Isaacs (1965).
 2. **Evasion radiale = meilleur cas pour E** : $E$ oppose toute sa vitesse, la distance se ferme a $(v_p - v_e)$, $t^* = d_0/(v_p-v_e)$ maximal.
 3. **Evasion perpendiculaire = pire cas pour E** : la composante radiale de $E$ est nulle, fermeture a $v_p$ seul, $t^* = d_0/v_p$ minimal. $E$ gaspille sa vitesse lateralement.
 4. **Lien avec les jeux LQ** : la poursuite-evasion est un cas particulier de jeu differentiel a somme nulle ; la resolution passe aussi par une equation HJB/Riccati, mais l'approche geometrique directe (pure pursuit) est ici suffisante et lisible.
+5. **Evasion vers refuge (cas non analytique)** : avec $R=(10,8)$ hors de l'axe, le simulateur donne $t^* \approx 6{,}6$, **intermediaire** entre radial ($\approx 10$) et perpendiculaire ($\approx 5$), et surtout $P$ capture $E$ **avant** qu'il n'atteigne le refuge (la borne $d_{refuge}/v_e = 8$ n'est pas atteinte). Ce resultat — ni l'un ni l'autre cas limite — n'est derivable d'aucune formule close : c'est precisement la que l'integrateur RK4 justifie son existence, la ou les cas radial et perpendiculaire ne faisaient que verifier des formules connues.
 
 > **Prong B** : ce twin C# transforme un exercice vide du Python en exemple pleinement resolu, illustrant le moteur differentiel la ou le Python se contentait d'une esquisse.
-",,,,,,,,87ac2fea90aebf71,,,,,,,
+",,,,,,,,05ec1707fd3a7484,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,240db1b9,markdown,fr,99f6c4996559eb7d,"## Synthese et transition vers les jeux cooperatifs
 
 ### Ce que nous avons appris
@@ -12717,22 +12793,40 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,c3e3af
 
 > **Lecon economique** : la valeur d'une ressource ne depend pas seulement de son utilite
 > intrinseque, mais de sa **rarete relative** par rapport aux ressources complementaires.",,,,,,,,a05b42c5b483450c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,a4847bd6993ddab6,"// Visualisation ASCII des valeurs de Shapley (jeu de gants)
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,6d12f18589ca161e,"// Visualisation Plotly des valeurs de Shapley (jeu de gants) -- technique C548-L2
+// (formatter HTML integre au kernel, zero dependence NuGet cote charting, rendu Plotly.js brut).
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
 Console.WriteLine(""Valeurs de Shapley (jeu de gants) :"");
-Console.WriteLine();
-double maxBar = 0.8;
 foreach (var (lab, val) in gloveLabels.Zip(shapleyGlove))
+    Console.WriteLine($""  {lab,-20} {val:F4}"");
+
+// Bar chart Plotly : le jeu de gants illustre un pouvoir asymetrique -- un seul joueur a un
+// gant droit (rare) -> sa valeur (0,667) domine celle des deux joueurs au gant gauche (0,167).
+// La ligne pointillee marque le partage egal (1/3), jamais atteint ici.
 {
-    int width = (int)Math.Round(val / maxBar * 30);
-    string bar = new string('#', width);
-    string marker = Math.Abs(val - 1.0/3) < 1e-9 ? ""  <-- partage egal (1/3)"" : """";
-    Console.WriteLine($""  {lab,-20} {val:F4} |{bar}{marker}"");
+    var labs = gloveLabels.ToArray();
+    var vals = shapleyGlove.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var trace = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = labs, [""y""] = vals, [""type""] = ""bar"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
+    var layout = ""{\""title\"":{\""text\"":\""Valeurs de Shapley - jeu de gants\""},"" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Joueur\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Valeur de Shapley\""},\""range\"":[0,0.8]},"" +
+                 ""\""shapes\"":[{\""type\"":\""line\"",\""xref\"":\""paper\"",\""x0\"":0,\""x1\"":1,"" +
+                 ""\""y0\"":0.3333,\""y1\"":0.3333,\""line\"":{\""color\"":\""#e8743b\"",\""width\"":2,\""dash\"":\""dash\""}}],"" +
+                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
 }
-double third = 1.0 / 3;
-int twidth = (int)Math.Round(third / maxBar * 30);
-string egalLbl = ""Partage egal 1/3"";
-Console.WriteLine($""  {egalLbl,-20} {third:F4} |{new string('-', twidth)}"");
-",,,,,,,,a4847bd6993ddab6,,,,,,,
+",,,,,,,,6d12f18589ca161e,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,2a85c633,markdown,fr,1f92ee3378053f31,"### Exercice 1 : Jeu de gants etendu a 4 joueurs
 
 **Objectif** : etendre le jeu de gants a 4 joueurs (L1, L2 gauches ; R1, R2 droits).
@@ -12915,21 +13009,34 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,260a2c
 **Paradoxe classique** : les non-permanents ont **plus de pouvoir relatif** que leur poids.
 Avec 6% du poids, ils captent 13% du pouvoir. Inversement, les permanents (41% du poids) n'ont
 que 30% du pouvoir. Le poids nominal ment sur le pouvoir reel.",,,,,,,,fbb305631fd67fda,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,ac81874e60132c4b,"// Visualisation ASCII comparative Shapley vs Banzhaf (Mini-ONU).
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,5e94f92a075f0644,"// Comparaison Plotly Shapley vs Banzhaf (Mini-ONU) -- (PlotlyHtml defini en cell[9], technique C548-L2).
+// Deux indices de pouvoir : Shapley (valeur) et Banzhaf (pivots). Comparer les deux met en evidence
+// que le pouvoir reel differe du poids nominal, et que les deux indices divergent legerement.
 Console.WriteLine(""Comparaison Shapley vs Banzhaf (Mini-ONU) :"");
-Console.WriteLine();
-double maxPow = Math.Max(shapleyUN.Max(), banzhafUN.Max());
 foreach (var (lab, sh, ba) in labelsUN.Zip(shapleyUN, banzhafUN))
+    Console.WriteLine($""  {lab,-8} Shapley {sh:F4}  Banzhaf {ba:F4}"");
 {
-    int wS = (int)Math.Round(sh / maxPow * 30);
-    int wB = (int)Math.Round(ba / maxPow * 30);
-    Console.WriteLine($""  {lab} (poids {wUN[Array.IndexOf(labelsUN, lab)]})"");
-    Console.WriteLine($""    Shapley {sh:F4} |{new string('#', wS)}"");
-    Console.WriteLine($""    Banzhaf {ba:F4} |{new string('+', wB)}"");
+    var labs = labelsUN.ToArray();
+    var sh = shapleyUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
+    var ba = banzhafUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var tShapley = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = labs, [""y""] = sh, [""type""] = ""bar"", [""name""] = ""Shapley"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
+    var tBanzhaf = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = labs, [""y""] = ba, [""type""] = ""bar"", [""name""] = ""Banzhaf"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#e8743b"" } });
+    var layout = ""{\""barmode\"":\""group\"",\""title\"":{\""text\"":\""Mini-ONU : Shapley vs Banzhaf (2 indices de pouvoir)\""},"" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Etat membre\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Indice de pouvoir\""}},"" +
+                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + tShapley + "","" + tBanzhaf + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
 }
-Console.WriteLine();
-Console.WriteLine(""Note : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");
-",,,,,,,,ac81874e60132c4b,,,,,,,
+Console.WriteLine(""\nNote : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");
+",,,,,,,,5e94f92a075f0644,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,8afd8af8,markdown,fr,ee1cc34608d4f348,"---
 
 ## 5. Jeux Convexes : Shapley dans le Core
@@ -19871,7 +19978,14 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,a9aa71af,mark
 
 Sur les 576 jeux, on compte combien ont 0, 1, 2, 3 ou 4 équilibres purs. Cette distribution révèle la **topologie de l'espace** : la plupart des jeux ont 1-2 équilibres, une minorité n'en a aucun (Matching Pennies et voisins).
 ",,,,,,,,adb841935210a9a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,4d06fe0ff149c41a,"// Cellule 7 — Classification des 576 jeux par nombre de Nash
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,181ffda8b3d5caa2,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
+// (rendu Plotly, technique C548-L2 : formatter HTML integre au kernel, zero dependence NuGet charting)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
 var histogram = new Dictionary<int, int>();
 foreach (var g in allGames)
 {
@@ -19880,22 +19994,45 @@ foreach (var g in allGames)
     histogram[n]++;
 }
 
+// Tableau texte du recensement
 var sb7 = new System.Text.StringBuilder();
-sb7.AppendLine("" #Nash | #Jeux | %     | Histogramme"");
-sb7.AppendLine(new string('-', 50));
+sb7.AppendLine("" #Nash | #Jeux | %"");
+sb7.AppendLine(new string('-', 30));
 foreach (var kv in histogram.OrderBy(x => x.Key))
 {
     double pct = 100.0 * kv.Value / allGames.Count;
-    int bars = (int)Math.Round(pct);   // 1 char par %
-    sb7.AppendLine($"" {kv.Key,5} | {kv.Value,5} | {pct,4:F1}% | {new string('#', bars)}"");
+    sb7.AppendLine($"" {kv.Key,5} | {kv.Value,5} | {pct,5:F1}%"");
 }
 sb7.ToString().Display();
+
+// Bar chart Plotly : nombre de jeux par nombre d'equilibres de Nash purs.
+// Le recensement exhaustif des 576 jeux 2x2 revele la distribution des nombres
+// d'equilibres (0, 1, 2, ...) -- la majorite des jeux a 0 ou 1 equilibre pur.
+{
+    var ordered = histogram.OrderBy(x => x.Key).ToList();
+    var keys = ordered.Select(kv => kv.Key.ToString()).Select(v => (object)v).ToArray();
+    var counts = ordered.Select(kv => (object)(double)kv.Value).ToArray();
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var trace = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = keys, [""y""] = counts, [""type""] = ""bar"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" },
+                                         [""text""] = ordered.Select(kv => (object)kv.Value.ToString()).ToArray(),
+                                         [""textposition""] = ""auto"" });
+    var layout = ""{\""title\"":{\""text\"":\""Recensement : nombre de jeux 2x2 par nombre d equilibres de Nash purs (sur 576)\""},"" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Nombre d equilibres de Nash purs\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Nombre de jeux\""}},"" +
+                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
+}
 
 int totalChecked = histogram.Values.Sum();
 $""Total verifie : {totalChecked}/576 (attendu 576)"".Display();
 int gamesWithNash = histogram.Where(x => x.Key >= 1).Sum(x => x.Value);
 $""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0*gamesWithNash/allGames.Count:F1}%)."".Display();
-",,,,,,,,4d06fe0ff149c41a,,,,,,,
+",,,,,,,,181ffda8b3d5caa2,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,67963dee,markdown,fr,777281bf8f7a073d,"## 8. Connexité du graphe des swaps
 
 Le graphe des swaps (576 nœuds, arêtes = swaps adjacents) est-il **connexe** ? C'est-à-dire : peut-on transformer n'importe quel jeu en n'importe quel autre par une séquence de swaps ? On le vérifie par BFS depuis un nœud — si on atteint les 576, le graphe est connexe.
@@ -31185,7 +31322,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,89d51
 ## 4. Visualisation interactive
 
 Creons une visualisation des valeurs de Grundy pour mieux comprendre leur structure.",,,,,,,,8d71f52facf5f0b1,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,460499421b19df37,"// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,9017e93b51b2399f,"// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
 var gamesToCompare = new Dictionary<string, HashSet<int>>
 {
     [""Fibonacci-like""] = new HashSet<int> { 1, 2 },
@@ -31194,6 +31331,7 @@ var gamesToCompare = new Dictionary<string, HashSet<int>>
     [""Pair seulement""]   = new HashSet<int> { 2, 4, 6 },
 };
 int maxN = 24;
+var grundyRows = new List<(string Name, List<int> Values)>();
 foreach (var kv in gamesToCompare)
 {
     var memo = new Dictionary<int, int>();
@@ -31201,15 +31339,33 @@ foreach (var kv in gamesToCompare)
     var (pre, period, _) = FindPeriodicity(kv.Value, maxN: 200);
     string ms = ""{"" + string.Join("","", kv.Value.OrderBy(x => x)) + ""}"";
     string perStr = period > 0 ? $""periode={period}"" : ""periode=?"";
-    Console.WriteLine($""S({ms}) {kv.Key} [{perStr}]"");
-    for (int n = 0; n < maxN; n++)
-    {
-        string bar = new string('#', values[n]);
-        string mark = values[n] == 0 ? "" <- P"" : """";
-        Console.WriteLine($""  {n,2}|{bar}{mark}"");
-    }
-    Console.WriteLine();
-}",,,,,,,,460499421b19df37,,,,,,,
+    Console.WriteLine($""S({ms}) {kv.Key} [{perStr}] ; P-positions (G=0): "" + string.Join("","", Enumerable.Range(0, maxN).Where(n => values[n] == 0)));
+    grundyRows.Add((kv.Key, values));
+}
+
+// Heatmap Plotly : valeurs de Grundy par variante (ligne) x position N (colonne).
+// Les bandes de couleur repetees = periodicite (caractere distinctif du solveur combinatoire).
+// (infra PlotlyHtml definie en cell[8], technique C548-L2)
+{
+    var yLabels = grundyRows.Select(r => (object)r.Item1).ToArray();
+    var xLabels = Enumerable.Range(0, maxN).Select(n => (object)n).ToArray();
+    int maxG = Math.Max(1, grundyRows.Max(r => r.Item2.Max()));
+    var z = grundyRows.Select(r => (object)r.Item2.Select(v => (object)v).ToArray()).ToArray();
+    var trace = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""type""] = ""heatmap"", [""z""] = z, [""x""] = xLabels, [""y""] = yLabels,
+                                         [""colorscale""] = ""Viridis"", [""zmin""] = 0, [""zmax""] = maxG,
+                                         [""colorbar""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Grundy G"" } } });
+    var layout = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""Valeurs de Grundy : periodicite des jeux de soustraction (G=0 = position P/perdante)"" },
+                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Position N"" }, [""dtick""] = 1 },
+                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Variante de jeu"" } },
+                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 140, [""r""] = 40, [""b""] = 50 } });
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
+}",,,,,,,,9017e93b51b2399f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,c641fe9a,markdown,fr,36242b6d0daae807,"---
 
 ## 5. Jeu de Chomp

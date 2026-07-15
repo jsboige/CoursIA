@@ -103,9 +103,9 @@ Chaque methode correspond a une etape de la boucle d'evolution. La metaheuristiq
 | `MetaPopulation` | Population sans tri implicite, les metaheuristiques adressent les individus par index stable |
 | `FitnessBasedElitistReinsertion` | Garde les meilleurs chromosomes (parents+descendance) -- elitisme explicite |
 | `EvolutionContext` | Contexte d'evolution partage entre les etapes, contient index, stage, parametres caches |",,,,,,,,dc61b43b97b773ba,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-3-setup-intro,markdown,fr,bc50e43a0a148dc1,"## 3. Premier exemple : minimisation d'une fonction quadratique
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-3-setup-intro,markdown,fr,4cb748a0d2e21693,"## 3. Premier exemple : minimisation de Rastrigin (paysage multimodal)
 
-Nous allons configurer un algorithme genetique avec `MetaGeneticAlgorithm` pour minimiser une fonction simple : $f(x) = \sum_{i=1}^{n} x_i^2$ (fonction Sphere).
+Nous allons configurer un algorithme genetique avec `MetaGeneticAlgorithm` pour minimiser la fonction de **Rastrigin** : $f(x) = 10n + \sum_{i=1}^{n} \left( x_i^2 - 10\cos(2\pi x_i) \right)$. Contrairement a la Sphere (convexe, optimum trivial a l'origine), Rastrigin est **multimodale** : parsemee d'optima locaux (un par valeur entiere), elle oblige le GA a explorer et a echapper aux pieges. C'est precisement ce qui rend le crossover et la metaheuristique discriminants -- la ou la Sphere laissait toutes les configurations converger vers 0.
 
 **Configuration** :
 - Chromosome : `FloatingPointChromosome` (genes dans $[-10, 10]$)
@@ -113,23 +113,28 @@ Nous allons configurer un algorithme genetique avec `MetaGeneticAlgorithm` pour 
 - Crossover : `OnePointCrossover`
 - Mutation : `UniformMutation` (probabilite 0.1)
 - Metaheuristique : `DefaultMetaHeuristic` (comportement standard)
-- Terminaison : 50 generations",,,,,,,,bc50e43a0a148dc1,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,quadratic-setup,code,fr,d5849d1924d3cf6a,"// Setup: define the fitness function (minimize sum of squares)
-public class QuadraticFitness : IFitness
+- Terminaison : 50 generations",,,,,,,,4cb748a0d2e21693,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,quadratic-setup,code,fr,428e65a031066121,"// Setup: fitness = fonction de Rastrigin (multimodale, nombreux optima locaux)
+// f(x) = 10*n + sum( x_i^2 - 10*cos(2*pi*x_i) ) ; minimum global 0 a l'origine,
+// mais parsemee d'optima locaux (un par valeur entiere). Contrairement a la Sphere
+// (convexe, optimum trivial), le GA doit ici echapper aux pieges locaux -- c'est
+// ce qui rend le crossover et le choix de metaheuristique pertinents.
+public class RastriginFitness : IFitness
 {
     public double Evaluate(IChromosome chromosome)
     {
         var fc = (FloatingPointChromosome)chromosome;
         var genes = fc.ToFloatingPoints();
-        double sum = 0.0;
-        foreach (var g in genes) sum += g * g;
-        // Lower is better, but GeneticSharp maximizes, so we invert
-        return 1.0 / (1.0 + sum);
+        int n = genes.Length;
+        double r = 10.0 * n;
+        foreach (var g in genes) r += g * g - 10.0 * Math.Cos(2.0 * Math.PI * g);
+        // Rastrigin est a minimiser ; GeneticSharp maximise, on inverse donc (1/(1+f))
+        return 1.0 / (1.0 + r);
     }
 }
 
-Console.WriteLine(""QuadraticFitness definie : minimise f(x) = sum(x_i^2)"");",,,,,,,,d5849d1924d3cf6a,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,quadratic-run,code,fr,7c6a45007ad99434,"// Run MetaGeneticAlgorithm with DefaultMetaHeuristic on the quadratic function
+Console.WriteLine(""RastriginFitness definie : minimise f(x) = 10n + sum( x_i^2 - 10*cos(2*pi*x_i) )  [multimodale]"");",,,,,,,,428e65a031066121,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,quadratic-run,code,fr,f59bd826909670fe,"// Run MetaGeneticAlgorithm with DefaultMetaHeuristic on the Rastrigin function
 
 // Chromosome: 4 genes, each in [-10, 10]
 var adamChromosome = new FloatingPointChromosome(
@@ -144,7 +149,7 @@ var population = new MetaPopulation(50, 50, adamChromosome);
 // GA with DefaultMetaHeuristic
 var ga = new MetaGeneticAlgorithm(
     population,
-    new QuadraticFitness(),
+    new RastriginFitness(),
     new TournamentSelection(3),
     new OnePointCrossover(),
     new UniformMutation());
@@ -168,36 +173,36 @@ ga.Start();
 var best = (FloatingPointChromosome)ga.BestChromosome;
 var bestGenes = best.ToFloatingPoints();
 var bestFitness = ga.BestChromosome.Fitness.Value;
-// Convert back to the original objective value (sum of squares)
+// Convert back to the original objective value (Rastrigin)
 var objectiveValue = (1.0 / bestFitness) - 1.0;
 
 Console.WriteLine(""  Meilleur chromosome : ["" + string.Join("", "", bestGenes.Select(g => string.Format(""{0:F4}"", g))) + ""]"");
 Console.WriteLine(string.Format(""  Fitness (inverted)  : {0:F6}"", bestFitness));
-Console.WriteLine(string.Format(""  Objectif f(x)=sum(x^2) : {0:F6}"", objectiveValue));
+Console.WriteLine(string.Format(""  Objectif Rastrigin f(x) : {0:F6}"", objectiveValue));
 Console.WriteLine(string.Format(""  Generations          : {0}"", ga.GenerationsNumber));
-Console.WriteLine(string.Format(""  Temps total          : {0:F0} ms"", ga.TimeEvolving.TotalMilliseconds));",,,,,,,,7c6a45007ad99434,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-quadratic,markdown,fr,10beb0b35c5ec897,"### Interpretation : Premier run avec DefaultMetaHeuristic
+Console.WriteLine(string.Format(""  Temps total          : {0:F0} ms"", ga.TimeEvolving.TotalMilliseconds));",,,,,,,,f59bd826909670fe,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-quadratic,markdown,fr,a5e15035ec8e3730,"### Interpretation : Premier run avec DefaultMetaHeuristic
 
-**Sortie obtenue** : L'algorithme converge vers un vecteur proche de [0, 0, 0, 0] (le minimum global de la fonction Sphere).
+**Sortie obtenue** : L'algorithme converge vers un optimum **local** -- un vecteur a coordonnees entieres (p. ex. $[2, -2, -3, -1]$), bien eloigne de l'optimum global $[0,0,0,0]$. C'est la signature d'un paysage multimodal : le GA s'est arrete dans un piege local.
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Meilleur chromosome | Proche de [0, 0, 0, 0] | Convergence vers l'optimum global |
-| Fitness | Proche de 1.0 | Fitness eleve = bonne solution (inversion de $1/(1+f)$) |
-| Objectif f(x) | Proche de 0 | La vraie valeur de $\sum x_i^2$ est proche de 0 |
+| Meilleur chromosome | Vecteur entier (p. ex. $[2, -2, -3, -1]$) | Optimum local (piege) |
+| Fitness | $1/(1+f)$ modere (p. ex. $\approx 0{,}05$) | Fitness bas : le GA n'a pas atteint l'optimum global |
+| Objectif f(x) | Valeur non nulle (p. ex. $\approx 18$) | Eloigne du minimum global 0 |
 | Generations | 50 | Terminaison atteinte |
 
 **Points cles** :
 1. `DefaultMetaHeuristic` reproduit le comportement d'un GA standard : selection par tournoi, crossover adjacent probabiliste, mutation par index
 2. Le moteur evalue le fitness uniquement sur les descendants (offspring-scoped evaluation)
 3. `FitnessBasedElitistReinsertion` assure l'elitisme en gardant les meilleurs parmi parents + descendance
-4. Aucune modification de GeneticSharp amont n'a ete necessaire",,,,,,,,10beb0b35c5ec897,,,,,,,
+4. Aucune modification de GeneticSharp amont n'a ete necessaire",,,,,,,,a5e15035ec8e3730,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-4-comparison-intro,markdown,fr,462f2b6ea850081c,"## 4. Impact des probabilites de crossover
 
 La probabilite de crossover ($p_c$) controle la frequence a laquelle deux parents echangent du materiel genetique. Une probabilite elevee favorise l'exploration (recombinaison de solutions), tandis qu'une probabilite basse preserve les solutions existantes.
 
 Comparons trois valeurs de $p_c$ : 0.3 (faible), 0.75 (defaut) et 0.95 (elevee). Pour chaque valeur, nous mesurons la convergence en repetant le run plusieurs fois.",,,,,,,,462f2b6ea850081c,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,crossover-comparison,code,fr,76b9c1ef8a88218e,"// Compare crossover probability: 0.3 vs 0.75 vs 0.95
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,crossover-comparison,code,fr,8a5dac73a1545007,"// Compare crossover probability: 0.3 vs 0.75 vs 0.95
 var crossoverProbs = new[] { 0.3f, 0.75f, 0.95f };
 var resultsByProb = new Dictionary<float, List<double>>();
 
@@ -216,7 +221,7 @@ foreach (var pc in crossoverProbs)
         var pop = new MetaPopulation(50, 50, adam);
         var runGa = new MetaGeneticAlgorithm(
             pop,
-            new QuadraticFitness(),
+            new RastriginFitness(),
             new TournamentSelection(3),
             new OnePointCrossover(),
             new UniformMutation());
@@ -250,26 +255,26 @@ foreach (var pc in crossoverProbs)
 }
 
 Console.WriteLine(""======================================================================"");
-Console.WriteLine(""Objectif optimal : f(x) = 0.0"");",,,,,,,,76b9c1ef8a88218e,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-comparison,markdown,fr,0168c93cdfce068a,"### Interpretation : Impact de la probabilite de crossover
+Console.WriteLine(""Objectif optimal : f(x) = 0.0"");",,,,,,,,8a5dac73a1545007,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-comparison,markdown,fr,eac3c99de5bb1169,"### Interpretation : Impact de la probabilite de crossover
 
-**Sortie obtenue** : Les trois configurations convergent, mais avec des nuances.
+**Sortie obtenue** : Les trois configurations donnent des resultats **nettement differents** -- sur Rastrigin, la probabilite de crossover discrimine (contrairement a la Sphere ou tout convergeait vers 0).
 
-| Probabilite pc | Convergence attendue | Explication |
+| Probabilite pc | Moyenne f(x) | Explication |
 |----------------|---------------------|-------------|
-| 0.3 (faible) | Plus lente, plus variable | Peu de recombinaison = exploration limitee |
-| 0.75 (defaut) | Bon equilibre | Recombinaison moderee + preservation des bonnes solutions |
-| 0.95 (elevee) | Rapide mais potentiellement instable | Beaucoup de recombinaison = exploration forte |
+| 0.3 (faible) | Moyenne $\approx 19$ | Peu de recombinaison : preserve les bons blocs trouves |
+| 0.75 (defaut) | Moyenne $\approx 36$ (pire) | Sur ce paysage rugged, trop de crossover casse les blocs de construction |
+| 0.95 (elevee) | Moyenne $\approx 23$ | Recombinaison forte, resultats bruyants (fort ecart-type) |
 
 **Points cles** :
-1. Sur la fonction Sphere (unimodale, convexe), toutes les valeurs convergent vers l'optimum
-2. L'ecart-type mesure la **robustesse** : une valeur faible indique que l'algorithme est peu sensible a l'alea initial
-3. Le choix de $p_c$ devient critique sur des problemes **multimodaux** ou avec des paysages de fitness complexes
-4. `DefaultMetaHeuristic` teste la probabilite pour chaque paire adjacente de parents (appariement sequentiel)",,,,,,,,0168c93cdfce068a,,,,,,,
+1. Contrairement a la Sphere (ou tout convergeait vers 0), Rastrigin rend $p_c$ **discriminant** : les moyennes different et l'ecart-type est eleve (6 a 10)
+2. L'ecart-type mesure la **sensibilite a l'alea** : sur un paysage multimodal, l'initialisation determine dans quel bassin d'optimum local la population tombe -- d'ou la forte variance
+3. Le resultat contre-intuitif ($p_c=0{,}75$ ici pire que $0{,}3$) est reel : sur un paysage rugged, trop de crossover decompose les bonnes solutions. C'est toute la lecon -- le choix de $p_c$ n'est pas trivial
+4. `DefaultMetaHeuristic` teste la probabilite pour chaque paire adjacente de parents (appariement sequentiel)",,,,,,,,eac3c99de5bb1169,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-5-generations-intro,markdown,fr,0368c656a5a5ca3f,"## 5. Suivi de la convergence par generation
 
 Pour visualiser la dynamique de convergence, suivons le meilleur fitness a chaque generation. Nous utilisons l'evenement `GenerationRan` pour collecter cette trace.",,,,,,,,0368c656a5a5ca3f,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,convergence-trace,code,fr,8220b415cc51076f,"// Track convergence per generation with DefaultMetaHeuristic
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,convergence-trace,code,fr,9adc3eeb054f2e4c,"// Track convergence per generation with DefaultMetaHeuristic
 var adam2 = new FloatingPointChromosome(
     new double[] { -10, -10, -10, -10 },
     new double[] {  10,  10,  10,  10 },
@@ -279,7 +284,7 @@ var adam2 = new FloatingPointChromosome(
 var pop2 = new MetaPopulation(50, 50, adam2);
 var ga2 = new MetaGeneticAlgorithm(
     pop2,
-    new QuadraticFitness(),
+    new RastriginFitness(),
     new TournamentSelection(3),
     new OnePointCrossover(),
     new UniformMutation());
@@ -300,7 +305,7 @@ ga2.Start();
 
 // Display convergence trace (every 5 generations)
 Console.WriteLine();
-Console.WriteLine(string.Format(""{0,-8} {1,-20}"", ""Gen"", ""f(x) = sum(x^2)""));
+Console.WriteLine(string.Format(""{0,-8} {1,-20}"", ""Gen"", ""f(x) = Rastrigin""));
 Console.WriteLine(""------------------------------"");
 foreach (var (gen, obj) in trace.Where(t => t.Gen % 5 == 0 || t.Gen == 1))
 {
@@ -310,7 +315,7 @@ Console.WriteLine(string.Format(""{0,-8} {1,-20:F6}"", ga2.GenerationsNumber, tr
 
 Console.WriteLine();
 Console.WriteLine(string.Format(""Convergence finale : f(x) = {0:F6}"", trace.Last().Objective));
-Console.WriteLine(string.Format(""Amelioration gen 1 -> {0} : {1:F1}x"", ga2.GenerationsNumber, trace[0].Objective / trace.Last().Objective));",,,,,,,,8220b415cc51076f,,,,,,,
+Console.WriteLine(string.Format(""Amelioration gen 1 -> {0} : {1:F1}x"", ga2.GenerationsNumber, trace[0].Objective / trace.Last().Objective));",,,,,,,,9adc3eeb054f2e4c,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-convergence,markdown,fr,1b8d6669ef2f85b7,"### Interpretation : Trace de convergence
 
 **Sortie obtenue** : Le fitness s'ameliore rapidement dans les premieres generations puis se stabilise.
@@ -331,7 +336,7 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-6
 `NoOpMetaHeuristic` est la metaheuristique neutre : elle passe les parents inchanges sans crossover ni mutation. Comparer `DefaultMetaHeuristic` avec `NoOpMetaHeuristic` montre l'apport des operateurs genetiques.
 
 **Attention** : avec `NoOpMetaHeuristic`, il n'y a **ni crossover ni mutation**. La reinsertion seule (`FitnessBasedElitistReinsertion`) agit comme un tri par fitness : la population converge immediatement vers le meilleur chromosome initial.",,,,,,,,4a359727e271415d,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,noop-comparison,code,fr,5a1b918b84c16160,"// Compare DefaultMetaHeuristic vs NoOpMetaHeuristic
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,noop-comparison,code,fr,fea79799d3e35cce,"// Compare DefaultMetaHeuristic vs NoOpMetaHeuristic
 var heuristics = new (string Name, IMetaHeuristic MH)[]
 {
     (""DefaultMetaHeuristic"", new DefaultMetaHeuristic()),
@@ -354,7 +359,7 @@ foreach (var (name, mh) in heuristics)
     var pop3 = new MetaPopulation(50, 50, adam3);
     var ga3 = new MetaGeneticAlgorithm(
         pop3,
-        new QuadraticFitness(),
+        new RastriginFitness(),
         new TournamentSelection(3),
         new OnePointCrossover(),
         new UniformMutation(),
@@ -374,7 +379,7 @@ foreach (var (name, mh) in heuristics)
         name, obj3, ga3.BestChromosome.Fitness.Value, genes3[0], genes3[1]));
 }
 
-Console.WriteLine(""================================================================="");",,,,,,,,5a1b918b84c16160,,,,,,,
+Console.WriteLine(""================================================================="");",,,,,,,,fea79799d3e35cce,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,interp-noop,markdown,fr,f06f23318451a5dd,"### Interpretation : Default vs NoOp
 
 **Sortie obtenue** : `DefaultMetaHeuristic` converge vers l'optimum, tandis que `NoOpMetaHeuristic` reste sur le meilleur chromosome de la population initiale.
@@ -472,7 +477,7 @@ L'objectif est de creer une metaheuristique qui **desactive la mutation sur les 
 - Si la generation est paire, ne faites rien (ou deleguez a un `EmptyMetaHeuristic`)
 - Si la generation est impaire, appelez `mutation.Mutate(offspring[ctx.LocalIndex], mutationProbability)`
 - L'interface `EvolutionStage` permet de limiter le scope a la mutation seulement",,,,,,,,391da668ae81e050,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,exercise-3-code,code,fr,7fb4db2ec126f928,"// Exercice 3 : Implementer un IMetaHeuristic personnalise
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,exercise-3-code,code,fr,12ffe62cbaa1c134,"// Exercice 3 : Implementer un IMetaHeuristic personnalise
 // TODO: Creez une classe EvenGenerationMutationMetaHeuristic
 // Indice: Heritez de ScopedMetaHeuristic avec new DefaultMetaHeuristic() comme base
 // Indice: ctx.Population.GenerationsNumber donne le numero de generation
@@ -493,8 +498,8 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,exercise-
 //     protected override IList<IChromosome> ScopedReinsert(...) { ... }
 // }
 
-object result = null; // TODO etudiant : tester avec le probleme quadratique
-Console.WriteLine(""Exercice a completer : EvenGenerationMutationMetaHeuristic"");",,,,,,,,7fb4db2ec126f928,,,,,,,
+object result = null; // TODO etudiant : tester avec la fonction de Rastrigin
+Console.WriteLine(""Exercice a completer : EvenGenerationMutationMetaHeuristic"");",,,,,,,,12ffe62cbaa1c134,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,nav-footer,markdown,fr,7c08dec7cdc11f7b,"---
 
 **Navigation** : [Index](README.md) | [MGS-2 Composition >>](MGS-2-Composition.ipynb)",,,,,,,,7c08dec7cdc11f7b,,,,,,,
@@ -681,7 +686,14 @@ foreach (var (optName, opt) in optimizers)
 Console.WriteLine();
 Console.WriteLine(""--- Suite terminee : 8 optimiseurs x 3 fonctions, chacune en centre + deplace ---"");
 ",,,,,,,,006a5ba7ec541d9a,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c08,code,fr,8cf7381823beb038,"// Tableau de synthèse : le delta (signature du biais) par fonction x optimiseur + moyenne par optimiseur.
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c08,code,fr,e5b8eaf605e8d626,"// Tableau de synthese : le delta (signature du biais) par fonction x optimiseur + moyenne par optimiseur.
+// (rendu Plotly du chart de biais en fin de cellule, technique C548-L2 : formatter HTML integre au kernel, zero NuGet charting)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
 var functions = rows.Select(r => r.R.Function).Distinct().ToList();
 
 Console.WriteLine(""Delta (objectif deplace - objectif centre) : ~0 = non biaise, >0 = biaise vers le centre."");
@@ -702,17 +714,31 @@ foreach (var g in byOpt)
     Console.WriteLine(row);
 }
 
-// Diagramme en barres ASCII : moyenne delta normalisée au max (hiérarchie du biais d'un coup d'œil).
-Console.WriteLine();
-Console.WriteLine(""Signature de biais moyenne (barre = delta normalise au pire optimiseur) :"");
-Console.WriteLine();
-foreach (var g in byOpt)
+// Diagramme en barres horizontales Plotly : signature de biais moyenne par optimiseur.
+// Contrairement a la barre ASCII (qui masquait les deltas negatifs via Math.Max(0, mean)),
+// le chart SIGNE montre les deux sens du biais : >0 = tire vers le centre (WOA, Random),
+// <0 = anti-centre (DE, BBPSO). La ligne zero (zeroline) separe les deux regimes.
 {
-    double mean = g.Average(x => x.R.Delta);
-    int barLen = maxMean <= 0 ? 0 : Math.Min(40, (int)Math.Round(40 * Math.Max(0, mean) / maxMean));
-    Console.WriteLine(""  "" + g.Key.PadRight(16) + "" |"" + new string('#', barLen).PadRight(40) + ""| delta_moyen = "" + mean.ToString(""F3""));
+    var ordered = byOpt.OrderByDescending(g => g.Average(x => x.R.Delta)).ToList();
+    var names = ordered.Select(g => g.Key).Select(v => (object)v).ToArray();
+    var means = ordered.Select(g => (object)Math.Round(g.Average(x => x.R.Delta), 3)).ToArray();
+    var colors = ordered.Select(g => g.Average(x => x.R.Delta) >= 0 ? (object)""#2a6dba"" : (object)""#e8743b"").ToArray();
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var trace = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""y""] = names, [""x""] = means, [""type""] = ""bar"", [""orientation""] = ""h"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""] = colors },
+                                         [""text""] = means, [""textposition""] = ""auto"" });
+    var layout = ""{\""title\"":{\""text\"":\""Signature de biais moyenne par optimiseur (delta > 0 = centre, < 0 = anti-centre)\""},"" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Delta moyen (objectif deplace - objectif centre)\""},"" +
+                 ""\""zeroline\"":true,\""zerolinewidth\"":2,\""zerolinecolor\"":\""#444\""},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Optimiseur\""}},"" +
+                 ""\""margin\"":{\""l\"":120,\""r\"":40}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
 }
-",,,,,,,,8cf7381823beb038,,,,,,,
+",,,,,,,,e5b8eaf605e8d626,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c09,markdown,fr,cd6cc33948914724,"## Lecture : que dit réellement le delta ?
 
 Le tableau révèle une histoire **plus nuancée** que le scénario « propre » (Random ≈ 0, tous les autres ≫ 0) — et c'est précisément cette nuance qui fait la valeur du protocole. Trois régimes apparaissent, selon que l'optimiseur **résout ou non** la fonction à ce budget (NFE = 5000, dimension 5) :

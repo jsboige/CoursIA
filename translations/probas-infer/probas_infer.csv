@@ -2061,7 +2061,7 @@ $$q(\theta, z, \phi) \approx q(\theta) \prod_n q(z_n) \prod_k q(\phi_k)$$
 3. Les priors Dirichlet doivent avoir des valeurs > 0 pour eviter des NaN
 
 > **Astuce** : Pour diagnostiquer les problemes de convergence, activez `moteur.ShowMslMessages = true` pour voir les messages VMP.",,,,,,,,ed9e8448f3c118ee,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,793d87d6,code,fr,73dcb2ad5ec2de50,"// Donnees : corpus synthetique
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,793d87d6,code,fr,c62be02b44631ade,"// Donnees : corpus synthetique
 // Vocabulaire : [sport, equipe, match, politique, election, vote, musique, concert, artiste]
 string[] vocabulaire = { ""sport"", ""equipe"", ""match"", ""politique"", ""election"", ""vote"", ""musique"", ""concert"", ""artiste"" };
 int vocabSize = vocabulaire.Length;
@@ -2075,7 +2075,7 @@ int[][] documents = {
     new[] { 0, 1, 3, 4, 0 },           // Doc 4 : sport + politique
     new[] { 6, 7, 0, 1, 8 },           // Doc 5 : musique + sport
     new[] { 2, 2, 1, 0, 2 },           // Doc 6 : sport
-    new[] { 5, 4, 3, 5, 4 }            // Doc 7 : politique
+    new[] { 2, 2, 5, 2, 4 }            // Doc 7 : politique via ""match"" (polysemique) + vote/election
 };
 
 int numDocs = documents.Length;
@@ -2085,8 +2085,8 @@ for (int d = 0; d < numDocs; d++)
 {
     string mots = string.Join("", "", documents[d].Select(i => vocabulaire[i]));
     Console.WriteLine($""Doc {d+1} : {mots}"");
-}",,,,,,,,73dcb2ad5ec2de50,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,xlhoqd285ii,markdown,fr,2692d504746cb5fb,"### Analyse du corpus synthetique
+}",,,,,,,,c62be02b44631ade,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,xlhoqd285ii,markdown,fr,97c5289ce3f3a8fe,"### Analyse du corpus synthetique
 
 **Structure du vocabulaire** : 9 mots repartis en 3 groupes thematiques
 
@@ -2100,10 +2100,11 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,xlhoqd285ii,markdown,
 
 | Document | Type | Description |
 |----------|------|-------------|
-| Doc 1, 2, 3, 6, 7 | **Pur** | Un seul topic dominant |
+| Doc 1, 2, 3, 6 | **Pur** | Un seul topic dominant |
+| Doc 7 | **Ambigu** | ""match"" (polysemique Sport/Politique) en contexte politique |
 | Doc 4, 5 | **Mixte** | Melange de deux topics |
 
-> **Note methodologique** : Ce corpus synthetique a ete concu avec des mots parfaitement separes entre topics. En pratique, les vocabulaires reels ont des mots polysemiques (ex: ""parti"" peut etre politique ou musical) qui compliquent l'inference.",,,,,,,,2692d504746cb5fb,,,,,,,
+> **Note methodologique** : Ce corpus introduit **deliberement un mot polysemique** : ""match"" (indice 2) appartient au Sport (un match de foot) ET a la Politique (un match electoral). Le Doc 7 melange 3 occurrences de ""match"" avec ""vote"" et ""election"". Cette ambiguite est exactement ce que le **comptage naif** (section 5) ne sait pas gerer, mais que l'**inference jointe LDA** (section 4bis) resout grace a la co-occurrence.",,,,,,,,97c5289ce3f3a8fe,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,a307d589,code,fr,2327ac3ff7fba141,"// Modele LDA simplifie (pour un seul document)
 
 // Prior sur les topics (symetrique)
@@ -2253,15 +2254,15 @@ Ces priors ne sont pas arbitraires : ils encodent une **hypothèse structurelle*
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,3guhtb200iz,markdown,fr,dcd33d71bb124ea4,"### Execution : Definition des priors asymetriques
 
 Le code suivant definit la matrice de priors asymetriques. Observez comment chaque topic recoit un prior qui favorise un groupe de mots specifique :",,,,,,,,dcd33d71bb124ea4,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,52jbbkuqdnp,code,fr,8bc1f819752a9aad,"// LDA avec priors asymétriques pour briser la symétrie
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,52jbbkuqdnp,code,fr,250cb6cfdcf66462,"// LDA avec priors asymétriques pour briser la symétrie
 
 // Priors asymétriques sur phi (mots par topic)
 // Chaque topic a une ""affinité"" pour un groupe de mots
 double[][] betaAsym = new double[][] {
-    // Topic 0 (Sport) : favorise mots 0, 1, 2
+    // Topic 0 (Sport) : favorise mots 0, 1, 2 (dont 'match' polysemique)
     new double[] { 10, 10, 10, 1, 1, 1, 1, 1, 1 },
-    // Topic 1 (Politique) : favorise mots 3, 4, 5
-    new double[] { 1, 1, 1, 10, 10, 10, 1, 1, 1 },
+    // Topic 1 (Politique) : favorise mots 3, 4, 5 ET 'match' (polysemique Sport/Politique)
+    new double[] { 1, 1, 10, 10, 10, 10, 1, 1, 1 },
     // Topic 2 (Musique) : favorise mots 6, 7, 8
     new double[] { 1, 1, 1, 1, 1, 1, 10, 10, 10 }
 };
@@ -2287,7 +2288,7 @@ for (int k = 0; k < numTopics; k++)
         .Where(x => x.beta > 1)
         .ToList();
     Console.WriteLine($""  Topic {k} : {string.Join("", "", topMots.Select(x => x.mot))} (beta=10)"");}
-Console.WriteLine();",,,,,,,,8bc1f819752a9aad,,,,,,,
+Console.WriteLine();",,,,,,,,250cb6cfdcf66462,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,57ted49ipac,markdown,fr,c0d0d8939f7aff1e,"### Execution : Inference LDA sur plusieurs documents
 
 Maintenant que les priors asymetriques sont definis, nous allons tester l'inference sur 5 documents : 3 documents ""purs"" (un seul topic) et 2 documents ""mixtes"" (melange de topics).
@@ -2301,12 +2302,12 @@ Maintenant que les priors asymetriques sont definis, nous allons tester l'infere
 | Doc 3 | Musique | Pur |
 | Doc 4 | Sport + Politique | Mixte |
 | Doc 5 | Musique + Sport | Mixte |",,,,,,,,c0d0d8939f7aff1e,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,r4m4ks1spuf,code,fr,ef3a746c5a49431f,"// Inference LDA avec priors asymetriques sur plusieurs documents
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,r4m4ks1spuf,code,fr,16ee5c4fa3592e8e,"// Inference LDA avec priors asymetriques sur plusieurs documents
 
 Console.WriteLine(""=== Inference LDA Corrigee ===\n"");
 
 // On teste sur les 3 premiers documents (1 par topic)
-int[] testDocs = { 0, 1, 2, 3, 4 };  // Sport, Politique, Musique, Sport+Politique, Musique+Sport
+int[] testDocs = { 0, 1, 2, 3, 4, 6 };  // Sport, Politique, Musique, mixtes, +Doc 7 (politique ambigu 'match')
 
 foreach (int docIdx in testDocs)
 {
@@ -2353,7 +2354,7 @@ foreach (int docIdx in testDocs)
     string[] topicLabels = { ""Sport"", ""Politique"", ""Musique"" };
     Console.WriteLine($""  Topic dominant : {topicLabels[topicDom]} ({thetaMeanAsym[topicDom]:P0})"");
     Console.WriteLine();
-}",,,,,,,,ef3a746c5a49431f,,,,,,,
+}",,,,,,,,16ee5c4fa3592e8e,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,8k7gcy3r1fv,markdown,fr,f1044c1208ff35af,"### Analyse : Résultats avec Priors Asymétriques
 
 **Amélioration observée** : Les topics sont maintenant correctement identifiés !
@@ -2407,7 +2408,7 @@ Les noeuds `phiAsym[k]` ont maintenant des **priors differents** pour chaque top
 L'asymetrie des priors cree des ""bassins d'attraction"" distincts dans l'espace des parametres, permettant a VMP de converger vers des solutions interpretables plutot que vers le point-selle symetrique.
 
 > **Note technique** : Le graphe genere correspond au dernier document traite dans la boucle. La structure est identique pour tous les documents, seules les observations (`wordsDoc`) changent.",,,,,,,,30b0780d06e94e49,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,65b0019f,markdown,fr,b2c44349b73b72d2,"## 5. LDA sur Corpus Complet
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,65b0019f,markdown,fr,5edd19656e6c02ce,"## 5. LDA sur Corpus Complet
 
 ### Approche simplifiee : comptage par categorie
 
@@ -2418,7 +2419,7 @@ Cette approche exploite la structure connue du vocabulaire :
 - Indices 3-5 : mots de **Politique**
 - Indices 6-8 : mots de **Musique**
 
-> **Limitation** : Cette methode ne capture pas l'incertitude ni les correlations entre mots. L'inference probabiliste est necessaire pour des corpus reels ou le vocabulaire n'est pas parfaitement partitionne.",,,,,,,,b2c44349b73b72d2,,,,,,,
+> **Limitation** : Cette methode ne capture pas l'incertitude ni les correlations entre mots, et **echoue sur les mots polysemiques**. Sur le Doc 7, le comptage classe ""match"" en Sport (indice <= 2) alors que le document est politique (vote, election). L'inference probabiliste jointe est necessaire pour resoudre cette ambiguite via la co-occurrence.",,,,,,,,5edd19656e6c02ce,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,106c17ea,code,fr,402490bff61587ef,"// Inference simplifiee document par document
 
 Console.WriteLine(""=== LDA sur corpus complet ==="");
@@ -2444,27 +2445,28 @@ for (int d = 0; d < numDocs; d++)
 }
 
 Console.WriteLine(""\n(Proportions basees sur les mots observes)"");",,,,,,,,402490bff61587ef,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,6p8toq74n8h,markdown,fr,cdfb983a06707804,"### Analyse des compositions de topics
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,6p8toq74n8h,markdown,fr,d094b371e5c52353,"### Analyse des compositions de topics
 
-**Résultats** : Classification correcte basée sur le comptage de mots
+**Résultats** : Classification basée sur le comptage — correcte, **sauf sur le mot polysémique**
 
 | Document | Topics détectés | Observation |
 |----------|-----------------|-------------|
 | Doc 1, 6 | Sport = 100% | Documents thématiques purs |
-| Doc 2, 7 | Politique = 100% | Documents thématiques purs |
+| Doc 2 | Politique = 100% | Document thématique pur |
+| Doc 7 | **Sport = 60% (erreur)** | **Comptage trompé** par « match » polysémique (doc en réalité politique) |
 | Doc 3 | Musique = 100% | Document thématique pur |
 | Doc 4 | Sport 60% / Politique 40% | Mélange détecté |
 | Doc 5 | Musique 60% / Sport 40% | Mélange détecté |
 
 **Observations clés** :
 
-1. **Documents purs** : La séparation parfaite du vocabulaire en 3 groupes disjoints (indices 0-2, 3-5, 6-8) permet une classification triviale
+1. **Documents purs** : La séparation du vocabulaire permet une classification triviale — **sauf sur le mot polysémique « match »** (Doc 7), où le comptage se trompe
 
 2. **Documents mixtes** : Les proportions reflètent directement le comptage (Doc 4 : 3 mots sport, 2 mots politique → 60/40)
 
 3. **Limitation** : Cette approche de comptage ne capture pas les **co-occurrences** ni les **corrélations sémantiques** entre mots
 
-**En pratique** : Un vrai LDA avec inférence jointe découvrirait automatiquement la structure des topics sans connaître a priori les groupes de mots.",,,,,,,,cdfb983a06707804,,,,,,,
+**Contraste avec l'inférence LDA** : l'inférence jointe de la section précédente (cellule d'inference à priors asymétriques) récupère correctement le Doc 7 comme **Politique (≈ 65 %)** en exploitant la co-occurrence de « match » avec « vote » et « election » — là où le comptage échoue (Sport 60 %). C'est toute la valeur de l'inférence probabiliste sur un vocabulaire non parfaitement partitionné.",,,,,,,,d094b371e5c52353,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,1dc820f4,markdown,fr,2c0afe41102e39bc,"## 6. Visualisation des Topics
 
 ### Visualisation de la matrice phi
