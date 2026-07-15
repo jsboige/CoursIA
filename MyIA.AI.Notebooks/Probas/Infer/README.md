@@ -121,7 +121,7 @@ Chaque notebook inclut les références nécessaires :
 
 ### 6. Graphviz (optionnel)
 
-Pour les visualisations de factor graphs dans les notebooks 11, 14-20 :
+Pour les visualisations de factor graphs dans les notebooks 11, 14-19 :
 
 ```bash
 # Windows (chocolatey)
@@ -844,16 +844,18 @@ Infer/
 
 | Domaine | Modèles | Notebooks |
 |---------|---------|-----------|
-| Jeux vidéo | TrueSkill, ranking | 6 |
-| Éducation | IRT, DINA, compétences | 5 |
-| NLP | LDA, topics | 9 |
-| Médecine | A/B testing, diagnostic, systèmes experts | 4, 7, 17, 18, 19 |
-| Crowdsourcing | Agrégation labels | 10 |
-| Finance | Détection régimes, aversion risque, MDPs | 11, 15, 20 |
-| E-commerce | Recommandation | 12 |
-| Bioinformatique | Motif finding | 11 |
-| Planification | Diagrammes d'influence, MDPs | 17, 20 |
-| Contrôle qualité | Valeur de l'information | 18 |
+| Jeux vidéo | TrueSkill, ranking | 8 |
+| Éducation | IRT, DINA, compétences | 7 |
+| NLP | LDA, topics | 11 |
+| Médecine | Diagnostic bayésien, test A/B, analyse de survie | 4, 9, 19 |
+| Crowdsourcing | Agrégation d'annotations | 13 |
+| Finance | Détection de régimes (rupture) | 18 |
+| E-commerce | Recommandation, factorisation | 15 |
+| Bioinformatique | Motif finding (HMM, ADN) | 14 |
+| Suivi, fusion de capteurs | Filtre de Kalman | 17 |
+| Contrôle qualité | Détection de rupture (dérive de production) | 18 |
+
+> Les applications de **théorie de la décision** — MDPs, valeur de l'information (EVPI/EVSI), aversion au risque, Thompson Sampling, indice de Gittins — vivent dans l'arc autonome [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md).
 
 ## Sources et Références
 
@@ -950,7 +952,7 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 
 | Série | Lien | Relation |
 | --- | --- | --- |
-| [PyMC](../PyMC/) | Même 20 modèles en Python/NUTS | Message passing (EP) vs MCMC (NUTS) |
+| [PyMC](../PyMC/) | Même 19 modèles en Python/NUTS | Message passing (EP) vs MCMC (NUTS) |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML.NET](../../ML/ML.Net/) | TP prévision de ventes | Combine ML.NET + Infer.NET |
 | [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
@@ -968,7 +970,7 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Prochaines étapes
 
-- **Le double regard MCMC** — le port [PyMC](../PyMC/) reprend les **20 mêmes modèles** en NUTS : alterner chaque jumeau pour comparer le message passing sur graphe de facteurs (Infer.NET, EP par défaut) et l'échantillonnage MCMC (PyMC, NUTS) sur des modèles identiques.
+- **Le double regard MCMC** — le port [PyMC](../PyMC/) reprend les **19 mêmes modèles** en NUTS : alterner chaque jumeau pour comparer le message passing sur graphe de facteurs (Infer.NET, EP par défaut) et l'échantillonnage MCMC (PyMC, NUTS) sur des modèles identiques.
 - **Le capstone ML.NET** — [ML.NET](../../ML/ML.Net/) combine ML.NET et Infer.NET (TP de prévision de ventes) : une mise en pratique où l'incertitude bayésienne complète une pipeline ML classique.
 - **Les ponts latéraux** — [Search/Part2-CSP](../../Search/Part2-CSP/) (CSP-5, optimisation sous contraintes) et le [glossaire](Infer-Glossary.md) prolongent la modélisation déclarative.
 
