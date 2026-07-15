@@ -12,8 +12,10 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Calibration» where
-  -- `globs` (not default roots) so `lake build` auto-discovers `*_en` siblings (#4980).
-  globs := #[.submodules `Calibration]
+  -- `.submodules `Calibration` covers the Calibration.* submodules (FR + their _en siblings);
+  -- the root `Calibration_en` aggregator must be globbed explicitly (bare `.submodules`
+  -- matches only submodules, not sibling root modules), pattern #6585 / #4980.
+  globs := #[.submodules `Calibration, `Calibration_en]
   -- Calibration targets for multi-agent Lean prover (Epic #1452).
   -- Each theorem is a self-contained proof challenge designed to exercise
   -- specific harness paths (P1/P2/P3 from Epic #1453).
