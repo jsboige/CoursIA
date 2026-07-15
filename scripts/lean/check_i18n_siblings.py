@@ -23,7 +23,7 @@ pairs, forensic notes "byte-identity N/N"). It does **NOT** compile Lean — use
 proves that the FR and EN bodies have not drifted apart.
 
 Two structural divergences are recognized as legitimate (erratum on #4980,
-2026-07-15, after two false-positive DRIFT dispatches — cf PR #6716):
+2026-07-15, after false-positive DRIFT dispatches — cf PR #6716, then #6725):
 
 * **Self-qualifiers** — an FR canonical whose defs live at top level may write
   ``_root_.X`` where its EN mirror, wrapped in ``namespace <Ns>_en``, must
@@ -36,6 +36,18 @@ Two structural divergences are recognized as legitimate (erratum on #4980,
   (StableMarriage/Lattice_en). Such a pair is checked by *subset*: every
   declaration block the EN file does state must match an FR block; blocks it
   reuses via the import are reported as ``OK-CONSUMER``, not as missing.
+* **Order-insensitive match** — the same set of declaration blocks, on either
+  side, but in a different order (typically one side was refactored or a new
+  lemma was inserted at a non-corresponding site: ConeKernel_en, #6727). The
+  checker reports ``OK-REORDERED`` (with the number of blocks at divergent
+  positions) instead of DRIFT; an earlier attempt to reorder one side to
+  match the other (PR #6717 v1, commit ``6788d1d1f``) broke the build — so the
+  reorder-tolerant verdict is preferred over forced re-ordering.
+
+Real drift that is NOT covered by any of the three legitimate variants is
+still reported as ``DRIFT``, but the diagnostic lists the *blocks unique to
+each side* rather than a text diff — a Counter diff is actionable for an
+LLM reviewer (a literal ``difflib`` line dump is not).
 
 Usage
 -----
@@ -53,7 +65,6 @@ missing).
 from __future__ import annotations
 
 import argparse
-import difflib
 import re
 import sys
 from collections import Counter
@@ -213,11 +224,23 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
 
 def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
     """Compare an FR/EN sibling pair. Returns ``(status, detail)`` where
-    ``status`` is ``"OK"`` (bodies identical after normalization),
-    ``"OK-CONSUMER"`` (the EN file imports the FR module and every declaration
-    block it does state matches an FR block — the rest is reused via the
-    import, not missing), or ``"DRIFT"`` (detail carries a short diff or the
-    offending blocks)."""
+    ``status`` is one of:
+
+    * ``"OK"`` — bodies identical after normalization.
+    * ``"OK-CONSUMER"`` — the EN file imports the FR module and every
+      declaration block it does state matches an FR block; the rest is reused
+      via the import, not missing.
+    * ``"OK-REORDERED"`` — the same set of declaration blocks on each side
+      (verified as equal multisets via ``Counter``), but in a different
+      top-level order. Counts the number of blocks that landed at a
+      *different position* (longest-common-prefix walk — a stable proxy for
+      how disruptive the reorder is).
+    * ``"DRIFT"`` — real divergence: blocks appear on one side that have no
+      counterpart on the other. ``detail`` carries a Counter diff (the blocks
+      unique to FR / unique to EN, up to a small preview) instead of a
+      textual ``difflib`` dump — the Counter diff is what an LLM reviewer can
+      act on, while a raw line diff is not.
+    """
     fr_src = fr_path.read_text(encoding="utf-8")
     en_src = en_path.read_text(encoding="utf-8")
     fr_body = normalize_body(fr_src)
@@ -237,16 +260,69 @@ def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
             return "OK-CONSUMER", (
                 f"{reused} FR declaration block(s) reused via import; "
                 "all EN-stated blocks match FR")
-        preview = "\n---\n".join(
-            "\n".join(b.splitlines()[:6]) for b in unmatched[:3])
-        return "DRIFT", (
-            f"consumer pattern, but {len(unmatched)} EN block(s) have no FR "
-            f"counterpart:\n{preview}")
-    diff = difflib.unified_diff(
-        fr_body.splitlines(), en_body.splitlines(),
-        fromfile=str(fr_path), tofile=str(en_path), lineterm="",
-    )
-    return "DRIFT", "\n".join(list(diff)[:40])
+        return _block_diff_diagnostic("consumer pattern, but",
+                                     unmatched, [], fr_path, en_path)
+    fr_blocks = split_decls(fr_body)
+    en_blocks = split_decls(en_body)
+    if Counter(fr_blocks) == Counter(en_blocks):
+        moved = _count_reordered(fr_blocks, en_blocks)
+        return "OK-REORDERED", (
+            f"{len(fr_blocks)}/{len(en_blocks)} declaration block(s) match "
+            f"order-insensitively ({moved} at a different position)")
+    fr_c, en_c = Counter(fr_blocks), Counter(en_blocks)
+    fr_only = list((fr_c - en_c).elements())
+    en_only = list((en_c - fr_c).elements())
+    return _block_diff_diagnostic("", fr_only, en_only, fr_path, en_path)
+
+
+def _block_diff_diagnostic(prefix: str, fr_only: list[str], en_only: list[str],
+                           fr_path: Path, en_path: Path) -> tuple[str, str]:
+    """Build a ``DRIFT`` diagnostic that lists the blocks unique to each side
+    (up to a 3-block preview on each side) instead of a textual ``difflib``
+    dump. The Counter diff is actionable: an LLM reviewer can read
+    *\"FR has X, EN has Y, no match\"*; it cannot reliably act on a 40-line
+    ``difflib`` patch."""
+    parts: list[str] = []
+    if prefix:
+        parts.append(prefix)
+    parts.append(f"{len(fr_only)} FR-only block(s), {len(en_only)} EN-only block(s)")
+    if fr_only:
+        parts.append("--- FR-only (first 3) ---")
+        for blk in fr_only[:3]:
+            for line in blk.splitlines()[:6]:
+                parts.append(f"FR | {line}")
+    if en_only:
+        parts.append("--- EN-only (first 3) ---")
+        for blk in en_only[:3]:
+            for line in blk.splitlines()[:6]:
+                parts.append(f"EN | {line}")
+    return "DRIFT", "\n".join(parts)
+
+
+def _count_reordered(fr_blocks: list[str], en_blocks: list[str]) -> int:
+    """Count how many top-level declaration blocks landed at a different
+    position on the EN side than on the FR side. We walk the ordered pair
+    with a longest-common-prefix / -suffix style greedy match: at each index
+    we either advance both sides (matched blocks at the same position) or
+    just advance the FR side (a block that moved). This is a stable proxy;
+    an LLM reviewer using ``OK-REORDERED`` typically wants an order-of-
+    magnitude estimate, not an exact permutation distance."""
+    f, e = list(fr_blocks), list(en_blocks)
+    i = j = moved = 0
+    while i < len(f) and j < len(e):
+        if f[i] == e[j]:
+            i += 1; j += 1
+            continue
+        # FR block at i is not at the current EN position: count it as moved
+        # and advance i. (Repeated blocks favour one side — we just take the
+        # first match greedily, which is robust enough for diagnostics.)
+        if f[i] in e[j:]:
+            moved += 1
+            i += 1
+        else:
+            j += 1
+    moved += max(0, len(f) - i)
+    return moved
 
 
 def _excluded(path: Path) -> bool:
@@ -302,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = 0
+    passed = consumer = reordered = failed = orphan = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -316,13 +392,18 @@ def main(argv: list[str] | None = None) -> int:
         elif status == "OK-CONSUMER":
             consumer += 1
             print(f"OK-CONSUMER  {en}  ({detail})")
+        elif status == "OK-REORDERED":
+            reordered += 1
+            print(f"OK-REORDERED  {en}  ({detail})")
         else:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
-    total = passed + consumer + failed + orphan
+    total = passed + consumer + reordered + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
-          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan")
+          f" | {consumer} consumer-pattern"
+          f" | {reordered} reorder-tolerant"
+          f" | {failed} drift | {orphan} orphan")
     return 0 if (failed == 0 and orphan == 0) else 1
 
 

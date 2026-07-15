@@ -191,7 +191,9 @@ def test_check_pair_consumer_pattern_lattice_fp(tmp_path):
 
 def test_consumer_pattern_still_flags_novel_en_block(tmp_path):
     # An EN block with no FR counterpart is real drift even under the
-    # consumer pattern.
+    # consumer pattern. Now reported via the Counter-diff diagnostic
+    # (FR-only / EN-only block count), not the legacy "no FR counterpart"
+    # string.
     fr = tmp_path / "Cone.lean"
     en = tmp_path / "Cone_en.lean"
     fr.write_text(
@@ -209,7 +211,8 @@ def test_consumer_pattern_still_flags_novel_en_block(tmp_path):
     )
     status, detail = check_pair(fr, en)
     assert status == "DRIFT"
-    assert "no FR counterpart" in detail
+    assert "consumer pattern" in detail
+    assert "FR-only block(s)" in detail or "EN-only block(s)" in detail
 
 
 def test_split_decls_attribute_line_starts_block():
@@ -260,6 +263,95 @@ def test_real_conway_pairs_are_byte_identical():
         if status == "DRIFT":
             failures.append(f"DRIFT {en.name}\n{detail}")
     assert not failures, "\n".join(failures)
+
+
+def test_check_pair_reordered_match(tmp_path):
+    """ConeKernel false-positive repro (#6727): 18 declaration blocks each
+    side, identical content, but the EN file inserts one lemma at a different
+    site than the FR canonical. The checker must report ``OK-REORDERED`` and
+    the detail must include both block counts."""
+    fr = tmp_path / "ConeKernel.lean"
+    en = tmp_path / "ConeKernel_en.lean"
+    # 3 declaration blocks; the EN side reorders `b` before `a` (FR keeps the
+    # natural order a, b, c). The bodies of each block are identical.
+    fr_body = (
+        "namespace ConeKernel\n"
+        "lemma a (n : Nat) : n = n := rfl\n"
+        "lemma b (n : Nat) : n + 0 = n := Nat.add_zero n\n"
+        "lemma c : True := trivial\n"
+        "end ConeKernel\n"
+    )
+    en_body = (
+        "namespace ConeKernel_en\n"
+        "lemma b (n : Nat) : n + 0 = n := Nat.add_zero n\n"
+        "lemma a (n : Nat) : n = n := rfl\n"
+        "lemma c : True := trivial\n"
+        "end ConeKernel_en\n"
+    )
+    fr.write_text(fr_body, encoding="utf-8")
+    en.write_text(en_body, encoding="utf-8")
+    status, detail = check_pair(fr, en)
+    assert status == "OK-REORDERED", detail
+    assert "3/3" in detail
+    # One block moved (either `b` or `a`, depending on which side we anchor).
+    assert "1 at a different position" in detail or "2 at a different position" in detail
+
+
+def test_check_pair_drift_unbalanced_diagnostic(tmp_path):
+    """Real drift on either side (a block appears on FR with no EN
+    counterpart, or vice versa) must still be reported as ``DRIFT``, and the
+    detail must now list the FR-only / EN-only blocks instead of a
+    ``difflib`` line dump."""
+    fr = tmp_path / "Cone.lean"
+    en = tmp_path / "Cone_en.lean"
+    fr.write_text(
+        "namespace Cone\n"
+        "lemma shared : True := trivial\n"
+        "lemma fr_only_def : Nat := 7\n"
+        "end Cone\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Cone_en\n"
+        "lemma shared : True := trivial\n"
+        "lemma en_only_def : Nat := 99\n"
+        "end Cone_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT", detail
+    # Diagnostic must list the imbalance, not a difflib patch.
+    assert "FR-only block(s)" in detail
+    assert "EN-only block(s)" in detail
+    assert "fr_only_def" in detail
+    assert "en_only_def" in detail
+    assert "@@" not in detail  # no difflib unified-diff signature
+
+
+def test_check_pair_reorder_with_consumer_still_consumer(tmp_path):
+    """If the EN file imports the FR module (consumer pattern), the consumer
+    subset check fires BEFORE the order-insensitive fallback — we must not
+    regress on the Lattice_en repro just because we added a new branch."""
+    fr = tmp_path / "Lattice.lean"
+    en = tmp_path / "Lattice_en.lean"
+    fr.write_text(
+        "namespace Lattice\n"
+        "def join (x : Nat) : Nat := x + 1\n"
+        "def meet (x : Nat) : Nat := x - 1\n"
+        "theorem join_comm (x : Nat) : join x = join x := rfl\n"
+        "end Lattice\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "import Lattice.Lattice\n"
+        "namespace Lattice_en\n"
+        "open Lattice\n"
+        "theorem join_comm (x : Nat) : join x = join x := rfl\n"
+        "end Lattice_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "OK-CONSUMER", detail
 
 
 def _run_direct() -> int:
