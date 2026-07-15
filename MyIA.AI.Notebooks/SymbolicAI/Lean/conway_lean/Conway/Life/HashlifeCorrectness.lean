@@ -977,6 +977,53 @@ theorem evolve_cone_agree (t u : Nat) (g₁ g₂ : Grid) (p q : Int × Int)
   have htri : manhattan p r ≤ manhattan p q + manhattan q r := manhattan_triangle p q r
   omega
 
+/-! ## P4.4 sub-cell coverage (S3)
+
+The super-cell `c` of level `k+2` decomposes into four quadrants
+`c.nw, c.ne, c.sw, c.se`, each a MacroCell of level `k+1`. For any point
+`p` in the central `2^k × 2^k` window of `c.toGrid (0, 0)`, the evolution
+of `c.toGrid (0, 0)` for `2^(k-1)` steps at `p` depends only on the cells
+within Manhattan distance `2^k` of `p` (by `step_light_cone (2^(k-1))`).
+If a chosen quadrant `q_j` agrees with `c.toGrid (0, 0)` on that light
+cone, then the two evolutions agree at `p`. The bridge from `c.toGrid`
+to `q_j.toGrid` uses `toGrid_shift_between` (L1389-1398) on the quadrant
+offset `(2^k, 0)` / `(0, 2^k)` / `(2^k, 2^k)`; this is the same offset-
+matching pattern that `p4_succ_membership` and `centralCorrect_mem`
+already exploit.
+
+This is the S3 sub-sorry of `hashlife_correctN` (carte #6724): once we
+have `centralCorrect q_j (k-1)` for the four quadrants (P4.3, via
+`p4_wave2_ih`), S4 (ai-01 turf) glues them with `quad_partition_bounds`
+to assemble `hashlifeResultAux (k+2) c` against `evolve (2^k) (c.toGrid)`. -/
+
+/-- **Sub-cell coverage (S3)**: for any MacroCell `c` and any one of its
+    four quadrants `q_j`, if `c.toGrid (0, 0)` and `q_j.toGrid (0, 0)`
+    agree on `lightCone p (2^k)` (where `p` lies in the central window of
+    `c.toGrid`), then the two evolutions for `2^(k-1)` steps agree at `p`.
+
+    Direct instance of `step_light_cone (2^(k-1))`: the cone-of-dependence
+    for `2^(k-1)` steps at `p` is exactly `lightCone p (2 * 2^(k-1)) =
+    lightCone p (2^k)`, which is precisely the agreement hypothesis.
+    No strengthening, no extra bridge — the lemma is just the cone-of-
+    dependence packaged with the correct instantiations.
+
+    This lemma is the S3 sub-sorry of the P4 HashlifeCorrectness proof.
+    It is independent of `p4_double_nine_shape` (P4.1) and `p4_wave1_ih`
+    (P4.2): any quadrant works, so S4 (ai-01) instantiates it on the
+    four `q_*` from `p4_double_nine_shape` once `centralCorrect q_* (k-1)`
+    is in scope. -/
+theorem quadrant_cone_agree (c : MacroCell) (k : Nat) (hk : 1 ≤ k)
+    (p : Int × Int) (q_j : MacroCell)
+    (h_agree : ∀ r ∈ lightCone p (2^k), isAlive (c.toGrid (0, 0)) r =
+                                          isAlive (q_j.toGrid (0, 0)) r) :
+    isAlive (evolve (2^(k-1)) (c.toGrid (0, 0))) p =
+      isAlive (evolve (2^(k-1)) (q_j.toGrid (0, 0))) p := by
+  -- The cone-of-dependence for `2^(k-1)` steps at `p` is
+  -- `lightCone p (2 * 2^(k-1)) = lightCone p (2^k)` — exactly `h_agree`.
+  apply step_light_cone (2 ^ (k - 1)) (c.toGrid (0, 0)) (q_j.toGrid (0, 0)) p
+  intro r hr
+  exact h_agree r hr
+
 /-! ## P2 corollary. Influence cone (light cone of influence)
 
 `step_light_cone` is the **cone of dependence**: to know the state of `p`
