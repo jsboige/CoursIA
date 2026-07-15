@@ -131,4 +131,88 @@ instance sheaf_balanced {C : Type u} [Category.{v} C]
     Balanced (Sheaf J (Type (max u v))) :=
   inferInstance
 
+/-!
+## Ponts vers les isomorphismes de faisceautisation
+
+Ces 4 théorèmes-ponts complètent l'inventaire des instances de LeftExact en
+exposant les isomorphismes canoniques de la **faisceautisation itérée** depuis
+Mathlib `CategoryTheory.Sites.LeftExact`. Chaque énoncé est un re-export nu
+(`:=`) de la déclaration Mathlib correspondante ; aucune tactique requise
+(puisque le code source est byte-identique à `inferInstance` au namespace près).
+
+### 1. `plusPlusSheafIsoPresheafToSheaf` — double-plus ≅ préfaisceau-vers-faisceau
+
+Pour tout site (C, J) et catégorie D, le foncteur de faisceautisation itérée
+`J.plusPlusSheaf D` (deux passages successifs par `sheafify`) est isomorphe au
+foncteur de préfaisceau-vers-faisceau `presheafToSheaf J D`. C'est
+l'**idempotence de la faisceautisation** : faisceautiser deux fois donne le
+même résultat qu'une seule fois, à isomorphismes canoniques près.
+-/
+
+/-- Theoreme-pont : la faisceautisation double `plusPlusSheaf` est isomorphe au
+    foncteur `presheafToSheaf` (canoniquement). Re-exporte
+    `plusPlusSheafIsoPresheafToSheaf` de Mathlib sans modification,
+    specialise a `D := Type (max u v)` pour beneficier des instances
+    automatiques de la theorie des types (HasColimitsOfShape, ConcreteCategory,
+    HasMultiequalizer). -/
+noncomputable def plusPlusSheafIsoPresheafToSheaf {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) :
+    J.plusPlusSheaf (Type (max u v)) ≅ presheafToSheaf J (Type (max u v)) :=
+  CategoryTheory.GrothendieckTopology.plusPlusSheafIsoPresheafToSheaf J _
+
+/-!
+### 2. `plusPlusFunctorIsoSheafification` — double-plus ≅ faisceautisation
+
+Reformulation du même phénomène au niveau du foncteur `sheafification J D` :
+deux passes successives de la **construction explicite** `J.sheafification D`
+donnent le même résultat que la **construction classique** `sheafification J D`,
+à isomorphismes canoniques près. C'est le pendant de (1) au niveau du
+`plus` interne.
+-/
+
+/-- Theoreme-pont : `J.plusPlusSheafification D` est isomorphe au foncteur
+    `sheafification J D`. Re-exporte `plusPlusFunctorIsoSheafification` de
+    Mathlib, specialise a `Type (max u v)`. -/
+noncomputable def plusPlusFunctorIsoSheafification {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) :
+    J.sheafification (Type (max u v)) ≅ sheafification J (Type (max u v)) :=
+  CategoryTheory.GrothendieckTopology.plusPlusFunctorIsoSheafification J _
+
+/-!
+### 3. `plusPlusIsoSheafify` — foncteur induit sur les préfaisceaux
+
+L'**isomorphisme au niveau des objets préfaisceau** : pour tout préfaisceau P
+sur (C, J), le préfaisceau `J.sheafify P` (passage par `plus` du préfaisceau
+puis faisceautisation explicite) est canoniquement isomorphe au faisceau
+`sheafify J P`. C'est l'instance naturelle de (1) et (2) sur les objets.
+-/
+
+/-- Theoreme-pont : pour tout prefaisceau P, `J.sheafify P ≅ sheafify J P`.
+    Re-exporte `plusPlusIsoSheafify` de Mathlib, specialise a
+    `Type (max u v)`. -/
+noncomputable def plusPlusIsoSheafify {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C)
+    (P : Cᵒᵖ ⥤ Type (max u v)) :
+    J.sheafify P ≅ sheafify J P :=
+  CategoryTheory.GrothendieckTopology.plusPlusIsoSheafify J _ P
+
+/-!
+### 4. `toSheafify_plusPlusIsoSheafify_hom` — naturalité du morphisme unité
+
+**Compatibilité** entre l'isomorphisme (3) et le morphisme canonique
+`toSheafify` (cf. `Sheafification.lean`, théoréme `toSheafify_is_unit`) :
+le carré formé par `J.toSheafify P` et `toSheafify J P ≫ (plusPlusIsoSheafify J (Type _) P).hom`
+commute identiquement. C'est la **cohérence des deux routes** vers
+`sheafify J P` (directe vs via `J.sheafify`).
+-/
+
+/-- Theoreme-pont : compatibilité naturelle entre `toSheafify` et l'isomorphisme
+    `plusPlusIsoSheafify.hom`. Re-exporte `toSheafify_plusPlusIsoSheafify_hom`
+    de Mathlib, specialise a `Type (max u v)`. -/
+theorem toSheafify_plusPlusIsoSheafify_hom {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C)
+    (P : Cᵒᵖ ⥤ Type (max u v)) :
+    J.toSheafify P ≫ (plusPlusIsoSheafify J P).hom = toSheafify J P :=
+  CategoryTheory.GrothendieckTopology.toSheafify_plusPlusIsoSheafify_hom J _ P
+
 end Grothendieck
