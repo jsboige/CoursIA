@@ -15,7 +15,9 @@ from check_i18n_siblings import (  # noqa: E402
     check_pair,
     find_en_files,
     fr_sibling,
+    imports_fr_sibling,
     normalize_body,
+    split_decls,
     strip_comments,
 )
 
@@ -119,8 +121,8 @@ def test_check_pair_matching(tmp_path):
         "end Conway_en\n",
         encoding="utf-8",
     )
-    ok, diff = check_pair(fr, en)
-    assert ok, diff
+    status, detail = check_pair(fr, en)
+    assert status == "OK", detail
 
 
 def test_check_pair_drift_detected(tmp_path):
@@ -130,9 +132,100 @@ def test_check_pair_drift_detected(tmp_path):
                   encoding="utf-8")
     en.write_text("namespace Conway_en\ndef answer : Nat := 43\nend Conway_en\n",
                   encoding="utf-8")
-    ok, diff = check_pair(fr, en)
-    assert not ok
-    assert "42" in diff and "43" in diff
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT"
+    assert "42" in detail and "43" in detail
+
+
+def test_normalize_strips_self_qualifiers_arrow_fp():
+    # Arrow_en/#6716 false-positive repro: FR defs at top level disambiguate
+    # with `_root_.X`; the EN mirror lives in `namespace SocialChoice_en` and
+    # must write `SocialChoice_en.X`. Same reference, two scopes.
+    fr = (
+        "def is_strictly_best (x : Nat) : Prop := x = 0\n"
+        "theorem t (x : Nat) : Prop := _root_.is_strictly_best x\n"
+    )
+    en = (
+        "namespace SocialChoice_en\n"
+        "def is_strictly_best (x : Nat) : Prop := x = 0\n"
+        "theorem t (x : Nat) : Prop := SocialChoice_en.is_strictly_best x\n"
+        "end SocialChoice_en\n"
+    )
+    assert normalize_body(fr) == normalize_body(en)
+
+
+def test_self_qualifier_does_not_mask_foreign_prefix():
+    # A qualified reference to a namespace NOT declared in the file is body
+    # content — it must still surface as drift.
+    fr = "theorem t : Prop := Other.f 1\n"
+    en = "theorem t : Prop := f 1\n"
+    assert normalize_body(fr) != normalize_body(en)
+
+
+def test_check_pair_consumer_pattern_lattice_fp(tmp_path):
+    # Lattice_en false-positive repro: the EN sibling imports the FR canonical
+    # module and reuses its defs (no redeclaration); only the theorems it does
+    # state must match.
+    fr = tmp_path / "Lattice.lean"
+    en = tmp_path / "Lattice_en.lean"
+    fr.write_text(
+        "namespace StableMarriage\n"
+        "def joinSpouse (x : Nat) : Nat := x + 1\n"
+        "def meetSpouse (x : Nat) : Nat := x - 1\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "import StableMarriage.Lattice\n"
+        "namespace StableMarriage_en\n"
+        "open StableMarriage\n"
+        "theorem join_comm (x : Nat) : joinSpouse x = joinSpouse x := rfl\n"
+        "end StableMarriage_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "OK-CONSUMER", detail
+    assert "2 FR declaration block(s) reused" in detail
+
+
+def test_consumer_pattern_still_flags_novel_en_block(tmp_path):
+    # An EN block with no FR counterpart is real drift even under the
+    # consumer pattern.
+    fr = tmp_path / "Cone.lean"
+    en = tmp_path / "Cone_en.lean"
+    fr.write_text(
+        "namespace Cone\n"
+        "theorem a : True := trivial\n"
+        "end Cone\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "import Cooperative.Cone\n"
+        "namespace Cone_en\n"
+        "theorem a : True := by exact trivial\n"
+        "end Cone_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT"
+    assert "no FR counterpart" in detail
+
+
+def test_split_decls_attribute_line_starts_block():
+    body = (
+        "def f : Nat := 1\n"
+        "@[simp]\n"
+        "theorem t : True := trivial\n"
+    )
+    blocks = split_decls(body)
+    assert len(blocks) == 2
+    assert blocks[1].startswith("@[simp]")
+
+
+def test_imports_fr_sibling_matches_last_segment():
+    assert imports_fr_sibling("import StableMarriage.Lattice\n", "Lattice")
+    assert not imports_fr_sibling("import StableMarriage.Defs\n", "Lattice")
 
 
 def test_fr_sibling_naming(tmp_path):
@@ -163,9 +256,9 @@ def test_real_conway_pairs_are_byte_identical():
         if not fr.exists():
             failures.append(f"ORPHAN {en.name}")
             continue
-        ok, diff = check_pair(fr, en)
-        if not ok:
-            failures.append(f"DRIFT {en.name}\n{diff}")
+        status, detail = check_pair(fr, en)
+        if status == "DRIFT":
+            failures.append(f"DRIFT {en.name}\n{detail}")
     assert not failures, "\n".join(failures)
 
 
