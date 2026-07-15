@@ -1,26 +1,4 @@
 /-
-Conway hommage — Collatz-like functions and undecidability
-John Horton Conway (1937-2020).
-
-Conway's 1972 paper "Unpredictable Iterations" proved that a natural
-generalization of the Collatz conjecture is undecidable. He showed that
-there exists a "Collatz-like" function (a piecewise-linear map on the
-integers with finitely many cases) whose eventual behavior (does every
-trajectory reach a particular set?) is algorithmically undecidable.
-
-This module formalizes the **accessible** parts of this result:
-1. The definition of a Collatz-like function (piecewise-linear iteration)
-2. Concrete examples with proven termination properties
-3. The connection between FRACTRAN and Collatz-like functions
-
-This is NOT the full undecidability proof (which requires arithmetization
-of Turing machines), but the computational core that motivates it.
-
-No `sorry` in this module — all results are proved via `native_decide`
-or direct computation.
--/
-
-/-
   `Conway.CollatzLike` — Fonctions de type Collatz et indécidabilité
   ===================================================================
   Hommage à Conway — Formalisation des fonctions « Collatz-like »
@@ -51,23 +29,15 @@ or direct computation.
   Aucun `sorry` dans ce module — tous les résultats sont prouvés via
   `native_decide` ou calcul direct.
 
-  ### i18n — convention #4980 ratifiée 2026-07-04
+  ### i18n — convention #4980 (sibling pair, decision 2026-07-04)
 
-  Ce sous-module suit l'option A (bilingue inline FR/EN), variante
-  pragmatique c.376-c.384 (deux blocs `/` top-level distincts, sans
-  `---` interne) : le bloc EN existant est préservé verbatim
-  ci-dessus, le bloc FR miroir est ajouté juste après sans séparateur
-  `---`. Convention sibling pair (`<Foo>_en.lean` à part) réservée aux
-  modules de substance (cf c.374 `Astar_en.lean`) ; pour les modules
-  de calibration/theorem comme `CollatzLike`, l'inline FR+EN est le bon
-  compromis (densité theorem élevée, deux langues côte à côte). Les
-  énoncés de théorèmes, les noms de lemmes, les tactiques Lean
-  (`:= by native_decide`, `simp`, `decide`, etc.) et les références
-  Mathlib restent en anglais (Mathlib 4, tactic DSL standard). Seules
-  les **docstrings `/-- ... -/`** et les **commentaires `-- ...`**
-  bilingues sont ajoutées. Anti-§D byte-identity garanti : le namespace
-  body est préservé bit-pour-bit (5992 chars extractibles byte-identique
-  via script Python `extract_ns_body`).
+  Ce fichier est **FR canonique**. Son miroir anglais vit dans le sibling
+  `CollatzLike_en.lean` (modèle sibling pair ratifié 2026-07-04, cf
+  `code-style.md` §Lean i18n, analogue `Angel.lean` / `Angel_en.lean`).
+  Les énoncés de théorèmes, les tactiques Lean, les noms de lemmes et les
+  références Mathlib restent en anglais (Mathlib 4) ; seules les docstrings
+  et les commentaires diffèrent entre les deux fichiers. Anti-§D
+  byte-identity garanti : le namespace body est préservé bit-pour-bit.
 
   ### c.385 — continuité conway_lean Phase 1+ satellites (post-c.384)
 
