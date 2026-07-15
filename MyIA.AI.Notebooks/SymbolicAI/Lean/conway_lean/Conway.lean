@@ -54,70 +54,12 @@ Ce workspace est un hommage pédagogique à un mathématicien extraordinairement
 fécond et créatif. Tous les `sorry` ne sont pas comblés — la plupart sont
 des échafaudages intentionnels pour le prouveur multi-agent (cf. Epic #1453).
 
----
-
-English: Conway tribute — accessible formalizations of lesser-known results
-by John Horton Conway (1937-2020).
-
-John Conway was taken by COVID-19 on April 11, 2020.
-This workspace formalizes some of his elegant lesser-known results.
-
-Nut 1: Doomsday algorithm (day-of-week calculation)
-Nut 2: Look-and-Say sequence (audioactive decay)
-Nut 3: FRACTRAN universal machine (encodes any program as a list of
-       fractions; running time is the numerator)
-Nut 4: Game of Life (2D cellular automaton, structure families:
-       oscillators, spaceships, guns; fast computation via Hashlife)
-
-Calibration track (Epic #1453): Nim/Sprague-Grundy + Doomsday/Look-and-Say
-lemmas as a prover-harness difficulty gradient (intentional sorry as
-a calibration scale; see also `Conway.DoomsdayLemmas` and
-`Conway.LookAndSayLemmas`).
-
-Substance (English):
-- `Conway.Doomsday` + `Conway.DoomsdayLemmas`: Doomsday algorithm
-  (Conway 1973 *Tomorrow is the Day After Doomsday*) — fast mental
-  calculation of the day of the week for any Gregorian calendar date.
-- `Conway.LookAndSay` + `Conway.LookAndSayLemmas`: audioactive decay
-  (Conway 1986 *The Weird and Wonderful Chemistry of Audioactive Decay*),
-  Conway sequence (1, 11, 21, 1211, 111221, 312211, ...), proof that
-  digits stabilize asymptotically (Conway's theorem).
-- `Conway.Fractran` + `Conway.FractranLemmas`: FRACTRAN, esoteric
-  language invented by Conway (1987 *FRACTRAN: A Simple Universal
-  Programming Language for Arithmetic*) — any Turing machine can be
-  encoded as a list of fractions; execution is repeated multiplication
-  by the first applicable fraction.
-- `Conway.Nim`: Nim (impartial combinatorial game) — Sprague-Grundy
-  proof (1935 / 1946) that every position has an integer Grundy value
-  and that the winning strategy is deterministic.
-- `Conway.Life` (+ 12 Life sub-modules): Conway's Game of Life
-  (1970 *The Game of Life* in Scientific American, M. Gardner). Fast
-  computation via Hashlife (Hashing + Lifetime, Bill Gosper 1984);
-  correctness proof `HashlifeCorrectness` + complexity bounds
-  (`HashlifeMarginDemo`, `LightCone`, `Pillars`).
-- `Conway.KochenSpecker` + `Conway.FreeWillTheorem`: Kochen-Specker
-  theorem (1967) and Conway-Kochen Free Will Theorem (2006 *The Free
-  Will Theorem*) — deep results on non-contextuality and determinism
-  in quantum mechanics.
-- `Conway.CollatzLike`: Collatz-type generalizations (3n+1) — Syracuse
-  conjecture reformalized in Lean.
-- `Conway.Angel`: Conway's Angel problem (J. Conway 1996 / 2002
-  *Angel Problem*, solved 2006 by Máthé, completion 2017 by Bowditch)
-  — can an Angel be trapped in an avoidance-type game?
-- `Conway.MathlibMap`: correspondence table between the concepts
-  formalized here and the underlying Mathlib 4 modules.
-
-This workspace is a pedagogical tribute to an extraordinarily prolific
-and creative mathematician. Not all `sorry`s are filled — most are
-intentional scaffolds for the multi-agent prover (cf. Epic #1453).
-
-Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : ce fichier root
-aggregator est bilingue inline (FR canonique d'abord, EN en miroir),
-conformément au pattern canonique `CooperativeGames.lean` (PR #5883,
-pilote EPIC), `Utility.lean` (PR #6045), `RepeatedGames.lean` (PR #6048),
-`Minimax.lean` (PR #6101), `SocialChoice.lean` (PR #6106). Les modules
-substantiels vivent dans des fichiers siblings (cf. structure lake ci-dessous),
-auto-découverts par le `globs := #[`Conway.*`, `Conway.Life.*`]` du lakefile.
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04) : ce fichier est le
+jumeau FR canonique du root aggregator. Le miroir EN vit dans le fichier
+jumeau `Conway_en.lean` (sibling pair pattern, cf. PR #6682
+`Knots.lean` ↔ `Knots_en.lean` pour knot_lean). Les modules substantiels
+habitent les fichiers siblings `Conway.X` (FR) et `Conway.X_en` (EN), auto-
+découverts par le `globs := #[.submodules `Conway, `Conway_en]` du lakefile.
 -/
 import Conway.Doomsday
 import Conway.LookAndSay
