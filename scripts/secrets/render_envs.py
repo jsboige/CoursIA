@@ -57,6 +57,11 @@ TARGET_ENVS = [
     # Only keys present in master.env are rewritten; the prover's own
     # ZAI/LOCAL/OPENROUTER config (absent from master) is left untouched.
     REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / ".env",
+    # Trading paper harness: Portfolio-IBKR-Coinbase-Hybrid/paper_harness/config.py
+    # loads this .env. Centralizes the IBKR paper login (#1199) so a re-provision =
+    # edit master.env + render. The credential was lost 3x when it lived only in a
+    # per-machine .env with no canonical anchor -- master.env is now that anchor.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Portfolio-IBKR-Coinbase-Hybrid" / ".env",
 ]
 
 # Keys whose VALUE is a shared secret and must be synced from master.env.
@@ -90,6 +95,12 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
     "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # IBKR paper/simulated trading login (Portfolio-IBKR-Coinbase-Hybrid, #1199).
+    # A single shared credential (not per-instance) -> centralized so a re-provision
+    # is edit-master + render, never a scattered per-machine .env that gets lost.
+    # IBKR_ACCOUNT_ID stays out (it is an identifier discovered post-login, not a
+    # secret; it lives in the consumer .env as config).
+    "IBKR_USERNAME", "IBKR_PASSWORD",
     # Session
     "SECRET_KEY",
 })
