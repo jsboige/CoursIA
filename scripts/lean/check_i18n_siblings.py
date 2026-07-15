@@ -22,6 +22,21 @@ pairs, forensic notes "byte-identity N/N"). It does **NOT** compile Lean — use
 ``lake build`` for that, per ``.claude/rules/lean-merge-discipline.md``; it only
 proves that the FR and EN bodies have not drifted apart.
 
+Two structural divergences are recognized as legitimate (erratum on #4980,
+2026-07-15, after two false-positive DRIFT dispatches — cf PR #6716):
+
+* **Self-qualifiers** — an FR canonical whose defs live at top level may write
+  ``_root_.X`` where its EN mirror, wrapped in ``namespace <Ns>_en``, must
+  write ``<Ns>_en.X``: the same reference expressed from two scopes. Both
+  spellings are normalized away (``_root_.`` always; ``<Ns>.`` only for
+  namespaces *declared in the same file*, where the prefix is redundant with
+  Lean's own name resolution).
+* **Consumer/extender pattern** — an EN sibling that ``import``s the FR
+  canonical module reuses the FR declarations instead of redeclaring them
+  (StableMarriage/Lattice_en). Such a pair is checked by *subset*: every
+  declaration block the EN file does state must match an FR block; blocks it
+  reuses via the import are reported as ``OK-CONSUMER``, not as missing.
+
 Usage
 -----
     python scripts/lean/check_i18n_siblings.py PATH [PATH ...]
@@ -41,6 +56,7 @@ import argparse
 import difflib
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 # Trees out of scope for the #4980 convention (vendored Mathlib, external lakes,
@@ -63,6 +79,28 @@ _STRUCTURAL_LINE = re.compile(r"^\s*(import|open|namespace|end)\b")
 # symmetric) makes the two variants compare equal on genuine body content while
 # still surfacing any real divergence.
 _EN_SUFFIX = re.compile(r"\b(\w+)_en\b")
+
+# Namespace declarations (matched on the comment-stripped source) feed the
+# self-qualifier normalization: a `<Ns>.X` reference is only stripped when
+# `<Ns>` is declared in the same file (after the `_en` collapse), so foreign
+# qualified names still count as body content.
+_NAMESPACE_DECL = re.compile(r"^\s*namespace\s+([\w.]+)", re.MULTILINE)
+
+# Import lines (matched on the comment-stripped EN source) feed the
+# consumer-pattern detection.
+_IMPORT_LINE = re.compile(r"^\s*import\s+([\w.]+)", re.MULTILINE)
+
+# A new top-level declaration (or a standalone attribute preceding one) starts
+# a comparison block for the consumer-pattern subset check.
+_DECL_START = re.compile(
+    r"^(?:@\[[^\]]*\]\s*)?"
+    r"(?:noncomputable\s+|private\s+|protected\s+|partial\s+|unsafe\s+"
+    r"|scoped\s+|local\s+)*"
+    r"(?:def|theorem|lemma|structure|inductive|instance|abbrev|class|example"
+    r"|axiom|opaque|macro|elab|syntax|notation|attribute|deriving|section"
+    r"|variable|universe|#eval|#check|#print|set_option)\b"
+)
+_ATTR_ONLY = re.compile(r"^@\[[^\]]*\]\s*$")
 
 
 def strip_comments(src: str) -> str:
@@ -120,9 +158,15 @@ def strip_comments(src: str) -> str:
 def normalize_body(src: str) -> str:
     """Reduce a ``.lean`` source to its comparable code body: strip comments /
     docstrings, drop ``import`` / ``open`` / ``namespace`` / ``end`` lines and
-    blank lines, and trim trailing whitespace (indentation is preserved, as Lean
-    tactic blocks are indentation-sensitive)."""
+    blank lines, trim trailing whitespace (indentation is preserved, as Lean
+    tactic blocks are indentation-sensitive), collapse the ``_en`` suffix, and
+    erase semantically-neutral self-qualifiers (``_root_.`` always, ``<Ns>.``
+    for namespaces declared in this same file — the Arrow_en/#6716 false
+    positive: FR top-level ``_root_.X`` vs EN in-namespace ``<Ns>_en.X``)."""
     stripped = strip_comments(src)
+    quals = {"_root_."}
+    for m in _NAMESPACE_DECL.finditer(stripped):
+        quals.add(_EN_SUFFIX.sub(r"\1", m.group(1)) + ".")
     kept: list[str] = []
     for line in stripped.splitlines():
         if _STRUCTURAL_LINE.match(line):
@@ -131,21 +175,78 @@ def normalize_body(src: str) -> str:
         if trimmed.strip() == "":
             continue
         kept.append(trimmed)
-    return _EN_SUFFIX.sub(r"\1", "\n".join(kept) + "\n")
+    body = _EN_SUFFIX.sub(r"\1", "\n".join(kept) + "\n")
+    qual_re = re.compile(r"\b(?:%s)" % "|".join(
+        re.escape(q) for q in sorted(quals, key=len, reverse=True)))
+    return qual_re.sub("", body)
 
 
-def check_pair(fr_path: Path, en_path: Path) -> tuple[bool, str]:
-    """Return ``(ok, diff)``: whether the FR and EN bodies match after
-    normalization, and a short unified diff when they do not."""
-    fr_body = normalize_body(fr_path.read_text(encoding="utf-8"))
-    en_body = normalize_body(en_path.read_text(encoding="utf-8"))
+def split_decls(body: str) -> list[str]:
+    """Split a normalized body into top-level declaration blocks (used by the
+    consumer-pattern subset check)."""
+    blocks: list[str] = []
+    cur: list[str] = []
+    for line in body.splitlines():
+        # A standalone attribute opens a block; the declaration that follows
+        # it stays attached (so `@[simp]\ntheorem ...` is one block).
+        starts_new = bool(_ATTR_ONLY.match(line)) or (
+            bool(_DECL_START.match(line))
+            and not all(_ATTR_ONLY.match(prev) for prev in cur))
+        if cur and starts_new:
+            blocks.append("\n".join(cur))
+            cur = []
+        cur.append(line)
+    if cur:
+        blocks.append("\n".join(cur))
+    return blocks
+
+
+def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
+    """Consumer/extender pattern (Lattice_en case): the EN file imports the FR
+    canonical module and legitimately reuses its declarations instead of
+    redeclaring them."""
+    return any(
+        m.group(1).rsplit(".", 1)[-1] == fr_module
+        for m in _IMPORT_LINE.finditer(en_src_stripped)
+    )
+
+
+def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
+    """Compare an FR/EN sibling pair. Returns ``(status, detail)`` where
+    ``status`` is ``"OK"`` (bodies identical after normalization),
+    ``"OK-CONSUMER"`` (the EN file imports the FR module and every declaration
+    block it does state matches an FR block — the rest is reused via the
+    import, not missing), or ``"DRIFT"`` (detail carries a short diff or the
+    offending blocks)."""
+    fr_src = fr_path.read_text(encoding="utf-8")
+    en_src = en_path.read_text(encoding="utf-8")
+    fr_body = normalize_body(fr_src)
+    en_body = normalize_body(en_src)
     if fr_body == en_body:
-        return True, ""
+        return "OK", ""
+    if imports_fr_sibling(strip_comments(en_src), fr_path.stem):
+        fr_blocks = Counter(split_decls(fr_body))
+        unmatched: list[str] = []
+        for blk in split_decls(en_body):
+            if fr_blocks[blk] > 0:
+                fr_blocks[blk] -= 1
+            else:
+                unmatched.append(blk)
+        if not unmatched:
+            reused = sum(fr_blocks.values())
+            return "OK-CONSUMER", (
+                f"{reused} FR declaration block(s) reused via import; "
+                "all EN-stated blocks match FR")
+        preview = "\n---\n".join(
+            "\n".join(b.splitlines()[:6]) for b in unmatched[:3])
+        return "DRIFT", (
+            f"consumer pattern, but {len(unmatched)} EN block(s) have no FR "
+            f"counterpart:\n{preview}")
     diff = difflib.unified_diff(
         fr_body.splitlines(), en_body.splitlines(),
         fromfile=str(fr_path), tofile=str(en_path), lineterm="",
     )
-    return False, "\n".join(list(diff)[:40])
+    return "DRIFT", "\n".join(list(diff)[:40])
 
 
 def _excluded(path: Path) -> bool:
@@ -201,25 +302,27 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = failed = orphan = 0
+    passed = consumer = failed = orphan = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
-        rel = en
         if not fr.exists():
             orphan += 1
-            print(f"ORPHAN  {rel}  (no FR sibling {fr.name})")
+            print(f"ORPHAN  {en}  (no FR sibling {fr.name})")
             continue
-        ok, diff = check_pair(fr, en)
-        if ok:
+        status, detail = check_pair(fr, en)
+        if status == "OK":
             passed += 1
-            print(f"OK      {rel}")
+            print(f"OK      {en}")
+        elif status == "OK-CONSUMER":
+            consumer += 1
+            print(f"OK-CONSUMER  {en}  ({detail})")
         else:
             failed += 1
-            print(f"DRIFT   {rel}")
-            print(diff)
-    total = passed + failed + orphan
+            print(f"DRIFT   {en}")
+            print(detail)
+    total = passed + consumer + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
-          f" | {failed} drift | {orphan} orphan")
+          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan")
     return 0 if (failed == 0 and orphan == 0) else 1
 
 
