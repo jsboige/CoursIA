@@ -1,154 +1,43 @@
 /-
-Copyright (c) 2026 CoursIA. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+  `Conway.FreeWillTheorem` — Le théorème du libre arbitre de Conway-Kochen
+  ======================================================================
+  Le théorème du libre arbitre (Conway-Kochen 2006/2009, « Strong Free Will
+  Theorem ») affirme que, sous des hypothèses physiques raisonnables
+  (compatibilité avec la mécanique quantique + non-conspiracy), les
+  particules élémentaires disposent d'une propriété analogue au « libre
+  arbitre » : leurs réponses à des expériences de spin ne sont pas
+  entièrement fixées par le passé lointain de l'univers.
 
-## Free Will Theorem (Conway-Kochen 2006/2009)
+  Plus précisément, si Alice et Bob effectuent des mesures de spin
+  (trois directions orthogonales d'un photon intriqué), et si les
+  particules avaient une fonction de réponse cachée qui dépendait de
+  manière certaine uniquement du passé commun (non-conspiracy), alors
+  la fonction devrait dépendre des directions mesurées — et cette
+  dépendance viole la propriété de « Kochen-Specker » qu'aucune
+  fonction d'une mesure quantique à valeur propre classique ne peut
+  être prédéterminée sans conspiration.
 
-Pilier 2 of Epic #1651. Proves that particle responses cannot be
-deterministic functions of prior information, assuming three physically
-motivated axioms: SPIN, TWIN, and MIN.
+  Ce fichier formalise la structure du théorème et la connecte au
+  contexte du projet `conway_lein` (Kochen-Specker, Conway's legacy).
 
-The argument proceeds in two stages:
+  ### i18n — convention #4980 (ratifiée 2026-07-04)
 
-**Stage 1 (Single-particle)**:
-A deterministic model assigns a fixed {0,1} response to each measurement
-direction, for each hidden state. SPIN forces this to be a valid coloring
-of the Cabello vectors (exactly one `true` per orthogonal basis). But the
-Kochen-Specker theorem (Pilier 1) says no such coloring exists.
-Contradiction.
+  Ce fichier est le **canonique français**. Le miroir anglais est le fichier
+  frère `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
+  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  — modèle sibling pair V2 nested (cf `code-style.md` §Lean i18n et l'analogue
+  `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
+  Docstrings en français ici ; le corps (signatures, defs, proofs) reste
+  byte-identique entre les deux fichiers. Pas de bloc bilingue inline (option B
+  rejetée 2026-07-04 ratif).
 
-**Stage 2 (Two-particle)**:
-With two entangled particles measured by spatially separated experimenters,
-TWIN forces both particles to share the same response function, and MIN
-ensures experimenter independence. The same KS contradiction applies.
-
-**Key insight (Conway-Kochen)**: "Free will" here is a *mathematical*
-definition, not a philosophical thesis. It means: the particle's response
-is not a function of the past. The theorem proves this rigorously from
-three modest physical axioms.
-
-Sources:
-  Conway & Kochen, "The Free Will Theorem",
-    Found. Phys. 36 (2006), 1441-1473.
-  Conway & Kochen, "The Strong Free Will Theorem",
-    Notices AMS 56 (2009), 226-232.
+  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.451
+  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
+  sibling pair (MERGED — EN twin standalone créé), c.457 `Conway/LookAndSay`
+  sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
+  **c.519 `Conway/FreeWillTheorem` strip bilingue FR canonical (ce PR)**.
 -/
 
-
-/-
-  `Conway.FreeWillTheorem` — Théorème du libre arbitre (Conway-Kochen)
-  ================================================================
-  Hommage à Conway — Formalisation du théorème du libre arbitre
-
-  John Horton Conway (1937-2020), avec Simon Kochen, ont démontré en
-  2006 (puis renforcé en 2009) le « Free Will Theorem » (théorème du
-  libre arbitre) : **les réponses des particules ne peuvent pas être
-  des fonctions déterministes de l'information passée**, sous trois
-  hypothèses physiques motivées : **SPIN**, **TWIN** et **MIN**.
-
-  ### Contexte mathématique
-
-  Le théorème procède en deux étapes (Pilier 2 de l'EPIC #1651) :
-
-  **Étape 1 (Particule unique)** : un modèle déterministe (à variables
-  cachées) assigne une réponse fixe `{0,1}` à chaque direction de mesure,
-  pour chaque état caché. L'axiome SPIN force cette réponse à constituer
-  un coloriage valide des vecteurs de Cabello (exactement un `true` par
-  base orthogonale). Mais le théorème de Kochen-Specker (Pilier 1)
-  prouve qu'aucun tel coloriage n'existe. Contradiction.
-
-  **Étape 2 (Deux particules)** : avec deux particules intriquées mesurées
-  par des expérimentateurs spatialement séparés, TWIN force les deux
-  particules à partager la même fonction de réponse, et MIN assure
-  l'indépendance des expérimentateurs. La même contradiction KS
-  s'applique.
-
-  **Insight clé (Conway-Kochen)** : le « libre arbitre » ici est une
-  définition **mathématique**, pas une thèse philosophique. Cela
-  signifie : la réponse de la particule n'est pas une fonction du passé.
-  Le théorème le prouve rigoureusement à partir de trois axiomes
-  physiques modestes.
-
-  ### i18n — convention #4980 ratifiée 2026-07-04
-
-  Ce sous-module suit l'option A (bilingue inline FR/EN), variante
-  pragmatique c.376-c.385 (deux blocs `/` top-level distincts, sans
-  `---` interne) : le bloc EN existant est préservé verbatim
-  ci-dessus, le bloc FR miroir est ajouté juste après sans séparateur
-  `---`. Convention sibling pair (`<Foo>_en.lean` à part) réservée aux
-  modules de substance (cf c.374 `Astar_en.lean`) ; pour les modules
-  de theorem à densité de preuves élevée comme `FreeWillTheorem`,
-  l'inline FR+EN est le bon compromis (densité theorem élevée, deux
-  langues côte à côte). Les énoncés de théorèmes, les noms de lemmes,
-  les tactiques Lean (`:= by rintro`, `exact`, `have`, etc.) et les
-  références Mathlib restent en anglais (Mathlib 4, tactic DSL
-  standard). Seules les **docstrings `/-- ... -/`** et **commentaires
-  `-- ...`** bilingues sont ajoutées. Anti-§D byte-identity garanti :
-  le namespace body (7026 chars entre `namespace Conway` L39 et
-  `end Conway` L208) est préservé bit-pour-bit via script Python
-  `extract_ns_body`.
-
-  ### c.386 — continuité conway_lean Phase 1+ satellites (post-c.385)
-
-  c.385 = 6ᵉ sous-module rollout `conway_lean` Phase 1+
-  (`Conway/CollatzLike`, Collatz 3n+1 + Conway 1972 indécidabilité,
-  PR #6217 OPEN MERGEABLE, +107 insertions 0 suppression, baseline LF-only CR=0 strict
-  préservée nativement, 8 theorem + 11 defs/structures byte-identique,
-  Math-Vérif COMMENTED 15ᵉ). PIVOT L335 strict post-c.381-c.383 = 3
-  cycles R6 Sustained intra-R6 sur registre `grothendieck_lein`,
-  retour `conway_lein` Phase 1+ satellites registre ouvert post-c.380.
-
-  **c.386 = 7ᵉ sous-module rollout `conway_lean` Phase 1+** =
-  `FreeWillTheorem` = continuité registre `conway_lein` Phase 1+
-  ouvert post-c.385 PIVOT strict obligatoire. Substance réelle :
-  **Conway-Kochen 2006/2009 « Strong Free Will Theorem »** (physique
-  quantique mathématique + logique + philosophie des sciences
-  formalisée). Analogie structurelle avec c.380 Doomsday (algorithme
-  mathématique fondamental) + c.384 Nim (jeu mathématique) + c.385
-  CollatzLike (conjecture mathématique fondamentale) : `FreeWillTheorem`
-  = théorème mathématique fondamental analogue structurel direct.
-  Réduction one-line (free_will_theorem := by ...) sur le moteur
-  Kochen-Specker (Pilier 1, 18 vecteurs Cabello). 2 theorem
-  (`fwt_single_particle`, `free_will_theorem`) + 1 structure
-  (`SatisfiesFWT`) + 1 inductive (`Experimenter`) + 2 def
-  (`SatisfiesSPIN`, `SatisfiesTWIN`) + 3 abbrev (`HiddenState`,
-  `DeterministicResponse`, `TwoParticleResponse`) byte-identiques.
-  1 import byte-identique (`Conway.KochenSpecker`).
-
-  Backlog c.387+ (2 sous-modules Phase 1+ restants après c.386 :
-  `Conway/{Angel,KochenSpecker}.lean` + `Conway/Life/*` 13 fichiers
-  + grothendieck_lein 19 restants Phase 2+) + hors-Lean backlog.
-
-  Cross-références : c.366 `#6111` `Conway.lean` racine bilingue
-  inline (MERGED, initie rollout Phase 1+) + c.377 `#6178`
-  `Conway/MathlibMap` bilingue (1ᵉʳ sous-module rollout conway_lein,
-  PIVOT L335 strict, analogue structurel c.382) + c.378 `#6182`
-  `Conway/LookAndSay` bilingue (2ᵉ sous-module rollout, suite
-  look-and-say λ ≈ 1.303577) + c.379 `#6190` `Conway/Fractran`
-  bilingue (3ᵉ sous-module, machine universelle Turing-complète) +
-  c.380 `#6194` `Conway/Doomsday` bilingue (4ᵉ sous-module,
-  algorithme Doomsday Conway 1973 + 4 `#eval!` cas réels, analogue
-  structurel direct c.385 CollatzLike) + c.381 `#6197`
-  `Grothendieck/YonedaLemma` bilingue (1ᵉʳ sous-module rollout
-  grothendieck_lein Phase 2+, PIVOT L335 strict c.381) + c.382
-  `#6202` `Grothendieck/MathlibMap` bilingue (2ᵉ sous-module
-  rollout, satellite cartographie Mathlib 4) + c.383 `#6208`
-  `Grothendieck/SheafBasics` bilingue (3ᵉ sous-module rollout,
-  fondations faisceaux = 6 theorem, 3ᵉ cycle R6 Sustained intra-R6
-  sur registre `grothendieck_lein` ouvert = au seuil R5.4b MUST
-  avant PIVOT obligatoire c.384) + c.384 `#6212` `Conway/Nim`
-  bilingue (5ᵉ sous-module rollout conway_lein Phase 1+, Nim +
-  Bouton 1901 + Sprague-Grundy = analogue structurel direct
-  c.385 CollatzLike par algorithme mathématique concret) + c.385
-  `#6217` `Conway/CollatzLike` bilingue (6ᵉ sous-module rollout
-  conway_lein Phase 1+, Collatz 3n+1 + Conway 1972 indécidabilité
-  = analogue structurel direct c.386 FreeWillTheorem par théorème
-  mathématique fondamental) + **c.386 `Conway/FreeWillTheorem`
-  bilingue (cette PR, 7ᵉ sous-module rollout conway_lein Phase 1+,
-  Conway-Kochen 2006/2009 « Strong Free Will Theorem »)** ←
-  **continuité registre `conway_lein` Phase 1+ ouvert post-c.385
-  PIVOT strict obligatoire**.
--/
 import Conway.KochenSpecker
 
 namespace Conway
