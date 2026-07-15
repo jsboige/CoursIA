@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Forensic analysis of multi-agent Lean prover traces (Epic #1453)."""
 
+import argparse
 import json
 import os
 import glob
@@ -11,7 +12,105 @@ import statistics
 
 TRACE_DIR = os.path.join(os.path.dirname(__file__), "traces")
 
-jsonl_files = sorted(glob.glob(os.path.join(TRACE_DIR, "*.spans.jsonl")))
+# Recency filter (#1453 forensic). Traces accumulate across harness versions,
+# and pre-fix artifacts skew every metric below when mixed with current traces.
+# Concrete case: 10 "a coroutine was expected" stalls from 2026-05 (autonomous
+# zai sessions, 4900-21000s, some LOSING real successes like 5->3) were addressed
+# by the 2700s wall-clock cap (#3837 / c.316). Newer runs (2026-07) max out around
+# 635s. Without --since, Section 1 (error rate) and Section 3 (outliers >120s)
+# still report the drained pathology as if live. --since scopes the window to the
+# CURRENT harness; the coverage banner below warns when stale traces are included.
+_parser = argparse.ArgumentParser(
+    description="Forensic analysis of multi-agent Lean prover traces (Epic #1453).")
+_parser.add_argument(
+    "--since", default=None, metavar="YYYY-MM-DD",
+    help="Only include traces whose companion *_result.json timestamp is >= this date.")
+_args = _parser.parse_args()
+
+jsonl_files_all = sorted(glob.glob(os.path.join(TRACE_DIR, "*.spans.jsonl")))
+
+
+def _result_timestamp(spans_path):
+    """Read the timestamp from the companion ``<stem>_result.json`` (run_prover_bg summary).
+
+    Returns an empty string when the companion is missing or unreadable, so the
+    trace is conservatively KEPT (never silently dropped on a parse hiccup).
+    """
+    stem = os.path.basename(spans_path).replace(".spans.jsonl", "")
+    result_path = os.path.join(TRACE_DIR, stem + "_result.json")
+    try:
+        with open(result_path, "r", encoding="utf-8") as fh:
+            ts = str(json.load(fh).get("timestamp", ""))
+            if ts:
+                return ts[:10]
+    except (OSError, ValueError):
+        pass
+    # Fallback: first span start_time_ns (OTel epoch ns) -> YYYY-MM-DD. Robust
+    # when no companion result.json exists (baseline traces carry the timestamp
+    # in-band on every span rather than in a sidecar summary).
+    try:
+        with open(spans_path, "r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                ns = json.loads(line).get("start_time_ns")
+                if ns:
+                    import datetime as _dt
+                    return _dt.datetime.fromtimestamp(
+                        int(ns) / 1e9, tz=_dt.timezone.utc).strftime("%Y-%m-%d")
+                break  # only the first span's timestamp is needed
+    except (OSError, ValueError):
+        pass
+    return ""
+
+
+_file_ts = {f: _result_timestamp(f) for f in jsonl_files_all}
+
+if _args.since:
+    # Honor the _result_timestamp docstring's conservative-keep intent: a trace
+    # whose age is indeterminate (no companion result.json AND unparseable first
+    # span -> "") cannot be proven stale, so KEEP it even under --since rather
+    # than silently dropping it (po-2024 §H.4 advisory on the recency filter).
+    jsonl_files = [f for f in jsonl_files_all
+                   if not _file_ts[f] or _file_ts[f] >= _args.since]
+else:
+    jsonl_files = list(jsonl_files_all)
+_in_window_count = len(jsonl_files)  # before the readability drop below
+
+# Drop unreadable spans files so one bad file (corrupted/locked, e.g. OSError
+# [Errno 22] seen post disk incident) doesn't abort the whole forensic run.
+_readable = []
+for _f in jsonl_files:
+    try:
+        with open(_f, "r", encoding="utf-8") as _fh:
+            _fh.read(1)
+        _readable.append(_f)
+    except OSError as _e:
+        print(f"  SKIP unreadable: {os.path.basename(_f)} ({_e})")
+if len(_readable) != len(jsonl_files):
+    print(f"  (dropped {len(jsonl_files) - len(_readable)} unreadable spans file(s))")
+jsonl_files = _readable
+
+# Coverage window banner — always printed so forensic output is self-documenting.
+print("=" * 80)
+print("COVERAGE WINDOW")
+print("=" * 80)
+print(f"  spans files: {len(jsonl_files_all)} total, {len(jsonl_files)} included")
+if _args.since:
+    print(f"  --since {_args.since}: "
+          f"excluded {len(jsonl_files_all) - _in_window_count} pre-window traces")
+_included_ts = sorted(t for t in _file_ts.values()
+                      if t and (not _args.since or t >= _args.since))
+if _included_ts:
+    print(f"  included timestamps: {_included_ts[0][:10]} -> {_included_ts[-1][:10]}")
+# Warn when pre-#3837 stale traces (2026-05 long-session stalls) pollute the window.
+_stale = [f for f in jsonl_files if _file_ts[f] and _file_ts[f] < "2026-06-01"]
+if _stale:
+    print(f"  WARN: {len(_stale)} pre-2026-06-01 trace(s) included — these predate the "
+          f"2700s wall-clock cap (#3837) and skew duration/outlier metrics.")
+    print(f"        Re-run with --since 2026-06-01 to scope to the current harness.")
+print()
 
 def extract_target(filename):
     base = filename.replace(".spans.jsonl", "")
