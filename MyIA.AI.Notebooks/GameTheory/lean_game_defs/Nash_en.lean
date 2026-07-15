@@ -1,81 +1,83 @@
 /-
-  Définitions de l'équilibre de Nash en Lean 4
-  ============================================
+  Nash Equilibrium Definitions in Lean 4
+  ======================================
 
-  Définit l'équilibre de Nash et les notions associées :
-  - Meilleure réponse
-  - Équilibre de Nash en stratégies pures
-  - Équilibre de Nash en stratégies mixtes
-  - Dominance stricte
+  Defines Nash equilibrium and related concepts:
+  - Best response
+  - Pure Nash equilibrium
+  - Mixed Nash equilibrium
+  - Strict dominance
 
-  Jumelage Pattern A (cf EPIC #4980, ratifié user 2026-07-04) : ce module
-  vit au top-level (FR canonique). Le twin anglais est `Nash_en.lean`
-  (namespace `NashEn`, body byte-identique, docstrings `--` et `/-!` en
-  anglais). Préfixe `_en` du namespace anti-collision Lean name resolution
-  (cf L516-L1 ★★★). Corps byte-identique préservé entre FR et EN : toutes
-  les définitions `def` ci-dessous, leurs signatures, leurs corps `match`
-  et leurs annotations numériques restent strictement équivalentes modulo
-  la traduction des commentaires.
+  Sibling pair Pattern A (cf EPIC #4980, ratified by user 2026-07-04): this
+  module is the English twin of `Nash.lean` (which lives at top-level as the
+  French canonical). It is wrapped in `namespace NashEn` (the `_en` suffix
+  is the standard anti-collision prefix for Lean name resolution, cf L516-L1
+  ★★★). The body is **byte-identical** to `Nash.lean` modulo the language
+  of docstrings (`/-!` section dividers and `--` line comments): every
+  `def` signature, every `match` arm, every numeric literal is preserved
+  exactly between FR and EN.
 
-  Basé sur `GameTheory-16-Lean-Definitions.ipynb`.
+  Based on `GameTheory-16-Lean-Definitions.ipynb`.
 
-  Epic #4980, Phase 3 (rollout `lean_game_defs`).
+  Epic #4980, Phase 3 (lean_game_defs rollout).
 -/
 
 import Basic
 
+namespace NashEn
+
 /-!
-## Meilleure réponse
+## Best Response
 -/
 
-/-- Le joueur 1 joue une meilleure réponse face à `s2`. -/
+/-- Player 1 plays a best response to s2. -/
 def isBestResponse1 (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   ∀ s1' : Fin 2 → Float,
     expectedPayoff1 g s1 s2 >= expectedPayoff1 g s1' s2
 
-/-- Le joueur 2 joue une meilleure réponse face à `s1`. -/
+/-- Player 2 plays a best response to s1. -/
 def isBestResponse2 (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   ∀ s2' : Fin 2 → Float,
     expectedPayoff2 g s1 s2 >= expectedPayoff2 g s1 s2'
 
 /-!
-## Équilibre de Nash
+## Nash Equilibrium
 -/
 
-/-- Équilibre de Nash en stratégies mixtes : chaque joueur joue une meilleure réponse. -/
+/-- Nash equilibrium in mixed strategies: each player plays a best response. -/
 def isNashEquilibrium (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   isBestResponse1 g s1 s2 ∧ isBestResponse2 g s1 s2
 
-/-- Équilibre de Nash en stratégies pures pour les jeux 2x2 :
-    aucune déviation unilatérale n'améliore le paiement d'un joueur. -/
+/-- Nash equilibrium in pure strategies for 2x2 games:
+    no unilateral deviation strictly improves a player's payoff. -/
 def isPureNashEquilibrium (g : Game2x2) (a1 : Fin 2) (a2 : Fin 2) : Prop :=
-  -- Le joueur 1 ne peut pas améliorer en changeant d'action
+  -- Player 1 cannot improve by changing action
   (∀ a1' : Fin 2, g.payoff1 a1 a2 >= g.payoff1 a1' a2) ∧
-  -- Le joueur 2 ne peut pas améliorer en changeant d'action
+  -- Player 2 cannot improve by changing action
   (∀ a2' : Fin 2, g.payoff2 a1 a2 >= g.payoff2 a1 a2')
 
 /-!
 ## Dominance
 -/
 
-/-- L'action `a` domine strictement l'action `a'` pour le joueur 1. -/
+/-- Action a strictly dominates action a' for player 1. -/
 def strictlyDominates1 (g : Game2x2) (a a' : Fin 2) : Prop :=
   ∀ a2 : Fin 2, g.payoff1 a a2 > g.payoff1 a' a2
 
-/-- L'action `a` domine faiblement l'action `a'` pour le joueur 1. -/
+/-- Action a weakly dominates action a' for player 1. -/
 def weaklyDominates1 (g : Game2x2) (a a' : Fin 2) : Prop :=
   (∀ a2 : Fin 2, g.payoff1 a a2 >= g.payoff1 a' a2) ∧
   (∃ a2 : Fin 2, g.payoff1 a a2 > g.payoff1 a' a2)
 
-/-- L'action `a` domine strictement l'action `a'` pour le joueur 2. -/
+/-- Action a strictly dominates action a' for player 2. -/
 def strictlyDominates2 (g : Game2x2) (a a' : Fin 2) : Prop :=
   ∀ a1 : Fin 2, g.payoff2 a1 a > g.payoff2 a1 a'
 
 /-!
-## Jeux classiques
+## Classic Games
 -/
 
-/-- Dilemme du prisonnier : C=0 (Coopérer), D=1 (Trahir). -/
+/-- Prisoner's Dilemma: C=0 (Cooperate), D=1 (Defect). -/
 def prisonersDilemma : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -93,7 +95,7 @@ def prisonersDilemma : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Jeu de la poule (Chicken) : Céder=0, Foncer=1. -/
+/-- Chicken Game: Yield=0, Charge=1. -/
 def chickenGame : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -111,7 +113,7 @@ def chickenGame : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Chasse au cerf (Stag Hunt) : Cerf=0, Lièvre=1. -/
+/-- Stag Hunt: Stag=0, Hare=1. -/
 def stagHunt : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -129,7 +131,7 @@ def stagHunt : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Matching Pennies (jeu à somme nulle) : Pile=0, Face=1. -/
+/-- Matching Pennies (zero-sum): Heads=0, Tails=1. -/
 def matchingPennies : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -148,7 +150,7 @@ def matchingPennies : Game2x2 := {
 }
 
 /-!
-## Noms d'actions
+## Action Names
 -/
 
 def Cooperer : Fin 2 := ⟨0, by omega⟩
@@ -159,3 +161,5 @@ def Cerf : Fin 2 := ⟨0, by omega⟩
 def Lievre : Fin 2 := ⟨1, by omega⟩
 def Pile : Fin 2 := ⟨0, by omega⟩
 def Face : Fin 2 := ⟨1, by omega⟩
+
+end NashEn
