@@ -919,9 +919,9 @@ print(f""unified-planning version : {up.__version__}"")
 #     print(f""Plan   : {result.plan}"")
 
 pass  # Remplacer par votre implementation",,,,,,,,c452d33324feb027,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,79014e5f,markdown,fr,b1dece0c232dbc0b,"# Planners-1-Introduction-Csharp : la planification automatique from-scratch
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,79014e5f,markdown,fr,34e93354dc7ec677,"# Planners-1-Introduction-Csharp : la planification automatique from-scratch
 
-**Navigation** : [<< Setup](Planners-0-Setup.ipynb) | [Twin Python unified-planning](Planners-1-Introduction.ipynb) | [PDDL Basics >>](Planners-2-PDDL-Basics.ipynb)
+**Navigation** : [<< Setup](../00-Environment/Planners-0-Setup.ipynb) | [Twin Python unified-planning](Planners-1-Introduction.ipynb) | [PDDL Basics >>](Planners-2-PDDL-Basics.ipynb)
 
 **Twin C#** du notebook Python [Planners-1-Introduction](Planners-1-Introduction.ipynb) (Python + lib `unified-planning`). Cette **premiere tranche = les fondations** : le modele **STRIPS** (Fikes & Nilsson, 1971), l'espace d'etats, et un **planificateur BFS from-scratch** qui resout le probleme canonique de l'interrupteur. Implementation **BCL .NET seule, 0 NuGet**.
 
@@ -935,7 +935,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csha
 Pas d'equivalent NuGet maintenu et didactique a `unified-planning` en .NET → from-scratch = la valeur pedagogique. On code chaque brique (predicat, operateur, transition, recherche) pour comprendre **comment** un planificateur fonctionne, pas seulement comment l'invoquer.
 
 **Stack technique** : BCL .NET seule, **0 NuGet**. Kernel `.net-csharp` (.NET Interactive).
-",,,,,,,,b1dece0c232dbc0b,,,,,,,
+",,,,,,,,34e93354dc7ec677,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,e868c323,markdown,fr,ef8db02169c2ca64,"## 1. Qu'est-ce que la planification ?
 
 La **planification automatique** est la branche de l'IA qui genere des **sequences d'actions** pour atteindre un objectif. Etant donne :
@@ -2708,7 +2708,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Cshar
 
 Un **planificateur STRIPS complet from-scratch** — le même moteur résout Logistics (7 actions) et Gripper (5 actions). Vous avez déroulé à la main ce que `unified-planning.solve()` fait en un appel côté Python : la modélisation typée, le grounding et la recherche dans l'espace d'états.
 ",,,,,,,,6ed6f5c230f74e6f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d8a9b18c,markdown,fr,9973efc16466419f,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d8a9b18c,markdown,fr,b326fb5c88fdbf17,"---
 
 ## Conclusion
 
@@ -2718,14 +2718,14 @@ Ce notebook a couvert les fondamentaux de PDDL en s'appuyant sur un **modèle ST
 
 La recherche BFS trouve le plan optimal en nombre d'actions, mais **l'espace d'états explose exponentiellement** avec le nombre d'objets. Pour les problèmes réalistes (des dizaines d'objets), il faut :
 
-- des **heuristiques admissibles** pour guider la recherche (A*, h-max, h-FF) — c'est l'objet de [Planners-5-Heuristics-Csharp](Planners-5-Heuristics-Csharp.ipynb) ;
+- des **heuristiques admissibles** pour guider la recherche (A*, h-max, h-FF) — c'est l'objet de [Planners-5-Heuristics-Csharp](../02-Classical/Planners-5-Heuristics-Csharp.ipynb) ;
 - ou des solveurs industriels qui compilent le problème vers SAT/CP — c'est ce que font Fast Downward et `unified-planning`.
 
 ### Prochaines étapes
 
 - **[Planners-3-State-Space-Csharp](Planners-3-State-Space-Csharp.ipynb)** : la structure des espaces d'états et pourquoi BFS explose.
-- **[Planners-5-Heuristics-Csharp](Planners-5-Heuristics-Csharp.ipynb)** : les heuristiques qui rendent la recherche tractable.
-",,,,,,,,9973efc16466419f,,,,,,,
+- **[Planners-5-Heuristics-Csharp](../02-Classical/Planners-5-Heuristics-Csharp.ipynb)** : les heuristiques qui rendent la recherche tractable.
+",,,,,,,,b326fb5c88fdbf17,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d7b5503d,markdown,fr,7f536e0d271b074d,"---
 
 ## Ressources
@@ -5187,7 +5187,7 @@ Dans le prochain notebook **Planners-4-Fast-Downward**, nous explorerons :
 ---
 
 **Notebook suivant** : [Planners-4-Fast-Downward](../02-Classical/Planners-4-Fast-Downward.ipynb)",,,,,,,,3737dc8418109d02,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,f4bc7eae,markdown,fr,ad1a8ec997df0bda,"# Planners-4-Fast-Downward (C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,f4bc7eae,markdown,fr,984ef1811dea022c,"# Planners-4-Fast-Downward (C#)
 
 ## Architecture Fast Downward, SAS+, A\*, GBFS et Enforced Hill Climbing
 
@@ -5214,7 +5214,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Duree estimee : 45 minutes
 
-> **Verdict SOTA (#3801 Prong A).** Ce twin C# est un **planificateur SAS+ pedagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) via Docker + `unified-planning` = **RECOVERABLE-MACHINE** (le solveur reel n'est pas lie a .NET pedagogique). Le twin from-scratch rend visibles les internes (representation SAS+, operateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pedagogique intentionnel, meme pattern que le twin [App-19 WFC C#](../../Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,ad1a8ec997df0bda,,,,,,,
+> **Verdict SOTA (#3801 Prong A).** Ce twin C# est un **planificateur SAS+ pedagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) via Docker + `unified-planning` = **RECOVERABLE-MACHINE** (le solveur reel n'est pas lie a .NET pedagogique). Le twin from-scratch rend visibles les internes (representation SAS+, operateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pedagogique intentionnel, meme pattern que le twin [App-19 WFC C#](../../../Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,984ef1811dea022c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,3b99f00d,markdown,fr,d8cae2accd3e5a2c,"## 1. Pourquoi SAS+ ? L'apport cle de Fast Downward
 
 Le **translator** de Fast Downward convertit un probleme PDDL (predicats booleens) en une representation **SAS+** (Simplified Action Structures) ou l'etat est un vecteur de **variables multi-valuees**. C'est le changement de representation fondateur du planificateur.
@@ -8822,7 +8822,7 @@ planification classique moderne.
 
 **Jalon ouvert** : la consistance de la relaxation (existence d'un plan relaxé) et la
 complexité algorithmique ne sont pas formalisées dans le lake ; la lib reste sorry-free.",,,,,,,,b82fdb6d6271e361,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb,eb3d4ef2,markdown,fr,e477329f976a9602,"# Planners-6-Domains-Csharp — Jumeau C# : planificateur STRIPS from-scratch
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb,eb3d4ef2,markdown,fr,aca4429f690aeff1,"# Planners-6-Domains-Csharp — Jumeau C# : planificateur STRIPS from-scratch
 
 > **Jumeau C# (.NET 9)** de [`Planners-6-Domains`](Planners-6-Domains.ipynb). Le notebook Python invoque le vrai moteur `unified-planning` (solveur `pyperplan`) pour résoudre des domaines PDDL classiques. **Ce jumeau prend le parti inverse (Prong B du marathon #4956)** : plutôt que d'appeler un solveur, on **reconstruit un planificateur STRIPS from-scratch** en C# pur (BCL .NET 9, zéro NuGet), puis on l'exécute sur les mêmes domaines canoniques (Block World, Tours de Hanoï, Gripper). L'objectif pédagogique est de rendre **visible la mécanique interne** que `pyperplan` cache : représentation de l'état, recherche avant (forward search), application des effets add/delete.
 
@@ -8837,8 +8837,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipy
 
 ### Prérequis
 
-- Concepts STRIPS (préconditions, effets) — voir [`Planners-2-PDDL-Basics`](Planners-2-PDDL-Basics.ipynb)
-- Recherche en espace d'états (BFS) — voir [`Planners-3-State-Space`](Planners-3-State-Space.ipynb)
+- Concepts STRIPS (préconditions, effets) — voir [`Planners-2-PDDL-Basics`](../01-Foundation/Planners-2-PDDL-Basics.ipynb)
+- Recherche en espace d'états (BFS) — voir [`Planners-3-State-Space`](../01-Foundation/Planners-3-State-Space.ipynb)
 - .NET 9 + kernel `csharp` (kernel `.net-csharp`)
 
 ### Durée estimée : 45 minutes
@@ -8853,7 +8853,7 @@ flowchart LR
     D --> F
     E --> F
 ```
-",,,,,,,,e477329f976a9602,,,,,,,
+",,,,,,,,aca4429f690aeff1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb,7df45571,markdown,fr,de3ade067ef26d36,"## 1. Modèle STRIPS en C# pur
 
 Un état STRIPS est un **ensemble d'atomes booléens grounded** (ex. `on(a,b)`, `clear(a)`, `handempty`). Une **action** a un nom, des paramètres (déjà instanciés ici), une **précondition** (ensemble d'atomes qui doivent tous être vrais) et un **effet** décomposé en listes `add` / `del` (ce que l'action rend vrai / faux).
@@ -9281,7 +9281,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipy
 Console.WriteLine(""Exercice 3 (A* avec heuristique naïve) — à compléter par l'étudiant."");
 // TODO étudiant : implémenter StripsPlanner.AStar et comparer.
 ",,,,,,,,cb4106207f217072,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb,480198e4,markdown,fr,f50f2a4d42ca4558,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb,480198e4,markdown,fr,b9728c7d227bdee5,"## Conclusion
 
 Ce jumeau C# reconstruit **à la main** ce que `unified-planning` (notebook Python) délègue à un solveur externe. Les deux approches sont **complémentaires** et servent des apprentissages différents :
 
@@ -9297,7 +9297,7 @@ Ce jumeau C# reconstruit **à la main** ce que `unified-planning` (notebook Pyth
 
 ### Prochaines étapes
 
-- [`Planners-7-OR-Tools`](Planners-7-OR-Tools.ipynb) : bascule vers la **programmation par contraintes** (CP-SAT) pour l'ordonnancement — un autre paradigme de planification.
+- [`Planners-7-OR-Tools`](../03-Advanced/Planners-7-OR-Tools.ipynb) : bascule vers la **programmation par contraintes** (CP-SAT) pour l'ordonnancement — un autre paradigme de planification.
 - [`Planners-8-Temporal`](../03-Advanced/Planners-8-Temporal.ipynb) : planification temporelle (PDDL 2.1, actions duratives).
 - Pour la version ""moteur réel"", revenir au notebook Python [`Planners-6-Domains`](Planners-6-Domains.ipynb) et son appel à `OneshotPlanner(name='pyperplan')`.
 
@@ -9309,8 +9309,8 @@ Ce jumeau C# reconstruit **à la main** ce que `unified-planning` (notebook Pyth
 
 ## Navigation
 
-[← Planners (parent)](../README.md) | [Planners-6 Python](Planners-6-Domains.ipynb) | [Planners-7 →](Planners-7-OR-Tools.ipynb)
-",,,,,,,,f50f2a4d42ca4558,,,,,,,
+[← Planners (parent)](../README.md) | [Planners-6 Python](Planners-6-Domains.ipynb) | [Planners-7 →](../03-Advanced/Planners-7-OR-Tools.ipynb)
+",,,,,,,,b9728c7d227bdee5,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb,cell-0,markdown,fr,d81cc84574ca54e5,"# Planners-6-Domains - Domaines Classiques de Planification
 
 **Navigation** : [Index](../../README.md) | [<< Heuristiques](Planners-5-Heuristics.ipynb) | [OR-Tools >>](../03-Advanced/Planners-7-OR-Tools.ipynb)
