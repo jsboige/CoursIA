@@ -58,6 +58,25 @@ Une conversion Prong-A .NET → Plotly est validée quand :
 
 Cf [sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md) §Prong-A (5 verdicts SOTA) et [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D/§H.
 
+## QA visuelle — pourquoi le gate Plotly-CDN est *structurel*, pas un cycle vision par PR
+
+La règle de routage vision ([model-delegation.md](../../.claude/rules/model-delegation.md) §« Capacité vision ») impose de faire vérifier tout rendu visuel par un modèle qui **voit** (MiniMax sur lane CoursIA-2, ou ai-01/Opus), jamais text-only sur une lane GLM. Cette exigence vise la classe de sortie où **« exister sur disque » ≠ « rend correctement »** : le raster statique (PNG matplotlib, image GenAI, screenshot de slide) peut être un bloc de couleur plat, une image blanche ou un placeholder — un défaut que **seul le regard** distingue d'une vraie figure (incident fondateur `workflow-orchestration.png`, 3 blocs plats consacrés comme « images générées »).
+
+**La sortie Plotly `text/html` + CDN de la technique C548-L2 n'appartient PAS à cette classe.** Elle est **rendue côté client par Plotly.js** de façon **déterministe** : à partir d'un tableau `data` non vide, d'un `layout` bien placé (3ᵉ argument) et d'un CDN joignable, le SVG produit est une fonction pure des données sérialisées dans la cellule. Il n'existe **pas** de mode d'échec « bloc plat / image blanche » propre au client : le rendu échoue de façon **structurelle et détectable dans la source committée**, pas de façon silencieuse-visuelle. Les trois modes d'échec réels sont tous forensiques :
+
+| Mode d'échec Plotly-CDN | Détection (sans regard) |
+|-------------------------|-------------------------|
+| Tableau `x`/`y` **vide** (coquille sans données) | grep sur la sortie : `x`/`y` non vides (déjà au gate de merge ci-dessus) |
+| `layout` en **4ᵉ trace** au lieu de 3ᵉ argument (titre/axes/`barmode` non appliqués) | piège C450-L1 ci-dessus : vérifier `Plotly.newPlot(id, [traces], layout)` |
+| **CDN absent** (`<script src="…plotly…">` manquant) | grep : présence du `<script src="https://cdn.plot.ly/…">` |
+
+**Conséquence opérationnelle — le gate visuel de la classe Plotly-CDN = forensique + un spot-check de rendu par vague de rollout, PAS un aller-retour MiniMax par PR.** Le contrôle de merge d'une conversion C548-L2 est donc :
+
+1. **Forensique par PR** (obligatoire, automatisable) : `x`/`y` non vides, `layout` en 3ᵉ arg, `<script>` CDN présent, `0` motif `new string('#'` résiduel — c'est le gate de merge de la section précédente.
+2. **Spot-check de rendu par vague / par nouveau type de trace** (échantillon, pas exhaustif) : extraire le markup Plotly committé → HTML autonome → screenshot (Playwright) → **lire l'image** depuis un modèle qui voit (MiniMax/CoursIA-2 ou ai-01/Opus). Ce spot-check attrape les bugs de **génération de données** que le forensique ne voit pas (série toute à zéro, mauvais mapping de couleurs, axes inversés) et valide le pattern pour la vague — il n'a **pas** à être refait pour chaque PR une fois la classe validée.
+
+Ainsi le routage vision reste correct **sans créer de goulot** : la classe où le regard est indispensable (raster statique) part vers MiniMax/ai-01 systématiquement ; la classe Plotly-CDN (déterministe côté client) est gatée par le forensique + un spot-check périodique. Validation empirique de ce partage : 3 conversions du rollout 2026-07 (#6696 barres groupées, #6698 barres + heatmap Viridis, #6700 courbe) rendues et **vues** — figures réelles conformes aux données, aucun bloc plat/placeholder (vision-audit ai-01, 2026-07-15).
+
 ## Notebooks utilisant le pattern (rollout 2026-07, #3801)
 
 App-7b-Wordle-CSharp (#6683), GameTheory-15c-CooperativeGames (#6684), GameTheory-3-Topology2x2 (#6687), Infer-12-Modeles-Hierarchiques (#6689), Search MGS-10-CenterBias (#6692) — rollout continu sous l'EPIC #3801.
