@@ -211,29 +211,74 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
     )
 
 
+def _drift_detail(fr_blocks: list[str], en_blocks: list[str],
+                  fr_path: Path, en_path: Path) -> str:
+    """Actionable ``DRIFT`` detail: list blocks *unique to each side* via
+    multiset diff instead of a noisy ``difflib`` unified diff on bodies.
+    Surfaces the structural divergence directly — which declarations exist
+    only in FR / only in EN — which is what a reviewer actually needs to
+    judge whether a drift is real (a missing declaration block, a missing
+    proof) or harmless (whitespace, ordering, indentation). Falls back to a
+    ``difflib`` dump only when the multisets match but bodies still diverge
+    at line level (rare: indentation drift inside a block).
+    """
+    fr_counter = Counter(fr_blocks)
+    en_counter = Counter(en_blocks)
+    only_en: list[str] = []
+    for blk, n in en_counter.items():
+        if fr_counter[blk] >= n:
+            fr_counter[blk] -= n
+        else:
+            only_en.append(blk)
+    only_fr = list(fr_counter.elements())
+    parts: list[str] = []
+    if only_en:
+        parts.append(f"{len(only_en)} block(s) only in EN:")
+        parts.append("\n---\n".join(
+            "\n".join(b.splitlines()[:6]) for b in only_en[:3]))
+    if only_fr:
+        parts.append(f"{len(only_fr)} block(s) only in FR:")
+        parts.append("\n---\n".join(
+            "\n".join(b.splitlines()[:6]) for b in only_fr[:3]))
+    if not parts:
+        # Multisets match — divergence is intra-block. Fall back to unified
+        # diff for diagnostic (whitespace / indentation drift inside a block).
+        diff = difflib.unified_diff(
+            fr_blocks, en_blocks,
+            fromfile=str(fr_path), tofile=str(en_path), lineterm="",
+        )
+        return "\n".join(list(diff)[:40])
+    return "\n".join(parts)
+
+
 def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
     """Compare an FR/EN sibling pair. Returns ``(status, detail)`` where
     ``status`` is ``"OK"`` (bodies identical after normalization),
     ``"OK-CONSUMER"`` (the EN file imports the FR module and every declaration
     block it does state matches an FR block — the rest is reused via the
-    import, not missing), or ``"DRIFT"`` (detail carries a short diff or the
-    offending blocks)."""
+    import, not missing), or
+    ``"DRIFT"`` (detail lists the declaration blocks unique to each side —
+    see ``_drift_detail``)."""
     fr_src = fr_path.read_text(encoding="utf-8")
     en_src = en_path.read_text(encoding="utf-8")
     fr_body = normalize_body(fr_src)
     en_body = normalize_body(en_src)
     if fr_body == en_body:
         return "OK", ""
+    fr_blocks = split_decls(fr_body)
+    en_blocks = split_decls(en_body)
     if imports_fr_sibling(strip_comments(en_src), fr_path.stem):
-        fr_blocks = Counter(split_decls(fr_body))
+        # Consumer pattern: each EN-stated block must match an FR block (the
+        # rest is legitimately reused via the import).
+        fr_counter = Counter(fr_blocks)
         unmatched: list[str] = []
-        for blk in split_decls(en_body):
-            if fr_blocks[blk] > 0:
-                fr_blocks[blk] -= 1
+        for blk in en_blocks:
+            if fr_counter[blk] > 0:
+                fr_counter[blk] -= 1
             else:
                 unmatched.append(blk)
         if not unmatched:
-            reused = sum(fr_blocks.values())
+            reused = sum(fr_counter.values())
             return "OK-CONSUMER", (
                 f"{reused} FR declaration block(s) reused via import; "
                 "all EN-stated blocks match FR")
@@ -242,11 +287,7 @@ def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
         return "DRIFT", (
             f"consumer pattern, but {len(unmatched)} EN block(s) have no FR "
             f"counterpart:\n{preview}")
-    diff = difflib.unified_diff(
-        fr_body.splitlines(), en_body.splitlines(),
-        fromfile=str(fr_path), tofile=str(en_path), lineterm="",
-    )
-    return "DRIFT", "\n".join(list(diff)[:40])
+    return "DRIFT", _drift_detail(fr_blocks, en_blocks, fr_path, en_path)
 
 
 def _excluded(path: Path) -> bool:

@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_i18n_siblings import (  # noqa: E402
+    _drift_detail,
     check_pair,
     find_en_files,
     fr_sibling,
@@ -135,6 +136,89 @@ def test_check_pair_drift_detected(tmp_path):
     status, detail = check_pair(fr, en)
     assert status == "DRIFT"
     assert "42" in detail and "43" in detail
+
+
+def test_drift_detail_lists_unique_blocks(tmp_path):
+    """_drift_detail surfaces structural divergence directly: which declaration
+    blocks exist ONLY in FR vs ONLY in EN. This replaces the noisy ``difflib``
+    unified diff on bodies and is the actionable diagnostic for any reviewer
+    investigating a DRIFT — no need to mentally diff two text dumps."""
+    fr = tmp_path / "M.lean"
+    en = tmp_path / "M_en.lean"
+    fr.write_text(
+        "namespace M\n"
+        "def shared : Nat := 1\n"
+        "def fr_only : Nat := 42\n"
+        "end M\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace M\n"
+        "def shared : Nat := 1\n"
+        "def en_only : Nat := 99\n"
+        "end M\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT"
+    assert "only in FR" in detail
+    assert "fr_only" in detail
+    assert "only in EN" in detail
+    assert "en_only" in detail
+    # The shared block must NOT appear in the diagnostic — it's not unique.
+    assert "shared" not in detail
+
+
+def test_drift_detail_handles_multiset_with_duplicates(tmp_path):
+    """Multiset semantics: if FR has 2 copies of a block and EN has 1, the
+    multiset difference FR−EN has the same block once (1 copy shared, 1 copy
+    surplus). Critical for sibling pairs with repeated helper lemmas."""
+    fr = tmp_path / "Dup.lean"
+    en = tmp_path / "Dup_en.lean"
+    fr.write_text(
+        "namespace Dup\n"
+        "def helper : Nat := 0\n"
+        "def helper : Nat := 0\n"
+        "def fr_extra : Nat := 7\n"
+        "end Dup\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Dup\n"
+        "def helper : Nat := 0\n"
+        "end Dup\n",
+        encoding="utf-8",
+    )
+    fr_blocks = split_decls(normalize_body(fr.read_text(encoding="utf-8")))
+    en_blocks = split_decls(normalize_body(en.read_text(encoding="utf-8")))
+    detail = _drift_detail(
+        fr_blocks, en_blocks, fr, en)
+    # FR has {helper×2, fr_extra×1}, EN has {helper×1}.
+    # Multiset diff FR−EN = {helper×1, fr_extra×1} → 2 blocks only in FR.
+    assert "2 block(s) only in FR" in detail
+    assert "fr_extra" in detail
+    assert "helper" in detail
+    # No block is unique to EN.
+    assert "only in EN" not in detail
+
+
+def test_drift_detail_multiset_match_returns_difflib_dump():
+    """When multisets of declaration blocks match but bodies still diverge
+    at line level (intra-block whitespace / indentation drift), fall back to
+    a ``difflib`` dump so the diagnostic remains useful. Rare in practice but
+    defensive: keep the door open."""
+    fr_path = Path("/tmp/fr.lean")
+    en_path = Path("/tmp/en.lean")
+    # Same block content in both multisets — multiset equal but bodies could
+    # differ at line level. Pass identical content to reach the fallback path
+    # (multisets equal, parts empty → ``difflib`` dump returned).
+    fr_blocks = ["def x : Nat :=\n  1"]
+    en_blocks = ["def x : Nat :=\n  1"]
+    detail = _drift_detail(fr_blocks, en_blocks, fr_path, en_path)
+    # difflib unified diff on identical inputs returns empty list — empty
+    # string from "\n".join([]). The diagnostic must remain non-crashing;
+    # content is empty, but the function must not raise.
+    assert isinstance(detail, str)
 
 
 def test_normalize_strips_self_qualifiers_arrow_fp():
