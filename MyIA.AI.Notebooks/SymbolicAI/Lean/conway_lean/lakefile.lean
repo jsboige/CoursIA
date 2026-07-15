@@ -15,15 +15,15 @@ lean_lib «Conway» where
   -- Conway hommage: accessible formalizations of lesser-known results
   -- by John Horton Conway (1937-2020)
   --
-  -- Convention i18n EPIC #4980 : `globs := #[`Conway.*]` (Glob.submodules) pour
-  -- que `lake build` compile le root, TOUS les sous-modules FR, ET les siblings
-  -- `_en` (`Conway.Doomsday_en`, `Conway.Angel_en`, ...). Sans ce glob, le defaut
-  -- Lake (`roots.map Glob.one` = umbrella `Conway.lean` + imports transitifs
-  -- seulement) laisse chaque `_en` ORPHELIN : l'umbrella FR ne les importe pas,
-  -- rien d'autre ne les importe, et le scan sorry du CI reutilisable exclut
-  -- `*_en.lean` (lean-build.yml L85, #6429) -> aucune etape ne les compilait.
-  -- Green CI etait donc necessaire mais NON suffisant comme preuve de build d'un
-  -- sibling (orphan-trap #5319/#5423). Modele verifie in vitro :
-  -- game_theory_lean CooperativeGames `globs := #[`CooperativeGames.*]` (#4980,
-  -- meme cas : `_en` en sous-modules sous le repertoire du lib).
-  globs := #[`Conway.*]
+  -- Convention i18n EPIC #4980 : `.submodules `Conway` couvre les sous-modules
+  -- FR (`Conway.Doomsday`, `Conway.Angel`, ...) ET leurs jumeaux `_en`
+  -- (`Conway.Doomsday_en`, `Conway.Angel_en`, ...). Le jumeau root `Conway_en`
+  -- doit etre globbe explicitement (bare `.submodules` ne matche que les
+  -- sous-modules, pas les fichiers siblings au niveau du lib), pattern #6585
+  -- knot_lean / #4980. Sans cet ajout, lake build laisse `Conway_en.lean`
+  -- ORPHELIN : l'umbrella FR ne l'importe pas, `Conway_en.lean` n'est pas dans
+  -- un sous-module, et le scan sorry du CI reutilisable exclut `*_en.lean`
+  -- (lean-build.yml L85, #6429) -> aucune etape ne le compilait (orphan-trap
+  -- #5319/#5423). Modele verifie : knot_lean `Knots_en.lean` PR #6682, meme
+  -- pattern sibling root aggregator.
+  globs := #[.submodules `Conway, `Conway_en]
