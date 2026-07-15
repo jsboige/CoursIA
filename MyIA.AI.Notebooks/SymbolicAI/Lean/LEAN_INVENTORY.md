@@ -127,7 +127,7 @@ prover, déplacé depuis GameTheory).
 
 | Classe | Définition | Lakes |
 |--------|-----------|-------|
-| **PEDA** | Pédagogique (enseigne un concept,面向 étudiants, notebooks compagnons) | conway_lean, knot_lean, sensitivity_lean |
+| **PEDA** | Pédagogique (enseigne un concept, destiné aux étudiants, notebooks compagnons) | conway_lean, knot_lean, sensitivity_lean |
 | **REF** | Formalisation de référence / recherche (pas directement pédagogique) | grothendieck_lean, finiteness_lean, mathlib_examples |
 | **HARNESS** | Composant de harnais (prover calibration / test fixture) | calibration_lean |
 | **SCAFFOLD** | Échafaudage partiel / en cours | _(aucun — tous sont buildables)_ |

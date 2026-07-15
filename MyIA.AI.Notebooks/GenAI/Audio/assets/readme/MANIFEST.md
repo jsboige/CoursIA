@@ -95,7 +95,7 @@ Investigation `nbformat` Python (script de référence `audit-genai-audio-c490.p
 | `audio5-multimodel.png` | `18fd4304` (71 205 B) | `03e86f25` (167 756 B) | 2,36 | DÉCLASSÉ — contenu librosa spectral ≠ barplots kokoro/openai |
 | `audio6-tts-benchmark.png` | `781aa4a1` (33 230 B) | `25b1a862` (49 946 B) | 1,50 | DÉCLASSÉ — contenu barplots kokoro/openai ≠ heatmaps MFCC |
 
-**Constat G.1 2026-07-14 — dette cumulative majeure non détectée par 5 PRs successives (#5701, #6009, #6466, #6510, + PR vague-3 c.437) :** aucune des attributions MANIFEST c.481 n'est vérifiable par `nbformat`. Les tailles diffèrent systématiquement (ratio 0,55 à 2,36), les MD5也不同, et le contenu visuel G.1 firsthand ne correspond à la cellule référencée que pour **1/6 PNG** (audio1).
+**Constat G.1 2026-07-14 — dette cumulative majeure non détectée par 5 PRs successives (#5701, #6009, #6466, #6510, + PR vague-3 c.437) :** aucune des attributions MANIFEST c.481 n'est vérifiable par `nbformat`. Les tailles diffèrent systématiquement (ratio 0,55 à 2,36), les MD5 diffèrent aussi, et le contenu visuel G.1 firsthand ne correspond à la cellule référencée que pour **1/6 PNG** (audio1).
 
 **Hypothèses haute confiance (par taille + contenu G.1)** :
 - audio5-multimodel.png ← **01-3 cell[28] out[2]** (Caractéristiques audio extraites librosa)
