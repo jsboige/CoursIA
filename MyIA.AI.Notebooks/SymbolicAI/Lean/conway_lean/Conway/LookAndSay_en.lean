@@ -1,38 +1,30 @@
 /-
-  `Conway.LookAndSay` — La suite look-and-say de Conway
-  ======================================================
-  La suite look-and-say démarre avec « 1 ». Chaque terme suivant décrit le
-  terme précédent en lisant à voix haute les groupes de chiffres consécutifs :
-    1 → 11 → 21 → 1211 → 111221 → 312211 → 13112221 → ...
+Conway's Look-and-Say Sequence
+John Horton Conway (1937-2020)
 
-  Conway a démontré des propriétés remarquables :
-  - Le rapport |a(n+1)| / |a(n)| converge vers la constante de Conway
-    λ ≈ 1.303577...
-  - λ est l'unique racine réelle positive d'un polynôme de degré 71
-  - La suite se décompose en exactement 92 « éléments atomiques » (nommés
-    d'après les éléments chimiques)
+English mirror of `LookAndSay.lean` (FR canonical). Convention EPIC #4980
+(decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN
+sibling files — no inline bilingual block in a single file (Option B rejected).
+The module docstring differs from the FR version; the body signatures,
+definitions, and `#eval!` cases remain byte-identical between the two files.
 
-  Ce fichier formalise la génération de la suite et vérifie les premiers
-  termes.
+The look-and-say sequence starts with "1". Each subsequent term describes the
+previous term by reading off consecutive digit groups:
+  1 → 11 → 21 → 1211 → 111221 → 312211 → 13112221 → ...
 
-  ### i18n — convention #4980 (ratifiée 2026-07-04)
+Conway proved remarkable properties:
+- The ratio |a(n+1)| / |a(n)| converges to Conway's constant λ ≈ 1.303577...
+- λ is the unique positive real root of a degree-71 polynomial
+- The sequence splits into exactly 92 "atomic elements" (named after chemical elements)
 
-  Ce fichier est le **canonique français**. Le miroir anglais est le fichier
-  frère `LookAndSay_en.lean` (`namespace Conway_en`, `open Conway`) — modèle
-  sibling pair, cf `code-style.md` §Lean i18n et l'analogue `Fractran.lean` /
-  `Fractran_en.lean`. Docstrings en français ici ; le corps (signatures, defs,
-  `#eval!`) reste byte-identique entre les deux fichiers. Pas de bloc bilingue
-  inline (option B rejetée).
-
-  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.451
-  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
-  sibling pair (MERGED), **c.457 `Conway/LookAndSay` sibling pair (ce PR)**,
-  c.518 `Conway/Nim` sibling pair (à suivre).
+This file formalizes the sequence generation and verifies the first terms.
 -/
 
-import Mathlib.Data.List.Basic
+import Conway.LookAndSay
 
-namespace Conway
+namespace Conway_en
+
+open Conway
 
 /-- Split a number into its decimal digits (most significant first).
   1211 → [1, 2, 1, 1]  -/
@@ -87,4 +79,4 @@ def lookAndSay : Nat → Nat
 #eval! lookAndSay 4  -- 111221
 #eval! lookAndSay 5  -- 312211
 
-end Conway
+end Conway_en
