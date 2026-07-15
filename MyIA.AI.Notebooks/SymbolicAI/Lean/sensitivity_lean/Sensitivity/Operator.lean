@@ -14,13 +14,6 @@ import Sensitivity.VectorSpace
 
 Ce fichier définit les opérateurs linéaires `f` (matrice de Huang) et `g` (matrice de Knuth),
 et prouve les propriétés clés : f² = n·id, injectivité de g, et la relation d'image.
-
----
-English:
-# Linear operators for Huang's sensitivity theorem
-
-This file defines the linear operators `f` (Huang's matrix) and `g` (Knuth's matrix),
-and proves key properties: f² = n·id, injectivity of g, and the image relation.
 -/
 
 namespace Sensitivity
@@ -33,15 +26,11 @@ local notation "√" => Real.sqrt
 
 variable {n : ℕ}
 
-/-! ### L'application linéaire
-
-English: The linear map -/
+/-! ### L'application linéaire -/
 
 
 /-- L'opérateur linéaire $f_n$ correspondant à la matrice $A_n$ de Huang,
-défini inductivement comme une application ℝ-linéaire de `V n` vers `V n`.
-    English: The linear operator $f_n$ corresponding to Huang's matrix $A_n$,
-defined inductively as a ℝ-linear map from `V n` to `V n`. -/
+défini inductivement comme une application ℝ-linéaire de `V n` vers `V n`. -/
 noncomputable def f : ∀ n, V n →ₗ[ℝ] V n
   | 0 => 0
   | n + 1 =>
@@ -81,8 +70,7 @@ theorem f_matrix (p q : Q n) : |ε q (f n (e p))| = if p ∈ q.adjacent then 1 e
       simp [hp, hq, IH, duality, abs_of_nonneg ite_nonneg, Q.adj_iff_proj_eq,
         Q.adj_iff_proj_adj]
 
-/-- L'opérateur linéaire $g_m$ correspondant à la matrice $B_m$ de Knuth.
-    English: The linear operator $g_m$ corresponding to Knuth's matrix $B_m$. -/
+/-- L'opérateur linéaire $g_m$ correspondant à la matrice $B_m$ de Knuth. -/
 noncomputable def g (m : ℕ) : V m →ₗ[ℝ] V m.succ :=
   LinearMap.prod (f m + √(m + 1) • LinearMap.id) LinearMap.id
 
