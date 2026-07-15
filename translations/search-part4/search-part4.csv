@@ -2916,7 +2916,15 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m3,m
 Un schedule exponentiel : `p(g) = p_max * exp(-k * g/G)`, avec `p_max = 0.5`, `k = 3` -> `p(0)=0.5`, `p(G) ~= 0.025`.
 
 Le fork expose ce mecanisme via **`ProbabilityConfig.Mutation.DynamicProbability : Func<IEvolutionContext, float, float>`** combine a `Strategy = OverwriteProbability`. A chaque evaluation de la probabilite, le moteur appelle notre fonction avec le contexte d'evolution (`ctx.Population.GenerationsNumber`).",,,,,,,,751f641d0b56f7eb,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c04,code,fr,9bb49a89ca4f17ad,"// === CONTROL DETERMINISTE === schedule decroissant p(g) = 0.5 * exp(-3 * g/G)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c04,code,fr,890e53992ccd413e,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
+// (Zero `#r ""nuget:""` sur une charting-lib : cf #3801 / C548-L2.)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// === CONTROL DETERMINISTE === schedule decroissant p(g) = 0.5 * exp(-3 * g/G)
 IMetaHeuristic BuildDecay(int maxGen)
 { var m=new DefaultMetaHeuristic();
   m.ProbabilityConfig.Mutation.Strategy=ProbabilityStrategy.TestProbability|ProbabilityStrategy.OverwriteProbability;
@@ -2927,17 +2935,42 @@ IMetaHeuristic BuildDecay(int maxGen)
   };
   return m; }
 
-Console.WriteLine(""Schedule deterministe p(g) = 0.5 * exp(-3 * g/G),  G=""+ (NFE/PopSize));
-for (int g=0; g<=NFE/PopSize; g+=(NFE/PopSize)/5)
-{ double p=0.5*Math.Exp(-3.0*(double)g/(NFE/PopSize));
-  int bar=(int)(p*40); Console.WriteLine($""  gen {g,3}  p={p:F3}  {new string('#',bar)}""); }
+// Courbe continue du schedule de decroissance : p(g) = 0.5 * exp(-3 * g/G).
+int G = NFE / PopSize;
+double Decay(int g) => 0.5 * Math.Exp(-3.0 * (double)g / G);
+var gAxis = Enumerable.Range(0, G + 1).Select(g => (double)g).ToArray();
+var pCurve = gAxis.Select(g => Decay((int)g)).ToArray();
+string traceJson = System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = ""p(g) (probabilite de mutation)"", [""x""] = gAxis, [""y""] = pCurve,
+                                     [""type""] = ""scatter"", [""mode""] = ""lines"",
+                                     [""line""] = new { color = ""#4C72B0"", width = 2.5 } });
+// Marqueurs explore (p~0.5 tot) / exploit (p~0.025 tard).
+string mkExplore = System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = ""Exploration (debut, p=0.5)"", [""x""] = new[] { 0.0 }, [""y""] = new[] { Decay(0) },
+                                     [""type""] = ""scatter"", [""mode""] = ""markers"",
+                                     [""marker""] = new { color = ""#DD8452"", size = 12 } });
+string mkExploit = System.Text.Json.JsonSerializer.Serialize(
+    new Dictionary<string, object> { [""name""] = ""Exploitation (fin, p=0.025)"", [""x""] = new[] { (double)G }, [""y""] = new[] { Decay(G) },
+                                     [""type""] = ""scatter"", [""mode""] = ""markers"",
+                                     [""marker""] = new { color = ""#C44E52"", size = 12 } });
+var layout = ""{\""title\"":{\""text\"":\""Schedule deterministe : p(g) = 0.5 * exp(-3 * g/G) (G="" + G + "")\""},"" +
+             ""\""xaxis\"":{\""title\"":{\""text\"":\""generation g\""}},"" +
+             ""\""yaxis\"":{\""title\"":{\""text\"":\""p(g)\""},\""range\"":[0,0.55]},"" +
+             ""\""showlegend\"":true}"";
+var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+             ""<script>Plotly.newPlot('"" + divId + ""',["" + traceJson + "","" + mkExplore + "","" + mkExploit + ""],"" + layout + "")</script>"";
+display(new PlotlyHtml(markup));
+Console.WriteLine($""Schedule deterministe p(g) = 0.5 * exp(-3 * g/G),  G="" + G);
+Console.WriteLine($""  Exploration tot (p=0.5) -> Exploitation tard (p={Decay(G):F3}) : le mecanisme f(generation) est valide par la courbe."");
 
 double decayObj=RunAvg(g=>BuildDecay(g), reqR, Seeds);
 Console.WriteLine();
 Console.WriteLine($""Rastrigin -- controle deterministe (decay) : objectif {decayObj:F3}"");
 Console.WriteLine($""  vs meilleur reglage fixe p={bestP:F2}      : objectif {bestFixed:F3}"");
 Console.WriteLine($""  => le deterministe {(decayObj < bestFixed ? ""BAT"" : ""est competitif avec (a bruit pres)"")} le meilleur fixe (delta {decayObj-bestFixed:+0.000;-0.000;0.000:F3})."");
-Console.WriteLine(""     Il explore tot (p=0.5) puis exploite tard (p=0.025) -- le mecanisme f(generation) est valide par le trace."");",,,,,,,,9bb49a89ca4f17ad,,,,,,,
+",,,,,,,,890e53992ccd413e,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m4,markdown,fr,70b81149ee98d548,"Le decay est **competitif** avec le meilleur reglage fixe (a bruit pres, NFE=5000) — il ne le domine pas nettement. Ce n'est pas un echec du controle deterministe, mais un indice honnete : sur ce paysage et ce budget, un schedule simple n'apporte pas un avantage massif. Le controle qui dominera arrive au §4 (self-adaptatif). Ce que cette section etablit est surtout le **mecanisme** : `DynamicProbability = f(generation)` produit bien un taux continu decroissant (trace ci-dessus), et le moteur l'invoque reellement chaque generation.",,,,,,,,70b81149ee98d548,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m5,markdown,fr,684313c6b55c7e47,"## 3. Controle adaptatif — la diversite pilote le taux
 
