@@ -37,6 +37,7 @@ Les cellules doivent suivre un **ordre canonique** sans glissement ni oubli. Fri
 
 - **Python notebooks** : Papermill pour batch (`notebook_tools.py execute <path>`)
 - **.NET notebooks** : Papermill avec kernel `.net-csharp` fonctionne (verifie SW-3, 50/50 cells). Sauf `#!import` (MCP Jupyter cell-by-cell en fallback). Prefere Papermill quand possible.
+- **.NET figures Plotly** (Prong-A #3801) : `#r "nuget:"` charting est bloque headless (c.547-L1) → utiliser la technique **C548-L2 « zero-restore »** (`record PlotlyHtml` + `Formatter.Register` + Plotly.js CDN, zero NuGet), jamais un workaround ASCII. Template canonique + piege du `layout` 3e argument + gate de merge : [docs/reference/dotnet-plotly-zero-restore.md](../../docs/reference/dotnet-plotly-zero-restore.md).
 - **WSL notebooks** (GameTheory/Lean) : `wsl_papermill.py` (cf [.claude/rules/wsl-kernels.md](wsl-kernels.md))
 - Working directory explicite pour notebooks avec paths relatifs
 - `BATCH_MODE=true` pour notebooks avec widgets interactifs
