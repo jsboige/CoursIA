@@ -25,6 +25,7 @@ Si **l'un des deux `cat-file -e` retourne non-zero** : la procédure ne marchera
 ## Procédure (6 étapes)
 
 Soit :
+
 - `<repo>` = repo principal (`d:/dev/CoursIA-2` typique)
 - `<branch>` = branche cible de la PR (ex `feature/6409-arg-pr1-bump`)
 - `<sub>` = chemin du submodule relatif à `<repo>` (ex `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum`)
@@ -71,7 +72,7 @@ Astuce Windows : `Copy-Item -Recurse -Force` (PowerShell) ou `robocopy /E` en mi
 
 Sans cette étape, le submodule gitdir pointe encore vers le working tree du **repo principal** et toute commande chdir dedans échoue avec :
 
-```
+```text
 fatal: cannot chdir to '../../../../../../MyIA.AI.Notebooks/...'
 ```
 
@@ -111,7 +112,7 @@ git submodule status          # doit afficher le submodule comme OK
 
 Le diff final attendu (PR atomic submodule bump) :
 
-```
+```diff
 diff --git a/<sub> b/<sub>
 index <source_sha>..<target_sha> 160000
 --- a/<sub>
@@ -151,6 +152,7 @@ Si `git cat-file -e <target_sha>` échoue (SHA pas encore fetché dans le submod
 
 - [CLAUDE.md global « Knowledge Preservation »](../../CLAUDE.md) — règle de consolidation durable
 - [harness-hygiene.md](../../.claude/rules/harness-hygiene.md) — info 3 tiers (harnais / docs / dashboard)
-- [MEMORY.md §L510-L6](../../.claude/projects/d--dev-CoursIA-2/memory/MEMORY.md) — leçon source (résumé)
 - [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md) — règle R2 (rebase frais)
 - [git-workflow.md](../../.claude/rules/git-workflow.md) — workflow général (branches, commits)
+- [PR #6641](https://github.com/jsboige/CoursIA/pull/6641) — application originale de la procédure (Argumentum bump MERGED 2026-07-15T04:53Z)
+- Leçon L510-L6 (résumée en `MEMORY.md` per-machine, voir section cycles-summary associée du worker)
