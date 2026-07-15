@@ -14271,7 +14271,9 @@ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Ve
 
 Grace a la propriete additive de Paillier, on peut **additionner les bulletins chiffres**
 sans les dechiffrer. Seul le **total** est ensuite dechiffre.",,,,,,,,ac33272b4cb78f1b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb,tally-code,code,fr,a13d2038d9cd385b,"# Addition homomorphique des bulletins
+MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb,tally-code,code,fr,e4002348447450e8,"# Addition homomorphique des bulletins
+# (SOTA Prong-A #3801 : la barre ASCII devisualisation est remplacee par un vrai
+#  graphique matplotlib ; le decompte homomorphique Paillier, lui, est inchange.)
 if PHE_AVAILABLE:
     print(""DECOMPTE HOMOMORPHIQUE"")
     print(""="" * 60)
@@ -14292,9 +14294,8 @@ if PHE_AVAILABLE:
 
     print(""RESULTATS :"")
     print(""-"" * 40)
-    for i, (candidate, votes) in enumerate(zip(candidates, results)):
-        bar = ""#"" * votes
-        print(f""  {candidate:20s} : {votes} votes  {bar}"")
+    for candidate, votes in zip(candidates, results):
+        print(f""  {candidate:20s} : {votes} votes"")
     print(f""  {'Total':20s} : {sum(results)} votes"")
     print()
 
@@ -14304,9 +14305,35 @@ if PHE_AVAILABLE:
         expected[v[""choice""]] += 1
     assert results == expected, ""Le decompte homomorphique doit correspondre au decompte manuel""
     print(""-> Verification : le decompte homomorphique correspond au decompte en clair"")
+
+    # Visualisation : repartition des voix dechiffrees (matplotlib, remplace l'ASCII).
+    # Rendu via savefig + IPython.display.Image (backend Agg headless : plt.show()
+    # n'affiche rien en sortie et emet un avertissement ; savefig garantit un PNG).
+    import matplotlib
+    matplotlib.use(""Agg"")
+    import matplotlib.pyplot as plt
+    import io
+    from IPython.display import Image, display
+
+    fig, ax = plt.subplots(figsize=(7, 3))
+    palette = [""#2980b9"", ""#27ae60"", ""#c0392b"", ""#8e44ad"", ""#d35400"", ""#16a085""]
+    ax.barh(range(len(candidates)), results, color=palette[:len(candidates)])
+    ax.set_yticks(range(len(candidates)))
+    ax.set_yticklabels(candidates)
+    ax.invert_yaxis()
+    ax.set_xlabel(""Nombre de voix"")
+    ax.set_title(""Decompte homomorphique Paillier - resultats dechiffres"")
+    ax.set_xlim(0, max(results) + 1)
+    for i, v in enumerate(results):
+        ax.text(v + 0.05, i, str(v), va=""center"", fontweight=""bold"")
+    plt.tight_layout()
+    buf = io.BytesIO()
+    fig.savefig(buf, format=""png"", dpi=110, bbox_inches=""tight"")
+    buf.seek(0)
+    display(Image(data=buf.getvalue()))
+    plt.close(fig)
 else:
-    print(""Section sautee : phe non disponible"")
-",,,,,,,,a13d2038d9cd385b,,,,,,,
+    print(""Section sautee : phe non disponible"")",,,,,,,,e4002348447450e8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography/SC-17-E2E-Verifiable-Voting.ipynb,tally-interpretation,markdown,fr,e1daaf453bb34026,"### Interpretation
 
 Le decompte s'est fait **entierement sur des donnees chiffrees** :
