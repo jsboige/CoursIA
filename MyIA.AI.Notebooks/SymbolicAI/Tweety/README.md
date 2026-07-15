@@ -181,35 +181,41 @@ Pour les praticiens intéressés par les applications multi-agents :
 
 ## En quoi chaque notebook est unique
 
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **25 notebooks principaux** (12 Python + 12 C#/.NET + 1 Lean companion) :
+Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **31 notebooks principaux** (12 Python + 18 C#/.NET + 1 Lean companion) :
 
 | #  | Notebook                      | Concept clé enseigné                                                    |
 |----|-------------------------------|--------------------------------------------------------------------------|
 | 1  | Setup                         | Boucle configuration : JVM → JPype → JARs → solveurs externes          |
 | 2  | Basic Logics                  | SAT solving en pratique (pySAT) + formalisme FOL avec EProver            |
+| 2a | Basic Logics (C#, pilote)     | Logique propositionnelle .NET — port pilote IKVM (#4792), premier pont Java→.NET de la série |
 | 2b | Semantics (C#)                | Sémantique propositionnelle .NET (mondes possibles) — port IKVM 8.14    |
 | 2c | Basic Logics (C#)             | FOL porté .NET via IKVM 8.14 : `tweetyproject.logics.fol.*` réel         |
 | 3  | Advanced Logics               | Ontologies OWL (DL) + raisonnement modale (SPASS) + QBF                 |
-| 3c-Adv | Advanced Logics (C#)        | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
+| 3c-DL | Advanced Logics (C#)         | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
 | 3c-CL | Conditional Logics (C#)      | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel               |
 | 3c-Dung | Dung (C#)                   | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner`  |
 | 3c-ML | Modal Logic (C#)             | Logique modale .NET (IKVM) — `MlReasoner` réel                          |
 | 3c-QBF | QBF (C#)                    | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel                       |
 | 4  | Belief Revision               | Identification de conflits (MUS) + révision AGM + MaxSAT                |
-| 4c | Belief Revision (C#)          | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels, BETA        |
+| 4c-BR | Belief Revision (C#)         | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels, BETA        |
 | 4c-Aspic | Aspic (C#)                 | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel                          |
 | 5  | Abstract Argumentation        | Sémantiques de Dung (grounded/stable/CF2) + frameworks aléatoires      |
 | 5b | Lean Argumentation            | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean`, BETA |
+| 5c | Abstract Argumentation (C#)   | Dung AF **from-scratch** BCL .NET (sans IKVM/JVM) : sémantiques grounded/stable/preferred, labeling 3 valeurs |
 | 6  | Structured Argumentation      | Comparaison ASPIC+/DeLP/ABA/ASP — le cadre idéal selon le domaine      |
+| 6c | Structured Argumentation (C#) | ASPIC+ **from-scratch** BCL .NET (sans IKVM) — DeLP/ABA/ASP en contrepoint conceptuel |
 | 7a | Extended Frameworks           | Au-delà de Dung : ADF, bipolarité, attaques pondérées et collectives   |
+| 7ac| Extended Frameworks (C#)      | ADF/SetAF/EAF/VAF **from-scratch** BCL .NET — logique de Kleene 3 valeurs, sans JVM |
 | 7b | Ranking & Probabilistic       | Classement graduel des arguments + incertitude sur les arguments        |
 | 7bc| Ranking & Probabilistic (C#)  | Ranking/Probabiliste .NET (IKVM) — `Ranking`, `SubgraphProbability` réels |
 | 8  | Agent Dialogues               | Protocoles d'échange entre agents + négociation argumentative          |
+| 8c | Agent Dialogues (C#)          | Dialogues argumentatifs **from-scratch** BCL .NET : protocole Claim/Argue/Concede/Retract + loterie Monte-Carlo |
 | 9  | Preferences                   | Agrégation de préférences (Borda, Condorcet) + théorie du vote          |
 | 9c | Preferences (C#)              | Préférences .NET (IKVM, EPIC #4667 PR #5268)                            |
 | 10 | MLN                           | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
 | 10c| MLN (C#)                      | MLN porté .NET (IKVM) : `MarkovLogicNetwork`, vrais appels              |
 | 11 | Causalité                     | do-calculus de Pearl : intervention `do(X)` vs observation, contrefactuels |
+| 11c| Causalité (C#)                | Moteur causal booléen **from-scratch** .NET : do-operator, contrefactuels par mondes jumeaux |
 
 ## Le pont symbolique/statistique (notebook 10 — MLN)
 
