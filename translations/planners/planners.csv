@@ -12604,13 +12604,15 @@ var sched2 = new List<Interval>
 var conflicts2 = TemporalMutex.FindConflicts(sched2);
 Show(""Schedule 2 conflits"", conflicts2.Count == 0 ? ""AUCUN"" : string.Join(""; "", conflicts2.Select(c => $""{c.Item1.Name}<->{c.Item2.Name} [{c.Item1}] vs [{c.Item2}]"")));
 ",,,,,,,,23e00351e57cefef,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,0af6f97a-e55e-4e85-8257-007530743e45,markdown,fr,6a2babb8a48bb14f,"## Partie 5 — Ordonnancement (RCPSP-lite) et diagramme de Gantt
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,0af6f97a-e55e-4e85-8257-007530743e45,markdown,fr,5eb6dd0508f9da2c,"## Partie 5 — Ordonnancement (RCPSP-lite) et diagramme de Gantt
 
 On assemble les briques précédentes : étant donné un ensemble de **tâches** (durée, précédences, demande en ressource) et une **capacité** de ressource, on calcule un **schedule** par heuristique gloutonne (liste de priorité + placement au plus tôt sous contraintes de précédence et de capacité). On produit ensuite un **diagramme de Gantt ASCII**.
 
+Le scénario ci-dessous est construit avec **contention de ressource** — plus de tâches disponibles à un instant donné que la capacité n'en permet d'exécuter en parallèle. C'est précisément la situation qui justifie le scheduler : sans contrainte de capacité *bindante*, un simple placement au plus tôt (aveugle aux ressources) donnerait le même schedule, et la logique de vérification de capacité du scheduler ne servirait à rien.
+
 C'est une variante simplifiée du **RCPSP** (Resource-Constrained Project Scheduling Problem, NP-difficile). L'heuristique gloutonne ne garantit pas l'optimalité (makespan minimal) mais produit un schedule réalisable en temps polynomial — la comparaison avec l'optimum known d'un benchmark (ex: PSPLIB) est laissée en exercice.
-",,,,,,,,6a2babb8a48bb14f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,91dd4758-156c-4ccc-80ff-eb99121ca072,code,fr,99df293755d65dc5,"// --- Ordonnancement glouton RCPSP-lite + Gantt ASCII ---
+",,,,,,,,5eb6dd0508f9da2c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,91dd4758-156c-4ccc-80ff-eb99121ca072,code,fr,6640f717cf15700f,"// --- Ordonnancement glouton RCPSP-lite + Gantt ASCII ---
 public sealed class Task
 {
     public string Name { get; }
@@ -12702,20 +12704,46 @@ public sealed class Scheduler
 }
 
 // --- Scenario : atelier avec 2 machines (capacite = 2) ---
+// Prong B (#3801) : 3 decoupes (A, B, C) sont disponibles des t=0 et demandent 1 machine
+// chacune => demande initiale 3 > capacite 2. Le scheduler DOIT differer une tache : c'est
+// la qu'il justifie son existence (resoudre la contention de ressource), la ou un schedule
+// aveugle aux ressources placerait les 3 en parallele et violerait la capacite.
 var tasks = new List<Task>
 {
-    new Task(""A"", 3, 1),             // duree 3, demande 1 machine
-    new Task(""B"", 2, 1),
-    new Task(""C"", 4, 1, ""A""),        // C apres A
-    new Task(""D"", 2, 1, ""B""),
-    new Task(""E"", 3, 2, ""C"", ""D""),   // E apres C et D, demande 2 machines
+    new Task(""A"", 3, 1),              // decoupe A (3h, 1 machine)
+    new Task(""B"", 3, 1),              // decoupe B
+    new Task(""C"", 3, 1),              // decoupe C  -> 3e tache en concurrence a t=0
+    new Task(""D"", 2, 1, ""A""),         // soudure apres A
+    new Task(""E"", 4, 2, ""B"", ""C""),    // assemblage apres B et C, demande les 2 machines
 };
 var sched = new Scheduler(2);
 sched.ScheduleAll(tasks);
-Show(""Schedule atelier"", sched.Gantt(tasks));
-Show(""Makespan"", tasks.Max(t => t.Finish));
+Show(""Schedule atelier (contention de ressource)"", sched.Gantt(tasks));
+
+// --- Diagnostics : la contrainte de ressource est-elle active ? ---
+double makespanRC = tasks.Max(t => t.Finish);
+double demandAt0 = tasks.Where(t => t.Predecessors.Count == 0).Sum(t => t.Demand);
+// Charge maximale par unite de temps (boucle explicite, evite le lambda imbrique CS9236)
+double peakLoad = 0;
+for (int kk = 0; kk <= (int)Math.Ceiling(makespanRC); kk++)
+{
+    double loadK = tasks.Where(x => x.Start >= 0 && kk >= x.Start && kk < x.Start + x.Duration).Sum(x => x.Demand);
+    if (loadK > peakLoad) peakLoad = loadK;
+}
+// Borne inferieure precedence : plus longue chaine (chemin critique), ressources ignorees.
+double CritLB(string name)
+{
+    var tk = tasks.First(x => x.Name == name);
+    return tk.Predecessors.Count == 0 ? tk.Duration : tk.Duration + tk.Predecessors.Max(CritLB);
+}
+double lbRC = tasks.Max(t => CritLB(t.Name));
+Show(""Demande a t=0 (sans predecesseur)"", $""{demandAt0} > capacite {sched.Capacity} -> schedule aveugle = INFEASIBLE"");
+Show(""Charge maximale observee"", $""{peakLoad} = capacite {sched.Capacity} (contrainte SATUREE)"");
+Show(""Chemin critique (borne inferieure)"", $""{lbRC}"");
+Show(""Makespan glouton"", $""{makespanRC}"");
+Show(""Surcout resource (makespan - chemin critique)"", $""{makespanRC - lbRC}"");
 Show(""Realisable ?"", tasks.All(t => t.Start >= 0) ? ""OUI (toutes planifiees)"" : ""NON (certaines non placees)"");
-",,,,,,,,99df293755d65dc5,,,,,,,
+",,,,,,,,6640f717cf15700f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,1d92c904-c43a-4067-9d50-c7ee0f788694,markdown,fr,818d8c95877fd5f5,"## Conclusion
 
 Ce twin C# a reconstruit **from-scratch** les 4 piliers de la planification temporelle :
@@ -19583,3 +19611,14 @@ Fast Downward est regulierement soumis aux competitions internationales de plani
 Le [fichier suivant](https://github.com/aibasel/downward/blob/main/misc/tests/configs.py) propose des alias de configuration elementaires, et [ce repertoire](https://github.com/aibasel/downward/tree/main/driver/portfolios) contient un grand nombre de configurations qui ont ete presentees aux competitions (il faut fusionner les chaines distinctes en ligne de commande).
 
 **Retour au sommaire** : [Index](../../README.md)",,,,,,,,8fced46e300e5df5,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb,7b296434-9a72-4785-b7da-36bca150d488,markdown,fr,0718f2a4be2f1112,"### Lecture du schedule — la contrainte de ressource est *bindante*
+
+Le scheduler glouton produit ici un makespan de **10**, alors que le **chemin critique** (la plus longue chaîne de précédence, en ignorant les ressources) ne vaut que **7**. Cet écart de **3 unités est entièrement dû à la contention de ressource** : c'est la trace, dans la sortie, du travail distinctif du scheduler.
+
+Trois signaux le confirment dans la sortie ci-dessus :
+
+1. **Demande à t=0 = 3 > capacité 2.** Les trois découpes A, B, C sont disponibles immédiatement et demandent chacune une machine. Un schedule *aveugle aux ressources* (placement au plus tôt sans vérifier la capacité) les placerait toutes en parallèle avec une charge 3 > 2 : il serait **infeasible**. Le scheduler doit donc déférer l'une d'elles.
+2. **Charge maximale observée = 2 = capacité.** La contrainte est **saturée** : le test `used + demand > capacity` a effectivement rejeté des placements (sinon la charge resterait strictement inférieure à la capacité).
+3. **Le Gantt montre les reports.** C démarre à $t=3$ (et non $t=0$) parce que A + B saturent déjà les deux machines ; E démarre à $t=6$ (et non $t=3$) parce qu'il attend la fin de C et exige les deux machines simultanément.
+
+C'est exactement la situation que le scheduler RCPSP est censé résoudre — **niveler la demande sous la capacité** en différant des tâches — et qui serait invisible sur une instance sans contention (makespan égal au chemin critique, boucle de capacité jamais rejetante). L'heuristique LPT (*Longest Processing Time first*) fixe l'ordre de priorité ; elle n'est pas optimale (RCPSP est NP-difficile) — l'exercice 3 propose de comparer au makespan optimal obtenu par énumération des ordres topologiques.",,,,,,,,0718f2a4be2f1112,,,,,,,
