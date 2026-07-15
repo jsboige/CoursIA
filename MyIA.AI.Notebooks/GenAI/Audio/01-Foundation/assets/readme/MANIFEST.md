@@ -1,17 +1,71 @@
 # Manifeste des figures — GenAI/Audio/01-Foundation (bases speech & audio)
 
-Provenance de chaque figure (convention `extract_readme_figures.py` L132 : index ALL-CELLS).
-Toutes les figures sont extraites des **outputs déjà committés** des notebooks (C.3 — aucune re-exécution).
-Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
+Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
+**Audit G.1 c.445 (2026-07-15, doctrine #5780)** : migration vague-1 → standard avec section *Contenu réel vérifié* + *Ce qui n'est PAS dans la figure* par figure. Méthode 4-pass formalisée c.481b-L1 : (1) lecture G.1 PNG + (2) croisement alt-text + (3) croisement MANIFEST + (4) `sha256sum` + `nbformat` Python investigation pour attribution cell.
 
-**Note de diversité** : les 5 figures proviennent du notebook fondationnel `01-3-Basic-Audio-Operations.ipynb` (seul du module à produire des visualisations PNG). Elles couvrent le **pipeline audio complet** : forme d'onde → spectrogramme → MFCC → extraction de caractéristiques. Les 4 autres notebooks du module (TTS, STT, etc.) ne produisent pas de sorties image extractibles.
+**Bilan c.445** : **3 ACCURATE** (aud1-waveform + aud1-mfcc + aud1-features, alt-text fidèle) + **2 corrections réelles alt-text sur-vendeurs** (aud1-spectrogram, aud1-mfcc2 — alt-text omet 2/3 subplots). Bug-rate = 2/5 = 40% alt-text, cohérent avec familles GenAI multi-subplot sans description détaillée des panneaux (cf c.481 Image racine 5/6, c.484 Orchestration 4/5, c.485 04-Applications 6/6).
 
-| Figure | Notebook source | Cellule | Output | Format | Dimensions | Poids | Alt-text FR |
-|--------|-----------------|---------|--------|--------|------------|-------|-------------|
-| `aud1-waveform.png` | `01-3-Basic-Audio-Operations.ipynb` | 12 | 1 | PNG | 1189×290 | 36,4 KB | Forme d'onde (waveform) du signal audio |
-| `aud1-spectrogram.webp` | `01-3-Basic-Audio-Operations.ipynb` | 15 | 1 | WebP | 800×713 | 81,7 KB | Spectrogramme — décomposition temps-fréquence |
-| `aud1-mfcc.png` | `01-3-Basic-Audio-Operations.ipynb` | 20 | 1 | PNG | 1080×390 | 32,1 KB | MFCC — coefficients cepstraux mel |
-| `aud1-mfcc2.png` | `01-3-Basic-Audio-Operations.ipynb` | 20 | 3 | PNG | 1072×790 | 75,8 KB | MFCC — carte de chaleur des coefficients |
-| `aud1-features.png` | `01-3-Basic-Audio-Operations.ipynb` | 28 | 2 | PNG | 1189×985 | 163,8 KB | Extraction de caractéristiques audio |
+**Attribution cell — investigation `nbformat` (2026-07-15, c.445)** : 5/5 PNG/WebP disk = re-export compressé des cell output originales du notebook `01-3-Basic-Audio-Operations.ipynb`. Différences taille cell vs disk :
 
-**Diversité couverte** : 5 visualisations du pipeline audio (waveform, spectrogramme, MFCC ×2, features). Total : 5 figures, 389,8 KB, max 163,8 KB/fichier. WebP fallback (P2) pour le spectrogramme (source dense 438 KB). 5 figures plutôt que 6 : seules 5 visualisations distinctes existent dans le module (pas de padding).
+| Figure | MD5 cell (8 chars) | Taille cell (B) | MD5 disk (SHA256) | Taille disk (B) | Ratio | Conclusion |
+|--------|---------------------|------------------|--------------------|------------------|-------|-----------|
+| `aud1-waveform.png` | `3ace572f` (cell[12,1]) | 39 273 | `17bf37ed...` | 37 273 | 0,95 | VRAI — cellule 12 out[1] re-export PNG |
+| `aud1-spectrogram.webp` | `db539f71` (cell[15,1]) | 448 439 (PNG) | `c7bf4993...` | 83 630 (WebP) | 0,19 | VRAI — cellule 15 out[1] re-export WebP (-81%, format optimization EPIC #5654 P2) |
+| `aud1-mfcc.png` | `f6c22e40` (cell[20,1]) | 35 097 | `8badf6f5...` | 32 823 | 0,94 | VRAI — cellule 20 out[1] re-export PNG |
+| `aud1-mfcc2.png` | `238e0bd6` (cell[20,3]) | 84 031 | `c39fe6aa...` | 77 625 | 0,92 | VRAI — cellule 20 out[3] re-export PNG |
+| `aud1-features.png` | `890f2d8a` (cell[28,2]) | 172 278 | `994f7713...` | 167 756 | 0,97 | VRAI — cellule 28 out[2] re-export PNG |
+
+**5/5 attributions cell VRAIES** — différence avec c.490 Audio racine (5/6 attributions FABRIQUÉES par dette cumulative majeure) : ici les PNG correspondent au contenu visuel des cellules référencées. **Pas de dette d'attribution**, uniquement dette alt-text sur les subplots omis.
+
+## aud1-waveform.png
+
+- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 12, output 1, `display_data` `image/png`)
+- **SHA256** : `17bf37ed06a8fdb69c4b85124e259517cbb72a419b0c1f7fbda177180a1fbd2c` (taille 37 273 octets)
+- **Alt-text (FR)** : Forme d'onde (waveform) du signal audio — échantillon de test, amplitude ±0,4 sur 12 secondes, signal parole avec silences (visible ~3-4,5 s et ~9-10,5 s).
+- **Poids** : 36,4 KB (PIL optimisé)
+- **Contenu réel vérifié (2026-07-15, c.445)** : **Single panel** matplotlib. Titre « Forme d'onde - Echantillon de test ». Axe X « Temps (s) » 0→12 ; axe Y « Amplitude » -0,4→0,4. Une seule courbe bleue (sample audio waveform), patterns typiques de signal parole : bursts énergétiques aux ~0-3 s, ~4,5-7,5 s, ~7,5-10 s, silences relatifs vers ~3-4,5 s et ~9-10,5 s.
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (forme d'onde d'un signal audio réel sur 12 s) et le titre matplotlib « Forme d'onde - Echantillon de test » confirme la nature échantillon-de-test du signal.
+- **Ce qui n'est PAS dans la figure** : pas de visualisation simultanée du signal dans le domaine fréquentiel (cf `aud1-spectrogram.webp` pour la décomposition spectrale) ; pas de marqueurs syllabe/phonème (la segmentation n'est pas annotée) ; pas d'axe secondaire pour la fréquence instantanée (le zero-crossing rate n'est pas extrait sur cette figure).
+
+## aud1-spectrogram.webp
+
+- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 15, output 1, `display_data` `image/png` → WebP fallback EPIC #5654 P2)
+- **SHA256** : `c7bf4993ace921902288b81898e9878fc33b067e64881b214784536c56ba3d82` (taille 83 630 octets)
+- **Alt-text (FR)** : Analyse spectrale de l'échantillon audio — 3 panneaux empilés : Spectrogramme STFT (échelle linéaire 0-10000 Hz, magnitude dB -80→0), Spectrogramme Mel (échelle perceptuelle log 0-8192 Hz, dB -80→0) et Chromagramme (pitch class B-A-G-F-E-D-C, activation 0-1).
+- **Poids** : 81,7 KB (WebP fallback, source cell PNG 448 KB → ratio 0,19)
+- **Contenu réel vérifié (2026-07-15, c.445)** : **3 panneaux empilés verticalement** matplotlib. Titre principal « Analyse spectrale de l'echantillon audio ». **(1) Spectrogramme STFT (echelle lineaire)** — colormap inferno/magma, axe X « Time » 0-11,5, axe Y « Hz » 0-10000, colorbar dB -80→0, harmoniques de parole visibles ~0-5000 Hz ; **(2) Spectrogramme Mel (echelle perceptuelle)** — colormap inferno, axe X « Time », axe Y « Hz » 0-8192 (échelle log 512, 1024, 2048, 4096, 8192), colorbar dB -80→0, énergie concentrée <4000 Hz (typique voix humaine) ; **(3) Chromagramme (notes musicales)** — colormap inferno, axe Y « Pitch class » B-A-G-F-E-D-C (12 classes chroma), axe X « Time », colorbar activation 0-1,0, avec concentrations visibles vers A, C, E, F (notes naturelles des harmoniques).
+- **Verdict** : **CORRECTION alt-text v1** — alt-text v1 « Spectrogramme — décomposition temps-fréquence » omettait 2/3 panneaux (Mel + Chromagramme). Alt-text corrigé pour décrire l'intégralité du contenu : STFT linéaire + Mel perceptuel + Chromagramme (analyse à 3 niveaux : fréquentiel pur, perceptuel, harmonique). Précision transférable : la présence simultanée des 3 représentations illustre le **pipeline progressif** STFT → Mel (filtre perceptuel) → Chroma (projection 12 classes), démontrant la richesse de l'analyse spectrale moderne.
+- **Ce qui n'est PAS dans la figure** : pas d'annotation syllabe/phonème (la segmentation temporelle n'est pas marquée sur l'axe Time) ; pas de comparaison à un signal de référence (e.g. bruit blanc, sinus pure) ; pas de visualisation 3D (les 3 panneaux sont 2D séparés) ; pas de barres d'incertitude sur la chroma (l'activation est ponctuelle par fenêtre).
+
+## aud1-mfcc.png
+
+- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 20, output 1, `display_data` `image/png`)
+- **SHA256** : `8badf6f52b6038ec12a54657c5ad1a5ccb3d38c8aea4e920a458f39bb826423a` (taille 32 823 octets)
+- **Poids** : 32,1 KB (PIL optimisé, ratio 0,94 vs cell 35 097 B)
+- **Contenu réel vérifié (2026-07-15, c.445)** : **Single panel** heatmap. Titre « MFCC - Echantillon de test ». Axe X « Time » 0-11,5 ; axe Y « Coefficient MFCC » 0-40. Colormap RdBu (rouge = +200, bleu = -500, blanc = 0). Le coefficient 0 (énergie moyenne) domine en rouge sombre, les coefficients 1-15 portent l'enveloppe spectrale (rouge/bleu clair), les coefficients 16-39 sont majoritairement bleus (faible magnitude). Les silences (vers ~3-4,5 s et ~9-10,5 s) sont visibles par un aplat bleu sur les coefficients 0-5.
+- **Verdict** : **VRAI** — alt-text « MFCC — coefficients cepstraux mel » capture l'enseignement (heatmap des coefficients cepstraux mel sur 40 dimensions × temps). Précision transférable : la distribution rouge concentrée sur les ~15 premiers coefficients illustre la **concentration de l'information vocale** dans les basses fréquences cepstrales (les coefficients 16+ portent le détail fin).
+- **Ce qui n'est PAS dans la figure** : pas de visualisation des Δ/Δ² (deltas et delta-deltas — dynamique temporelle) ; pas d'axe de fréquence Hz en Y (l'axe Y est l'indice cepstral, pas une fréquence directe) ; pas d'annotation des formants F1/F2/F3 (qui seraient sur l'axe Hz, pas cepstral) ; voir `aud1-mfcc2.png` pour les dynamiques.
+
+## aud1-mfcc2.png
+
+- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 20, output 3, `display_data` `image/png`)
+- **SHA256** : `c39fe6aa74dca58764e390da99fbdaf0d79d0ee1dc76566b2dd854ae6da26ca6` (taille 77 625 octets)
+- **Alt-text (FR)** : Dynamiques cepstrales — 3 panneaux empilés : MFCC statique (-500→+200) + Delta MFCC vitesse (-40→+40) + Delta-Delta MFCC accélération (-40→+40), illustrant l'évolution temporelle des coefficients cepstraux mel.
+- **Poids** : 75,8 KB (PIL optimisé, ratio 0,92 vs cell 84 031 B)
+- **Contenu réel vérifié (2026-07-15, c.445)** : **3 panneaux empilés verticalement** matplotlib. Titre de chaque panneau (sans titre global) : **(1) « MFCC »** — heatmap identique à `aud1-mfcc.png` (échelle -500→+200, axe X Time, axe Y coefficient MFCC), concentration rouge 0-15 ; **(2) « Delta MFCC (vitesse) »** — heatmap colormap RdBu échelle ±40, mêmes axes, montre les variations frame-à-frame (rouge/bleu en alternance) ; **(3) « Delta-Delta MFCC (acceleration) »** — heatmap colormap RdBu échelle ±40, axes identiques, dynamique du 2nd ordre (variations plus rapides).
+- **Verdict** : **CORRECTION alt-text v1** — alt-text v1 « MFCC — carte de chaleur des coefficients » omettait 2/3 panneaux (Delta, Delta-Delta) et réduisait la figure à une simple heatmap. Alt-text corrigé pour refléter le contenu réel : 3 heatmaps empilées illustrant les **dynamiques cepstrales d'ordre 1 et 2** (vitesse et accélération), pas seulement les coefficients statiques. Précision transférable : les Δ/Δ² sont cruciaux pour la reconnaissance vocale moderne (GMM-HMM, DNN, Whisper) car ils capturent la **trajectoire temporelle** des formants, pas seulement leur valeur instantanée.
+- **Ce qui n'est PAS dans la figure** : pas de visualisation des MFCC normalisés (CMS — Cepstral Mean Subtraction, indispensable en reconnaissance vocale pour la robustesse au canal) ; pas d'annotation des formants F1/F2/F3 sur les heatmaps (l'axe Y est l'indice cepstral, pas Hz) ; pas de comparaison aux MFCC d'un signal de référence (bruit blanc, silence) ; pas de barre d'erreur / incertitude par fenêtre temporelle.
+
+## aud1-features.png
+
+- **Source** : notebook `01-3-Basic-Audio-Operations.ipynb` (cellule 28, output 2, `display_data` `image/png`)
+- **SHA256** : `994f7713dca9dc29de406b044da713dc53db2f1f2027506d0122df6e84391708` (taille 167 756 octets)
+- **Alt-text (FR)** : Caractéristiques audio extraites (librosa) — 4 panneaux empilés : Spectral Centroid (Hz 0-8000, bleu), Spectral Bandwidth (Hz 1000-3500, vert), RMS Energy (Amplitude 0-0,15, rouge) et Zero-Crossing Rate (Rate 0-0,6, violet), sur 12 secondes d'échantillon.
+- **Poids** : 163,8 KB (PIL optimisé, ratio 0,97 vs cell 172 278 B)
+- **Contenu réel vérifié (2026-07-15, c.445)** : **4 panneaux empilés verticalement** matplotlib. Titre principal « Caracteristiques audio extraites » (note : sans accents — généré par matplotlib par défaut). Chaque panneau : **(1) Spectral Centroid** — axe Y Hz 0-8000, courbe bleue oscillant 2000-8000 Hz avec bursts ~0-1,5 s, ~3,5-7 s, ~7,5-8 s ; **(2) Spectral Bandwidth** — axe Y Hz 1000-3500, courbe verte oscillant 1000-3500 Hz, complémentaire du centroid ; **(3) RMS Energy** — axe Y Amplitude 0-0,15, courbe rouge, profil énergétique clair (silences ~3-4,5 s et ~9-10,5 s marqués à 0) ; **(4) Zero-Crossing Rate** — axe Y Rate 0-0,6, courbe violette, pics sporadiques 0,3-0,6 alignés sur les transitions phonétiques. Axe X commun « Temps (s) » 0-12 sur tous les panneaux.
+- **Verdict** : **VRAI MINEUR** — alt-text v1 « Extraction de caractéristiques audio » était volontairement générique (titre court), mais ne nommait pas les 4 caractéristiques. Alt-text corrigé pour nommer explicitement les 4 features librosa visibles. Précision transférable : la **cohérence croisée** entre les 4 panneaux est l'enseignement clé — les silences RMS (~3-4,5 s, ~9-10,5 s) correspondent à des chutes du Spectral Centroid et à l'absence de pics ZCR, validant visuellement que les 4 mesures capturent le même phénomène physique.
+- **Ce qui n'est PAS dans la figure** : pas de Mel-frequency cepstral coefficients (cf `aud1-mfcc.png`/`aud1-mfcc2.png`) ; pas de visualisation du spectrogramme (cf `aud1-spectrogram.webp`) ; pas de feature d'ordre supérieur (rolloff, contrast, polyfeatures) ; pas de barre d'erreur inter-seed (single run) ; les accents français manquent dans les titres matplotlib (« Caracteristiques » sans accent) — défaut de localisation mineur du code source.
+
+---
+
+*Audit G.1 conducted 2026-07-15 (c.445) — méthode 4-pass formalisée c.481b-L1. Bilan : 3/5 ACCURATE (aud1-waveform + aud1-mfcc + aud1-features avec correction mineure de nommage des 4 features) + 2 corrections réelles alt-text sur-vendeurs (aud1-spectrogram 1/3 panneaux décrits → 3/3, aud1-mfcc2 1/3 panneaux décrits → 3/3). Bug-rate = 40% alt-text (cohérent avec familles GenAI multi-subplot, cf c.481/c.484/c.485). 5/5 attributions cell VRAIES (cell output re-export PNG/WebP, ratio taille 0,92-0,97 sauf spectrogram 0,19 via WebP optimization). 0 PNG regénéré, 0 notebook re-exécuté, 0 catalogue régénéré (cf catalog-pr-hygiene R1). Différenciation vs c.490 Audio racine (5/6 attributions FABRIQUÉES par dette cumulative majeure post-5 PRs successives) : 01-Foundation est resté sous le radar (2 PRs : #5723 README illustrer, #6159 narrative), dette = alt-text subplot uniquement, pas d'attribution fabriquée.*
