@@ -6488,11 +6488,14 @@ A la fin de ce notebook, vous serez capable de :
 - Chaque agent doit apprendre une politique adaptee au comportement des autres agents, qui apprennent simultanement.
 - L'environnement devient **non-stationnaire** du point de vue d'un seul agent, ce qui complique l'apprentissage.",,,,,,,,9f70834b06664df2,,,,,,,
 MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,m1b2e002,markdown,fr,bdf677c9de91e174,## 1. Installation et imports,,,,,,,,bdf677c9de91e174,,,,,,,
-MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,m2c3e003,code,fr,854efb297da4e5fc,"import numpy as np
+MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,m2c3e003,code,fr,10a249dc31c8aa80,"import warnings
+import numpy as np
 import matplotlib.pyplot as plt
+warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated"")  # advisory pygame import (#3436 path-leak)
 from pettingzoo.classic import tictactoe_v3
 
-print(""PettingZoo charge avec succes"")",,,,,,,,854efb297da4e5fc,,,,,,,
+print(""PettingZoo charge avec succes"")
+",,,,,,,,10a249dc31c8aa80,,,,,,,
 MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,m3d4e004,code,fr,854efb297da4e5fc,"import numpy as np
 import matplotlib.pyplot as plt
 from pettingzoo.classic import tictactoe_v3
