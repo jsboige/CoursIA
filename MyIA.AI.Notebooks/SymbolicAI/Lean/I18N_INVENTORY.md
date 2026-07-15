@@ -60,6 +60,51 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 
 ---
 
+## Nature des gaps restants — FR-flip vs EN-sibling (2026-07-15, ai-01 firsthand)
+
+**Le compte « N siblings restants » de la table Résumé conflate quatre types de gap
+très différents.** Un audit firsthand (`git ls-files` + lecture des headers de
+docstring, pas un grep buggé) le 2026-07-15 montre que le « reste à faire » nominal
+sur les deux gros lakes n'est PAS un chantier de traduction FR→EN propre. Distinguer :
+
+| Type de gap | Définition | Effort | Priorité |
+|-------------|-----------|--------|----------|
+| **(A) FR-canon → EN-sibling** | `Foo.lean` a des docstrings **FR canoniques**, pas de `Foo_en.lean` | Léger (traduire FR→EN, tactiques byte-identical) | **Grain clean 1-PR** |
+| **(B) EN-canon → FR-flip** | `Foo.lean` a des docstrings **anglaises** (fichier authored EN-first) | Lourd (flip FR canonique + EN sibling) | **Basse** (surtout lake recherche) |
+| **(C) bilingue inline** | `Foo.lean` contient déjà EN **et** FR dans le même fichier (Option B hybride) | Nul (déjà couvert) ou refactor Option A optionnel | Cosmétique |
+| **(D) aglistique** | `lakefile.lean`, umbrella `Foo.lean` sans docstring utilisateur | N/A (pas de sibling par convention) | Hors compte |
+
+**Conséquence sur les deux gros lakes :**
+
+- **`grothendieck_lean` (10 nominal)** : les **9 modules substantiels NO-EN sont TOUS
+  de type (B) EN-canoniques** (headers `« Grothendieck tribute — Part N: … »`,
+  docstrings anglaises — vérifié firsthand sur `CanonicalProps`, `MathlibMap`,
+  `SheafBasics`, `SheafCohomology/MayerVietoris`, `Sheafification`, `SieveGenerate`,
+  `SieveLattice`, `SieveOps`, `YonedaLemma`). Ce n'est **pas** un gap EN-sibling
+  propre : c'est un FR-flip lourd sur un lake **recherche** (EPIC #2159) → priorité
+  **basse** (cf `readme-french-first.md` : la francisation vise en priorité la prose
+  pédagogique, pas le retro-flip de fichiers Lean recherche EN-first). Le reste (umbrella
+  + lakefile) = type (D).
+- **`conway_lean` (9 nominal)** : **mixte** — au moins `Doomsday.lean` est déjà de
+  type (C) bilingue inline ; les autres (`Fractran`, `LookAndSay`, `Nim`,
+  `FreeWillTheorem`, 2 `Life/*`) sont à vérifier par-fichier (direction FR/EN non
+  auditée exhaustivement ici). Lake **PEDA** (haute valeur) mais **lane active de
+  po-2026** → tout ajout de sibling exige `[CLAIMED]` (anti-double-claim R3).
+- **Queues « near-done » (priorité 3, « 1-2 restants »)** : les résidus scannés sont
+  en fait des **umbrellas/lakefiles type (D)** (ex. `argumentation_lean/Argumentation.lean`
+  = umbrella `/-! … -/`), pas des gaps substantiels. Ces lakes sont **effectivement
+  complets** côté modules.
+
+**Bilan honnête** : le rollout i18n **pédagogique** (#4980) est **substantiellement
+complet**. Le « reste » substantiel réel = (a) `conway_lean` type-A/C mixte, lane
+active po-2026 ; (b) `grothendieck_lean` type-B FR-flips, recherche, basse priorité.
+Il n'y a **plus de grain type-A clean 1-PR** disponible pour un worker en attente : un
+worker dont la lane i18n est « exhausted » doit **pivoter cross-lane** (pool global),
+pas signaler idle ni « inventory under-counts saturation » (l'inventory est correct ;
+c'est la nature des gaps qui a changé). Voir la révision de la table _Cibles PR pilote_.
+
+---
+
 ## Lakes Lean hors scope inventaire historique (à intégrer — See #4980)
 
 L'inventaire d'origine ne scannait que `SymbolicAI/Lean/`, `GameTheory/`, `ML/`,
@@ -179,8 +224,14 @@ bilingues**. Lake = composant harnais de calibration (déplacé depuis GameTheor
 26 fichiers FR canoniques, **15 fichiers EN siblings** (⬆ de 12 le 14/07 :
 bilinguisation via #6304 SheafCohomology/Basic, #6284 CoverageGen, #6280
 DenseTopology et successeurs). Lake = **recherche** (EPIC #2159 Grothendieck).
-**10 siblings restants**. ⚠ Vérifier l'état d'un éventuel WIP-handoff avant
-d'ajouter de nouveaux siblings pour éviter collision.
+**10 nominal restants** — mais **⚠ tous de type (B) EN-canon → FR-flip** (voir
+_Nature des gaps restants_ ci-dessus). Les 9 modules substantiels NO-EN
+(`CanonicalProps`, `MathlibMap`, `SheafBasics`, `SheafCohomology/MayerVietoris`,
+`Sheafification`, `SieveGenerate`, `SieveLattice`, `SieveOps`, `YonedaLemma`) ont
+des **docstrings anglaises** (`« Grothendieck tribute — Part N: … »`) : ce n'est PAS
+un gap EN-sibling propre mais un FR-flip lourd sur un lake recherche → **priorité
+basse**, pas un grain de remplissage. ⚠ Vérifier aussi l'état d'un éventuel
+WIP-handoff avant toute modification.
 
 ### 10. `conway_cgt_lean` — FAIT (100 % hors lakefile)
 
@@ -237,17 +288,26 @@ Les cibles #1 (`conway_cgt_lean`) et #3 (`knot_lean`) de la version 14/07 sont
 **livrées**. Le reste à faire substantiel se concentre sur les deux gros lakes
 recherche et la complétion des queues.
 
-| Priorité | Lake | Reste | Gain pédagogique | Risque |
+| Priorité | Lake | Reste (par **type de gap**) | Gain pédagogique | Risque |
 |---------:|------|-------|------------------|--------|
-| **1** | `conway_lean` | ~9 siblings (Life en premier, vu l'attention Hashlife) | Très élevé (lake le plus visité après learning_theory) | Moyen (gros lake, build à vérifier) |
-| 2 | `grothendieck_lean` | ~10 siblings | Moyen (lake recherche) | Moyen (vérifier WIP avant) |
-| 3 | Queues near-done | 1-2 siblings chacun : `game_theory_lean` (5), `knot_lean` (2), `decision_theory_lean` (1), `search_lean` (1), `argumentation_lean` (2), `planning_lean` (1), `kelly_lean` (1), `erc20_lean` (2) | Variable | Faible (deltas triviaux) |
-| 4 | `mathlib_examples` | 3 siblings | Faible (contenu FR quasi-nul) | Faible |
+| **1** | `conway_lean` | ~9 nominal, **mixte type-A/C** (Doomsday = C bilingue inline ; autres à auditer par-fichier) | Très élevé (lake le plus visité après learning_theory) | **Collision** (lane active po-2026 → `[CLAIMED]` obligatoire) + gros lake, build à vérifier |
+| **basse** | `grothendieck_lean` | ~9 substantiels, **tous type-B EN-canon → FR-flip** (pas un gap EN-sibling propre) | Moyen (lake **recherche**, hors priorité francisation pédagogique) | FR-flip lourd + vérifier WIP |
+| — | Queues « near-done » | résidus = **umbrellas/lakefiles type-D** (aglistiques), **pas** des gaps substantiels → **effectivement complets** | N/A | N/A |
+| basse | `mathlib_examples` | `Basic_en` livré (#6664) ; reste = contenu FR quasi-nul type-D | Faible | Faible |
 
-**Recommandation c.365+** : démarrer par **`conway_lean`** (cible #1) — c'est
-désormais le principal chantier i18n substantiel restant (9 siblings, sous-série
-Life prioritaire). Les queues near-done (priorité 3) sont d'excellents grains de
-remplissage 1-PR pour les workers entre deux grains de fond.
+> **Note post-recompte (2026-07-15)** : `erc20_lean` passe 3→4 EN siblings (`ERC20_en`
+> livré #6662, glob lakefile mis à jour) ; `mathlib_examples` 0→1 (`Basic_en` #6664) ;
+> `conway_lean` +1 (`CollatzLike_en` #6663). Ces trois lakes ne sont plus des cibles
+> pilote « à 0 ».
+
+**Recommandation révisée c.514+** : il n'existe **plus de grain type-A clean 1-PR**
+disponible. `conway_lean` (cible #1) reste le seul chantier substantiel — mais c'est la
+**lane active de po-2026** (collision) et il est **type-A/C mixte** (auditer la direction
+FR/EN par-fichier avant de siblinger, ne pas re-siblinger un fichier déjà bilingue inline
+comme `Doomsday`). `grothendieck_lean` est déclassé en **priorité basse** (type-B FR-flip,
+recherche). **Conséquence coordination** : un worker dont la lane i18n est « exhausted »
+**pivote cross-lane** (pool global `gh issue list --state open`), il ne signale ni idle ni
+« saturation » — l'i18n **pédagogique** est substantiellement fait.
 
 ---
 
