@@ -71,7 +71,7 @@ sur les deux gros lakes n'est PAS un chantier de traduction FR→EN propre. Dist
 |-------------|-----------|--------|----------|
 | **(A) FR-canon → EN-sibling** | `Foo.lean` a des docstrings **FR canoniques**, pas de `Foo_en.lean` | Léger (traduire FR→EN, tactiques byte-identical) | **Grain clean 1-PR** |
 | **(B) EN-canon → FR-flip** | `Foo.lean` a des docstrings **anglaises** (fichier authored EN-first) | Lourd (flip FR canonique + EN sibling) | **Basse** (surtout lake recherche) |
-| **(C) bilingue inline** | `Foo.lean` contient déjà EN **et** FR dans le même fichier (Option B hybride) | Nul (déjà couvert) ou refactor Option A optionnel | Cosmétique |
+| **(C) bilingue inline** | `Foo.lean` contient EN **et** FR dans le même fichier (état Option B hybride) | Léger-moyen : split → base FR-seule + `Foo_en.lean` EN-seul | **Grain clean** sur lake PEDA sous greenlight #4980 (Option B **rejetée** → à convertir) ; **cosmétique** seulement sur lake REF/harness sans greenlight |
 | **(D) aglistique** | `lakefile.lean`, umbrella `Foo.lean` sans docstring utilisateur | N/A (pas de sibling par convention) | Hors compte |
 
 **Conséquence sur les deux gros lakes :**
@@ -85,23 +85,32 @@ sur les deux gros lakes n'est PAS un chantier de traduction FR→EN propre. Dist
   **basse** (cf `readme-french-first.md` : la francisation vise en priorité la prose
   pédagogique, pas le retro-flip de fichiers Lean recherche EN-first). Le reste (umbrella
   + lakefile) = type (D).
-- **`conway_lean` (9 nominal)** : **mixte** — au moins `Doomsday.lean` est déjà de
-  type (C) bilingue inline ; les autres (`Fractran`, `LookAndSay`, `Nim`,
-  `FreeWillTheorem`, 2 `Life/*`) sont à vérifier par-fichier (direction FR/EN non
-  auditée exhaustivement ici). Lake **PEDA** (haute valeur) mais **lane active de
-  po-2026** → tout ajout de sibling exige `[CLAIMED]` (anti-double-claim R3).
+- **`conway_lean`** : audit firsthand **exhaustif** 2026-07-15 (lecture complète des
+  docstrings, pas un peek de header) — les **6 fichiers non-Life sont TOUS de type (C)
+  bilingue inline** (bloc EN en tête + bloc FR substantiel) : `CollatzLike`, `Doomsday`,
+  `Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`. Sous le greenlight option-c #4980
+  (Option B **rejetée**), ce sont **des grains sibling-extraction CLEAN**, PAS « déjà
+  couverts ». `CollatzLike_en` est livré (#6663) mais **extract-only** (le bloc EN
+  subsiste dans la base `CollatzLike.lean`, marqueur « This module formalizes the »
+  présent) → il reste **5 grains** : `Doomsday`, `Fractran`, `FreeWillTheorem`,
+  `LookAndSay`, `Nim`. Cible convention-pure = `Angel.lean` (**FR-seul**, vérifié
+  firsthand) + `Angel_en.lean` : pour chaque fichier, créer `Foo_en.lean` EN-seul **et
+  retirer le bloc EN de la base** (le bloc EN migre dans le sibling → aucune perte de
+  contenu, ce n'est pas une régression). Lake **PEDA** haute valeur, **lane active
+  po-2026** → `[CLAIMED]` **par fichier** obligatoire (anti-double-claim R3).
 - **Queues « near-done » (priorité 3, « 1-2 restants »)** : les résidus scannés sont
   en fait des **umbrellas/lakefiles type (D)** (ex. `argumentation_lean/Argumentation.lean`
   = umbrella `/-! … -/`), pas des gaps substantiels. Ces lakes sont **effectivement
   complets** côté modules.
 
-**Bilan honnête** : le rollout i18n **pédagogique** (#4980) est **substantiellement
-complet**. Le « reste » substantiel réel = (a) `conway_lean` type-A/C mixte, lane
-active po-2026 ; (b) `grothendieck_lean` type-B FR-flips, recherche, basse priorité.
-Il n'y a **plus de grain type-A clean 1-PR** disponible pour un worker en attente : un
-worker dont la lane i18n est « exhausted » doit **pivoter cross-lane** (pool global),
-pas signaler idle ni « inventory under-counts saturation » (l'inventory est correct ;
-c'est la nature des gaps qui a changé). Voir la révision de la table _Cibles PR pilote_.
+**Bilan honnête** : le rollout i18n **pédagogique** (#4980) avance mais n'est **pas
+épuisé**. Le « reste » substantiel réel = (a) `conway_lean` = **5 grains type-C clean**
+(bilingue-inline → sibling, sous greenlight, lane po-2026) ; (b) `grothendieck_lean`
+type-B FR-flips, recherche, basse priorité. Un worker sur la lane conway a **du grain
+clean** : il **continue conway** (`[CLAIMED]` par fichier), il ne pivote PAS cross-lane
+en invoquant une « saturation » que cet audit réfute. Le pivot cross-lane (pool global)
+ne s'active **qu'après** livraison des 5 grains conway ET déclassement grothendieck.
+Voir la révision de la table _Cibles PR pilote_.
 
 ---
 
@@ -290,7 +299,7 @@ recherche et la complétion des queues.
 
 | Priorité | Lake | Reste (par **type de gap**) | Gain pédagogique | Risque |
 |---------:|------|-------|------------------|--------|
-| **1** | `conway_lean` | ~9 nominal, **mixte type-A/C** (Doomsday = C bilingue inline ; autres à auditer par-fichier) | Très élevé (lake le plus visité après learning_theory) | **Collision** (lane active po-2026 → `[CLAIMED]` obligatoire) + gros lake, build à vérifier |
+| **1** | `conway_lean` | **5 grains type-C clean** (bilingue-inline → sibling : `Doomsday`, `Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim` ; `CollatzLike_en` livré #6663 extract-only) | Très élevé (lake le plus visité après learning_theory) | **Collision** (lane active po-2026 → `[CLAIMED]` **par fichier**) + gros lake, build à vérifier |
 | **basse** | `grothendieck_lean` | ~9 substantiels, **tous type-B EN-canon → FR-flip** (pas un gap EN-sibling propre) | Moyen (lake **recherche**, hors priorité francisation pédagogique) | FR-flip lourd + vérifier WIP |
 | — | Queues « near-done » | résidus = **umbrellas/lakefiles type-D** (aglistiques), **pas** des gaps substantiels → **effectivement complets** | N/A | N/A |
 | basse | `mathlib_examples` | `Basic_en` livré (#6664) ; reste = contenu FR quasi-nul type-D | Faible | Faible |
@@ -300,14 +309,18 @@ recherche et la complétion des queues.
 > `conway_lean` +1 (`CollatzLike_en` #6663). Ces trois lakes ne sont plus des cibles
 > pilote « à 0 ».
 
-**Recommandation révisée c.514+** : il n'existe **plus de grain type-A clean 1-PR**
-disponible. `conway_lean` (cible #1) reste le seul chantier substantiel — mais c'est la
-**lane active de po-2026** (collision) et il est **type-A/C mixte** (auditer la direction
-FR/EN par-fichier avant de siblinger, ne pas re-siblinger un fichier déjà bilingue inline
-comme `Doomsday`). `grothendieck_lean` est déclassé en **priorité basse** (type-B FR-flip,
-recherche). **Conséquence coordination** : un worker dont la lane i18n est « exhausted »
-**pivote cross-lane** (pool global `gh issue list --state open`), il ne signale ni idle ni
-« saturation » — l'i18n **pédagogique** est substantiellement fait.
+**Recommandation révisée c.515+ (audit firsthand exhaustif conway)** : `conway_lean`
+(cible #1) offre **5 grains type-C clean**. Les 6 fichiers non-Life sont bilingue-inline,
+donc sous le greenlight option-c #4980 (Option B rejetée) chacun est une conversion
+sibling propre : créer `Foo_en.lean` EN-seul **et** retirer le bloc EN de la base
+(→ FR-seule, pattern `Angel.lean`). Restent 5 après `CollatzLike_en` (#6663, extract-only) :
+`Doomsday`, `Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`. C'est la **lane active de
+po-2026** → `[CLAIMED]` **par fichier** (dédup R3), **pas** un motif de pivot.
+`grothendieck_lean` est déclassé en **priorité basse** (type-B FR-flip, recherche, hors
+priorité francisation pédagogique). **Conséquence coordination** : un worker sur la lane
+conway **continue conway** ; le pivot cross-lane (pool global `gh issue list --state open`)
+ne s'active **qu'après** épuisement des 5 grains conway — jamais en invoquant une
+« saturation » que cet audit réfute.
 
 ---
 
