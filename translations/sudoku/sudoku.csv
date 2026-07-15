@@ -6022,9 +6022,9 @@ Ce tour de force existe en **deux formes réelles** (souvent confondues) :
 - la **forme déroulée** : les 81 cases sont écrites explicitement (backreferences + lookaheads, **sans** `(?R)`), lignée Aron Griffis (2007), domaine public. Elle **tourne** sur tout moteur à backtracking, .NET compris.
 
 Dans les deux cas, le pattern est un **monstre** illisible, inversement pédagogique, et non généralisable - du folklore de concours, pas une méthode. La forme déroulée est celle que nous **générons et exécutons réellement** en section 8 ; le tronceau ci-dessous en est extrait (un troncage de l'artefact réel sauvegardé dans `assets/sudoku-unrolled.regex.txt`), pas un fragment reconstruit à la main.",,,,,,,,290e4c6c6c3be519,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,145a4599,code,fr,b3fa833085b8f7dd,"// Le VRAI monstre regex (forme deroulee, lignee Conway/folklore PCRE) genere en section 8
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,145a4599,code,fr,63404293e8e6c681,"// Le VRAI monstre regex (forme deroulee, lignee Conway/folklore PCRE) genere en section 8
 // et sauvegarde dans assets/sudoku-unrolled.regex.txt. On en affiche un TRONCAGE : tete + queue,
-// extraits du fichier reel (pas un fragment reconstruit a la main).
+// extraits du fichier réel (pas un fragment reconstruit à la main).
 using System;
 using System.IO;
 using System.Linq;
@@ -6053,7 +6053,7 @@ if (chemin == null) {
     Console.WriteLine(""-> Backtracking PCRE detourne en moteur de recherche : ca 'tourne' (section 8),"");
     Console.WriteLine(""   mais l'unicite encodee en lookaheads/backrefs est illisible. Ce n'est PAS"");
     Console.WriteLine(""   la representation declarative que nous cherchons (intersection -> Z3)."");
-}",,,,,,,,b3fa833085b8f7dd,,,,,,,
+}",,,,,,,,63404293e8e6c681,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3163cc0,markdown,fr,70f07bd4deacf583,"### Interprétation : le monstre PCRE = l'anti-modèle
 
 Ce monstre démontre par l'absurde que **détourner le backtracking d'un moteur regex pour faire de la recherche** conduit à une représentation illisible. La contrainte d'unicité Sudoku n'est *pas* naturelle en PCRE : elle s'exprime en empilant des lookaheads négatifs sur les cellules déjà posées. La forme déroulée *tourne* (section 8) mais reste illisible et, on le verra, non portable d'un moteur à l'autre ; la forme récursive `(?R)` ne tourne même pas en .NET.
@@ -6107,7 +6107,7 @@ Crucialement, RE# est **non-backtracking** et compile vers des automates dont la
 **Caveat honnête** : RE# est **recognition-only**. Il *reconnaît* (valide) ; il ne *génère* aucun témoin. Pour produire une grille, il faudra Z3 (section 6).
 
 > **Note technique (environnement)** : `Resharp` est un **package NuGet standard** (non modifié), mais `#r ""nuget: Resharp""` ne suffit pas sous le kernel `.net-csharp` : le restore aboutit, puis RE# échoue **à l'exécution** avec `FileNotFoundException: FSharp.Core, Version=10.0.0.0` - le kernel ne lie pas le runtime F# via une référence NuGet. On charge donc les DLL **par chemin relatif** vers un dossier `.deploy` **committé dans le dépôt** (`SymbolicAI/SMT/Resharp/.deploy/` : `Resharp.dll`, `Resharp.Runtime.dll` et surtout `FSharp.Core.dll` 10.x, assembly 10.0.0.0). Résultat : reproductible après un simple clone, hors-ligne, sans aucun chemin utilisateur code en dur.",,,,,,,,a34adb49b9424003,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,ad89452f,code,fr,ca094c0f346583dc,"// RE# via DLL in-repo (.deploy, portable) : pas de #r ""nuget:"" sous papermill, et plus aucun chemin utilisateur code en dur.
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,ad89452f,code,fr,858566a434931089,"// RE# via DLL in-repo (.deploy, portable) : pas de #r ""nuget:"" sous papermill, et plus aucun chemin utilisateur code en dur.
 // Resharp + Resharp.Runtime (net8.0) + FSharp.Core 10.x (assembly 10.0.0.0) co-localises dans le dossier .deploy committe ;
 // chemin relatif au notebook, reproductible sur toute machine. Le kernel .net-csharp tourne sous net8.0.
 #r ""../SymbolicAI/SMT/Resharp/.deploy/FSharp.Core.dll""
@@ -6115,9 +6115,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,ad89452f,code,f
 #r ""../SymbolicAI/SMT/Resharp/.deploy/Resharp.dll""
 using System.Diagnostics;
 
-// Smoke test : l'INTERSECTION & est first-class dans UNE chaine. C'est l'operateur
+// Smoke test : l'INTERSECTION & est first-class dans UNE chaîne. C'est l'operateur
 // qui encode la contrainte de ligne Sudoku (section suivante). On le demontre ici
-// en combinant 2 puis 3 contraintes d'inclusion dans la meme expression.
+// en combinant 2 puis 3 contraintes d'inclusion dans la même expression.
 var sw = Stopwatch.StartNew();
 var has5And7 = new Resharp.Regex(@"".*5.*&.*7.*"");          // contient un 5 ET un 7
 var has123   = new Resharp.Regex(@"".*1.*&.*2.*&.*3.*"");    // contient 1, 2 ET 3 (3-way)
@@ -6131,7 +6131,7 @@ Console.WriteLine();
 Console.WriteLine(""RE# supporte aussi le complement ~ et le wildcard _ (first-class, documentes"");
 Console.WriteLine(""par le moteur). Nous nous appuyons ici sur l'INTERSECTION &: c'est elle qui"");
 Console.WriteLine(""encode de maniere robuste la contrainte de ligne Sudoku ci-dessous."");
-",,,,,,,,ca094c0f346583dc,,,,,,,
+",,,,,,,,858566a434931089,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,8ab75967,markdown,fr,7bfd149e9a881342,"### Interprétation : RE# valide, ne résout pas
 
 RE# rend l'**intersection** (`&`) et le **complément** (`~`) first-class dans une chaîne unique, compilée en temps linéaire. C'est précisément le barreau intermédiaire qui manquait en 2020 : fini le spaghetti builder `MkAnd(MkLike(...))`, fini l'explosion DFA.
@@ -6222,14 +6222,14 @@ RE# sait *vérifier* ; il ne sait pas *produire*. Pour résoudre un puzzle Sudok
 L'idée : encoder les contraintes `Ligne & Colonne & Bloc` non plus comme un regex symbolique, mais comme des **assertions SMT** sur 81 variables entières, puis demander à Z3 un **modèle = la grille solution**.
 
 > **Note technique** : comme pour RE#, on charge Z3 via référence DLL à **chemin relatif** + un `NativeLibrary.SetDllImportResolver` pour la librairie native `libz3.dll` (le `#r ""nuget:""` se bloquerait sous papermill). Les binaires Z3 et le fork Automata (section 6b) vivent dans le `.deploy` de leurs **submodules** respectifs (`SymbolicAI/SMT/Z3.Linq` et `.../Automata`, série Z3) - à initialiser via `git submodule update --init`. Plus aucun chemin utilisateur code en dur.",,,,,,,,77919232361e2615,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,5a7a038b,code,fr,142cb3bf4c229bf9,"// Z3 chargee par chemin RELATIF au depot (.deploy) + resolver natif (libz3.dll), pas de #r ""nuget:"" sous papermill.
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,5a7a038b,code,fr,4eff1f22c4dfa424,"// Z3 chargee par chemin RELATIF au depot (.deploy) + resolver natif (libz3.dll), pas de #r ""nuget:"" sous papermill.
 // Plus aucun chemin utilisateur code en dur. Les binaires Z3 proviennent du .deploy du submodule Z3.Linq (serie Z3).
 #r ""../SymbolicAI/SMT/Z3.Linq/.deploy/Microsoft.Z3.dll""
 using Microsoft.Z3;
 using System.IO;
 using System.Runtime.InteropServices;
 
-// Z3 est une librairie native (libz3.dll) ; on la resout a cote du Microsoft.Z3.dll charge (meme dossier .deploy).
+// Z3 est une librairie native (libz3.dll) ; on la résout a cote du Microsoft.Z3.dll charge (même dossier .deploy).
 NativeLibrary.SetDllImportResolver(typeof(Context).Assembly, (name, assembly, path) => {
     if (name == ""libz3"") {
         string asmDir = Path.GetDirectoryName(typeof(Context).Assembly.Location);
@@ -6244,12 +6244,12 @@ NativeLibrary.SetDllImportResolver(typeof(Context).Assembly, (name, assembly, pa
 });
 var ctx = new Context();
 Console.WriteLine($""Z3 charge (native libz3 resolue, .deploy submodule Z3.Linq). Version {Microsoft.Z3.Version.FullVersion}."");
-",,,,,,,,142cb3bf4c229bf9,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,53fcffb0,code,fr,f42037c1f754f64a,"using Microsoft.Z3;
+",,,,,,,,4eff1f22c4dfa424,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,53fcffb0,code,fr,f7c91da663b934e3,"using Microsoft.Z3;
 using System.Text;
 
 // Resolution du Sudoku par Z3 : 81 entiers + Distinct sur lignes/colonnes/blocs.
-// C'est le VRAI resolveur de production (le temoin = la grille solution).
+// C'est le VRAI resolveur de production (le témoin = la grille solution).
 static int[,] ResoudreSudokuZ3(Context ctx, int[,] puzzle, out long ms)
 {
     var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -6298,7 +6298,7 @@ static int[,] ResoudreSudokuZ3(Context ctx, int[,] puzzle, out long ms)
     return res;
 }
 
-// Rendu de la grille en UNE seule chaine (lignes uniformes, separateurs alignes) pour
+// Rendu de la grille en UNE seule chaîne (lignes uniformes, separateurs alignes) pour
 // eviter les sauts de ligne fragmentes qui s'affichent mal sous Jupyter / GitHub.
 static string RendreGrille(int[,] g)
 {
@@ -6334,7 +6334,7 @@ int[,] puzzle = {
 long msSolve;
 var solution = ResoudreSudokuZ3(ctx, puzzle, out msSolve);
 Console.WriteLine($""Z3 a produit un temoin (grille solution) en {msSolve} ms :\n"");
-Console.Write(RendreGrille(solution));",,,,,,,,f42037c1f754f64a,,,,,,,
+Console.Write(RendreGrille(solution));",,,,,,,,f7c91da663b934e3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3872431,markdown,fr,5dce5514462485be,"### Interprétation : Z3 = production du témoin (le travail dur)
 
 Z3 a **produit** la grille solution - le *témoin* - en quelques dizaines de millisecondes. C'est le barreau 2 de 2020, mais **sans le cap de 21 caractères** : on appelle Z3 directement, pas via le chemin SFAz3 qui était tronqué. C'est ce résolveur qui entre dans le benchmark Sudoku multi-paradigmes (aux côtés d'Infer.NET, du PSO, du réseau de neurones) : il **résout réellement** le dataset.
@@ -6358,9 +6358,9 @@ Restait une dernière marche, le 9x9. Et là, ce n'est ni le substrat ni le mote
 | **Grille 9x9** | inégalités 2 à 2 (= `Distinct` développé) | **atterrit** (~0,8 s, cellule suivante) |
 
 La grille 9x9 n'est bloquée ni par un mur d'automate, ni par le substrat chaîne, ni même par l'appartenance régulière : elle l'est seulement quand on **fond** les 27 intersections k-way en un produit `re.inter` que Z3 doit matérialiser au solve. **Éclate** ce même `&` d'appartenances en la primitive native `str.contains` (un par chiffre - section 6c) et la grille atterrit, sans une seule inégalité. Les inégalités 2 à 2 (ci-dessous) atterrissent plus vite encore, mais elles **quittent** le regex ; la forme la plus pure - le regex qui se suffit à lui-même - est `str.contains`. Le critère décisif n'est donc pas ""appartenance vs inégalité"" ni ""1D vs 2D"" : c'est **produit d'automates fondu vs primitive native éclatée**.",,,,,,,,c5b2ef77de57663e,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00002,code,fr,9fb3bb838d5a57ce,"// Le fork Automata compile la MEME intersection 10-way que RE# verifie (section 5) vers la
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00002,code,fr,fd32e146671a8801,"// Le fork Automata compile la MEME intersection 10-way que RE# vérifie (section 5) vers la
 // THEORIE DES CHAINES de Z3 (re.inter / re.comp / re.range), PAS vers un produit d'automates.
-// On boucle la chaine SMT -> Z3 -> temoin, puis on CROISE les moteurs : le temoin doit etre
+// On boucle la chaîne SMT -> Z3 -> témoin, puis on CROISE les moteurs : le témoin doit être
 // VALIDE par le verificateur RE# `ligneValide` (section 5).
 #r ""../SymbolicAI/SMT/Automata/.deploy/System.CodeDom.dll""
 #r ""../SymbolicAI/SMT/Automata/.deploy/Microsoft.Automata.dll""
@@ -6375,12 +6375,12 @@ string ligneSurface = ""^[1-9]{9}$&.*1.*&.*2.*&.*3.*&.*4.*&.*5.*&.*6.*&.*7.*&.*8
 Console.WriteLine(""NOTRE regex - l'intersection 10-way en syntaxe de surface & (celui qu'on veut voir) :"");
 Console.WriteLine(""  "" + ligneSurface);
 Console.WriteLine();
-string smtLigne = conv.ConvertRegex(ligneSurface);   // dialecte SMT-LIB 2.6 (theorie des chaines)
+string smtLigne = conv.ConvertRegex(ligneSurface);   // dialecte SMT-LIB 2.6 (théorie des chaînes)
 Console.WriteLine($""Le fork emet du SMT-LIB 2.6 ({smtLigne.Length} caracteres). Tete :"");
 Console.WriteLine(""  "" + smtLigne.Substring(0, Math.Min(150, smtLigne.Length)) + "" ..."");
 Console.WriteLine();
 
-// On resout ce terme regex via Z3 (ctx defini section 6) : (str.in_re w <terme>).
+// On résout ce terme regex via Z3 (ctx defini section 6) : (str.in_re w <terme>).
 string script = ""(declare-const w String)\n(assert (str.in_re w "" + smtLigne + ""))\n(check-sat)"";
 var sw = Stopwatch.StartNew();
 var asserts = ctx.ParseSMTLIB2String(script);
@@ -6407,13 +6407,13 @@ Console.WriteLine();
 Console.WriteLine(""Mur 2 (cap ~21 char) : disparu - temoin complet de 9 caracteres."");
 Console.WriteLine(""Mur 1 (explosion DFA) : non rencontre - aucun produit d'automates n'est construit."");
 Console.WriteLine(""Cout dans le solveur de chaines : ~10 s sur cette intersection 10-way (1D),"");
-Console.WriteLine(""vs ~100 ms pour un 'A & ~B' general (NB06). Et une GRILLE entiere (2D) ? -> cellule suivante."");",,,,,,,,9fb3bb838d5a57ce,,,,,,,
+Console.WriteLine(""vs ~100 ms pour un 'A & ~B' general (NB06). Et une GRILLE entiere (2D) ? -> cellule suivante."");",,,,,,,,fd32e146671a8801,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00005,markdown,fr,fb2caec2e060f750,"### La boucle est bouclée : notre regex résout une grille COMPLETE (4x4)
 
 Une ligne, c'est 1D. Une **grille** est 2D : chaque case appartient simultanément à une ligne, une colonne ET un bloc. Donnons à Z3 les 16 cases d'un **Shidoku** (Sudoku 4x4) comme 16 chaînes d'un caractère, et imposons que **chaque ligne, chaque colonne et chaque bloc** satisfasse *la même* intersection - **notre regex** `^[1-4]{4}$ & .*1.* & .*2.* & .*3.* & .*4.*`. Aucun produit d'automates, aucun cap de témoin : le fork compile notre regex en théorie des chaînes, et Z3 **produit la grille entière**.
 
 C'est l'aboutissement concret de l'échelle : un beau regex d'intersection **en entrée**, une grille résolue **en sortie**. La voie symbolique *atterrit*.",,,,,,,,fb2caec2e060f750,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00006,code,fr,0ef3b86be6914b1b,"// === La boucle bouclee : NOTRE regex resout une grille COMPLETE (4x4 Shidoku) via la theorie des chaines ===
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00006,code,fr,43f995e9c1316c1b,"// === La boucle bouclee : NOTRE regex résout une grille COMPLETE (4x4 Shidoku) via la théorie des chaînes ===
 // Chaque ligne, colonne ET bloc doit satisfaire la MEME intersection (notre regex). Z3 produit la grille.
 using System.Text;
 using System.Linq;
@@ -6464,7 +6464,7 @@ if (st4 == Status.SATISFIABLE) {
     Console.WriteLine(""La voie symbolique ATTERRIT. (Le 9x9 demandera un autre encodage : cellule suivante.)"");
 } else {
     Console.WriteLine($""Statut inattendu : {st4}"");
-}",,,,,,,,0ef3b86be6914b1b,,,,,,,
+}",,,,,,,,43f995e9c1316c1b,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00003,code,fr,5ad2d6518736b42c,"int groupes = 9 + 9 + 9;                        // 27
 int sousContraintesParGroupe = 1 + 9;           // 1 longueur + 9 presences de chiffre
 int total = groupes * sousContraintesParGroupe; // 270
@@ -6490,9 +6490,9 @@ On **garde les 81 chaînes d'un caractère** (même substrat), mais pour chaque 
 Résultat : la **grille 9x9 complète** sort en théorie des chaînes, de l'ordre de la seconde (~0,8 s, mesure ci-dessous, validée) - soit ~60x plus vite que l'appartenance `str.contains` (~53 s). Le compromis est clair : l'appartenance pure (6c) est la **forme la plus fidèle** à la vision 2020 (le regex se suffit, 0 inégalité) ; les inégalités sont la **forme la plus rapide** (mais ce ne sont plus un regex).
 
 > **Subtilité honnête.** Un *vrai* ""2 à 2 en regex pur"" (`(.).*\1` : ""deux fois le même caractère"") utilise une **back-référence** - donc un langage **non régulier**, qui ne compile ni vers la théorie `re` de Z3 ni via le convertisseur `&`/`~`. Le 2 à 2 de cette cellule est exprimé comme **inégalités SMT** (`(not (= s_i s_j))`), pas comme regex. La voie qui reste *dans* le regex, c'est l'appartenance `.*d.*` émise en `str.contains` (section 6c) ; celle-ci, en inégalités, en sort. Les deux atterrissent ; seule la première honore ""le regex se suffit à lui-même"".",,,,,,,,d65dd66260549abc,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00007,code,fr,3fb8c57b7b363725,"// === Le 9x9 COMPLET atterrit en theorie des chaines : tous-distincts en INEGALITES 2 A 2 (intuition de l'auteur) ===
-// Meme substrat que le 4x4 (81 chaines d'un caractere). On change SEULEMENT l'encodage du tous-distincts :
-// non plus une appartenance regex (qui sature -> unknown), mais des inegalites 2 a 2  s_i != s_j  par groupe.
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00007,code,fr,7a6d6dc41bd449f5,"// === Le 9x9 COMPLET atterrit en théorie des chaînes : tous-distincts en INEGALITES 2 A 2 (intuition de l'auteur) ===
+// Meme substrat que le 4x4 (81 chaînes d'un caractère). On change SEULEMENT l'encodage du tous-distincts :
+// non plus une appartenance regex (qui sature -> unknown), mais des inégalités 2 a 2  s_i != s_j  par groupe.
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
@@ -6512,12 +6512,12 @@ string[] grille9 = {
 
 var sb9 = new StringBuilder();
 for (int r = 0; r < 9; r++) for (int c = 0; c < 9; c++) sb9.AppendLine($""(declare-const s_{r}_{c} String)"");
-// chaque case : un caractere, dans l'alphabet 1..9
+// chaque case : un caractère, dans l'alphabet 1..9
 for (int r = 0; r < 9; r++) for (int c = 0; c < 9; c++) {
     sb9.AppendLine($""(assert (= (str.len s_{r}_{c}) 1))"");
     sb9.AppendLine($""(assert (str.in_re s_{r}_{c} (re.range \""1\"" \""9\"")))"");
 }
-// les 27 groupes (lignes, colonnes, blocs) ; tous-distincts = inegalites 2 a 2
+// les 27 groupes (lignes, colonnes, blocs) ; tous-distincts = inégalités 2 a 2
 var groupes9 = new List<List<(int r, int c)>>();
 for (int r = 0; r < 9; r++) groupes9.Add(Enumerable.Range(0, 9).Select(c => (r, c)).ToList());
 for (int c = 0; c < 9; c++) groupes9.Add(Enumerable.Range(0, 9).Select(r => (r, c)).ToList());
@@ -6575,7 +6575,7 @@ if (st9 == Status.SATISFIABLE) {
     Console.WriteLine(""Meme substrat, encodage 2 a 2 -> la voie symbolique atterrit la GRILLE 9x9 COMPLETE."");
 } else {
     Console.WriteLine($""Statut inattendu : {st9}"");
-}",,,,,,,,3fb8c57b7b363725,,,,,,,
+}",,,,,,,,7a6d6dc41bd449f5,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00004,markdown,fr,9e2aa5955af58089,"### Interprétation : les deux murs tombent, et la forme d'émission franchit le 9x9
 
 La chaîne moderne **débride le témoin** : une ligne Sudoku (intersection 10-way) produit désormais un témoin réel, **valide par RE#** (validation croisée inter-moteurs ci-dessus) - chose impossible en 2020 sous le cap des 21 caractères. Et aucun produit d'automates n'est construit, donc le ""trop d'états"" de 2020 ne se produit pas. Les deux murs sont derrière nous.
@@ -6623,7 +6623,7 @@ On ferme la boucle dans la forme attendue par la série : un solveur qui implém
 - **éclaté** : `(str.contains g ""d"")` par chiffre -> primitive bien propagée -> **`SATISFIABLE` (~53 s en .NET, ~12 s en z3-py)**.
 
 C'est le **même** `&` d'appartenances, **zéro inégalité** : seule la forme d'émission change. C'est cela, l'élément de syntaxe entrevu en 2020 - et c'est ce qui fait **atterrir la grille 9x9 complète** depuis le seul regex. Sur la grille **4x4** (Shidoku), l'appartenance atterrit même fondue en `re.inter` (~1,7 s, section 6b) ; au 9x9, il faut l'éclater en `str.contains`. La grille produite ci-dessous est **réelle**, validée (27 groupes = permutation de 1..9), et sort de la **seule appartenance regex** -> théorie des chaînes. Le regex qui se suffit à lui-même n'est donc pas borné au 4x4 : il atterrit le 9x9. (Les inégalités 2 à 2 - section suivante - sont ~60x plus rapides, mais elles quittent le regex ; ici, le regex se suffit.)",,,,,,,,a692b2a4c3236495,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c2,code,fr,462f2986f1facea9,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c2,code,fr,d49994f59b4e95e9,"using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -6636,7 +6636,7 @@ public class SudokuGrid
     public int[,] Cells { get; set; } = new int[9, 9];
     public SudokuGrid Clone() { var g = new SudokuGrid(); Array.Copy(Cells, g.Cells, Cells.Length); return g; }
 
-    // Parse une grille au format ""81 caracteres"" (1-9 ; '.', '0' ou espace = case vide).
+    // Parse une grille au format ""81 caractères"" (1-9 ; '.', '0' ou espace = case vide).
     public static SudokuGrid ReadSudoku(string s)
     {
         var jetons = s.Where(ch => char.IsDigit(ch) || ch == '.').ToArray();
@@ -6680,8 +6680,8 @@ string DossierPuzzles()
 string ligneEasy = File.ReadLines(Path.Combine(DossierPuzzles(), ""Sudoku_Easy51.txt"")).First();
 var puzzlePartage = SudokuGrid.ReadSudoku(ligneEasy);
 Console.WriteLine(""Infra de la serie reproduite (ISudokuSolver / SudokuGrid) ; puzzle reel charge depuis Puzzles/Sudoku_Easy51.txt :"");
-Console.WriteLine(puzzlePartage.ToString());",,,,,,,,462f2986f1facea9,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c3,code,fr,765737d9d03e5270,"using System;
+Console.WriteLine(puzzlePartage.ToString());",,,,,,,,d49994f59b4e95e9,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c3,code,fr,d124e18a5b210b2d,"using System;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
@@ -6691,16 +6691,16 @@ using Microsoft.Z3;
 
 // VISION 2020 : un REGEX QUI SE SUFFIT A LUI-MEME, et qui ATTERRIT le 9x9.
 // Toutes les contraintes - domaine, indices, ET tous-distincts - sont portees par l'APPARTENANCE a un
-// regex (intersection &), zero inegalite. Le tous-distincts d'un groupe = la conjonction d'appartenances
+// regex (intersection &), zero inégalité. Le tous-distincts d'un groupe = la conjonction d'appartenances
 //   .*1.* & .*2.* & ... & .*9.*   (= ""contient chaque chiffre 1..9"" ; sur 9 cases, c'est une permutation).
 //
 // LA CLEF (l'element de syntaxe vise en 2020). Chaque conjonct d'appartenance "".*d.*"" a une primitive
-// NATIVE dans la theorie des chaines de Z3 : (str.contains g ""d""). C'est EXACTEMENT "".*d.*"", mais emis
+// NATIVE dans la théorie des chaînes de Z3 : (str.contains g ""d""). C'est EXACTEMENT "".*d.*"", mais emis
 // comme predicat propre plutot que fondu dans un produit d'automates (re.inter / str.in_re) :
 //   - fondu  : (str.in_re g (re.inter (.*1.*) ... (.*9.*)))  -> Z3 construit les produits au solve -> unknown (>60 s) ;
 //   - eclate : (str.contains g ""d"") par chiffre              -> primitive bien propagee            -> SAT ~12 s.
-// Le regex reste integralement le probleme (0 inegalite) ; seule la FORME d'emission du MEME & d'appartenances
-// change. C'est cela qui fait atterrir le 9x9 en theorie des chaines - sans jamais sortir du regex.
+// Le regex reste integralement le problème (0 inégalité) ; seule la FORME d'emission du MEME & d'appartenances
+// change. C'est cela qui fait atterrir le 9x9 en théorie des chaînes - sans jamais sortir du regex.
 public class RegexAutoSuffisantSolver : ISudokuSolver
 {
     private readonly Context _ctx;
@@ -6727,11 +6727,11 @@ public class RegexAutoSuffisantSolver : ISudokuSolver
         var sb = new StringBuilder();
         for (int r = 0; r < 9; r++) for (int c = 0; c < 9; c++) sb.AppendLine($""(declare-const s_{r}_{c} String)"");
         // (1) domaine + indices : chaque case appartient a son fragment de regex (genere DU puzzle).
-        //     ""[1-9]"" force deja len=1 + alphabet ; ""d"" force l'indice. Tout est appartenance regex.
+        //     ""[1-9]"" force déjà len=1 + alphabet ; ""d"" force l'indice. Tout est appartenance regex.
         for (int r = 0; r < 9; r++) for (int c = 0; c < 9; c++)
             sb.AppendLine($""(assert (str.in_re s_{r}_{c} {conv.ConvertRegex(Frag(s.Cells[r, c]))}))"");
         // (2) tous-distincts EN REGEX : pour chaque groupe (27) et chaque chiffre d, la concatenation du
-        //     groupe satisfait .*d.* -- emis comme la primitive native (str.contains g ""d""). 0 inegalite.
+        //     groupe satisfait .*d.* -- emis comme la primitive native (str.contains g ""d""). 0 inégalité.
         var groupes = new List<(int r, int c)[]>();
         for (int r = 0; r < 9; r++) groupes.Add(Enumerable.Range(0, 9).Select(c => (r, c)).ToArray());
         for (int c = 0; c < 9; c++) groupes.Add(Enumerable.Range(0, 9).Select(r => (r, c)).ToArray());
@@ -6801,7 +6801,7 @@ if (solveurAuto.Statut == ""SATISFIABLE"")
 else
 {
     Console.WriteLine($""Z3 ne tranche pas (statut {solveurAuto.Statut}) - inattendu pour str.contains, a investiguer."");
-}",,,,,,,,765737d9d03e5270,,,,,,,
+}",,,,,,,,d124e18a5b210b2d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,81f6e32b,markdown,fr,5505ca549118b79f,"## 7. L'ironie pédagogique - RE# valide ce qu'il ne peut produire
 
 Nous avons maintenant les deux outils en main :
@@ -6872,7 +6872,7 @@ Le ""Sudoku en un seul regex"" de la lignée Conway existe en **deux versions di
 | **Variante déroulée** | Aron Griffis (2007), domaine public | récursion **déroulée** en 81 blocs explicites : backrefs `\1`..`\81` + lookaheads, **aucun** `(?R)` | tout moteur à backtracking : stdlib Python `re` **et** .NET |
 
 Le monstre récursif est l'**anti-modèle** du barreau 1 : élégant, illisible, et hors de portée du moteur .NET, qui ne sait pas faire de récursion de motif. (Le mécanisme `(?R)` est vérifiable en une ligne dans le module Python `regex` : `\((?:[^()]|(?R))*\)` reconnaît les parenthèses bien balancées - un langage non régulier - mais ne compile même pas en .NET.) C'est donc la **variante déroulée de Griffis** qu'on exécute ci-dessous en .NET : elle, au moins, tourne. La cellule génère les 81 blocs, puis résout par UNE substitution `Regex.Replace` - c'est le moteur de backtracking qui fait toute la recherche.",,,,,,,,ec71d3977d18caa7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rgx,code,fr,45d0f772de1488c0,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rgx,code,fr,3ba9a561784b53e3,"using System;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
@@ -6923,7 +6923,7 @@ string grilleB = ""0 4 5 0 1 0 0 0 0\n0 0 0 7 5 0 0 0 8\n0 0 7 0 8 0 0 1 0\n0 0 
 string pat = BuildSudokuRegex();
 
 // Persiste l'artefact REEL : c'est LA ""vraie chose"" affichee tronquee en section 2 (cell 3).
-// Le fichier committe en est byte-identique (meme generateur), la regen est idempotente.
+// Le fichier committe en est byte-identique (même generateur), la regen est idempotente.
 try {
     var dir = new[] { ""assets"", ""MyIA.AI.Notebooks/Sudoku/assets"" }.FirstOrDefault(System.IO.Directory.Exists) ?? ""assets"";
     System.IO.Directory.CreateDirectory(dir);
@@ -6942,7 +6942,7 @@ foreach (var (nom, puz) in new[] { (""canonique (30 indices)"", canon), (""grill
                    :                            $""RESOLU en {ms:F1} ms"";
     Console.WriteLine($""--- {nom} : {verdict} ---"");
     Console.WriteLine(grille != null && grille != ""__TIMEOUT__"" ? grille + ""\n"" : """");
-}",,,,,,,,45d0f772de1488c0,,,,,,,
+}",,,,,,,,3ba9a561784b53e3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md3,markdown,fr,ab94a0a39b09845d,"### Le même regex, deux moteurs : la portabilité est une illusion
 
 Le motif généré ci-dessus fait 13515 caractères et ne contient **aucune** récursion : il devrait donc se comporter pareil partout. Il n'en est rien. Le **même** motif, octet pour octet, appliqué en .NET (`System.Text.RegularExpressions`, cellule ci-dessus) et en Python (`re`, lignée PCRE, mesure reproductible hors notebook) **diverge** :
@@ -6971,12 +6971,12 @@ Cette récursion donne une **troisième** sorte de ""résultat"", à côté de *
 | .NET `System.Text.RegularExpressions` | **rejetée** | *exception à la construction* (cellule suivante) | - |
 
 *Mesure reproductible hors notebook (`pcre2grep`, `perl`, modules Python `re` / `regex`). Le monstre récursif de Sudoku est ce même mécanisme `(?R)` porté à 81 cases : élégant, illisible, et - point clé - **hors de portée de .NET**. C'est exactement pourquoi ce notebook exécute en .NET la variante **déroulée** (sans récursion), et non le monstre récursif.*",,,,,,,,a093f2cfd91e31b5,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rec2,code,fr,c993045ffbfff198,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rec2,code,fr,65598a039673f6c4,"using System;
 using System.Text.RegularExpressions;
 
 // Les Sudoku-en-un-regex CELEBRES (Conway, ikegami PerlMonks 471168, Davidebyzero) reposent sur la
 // RECURSION (?R)/(?0)/(?&nom) - un langage NON regulier. .NET ne sait pas recurser un motif : il
-// REJETTE la syntaxe a la construction. C'est le 3e type de ""resultat"" : ni resolu, ni timeout, mais
+// REJETTE la syntaxe à la construction. C'est le 3e type de ""resultat"" : ni resolu, ni timeout, mais
 // motif impossible a compiler.
 string[] recursifs = {
     @""\((?:[^()]|(?R))*\)"",          // (?R)  : recursion du motif entier (style Conway/Davidebyzero)
@@ -6995,7 +6995,7 @@ foreach (var motif in recursifs) {
 Console.WriteLine();
 Console.WriteLine(""A l'inverse, la variante DEROULEE de Griffis (cellule plus haut) ne contient aucun (?R) :"");
 Console.WriteLine(""c'est exactement pourquoi elle, elle COMPILE et tourne en .NET (avec les ecarts vus ci-dessus)."");
-Console.WriteLine(""Lecon : 'le meme regex partout' est un mythe - la recursion est un dialecte PCRE, absent de .NET."");",,,,,,,,c993045ffbfff198,,,,,,,
+Console.WriteLine(""Lecon : 'le meme regex partout' est un mythe - la recursion est un dialecte PCRE, absent de .NET."");",,,,,,,,65598a039673f6c4,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00nai,code,fr,b1c39e1eda1a2492,"using System;
 using System.Linq;
 using System.Diagnostics;
@@ -7559,7 +7559,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6a91a2b3,markdown,fr,06c81c8
 ### 2.1 Structure du BDD
 
 Commençons par implémenter un BDD simple pour des fonctions booléennes.",,,,,,,,06c81c8f5580a137,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6c520e4,code,fr,d4980712387d215b,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6c520e4,code,fr,aaf8bcf93e5a0060,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7617,7 +7617,7 @@ public class BDDNode
     }
 
     /// <summary>
-    /// Evalue le BDD pour une assignation de variables.
+    /// Évalue le BDD pour une assignation de variables.
     /// </summary>
     public bool Evaluate(Dictionary<string, bool> assignment)
     {
@@ -7663,7 +7663,7 @@ Console.WriteLine(""Operations disponibles :"");
 Console.WriteLine(""  - True/False : Terminaux (feuilles)"");
 Console.WriteLine(""  - Create(var, low, high) : Cree un noeud de decision"");
 Console.WriteLine(""  - Evaluate(assign) : Evalue le BDD"");
-Console.WriteLine(""  - CountNodes() : Compte les noeuds"");",,,,,,,,d4980712387d215b,,,,,,,
+Console.WriteLine(""  - CountNodes() : Compte les noeuds"");",,,,,,,,aaf8bcf93e5a0060,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,ce7ac457,markdown,fr,a08247924ace3138,"### 2.2 Exemples de BDD
 
 Créons quelques BDD simples pour comprendre la structure.",,,,,,,,a08247924ace3138,,,,,,,
@@ -8105,7 +8105,7 @@ Console.WriteLine(""MDDOperations OK (Product)."");",,,,,,,,87948f984e4f843b,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,7a167a52,markdown,fr,1f9946ed27e466e5,"### 5.2 Test du Produit
 
 Testons le produit avec un petit exemple : une grille 2x2 au lieu de 9x9.",,,,,,,,1f9946ed27e466e5,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,880d00f1,code,fr,cc656a3d9622ec61,"// Pour simplifier, travaillons avec une grille 2x2 (valeurs 1-2)
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,880d00f1,code,fr,6ce3ee0f614822d0,"// Pour simplifier, travaillons avec une grille 2x2 (valeurs 1-2)
 // Cela nous permet de voir la structure du produit
 
 /// <summary>
@@ -8156,7 +8156,7 @@ Console.WriteLine(""=== Test du Produit MDD ==="");
 Console.WriteLine(""Grille 2x2 (valeurs 1-2)"");
 Console.WriteLine();
 
-// MDD pour la ligne 0 : r0_c0 et r0_c1 doivent etre distincts
+// MDD pour la ligne 0 : r0_c0 et r0_c1 doivent être distincts
 var row0Builder = new SmallRowMDDBuilder(""r0"", 2, 2);
 var row0MDD = row0Builder.Build();
 
@@ -8164,12 +8164,12 @@ Console.WriteLine(""MDD Ligne 0 (2 cellules, valeurs 1-2) :"");
 Console.WriteLine($""Noeuds : {row0MDD.CountNodes()}"");
 Console.WriteLine();
 
-// MDD pour la colonne 0 : r0_c0 et r1_c0 doivent etre distincts
+// MDD pour la colonne 0 : r0_c0 et r1_c0 doivent être distincts
 var col0Builder = new SmallRowMDDBuilder(""c0"", 2, 2);  // Reutilise le meme constructeur
 // Note: Pour la vraie colonne, il faudrait un constructeur différent
 // Ici on simplifie en traitant comme une ""ligne"" c0_0 et c0_1
 
-// Pour le test, creons une contrainte simple : r0_c0 != 1
+// Pour le test, créons une contrainte simple : r0_c0 != 1
 var notOneChildren = new Dictionary<int, MDDNode>
 {
     {1, MDDNode.Invalid},
@@ -8187,13 +8187,13 @@ var productMDD = MDDOperations.Product(row0MDD, notOneMDD);
 Console.WriteLine(""MDD Produit (ligne 0 INTERSECT r0_c0 != 1) :"");
 Console.WriteLine($""Noeuds : {productMDD.CountNodes()}"");
 
-// Test : r0_c0=1, r0_c1=2 devrait etre rejecte par le produit
+// Test : r0_c0=1, r0_c1=2 devrait être rejecte par le produit
 var testAssign1 = new Dictionary<string, int> {{""r0_c0"", 1}, {""r0_c1"", 2}};
 Console.WriteLine($""Test (r0_c0=1, r0_c1=2) : {productMDD.Evaluate(testAssign1)} (attendu: False)"");
 
-// Test : r0_c0=2, r0_c1=1 devrait etre accepte
+// Test : r0_c0=2, r0_c1=1 devrait être accepté
 var testAssign2 = new Dictionary<string, int> {{""r0_c0"", 2}, {""r0_c1"", 1}};
-Console.WriteLine($""Test (r0_c0=2, r0_c1=1) : {productMDD.Evaluate(testAssign2)} (attendu: True)"");",,,,,,,,cc656a3d9622ec61,,,,,,,
+Console.WriteLine($""Test (r0_c0=2, r0_c1=1) : {productMDD.Evaluate(testAssign2)} (attendu: True)"");",,,,,,,,6ce3ee0f614822d0,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1d591f2f,markdown,fr,944da77383176fbd,"---
 
 ## 6. Solveur Sudoku avec MDD (20 min)
@@ -8212,14 +8212,14 @@ Pour résoudre un Sudoku complet avec MDD, nous devrions théoriquement:
 Nous allons utiliser une approche hybride :
 - Utiliser les MDD pour vérifier les contraintes localement
 - Utiliser le backtracking pour la recherche globale",,,,,,,,944da77383176fbd,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1388b811,code,fr,e0407438dfcadadc,"using System;
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1388b811,code,fr,6d14934c752cead7,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Solveur Sudoku utilisant des MDD pour la vérification de contraintes.
-/// Contrairement a Z3, les MDD verifient les contraintes par parcours
-/// de graphe plutot que par SAT solving.
+/// Contrairement à Z3, les MDD vérifient les contraintes par parcours
+/// de graphe plutôt que par SAT solving.
 /// </summary>
 public class SudokuMDDSolver
 {
@@ -8288,7 +8288,7 @@ public class SudokuMDDSolver
     }
 
     /// <summary>
-    /// Resout le Sudoku avec backtracking.
+    /// Résout le Sudoku avec backtracking.
     /// </summary>
     public int[,] Solve()
     {
@@ -8308,7 +8308,7 @@ public class SudokuMDDSolver
                 return true; // Solution trouve
         }
 
-        // Si la cellule est déjà remplie, passer a la suivante
+        // Si la cellule est déjà remplie, passer à la suivante
         if (_grid[row, col] != 0)
             return SolveRecursive(row, col + 1);
 
@@ -8330,7 +8330,7 @@ public class SudokuMDDSolver
 
 Console.WriteLine(""Classe SudokuMDDSolver definie avec succes."");
 Console.WriteLine(""Note: Cette implementation utilise le backtracking classique"");
-Console.WriteLine(""car les MDD complets pour Sudoku seraient trop volumineux."");",,,,,,,,e0407438dfcadadc,,,,,,,
+Console.WriteLine(""car les MDD complets pour Sudoku seraient trop volumineux."");",,,,,,,,6d14934c752cead7,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,3608933f,markdown,fr,4f2f6c9b25e350ae,"### 6.3 Test du Solveur
 
 Notons que ce solveur est essentiellement du backtracking. La vraie valeur de l'approche MDD serait dans la composition de contraintes, mais l'explosion d'états la rend impraticable pour Sudoku complet.",,,,,,,,4f2f6c9b25e350ae,,,,,,,
@@ -8535,7 +8535,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,66aa2af
 
 **Retour au sommaire** : [Index Sudoku](README.md)
 ",,,,,,,,66aa2af7f18d6808,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,0ef0f013,code,fr,a8c11e94c1d97a8d,"// A COMPLETER : Solveur BDD avec propagation de contraintes
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,0ef0f013,code,fr,f41c49bae4e3bae8,"// À COMPLÉTER : Solveur BDD avec propagation de contraintes
 
 public class BDDConstraintPropagator
 {
@@ -8571,7 +8571,7 @@ public class BDDConstraintPropagator
     }
 
     /// <summary>
-    /// Resout un Sudoku en combinant propagation MDD et backtracking.
+    /// Résout un Sudoku en combinant propagation MDD et backtracking.
     /// </summary>
     public int[,] Solve(string puzzle)
     {
@@ -8584,7 +8584,7 @@ Console.WriteLine(""BDDConstraintPropagator class defined (exercice a completer)
 // string puzzle = ""003020600900305001001806400008102900700000008006708200002609500800203009005010300"";
 // var propagator = new BDDConstraintPropagator();
 // var solution = propagator.Solve(puzzle);
-// Console.WriteLine(solution != null ? ""Solution trouvee !"" : ""Echec !"");",,,,,,,,a8c11e94c1d97a8d,,,,,,,
+// Console.WriteLine(solution != null ? ""Solution trouvée !"" : ""Échec !"");",,,,,,,,f41c49bae4e3bae8,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb,a00534f2,markdown,fr,9c3b288c542be784,"# Sudoku-14 : Automates avec BDD/MDD - Approche Pure (Python)
 
 > **Jumeau Python** du notebook [Sudoku-14-BDD-Csharp.ipynb](Sudoku-14-BDD-Csharp.ipynb).
@@ -15447,31 +15447,42 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,04ab291e,markdown,fr,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,5eeab716,markdown,fr,e45104b2301e841d,"### Visualisation : temps moyen par difficulte
 
 Le graphique en barres groupees montre le temps moyen de resolution pour chaque solveur sur chaque niveau de difficulte. L'echelle logarithmique permet de comparer des ordres de grandeur tres differents.",,,,,,,,e45104b2301e841d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,dc4ecdb4,code,fr,1cf2e0c8d1ecc847,"// Graphique en barres groupees (rendu ASCII) : temps moyen par difficulte et solveur.
-public static void PlotBenchmarkBarsAscii(Dictionary<string, Dictionary<string, BenchResult>> results)
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,dc4ecdb4,code,fr,6ca195a15ff6b168,"// Graphique en barres groupees (rendu Plotly) : temps moyen par difficulte et solveur.
+// Technique C548-L2 : formatter HTML integre au kernel (Microsoft.DotNet.Interactive.Formatting),
+// evite `#r ""nuget:""` sur une charting-lib (restore lent / pin vieille beta Microsoft.DotNet.Interactive).
+// Rendu Plotly.js brut, zero dependence NuGet cote charting.
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// Barres groupees : une trace par solveur, x = difficultes, y = temps moyen (ms), axe Y log.
+// L'echelle logarithmique (deja dans le rendu ASCII original) rend compte des ecarts d'ordres de grandeur.
+static void PlotBenchmarkBarsPlotly(Dictionary<string, Dictionary<string, BenchResult>> results, string title)
 {
     var diffs = new[] { ""Easy"", ""Medium"", ""Hard"", ""Expert"" };
-    Console.WriteLine(""Benchmark : temps moyen (ms) - echelle log10 (1 '#' ~= 0.2 unite log)"");
-    foreach (var d in diffs)
+    var traces = results.Keys.Select(name =>
     {
-        Console.WriteLine($""\n[{d}]"");
-        foreach (var name in results.Keys)
-        {
-            double t = results[name][d].TimeAvgMs;
-            int bars = 1;
-            if (t > 0)
-            {
-                double lg = Math.Log10(t + 1e-9);
-                bars = (int)Math.Round(Math.Max(0, lg + 1) * 5);
-                bars = Math.Min(40, Math.Max(1, bars));
-            }
-            Console.WriteLine($""  {name,-20} {new string('#', bars)} {t,9:F2} ms  [{results[name][d].Solved}/{results[name][d].Count}]"");
-        }
-    }
+        var ys = diffs.Select(d => results[name][d].TimeAvgMs).ToArray();
+        return System.Text.Json.JsonSerializer.Serialize(
+            new Dictionary<string, object> { [""name""] = name, [""x""] = diffs, [""y""] = ys,
+                                             [""type""] = ""bar"" });
+    });
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var layout = ""{\""title\"":{\""text\"":"" + System.Text.Json.JsonSerializer.Serialize(title) + ""},"" +
+                 ""\""barmode\"":\""group\"","" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Difficulte\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Temps moyen (ms)\""},\""type\"":\""log\""}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + string.Join("","", traces) + ""],"" + layout + "")</script>"";
+    Console.WriteLine(""Temps moyen (ms) par solveur et difficulte (axe Y log) :"");
+    display(new PlotlyHtml(markup));
 }
 
-PlotBenchmarkBarsAscii(results);
-",,,,,,,,1cf2e0c8d1ecc847,,,,,,,
+PlotBenchmarkBarsPlotly(results, ""Benchmark : temps moyen (ms) par difficulte et solveur"");
+",,,,,,,,6ca195a15ff6b168,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,d0a4ff6c,markdown,fr,3de96d967864e778,"### Interpretation : Ecarts de performance entre solveurs
 
 Le graphique en barres (echelle logarithmique) rend compte de l'ampleur des differences :
@@ -15486,30 +15497,34 @@ Le graphique en barres (echelle logarithmique) rend compte de l'ampleur des diff
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,f0ba5897,markdown,fr,3aba61bd9db46f4d,"### Visualisation : distribution des temps par solveur
 
 Les boites a moustaches (boxplots) montrent la **variabilite** des temps de resolution. Un solveur avec une boite etroite est plus **previsible** dans ses performances.",,,,,,,,3aba61bd9db46f4d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,89517112,code,fr,6684637f258fb9fa,"// Boxplots ASCII de la distribution des temps pour chaque solveur.
-public static void PlotBoxplotsAscii(Dictionary<string, Dictionary<string, BenchResult>> results)
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,89517112,code,fr,5d10a4d7925cd5a0,"// Boxplots (rendu Plotly) de la distribution des temps pour chaque solveur, par difficulte.
+// Une boite par solveur ; x = difficulte (un point par timing), y = temps (ms), axe Y log.
+static void PlotBoxplotsPlotly(Dictionary<string, Dictionary<string, BenchResult>> results)
 {
     var diffs = new[] { ""Easy"", ""Medium"", ""Hard"", ""Expert"" };
-    foreach (var d in diffs)
+    var traces = results.Keys.Select(name =>
     {
-        Console.WriteLine($""\n=== Distribution - {d} (min | mediane | max, ms) ==="");
-        foreach (var name in results.Keys)
-        {
-            var ts = results[name][d].TimesMs;
-            if (ts.Count == 0) { Console.WriteLine($""  {name,-20} (no data)""); continue; }
-            var sorted = ts.OrderBy(x => x).ToList();
-            double mn = sorted[0], mx = sorted[^1];
-            double med = sorted[sorted.Count / 2];
-            int span = (int)Math.Round(Math.Max(1, (Math.Log10(mx + 1e-9) - Math.Log10(mn + 1e-9)) * 8));
-            string bar = ""["" + new string('-', Math.Max(1, span / 3)) + ""|""
-                         + new string('-', Math.Max(1, span * 2 / 3)) + ""]"";
-            Console.WriteLine($""  {name,-20} {bar}  {mn,8:F2} | {med,8:F2} | {mx,8:F2}"");
-        }
-    }
+        var xs = new List<string>();
+        var ys = new List<double>();
+        foreach (var d in diffs)
+            foreach (var t in results[name][d].TimesMs) { xs.Add(d); ys.Add(t); }
+        return System.Text.Json.JsonSerializer.Serialize(
+            new Dictionary<string, object> { [""name""] = name, [""x""] = xs, [""y""] = ys, [""type""] = ""box"" });
+    });
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var layout = ""{\""title\"":{\""text\"":\""Distribution des temps de resolution (ms)\""},"" +
+                 ""\""boxmode\"":\""group\"","" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Difficulte\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Temps (ms)\""},\""type\"":\""log\""}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + string.Join("","", traces) + ""],"" + layout + "")</script>"";
+    Console.WriteLine(""Distribution des temps (boite = Q1..Q3, moustaches = min/max) :"");
+    display(new PlotlyHtml(markup));
 }
 
-PlotBoxplotsAscii(results);
-",,,,,,,,6684637f258fb9fa,,,,,,,
+PlotBoxplotsPlotly(results);
+",,,,,,,,5d10a4d7925cd5a0,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,41590dbb,markdown,fr,199e6ea84f43861d,"### Interpretation : Variabilite et previsibilite des solveurs
 
 Les boxplots revelent un aspect crucial souvent neglige : la **previsibilite** des performances.
@@ -15778,10 +15793,10 @@ Console.WriteLine(""Termine.\n"");
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,31926d52,markdown,fr,2e5c917a66440ab7,"### Execution du benchmark etendu
 
 Nous relancons le benchmark avec les 5 solveurs (les 4 originaux + Norvig + Forward Checking) pour mesurer l'impact du forward checking sur les performances.",,,,,,,,2e5c917a66440ab7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,a091a298,code,fr,819f086810c42e0a,"// Graphique etendu (ASCII) : Norvig+FC + Simulated Annealing (Prong B #3801)
-PlotBenchmarkBarsAscii(resultsExtended);
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,a091a298,code,fr,32208ab4c6e2700d,"// Graphique etendu (Plotly) : Norvig+FC + Simulated Annealing (Prong B #3801)
+PlotBenchmarkBarsPlotly(resultsExtended, ""Benchmark etendu : Norvig+FC + recuit simule (Prong B #3801)"");
 Console.WriteLine(""\n(Prong B #3801 : le recuit simule n'a aucune garantie de convergence)"");
-",,,,,,,,819f086810c42e0a,,,,,,,
+",,,,,,,,32208ab4c6e2700d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,c43989c3,markdown,fr,e3fc03e9309fb329,"### Analyse : le solveur Norvig + FC est-il competitif ?
 
 **Reponse courte** : oui, il est competitif avec Norvig standard, mais il n'apporte pas de gain significatif sur ce benchmark.
