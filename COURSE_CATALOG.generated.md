@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-14 05:55
+Generated: 2026-07-15 05:56
 Total notebooks: 820
 
 ## Status Summary
@@ -788,7 +788,7 @@ Total notebooks: 820
 | 18 | DecPyMC-7-MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 19 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 20 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 21 | Infer-10-Model-Selection : Selection et Comparaiso | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | Infer-10-Model-Sélection : Sélection et Comparaiso | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | Infer-11-Topic-Models : Latent Dirichlet Allocatio | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 23 | 12. Modèles Hiérarchiques Bayésiens — Pooling Part | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 24 | Infer-13-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
