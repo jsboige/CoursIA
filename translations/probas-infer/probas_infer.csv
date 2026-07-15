@@ -3164,21 +3164,66 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb,29f5a230,mar
 
 Comparons les trois quantités : effet vrai, estimation no-pool (brute), estimation hiérarchique (pooling partiel). La rétraction doit être **visiblement plus forte** pour les classes clairsemées (faible effectif).
 ",,,,,,,,6e1e0e838bc421fa,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb,c30c821e,code,fr,3c85c7369d820bcd,"Console.WriteLine(""Classe | n  | vrai | no-pool | hierarchique | retraction"");
+MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb,c30c821e,code,fr,6139a239a8cecc76,"using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+using System.Collections.Generic;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+Console.WriteLine(""Classe | n  | vrai | no-pool | hierarchique | retraction"");
 Console.WriteLine(""-------|----|------|---------|--------------|----------"");
 double hierMSE = 0;
+var labels = new List<string>();
+var vraiArr = new List<double>();
+var noPoolArr = new List<double>();
+var hierArr = new List<double>();
 for (int k = 0; k < numClasses; k++) {
     double hier = thetaPost[k].GetMean();
     double shrink = noPoolEstimates[k] - hier; // >0 = tire vers mu
     double err = hier - trueClassEffects[k];
     hierMSE += err * err;
-    string bar = new string('#', (int)Math.Round(Math.Abs(shrink) * 5));
-    Console.WriteLine($""  {k}    | {countsByClass[k],2} | {trueClassEffects[k],4:F1} | {noPoolEstimates[k],7:F2} | {hier,12:F2} | {bar}"");
+    Console.WriteLine($""  {k}    | {countsByClass[k],2} | {trueClassEffects[k],4:F1} | {noPoolEstimates[k],7:F2} | {hier,12:F2} | {shrink,7:F2}"");
+    labels.Add($""cl.{k} (n={countsByClass[k]})"");
+    vraiArr.Add(trueClassEffects[k]);
+    noPoolArr.Add(noPoolEstimates[k]);
+    hierArr.Add(hier);
 }
 hierMSE /= numClasses;
 Console.WriteLine($""\nNo-pooling   MSE = {noPoolMSE:F3}"");
 Console.WriteLine($""Hierarchique MSE = {hierMSE:F3}   (amelioration {100*(1 - hierMSE/noPoolMSE):F0}%)"");
-",,,,,,,,3c85c7369d820bcd,,,,,,,
+
+// Bar chart Plotly groupe : vrai / no-pool / hierarchique par classe.
+// Le pooling hierarchique retracte chaque estimation de classe vers la moyenne de groupe (mu) :
+// les classes a faible effectif (n petit) sont les plus retractees -- c'est tout l'interet du modele
+// hierarchique (regularisation adaptee a l'incertitude). La barre 'hierarchique' se rapproche du
+// centre du au retrait la ou 'no-pool' suit bruyamment l'echantillon.
+{
+    var xs = labels.Select(v => (object)v).ToArray();
+    var tVrai = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = xs, [""y""] = vraiArr.Select(v => (object)Math.Round(v,2)).ToArray(),
+                                         [""type""] = ""bar"", [""name""] = ""vrai"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""] = ""#444"" } });
+    var tNoPool = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = xs, [""y""] = noPoolArr.Select(v => (object)Math.Round(v,2)).ToArray(),
+                                         [""type""] = ""bar"", [""name""] = ""no-pool"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""] = ""#e8743b"" } });
+    var tHier = System.Text.Json.JsonSerializer.Serialize(
+        new Dictionary<string, object> { [""x""] = xs, [""y""] = hierArr.Select(v => (object)Math.Round(v,2)).ToArray(),
+                                         [""type""] = ""bar"", [""name""] = ""hierarchique"",
+                                         [""marker""] = new Dictionary<string,object>{ [""color""] = ""#2a6dba"" } });
+    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+    var layout = ""{\""barmode\"":\""group\"",\""title\"":{\""text\"":\""Modele hierarchique : retraction des effets de classe vers mu "" +
+                 ""(le pooling retracte surtout les classes a faible effectif)\""},"" +
+                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Classe (effectif n)\""}},"" +
+                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Effet estime\""}},"" +
+                 ""\""margin\"":{\""l\"":50,\""r\"":30,\""b\"":90}}"";
+    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+                 ""<script>Plotly.newPlot('"" + divId + ""',["" + tVrai + "","" + tNoPool + "","" + tHier + ""],"" + layout + "")</script>"";
+    display(new PlotlyHtml(markup));
+}
+",,,,,,,,6139a239a8cecc76,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb,958f5f00,markdown,fr,232ba6b71e9e2af7,"### Lecture du résultat
 
 L'**erreur quadratique moyenne de récupération** (MSE) chute avec le pooling partiel (hierarchique < no-pooling) : les trois classes clairsemées (effectif 1 ou 2) voient leur estimateur **rétracter** vers la moyenne de population `mu`, ce qui les arrache au bruit de leur (trop) petite mesure. La classe 7 (un seul élève) en est l'illustration la plus nette : sa moyenne brute est fortement bruitée, et le modèle la ramène près de `mu` — bien plus proche de l'effet vrai.

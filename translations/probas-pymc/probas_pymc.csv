@@ -1518,18 +1518,46 @@ print(f""Divergences NUTS (non centre) = {div_noncentered}  (cible : 0)"")",,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb,08d92b72,markdown,fr,b4572f04350cbc25,"## Pooling partiel vs no pooling -- la retraction en action
 
 Comparons les trois quantites : effet vrai, estimation no-pool (brute), estimation hierarchique (pooling partiel). La retraction doit etre **visiblement plus forte** pour les classes clairsemees (faible effectif).",,,,,,,,b4572f04350cbc25,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb,ec3a0f75,code,fr,ee2d9fbea5e04fe8,"hier_mean = idata.posterior[""theta""].mean(dim=(""chain"", ""draw"")).values
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb,ec3a0f75,code,fr,d58c34d41e560b52,"hier_mean = idata.posterior[""theta""].mean(dim=(""chain"", ""draw"")).values
 hier_mse = np.mean((hier_mean - true_class_effects) ** 2)
 
-print(""Classe | n  | vrai  | no-pool | hierarchique | retraction"")
-print(""-------|----|-------|---------|--------------|----------"")
+print(""Classe | n  | vrai  | no-pool | hierarchique | retraction (|no-pool - hier|)"")
+print(""-------|----|-------|---------|--------------|--------------------------"")
 for c in range(num_classes):
     shrink = no_pool[c] - hier_mean[c]   # >0 = tire vers mu
-    bar = ""#"" * round(abs(shrink) * 5)
-    sign = ""+"" if shrink >= 0 else ""-""
-    print(f""  {c}    | {counts_by_class[c]:2d} | {true_class_effects[c]:.1f}   | {no_pool[c]:7.2f} | {hier_mean[c]:12.2f} | {sign}{bar}"")
+    print(f""  {c}    | {counts_by_class[c]:2d} | {true_class_effects[c]:.1f}   | {no_pool[c]:7.2f} | {hier_mean[c]:12.2f} | {abs(shrink):+.2f}"")
 print(f""\nNo-pooling     MSE = {no_pool_mse:.3f}"")
-print(f""Hierarchique   MSE = {hier_mse:.3f}   (amelioration {100*(1 - hier_mse/no_pool_mse):.0f}%)"")",,,,,,,,ee2d9fbea5e04fe8,,,,,,,
+print(f""Hierarchique   MSE = {hier_mse:.3f}   (amelioration {100*(1 - hier_mse/no_pool_mse):.0f}%)"")
+
+# Dumbbell : vrai (◆) / no-pool (●) / hierarchique (▲) par classe,
+# colore par effectif n -- la retraction (hier tire vers mu) doit etre
+# visiblement plus forte pour les classes clairsemees (n faible).
+import matplotlib.pyplot as plt
+classes = np.arange(num_classes)
+ns = np.array([counts_by_class[c] for c in classes], dtype=float)
+nc = (ns - ns.min()) / (ns.max() - ns.min() + 1e-12)  # 0=sparse .. 1=opaque
+fig, ax = plt.subplots(figsize=(8, 1.0 + 0.45 * num_classes))
+for c in classes:
+    vals = [float(true_class_effects[c]), float(no_pool[c]), float(hier_mean[c])]
+    lo, hi = min(vals), max(vals)
+    col = plt.cm.viridis(nc[c])
+    ax.plot([lo, hi], [c, c], color=col, lw=4, alpha=0.55, zorder=1)
+    ax.scatter(float(true_class_effects[c]), c, marker=""D"", s=90,
+               color=""black"", zorder=5, label=""vrai"" if c == 0 else None)
+    ax.scatter(float(no_pool[c]), c, marker=""o"", s=80,
+               color=col, edgecolor=""black"", zorder=5, label=""no-pool"" if c == 0 else None)
+    ax.scatter(float(hier_mean[c]), c, marker=""^"", s=95,
+               color=""white"", edgecolor=col, linewidth=2.2, zorder=5,
+               label=""hierarchique"" if c == 0 else None)
+ax.set_yticks(classes)
+ax.set_yticklabels([f""classe {c} (n={counts_by_class[c]})"" for c in classes])
+ax.set_xlabel(""effet estime"")
+ax.set_title(""Retraction hierarchique : le pooling partiel tire les classes\nclairsemees (n faible, jaune) vers la moyenne de population mu"")
+ax.legend(loc=""lower right"", framealpha=0.9)
+ax.invert_yaxis()
+plt.tight_layout()
+plt.show()
+",,,,,,,,d58c34d41e560b52,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb,fa01d255,markdown,fr,53e8a4a5f346eca7,"### Lecture du resultat
 
 L'**erreur quadratique moyenne de recuperation** (MSE) chute avec le pooling partiel (hierarchique < no-pooling) : les classes clairsemees (effectif 1 ou 2) voient leur estimateur **retracter** vers la moyenne de population `mu`, ce qui les arrache au bruit de leur (trop) petite mesure. La classe a un seul eleve en est l'illustration la plus nette : sa moyenne brute est fortement bruitee, et le modele la ramene pres de `mu` -- bien plus proche de l'effet vrai.
