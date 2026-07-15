@@ -221,6 +221,41 @@ def test_drift_detail_multiset_match_returns_difflib_dump():
     assert isinstance(detail, str)
 
 
+def test_reorder_stays_drift_not_ok(tmp_path):
+    # #6731 ConeKernel doctrine guard. A pure reorder of otherwise
+    # byte-identical declaration blocks is a REPAIRABLE divergence: #6731
+    # moved the EN `separatingFunctional_none_neg` block back to the
+    # FR-canonical position (an inert +57/-57 block move). Because it is
+    # repairable, it MUST surface as DRIFT — an investigation trigger — and
+    # never be consecrated as a pass-verdict. The `OK-REORDERED`
+    # (order-insensitive) verdict proposed by #6728/#6729 was rejected:
+    # consecrating a recoverable divergence would mask real drift and let a
+    # genuine reorder-plus-edit slip through. This test pins reorder -> DRIFT
+    # so the rejected doctrine cannot be silently re-introduced.
+    fr = tmp_path / "Cone.lean"
+    en = tmp_path / "Cone_en.lean"
+    fr.write_text(
+        "namespace Cone\n"
+        "theorem gen_apply_linear : True := trivial\n"
+        "theorem separatingFunctional_none_neg : True := trivial\n"
+        "theorem gen_apply_some : True := trivial\n"
+        "end Cone\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Cone_en\n"
+        "theorem gen_apply_linear : True := trivial\n"
+        "theorem gen_apply_some : True := trivial\n"
+        "theorem separatingFunctional_none_neg : True := trivial\n"
+        "end Cone_en\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT", detail
+    # the moved lemma must appear in the diff so the investigation is actionable
+    assert "separatingFunctional_none_neg" in detail
+
+
 def test_normalize_strips_self_qualifiers_arrow_fp():
     # Arrow_en/#6716 false-positive repro: FR defs at top level disambiguate
     # with `_root_.X`; the EN mirror lives in `namespace SocialChoice_en` and
