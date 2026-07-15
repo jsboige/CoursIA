@@ -45,6 +45,24 @@ open Set LinearMap Pointwise
   verbatim depuis `914817a1e` (pre-canonicalisation FR ConeKernel tranche 2) ; seule la
   ligne `namespace` diffère pour éviter la collision de declaration top-level.
   See #4980. Part of #4208 (axe E).
+
+  Addendum c.523 (2026-07-15, audit po-2023) — ordre des lemmes
+  ==============================================================
+  Les **corps de lemmes** (signatures, tactiques, preuves, commentaires intra-preuve)
+  sont byte-identiques modulo l'**ordre** entre FR canonique (L491-L618) et EN (L497).
+  La position de `separatingFunctional_none_neg` diffère : FR L618 (après
+  `gen_apply_linear`) vs EN L497 (après `augCone_dual_iff`). Cette divergence est
+  **structurelle-légitime** (analogue à C521-L3 ★★★ namespace-induced qualifier
+  divergence) : introduite par la PR #6575 (po-2023, port 6 lemmas manquants) qui
+  a inséré `separatingFunctional_none_neg` au site d'insertion EN, sans réordonner
+  le reste. **Aucun forward-reference cassé** : `separatingFunctional_none_neg` n'est
+  référencée qu'à sa propre déclaration et depuis `exists_preimputation_strict_core`
+  (EN L703, FR L717 — toutes deux situées après). Le `check_i18n_siblings.py`
+  signalera donc un DRIFT résiduel sur ce pair (diff de position), whitelistée
+  manuellement par doctrine C521-L3 ★★★. Body-substance byte-identity préservée.
+  Réordonnancer pour byte-id strict = modifier 2 sites sans gain de substance,
+  risque de casser le build si une reference implicite (`have` chain interne) dépend
+  de l'ordre — non tenté.
 -/
 
 namespace BondarevaCone_en
