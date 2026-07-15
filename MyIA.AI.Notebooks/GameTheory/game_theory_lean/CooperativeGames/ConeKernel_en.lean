@@ -505,63 +505,6 @@ The separating functional `f` from `hyperplane_separation_point` (applied to a p
 well-defined once we know `f (Pi.single none 1) < 0`. This sign is the first
 load-bearing decoding step. -/
 
-/-- **Decoding sign condition** — the separating functional `f` satisfies
-    `f (Pi.single none 1) < 0`. Proof: `0 ≤ f` on the grand-coalition generator
-    `phiAugCont v (Pi.single ⊤ 1)` (it is in `augCone v`, via `augCone_dual_iff`); the
-    identity `balancedUnit (v(N)+t) = phiAugCont v (Pi.single ⊤ 1) + t • Pi.single none 1`
-    plus linearity turns `f (balancedUnit (v(N)+t)) < 0` into
-    `f (phiAugCont v (Pi.single ⊤ 1)) + t * f (Pi.single none 1) < 0`; combined with the
-    nonnegativity on the generator, `t * f (Pi.single none 1) < 0`, hence the sign (t > 0). -/
-lemma separatingFunctional_none_neg (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
-    (f : ((Option N) → ℝ) →L[ℝ] ℝ)
-    (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
-    (hfSep : f (balancedUnit (v Finset.univ + t)) < 0) :
-    f (Pi.single none 1) < 0 := by
-  -- 0 ≤ f on the grand-coalition generator.
-  have huniv : 0 ≤ f (phiAugCont v (Pi.single Finset.univ 1)) :=
-    (augCone_dual_iff v f).mp hfCone Finset.univ
-  -- Coordinate value `phiAugCont v (Pi.single ⊤ 1) (some i) = 1` (incidence of ⊤).
-  have hGenSome (i : N) :
-      (phiAugCont v (Pi.single Finset.univ 1)) (some i) = (1 : ℝ) := by
-    show ∑ S ∈ Finset.univ.filter (fun S => i ∈ S),
-        (Pi.single Finset.univ 1 : Finset N → ℝ) S = 1
-    -- `rw` (not `exact`) determines the implicit `{s, f}` from the LHS occurrence,
-    -- sidestepping the `(Pi.single ⊤ 1) ⊤ ≟ 1` ite-reduction defeq that `exact` demands.
-    rw [Finset.sum_eq_single Finset.univ
-        (fun b _ hb => by rw [Pi.single_apply, if_neg hb])
-        (fun h => by simp at h), Pi.single_eq_same]
-  -- Coordinate value `phiAugCont v (Pi.single ⊤ 1) none = v(N)`.
-  have hGenNone :
-      (phiAugCont v (Pi.single Finset.univ 1)) none = v Finset.univ := by
-    have hsum : ∑ S : Finset N,
-        (Pi.single Finset.univ 1 : Finset N → ℝ) S * v S
-        = (Pi.single Finset.univ 1 : Finset N → ℝ) Finset.univ * v Finset.univ :=
-      Finset.sum_eq_single Finset.univ
-        (fun b _ hb => by rw [Pi.single_apply, if_neg hb]; ring)
-        (fun h => by simp at h)
-    show ∑ S : Finset N, (Pi.single Finset.univ 1 : Finset N → ℝ) S * v S = v Finset.univ
-    rw [hsum, Pi.single_apply, if_pos rfl, one_mul]
-  -- Identity: balancedUnit (v(N)+t) = grand-coal generator + t • none-basis.
-  have hId : balancedUnit (v Finset.univ + t) =
-      phiAugCont v (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
-    funext j
-    -- `Option` constructors are `none` then `some`; use explicit `cases` to pin
-    -- each arm to its tactic (a positional `rcases ... with i | _` swapped them).
-    cases j with
-    | none =>
-      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
-      rw [hGenNone, Pi.single_eq_same]
-      ring
-    | some i =>
-      have hne : (some i : Option N) ≠ none := Option.some_ne_none i
-      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
-      rw [hGenSome, Pi.single_apply, if_neg hne]
-      ring
-  -- Linearity on the separating inequality, then sign (t > 0). `nlinarith` because
-  -- the goal `f (Pi.single none 1) < 0` needs dividing `t * f (...) < 0` by `t`.
-  rw [hId, map_add, map_smul, smul_eq_mul] at hfSep
-  nlinarith [ht, huniv]
-
 /-- `some i` coordinate of the `S`-generator: the incidence indicator `1` if
     `i ∈ S`, else `0`. Generalizes the grand-coalition special case to any `S`. -/
 lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
@@ -669,6 +612,63 @@ lemma gen_apply_linear (v : Finset N → ℝ) (S : Finset N)
     f (phiAugCont v (Pi.single S 1)) =
       ∑ i ∈ S, f (Pi.single (some i) 1) + v S * f (Pi.single none 1) := by
   rw [gen_decomp, map_add, map_sum, map_smul, smul_eq_mul]
+
+/-- **Decoding sign condition** — the separating functional `f` satisfies
+    `f (Pi.single none 1) < 0`. Proof: `0 ≤ f` on the grand-coalition generator
+    `phiAugCont v (Pi.single ⊤ 1)` (it is in `augCone v`, via `augCone_dual_iff`); the
+    identity `balancedUnit (v(N)+t) = phiAugCont v (Pi.single ⊤ 1) + t • Pi.single none 1`
+    plus linearity turns `f (balancedUnit (v(N)+t)) < 0` into
+    `f (phiAugCont v (Pi.single ⊤ 1)) + t * f (Pi.single none 1) < 0`; combined with the
+    nonnegativity on the generator, `t * f (Pi.single none 1) < 0`, hence the sign (t > 0). -/
+lemma separatingFunctional_none_neg (v : Finset N → ℝ) {t : ℝ} (ht : 0 < t)
+    (f : ((Option N) → ℝ) →L[ℝ] ℝ)
+    (hfCone : ∀ y ∈ augCone v, 0 ≤ f y)
+    (hfSep : f (balancedUnit (v Finset.univ + t)) < 0) :
+    f (Pi.single none 1) < 0 := by
+  -- 0 ≤ f on the grand-coalition generator.
+  have huniv : 0 ≤ f (phiAugCont v (Pi.single Finset.univ 1)) :=
+    (augCone_dual_iff v f).mp hfCone Finset.univ
+  -- Coordinate value `phiAugCont v (Pi.single ⊤ 1) (some i) = 1` (incidence of ⊤).
+  have hGenSome (i : N) :
+      (phiAugCont v (Pi.single Finset.univ 1)) (some i) = (1 : ℝ) := by
+    show ∑ S ∈ Finset.univ.filter (fun S => i ∈ S),
+        (Pi.single Finset.univ 1 : Finset N → ℝ) S = 1
+    -- `rw` (not `exact`) determines the implicit `{s, f}` from the LHS occurrence,
+    -- sidestepping the `(Pi.single ⊤ 1) ⊤ ≟ 1` ite-reduction defeq that `exact` demands.
+    rw [Finset.sum_eq_single Finset.univ
+        (fun b _ hb => by rw [Pi.single_apply, if_neg hb])
+        (fun h => by simp at h), Pi.single_eq_same]
+  -- Coordinate value `phiAugCont v (Pi.single ⊤ 1) none = v(N)`.
+  have hGenNone :
+      (phiAugCont v (Pi.single Finset.univ 1)) none = v Finset.univ := by
+    have hsum : ∑ S : Finset N,
+        (Pi.single Finset.univ 1 : Finset N → ℝ) S * v S
+        = (Pi.single Finset.univ 1 : Finset N → ℝ) Finset.univ * v Finset.univ :=
+      Finset.sum_eq_single Finset.univ
+        (fun b _ hb => by rw [Pi.single_apply, if_neg hb]; ring)
+        (fun h => by simp at h)
+    show ∑ S : Finset N, (Pi.single Finset.univ 1 : Finset N → ℝ) S * v S = v Finset.univ
+    rw [hsum, Pi.single_apply, if_pos rfl, one_mul]
+  -- Identity: balancedUnit (v(N)+t) = grand-coal generator + t • none-basis.
+  have hId : balancedUnit (v Finset.univ + t) =
+      phiAugCont v (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
+    funext j
+    -- `Option` constructors are `none` then `some`; use explicit `cases` to pin
+    -- each arm to its tactic (a positional `rcases ... with i | _` swapped them).
+    cases j with
+    | none =>
+      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
+      rw [hGenNone, Pi.single_eq_same]
+      ring
+    | some i =>
+      have hne : (some i : Option N) ≠ none := Option.some_ne_none i
+      simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, balancedUnit]
+      rw [hGenSome, Pi.single_apply, if_neg hne]
+      ring
+  -- Linearity on the separating inequality, then sign (t > 0). `nlinarith` because
+  -- the goal `f (Pi.single none 1) < 0` needs dividing `t * f (...) < 0` by `t`.
+  rw [hId, map_add, map_smul, smul_eq_mul] at hfSep
+  nlinarith [ht, huniv]
 
 /-! ### Witness construction (separator → pre-imputation)
 
