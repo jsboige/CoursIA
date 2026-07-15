@@ -1238,10 +1238,17 @@ class AutonomousProver:
         # compile() durations instead of _LeanVerifier._total_build_seconds.
         _build_credit_s = 0.0
         _wallclock_capped = False  # set if wall-clock cap triggers early break
+        # FX-11 (#1453 forensic): provider-auth circuit-breaker flag. Set when a
+        # PERMANENT (non-retryable) provider error is observed so the outer
+        # iteration loop can abort instead of wasting the remaining iterations
+        # on a provider that will fail identically every time. Mirrors the
+        # _wallclock_capped break pattern + the multi-path provider_outage
+        # verdict (#5869, surfaced at provers.py:934).
+        _provider_dead = False
 
         async def _run_session():
             nonlocal compile_data, context_history, proof_tactics_found, final_build_ok
-            nonlocal _build_credit_s, _wallclock_capped
+            nonlocal _build_credit_s, _wallclock_capped, _provider_dead
             loop = asyncio.get_event_loop()
 
             for iteration in range(1, max_iterations + 1):
@@ -1355,6 +1362,34 @@ class AutonomousProver:
                             continue
                         print(f"  Agent error: {e}", flush=True)
                         response_text = err_str
+                        break
+
+                # FX-11 (#1453 forensic): a PERMANENT provider-auth/config error
+                # (403/401 non-retryable) will fail identically on every iteration.
+                # Forensic evidence (baselines/traces/auto_*_mistral*.spans.jsonl,
+                # 2026-07): each dead-provider session wasted 4-6 identical
+                # `labs_not_enabled` 403s over 15-66s, then the loop continued
+                # iterating with response=None — burning the full iteration budget
+                # and up to ~900s wall-clock on a provider that never could answer.
+                # Break the OUTER loop here (mirroring _wallclock_capped) and let
+                # the result dict surface the verdict so forensic can tell
+                # "provider dead" from "no tactical progress". Detection is on the
+                # error string (response is None here), conservative: only abort on
+                # substrings that are definitionally permanent (auth/permission/
+                # model-not-found), never on transient/network errors.
+                if response is None and response_text:
+                    _etx = response_text.lower()
+                    if ("labs_not_enabled" in _etx or "403" in _etx
+                            or "401" in _etx or "invalid_api_key" in _etx
+                            or "model_not_found" in _etx
+                            or "permissiondenied" in _etx):
+                        _provider_dead = True
+                        print(f"  [PERMANENT PROVIDER ERROR] auth/config error "
+                              f"(non-retryable: {response_text[:120].strip()}) "
+                              f"— aborting session after iter {iteration}/"
+                              f"{max_iterations} to avoid "
+                              f"{max_iterations - iteration} more identical "
+                              f"failure iterations.", flush=True)
                         break
 
                 if response is not None:
@@ -1771,6 +1806,14 @@ class AutonomousProver:
             # sorry_delta>=0 "proof restructured" outcome is distinguishable
             # from a real sorry reduction in the result JSON.
             "structural_progress": structural_progress_autonomous,
+            # FX-11 (#1453 forensic): provider-auth circuit-breaker verdict (cf
+            # multi-path provider_outage at provers.py:934). True when the session
+            # aborted because the LLM provider returned a PERMANENT auth/config
+            # error (403/401 — e.g. labs_not_enabled, invalid_api_key,
+            # model_not_found). Forensic: such a run never got to work, which is
+            # NOT `no_progress` / `structural_progress` — it must be filtered out
+            # of progress metrics.
+            "provider_outage": _provider_dead,
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
