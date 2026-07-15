@@ -5,41 +5,49 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-07-06, re-confirmé 2026-07-12, 16 réels — 14 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
+## État des sorries (vérifié 2026-07-06, re-confirmé 2026-07-12, **17 réels** — 15 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
 
 Deux comptes, selon le filtre :
 
 | Fichier | sorry réels | sorry (prose, CI) |
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
-| `Knots/Reidemeister.lean` | 1 | 2 |
+| `Knots/Reidemeister.lean` | 2 | 2 |
 | `Knots/Invariant.lean` | 5 | 6 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **16** | **26** |
+| **Total** | **17** | **26** |
 
 - **sorry réels** (`exact sorry`, `:= sorry`, `:= by sorry`) = ce qui manque
-  vraiment comme preuve. **16** au total — 14 stables + **2 du transfer backward
+  vraiment comme preuve. **17** au total — 15 stables + **2 du transfer backward
   PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`col` laissés en
   sorry après décomposition (`num` PROUVÉ par parité `wf`, cf. § Phase 5 ;
   cœur `hcolPres` prouvé). Un sorry de scaffolding Lidman (diagramme L39) a été
   éliminé par **#4899** (PD-code 11n102 depuis KnotInfo, MERGED 2026-07-02) :
   Lidman passe de 3 à 2 réels.
-- **Reidemeister.lean à 1 sorry réel** (recompté firsthand 2026-07-06 :
-  stable à 1 depuis juin — `exact sorry` L549 seul ; la version précédente
-  du README surcomptait à 2).
+- **Reidemeister.lean à 2 sorries réels** (recompté firsthand 2026-07-15 avec
+  l'awk CI real-mode : `sorry -- ambient_isotopic k₁ k₂` L554 *et* `exact sorry`
+  L558 ; le mot-bounded `\bsorry\b` compte la ligne dont seul le `-- ...` est
+  strippé, donc l'occurrence bare `sorry` au L554 reste un real-mode sorry.
+  Le README précédent (re-comptage 2026-07-06) datait d'avant le switch CI
+  prose-header→real de 2026-07-11, sous-comptait de 1).
 - **sorry prose** (toute ligne contenant `sorry`, filtre CI `prose-header`) =
-  **26** actuellement. La CI `lean-knot.yml` gate à `sorry-baseline: "28"`
-  (mode prose-header) : marge de 2 après #3163 (`num`) et #4899 (Lidman), la
-  baseline n'ayant pas encore été resserrée. Ce compte inclut les occurrences
-  dans les commentaires de diagnostic (ex. le commentaire sur `KnotDiagram.wf`
-  dans `Basic.lean`).
+  **26** actuellement. La CI `lean-knot.yml` a basculé en mode **`real`**
+  (sorry-baseline: `"17"`) le 2026-07-11 (auparavant prose-header baseline
+  28) ; le mode real strippe les commentaires `--` et `/- -/`, puis compte le
+  mot-bounded `\bsorry\b` — c'est désormais le seul mode CI officiel pour
+  knot_lean. Le compte 26 est conservé à titre indicatif (raw, any-line
+  matchant `sorry`). Ce compte inclut les occurrences dans les commentaires
+  de diagnostic (ex. le commentaire sur `KnotDiagram.wf` dans `Basic.lean`).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **prose-header baseline 28**
-(historique : bump 25→28 dans #3124 pour la décomposition du transfer backward,
-baissé à 27 après la preuve `num` #3163, puis re-bumpé à 28 par le suivi GF(3) #3003) : toute PR qui ajoute un sorry réel fait monter les
-deux comptes et échoue la CI, sauf justification documentée dans le body PR.
+La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 17**
+depuis le switch 2026-07-11 (historique : prose-header 25→28 dans #3124 pour
+la décomposition du transfer backward, baissé à 27 après la preuve `num`
+#3163, re-bumpé à 28 par le suivi GF(3) #3003 ; puis switch prose-header→real
+à baseline 17 le 2026-07-11 quand le compte brute a divergé du compte real) :
+toute PR qui ajoute un sorry réel fait monter le compte real et échoue la CI,
+sauf justification documentée dans le body PR.
 
 ## Résultats par statut réel (vérifié contre le code)
 
@@ -238,9 +246,11 @@ prouvés** (un sous-cas chacun clos) :
    couleurs nécessite la construction colour-symmetry / proper-arc (#3003,
    `Invariant.lean` L1354).
 
-Ces **2 résiduels §9.1** s'inscrivent sous la **baseline CI 28** (historique : bump
-25→28 dans #3124, baissée à 27 après la preuve `num` #3163, re-bumpée à 28 par le suivi
-GF(3) #3003) ; le compte réel courant est **26** après #4899 (marge de 2).
+Ces **2 résiduels §9.1** s'inscrivent sous la **baseline CI 17** (real-mode,
+switch prose-header→real le 2026-07-11 ; historique prose-header : bump 25→28
+dans #3124, baissée à 27 après la preuve `num` #3163, re-bumpée à 28 par le
+suivi GF(3) #3003) ; le compte réel courant est **17** (cohérent avec la
+baseline, marge de 0 — tout nouveau sorry réel fera FAIL la CI).
 
 Le marquee `tricolorable_invariant` reste gated sur la **complétion des 2 résiduels
 §9.1 backward** (puis composition forward + backward = bi-implication R1
@@ -255,7 +265,7 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | Fichier | Contenu | sorry réels |
 |---------|---------|-------------|
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
-| `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 1 |
+| `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, unknotting number, contre-exemple PR1, transfer R1 forward (#3000) + backward PARTIEL (#3124) | 5 |
 | `Knots/Conway.lean` | Nœud de Conway (11n34), Piccirillo, dichotomie lisse/topologique | 8 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
@@ -326,7 +336,7 @@ Le marquee `tricolorable_invariant` reste **gated** sur deux sous-buts résiduel
 §9.1 du backward : la symétrie des couleurs sur le crossing modifié `Y` (`fox`) et
 le lift « all-distinct » hors range du diagramme source (`col`). Leur clôture
 permettrait de composer forward + backward en une bi-implication R1 connectée
-(**16 sorry réels** au total). Les résultats « lointains » — Conway non-slice
+(**17 sorry réels** au total). Les résultats « lointains » — Conway non-slice
 (Piccirillo), unknotting number de Lidman, théorème Reidemeister ↔ isotopie
 ambiante — restent du **scaffolding permanent** : ils excèdent la portée actuelle
 de Mathlib (topologie PL des 3-variétés, Heegaard-Floer).
