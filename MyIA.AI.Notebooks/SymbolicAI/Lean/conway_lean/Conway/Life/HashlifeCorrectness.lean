@@ -1002,10 +1002,10 @@ to assemble `hashlifeResultAux (k+2) c` against `evolve (2^k) (c.toGrid)`. -/
     `c.toGrid`), then the two evolutions for `2^(k-1)` steps agree at `p`.
 
     Direct instance of `step_light_cone (2^(k-1))`: the cone-of-dependence
-    for `2^(k-1)` steps at `p` is exactly `lightCone p (2 * 2^(k-1)) =
-    lightCone p (2^k)`, which is precisely the agreement hypothesis.
-    No strengthening, no extra bridge — the lemma is just the cone-of-
-    dependence packaged with the correct instantiations.
+    for `2^(k-1)` steps at `p` is `lightCone p (2 * 2^(k-1))`, which equals
+    `lightCone p (2^k)` since `k ≥ 1` (`2 * 2^(k-1) = 2^k`) — i.e. the
+    agreement hypothesis. The only bridge is that radius coincidence; no
+    strengthening, no appeal to `evolve_cone_agree`.
 
     This lemma is the S3 sub-sorry of the P4 HashlifeCorrectness proof.
     It is independent of `p4_double_nine_shape` (P4.1) and `p4_wave1_ih`
@@ -1018,10 +1018,16 @@ theorem quadrant_cone_agree (c : MacroCell) (k : Nat) (hk : 1 ≤ k)
                                           isAlive (q_j.toGrid (0, 0)) r) :
     isAlive (evolve (2^(k-1)) (c.toGrid (0, 0))) p =
       isAlive (evolve (2^(k-1)) (q_j.toGrid (0, 0))) p := by
-  -- The cone-of-dependence for `2^(k-1)` steps at `p` is
-  -- `lightCone p (2 * 2^(k-1)) = lightCone p (2^k)` — exactly `h_agree`.
+  -- step_light_cone (2^(k-1)) requires agreement on `lightCone p (2 * 2^(k-1))`.
+  -- Bridge the cone radius: `2 * 2^(k-1) = 2^k` since `k ≥ 1` (`hk`), so the
+  -- agreement hypothesis `h_agree` (stated on `lightCone p (2^k)`) discharges it.
+  have h2k : 2 * 2^(k-1) = 2^k := by
+    have hkey : k = (k - 1) + 1 := by omega
+    conv_rhs => rw [hkey, pow_succ]
+    ring
   apply step_light_cone (2 ^ (k - 1)) (c.toGrid (0, 0)) (q_j.toGrid (0, 0)) p
   intro r hr
+  rw [h2k] at hr
   exact h_agree r hr
 
 /-! ## P2 corollary. Influence cone (light cone of influence)
