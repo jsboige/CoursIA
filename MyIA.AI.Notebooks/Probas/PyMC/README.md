@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Infer.NET (C#) →](../Infer/README.md)
 
-Port Python de la série Infer.NET couvrant l'inférence bayésienne avec PyMC (NUTS, échantillonnage MCMC), des fondamentaux aux modèles relationnels avancés, en clôture sur l'**inférence causale** (do-calculus de Pearl, opérateur `pm.do`). La **théorie de la décision** (utilité espérée, EVPI, MDPs, bandits) forme une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/DecInfer/README.md).
+Série parallèle à la piste Infer.NET (C#/.NET), couvrant les **mêmes modèles bayésiens** avec un moteur différent : **PyMC** (échantillonnage MCMC NUTS) au lieu du message passing compilé Infer.NET. Le corpus va des fondamentaux aux modèles relationnels avancés, en clôture sur l'**inférence causale** (do-calculus de Pearl, opérateur `pm.do`). La **théorie de la décision** (utilité espérée, EVPI, MDPs, bandits) forme une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md), miroir Python de [DecisionTheory/DecInfer/](../DecisionTheory/DecInfer/README.md).
 
 **À qui s'adresse cette série** : praticiens Python, data scientists et étudiants souhaitant maîtriser l'inférence bayésienne moderne avec l'écosystème PyMC/ArviZ. Aucun prérequis en C# ou Infer.NET : chaque notebook est autonome.
 

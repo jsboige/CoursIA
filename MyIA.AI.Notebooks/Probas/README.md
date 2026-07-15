@@ -274,8 +274,8 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 | Notebook | Kernel | Contenu | Durée |
 |----------|--------|---------|-------|
-| [Infer-101](Infer-101.ipynb) | Python + C# | Introduction Infer.NET, Two Coins, Cyclist | 45 min |
-| [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 60 min |
+| [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
+| [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python | Rational Speech Acts, hyperboles | 30 min |
 
 ### Infer-101.ipynb
 
@@ -310,7 +310,7 @@ Les **27 notebooks Infer.NET C#** (19 du corpus bayésien + 8 de l'arc décision
 
 ## Série PyMC (19 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, processus gaussien épars 15, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, survie) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3 = notebooks 1-3, modèles classiques 4-13 = notebooks 4, 7-11, 13 + debugging 6, inférence causale 14 = notebook 5, processus gaussien épars 15 = notebook 16, modèles hiérarchiques 16 = notebook 12, filtre de Kalman 17 = notebook 17, change-point 18 = notebook 18, analyse de survie 19 = notebook 19) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -384,7 +384,7 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la thé
 
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
-| [Infer-101](Infer-101.ipynb) | .NET (C#) + Python | Introduction Infer.NET, Two Coins, Cyclist | 1h |
+| [Infer-101](Infer-101.ipynb) | .NET (C#) | Introduction Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
 
 ## Prerequisites
