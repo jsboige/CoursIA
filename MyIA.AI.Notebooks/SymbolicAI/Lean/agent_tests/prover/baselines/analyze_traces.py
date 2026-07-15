@@ -68,7 +68,12 @@ def _result_timestamp(spans_path):
 _file_ts = {f: _result_timestamp(f) for f in jsonl_files_all}
 
 if _args.since:
-    jsonl_files = [f for f in jsonl_files_all if _file_ts[f] >= _args.since]
+    # Honor the _result_timestamp docstring's conservative-keep intent: a trace
+    # whose age is indeterminate (no companion result.json AND unparseable first
+    # span -> "") cannot be proven stale, so KEEP it even under --since rather
+    # than silently dropping it (po-2024 §H.4 advisory on the recency filter).
+    jsonl_files = [f for f in jsonl_files_all
+                   if not _file_ts[f] or _file_ts[f] >= _args.since]
 else:
     jsonl_files = list(jsonl_files_all)
 _in_window_count = len(jsonl_files)  # before the readability drop below
