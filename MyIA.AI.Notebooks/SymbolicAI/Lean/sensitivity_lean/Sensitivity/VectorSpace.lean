@@ -17,13 +17,6 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
 Ce fichier définit l'espace vectoriel libre `V n` sur les sommets de l'hypercube,
 la base `e`, la base duale `ε`, et prouve les résultats de dualité et de dimension.
-
----
-English:
-# Vector space for Huang's sensitivity theorem
-
-This file defines the free vector space `V n` on vertices of the hypercube,
-the basis `e`, the dual basis `ε`, and proves duality and dimension results.
 -/
 
 namespace Sensitivity
@@ -34,13 +27,10 @@ open Function LinearMap Module Module.DualBases
 
 local notation "√" => Real.sqrt
 
-/-! ### L'espace vectoriel
-
-English: The vector space -/
+/-! ### L'espace vectoriel -/
 
 
-/-- L'espace vectoriel libre sur les sommets d'un hypercube, défini inductivement.
-    English: The free vector space on vertices of a hypercube, defined inductively. -/
+/-- L'espace vectoriel libre sur les sommets d'un hypercube, défini inductivement. -/
 def V : ℕ → Type
   | 0 => ℝ
   | n + 1 => V n × V n
@@ -67,8 +57,7 @@ instance : Module ℝ (V n) := by induction n <;> · dsimp only [V]; infer_insta
 
 end V
 
-/-- La base de `V` indexée par l'hypercube, définie inductivement.
-    English: The basis of `V` indexed by the hypercube, defined inductively. -/
+/-- La base de `V` indexée par l'hypercube, définie inductivement. -/
 noncomputable def e : ∀ {n}, Q n → V n
   | 0 => fun _ => (1 : ℝ)
   | Nat.succ _ => fun x => cond (x 0) (e (π x), 0) (0, e (π x))
@@ -77,8 +66,7 @@ noncomputable def e : ∀ {n}, Q n → V n
 theorem e_zero_apply (x : Q 0) : e x = (1 : ℝ) :=
   rfl
 
-/-- La base duale de `e`, définie inductivement.
-    English: The dual basis to `e`, defined inductively. -/
+/-- La base duale de `e`, définie inductivement. -/
 noncomputable def ε : ∀ {n : ℕ}, Q n → V n →ₗ[ℝ] ℝ
   | 0, _ => LinearMap.id
   | Nat.succ _, p =>
@@ -99,8 +87,7 @@ theorem duality (p q : Q n) : ε p (e q) = if p = q then 1 else 0 := by
         LinearMap.comp_apply, IH]
       congr 1; simp [Q.succ_n_eq, hp, hq]
 
-/-- Tout vecteur de `V n` annulé par tous les `ε p` est nul.
-    English: Any vector in `V n` annihilated by all `ε p`'s is zero. -/
+/-- Tout vecteur de `V n` annulé par tous les `ε p` est nul. -/
 theorem epsilon_total {v : V n} (h : ∀ p : Q n, (ε p) v = 0) : v = 0 := by
   induction n with
   | zero => dsimp [ε] at h; exact h fun _ => true
@@ -119,8 +106,7 @@ theorem epsilon_total {v : V n} (h : ∀ p : Q n, (ε p) v = 0) : v = 0 := by
 open Module
 
 open Classical in
-/-- `e` et `ε` sont des familles duales de vecteurs.
-    English: `e` and `ε` are dual families of vectors. -/
+/-- `e` et `ε` sont des familles duales de vecteurs. -/
 theorem dualBases_e_ε (n : ℕ) : DualBases (@e n) (@ε n) where
   eval_same := by simp [duality]
   eval_of_ne _ _ h := by simp [duality, h]
