@@ -2,12 +2,76 @@
 
 Provenance de chaque figure (convention d'indexation **all-cells** du module `extract_readme_figures.py` : `cellule` = indice de cellule dans le notebook, `output` = indice de sortie de cette cellule). Sources vérifiées sur `origin/main`, extraites de [`research.ipynb`](../../research.ipynb) (notebook de recherche local).
 
-| Figure | Fichier | Dimensions | Poids | Source (cellule · output) | Sujet |
-|--------|---------|------------|-------|---------------------------|-------|
-| BTC + moyennes mobiles | `emacrypto-btc-emas.png` | 1389×690 | 140 Ko | cellule 11 · output 0 | Cours BTC et moyennes mobiles (EMA 20/60) |
-| CAGR par configuration | `emacrypto-cagr.png` | 1583×590 | 129 Ko | cellule 19 · output 0 | Comparaison du CAGR entre configurations testées |
-| Métriques | `emacrypto-metrics.png` | 1389×989 | 130 Ko | cellule 24 · output 0 | Comparaison Sharpe / CAGR / drawdown |
-| Sharpe par configuration | `emacrypto-sharpe.png` | 1589×690 | 148 Ko | cellule 32 · output 0 | Comparaison du Sharpe entre configurations |
-| Drawdowns | `emacrypto-drawdowns.png` | 1389×989 | 137 Ko | cellule 34 · output 1 | Analyse des drawdowns par période (§9) |
+> **Audit vision po-2026 c.448 (2026-07-15, doctrine #5780)** : les 5 PNG ci-dessous ont été ouverts un par un via l'outil `Read` (vision MiniMax M3) et comparés à leur alt-text d'origine (champ `Sujet`). Verdict par figure dans la section *Contenu réel vérifié*. Cohérence caption ↔ image = **0/5 exacte, 5 corrections réelles dont 2 inversions factuelles** — la quasi-totalité des alt-texts d'origine étaient **TITLES-driven** (auto-extraction à partir des commentaires de cellule, sans lecture visuelle) et **omettaient** la structure réelle (4/5 figures sont en réalité **dual-panel**, alors qu'originellement présentées comme une seule métrique), les valeurs concrètes (CAGR 32% MaxDD 41% pour `Hard stop-loss 8%`, Sharpe=1.0 / MaxDD=40% max atteint, MaxDD cible -35%, échelle log BTC-USD), et l'**inversion factuelle** (le fichier `emacrypto-metrics.png` n'est PAS une comparaison Sharpe/CAGR/DD — c'est une analyse **filtre SMA200** ; `emacrypto-btc-emas.png` montre 6 configurations EMA et non 2). Défaut fondateur type systemic 1:1 doctrinal documenté par L490 (c.433 → c.447) et confirmé pour le projet EMA-Cross-Crypto : **5/5 cas TITLES-driven** sur 5 figures = pattern massif (vs AllWeather 5:1 systemic). À noter : ce projet utilise intensivement les **dual-panel** matplotlib (4/5 figures) — la convention d'auto-extraction par commentaire de cellule échoue particulièrement sur ces compositions.
 
-**Total** : 5 figures, 686 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Courbes matplotlib → **PNG lossless natif** (netteté des étiquettes ; tous sous le seuil sans downscale, max 148 Ko). Arc : cours BTC + moyennes mobiles → comparaison des configurations (CAGR, Sharpe/drawdown) → analyse des drawdowns par période.
+| Figure | Fichier | Dimensions | Poids | Source (cellule · output) | Sujet *(c.448 reformulé CONTENT-driven)* |
+|--------|---------|------------|-------|---------------------------|-----------------------------------------|
+| EMA configurations | `emacrypto-btc-emas.png` | 1389×690 | 140 Ko | cellule 11 · output 0 | **6 equity curves** EMA (10/30, 12/26 MACD-like, 15/40, 20/50 BASELINE, 20/100, 30/70) 2020-2026 USDT — pas seulement 2 EMAs |
+| Trailing stop + Pareto | `emacrypto-cagr.png` | 1583×590 | 129 Ko | cellule 19 · output 0 | **Dual-panel** : gauche equity 9 configs trailing stop 2020-2026, droite scatter **Trade-off MaxDD vs CAGR** — `Hard stop-loss 8%` = winner Pareto (CAGR 32%, MaxDD ≈41%) |
+| Filtre SMA200 | `emacrypto-metrics.png` | 1389×989 | 130 Ko | cellule 24 · output 0 | **Dual-panel** : haut BTC-USD (log) vs SMA200 (zones rouges = entrées filtrées), bas impact equity Baseline vs Avec filtre SMA200 |
+| Meilleures combinaisons | `emacrypto-sharpe.png` | 1589×690 | 148 Ko | cellule 32 · output 0 | **Dual-panel** : gauche 10 equity curves "Meilleures combinaisons", droite scatter Sharpe vs MaxDD avec **zone cible verte** (Sharpe ≥2.5 + MaxDD ≤35%) — **0/10 dans la cible**, max Sharpe ≈1.05 |
+| Drawdowns context | `emacrypto-drawdowns.png` | 1389×989 | 137 Ko | cellule 34 · output 1 | **Dual-panel** : haut BTC-USD log (contexte marché), bas DD Baseline vs DD config optimale (+SMA200+Cap80+Trail10%) avec **ligne cible MaxDD -35%** |
+
+**Total** : 5 figures, 686 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Courbes matplotlib → **PNG lossless natif** (netteté des étiquettes ; tous sous le seuil sans downscale, max 148 Ko). Arc : exploration des configurations EMA → analyse trailing stop → filtre SMA200 → meilleures combinaisons → drawdowns context.
+
+## Contenu réel vérifié par figure (audit visuel MiniMax M3, c.448)
+
+### `emacrypto-btc-emas.png` — 6 equity curves EMA 2020-2026
+
+**Alt-text (FR)** *(c.448 reformulé CONTENT-driven)* : **6 equity curves** en USDT (axe Y = 10 000 → 140 000), période 2020-2026, légende haut-gauche avec **6 configurations EMA** (et non 2) :
+- **EMA 10/30** (bleu, plus réactif)
+- **EMA 12/26** (orange, MACD-like)
+- **EMA 15/40** (vert, intermédiaire)
+- **EMA 20/50** (rouge pointillé, BASELINE)
+- **EMA 20/100** (violet, plus lent)
+- **EMA 30/70** (marron, lent)
+
+**Observations visuelles** : la BASELINE rouge pointillée (EMA 20/50) sort du lot en 2024-2025 (pic ~145 000 USDT) ; EMA 20/100 violet termine plus bas (~95 000 USDT). 2022 = bear market visible (toutes configs chutent vers 30-45k). Convergence en 2023, divergence en 2024-2025.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.448) : figure mono-panel (1 subplot), titre « Equity Curves - Comparaison périodes EMA (BTC-USD 2020-2026) ». **Alt-text précédent** « Cours BTC et moyennes mobiles (EMA 20/60) » était **FAUX** : il mentionnait « EMA 20/60 » qui n'existe pas dans la figure (les 6 EMA sont 10/30, 12/26, 15/40, 20/50, 20/100, 30/70 — pas de 20/60). Il omettait 5 des 6 configurations.
+
+- **Poids** : 140 Ko (PNG lossless natif, source 1389×690)
+
+### `emacrypto-cagr.png` — Dual-panel trailing stop + Pareto MaxDD/CAGR
+
+**Alt-text (FR)** *(c.448 reformulé CONTENT-driven)* : **Deux sous-graphiques côte à côte** (1583×590). **Gauche — Equity Curves « Impact du trailing stop »** (axe Y = 10 000 → 140 000 USDT, axe X = 2020-2026) : 9 equity curves dont BASELINE (Pas de stop), 4 trailing stops (6/8/10/12/15%), 2 hard stop-loss (8/10%), et la combo `Trail 10% + Hard SL 8%`. **Droite — Scatter « Trade-off MaxDD vs CAGR »** (CAGR % axe Y = 25 → 32, MaxDD % axe X = 41 → 49) : 9 points bleus étiquetés avec leur nom. **`Hard stop-loss 8%`** = **winner Pareto** (coin haut-gauche, CAGR ≈ 32%, MaxDD ≈ 41%). `Hard stop-loss 10%` second (CAGR ≈ 30.8%, MaxDD ≈ 47%). `Pas de stop` (BASELINE) au centre (CAGR ≈ 30.5%, MaxDD ≈ 47%). **Pire combo** : `Trailing stop 6%` (CAGR ≈ 24.5%, MaxDD ≈ 45%) — stop trop serré, on sort trop tôt des rallyes.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.448) : figure composite dual-panel 1×2, légendes complètes 9 configs. **Alt-text précédent** « Comparaison du CAGR entre configurations testées » était **TITLES-driven** : il décrivait la métrique (CAGR) sans rendre compte de la structure dual-panel (gauche equity, droite scatter Pareto) ni de la conclusion winner Hard stop-loss 8%.
+
+- **Poids** : 129 Ko (PNG lossless natif, source 1583×590)
+
+### `emacrypto-metrics.png` — Dual-panel filtre SMA200 (inversion factuelle corrigée)
+
+**Alt-text (FR)** *(c.448 reformulé CONTENT-driven)* : **Deux sous-graphiques empilés** (1389×989). **Haut — « BTC-USD vs SMA200 (zones rouges = BTC < SMA200, entrées filtrées) »** : courbe BTC-USD (orange, échelle log axe Y 10⁴ → 10⁵), SMA200 (bleu pointillé). **Zones rouges verticales** = périodes où BTC < SMA200 = entrées filtrées (donc trade évité). Périodes filtrées majeures : mi-2021 → mi-2022, fin 2022, mi-2024, fin 2025. **Bas — « Impact du filtre SMA200 sur l'equity curve »** (axe Y = 10 000 → 140 000 USDT) : 2 equity curves 2020-2026 — `Pas de filtre SMA200 (BASELINE)` (bleu) vs `Avec filtre SMA200` (orange). La courbe **avec filtre** termine plus haut (~110 000 vs ~102 000 USDT pour la BASELINE), MAIS reste plate 2022-2023 (sortie de marché pendant bear) tandis que la BASELINE reste plus stable mais termine plus bas.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.448) : figure composite dual-panel 2×1, échelle log en haut (logarithmic Y-axis sur prix BTC), zones rouges en alpha ~0.3. **Alt-text précédent** « Comparaison Sharpe / CAGR / drawdown » était **TITLES-driven ET FAUX** : la figure ne montre **aucune comparaison Sharpe/CAGR/drawdown** — c'est en fait une analyse **filtre SMA200** (filtrage des entrées quand BTC < SMA200). Inversion factuelle corrigée c.448.
+
+- **Poids** : 130 Ko (PNG lossless natif, source 1389×989)
+
+### `emacrypto-sharpe.png` — Dual-panel meilleures combinaisons + scatter zone cible (RATE ÉCHEC)
+
+**Alt-text (FR)** *(c.448 reformulé CONTENT-driven)* : **Deux sous-graphiques côte à côte** (1589×690). **Gauche — Equity Curves « Meilleures combinaisons »** (axe Y = 10 000 → 140 000 USDT, axe X = 2020-2026) : 10 equity curves étagées dont BASELINE EMA 20/50 95%, variantes empilant `+ Filtre SMA200`, `+ Cap 80%`, `+ Trail 10%`, `+ Vol-scaling (cap 80)`, `+ Vol-scaling + Trail`, et combinaisons EMA alternatives (10/30, 15/40). **`+ Filtre SMA200` orange** sort du lot (≈ 120 000 USDT fin 2025). **Droite — Scatter « Sharpe vs MaxDD (zone verte = objectif atteint) »** (Sharpe axe Y = 0 → 3, MaxDD axe X = 0 → 45%) : **zone cible verte** matérialise l'objectif (Sharpe ≥ 2.5 ET MaxDD ≤ 35%). 10 points colorés étiquetés par config. **Résultat** : **0/10 config dans la zone cible**, **max Sharpe ≈ 1.05** (toutes les configs clusterisées autour de Sharpe=1.0, MaxDD=30-45%). Le verdict visuel est sans appel : **la zone cible n'est pas atteignable** avec ces combinaisons, l'effort d'optimisation a amélioré le CAGR (~10-20%) mais pas le ratio risque/rendement.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.448) : figure composite dual-panel 1×2, légendes 10 configs à gauche, scatter 10 points colorés à droite, ligne verticale pointillée verte à MaxDD=35% (« MaxDD cible »), ligne horizontale pointillée orange à Sharpe=1.0 (« Sharpe cible »). **Alt-text précédent** « Comparaison du Sharpe entre configurations » était **TITLES-driven** : omettait la structure dual-panel, la zone cible verte matérialisée, et le **verdict honnête** : 0/10 atteint, Sharpe max ≈1.05.
+
+- **Poids** : 148 Ko (PNG lossless natif, source 1589×690, le + lourd)
+
+### `emacrypto-drawdowns.png` — Dual-panel contexte BTC + comparaison DD avec cible
+
+**Alt-text (FR)** *(c.448 reformulé CONTENT-driven)* : **Deux sous-graphiques empilés** (1389×989). **Haut — « BTC-USD (log) - Contexte marché »** (axe Y log 10⁴ → 10⁵ USD) : courbe BTC-USD en orange sur 2020-2026. Bear 2022 visible (chute à ~16k), rallye 2023-2024, pic ~108k fin 2024, correction 2025. **Bas — « Comparaison Drawdowns : Baseline vs + SMA200 + Cap 80% + Trail 10% »** (axe Y = 0 → -50% drawdown) : 2 aires drawdown superposées — `Baseline DD` (rouge/rose) vs `+ SMA200 + Cap 80% + Trail 10% DD` (violet/bleu). **Ligne horizontale pointillée verte** à **-35%** = « Cible MaxDD ». Verdict : la **config optimale (violet)** reste **quasi toujours au-dessus de la cible -35%** sauf 1-2 incursions brèves en 2022 et 2025, alors que la **BASELINE (rouge)** dépasse -35% en 2022-2023 (max ≈ -47%) et 2024 (≈ -41%). La config optimale divise le MaxDD par ~1.5 sur les pires épisodes.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.448) : figure composite dual-panel 2×1, échelle log en haut, aires drawdown colorées en alpha 0.5-0.6, ligne cible horizontale. **Alt-text précédent** « Analyse des drawdowns par période (§9) » était **TITLES-driven** : omettait la structure dual-panel (haut contexte marché log, bas comparaison DD), la cible MaxDD -35% matérialisée, et le verdict config optimale quasi respectée.
+
+- **Poids** : 137 Ko (PNG lossless natif, source 1389×989)
+
+## Verdict synthétique c.448
+
+| # | Fichier | Alt-text précédent | Verdict | Action |
+|---|---------|---------------------|---------|--------|
+| 1 | `emacrypto-btc-emas.png` | « Cours BTC et moyennes mobiles (EMA 20/60) » | **FAUX** (EMA 20/60 inexistant, 6 configs pas 2) | Reformulé CONTENT-driven |
+| 2 | `emacrypto-cagr.png` | « Comparaison du CAGR entre configurations testées » | **TITLES-driven** (omets dual-panel + Pareto + winner) | Enrichi avec dual-panel + scatter Pareto + winner Hard stop-loss 8% |
+| 3 | `emacrypto-metrics.png` | « Comparaison Sharpe / CAGR / drawdown » | **FAUX** (aucun Sharpe/CAGR/DD, c'est filtre SMA200) | Reformulé CONTENT-driven, mention explicite inversion |
+| 4 | `emacrypto-sharpe.png` | « Comparaison du Sharpe entre configurations » | **TITLES-driven** (omets zone cible + verdict 0/10) | Enrichi avec zone cible verte + verdict 0/10 atteint |
+| 5 | `emacrypto-drawdowns.png` | « Analyse des drawdowns par période (§9) » | **TITLES-driven** (omets dual-panel + cible -35%) | Enrichi avec dual-panel + cible MaxDD -35% + verdict config optimale |
+
+**Score** : **0/5 ACCURATE** — **5 corrections réelles** + **2 inversions factuelles complètes** (btc-emas + metrics). Ratio systemic 1:1 doctrinal **massif** : 5/5 cas = **100% defect rate** (vs AllWeather c.447 = 5:1 systemic 83%, et ML-Training-Pipeline c.437 = doctrinal 1:1 mais sur 6 figures). **Cause racinaire confirmée** : alt-texts générés par auto-extraction des commentaires de cellule (`# Visualisation des equity curves`, `# Visualisation: impact du trailing stop`, etc.), sans lecture visuelle. Particulièrement défaillant sur ce projet à cause de l'usage intensif du **dual-panel matplotlib** (4/5 figures) — le commentaire de cellule ne capture qu'un seul subplot (généralement le premier), donc le second (scatter Pareto, scatter zone cible, comparaison DD) reste totalement invisible dans l'alt-text. Le rédacteur原始 ne pouvait pas voir les PNG. Corrigé c.448 par audit visuel MiniMax M3 (cf `.claude/rules/model-delegation.md` section vision routing).
