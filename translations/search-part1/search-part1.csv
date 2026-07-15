@@ -10718,7 +10718,7 @@ Il existe deux variantes fondamentales :
 - **Graph-Search** : maintient un ensemble d'etats **explores** (closed list) pour eviter les repetitions
 
 En pratique, on utilise presque toujours Graph-Search, sauf quand l'espace d'etats est un arbre (pas de cycles).",,,,,,,,b069795601bf35dc,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,09f62a40,code,fr,425467fd1105a319,"# --- Definition du noeud de recherche ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,09f62a40,code,fr,a63cf0e4931a9e1d,"# --- Définition du noeud de recherche ---
 
 class Node:
     """"""Noeud dans l'arbre de recherche.""""""
@@ -10766,11 +10766,11 @@ class Node:
 
     def __repr__(self):
         return f""Node({self.state}, cost={self.path_cost}, depth={self.depth})""
-print(""Classe Node definie : noeud dans l arbre de recherche"")",,,,,,,,425467fd1105a319,,,,,,,
+print(""Classe Node definie : noeud dans l arbre de recherche"")",,,,,,,,a63cf0e4931a9e1d,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,uok4xsg10p,markdown,fr,68a030d583ad5260,"### Classe Problem
 
 La classe abstraite `Problem` definit l'interface que tout probleme de recherche doit implementer.",,,,,,,,68a030d583ad5260,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9627a2ca,code,fr,ff2e5f5f3da79cea,"# --- Definition abstraite d'un probleme de recherche ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9627a2ca,code,fr,36efc73c25d881a6,"# --- Définition abstraite d'un problème de recherche ---
 
 class Problem:
     """"""Classe abstraite definissant un probleme de recherche.""""""
@@ -10794,7 +10794,7 @@ class Problem:
     def step_cost(self, state, action, next_state):
         """"""Cout d'une action. Par defaut, cout uniforme de 1.""""""
         return 1
-print(""Classe Problem definie : probleme de recherche abstrait"")",,,,,,,,ff2e5f5f3da79cea,,,,,,,
+print(""Classe Problem definie : probleme de recherche abstrait"")",,,,,,,,36efc73c25d881a6,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9k59b7qh66s,markdown,fr,54e0b6dbc1bdee1a,"### Probleme concret : villes francaises
 
 Definissons un probleme de recherche d'itineraire sur un graphe de villes francaises avec des distances reelles.",,,,,,,,54e0b6dbc1bdee1a,,,,,,,
@@ -10926,7 +10926,7 @@ Ce probleme est interessant car :
 - Plusieurs chemins existent (via Paris, via Lyon, via Toulouse-Marseille-Lyon, etc.)
 - Les couts sont non uniformes (les distances varient beaucoup)
 - BFS et UCS donneront des resultats differents",,,,,,,,d2c2e6e248ee19ac,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,715f3c28,code,fr,df10f3b68090e897,"# --- Fonction utilitaire pour tracer une recherche ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,715f3c28,code,fr,2a2af9fcff7593fe,"# --- Fonction utilitaire pour tracer une recherche ---
 
 class SearchResult:
     """"""Resultat d'une recherche, avec statistiques.""""""
@@ -10963,15 +10963,15 @@ class SearchResult:
         if self.found:
             print(f""  Chemin     : {' -> '.join(self.path)}"")
             print(f""  Cout total : {self.cost}"")
-            print(f""  Longueur   : {len(self.path) - 1} etapes"")
+            print(f""  Longueur   : {len(self.path) - 1} étapes"")
         else:
             print(f""  Aucune solution trouvee."")
-        print(f""  Noeuds explores  : {self.nodes_expanded}"")
+        print(f""  Noeuds explorés  : {self.nodes_expanded}"")
         print(f""  Noeuds generes   : {self.nodes_generated}"")
         print(f""  Frontiere max    : {self.max_frontier_size}"")
         print(f""  Temps            : {self.elapsed_ms:.2f} ms"")
 
-print(""Framework de recherche pret."")",,,,,,,,df10f3b68090e897,,,,,,,
+print(""Framework de recherche pret."")",,,,,,,,2a2af9fcff7593fe,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a11be67e,markdown,fr,040c52b68c1648ce,"## 3. Recherche en Largeur (BFS - Breadth-First Search)
 
 BFS explore l'arbre de recherche **niveau par niveau** : tous les noeuds de profondeur $d$ sont explores avant ceux de profondeur $d+1$.
@@ -11040,14 +11040,14 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,aabbe221,co
                         max_frontier, elapsed, explored_order)
 print(""Fonction breadth_first_search definie (BFS)"")",,,,,,,,b3f087fab8ff2778,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,hhe2df30ijf,markdown,fr,c3728a619fa11ea7,Testons BFS sur notre probleme de reference : trouver un chemin de Bordeaux a Strasbourg.,,,,,,,,c3728a619fa11ea7,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c24081b8,code,fr,026123ffc196516f,"# --- Application de BFS au probleme Bordeaux -> Strasbourg ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c24081b8,code,fr,c7bc315872b370fb,"# --- Application de BFS au problème Bordeaux -> Strasbourg ---
 
 problem_bs = GraphProblem('Bordeaux', 'Strasbourg', france_graph)
 
 print(""BFS : Bordeaux -> Strasbourg"")
 print(""="" * 60)
 result_bfs = breadth_first_search(problem_bs, verbose=True)
-result_bfs.display()",,,,,,,,026123ffc196516f,,,,,,,
+result_bfs.display()",,,,,,,,c7bc315872b370fb,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,f9568757,markdown,fr,98c6454446e42584,"### Interpretation - BFS sur les villes francaises
 
 **Sortie obtenue** : BFS explore les villes par ""cercles concentriques"" autour de Bordeaux.
@@ -11064,11 +11064,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,f9568757,ma
 3. Le chemin via Paris est direct en nombre d'etapes, mais peut ne pas etre optimal en distance
 
 > **Rappel** : BFS est optimal uniquement quand tous les couts d'action sont identiques.",,,,,,,,98c6454446e42584,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8ef67017,code,fr,1284d5852438be16,"# Visualisation du resultat BFS
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8ef67017,code,fr,edbaa703d963a94d,"# Visualisation du résultat BFS
 draw_france_graph(france_graph, france_coords,
                   path=result_bfs.path,
                   explored=set(result_bfs.explored_order),
-                  title=f""BFS : {' -> '.join(result_bfs.path)} (cout={result_bfs.cost})"")",,,,,,,,1284d5852438be16,,,,,,,
+                  title=f""BFS : {' -> '.join(result_bfs.path)} (cout={result_bfs.cost})"")",,,,,,,,edbaa703d963a94d,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,f77a0545,markdown,fr,11767ecdff07f2ef,"## 4. Recherche en Profondeur (DFS - Depth-First Search)
 
 DFS explore l'arbre de recherche en allant **le plus profondement possible** avant de revenir en arriere (backtracking).
@@ -11140,12 +11140,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,db3237fd,co
                         max_frontier, elapsed, explored_order)
 print(""Fonction depth_first_search definie (DFS)"")",,,,,,,,81d6931a5b9eba20,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,0d8xpt8gkfbp,markdown,fr,38e0affaeb7b927b,Appliquons DFS au meme probleme Bordeaux-Strasbourg pour comparer avec BFS.,,,,,,,,38e0affaeb7b927b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,4b6ee0a5,code,fr,07f49e913cf6597d,"# --- Application de DFS au probleme Bordeaux -> Strasbourg ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,4b6ee0a5,code,fr,be6a8087320fd561,"# --- Application de DFS au problème Bordeaux -> Strasbourg ---
 
 print(""DFS : Bordeaux -> Strasbourg"")
 print(""="" * 60)
 result_dfs = depth_first_search(problem_bs, verbose=True)
-result_dfs.display()",,,,,,,,07f49e913cf6597d,,,,,,,
+result_dfs.display()",,,,,,,,be6a8087320fd561,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,65d43801,markdown,fr,cc3a3fb1e58aa945,"### Interpretation - DFS vs BFS
 
 **Sortie obtenue** : DFS suit un chemin en profondeur avant de considerer les alternatives.
@@ -11175,7 +11175,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,338f3840,ma
 - Inspirez-vous de `depth_first_search` mais ajoutez un test `node.depth >= max_depth`
 - Utilisez `GraphProblem('Bordeaux', 'Strasbourg', france_graph)`
 - La solution est a profondeur 2 (Bordeaux -> Paris -> Strasbourg)",,,,,,,,9b27254b9ee4809b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,69af443a,code,fr,c2ea72f5680f1439,"# --- Exercice 1 : DFS avec limite de profondeur ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,69af443a,code,fr,a4436aa856c8c593,"# --- Exercice 1 : DFS avec limite de profondeur ---
 
 def dfs_limited(problem, max_depth, verbose=False):
     """"""
@@ -11196,7 +11196,7 @@ def dfs_limited(problem, max_depth, verbose=False):
         - Ajoutez un test : si node.depth >= max_depth, ne pas expanser ce noeud
         - Retournez None si la solution n'est pas trouvee a cette profondeur
     """"""
-    # TODO etudiant : implementer le DFS avec limite
+    # TODO étudiant : implementer le DFS avec limite
     # Etape 1 : initialiser noeud, frontiere (pile LIFO), explored (set)
     # Etape 2 : boucle principale (retirer sommet de la pile)
     # Etape 3 : si goal_test -> retourner SearchResult
@@ -11204,7 +11204,7 @@ def dfs_limited(problem, max_depth, verbose=False):
     # Etape 5 : si frontiere vide -> retourner None
     return None  # TODO etudiant : remplacer
 
-# Test avec differentes profondeurs
+# Test avec différentes profondeurs
 # problem_test = GraphProblem('Bordeaux', 'Strasbourg', france_graph)
 # for depth in [1, 2, 3, 4]:
 #     result = dfs_limited(problem_test, max_depth=depth)
@@ -11213,16 +11213,16 @@ def dfs_limited(problem, max_depth, verbose=False):
 #     else:
 #         print(f""Profondeur {depth}: pas de solution"")
 
-print(""Exercice a completer"")",,,,,,,,c2ea72f5680f1439,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,72cd4ec3,code,fr,32139e1d708d546b,"# Visualisation du resultat DFS
+print(""Exercice a completer"")",,,,,,,,a4436aa856c8c593,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,72cd4ec3,code,fr,79ae6d3e4243da02,"# Visualisation du résultat DFS
 draw_france_graph(france_graph, france_coords,
                   path=result_dfs.path,
                   explored=set(result_dfs.explored_order),
-                  title=f""DFS : {' -> '.join(result_dfs.path)} (cout={result_dfs.cost})"")",,,,,,,,32139e1d708d546b,,,,,,,
+                  title=f""DFS : {' -> '.join(result_dfs.path)} (cout={result_dfs.cost})"")",,,,,,,,79ae6d3e4243da02,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8b20329a,markdown,fr,df7ff442e3d813e7,"### Illustration : Ordre d'expansion BFS vs DFS sur un arbre
 
 Pour mieux comprendre la difference, visualisons l'ordre d'expansion sur un petit arbre binaire.",,,,,,,,df7ff442e3d813e7,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c47a96a0,code,fr,0e05a1c70f9b1b1a,"# --- Comparaison visuelle BFS vs DFS sur un arbre binaire ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c47a96a0,code,fr,922c9e17c40d1497,"# --- Comparaison visuelle BFS vs DFS sur un arbre binaire ---
 
 def build_binary_tree_graph(depth=3):
     """"""Construit un graphe representant un arbre binaire.""""""
@@ -11239,7 +11239,7 @@ def build_binary_tree_graph(depth=3):
                 graph[node][left] = 1
                 graph[node][right] = 1
             else:
-                # Le but est la derniere feuille
+                # Le but est la dernière feuille
                 goal_node = node
     return graph, goal_node
 
@@ -11276,7 +11276,7 @@ for ax, result, color, title in [
                 x2, y2 = positions[neighbor]
                 ax.plot([x1, x2], [y1, y2], 'k-', linewidth=0.8, alpha=0.4)
 
-    # Dessiner les noeuds avec le numero d'exploration
+    # Dessiner les noeuds avec le numéro d'exploration
     for idx, node_name in enumerate(order):
         if node_name in positions:
             x, y = positions[node_name]
@@ -11287,7 +11287,7 @@ for ax, result, color, title in [
             ax.text(x, y, str(idx+1), ha='center', va='center',
                     fontsize=7, fontweight='bold', zorder=6)
 
-    # Noeuds non explores
+    # Noeuds non explorés
     for node_name in tree_graph:
         if node_name not in order and node_name in positions:
             x, y = positions[node_name]
@@ -11304,10 +11304,10 @@ plt.suptitle(""Ordre d'exploration : BFS vs DFS"", fontsize=14, fontweight='bold
 plt.tight_layout()
 plt.show()
 
-print(f""BFS : {len(bfs_tree.explored_order)} noeuds explores, ""
+print(f""BFS : {len(bfs_tree.explored_order)} noeuds explorés, ""
       f""chemin de longueur {len(bfs_tree.path)-1}"")
-print(f""DFS : {len(dfs_tree.explored_order)} noeuds explores, ""
-      f""chemin de longueur {len(dfs_tree.path)-1}"")",,,,,,,,0e05a1c70f9b1b1a,,,,,,,
+print(f""DFS : {len(dfs_tree.explored_order)} noeuds explorés, ""
+      f""chemin de longueur {len(dfs_tree.path)-1}"")",,,,,,,,922c9e17c40d1497,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9ec47c6b,markdown,fr,f75df36efae31fa2,"### Interpretation - Ordres d'exploration
 
 Les numeros dans les noeuds indiquent l'**ordre d'exploration** :
@@ -11394,16 +11394,16 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,b9f5f010,co
                         max_frontier, elapsed, explored_order)
 print(""Fonction uniform_cost_search definie (UCS)"")",,,,,,,,ec1092dc4b2b6f4f,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,dh1xok4wczj,markdown,fr,34f21e5ee5440f5b,Appliquons UCS a notre probleme de reference et comparons avec les resultats de BFS.,,,,,,,,34f21e5ee5440f5b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,53f6b1a6,code,fr,aa6e6fd129661d74,"# --- Application de UCS au probleme Bordeaux -> Strasbourg ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,53f6b1a6,code,fr,b9c9d3f2169e22aa,"# --- Application de UCS au problème Bordeaux -> Strasbourg ---
 
 print(""UCS : Bordeaux -> Strasbourg"")
 print(""="" * 60)
 result_ucs = uniform_cost_search(problem_bs, verbose=True)
 result_ucs.display()
 print(""\nNOTE : sur Bordeaux -> Strasbourg, BFS et UCS trouvent le MEME chemin."")
-print(""C'est un cas ou couts et nombre d'etapes coincident : l'avantage de UCS sur les couts n'est pas visible."")
+print(""C'est un cas ou couts et nombre d'étapes coincident : l'avantage de UCS sur les couts n'est pas visible."")
 print(""Voir le trajet Paris -> Rennes ci-dessous, ou UCS divise le cout par deux."")
-",,,,,,,,aa6e6fd129661d74,,,,,,,
+",,,,,,,,b9c9d3f2169e22aa,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9d296b92,markdown,fr,ea28ee8db927ef07,"### Quand l'avantage de cout de UCS devient visible : Paris -> Rennes
 
 Sur le trajet Bordeaux -> Strasbourg, BFS et UCS ont trouve le meme chemin
@@ -11427,7 +11427,7 @@ le front `g(n)` : 495 < 825, donc il developpe la frontiere Nantes avant
 Lille et trouve le chemin 40% moins cher. **C'est ici que l'optimalite en
 cout de UCS devient visible dans la sortie.**
 ",,,,,,,,ea28ee8db927ef07,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,d4c90f28,code,fr,9561c13cd94321fb,"# --- Cas discriminant : Paris -> Rennes (UCS divise le cout par deux) ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,d4c90f28,code,fr,770b1816999ae97c,"# --- Cas discriminant : Paris -> Rennes (UCS divise le cout par deux) ---
 
 import pandas as pd
 
@@ -11445,7 +11445,7 @@ comparison_pr_df = pd.DataFrame([
         'Chemin': ' -> '.join(result_bfs_pr.path),
         'Cout (km)': result_bfs_pr.cost,
         'Longueur': len(result_bfs_pr.path) - 1,
-        'Noeuds explores': result_bfs_pr.nodes_expanded,
+        'Noeuds explorés': result_bfs_pr.nodes_expanded,
         'Temps (ms)': f""{result_bfs_pr.elapsed_ms:.2f}"",
     },
     {
@@ -11453,7 +11453,7 @@ comparison_pr_df = pd.DataFrame([
         'Chemin': ' -> '.join(result_ucs_pr.path),
         'Cout (km)': result_ucs_pr.cost,
         'Longueur': len(result_ucs_pr.path) - 1,
-        'Noeuds explores': result_ucs_pr.nodes_expanded,
+        'Noeuds explorés': result_ucs_pr.nodes_expanded,
         'Temps (ms)': f""{result_ucs_pr.elapsed_ms:.2f}"",
     },
 ])
@@ -11468,12 +11468,12 @@ if result_bfs_pr.cost > result_ucs_pr.cost:
     print(""BFS a developpe Lille en premier (premier voisin alphabetique) et s'est"")
     print(""arrete la : 225 + 600 = 825 km. UCS, en suivant le cout cumule g(n), a"")
     print(""developpe Nantes en premier et trouve 385 + 110 = 495 km. Meme nombre"")
-    print(""d'etapes, mais UCS est garanti optimal en cout."")
+    print(""d'étapes, mais UCS est garanti optimal en cout."")
 elif result_bfs_pr.cost == result_ucs_pr.cost:
     print(""NOTE : BFS egale UCS sur ce trajet (tie)."")
 else:
     print(""NOTE : BFS strictement meilleur (ne devrait pas arriver)."")
-",,,,,,,,9561c13cd94321fb,,,,,,,
+",,,,,,,,770b1816999ae97c,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,04c1e915,markdown,fr,0ad0cf22f0cf3e2a,"### Interpretation - UCS trouve le chemin optimal
 
 **Sortie obtenue** : UCS explore les noeuds par **cout croissant**, garantissant l'optimalite.
@@ -11496,11 +11496,11 @@ ecarte 40% de cout. La capacite de UCS a selectionner le chemin le moins cher n'
 visible sur Bordeaux -> Strasbourg (ou BFS ≡ UCS) ; elle devient visible sur ce trajet ou
 plusieurs chemins de meme longueur existent avec des couts tres differents.
 ",,,,,,,,0ad0cf22f0cf3e2a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c1bf61c6,code,fr,4e058c4ab3708e2a,"# Visualisation du resultat UCS
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c1bf61c6,code,fr,1979e374adc8fd94,"# Visualisation du résultat UCS
 draw_france_graph(france_graph, france_coords,
                   path=result_ucs.path,
                   explored=set(result_ucs.explored_order),
-                  title=f""UCS : {' -> '.join(result_ucs.path)} (cout={result_ucs.cost} km)"")",,,,,,,,4e058c4ab3708e2a,,,,,,,
+                  title=f""UCS : {' -> '.join(result_ucs.path)} (cout={result_ucs.cost} km)"")",,,,,,,,1979e374adc8fd94,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,beab01ab,markdown,fr,55a3c81d742bb6e6,"### Exercice 2 : Analyser l'ecart de cout entre BFS et UCS
 
 **Objectif** : Identifiez un trajet dans `france_graph` ou BFS et UCS trouvent des chemins de couts differents, puis expliquez pourquoi.
@@ -11515,22 +11515,22 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,beab01ab,ma
 - Le trajet Rennes -> Nice montre un ecart notable
 - BFS minimise le nombre d'etapes, UCS minimise la distance totale
 - Regardez les distances sur le graphe pour comprendre les detours",,,,,,,,55a3c81d742bb6e6,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,43b39e87,code,fr,c625645659900989,"# --- Exercice 2 : Analyser l'ecart de cout entre BFS et UCS ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,43b39e87,code,fr,1f16e4d071755e9f,"# --- Exercice 2 : Analyser l'ecart de cout entre BFS et UCS ---
 
-# TODO etudiant : choisissez un trajet ou BFS et UCS divergent
+# TODO étudiant : choisissez un trajet ou BFS et UCS divergent
 depart_6 = None    # TODO etudiant : remplacer (ex: 'Rennes')
 arrivee_6 = None   # TODO etudiant : remplacer (ex: 'Nice')
 
-# TODO etudiant : executez BFS et UCS sur ce trajet
+# TODO étudiant : exécutez BFS et UCS sur ce trajet
 # Etape 1 : problem_6 = GraphProblem(depart_6, arrivee_6, france_graph)
 # Etape 2 : res_bfs_6 = breadth_first_search(problem_6)
 # Etape 3 : res_ucs_6 = uniform_cost_search(problem_6)
 
-# TODO etudiant : affichez les deux chemins et comparez les couts
-# Indice : utilisez res.display() pour chaque resultat
+# TODO étudiant : affichez les deux chemins et comparez les couts
+# Indice : utilisez res.display() pour chaque résultat
 # Puis expliquez pourquoi UCS trouve un chemin moins cher
 
-print(""Exercice a completer"")",,,,,,,,c625645659900989,,,,,,,
+print(""Exercice a completer"")",,,,,,,,1f16e4d071755e9f,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,d70d0737,markdown,fr,1c6c6c0c8d48dce9,"## 6. Recherche en Profondeur Iteree (IDDFS - Iterative Deepening DFS)
 
 IDDFS combine les avantages de BFS (completude, optimalite avec couts uniformes) et de DFS (faible consommation memoire).
@@ -11560,7 +11560,7 @@ On pourrait penser que re-explorer les niveaux superieurs est couteux. En realit
 $$N(IDDFS) = (d)b + (d-1)b^2 + ... + (1)b^d$$
 
 Pour $b=10, d=5$ : $N(IDDFS) = 123\,456$ vs $N(BFS) = 111\,111$. L'overhead n'est que d'environ 11%.",,,,,,,,1c6c6c0c8d48dce9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,e353dad2,code,fr,41e5bd2fed4e904e,"def depth_limited_search(problem, limit, verbose=False):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,e353dad2,code,fr,8d97aec2c2bea016,"def depth_limited_search(problem, limit, verbose=False):
     """"""
     Recherche en profondeur limitee.
     Retourne (result_node, cutoff_occurred)
@@ -11622,7 +11622,7 @@ def iterative_deepening_search(problem, max_depth=50, verbose=False):
 
         if result is not None:
             elapsed = (time.perf_counter() - start_time) * 1000
-            # Fusionner les noeuds explores de la derniere iteration
+            # Fusionner les noeuds explorés de la dernière itération
             all_explored = explored
             return SearchResult('IDDFS', result, total_expanded,
                                 total_generated, depth_limit,
@@ -11634,14 +11634,14 @@ def iterative_deepening_search(problem, max_depth=50, verbose=False):
     elapsed = (time.perf_counter() - start_time) * 1000
     return SearchResult('IDDFS', None, total_expanded, total_generated,
                         0, elapsed, all_explored)
-print(""Fonction depth_limited_search definie (DLS)"")",,,,,,,,41e5bd2fed4e904e,,,,,,,
+print(""Fonction depth_limited_search definie (DLS)"")",,,,,,,,8d97aec2c2bea016,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,51lrqc0do0m,markdown,fr,3e0468d898ca6c57,Appliquons maintenant IDDFS a notre probleme de reference et observons le comportement iteratif.,,,,,,,,3e0468d898ca6c57,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c2a90d58,code,fr,b5daf920d50e63f3,"# --- Application de IDDFS au probleme Bordeaux -> Strasbourg ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c2a90d58,code,fr,e6bd77fa08f5fa93,"# --- Application de IDDFS au problème Bordeaux -> Strasbourg ---
 
 print(""IDDFS : Bordeaux -> Strasbourg"")
 print(""="" * 60)
 result_iddfs = iterative_deepening_search(problem_bs, verbose=True)
-result_iddfs.display()",,,,,,,,b5daf920d50e63f3,,,,,,,
+result_iddfs.display()",,,,,,,,e6bd77fa08f5fa93,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8654007e,markdown,fr,5373adaef13f08a8,"### Interpretation - IDDFS et l'overhead de re-exploration
 
 **Sortie obtenue** : IDDFS teste successivement les limites de profondeur 0, 1, 2, ... jusqu'a trouver une solution.
@@ -11660,11 +11660,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8654007e,ma
 4. C'est l'algorithme recommande quand on ne connait pas la profondeur de la solution
 
 > **Recommandation AIMA** : IDDFS est generalement la methode de recherche non informee preferee quand l'espace de recherche est grand et la profondeur de la solution inconnue.",,,,,,,,5373adaef13f08a8,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a511d54f,code,fr,1f7728214c82900a,"# Visualisation du resultat IDDFS
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a511d54f,code,fr,d2af56a57200855c,"# Visualisation du résultat IDDFS
 draw_france_graph(france_graph, france_coords,
                   path=result_iddfs.path,
                   explored=set(result_iddfs.explored_order),
-                  title=f""IDDFS : {' -> '.join(result_iddfs.path)} (cout={result_iddfs.cost})"")",,,,,,,,1f7728214c82900a,,,,,,,
+                  title=f""IDDFS : {' -> '.join(result_iddfs.path)} (cout={result_iddfs.cost})"")",,,,,,,,d2af56a57200855c,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,6b351a0a,markdown,fr,eaac8adfeaeadfd0,"### Analyse de l'overhead de IDDFS
 
 Calculons l'overhead theorique de IDDFS par rapport a BFS sur un arbre regulier.",,,,,,,,eaac8adfeaeadfd0,,,,,,,
@@ -11705,7 +11705,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,0534d8ca,ma
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c90f52b8,markdown,fr,91514d434de10e8f,"## 7. Comparaison des algorithmes
 
 Comparons les quatre algorithmes sur le meme probleme pour observer leurs differences en pratique.",,,,,,,,91514d434de10e8f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a9239dba,code,fr,1ac2e666235cc5c3,"# --- Comparaison complete sur plusieurs problemes ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a9239dba,code,fr,fe99635747bf7874,"# --- Comparaison complète sur plusieurs problèmes ---
 
 test_cases = [
     ('Bordeaux', 'Strasbourg'),
@@ -11741,7 +11741,7 @@ for start, goal in test_cases:
         print(f""{name:<8} {path_str:<40} {result.cost:>8.0f} ""
               f""{result.nodes_expanded:>10} {result.nodes_generated:>10}"")
 
-    all_results.append((start, goal, results))",,,,,,,,1ac2e666235cc5c3,,,,,,,
+    all_results.append((start, goal, results))",,,,,,,,fe99635747bf7874,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,de0f681a,markdown,fr,c4249fb413dc3674,"### Interpretation - Comparaison experimentale
 
 **Observations** :
@@ -11758,10 +11758,10 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,de0f681a,ma
 2. **BFS** et **IDDFS** donnent le meme chemin (meme profondeur), mais des couts differents de UCS
 3. **DFS** peut trouver des chemins tres longs et couteux
 4. **IDDFS** explore plus de noeuds au total (overhead), mais utilise peu de memoire",,,,,,,,c4249fb413dc3674,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,12aac53c,code,fr,72dac54f7cb8984f,"# --- Tableau recapitulatif et graphique ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,12aac53c,code,fr,012737035298ee97,"# --- Tableau récapitulatif et graphique ---
 
-# Tableau recapitulatif theorique
-print(""\nTableau recapitulatif des proprietes"")
+# Tableau récapitulatif théorique
+print(""\nTableau récapitulatif des propriétés"")
 print(""="" * 85)
 print(f""{'Algorithme':<12} {'Complet?':<12} {'Optimal?':<15} ""
       f""{'Temps':<18} {'Espace':<15} {'Frontiere':<10}"")
@@ -11775,11 +11775,11 @@ rows = [
 for row in rows:
     print(f""{row[0]:<12} {row[1]:<12} {row[2]:<15} {row[3]:<18} {row[4]:<15} {row[5]:<10}"")
 
-print(""\n* Optimal uniquement si tous les couts d'action sont identiques."")",,,,,,,,72dac54f7cb8984f,,,,,,,
+print(""\n* Optimal uniquement si tous les couts d'action sont identiques."")",,,,,,,,012737035298ee97,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,sv3nbetj1ts,markdown,fr,51c893b52dc12774,Visualisons maintenant ces resultats sous forme de graphiques en barres pour mieux comparer les performances.,,,,,,,,51c893b52dc12774,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,f0dfb19c,code,fr,3fc78c86a36aefc7,"# --- Graphique comparatif ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,f0dfb19c,code,fr,cb33543f5d10debf,"# --- Graphique comparatif ---
 
-# Utiliser le premier probleme (Bordeaux -> Strasbourg) pour le graphique
+# Utiliser le premier problème (Bordeaux -> Strasbourg) pour le graphique
 _, _, results_bs = all_results[0]
 
 algos = ['BFS', 'DFS', 'UCS', 'IDDFS']
@@ -11789,11 +11789,11 @@ costs = [results_bs[a].cost for a in algos]
 
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
-# Noeuds explores
+# Noeuds explorés
 colors = ['#4169E1', '#228B22', '#FF8C00', '#8B008B']
 axes[0].bar(algos, expanded, color=colors, edgecolor='black')
 axes[0].set_ylabel('Nombre de noeuds')
-axes[0].set_title('Noeuds explores', fontweight='bold')
+axes[0].set_title('Noeuds explorés', fontweight='bold')
 for i, v in enumerate(expanded):
     axes[0].text(i, v + 0.2, str(v), ha='center', fontsize=10)
 
@@ -11818,7 +11818,7 @@ axes[2].legend()
 
 plt.suptitle('Comparaison : Bordeaux -> Strasbourg', fontsize=14, fontweight='bold')
 plt.tight_layout()
-plt.show()",,,,,,,,3fc78c86a36aefc7,,,,,,,
+plt.show()",,,,,,,,cb33543f5d10debf,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,8a658937,markdown,fr,e82ad0dc84902ed8,"### Interpretation - Graphiques comparatifs
 
 Les trois graphiques montrent les compromis entre les algorithmes :
@@ -11850,25 +11850,25 @@ Choisissez un trajet dans le graphe `france_graph` qui met en evidence une diffe
 - Un trajet long (4+ etapes) montrera mieux les differences
 - Comparez le cout BFS vs UCS pour voir l'impact des couts non uniformes
 - Utilisez `SearchResult.display()` pour afficher chaque resultat",,,,,,,,9048058b42bf6556,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,87f7a692,code,fr,94e9ca95cffc3f96,"# --- Exercice 3 : Comparaison experimentale personnalisee ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,87f7a692,code,fr,586da9b399e6b5f3,"# --- Exercice 3 : Comparaison experimentale personnalisee ---
 
-# TODO etudiant : choisissez un depart et une arrivee
+# TODO étudiant : choisissez un depart et une arrivee
 depart = None    # TODO etudiant : remplacer par une ville (ex: 'Grenoble')
 arrivee = None   # TODO etudiant : remplacer par une ville (ex: 'Lille')
 
-# TODO etudiant : instanciez le probleme
+# TODO étudiant : instanciez le problème
 # problem_custom = GraphProblem(depart, arrivee, france_graph)
 
-# TODO etudiant : executez les 4 algorithmes
+# TODO étudiant : exécutez les 4 algorithmes
 # Etape 1 : res_bfs = breadth_first_search(problem_custom)
 # Etape 2 : res_dfs = depth_first_search(problem_custom)
 # Etape 3 : res_ucs = uniform_cost_search(problem_custom)
 # Etape 4 : res_iddfs = iterative_deepening_search(problem_custom)
 
-# TODO etudiant : affichez un tableau comparatif
-# Indice : utilisez result.display() pour chaque resultat
+# TODO étudiant : affichez un tableau comparatif
+# Indice : utilisez result.display() pour chaque résultat
 
-print(""Exercice a completer"")",,,,,,,,94e9ca95cffc3f96,,,,,,,
+print(""Exercice a completer"")",,,,,,,,586da9b399e6b5f3,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,976cd451,markdown,fr,f70737af0fe6a872,"## 8. Exemple guide
 
 ### Exemple guide 1 : Trace manuelle de BFS
@@ -11951,9 +11951,9 @@ Le BFS explore tous les noeuds par niveau, donc on explore toutes les branches p
 Le DFS, quant à lui, va explorer une branche complète avant de revenir en arrière et ici il choisi directement la branche gauche. Il descend directement jusqu'à la solution, ce qui implique que très peu de noeuds sont explorés.
 
 DFS est meilleur quand la solution est profonde et bien orentiée dans l'ordre d'exploration, tandis que BFS souffre de l'explosion combinatoire en largeur.",,,,,,,,6f6377ec56d9a764,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,7cea7d47,code,fr,127636e2aa8813db,"# --- Exemple guide 2 : Construction d'un cas favorable a DFS ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,7cea7d47,code,fr,eef3d7013d381ff8,"# --- Exemple guide 2 : Construction d'un cas favorable a DFS ---
 #
-# Objectif : construire un probleme de graphe ou DFS explore
+# Objectif : construire un problème de graphe ou DFS explore
 # strictement moins de noeuds que BFS.
 #
 # Indices :
@@ -11961,8 +11961,8 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,7cea7d47,co
 #      (ex : depth=8, branching=3).
 #   2. Placez le but sur la PREMIERE branche exploree par DFS
 #      (la branche ""la plus a gauche"").
-#   3. Comparez le nombre de noeuds explores par breadth_first_search
-#      et depth_first_search sur ce probleme.
+#   3. Comparez le nombre de noeuds explorés par breadth_first_search
+#      et depth_first_search sur ce problème.
 #
 # A completer :
 
@@ -11985,7 +11985,7 @@ for i in range(depth):
                 deep_graph[node][fils] = 1
 
 
-# Exemple guide: definir goal_dfs (la feuille atteinte par la premiere branche)
+# Exemple guide: définir goal_dfs (la feuille atteinte par la première branche)
 # goal_dfs = ...
 goal_dfs = f""L{depth - 1}_0""
 
@@ -12000,24 +12000,24 @@ result_bfs_deep = breadth_first_search(problem_deep)
 result_dfs_deep = depth_first_search(problem_deep)
 
 
-# Exemple guide: comparer les compteurs de noeuds explores (attribut .counts
-# ou count de result.display() selon l'implementation utilisee).
+# Exemple guide: comparer les compteurs de noeuds explorés (attribut .counts
+# ou count de result.display() selon l'implémentation utilisée).
 print(""\nComparaison BFS vs DFS sur le cas profond"")
 print(""-"" * 50)
-print(f""BFS : {result_bfs_deep.nodes_expanded} noeuds explores, ""
+print(f""BFS : {result_bfs_deep.nodes_expanded} noeuds explorés, ""
       f""chemin de longueur {len(result_bfs_deep.path)-1}"")
-print(f""DFS : {result_dfs_deep.nodes_expanded} noeuds explores, ""
+print(f""DFS : {result_dfs_deep.nodes_expanded} noeuds explorés, ""
         f""chemin de longueur {len(result_dfs_deep.path)-1}"")
 
 print(""Exemple guide 2 : construction et comparaison terminees."")
-",,,,,,,,127636e2aa8813db,,,,,,,
+",,,,,,,,eef3d7013d381ff8,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,fc1fcb07,markdown,fr,004f1d12e592df8e,"### Exemple 3 : Recherche bidirectionnelle (BFS)
 
 **Principe** : lancez simultanement un BFS depuis l'etat initial et un BFS depuis l'etat but. Les deux recherches s'arretent quand leurs frontieres se rencontrent.
 
 **Avantage theorique** : complexite en $O(b^{d/2})$ au lieu de $O(b^d)$.
 ",,,,,,,,004f1d12e592df8e,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,e4ebee1b,code,fr,b8998d3e09020cfe,"# --- Exemple 3 : BFS bidirectionnel ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,e4ebee1b,code,fr,22472272d497db90,"# --- Exemple 3 : BFS bidirectionnel ---
 
 def bidirectional_bfs(problem, graph, verbose=False):
     """"""
@@ -12027,7 +12027,7 @@ def bidirectional_bfs(problem, graph, verbose=False):
     """"""
     start_time = time.perf_counter()
 
-    # Initialiser les structures pour BFS avant et arriere
+    # Initialiser les structures pour BFS avant et arrière
     frontier_fwd = deque([problem.initial])
     parent_fwd = {problem.initial: None}
     frontier_bwd = deque([problem.goal])
@@ -12035,7 +12035,7 @@ def bidirectional_bfs(problem, graph, verbose=False):
     expanded_nodes = 0
     central_point = None
 
-    # Boucle principale : alterner expansion avant/arriere
+    # Boucle principale : alterner expansion avant/arrière
     # Detecter le point de rencontre (noeud present dans les deux parent dicts)
     while frontier_fwd and frontier_bwd:
         if frontier_fwd:
@@ -12088,7 +12088,7 @@ def bidirectional_bfs(problem, graph, verbose=False):
     if verbose:
         print(f""point de rencontre: {central_point}"")
         print(f""chemin trouve: {' -> '.join(global_path)} (cout={total_cost})"")
-        print(f""noeuds explores: {expanded_nodes} en {elapsed:.2f} ms"")
+        print(f""noeuds explorés: {expanded_nodes} en {elapsed:.2f} ms"")
     return global_path, total_cost, expanded_nodes
 
 print(""BFS bidirectionnel : Bordeaux -> Strasbourg"")
@@ -12097,10 +12097,10 @@ bi_result = bidirectional_bfs(problem_bs, france_graph, verbose=True)
 
 # Comparer avec BFS classique
 print(""\nComparaison :"")
-print(f""  BFS classique     : {result_bfs.nodes_expanded} noeuds explores"")
+print(f""  BFS classique     : {result_bfs.nodes_expanded} noeuds explorés"")
 if bi_result:
-    print(f""  BFS bidirectionnel: {bi_result[2]} noeuds explores"")
-",,,,,,,,b8998d3e09020cfe,,,,,,,
+    print(f""  BFS bidirectionnel: {bi_result[2]} noeuds explorés"")
+",,,,,,,,22472272d497db90,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c9639a47,markdown,fr,cce80555932442fc,"### Exemple guide 3 : IDS avec suivi de memoire
 
 **Question** : Implementez une variante de la recherche en profondeur iteree (IDS) qui suit en detail la consommation memoire a chaque iteration.
@@ -12111,27 +12111,27 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c9639a47,ma
 
 **Contexte** : IDS est reconnu pour sa faible empreinte memoire ($O(bd)$) contre $O(b^d)$ pour BFS. Cet exercice vous demande de le verifier experimentalement.
 ",,,,,,,,cce80555932442fc,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,cda4121f,code,fr,dd5ab411b77e3a63,"# --- Exemple guide 3 : IDS avec suivi de memoire ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,cda4121f,code,fr,cd84b709e1a4d8f9,"# --- Exemple guide 3 : IDS avec suivi de mémoire ---
 #
-# Objectif : implementez iterative_deepening_search avec un suivi detaille
-# de la memoire utilisee a chaque iteration.
+# Objectif : implémentez iterative_deepening_search avec un suivi détaillé
+# de la mémoire utilisée a chaque itération.
 #
 # 1. Completez la fonction ids_with_memory() qui : 
 #    - Execute des DLS avec des profondeurs croissantes (0, 1, 2, ...)
-#    - A chaque iteration, enregistre :
+#    - A chaque itération, enregistre :
 #      * La profondeur limite
-#      * Le nombre de noeuds explores
+#      * Le nombre de noeuds explorés
 #      * Le nombre de noeuds generes
-#      * La taille maximale de la pile (memoire)
+#      * La taille maximale de la pile (mémoire)
 #    - Retourne un objet SearchResult et un dictionnaire memory_log
 #
-# 2. Comparez la consommation memoire de IDS avec celle de BFS
-#    sur le probleme Rennes -> Nice (le plus profond du notebook).
+# 2. Comparez la consommation mémoire de IDS avec celle de BFS
+#    sur le problème Rennes -> Nice (le plus profond du notebook).
 #
 # Indices :
 #   - Utilisez depth_limited_search comme sous-routine
-#   - Pour mesurer la memoire, comptez le nombre d'elements dans la pile
-#     recursive (profondeur d'appel = memoire utilisee)
+#   - Pour mesurer la mémoire, comptez le nombre d'éléments dans la pile
+#     récursive (profondeur d'appel = mémoire utilisée)
 #   - Un dictionnaire memory_log peut contenir : {""depth"": [...], ""memory"": [...]}
 #
 
@@ -12142,7 +12142,7 @@ def ids_with_memory(problem, max_depth=50, verbose=False):
     Retourne: (SearchResult, memory_log)
         memory_log = {""depth"": [...], ""expanded"": [...], ""memory"": [...]}
     """"""
-    # Exemple guide: implementation de cette fonction
+    # Exemple guide: implémentation de cette fonction
     memory_log = {
         ""depth"": [],
         ""expanded"": [],
@@ -12197,7 +12197,7 @@ def ids_with_memory(problem, max_depth=50, verbose=False):
             print(f""Profondeur {limit} | expanded={expanded} | memory={max_memory}"")
 
         if path:
-            # Creation d'un resultat simple compatible
+            # Création d'un résultat simple compatible
             class Result:
                 def __init__(self, path, expanded):
                     self.path = path
@@ -12206,14 +12206,14 @@ def ids_with_memory(problem, max_depth=50, verbose=False):
             return Result(path, total_expanded), memory_log
 
     return None, memory_log
-# Exemple guide: executez ids_with_memory sur le probleme Rennes -> Nice
+# Exemple guide: exécutez ids_with_memory sur le problème Rennes -> Nice
 # problem_rn = GraphProblem('Rennes', 'Nice', france_graph)
 # result_ids, mem_log = ids_with_memory(problem_rn, verbose=True)
 
-# Exemple guide: affichez un graphique comparant la memoire de IDS vs BFS
+# Exemple guide: affichez un graphique comparant la mémoire de IDS vs BFS
 # avec plt.plot(mem_log[""depth""], mem_log[""memory""], label=""IDS"")
 
-print(""Exemple guide 3 a completer"")",,,,,,,,dd5ab411b77e3a63,,,,,,,
+print(""Exemple guide 3 a completer"")",,,,,,,,cd84b709e1a4d8f9,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,0614293c,markdown,fr,b532eb0e60a027d7,"### Algorithme supplementaire
 
 Implementation complementaire des methodes de recherche non informee.",,,,,,,,b532eb0e60a027d7,,,,,,,
@@ -12227,22 +12227,22 @@ print(f""Noeuds explorés : {result_ids.nodes_expanded}"")",,,,,,,,3cbcfc2681abf
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,0770259c,markdown,fr,ccab9a7b95c924e1,"IDS explore en profondeur limitée croissante, la mémoire utilisée est équivalente à la profondeur courante, avec une faible empreinte mémoire. Ici, on a une mémoire max = 5 et une croissance linéaire.
 
 Pour le BFS, on stocke tous les noeuds d'un niveau et la mémoire grandit exponentiellement en fonction de la profondeur.",,,,,,,,ccab9a7b95c924e1,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,1d1e2006,code,fr,581bff234decaff1,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,1d1e2006,code,fr,6ae2c057962d84f8,"import matplotlib.pyplot as plt
 
 # BFS pour comparaison
 result_bfs = breadth_first_search(problem_rn)
 
 # Courbe IDS
-plt.plot(mem_log[""depth""], mem_log[""memory""], label=""IDS (memoire)"")
+plt.plot(mem_log[""depth""], mem_log[""memory""], label=""IDS (mémoire)"")
 
 # Ligne BFS (constante)
 plt.axhline(y=result_bfs.nodes_expanded, linestyle='--', label=""BFS (approx)"")
 
 plt.xlabel(""Profondeur"")
 plt.ylabel(""Memoire"")
-plt.title(""Comparaison memoire IDS vs BFS"")
+plt.title(""Comparaison mémoire IDS vs BFS"")
 plt.legend()
-plt.show()",,,,,,,,581bff234decaff1,,,,,,,
+plt.show()",,,,,,,,6ae2c057962d84f8,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,a87492ca,markdown,fr,a7083dfdd927cf72,"## 9. Resume
 
 ### Concepts cles
