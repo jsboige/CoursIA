@@ -1,42 +1,34 @@
 /-
-  `Conway.Nim` — Jeu de Nim et théorème de Bouton (1901) / Sprague-Grundy
-  ========================================================================
-  Hommage à Conway — Calibration de harness : Nim / Sprague-Grundy (P1 : décomposition stratégique)
-  John Horton Conway (1937-2020) — co-fondateur de la théorie des jeux combinatoires.
+Conway's Nim / Sprague-Grundy (P1: strategic decomposition)
+John Horton Conway (1937-2020) — co-founder of combinatorial game theory.
 
-  Nim est le jeu impartial canonique. Sa théorie (le nim-sum / XOR des tailles
-  de tas) est la graine du théorème de Sprague-Grundy que Conway a généralisé
-  dans les nombres surréels et « On Numbers and Games ».
+English mirror of `Nim.lean` (FR canonical). Convention EPIC #4980
+(decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN
+sibling files — no inline bilingual block in a single file (Option B rejected).
+The module docstring differs from the FR version; the body signatures,
+definitions, theorems, and `#eval!` cases remain byte-identical between the
+two files.
 
-  Ce fichier formalise :
-    - le calcul du nim-sum (XOR-fold des tailles de tas) ;
-    - le critère de position gagnante (nim-sum ≠ 0) ;
-    - les lemmes fondamentaux du XOR (`xor_zero`, `xor_comm`, `xor_assoc`) ;
-    - la vérification de la stratégie de Bouton sur des positions de
-      référence (`[3,4,5]`, `[1,1]`, `[3,5,7]`, `[1,2,3]`) ;
-    - la preuve que toute position perdante (`nim-sum = 0`) ne peut mener
-      qu'à des positions gagnantes après un coup du premier joueur
-      (Bouton 1901, le théorème fondateur de la CGT).
+Nim is the canonical impartial game. Its theory (the nim-sum / XOR of heap
+sizes) is the seed of the Sprague-Grundy theorem that Conway generalized
+into the surreal numbers and "On Numbers and Games".
 
-  ### i18n — convention #4980 (ratifiée 2026-07-04)
-
-  Ce fichier est le **canonique français**. Le miroir anglais est le fichier
-  frère `Nim_en.lean` (`namespace Conway_en`, `open Conway`) — modèle
-  sibling pair, cf `code-style.md` §Lean i18n et l'analogue `Fractran.lean` /
-  `Fractran_en.lean`. Docstrings en français ici ; le corps (signatures, defs,
-  théorèmes, `#eval!`) reste byte-identique entre les deux fichiers. Pas de
-  bloc bilingue inline (option B rejetée).
-
-  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.451
-  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
-  sibling pair (MERGED), c.457 `Conway/LookAndSay` sibling pair (MERGED),
-  **c.518 `Conway/Nim` sibling pair (ce PR)**.
+This file formalizes:
+  - nim-sum computation (XOR-fold of heap sizes);
+  - the winning-position criterion (nim-sum ≠ 0);
+  - fundamental XOR lemmas (`xor_zero`, `xor_comm`, `xor_assoc`);
+  - Bouton's strategy verification on canonical positions
+    (`[3,4,5]`, `[1,1]`, `[3,5,7]`, `[1,2,3]`);
+  - the proof that any losing position (`nim-sum = 0`) can only lead to
+    winning positions after the first player's move (Bouton 1901, the
+    founding theorem of CGT).
 -/
 
-import Mathlib.Data.Nat.Bitwise
-import Mathlib.Data.List.Basic
+import Conway.Nim
 
-namespace Conway
+namespace Conway_en
+
+open Conway
 /-- The nim-sum of a position: XOR-fold of the heap sizes. -/
 def nimSum (heaps : List Nat) : Nat :=
   heaps.foldl (· ^^^ ·) 0
@@ -152,4 +144,4 @@ theorem winning_move_verified_357 :
   native_decide
 
 
-end Conway
+end Conway_en
