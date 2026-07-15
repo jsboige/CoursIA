@@ -3,9 +3,9 @@
   =====================================
 
   * Racine du sous-lac `knot_lean` (namespace `Knots`)
-    présentée selon la convention i18n #4980 (sibling pair / agrégateur
-    bilingue inline : `Knots.lean` canonique + `Knots_en.lean` jumeau,
-    via `globs := #[.submodules \`Knots]` dans `lakefile.lean`).
+    présentée selon la convention i18n #4980 (sibling pair : `Knots.lean`
+    canonique FR + `Knots_en.lean` jumeau EN, via
+    `globs := #[.submodules \`Knots, \`Knots_en]` dans `lakefile.lean`).
 
   * Cible EPIC #2874 (Phase 1) — formalisation de la théorie des
     nœuds en Lean 4 / Mathlib 4, briques :
@@ -27,36 +27,6 @@
     (compatibilité Mathlib 4 et tactic DSL), commentaires et chaînes
     de documentation en français par défaut (cf `#4980` ratifié
     2026-07-04).
-
----
-
-The `knot_lean` sub-lake root (`namespace Knots`).
-Aggregates the six modules below, following the i18n convention
-ratified in #4980 (sibling pair via `globs := #[.submodules
-\`Knots]` in `lakefile.lean`; this file is the canonical FR root,
-mirrored by `Knots_en.lean`).
-
-EPIC #2874 (Phase 1) — formalisation of knot theory in Lean 4 /
-Mathlib 4, structured into six bricks:
-
-- `Knots.Basic` — combinatorial foundations (crossings,
-  diagrams, PD-codes, Gauss codes, Dowker-Thistlethwaite notation)
-- `Knots.Reidemeister` — Reidemeister moves (RI, RII, RIII) and
-  invariance of the polynomial / combinatorial invariants
-- `Knots.Invariant` — polynomial invariants (Alexander, Jones),
-  tricolourability, genus
-- `Knots.Conway` — Conway notations and conventions
-- `Knots.Lidman` — external collaboration layer (Joshua Lidman),
-  orientation of knot varieties
-- `Knots.MathlibPrerequisites` — Mathlib 4 compatibility shim
-
-Inspired by `shua/leanknot` (https://github.com/shua/leanknot)
-and Prathamesh (2015), *Formalising Knot Theory in Isabelle/HOL*.
-
-Convention: `namespace Knots`, proofs and theorem statements in
-English (Mathlib 4 / tactic DSL compatibility); default language
-for documentation strings and prose comments is French per #4980
-(ratified 2026-07-04).
 -/
 
 import Knots.Basic
