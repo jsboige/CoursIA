@@ -23,7 +23,9 @@ as `Conway_en > Life_en` (level-2 sibling pattern, see `LightCone_en.lean` c.421
 import Conway.Life
 
 namespace Conway_en
+open Conway
 namespace Life_en
+open Life
 
 /-! ## The lexicographic comparator: order axioms -/
 

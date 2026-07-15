@@ -44,9 +44,7 @@ import Mathlib.Tactic
 -/
 
 namespace Conway_en
-open Conway
 namespace Life_en
-open Life
 
 /-! ## Basic types
 

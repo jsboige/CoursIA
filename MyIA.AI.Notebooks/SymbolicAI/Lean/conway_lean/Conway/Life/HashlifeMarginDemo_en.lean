@@ -25,9 +25,11 @@ N3 = P5 invariant restatement).
 import Conway.Life.MacroCell
 import Conway.Life.HashlifeCorrectness
 
-namespace Conway
+namespace Conway_en
+open Conway
 
 namespace Life_en
+open Life
 
 /-! ## The fixed-2 cap vs the n-aware frame
 
@@ -92,5 +94,5 @@ information again — the redesign (N2 threads this frame through the jump loop
 without re-framing; N3 restates the P5 invariant as "margin >= remaining n")
 builds on this N1 socle. -/
 
-end Life
+end Life_en
 end Conway_en

@@ -32,7 +32,6 @@ import Mathlib.Data.Int.Interval
 import Mathlib.Data.Finset.Prod
 
 namespace Conway_en
-open Conway
 
 /-- Chebyshev (king-move) distance on the integer lattice. -/
 def chebyshev (a b : ℤ × ℤ) : ℤ :=
