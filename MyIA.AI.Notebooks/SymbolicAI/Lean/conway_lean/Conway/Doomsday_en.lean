@@ -21,6 +21,7 @@ Conway passed away on Saturday, April 11, 2020.
 -/
 
 import Mathlib.Data.Int.ModEq
+import Conway.Doomsday
 
 namespace Conway_en
 
