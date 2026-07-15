@@ -211,29 +211,70 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
     )
 
 
+def _drift_detail(fr_blocks: list[str], en_blocks: list[str],
+                  fr_path: Path, en_path: Path) -> str:
+    """Actionable DRIFT detail: list blocks unique to each side rather than a
+    noisy unified diff. Used when the ordered AND sorted comparisons both fail.
+    """
+    fr_counter = Counter(fr_blocks)
+    en_counter = Counter(en_blocks)
+    only_en: list[str] = []
+    for blk, n in en_counter.items():
+        if fr_counter[blk] >= n:
+            fr_counter[blk] -= n
+        else:
+            only_en.append(blk)
+    only_fr = list(fr_counter.elements())
+    parts: list[str] = []
+    if only_en:
+        parts.append(f"{len(only_en)} block(s) only in EN:")
+        parts.append("\n---\n".join(
+            "\n".join(b.splitlines()[:6]) for b in only_en[:3]))
+    if only_fr:
+        parts.append(f"{len(only_fr)} block(s) only in FR:")
+        parts.append("\n---\n".join(
+            "\n".join(b.splitlines()[:6]) for b in only_fr[:3]))
+    if not parts:
+        # Blocks match by multiset but full-body diff still failed (line-level
+        # noise inside a block): fall back to the unified diff for diagnostic.
+        diff = difflib.unified_diff(
+            fr_blocks, en_blocks,
+            fromfile=str(fr_path), tofile=str(en_path), lineterm="",
+        )
+        return "\n".join(list(diff)[:40])
+    return "\n".join(parts)
+
+
 def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
     """Compare an FR/EN sibling pair. Returns ``(status, detail)`` where
     ``status`` is ``"OK"`` (bodies identical after normalization),
     ``"OK-CONSUMER"`` (the EN file imports the FR module and every declaration
-    block it does state matches an FR block — the rest is reused via the
-    import, not missing), or ``"DRIFT"`` (detail carries a short diff or the
-    offending blocks)."""
+    block it does state must match an FR block — the rest is reused via the
+    import, not missing),
+    ``"OK-REORDERED"`` (FR and EN share the same multiset of declaration
+    blocks but in a different order — legitimate per ConeKernel / C521-L3; the
+    detail reports how many blocks moved), or
+    ``"DRIFT"`` (detail lists the blocks unique to each side)."""
     fr_src = fr_path.read_text(encoding="utf-8")
     en_src = en_path.read_text(encoding="utf-8")
     fr_body = normalize_body(fr_src)
     en_body = normalize_body(en_src)
     if fr_body == en_body:
         return "OK", ""
+    fr_blocks = split_decls(fr_body)
+    en_blocks = split_decls(en_body)
     if imports_fr_sibling(strip_comments(en_src), fr_path.stem):
-        fr_blocks = Counter(split_decls(fr_body))
+        # Consumer pattern: each EN-stated block must match an FR block (the
+        # rest is legitimately reused via the import).
+        fr_counter = Counter(fr_blocks)
         unmatched: list[str] = []
-        for blk in split_decls(en_body):
-            if fr_blocks[blk] > 0:
-                fr_blocks[blk] -= 1
+        for blk in en_blocks:
+            if fr_counter[blk] > 0:
+                fr_counter[blk] -= 1
             else:
                 unmatched.append(blk)
         if not unmatched:
-            reused = sum(fr_blocks.values())
+            reused = sum(fr_counter.values())
             return "OK-CONSUMER", (
                 f"{reused} FR declaration block(s) reused via import; "
                 "all EN-stated blocks match FR")
@@ -242,11 +283,16 @@ def check_pair(fr_path: Path, en_path: Path) -> tuple[str, str]:
         return "DRIFT", (
             f"consumer pattern, but {len(unmatched)} EN block(s) have no FR "
             f"counterpart:\n{preview}")
-    diff = difflib.unified_diff(
-        fr_body.splitlines(), en_body.splitlines(),
-        fromfile=str(fr_path), tofile=str(en_path), lineterm="",
-    )
-    return "DRIFT", "\n".join(list(diff)[:40])
+    # Third pattern (C521-L3 / #6727): same multiset of blocks, different
+    # order — legitimate when a lemma is declared at the site where it is
+    # first used rather than after a sibling lemma. Whitelisted via #6725
+    # (ConeKernel / ConeKernel_en).
+    if sorted(fr_blocks) == sorted(en_blocks) and fr_blocks != en_blocks:
+        moves = sum(1 for a, b in zip(fr_blocks, en_blocks) if a != b)
+        return "OK-REORDERED", (
+            f"{len(fr_blocks)} blocks shared, {moves} position(s) moved; "
+            "same multiset, order differs (legitimate, see C521-L3)")
+    return "DRIFT", _drift_detail(fr_blocks, en_blocks, fr_path, en_path)
 
 
 def _excluded(path: Path) -> bool:
@@ -302,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = 0
+    passed = consumer = reordered = failed = orphan = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -316,13 +362,17 @@ def main(argv: list[str] | None = None) -> int:
         elif status == "OK-CONSUMER":
             consumer += 1
             print(f"OK-CONSUMER  {en}  ({detail})")
+        elif status == "OK-REORDERED":
+            reordered += 1
+            print(f"OK-REORDERED  {en}  ({detail})")
         else:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
-    total = passed + consumer + failed + orphan
+    total = passed + consumer + reordered + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
-          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan")
+          f" | {consumer} consumer-pattern | {reordered} reordered"
+          f" | {failed} drift | {orphan} orphan")
     return 0 if (failed == 0 and orphan == 0) else 1
 
 

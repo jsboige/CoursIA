@@ -233,6 +233,102 @@ def test_fr_sibling_naming(tmp_path):
     assert fr_sibling(en).name == "Widget.lean"
 
 
+def test_check_pair_reorder_reports_ok_reordered(tmp_path):
+    """#6727 / C521-L3: same multiset of declaration blocks, different order
+    is legitimate (e.g. lemma declared at first-use site rather than after a
+    sibling). The checker must report ``OK-REORDERED`` instead of DRIFT.
+    """
+    fr = tmp_path / "Reorder.lean"
+    en = tmp_path / "Reorder_en.lean"
+    fr.write_text(
+        "namespace Game\n"
+        "def a : Nat := 1\n"
+        "def b : Nat := 2\n"
+        "def c : Nat := 3\n"
+        "end Game\n",
+        encoding="utf-8",
+    )
+    # EN declares in a different order (c, a, b) but same blocks.
+    en.write_text(
+        "namespace Game\n"
+        "def c : Nat := 3\n"
+        "def a : Nat := 1\n"
+        "def b : Nat := 2\n"
+        "end Game\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "OK-REORDERED", detail
+    assert "3 blocks shared" in detail
+    assert "legitimate" in detail
+
+
+def test_check_pair_reordered_does_not_mask_real_drift(tmp_path):
+    """If the multisets differ, ``OK-REORDERED`` must NOT trigger — the
+    status stays ``DRIFT`` and the detail lists the unique blocks."""
+    fr = tmp_path / "Mixed.lean"
+    en = tmp_path / "Mixed_en.lean"
+    fr.write_text(
+        "namespace Mixed\n"
+        "def a : Nat := 1\n"
+        "def b : Nat := 2\n"
+        "end Mixed\n",
+        encoding="utf-8",
+    )
+    en.write_text(
+        "namespace Mixed\n"
+        "def a : Nat := 1\n"
+        "def c : Nat := 3\n"
+        "end Mixed\n",
+        encoding="utf-8",
+    )
+    status, detail = check_pair(fr, en)
+    assert status == "DRIFT"
+    assert "only in EN" in detail or "only in FR" in detail
+
+
+def test_real_conekernel_pair_is_ok():
+    """Regression guard for the ConeKernel / #6725 merge: the checker must
+    keep reporting the pair as OK (bodies already byte-identical at
+    normalize_body level after the C521-L3 reorder fixes). Skips silently if
+    the file is not present in the checkout.
+    """
+    en = (REPO_ROOT
+          / "MyIA.AI.Notebooks" / "GameTheory" / "game_theory_lean"
+          / "CooperativeGames" / "ConeKernel_en.lean")
+    fr = en.with_name("ConeKernel.lean")
+    if not en.exists() or not fr.exists():
+        return  # tree not present in this checkout; skip silently
+    status, detail = check_pair(fr, en)
+    assert status == "OK", detail
+
+
+def test_real_repo_scan_has_no_orphan_drift():
+    """Sanity sweep across the merged rollout: every discoverable pair must
+    resolve to OK / OK-CONSUMER / OK-REORDERED — no DRIFT, no ORPHAN. Catches
+    regressions in the byte-identity invariant for all 6 lakes."""
+    from check_i18n_siblings import find_en_files
+    scan_roots = [
+        REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean",
+        REPO_ROOT / "MyIA.AI.Notebooks" / "GameTheory" / "game_theory_lean",
+    ]
+    en_files: list[Path] = []
+    for r in scan_roots:
+        if r.is_dir():
+            en_files.extend(find_en_files([r]))
+    assert en_files, "expected at least one *_en.lean in the rollout trees"
+    failures: list[str] = []
+    for en in en_files:
+        fr = fr_sibling(en)
+        if not fr.exists():
+            failures.append(f"ORPHAN {en.name}")
+            continue
+        status, detail = check_pair(fr, en)
+        if status not in ("OK", "OK-CONSUMER", "OK-REORDERED"):
+            failures.append(f"{status} {en.name}\n{detail}")
+    assert not failures, "\n".join(failures)
+
+
 def test_find_en_files_skips_excluded(tmp_path):
     good = tmp_path / "Good_en.lean"
     good.write_text("x", encoding="utf-8")
