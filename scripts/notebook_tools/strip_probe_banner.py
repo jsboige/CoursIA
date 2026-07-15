@@ -385,6 +385,28 @@ def iter_notebooks(nb_root):
         yield path
 
 
+def submodule_dirs(repo_root):
+    """Absolute paths of git submodule directories declared in .gitmodules.
+
+    Used by --exclude-submodules so the CI banner-guard scans main-repo
+    notebooks only. Submodules are separate repos with their own CI (e.g. the
+    Z3.Linq notebook residual is tracked in #6633 against MyIntelligenceAgency/Z3.Linq).
+    """
+    gitmodules = os.path.join(repo_root, ".gitmodules")
+    dirs = []
+    if not os.path.isfile(gitmodules):
+        return dirs
+    with open(gitmodules, "r", encoding="utf-8") as fh:
+        for line in fh:
+            stripped = line.strip()
+            if stripped.startswith("path"):
+                _, _, rel = stripped.partition("=")
+                rel = rel.strip()
+                if rel:
+                    dirs.append(os.path.abspath(os.path.join(repo_root, rel)))
+    return dirs
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Strip the .NET Interactive probeAddresses banner from notebooks"
@@ -400,6 +422,10 @@ def main():
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
                         help="with --scan-all: exit 1 if any banner found")
+    parser.add_argument("--exclude-submodules", action="store_true",
+                        help="skip notebooks inside git submodules (main-repo only; "
+                             "used by the CI banner-guard so it stays green while a "
+                             "submodule residual is tracked in its own repo)")
     args = parser.parse_args()
 
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -417,6 +443,17 @@ def main():
         paths = [target]
     else:
         parser.error("path not found: %s" % target)
+
+    if args.exclude_submodules:
+        subs = submodule_dirs(repo_root)
+        if subs:
+            before = len(paths)
+            paths = [p for p in paths
+                     if not any(os.path.abspath(p).startswith(s + os.sep) for s in subs)]
+            excluded = before - len(paths)
+            if excluded:
+                print("(excluded %d notebook(s) inside %d submodule(s))"
+                      % (excluded, len(subs)))
 
     total_files = 0
     total_banners_found = 0

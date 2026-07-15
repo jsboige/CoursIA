@@ -1,0 +1,65 @@
+name: banner-guard
+
+# Durable anti-regression guard for the .NET Interactive `probeAddresses` banner
+# leak vector (secrets-hygiene.md, Stop & Repair). The banner is injected by the
+# dotnet-interactive kernel into the FIRST code cell's text/html output and embeds
+# the host's network interfaces (LAN 192.168.x, Docker/WSL 172.x, and sometimes a
+# public IPv6) -- a machine-fingerprint leak committed with the notebook outputs.
+#
+# No active gate caught it until now: the pre-commit hooks are disabled and
+# pip-leak-guard.yml only inspects `!pip install` cells. This workflow closes that
+# gap by FAILING any PR that commits a banner into a main-repo notebook. The fix is
+# the canonical output-only surgical strip (Stop & Repair-compliant, NOT a hand-edit
+# of a cell output -- re-execution re-injects, so the strip is the durable form).
+#
+# Scope: main-repo notebooks only (`--exclude-submodules`). Submodules are separate
+# repos with their own CI; the Z3.Linq residual is tracked in #6633 against
+# MyIntelligenceAgency/Z3.Linq. Mirrors the #6312 probeAddresses `--apply` sweep,
+# transposed to a durable CI guard (cf pip-leak-guard.yml design note).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/strip_probe_banner.py'
+      - '.github/workflows/banner-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/strip_probe_banner.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: banner-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  banner-scan:
+    name: "probeAddresses banner guard (main-repo notebooks)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Default checkout does not initialise submodules; --exclude-submodules is a
+      # belt-and-suspenders so the guard stays main-repo-only even run locally.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Fail if any probeAddresses banner is committed"
+        run: |
+          if ! python scripts/notebook_tools/strip_probe_banner.py --scan-all --check --exclude-submodules; then
+            echo ""
+            echo "::error::A probeAddresses banner was committed in a notebook output -- it leaks this repo runner's / a contributor's host network interfaces."
+            echo "Fix (output-only surgical strip, Stop & Repair-compliant, NOT a hand-edit):"
+            echo "    python scripts/notebook_tools/strip_probe_banner.py --apply <path>"
+            echo "then re-commit. Re-executing a .NET notebook re-injects the banner, so run the strip after every re-exec before committing."
+            exit 1
+          fi
