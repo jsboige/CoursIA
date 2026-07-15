@@ -33,4 +33,4 @@ require mathlib from git
 
 @[default_target]
 lean_lib «ERC20» where
-  globs := #[.submodules `ERC20]
+  globs := #[.submodules `ERC20, `ERC20_en]
