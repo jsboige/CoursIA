@@ -21193,9 +21193,6 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,d9a7fc63,code,fr,9fb
 # distribution = classify_and_visualize_nash_distribution(all_games)
 # print(distribution)
 print(""Exercice a completer : classification et visualisation des 576 jeux 2x2"")",,,,,,,,9fb00676c204caa4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,683ba13f,code,fr,22bafdb26f3b8780,"# Espace pour les exercices
-print(""Exercice a completer : exploration topologique"")
-",,,,,,,,22bafdb26f3b8780,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,e0e384d4,markdown,fr,f1c9cf052d2e0060,"### A retenir
 
 L'espace des jeux 2x2 est une **structure topologique** (tore), pas un catalogue de cas isoles :
@@ -29407,50 +29404,6 @@ print(f""  solve_ultimatum([2,4,5,6,8]) -> {solve_ultimatum([2,4,5,6,8])}"")
 print(f""  build_three_player_entry_game() -> {build_three_player_entry_game().name}"")
 print(f""  verify_spe(entry_game, ...) -> {verify_spe(entry_game, {1: entrant_enter, 2: incumbent_acc})['is_spe']}"")
 ",,,,,,,,572e52ae27c8cec1,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,da8ad4f4,markdown,fr,3a1eb929b7dc52d8,"---
-
-## Exercice : Construction d'un arbre de jeu
-
-**Objectifs** :
-
-1. Construire un arbre de jeu sequentiel a 3 joueurs
-2. Identifier les ensembles d'information
-3. Calculer les equilibres de Nash en strategies comportementales
-
-**Contexte** : Trois firmes (A, B, C) choisissent sequentiellement d'entrer ou non sur un marche. La firme A decide en premier, puis B observe le choix de A, puis C observe les choix de A et B.
-
-**Questions** :
-
-1. Dessinez l'arbre de jeu complet avec les gains
-2. Quels sont les ensembles d'information ?
-3. Trouvez l'equilibre de Nash en strategies comportementales
-",,,,,,,,3a1eb929b7dc52d8,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,40df1ebd,code,fr,34ca0d8c18b9a14d,"# Exercice : Construction d'arbre de jeu
-
-# TODO: Definir la structure de l'arbre
-# Chaque noeud: {'player': int, 'children': dict, 'payoffs': tuple}
-# tree = {
-#     'player': 0,  # Joueur A (racine)
-#     'actions': {
-#         'Enter': {...},
-#         'Stay': {...}
-#     }
-# }
-
-# TODO: Implementer une fonction pour afficher l'arbre
-# def print_tree(node, indent=0):
-#     ...
-
-# TODO: Implementer la recherche d'equilibres (backward induction)
-# def find_equilibrium(tree):
-#     ...
-
-# TODO: Afficher l'equilibre trouve
-# equilibrium = find_equilibrium(tree)
-# print(f""Equilibre: {equilibrium}"")
-
-print(""Exercice a completer : construction d'arbre de jeu"")
-",,,,,,,,34ca0d8c18b9a14d,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30fc7f9e,markdown,fr,441bd8ae4e6275ce,"## 9. Resume
 
 | Concept | Description |
@@ -29473,22 +29426,6 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30fc7f9e,markdown,
 ### Prochaine etape
 
 **Notebook 8 : Jeux Combinatoires** - Theorie de Conway, jeux de Nim et theoreme de Sprague-Grundy.",,,,,,,,441bd8ae4e6275ce,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,95f3a7ac,markdown,fr,1440120110342954,"### Exercice 3 : Verification de SPE
-
-Verifiez que le profil strategique trouve dans l'exemple guide (cellule 20) est bien un equilibre parfait en sous-jeux (SPE).
-
-- **Etape 1** : Identifier tous les sous-jeux du jeu a 3 joueurs
-- **Etape 2** : Pour chaque sous-jeu, verifier que la strategie est un Nash equilibrium
-- **Etape 3** : Conclure sur le statut SPE
-
-*Indice* : Un SPE exige que chaque sous-jeu soit en Nash, pas seulement le jeu global.",,,,,,,,1440120110342954,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,9d35c7ef,code,fr,2b3823b3c9bab199,"# Exercice 3 : Verification de SPE
-# TODO etudiant : pour chaque sous-jeu identifie, verifier que la strategie est un best response
-# Indice : comparez le payoff de la strategie SPE avec les deviations unilaterales
-def verify_spe(game_tree: dict, strategy_profile: dict) -> dict:
-    return {""is_spe"": False, ""violations"": []}  # TODO etudiant
-
-print(""Exercice a completer"")",,,,,,,,2b3823b3c9bab199,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,9c667a32,markdown,fr,a686a6878547d23e,"> **Lien avec la formalisation Lean** : La conversion entre forme extensive et forme normale (section 7) s'appuie sur les structures de jeux definies dans [`lean_game_defs/Basic.lean`](lean_game_defs/Basic.lean), qui formalise `NormalFormGame` et `Game2x2`. Les equilibres de Nash en strategies pures et mixtes, calcules ici sur la matrice issue de la conversion, correspondent aux definitions formelles de [`lean_game_defs/Nash.lean`](lean_game_defs/Nash.lean) (`isPureNashEquilibrium`, `isNashEquilibrium`). La theorie des ensembles d'information et de l'equilibre parfait en sous-jeux (SPE) sera approfondie dans les notebooks 9 et 10 avec l'induction arriere.",,,,,,,,a686a6878547d23e,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,225fe7df,markdown,fr,8638ca075289b409,"## Resume et perspectives
 
@@ -30923,25 +30860,62 @@ L'analyse de periodicite revele des structures interessantes :
 3. **Pre-periode nulle** : Tous les exemples ont une pre-periode de 0, ce qui signifie que la periodicite commence immediatement. C'est typique des jeux de soustraction simples.
 
 > **Theoreme de Guy** : Pour tout jeu de soustraction fini, la sequence de Grundy est ultimement periodique. La periode peut etre bornee, mais les bornes exactes restent un probleme ouvert.",,,,,,,,250d40724a1e571d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,bd482d55212fc011,"// Visualisation ASCII de la periodicite (matplotlib -> barres ASCII)
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,772906c5a254ee97,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
+// (Zero `#r ""nuget:""` sur une charting-lib : les charting libs pinent une vieille beta
+//  de Microsoft.DotNet.Interactive et font timeout le restore, cluster-wide. Le formatter
+//  ci-dessous emet du HTML Plotly brut, sans dependence. Cf #3801 / C548-L2.)
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// Visualisation de la sequence de Grundy (valeurs G(n)) et de sa structure periodique.
 var moves = new HashSet<int> { 1, 3, 4 };
 var (pre, period, seq) = FindPeriodicity(moves, maxN: 100);
-
-Console.WriteLine($""Jeu de soustraction S({{1,3,4}}) - Periode = {period}, Pre-periode = {pre}"");
-Console.WriteLine();
 int show = Math.Min(35, seq.Count);
-for (int i = 0; i < show; i++)
-{
-    string bar = new string('#', seq[i]);
-    string marker = """";
-    if (i == pre) marker += ""  <- fin pre-periode"";
-    if (i == pre + period) marker += ""  <- fin 1ere periode"";
-    Console.WriteLine($""{i,3} |{bar}{marker}"");
-}
+
+var xIdx = Enumerable.Range(0, show).Select(i => (double)i).ToArray();
+var yGrundy = seq.GetRange(0, show).Select(v => (double)v).ToArray();
+
+// Couleur : rouge pour la pre-periode, bleu pour la premiere periode, gris pour la suite.
+var barColors = Enumerable.Range(0, show).Select(i =>
+    i < pre ? ""#C44E52""
+    : i < pre + period ? ""#4C72B0""
+    : ""#888888"").ToArray();
+
+var barTrace = new Dictionary<string, object> {
+    [""name""] = ""G(n) (Grundy)"", [""x""] = xIdx, [""y""] = yGrundy, [""type""] = ""bar"",
+    [""marker""] = new { color = barColors } };
+string barJson = System.Text.Json.JsonSerializer.Serialize(barTrace);
+
+// Lignes verticales marquant la fin de pre-periode et la fin de la premiere periode.
+string ShapeLine(double x0, string color) =>
+    $""{{\""type\"":\""line\"",\""x0\"":{x0},\""x1\"":{x0},\""y0\"":0,\""y1\"":1,\""yref\"":\""paper\"","" +
+    $""\""line\"":{{\""color\"":\""{color}\"",\""width\"":1.5,\""dash\"":\""dash\""}}}}"";
+string shapes = ""["" + ShapeLine(pre, ""#C44E52"") + "","" + ShapeLine(pre + period, ""#4C72B0"") + ""]"";
+
+var layout = ""{\""title\"":{\""text\"":\""Sequence de Grundy du jeu de soustraction S({1,3,4})\""},"" +
+             ""\""xaxis\"":{\""title\"":{\""text\"":\""n (taille du tas)\""}},"" +
+             ""\""yaxis\"":{\""title\"":{\""text\"":\""G(n)\""}},"" +
+             ""\""shapes\"":"" + shapes + "","" +
+             ""\""showlegend\"":false,"" +
+             ""\""annotations\"":["" +
+             ""{\""x\"":"" + pre + "",\""y\"":1,\""yref\"":\""paper\"",\""text\"":\""fin pre-periode\"","" +
+               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#C44E52\"",\""size\"":10}},"" +
+             ""{\""x\"":"" + (pre + period) + "",\""y\"":0.95,\""yref\"":\""paper\"",\""text\"":\""fin 1ere periode\"","" +
+               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#4C72B0\"",\""size\"":10}}"" +
+             ""]}"";
+var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
+var markup = ""<div id=\"""" + divId + ""\""></div>"" +
+             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+             ""<script>Plotly.newPlot('"" + divId + ""',["" + barJson + ""],"" + layout + "")</script>"";
+display(new PlotlyHtml(markup));
+
 var onePeriod = seq.GetRange(pre, period);
-Console.WriteLine();
-Console.WriteLine($""Pre-periode: {pre}, Periode: {period}"");
-Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");",,,,,,,,bd482d55212fc011,,,,,,,
+Console.WriteLine($""Jeu de soustraction S({{1,3,4}}) - Periode = {period}, Pre-periode = {pre}"");
+Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");
+",,,,,,,,772906c5a254ee97,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,8a938606,markdown,fr,7ea428f15bd085f1,"---
 
 ## 2. Jeu de Wythoff
