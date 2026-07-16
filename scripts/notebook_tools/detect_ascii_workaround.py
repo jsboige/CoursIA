@@ -70,10 +70,8 @@ Known blind spots (valides c.543, a completer au fil des rencontres)
   (#6837 Search-11b sweep). Ce n'est PAS le pattern bar/char-repeat -- c'est un
   jugement pedagogique plus large et bien plus bruite (la plupart des tables de
   resultats sont legitimes). Hors scope par design.
-- FORMES HELPER C# : `new string('-', n)`, methodes .NET repetant un char. Le
-  detecteur helper-call couvre le `def` Python ; les idiom C# (.NET Interactive)
-  ne sont pas reconnus. La majorite des defects C# connus (#6826 App-8, #6829
-  GT-4c) sont deja fixes ; le residuel est a verifier manuellement.
+- CARACTERE VIA VARIABLE C# : `var c = '#'; new string(c, n)` (le char est une
+  variable au call-site, pas un litteral) -- rate, comme le pendant Python (c).
 - CARACTERE VIA VARIABLE : `c = '#'; print(c * n)` (le char est une variable, pas
   un litteral a l'endroit de la multiplication) -- rate. Pattern rare.
 - BARRES EN CARACTERE SEPARATEUR : un vrai histogramme dessine en `-` ou `=`
@@ -91,6 +89,9 @@ Pour chaque cellule code, l'outil cherche un CARACTERE DE REMPLISSAGE DE BARRE
   (3) helper-call : `def bar(v,c): return c*n` appele `bar(x, '|')` (analyses au
       niveau fonction -- relie le char du call-site au parametre retourne, forme
       canonique PyMC-17 cell6) ;
+  (4bis) C# (.NET Interactive) : `new string('#', barLen)` / `Enumerable.Repeat(
+      '#', n)` -- pendant .NET de `'#' * n`, meme discriminateur (fill-char, pas
+      separateur ; longueur derivee de donnees, pas un entier litteral) ;
   ET (4) la cellule n'utilise PAS un charting lib ;
   ET (5) la cellule n'est PAS une viz d'etat discret dominante.
 Chaque hit est rapporte avec index de cellule, signature detectee, et la ligne
@@ -179,6 +180,23 @@ BAR_LENGTH_FROM_SCALAR_RE = re.compile(
 #     `grid.get(nxt, "#")` (dict default) and dynamic-width borders -- none are data
 #     bars. The real signal ties the call-site char literal to a function whose body
 #     repeats a parameter: `def bar(v,c): return c * n` called as `bar(x, '|')`.
+# (e) C# (.NET Interactive) data-bar idiom: `new string('#', barLen)` /
+#     `Enumerable.Repeat('#', n)` is the .NET equivalent of Python `'#' * n`. Same
+#     discriminator as the Python forms: the char must be a FILL char (# * | blocks),
+#     NOT a separator (- = + . _ ^ space), and the length must be DATA-derived, not a
+#     bare integer literal (`new string('=', 60)` is a fixed-width separator/border).
+#     Survey of the current corpus: all 329 `new string`/`Enumerable.Repeat`/`PadLeft`
+#     occurrences use separator chars (- = . ^ space) -> this pattern yields 0 hits
+#     today (the known C# data-bar defects #6826 App-8, #6829 GT-4c are already
+#     fixed). It is a CAPABILITY extension + anti-regression guard: a future
+#     `new string('#', barLen)` regression would now be caught, closing the
+#     documented C# blind spot.
+CSHARP_BAR_RE = re.compile(
+    rf"(?:new\s+string|Enumerable\.Repeat)\s*\(\s*'{DATA_BAR_CHAR}'\s*,"
+    rf"(?!\s*\d+\s*[),])"            # exclude fixed-width literal count: new string('#', 40)
+    rf"\s*[^)]+\)",                  # length arg is a data expression, not a bare int literal
+    re.IGNORECASE,
+)
 
 # --- ASCII-viz comment + quantitative context ---
 ASCII_COMMENT_RE = re.compile(
@@ -278,6 +296,7 @@ def detect_cell(src: str) -> dict | None:
     has_inline_bar = bool(INLINE_BAR_RE.search(src))       # '#' * score (literal*var)
     has_bar_scalar = bool(BAR_LENGTH_FROM_SCALAR_RE.search(src))  # int(round(v*W)) / * W
     bar_param = _bar_helper_call(src)                       # def bar(v,c): return c*n; bar(x,'|')
+    has_csharp_bar = bool(CSHARP_BAR_RE.search(src))       # new string('#', barLen) / Enumerable.Repeat('#', n)
     ascii_comment = bool(ASCII_COMMENT_RE.search(src))
     quant_context = bool(QUANT_CONTEXT_RE.search(src))
 
@@ -299,6 +318,9 @@ def detect_cell(src: str) -> dict | None:
     if bar_param:
         is_defect = True
         signatures.append(f"bar_helper_call(param={bar_param})")
+    if has_csharp_bar:
+        is_defect = True
+        signatures.append("csharp_new_string_bar")
 
     if not is_defect:
         return None
@@ -307,7 +329,7 @@ def detect_cell(src: str) -> dict | None:
     context = ""
     for line in src.splitlines():
         if (INLINE_BAR_RE.search(line) or BAR_HELPER_RE.search(line)
-                or ASCII_COMMENT_RE.search(line)):
+                or CSHARP_BAR_RE.search(line) or ASCII_COMMENT_RE.search(line)):
             context = line.strip()[:100]
             break
     return {
