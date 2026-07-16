@@ -31,9 +31,9 @@ calculs de $\Phi$ : aucun substitut, aucune valeur fabriquee. Les systemes
 restent volontairement minuscules (3 noeuds, $2^3 = 8$ etats) car le calcul de
 $\Phi$ est exponentiel — c'est une contrainte intrinseque de l'IIT, discutee en
 conclusion.",,,,,,,,6c9e093987323ca0,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,982d42e5,markdown,fr,204b93d32ab5b1e4,"## Repères IIT canoniques
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,982d42e5,markdown,fr,265144f5e4b55c6c,"## Repères IIT canoniques
 
-> Vocabulaire de référence pour rattacher ce notebook à la colonne vertébrale de la série (mandat user *2026-07-03, directive 1 — recadrage IIT/$\Phi$*). Sources : [IIT-1-IntroToPyphi](../IIT-1-IntroToPyphi.ipynb) (fondations), [ICT-0-Framing](ICT-0-Framing.md) § *« Double lecture du sigle »*, [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) (texte fondateur, $\Phi_{\text{dyn}}$).
+> Vocabulaire de référence pour rattacher ce notebook à la colonne vertébrale de la série (mandat user *2026-07-03, directive 1 — recadrage IIT/$\Phi$*). Sources : [IIT-1-IntroToPyPhi](../IIT-1-IntroToPyPhi.ipynb) (fondations), [ICT-0-Framing](ICT-0-Framing.md) § *« Double lecture du sigle »*, [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) (texte fondateur, $\Phi_{\text{dyn}}$).
 
 Trois notions de **Integrated Information Theory** (Tononi, 2004/2008) suffisent pour ce qui suit :
 
@@ -43,7 +43,7 @@ Trois notions de **Integrated Information Theory** (Tononi, 2004/2008) suffisent
 
 Ce que ce notebook ajoute : $\Phi$ est habituellement calculé **état par état**, comme une photographie. ICT-1 le filme — on suit la *trajectoire* de $\Phi$ le long de $s_0 \rightarrow s_1 \rightarrow s_2 \rightarrow \dots$ pendant que le système déterministe évolue dans son espace d'états. Les trois questions (paysage, trajectoire, robustesse) sont les projections naturelles de $\Phi$ sur la dimension temporelle.
 
-**Pourquoi 3 nœuds.** Le calcul exact de $\Phi$ est exponentiel en $N$ (chaque bipartition d'un système à $N$ nœuds $= 2^{N-1} - 1$ coupes dirigées, plus le calcul EMD par coupe). Pour $N = 3$ on a $3$ bipartitions, et PyPhi termine en quelques millisecondes ; pour $N = 10$ le calcul devient intraitable — c'est la *contrainte intrinsèque* discutée en conclusion, et la motivation des approximations introduites par les strates suivantes ($\Phi_{\text{dyn}}$ dans [l'annexe fondatrice](ICT-0-Annexe-IntegratedComplexityTheory.md), $\Phi$-trajectoires échantillonnées, mesures variationnelles).",,,,,,,,204b93d32ab5b1e4,,,,,,,
+**Pourquoi 3 nœuds.** Le calcul exact de $\Phi$ est exponentiel en $N$ (chaque bipartition d'un système à $N$ nœuds $= 2^{N-1} - 1$ coupes dirigées, plus le calcul EMD par coupe). Pour $N = 3$ on a $3$ bipartitions, et PyPhi termine en quelques millisecondes ; pour $N = 10$ le calcul devient intraitable — c'est la *contrainte intrinsèque* discutée en conclusion, et la motivation des approximations introduites par les strates suivantes ($\Phi_{\text{dyn}}$ dans [l'annexe fondatrice](ICT-0-Annexe-IntegratedComplexityTheory.md), $\Phi$-trajectoires échantillonnées, mesures variationnelles).",,,,,,,,265144f5e4b55c6c,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,32e6860b,markdown,fr,cc884dd456ba05d3,"## 0. Mise en place
 
 On charge PyPhi et le module `ict.trajectories` (pose a cote de PyPhi, il gere
@@ -10896,9 +10896,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization.ipynb,78bbd
 classification_ex3 = None  # TODO etudiant : regles triees par sigma_real
 print(""Exercice 3 a completer -- voir l'Exemple guide 3 pour wolfram_trajectory"")
 ",,,,,,,,ccd5190abdfe9734,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,cell-741b486e,markdown,fr,f6e7a4c1d570e9af,"## Repères IIT — sous-systèmes et structures cause-effet
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-2-SelfSortingMorphogenesis.ipynb,cell-741b486e,markdown,fr,cbbbce34b8f75440,"## Repères IIT — sous-systèmes et structures cause-effet
 
-> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](ICT-1-PhiTrajectories.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../IIT-1-IntroToPyphi.ipynb) + [IIT-2 — Advanced Topics](../IIT-2-AdvancedTopics.ipynb).
+> Vocabulaire IIT nécessaire pour interpréter ICT-2 (self-sorting morphogenesis) en termes d'information intégrée. Pour Φ/TPM/partition (notions de base), voir [ICT-1](ICT-1-PhiTrajectories.ipynb) § Repères IIT canoniques. Pour le texte fondateur, voir [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) ($\Phi_{\text{dyn}}$). Source primaire : [IIT-1 — Intro to PyPhi](../IIT-1-IntroToPyPhi.ipynb) + [IIT-2 — Advanced Topics](../IIT-2-AdvancedTopics.ipynb).
 
 ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulève une question plus fine : **quelles parties du tableau qui se trie sont causalement responsables de ce tri ?** Cela exige deux notions que ICT-1 n'introduisait pas :
 
@@ -10911,7 +10911,7 @@ ICT-1 calculait $\Phi$ **état par état** sur le système entier. ICT-2 soulèv
 **Lecture IIT de ICT-2.** Le tableau qui se trie est un système $\mathcal{S}$ à $N$ cellules. À chaque état $s_t$, le **tri en cours** est un certain motif (zones homogènes + frontière). La question IIT est : *quelle est la valeur de $\Phi_{\mathrm{CE}}$ du système $\mathcal{S}$ dans cet état ?* Si $\Phi_{\mathrm{CE}} > 0$, le tableau est **causalement intégré** au-dessus de ses parties — la morphogenèse n'est pas un artefact local mais une structure globale qui contraint passé et futur. Si on bipartitionne en deux moitiés du tableau, on mesure l'information que chaque moitié génère *indépendamment* ; le MIP dit « la partition qui enlève le moins d'intégration possible » — c'est précisément la frontière morphologique. **Un tableau déjà trié a un $\Phi_{\mathrm{CE}}$ plus faible qu'un tableau en train de se trier** : une fois l'ordre établi, les cellules n'ont plus d'information à générer les unes sur les autres (leur état futur est fixé par la règle locale). Un tableau **chimerique** (cell 14-16) qui ne se trie pas, lui, conserve un $\Phi_{\mathrm{CE}}$ non trivial mais reste **piégé** dans un attracteur local — information présente, intégration sans progrès : c'est exactement le type de distinction que la triad IIT/ICT permet de poser.
 
 Ce notebook, comme ICT-1, **n'exécute pas PyPhi** sur les tableaux (le code resterait intraitable pour $N > 5$). Il introduit les concepts pour que ICT-6 (Sorting-to-TPM bridge, à venir) puisse les opérationnaliser sur les simulations.
-",,,,,,,,f6e7a4c1d570e9af,,,,,,,
+",,,,,,,,cbbbce34b8f75440,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb,8928045b,markdown,fr,0dfe84ec860b52b4,"# Tete-a-tete SAE <-> J-space -- les deux lentilles du workspace global sur Qwen3.5-9B-Base (couche 16)
 
 **Navigation** : [Index](README.md) | [<< ICT-24 WorkspaceIgnition](ICT-24-WorkspaceIgnition.ipynb) | [ICT-21 SAE Trajectoires >>](ICT-21-SAETrajectoires.ipynb)
