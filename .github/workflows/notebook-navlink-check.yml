@@ -1,0 +1,28 @@
+name: Notebook Navlink Check
+
+# CI gate for broken relative navlinks INSIDE .ipynb markdown cells.
+# Mirrors docs-link-check.yml (same --check --quiet convention), but for the
+# notebook navlink checker (check_notebook_navlinks.py, PR #6813). Enforces the
+# EPIC #5081 renumbering hygiene: any NEW broken navlink 404 introduced by a PR
+# fails the gate (exit 1). Pre-existing broken are tracked in the baseline
+# (scripts/tests/baseline_nb_navlinks.json) and do not block.
+#
+# The checker is stdlib-only (no deps) and handles un-checked-out submodules
+# (deep-links into git submodules are filtered via .gitmodules parse).
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ipynb'
+      - 'scripts/notebook_tools/check_notebook_navlinks.py'
+      - 'scripts/tests/baseline_nb_navlinks.json'
+      - '.github/workflows/notebook-navlink-check.yml'
+
+jobs:
+  check-navlinks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check notebook navlinks
+        run: python scripts/notebook_tools/check_notebook_navlinks.py --check --quiet
