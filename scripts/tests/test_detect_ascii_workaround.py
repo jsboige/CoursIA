@@ -11,9 +11,15 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Convention siblings (test_notebook_tools_pure.py, test_execute_qcpy_docker.py) :
+# inserer scripts/notebook_tools/ et importer le module directement. Importer
+# `notebook_tools.detect_ascii_workaround` (package-style) enregistrerait le
+# REPERTOIRE comme namespace package `notebook_tools` dans sys.modules, masquant
+# le module notebook_tools.py pour les autres tests de la session pytest
+# (ImportError "unknown location" en CI Scripts Tests).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
 
-from notebook_tools.detect_ascii_workaround import SKIP_DIRS, _should_skip, _iter_notebooks
+from detect_ascii_workaround import SKIP_DIRS, _should_skip, _iter_notebooks
 
 
 class TestSkipDirs:
