@@ -12,11 +12,11 @@ Ces projets servent donc d'**exemples-capstones** : chacun est autonome (son pro
 
 | Projet | Description | Séries mobilisées |
 | --- | --- | --- |
-| [matching-cv/](matching-cv/) | Application web Flask qui compare trois algorithmes d'appariement CV ↔ fiche de poste : mots-clés (baseline), similarité sémantique par embeddings, et appariement stable de Gale-Shapley. | GameTheory, GenAI, ML |
+| [matching-cv/](../matching-cv/) | Application web Flask qui compare trois algorithmes d'appariement CV ↔ fiche de poste : mots-clés (baseline), similarité sémantique par embeddings, et appariement stable de Gale-Shapley. | GameTheory, GenAI, ML |
 
 ## Focus — matching-cv : trois lectures d'un même problème
 
-Le projet [matching-cv/](matching-cv/) prend un problème unique — apparier des CV de consultants à des fiches de poste — et le résout de **trois façons**, chacune ancrée dans une série différente. C'est précisément ce contraste qui en fait un projet cross-séries :
+Le projet [matching-cv/](../matching-cv/) prend un problème unique — apparier des CV de consultants à des fiches de poste — et le résout de **trois façons**, chacune ancrée dans une série différente. C'est précisément ce contraste qui en fait un projet cross-séries :
 
 | Algorithme | Principe | Série d'origine |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ Le projet [matching-cv/](matching-cv/) prend un problème unique — apparier de
 
 La leçon transversale est que **le « meilleur » appariement dépend du critère** : le meilleur score individuel (algorithme 2) n'est pas le même que l'appariement globalement stable au sens de Gale-Shapley (algorithme 3), où aucune paire candidat/poste n'a intérêt à se ré-apparier. Comparer les deux sur les mêmes données rend visible la différence entre *optimisation locale* et *stabilité globale*.
 
-> **Note pédagogique.** matching-cv a été produit sous orchestration automatisée comme extension d'un atelier élémentaire ; sa trace d'orchestration n'a pas été conservée. Sa valeur tient à l'**illustration** de l'intégration cross-séries plus qu'à un déroulé pas-à-pas — voir son [README dédié](matching-cv/README.md) et son [introduction](matching-cv/docs/INTRODUCTION.md) pour le détail.
+> **Note pédagogique.** matching-cv a été produit sous orchestration automatisée comme extension d'un atelier élémentaire ; sa trace d'orchestration n'a pas été conservée. Sa valeur tient à l'**illustration** de l'intégration cross-séries plus qu'à un déroulé pas-à-pas — voir son [README dédié](../matching-cv/README.md) et son [introduction](../matching-cv/docs/INTRODUCTION.md) pour le détail.
 
 ---
 
