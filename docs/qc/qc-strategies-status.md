@@ -69,7 +69,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 |--------|-------:|---------|
 | Vérifié (tranche 1, firsthand) | 13 | statut firsthand confirmé dans le tableau ci-dessus |
 | Vérifié (tranche 2, backtests QC Cloud MCP) | 5 | métriques réelles (Sharpe/CAGR/MaxDD) — **toutes Needs-improvement** (PSR < 50 %, pas d'edge statistique) |
-| Vivant (best-guess, non vérifié) | 77 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
+| Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN |
+| Vivant (best-guess, non vérifié) | 72 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
 | Vivant (README revendique vérifié) | 1 | README revendique un backtest QC Cloud — à recroiser firsthand |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -116,21 +117,35 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `HAR-RV-Kelly` | `projects/HAR-RV-Kelly/` | Volatility / Kelly | **Needs-improvement** | pleine période (2516 j.) ; Sharpe 0.146 ; CAGR 4.23 % ; MaxDD 12.8 % ; PSR 3.0 % ; NP 51.3 % ($50 666) — quasi-baseline, edge nul |
 | `InverseVolatility-Rank` | `projects/InverseVolatility-Rank/` | Risk-parity inversé | **Needs-improvement / near-BROKEN** | pleine période (1629 j.) ; Sharpe 0.124 ; CAGR 4.13 % ; **MaxDD 41.0 %** ; PSR 1.9 % — drawdown inacceptable, edge nul |
 
-#### Vivant (best-guess, non vérifié) (77)
+#### Vérifié (tranche 3, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 3 (#1621)** : 5 stratégies « Vivant » promues via backtests QC Cloud réels
+> (MCP `qc-mcp`, backtests « aligned 2018–2025 » relus firsthand). Cohorte **Momentum / Factor /
+> Composite** (différente de la cohorte Vol-* de la tranche 2, pour variété intra-famille). Métriques
+> pleine période in-sample (non walk-forward OOS). **Image plus nuancée que la tranche 2** : un seul
+> candidat présente une edge statistiquement significative (PSR > 50 %), 2 sont marginales, 2 sont
+> BROKEN / sous-performantes — le bucket « Vivant » n'est donc pas uniformément faible.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `BlackLitterman-Momentum` | `projects/BlackLitterman-Momentum/` | Factor / Momentum | **Alive (edge candidat)** | 2018–2025 (2766 j.) ; **Sharpe 0.83** ; CAGR 15.83 % ; MaxDD 16.9 % ; **PSR 51.4 %** ; NP 404.0 % ($405 328) — **seule stratégie de la cohorte avec PSR > 50 %** (edge statistiquement significative) ; à confirmer en walk-forward OOS |
+| `composite-c2-equityfactor` | `projects/composite-c2-equityfactor/` | Composite equity/factor | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.574 ; CAGR 11.94 % ; MaxDD 18.6 % ; PSR 25.8 % ; NP 120.4 % ($105 319) — décent mais edge non significative |
+| `AssetClassMomentum-QC` | `projects/AssetClassMomentum-QC/` | Cross-asset momentum | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.22 ; CAGR 6.64 % ; MaxDD 28.1 % ; PSR 3.8 % ; NP 56.9 % ($43 119) — edge nul, drawdown élevé |
+| `MomentumRegime-AdaptiveWeights` | `projects/MomentumRegime-AdaptiveWeights/` | Momentum / Régime | **Needs-improvement / near-cash** | 2018–2025 (1761 j.) ; **Sharpe −0.729** ; CAGR 1.88 % ; MaxDD 4.3 % ; PSR 17.4 % ; NP 13.9 % — Sharpe négatif (sous le sans-risque), quasi-flat |
+| `Cloud-SectorRotation-Momentum` | `projects/Cloud-SectorRotation-Momentum/` | Rotation sectorielle | **BROKEN** | 2018–2025 (1761 j.) ; **Sharpe −0.029** ; CAGR 2.13 % ; **MaxDD 42.7 %** ; PSR 0.5 % ; NP 15.9 % — flat + drawdown catastrophique, edge nul |
+
+#### Vivant (best-guess, non vérifié) (72)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `AdaptiveAssetAllocation` | `projects/AdaptiveAssetAllocation/` | Multi-asset allocation | Vivant | main.py: class AdaptiveAssetAllocation(QCAlgorithm) + quantbook.ipynb |
-| `AssetClassMomentum-QC` | `projects/AssetClassMomentum-QC/` | Cross-asset momentum | Vivant | main.py: class AssetClassMomentumAlgorithm(QCAlgorithm) |
 | `BTC-ML` | `projects/BTC-ML/` | ML Crypto | Vivant | main.py: class MyEnhancedCryptoMlAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
-| `BlackLitterman-Momentum` | `projects/BlackLitterman-Momentum/` | Factor / Momentum | Vivant | main.py: class BlackLittermanMomentum(QCAlgorithm) |
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | Vivant | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
 | `CausalEventAlpha` | `projects/CausalEventAlpha/` | Causal alpha | Vivant | main.py: class CausalEventAlphaAlgorithm(QCAlgorithm) ; aucun notebook compagnon |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
 | `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | Vivant | main.py: class CloudMeanReversionSectors(QCAlgorithm) |
-| `Cloud-SectorRotation-Momentum` | `projects/Cloud-SectorRotation-Momentum/` | Rotation sectorielle | Vivant | main.py: class SectorRotationMomentum(QCAlgorithm) |
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | Vivant | main.py: class VolTargetingAlgorithm(QCAlgorithm) |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | Vivant | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb |
@@ -172,7 +187,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `MacroFactorRotation-QC` | `projects/MacroFactorRotation-QC/` | Rotation actions/obligations | Vivant | main.py: class AIStocksBondsRotationAlgorithm(QCAlgorithm) — nom classe ≠ nom dossier (cf. incertitudes) |
 | `Markov-Regime-Detection` | `projects/Markov-Regime-Detection/` | Régime (Markov) | Vivant | main.py: class MarkovRegimeDetection(QCAlgorithm) |
 | `MeanReversion` | `projects/MeanReversion/` | Mean reversion | Vivant | main.py: class ShortTermMeanReversion(QCAlgorithm) + research.ipynb + quantbook.ipynb |
-| `MomentumRegime-AdaptiveWeights` | `projects/MomentumRegime-AdaptiveWeights/` | Momentum / Régime | Vivant | main.py: class MomentumRegimeAdaptiveWeights(QCAlgorithm) |
 | `MomentumStrategy` | `projects/MomentumStrategy/` | Sector momentum ETF | Vivant | main.py: class SectorMomentumETFRotation(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
@@ -196,7 +210,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `VIX-TermStructure` | `projects/VIX-TermStructure/` | Vol (VIX term) | Vivant | main.py: class VIXTermStructureStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | Vivant | main.py: class VolTargetMomentum(QCAlgorithm) |
 | `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | Vivant | main.py: class CompositeC1MultiAssetRotation(QCAlgorithm) |
-| `composite-c2-equityfactor` | `projects/composite-c2-equityfactor/` | Composite equity/factor | Vivant | main.py: class CompositeC2EquityFactor(QCAlgorithm) |
 
 #### Vivant (README revendique vérifié) (1)
 
