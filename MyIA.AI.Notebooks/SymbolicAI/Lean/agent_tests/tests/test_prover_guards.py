@@ -2835,3 +2835,82 @@ def test_latch_resolution_depth2_legacy_unchanged(tmp_path):
     project_dir, module_name = resolve_lake_module(str(depth2))
     assert Path(project_dir) == pkg_root
     assert module_name == "Conway.Doomsday"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Bug 1b (#6790 forensic) — final-verify false-negative anti-revert guard
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_final_verify_false_negative_incoherent_zero_errors():
+    """THE BUG CASE (DEMO 62): level_1_build=False but 0 compile errors on
+    build-passing content -> false-negative verify -> must NOT revert.
+
+    Before the guard, provers.py blindly reverted here, destroying a real
+    5-sub-goal decomposition whose tool build_check had passed 20 min earlier.
+    """
+    from prover.provers import _final_verify_is_false_negative
+
+    # Exact shape observed in DEMO 62: build-fail verdict from verifier.success
+    # (sensitive to the worktree "manifest out of date" warning prefix), but
+    # zero parseable compile errors in raw_output.
+    incoherent = {
+        "success": False,
+        "level_1_build": False,
+        "error_count": 0,
+        "errors": [],
+        "sorry_count": 8,
+        "raw_output": "warning: manifest out of date: git revision of dependency 'mathlib'...",
+    }
+    assert _final_verify_is_false_negative(incoherent) is True
+
+
+def test_final_verify_false_negative_via_empty_errors_no_count_field():
+    """Same incoherence expressed without an explicit error_count field — the
+    helper falls back to len(errors) and still detects the false-negative."""
+    from prover.provers import _final_verify_is_false_negative
+
+    incoherent = {"level_1_build": False, "errors": []}
+    assert _final_verify_is_false_negative(incoherent) is True
+
+
+def test_final_verify_real_failure_is_not_false_negative():
+    """A genuine build failure (>=1 parseable compile error) must still revert —
+    the guard never masks a real breakage."""
+    from prover.provers import _final_verify_is_false_negative
+
+    real_failure = {
+        "success": False,
+        "level_1_build": False,
+        "error_count": 3,
+        "errors": [
+            {"line": 29, "message": "unsolved goals"},
+            {"line": 41, "message": "type mismatch"},
+            {"line": 58, "message": "unknown identifier 'foo'"},
+        ],
+    }
+    assert _final_verify_is_false_negative(real_failure) is False
+
+
+def test_final_verify_build_ok_is_not_false_negative():
+    """A verify that reports level_1_build=True is not a false-negative (it
+    is a clean pass — the guard short-circuits and the caller skips revert)."""
+    from prover.provers import _final_verify_is_false_negative
+
+    ok = {"success": True, "level_1_build": True, "error_count": 0, "errors": []}
+    assert _final_verify_is_false_negative(ok) is False
+
+
+def test_final_verify_crash_synthetic_still_reverts():
+    """The verify-crash synthetic dict (errors=[{"message": "final-verify
+    crashed: ..."}], no error_count) must NOT be classified as a false-
+    negative — a crashed verify has unknown state and the prior safe behavior
+    (revert to original) is preserved. err_count falls back to len(errors)=1."""
+    from prover.provers import _final_verify_is_false_negative
+
+    crashed = {
+        "overall": False,
+        "level_1_build": False,
+        "errors": [{"message": "final-verify crashed: KeyError('foo')"}],
+    }
+    assert _final_verify_is_false_negative(crashed) is False
