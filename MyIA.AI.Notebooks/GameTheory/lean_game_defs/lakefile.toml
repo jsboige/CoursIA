@@ -8,7 +8,14 @@ defaultTargets = ["LeanGameDefs"]
 
 [[lean_lib]]
 name = "LeanGameDefs"
-# `Basic_en` is the English twin of `Basic` (EPIC #4980 sibling-pair, namespace
-# `LeanGameDefs_en`). Listed as a root so the twin is built by CI (anti-ORPHAN-TRAP,
-# cf L504 root-twin-glob-pattern). The other 5 leaves are migrated in follow-up PRs.
-roots = ["Basic", "Basic_en", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret"]
+# Roots include the `_en` i18n siblings (EPIC #4980 sibling-pair Pattern A) so
+# that `lake build` (the CI verification path) actually compiles them — without
+# an explicit root, a `*_en.lean` mirror is an orphan that Lake never builds
+# and whose compile errors stay invisible. `Nash_en` reuses the FR `Basic`
+# identifiers (reuse-FR-names variant) so it imports `Basic`, not `Basic_en`.
+# `Combinatorial_en` is self-contained (no import), so it builds standalone.
+# `Basic_en` is the English twin of `Basic` (namespace `LeanGameDefs_en`).
+roots = [
+  "Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret",
+  "Nash_en", "Combinatorial_en", "Basic_en",
+]
