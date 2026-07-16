@@ -29,13 +29,23 @@ Comment ca marche
 
 Modes (convention check_docs_links.py)
 ---------------------------------------
-    python check_notebook_navlinks.py               # scan complet (exit 1 si broken)
+    python check_notebook_navlinks.py               # scan complet tracked-only (defaut, exit 1 si broken)
     python check_notebook_navlinks.py --baseline    # ecrit scripts/tests/baseline_nb_navlinks.json
     python check_notebook_navlinks.py --check       # check vs baseline (exit 1 si NEW broken)
     python check_notebook_navlinks.py --family Search  # limiter a une famille
     python check_notebook_navlinks.py NB.ipynb      # un seul notebook
     python check_notebook_navlinks.py --json        # sortie machine
     python check_notebook_navlinks.py --quiet       # sortie minimale (CI)
+    python check_notebook_navlinks.py --include-untracked  # legacy behavior (cf c.530)
+
+Filtrage git-tracked (c.530)
+-----------------------------
+Depuis c.530 le scanner ignore par defaut les .ipynb NON-TRACKED par git
+(artefacts Papermill `_output.ipynb` dans `.gitignore`, clones locaux non
+commits, etc.). Pour reproduire l'ancien rapport (tous les fichiers sur
+disque), passer `--include-untracked`. Incident fondateur c.529 : 116
+broken signales dont 116 sur `_output.ipynb` gitignored = 0 sur
+COMMITED (= phantom findings qui brulent les cycles workers).
 
 Exit codes
 ----------
@@ -52,6 +62,7 @@ Voir aussi
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import unquote
@@ -94,6 +105,27 @@ def _load_submodule_paths():
 
 
 SUBMODULE_PATHS = _load_submodule_paths()
+
+
+def _git_tracked_notebooks() -> set[str] | None:
+    """Return set of git-tracked .ipynb paths under NOTEBOOKS_ROOT, or None if not in a git repo.
+
+    Mirrors generate_catalog.py + scripts/lean/regression-scan.py:_git_tracked_files
+    so axis-2 audits never report on gitignored notebooks (e.g. Papermill `_output.ipynb`
+    artefacts, local lean-workspace clones) that live on disk but are never committed
+    -> false-positive degradations like the c.529 trap (50 reported, 0 real on COMMITED).
+    """
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", str(NOTEBOOKS_ROOT.relative_to(REPO_ROOT))],
+            capture_output=True, text=False, cwd=str(REPO_ROOT),
+        )
+        if result.returncode != 0:
+            return None
+        rels = result.stdout.decode("utf-8").strip("\x00").split("\x00")
+        return {r.replace("\\", "/") for r in rels if r.endswith(".ipynb")}
+    except (FileNotFoundError, OSError):
+        return None
 
 # Meme pattern que check_docs_links.py : [text](target) relatif seulement.
 # On depouille les ancres `#section` apres capture.
@@ -234,13 +266,33 @@ def scan_notebook(nb_path: Path):
     return broken
 
 
-def _iter_notebooks(family_filter=None):
-    """Genere les chemins de notebooks pedagogiques."""
+def _iter_notebooks(family_filter=None, tracked_only=True):
+    """Genere les chemins de notebooks pedagogiques.
+
+    Si tracked_only=True (defaut), restreint aux .ipynb git-tracked
+    (filtre les artefacts Papermill `_output.ipynb` et autres gitignored).
+    tracked_only=False reproduit l'ancien comportement (audit/debug).
+    """
     if not NOTEBOOKS_ROOT.is_dir():
         return
+    tracked_set = _git_tracked_notebooks() if tracked_only else None
+    if tracked_only and tracked_set is None:
+        # Pas en repo git (ou `git ls-files` indisponible) -> on degrade
+        # en "tous les fichiers sur disque" pour eviter un faux "0 broken"
+        # silencieux. Mais on PREVIENT le caller.
+        print("warn: --tracked-only demande mais `git ls-files` indisponible ; "
+              "fallback sur decouverte complete (possible false-positifs gitignored).",
+              file=sys.stderr)
     for nb in sorted(NOTEBOOKS_ROOT.rglob("*.ipynb")):
         if _should_skip(nb):
             continue
+        if tracked_only and tracked_set is not None:
+            try:
+                rel = nb.relative_to(REPO_ROOT).as_posix()
+            except ValueError:
+                continue
+            if rel not in tracked_set:
+                continue
         if family_filter is not None:
             # family = sous-dossier de niveau 1
             try:
@@ -307,7 +359,23 @@ def main(argv=None):
                         help="Comparer au baseline ; exit 1 si NEW broken (regression)")
     parser.add_argument("--json", action="store_true", help="Sortie JSON machine-readable")
     parser.add_argument("--quiet", action="store_true", help="Sortie minimale (CI)")
+    parser.add_argument(
+        "--tracked-only", action="store_true", default=True,
+        help="Restreint la decouverte aux notebooks git-tracked (exclut artefacts "
+             "Papermill `_output.ipynb` gitignored + clones locaux non commits). "
+             "DEFAULT ON depuis c.530 (sinon phantom findings massifs). "
+             "Utiliser --include-untracked pour forcer l ancien comportement."
+    )
+    parser.add_argument(
+        "--include-untracked", action="store_true", default=False,
+        help="Inclut les .ipynb sur disque non-tracked par git (legacy). "
+             "Equivalent a forcer --tracked-only=off ; preserve les audits "
+             "off-tree ou les catalogues locaux."
+    )
     args = parser.parse_args(argv)
+
+    # --include-untracked override le default --tracked-only=ON
+    tracked_only = not args.include_untracked
 
     # collecte des cibles
     if args.notebook:
@@ -315,9 +383,10 @@ def main(argv=None):
         if not p.is_file():
             print(f"error: notebook introuvable: {args.notebook}", file=sys.stderr)
             return 2
+        # Mode notebook ciblé : pas de filtre tracked (l'appelant nomme explicitement)
         targets = [p]
     else:
-        targets = list(_iter_notebooks(args.family))
+        targets = list(_iter_notebooks(args.family, tracked_only=tracked_only))
         if not targets:
             where = f"famille {args.family!r}" if args.family else "MyIA.AI.Notebooks/"
             print(f"error: aucun notebook trouve sous {where}", file=sys.stderr)
