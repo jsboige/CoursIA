@@ -1,0 +1,1166 @@
+notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,f4a5ed66,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,21e84a2e,markdown,fr,7a4235148df3407e,"# Duel Verbal : Barbie vs l'Âne de Shrek
+## Introduction - barbie schreck
+
+**Navigation** : [Index](../README.md)
+
+Ce notebook couvre les concepts et techniques principaux de barbie schreck. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de resultats.
+
+**Prerequis** : notions de base en Python et en algorithmique.
+",,,,,,,,7a4235148df3407e,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,da30ce89,markdown,fr,d5b0b2b299c5a230,"Notebook utilisant Semantic Kernel pour un débat contraint avec génération d'images
+",,,,,,,,d5b0b2b299c5a230,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,beaa46fc,code,fr,1a03546a3386985f,"# Import guards - availability flags for external dependencies
+
+try:
+    from IPython.display import display, Audio, Image as IPImage
+    IPYTHON_AVAILABLE = True
+except ImportError:
+    IPYTHON_AVAILABLE = False
+    print(f'  IPython non disponible - certaines fonctionnalites seront limitees')
+
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    print(f'  dotenv non disponible - certaines fonctionnalites seront limitees')
+
+try:
+    import semantic_kernel
+    SEMANTIC_KERNEL_AVAILABLE = True
+except ImportError:
+    SEMANTIC_KERNEL_AVAILABLE = False
+    print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+",,,,,,,,1a03546a3386985f,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a7548b48,markdown,fr,c2bd7773dd7fa517,"## Configuration initiale
+Chargement des variables d'environnement et initialisation des services
+",,,,,,,,c2bd7773dd7fa517,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,6653c56db3079ac9,"import os
+import random
+import logging
+from dotenv import load_dotenv
+from semantic_kernel import Kernel
+from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.connectors.ai.open_ai.services.open_ai_text_to_image import OpenAITextToImage
+from semantic_kernel.functions import kernel_function, KernelArguments
+from semantic_kernel.contents import ChatMessageContent, AuthorRole
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('BarbieVsAne')
+print(""Imports et configuration OK"")
+",,,,,,,,6653c56db3079ac9,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e9592b88,markdown,fr,f0a6763a701bca85,"## Définition des contraintes linguistiques
+Sélection aléatoire d'une contrainte pour le débat
+",,,,,,,,f0a6763a701bca85,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,91dea5ab52872319,"CONTRAINTES = [
+    (""Rime"", ""Chaque réplique doit contenir une rime parfaite""),
+    (""Shakespeare"", ""Imiter le style théâtral de Shakespeare""),
+    (""Chanson"", ""Répondre sur l'air de 'I'm a Believer'"")
+]
+
+contrainte_choisie = random.choice(CONTRAINTES)
+print(f""Contrainte choisie : {contrainte_choisie[0]}"")
+print(""Contraintes de debate definies"")
+",,,,,,,,91dea5ab52872319,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,994f885c,markdown,fr,9a92a9675ee164a5,"### Exercice 1 : Ajout de contraintes linguistiques personnalisees
+
+La liste `CONTRAINTES` contient actuellement trois styles (Rime, Shakespeare, Chanson). L'objectif est d'enrichir cette liste avec de nouvelles contraintes originales pour varier les debats.
+
+**Objectif** : ajouter au moins deux nouvelles contraintes a la liste, par exemple un style ""Haiku japonais"" (3 lignes, 5-7-5 syllabes) ou ""Code Python"" (repondre en utilisant la syntaxe Python).
+
+**Indices** :
+- # Etape 1 : Definir le nom et la description de chaque nouvelle contrainte
+- # Etape 2 : Ajouter les tuples `(nom, description)` a la liste `CONTRAINTES`
+- # Indice : respecter le format existant `(""Nom"", ""Description de la regle"")`",,,,,,,,9a92a9675ee164a5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bc6ea55e,code,fr,f432d5f6398f7544,"# Exercice 1 : Ajout de contraintes linguistiques personnalisees
+# TODO etudiant : ajouter de nouvelles contraintes a la liste
+
+NOUVELLES_CONTRAINTES = []  # Etape 1 : definir les nouvelles contraintes
+
+# Etape 2 : les ajouter a CONTRAINTES
+# CONTRAINTES.extend(NOUVELLES_CONTRAINTES)
+
+print(""Exercice a completer : nouvelles contraintes"")",,,,,,,,f432d5f6398f7544,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8d4bd174,markdown,fr,088f7af9fc6e3ff5,"## Création du kernel
+Initialisation des services OpenAI pour le chat et les images
+",,,,,,,,088f7af9fc6e3ff5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e,code,fr,e6a88241a34f1f64,"def create_kernel():
+    kernel = Kernel()
+    kernel.add_service(OpenAIChatCompletion(
+        service_id=""chat"",
+         ai_model_id=os.getenv(""OPENAI_CHAT_MODEL_ID""),
+        api_key=os.getenv(""OPENAI_API_KEY"")
+    ))
+    kernel.add_service(OpenAITextToImage(
+        service_id=""dalle"",
+        ai_model_id=""gpt-image-1"",
+        api_key=os.getenv(""OPENAI_API_KEY"")
+    ))
+    return kernel
+
+print(""Fonction create_kernel définie"")
+print(""Fonction create_kernel definie"")
+",,,,,,,,e6a88241a34f1f64,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,e3e2a2f117b776e7,"## Plugin de génération d'images
+Implémentation de la fonctionnalité de création d'illustrations
+",,,,,,,,e3e2a2f117b776e7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,644aac65,code,fr,f33dcf65e3174201,"class ImagePlugin:
+    def __init__(self, kernel):
+        self.text_to_image = kernel.get_service(""dalle"", OpenAITextToImage)
+
+    @kernel_function(name=""generate_image"", description=""Genere une image via DALL-E"")
+    async def generate(self, context: str) -> str:
+        try:
+            response = await self.text_to_image.generate_image(
+                description=f""Style cartoon comique - {context}"",
+                width=1024,
+                height=1024
+            )
+            return str(response)
+        except Exception as e:
+            logger.error(f""Erreur generation image: {e}"")
+            return """"
+print(""Classe ImagePlugin définie"")
+print(""Debat configure"")
+print(""Classe ImagePlugin definie"")
+",,,,,,,,f33dcf65e3174201,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,82f29e01,markdown,fr,4776d7aab82815c5,"## Configuration des agents
+Création des personnages avec leurs instructions spécifiques
+",,,,,,,,4776d7aab82815c5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e24e577d,code,fr,1f0f1331f3840fff,"# Création des kernels séparés
+kernel_barbie = create_kernel()
+kernel_ane = create_kernel()
+
+image_Plugin = ImagePlugin(kernel_ane)
+# Ajout du plugin uniquement à l'Âne
+kernel_ane.add_plugin(image_Plugin, plugin_name=""image_gen"")
+
+
+
+
+barbie = ChatCompletionAgent(
+    kernel=kernel_barbie,
+    name=""Barbie"",
+    instructions=f""""""
+    Tu es Barbie. Défends des positions optimistes avec élégance.
+    Contrainte obligatoire : {contrainte_choisie[1]}
+    """"""
+)
+
+ane = ChatCompletionAgent(
+    kernel=kernel_ane,
+    name=""Ane_Shrek"",
+    instructions=f""""""
+    Tu es l'Âne de Shrek. Utilise l'humour absurde et décalé.
+    Contrainte obligatoire : {contrainte_choisie[1]}
+    """"""
+)
+
+print(""Kernels et agents Barbie/Ane créés"")
+print(""Kernels et agents Barbie/Ane crees"")
+",,,,,,,,1f0f1331f3840fff,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,404418f6,markdown,fr,8f431d0c89d859e2,"### Exercice 2 : Creation d'un troisieme agent
+
+Le debat oppose actuellement Barbie et l'Ane de Shrek. L'objectif est d'ajouter un **troisieme personnage** au debat : un **Arbitre** qui commente les performances des deux duellistes a chaque tour.
+
+**Objectif** : creer un agent `ChatCompletionAgent` nomme ""Arbitre"" avec un kernel separe et des instructions systeme qui lui demandent de juger la qualite des repliques (respect de la contrainte, creativite, humour).
+
+**Indices** :
+- # Etape 1 : Creer un kernel dedie pour l'Arbitre avec `create_kernel()`
+- # Etape 2 : Definir les instructions de l'Arbitre (role, comportement attendu)
+- # Indice : s'inspirer des instructions de Barbie et l'Ane pour le format du prompt",,,,,,,,8f431d0c89d859e2,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,7416b1e6,code,fr,ed3e4a9e5c19b1c7,"# Exercice 2 : Creation d'un troisieme agent (Arbitre)
+# TODO etudiant : creer le kernel et l'agent Arbitre
+
+kernel_arbitre = None  # Etape 1 : creer un kernel avec create_kernel()
+ARBITRE_INSTRUCTIONS = """"  # Etape 2 : definir les instructions de l'arbitre
+
+arbitre = None  # TODO etudiant : creer le ChatCompletionAgent
+
+print(""Exercice a completer : agent Arbitre"")",,,,,,,,ed3e4a9e5c19b1c7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8736c2ad,markdown,fr,05522f7b193f4a3c,"## Stratégie de terminaison
+Arrêt du débat après 5 échanges
+",,,,,,,,05522f7b193f4a3c,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,0266617e,code,fr,5aca9c25814aee01,"# %% [code]
+from typing import ClassVar
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+
+class DebateTerminationStrategy(TerminationStrategy):
+    MAX_TURNS: ClassVar[int] = 5  # Annotation correcte avec ClassVar
+    
+    async def should_terminate(self, agent, history, cancellation_token=None) -> bool:
+        return len(history) >= self.MAX_TURNS
+print(""Stratégie de terminaison du débat configurée"")
+print(""Fonction create_kernel definie"")
+print(""Strategie de terminaison du debate configuree"")
+",,,,,,,,5aca9c25814aee01,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,6d3cb56eefc0affc,"## Lancement du débat
+Exécution de la conversation avec génération d'images
+",,,,,,,,6d3cb56eefc0affc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,4827e23af3544bbc,"async def run_debate():
+    logger.info(f""Contrainte active : {contrainte_choisie[0]}"")
+    
+    group_chat = AgentGroupChat(
+        agents=[barbie, ane],
+        termination_strategy=DebateTerminationStrategy()
+    )
+    
+    # Add initial topic message (SK requires non-empty chat history)
+    await group_chat.add_chat_message(
+        ChatMessageContent(role=AuthorRole.USER, content=""Commencez le duel verbal !"")
+    )
+    
+    async for msg in group_chat.invoke():
+        print(f""\n{msg.name}: {msg.content}"")
+        
+        if msg.name == ""Ane_Shrek"":
+            try:
+                image_result = await ane.kernel.invoke(
+                    function_name=""generate_image"",
+                    plugin_name=""image_gen"",
+                    arguments=KernelArguments(context=msg.content)
+                )
+                if image_result:
+                    import base64
+                    from IPython.display import display, Image
+                    img_str = str(image_result)
+                    if img_str.startswith(""http""):
+                        display(Image(url=img_str, width=300))
+                    else:
+                        display(Image(data=base64.b64decode(img_str), width=300))
+            except Exception as e:
+                logger.warning(f""Image generation skipped: {e}"")
+
+await run_debate()",,,,,,,,4827e23af3544bbc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c827dcb0,markdown,fr,f64cad0220e8bab5,"## Conclusion
+
+Ce notebook a permis d explorer les aspects essentiels de barbie schreck. Les points cles :
+
+- Les concepts fondamentaux ont ete presentes et illustres
+- Les exercices proposent une mise en pratique progressive
+- Les resultats obtenus permettent de valider la comprehension
+
+**Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,f64cad0220e8bab5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,f27b1648,markdown,fr,150575c6be5e2040,"### Exercice 3 : Strategie de terminaison personnalisee
+
+L'implementation actuelle arrete le debat apres un nombre fixe de tours (`MAX_TURNS = 5`). Imaginez un scenario ou le debat doit s'arreter dynamiquement selon le contenu des messages.
+
+**Objectif** : implementer une strategie de terminaison qui detecte quand un des deux personnages utilise un mot specifique (par exemple ""capituler"" ou ""abandon"") dans sa reponse, et arrete le debat immediatement.
+
+**Indices** :
+- # Etape 1 : Definir une liste de mots-cles declencheurs
+- # Etape 2 : Dans `should_terminate`, verifier si le dernier message contient un mot-cle
+- # Indice : utiliser `str(history[-1].content).lower()` pour lire le dernier message",,,,,,,,150575c6be5e2040,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,97ca931e,code,fr,c652ac2f77f73d39,"from typing import ClassVar
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+
+class SurrenderTerminationStrategy(TerminationStrategy):
+    # TODO etudiant : completer la strategy de terminaison par mots-cles
+    TRIGGER_WORDS: ClassVar[list[str]] = []  # Etape 1 : mots-cles declencheurs
+    
+    async def should_terminate(self, agent, history, cancellation_token=None) -> bool:
+        # Etape 2 : verifier si le dernier message contient un mot-cle
+        result = False  # TODO etudiant : remplacer par la logique de detection
+        return result
+
+print(""Exercice a completer : SurrenderTerminationStrategy"")",,,,,,,,c652ac2f77f73d39,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3dbb1aca,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,7a5a944e,markdown,fr,d90def923e958323,"# Jeu de devinette : Père Fouras vs Laurent Jalabert
+
+**Navigation** : [Index](../README.md)
+
+Dans ce notebook, nous allons simuler le duel légendaire entre le Père Fouras et Laurent Jalabert en utilisant Semantic Kernel avec des agents conversationnels.
+",,,,,,,,d90def923e958323,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,34b19aac,code,fr,dded437c58383e68,"# Import guards - availability flags for external dependencies
+
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    print(f'  dotenv non disponible - certaines fonctionnalites seront limitees')
+
+try:
+    import semantic_kernel
+    SEMANTIC_KERNEL_AVAILABLE = True
+except ImportError:
+    SEMANTIC_KERNEL_AVAILABLE = False
+    print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+
+# Bloc 1 - Installation et imports
+
+import os
+import logging
+from dotenv import load_dotenv
+from semantic_kernel import Kernel
+from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat
+from semantic_kernel.agents.strategies import KernelFunctionTerminationStrategy
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.contents import ChatHistory
+from semantic_kernel.functions import KernelArguments
+
+# Configuration des logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger('FortBoyard')
+
+# Chargement des variables d'environnement
+env_path = os.path.join(os.path.dirname(os.path.abspath(""."")), "".env"")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
+",,,,,,,,dded437c58383e68,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b793,markdown,fr,7616ae335173bb25,## Configuration des agents,,,,,,,,7616ae335173bb25,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,f831efcb9bbeae84,"# Bloc 2 - Création du kernel
+MOT_A_DEVINER = ""anticonstitutionnellement""
+
+def create_kernel():
+    kernel = Kernel()
+    model_id = os.getenv(""OPENAI_CHAT_MODEL_ID"", ""gpt-5-mini"")
+    kernel.add_service(OpenAIChatCompletion(
+        service_id=""openai"",
+        ai_model_id=model_id,
+        api_key=os.getenv(""OPENAI_API_KEY"")
+    ))
+    return kernel
+",,,,,,,,f831efcb9bbeae84,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,194199e7fc3383e1,## Définition des prompts,,,,,,,,194199e7fc3383e1,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9bedfe8b,code,fr,7f877f1f31e39469,"# Bloc 3 - Prompts des agents
+PERE_FOURAS_PROMPT = f""""""
+Tu es le Père Fouras de Fort Boyard. 
+Tu dois faire deviner le mot '{MOT_A_DEVINER}'. 
+Utilise des charades et réponses énigmatiques. 
+Ne révèle jamais directement le mot !
+""""""
+
+LAURENT_JALABERT_PROMPT = """"""
+Tu es Laurent Jalabert. 
+Tu dois deviner le mot en posant des questions fermées (Oui/Non).
+Sois perspicace et stratégique dans tes questions.
+""""""",,,,,,,,7f877f1f31e39469,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,5d256513c9d21692,"### Exercice 1 : Personnaliser les personnages du duel
+
+Les prompts actuels definissent le Pere Fouras comme enigmatique et Laurent Jalabert comme perspicace. L'objectif est de creer une variante du jeu avec deux personnages differents : un **Detective** (qui pose des questions deductives) et un **Temoin** (qui repond de maniere evasive sans reveler le mot).
+
+**Objectif** : ecrire les instructions systeme pour ces deux nouveaux personnages et configurer les agents correspondants.
+
+**Indices** :
+- # Etape 1 : Rediger le prompt du Temoin (role, regles, interdictions)
+- # Etape 2 : Rediger le prompt du Detective (strategie de questionnement)
+- # Indice : le Temoin ne doit jamais reveler le mot directement, mais peut donner des indices indirects",,,,,,,,5d256513c9d21692,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,fb5c1ca4effe98b3,"# Exercice 1 : Personnaliser les personnages du duel
+# TODO etudiant : definir les prompts et creer les agents
+
+TEMoin_PROMPT = """"  # Etape 1 : instructions du Temoin (evasif, indices indirects)
+DETECTIVE_PROMPT = """"  # Etape 2 : instructions du Detective (questions deductives)
+
+# Indice : creer les agents avec ChatCompletionAgent(kernel=..., name=..., instructions=...)
+temoin = None    # TODO etudiant : creer l'agent Temoin
+detective = None  # TODO etudiant : creer l'agent Detective
+
+print(""Exercice a completer : personnages Detective et Temoin"")",,,,,,,,fb5c1ca4effe98b3,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2b,markdown,fr,8e8c10732fb2e72b,## Création des agents avec stratégies personnalisées,,,,,,,,8e8c10732fb2e72b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,83e35526,code,fr,1884ec56d5922898,"# Bloc 4 - Définition des agents
+pere_fouras = ChatCompletionAgent(
+    kernel=create_kernel(),
+    name=""Pere_Fouras"",
+    instructions=PERE_FOURAS_PROMPT,
+)
+
+laurent_jalabert = ChatCompletionAgent(
+    kernel=create_kernel(),
+    name=""Laurent_Jalabert"",
+    instructions=LAURENT_JALABERT_PROMPT,
+)",,,,,,,,1884ec56d5922898,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,d24ddfa7e0e49490,## Stratégie de terminaison personnalisée,,,,,,,,d24ddfa7e0e49490,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a86ac80f,code,fr,c41a211f227072d5,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+from semantic_kernel.contents.chat_message_content import ChatMessageContent
+
+# Bloc 5 - Logique de terminaison
+class FortBoyardTerminationStrategy(TerminationStrategy):
+    """"""Arrête la partie si le mot est deviné""""""
+    
+    async def should_agent_terminate(
+        self, 
+        agent: ChatCompletionAgent, 
+        history: list[ChatMessageContent], 
+        cancellation_token = None
+    ) -> bool:
+        if not history:
+            return False
+        
+        last_message = str(history[-1].content).lower()
+        return MOT_A_DEVINER in last_message",,,,,,,,c41a211f227072d5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,81de6677,markdown,fr,d81293ac2973649b,"### Exercice 2 : Terminaison avec detection de renoncement
+
+La strategie actuelle arrete la partie uniquement si le mot est devine. Mais Laurent Jalabert pourrait aussi abandonner. L'objectif est de creer une strategie hybride qui arrete la partie si le mot est devine **ou** si Laurent exprime un renoncement (""je donne ma langue au chat"", ""j'abandonne"").
+
+**Objectif** : implementer `RenoncementTerminationStrategy` qui combine la detection du mot secret avec la detection de phrases d'abandon.
+
+**Indices** :
+- # Etape 1 : Definir une liste de phrases d'abandon typiques
+- # Etape 2 : Verifier si le dernier message contient une de ces phrases (en minuscules)
+- # Indice : combiner les deux conditions avec `or` dans `should_agent_terminate`",,,,,,,,d81293ac2973649b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,9a91cbf579858a4b,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+from semantic_kernel.contents.chat_message_content import ChatMessageContent
+
+class RenoncementTerminationStrategy(TerminationStrategy):
+    # TODO etudiant : implementer la strategie de terminaison hybride
+    PHRASES_ABANDON: list[str] = []  # Etape 1 : phrases de renoncement
+    
+    async def should_agent_terminate(self, agent, history: list[ChatMessageContent], cancellation_token=None) -> bool:
+        # Etape 2 : verifier mot devine OU abandon detecte
+        result = False  # TODO etudiant : remplacer par la logique
+        return result
+
+print(""Exercice a completer : RenoncementTerminationStrategy"")",,,,,,,,9a91cbf579858a4b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f51,markdown,fr,e28fd58700f688dc,## Configuration du groupe de discussion,,,,,,,,e28fd58700f688dc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fc868e1b,code,fr,e3c965a025256976,"# Bloc 6 - Configuration corrigée
+chat = AgentGroupChat(
+    agents=[pere_fouras, laurent_jalabert],
+    termination_strategy=FortBoyardTerminationStrategy(
+        agents=[laurent_jalabert],  # Définit explicitement les agents
+        maximum_iterations=20       # Définit le nombre max d'itérations
+    )
+)
+",,,,,,,,e3c965a025256976,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,ecc9f3c693bb86a7,## Lancement de la partie !,,,,,,,,ecc9f3c693bb86a7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,bad1ce48,code,fr,62bb9d8c5d80b76b,"from semantic_kernel.contents import AuthorRole, ChatMessageContent
+
+# Bloc 7 - Exécution du jeu
+async def jouer_partie():
+    logger.info(""Depart du duel Pere Fouras vs Laurent Jalabert !"")
+    logger.info(f""Mot a deviner : {MOT_A_DEVINER.upper()}"")
+    
+    # Message initial pour lancer la conversation
+    await chat.add_chat_message(
+        ChatMessageContent(role=AuthorRole.USER, content=""Pere Fouras, donne-moi un indice !"")
+    )
+    
+    async for message in chat.invoke():
+        role = message.role
+        logger.info(f""[{role}] : {message.content}"")
+    
+    logger.info(""Partie terminee !"")
+
+await jouer_partie()",,,,,,,,62bb9d8c5d80b76b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9c2a66c0,markdown,fr,ae41af7cc354dd2d,"### Exercice 3 : Systeme de score pour la partie
+
+Actuellement, la partie s'arrete simplement quand le mot est devine ou apres 20 iterations. L'objectif est d'ajouter un **systeme de score** qui compte le nombre de questions posees par Laurent Jalabert et affiche un score final.
+
+**Objectif** : ecrire une fonction `evaluer_partie` qui prend l'historique des messages et retourne un dictionnaire contenant le nombre de questions posees, si le mot a ete trouve, et un score (moins de questions = meilleur score).
+
+**Indices** :
+- # Etape 1 : Compter les messages ou le role est celui de Laurent Jalabert
+- # Etape 2 : Verifier si le mot secret apparait dans le dernier message
+- # Indice : le score peut etre `max(0, 100 - nb_questions * 10)`",,,,,,,,ae41af7cc354dd2d,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,c67bed915c276918,"def evaluer_partie(history_messages: list) -> dict:
+    # TODO etudiant : implementer le systeme de score
+    nb_questions = 0     # Etape 1 : compter les questions de Laurent
+    mot_trouve = False   # Etape 2 : verifier la presence du mot
+    
+    # Indice : parcourir history_messages et compter les messages de Laurent
+    score = None  # TODO etudiant : calculer le score
+    return {""nb_questions"": nb_questions, ""mot_trouve"": mot_trouve, ""score"": score}
+
+print(""Exercice a completer : systeme de score"")",,,,,,,,c67bed915c276918,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,068a6d38,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,238be99b,markdown,fr,43c47d13c7e2a626,"# Docteur vs ChatGPT : Chatbot medical multi-agent
+
+**Navigation** : [Index](../README.md)
+
+**Durée estimée** : 30 minutes | **Prérequis** : compte OpenAI avec clé API, connaissances de base en Python
+
+Dans ce cas d'usage, nous construisons un systeme de consultation medicale simulee ou trois agents IA cooperent : un **medecin generaliste** qui pose des questions, une **IA medicale** qui analyse les symptomes, et un **pharmacien** qui recommande des traitements. Le dialogue est orchestre par Semantic Kernel via `AgentGroupChat`, avec une strategie de terminaison automatique.
+
+> **Avertissement** : ce notebook est un exercice pedagogique. Les diagnostics et recommandations medicamenteuses sont simules et ne remplacent en aucun cas une consultation medicale reelle.
+",,,,,,,,43c47d13c7e2a626,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,a2b0c20a,code,fr,98e8009ebbbf579d,"# Import guards - availability flags for external dependencies
+
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    print(f'  dotenv non disponible - certaines fonctionnalites seront limitees')
+
+try:
+    import semantic_kernel
+    SEMANTIC_KERNEL_AVAILABLE = True
+except ImportError:
+    SEMANTIC_KERNEL_AVAILABLE = False
+    print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+",,,,,,,,98e8009ebbbf579d,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,4392065a,markdown,fr,e46046e0da2169a5,"## Import des bibliothèques
+",,,,,,,,e46046e0da2169a5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,7b7a307cbde18bdc,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt systeme et de plugins dedies via des `@kernel_function`.
+
+**Objectifs pedagogiques** :
+- Comprendre l'orchestration multi-agent avec `AgentGroupChat`
+- Utiliser des plugins `@kernel_function` pour doter les agents de capacites specifiques
+- Implementer une `TerminationStrategy` pour controler la fin du dialogue
+- Configurer `FunctionChoiceBehavior.Auto()` pour l'appel automatique de plugins",,,,,,,,7b7a307cbde18bdc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,3749930c,code,fr,ac18de33b3ce29f9,"import os
+import logging
+import asyncio
+from dotenv import load_dotenv
+from semantic_kernel import Kernel
+from semantic_kernel.agents import ChatCompletionAgent, AgentGroupChat
+from semantic_kernel.agents.strategies import TerminationStrategy
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.contents import ChatHistory
+from semantic_kernel.functions import kernel_function, KernelArguments
+from semantic_kernel.connectors.ai import FunctionChoiceBehavior
+from typing import Annotated
+print(""Imports OK"")
+print(""Imports et configuration OK"")
+",,,,,,,,ac18de33b3ce29f9,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6a7cc7f4,code,fr,b01728f11260e223,"# Charger les variables d'environnement
+load_dotenv()",,,,,,,,b01728f11260e223,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,50bcca21,markdown,fr,ec29444c3cb5f77b,"## Configuration des logs
+
+Le module `logging` permet de tracer les echanges entre agents en temps reel. Chaque message sera horodate et identifie par le nom de l'agent emetteur, ce qui facilite le debug des conversations multi-agent.",,,,,,,,ec29444c3cb5f77b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f57ef328,code,fr,66ee957e3bef0fc6,"# Configuration des logs
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger('MedicalAI')
+print(""Configuration des logs OK"")
+",,,,,,,,66ee957e3bef0fc6,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6ee57404,markdown,fr,cac3434bdb4c4c35,## Création du kernel Semantic Kernel,,,,,,,,cac3434bdb4c4c35,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,560d976c,code,fr,5ece31ba54a59f52,"# Création du kernel Semantic Kernel
+def create_kernel():
+    kernel = Kernel()
+    kernel.add_service(OpenAIChatCompletion(
+        service_id=""openai"",
+        ai_model_id=""gpt-4o-mini"",  # Modifier si besoin
+        api_key=os.getenv(""OPENAI_API_KEY"")
+    ))
+    return kernel
+print(""Kernel Semantic Kernel créé"")
+print(""Imports OK"")
+print(""Fonction create_kernel definie"")
+",,,,,,,,5ece31ba54a59f52,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,342dd780,markdown,fr,2cbf7c72f969ae70,"## Plugins medicaux : doter les agents de competences specifiques
+
+Chaque agent dispose d'un plugin dedie contenant des fonctions annotees avec `@kernel_function`. Ces fonctions agissent comme des outils que le LLM peut invoquer automatiquement lorsqu'il en a besoin :
+
+- **DoctorPlugin** : pose des questions de suivi en fonction du symptome mentionne
+- **MedicalAIPlugin** : evalue la gravite d'un symptome (Leger, Modere, Severe, Critique)
+- **PharmacistPlugin** : recommande un medicament adapte avec posologie et precautions",,,,,,,,2cbf7c72f969ae70,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8c1f2580,markdown,fr,0d84d58d0691dd06,Le kernel est l'element central de Semantic Kernel. La fonction `create_kernel()` instancie un kernel et y enregistre un service `OpenAIChatCompletion` qui fournira l'acces au modele GPT-4o-mini. Chaque agent utilisera ce kernel partage pour generer ses reponses.,,,,,,,,0d84d58d0691dd06,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,041704aa,code,fr,8e01c92f30814a8b,"class DoctorPlugin:
+    """"""Plugin permettant au médecin de poser des questions complémentaires sur les symptômes.""""""
+    @kernel_function(description=""Pose des questions supplémentaires pour affiner le diagnostic."")
+    def ask_followup_questions(self, symptom: Annotated[str, ""Symptôme décrit par l'utilisateur""]) -> str:
+        """"""Retourne une question en fonction du symptôme mentionné.""""""
+        questions_map = {
+            ""fièvre"": ""Depuis combien de temps avez-vous de la fièvre ?"",
+            ""maux de tête"": ""Avez-vous une sensibilité à la lumière ou au bruit ?"",
+            ""douleur thoracique"": ""La douleur est-elle aiguë ou diffuse ?"",
+        }
+        return questions_map.get(symptom.lower(), ""Pouvez-vous donner plus de détails sur vos symptômes ?"")
+
+class MedicalAIPlugin:
+    """"""Plugin qui analyse la gravité des symptômes.""""""
+    @kernel_function(description=""Vérifie la gravité d'un symptôme médical."")
+    def check_symptom_severity(self, symptom: Annotated[str, ""Symptôme décrit par l'utilisateur""]) -> str:
+        """"""Retourne une évaluation de la gravité du symptôme.""""""
+        severity_map = {
+            ""fièvre"": ""Modérée"",
+            ""maux de tête"": ""Léger"",
+            ""douleur thoracique"": ""Sévère"",
+            ""perte de connaissance"": ""Critique""
+        }
+        return severity_map.get(symptom.lower(), ""Inconnu - consultez un médecin."")
+
+class PharmacistPlugin:
+    """"""Plugin qui recommande des médicaments en fonction du diagnostic.""""""
+    @kernel_function(description=""Recommande un médicament adapté à un symptôme."")
+    def recommend_medication(self, symptom: Annotated[str, ""Symptôme décrit par l'utilisateur""]) -> str:
+        """"""Retourne une suggestion de médicament (avec précautions).""""""
+        medication_map = {
+            ""fièvre"": ""Paracétamol (500mg, toutes les 6h, max 3 jours)"",
+            ""maux de tête"": ""Ibuprofène (200mg, toutes les 8h, avec précaution si problème gastrique)"",
+            ""douleur thoracique"": ""Aucun médicament recommandé - Consultez un médecin immédiatement"",
+        }
+        return medication_map.get(symptom.lower(), ""Aucun médicament recommandé - Consultez un pharmacien."")
+print(""Classe DoctorPlugin définie"")
+print(""Classes DoctorPlugin, MedicalAIPlugin, PharmacistPlugin definies"")
+",,,,,,,,8e01c92f30814a8b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c3a57d0b,markdown,fr,60e5a05e340b8e6e,"### Exercice 1 : Plugin de verification des allergies
+
+Les plugins actuels couvrent les questions de suivi, la gravite et les medicaments. Il manque un plugin crucial : la **verification des allergies**. L'objectif est de creer `AllergyPlugin` qui permet a l'agent pharmacien de verifier si un medicament recommande est compatible avec les allergies declarees du patient.
+
+**Objectif** : implementer une classe `AllergyPlugin` avec une methode `check_allergy` annotee `@kernel_function` qui retourne un avertissement si le medicament est incompatible avec une allergie connue.
+
+**Indices** :
+- # Etape 1 : Definir un dictionnaire associant des allergies a des medicaments contre-indiques
+- # Etape 2 : Implementer la methode `check_allergy` avec les annotations de type `Annotated`
+- # Indice : utiliser le pattern des plugins existants (DoctorPlugin, PharmacistPlugin)",,,,,,,,60e5a05e340b8e6e,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,82094ec1,code,fr,b7e6599ca302d2e3,"class AllergyPlugin:
+    """"""Plugin de verification des allergies medicamenteuses.""""""
+    # TODO etudiant : implementer le plugin
+    
+    @kernel_function(description=""Verifie si un medicament est compatible avec les allergies du patient."")
+    def check_allergy(
+        self, 
+        medication: Annotated[str, ""Nom du medicament""], 
+        allergy: Annotated[str, ""Allergie declaree du patient""]
+    ) -> str:
+        # Etape 1 : definir les contre-indications connues
+        contraindications = {}  # TODO etudiant : dictionnaire allergie -> medicaments
+        
+        # Etape 2 : verifier et retourner le resultat
+        result = None  # TODO etudiant : logique de verification
+        return result  # TODO etudiant : retourner le message approprie
+
+print(""Exercice a completer : AllergyPlugin"")",,,,,,,,b7e6599ca302d2e3,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c6adcae8,markdown,fr,71caa2d83d69c3c2,## Création du Kernel,,,,,,,,71caa2d83d69c3c2,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6edc5679,code,fr,08fa670982b97e37,"# Création du kernel
+kernel = create_kernel()
+print(""Kernel instancie"")
+",,,,,,,,08fa670982b97e37,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,27e18741,markdown,fr,912cb6832b0144a9,## Ajout des plugins pour chaque agent,,,,,,,,912cb6832b0144a9,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,934c210f,code,fr,15cdf9a0e6b507bb,"# Ajout des plugins pour chaque agent
+kernel.add_plugin(DoctorPlugin(), plugin_name=""doctor"")
+kernel.add_plugin(MedicalAIPlugin(), plugin_name=""medical"")
+kernel.add_plugin(PharmacistPlugin(), plugin_name=""pharmacist"")
+print(""Kernel configuré avec le plugin médical"")
+print(""Classes plugins medicaux definies"")
+print(""Kernel configure avec le plugin medical"")
+",,,,,,,,15cdf9a0e6b507bb,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,d59030d3,markdown,fr,4506143aa54cefd9,"## Prompts systeme : definir le comportement de chaque agent
+
+Les prompts systeme sont les instructions qui guident le comportement de chaque agent. Ils etablissent le role, les contraintes et le style de reponse attendu. Une bonne conception de prompt est essentielle pour eviter les comportements indesirables (diagnostic premature, recommandation non fondee).",,,,,,,,4506143aa54cefd9,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,2ceb95fd,code,fr,7204ffc5b2db8385,"DOCTOR_PROMPT = """"""
+Vous êtes un médecin généraliste. Vous posez d'abord des questions pour mieux comprendre les symptômes de l'utilisateur,
+puis vous donnez un diagnostic probable basé sur votre expertise médicale. 
+Ne donnez jamais de diagnostic sans avoir recueilli assez d'informations.
+""""""
+
+AI_MEDICAL_PROMPT = """"""
+Vous êtes une IA médicale spécialisée en diagnostic. Analysez les symptômes fournis et proposez un diagnostic basé sur des statistiques et des études médicales. 
+Soyez clair et donnez plusieurs hypothèses si nécessaire.
+""""""
+
+PHARMACIST_PROMPT = """"""
+Vous êtes un pharmacien qualifié. En fonction du diagnostic fourni, vous recommandez les médicaments appropriés. 
+Mentionnez toujours les précautions d'utilisation et la nécessité d'une consultation médicale avant la prise de médicaments.
+""""""
+print(""Prompt médical configuré"")
+print(""Prompts medicaux configures"")
+",,,,,,,,7204ffc5b2db8385,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,35b7c5f2,markdown,fr,07008a60043992ab,"### Exercice 2 : Adapter les prompts pour un scenario pediatric
+
+Les prompts actuels sont configures pour un adulte. L'objectif est d'adapter le systeme pour une **consultation pediatric** : le medecin doit utiliser un langage adapte aux enfants, l'IA medicale doit prendre en compte les specificites pediatric (posologie differente, signes vitaux specifiques), et le pharmacien doit mentionner les precautions enfant.
+
+**Objectif** : ecrire les trois prompts systeme adaptes au contexte pediatric.
+
+**Indices** :
+- # Etape 1 : Modifier le prompt du medecin pour un langage accessible aux enfants
+- # Etape 2 : Adapter le prompt de l'IA medicale pour les dosages et signes pediatric
+- # Indice : ajouter des contraintes comme ""toujours mentionner le poids recommande pour la posologie""",,,,,,,,07008a60043992ab,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,41dedfea,code,fr,7f431eddf5f2de3e,"# Exercice 2 : Prompts adaptes au contexte pediatric
+# TODO etudiant : rediger les trois prompts pediatric
+
+PEDIATRIC_DOCTOR_PROMPT = """"    # Etape 1 : langage enfantin, questions adaptees
+PEDIATRIC_AI_PROMPT = """"        # Etape 2 : dosages enfant, signes specific
+PEDIATRIC_PHARMACIST_PROMPT = """"  # TODO etudiant : precautions enfant, posologie poids
+
+print(""Exercice a completer : prompts pediatric"")",,,,,,,,7f431eddf5f2de3e,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,56d7279a,markdown,fr,bbf0d058a94634e8,## Création des agents,,,,,,,,bbf0d058a94634e8,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8020ebad,markdown,fr,86ab464455528b32,"Les trois prompts systeme definissent le comportement et les contraintes de chaque agent. Le medecin doit poser des questions avant de diagnostiquer, l'IA medicale analyse les symptomes avec une approche statistique, et le pharmacien recommande des traitements en rappelant les precautions d'usage. Cette separation des roles est fondamentale dans une architecture multi-agent.",,,,,,,,86ab464455528b32,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c20f89b3,code,fr,3d38699948002bb4,"# Création des agents
+doctor_agent = ChatCompletionAgent(
+    kernel=kernel,
+    name=""Docteur_Humain"",
+    instructions=DOCTOR_PROMPT,
+)
+
+ai_medical_agent = ChatCompletionAgent(
+    kernel=kernel,
+    name=""IA_Medicale"",
+    instructions=AI_MEDICAL_PROMPT,
+)
+print(""Agents de conversation créés"")
+print(""Kernel configure avec plugin medical"")
+print(""Agents de conversation crees"")
+",,,,,,,,3d38699948002bb4,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,f026c6bd,markdown,fr,d6054fa55c5ef79b,"## Configuration pour que l'agent médical appelle automatiquement les plugins
+",,,,,,,,d6054fa55c5ef79b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,80cd3f50,code,fr,3a6d162f88e072cf,"settings = kernel.get_prompt_execution_settings_from_service_id(""openai"")
+settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+ai_medical_agent.arguments = KernelArguments(settings=settings)
+
+pharmacist_agent = ChatCompletionAgent(
+    kernel=kernel,
+    name=""Pharmacien"",
+    instructions=PHARMACIST_PROMPT,
+)
+print(""Paramètres d'exécution configurés"")
+print(""Parametres d execution configures"")
+",,,,,,,,3a6d162f88e072cf,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,33ffc948,markdown,fr,777bb084c01bb68e,## Définition d'une stratégie de terminaison,,,,,,,,777bb084c01bb68e,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,9c97ce93,markdown,fr,22a557c49f6f8eb4,"Le parametrage `FunctionChoiceBehavior.Auto()` permet a l'agent `IA_Medicale` d'invoquer automatiquement les plugins enregistres dans le kernel (gravite des symptomes, recommandations). Sans cette configuration, l'agent ne disposerait que de ses instructions textuelles pour formuler ses reponses.",,,,,,,,22a557c49f6f8eb4,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,8477b987,code,fr,d223cbb405a662db,"class MedicalTerminationStrategy(TerminationStrategy):
+    async def should_terminate(self, agent, history):
+        return len(history) >= 6  # On limite à 6 échanges
+print(""Stratégie de terminaison médicale définie"")
+print(""Strategie de terminaison medicale definie"")
+",,,,,,,,d223cbb405a662db,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c555c4b3,markdown,fr,52924bfb0fb653eb,"### Exercice 3 : Strategie de terminaison basee sur le diagnostic
+
+La strategie actuelle arrete apres 6 messages. L'objectif est d'implementer une strategie plus intelligente qui detecte quand un **diagnostic probable** a ete formule par l'IA medicale (presence de mots comme ""diagnostic"", ""hypothese"", ""probablement"" dans le dernier message).
+
+**Objectif** : creer `DiagnosticTerminationStrategy` qui arrete la conversation des qu'un diagnostic est emis ou apres 8 echanges maximum.
+
+**Indices** :
+- # Etape 1 : Definir une liste de mots-cles indicatifs d'un diagnostic
+- # Etape 2 : Verifier leur presence dans le contenu du dernier message
+- # Indice : combiner la condition de diagnostic avec un compteur maximum d'echanges",,,,,,,,52924bfb0fb653eb,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ee8117ae,code,fr,bbb48e86c815d7b3,"class DiagnosticTerminationStrategy(TerminationStrategy):
+    # TODO etudiant : implementer la detection de diagnostic
+    DIAGNOSTIC_KEYWORDS = []  # Etape 1 : mots-cles de diagnostic
+    MAX_EXCHANGES = 8
+    
+    async def should_terminate(self, agent, history):
+        # Etape 2 : verifier diagnostic OU limite d'echanges
+        result = False  # TODO etudiant : remplacer par la logique
+        return result
+
+print(""Exercice a completer : DiagnosticTerminationStrategy"")",,,,,,,,bbb48e86c815d7b3,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,c60d9197,markdown,fr,c2c13daa3e4e7371,## Création du chat groupé avec stratégie de terminaison,,,,,,,,c2c13daa3e4e7371,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,133e4244,markdown,fr,c4122ed1e1e0e007,"La classe `MedicalTerminationStrategy` herite de `TerminationStrategy` et implemente `should_terminate`. Ici, la condition est simple : apres 6 messages dans l'historique, le dialogue s'arrete. Cette approche evite les boucles infinies tout en laissant suffisamment d'echanges pour un diagnostic complet.",,,,,,,,c4122ed1e1e0e007,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,62f87cab,code,fr,c01fbc60b42fc540,"chat = AgentGroupChat(
+    agents=[doctor_agent, ai_medical_agent, pharmacist_agent],
+    termination_strategy=MedicalTerminationStrategy()  # Ajout de la stratégie
+)
+print(""Chat de groupe médical configuré"")
+print(""Prompts medicaux configures"")
+print(""Chat de groupe medical configure"")
+",,,,,,,,c01fbc60b42fc540,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,0c12975d,markdown,fr,4561be1ad4182028,## Fonction pour exécuter le dialogue,,,,,,,,4561be1ad4182028,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,6e4e04a9,markdown,fr,47ae267fb0a3c30f,"La fonction `run_medical_chat` orchestre le dialogue complet : elle recueille les symptomes initiaux via `input()`, transmet le message a l'`AgentGroupChat`, puis itere sur les reponses des agents. Le cycle se poursuit jusqu'a ce que la strategie de terminaison declare la consultation terminee.
+
+En mode interactif (`BATCH_MODE = False`), l'utilisateur peut repondre a chaque agent. En mode batch, l'appel est capture par le bloc `try/except` ci-dessous.",,,,,,,,47ae267fb0a3c30f,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,979228df,code,fr,92c4be50a9e82bab,"async def run_medical_chat():
+    logger.info(""🚀 Début de la consultation médicale IA"")
+    chat_history = ChatHistory()
+    
+    symptoms = input(""Décrivez vos symptômes : "")
+    chat_history.add_user_message(symptoms)
+    
+    while True:
+        async for message in chat.invoke():
+            logger.info(f""[{message.role}] {message.name}: {message.content}"")
+            print(f""{message.name}: {message.content}"")
+            
+            if message.name not in [""Pharmacien""]:
+                user_response = input(""👉 Votre réponse : "")
+                chat_history.add_user_message(user_response)
+        
+        if chat.is_complete:
+            break
+    
+    logger.info(""🏥 Consultation terminée."")
+print(""Fonction de chat médical prête"")
+print(""Fonction run_medical_chat prete"")
+",,,,,,,,92c4be50a9e82bab,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,d0d7a23d,code,fr,e0d2761e5f4d5d05,"try:
+    await run_medical_chat()
+except (EOFError, KeyboardInterrupt, Exception) as e:
+    print(f""[Batch] Consultation interactive ignoree ({type(e).__name__}: {str(e)[:80]})"")",,,,,,,,e0d2761e5f4d5d05,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ceaae36c,markdown,fr,375b848525a09b41,"## Ce que nous avons construit
+
+Ce cas d'usage illustre plusieurs concepts avances de Semantic Kernel :
+
+| Concept | Implementation |
+|---------|----------------|
+| **Agents specialises** | Trois roles distincts (Medecin, IA Medicale, Pharmacien) avec instructions systeme dediees |
+| **Plugins `@kernel_function`** | Chaque agent dispose d'un plugin avec des fonctions specifiques (questions de suivi, evaluation de gravite, recommandations medicamenteuses) |
+| **`AgentGroupChat`** | Orchestration multi-agent avec passage de baton automatique entre les trois participants |
+| **Strategie de terminaison** | `MedicalTerminationStrategy` arrete le dialogue apres 6 echanges pour eviter les boucles infinies |
+| **`FunctionChoiceBehavior.Auto()`** | L'agent IA Medicale peut appeler automatiquement les plugins du kernel pour enrichir ses reponses |
+
+### Points cles a retenir
+
+1. **Separation des responsabilites** : chaque agent a un role precis, ses propres instructions et ses propres outils. Cette modularite facilite le debug et l'evolution du systeme.
+
+2. **Plugins comme outils** : les `@kernel_function` exposent des capacites que les agents peuvent invoquer via `FunctionChoiceBehavior.Auto()`. Le LLM decide quand et quel plugin appeler en fonction du contexte.
+
+3. **Strategies de controle** : la `TerminationStrategy` est indispensable dans un `AgentGroupChat` pour eviter que les agents ne dialoguent indefiniment. D'autres strategies existent (selection d'agent, filtre de messages).
+
+### Pour aller plus loin
+
+- Ajouter un agent **Patient** simule qui decrit des symptomes de maniere realiste
+- Implementer un historique de consultations persistant (stockage dans une base de donnees)
+- Utiliser un modele de vecteurs pour rechercher des cas medicaux similaires dans une base de connaissances
+- Ajouter des garde-fous ethiques (refus de diagnostic pour certaines pathologies, orientation systematique vers un professionnel de sante)",,,,,,,,375b848525a09b41,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7a16c5fb,code,fr,d7a1ea74a47bcb51,"# Parameters
+BATCH_MODE = True
+",,,,,,,,d7a1ea74a47bcb51,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,5e57bb4638cd375d,"# Générateur de Recettes PDF
+## Introduction - receipe maker
+
+**Navigation** : [Index](../README.md)
+
+Ce notebook couvre les concepts et techniques principaux de receipe maker. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de resultats.
+
+**Prerequis** : notions de base en Python et en algorithmique.
+",,,,,,,,5e57bb4638cd375d,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,75e5f73c,markdown,fr,95fbf4fb32daa3b1,"
+Ce notebook orchestre une collaboration multi-agents pour :
+1. Collecter des contraintes utilisateur
+2. Générer une recette personnalisée
+3. Produire un PDF stylisé
+
+**Agents** :  
+- `InputCollector` → Collecte des préférences  
+- `RecipeGenerator` → Crée la recette via LLM  
+- `PDFGenerator` → Génère le document final
+
+---",,,,,,,,95fbf4fb32daa3b1,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,88460300f79a0e9f,### Installation des bibliothèques,,,,,,,,88460300f79a0e9f,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,139e9aae,code,fr,1ef759b02fa5ca5c,"# Import guards - availability flags for external dependencies
+
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    print(f'  dotenv non disponible - certaines fonctionnalites seront limitees')
+
+try:
+    import semantic_kernel
+    SEMANTIC_KERNEL_AVAILABLE = True
+except ImportError:
+    SEMANTIC_KERNEL_AVAILABLE = False
+    print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
+
+# Cell 1 - Installation
+",,,,,,,,1ef759b02fa5ca5c,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,02378d10,markdown,fr,6dc73a3e63cd7e7a,## État Global & Configuration,,,,,,,,6dc73a3e63cd7e7a,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bc1a675a,code,fr,0e94d64476bc179f,"class RecipeState:
+    def __init__(self):
+        self.diet: str = """"
+        self.excluded_ingredients: list[str] = []
+        self.guests: int = 4
+        self.ingredients: list[str] = []
+        self.steps: list[str] = []
+        self.cooking_time: float = 0.0
+        self.ready_to_generate: bool = False
+        self.pdf_path: str = """"
+
+print(""Classe RecipeState définie"")
+print(""Classe RecipeState definie"")
+",,,,,,,,0e94d64476bc179f,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,9227aa4c,markdown,fr,143f5777ea36b698,"### Exercice 1 : Enrichir l'etat partage avec des preferences culinaires
+
+La classe `RecipeState` stocke le regime, les ingredients exclus et le nombre de convives. L'objectif est de l'enrichir avec de nouveaux champs : **niveau de difficulte** (debutant, intermediaire, expert), **temps de preparation maximum**, et **cuisine preferee** (francaise, italienne, asiatique, etc.).
+
+**Objectif** : etendre `RecipeState` avec ces nouveaux attributs et creer les methodes de mise a jour correspondantes.
+
+**Indices** :
+- # Etape 1 : Ajouter les attributs `difficulty`, `max_prep_time` et `cuisine_type` dans `__init__`
+- # Etape 2 : Creer les methodes `set_difficulty`, `set_max_prep_time` et `set_cuisine`
+- # Indice : suivre le pattern existant des autres attributs (type hints + valeur par defaut)",,,,,,,,143f5777ea36b698,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,code,fr,147a59853e1b4967,"class ExtendedRecipeState(RecipeState):
+    # TODO etudiant : enrichir l'etat avec les nouvelles preferences
+    
+    def __init__(self):
+        super().__init__()
+        self.difficulty: str = """"         # Etape 1 : debutant / intermediaire / expert
+        self.max_prep_time: float = 0.0   # Etape 1 : temps max en minutes
+        self.cuisine_type: str = """"       # Etape 1 : type de cuisine preferee
+    
+    def set_difficulty(self, level: str) -> str:
+        result = None  # TODO etudiant : valider et assigner
+        return result  # TODO etudiant : retourner confirmation
+    
+    def set_max_prep_time(self, minutes: float) -> str:
+        result = None  # TODO etudiant : valider et assigner
+        return result  # TODO etudiant : retourner confirmation
+    
+    def set_cuisine(self, cuisine: str) -> str:
+        result = None  # TODO etudiant : assigner
+        return result  # TODO etudiant : retourner confirmation
+
+print(""Exercice a completer : ExtendedRecipeState"")",,,,,,,,147a59853e1b4967,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d0827941,markdown,fr,fc3b608e03ddf8c4,### Plugins d'agents et fonctions de modification d'état,,,,,,,,fc3b608e03ddf8c4,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,fa663c16,code,fr,7676a3f01d078979,"from semantic_kernel.functions import kernel_function
+from reportlab.pdfgen import canvas
+
+class InputCollectorPlugin:
+    def __init__(self, state: RecipeState):
+        self.state = state
+    
+    @kernel_function(name=""set_diet"", description=""Définit le régime alimentaire"")
+    def set_diet(self, diet: str) -> str:
+        self.state.diet = diet
+        return f""Régime {diet} enregistré""
+
+    @kernel_function(name=""exclude_ingredient"", description=""Ajoute un ingrédient à exclure"")
+    def exclude_ingredient(self, ingredient: str) -> str:
+        self.state.excluded_ingredients.append(ingredient)
+        return f""Ingrédient {ingredient} exclu""
+
+    @kernel_function(name=""set_guests"", description=""Définit le nombre de convives"")
+    def set_guests(self, guests: int) -> str:
+        self.state.guests = guests
+        return f""{guests} convives prévus""
+
+class RecipeGeneratorPlugin:
+    def __init__(self, state: RecipeState):
+        self.state = state
+
+    @kernel_function(name=""submit_recipe"", description=""Valide la recette générée"")
+    def submit_recipe(self, ingredients: list[str], steps: list[str], cooking_time: float) -> str:
+        self.state.ingredients = ingredients
+        self.state.steps = steps
+        self.state.cooking_time = cooking_time
+        self.state.ready_to_generate = True
+        return ""Recette validée et prête pour la génération PDF""
+
+
+
+class PDFGeneratorPlugin:
+    def __init__(self, state: RecipeState):
+        self.state = state
+    
+    @kernel_function(name=""generate_pdf"", description=""Génère le PDF final"")
+    def generate_pdf(self, output_path: str) -> str:
+        c = canvas.Canvas(output_path)
+        c.drawString(100, 800, ""Recette personnalisée"")
+        c.drawString(100, 780, f""Pour {self.state.guests} personnes"")
+        c.save()
+        self.state.pdf_path = output_path
+        return f""PDF généré : {output_path}""
+
+print(""Imports Semantic Kernel OK"")
+",,,,,,,,7676a3f01d078979,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,bb7a7733,markdown,fr,d9c86ef17cc560bb,"### Exercice 2 : Plugin d'estimation nutritionnelle
+
+Les plugins actuels gerent la collecte d'informations et la generation de recette, mais aucune information nutritionnelle n'est fournie. L'objectif est d'ajouter un `NutritionPlugin` qui estime les calories et macronutriments d'une recette.
+
+**Objectif** : creer une classe `NutritionPlugin` avec une methode `estimate_nutrition` annotee `@kernel_function` qui retourne une estimation des calories par portion.
+
+**Indices** :
+- # Etape 1 : Definir un dictionnaire approximatif de calories par ingredient de base
+- # Etape 2 : Calculer la somme des calories et diviser par le nombre de convives
+- # Indice : le dictionnaire peut contenir des valeurs moyennes (ex: poulet = 165 kcal/100g, riz = 130 kcal/100g)",,,,,,,,d9c86ef17cc560bb,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,code,fr,5d667c20e03d1d49,"class NutritionPlugin:
+    """"""Plugin d'estimation nutritionnelle pour les recettes.""""""
+    
+    def __init__(self, state: RecipeState):
+        self.state = state
+    
+    @kernel_function(name=""estimate_nutrition"", description=""Estime les calories par portion"")
+    def estimate_nutrition(self, ingredients: str) -> str:
+        # TODO etudiant : implementer l'estimation nutritionnelle
+        # Etape 1 : dictionnaire de reference (ingredient -> kcal/100g)
+        CALORIES_REF = {}  # TODO etudiant : completer le dictionnaire
+        
+        # Etape 2 : parser les ingredients et calculer les calories totales
+        total_calories = 0  # TODO etudiant : calculer
+        calories_par_portion = None  # TODO etudiant : diviser par state.guests
+        
+        result = None  # TODO etudiant : formater le resultat
+        return result  # TODO etudiant : retourner la description nutritionnelle
+
+print(""Exercice a completer : NutritionPlugin"")",,,,,,,,5d667c20e03d1d49,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,50c033b4,markdown,fr,dccfa1b8b6e9e922,### Création des agents,,,,,,,,dccfa1b8b6e9e922,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,f6e42299,code,fr,a1d88744f705df38,"import os
+from dotenv import load_dotenv
+from semantic_kernel import Kernel
+from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv(""OPENAI_API_KEY"")
+CHAT_MODEL = os.getenv(""OPENAI_CHAT_MODEL"", ""gpt-4o-mini"")
+
+
+def build_kernel(plugin, plugin_name: str) -> Kernel:
+    """"""Cree un kernel avec un service de chat OpenAI et le plugin fourni.
+
+    Sans add_service, l'agent leve ""No service found"" des le premier appel LLM.
+    """"""
+    kernel = Kernel()
+    kernel.add_service(
+        OpenAIChatCompletion(
+            service_id=""openai"",
+            ai_model_id=CHAT_MODEL,
+            api_key=OPENAI_API_KEY,
+        )
+    )
+    kernel.add_plugin(plugin, plugin_name)
+    return kernel
+
+
+shared_state = RecipeState()
+
+# InputCollector
+input_kernel = build_kernel(InputCollectorPlugin(shared_state), ""input_plugin"")
+input_agent = ChatCompletionAgent(
+    kernel=input_kernel,
+    name=""InputCollector"",
+    instructions=""""""Collectez les informations utilisateur de manière structurée.
+    - Demandez d'abord le régime alimentaire
+    - Puis les ingrédients à exclure
+    - Enfin le nombre de convives""""""
+)
+
+# RecipeGenerator avec son plugin
+recipe_kernel = build_kernel(RecipeGeneratorPlugin(shared_state), ""recipe_plugin"")
+recipe_agent = ChatCompletionAgent(
+    kernel=recipe_kernel,
+    name=""RecipeGenerator"",
+    instructions=""""""Générez des recettes en respectant les contraintes.
+    - Convertir les ingrédients en liste Python
+    - Structurer les étapes de préparation
+    - Calculer le temps de cuisson""""""
+)
+
+# PDFGenerator
+pdf_kernel = build_kernel(PDFGeneratorPlugin(shared_state), ""pdf_plugin"")
+pdf_agent = ChatCompletionAgent(
+    kernel=pdf_kernel,
+    name=""PDFGenerator"",
+    instructions=""""""Générez un PDF professionnel:
+    - Structurez en sections claires
+    - Utilisez une mise en page aérée""""""
+)
+
+print(""Imports et configuration OK"")
+",,,,,,,,a1d88744f705df38,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,da55fb35,markdown,fr,aaa34a8141b92344,### création de la conversation avec critères de terminaison et/ou de sélection,,,,,,,,aaa34a8141b92344,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,a81079d4,code,fr,417c9178b1a64fe5,"from semantic_kernel.agents import AgentGroupChat
+from pydantic import PrivateAttr
+
+from semantic_kernel.agents.strategies import TerminationStrategy
+
+class ReadyTerminationStrategy(TerminationStrategy):
+    _state: RecipeState = PrivateAttr()
+
+    def __init__(self, state: RecipeState, **kwargs):
+        super().__init__(**kwargs)
+        self._state = state
+
+    async def should_agent_terminate(self, agent, history):
+        return self._state.ready_to_generate
+
+
+group_chat = AgentGroupChat(
+    agents=[input_agent, recipe_agent, pdf_agent],
+    termination_strategy=ReadyTerminationStrategy(shared_state),
+)
+
+print(""Imports agents OK"")
+",,,,,,,,417c9178b1a64fe5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,0ec46974,markdown,fr,8fdb76afdc2f37b5,### Boucle principale,,,,,,,,8fdb76afdc2f37b5,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,d34da44f,code,fr,cbe3f4cd5b630217,"# Fallback: s'assurer que group_chat est défini
+try:
+    group_chat
+except NameError:
+    print(""⚠️ group_chat non défini - vérifiez que la cellule précédente a été exécutée"")
+    group_chat = None
+
+async def recipe_workflow():
+    if group_chat is None:
+        print(""❌ Impossible d'exécuter: group_chat non initialisé"")
+        return
+        
+    recipe_query = (
+        ""Je souhaite une recette végétarienne pour 6 personnes, ""
+        ""sans champignons ni produits laitiers.""
+    )
+    
+    group_chat.history.add_user_message(recipe_query)
+    
+    try:
+        async for message in group_chat.invoke():
+            print(f""[{message.name}] {message.content}"")
+            
+            if shared_state.ready_to_generate:
+                print(""\\nTransition vers la génération PDF..."")
+                break
+                
+    except Exception as e:
+        print(f""Erreur lors de la génération: {str(e)}"")
+    
+    print(""\\nProcessus terminé"")
+
+await recipe_workflow()
+",,,,,,,,cbe3f4cd5b630217,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,3bc1868c,markdown,fr,e9390ab36873c437,"### Exercice 3 : Validation des contraintes avant generation
+
+Le workflow actuel lance la generation sans verifier que les contraintes sont coherentes. L'objectif est d'implementer une fonction `valider_contraintes` qui verifie la coherence des preferences utilisateur avant de les transmettre aux agents.
+
+**Objectif** : ecrire une fonction qui detecte les incoherences (par exemple : regime vegane + demande de fromage, nombre de convives negatif, ingredients exclus qui font partie du regime).
+
+**Indices** :
+- # Etape 1 : Definir les regles de validation (liste de conditions a verifier)
+- # Etape 2 : Retourner un tuple `(est_valide, liste_erreurs)` pour guider l'utilisateur
+- # Indice : utiliser des conditions if/elif pour chaque regle et accumuler les messages d'erreur",,,,,,,,e9390ab36873c437,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7d996ec0,code,fr,ebf2616347378ace,"def valider_contraintes(state: RecipeState) -> tuple[bool, list[str]]:
+    # TODO etudiant : implementer la validation des contraintes
+    erreurs = []
+    
+    # Etape 1 : verifier la coherence du regime et des ingredients exclus
+    # Etape 2 : verifier le nombre de convives, la duree, etc.
+    
+    est_valide = len(erreurs) == 0  # TODO etudiant : ajouter les conditions
+    return est_valide, erreurs
+
+print(""Exercice a completer : validation des contraintes"")",,,,,,,,ebf2616347378ace,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,5ffc461a,markdown,fr,c07963c3cb5a8c48,### Génération de pdf,,,,,,,,c07963c3cb5a8c48,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,8cc84d56,code,fr,692e77e773af99fc,"pass
+
+print(""Workflow prêt"")
+print(""Workflow pret"")
+",,,,,,,,692e77e773af99fc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,345efbaf,code,fr,accd1b769f363219,"if shared_state.pdf_path:
+    print(f""PDF généré avec succès: {shared_state.pdf_path}"")
+    print(""Contenu de la recette:"")
+    print(f""- Régime: {shared_state.diet}"")
+    print(f""- Ingrédients: {', '.join(shared_state.ingredients)}"")
+else:
+    print(""Échec de la génération:"", 
+          ""Aucun PDF produit malgré les tentatives"")
+",,,,,,,,accd1b769f363219,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,644bdc70,markdown,fr,1b229b84a2c10f34,"## Conclusion
+
+Ce notebook a mis en oeuvre une collaboration multi-agents pour generer une recette personnalisee et produire un PDF.
+
+**Points cles** :
+
+- **Etat partage** : la classe `RecipeState` sert de memoire commune aux trois agents. Chaque plugin lit et ecrit dans cette instance unique, ce qui permet de transmettre les contraintes utilisateur jusqu'a la generation du PDF.
+- **Plugins et `@kernel_function`** : le decorateur `@kernel_function` expose les methodes Python comme outils appelables par le LLM (`set_diet`, `submit_recipe`, `generate_pdf`).
+- **Orchestration `AgentGroupChat`** : les agents `InputCollector`, `RecipeGenerator` et `PDFGenerator` dialoguent dans une conversation de groupe, chacun avec son propre kernel et son service de chat.
+- **Strategie de terminaison** : `ReadyTerminationStrategy` interroge l'etat partage (`ready_to_generate`) pour arreter la boucle des que la recette est validee.
+- **Configuration du service** : chaque kernel doit recevoir un service via `add_service` (ici `OpenAIChatCompletion`), faute de quoi l'invocation echoue avec `No service found`.
+
+**Pour aller plus loin** :
+
+- Enrichir le PDF avec une mise en page stylisee (sections, images, table des ingredients) via `reportlab.platypus`.
+- Brancher une API nutritionnelle pour calculer les apports caloriques de la recette.
+- Generer une illustration du plat avec un modele image et l'inserer dans le document.
+",,,,,,,,1b229b84a2c10f34,,,,,,,
