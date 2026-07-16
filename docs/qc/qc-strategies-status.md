@@ -68,7 +68,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Bucket | Nombre | Lecture |
 |--------|-------:|---------|
 | Vérifié (tranche 1, firsthand) | 13 | statut firsthand confirmé dans le tableau ci-dessus |
-| Vivant (best-guess, non vérifié) | 82 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
+| Vérifié (tranche 2, backtests QC Cloud MCP) | 5 | métriques réelles (Sharpe/CAGR/MaxDD) — **toutes Needs-improvement** (PSR < 50 %, pas d'edge statistique) |
+| Vivant (best-guess, non vérifié) | 77 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
 | Vivant (README revendique vérifié) | 1 | README revendique un backtest QC Cloud — à recroiser firsthand |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -98,11 +99,27 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |
 | `RiskParity` | `projects/RiskParity/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (Needs-improvement, 0.399) |
 
-#### Vivant (best-guess, non vérifié) (82)
+#### Vérifié (tranche 2, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 2 (#1621)** : 5 stratégies « Vivant » promues au statut vérifié via backtests
+> QC Cloud réels (MCP `qc-mcp`, backtests existants relus firsthand). Métriques **non walk-forward
+> OOS** (backtest pleine période in-sample) — suffisantes pour classer Alive / Needs-improvement /
+> BROKEN, insuffisantes pour un verdict de production. **Toutes 5 = Needs-improvement** : PSR < 50 %
+> sur toute la cohorte (aucune edge statistiquement significative) — confirmation honnête que le
+> bucket « Vivant best-guess » recèle majoritairement des stratégies marginales une fois backtestées.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Adaptive-Conformal-Risk` | `projects/Adaptive-Conformal-Risk/` | Vol / Risk adaptatif | **Needs-improvement** | 2018–2025 (2766 j.) ; Sharpe 0.604 ; CAGR 13.70 % ; MaxDD 33.1 % ; PSR 17.8 % ; NP 310.8 % ($288 311) — meilleur CAGR mais drawdown élevé |
+| `Vol-GARCH-Target` | `projects/Vol-GARCH-Target/` | Vol (GARCH) | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.325 ; CAGR 6.97 % ; MaxDD 10.8 % ; PSR 14.9 % ; NP 60.3 % ($56 709) — modeste, plafond structurel |
+| `Vol-Ensemble-Conservative` | `projects/Vol-Ensemble-Conservative/` | Vol ensemble | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.265 ; CAGR 6.14 % ; MaxDD 10.4 % ; PSR 13.6 % ; NP 51.8 % ($50 438) — modeste, plafond structurel |
+| `HAR-RV-Kelly` | `projects/HAR-RV-Kelly/` | Volatility / Kelly | **Needs-improvement** | pleine période (2516 j.) ; Sharpe 0.146 ; CAGR 4.23 % ; MaxDD 12.8 % ; PSR 3.0 % ; NP 51.3 % ($50 666) — quasi-baseline, edge nul |
+| `InverseVolatility-Rank` | `projects/InverseVolatility-Rank/` | Risk-parity inversé | **Needs-improvement / near-BROKEN** | pleine période (1629 j.) ; Sharpe 0.124 ; CAGR 4.13 % ; **MaxDD 41.0 %** ; PSR 1.9 % — drawdown inacceptable, edge nul |
+
+#### Vivant (best-guess, non vérifié) (77)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
-| `Adaptive-Conformal-Risk` | `projects/Adaptive-Conformal-Risk/` | Vol / Risk adaptatif | Vivant | main.py: class AdaptiveConformalRisk(QCAlgorithm) ; aucun notebook compagnon |
 | `AdaptiveAssetAllocation` | `projects/AdaptiveAssetAllocation/` | Multi-asset allocation | Vivant | main.py: class AdaptiveAssetAllocation(QCAlgorithm) + quantbook.ipynb |
 | `AssetClassMomentum-QC` | `projects/AssetClassMomentum-QC/` | Cross-asset momentum | Vivant | main.py: class AssetClassMomentumAlgorithm(QCAlgorithm) |
 | `BTC-ML` | `projects/BTC-ML/` | ML Crypto | Vivant | main.py: class MyEnhancedCryptoMlAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
@@ -131,10 +148,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
 | `GlobalMacro-Regime` | `projects/GlobalMacro-Regime/` | Macro / Régime | Vivant | main.py: class GlobalMacroRegime(QCAlgorithm) |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | Vivant | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) |
-| `HAR-RV-Kelly` | `projects/HAR-RV-Kelly/` | Volatility / Kelly | Vivant | main.py: class HarrvKellyAlgorithm(QCAlgorithm) + research.ipynb |
 | `HMM-KMeans-Voting` | `projects/HMM-KMeans-Voting/` | Régime (HMM) | Vivant | main.py: class HMMKMeansVoting(QCAlgorithm) (helpers KMeans/GaussianHMM en amont) |
 | `HighBookToMarketFScore-QC` | `projects/HighBookToMarketFScore-QC/` | Factor (Piotroski) | Vivant | main.py: class PiotroskiScoreAlgorithm(QCAlgorithm) |
-| `InverseVolatility-Rank` | `projects/InverseVolatility-Rank/` | Risk-parity inversé | Vivant | main.py: class InverseVolatilityRankAlgorithm(QCAlgorithm) + research.ipynb |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | Vivant | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Rotation sectorielle | Vivant | main.py: class ConditionalSectorRotation(QCAlgorithm) — nom classe ≠ nom dossier (cf. incertitudes) |
 | `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | Vivant | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
@@ -179,8 +194,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `TrendStocks-Alpha` | `projects/TrendStocks-Alpha/` | Trend actions | Vivant | main.py: class TrendStocksAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `TrendStocksLite` | `projects/TrendStocksLite/` | Trend actions (lite) | Vivant | main.py: class TrendStocksLite(QCAlgorithm) + research.ipynb |
 | `VIX-TermStructure` | `projects/VIX-TermStructure/` | Vol (VIX term) | Vivant | main.py: class VIXTermStructureStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
-| `Vol-Ensemble-Conservative` | `projects/Vol-Ensemble-Conservative/` | Vol ensemble | Vivant | main.py: class VolEnsembleConservativeAlgorithm(QCAlgorithm) + research.ipynb |
-| `Vol-GARCH-Target` | `projects/Vol-GARCH-Target/` | Vol (GARCH) | Vivant | main.py: class GarchVolTargetAlgorithm(QCAlgorithm) + research.ipynb |
 | `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | Vivant | main.py: class VolTargetMomentum(QCAlgorithm) |
 | `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | Vivant | main.py: class CompositeC1MultiAssetRotation(QCAlgorithm) |
 | `composite-c2-equityfactor` | `projects/composite-c2-equityfactor/` | Composite equity/factor | Vivant | main.py: class CompositeC2EquityFactor(QCAlgorithm) |
@@ -258,7 +271,7 @@ pour un backtest dédié (scope RECOVERABLE-MACHINE) :
 - **`MacroFactorRotation-QC`** — classe `AIStocksBondsRotationAlgorithm` : divergence avec le nom de dossier.
 - **`FamaFrench`** — classe `FactorETFRotation` : la sémantique Fama-French n'est pas évidente depuis le nom de classe.
 - **`Options-VGT`** — classe `GainStrategy` (nom vague), aucun notebook de recherche compagnon.
-- **`HAR-RV-J-Kelly`** vs **`HAR-RV-Kelly`** — deux dossiers quasi-identiques (variante « J » = jump) ; l'un supersède probablement l'autre (à clarifier).
+- **`HAR-RV-J-Kelly`** vs **`HAR-RV-Kelly`** — deux dossiers quasi-identiques (variante « J » = jump). `HAR-RV-Kelly` désormais backtesté (tranche 2 : Sharpe 0.146, Needs-improvement) ; reste à backtester la variante « J » pour déterminer si elle supersède la version plain.
 - **`MomentumStrategy`** (classe `SectorMomentumETFRotation`) vs **`SectorMomentum`** (classe `SectorDualMomentumStrategy`) — chevauchement sector-momentum suspect (doublon partiel ?).
 - **`DL-LSTM` / `LSTM-Forecasting` / `Crypto-LSTM-Prediction` / `ML-DeepLearning`** — quatre dossiers LSTM ; périmètres respectifs à clarifier pour éviter la redondance.
 - **`RL-DQN-Trading`** (classe `ReinforcementLearningTrading`) vs **`Reinforcement-Learning-Trading`** (squelette, même nom de classe) — l'un est squelette, mais le nom identique crée une ambiguïté.
