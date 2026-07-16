@@ -41,7 +41,7 @@ Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), re
 **Étape 2 — Spectrogramme.** Une transformée temps-fréquence (FFT) décompose ce signal en ses composantes spectrales : l'axe vertical devient la fréquence, l'intensité codant l'énergie. C'est la représentation qu'utilisent de nombreux modèles de speech :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-spectrogram.webp" alt="Spectrogramme — décomposition temps-fréquence" width="420"/></a><br>
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-spectrogram.webp" alt="Analyse spectrale de l'échantillon audio — 3 panneaux empilés : Spectrogramme STFT (échelle linéaire 0-10000 Hz, magnitude dB -80→0), Spectrogramme Mel (échelle perceptuelle log 0-8192 Hz, dB -80→0) et Chromagramme (pitch class B-A-G-F-E-D-C, activation 0-1)." width="420"/></a><br>
   <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 15) : spectrogramme — décomposition temps-fréquence du même signal.</em>
 </p>
 
@@ -53,14 +53,14 @@ Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), re
 </p>
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc2.png" alt="MFCC — carte de chaleur des coefficients" width="460"/></a><br>
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc2.png" alt="Dynamiques cepstrales — 3 panneaux empilés : MFCC statique (-500→+200) + Delta MFCC vitesse (-40→+40) + Delta-Delta MFCC accélération (-40→+40), illustrant l'évolution temporelle des coefficients cepstraux mel." width="460"/></a><br>
   <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 3) : MFCC en carte de chaleur — même information, vue alternative.</em>
 </p>
 
 **Étape 4 — Extraction de caractéristiques.** Aboutissement du pipeline : les descripteurs extraits (centroid spectral, RMS, ZCR…) alimentent directement les comparaisons et benchmarks des niveaux suivants :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-features.png" alt="Extraction de caractéristiques audio" width="480"/></a><br>
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-features.png" alt="Caractéristiques audio extraites (librosa) — 4 panneaux empilés : Spectral Centroid (Hz 0-8000, bleu), Spectral Bandwidth (Hz 1000-3500, vert), RMS Energy (Amplitude 0-0,15, rouge) et Zero-Crossing Rate (Rate 0-0,6, violet), sur 12 secondes d'échantillon." width="480"/></a><br>
   <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 28) : extraction des caractéristiques audio — le pipeline complet résumé.</em>
 </p>
 
