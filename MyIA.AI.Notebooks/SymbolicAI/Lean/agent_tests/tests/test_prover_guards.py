@@ -2998,3 +2998,54 @@ def test_final_verify_crash_synthetic_still_reverts():
         "errors": [{"message": "final-verify crashed: KeyError('foo')"}],
     }
     assert _final_verify_is_false_negative(crashed) is False
+
+
+def test_parse_lean_errors_catches_module_level_no_linecol():
+    """Regression for the metrics=0 / false-negative integrity bug (#6790).
+
+    The legacy inline parsers anchored on ``<digits>:<digits>: error:`` and
+    therefore MISSED module-level errors that carry no per-line ``line:col``
+    position (``foo.lean: error: type mismatch``).  An authoritative
+    ``LeanVerifier._extract_errors`` detects the same class via the
+    ``": error:"`` substring and sets ``success=False``; the inline parsers
+    returned ``error_count == 0`` for those very lines -> the false-negative
+    ``level_1_build == False AND errors == []`` that let DEMO 62 preserve a
+    non-compiling ``HashlifeCorrectness.lean:2940`` snapshot.
+    ``_parse_lean_errors`` mirrors the authoritative substring detection.
+    """
+    from prover.tools import _parse_lean_errors
+
+    # Module-level error with NO line:col position — the false-negative case.
+    raw = (
+        "info: ...\n"
+        "HashlifeCorrectness.lean: error: type mismatch\n"
+        "  term\n"
+        "Foo.lean:12:3: error: unsolved goals\n"
+    )
+    errors = _parse_lean_errors(raw)
+    assert len(errors) == 2, errors
+    # Module-level error is now captured (line=None), not dropped.
+    module_level = [e for e in errors if e["line"] is None]
+    assert len(module_level) == 1, module_level
+    assert "type mismatch" in module_level[0]["message"]
+    # line:col error still parsed correctly.
+    positioned = [e for e in errors if e["line"] == 12]
+    assert len(positioned) == 1 and "unsolved goals" in positioned[0]["message"]
+
+
+def test_parse_lean_errors_matches_authoritative_substring_contract():
+    """The whole point of #6790: where the authoritative verifier sees an
+    error (``": error:"`` substring -> ``success=False``), the inline tool
+    must agree (``len(errors) > 0``), not return the false-negative 0.
+    This test pins the substring contract shared with
+    ``LeanVerifier._extract_errors`` (``agent_tests/lean_server.py``)."""
+    from prover.tools import _parse_lean_errors
+
+    raw = "MyMod.lean: error: cannot synthesize type\n"
+    # Authoritative substring contract: any line containing ": error:" is one.
+    substring_count = sum(1 for line in raw.split("\n") if ": error:" in line)
+    assert substring_count == 1
+    inline = _parse_lean_errors(raw)
+    assert len(inline) == substring_count, (inline, substring_count)
+    assert inline[0]["line"] is None
+    assert "cannot synthesize type" in inline[0]["message"]
