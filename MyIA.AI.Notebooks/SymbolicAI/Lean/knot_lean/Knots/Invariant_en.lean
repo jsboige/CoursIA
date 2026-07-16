@@ -16,6 +16,7 @@
 
 import Knots.Basic_en
 import Knots.Reidemeister_en
+import Mathlib.Data.Fintype.Pi
 
 /-
   English mirror of `Invariant.lean` (FR canonical). Convention EPIC #4980
@@ -46,6 +47,15 @@ inductive TriColor where
   | blue : TriColor
   | green : TriColor
   deriving BEq, DecidableEq, Repr
+
+/-- `TriColor` is a three-element type, hence a `Fintype`: needed to decide, by
+finite enumeration (`native_decide`), the existential
+`∃ coloring : Fin n → TriColor, …` in `figureEight_not_tricolorable`. Without this
+instance, `Fintype (Fin n → TriColor)` (via `Pi.fintype`) fails to synthesize and
+`decide`/`native_decide` fail before any reduction. -/
+instance : Fintype TriColor where
+  elems := {TriColor.red, TriColor.blue, TriColor.green}
+  complete := by intro x; cases x <;> decide
 
 /-- A tricoloring assigns a color to each edge in a knot diagram. -/
 def TriColoring (d : KnotDiagram) := Fin d.numEdges → TriColor
@@ -184,6 +194,47 @@ def IsTricolorable (d : KnotDiagram) : Prop :=
 /-- A knot is tricolorable if any of its diagrams is. -/
 def Knot.isTricolorable (k : Knot) : Prop :=
   IsTricolorable k.diagram
+
+/-! ### Decidability of tricolorability (finite enumeration)
+
+Tricolorability of a finite diagram is decidable: each predicate layer receives a
+named `Decidable` instance, so that synthesis at the use site (`native_decide` in
+`figureEight_not_tricolorable`) stays shallow. Without this decomposition, a single
+monolithic synthesis must chain `List.decidableBAll`, several `And.decidable`, the
+`DecidableEq TriColor` of the coloring `dite`s, and the `Fintype (Fin n →
+TriColor)` enumeration — exhausting the instance synthesis budget even though each
+layer is individually decidable. -/
+
+/-- The per-crossing Fox condition (`triColorConditionAt`) is a conjunction of
+integer bounds, equalities and disjunctions over `TriColor`: decidable. -/
+instance triColorConditionAt.decidable (d : KnotDiagram)
+    (coloring : Fin d.numEdges → TriColor) (c : PDCrossing) :
+    Decidable (triColorConditionAt d coloring c) := by
+  unfold triColorConditionAt
+  infer_instance
+
+/-- A valid coloring (`IsTriColoring`) is decidable: the `∀ c ∈ crossings` relies
+on the per-crossing instance above, and "≥ 2 colors" on the finiteness of
+`Fin d.numEdges`. -/
+instance IsTriColoring.decidable (d : KnotDiagram) (coloring : TriColoring d) :
+    Decidable (IsTriColoring d coloring) := by
+  unfold IsTriColoring
+  infer_instance
+
+/-- The coloring space `TriColoring d = Fin d.numEdges → TriColor` is finite
+(`Pi.fintype` + `Fintype TriColor`). Since `TriColoring` is a non-reducible `def`,
+this instance is needed for synthesis to find it under that name. -/
+instance TriColoring.fintype (d : KnotDiagram) : Fintype (TriColoring d) := by
+  unfold TriColoring
+  infer_instance
+
+/-- Tricolorability (`∃ coloring : Fin n → TriColor, IsTriColoring …`) is decidable
+by finite enumeration of the coloring space (`Fintype (TriColoring d)`) combined
+with the decidability of `IsTriColoring`. -/
+instance IsTricolorable.decidable (d : KnotDiagram) :
+    Decidable (IsTricolorable d) := by
+  unfold IsTricolorable
+  infer_instance
 
 /-! ### GF(3) linearity of the per-crossing Fox condition (cycle-3, #4022)
 
@@ -942,6 +993,28 @@ theorem unknot_not_tricolorable : ¬ Knot.isTricolorable unknot := by
     rw [hi, hj]
   obtain ⟨i, j, hne⟩ := htwocolors
   exact hne (this i j)
+
+/-! ## 4b. The figure-eight is NOT tricolorable
+
+The figure-eight (4_1) has 4 crossings and determinant 5, so it is NOT
+3-colorable in the Fox sense. Under **Path B** (the `c₂ = c₄` over-strand
+continuity conjunct), this is the canonical distinguishing witness: the earlier
+permissive model admitted a spurious tricoloring `(0,0,0,1,0,0,1,2)` (README
+§Path B), which the arc constraint now excludes.
+
+Proof by finite enumeration (`native_decide`): the coloring space
+`Fin 8 → TriColor` (3⁸ = 6561) is exhausted, and for each the arc-continuity +
+Fox conjunction at all 4 crossings is refuted — either arc-continuity breaks, or
+Fox forces monochrome (contradicting "≥ 2 colors"). We use `native_decide` (not
+`decide`): the existential ranges over the function type `Fin 8 → TriColor`, whose
+`Decidable` instance rests on `Fintype.piFinset`; the kernel does not reduce that
+enumeration (`decide` fails with "did not reduce to 'isTrue' or 'isFalse'"),
+whereas the native evaluator handles it in a few ms — the same tool used by the
+finite-calibration lemmas in `conway_lean/Angel.lean`. Path-B non-regression
+witness (#2874). -/
+theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
+  unfold Knot.isTricolorable
+  native_decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 
