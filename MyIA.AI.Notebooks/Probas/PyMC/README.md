@@ -66,19 +66,53 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 
 PyMC ne produit pas une prédiction ponctuelle mais une **distribution postérieure complète**. Les six visualisations ci-dessous, extraites des notebooks de la série, illustrent cette différence : chaque estimateur vient avec son incertitude quantifiée. Sorties d'exécution **réelles** (non régénérées pour l'illustration, règle C.3), downscalées à ≤1200 px et ≤200 ko (politique EPIC #5654). Provenance exacte dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-| | | |
-|:--:|:--:|:--:|
-| <img src="assets/readme/pymc2-gaussian-mixtures.png" width="300" alt="Inférence bayésienne sur les temps de trajet : postérieures de la moyenne (μ) et de la précision (τ) du modèle Normal simple."> | <img src="assets/readme/pymc5-irt-curves.png" width="250" alt="Évaluation IRT : courbe ROC du modèle sur la prédiction de réussite aux items, AUC=0.788 au-dessus du hasard."> | <img src="assets/readme/pymc13-mcmc-diagnostics.png" width="300" alt="Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres."> |
-| [PyMC-2 — Gaussian Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) | [PyMC-7 — IRT](PyMC-7-Skills-IRT.ipynb) | [PyMC-6 — Debugging](PyMC-6-Debugging.ipynb) |
-| <img src="assets/readme/pymc11-sequences.png" width="290" alt="Inférence sur séquences : comparatif HMM Forward-Backward vs classification indépendante, où les transitions lissent les états ambigus."> | <img src="assets/readme/pymc12-recommenders.png" width="300" alt="Système de recommandation bayésien : facteurs latents par document (estimations ponctuelles vs distributions postérieures d'incertitude)."> | <img src="assets/readme/pymc15-sparse-gp.png" width="300" alt="Classification par Processus Gaussien sur un problème jouet en « donut » : probabilité prédite de la classe 1 et incertitude associée (écart-type de f*), sans inducer points (illustration dense classique)."> |
-| [PyMC-14 — Séquences](PyMC-14-Sequences.ipynb) | [PyMC-15 — Recommenders](PyMC-15-Recommenders.ipynb) | [PyMC-16 — Sparse GP](PyMC-16-Sparse-Gaussian-Process.ipynb) |
+### Postérieurs d'un modèle Normal simple sur les temps de trajet
 
-> **Note d'audit c.483 (2026-07-14, doctrine #5780).** Audit vision G.1 firsthand des 6 PNG (lecture directe via `Read` tool, doctrine #5780 amendée 2026-07-09) : **3 figures ACCURATE sans correction** (pymc11, pymc12, pymc13) et **3 corrections réelles** (pymc2, pymc5, pymc15). Détail dans le MANIFEST.
-> - `pymc2-gaussian-mixtures.png` — l'alt-text v1 parlait de « mélange de gaussiennes » mais la cellule précise illustre le modèle Normal simple sur les temps de trajet (postérieures μ et τ) ; le vrai mélange de gaussiennes vit dans une cellule ultérieure du notebook (cell[16] `sigma_components`). Alt-text corrigé pour décrire le contenu réel de la cellule.
-> - `pymc5-irt-curves.png` — l'alt-text v1 parlait de « courbes de réponse aux items » mais la figure montre une **courbe ROC** d'évaluation IRT (AUC=0.788), pas les courbes ICC du modèle. Alt-text corrigé.
-> - `pymc15-sparse-gp.png` — l'alt-text v1 mentionnait « inducteurs réduisant le coût » mais la cellule précise illustre un **GP classification 2D dense classique** sur un problème jouet en donut, sans inducing points. Alt-text corrigé.
->
-> Ces corrections sont **éditoriales** (alt-text) et ne modifient aucune figure sur disque (cf. règle assets du projet : pas de DROP ni régénération). `MANIFEST.md` resynchronisé au format standard (sections *Contenu réel vérifié* + *Ce qui n'est PAS dans la figure*).
+Le notebook [PyMC-2 — Gaussian Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) introduit l'inférence bayésienne sur un modèle Normal simple. Deux postérieures ArviZ (densité KDE + barre HDI à 94 %) pour les paramètres μ (moyenne) et τ (précision) du modèle : μ ≈ 16 avec HDI [14, 18], τ ≈ 0.081 avec HDI [0.025, 0.14]. La cellule précise (cell[4] output 6) montre ce que le MCMC produit sur un problème jouet de temps de trajet — le vrai mélange de gaussiennes vit dans une cellule ultérieure du même notebook (cell[16] `sigma_components`), ce qui justifie la migration de ce modèle vers un notebook ultérieur de la série.
+
+<img src="assets/readme/pymc2-gaussian-mixtures.png" width="720" alt="Inférence bayésienne sur les temps de trajet : postérieures de la moyenne (μ) et de la précision (τ) du modèle Normal simple.">
+
+### Évaluation d'un modèle IRT par courbe ROC
+
+Le notebook [PyMC-7 — IRT](PyMC-7-Skills-IRT.ipynb) construit un modèle de réponse aux items (compétence latente, difficulté, discrimination). L'évaluation binaire « item réussi / échoué » sur l'ensemble de test se visualise par une **courbe ROC** (Receiver Operating Characteristic) : l'AUC (aire sous la courbe) vaut 0.788, soit une discrimination modérée au-dessus du hasard (diagonale pointillée). Cette figure illustre la distinction entre l'objet IRT canonique (courbes ICC, probabilité de bonne réponse vs compétence) et son **évaluation** supervisée (classification binaire des items).
+
+<img src="assets/readme/pymc5-irt-curves.png" width="480" alt="Évaluation IRT : courbe ROC du modèle sur la prédiction de réussite aux items, AUC=0.788 au-dessus du hasard.">
+
+### Diagnostic du mélange des chaînes MCMC
+
+Le notebook [PyMC-6 — Debugging](PyMC-6-Debugging.ipynb) traite les pannes de convergence. Sur un modèle hiérarchique 8-pièces (paramétrisation non-centrée), les trace plots des hyperparamètres `hyper_mean` et `hyper_sigma` montrent que les 4 chaînes MCMC se mélangent correctement : la densité postérieure (KDE à gauche) est unimodale et régulière, la trace (à droite) oscille sans drift visible. Ce diagnostic **purement visuel** (KDE + trace) est le premier réflexe avant d'inspecter R-hat et ESS — il détecte en un coup d'œil les chaînes figées ou les divergences.
+
+<img src="assets/readme/pymc13-mcmc-diagnostics.png" width="720" alt="Diagnostics MCMC : vérification visuelle du mélange des chaînes via KDE postérieure et trace plot pour les hyperparamètres.">
+
+### HMM Forward-Backward vs classification i.i.d.
+
+Le notebook [PyMC-14 — Séquences](PyMC-14-Sequences.ipynb) introduit les modèles de Markov cachés sur des séquences temporelles. La vraisemblance de mélange (`NormalMixture` à deux états) marginalise l'assignation discrète pour conserver un NUTS pur sur les paramètres continus. Le comparatif visualise les probabilités postérieures d'état haut/bas sur 8 pas de temps : sans transitions (classification i.i.d.), les états ambigus (temps 2 et 5) sont tranchés à 50/50 de façon abrupte ; avec transitions (Forward-Backward), les mêmes instants sont **lissés** par la matrice de transition — l'incertitude est propagée d'un pas à l'autre, signature visible du bénéfice du HMM.
+
+<img src="assets/readme/pymc11-sequences.png" width="720" alt="Inférence sur séquences : comparatif HMM Forward-Backward vs classification indépendante, où les transitions lissent les états ambigus.">
+
+### Facteurs latents bayésiens en recommandation
+
+Le notebook [PyMC-15 — Recommenders](PyMC-15-Recommenders.ipynb) aborde la recommandation par factorisation de matrices en formulation bayésienne : pour chaque document (0 à 5), un score latent est inféré à partir de trois sources observées (jugements explicites, score latent estimé, clics remis à l'échelle). Le panneau de gauche compare ces trois sources par document ; celui de droite montre les **distributions postérieures** des scores latents par document (6 histogrammes ArviZ distincts), illustrant l'incertitude différentielle : un document peu observé (Doc 3) a une postérieure plus large qu'un document bien noté (Doc 4).
+
+<img src="assets/readme/pymc12-recommenders.png" width="720" alt="Système de recommandation bayésien : facteurs latents par document (estimations ponctuelles vs distributions postérieures d'incertitude).">
+
+### Classification par Processus Gaussien (illustration dense jouet)
+
+Le notebook [PyMC-16 — Sparse Gaussian Process](PyMC-16-Sparse-Gaussian-Process.ipynb) introduit les Processus Gaussiens (prior sur fonctions, noyau RBF, classification probit). La cellule précise illustrée ici est un **pré-requis** : un GP classification 2D dense classique sur un problème jouet en « donut » (classe 0 au centre, classe 1 en couronne). Le panneau de gauche montre la probabilité prédite de la classe 1 (colormap bleu→rouge, frontière de décision en noir) ; celui de droite visualise l'incertitude (écart-type de f*, colormap jaune→orange, valeurs 0.725 à 1.025). Les inducing points du sparse GP proprement dit sont introduits dans les cellules ultérieures du notebook — cette cellule est l'illustration dense servant de référence comparative.
+
+<img src="assets/readme/pymc15-sparse-gp.png" width="720" alt="Classification par Processus Gaussien sur un problème jouet en « donut » : probabilité prédite de la classe 1 et incertitude associée (écart-type de f*), sans inducer points (illustration dense classique).">
+
+### Note d'audit (c.483 + c.532)
+
+**Audit vision G.1 firsthand** des 6 PNG (lecture directe via `Read` tool, doctrine #5780 amendée 2026-07-09) : **3 figures ACCURATE sans correction** (pymc11, pymc12, pymc13) et **3 corrections réelles** (pymc2, pymc5, pymc15) déjà appliquées dans les alt-text ci-dessus. Détail dans [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+- `pymc2-gaussian-mixtures.png` — l'alt-text v1 parlait de « mélange de gaussiennes » mais la cellule précise illustre le modèle Normal simple sur les temps de trajet (postérieures μ et τ) ; le vrai mélange de gaussiennes vit dans une cellule ultérieure du notebook (cell[16] `sigma_components`). Alt-text corrigé pour décrire le contenu réel de la cellule.
+- `pymc5-irt-curves.png` — l'alt-text v1 parlait de « courbes de réponse aux items » mais la figure montre une **courbe ROC** d'évaluation IRT (AUC=0.788), pas les courbes ICC du modèle. Alt-text corrigé.
+- `pymc15-sparse-gp.png` — l'alt-text v1 mentionnait « inducteurs réduisant le coût » mais la cellule précise illustre un **GP classification 2D dense classique** sur un problème jouet en donut, sans inducing points. Alt-text corrigé.
+
+**Migration c.532 (doctrine #5780 amendée 2026-07-09)** : les 6 figures passent du bloc-mosaïque `<table>` 2×3 en tête (galerie d'images sans prose pédagogique) à une **intégration narrative** : une figure par sous-section, chacune placée dans le contexte de son notebook source et accompagnée d'une prose qui explique ce que la figure MONTRE et ce qu'elle n'illustre PAS. Le format mosaïque est abandonné au profit d'une lecture linéaire en six actes qui suit la progression pédagogique de la série (modèles simples → évaluation → diagnostic → séquences → recommandation → GP).
+
+Ces corrections sont **éditoriales** (prose, pas de modification des figures sur disque — règle assets du projet : pas de DROP ni régénération). `MANIFEST.md` reste au format standard (sections *Contenu réel vérifié* + *Ce qui n'est PAS dans la figure*).
 
 ## Vue d'ensemble
 
