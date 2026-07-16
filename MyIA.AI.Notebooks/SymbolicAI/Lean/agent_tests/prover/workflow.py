@@ -221,6 +221,19 @@ class AgentExecutor(Executor):
         # path). Covers the case where every iteration is a BUILD-FAIL storm
         # and the Δ0 counter cannot move (gated on success=True in tools.py).
         self._fail_streak_hardcap = FAIL_STREAK_HARDCAP
+        # C617 (#6790 pathology 2): consecutive "no tool_call emitted" turns
+        # from TacticAgent. When TacticAgent returns text without ever calling
+        # submit_tactic/submit_decomposition, tactic_history doesn't grow,
+        # VerifyExecutor gets msg.tactic=None and routes back to tactic —
+        # a freeze-loop with no memory. After N consecutive turns the agent
+        # has demonstrably stalled; force a handoff so Coordinator can
+        # revise the attack plan (or yield if Director budget is also spent).
+        # Only TacticAgent has productive tool_calls in this workflow —
+        # Coordinator/Critic/Search legitimately produce text-only replies.
+        self._consecutive_no_tool_call = 0
+        self._no_tool_call_threshold = int(
+            os.environ.get("PROVER_NO_TOOL_CALL_THRESHOLD", "3")
+        )
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -564,8 +577,11 @@ class AgentExecutor(Executor):
         # bridge, `msg.tactic` stays None forever, VerifyExecutor fails with
         # "No tactic submitted" and routes back to TacticAgent until the
         # iteration cap. Pick up the latest attempt added during this run.
-        if (self._state and hasattr(self._state, "tactic_history")
-                and len(self._state.tactic_history) > history_len_before):
+        _tactic_history_grew = (
+            self._state and hasattr(self._state, "tactic_history")
+            and len(self._state.tactic_history) > history_len_before
+        )
+        if _tactic_history_grew:
             latest = self._state.tactic_history[-1]
             tactic_text = getattr(latest, "tactic", None)
             # Filter control signals that are NOT valid Lean tactics
@@ -583,6 +599,52 @@ class AgentExecutor(Executor):
                                  f"len={len(tactic_text)}): "
                                  f"{tactic_text[:80]}"),
                     )
+
+        # C617 (#6790 pathology 2 — freeze-loop guard): detect consecutive
+        # TacticAgent turns that emit text WITHOUT calling any tool. The
+        # tactic_bridge above only sets msg.tactic when tactic_history grew,
+        # so the dual condition (TacticAgent name AND no tactic_history
+        # growth AND no msg.tactic propagated from earlier runs) is exactly
+        # "agent responded but did not invoke a productive tool". Counter
+        # resets as soon as TacticAgent actually submits something, so
+        # legitimate reasoning pauses interleaved with submissions do NOT
+        # trigger this guard.
+        if self._agent.name == "TacticAgent" and not _tactic_history_grew:
+            self._consecutive_no_tool_call += 1
+            if self._consecutive_no_tool_call >= self._no_tool_call_threshold:
+                # Force a Coordinator handoff so the attack plan is revised
+                # (or a yield signal is emitted if the Coordinator also
+                # can't unstick the run). Skip Director here: F12 already
+                # forces a Director consultation at iter 4, so this guard
+                # only fires when Director has already been consulted or
+                # is unavailable. Sending to coordinator surfaces the
+                # freeze in the plan-revision channel where it can be
+                # addressed (alternative plan, decompose, abandon).
+                msg.next_agent = "coordinator"
+                msg.error = (
+                    f"TacticAgent produced text without calling any tool for "
+                    f"{self._consecutive_no_tool_call} consecutive turns "
+                    f"(threshold={self._no_tool_call_threshold}). Forcing "
+                    f"Coordinator handoff to revise the attack plan."
+                )
+                msg.error_type = "tactic_freeze_loop"
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="freeze_loop_guard",
+                        content=(f"freeze loop detected "
+                                 f"(consecutive_no_tool_call="
+                                 f"{self._consecutive_no_tool_call}, "
+                                 f"threshold={self._no_tool_call_threshold}); "
+                                 f"forcing next_agent=coordinator"),
+                    )
+                await ctx.send_message(msg)
+                return
+        else:
+            # Any productive TacticAgent turn (submit_tactic or
+            # submit_decomposition grew tactic_history) resets the counter,
+            # as do all other agents (Coordinator/Critic/Search text-only
+            # replies are legitimate and do not count against TacticAgent).
+            self._consecutive_no_tool_call = 0
 
         # B.3: Propagate plan from ProofState into message after Coordinator runs
         if self._agent.name == "CoordinatorAgent" and self._state and not msg.plan:
