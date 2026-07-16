@@ -4237,41 +4237,42 @@ print(""Filtrage termine : 50 pas en forme fermee (conjugaison gaussienne exacte
 print(f""Variance posterieure finale : {filtVar[T - 1]:.3f}   (var d'observation R = {obsVar:.1f})"")
 print(f""Variance posterieure moyenne : {filtVar.mean():.3f}"")
 ",,,,,,,,4427a87128c5962c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,93c03c8b,markdown,fr,18734a20f926cbd1,"## 3. Visualisation : trajectoire vraie, observations brutes, estimation filtree
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,93c03c8b,markdown,fr,1178b4eee97a8295,"## 3. Visualisation : trajectoire vraie, observations brutes, estimation filtree
 
-Le graphe ASCII ci-dessous aligne, a chaque pas de temps (un pas sur deux pour la
-lisibilite), les trois series. Les **observations** (`.`) oscillent fortement autour de
-la vraie trajectoire (`|`) a cause du capteur bruite ($R = 4$). L'**estimation filtree**
-(`#`, esperance du posterieur) lisse ce bruit et suit fidelement la trajectoire cachee.
-",,,,,,,,18734a20f926cbd1,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,675c7377,code,fr,11bf8f4e6e3d617f,"# --- Visualisation ASCII + metriques honnetes ---
-# Axe horizontal = position. On cale l'echelle sur l'ensemble des series.
-lo = min(trueState.min(), obs.min()) - 2
-hi = max(trueState.max(), obs.max()) + 2
-W = 60
+Le graphique ci-dessous trace, a chaque pas de temps, les trois series : **etat vrai**
+(trait noir), **observations** (points gris, bruit du capteur $R = 4$) et **estimation
+filtree** (trait bleu, esperance du posterieur). La **bande bleue** ($\pm 1$ ecart-type,
+$\sqrt{\text{filtVar}}$) montre l'incertitude residuelle : elle se resserre au fur et a
+mesure que le filtre corrige le bruit.",,,,,,,,1178b4eee97a8295,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,675c7377,code,fr,a402f4afeeee5725,"# --- Visualisation matplotlib + metriques honnetes (remplace l'ASCII art -- EPIC #3801 Prong A) ---
+import matplotlib.pyplot as plt
 
-def bar(v, c):
-    n = int(round((v - lo) / (hi - lo) * W))
-    n = max(0, min(W, n))
-    return c * n
-
-print(f""Echelle : {lo:.1f} (gauche) -> {hi:.1f} (droite), {W} colonnes"")
-print(""  VRAI = |   OBS = .   FILT = #"")
-for t in range(0, T, 2):
-    print(f""t={t:2d} VRAI {bar(trueState[t], '|')}"")
-    print(f""     OBS  {bar(obs[t], '.')}"")
-    print(f""     FILT {bar(filtMean[t], '#')}  (+-{np.sqrt(filtVar[t]):.2f})"")
+fig, ax = plt.subplots(figsize=(9, 4))
+t = np.arange(T)
+# Etat vrai (ground truth inconnu du filtre), observations bruitees, estimation filtree.
+ax.plot(t, trueState, color=""black"", linewidth=2, label=""Vrai etat"")
+ax.plot(t, obs, ""."", color=""gray"", alpha=0.5, label=""Observations (bruitees)"")
+ax.plot(t, filtMean, color=""blue"", linewidth=2, label=""Filtre de Kalman"")
+# Bande d'incertitude post. : +-1 ecart-type (sqrt de la variance filtree).
+ax.fill_between(t, filtMean - np.sqrt(filtVar), filtMean + np.sqrt(filtVar),
+                color=""blue"", alpha=0.15, label=""Incertainite (+-1 ecart-type)"")
+ax.set_xlabel(""Temps t"")
+ax.set_ylabel(""Position"")
+ax.set_title(""Filtre de Kalman : etat vrai, observations bruitees, estimation filtree"")
+ax.legend(loc=""upper left"", fontsize=9)
+ax.grid(True, alpha=0.3)
+fig.tight_layout()
+plt.show()
 
 # --- Metriques : MSE filtree vs MSE brute (par rapport a la VRAIE trajectoire) ---
 rawMSE = np.mean((obs - trueState) ** 2)
 filtMSE = np.mean((filtMean - trueState) ** 2)
 
-print(""\n=== Performance du filtre (par rapport a la trajectoire VRAIE) ==="")
+print(""=== Performance du filtre (par rapport a la trajectoire VRAIE) ==="")
 print(f""MSE observations brutes : {rawMSE:.3f}   (variance de capteur R = {obsVar:.1f})"")
 print(f""MSE estimation filtree  : {filtMSE:.3f}"")
 print(f""Reduction d'erreur      : {(1.0 - filtMSE / rawMSE) * 100:.1f}%   (filtre vs brut)"")
-print(f""Variance post. finale   : {filtVar[T - 1]:.3f}   (vs R = {obsVar:.1f})"")
-",,,,,,,,11bf8f4e6e3d617f,,,,,,,
+print(f""Variance post. finale   : {filtVar[T - 1]:.3f}   (vs R = {obsVar:.1f})"")",,,,,,,,a402f4afeeee5725,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,4b674bb3,markdown,fr,37004347c32b27b6,"### Lecture du resultat
 
 Le filtre **reduit fortement l'erreur** : la MSE filtree est nettement inferieure a la MSE
