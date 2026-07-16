@@ -305,14 +305,14 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **huit lakes game-théoriques en propre** — dont les sept phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques en propre** — dont les six phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
 | **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
 | **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
-| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
+| **GameTheory** (coopératif) | `game_theory_lean` (CooperativeGames) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
 | **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
 | **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
 | **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
@@ -333,7 +333,7 @@ flowchart LR
         L1["social_choice_lean<br/>impossibilité"]
         L2["minimax_lean<br/>Sion"]
         L3["lean_game_defs_ext<br/>Vickrey"]
-        L4["cooperative_games_lean<br/>0 sorry #3954"]
+        L4["game_theory_lean/CooperativeGames<br/>0 sorry #3954"]
         L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
         L6["repeated_games_lean<br/>grim_trigger"]
     end
@@ -352,6 +352,8 @@ flowchart LR
 ```
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
+
+> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` (**Supprimé**, PR #5971 — contenu absorbé sous `game_theory_lean/StableMarriage/`) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `conway_cgt_lean`, `game_theory_lean` (multi-module, absorbant CooperativeGames + StableMarriage), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `repeated_games_lean`, `social_choice_lean`. Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
@@ -494,7 +496,7 @@ Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de vot
 
 ### Les projets Lake Lean ne buildent pas
 
-Chaque sous-dossier Lean (`social_choice_lean/`, `cooperative_games_lean/`, `game_theory_lean/`, etc.) est un projet Lake indépendant. Pour builder :
+Chaque sous-dossier Lake (`conway_cgt_lean/`, `game_theory_lean/`, `minimax_lean/`, `repeated_games_lean/`, `social_choice_lean/`, `social_choice_lean_peters/`, `lean_game_defs/`, `lean_game_defs_ext/`) est un projet Lake indépendant. Pour builder :
 
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/social_choice_lean
@@ -721,7 +723,6 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley + Bondareva-Shapley 0 sorry, cf #3954)
 ├── conway_cgt_lean/               # Projet Lake jeux combinatoires (Conway CGT, toolchain v4.31.0-rc1)
 ├── minimax_lean/                  # Projet Lake minimax (Sion, cf #4054)
 ├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
@@ -810,7 +811,7 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 | Mécanismes VCG, matching Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | Gouvernance on-chain (DAO, vote vérifiable) ; le design de mécanismes se prolonge en smart contracts |
 | Encodage SAT/Z3 d'Arrow | [SymbolicAI/SMT/Z3-Linq2Z3](../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Outil Z3 partagé ; notebook SC-04 exploite la même API que NB-06 (witness generation Automata) |
 
-**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec **8 lakes game-théoriques en propre** (plus le lake de référence externe `social_choice_lean_peters`) et **0 sorry sur les théorèmes majeurs**.
+**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec **7 lakes game-théoriques en propre** (plus le lake de référence externe `social_choice_lean_peters`) et **0 sorry sur les théorèmes majeurs**.
 
 ## Licence
 
@@ -818,4 +819,6 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles→hub : intégration du marathon parité C# #4956 (binômes GT-2..17 + SocialChoice), 8 lakes en propre + peters, grim-trigger certifié, comptes délégués au marqueur CATALOG-STATUS.*
+*Version 1.4.1 — Juillet 2026 (2026-07-16) — reconciliation EPIC #4365 : retrait des références aux lakes supprimés `cooperative_games_lean` (rm #6587) et `stable_marriage_lean` (PR #5971), absorbés dans `game_theory_lean` ; comptes lakes mis à jour (7 en propre + peters).*
+
+*Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles→hub : intégration du marathon parité C# #4956 (binômes GT-2..17 + SocialChoice), 7 lakes en propre + peters, grim-trigger certifié, comptes délégués au marqueur CATALOG-STATUS.*

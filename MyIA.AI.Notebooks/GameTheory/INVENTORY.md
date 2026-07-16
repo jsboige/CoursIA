@@ -1,5 +1,7 @@
 # Game Theory Series — Inventory & Audit Report
 
+> ⚠ **Snapshot daté (2026-04-30) — ne pas utiliser comme état courant.** Cet audit fige l'état au 2026-04-30 ; depuis lors, `cooperative_games_lean/` a été **supprimé** (rm #6587, absorbé dans `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` également (PR #5971, absorbé dans `game_theory_lean/StableMarriage/`). Pour l'état courant des lakes Lean, voir [`LEAN_INVENTORY.md`](LEAN_INVENTORY.md).
+
 **Generated**: 2026-04-30 | **Agent**: po-2025 | **Issue**: #622
 
 ## Summary
