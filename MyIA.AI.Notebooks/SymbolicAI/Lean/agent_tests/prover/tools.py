@@ -118,24 +118,45 @@ def _parse_lean_errors(raw_output: str) -> list:
     ``level_1_build == False AND errors == []`` that let a non-compiling
     snapshot be preserved (DEMO 62, ``HashlifeCorrectness.lean:2940``).
 
-    This helper mirrors the authoritative substring detection so the inline
-    tools agree with ``LeanVerifier`` on what counts as an error.  Each entry
-    carries ``line`` (``int`` when a ``line:col`` is present, else ``None``)
-    and ``message`` (the text following ``": error:"``).
+    This helper mirrors the authoritative detection so the inline tools agree
+    with ``LeanVerifier`` on what counts as an error.  Each entry carries
+    ``line`` (``int`` when a ``line:col`` is present, else ``None``) and
+    ``message`` (the text following the error marker).
+
+    Grain a-2 (#6790 forensic, BG run-2/run-3, msg-20260716T084204-myaddh): the
+    real Lake output also emits errors in a **lake-prefix** format with
+    ``error:`` at the START of the line -- ``error: <file>:<line>:<col>: <msg>``
+    (e.g. ``error: Conway/Life/HashlifeCorrectness.lean:2940:79: Application
+    type mismatch``).  That format carries NO ``": error:"`` substring, so the
+    bare substring gate ``if ": error:" not in line: continue`` SKIPPED it --
+    the parser returned ``[]`` even though a real compile error existed, and
+    the false-negative ``level_1_build == False AND errors == []`` persisted
+    (the authority ``LeanVerifier`` still set ``success=False`` via the exit
+    code, hence the incoherent signature).  Fix: go **regex-first** -- try the
+    two positional regexes (standard ``<f>:<l>:<c>: error:`` and lake-prefix
+    ``error: <f>:<l>:<c>:``) on every line regardless of substring, then fall
+    back to substring / line-start detection for non-positional errors.
     """
     errors = []
     for line in raw_output.split("\n"):
-        if ": error:" not in line:
-            continue
+        # Standard positional: <file>:<line>:<col>: error: <msg>
         m = re.search(r"(\d+):(\d+): error: (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
+        # Lake-prefix positional: error: <file>:<line>:<col>: <msg>  (grain a-2)
         m = re.search(r"error: .*?(\d+):(\d+): (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
-        errors.append({"line": None, "message": line.split(": error:", 1)[1].strip()})
+        # Non-positional, substring form: <file>: error: <msg> (module-level)
+        if ": error:" in line:
+            errors.append({"line": None, "message": line.split(": error:", 1)[1].strip()})
+            continue
+        # Non-positional, line-start form: error: <msg> (message-only / lake-prefix no-col)
+        if line.lstrip().startswith("error: "):
+            errors.append({"line": None, "message": line.lstrip().split("error: ", 1)[1].strip()})
+            continue
     return errors
 
 def _read_lines_from_source(source: str, start: int, end: int) -> str:

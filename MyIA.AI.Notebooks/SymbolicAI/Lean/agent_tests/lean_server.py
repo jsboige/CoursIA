@@ -496,9 +496,19 @@ class LeanVerifier:
 
     @staticmethod
     def _extract_errors(output: str) -> list:
-        """Extract error lines from lake build output."""
+        """Extract error lines from lake build output.
+
+        Alignment with ``prover.tools._parse_lean_errors`` (grain a-2, #6790):
+        Lake emits errors in a **lake-prefix** format with ``error:`` at the
+        START of the line -- ``error: <file>:<line>:<col>: <msg>`` -- which
+        carries NO ``": error:"`` substring.  The bare substring gate alone
+        missed that format, so the authority and the inline parser disagreed
+        (``success`` flipped via exit code, but 0 parsed errors -> false
+        negative).  Catch BOTH forms here.
+        """
         errors = []
         for line in output.split("\n"):
-            if ": error:" in line:
-                errors.append(line.strip())
+            stripped = line.strip()
+            if ": error:" in stripped or stripped.startswith("error:"):
+                errors.append(stripped)
         return errors
