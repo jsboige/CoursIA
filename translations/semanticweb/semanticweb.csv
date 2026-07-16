@@ -483,7 +483,7 @@ ex:statement1 ex:assertedBy ex:Alice .
 
 Cela represente **5 triplets supplementaires** pour annoter un seul fait. De plus, la reification ne **garantit pas** que le triplet original existe reellement dans le graphe.",,,,,,,,c303ed9837a038cf,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section1-demo-intro,markdown,fr,80944611f560574f,Voyons cela en pratique avec rdflib : la reification classique est verbeuse mais fonctionnelle.,,,,,,,,80944611f560574f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-reification,code,fr,66b2ff3eeedaa34f,"from rdflib import Graph, URIRef, Literal, Namespace, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-reification,code,fr,2ceadfb7bd8fb87c,"from rdflib import Graph, URIRef, Literal, Namespace, BNode
 from rdflib.namespace import RDF, RDFS, FOAF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -495,7 +495,7 @@ g_reif.bind(""foaf"", FOAF)
 # Le fait original
 g_reif.add((EX.Bob, FOAF.knows, EX.Carol))
 
-# Reification classique : decomposer le triplet
+# Réification classique : decomposer le triplet
 stmt = EX.statement1
 g_reif.add((stmt, RDF.type, RDF.Statement))
 g_reif.add((stmt, RDF.subject, EX.Bob))
@@ -512,7 +512,7 @@ print(f""  - Reification : 4 triplets"")
 print(f""  - Annotations : 2 triplets"")
 print(f""  - Total : 7 triplets pour annoter 1 fait"")
 print()
-print(g_reif.serialize(format=""turtle""))",,,,,,,,66b2ff3eeedaa34f,,,,,,,
+print(g_reif.serialize(format=""turtle""))",,,,,,,,2ceadfb7bd8fb87c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-reification,markdown,fr,7278672d5504e16e,"## Interpretation : cout de la reification
 
 | Approche | Triplets necessaires | Lisibilite | Garantie d'existence |
@@ -573,7 +573,7 @@ En RDF-Star, l'equivalent serait simplement :
 ```turtle
 << ex:Bob foaf:knows ex:Carol >> ex:assertedBy ex:Alice .
 ```",,,,,,,,f0184f43404e3fae,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-rdfstar-basic,code,fr,8080a9f094710345,"from rdflib import Graph, URIRef, Literal, Namespace, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-rdfstar-basic,code,fr,996f97952dde7bca,"from rdflib import Graph, URIRef, Literal, Namespace, BNode
 from rdflib.namespace import RDF, FOAF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -611,7 +611,7 @@ g_demo.bind(""foaf"", FOAF)
 # Le fait original
 g_demo.add((EX.Bob, FOAF.knows, EX.Carol))
 
-# Reification + annotations (equivalent RDF-Star : << ex:Bob foaf:knows ex:Carol >>)
+# Réification + annotations (equivalent RDF-Star : << ex:Bob foaf:knows ex:Carol >>)
 stmt = reify(g_demo, EX.Bob, FOAF.knows, EX.Carol)
 g_demo.add((stmt, EX.assertedBy, EX.Alice))
 g_demo.add((stmt, EX.confidence, Literal(0.85, datatype=XSD.double)))
@@ -624,7 +624,7 @@ print(f""  - Annotations : 3"")
 print(f""  - Total : {len(g_demo)}"")
 print()
 print(""=== Serialisation Turtle ==="")
-print(g_demo.serialize(format=""turtle""))",,,,,,,,8080a9f094710345,,,,,,,
+print(g_demo.serialize(format=""turtle""))",,,,,,,,996f97952dde7bca,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-rdfstar-basic,markdown,fr,993b67137c166531,"## Interpretation
 
 La fonction `reify()` simplifie l'ecriture, mais le cout en triplets reste le meme. Comparons :
@@ -701,7 +701,7 @@ En RDF-Star, cela s'ecrirait :
 ```
 
 Avec la reification, on chaine les Statements. Construisons cet exemple.",,,,,,,,c4d6e2641d7815e6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-nested,code,fr,be22400cdb5dc3ce,"from rdflib import Graph, Namespace, Literal, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-nested,code,fr,5d898f2b8fc54f5e,"from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, FOAF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -720,7 +720,7 @@ g_nested.add((stmt_level1, EX.believedBy, EX.Bob))
 
 # Niveau 3 : Alice rapporte la croyance de Bob
 # En RDF-Star : << << ... >> ex:believedBy ex:Bob >> ex:reportedBy ex:Alice .
-# Avec la reification, on reifie le Statement de niveau 2
+# Avec la réification, on reifie le Statement de niveau 2
 stmt_level2 = reify(g_nested, stmt_level1, EX.believedBy, EX.Bob)
 g_nested.add((stmt_level2, EX.reportedBy, EX.Alice))
 g_nested.add((stmt_level2, EX.reportDate, Literal(""2024-06-01"", datatype=XSD.date)))
@@ -732,7 +732,7 @@ print(f""  - Reification niveau 2 : 4 + 2 annotations"")
 print(f""  - Total : {len(g_nested)}"")
 print()
 print(""=== Serialisation Turtle ==="")
-print(g_nested.serialize(format=""turtle""))",,,,,,,,be22400cdb5dc3ce,,,,,,,
+print(g_nested.serialize(format=""turtle""))",,,,,,,,5d898f2b8fc54f5e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-nested,markdown,fr,c4a01d359d8562c8,"## Interpretation : imbrication
 
 Chaque niveau d'imbrication ajoute du contexte sans modifier le fait de base :
@@ -824,9 +824,9 @@ En RDF-Star, la meme distinction existe : `<< ex:Alice foaf:knows ex:Dave >> ex:
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section4-sparql-intro,markdown,fr,fbd2de09e13ca46b,"### 4.2 Requetes SPARQL sur les reifications
 
 Interrogeons le graphe avec SPARQL standard pour extraire les annotations via les patterns de reification.",,,,,,,,fbd2de09e13ca46b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,sparql-star-basic,code,fr,77c7cf8c30c2b37e,"# Requete 1 : Toutes les relations annotees avec confiance
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,sparql-star-basic,code,fr,27effad68f39f203,"# Requête 1 : Toutes les relations annotées avec confiance
 # En SPARQL-Star, on ecrirait : << ?person1 foaf:knows ?person2 >> ex:confidence ?confidence .
-# Avec la reification, on joint sur rdf:subject, rdf:predicate, rdf:object
+# Avec la réification, on joint sur rdf:subject, rdf:predicate, rdf:object
 
 query_all = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -857,11 +857,11 @@ for row in results:
     conf = f""{float(row.confidence):.2f}""
     src = str(row.source) if row.source else ""-""
     since = str(row.since) if row.since else ""-""
-    print(f""{p1:<15} {p2:<15} {conf:>10} {src:<12} {since}"")",,,,,,,,77c7cf8c30c2b37e,,,,,,,
+    print(f""{p1:<15} {p2:<15} {conf:>10} {src:<12} {since}"")",,,,,,,,27effad68f39f203,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section4-filter-intro,markdown,fr,9fab96a6a9f58664,"### 4.3 Filtrer par score de confiance
 
 Un cas d'usage important : ne retenir que les relations ayant un score de confiance superieur a un seuil. Cela permet de construire une vue ""fiable"" du graphe.",,,,,,,,9fab96a6a9f58664,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,sparql-star-filter,code,fr,afd23b60491899e7,"# Requete : Relations a haute confiance (>= 0.60)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,sparql-star-filter,code,fr,48742d183f1b32aa,"# Requête : Relations a haute confiance (>= 0.60)
 # En SPARQL-Star : << ?p1 foaf:knows ?p2 >> ex:confidence ?c . FILTER(?c >= 0.60)
 
 query_high = """"""
@@ -883,7 +883,7 @@ WHERE {
 ORDER BY DESC(?confidence)
 """"""
 
-# Requete : Relations a basse confiance (< 0.60)
+# Requête : Relations a basse confiance (< 0.60)
 query_low = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -916,7 +916,7 @@ for row in g_kg.query(query_low):
     p1 = str(row.person1).split(""/"")[-1]
     p2 = str(row.person2).split(""/"")[-1]
     src = str(row.source) if row.source else ""-""
-    print(f""  {p1} connait {p2} (confiance={float(row.confidence):.2f}, source={src})"")",,,,,,,,afd23b60491899e7,,,,,,,
+    print(f""  {p1} connait {p2} (confiance={float(row.confidence):.2f}, source={src})"")",,,,,,,,48742d183f1b32aa,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-filter,markdown,fr,e0ed34e3271b7678,"## Interpretation : filtrage par confiance
 
 Le filtrage separe les faits fiables des faits incertains :
@@ -944,7 +944,7 @@ En RDF-Star, cela s'ecrirait de maniere compacte :
     prov:wasDerivedFrom ex:INSEE_2023 ;
     prov:generatedAtTime ""2023-12-01""^^xsd:date .
 ```",,,,,,,,b7b6c64c30b2d6a9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-provenance,code,fr,12e63836ffc12a63,"from rdflib import Graph, Namespace, Literal, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-provenance,code,fr,b77f629414852687,"from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, RDFS, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -960,7 +960,7 @@ g_prov.bind(""schema"", SDO)
 pop_value = Literal(2161000, datatype=XSD.integer)
 g_prov.add((EX.Paris, SDO.population, pop_value))
 
-# Provenance du fait (reification)
+# Provenance du fait (réification)
 stmt_pop = reify(g_prov, EX.Paris, SDO.population, pop_value)
 g_prov.add((stmt_pop, PROV.wasDerivedFrom, EX.INSEE_2023))
 g_prov.add((stmt_pop, PROV.generatedAtTime, Literal(""2023-12-01"", datatype=XSD.date)))
@@ -979,7 +979,7 @@ g_prov.add((stmt_area, EX.method, Literal(""Mesure cadastrale"")))
 print(f""Graphe de provenance : {len(g_prov)} triplets"")
 print()
 
-# Requete : quels faits, avec quelle source ?
+# Requête : quels faits, avec quelle source ?
 query_prov = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1007,7 +1007,7 @@ for row in g_prov.query(query_prov):
     src = str(row.source).split(""/"")[-1]
     date = str(row.date) if row.date else ""-""
     method = str(row.method) if row.method else ""-""
-    print(f""{subj:<10} {prop:<20} {str(row.value):<12} {src:<15} {date:<12} {method}"")",,,,,,,,12e63836ffc12a63,,,,,,,
+    print(f""{subj:<10} {prop:<20} {str(row.value):<12} {src:<15} {date:<12} {method}"")",,,,,,,,b77f629414852687,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-provenance,markdown,fr,92929963ac4e0e43,"## Interpretation : provenance
 
 | Fait | Source | Date | Methode |
@@ -1034,7 +1034,7 @@ En RDF-Star, cela s'ecrirait :
 << ex:Marie schema:worksFor ex:Sorbonne >> ex:startDate ""2020-09-01""^^xsd:date .
 << ex:Marie schema:worksFor ex:Sorbonne >> ex:role ""Professeure"" .
 ```",,,,,,,,ab9cfb60051dddf4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-temporal,code,fr,0dacba800da35df1,"from rdflib import Graph, Namespace, Literal, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-temporal,code,fr,ecd6ff886988d701,"from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -1078,7 +1078,7 @@ g_temporal.add((stmt_mit, EX.status, Literal(""termine"")))
 print(f""Graphe temporel : {len(g_temporal)} triplets"")
 print()
 
-# Requete : parcours professionnel chronologique
+# Requête : parcours professionnel chronologique
 query_career = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1104,7 +1104,7 @@ print(f""{'Organisation':<15} {'Role':<15} {'Debut':<12} {'Fin':<12} {'Statut'}"
 print(""-"" * 65)
 for row in g_temporal.query(query_career):
     end = str(row.endDate) if row.endDate else ""en cours""
-    print(f""{str(row.orgName):<15} {str(row.role):<15} {str(row.startDate):<12} {end:<12} {str(row.status)}"")",,,,,,,,0dacba800da35df1,,,,,,,
+    print(f""{str(row.orgName):<15} {str(row.role):<15} {str(row.startDate):<12} {end:<12} {str(row.status)}"")",,,,,,,,ecd6ff886988d701,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-temporal,markdown,fr,1680531f827880d2,"## Interpretation : annotations temporelles
 
 Le parcours professionnel est represente de maniere structuree :
@@ -1129,7 +1129,7 @@ RDF-Star simplifierait cette ecriture en annotant directement :
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section5-multi-intro,markdown,fr,bd4d90b36d121390,"### 5.3 Fusion multi-sources avec scores de confiance
 
 Dans un graphe de connaissances construit a partir de sources multiples, chaque source peut affirmer des faits contradictoires. La reification permet de conserver toutes les versions et de les departager.",,,,,,,,bd4d90b36d121390,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-multi-source,code,fr,358308f98d36bf3f,"from rdflib import Graph, Namespace, Literal, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-multi-source,code,fr,eb80d9f3b34efc3d,"from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -1167,7 +1167,7 @@ g_multi.add((stmt_mairie, EX.year, Literal(""2024"", datatype=XSD.gYear)))
 print(f""Graphe multi-sources : {len(g_multi)} triplets"")
 print()
 
-# Requete : toutes les valeurs avec leurs sources
+# Requête : toutes les valeurs avec leurs sources
 query_sources = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1215,7 +1215,7 @@ LIMIT 1
 
 print()
 for row in g_multi.query(query_best):
-    print(f""Valeur retenue (confiance max) : {int(row.pop):,d} (source: {row.source})"")",,,,,,,,358308f98d36bf3f,,,,,,,
+    print(f""Valeur retenue (confiance max) : {int(row.pop):,d} (source: {row.source})"")",,,,,,,,eb80d9f3b34efc3d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-multi-source,markdown,fr,d628e90abc40c57b,"## Interpretation : fusion multi-sources
 
 Ce pattern est fondamental pour les graphes de connaissances industriels :
@@ -1251,7 +1251,7 @@ puis on annote cette URI.
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-named-graphs-intro,markdown,fr,5516b9240a657368,"### 6.1 Graphes nommes avec rdflib Dataset
 
 rdflib fournit la classe `Dataset` pour gerer des graphes nommes. Chaque graphe est identifie par une URI et contient un ensemble de triplets.",,,,,,,,5516b9240a657368,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-named-graphs,code,fr,39889af5bd90dcfb,"from rdflib import Dataset, URIRef, Literal, Namespace
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-named-graphs,code,fr,7c252d5dea429f99,"from rdflib import Dataset, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, FOAF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -1260,11 +1260,11 @@ ds = Dataset()
 ds.bind(""ex"", EX)
 ds.bind(""foaf"", FOAF)
 
-# Creer un graphe nomme pour le contexte ""assertion d'Alice""
+# Créer un graphe nommé pour le contexte ""assertion d'Alice""
 ctx_alice = URIRef(""http://example.org/context/alice-assertion"")
 g_alice = ds.graph(ctx_alice)
 
-# Les triplets sont dans le graphe nomme
+# Les triplets sont dans le graphe nommé
 g_alice.add((EX.Bob, FOAF.knows, EX.Carol))
 g_alice.add((EX.Bob, FOAF.knows, EX.Dave))
 
@@ -1305,7 +1305,7 @@ for s, p, o in g_bob:
     s_short = str(s).replace(""http://example.org/"", ""ex:"")
     p_short = str(p).replace(""http://xmlns.com/foaf/0.1/"", ""foaf:"")
     o_short = str(o).replace(""http://example.org/"", ""ex:"")
-    print(f""  {s_short} {p_short} {o_short}"")",,,,,,,,39889af5bd90dcfb,,,,,,,
+    print(f""  {s_short} {p_short} {o_short}"")",,,,,,,,7c252d5dea429f99,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-named-graphs,markdown,fr,35be0f71e297dff7,"## Interpretation : graphes nommes
 
 Les graphes nommes regroupent des triplets par contexte :
@@ -1341,7 +1341,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section7-ser
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section7-demo-intro,markdown,fr,e475ddcb52284e67,"### Serialisation d'un graphe avec reification
 
 Testons les formats disponibles dans rdflib pour un graphe contenant des reifications.",,,,,,,,e475ddcb52284e67,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-serialization,code,fr,6213a4d1eb460a07,"from rdflib import Graph, Namespace, Literal, BNode
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,demo-serialization,code,fr,05826e0fe07cb10e,"from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, FOAF, XSD
 
 EX = Namespace(""http://example.org/"")
@@ -1350,7 +1350,7 @@ g_ser = Graph()
 g_ser.bind(""ex"", EX)
 g_ser.bind(""foaf"", FOAF)
 
-# Fait + reification + annotation
+# Fait + réification + annotation
 g_ser.add((EX.Alice, FOAF.knows, EX.Bob))
 stmt = reify(g_ser, EX.Alice, FOAF.knows, EX.Bob)
 g_ser.add((stmt, EX.confidence, Literal(0.9, datatype=XSD.double)))
@@ -1378,7 +1378,7 @@ try:
     print(""=== JSON-LD ==="")
     print(jsonld_out.strip())
 except Exception as e:
-    print(f""=== JSON-LD : {e} ==="")",,,,,,,,6213a4d1eb460a07,,,,,,,
+    print(f""=== JSON-LD : {e} ==="")",,,,,,,,05826e0fe07cb10e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,interpretation-serialization,markdown,fr,336c88c326c61fc1,"## Interpretation : formats de serialisation
 
 - **Turtle** : la reification est representee avec des blank nodes et les proprietes `rdf:subject`, `rdf:predicate`, `rdf:object`
@@ -1437,7 +1437,7 @@ En RDF-Star, cela s'ecrirait :
                                            ex:source ""Le Monde"" ;
                                            ex:date ""2024-01-15""^^xsd:date .
 ```",,,,,,,,f0030f08f573df1a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercise1,code,fr,de850ab2bf8f614a,"# Exemple guide 1 : Critiques de film avec reification
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercise1,code,fr,35880654a7cc0ad1,"# Exemple guide 1 : Critiques de film avec réification
 from rdflib import Graph, Namespace, Literal, BNode
 from rdflib.namespace import RDF, XSD
 
@@ -1477,7 +1477,7 @@ g_ex1.add((stmt_c, EX.date, Literal(""2024-02-01"", datatype=XSD.date)))
 print(""=== Graphe des critiques ==="")
 print(g_ex1.serialize(format=""turtle""))
 
-# Requete SPARQL : lister les critiques
+# Requête SPARQL : lister les critiques
 query = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1496,7 +1496,7 @@ ORDER BY DESC(?note)
 
 print(""\n=== Critiques triees par note ==="")
 for row in g_ex1.query(query):
-    print(f""  {row.reviewer} : {row.note}/5 ({row.source}, {row.date})"")",,,,,,,,de850ab2bf8f614a,,,,,,,
+    print(f""  {row.reviewer} : {row.note}/5 ({row.source}, {row.date})"")",,,,,,,,35880654a7cc0ad1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercise2-title,markdown,fr,7bc00fa27e8c1c63,"### Exemple guide 2 : Requeter les reifications avec SPARQL
 
 *Solution proposee par Lilou Mayot (promo 2026)*
@@ -1507,9 +1507,9 @@ En utilisant le graphe de connaissances annote de la section 4.1 (variable `g_kg
 2. Trouver les relations **etablies depuis plus de 3 ans** (avant 2022-01-01)
 
 **Indice** : Utilisez le pattern `?stmt a rdf:Statement ; rdf:subject ?s ; rdf:predicate foaf:knows ; rdf:object ?o .`",,,,,,,,7bc00fa27e8c1c63,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercise2,code,fr,556dbebb0704d8fb,"# Exemple guide 2 : Requetes SPARQL sur les reifications
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercise2,code,fr,366aa25a998d6cf8,"# Exemple guide 2 : Requêtes SPARQL sur les réifications
 
-# Requete 2a : Relations assertees par une tierce personne
+# Requête 2a : Relations assertées par une tierce personne
 query_2a = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1525,7 +1525,7 @@ WHERE {
 }
 """"""
 
-# Requete 2b : Relations anciennes (avant 2022)
+# Requête 2b : Relations anciennes (avant 2022)
 query_2b = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1554,7 +1554,7 @@ print(""\n=== 2b : Relations anterieures a 2022 ==="")
 for row in g_kg.query(query_2b):
     p1 = str(row.person1).split(""/"")[-1]
     p2 = str(row.person2).split(""/"")[-1]
-    print(f""  {p1} connait {p2} depuis {row.since}"")",,,,,,,,556dbebb0704d8fb,,,,,,,
+    print(f""  {p1} connait {p2} depuis {row.since}"")",,,,,,,,366aa25a998d6cf8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,section10-title,markdown,fr,ca868ca933fc6ec5,"---
 
 ## 10. Ecosysteme et compatibilite
@@ -1702,7 +1702,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemples-gui
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-59a8f5a2,markdown,fr,f0da7732ab80099c,"### Exemple guide 4 : Donnees sportives multi-sources
 
 *Solution proposee par @Sosolalt (EPITA-IS, promo 2028).*",,,,,,,,f0da7732ab80099c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-59a8f5a2,code,fr,c695fdca8190e718,"# Exercice 4 : Donnees sportives multi-sources
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-59a8f5a2,code,fr,c33c315fa3270602,"# Exercice 4 : Donnees sportives multi-sources
 from rdflib import Graph, Namespace, Literal
 from rdflib.namespace import RDF, XSD
 
@@ -1716,7 +1716,7 @@ g_sport.bind(""rdf"", RDF)
 def add_score_claim(match, home, away, score, source, confidence, date):
     g_sport.add((match, EX.homeTeam, Literal(home)))
     g_sport.add((match, EX.awayTeam, Literal(away)))
-    # Le score est l'assertion annotee par source -> reification
+    # Le score est l'assertion annotée par source -> réification
     stmt = reify(g_sport, match, EX.score, Literal(score))
     g_sport.add((stmt, EX.source, Literal(source)))
     g_sport.add((stmt, EX.confidence, Literal(confidence, datatype=XSD.double)))
@@ -1736,7 +1736,7 @@ add_score_claim(EX.match3, ""Lille"", ""Lens"", ""0-1"", ""Foot Mercato"", 0.60,
 
 print(f""Graphe sportif : {len(g_sport)} triplets\n"")
 
-# Requete : scores confirmes par au moins 2 sources differentes
+# Requête : scores confirmes par au moins 2 sources différentes
 query_confirmed = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1758,11 +1758,11 @@ print(""=== Scores confirmes par >= 2 sources ==="")
 for row in g_sport.query(query_confirmed):
     match = str(row.match).split(""/"")[-1]
     print(f""  {match} : score {row.score} (confirme par {row.nbSources} sources)"")
-",,,,,,,,c695fdca8190e718,,,,,,,
+",,,,,,,,c33c315fa3270602,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-69862e55,markdown,fr,14917600b18e2752,"### Exemple guide 5 : Agregats SPARQL sur scores de confiance
 
 *Solution proposee par @Sosolalt (EPITA-IS, promo 2028).*",,,,,,,,14917600b18e2752,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-69862e55,code,fr,36dc1a2e0a25bf50,"# Exercice 5 : Agregats SPARQL sur scores de confiance (graphe g_kg de la section 4)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-69862e55,code,fr,cb72516597de30a2,"# Exercice 5 : Agrégats SPARQL sur scores de confiance (graphe g_kg de la section 4)
 
 # 1. Moyenne des scores de confiance de toutes les relations foaf:knows
 query_avg = """"""
@@ -1825,13 +1825,13 @@ ORDER BY DESC(?nb)
 print(""\n=== 3. Nombre de relations par source ==="")
 for row in g_kg.query(query_by_source):
     print(f""  {str(row.source):<15} : {int(row.nb)} relation(s)"")
-",,,,,,,,36dc1a2e0a25bf50,,,,,,,
+",,,,,,,,cb72516597de30a2,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-0cfb9138,markdown,fr,b92a5875693021d9,"### Exemple guide 6 : Annotations temporelles sur evenements historiques
 
 *Solution proposee par @Sosolalt (EPITA-IS, promo 2028).*",,,,,,,,b92a5875693021d9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-0cfb9138,code,fr,323468d2480a9f82,"# Exercice 6 : Annotations temporelles sur des evenements historiques
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemple-code-0cfb9138,code,fr,8d93c2f61c27a0c7,"# Exercice 6 : Annotations temporelles sur des événements historiques
 # Note : rdflib 7.6 ne supporte pas la syntaxe RDF-Star native (<< s p o >>),
-# on utilise donc la reification (fonction reify) comme dans tout le notebook.
+# on utilise donc la réification (fonction reify) comme dans tout le notebook.
 
 from rdflib import Graph, Namespace, Literal, URIRef, BNode
 from rdflib.namespace import RDF, XSD
@@ -1841,7 +1841,7 @@ ex = Namespace(""http://example.org/"")
 g = Graph()
 g.bind(""ex"", ex)
 
-# Etape 2 : 3 evenements historiques avec annotations temporelles (date + source)
+# Étape 2 : 3 événements historiques avec annotations temporelles (date + source)
 evenements = [
     (ex.priseBastille, ""Prise de la Bastille"", ""1789-07-14"", ""Encyclopedie Larousse""),
     (ex.sacreNapoleon, ""Sacre de Napoleon Ier"", ""1804-12-02"", ""Archives nationales""),
@@ -1851,14 +1851,14 @@ evenements = [
 for event, label, date, source in evenements:
     g.add((event, RDF.type, ex.EvenementHistorique))
     g.add((event, ex.label, Literal(label)))
-    # Le fait date est asserte puis annote (date + source) par reification
+    # Le fait date est asserte puis annote (date + source) par réification
     g.add((event, ex.date, Literal(date, datatype=XSD.date)))
     stmt = reify(g, event, ex.date, Literal(date, datatype=XSD.date))
     g.add((stmt, ex.source, Literal(source)))
 
 print(f""Graphe d'evenements : {len(g)} triplets\n"")
 
-# Etape 3 : requete SPARQL filtrant les evenements posterieurs a l'an 1800
+# Étape 3 : requête SPARQL filtrant les événements postérieurs a l'an 1800
 query = """"""
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX ex: <http://example.org/>
@@ -1880,11 +1880,11 @@ ORDER BY ?date
 
 results = g.query(query)
 
-# Etape 4 : afficher les resultats
+# Étape 4 : afficher les résultats
 print(""=== Evenements posterieurs a 1800 ==="")
 for row in results:
     print(f""  {str(row.date)} - {row.label} (source : {row.source})"")
-",,,,,,,,323468d2480a9f82,,,,,,,
+",,,,,,,,8d93c2f61c27a0c7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exercices-a-completer,markdown,fr,ac1bdd159b5d3237,"---
 
 ## Exercices a completer
@@ -1901,14 +1901,14 @@ Pour chaque match, ajoutez :
 Ecrivez ensuite une requete SPARQL selectionnant uniquement les scores confirmes par au moins 2 sources.
 
 **Indice** : Chaque source produit un `rdf:Statement` different pour le meme match. Utilisez `GROUP BY` et `HAVING(COUNT(?source) >= 2)`.",,,,,,,,ea401b1fc05ca08e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,59a8f5a2,code,fr,53be42512a829404,"# Exercice 4 : Donnees sportives multi-sources
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,59a8f5a2,code,fr,af2ad03e96ec20c4,"# Exercice 4 : Donnees sportives multi-sources
 from rdflib import Graph, Namespace, Literal
 from rdflib.namespace import RDF, XSD
 
-# TODO etudiant : Creez le graphe avec matchs, scores et sources multiples
-# Puis ecrivez une requete SPARQL pour trouver les scores confirmes par >= 2 sources
+# TODO étudiant : Créez le graphe avec matchs, scores et sources multiples
+# Puis écrivez une requête SPARQL pour trouver les scores confirmes par >= 2 sources
 
-print(""Exercice a completer"")",,,,,,,,53be42512a829404,,,,,,,
+print(""Exercice a completer"")",,,,,,,,af2ad03e96ec20c4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,1c81c386,markdown,fr,40da3230804e7114,"### Exercice 5 : Agregats SPARQL sur scores de confiance
 
 En reprenant le graphe `g_kg` de la section 4, ecrivez des requetes SPARQL pour :
@@ -1917,14 +1917,14 @@ En reprenant le graphe `g_kg` de la section 4, ecrivez des requetes SPARQL pour 
 3. Compter le **nombre de relations par source** (regroupement)
 
 **Indice** : Utilisez `AVG()`, `MIN()`, `COUNT()` et `GROUP BY`.",,,,,,,,40da3230804e7114,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,69862e55,code,fr,f4ddd6a4eeaef842,"# Exercice 5 : Agregats SPARQL sur scores de confiance
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,69862e55,code,fr,ce392de90990580d,"# Exercice 5 : Agrégats SPARQL sur scores de confiance
 
-# TODO etudiant : Ecrivez 3 requetes SPARQL avec agregats sur g_kg
+# TODO étudiant : Écrivez 3 requêtes SPARQL avec agrégats sur g_kg
 # 1. Moyenne des confiances
 # 2. Relation la plus ancienne
 # 3. Nombre de relations par source
 
-print(""Exercice a completer"")",,,,,,,,f4ddd6a4eeaef842,,,,,,,
+print(""Exercice a completer"")",,,,,,,,ce392de90990580d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,022164e5,markdown,fr,bca716d3b8439cd1,"### Exercice 6 : Annotations temporelles sur des evenements historiques
 
 Les sections 5.2 et 5.3 ont montre les **annotations temporelles** et la **fusion multi-sources**.
@@ -1942,22 +1942,22 @@ Creez un graphe RDF-Star qui annote des evenements historiques avec des dates et
 - `<<ex:event1 ex:aLieu ""1789-07-14""^^xsd:date>>` en Turtle-Star
 - `FILTER(YEAR(?date) > 1800)` pour le filtrage temporel
 ",,,,,,,,bca716d3b8439cd1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,0cfb9138,code,fr,dda76eb17af23b26,"# Exercice 6 : Annotations temporelles sur des evenements historiques
-# TODO etudiant : creez un graphe RDF-Star d'evenements historiques annotes
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,0cfb9138,code,fr,16cc690d174636bf,"# Exercice 6 : Annotations temporelles sur des événements historiques
+# TODO étudiant : créez un graphe RDF-Star d'événements historiques annotés
 #
-# Etape 1 : importer rdflib et definir les namespaces
+# Étape 1 : importer rdflib et définir les namespaces
 #   from rdflib import Graph, Namespace, Literal, URIRef, BNode
 #   from rdflib.namespace import XSD
-# Etape 2 : creer un Graph et ajouter 3 evenements avec annotations temporelles
+# Étape 2 : créer un Graph et ajouter 3 événements avec annotations temporelles
 #   ex = Namespace(""http://example.org/"")
-#   Utiliser RDF-Star pour attacher date et source a chaque triplet evenement
-# Etape 3 : ecrire une requete SPARQL-Star pour filtrer les evenements apres 1800
-# Etape 4 : afficher les resultats
+#   Utiliser RDF-Star pour attacher date et source a chaque triplet événement
+# Étape 3 : écrire une requête SPARQL-Star pour filtrer les événements après 1800
+# Étape 4 : afficher les résultats
 
-g = None  # TODO etudiant : remplacer par le Graph construit
-results = None  # TODO etudiant : remplacer par les resultats de la requete
+g = None  # TODO étudiant : remplacer par le Graph construit
+results = None  # TODO étudiant : remplacer par les résultats de la requête
 print(""Exercice a completer"")
-",,,,,,,,dda76eb17af23b26,,,,,,,
+",,,,,,,,16cc690d174636bf,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,4186ac5b,markdown,fr,09ff44923ec643a1,"## Conclusion
 
 Ce notebook a permis d'explorer les aspects essentiels de sw 10 python rdfstar. Les points cles :
