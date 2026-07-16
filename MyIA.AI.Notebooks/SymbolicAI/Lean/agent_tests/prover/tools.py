@@ -102,6 +102,42 @@ def _count_sorries_from_build_output(raw_output: str) -> int:
     return count
 
 
+
+def _parse_lean_errors(raw_output: str) -> list:
+    """Parse Lean/Lake error lines from build output.
+
+    Root-cause fix for the metrics=0 / false-negative integrity bug (#6790):
+    the inline parsers anchored on ``<digits>:<digits>: error:`` (a per-line
+    ``line:col`` position) and therefore MISSED every error that carries no
+    per-line position -- module-level errors (``foo.lean: error: ...``),
+    message-only errors, and multi-line continuations.  An authoritative
+    ``LeanVerifier._extract_errors`` (``agent_tests/lean_server.py``) detects
+    the same class with the bare substring ``": error:"`` and flips
+    ``success`` to ``False``; the inline parsers returned ``error_count == 0``
+    for those very lines, producing the false-negative
+    ``level_1_build == False AND errors == []`` that let a non-compiling
+    snapshot be preserved (DEMO 62, ``HashlifeCorrectness.lean:2940``).
+
+    This helper mirrors the authoritative substring detection so the inline
+    tools agree with ``LeanVerifier`` on what counts as an error.  Each entry
+    carries ``line`` (``int`` when a ``line:col`` is present, else ``None``)
+    and ``message`` (the text following ``": error:"``).
+    """
+    errors = []
+    for line in raw_output.split("\n"):
+        if ": error:" not in line:
+            continue
+        m = re.search(r"(\d+):(\d+): error: (.*)", line)
+        if m:
+            errors.append({"line": int(m.group(1)), "message": m.group(3)})
+            continue
+        m = re.search(r"error: .*?(\d+):(\d+): (.*)", line)
+        if m:
+            errors.append({"line": int(m.group(1)), "message": m.group(3)})
+            continue
+        errors.append({"line": None, "message": line.split(": error:", 1)[1].strip()})
+    return errors
+
 def _read_lines_from_source(source: str, start: int, end: int) -> str:
     """Read lines [start, end] (1-based inclusive) from a string source."""
     lines = source.split("\n")
@@ -1131,27 +1167,21 @@ class TacticTools:
         # replacement might still be valid if no new syntax errors were introduced.
         raw_output = result.get("raw_output", "") or result.get("errors", "")
         non_sorry_errors = []
-        for line in raw_output.split("\n"):
-            if "error:" not in line:
+        skip_patterns = [
+            "declaration uses `sorry`",
+            "uses `sorry`",
+            "Some required targets logged failures",
+            "Lean exited with code 1",
+            "error: build failed",
+            "compiled configuration is invalid",
+        ]
+        for err in _parse_lean_errors(raw_output):  # #6790: authoritative parser
+            msg = err["message"]
+            if any(skip in msg for skip in skip_patterns):
                 continue
-            skip_patterns = [
-                "declaration uses `sorry`",
-                "uses `sorry`",
-                "Some required targets logged failures",
-                "Lean exited with code 1",
-                "error: build failed",
-                "compiled configuration is invalid",
-            ]
-            if any(skip in line for skip in skip_patterns):
+            if "unsolved goals" in msg:
                 continue
-            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
-            if not m:
-                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
-            if m:
-                msg = m.group(2)
-                if "unsolved goals" in msg:
-                    continue
-                non_sorry_errors.append({"line": int(m.group(1)), "message": msg})
+            non_sorry_errors.append({"line": err["line"], "message": msg})
 
         # If only sorry-related errors, accept the replacement (don't revert)
         if not non_sorry_errors:
@@ -1202,13 +1232,7 @@ class TacticTools:
         # Build failed with real errors — revert to original.
         Path(self._filepath).write_text(original_content, encoding="utf-8")
         raw_output = result.get("raw_output", "") or result.get("errors", "")
-        errors = []
-        for line in raw_output.split("\n"):
-            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
-            if not m:
-                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
-            if m:
-                errors.append({"line": int(m.group(1)), "message": m.group(2)})
+        errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
 
         if self._trace:
             self._trace.log(
@@ -1859,13 +1883,7 @@ class TacticTools:
         success = result.get("success", False)
         cached = result.get("cached", False)
 
-        errors = []
-        for line in raw_output.split("\n"):
-            m = re.match(r".*?(\d+):\d+: error: (.*)", line)
-            if not m:
-                m = re.match(r"error: .*?(\d+):\d+: (.*)", line)
-            if m:
-                errors.append({"line": int(m.group(1)), "message": m.group(2)})
+        errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
 
         content = Path(self._filepath).read_text(encoding="utf-8")
         text_sorry_count = count_real_sorries(content)
