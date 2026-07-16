@@ -980,6 +980,22 @@ theorem unknot_not_tricolorable : ¬ Knot.isTricolorable unknot := by
   obtain ⟨i, j, hne⟩ := htwocolors
   exact hne (this i j)
 
+/-! ## 4b. La figure-eight n'est PAS tricolorable
+
+La figure-eight (4₁) possède 4 croisements et un déterminant égal à 5 ; elle
+n'est donc PAS 3-coloriable au sens de Fox. Sous **Path B** (conjonction
+d'arc-égalité `c₂ = c₄`), c'est le témoin de distinction canonique : le modèle
+permissif antérieur laissait passer une tricoloration parasite `(0,0,0,1,0,0,1,2)`
+(README §Path B), que la contrainte d'arc exclut désormais.
+
+Preuve par énumération finie (`decide`) : l'espace des coloriages `Fin 8 → TriColor`
+(3⁸ = 6561) est parcouru, et pour chacun la conjonction d'arc-égalité + Fox aux 4
+croisements est réfutée — soit l'arc-continuité casse, soit Fox force le monochrome
+(contrredisant « ≥ 2 couleurs »). Témoin de non-régression Path B (#2874). -/
+theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
+  unfold Knot.isTricolorable IsTricolorable IsTriColoring figureEight
+  decide
+
 /-! ## 5. Corollary: the trefoil is not the unknot
 
 Since tricolorability is an invariant, and the trefoil has it
