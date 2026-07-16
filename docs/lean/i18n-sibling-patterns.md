@@ -41,6 +41,26 @@ Quand une entité existe **au top-level** côté FR mais **dans un namespace** c
 
 Les deux qualifieurs **doivent** différer pour que **chacun** compile. Un checker byte-identité naïf voit un « drift » là où la divergence est obligatoire (la résolution de nom scope-dépendante est **invisible textuellement**). Le checker #6718 normalise les self-qualifiers (`_root_.X` ↔ `<Ns_en>.X` du namespace local) : verdict **`OK`** — c'est le faux positif qui avait cassé **#6716** (fermé comme FP après l'errata).
 
+## Roots aggregators sans sibling `_en` — classification des faux positifs
+
+Les trois formes ci-dessus décrivent une **paire sibling existante** (`Foo.lean` + `Foo_en.lean`). Une source de confusion récurrente distincte : le **root aggregator** d'un lake (`<Lib>.lean`) qui **n'a pas** de `<Lib>_en.lean`. Un scan naïf « FR > EN » (ou un checker `ORPHAN`) le signale comme un gap à corriger — **souvent à tort**. Vérifié firsthand c.559–c.560 (origin/main `6c6aeb1b9`) :
+
+| Catégorie | Le root porte… | `_en` attendu ? | Exemples vérifiés firsthand |
+|-----------|---------------|-----------------|-----------------------------|
+| **Inline Option B** | FR + EN dans sa docstring (« ce fichier root aggregator est bilingue inline ») | **NON** — créer un `_en` contredirait la convention déclarée | `Finiteness.lean`, `Argumentation.lean`, `SocialChoice.lean`, `Grothendieck.lean`, `Minimax.lean` |
+| **Exemption documentée** | FR-only ; déclare que les siblings `_en` des leaves sont **exprès non importés** (landmine de collision de namespace) | **NON** — l'exemption est écrite dans le root | `CooperativeGames.lean` (abbrev `Coalition` top-level dupliquée `Basic.lean`/`Basic_en.lean`) |
+| **Skeleton comment-only** | 0 import actif (commentaire de plan de regroupement) | **NON** — hors scope i18n | `GameTheory.lean` (c.299, EPIC #4365) |
+| **FR-only substantiel (Pattern A)** | FR-only, **importe** ses leaves substantiels | **OUI** si **tous** les leaves importés ont leur `_en` | `Utility.lean`/`Gittins.lean`/`Coherence.lean` (decision_theory), `RepeatedGames.lean`/`StableMarriage.lean` (game_theory), `Knots.lean`, `Sensitivity.lean`, `Astar.lean`, `Sudoku.lean` |
+
+### Test de classification (à exécuter AVANT de créer un `<Root>_en.lean`)
+
+1. **Lire la docstring du root FR.** Si elle déclare « bilingue inline » → **Pattern B inline**, ne pas créer de `_en` (FP).
+2. Sinon, si elle déclare une **exemption** (siblings `_en` non importés exprès, collision documentée) → **ne pas créer de `_en`** (FP).
+3. Sinon, si le root est un **skeleton comment-only** (0 `import`) → **hors scope**.
+4. Sinon (root FR-only substantiel qui importe ses leaves) → vérifier que **chaque leaf importé a son `_en`**. Si oui → Pattern A, créer `<Root>_en.lean` est un grain légitime (convention-pure split, cf #6682/#6685/#6662). Si un leaf importé manque son `_en` → traiter ce leaf d'abord (le root `_en` sans ses leaves `_en` ne compile pas).
+
+> **Incident de méthode (c.559–c.560)** : un steer coordinateur avait classé `SocialChoice.lean` comme « root `_en` légitime dès le 8ᵉ sibling », mais le root est **déjà inline Option B** et le « 8ᵉ module » (`_SmokeTest.lean` = trivial sanity test `0+n=n`) est explicitement exclu de la liste des substantiels. Verdict reposait sur 2 FP non vérifiés par lecture du root. **La lecture du root FR est non-négociable** avant tout grain i18n root — le label « ORPHAN » d'un checker ou un claim hérité ne remplace pas la lecture de la déclaration de convention dans la docstring.
+
 ## Discipline opératoire — HARD
 
 > **Une sortie de checker `DRIFT` / `ORPHAN` est un POINT DE DÉPART D'INVESTIGATION, JAMAIS un grain à exécuter verbatim.**
