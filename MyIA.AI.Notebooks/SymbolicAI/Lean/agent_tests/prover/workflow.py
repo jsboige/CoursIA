@@ -234,6 +234,20 @@ class AgentExecutor(Executor):
         # Forensic evidence: Demo16 CYCLE78, iter_cap fired at [+3213.3s]
         # while Director was the designated next_agent, 2→2 no progress.
         msg.iteration += 1
+        # metrics=0 (#6790 bug 4, completes FX-9): mirror the per-traversal
+        # iteration into state.remaining_iterations on EVERY hop, not just in
+        # DiagnosisExecutor.handle (the earlier sole sync site). When a run
+        # ends via an AgentExecutor hard-cap (iteration_cap / delta0_stagnation
+        # / build_fail_streak below) it yields BEFORE reaching DiagnosisExecutor,
+        # so remaining_iterations kept its init value (max_iterations) and the
+        # result computed ``iterations = max_iterations - max_iterations = 0``
+        # even though msg.iteration had advanced (forensic: ai-01 BG iter
+        # DEMO 62, 33 min of work, RESULT_ITERATIONS 0). The cap logic below
+        # keys on msg.iteration directly, so syncing the reporting field here
+        # is inert to the cap and only fixes the reported count.
+        if self._state and msg.max_iterations > 0:
+            self._state.remaining_iterations = max(
+                0, msg.max_iterations - msg.iteration)
         _director_budget_remaining = (
             self._state
             and hasattr(self._state, '_has_director')
