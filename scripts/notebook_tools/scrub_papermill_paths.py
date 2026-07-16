@@ -380,7 +380,10 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH", help="dry-run scan a file or dir")
     group.add_argument("--scan-all", action="store_true", help="dry-run scan repo-wide")
-    group.add_argument("--apply", metavar="PATH", help="fix a file or dir in place")
+    group.add_argument("--apply", metavar="PATH", nargs="+",
+                       help="fix file(s) or dir(s) in place (accepts multiple "
+                            "paths, so it can be wired as a pre-commit hook that "
+                            "receives the staged notebooks as trailing arguments)")
     group.add_argument("--apply-all", action="store_true", help="fix repo-wide in place")
     parser.add_argument("--outputs", action="store_true",
                         help="scrub machine-local paths in OUTPUT text "
@@ -393,17 +396,30 @@ def main():
     nb_root = os.path.join(repo_root, "MyIA.AI.Notebooks")
 
     do_apply = args.apply is not None or args.apply_all
-    target = args.apply if args.apply else (args.scan if args.scan else nb_root)
 
     paths = []
     if args.scan_all or args.apply_all:
         paths = list(iter_notebooks(nb_root))
-    elif os.path.isdir(target):
-        paths = list(iter_notebooks(target))
-    elif os.path.isfile(target):
-        paths = [target]
     else:
-        parser.error("path not found: %s" % target)
+        # --apply is nargs="+" (a list; a pre-commit hook appends the staged
+        # notebooks here). --scan is a single path. Default to the notebook root.
+        targets = args.apply if args.apply else ([args.scan] if args.scan else [nb_root])
+        for target in targets:
+            if os.path.isdir(target):
+                paths.extend(iter_notebooks(target))
+            elif os.path.isfile(target):
+                paths.append(target)
+            else:
+                parser.error("path not found: %s" % target)
+        paths = list(dict.fromkeys(paths))  # de-dup while preserving order
+
+    def _display(pp):
+        # relpath raises ValueError across Windows drives (e.g. a file on C:
+        # while the repo is on D:). Display-only, so fall back to the abs path.
+        try:
+            return os.path.relpath(pp, repo_root)
+        except ValueError:
+            return pp
 
     total_defects = 0
     total_fixed = 0
@@ -418,7 +434,7 @@ def main():
             files_with_defect += 1
             total_defects += found
             total_fixed += fixed
-            rel = os.path.relpath(p, repo_root)
+            rel = _display(p)
             tag = "FIXED" if do_apply and fixed else ("DEFECT" if not do_apply else "PARTIAL")
             print("[%s] %s  (%d output leak(s)%s)" % (
                 tag, rel, found, ", %d fixed" % fixed if do_apply else ""))
@@ -429,7 +445,7 @@ def main():
             continue
         files_with_defect += 1
         total_defects += len(defects)
-        rel = os.path.relpath(p, repo_root)
+        rel = _display(p)
         if do_apply:
             unfixed = [d for d in defects if d not in fixed]
             total_fixed += len(fixed)

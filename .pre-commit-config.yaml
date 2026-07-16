@@ -47,3 +47,23 @@ repos:
         pass_filenames: true
         files: '\.ipynb$'
         stages: [pre-commit]
+
+      - id: scrub-papermill-paths
+        name: Scrub absolute papermill input/output paths from staged notebooks
+        description: |
+          Rewrites metadata.papermill.input_path / output_path from an absolute
+          machine-local path (C:\Users\<user>\..., /home/<user>/..., WSL/temp
+          dirs) down to the notebook basename. Papermill records the absolute
+          --output path it was handed into the notebook metadata at EVERY
+          execution, so this machine-path leak is re-injected on each
+          re-execution regardless of the launcher (batch_reexecute, wsl_papermill,
+          or a hand-typed `papermill --output /abs/path`). Hand-patching it per
+          notebook is a treadmill wiped by the next run; this metadata-only
+          pre-commit strip is the durable owner (mirrors the probeAddresses and
+          NuGet-cache strip hooks above). Byte-surgical text edit: source cells,
+          outputs and execution_count are untouched. See #3436.
+        entry: python scripts/notebook_tools/scrub_papermill_paths.py --apply
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
