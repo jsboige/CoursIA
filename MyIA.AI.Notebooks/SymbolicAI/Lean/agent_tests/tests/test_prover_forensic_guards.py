@@ -134,30 +134,46 @@ class TestFindSorryDefinitions:
         assert _find_sorry_definitions(content) == {"a", "b"}
 
 
-class TestFindSorryDefinitionsKnownLimitation:
-    """Known robustness gap, verified firsthand on origin/main.
+class TestFindSorryDefinitionsTypeAnnotated:
+    """Type-annotated ``lemma``/``def`` with sorry — the common real-world form.
 
-    `_SORRY_DEF_RE` matches `(?:lemma|def)\\s+(\\w+)\\b[^:]*:=\\s*by\\s+sorry`.
-    The `[^:]*` before `:=` cannot span a *type-annotation* colon, so the
-    common real-world form ``lemma foo : P := by sorry`` is NOT detected
-    (only annotation-less ``lemma foo := by sorry`` is). Consequently
-    `_check_sorry_relocation` misses relocations whose fresh helper lemma
-    carries a type annotation.
-
-    Broadening the regex is a production change that needs its own
-    diagnostic + review under the anti-regression protocol, so it is out of
-    scope for this coverage-only PR. The xfail below documents the desired
-    behavior and will flip to XPASS once the regex is broadened — a signal
-    to remove the marker. Follow-up to #6790.
+    `_SORRY_DEF_RE` was broadened from `(?:lemma|def)\\s+(\\w+)\\b[^:]*:=\\s*by`
+    to `(?:lemma|def)\\s+(\\w+)\\b(?:[^:=]|:[^=])*?\\s*:=\\s*by` so it can span
+    the type-annotation colon without swallowing the `:=` token. The fix was
+    verified firsthand on 12 cases before commit (annotation only, nested
+    binders `(n m : Nat)`, instance binders `[Monad m]`, type-class binders
+    `{α : Type _}`, multi-line, `have`/`theorem` exclusion). The previous
+    xfail (PR #6907) is flipped to a passing regression test by this PR.
+    Follow-up to #6790 / closes the documented gap from #6907.
     """
 
-    @pytest.mark.xfail(
-        reason="known gap: _SORRY_DEF_RE [^:]* cannot cross the type "
-        "annotation colon; follow-up to #6790",
-        strict=False,
-    )
-    def test_type_annotated_sorry_def_should_be_detected(self):
+    def test_type_annotated_lemma(self):
         assert _find_sorry_definitions("lemma foo : P := by sorry") == {"foo"}
+
+    def test_type_annotated_def(self):
+        assert _find_sorry_definitions("def bar : Nat := by sorry") == {"bar"}
+
+    def test_binder_colons_in_signature(self):
+        # Nested binders each contain a colon; the regex must allow them.
+        assert (
+            _find_sorry_definitions("lemma mul (n m : Nat) : Nat := by sorry")
+            == {"mul"}
+        )
+
+    def test_instance_and_typeclass_binders(self):
+        content = (
+            "lemma foldl [Monad m] (n : Nat) : Nat := by sorry\n"
+            "def mem_iff {α : Type _} (a : α) (as : List α) : Prop := by sorry"
+        )
+        assert _find_sorry_definitions(content) == {"foldl", "mem_iff"}
+
+    def test_multiline_annotation(self):
+        content = "lemma qux\n  : P\n  := by sorry"
+        assert _find_sorry_definitions(content) == {"qux"}
+
+    def test_implication_arrow_in_signature(self):
+        # `→` is not a `:` or `=`, so the body segment handles it natively.
+        assert _find_sorry_definitions("lemma baz : P → Q := by sorry") == {"baz"}
 
 
 # ──────────────────────────────────────────────────────────────────────────
