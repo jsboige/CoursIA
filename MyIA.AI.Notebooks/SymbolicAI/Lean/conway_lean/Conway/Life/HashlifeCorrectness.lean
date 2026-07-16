@@ -2866,6 +2866,126 @@ private theorem p4_nw_shift_lemma
   exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
     (2^k) (2^k) p hcc
 
+/-- Local `isAlive … = true ↔ p ∈ …` bridge. Mirrors `LightCone.isAlive_true_iff_mem`
+    verbatim, but LightCone is DOWNSTREAM of this file (`LightCone.lean` imports
+    `Conway.Life.HashlifeCorrectness`), so importing it here would be a cycle.
+    `private` keeps it file-local — no clash with LightCone's public theorem. -/
+private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
+    isAlive g p = true ↔ p ∈ g := by
+  rw [isAlive]; exact List.elem_iff
+
+/-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
+    The wave-1/wave-2 correspondence for the nw quadrant, stated at the
+    `evolve`-level so the arm lemma below wires it with a single `rw`. Reads:
+    "the twice-`evolve 2^(k-1)`d parent grid at `p` equals the once-`evolve
+    2^(k-1)`d wave-1 supercell `node R1 R2 R4 R5` at the supercell-local point
+    `p' = (p.1 - 2^k + 2^(k-1), …)`." The `hR_i` link the (opaque, so the arm
+    stays whnf-free) supercell children to the concrete wave-1 results.
+
+    This is an HONEST isolation, not a disguised sorry: it is exactly the S4
+    frame-translation + light-cone agreement content (the `evolve_cone_agree` /
+    `quadrant_cone_agree` locality composition over the `evolve_half_step`
+    split), factored out of the whnf-hard call site. ai-01 owns its proof
+    (tree-lock #6875); the boundary is evolve-level for wiring-compilability —
+    ai-01 may refactor to the raw-cone `∀ r ∈ lightCone …` form if preferred.
+    Net sorry count is FLAT: this named sorry replaces the monolithic nw
+    call-site sorry (isolation refactor; anti-régression §D does not apply). -/
+private theorem p4_nw_supercell_agree
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (p : Int × Int) :
+    isAlive (evolve (2^(k - 1)) (evolve (2^(k - 1))
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))) p
+      = isAlive (evolve (2^(k - 1)) ((node R1 R2 R4 R5).toGrid (0, 0)))
+          (p.1 - (2^k : Int) + (2^(k - 1) : Int),
+           p.2 - (2^k : Int) + (2^(k - 1) : Int)) := by
+  sorry
+
+/-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
+    Discharges the nw quadrant of `p4_succ_membership` over OPAQUE wave-1
+    results `R1..R5`, so this declaration gets a fresh 200000-heartbeat budget
+    and the `p4_nw_shift_lemma.mp` fuel-align abstracts only the outer fuel
+    (whnf-clean — proven by the `p4_nw_shift_consume_probe` crux, LAKE_EXIT=0).
+    The `p4_succ_membership` call site then merely *applies* this arm with
+    `R_i := hashlifeResultAux (k+1) n_i` (pure substitution, no whnf). The one
+    residual sorry lives in `p4_nw_supercell_agree`; here everything is wired.
+
+    Chain: `p4_nw_shift_lemma.mp` (supercell isAlive at `p'` + window bounds)
+    → `mem_restrictGridTo` → `isAlive_true_iff_mem` + `evolve_half_step`
+    (`2^k = 2^(k-1) ∘ 2^(k-1)`) + `p4_nw_supercell_agree` fold the membership
+    into `hsup.1`; the four coordinate bounds discharge from the shift window
+    (`2^((k-1)+1) = 2^k ≤ 2^(k+1)`) by omega. -/
+private theorem p4_nw_membership_arm
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (hR1_w : R1.wf = true) (hR2_w : R2.wf = true)
+    (hR4_w : R4.wf = true) (hR5_w : R5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int)
+    (hnw : p ∈ (hashlifeResultAux (k + 1) (node R1 R2 R4 R5)).toGrid
+            ((2^k : Int), (2^k : Int))) :
+    p ∈ restrictGridTo (evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))
+        (2^k : Int) (2^(k+1)) := by
+  -- Fuel-align (k+1) → (k-1)+2 on the OPAQUE-node membership, then consume the
+  -- shift lemma's `.mp` (whnf-clean over opaque `R_i` — the probe-proven crux).
+  rw [show (k + 1) = (k - 1) + 2 from by omega] at hnw
+  have hsup := (p4_nw_shift_lemma k hk1 R1 R2 R4 R5
+      hR1_l hR2_l hR4_l hR5_l hR1_w hR2_w hR4_w hR5_w ih p).mp hnw
+  -- hsup.1 : isAlive (evolve 2^(k-1) ((node R1 R2 R4 R5).toGrid 0)) p' = true
+  -- hsup.2 : 2^k ≤ p.1 ∧ p.1 < 2^k + 2^((k-1)+1) ∧ 2^k ≤ p.2 ∧ p.2 < 2^k + 2^((k-1)+1)
+  rw [mem_restrictGridTo]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · -- membership: fold `evolve 2^k` via half-step + supercell agreement into hsup.1
+    rw [← isAlive_true_iff_mem_local]
+    rw [evolve_half_step k hk1]
+    rw [p4_nw_supercell_agree k hk1
+          nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+          sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+          R1 R2 R4 R5 hR1 hR2 hR4 hR5 p]
+    exact hsup.1
+  · -- 2^k ≤ p.1
+    exact hsup.2.1
+  · -- p.1 < 2^k + 2^(k+1)  (from shift window p.1 < 2^k + 2^k, and 2^k ≤ 2^(k+1))
+    have hb := hsup.2.2.1
+    have he : (k - 1) + 1 = k := by omega
+    rw [he] at hb
+    have hbridge : ((2 ^ (k + 1) : Nat) : Int) = 2 ^ k + 2 ^ k := by
+      push_cast; rw [pow_succ]; ring
+    have hpos : (0 : Int) < 2 ^ k := pow_pos (by norm_num) k
+    rw [hbridge]
+    omega
+  · -- 2^k ≤ p.2
+    exact hsup.2.2.2.1
+  · -- p.2 < 2^k + 2^(k+1)
+    have hb := hsup.2.2.2.2
+    have he : (k - 1) + 1 = k := by omega
+    rw [he] at hb
+    have hbridge : ((2 ^ (k + 1) : Nat) : Int) = 2 ^ k + 2 ^ k := by
+      push_cast; rw [pow_succ]; ring
+    have hpos : (0 : Int) < 2 ^ k := pow_pos (by norm_num) k
+    rw [hbridge]
+    omega
+
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
@@ -2964,10 +3084,23 @@ noncomputable def p4_succ_membership
       have hn5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
                                         hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
       have r5 := wave1_result_facts k hk1 (node nw_se ne_sw sw_ne se_nw) hn5.2 hn5.1
-      -- With r1, r2, r4, r5 we can now (step 3) apply p4_wave2_ih_step to get
-      -- centralCorrect (node r1_result r2_result r4_result r5_result) (k-1).
-      -- Left as sorry pending steps 3-7 (evolve_half_step + evolve_cone_agree assembly).
-      sorry
+      -- With r1, r2, r4, r5 (the four wave-1 results), apply the opaque-binder
+      -- nw arm lemma. `R_i := hashlifeResultAux (k+1) n_i` is pure substitution
+      -- (no whnf): the whnf-hard shift consumption happens inside the arm over
+      -- opaque binders (fresh heartbeat budget). Normalize hnw's Nat-cast offset
+      -- `↑(2^k)` to `(2^k : Int)` so it unifies with the arm's hypothesis.
+      push_cast at hnw
+      exact p4_nw_membership_arm k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+        (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+        (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+        (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+        rfl rfl rfl rfl
+        r1.1 r2.1 r4.1 r5.1
+        (wf_of_cellWf r1.2) (wf_of_cellWf r2.2) (wf_of_cellWf r4.2) (wf_of_cellWf r5.2)
+        ih p hnw
 
     · -- ne quadrant: p ∈ out_ne.toGrid (2^k, 2^k + 2^level)
       sorry
