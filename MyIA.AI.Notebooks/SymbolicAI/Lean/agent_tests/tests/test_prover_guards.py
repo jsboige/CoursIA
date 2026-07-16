@@ -3283,3 +3283,29 @@ def test_reverify_survives_errors_list_fallback(monkeypatch):
         "re-verify must return False (revert) on a broken snapshot reported "
         "via the errors-list fallback -- and must not crash with AttributeError"
     )
+
+
+def test_count_sorries_from_build_output_type_safe_on_list_input():
+    """Defense-in-depth companion to ``test_parse_lean_errors_accepts_list_input``
+    (#6846): the two build-output parsers share the same input shape, so
+    ``_count_sorries_from_build_output`` must coerce a list/tuple to a joined
+    string (not crash on ``.split("\\n")``), keeping the API contract aligned.
+
+    No current call-site passes the ``or errors`` list fallback to this helper
+    (those sites feed ``_parse_lean_errors``, already defended by #6846); this
+    guards the helper against future callers and documents the shared contract.
+    """
+    from prover.tools import _count_sorries_from_build_output
+
+    # The crash shape (as produced by an `errors`-list fallback).
+    assert _count_sorries_from_build_output(
+        ["warning: declaration uses 'sorry'", "warning: bar uses sorry"]
+    ) == 2
+    # Empty list / empty str -> 0 (no crash).
+    assert _count_sorries_from_build_output([]) == 0
+    assert _count_sorries_from_build_output("") == 0
+    # String path unchanged (regression: existing callers still work).
+    assert _count_sorries_from_build_output(
+        "warning: foo uses sorry\nwarning: bar uses `sorry`\n"
+    ) == 2
+
