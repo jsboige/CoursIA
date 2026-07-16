@@ -96,3 +96,55 @@ theorem maxFin_if_distrib {n : Nat} (c : Prop) [Decidable c]
     (f : Fin (n + 1) → Int) :
     maxFin n (fun a => if c then f a else 0) = if c then maxFin n f else 0 := by
   by_cases h : c <;> simp [h]
+
+/-! ## Argmax fini — l'indice atteignant le maximum
+
+`maxFin` donne la *valeur* du maximum ; `argmaxFin` donne son *témoin* (un indice
+qui l'atteint). Ce témoin manquait jusqu'ici : le module de fictitious play
+(`FictitiousPlay.lean`, phase 7) calcule le paiement de la meilleure réponse via
+`maxFin` mais défère l'extraction de l'indice argmax. `argmaxFin` comble ce gap
+de manière *born-correct* : sur un domaine non vide `Fin (n + 1)`, il renvoie
+toujours un indice (jamais d'échec), avec une garantie d'optimalité. En cas
+d'égalité, le plus petit indice l'emporte.
+
+English:
+Finite argmax — the index achieving the maximum
+
+`maxFin` gives the *value* of the maximum; `argmaxFin` gives its *witness* (an
+index that attains it). This witness was missing until now: the fictitious play
+module (`FictitiousPlay.lean`, phase 7) computes the best-response payoff via
+`maxFin` but defers extracting the argmax index. `argmaxFin` fills this gap in a
+*born-correct* way: over a nonempty domain `Fin (n + 1)` it always returns an
+index (never fails), with an optimality guarantee. Ties break to the smaller
+index. -/
+
+/-- Indice atteignant le maximum de `f` sur `Fin (n + 1)` (domaine non vide),
+    miroir argmax de `maxFin`. En cas d'égalité, le plus petit indice l'emporte.
+    English: Index achieving the maximum of `f` over `Fin (n + 1)` (nonempty
+    domain), the argmax mirror of `maxFin`. Ties break to the smaller index. -/
+def argmaxFin : (n : Nat) → (Fin (n + 1) → Int) → Fin (n + 1)
+  | 0, _ => 0
+  | n + 1, f =>
+    if f 0 ≥ f (argmaxFin n (fun i => f i.succ)).succ
+    then 0
+    else (argmaxFin n (fun i => f i.succ)).succ
+
+/-- L'argmax atteint bien le maximum : `f (argmaxFin n f) = maxFin n f`.
+    English: The argmax does achieve the maximum: `f (argmaxFin n f) = maxFin n f`. -/
+theorem argmaxFin_spec : ∀ {n : Nat} (f : Fin (n + 1) → Int),
+    f (argmaxFin n f) = maxFin n f
+  | 0, _ => rfl
+  | n + 1, f => by
+    have ih : f (argmaxFin n (fun i => f i.succ)).succ
+        = maxFin n (fun i => f i.succ) := argmaxFin_spec (fun i => f i.succ)
+    simp only [argmaxFin, maxFin_succ]
+    split <;> rename_i h <;> omega
+
+/-- Garantie d'optimalité de l'argmax : aucune valeur ne dépasse celle de
+    l'indice choisi.
+    English: Optimality guarantee of the argmax: no value exceeds that of the
+    chosen index. -/
+theorem le_argmaxFin {n : Nat} (f : Fin (n + 1) → Int) (i : Fin (n + 1)) :
+    f i ≤ f (argmaxFin n f) := by
+  rw [argmaxFin_spec f]
+  exact le_maxFin f i
