@@ -7,7 +7,7 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
 | `game_theory_lean` | v4.31.0-rc1 | 3 (Lattice) | CooperativeGames + StableMarriage | COMPLETE (EPIC #4365) |
-| `cooperative_games_lean` | v4.31.0-rc1 | 0 | 3 files | COMPLETE |
+| ~~`cooperative_games_lean`~~ | — | — | — | **Supprimé** (rm #6587 — absorbé dans `game_theory_lean/CooperativeGames/`) |
 | `social_choice_lean` | v4.31.0-rc1 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
 | `repeated_games_lean` | v4.31.0-rc1 | 0 (1 stretch) | 4 files | COMPLETE (Folk stretch) |
@@ -57,7 +57,9 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 ---
 
-### 2. cooperative_games_lean
+### 2. cooperative_games_lean — ⚠ **Supprimé** (rm #6587)
+
+> **Lake standalone supprimé** (commit `522c450e9`, PR #6587). Modules `Basic` / `ConeKernel` / `Shapley` (+ jumeaux `_en`) absorbés byte-identique dans [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) (EPIC #4365). La section ci-dessous est conservée comme trace d'audit du statut de preuve (0 sorry, préservé dans la cible). Pour l'état courant, voir [§1. game_theory_lean](#1-game_theory_lean).
 
 **Objective**: Formalize cooperative game theory (Shapley value, core).
 
@@ -231,7 +233,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
 | game_theory_lean       | COMPLETE | 3 sorry (Lattice, Knuth lattice stretch). StableMarriage: former false statements refuted, honest `exists_isManOptimal` proved. Absorbed standalone `stable_marriage_lean/` (EPIC #4365). |
-| cooperative_games_lean | COMPLETE | 0 sorry. Bondareva-Shapley proven (#3954) via compact-slice Weierstrass; hCore bypassed without added axiom. |
+| ~~cooperative_games_lean~~ | **Supprimé** (rm #6587) | Lake standalone removed — content (0 sorry, Bondareva-Shapley #3954) absorbed byte-identique into `game_theory_lean/CooperativeGames/`. Status preserved there. |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
 
