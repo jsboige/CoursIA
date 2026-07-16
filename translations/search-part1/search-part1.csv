@@ -4921,9 +4921,9 @@ Cette approche ouvre des applications de **verification de proprietes** : portes
 - de Moura, L. & Bjorner, N. (2008). Z3: An Efficient SMT Solver. TACAS 2008, LNCS 4963:337-340.
 
 ",,,,,,,,2b67a6dac7181bb2,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,434b7647,markdown,fr,e68f4b2595d8f4ff,"# Search-11 (C#) : Metaheuristiques — Optimisation par essaim, recuit et evolution
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,434b7647,markdown,fr,2b7490f0f7737e09,"# Search-11 (C#) : Metaheuristiques — Optimisation par essaim, recuit et evolution
 
-**Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | [Index Part 1](../README.md) | [Search-12 A*](Search-12-AStar-And-Heuristics.ipynb) >>
+**Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | [Index Part 1](../README.md) | [Search-11b Métaheuristiques (Deep)](Search-11b-Metaheuristiques-Deep.ipynb) >>
 
 **Serie** : Search / Partie 1 — Fondations (C#). Jumeau .NET du notebook Python [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb).
 
@@ -4932,7 +4932,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb
 **Prerequis** : [Search-5-LocalSearch](Search-4-LocalSearch.ipynb) (recuit simule, hill-climbing), notions d'algebre lineaire et de C# / .NET.
 
 **Pourquoi un jumeau C# ?** Le notebook Python original s'appuie sur la librairie **`mealpy`** (PSO, ABC, SA, BRO, GWO, WOA, GA, DE) et `numpy`/`matplotlib` pour comparer des metaheuristiques sur des fonctions de benchmark. Ce jumeau reimplemente les **algorithmes majeurs depuis zero** en **C# .NET 9 (BCL seule, 0 NuGet)** : essaim particulaire (PSO), recuit simule (SA), algorithme genetique (GA). Les fonctions de benchmark (Sphere, Rastrigin, Rosenbrock, Ackley) sont codees explicitement, ainsi que la convergence, l'analyse de parametres et un exemple d'optimisation de profit. Les graphiques `matplotlib` sont remplaces par des tables et traces ASCII. Les deux notebooks derivent les memes optima (f=0 sur les benchmarks, profit max sur l'exemple entreprise).
-",,,,,,,,e68f4b2595d8f4ff,,,,,,,
+",,,,,,,,2b7490f0f7737e09,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,ac53d855,markdown,fr,a4a6222ed1188e2d,"## 1. Introduction aux metaheuristiques
 
 Une **metaheuristique** est une strategie d'optimisation generique qui guide une recherche dans un espace de solutions trop vaste pour une exploration exhaustive. Contrairement aux methodes exactes (programmation lineaire, branch-and-bound), elle ne garantit pas l'optimalite mais trouve de bonnes solutions en temps raisonnable sur des problemes reels (dimension elevee, multimodalite, non-differentiabilite).
@@ -5485,7 +5485,7 @@ static double Schwefel(double[] x)
 double fitSchwefel = 0.0;  // TODO etudiant : optimiser Schwefel dim=10 avec PSO, bornes [-500,500]
 Console.WriteLine($""Exercice 3 a completer : Schwefel(420.9687,...)={Schwefel(Enumerable.Repeat(420.9687,5).ToArray()):F4} (attendu ~0), optimiser en dim=10 : {fitSchwefel} (a completer)."");
 ",,,,,,,,cc9e76b0b8b11d0f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,7efb4dec,markdown,fr,daa8a73f4e770acd,"## Conclusion et resume
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb,7efb4dec,markdown,fr,ff7bbac1b03dfd62,"## Conclusion et resume
 
 Ce jumeau C# a reimplemente, sans aucune librairie externe, les metaheuristiques majeures du notebook Python `mealpy` :
 
@@ -5511,14 +5511,14 @@ Les **valeurs numeriques exactes** (fitness finale, temps) different C# vs Pytho
 
 ### Prochaines etapes
 
-- [Search-12-AStar](Search-12-AStar-And-Heuristics.ipynb) : recherche informe avec heuristiques (cas ou l'optimalite est garantie, contrairement aux metaheuristiques).
+- [Search-3-Informed (A*)](Search-3-Informed-Csharp.ipynb) : recherche informe avec heuristiques (cas ou l'optimalite est garantie, contrairement aux metaheuristiques).
 - [Search-5-LocalSearch](Search-4-LocalSearch.ipynb) : fondements du recuit simule et hill-climbing.
 - Applications metaheuristiques : [App-13-TSP](../Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb), [App-9-EdgeDetection](../Applications/Hybrid/App-9-EdgeDetection.ipynb).
 
 ---
 
 *Part of #4956 (marathon parite .NET <-> Python).*
-",,,,,,,,daa8a73f4e770acd,,,,,,,
+",,,,,,,,ff7bbac1b03dfd62,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb,nav-header,markdown,fr,598a5ff1b0266ed0,"# Search-11-Metaheuristiques : Optimisation avec MEALPy
 
 **Navigation** : [<< Recherche locale](Search-4-LocalSearch.ipynb) | [Index](../README.md) | [App-1-NQueens >>](../Applications/CSP/App-1-NQueens.ipynb)
@@ -7185,12 +7185,20 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part
 
 Le seul parametre critique d'ABC est `limit` (seuil d'abandon d'une source). Illustrons son impact en faisant varier sa valeur : un `limit` petit declenche beaucoup d'abandons (exploration forte), un `limit` grand laisse les sources tranquilles (exploitation forte).
 ",,,,,,,,3a7a7f8ead5d0ac9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,d8358eeb,code,fr,c088da2df3f7901a,"// Sweep du parametre limit sur Rosenbrock.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,d8358eeb,code,fr,717623cddc16ae4d,"// Setup Plotly (technique C548-L2) — la clause using DOIT preceder tout autre element (CS1529).
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+using System.Text.Json;
+
+// Sweep du parametre limit sur Rosenbrock.
 Console.WriteLine(""Effet de 'limit' sur la qualite finale (Rosenbrock, dim=10, moyenne sur 3 seeds) :"");
 Console.WriteLine(""  limit | f moyen       | std"");
 Console.WriteLine(""  ------|---------------|----------"");
 
 int[] limits = { 5, 20, 50, 100, 200 };
+var limArr = new List<int>();
+var meanArr = new List<double>();
+var stdArr = new List<double>();
 foreach (int lim in limits) {
     var fs = new List<double>();
     foreach (int seed in new[] { 1, 7, 42 }) {
@@ -7200,13 +7208,48 @@ foreach (int lim in limits) {
     }
     double mean = fs.Average();
     double std = Math.Sqrt(fs.Select(v => (v - mean) * (v - mean)).Average());
+    limArr.Add(lim); meanArr.Add(mean); stdArr.Add(std);
     Console.WriteLine($""  {lim,5}  | {FI(mean, ""F6""),13} | {FI(std, ""F6"")}"");
 }
 Console.WriteLine();
 Console.WriteLine(""Lecture : limit=5 (abandon agressif) casse la convergence (f>>0, bruit)."");
 Console.WriteLine(""Sur Rosenbrock, un limit GRAND (abandon rare) est meilleur : les sources ont"");
 Console.WriteLine(""le temps d'explorer la vallee avant abandon — limite de l'intuition naive."");
-",,,,,,,,c088da2df3f7901a,,,,,,,
+
+// --- Visualisation Plotly (EPIC #3801 Prong-A) : f moyen +- std vs limit ---
+// Technique C548-L2 : Plotly.js via Formatter.Register (kernel builtin, aucun #r nuget).
+// Les barres d'erreur (std, 3 seeds) sont INVISIBLES dans le tableau ASCII ci-dessus ;
+// le graphique les rend apparentes : limit=5 est a la fois mauvais ET bruite.
+
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+string[] xLabels = limArr.Select(l => l.ToString()).ToArray();
+string trace = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""x""] = xLabels,
+    [""y""] = meanArr,
+    [""error_y""] = new Dictionary<string, object> {
+        [""type""] = ""data"", [""array""] = stdArr, [""visible""] = true, [""color""] = ""#888888"", [""thickness""] = 1.5
+    },
+    [""type""] = ""scatter"",
+    [""mode""] = ""lines+markers"",
+    [""name""] = ""f moyen"",
+    [""line""] = new Dictionary<string, object> { [""color""] = ""#264653"", [""width""] = 2 },
+    [""marker""] = new Dictionary<string, object> { [""size""] = 9, [""color""] = ""#2a9d8f"" },
+});
+string layout = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""title""] = new Dictionary<string, string> { [""text""] = ""Qualite ABC vs limit (Rosenbrock dim=10, moy sur 3 seeds)"" },
+    [""xaxis""] = new Dictionary<string, object> { [""title""] = ""limit (budget d'essai avant abandon d'une source)"" },
+    [""yaxis""] = new Dictionary<string, object> { [""title""] = ""f moyen (plus bas = mieux)"", [""type""] = ""log"" },
+    [""margin""] = new Dictionary<string, int> { [""t""] = 60, [""r""] = 20, [""b""] = 60, [""l""] = 70 },
+    [""showlegend""] = false,
+    [""height""] = 400,
+});
+string markup = ""<div id=\""pltLimitSweep\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    $""<script>Plotly.newPlot('pltLimitSweep',[{trace}],{layout});</script>"";
+new PlotlyHtml(markup)",,,,,,,,717623cddc16ae4d,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,741c0835,markdown,fr,3e818d6a2e2d7d7b,"## 7. Exercices
 
 Trois exercices pour aller plus loin. Chaque stub est conforme a la regle C.1 (pas d'erreur volontaire) — le notebook s'execute de bout en bout meme exercices non completes.
@@ -7901,9 +7944,9 @@ Cette tranche a posé les fondations des métaheuristiques en C#/.NET via le **r
 ---
 
 *Tranche 1 du twin .NET⇄Python (#4956, marathon). SA = 1er des 4 algorithmes (SA, PSO, ABC, benchmark).*",,,,,,,,1363698cb6c9b844,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,8f2ab8c5-564e-437d-9bd1-dee4e6f4808b,markdown,fr,694d032a90716747,"# Search-15 : Theorie des Graphes avec NetworkX (C#)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,8f2ab8c5-564e-437d-9bd1-dee4e6f4808b,markdown,fr,d69a66c1c9c7c285,"# Search-15 : Theorie des Graphes avec NetworkX (C#)
 
-**Navigation** : [<< 14-WeightedAstar](Search-14-WeightedAstar-Csharp.ipynb) | [Index](../README.md) | [16-QuikGraph >>](Search-16-QuikGraph.ipynb)
+**Navigation** : [<< 14-WeightedAstar](../Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb) | [Index](../README.md) | [16-QuikGraph >>](Search-16-QuikGraph.ipynb)
 
 **Twin C# (.NET Interactive)** de [Search-15-NetworkX.ipynb](Search-15-NetworkX.ipynb) — marathon **#4956** (parite .NET <-> Python).
 
@@ -7919,7 +7962,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,8f2ab
 6. **Exercices**
 
 > **Parite #4956** : la version Python s'appuie sur **networkx** (boite noire industrielle, 200+ algos) pour TOUT. Ce twin C# (BCL .NET 9, **0 NuGet**) traduit les **moteurs from-scratch** (le coeur algorithmique). networkx = **RECOVERABLE-MACHINE** : pas d'equivalent C# du meme niveau en une seule lib pour ce notebook pedagogique ; le from-scratch engine EST la substance. Louvain (communautes) et matching pondere (Hongrois) — couverts par networkx cote Python mais complexes au-dela du coeur — deviennent des **exercices** cote C#.
-",,,,,,,,694d032a90716747,,,,,,,
+",,,,,,,,d69a66c1c9c7c285,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb,e761f921-1467-407a-8323-29565c6d8753,markdown,fr,f53502146a648c20,"## 1. Graphe pondere : modele adjacency list
 
 Un graphe $G = (V, E)$ : un ensemble de **sommets** $V$ et d'**aretes** $E$. On modelise ici une **adjacency list** : pour chaque sommet, la liste de ses voisins (avec poids). Le graphe peut etre **oriente** ou **non-oriente**. Les poids servent aux plus courts chemins (Dijkstra) et au flot (capacites).",,,,,,,,f53502146a648c20,,,,,,,
@@ -26677,3 +26720,79 @@ Vous avez implémenté **from-scratch** l'Algorithme X de Knuth avec la structur
 **Verdict #3801 (prong A — SOTA-OK)** : .NET n'a pas de bibliothèque DLX dominante (contrairement à Python où on pourrait importer un solveur) ; l'implémentation from-scratch de la structure toroïdale et des opérations cover/uncover **est** la leçon pédagogique. Les sorties texte passent par `StringBuilder.Display()` plutôt qu'une lib de plotting — en exécution papermill headless, `Console.WriteLine` est avalé, `.Display()` capture `text/plain` (verdict intrinsèque #3436, cohérent avec le twin GA).
 
 **Navigation** : [<< Search-7 MCTS](Search-7-MCTS-And-Beyond.ipynb) | [↑ Série Search (C#)](../README.md) | [Search-9 Linear Programming >>](Search-9-LinearProgramming.ipynb)",,,,,,,,aee6ecf5f64531c1,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb,c543trap-md,markdown,fr,696e4961b1809203,"## 3b. Pourquoi un algorithme genetique ? Le piege deceptif (trap function)
+
+OneMax est **GA-easy** : unimodal, separable, a optimum unique. Un simple *hill-climber* (mutation + ascent glouton) resout OneMax **aussi bien et plus vite** qu'un AG — l'AG n'y ajoute aucune valeur distinctive. Demontrer un AG sur OneMax seul ne montre donc pas *pourquoi* l'AG existe.
+
+Le cas qui discrimine est le **piege deceptif** (*deceptive trap*, Goldberg) : l'optimum global est tout-1, mais le gradient local pousse vers tout-0. Un hill-climber suit ce gradient trompeur et reste bloque a l'optimum local deceptif ; l'AG, lui, recombine via le **croisement** les blocs tout-1 disperses dans la population et echappe au piege. C'est ici que le croisement — la capacite distinctive de l'AG — devient essentiel.
+",,,,,,,,696e4961b1809203,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb,c543trap-code,code,fr,acbbf47cd8d90a5e,"// Prong-B (#3801) : pourquoi un AG ? Piege deceptif (Goldberg k-trap).
+// L=20 bits en 5 blocs de 4. Pour chaque bloc : tout-1 -> fitness 4 (optimum du bloc) ;
+// sinon fitness = 3 - (nb de 1) -> gradient TROMPEUR vers tout-0.
+// Un hill-climber suit ce gradient et se bloque ; le croisement de l'AG recombine
+// les blocs tout-1 et atteint l'optimum global (20).
+double Trap(bool[] c, int k = 4) {
+    double f = 0;
+    for (int i = 0; i < c.Length; i += k) {
+        int u = 0; for (int j = 0; j < k; j++) u += c[i + j] ? 1 : 0;
+        f += (u == k) ? k : (k - 1 - u);
+    }
+    return f;
+}
+double TrapFitness(bool[] c) => Trap(c, 4);
+
+// Hill-climber de reference : steepest-ascent (flip du meilleur bit) + random-restart.
+(double fit, int evals) HillClimber(Func<bool[],double> fit, int L, int restarts, int seed) {
+    var rng = new Random(seed);
+    double best = double.NegativeInfinity; int evals = 0;
+    for (int r = 0; r < restarts; r++) {
+        bool[] x = Enumerable.Range(0, L).Select(_ => rng.NextDouble() < 0.5).ToArray();
+        double cur = fit(x); evals++;
+        bool improved = true;
+        while (improved) {
+            improved = false; int bestI = -1; double bestN = cur;
+            for (int i = 0; i < L; i++) { x[i] = !x[i]; double fv = fit(x); evals++; x[i] = !x[i];
+                if (fv > bestN) { bestN = fv; bestI = i; } }
+            if (bestI >= 0) { x[bestI] = !x[bestI]; cur = bestN; improved = true; }
+        }
+        if (cur > best) best = cur;
+    }
+    return (best, evals);
+}
+
+int L = 20;
+var sw = Stopwatch.StartNew();
+// OneMax : hill-climber ET AG atteignent l'optimum (OneMax est GA-easy)
+var (hcOm, eOm) = HillClimber(OneMax, L, 1, 42);
+var gaOm = new GeneticAlgorithm<bool[]>(OneMax, RandomBits, Crossover1P, MutateBitFlip, Roulette, 100, 0.01, 42);
+gaOm.Run(40);
+double gaOmBest = gaOm.HistoryBest.Max();
+// Trap deceptif : hill-climber (recherche locale pure, 1 depart) se bloque ;
+// l'AG (population + croisement) grimpe vers l'optimum global.
+var (hcTrap, eTrap) = HillClimber(TrapFitness, L, 1, 42);
+var gaTrap = new GeneticAlgorithm<bool[]>(TrapFitness, RandomBits, Crossover1P, MutateBitFlip, Roulette, 200, 0.02, 42);
+gaTrap.Run(100);
+double gaTrapBest = gaTrap.HistoryBest.Max();
+sw.Stop();
+
+var sb = new StringBuilder();
+sb.AppendLine(""=== Pourquoi un AG ? Hill-climber vs AG sur OneMax (GA-easy) et Trap (deceptif) ==="");
+sb.AppendLine($""OneMax  (optimum={L}) : HillClimber = {hcOm:F0}/{L} ({eOm} evals) | AG = {gaOmBest:F0}/{L}"");
+sb.AppendLine($""Trap    (optimum={L}) : HillClimber = {hcTrap:F0}/{L} ({eTrap} evals) | AG = {gaTrapBest:F0}/{L}"");
+sb.AppendLine($""Temps : {sw.Elapsed.TotalMilliseconds:F1} ms"");
+sb.AppendLine();
+sb.AppendLine(""Convergence de l'AG sur le Trap (le croisement extrait les blocs tout-1) :"");
+sb.AppendLine(""  Generation | Best"");
+sb.AppendLine(""  -----------|----"");
+foreach (var g in new[]{0,20,40,60,80,100})
+    if (g < gaTrap.HistoryBest.Count) sb.AppendLine($""  {g,10} | {gaTrap.HistoryBest[g],4:F0}"");
+sb.AppendLine();
+if (hcOm >= L - 1 && gaOmBest >= L - 1)
+    sb.AppendLine($""OneMax : hill-climber ({hcOm:F0}) et AG ({gaOmBest:F0}) convergent - OneMax ne discrimine PAS (GA-easy)."");
+if (hcTrap < gaTrapBest)
+    sb.AppendLine($""Trap : hill-climber bloque a {hcTrap:F0}/{L} (gradient deceptif), AG monte a {gaTrapBest:F0}/{L} via le croisement."");
+else
+    sb.AppendLine($""Trap : HC={hcTrap:F0}, AG={gaTrapBest:F0}."");
+sb.AppendLine(""=> Le croisement (recombinaison de blocs tout-1) est la capacite distinctive que OneMax masque."");
+sb.ToString().Display();
+",,,,,,,,acbbf47cd8d90a5e,,,,,,,
