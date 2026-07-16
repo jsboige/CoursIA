@@ -2,25 +2,6 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## Kochen-Specker Theorem (18-vector Cabello proof)
-
-No `{0, 1}`-coloring of the 18 unit vectors of R^4 listed below is compatible
-with the orthogonality constraint: in every orthogonal basis (4 mutually
-orthogonal vectors), exactly one vector receives color `1`.
-
-This is the combinatorial kernel used in the Conway-Kochen Free Will Theorem
-(Pilier 1 of Epic #1651). The 18-vector proof is due to Cabello, Estebaranz
-and Garcia-Alcaine (1996), tightening the original 117-vector proof by
-Kochen and Specker (1967), the 33-vector proof of Peres (1991), and the
-20-vector construction of Kernaghan (1994).
-
-Source: Cabello, Estebaranz, Garcia-Alcaine,
-       "Bell-Kochen-Specker theorem: A proof with 18 vectors",
-       Phys. Lett. A 212 (1996), 183-187.
-Table: Wikipedia "Kochen-Specker theorem" (Overview section), which
-       reproduces the original Cabello et al. table.
--/
-/-
 ## Théorème de Kochen-Specker (preuve 18-vecteurs de Cabello)
 
 Aucune coloration `{0, 1}` des 18 vecteurs unitaires de ℝ⁴ listés ci-dessous
@@ -136,8 +117,9 @@ import Mathlib.Tactic
   avec son miroir anglais dans le fichier sibling `KochenSpecker_en.lean` (modèle sibling
   pair ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de
   théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent en
-  anglais (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
-  diffèrent entre les deux fichiers.
+  anglais (compatibilité Mathlib 4) ; les docstrings (module, sections, items) sont en
+  français dans ce fichier et en anglais dans le miroir — le corps Lean (signatures,
+  preuves, tactiques) reste byte-identical entre les deux (vérifié par check_i18n_siblings).
 -/
 
 namespace Conway
@@ -145,14 +127,14 @@ namespace Conway
 namespace KochenSpecker
 
 /-!
-## The 18 Cabello vectors and 9 orthogonal bases (R^4)
+## Les 18 vecteurs de Cabello et les 9 bases orthogonales (ℝ⁴)
 
-The 9 orthogonal bases (contexts) are columns of the following table.
-Each column contains 4 mutually orthogonal vectors of R^4. Every vector
-appears in exactly 2 columns, yielding the overlap structure that
-enables the parity contradiction.
+Les 9 bases orthogonales (contextes) sont les colonnes de la table suivante.
+Chaque colonne contient 4 vecteurs mutuellement orthogonaux de ℝ⁴. Chaque
+vecteur apparaît dans exactement 2 colonnes, ce qui produit la structure de
+recouvrement qui rend possible la contradiction de parité.
 
-Columns (bases) of the Cabello table:
+Colonnes (bases) de la table de Cabello :
 
   C0:  (0,0,0,1)  (0,0,1,0)  (1,1,0,0)  (1,-1,0,0)
   C1:  (0,0,0,1)  (0,1,0,0)  (1,0,1,0)  (1,0,-1,0)
@@ -164,7 +146,7 @@ Columns (bases) of the Cabello table:
   C7:  (1,1,-1,1) (-1,1,1,1)  (1,0,1,0)  (0,1,0,-1)
   C8:  (1,1,1,-1) (-1,1,1,1)  (1,0,0,1)  (0,1,-1,0)
 
-The 18 distinct vectors (after deduplication across columns):
+Les 18 vecteurs distincts (après déduplication entre colonnes) :
 
   v0  = (0,0,0,1)   v9  = (0,0,1,1)
   v1  = (0,0,1,0)   v10 = (1,1,1,1)
@@ -176,7 +158,7 @@ The 18 distinct vectors (after deduplication across columns):
   v7  = (1,-1,1,-1) v16 = (1,1,1,-1)
   v8  = (1,-1,-1,1) v17 = (-1,1,1,1)
 
-Overlap structure (each vector in exactly 2 contexts):
+Structure de recouvrement (chaque vecteur dans exactement 2 contextes) :
 
   v0  ∈ {C0,C1}   v6  ∈ {C1,C3}   v12 ∈ {C4,C8}
   v1  ∈ {C0,C4}   v7  ∈ {C2,C3}   v13 ∈ {C4,C5}
@@ -187,29 +169,30 @@ Overlap structure (each vector in exactly 2 contexts):
 -/
 
 /-!
-## Abstract formulation
+## Formulation abstraite
 
-Rather than formalizing the exact R^4 coordinates and orthogonality
-predicates (which require Real-valued inner products), we state the
-theorem combinatorially: given 18 abstract vector indices and 9
-contexts of size 4 with the Cabello overlap, no {0,1}-coloring
-satisfying "exactly one 1 per context" exists.
+Plutôt que de formaliser les coordonnées exactes de ℝ⁴ et les prédicats
+d'orthogonalité (qui nécessitent des produits scalaires à valeurs réelles),
+nous énonçons le théorème de manière combinatoire : étant donnés 18 indices
+abstraits de vecteurs et 9 contextes de taille 4 avec le recouvrement de
+Cabello, il n'existe aucune coloration {0,1} satisfaisant « exactement un 1
+par contexte ».
 
-The orthogonality of each context is implicit in the index encoding:
-`contextMembers` reflects the Cabello table; verifying the inner
-products vanish is a separate (computational) lemma left for the
-geometric formalization (Pilier 2).
+L'orthogonalité de chaque contexte est implicite dans l'encodage par indices :
+`contextMembers` reflète la table de Cabello ; vérifier que les produits
+scalaires s'annulent est un lemme séparé (calculatoire) laissé à la
+formalisation géométrique (Pilier 2).
 -/
 
-/-- An abstract index for the 18 distinct vectors. -/
+/-- Un index abstrait pour les 18 vecteurs distincts. -/
 abbrev VecIdx := Fin 18
 
-/-- An abstract index for the 9 orthogonal bases (contexts). -/
+/-- Un index abstrait pour les 9 bases orthogonales (contextes). -/
 abbrev ContextIdx := Fin 9
 
-/-- Context membership: which 4 vector indices form each orthogonal basis.
-    Encodes the Cabello overlap structure where each vector appears
-    in exactly 2 contexts. -/
+/-- Appartenance au contexte : quels 4 indices de vecteurs forment chaque base
+    orthogonale. Encode la structure de recouvrement de Cabello où chaque
+    vecteur apparaît dans exactement 2 contextes. -/
 def contextMembers : ContextIdx → Fin 4 → VecIdx
   -- C0: standard basis-like {v0, v1, v2, v3}
   | 0, 0 => 0   -- (0,0,0,1)
@@ -257,36 +240,36 @@ def contextMembers : ContextIdx → Fin 4 → VecIdx
   | 8, 2 => 12  -- (1,0,0,1)    shared with C4
   | 8, 3 => 14  -- (0,1,-1,0)   shared with C5
 
-/-- A {0,1}-coloring of the 18 vectors. -/
+/-- Une {0,1}-coloration des 18 vecteurs. -/
 def Coloring := VecIdx → Bool
 
-/-- A coloring is valid iff every context (orthogonal basis) has
-    exactly one vector colored `true`. -/
+/-- Une coloration est valide ssi chaque contexte (base orthogonale) a
+    exactement un vecteur colorié `true`. -/
 def IsValidColoring (c : Coloring) : Prop :=
   ∀ k : ContextIdx,
     (∑ i : Fin 4, if c (contextMembers k i) then (1 : ℕ) else 0) = 1
 
-/-- Key property: each of the 18 vectors appears in exactly 2 contexts.
-    This is the Cabello overlap structure that enables the parity proof. -/
+/-- Propriété clé : chacun des 18 vecteurs apparaît dans exactement 2 contextes.
+    C'est la structure de recouvrement de Cabello qui rend possible la preuve par parité. -/
 lemma each_vector_in_two_contexts (v : VecIdx) :
     (∑ k : ContextIdx, ∑ i : Fin 4,
       if contextMembers k i = v then (1 : ℕ) else 0) = 2 := by
   fin_cases v <;> decide
 
-/-- **Kochen-Specker Theorem (18-vector Cabello proof)**.
-    There is no valid {0,1}-coloring of the 18 vectors compatible
-    with the orthogonality constraint.
+/-- **Théorème de Kochen-Specker (preuve 18-vecteurs de Cabello)**.
+    Il n'existe aucune {0,1}-coloration valide des 18 vecteurs compatible
+    avec la contrainte d'orthogonalité.
 
-    Proof sketch (parity argument):
-    1. A valid coloring assigns exactly one `1` per context, so summing
-       over all 9 contexts gives a total of 9 ones (counted with
-       multiplicity over contexts).
-    2. Reordering the double sum: each vector `v` contributes
-       `(number of contexts containing v) * c(v)` to the total.
-       By `each_vector_in_two_contexts`, that factor is always 2.
-    3. Hence the total ones = 2 * (number of vectors colored `1`),
-       which is even.
-    4. But 9 is odd. Contradiction. -/
+    Esquisse de preuve (argument de parité) :
+    1. Une coloration valide assigne exactement un `1` par contexte, donc
+       la somme sur les 9 contextes donne un total de 9 uns (comptés avec
+       multiplicité sur les contextes).
+    2. En réordonnant la double somme : chaque vecteur `v` contribue
+       `(nombre de contextes contenant v) * c(v)` au total.
+       Par `each_vector_in_two_contexts`, ce facteur vaut toujours 2.
+    3. Par conséquent, le total des uns = 2 * (nombre de vecteurs coloriés `1`),
+       ce qui est pair.
+    4. Mais 9 est impair. Contradiction. -/
 theorem kochen_specker : ¬ ∃ c : Coloring, IsValidColoring c := by
   rintro ⟨c, hc⟩
   -- Let S = total ones counted with multiplicity over contexts.
@@ -357,18 +340,18 @@ end KochenSpecker
 
 
 /-!
-## Connection to Free Will Theorem (Pilier 2)
+## Lien avec le théorème du Libre Arbitre (Pilier 2)
 
-The KS theorem is the combinatorial core of the SPIN axiom:
-for spin-1 particles, measuring the squared spin component along
-3 (or, in the 4D version here, 4) mutually compatible projectors
-always yields a fixed pattern (one "1" per orthonormal basis).
-If the response were a deterministic function of hidden variables,
-it would define a valid {0,1}-coloring — contradicting KS.
-Hence the particle's response cannot be a function of the past alone.
+Le théorème de KS est le noyau combinatoire de l'axiome SPIN :
+pour des particules de spin 1, mesurer la composante de spin au carré le long
+de 3 (ou, dans la version 4D ici, 4) projecteurs mutuellement compatibles
+produit toujours un motif fixe (un seul « 1 » par base orthonormée).
+Si la réponse était une fonction déterministe de variables cachées,
+elle définirait une {0,1}-coloration valide — contredisant KS.
+La réponse de la particule ne peut donc pas être une fonction du seul passé.
 
-This connection will be formalized in Pilier 2 (FreeWillTheorem.lean),
-together with the TWIN and MIN axioms.
+Ce lien sera formalisé au Pilier 2 (FreeWillTheorem.lean),
+avec les axiomes TWIN et MIN.
 -/
 
 end Conway
