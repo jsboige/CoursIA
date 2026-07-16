@@ -8,7 +8,7 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-06-16, standalone-tactic mode, baseline=7):
+# Sorry profile (re-verified 2026-07-16, standalone-tactic mode, baseline=8):
 # conway has 7 real tactic sorries, ALL in HashlifeCorrectness.lean. The
 # standalone-tactic filter now also counts the Lean case-bullet form `· sorry`
 # (fixed in lean-build.yml, See #2747); the prior regex silently dropped it, so
@@ -43,5 +43,5 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "7"
+      sorry-baseline: "8"
       sorry-filter-mode: standalone-tactic

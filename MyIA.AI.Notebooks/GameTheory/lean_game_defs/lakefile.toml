@@ -14,9 +14,11 @@ name = "LeanGameDefs"
 # and whose compile errors stay invisible. `Nash_en` reuses the FR `Basic`
 # identifiers (reuse-FR-names variant) so it imports `Basic`, not `Basic_en`.
 # `Combinatorial_en` and `SocialChoice_en` are self-contained (no import), so
-# they build standalone. `Basic_en` is the English twin of `Basic` (namespace
-# `LeanGameDefs_en`).
+# they build standalone. `Bayesian_en` likewise uses the reuse-FR-names variant
+# (`import Basic`, redeclares its declarations in `namespace BayesianEn`).
+# `Basic_en` is the English twin of `Basic` (namespace `LeanGameDefs_en`).
 roots = [
   "Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret",
-  "Nash_en", "Combinatorial_en", "Basic_en", "SocialChoice_en",
+  "Nash_en", "Combinatorial_en", "Basic_en", "SocialChoice_en", "Bayesian_en",
+  "Regret_en",
 ]

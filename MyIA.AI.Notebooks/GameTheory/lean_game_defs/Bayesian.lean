@@ -17,76 +17,47 @@
   et les espaces mesurables de Mathlib.
 
   ---
-  English:
-  Bayesian Game Theory Definitions in Lean 4
-  ============================================
-
-  Defines structures for games with incomplete information (Harsanyi):
-  - BayesianGame: Games with private types and common prior
-  - TypeStrategy: Strategy conditioned on private type
-  - BayesianNashEquilibrium: Equilibrium concept for incomplete info
-  - SignalingGame: Two-phase games (sender/receiver)
-  - InformationSet: Partition of decision nodes (imperfect info)
-
-  Based on GameTheory-11-BayesianGames.ipynb and
-           GameTheory-13-ImperfectInfo-CFR.ipynb
-
-  Note: These are pedagogical definitions for teaching purposes.
-  For a full formalization, one would need measure-theoretic probability
-  and measurable spaces from Mathlib.
+  Jumelage i18n : ce module est le FR canonique (sibling pair Pattern A,
+  ratifié par user 2026-07-04 sur EPIC #4980). Le miroir anglais vit dans
+  `Bayesian_en.lean` (variante reuse-FR-names : il `import Basic` comme ce
+  fichier et redéclare ses déclarations dans `namespace BayesianEn`). Le corps
+  des définitions, signatures, structures, inductifs, instances et tactiques
+  est byte-identique entre les deux fichiers ; seules les docstrings
+  `/-! ... -/` (titres de section) et `/-- ... -/` (docstrings de champs et
+  déclarations) diffèrent, FR dans ce fichier, EN dans `Bayesian_en.lean`.
 -/
 
 import Basic
 
 /-!
 ## Utilitaires (évite la dépendance Mathlib)
-
----
-English:
-## Utility (avoids Mathlib dependency)
 -/
 
 /-- Met à jour une fonction dépendante à un indice donné.
     Équivalent au `Function.update` de Mathlib mais autonome.
-    Utilise l'égalité décidable sur `Fin` pour la comparaison.
-    English: Update a dependent function at a given index.
-    Equivalent to Mathlib's `Function.update` but self-contained.
-    Uses `Fin` decidable equality for comparison. -/
+    Utilise l'égalité décidable sur `Fin` pour la comparaison. -/
 def funUpdate {n : Nat} {β : Fin n → Type} (f : (i : Fin n) → β i)
     (i : Fin n) (x : β i) : (j : Fin n) → β j :=
   fun j => if h : j = i then h ▸ x else f j
 
 /-!
 ## Espaces de types et croyances
-
----
-English:
-## Type Spaces and Beliefs
 -/
 
-/-- Un espace de types pour un joueur : l'ensemble des types privés possibles.
-    English: A type space for a player: the set of possible private types -/
+/-- Un espace de types pour un joueur : l'ensemble des types privés possibles. -/
 def TypeSpace (α : Type) := List α
 
-/-- Une croyance commune (prior) sur les profils de types (simplifié : poids uniformes).
-    English: A common prior over type profiles (simplified: uniform weights) -/
+/-- Une croyance commune (prior) sur les profils de types (simplifié : poids uniformes). -/
 structure CommonPrior (T : Type) (n : Nat) where
-  /-- Profils de types possibles : liste de n-uplets.
-      English: Possible type profiles: list of n-tuples -/
+  /-- Profils de types possibles : liste de n-uplets. -/
   typeProfiles : List (Fin n → T)
-  /-- Probabilité de chaque profil (simplifiée en poids rationnel).
-      English: Probability of each profile (simplified as rational weight) -/
+  /-- Probabilité de chaque profil (simplifiée en poids rationnel). -/
   weights : List Nat
-  /-- Les poids somment à 100 (probabilités mises à l'échelle).
-      English: Weights sum to 100 (scaled probabilities) -/
+  /-- Les poids somment à 100 (probabilités mises à l'échelle). -/
   weightsSum100 : weights.sum = 100 := by decide
 
 /-!
 ## Structure du jeu bayésien
-
----
-English:
-## Bayesian Game Structure
 -/
 
 /-- Un jeu bayésien (information incomplète) à types finis.
@@ -94,56 +65,35 @@ English:
     Chaque joueur a un type privé tiré d'une croyance commune.
     Les stratégies associent des types à des actions. Les paiements
     dépendent du profil de types complet et du profil d'actions.
-
-    English: A Bayesian (incomplete information) game with finite types.
-
-    Each player has a private type drawn from a common prior.
-    Strategies map types to actions. Payoffs depend on the full
-    type profile and action profile.
 -/
 structure BayesianGame (PlayerType : Type) where
-  /-- Nombre de joueurs.
-      English: Number of players -/
+  /-- Nombre de joueurs. -/
   numPlayers : Nat
-  /-- Types possibles pour chaque joueur.
-      English: Possible types for each player -/
+  /-- Types possibles pour chaque joueur. -/
   typeSet : Fin numPlayers → List PlayerType
-  /-- Nombre d'actions disponibles pour chaque joueur.
-      English: Number of actions available to each player -/
+  /-- Nombre d'actions disponibles pour chaque joueur. -/
   numActions : Fin numPlayers → Nat
-  /-- Le paiement dépend du profil de types ET du profil d'actions.
-      English: Payoff depends on type profile AND action profile -/
+  /-- Le paiement dépend du profil de types ET du profil d'actions. -/
   payoff : (i : Fin numPlayers) →
            (types : Fin numPlayers → PlayerType) →
            (actions : (j : Fin numPlayers) → Fin (numActions j)) → Int
-  /-- Probabilité a priori (prior) sur les profils de types (simplifié).
-      English: Common prior probability over type profiles (simplified) -/
+  /-- Probabilité a priori (prior) sur les profils de types (simplifié). -/
   priorProb : (types : Fin numPlayers → PlayerType) → Float
 
 /-!
 ## Stratégies conditionnées par le type
-
----
-English:
-## Type-Conditioned Strategies
 -/
 
-/-- Une stratégie (pure) conditionnée par le type : associe son propre type à une action.
-    English: A type-conditioned (pure) strategy: maps own type to an action -/
+/-- Une stratégie (pure) conditionnée par le type : associe son propre type à une action. -/
 def TypeStrategy (g : BayesianGame α) (i : Fin g.numPlayers) :=
   α → Fin (g.numActions i)
 
-/-- Un profil de stratégies par type : une par joueur.
-    English: A profile of type strategies: one per player -/
+/-- Un profil de stratégies par type : une par joueur. -/
 def TypeStrategyProfile (g : BayesianGame α) :=
   (i : Fin g.numPlayers) → TypeStrategy g i
 
 /-!
 ## Paiement espéré (simplifié)
-
----
-English:
-## Expected Payoff (Simplified)
 -/
 
 /-- Paiement espéré du joueur i étant donné un profil de stratégies par type
@@ -151,12 +101,6 @@ English:
 
     Dans une formalisation complète, cela impliquerait de sommer sur tous
     les profils de types pondérés par la croyance commune.
-
-    English: Expected payoff for player i given a type strategy profile
-    and a particular type profile (simplified: no integration).
-
-    In a full formalization this would involve summing over all
-    type profiles weighted by the common prior.
 -/
 def expectedPayoffBayesian (g : BayesianGame α)
     (profile : TypeStrategyProfile g)
@@ -166,10 +110,6 @@ def expectedPayoffBayesian (g : BayesianGame α)
 
 /-!
 ## Équilibre de Nash bayésien
-
----
-English:
-## Bayesian Nash Equilibrium
 -/
 
 /-- Équilibre de Nash bayésien : aucun joueur ne peut améliorer en déviant,
@@ -178,13 +118,6 @@ English:
     Pour chaque joueur i et chaque type t_i du joueur i, le profil de
     stratégies doit être une meilleure réponse conditionnellement à t_i.
     (Simplifié : vérifié sur un seul profil de types.)
-
-    English: Bayesian Nash Equilibrium: no player can improve by deviating,
-    given their type.
-
-    For each player i and each type t_i of player i, the strategy
-    profile must be a best response conditional on t_i.
-    (Simplified: checks for a single type profile.)
 -/
 def isBayesianNashEquilibrium (g : BayesianGame α)
     (profile : TypeStrategyProfile g)
@@ -195,10 +128,6 @@ def isBayesianNashEquilibrium (g : BayesianGame α)
 
 /-!
 ## Ensembles d'information (information imparfaite)
-
----
-English:
-## Information Sets (Imperfect Information)
 -/
 
 /-- Un ensemble d'information regroupe des nœuds de décision qu'un joueur ne
@@ -206,35 +135,21 @@ English:
 
     Tiré de GT-13 : « l'ensemble d'information d'un joueur à un moment du jeu
     est l'ensemble des nœuds où il pourrait être, compte tenu de ce qu'il observe. »
-
-    English: An information set groups decision nodes that a player cannot
-    distinguish between. Modeled as a set of game histories.
-
-    From GT-13: "A player's information set at any point in the game
-    is the set of nodes they might be at, given what they observe."
 -/
 structure InformationSet where
-  /-- Joueur confronté à cet ensemble d'information.
-      English: Player who faces this information set -/
+  /-- Joueur confronté à cet ensemble d'information. -/
   player : Nat
-  /-- Historiques possibles (états du jeu) dans cet ensemble.
-      English: Possible histories (game states) in this set -/
+  /-- Historiques possibles (états du jeu) dans cet ensemble. -/
   nodes : List String
-  /-- Actions disponibles dans cet ensemble d'information.
-      English: Available actions at this information set -/
+  /-- Actions disponibles dans cet ensemble d'information. -/
   actions : List String
 
-/-- Vérifie si deux historiques appartiennent au même ensemble d'information.
-    English: Check if two histories belong to the same information set -/
+/-- Vérifie si deux historiques appartiennent au même ensemble d'information. -/
 def sameInfoSet (h1 h2 : String) (iset : InformationSet) : Bool :=
   iset.nodes.contains h1 && iset.nodes.contains h2
 
 /-!
 ## Jeux de signal (Spence 1973)
-
----
-English:
-## Signaling Games (Spence 1973)
 -/
 
 /-- Un jeu de signal : l'émetteur observe son type, envoie un message,
@@ -242,79 +157,49 @@ English:
 
     Tiré de GT-11 Section 6 (modèle de signal de Spence).
     Deux joueurs : Émetteur (joueur 0) et Récepteur (joueur 1).
-
-    English: A signaling game: sender observes type, sends message,
-    receiver observes message, chooses action.
-
-    From GT-11 Section 6 (Spence signaling model).
-    Two players: Sender (player 0) and Receiver (player 1).
 -/
 structure SignalingGame (MessageType : Type) (ActionResult : Type) where
-  /-- Types possibles de l'émetteur.
-      English: Possible types of the sender -/
+  /-- Types possibles de l'émetteur. -/
   senderTypes : List MessageType
-  /-- Messages que l'émetteur peut envoyer.
-      English: Messages the sender can send -/
+  /-- Messages que l'émetteur peut envoyer. -/
   messages : List MessageType
-  /-- Actions que le récepteur peut entreprendre.
-      English: Actions the receiver can take -/
+  /-- Actions que le récepteur peut entreprendre. -/
   receiverActions : List ActionResult
-  /-- Paiement de l'émetteur : dépend du type, du message envoyé, de l'action du récepteur.
-      English: Sender payoff: depends on type, message sent, receiver action -/
+  /-- Paiement de l'émetteur : dépend du type, du message envoyé, de l'action du récepteur. -/
   senderPayoff : MessageType → MessageType → ActionResult → Int
-  /-- Paiement du récepteur : dépend du type, du message envoyé, de l'action du récepteur.
-      English: Receiver payoff: depends on type, message sent, receiver action -/
+  /-- Paiement du récepteur : dépend du type, du message envoyé, de l'action du récepteur. -/
   receiverPayoff : MessageType → MessageType → ActionResult → Int
-  /-- Probabilité a priori de chaque type de l'émetteur.
-      English: Prior probability of each sender type -/
+  /-- Probabilité a priori de chaque type de l'émetteur. -/
   typePrior : MessageType → Float
 
-/-- Stratégie de l'émetteur : type → message.
-    English: A sender strategy: type → message -/
+/-- Stratégie de l'émetteur : type → message. -/
 def SenderStrategy (_g : SignalingGame α β) := α → α
 
-/-- Stratégie du récepteur : message → action.
-    English: A receiver strategy: message → action -/
+/-- Stratégie du récepteur : message → action. -/
 def ReceiverStrategy (_g : SignalingGame α β) := α → β
 
 /-!
 ## Enchère au premier prix (tiré de GT-11 Section 5)
-
----
-English:
-## First-Price Auction (from GT-11 Section 5)
 -/
 
 /-- Une enchère scellée au premier prix avec valeurs privées.
 
     Chaque enchérisseur a une valorisation privée. Il soumet une offre.
     L'offre la plus élevée gagne et paie son offre.
-
-    English: A first-price sealed-bid auction with private values.
-
-    Each bidder has a private valuation. They submit a bid.
-    Highest bid wins and pays their bid.
 -/
 structure FirstPriceAuction where
-  /-- Nombre d'enchérisseurs.
-      English: Number of bidders -/
+  /-- Nombre d'enchérisseurs. -/
   numBidders : Nat
-  /-- Valeur maximale possible.
-      English: Maximum possible value -/
+  /-- Valeur maximale possible. -/
   maxValue : Nat
-  /-- Stratégie d'enchère : valorisation → offre (simplifié, identique pour tous).
-      English: Bidding strategy: valuation → bid (simplified, same for all) -/
+  /-- Stratégie d'enchère : valorisation → offre (simplifié, identique pour tous). -/
   bidStrategy : Nat → Nat
-  /-- Vérifie si l'enchère est valide (0 ≤ offre ≤ maxValue).
-      English: Check if bid is valid (0 ≤ bid ≤ maxValue) -/
+  /-- Vérifie si l'enchère est valide (0 ≤ offre ≤ maxValue). -/
   validBid : (bid : Nat) → Bool := fun bid => bid <= maxValue
 
 /-- Détermine le gagnant de l'enchère étant donné les offres.
     Renvoie l'indice du premier enchérisseur avec l'offre maximale.
-    Nécessite n ≥ 1 (au moins un enchérisseur).
-    English: Determine winner of auction given bids.
-    Returns the index of the first bidder with the maximum bid.
-    Requires n ≥ 1 (at least one bidder). -/
+    Nécessite n ≥ 1 (au moins un enchérisseur). -/
 def auctionWinner {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Fin n :=
   let maxBid := (List.finRange n).foldl (fun acc i => max acc (bids i)) 0
   -- Le premier joueur ayant offert le maximum gagne (départage les égalités)
@@ -322,27 +207,19 @@ def auctionWinner {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Fin n :=
   | some i => i
   | none => ⟨0, by omega⟩
 
-/-- Revenu pour l'enchérisseur (l'organisateur de l'enchère).
-    English: Revenue for the auctioneer -/
+/-- Revenu pour l'enchérisseur (l'organisateur de l'enchère). -/
 def auctionRevenue {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Nat :=
   bids (auctionWinner h_n bids)
 
 /-!
 ## Poker de Kuhn (tiré de GT-13 Section 2)
-
----
-English:
-## Kuhn Poker (from GT-13 Section 2)
 -/
 
 /-- Une carte au poker de Kuhn (simplifié : Valet=0, Dame=1, Roi=2).
-    `abbrev` (et non `def`) pour que les instances de `Fin 3` (`LT`, `DecidableEq`, ...) se propagent.
-    English: A card in Kuhn poker (simplified: Jack=0, Queen=1, King=2).
-    `abbrev` (not `def`) so `Fin 3` instances (`LT`, `DecidableEq`, ...) propagate. -/
+    `abbrev` (et non `def`) pour que les instances de `Fin 3` (`LT`, `DecidableEq`, ...) se propagent. -/
 abbrev KuhnCard := Fin 3
 
-/-- Historique des actions dans une donne de poker de Kuhn.
-    English: History of actions in a Kuhn poker round -/
+/-- Historique des actions dans une donne de poker de Kuhn. -/
 inductive KuhnAction where
   | check : KuhnAction
   | bet : KuhnAction
@@ -357,14 +234,11 @@ instance : ToString KuhnAction where
     | .fold => "fold"
     | .call => "call"
 
-/-- Un état de partie de poker de Kuhn.
-    English: A Kuhn poker game state -/
+/-- Un état de partie de poker de Kuhn. -/
 structure KuhnState where
-  /-- Cartes distribuées à chaque joueur.
-      English: Cards dealt to each player -/
+  /-- Cartes distribuées à chaque joueur. -/
   cards : Fin 2 → KuhnCard
-  /-- Historique des actions.
-      English: Action history -/
+  /-- Historique des actions. -/
   history : List KuhnAction
 
 -- pas de `deriving Repr` : `cards` est un type fonctionnel, non dérivable. Instance manuelle :
@@ -374,8 +248,7 @@ instance : Repr KuhnState where
     let c1 := toString (s.cards ⟨1, by omega⟩)
     s!"KuhnState({c0}, {c1}, {toString s.history})"
 
-/-- Vérifie si une partie de poker de Kuhn a atteint un état terminal.
-    English: Check if a Kuhn poker game has reached a terminal state -/
+/-- Vérifie si une partie de poker de Kuhn a atteint un état terminal. -/
 def KuhnIsTerminal (history : List KuhnAction) : Bool :=
   match history with
   | [KuhnAction.check, KuhnAction.check] => true    -- les deux checkent
@@ -385,15 +258,12 @@ def KuhnIsTerminal (history : List KuhnAction) : Bool :=
   | [KuhnAction.bet, KuhnAction.call] => true
   | _ => false
 
-/-- Renvoie l'ensemble d'information d'un joueur au poker de Kuhn.
-    English: Get the information set for a player in Kuhn poker -/
+/-- Renvoie l'ensemble d'information d'un joueur au poker de Kuhn. -/
 def kuhnInfoSet (card : KuhnCard) (history : List KuhnAction) : String :=
   s!"card={card.val}-hist={toString history}"
 
 /-- Paiement du joueur 1 dans les états terminaux du poker de Kuhn.
     Renvoie 0 pour les états non terminaux.
-    English: Payoff for player 1 in terminal Kuhn poker states.
-    Returns 0 for non-terminal states.
 -/
 def kuhnPayoff (cards : Fin 2 → KuhnCard) (history : List KuhnAction) : Int :=
   match history with
