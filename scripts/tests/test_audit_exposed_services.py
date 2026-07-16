@@ -29,11 +29,15 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from security.audit_exposed_services import (  # noqa: E402
     DEFAULT_TIER,
+    WEBUI_TIER,
+    API_TIER,
+    DEFAULT_LOCAL_PORT,
     classify_subdomain,
     compose_exists,
     container_running,
     dns_resolves,
     http_probe,
+    normalize_entry,
     probe_api_auth,
     render_markdown,
     run_audit,
@@ -270,3 +274,145 @@ def test_default_tier_covers_forge_sdnext_and_text_gen():
     assert "sdnext.myia.io" in subdomains
     text_gen = [s for s in subdomains if "text-generation-webui.myia.io" in s]
     assert len(text_gen) == 4  # micro/mini/medium/large
+
+
+# --- API_TIER (c.615) — round-trip OUTPUT-content (L498) ---
+# Each test asserts on the dict/finding shape produced by the new code path,
+# not just detection booleans. Tests use mock fixtures so they don't depend
+# on whether whisper-api containers are actually running on the worker machine.
+
+def test_api_tier_covers_all_16_apis_from_issue_16():
+    """API_TIER must cover the 9 services in issue #16 §APIs nécessitant tokens
+    (whisper/tts/musicgen/demucs/mcp-tools/skagents/embeddings/qdrant/search)
+    plus adjacent compose-driven services (comfyui-qwen/comfyui-video/orchestrator).
+    """
+    subdomains = [entry[0] for entry in API_TIER]
+    # issue #16 §APIs (must-haves):
+    for required in ("whisper-api.myia.io", "tts-api.myia.io", "musicgen-api.myia.io",
+                     "demucs-api.myia.io", "mcp-tools.myia.io", "skagents.myia.io",
+                     "embeddings.myia.io", "qdrant.myia.io", "search.myia.io"):
+        assert required in subdomains, f"missing required service {required}"
+    # Adjacent compose-driven services:
+    for adjacent in ("comfyui-qwen.myia.io", "comfyui-video.myia.io",
+                     "orchestrator.myia.io"):
+        assert adjacent in subdomains, f"missing adjacent compose {adjacent}"
+
+
+def test_api_tier_each_entry_has_local_port_int():
+    """Every API_TIER entry must be a 4-tuple with explicit local_port (issue #16
+    category spans many different backend ports — Whisper=8190, TTS=8191, …)."""
+    for entry in API_TIER:
+        assert len(entry) == 4, f"entry not 4-tuple: {entry!r}"
+        subdomain, compose_dir, api_endpoint, port = entry
+        assert isinstance(port, int), f"port not int in {entry!r}"
+        # ORPHELIN-DNS external entries use port=0 as skip-sentinel
+        if compose_dir is None:
+            assert port == 0, f"ORPHELIN-DNS entry {entry!r} must use port=0"
+
+
+def test_orphelin_dns_external_services_have_no_compose():
+    """5 external services (mcp-tools/skagents/embeddings/qdrant/search) have
+    no compose_dir — they fall into ORPHELIN-DNS when DNS resolves but no
+    compose file exists in this repo. Round-trip on actual shape."""
+    externals = [entry for entry in API_TIER if entry[0]
+                 in ("mcp-tools.myia.io", "skagents.myia.io",
+                     "embeddings.myia.io", "qdrant.myia.io", "search.myia.io")]
+    assert len(externals) == 5
+    for entry in externals:
+        assert entry[1] is None, f"{entry[0]} must have compose_dir=None"
+        assert entry[2] is None, f"{entry[0]} must have api_endpoint=None"
+        assert entry[3] == 0, f"{entry[0]} must have local_port=0 (skip sentinel)"
+
+
+def test_normalize_entry_3_tuple_promotes_to_4_with_default_port():
+    """Backward compat: legacy 3-tuple entries (c.442) must still work — promote
+    to 4-tuple with DEFAULT_LOCAL_PORT (=1111, forge-turbo)."""
+    promoted = normalize_entry(("forge.myia.io", "forge-turbo", "/sdapi/v1/options"))
+    assert len(promoted) == 4
+    assert promoted[3] == DEFAULT_LOCAL_PORT
+
+
+def test_normalize_entry_4_tuple_passes_through():
+    """4-tuple entries must pass through unchanged."""
+    entry = ("whisper-api.myia.io", "whisper-api", "/health", 8190)
+    assert normalize_entry(entry) == entry
+
+
+def test_normalize_entry_rejects_invalid_arity():
+    """Anything other than 3- or 4-tuple must raise ValueError loudly."""
+    import pytest
+    with pytest.raises(ValueError, match="TierEntry must be 3- or 4-tuple"):
+        normalize_entry(("only", "two"))
+    with pytest.raises(ValueError, match="TierEntry must be 3- or 4-tuple"):
+        normalize_entry(("one",))
+
+
+def test_probe_api_auth_port_zero_returns_na():
+    """ORPHELIN-DNS external entries use port=0 as the skip-sentinel. The
+    probe must short-circuit to 'N/A' without contacting localhost."""
+    assert probe_api_auth(None, port=0) == "N/A"
+    assert probe_api_auth("/some/endpoint", port=0) == "N/A"
+
+
+def test_run_audit_api_tier_returns_findings_with_local_port_set():
+    """When run_audit is called with API_TIER, each finding must include
+    local_port field (round-trip on new c.615 output key). Mocks prevent
+    real network/probes."""
+    fake_finding_whisper = {
+        "subdomain": "whisper-api.myia.io", "category": "AUTH-OK",
+        "dns_resolves": True, "dns_ip": "82.66.89.184",
+        "http_external": 200, "compose_exists": True,
+        "container_running": True, "api_auth": "PROTECTED",
+        "redirect": "", "server": "Gradio", "local_port": 8190,
+        "compose_dir": "whisper-api",
+    }
+    fake_finding_external = {
+        "subdomain": "qdrant.myia.io", "category": "ORPHELIN-DNS",
+        "dns_resolves": True, "dns_ip": "82.66.89.184",
+        "http_external": 200, "compose_exists": False,
+        "container_running": False, "api_auth": "N/A",
+        "redirect": "", "server": "IIS", "local_port": 0,
+        "compose_dir": None,
+    }
+    with mock.patch(
+        "security.audit_exposed_services.classify_subdomain",
+        side_effect=[fake_finding_whisper, fake_finding_external],
+    ):
+        out = run_audit(tier=[("whisper-api.myia.io", "whisper-api", "/health", 8190),
+                              ("qdrant.myia.io", None, None, 0)])
+    assert len(out) == 2
+    assert out[0]["local_port"] == 8190  # normal service
+    assert out[0]["compose_dir"] == "whisper-api"
+    assert out[1]["local_port"] == 0     # ORPHELIN-DNS sentinel
+    assert out[1]["compose_dir"] is None
+
+
+def test_render_markdown_api_tier_includes_port_column():
+    """The c.615 markdown report must include the new 'Port' column and label
+    the API tier accordingly. Round-trip on output content (L498)."""
+    findings = [
+        {"subdomain": "whisper-api.myia.io", "category": "AUTH-OK",
+         "dns_resolves": True, "dns_ip": "82.66.89.184",
+         "http_external": 200, "compose_exists": True,
+         "container_running": True, "api_auth": "PROTECTED",
+         "redirect": "/login", "server": "Gradio",
+         "local_port": 8190, "compose_dir": "whisper-api"},
+        {"subdomain": "qdrant.myia.io", "category": "ORPHELIN-DNS",
+         "dns_resolves": True, "dns_ip": "82.66.89.184",
+         "http_external": 200, "compose_exists": False,
+         "container_running": False, "api_auth": "N/A",
+         "redirect": "", "server": "IIS",
+         "local_port": 0, "compose_dir": None},
+    ]
+    md = render_markdown(findings, tier_name="tier API (compose-driven + ORPHELIN-DNS)")
+    assert "# Audit `*.myia.io`" in md
+    assert "tier API" in md
+    assert "| Port |" in md  # new column header
+    assert "8190" in md     # concrete port
+    assert "—" in md        # ORPHELIN-DNS port placeholder
+
+
+def test_webui_tier_alias_matches_default_tier_identity():
+    """Rétro-compat: WEBUI_TIER must be the same object as DEFAULT_TIER (c.442
+    callers referencing either name see the same data)."""
+    assert WEBUI_TIER is DEFAULT_TIER
