@@ -3049,3 +3049,124 @@ def test_parse_lean_errors_matches_authoritative_substring_contract():
     assert len(inline) == substring_count, (inline, substring_count)
     assert inline[0]["line"] is None
     assert "cannot synthesize type" in inline[0]["message"]
+
+
+def test_reverify_compiles_clean_false_on_fresh_build_failure(monkeypatch):
+    """#6790 interim guard hardening: the re-verify trust gate must return False
+    when the independent fresh build FAILS — this is the case where the
+    false-negative verify (``level_1_build=False, error_count=0``) was itself
+    MISLEADING (the snapshot is truly broken). Preserving on this signal would
+    leave a broken file committed; the gate's False forces a revert instead."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _BrokenVerifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _BrokenVerifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # Fresh build FAILS: level_1_build False + a real parseable error.
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "Foo.lean:12:3: error: type mismatch\n",
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is False, (
+        "re-verify must return False when the fresh independent build fails "
+        "(false-negative verify was misleading) -> forces revert, not preserve"
+    )
+
+
+def test_reverify_compiles_clean_true_on_fresh_build_success(monkeypatch):
+    """#6790 interim guard hardening: the re-verify trust gate must return True
+    when the independent fresh build GENUINELY compiles (level_1_build=True AND
+    zero parseable errors). This confirms the false-negative verify and permits
+    preservation of the build-passing snapshot (DEMO 62 decomposition case)."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _CleanVerifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _CleanVerifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # Fresh build PASSES: success True, no error lines in raw_output.
+            return json.dumps({
+                "level_1_build": True,
+                "raw_output": "info: invocation took 5.2s\n",
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is True, (
+        "re-verify must return True when the fresh independent build compiles "
+        "clean -> confirms false-negative verify, preserves build-passing snapshot"
+    )
+
+
+def test_reverify_compiles_clean_false_on_crash(monkeypatch):
+    """#6790 hardening: if the fresh re-verify itself crashes, the gate must
+    conservatively return False (do NOT preserve on unknown state) — the prior
+    safe behavior is revert."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _CrashVerifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            raise RuntimeError("invalidate exploded")
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: None)
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            raise RuntimeError("compile exploded")
+
+    # compile() raises -> the helper's except branch returns False.
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is False, (
+        "re-verify must conservatively return False on its own crash -> revert"
+    )
+
+
+def test_reverify_compiles_clean_requires_zero_errors_even_on_success(monkeypatch):
+    """#6790 hardening: level_1_build=True ALONE is not enough — if the raw
+    output still carries a parseable error line (substring contract), the gate
+    must return False (catches a verifier that flips success=True but still
+    logs an error in raw_output). Belt-and-suspenders with the parser fix
+    #6831."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # level_1_build True BUT raw_output has an error line -> not clean.
+            return json.dumps({
+                "level_1_build": True,
+                "raw_output": "Bar.lean: error: cannot synthesize type\n",
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is False, (
+        "re-verify must return False when level_1_build=True but raw_output "
+        "still carries a parseable error line"
+    )

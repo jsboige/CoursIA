@@ -374,6 +374,63 @@ def _final_verify_is_false_negative(final_verify: dict) -> bool:
     return err_count == 0
 
 
+def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool:
+    """Interim guard hardening (#6790): independent fresh re-verify of the exact
+    on-disk content before trusting a false-negative verify and PRESERVING.
+
+    The bug-1b guard ``_final_verify_is_false_negative`` detects the pattern
+    ``level_1_build == False AND error_count == 0`` and historically PRESERVED
+    the committed snapshot on that signal alone. The risk: if the
+    false-negative signal is itself misleading (the initial verify's
+    ``error_count == 0`` came from a parser/cache/manifest quirk rather than a
+    genuinely clean build), preserving leaves a *truly broken* file committed.
+    ai-01 calibration (msg-20260716T080013-ltad25): "re-verifier frais le
+    contenu exact avant de preserver" — protect the runs while (b)/(c) await.
+
+    This helper is the trust gate: it does NOT trust the false-negative
+    premise. It invalidates the verifier cache (drops stale manifest/cache
+    entries) and runs ONE independent fresh ``force=True`` build of the exact
+    on-disk content, parsed with the authoritative ``": error:"`` substring
+    contract (``_parse_lean_errors``, #6831). Returns True only if that fresh
+    build genuinely compiles with zero errors.
+
+    The caller then preserves on True (fresh build confirms the snapshot is
+    build-passing) and reverts on False (the false-negative was misleading; the
+    snapshot is truly broken). This converts "trust and preserve" into
+    "preserve only if an independent fresh build confirms".
+    """
+    from .verifier import get_verifier
+    from .tools import _parse_lean_errors  # authoritative parser (#6831)
+    from .lean_utils import resolve_lake_module
+    try:
+        verifier = get_verifier()
+        if verifier is not None:
+            type(verifier).invalidate(filepath)
+        # Re-run compile() — it already uses force=True internally, and now
+        # operates against a cache that was just invalidated above, so the
+        # build is genuinely fresh and independent of the first verify.
+        raw = tactic_tools.compile()
+        rv = json.loads(raw)
+    except Exception as _e:
+        print(f"  RE-VERIFY crashed: {_e} — conservatively revert (do NOT preserve).")
+        return False
+    fresh_errors = _parse_lean_errors(rv.get("raw_output", "") or rv.get("errors", ""))
+    fresh_ok = bool(rv.get("level_1_build", False)) and len(fresh_errors) == 0
+    if not fresh_ok:
+        print(
+            f"  RE-VERIFY FAILED: fresh independent build of the on-disk content "
+            f"reports {len(fresh_errors)} error(s) — the false-negative verify was "
+            f"MISLEADING; the snapshot is truly broken -> REVERT (#6790 hardening)."
+        )
+    else:
+        print(
+            "  RE-VERIFY PASSED: fresh independent build confirms the on-disk "
+            "content compiles clean -> the false-negative verify is confirmed, "
+            "snapshot is genuinely build-passing -> PRESERVE (#6790 hardening)."
+        )
+    return fresh_ok
+
+
 class MultiAgentSorryProver:
     """Multi-agent sorry replacement using WorkflowBuilder graph.
 
@@ -833,20 +890,38 @@ class MultiAgentSorryProver:
                 if _final_verify_is_false_negative(final_verify):
                     # Bug 1b (#6790): level_1_build=False but 0 compile errors
                     # = false-negative verify (worktree manifest warning / cache
-                    # state), on content the tool build_check had passed. Do NOT
-                    # revert — reverting here destroyed a build-passing snapshot
-                    # (DEMO 62: 5-sub-goal decomposition lost). Preserve the
-                    # committed file + structural_progress; log raw verify for
-                    # diagnosis. Treat as build-ok so the success gate below can
-                    # fire on the preserved structural progress.
+                    # state), on content the tool build_check had passed.
+                    # Interim guard hardening (msg-20260716T080013-ltad25): do
+                    # NOT trust the false-negative premise alone — re-verify the
+                    # EXACT on-disk content with an independent fresh build. If
+                    # the fresh build compiles clean, the snapshot is genuinely
+                    # build-passing -> PRESERVE (DEMO 62: 5-sub-goal decomposition
+                    # preserved). If the fresh build FAILS, the false-negative was
+                    # misleading and the snapshot is truly broken -> REVERT.
                     print(
                         f"  FINAL VERIFY INCOHERENT: level_1_build=False but 0 "
                         f"compile errors — false-negative verify (worktree "
-                        f"manifest warning / cache state), build-passing snapshot "
-                        f"PRESERVED, not reverted (#6790). Raw verify preview: "
-                        f"{final_verify_raw[:400]}"
+                        f"manifest warning / cache state). Running independent "
+                        f"fresh re-verify of the exact on-disk content before "
+                        f"deciding preserve vs revert (#6790 hardening). Raw "
+                        f"verify preview: {final_verify_raw[:400]}"
                     )
-                    final_build_ok = True
+                    if _reverify_compiles_clean(filepath, tactic_tools):
+                        # Fresh build confirms the snapshot compiles -> preserve.
+                        final_build_ok = True
+                    else:
+                        # Fresh build FAILED -> the false-negative was misleading;
+                        # the snapshot is truly broken. Revert to original (same
+                        # recovery as the genuine-build-failure branch below).
+                        print(
+                            "  REVERTING to original — independent fresh re-verify "
+                            "failed, snapshot is truly broken (#6790 hardening)."
+                        )
+                        Path(filepath).write_text(original_content, encoding="utf-8")
+                        final_sorry = original_sorry_count
+                        structural_progress = False
+                        tactic_tools._best_content = None
+                        tactic_tools._best_sorry_count = original_sorry_count
                 else:
                     print(
                         f"  FINAL VERIFY FAILED ({len(_errs)} compile errors). "
