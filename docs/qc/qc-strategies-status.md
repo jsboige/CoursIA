@@ -70,8 +70,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 1, firsthand) | 13 | statut firsthand confirmé dans le tableau ci-dessus |
 | Vérifié (tranche 2, backtests QC Cloud MCP) | 5 | métriques réelles (Sharpe/CAGR/MaxDD) — **toutes Needs-improvement** (PSR < 50 %, pas d'edge statistique) |
 | Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN |
-| Vivant (best-guess, non vérifié) | 72 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
-| Vivant (README revendique vérifié) | 1 | README revendique un backtest QC Cloud — à recroiser firsthand |
+| Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 2 BROKEN ; Multi-Layer-EMA revendication README confirmée |
+| Vivant (best-guess, non vérifié) | 68 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
+| Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
 | Squelette/template (pas de stratégie active) | 2 | README : template/skeleton, pas de stratégie active |
@@ -134,18 +135,35 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `MomentumRegime-AdaptiveWeights` | `projects/MomentumRegime-AdaptiveWeights/` | Momentum / Régime | **Needs-improvement / near-cash** | 2018–2025 (1761 j.) ; **Sharpe −0.729** ; CAGR 1.88 % ; MaxDD 4.3 % ; PSR 17.4 % ; NP 13.9 % — Sharpe négatif (sous le sans-risque), quasi-flat |
 | `Cloud-SectorRotation-Momentum` | `projects/Cloud-SectorRotation-Momentum/` | Rotation sectorielle | **BROKEN** | 2018–2025 (1761 j.) ; **Sharpe −0.029** ; CAGR 2.13 % ; **MaxDD 42.7 %** ; PSR 0.5 % ; NP 15.9 % — flat + drawdown catastrophique, edge nul |
 
-#### Vivant (best-guess, non vérifié) (72)
+#### Vérifié (tranche 4, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 4 (#1621)** : 5 stratégies promues via backtests QC Cloud réels (MCP `qc-mcp`,
+> backtests existants relus firsthand). Cohorte **Mean-Reversion / Macro / Multi-asset / Crypto**
+> (différente des tranches 2 Vol-* et 3 Momentum/Factor). Métriques pleine période in-sample (non
+> walk-forward OOS). **0 edge statistiquement significative** (PSR < 50 % partout, contrairement à la
+> tranche 3 qui comptait BlackLitterman PSR 51 %). Inclut la **vérification firsthand de la
+> revendication README « Verified on QC Cloud » de Multi-Layer-EMA** (project 28433748 = bien l'ID
+> cité par le README → revendication confirmée réelle, mais edge non significative + drawdown crypto
+> catastrophique).
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `MacroFactorRotation-QC` | `projects/MacroFactorRotation-QC/` | Rotation actions/obligations | **Needs-improvement** | 3651 j. ; Sharpe 0.731 ; CAGR 22.63 % ; **MaxDD 42.0 %** ; PSR 23.8 % ; NP 669.2 % ($720 114) — CAGR élevé mais drawdown inacceptable, edge non significative |
+| `Multi-Layer-EMA` | `projects/Multi-Layer-EMA/` | Crypto multi-indicateurs | **Needs-improvement** | 2557 j. ; Sharpe 0.798 ; CAGR 24.99 % ; **MaxDD 57.1 %** ; PSR 23.9 % ; NP 377.4 % (₮385 063) — **revendication README « Verified on QC Cloud » confirmée firsthand** (project 28433748) mais drawdown crypto 57 % = inacceptable |
+| `AdaptiveAssetAllocation` | `projects/AdaptiveAssetAllocation/` | Multi-asset allocation | **Needs-improvement** | 2008–2024 (4639 j.) ; Sharpe 0.509 ; CAGR 8.01 % ; MaxDD 18.9 % ; PSR 10.6 % ; NP 314.4 % ($315 339) — long-terme décent mais edge non significative |
+| `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | **Needs-improvement / near-cash** | 2768 j. ; Sharpe 0.278 ; CAGR 5.60 % ; MaxDD 14.7 % ; PSR 3.7 % ; NP 82.1 % — edge nul, sous-performant |
+| `MeanReversion` | `projects/MeanReversion/` | Mean reversion | **BROKEN** | 2845 j. ; **Sharpe −0.082** ; CAGR 3.00 % ; MaxDD 17.5 % ; PSR 1.3 % ; NP 39.7 % — Sharpe négatif, edge nul |
+
+#### Vivant (best-guess, non vérifié) (68)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
-| `AdaptiveAssetAllocation` | `projects/AdaptiveAssetAllocation/` | Multi-asset allocation | Vivant | main.py: class AdaptiveAssetAllocation(QCAlgorithm) + quantbook.ipynb |
 | `BTC-ML` | `projects/BTC-ML/` | ML Crypto | Vivant | main.py: class MyEnhancedCryptoMlAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | Vivant | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
 | `CausalEventAlpha` | `projects/CausalEventAlpha/` | Causal alpha | Vivant | main.py: class CausalEventAlphaAlgorithm(QCAlgorithm) ; aucun notebook compagnon |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
-| `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | Vivant | main.py: class CloudMeanReversionSectors(QCAlgorithm) |
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | Vivant | main.py: class VolTargetingAlgorithm(QCAlgorithm) |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | Vivant | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb |
@@ -184,9 +202,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | Vivant | main.py: class MLTrendScanning(QCAlgorithm) |
-| `MacroFactorRotation-QC` | `projects/MacroFactorRotation-QC/` | Rotation actions/obligations | Vivant | main.py: class AIStocksBondsRotationAlgorithm(QCAlgorithm) — nom classe ≠ nom dossier (cf. incertitudes) |
 | `Markov-Regime-Detection` | `projects/Markov-Regime-Detection/` | Régime (Markov) | Vivant | main.py: class MarkovRegimeDetection(QCAlgorithm) |
-| `MeanReversion` | `projects/MeanReversion/` | Mean reversion | Vivant | main.py: class ShortTermMeanReversion(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `MomentumStrategy` | `projects/MomentumStrategy/` | Sector momentum ETF | Vivant | main.py: class SectorMomentumETFRotation(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
@@ -211,11 +227,11 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | Vivant | main.py: class VolTargetMomentum(QCAlgorithm) |
 | `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | Vivant | main.py: class CompositeC1MultiAssetRotation(QCAlgorithm) |
 
-#### Vivant (README revendique vérifié) (1)
+#### Vivant (README revendique vérifié) (0)
 
-| Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
-|-----------|--------|------|---------------------|--------------------------------------|
-| `Multi-Layer-EMA` | `projects/Multi-Layer-EMA/` | Crypto multi-indicateurs | Vivant (revendiqué) | main.py: class OptimizedCryptoAlgorithm(QCAlgorithm) + research.ipynb + README revendique « Verified on QC Cloud (project 28433748) » |
+> Bucket désormais vide : `Multi-Layer-EMA` (dernier entrant) promu en tranche 4 — sa revendication
+> README « Verified on QC Cloud (project 28433748) » **confirmée firsthand** via MCP qc-mcp, mais
+> reclassée Needs-improvement (Sharpe 0.798, MaxDD crypto 57 %, PSR 23.9 % — edge non significative).
 
 #### Recherche uniquement (pas d'algo déployable) (5)
 
@@ -279,7 +295,7 @@ Entrées où le statut *best-guess* est le plus fragile — divergence nom de do
 classe, revendication de vérification non recoupée, ou doublons suspects. Cibles privilégiées 
 pour un backtest dédié (scope RECOVERABLE-MACHINE) :
 
-- **`Multi-Layer-EMA`** — README revendique « Verified on QC Cloud (project 28433748) » mais la classe est `OptimizedCryptoAlgorithm` (le README lui-même prévient « NOT a simple multi-layer EMA »). Vérification à recroiser firsthand.
+- **`Multi-Layer-EMA`** — README revendiquait « Verified on QC Cloud (project 28433748) » ; **vérifié tranche 4** (backtest relus firsthand via MCP — project ID confirmé, revendication réelle). Classe `OptimizedCryptoAlgorithm` (le README prévient « NOT a simple multi-layer EMA ») — reclassé Needs-improvement (Sharpe 0.798, MaxDD crypto 57 %, PSR 23.9 %).
 - **`LeveragedETFMomentum-QC`** — classe `ConditionalSectorRotation` : divergence totale avec le nom de dossier « Leveraged ETF Momentum ». Contenu réel à confirmer.
 - **`MacroFactorRotation-QC`** — classe `AIStocksBondsRotationAlgorithm` : divergence avec le nom de dossier.
 - **`FamaFrench`** — classe `FactorETFRotation` : la sémantique Fama-French n'est pas évidente depuis le nom de classe.
