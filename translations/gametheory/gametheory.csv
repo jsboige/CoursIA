@@ -2668,6 +2668,25 @@ def analyze_batna(batna_values=[0, 1, 2, 3]):
 # TODO etudiant : modeliser le jeu de la chaine de magasins avec engagement
 
 print(""Exercices a completer : Beer-Quiche, BATNA, Engagement sequentiel"")",,,,,,,,caad125c93df5107,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-2aa0ebcd,markdown,fr,4d96d17e4bf70198,"### Exercice 4 : Jeu d'entree avec signal de prix
+
+Une firme en place (Incumbent) peut signaler sa force en fixant un prix bas avant qu'un entrant potentiel
+(Entrant) ne decide d'entrer sur le marche.
+
+- **Etape 1** : Modeliser le jeu sous forme extensive (signal -> entrée -> combat/accommodation)
+- **Etape 2** : Identifier les equilibres de Forward Induction
+- **Etape 3** : Comparer avec le resultat en information complete
+
+*Indice* : Un prix bas peut etre un signal credible de force (le faible ne peut pas imiter).",,,,,,,,4d96d17e4bf70198,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-d5ed0e02,code,fr,c186e5809ce6c058,"# Exercice 4 : Jeu d'entree avec signal de prix
+# TODO etudiant : modeliser le jeu d'entree avec signal
+# Etape 1 : definir l'arbre (Incumbent: prix haut/bas, Entrant: entre/pas, Incumbent: combat/accommode)
+# Etape 2 : forward induction - quel signal est credible ?
+# Etape 3 : conclusion
+def solve_entry_signaling() -> dict:
+    return {""equilibrium_signal"": None, ""entrant_enters"": None}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,c186e5809ce6c058,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,6bdff093,markdown,fr,8085f0fd86bccf5c,"---
 
 ## Exercice 5 : Identification des SPE
@@ -6726,6 +6745,25 @@ import numpy as np
 #     result = simulate_chain_store(p, N_ENTRANTS)
 #     print(f""P(hard)={p}: {result['fights']} combats sur {N_ENTRANTS}"")
 print(""Exercice a completer"")",,,,,,,,ee5bc28a52bad273,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-53398827,markdown,fr,8aa9581aa23ba535,"### Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
+
+Simulez un Dilemme du Prisonnier repete sur 10 tours entre un joueur avec strategie de reputation
+(Tit-for-Tat) et un joueur opportuniste (best response myope).
+
+- **Etape 1** : Implementer Tit-for-Tat et Best-Response-Myope
+- **Etape 2** : Simuler 10 tours et calculer les gains cumules
+- **Etape 3** : Analyser si la reputation (TFT) est un avantage ou un cout
+
+*Indice* : En finitude connue, backward induction predit toujours defect. La reputation change-t-elle cela ?",,,,,,,,8aa9581aa23ba535,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-7f3d611b,code,fr,87bcb358e1377577,"# Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
+# TODO etudiant : implementer TFT vs BR-Myope sur 10 tours
+# Etape 1 : definir les deux strategies
+# Etape 2 : simulation
+# Etape 3 : comparaison des gains cumules
+def simulate_tft_vs_myopic(payoff_matrix: dict, n_rounds: int = 10) -> dict:
+    return {""tft_payoff"": 0, ""myopic_payoff"": 0, ""history"": []}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,87bcb358e1377577,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,8844f19d,markdown,fr,1cd0a0a8cb5b90f2,"## 7. Resume
 
 | Concept | Description |
@@ -8467,6 +8505,25 @@ class RPSGame:
 # Indice: Adaptez le CFRSolver vu dans les sections precedentes
 
 print(""Exercices a completer dans les cellules suivantes"")",,,,,,,,3f008eec8bfad845,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-7b58d7e5,markdown,fr,4fb8d2987a6a7643,"### Exercice 5 : Kuhn Poker - Implementation CFR
+
+Implementez le jeu de Kuhn Poker (3 cartes, 2 joueurs, mise 1 jeton) et resolvez-le par CFR.
+
+- **Etape 1** : Definir les infosets (JQ, JK, QJ, QK, KJ, KQ)
+- **Etape 2** : Implementer le regret matching pour chaque infoset
+- **Etape 3** : Verifier que la strategie converge vers la solution analytique connue
+
+*Indice* : La solution analytique de Kuhn Poker (1930) est connu. Joueur 1 avec K mise toujours.
+Joueur 1 avec Q check toujours. Joueur 1 avec J mise avec probabilite alpha.",,,,,,,,4fb8d2987a6a7643,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-bce43bec,code,fr,1a6ace566f735ff3,"# Exercice 5 : Kuhn Poker CFR
+# TODO etudiant : implementer Kuhn Poker (3 cartes, 2 joueurs)
+# Etape 1 : definir les infosets et actions
+# Etape 2 : regret matching
+# Etape 3 : verifier convergence
+def kuhn_poker_cfr(n_iterations: int = 1000) -> dict:
+    return {""strategy"": {}, ""converged"": False}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,1a6ace566f735ff3,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,7f9c9442,markdown,fr,32b6b7e50a3022a2,"## 10. Resume et Points Cles
 
 ### Ce que nous avons appris
@@ -10211,6 +10268,25 @@ def commitment_value(demand: LinearDemand, firm_L: Firm, firm_F: Firm) -> float:
 # print(f""Valeur de l'engagement pour le leader: {value:.2f}"")
 print(""Exercice a completer : Valeur de l engagement (Stackelberg vs Cournot)"")
 ",,,,,,,,02e5fea4845731cf,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-d25fbf6f,markdown,fr,334b7cd0e429523f,"### Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
+
+Modelisez un jeu de poursuite simple en 2D. Un poursuivant (P) a vitesse v_p et un evasif (E) a vitesse v_e < v_p.
+L'objectif de P est de capturer E (distance < epsilon) ; E veut maximiser le temps de capture.
+
+- **Etape 1** : Definir les equations differentielles du mouvement
+- **Etape 2** : Implementer une trajectoire de poursuite (P vise E a chaque instant)
+- **Etape 3** : Calculer le temps de capture et verifier qu'il est fini quand v_p > v_e
+
+*Indice* : La strategie optimale de P est de se diriger directement vers E (ligne droite).",,,,,,,,334b7cd0e429523f,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-1bdf5de7,code,fr,790893df859ee737,"# Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
+# TODO etudiant : modeliser la poursuite en 2D
+# Etape 1 : equations du mouvement
+# Etape 2 : simulation Euler
+# Etape 3 : temps de capture
+def simulate_pursuit(v_p: float, v_e: float, pos_p: list, pos_e: list, dt: float = 0.01) -> dict:
+    return {""capture_time"": None, ""trajectory"": []}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,790893df859ee737,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,81bbeb86,markdown,fr,0717db72e4f1f0ed,"---
 
 ## Exercice 6 : Jeu differentiel linear-quadratic
@@ -17347,6 +17423,7 @@ foreach (var (s1, s2) in eqs)
 sb.AppendLine("">>> Equilibre uniforme (1/3, 1/3, 1/3) pour les deux joueurs, comme prevu par symetrie."");
 sb.AppendLine(""    Valeur du jeu (zero-sum) : esperance = 0 pour chacun."");
 sb.ToString().Display();",,,,,,,,94515de6baea20ad,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b26,markdown,fr,9b7fdcb0fbf1a6c8,"**Interprétation -- symétrie et uniformité.** L'algorithme retrouve l'équilibre uniforme $(\tfrac{1}{3}, \tfrac{1}{3}, \tfrac{1}{3})$ sans qu'on le lui indique. C'est une conséquence directe de la **symétrie** de la matrice de paiement : aucune action n'est distinguable a priori, donc aucune ne peut recevoir plus de poids qu'une autre a l'équilibre. La valeur du jeu est nulle (jeu à somme nulle équitable). Le point pédagogique : la support enumeration redécouvre ce résultat par le **calcul** (résolution du système d'indifférence), et non par un argument de symétrie injecté à la main.",,,,,,,,9b7fdcb0fbf1a6c8,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b13,markdown,fr,40171c3f479f10ed,"## 5. Un jeu 3x3 asymétrique
 
 Pour montrer que l'algorithme gère le non-symétrique, prenons un jeu où RPS est **biaisé** : la matière (Rock) rapporte double. L'équilibre n'est plus uniforme — la résolution exacte le révèle.",,,,,,,,40171c3f479f10ed,,,,,,,
@@ -17377,6 +17454,7 @@ foreach (var (s1, s2) in eqs)
     sb.AppendLine($""Valeur du jeu (esperance j1) = {FI(v1)}"");
 }
 sb.ToString().Display();",,,,,,,,e245e486817ff20a,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b27,markdown,fr,13b848b518c4d7e9,"**Interprétation -- rupture de symétrie, Paper devient modal.** Doubler le gain de Rock contre Scissors brise la symétrie : Rock devient une menace renforcée (il bat Scissors de +2 au lieu de +1). Anticipant cela, les deux joueurs déplacent leur probabilité vers **Paper** -- l'action qui bat Rock -- qui atteint 50 %, tandis que Rock et Scissors tombent à 25 % chacun. La valeur du jeu reste nulle (le biais est symétrique entre les deux joueurs). Cet équilibre non-uniforme est exactement le genre de résultat **non evident à l'intuition** que la support enumeration révèle : aucun argument heuristique simple ne dirait ""Paper 50 %"" sans résoudre le système.",,,,,,,,13b848b518c4d7e9,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b15,markdown,fr,0ec0741c3321413d,"## 6. Vérification : le Dilemme du Prisonnier
 
 Sur le Dilemme du Prisonnier, la support enumeration doit retrouver **(Defect, Defect)** comme **unique équilibre** — un support de taille 1 (stratégie pure). C'est le test que l'algorithme gère aussi les équilibres purs (non seulement mixtes).",,,,,,,,0ec0741c3321413d,,,,,,,
@@ -17401,6 +17479,7 @@ foreach (var (s1, s2) in eqs)
 sb.AppendLine("">>> Unique equilibre = (Defect, Defect) en strategies pures (support taille 1)."");
 sb.AppendLine(""    L'algorithme retrouve l'equilibre pur, pas seulement mixte."");
 sb.ToString().Display();",,,,,,,,7637fc1d3831c69c,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b28,markdown,fr,fc0e9856e8acbee3,"**Interprétation -- équilibre pur, support de taille 1.** Le Dilemme du Prisonnier n'a pas d'équilibre mixte intéressant : son unique équilibre de Nash est la stratégie pure $(\text{Defect}, \text{Defect})$. C'est un **support de taille 1**. L'intérêt ici est de montrer que la support enumeration ne se limite pas aux mélanges -- elle énumère les supports de **toutes tailles**, et retrouve donc aussi les équilibres purs. La méthode est **générale** : pas besoin de traiter séparément le cas pur et le cas mixte.",,,,,,,,fc0e9856e8acbee3,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b17,markdown,fr,0117d8900605e20b,"## 7. Pile ou Face (Matching Pennies) : équilibre mixte 2x2
 
 Sur ce jeu zero-sum sans équilibre pur, la support enumeration doit retrouver le mélange **(0.5, 0.5)** pour les deux joueurs — confirmant le résultat de la formule close de la tranche 1.",,,,,,,,0117d8900605e20b,,,,,,,
@@ -17422,6 +17501,9 @@ foreach (var (s1, s2) in eqs)
 }
 sb.AppendLine("">>> Melange (0.5,0.5) retrouve, valeur 0 (confirme la tranche 1)."");
 sb.ToString().Display();",,,,,,,,dd93319191a2615e,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b29,markdown,fr,2974d1da82229dcf,"**Interprétation -- équilibre mixte 2x2 sans équilibre pur.** Pile ou Face (Matching Pennies) n'a **aucun équilibre pur** (jeu à somme nulle sans point-selle en stratégies pures). L'unique équilibre est le mélange uniforme $(0{,}5\,;\,0{,}5)$ : chaque joueur rend l'autre indifférent entre ses deux actions. La support enumeration retrouve ce résultat sur le support de taille 2, **confirmant la formule close de la tranche 1**.
+
+Ce notebook démontre ainsi les **quatre régimes** possibles d'un équilibre de Nash mélange/pur : uniforme par symétrie (RPS), non-uniforme par asymétrie (RPS biaisé), pur par stratégie dominante (Prisonnier), et mixte sans équilibre pur (Pile ou Face).",,,,,,,,2974d1da82229dcf,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b19,markdown,fr,88ccbdd474622a2e,"### Exercice 1 : Bataille des Sexes (3 équilibres)
 
 Appliquez `SupportEnumeration` à la **Bataille des Sexes** (cf. tranche 1). Combien d'équilibres trouve-t-on ? Vous devez retrouver les **2 équilibres purs** (Opera,Opera) et (Foot,Foot) **plus** l'**équilibre mixte** (0.667, 0.333) — soit 3 équilibres au total. Vérifiez firsthand.",,,,,,,,88ccbdd474622a2e,,,,,,,
@@ -24000,6 +24082,50 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,60a42af0,c
 // TODO étudiant
 Console.WriteLine(""Exercice 3 (Dilemme du prisonnier) à compléter : vérifiez la convergence vers le NE pur (0, 1)."");
 ",,,,,,,,d230e826b071b639,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-c8d54e45,code,fr,30dc4d86f26d738d,"// EXERCICE 2 (supplementaire) : dynamique de meilleure reponse ALTERNEE.
+// Au lieu de moyenner BR1 et BR2 simultanement (NashDynamicsStep), alternez-les :
+// J1 joue sa BR courante, puis J2 repond a la BR de J1, puis J1 repond a J2, etc.
+// Question : la convergence vers (0.5, 0.5) differe-t-elle de la dynamique simutanee ?
+// Pourquoi la simultaneite (moyenne des BR) est-elle plus proche de la preuve de Nash
+// (qui invoque Brouwer sur f = moyenne des BR) que l'alternance ?
+// Indice : PerturbedBR(sigma, U, epsilon=0.1) calcule la BR d'UN joueur (cellule 6).
+//          L'alternance = J1 fixe sigma1, J2 repond via PerturbedBR(sigma, U2),
+//          puis on recombine (sigma1, sigma2_repondu) -- une etape = 2 sous-etapes.
+//          Comparer le nombre d'iterations pour atteindre |sigma - (0.5,0.5)| < 0.01.
+
+// TODO etudiant : iterer une dynamique alternee (J1 puis J2) depuis (0.9, 0.1)
+//                 et comparer la vitesse de convergence a NashDynamicsStep.
+double[] NashDynamicsStepAlternate(double[] sigma, double[,] u1, double[,] u2, double epsilon = 0.2) {
+    // Etape 1 : J1 joue sa BR courante (PerturbedBR sur u1).
+    // Etape 2 : J2 repond a la BR de J1 (PerturbedBR sur u2, avec le sigma mis a jour).
+    // Etape 3 : recombinez (sigma1_new, sigma2_new) et projetez sur le simplexe.
+    return (double[])sigma.Clone();  // TODO etudiant : remplacer par la dynamique alternee
+}
+
+Console.WriteLine(""Exercice 2 a completer : dynamique alternee vs simultanee."");
+",,,,,,,,30dc4d86f26d738d,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-5bd6f76c,code,fr,7bb21bf111c7359f,"// EXERCICE 3 (supplementaire) : verificateur d'hypotheses de Brouwer.
+// Brouwer exige pour f : Delta -> Delta : (a) continue, (b) Delta convexe compact,
+// (c) f(Delta) subset Delta. Implementez un verificateur qui teste ces 3 proprietes
+// sur une fonction donnee, puis testez sur PerturbedBR (qui les satisfait) et sur
+// une fonction discontinue (qui les viole).
+// Indice : Delta = simplexe 2D {(p, 1-p) : p in [0,1]}.
+//   (a) continuite : discretisez [0,1] en N pas, verifiez |f(p1)-f(p2)| petit quand
+//       |p1-p2| petit (test Lipschitz numerique).
+//   (b) Delta convexe compact : toujours vrai pour le simplexe (fait Mathlib/theorique).
+//   (c) f(Delta) subset Delta : verifiez ProjectSimplex(f(p)) ~ f(p) sur la grille.
+//   Discontinu test : f(p) = p < 0.5 ? (1,0) : (0,1) -- saut, viole (a).
+
+// TODO etudiant : implementez VerifierBrouwer(f, N) renvoyant (continue, stable_simplexe).
+(bool continuous, bool stableSimplex) VerifierBrouwer(Func<double[], double[]> f, int N = 50) {
+    // Etape 1 : discretisez p in [0,1] en N pas, sigma = (p, 1-p).
+    // Etape 2 : continuite -> max |f(p1)-f(p2)| / |p1-p2| borne (test Lipschitz).
+    // Etape 3 : stableSimplexe -> ProjectSimplex(f(sigma)) ~ f(sigma) pour tout p.
+    return (false, false);  // TODO etudiant
+}
+
+Console.WriteLine(""Exercice 3 a completer : verificateur d'hypothese de Brouwer."");
+",,,,,,,,7bb21bf111c7359f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,06825320,markdown,fr,b997a7a056768997,"## Bilan
 
 Ce notebook a présenté le **théorème d'existence de Nash** via Brouwer, jumeau C# du
@@ -25332,6 +25458,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,e3e9ab03,
 // TODO etudiant : remplacer la matrice 1x1 ci-dessous par votre matrice Blotto(5, 3).
 double[,] ex1Matrix = new double[,] { { 0 } };
 display(""Exercice 1 a completer : matrice Blotto(5,3) puis appelez SolveMatrixGame(ex1Matrix)."");",,,,,,,,757d0b7193139ae9,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,6132fb66,markdown,fr,3e993d59b473f078,"### 9.2. Verification du theoreme minimax sur un jeu 3x3 personnalise
+
+C'est l'envers de l'exercice 1 : on **invente** une matrice 3x3 sans point-selle, on **resout** avec notre simplexe, et on **verifie** numeriquement la dualite ($\sigma^\top A \tau = v$). C'est la verification experimentale que le theoreme minimax n'est pas qu'un enonce abstrait — il se **calcule** effectivement sur une matrice.
+
+Pour un bon test : choisir une matrice ou la valeur du jeu $v \ne 0$ et $\ne \pm 1$ (par exemple $\begin{pmatrix}2 & -1 & 0 \\ -1 & 3 & -2 \\ 0 & -2 & 4\end{pmatrix}$), pour eviter que le simplexe ne converge trivialement.",,,,,,,,3e993d59b473f078,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,748cd741,code,fr,8e53d70330d90ee5,"// Exercice 2 : Verification du theoreme minimax sur un jeu 3x3 personnalise
 // Etape 1 : remplacer la matrice 1x1 ci-dessous par votre matrice 3x3 (sans point-selle).
 // Etape 2 : appeler SolveMatrixGame(ex2Matrix) pour obtenir sigma, tau, v.
@@ -25342,6 +25473,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,748cd741,
 // TODO etudiant : remplacer la matrice 1x1 ci-dessous par votre matrice 3x3.
 double[,] ex2Matrix = new double[,] { { 0 } };
 display(""Exercice 2 a completer : votre matrice 3x3 -> SolveMatrixGame -> verification."");",,,,,,,,8e53d70330d90ee5,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,df292abe,markdown,fr,b7d81f51aac63540,"### 9.3. Construction d'un jeu 3x3 avec point-selle en strategies pures
+
+C'est l'exercice inverse : trouver une matrice 3x3 ou il **existe** un equilibre en strategies pures. La cle est de placer une entree qui soit **simultanement** le maximum de sa colonne et le minimum de sa ligne — c'est la definition d'un point-selle (cf section 2 du notebook).
+
+Point pedagogique : si vous prenez la matrice `saddle` du notebook (cellule 5, `{{3,4,8},{6,5,7},{1,3,2}}`), le point-selle est `A[1,1]=5`. C'est l'**exemple de reference**, et vous pouvez vous en inspirer pour construire la votre. La cellule `AnalyzePure` detecte automatiquement le point-selle et confirme `maximin == minimax`.",,,,,,,,b7d81f51aac63540,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,b663ecf7,code,fr,b44746df4f73d8a0,"// Exercice 3 : Construire un jeu 3x3 AVEC un point-selle en strategies pures
 // Indice 1 : un point-selle A[i,j] = max de la colonne j ET min de la ligne i.
 // Indice 2 : dimensions obligatoires : double[,] ex3Matrix = new double[3,3] { ... };
@@ -40059,139 +40195,3 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ip
 
 **Navigation** : [<< 03-Voting-Methods.ipynb](03-Voting-Methods.ipynb) | [Index](../README.md)
 ",,,,,,,,a93ca84c2f78b586,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-2aa0ebcd,markdown,fr,4d96d17e4bf70198,"### Exercice 4 : Jeu d'entree avec signal de prix
-
-Une firme en place (Incumbent) peut signaler sa force en fixant un prix bas avant qu'un entrant potentiel
-(Entrant) ne decide d'entrer sur le marche.
-
-- **Etape 1** : Modeliser le jeu sous forme extensive (signal -> entrée -> combat/accommodation)
-- **Etape 2** : Identifier les equilibres de Forward Induction
-- **Etape 3** : Comparer avec le resultat en information complete
-
-*Indice* : Un prix bas peut etre un signal credible de force (le faible ne peut pas imiter).",,,,,,,,4d96d17e4bf70198,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-d5ed0e02,code,fr,c186e5809ce6c058,"# Exercice 4 : Jeu d'entree avec signal de prix
-# TODO etudiant : modeliser le jeu d'entree avec signal
-# Etape 1 : definir l'arbre (Incumbent: prix haut/bas, Entrant: entre/pas, Incumbent: combat/accommode)
-# Etape 2 : forward induction - quel signal est credible ?
-# Etape 3 : conclusion
-def solve_entry_signaling() -> dict:
-    return {""equilibrium_signal"": None, ""entrant_enters"": None}  # TODO etudiant
-
-print(""Exercice a completer"")",,,,,,,,c186e5809ce6c058,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-53398827,markdown,fr,8aa9581aa23ba535,"### Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
-
-Simulez un Dilemme du Prisonnier repete sur 10 tours entre un joueur avec strategie de reputation
-(Tit-for-Tat) et un joueur opportuniste (best response myope).
-
-- **Etape 1** : Implementer Tit-for-Tat et Best-Response-Myope
-- **Etape 2** : Simuler 10 tours et calculer les gains cumules
-- **Etape 3** : Analyser si la reputation (TFT) est un avantage ou un cout
-
-*Indice* : En finitude connue, backward induction predit toujours defect. La reputation change-t-elle cela ?",,,,,,,,8aa9581aa23ba535,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-7f3d611b,code,fr,87bcb358e1377577,"# Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
-# TODO etudiant : implementer TFT vs BR-Myope sur 10 tours
-# Etape 1 : definir les deux strategies
-# Etape 2 : simulation
-# Etape 3 : comparaison des gains cumules
-def simulate_tft_vs_myopic(payoff_matrix: dict, n_rounds: int = 10) -> dict:
-    return {""tft_payoff"": 0, ""myopic_payoff"": 0, ""history"": []}  # TODO etudiant
-
-print(""Exercice a completer"")",,,,,,,,87bcb358e1377577,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-7b58d7e5,markdown,fr,4fb8d2987a6a7643,"### Exercice 5 : Kuhn Poker - Implementation CFR
-
-Implementez le jeu de Kuhn Poker (3 cartes, 2 joueurs, mise 1 jeton) et resolvez-le par CFR.
-
-- **Etape 1** : Definir les infosets (JQ, JK, QJ, QK, KJ, KQ)
-- **Etape 2** : Implementer le regret matching pour chaque infoset
-- **Etape 3** : Verifier que la strategie converge vers la solution analytique connue
-
-*Indice* : La solution analytique de Kuhn Poker (1930) est connu. Joueur 1 avec K mise toujours.
-Joueur 1 avec Q check toujours. Joueur 1 avec J mise avec probabilite alpha.",,,,,,,,4fb8d2987a6a7643,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-bce43bec,code,fr,1a6ace566f735ff3,"# Exercice 5 : Kuhn Poker CFR
-# TODO etudiant : implementer Kuhn Poker (3 cartes, 2 joueurs)
-# Etape 1 : definir les infosets et actions
-# Etape 2 : regret matching
-# Etape 3 : verifier convergence
-def kuhn_poker_cfr(n_iterations: int = 1000) -> dict:
-    return {""strategy"": {}, ""converged"": False}  # TODO etudiant
-
-print(""Exercice a completer"")",,,,,,,,1a6ace566f735ff3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-d25fbf6f,markdown,fr,334b7cd0e429523f,"### Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
-
-Modelisez un jeu de poursuite simple en 2D. Un poursuivant (P) a vitesse v_p et un evasif (E) a vitesse v_e < v_p.
-L'objectif de P est de capturer E (distance < epsilon) ; E veut maximiser le temps de capture.
-
-- **Etape 1** : Definir les equations differentielles du mouvement
-- **Etape 2** : Implementer une trajectoire de poursuite (P vise E a chaque instant)
-- **Etape 3** : Calculer le temps de capture et verifier qu'il est fini quand v_p > v_e
-
-*Indice* : La strategie optimale de P est de se diriger directement vers E (ligne droite).",,,,,,,,334b7cd0e429523f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-1bdf5de7,code,fr,790893df859ee737,"# Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
-# TODO etudiant : modeliser la poursuite en 2D
-# Etape 1 : equations du mouvement
-# Etape 2 : simulation Euler
-# Etape 3 : temps de capture
-def simulate_pursuit(v_p: float, v_e: float, pos_p: list, pos_e: list, dt: float = 0.01) -> dict:
-    return {""capture_time"": None, ""trajectory"": []}  # TODO etudiant
-
-print(""Exercice a completer"")",,,,,,,,790893df859ee737,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b26,markdown,fr,9b7fdcb0fbf1a6c8,"**Interprétation -- symétrie et uniformité.** L'algorithme retrouve l'équilibre uniforme $(\tfrac{1}{3}, \tfrac{1}{3}, \tfrac{1}{3})$ sans qu'on le lui indique. C'est une conséquence directe de la **symétrie** de la matrice de paiement : aucune action n'est distinguable a priori, donc aucune ne peut recevoir plus de poids qu'une autre a l'équilibre. La valeur du jeu est nulle (jeu à somme nulle équitable). Le point pédagogique : la support enumeration redécouvre ce résultat par le **calcul** (résolution du système d'indifférence), et non par un argument de symétrie injecté à la main.",,,,,,,,9b7fdcb0fbf1a6c8,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b27,markdown,fr,13b848b518c4d7e9,"**Interprétation -- rupture de symétrie, Paper devient modal.** Doubler le gain de Rock contre Scissors brise la symétrie : Rock devient une menace renforcée (il bat Scissors de +2 au lieu de +1). Anticipant cela, les deux joueurs déplacent leur probabilité vers **Paper** -- l'action qui bat Rock -- qui atteint 50 %, tandis que Rock et Scissors tombent à 25 % chacun. La valeur du jeu reste nulle (le biais est symétrique entre les deux joueurs). Cet équilibre non-uniforme est exactement le genre de résultat **non evident à l'intuition** que la support enumeration révèle : aucun argument heuristique simple ne dirait ""Paper 50 %"" sans résoudre le système.",,,,,,,,13b848b518c4d7e9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b28,markdown,fr,fc0e9856e8acbee3,"**Interprétation -- équilibre pur, support de taille 1.** Le Dilemme du Prisonnier n'a pas d'équilibre mixte intéressant : son unique équilibre de Nash est la stratégie pure $(\text{Defect}, \text{Defect})$. C'est un **support de taille 1**. L'intérêt ici est de montrer que la support enumeration ne se limite pas aux mélanges -- elle énumère les supports de **toutes tailles**, et retrouve donc aussi les équilibres purs. La méthode est **générale** : pas besoin de traiter séparément le cas pur et le cas mixte.",,,,,,,,fc0e9856e8acbee3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b29,markdown,fr,2974d1da82229dcf,"**Interprétation -- équilibre mixte 2x2 sans équilibre pur.** Pile ou Face (Matching Pennies) n'a **aucun équilibre pur** (jeu à somme nulle sans point-selle en stratégies pures). L'unique équilibre est le mélange uniforme $(0{,}5\,;\,0{,}5)$ : chaque joueur rend l'autre indifférent entre ses deux actions. La support enumeration retrouve ce résultat sur le support de taille 2, **confirmant la formule close de la tranche 1**.
-
-Ce notebook démontre ainsi les **quatre régimes** possibles d'un équilibre de Nash mélange/pur : uniforme par symétrie (RPS), non-uniforme par asymétrie (RPS biaisé), pur par stratégie dominante (Prisonnier), et mixte sans équilibre pur (Pile ou Face).",,,,,,,,2974d1da82229dcf,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-c8d54e45,code,fr,30dc4d86f26d738d,"// EXERCICE 2 (supplementaire) : dynamique de meilleure reponse ALTERNEE.
-// Au lieu de moyenner BR1 et BR2 simultanement (NashDynamicsStep), alternez-les :
-// J1 joue sa BR courante, puis J2 repond a la BR de J1, puis J1 repond a J2, etc.
-// Question : la convergence vers (0.5, 0.5) differe-t-elle de la dynamique simutanee ?
-// Pourquoi la simultaneite (moyenne des BR) est-elle plus proche de la preuve de Nash
-// (qui invoque Brouwer sur f = moyenne des BR) que l'alternance ?
-// Indice : PerturbedBR(sigma, U, epsilon=0.1) calcule la BR d'UN joueur (cellule 6).
-//          L'alternance = J1 fixe sigma1, J2 repond via PerturbedBR(sigma, U2),
-//          puis on recombine (sigma1, sigma2_repondu) -- une etape = 2 sous-etapes.
-//          Comparer le nombre d'iterations pour atteindre |sigma - (0.5,0.5)| < 0.01.
-
-// TODO etudiant : iterer une dynamique alternee (J1 puis J2) depuis (0.9, 0.1)
-//                 et comparer la vitesse de convergence a NashDynamicsStep.
-double[] NashDynamicsStepAlternate(double[] sigma, double[,] u1, double[,] u2, double epsilon = 0.2) {
-    // Etape 1 : J1 joue sa BR courante (PerturbedBR sur u1).
-    // Etape 2 : J2 repond a la BR de J1 (PerturbedBR sur u2, avec le sigma mis a jour).
-    // Etape 3 : recombinez (sigma1_new, sigma2_new) et projetez sur le simplexe.
-    return (double[])sigma.Clone();  // TODO etudiant : remplacer par la dynamique alternee
-}
-
-Console.WriteLine(""Exercice 2 a completer : dynamique alternee vs simultanee."");
-",,,,,,,,30dc4d86f26d738d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-5bd6f76c,code,fr,7bb21bf111c7359f,"// EXERCICE 3 (supplementaire) : verificateur d'hypotheses de Brouwer.
-// Brouwer exige pour f : Delta -> Delta : (a) continue, (b) Delta convexe compact,
-// (c) f(Delta) subset Delta. Implementez un verificateur qui teste ces 3 proprietes
-// sur une fonction donnee, puis testez sur PerturbedBR (qui les satisfait) et sur
-// une fonction discontinue (qui les viole).
-// Indice : Delta = simplexe 2D {(p, 1-p) : p in [0,1]}.
-//   (a) continuite : discretisez [0,1] en N pas, verifiez |f(p1)-f(p2)| petit quand
-//       |p1-p2| petit (test Lipschitz numerique).
-//   (b) Delta convexe compact : toujours vrai pour le simplexe (fait Mathlib/theorique).
-//   (c) f(Delta) subset Delta : verifiez ProjectSimplex(f(p)) ~ f(p) sur la grille.
-//   Discontinu test : f(p) = p < 0.5 ? (1,0) : (0,1) -- saut, viole (a).
-
-// TODO etudiant : implementez VerifierBrouwer(f, N) renvoyant (continue, stable_simplexe).
-(bool continuous, bool stableSimplex) VerifierBrouwer(Func<double[], double[]> f, int N = 50) {
-    // Etape 1 : discretisez p in [0,1] en N pas, sigma = (p, 1-p).
-    // Etape 2 : continuite -> max |f(p1)-f(p2)| / |p1-p2| borne (test Lipschitz).
-    // Etape 3 : stableSimplexe -> ProjectSimplex(f(sigma)) ~ f(sigma) pour tout p.
-    return (false, false);  // TODO etudiant
-}
-
-Console.WriteLine(""Exercice 3 a completer : verificateur d'hypothese de Brouwer."");
-",,,,,,,,7bb21bf111c7359f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,6132fb66,markdown,fr,3e993d59b473f078,"### 9.2. Verification du theoreme minimax sur un jeu 3x3 personnalise
-
-C'est l'envers de l'exercice 1 : on **invente** une matrice 3x3 sans point-selle, on **resout** avec notre simplexe, et on **verifie** numeriquement la dualite ($\sigma^\top A \tau = v$). C'est la verification experimentale que le theoreme minimax n'est pas qu'un enonce abstrait — il se **calcule** effectivement sur une matrice.
-
-Pour un bon test : choisir une matrice ou la valeur du jeu $v \ne 0$ et $\ne \pm 1$ (par exemple $\begin{pmatrix}2 & -1 & 0 \\ -1 & 3 & -2 \\ 0 & -2 & 4\end{pmatrix}$), pour eviter que le simplexe ne converge trivialement.",,,,,,,,3e993d59b473f078,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,df292abe,markdown,fr,b7d81f51aac63540,"### 9.3. Construction d'un jeu 3x3 avec point-selle en strategies pures
-
-C'est l'exercice inverse : trouver une matrice 3x3 ou il **existe** un equilibre en strategies pures. La cle est de placer une entree qui soit **simultanement** le maximum de sa colonne et le minimum de sa ligne — c'est la definition d'un point-selle (cf section 2 du notebook).
-
-Point pedagogique : si vous prenez la matrice `saddle` du notebook (cellule 5, `{{3,4,8},{6,5,7},{1,3,2}}`), le point-selle est `A[1,1]=5`. C'est l'**exemple de reference**, et vous pouvez vous en inspirer pour construire la votre. La cellule `AnalyzePure` detecte automatiquement le point-selle et confirme `maximin == minimax`.",,,,,,,,b7d81f51aac63540,,,,,,,
