@@ -1814,7 +1814,7 @@ DEMOS = {
     62: {
         "name": "HASHLIFE_P4_SUCC_MEMBERSHIP",
         "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
-        "line": 2904,
+        "line": 2929,
         "sorry_type": "sorry_replacement",
         "theorem_name": "p4_succ_membership",
         "theorem": "p4_succ_membership",
@@ -1824,8 +1824,8 @@ DEMOS = {
             "the p4_succ_membership decomposition (PR #6792, 2026-07-16). The\n"
             "former monolithic residual sorry (ex-L2892) is now 5 named\n"
             "sub-sorries under `refine (?mp, ?mpr)`: 4 mp quadrant cases (nw\n"
-            "L2904, ne L2906, sw L2908, se L2910) + 1 mpr routing case (L2915).\n"
-            "CURRENT TARGET = nw quadrant (L2904): from hypothesis\n"
+            "L2929, ne L2932, sw L2934, se L2936) + 1 mpr routing case (L2941).\n"
+            "CURRENT TARGET = nw quadrant (L2929): from hypothesis\n"
             "`hnw : p in out_nw.toGrid (2^k, 2^k)` prove membership\n"
             "`p in restrictGridTo (evolve (2^k) (toGrid (0,0) c)) (2^k) (2^(k+1))`\n"
             "(note: `c` is destructured into its 16 nodes at this proof point).\n"
@@ -1850,6 +1850,15 @@ DEMOS = {
             "first using hk1 : 1 <= k (Nat.sub_add_cancel / omega-driven\n"
             "`show`/`convert`) BEFORE the .mp application. Fixing that one\n"
             "conversion is likely all that separates the nw case from closing.\n"
+            "IN-FILE PROGRESS (BG run-3 2026-07-16, independently build-verified):\n"
+            "steps 1-2 are now MATERIALIZED IN-FILE above the nw sorry — hfacts\n"
+            "is destructured into 32 named components (hnw_nw_l..hse_se_w) and\n"
+            "the 4 wave-1 result facts hn1/r1, hn2/r2, hn4/r4, hn5/r5 are\n"
+            "established via node_wf_level_of_four + wave1_result_facts. DO NOT\n"
+            "re-derive them. REMAINING = steps 3-7: apply p4_wave2_ih_step on\n"
+            "(r1, r2, r4, r5) to obtain hcc_nw, then the hk1 rewrite above,\n"
+            "then centralCorrect_mem_shift .mp and the evolve_half_step +\n"
+            "evolve_cone_agree bridge to the goal window.\n"
             "When the nw case is proved, re-point `line` to the next sub-sorry.\n"
             "Harness caution (#6790): file_replace_lines build_check can\n"
             "false-positive; only an independent lake build is proof.\n"
