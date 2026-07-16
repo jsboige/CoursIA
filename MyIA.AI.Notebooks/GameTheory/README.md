@@ -595,7 +595,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
 
-**Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/8c/15c et SC-01/SC-03) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 fichiers) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
+**Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/6c/8c/15c et SC-01/SC-03/SC-04) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 jumeaux distincts — 24 fichiers `.ipynb` en comptant la tranche `Part2` du GT-2) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens
@@ -708,14 +708,13 @@ GameTheory/
 ├── INVENTORY.md                            # Inventaire notebooks
 ├── LEAN_INVENTORY.md                       # Inventaire Lean (toolchains + sorry)
 ├── install_wsl_kernel.md                   # Install kernel WSL
-├── requirements.txt                        # 14 deps Python (nashpy/scipy/z3/etc.)
+├── requirements.txt                        # 16 deps Python (nashpy/scipy/z3/etc.)
 ├── .env.example
 ├── game_theory_utils.py           # Utilitaires partages
 ├── cooperative_games/             # Module jeux cooperatifs
 │   ├── __init__.py
 │   ├── shapley.py                 # Valeur de Shapley
 │   ├── core.py                    # Core, Bondareva-Shapley
-│   ├── voting.py                  # Jeux de vote
 │   ├── assistance_games.py        # Jeux d'assistance (veto, etc.)
 │   ├── coalition_games.py         # Jeux de coalition
 │   └── french_politics.py         # Politique française (exemples)
@@ -728,14 +727,13 @@ GameTheory/
 ├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
-├── game_theory_lean/              # Projet Lake multi-module (CooperativeGames + StableMarriage absorbés, EPIC #4365 — Gale-Shapley COMPLETE, exists_isManOptimal prouvé)
+├── game_theory_lean/              # Projet Lake multi-module (4 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage — dont CooperativeGames + StableMarriage absorbés via EPIC #4365)
 ├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
 ├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
 ├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
 ├── examples/
 │   ├── prisoners_dilemma.py
 │   ├── topology_2x2_periodic_table.py
-│   ├── nim_game.py
 │   ├── kuhn_poker_cfr.py
 │   ├── vcg_auction.py
 │   ├── centipede_game.py          # Centipede game
@@ -745,7 +743,6 @@ GameTheory/
 └── tests/
     ├── test_nash_computation.py
     ├── test_strategies.py
-    ├── test_combinatorial.py
     ├── test_lean_definitions.py
     ├── test_cooperative_core.py
     ├── test_extensive_form.py
