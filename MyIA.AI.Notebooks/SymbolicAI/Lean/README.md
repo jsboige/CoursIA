@@ -13,14 +13,14 @@ Cette série introduit **Lean 4**, un assistant de preuves et langage de program
 
 ## Aperçu — Lean en images
 
-Six visualisations extraites des notebooks illustrent l'arc de la série : de l'assistance aux preuves par LLM et la vérification formelle de réseaux de neurones jusqu'aux automates de Conway (Game of Life) et à la théorie des nœuds (définition, nœud de Conway, invariants). Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+Six visualisations extraites des notebooks illustrent l'arc de la série : de l'assistance aux preuves par LLM et la vérification formelle de réseaux de neurones jusqu'aux automates de Conway (Game of Life) et à la théorie des nœuds (nœuds simples, couple de mutants Conway/Kinoshita-Terasaka, invariant d'Alexander). Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM interprète et visualise une solution de preuve ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11a](Lean-11-TorchLean-Python.ipynb)).
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11a](Lean-11-TorchLean-Python.ipynb)).
 
 <p align="center">
-  <a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Assistance LLM : interprétation visualisée d'une solution de preuve."></a>
+  <a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM : taux de succès, itérations, temps d'exécution et tokens sur dix théorèmes Lean."></a>
 </p>
 
 <p align="center">
@@ -37,18 +37,18 @@ L'hommage à John Conway passe par le Game of Life comme modèle de calcul ([Lea
 
 ### Théorie des nœuds
 
-La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : la définition d'un nœud mathématique ([Lean-17a](Lean-17-Knots-a-Conway-and-Proofs.ipynb)), le nœud de Conway (11n34) dont Lisa Piccirillo prouva la non-sliceness, puis le polynôme d'Alexander qui caractérise cette sliceness ([Lean-17b](Lean-17-Knots-b-Invariants-Companion.ipynb)).
+La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : les nœuds les plus simples classés par nombre de croisements ([Lean-17a](Lean-17-Knots-a-Conway-and-Proofs.ipynb)), le couple de mutants Conway (11n34) / Kinoshita-Terasaka (11n42) dont Lisa Piccirillo prouva que seul le second borne un disque lisse (slice), puis le polynôme d'Alexander — trivial (= 1) pour ce couple, et donc incapable à lui seul de distinguer leur sliceness ([Lean-17b](Lean-17-Knots-b-Invariants-Companion.ipynb)).
 
 <p align="center">
-  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Théorie des nœuds : qu'est-ce qu'un nœud mathématique ?"></a>
+  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Les trois premiers nœuds par nombre de croisements : nœud trivial (unknot), trèfle (3₁) et nœud de huit (4₁)."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="420" alt="Le nœud de Conway (11n34) — schéma."></a>
+  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="420" alt="Nœuds mutants de Conway (11n34) et Kinoshita-Terasaka (11n42) : même polynôme d'Alexander (= 1), sliceness lisse différente."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynôme d'Alexander et sliceness — le critère de Conway."></a>
+  <a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
 
 ## Navigation
