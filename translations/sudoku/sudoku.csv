@@ -3750,12 +3750,12 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,749fe2ff,markdown,fr,98d90
 
 > **Note technique** : JPype utilise la JVM (Java Virtual Machine) pour executer le code Java. Il est différent de Jython (Python en Java) ou PyJNIus (alternative plus legere). JPype est le choix recommande pour Python 3.x car il est activement maintenu et supporte les types Java modernes.",,,,,,,,98d90f31c48b70f3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,160a389d,markdown,fr,ff2f78bb45ea9b5c,Installation des dépendances Python (pyjnius/JPype).,,,,,,,,ff2f78bb45ea9b5c,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,jpype-setup,code,fr,b4207abd87f0abef,"# Configuration de JPype et téléchargement de Choco
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,jpype-setup,code,fr,b0eb696c340d41b2,"# Configuration de JPype et téléchargement de Choco
 import os
 from pathlib import Path
 import urllib.request
 
-# Drapeau global pour vérifier la disponibilite de Choco
+# Drapeau global pour vérifier la disponibilité de Choco
 CHOCO_AVAILABLE = False
 
 try:
@@ -3806,7 +3806,7 @@ except Exception as e:
 if CHOCO_AVAILABLE:
     print(""Choco solver est disponible et pret."")
 else:
-    print(""Choco solver non disponible -- mode demonstration."")",,,,,,,,b4207abd87f0abef,,,,,,,
+    print(""Choco solver non disponible -- mode demonstration."")",,,,,,,,b0eb696c340d41b2,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,b9022e73,markdown,fr,a76d6fde7f6f9a43,"### Interpretation : Configuration de JPype et chargement de Choco
 
 **Sortie obtenue** : Le JAR Choco 4.10.17 est present et la JVM est demarree avec succes.
@@ -3994,7 +3994,7 @@ Un Sudoku est un problème de Satisfaction de Contraintes (CSP) defini par :
 - **Contrainte `allDifferent` globale** : Plus efficace que $\binom{9}{2} = 36$ contraintes binaires $x_i \neq x_j$
 - **Propagation automatique** : Reduction des domaines lors de l'assignation
 - **Strategies configurables** : Heuristiques de choix de variables/valeurs",,,,,,,,71b8d283867d716e,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,choco-solver-class,code,fr,60462df72674fdfe,"import time
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,choco-solver-class,code,fr,6e677a67f0351f3c,"import time
 from typing import List, Optional
 
 class ChocoSudokuSolver:
@@ -4046,7 +4046,7 @@ class ChocoSudokuSolver:
                 if grid[i][j] != 0:
                     cells[i][j].eq(grid[i][j]).post()
         
-        # Recuperer le solver et résoudre
+        # Récupérer le solver et résoudre
         solver = model.getSolver()
         
         start = time.time()
@@ -4082,7 +4082,7 @@ else:
     print(""  1. Java Development Kit (JDK) 8 ou superieur"")
     print(""  2. pip install jpype1"")
     print(""  3. Le JAR Choco sera telecharge automatiquement"")
-",,,,,,,,60462df72674fdfe,,,,,,,
+",,,,,,,,6e677a67f0351f3c,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,0434737d,markdown,fr,d3cbae926d79ff4d,"### Interpretation : Première résolution avec Choco
 
 **Sortie obtenue** : Solution trouvée avec succes en 64.01 ms. La grille complète est affichée avec toutes les contraintes satisfaites.
@@ -4124,7 +4124,7 @@ Tous les exemples précédents partent d'une grille pre-remplie a résoudre. Mai
 - L'étape 1 réutilise exactement le même schéma que `ChocoSudokuSolver.solve()`, mais sans la boucle qui fixe les valeurs initiales
 - Pour l'étape 3, utiliser `random.sample(range(81), 81 - n_clues)` pour choisir les positions a vider
 - Pour l'étape 4, résoudre le puzzle puis chercher une seconde solution ; s'il n'y en a qu'une, le puzzle est valide",,,,,,,,fd8fb7d3d1607af2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,ae43e874,code,fr,439556d18e018f0a,"import random
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,ae43e874,code,fr,c632663fb922eeee,"import random
 
 def generate_sudoku(n_clues: int = 30, seed: int = 42) -> tuple:
     """"""
@@ -4144,18 +4144,18 @@ def generate_sudoku(n_clues: int = 30, seed: int = 42) -> tuple:
     Returns:
         (puzzle_grid, solution_grid) ou (None, None) si echec
     """"""
-    # TODO etudiant : implémenter la génération de Sudoku
+    # TODO étudiant : implémenter la génération de Sudoku
     # Étape 1 : créer le modèle CSP avec 81 variables IntVar(1, 9)
     # Indice : réutiliser le schéma de ChocoSudokuSolver.solve() mais SANS fixer les valeurs initiales
     # Étape 2 : ajouter les 27 contraintes allDifferent (lignes, colonnes, blocs 3x3)
     # Étape 3 : résoudre et extraire la grille complète (solution)
     # Étape 4 : retirer (81 - n_clues) valeurs aléatoirement
     # Indice : random.seed(seed) puis random.sample(range(81), 81 - n_clues) pour choisir les cases a vider
-    # Étape 5 : vérifier l'unicite de la solution du puzzle obtenu
+    # Étape 5 : vérifier l'unicité de la solution du puzzle obtenu
     # Indice : résoudre le puzzle, puis chercher une seconde solution différente (max_count=2)
-    return (None, None)  # TODO etudiant : remplacer
+    return (None, None)  # TODO étudiant : remplacer
 
-print(""Exercice a completer : generation de Sudoku"")",,,,,,,,439556d18e018f0a,,,,,,,
+print(""Exercice a completer : generation de Sudoku"")",,,,,,,,c632663fb922eeee,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,strategies,markdown,fr,4151afd26cc8ddf3,"## Strategies de Recherche dans Choco
 
 La performance d'un solveur CP dépend grandement de la stratégie de choix de variables et de valeurs. Choco propose plusieurs heuristiques eprouvees.
@@ -4266,7 +4266,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,83783477,markdown,fr,c7466
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,132c8105,markdown,fr,5085539862134120,"### Exercice : Stratégie de recherche DomOverWDeg
 
 Le benchmark précédent montre que la stratégie par defaut (InputOrder) resout les puzzles faciles rapidement, mais peut etre plus lente sur les instances difficiles. Choco propose **DomOverWDeg** qui combine l'heuristique MRV (Minimum Remaining Values) avec un degré pondéré par les conflits passes. Implémentez cette stratégie et comparez ses performances avec le solveur par defaut.",,,,,,,,5085539862134120,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,561afdcf,code,fr,509bd336ab6c416e,"def solve_with_dom_over_wdeg(grid: list) -> dict:
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,561afdcf,code,fr,f550dab5b7a9e32b,"def solve_with_dom_over_wdeg(grid: list) -> dict:
     """"""
     Resout un Sudoku avec la strategie DomOverWDeg de Choco.
 
@@ -4277,15 +4277,15 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,561afdcf,code,fr,509bd336a
     Returns:
         dict avec ""solved"" (bool), ""time_ms"" (float), ""nodes"" (int)
     """"""
-    # TODO etudiant : implémenter avec stratégie DomOverWDeg
+    # TODO étudiant : implémenter avec stratégie DomOverWDeg
     # Étape 1 : créer le modèle Choco et les 81 variables IntVar(1, 9)
     # Étape 2 : ajouter les 27 contraintes allDifferent (lignes, colonnes, blocs)
     # Étape 3 : fixer les valeurs initiales de la grille
     # Étape 4 : aplatir les variables en liste 1D et configurer setSearch(domOverWDegSearch(...))
-    # Étape 5 : résoudre et extraire solution + metriques
+    # Étape 5 : résoudre et extraire solution + métriques
     return {""solved"": False, ""time_ms"": 0.0, ""nodes"": 0}  # TODO etudiant : remplacer
 
-print(""Exercice a completer : strategie DomOverWDeg"")",,,,,,,,509bd336ab6c416e,,,,,,,
+print(""Exercice a completer : strategie DomOverWDeg"")",,,,,,,,f550dab5b7a9e32b,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,advanced-features,markdown,fr,fa5467342688e0ff,"## Fonctionnalités Avancées de Choco
 
 Choco offre de nombreuses fonctionnalités pour optimiser la résolution et analyser les problèmes.
@@ -4324,7 +4324,7 @@ Choco supporte aussi :
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,cf366431,markdown,fr,80e91d31eb014e41,"### Exercice : Résolution avec limite de temps
 
 La section précédente presente les fonctionnalités avancées de Choco, dont la limitation du temps de recherche avec `solver.limitTime()`. Implémentez une fonction qui resout un Sudoku avec un timeout configurable, permettant d'éviter les blocages sur les instances les plus difficiles.",,,,,,,,80e91d31eb014e41,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,37cc50e5,code,fr,2603a518222519e2,"def solve_with_timeout(grid: list, timeout_seconds: float = 1.0) -> dict:
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,37cc50e5,code,fr,5a2bdd057fa8da4b,"def solve_with_timeout(grid: list, timeout_seconds: float = 1.0) -> dict:
     """"""
     Resout un Sudoku avec une limite de temps configurable.
 
@@ -4335,15 +4335,15 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,37cc50e5,code,fr,2603a5182
     Returns:
         dict avec ""solution"", ""time_ms"", ""timeout_reached""
     """"""
-    # TODO etudiant : implémenter la résolution avec timeout
+    # TODO étudiant : implémenter la résolution avec timeout
     # Étape 1 : créer le modèle CSP (variables + contraintes allDifferent)
     # Étape 2 : fixer les valeurs initiales
     # Étape 3 : configurer le timeout avec solver.limitTime(str(int(timeout_seconds * 1000)) + ""ms"")
     # Étape 4 : résoudre et vérifier si le timeout a été atteint
-    # Étape 5 : retourner la solution et les metriques
+    # Étape 5 : retourner la solution et les métriques
     return {""solution"": None, ""time_ms"": 0.0, ""timeout_reached"": False}  # TODO etudiant : remplacer
 
-print(""Exercice a completer : resolution avec timeout"")",,,,,,,,2603a518222519e2,,,,,,,
+print(""Exercice a completer : resolution avec timeout"")",,,,,,,,5a2bdd057fa8da4b,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,comparison,markdown,fr,b84c822a85ada3d2,"## Comparaison : Choco vs OR-Tools vs python-constraint
 
 ### Tableau Comparatif
@@ -4489,7 +4489,7 @@ Implémentez deux extensions du solveur Choco :
 1. Combien de solutions le puzzle facile 1 possede-t-il ? (attendu : 1)
 2. Generez une grille Sudoku complète aléatoire (sans valeurs initiales) : est-elle unique ?
 3. Le puzzle facile 1 est-il resoluble avec les contraintes de diagonale ?",,,,,,,,1363ed18e6c42442,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,0742z141zkqc,code,fr,cf8c345c3b3b8825,"def count_solutions(grid: list, max_count: int = 10) -> tuple:
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,0742z141zkqc,code,fr,af15e0676eb0b809,"def count_solutions(grid: list, max_count: int = 10) -> tuple:
     """"""
     Compte le nombre de solutions d'un Sudoku avec Choco.
     
@@ -4498,7 +4498,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,0742z141zkqc,code,fr,cf8c3
     Returns:
         (count, first_solution) ou (count, None) si aucune solution
     """"""
-    # TODO : Implementer le comptage de solutions
+    # TODO : Implémenter le comptage de solutions
     # 1. Créer le modèle Choco comme dans ChocoSudokuSolver.solve()
     # 2. Appeler solver.solve() en boucle
     # 3. Compter les solutions et conserver la première
@@ -4537,7 +4537,7 @@ class ChocoSudokuDiagonalSolver:
 # diagonal_solution = diagonal_solver.solve(example_grid)
 # print(f""Solution avec diagonales : {diagonal_solution is not None}"")
 
-print(""Exercice Choco a implementer !"")",,,,,,,,cf8c345c3b3b8825,,,,,,,
+print(""Exercice Choco a implementer !"")",,,,,,,,af15e0676eb0b809,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,conclusion,markdown,fr,307de36a99ad6cc5,"## Conclusion
 
 Dans ce notebook, nous avons :
@@ -20972,9 +20972,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Python.ipynb,cell-13,markdown,fr,17469
 
 ---
 **Navigation** : [<< Python DancingLinks](Sudoku-2-DancingLinks-Python.ipynb) | [Index](README.md) | [Python SimulatedAnnealing >>](Sudoku-4-SimulatedAnnealing-Python.ipynb)",,,,,,,,174698eaca97d422,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,d84f8ac8,markdown,fr,c14621d5e01af68b,"# Résolution de Sudoku par Recuit Simulé
+MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,d84f8ac8,markdown,fr,bb45a8272f171835,"# Résolution de Sudoku par Recuit Simulé
 
-**Navigation** : [Index](README.md) | [<< Sudoku-7-Norvig](Sudoku-7-Norvig-Csharp.ipynb) | [Sudoku-8-HumanStrategies >>](Sudoku-8-HumanStrategies-Csharp.ipynb)
+**Navigation** : [Index](README.md) | [<< Sudoku-3-Genetic](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-8-HumanStrategies >>](Sudoku-8-HumanStrategies-Csharp.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -20994,7 +20994,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,d84f8ac8,markd
 - **Version Python** : [Sudoku-Python-SimulatedAnnealing](Sudoku-4-SimulatedAnnealing-Python.ipynb)
 
 ### Durée estimée : ~40 minutes
-",,,,,,,,c14621d5e01af68b,,,,,,,
+",,,,,,,,bb45a8272f171835,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,2c0bd0d3,markdown,fr,cafafba0bee779a4,"## 1. Introduction (~3 min)
 
 ### Le Sudoku comme problème d'optimisation
@@ -21773,14 +21773,14 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,848804d7,markd
 - Explorer la **recherche tabou** (Tabu Search) sur le Sudoku : voir [Search-4 LocalSearch](../Search/Part1-Foundations/Search-4-LocalSearch.ipynb)
 - Combiner recuit simulé et propagation de contraintes (hybride SA + arc-consistance)
 - Etudier la valeur de Shapley dans les jeux cooperatifs : voir les notebooks de la série [GameTheory](../GameTheory/)",,,,,,,,270dcd0d88e032b8,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,5917371d,markdown,fr,1b8fa6a8d34a5525,"---
+MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb,5917371d,markdown,fr,4f98058003edb47d,"---
 
-**Navigation** : [Index](README.md) | [<< Sudoku-7-Norvig](Sudoku-7-Norvig-Csharp.ipynb) | [Sudoku-8-HumanStrategies >>](Sudoku-8-HumanStrategies-Csharp.ipynb)
+**Navigation** : [Index](README.md) | [<< Sudoku-3-Genetic](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-8-HumanStrategies >>](Sudoku-8-HumanStrategies-Csharp.ipynb)
 
 **Voir aussi** :
 - [Search-4-LocalSearch](../Search/Part1-Foundations/Search-4-LocalSearch.ipynb) - Théorie du recuit simulé (Hill Climbing, SA, Tabu Search)
 - [Sudoku-Python-SimulatedAnnealing](Sudoku-4-SimulatedAnnealing-Python.ipynb) - Version Python de ce notebook
-",,,,,,,,1b8fa6a8d34a5525,,,,,,,
+",,,,,,,,4f98058003edb47d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb,42074b14,markdown,fr,51f7b80fd09b258b,"# Sudoku-4 : Recuit Simule (Python)
 
 **Niveau** : Metaheuristique | **Duree** : ~20 min | **Prerequis** : Sudoku-0 Environment
