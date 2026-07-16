@@ -73,13 +73,13 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 58 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
+| Vivant (best-guess, non vérifié) | 56 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
 | Squelette/template (pas de stratégie active) | 2 | README : template/skeleton, pas de stratégie active |
 | Contre-exemple pédagogique (BROKEN) | 2 | README : intentionnellement BROKEN (pédagogie) |
-| Archivé / superseded | 1 | README : archived / plafond structurel documenté |
+| Archivé / superseded | 3 | README/en-tête : archived / plafond structurel documenté (MomentumStrategy, SectorMomentum reclassés firsthand c.570) |
 | Research phase | 1 | README : research phase (WIP) |
 | Démonstration pédagogique | 1 | README : educational demo |
 | Utilitaire / docs (pas une stratégie) | 2 | pas une stratégie (harness ou docs) |
@@ -193,7 +193,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
-#### Vivant (best-guess, non vérifié) (58)
+#### Vivant (best-guess, non vérifié) (56)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -232,7 +232,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | Vivant | main.py: class MLTrendScanning(QCAlgorithm) |
-| `MomentumStrategy` | `projects/MomentumStrategy/` | Sector momentum ETF | Vivant | main.py: class SectorMomentumETFRotation(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
 | `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | Vivant | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
@@ -244,7 +243,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | Vivant | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | Vivant | main.py: class SectorMLClassificationAlgorithm(QCAlgorithm) + research.ipynb |
-| `SectorMomentum` | `projects/SectorMomentum/` | Sector dual momentum | Vivant | main.py: class SectorDualMomentumStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Stoploss-Volatility-ML` | `projects/Stoploss-Volatility-ML/` | ML risk | Vivant | main.py: class StoplossVolatilityMLAlgorithm(QCAlgorithm) + research.ipynb |
 | `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPrediction(QCAlgorithm) + research.ipynb |
 | `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Commodities (term structure) | Vivant | main.py: class CommodityTermStructureAlgorithm(QCAlgorithm) |
@@ -293,11 +291,13 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ETF-Pairs` | `projects/ETF-Pairs/` | Pairs (cassé) | Contre-exemple | README : « Statut : ❌ BROKEN — contre-exemple à visée pédagogique » + main.py: class ETFPairsTrading(QCAlgorithm) |
 | `PairsTrading` | `projects/PairsTrading/` | Pairs (cassé) | Contre-exemple | README : « Statut : BROKEN — contre-exemple à visée pédagogique » + main.py: class PairsTrading(QCAlgorithm) |
 
-#### Archivé / superseded (1)
+#### Archivé / superseded (3)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `TurnOfMonth` | `projects/TurnOfMonth/` | Calendrier (archivé) | Archivé | README : « Status: ARCHIVED (Sharpe ceiling ~0.13) » + main.py: class TurnOfMonthEffect(QCAlgorithm) |
+| `MomentumStrategy` | `projects/MomentumStrategy/` | Rotation ETF sectoriels (momentum) | Archivé | `ARCHIVE.md` + main.py en-tête `# [ARCHIVED - Sharpe ceiling ~0.48]` ; class SectorMomentumETFRotation(QCAlgorithm) — reclassé firsthand c.570 |
+| `SectorMomentum` | `projects/SectorMomentum/` | Dual momentum 3 actifs (SPY/TLT/GLD) | Archivé | `ARCHIVE.md` + main.py en-tête `# [ARCHIVED - Sharpe ceiling ~0.56]` ; class SectorDualMomentumStrategy(QCAlgorithm) — reclassé firsthand c.570 |
 
 #### Research phase (1)
 
@@ -318,21 +318,19 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Research-Executor` | `projects/Research-Executor/` | Harness d'exécution recherche | Utilitaire | README : « Utility (research execution harness, not a trading strategy) » + main.py: class ResearchExecutor(QCAlgorithm) |
 | `_docs` | `projects/_docs/` | Documentation / audits | Utilitaire | dossier de docs (OPTIMIZATION_BACKLOG.md, QUANTCONNECT_PROJECTS_AUDIT.md, …) ; pas d'algo |
 
-### Incertitudes prioritaires (à spot-checker)
+### Incertitudes prioritaires — résolues firsthand (spot-check code, c.570)
 
-Entrées où le statut *best-guess* est le plus fragile — divergence nom de dossier / nom de 
-classe, revendication de vérification non recoupée, ou doublons suspects. Cibles privilégiées 
-pour un backtest dédié (scope RECOVERABLE-MACHINE) :
+Entrées où le statut *best-guess* était le plus fragile (divergence nom de dossier / nom de classe, doublons suspects). **Résolution firsthand par lecture directe de `main.py`** — la divergence de nommage se tranche par le code, pas par les métriques, donc aucun backtest requis :
 
-- **`Multi-Layer-EMA`** — README revendiquait « Verified on QC Cloud (project 28433748) » ; **vérifié tranche 4** (backtest relus firsthand via MCP — project ID confirmé, revendication réelle). Classe `OptimizedCryptoAlgorithm` (le README prévient « NOT a simple multi-layer EMA ») — reclassé Needs-improvement (Sharpe 0.798, MaxDD crypto 57 %, PSR 23.9 %).
-- **`LeveragedETFMomentum-QC`** — classe `ConditionalSectorRotation` : divergence totale avec le nom de dossier « Leveraged ETF Momentum ». Contenu réel à confirmer.
-- **`MacroFactorRotation-QC`** — classe `AIStocksBondsRotationAlgorithm` : divergence avec le nom de dossier.
-- **`FamaFrench`** — classe `FactorETFRotation` : la sémantique Fama-French n'est pas évidente depuis le nom de classe.
-- **`Options-VGT`** — classe `GainStrategy` (nom vague), aucun notebook de recherche compagnon.
-- **`HAR-RV-J-Kelly`** vs **`HAR-RV-Kelly`** — deux dossiers quasi-identiques (variante « J » = jump). `HAR-RV-Kelly` désormais backtesté (tranche 2 : Sharpe 0.146, Needs-improvement) ; reste à backtester la variante « J » pour déterminer si elle supersède la version plain.
-- **`MomentumStrategy`** (classe `SectorMomentumETFRotation`) vs **`SectorMomentum`** (classe `SectorDualMomentumStrategy`) — chevauchement sector-momentum suspect (doublon partiel ?).
-- **`DL-LSTM` / `LSTM-Forecasting` / `Crypto-LSTM-Prediction` / `ML-DeepLearning`** — quatre dossiers LSTM ; périmètres respectifs à clarifier pour éviter la redondance.
-- **`RL-DQN-Trading`** (classe `ReinforcementLearningTrading`) vs **`Reinforcement-Learning-Trading`** (squelette, même nom de classe) — l'un est squelette, mais le nom identique crée une ambiguïté.
+- **`Multi-Layer-EMA`** (`OptimizedCryptoAlgorithm`) — **résolu**. Vérifié tranche 4 (Needs-improvement, Sharpe 0.798). Divergence de nommage levée : crypto BTC/ETH/LTC (Binance) avec EMA10/50 + RSI + Bollinger + filtre de volatilité ATR (max 3 positions) — « Multi-Layer-EMA » est défendable (EMA = couche primaire d'un empilement multi-indicateurs).
+- **`LeveragedETFMomentum-QC`** (`ConditionalSectorRotation`) — **résolu, pas une divergence**. QC Strategy Library #60 (Grant Forman) : ETF à effet de levier SPY/QQQ/TQQQ/UVXY/TECL/SPXL/SQQQ/TECS/BSV, régime RSI + SMA. Le dossier nomme le *thème* (momentum ETF levier), la classe le *mécanisme* (rotation conditionnelle) — complémentaires. Déjà backtesté tranche 6 (PSR 79.8 %, flag OOS ETF levier).
+- **`MacroFactorRotation-QC`** (`AIStocksBondsRotationAlgorithm`) — **résolu, pas une divergence**. QC Strategy Library #72 (Derek Melchin) : rotation cross-actifs SPY/GLD/BND/BTCUSD pilotée par `DecisionTreeRegressor` sur facteurs FRED (VIX, courbe 10Y-3M, fed funds), rebalancement mensuel. Nom = thème macro-factoriel, classe = mécanisme ML actions/bonds/crypto. Multi-actifs sur brokerage par défaut (IBKR rejette le crypto — cf #1027).
+- **`FamaFrench`** (`FactorETFRotation`) — **résolu, pas une divergence**. Rotation d'ETF factoriels VLUE/MTUM/SIZE/QUAL/USMV (momentum risk-adjusted 12m/vol63 + régime SMA200, stop -12 %). La sémantique Fama-French *est* portée par les ETF factoriels tradés ; la classe nomme le mécanisme. Métriques auto-rapportées v3.0 (Sharpe 0.540) dans la docstring — non recroisées firsthand.
+- **`Options-VGT`** (`GainStrategy`) — **résolu**. Stratégie d'*income options* (contrats OTM, `OptionChainProvider`, échéance ~30 j) sur des tech single-names NVDA/ORCL/CSCO/AMD/QCOM, benchmark VGT. Le dossier « VGT » désigne le *benchmark*, pas le sous-jacent tradé. Nom de classe `GainStrategy` vague mais contenu clair.
+- **`HAR-RV-J-Kelly`** vs **`HAR-RV-Kelly`** — **résolu : PAS une relation de supersession**. Classes d'actifs distinctes : `HAR-RV-J-Kelly` (`HarrvjKellyAlgorithm`) trade du **crypto** (BTC/ETH/LTC/BCH, Binance) avec composante de saut Huang-Tauchen (paramètre `use_jumps`) ; `HAR-RV-Kelly` (`HarrvKellyAlgorithm`) trade des **ETF multi-actifs actions** (SPY/EFA/EEM/TLT/GLD/DBC, HAR classique Corsi). Deux démonstrations complémentaires (crypto-jump vs equity-classique, Kelly 1/4 commun) — backtester la variante « J » ne la rend pas « supérieure » à la plain puisque l'univers diffère.
+- **`MomentumStrategy`** vs **`SectorMomentum`** — **résolu : deux stratégies distinctes, toutes deux ARCHIVÉES** (reclassées hors du bucket Vivant, cf synthèse). `MomentumStrategy` (`SectorMomentumETFRotation`, `ARCHIVE.md`) = rotation d'ETF sectoriels v4.0, plafond Sharpe ~0.48 ; `SectorMomentum` (`SectorDualMomentumStrategy`, `ARCHIVE.md`) = dual-momentum 3 actifs SPY/TLT/GLD v3.2, plafond ~0.56. Chevauchement de *thème* (momentum) seulement, univers + mécanisme distincts. Les deux portent l'en-tête `# [ARCHIVED …]` : le best-guess « Vivant » était erroné.
+- **`DL-LSTM` / `ML-DeepLearning` / `Crypto-LSTM-Prediction` / `LSTM-Forecasting`** — **résolu : périmètres distincts (profondeur de modèle × classe d'actifs)**. `DL-LSTM` = PyTorch LSTM bidirectionnel (2×50), prédiction de prix mono-action (modèle de `research_lstm.ipynb`). `ML-DeepLearning` = PyTorch LSTM simple (1×32), prédiction de rendement multi-actions (baseline). `Crypto-LSTM-Prediction` = PyTorch DLinear (AAAI 2023) + LSTM comparé, **crypto** BTCUSDT. `LSTM-Forecasting` = **PAS un LSTM** : `MLPClassifier` sklearn (docstring honnête « replacing hand-rolled fake LSTM »), actions, livre Ch06 — le nom est un héritage du « fake LSTM » remplacé. Les quatre ne sont pas redondants.
+- **`RL-DQN-Trading`** vs **`Reinforcement-Learning-Trading`** — **résolu : classification doc correcte**. Nom de classe identique `ReinforcementLearningTrading`, mais `RL-DQN-Trading` = DQN amélioré v2.0.1 (`MLPRegressor(64,32)`, 11 features, reward risk-adjusted) = *Vivant/développé* ; `Reinforcement-Learning-Trading` = démo DQN basique SPY-seul (livre Ch07) = *Squelette*. Seule l'homonymie de classe créait l'ambiguïté.
 
 ## Travaux connexes
 
