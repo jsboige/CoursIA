@@ -2474,7 +2474,12 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,1dc820f4,markdown,fr,
 Pour comprendre ce que chaque topic a ""appris"", nous visualisons la distribution $\phi_k$ des mots pour chaque topic. Les **mots les plus probables** definissent l'interpretation semantique du topic.
 
 En pratique, on affiche les **top-N mots** par topic pour faciliter l'interpretation humaine.",,,,,,,,2c0afe41102e39bc,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,0e5bd4a3,code,fr,963a7023ddaaa7ba,"// Distribution phi (mots par topic) - simulee
+MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,0e5bd4a3,code,fr,4c5b0d65ed8b9485,"// Setup Plotly (technique C548-L2) — la clause using DOIT preceder tout autre element (CS1529).
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+using System.Text.Json;
+
+// Distribution phi (mots par topic) - simulee
 
 double[,] phiSimule = {
     // Topic Sport
@@ -2493,19 +2498,57 @@ Console.WriteLine();
 for (int k = 0; k < numTopics; k++)
 {
     Console.WriteLine($""Topic {k+1} ({topicNames[k]}) :"");
-    
+
     // Top mots
     var topMots = Enumerable.Range(0, vocabSize)
         .Select(v => (mot: vocabulaire[v], prob: phiSimule[k, v]))
         .OrderByDescending(x => x.prob)
         .Take(3);
-    
+
     foreach (var (mot, prob) in topMots)
     {
         Console.WriteLine($""  {mot,-12} : {prob:F2}"");
     }
     Console.WriteLine();
-}",,,,,,,,963a7023ddaaa7ba,,,,,,,
+}
+
+// --- Visualisation Plotly (EPIC #3801 Prong-A) : heatmap complete de la matrice phi ---
+// Technique C548-L2 : Plotly.js via Formatter.Register (kernel builtin, aucun #r nuget).
+// Le top-3 ASCII ci-dessus masque la structure bloc-diagonale (chaque topic ""possede""
+// 3 mots a 0.30) ; la heatmap de la matrice COMPLETE 3x9 la rend immediatement visible.
+
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// z = phiSimule en listes de listes (Plotly attend un tableau 2D JSON)
+var z = new List<List<double>>();
+for (int k = 0; k < numTopics; k++) {
+    var row = new List<double>();
+    for (int v = 0; v < vocabSize; v++) row.Add(phiSimule[k, v]);
+    z.Add(row);
+}
+string trace = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""z""] = z,
+    [""x""] = vocabulaire,
+    [""y""] = topicNames,
+    [""type""] = ""heatmap"",
+    [""colorscale""] = ""Viridis"",
+    [""zmin""] = 0.0, [""zmax""] = 0.35,
+    [""text""] = z, [""texttemplate""] = ""%{text:.2f}"",
+    [""hovertemplate""] = ""P(%{x} | %{y}) = %{z:.2f}<extra></extra>"",
+});
+string layout = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""title""] = new Dictionary<string, string> { [""text""] = ""Matrice phi complete : P(mot | topic)"" },
+    [""xaxis""] = new Dictionary<string, object> { [""title""] = ""Vocabulaire"", [""side""] = ""bottom"" },
+    [""yaxis""] = new Dictionary<string, object> { [""title""] = ""Topic"", [""autorange""] = ""reversed"" },
+    [""margin""] = new Dictionary<string, int> { [""t""] = 60, [""r""] = 20, [""b""] = 60, [""l""] = 90 },
+    [""height""] = 320,
+});
+string markup = ""<div id=\""pltPhi\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    $""<script>Plotly.newPlot('pltPhi',[{trace}],{layout});</script>"";
+new PlotlyHtml(markup)",,,,,,,,4c5b0d65ed8b9485,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,cc8aichxbkn,markdown,fr,5ccab0f76313cb75,"### Interpretation de la matrice phi
 
 **Structure de la distribution mots/topics** :
