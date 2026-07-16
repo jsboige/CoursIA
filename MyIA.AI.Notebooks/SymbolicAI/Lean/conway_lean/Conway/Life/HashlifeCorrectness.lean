@@ -2901,7 +2901,33 @@ noncomputable def p4_succ_membership
     rcases hlhs with hnw | hne | hsw | hse
     · -- nw quadrant: p ∈ out_nw.toGrid (2^k, 2^k)
       -- goal: p ∈ restrictGridTo (evolve (2^k) (toGrid (0,0) <c destructuré en nodes>)) (2^k) (2^(k+1))
+      -- Step 1: destructure the 32-conjunct grandchild facts into hg1..hg32.
+      obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
+              hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
+              hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
+              hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ := hfacts
+      -- Step 2: build 9 wave-1 result facts (level + cellWf) via node_wf_level_of_four + wave1_result_facts.
+      -- n1 = node nw_nw nw_ne nw_sw nw_se
+      have hn1 := node_wf_level_of_four hnw_nw_l hnw_ne_l hnw_sw_l hnw_se_l
+                                        hnw_nw_w hnw_ne_w hnw_sw_w hnw_se_w
+      have r1 := wave1_result_facts k hk1 (node nw_nw nw_ne nw_sw nw_se) hn1.2 hn1.1
+      -- n2 = node nw_ne ne_nw nw_se ne_sw
+      have hn2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
+                                        hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
+      have r2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hn2.2 hn2.1
+      -- n4 = node nw_sw nw_se sw_nw sw_ne
+      have hn4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
+                                        hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
+      have r4 := wave1_result_facts k hk1 (node nw_sw nw_se sw_nw sw_ne) hn4.2 hn4.1
+      -- n5 = node nw_se ne_sw sw_ne se_nw
+      have hn5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+                                        hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
+      have r5 := wave1_result_facts k hk1 (node nw_se ne_sw sw_ne se_nw) hn5.2 hn5.1
+      -- With r1, r2, r4, r5 we can now (step 3) apply p4_wave2_ih_step to get
+      -- centralCorrect (node r1_result r2_result r4_result r5_result) (k-1).
+      -- Left as sorry pending steps 3-7 (evolve_half_step + evolve_cone_agree assembly).
       sorry
+
     · -- ne quadrant: p ∈ out_ne.toGrid (2^k, 2^k + 2^level)
       sorry
     · -- sw quadrant: p ∈ out_sw.toGrid (2^k + 2^level, 2^k)
