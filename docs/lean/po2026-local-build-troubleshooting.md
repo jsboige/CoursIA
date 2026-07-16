@@ -14,7 +14,7 @@
 | 1 | **Cold-build timeout** : rebuild Mathlib ~2900 modules > fenêtre de session (~8 min) | Pas de cache warm/trusted ; lake rebuild depuis la source | #6771 body, cycles c.466-c.469 |
 | 2 | **OOM / access-violation** (`3221226505` / `3221225477`) sous build parallèle | Pic mémoire sur les gros modules tardifs ; toolchain rc1 complet (2419 `.olean.private` présents — ce n'est PAS un fichier manquant) | #6771 body |
 | 3 | **Junction `.lake` worktree→shared inopérante** : timeout à 98 % (2894/2948) | Le lake DB ne propage pas le *trust* du build junctionné → rebuild from scratch → OOM/timeout | #6771 body, leçon L502 (memory po-2026) |
-| 4 | **Clone mathlib4 réseau instable** : `git clone` de `.lake/packages/mathlib` échoue (`fetch-pack: invalid index-pack output` / `unexpected disconnect`) | Instabilité réseau/git sur le chemin de clone — bloque la récupération via `lake exe cache get` | Empirique c.472 (`lake exe cache` sur knot_lean → clone FAIL) |
+| 4 | **Clone mathlib4 réseau instable** : `git clone` de `.lake/packages/mathlib` échoue (`fetch-pack: invalid index-pack output` / `unexpected disconnect`) | Instabilité réseau/git sur le chemin de clone — **mitigeable** par `http.postBuffer 524288000` + `--depth 1` shallow clone | Empirique c.472 (FAIL) → **c.473 MITIGÉ** (clone SUCCESS + cache-get 38,7 s + build 61 s, knot_lean) |
 
 ## Recette de récupération canonique
 
@@ -26,13 +26,28 @@ Tant que le gate local po-2026 n'est pas rétabli, les PR Lean de po-2026 passen
 
 La voie rapide = télécharger les oleans précompilés officiels de Mathlib depuis Azure plutôt que rebuild la source :
 
+**Recette validée empiriquement (c.473, knot_lean, firsthand po-2026)** :
+
 ```bash
 cd <lake_lean>          # ex: knot_lean, calibration_lean, sensitivity_lean
-lake exe cache get      # télécharge les .olean précompilés (Azure) — ~1-2 min vs rebuild 8 min
-lake build              # doit compléter en ~1-2 min si le lake DB truste le cache
+
+# Étape 1 — mitiger le mode d'échec 4 (clone réseau instable) :
+git config --global http.postBuffer 524288000     # 500 MB (élimine le `invalid index-pack output`)
+
+# Étape 2 — cloner mathlib4 en shallow (4× moins de données, plus résilient) :
+mkdir -p .lake/packages
+git clone --depth 1 https://github.com/leanprover-community/mathlib4.git .lake/packages/mathlib
+
+# Étape 3 — télécharger les .olean précompilés (Azure) via lake :
+lake exe cache get      # décompresse les .olean précompilés — ~40-60 s
+
+# Étape 4 — build (les .olean sont déjà présents → pas de rebuild source) :
+lake build              # ~60 s pour knot_lean (vs ~8 min/OOM-timeout sans cache)
 ```
 
-⚠ **Bloqueur empirique (mode d'échec 4)** : `lake exe cache` déclenche d'abord un `git clone` de mathlib4, qui échoue en réseau instable sur po-2026 (`invalid index-pack output`). Le cache-get ne peut donc pas compléter tant que le réseau de clone n'est pas fiable. **Validation empirique du chemin trusted (cache-get → build SUCCESS < 2 min) : pending** — à retester sur une session réseau stable.
+**Résultat empirique c.473** : `lake exe cache get` → SUCCESS 38,7 s (8473 fichiers décompressés, 8119 `.olean`) ; `lake build Knots` → **BUILD SUCCESS 61 s** (2959 jobs, sorry warnings = baseline prover connue, EXIT 0). Le chemin trusted-path (cache-get → build) est **VALIDÉ** : le build-gate local po-2026 passe de ~8 min/OOM-timeout à **~1 min SUCCESS**.
+
+⚠ **Note résiduelle** : le mode d'échec 4 (clone réseau instable `invalid index-pack output`) n'est pas éliminé — il est **mitigé** par `http.postBuffer 524288000` + `--depth 1`. Sur un réseau très instable, le clone peut encore échouer (recommencer l'étape 2). Le cache Azure lui-même (`lake exe cache get`) est fiable une fois mathlib cloné.
 
 ### C. Limiter le parallélisme (dodge OOM)
 
@@ -71,11 +86,11 @@ Si pic > 80 % RAM physique → `LAKE_JOBS=2` (option C) obligatoire.
 2. Tente `LAKE_JOBS=2 lake build` local (option C). Si SUCCESS → gate local OK, pousser avec preuve. Si timeout/OOM → passez à étape 3.
 3. po-2026 pousse la PR avec caveat honnête au body : `gate local ai-01 (po-2026 local build instable, #6771)`.
 4. ai-01 build local WSL AVANT merge (double gate CI + local).
-5. Empirique : retester `lake exe cache get` (option B) sur session réseau stable pour rétablir le gate local po-2026.
+5. **Gate local rétabli (c.473)** : sur session réseau stable, exécuter la recette B (`postBuffer 524288000` + clone `--depth 1` + `lake exe cache get` + `lake build`) → BUILD SUCCESS ~1 min. Le gate local po-2026 est de nouveau atteignable (validation firsthand knot_lean).
 
 ## Suivi
 
-- [ ] Valider chemin trusted : `lake exe cache get` + `lake build` < 2 min sur session réseau stable
+- [x] ~~Valider chemin trusted : `lake exe cache get` + `lake build` < 2 min sur session réseau stable~~ **VALIDÉ c.473** (knot_lean : cache-get 38,7 s + build 61 s = ~1,5 min ; mitigation clone = `http.postBuffer 524288000` + `--depth 1`)
 - [ ] Confirmer `LAKE_JOBS=2` évite l'OOM sur le lake mathlib-junction le plus gros
 - [ ] Documenter RAM pic exact (mode d'échec 2) pour calibrer le jobs-limit
 - See [#6771](https://github.com/jsboige/CoursIA/issues/6771), [#4980](https://github.com/jsboige/CoursIA/issues/4980), [#2874](https://github.com/jsboige/CoursIA/issues/2874)
