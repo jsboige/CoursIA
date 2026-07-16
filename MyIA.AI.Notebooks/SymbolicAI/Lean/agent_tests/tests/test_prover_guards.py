@@ -3051,6 +3051,54 @@ def test_parse_lean_errors_matches_authoritative_substring_contract():
     assert "cannot synthesize type" in inline[0]["message"]
 
 
+def test_parse_lean_errors_catches_lake_prefix_format():
+    """Grain a-2 regression (#6790 forensic, BG run-2, msg-myaddh).
+
+    The real Lake output emits errors in a **lake-prefix** format with
+    ``error:`` at the START of the line -- ``error: <file>:<line>:<col>: <msg>``
+    (verbatim from DEMO 62 run-2: ``error: Conway/Life/HashlifeCorrectness.lean:
+    2940:79: Application type mismatch``).  That format carries NO ``": error:"``
+    substring, so the bare substring gate ``if ": error:" not in line: continue``
+    SKIPPED it -> the parser returned ``[]`` even though a real compile error
+    existed -> the false-negative persisted.  This test pins the lake-prefix
+    contract so it cannot regress.
+    """
+    from prover.tools import _parse_lean_errors
+
+    # Verbatim lake-prefix error from the real BG run-2 output.
+    line = "error: Conway/Life/HashlifeCorrectness.lean:2940:79: Application type mismatch"
+    # Pin the empirical hole: this is NOT a substring-form line.
+    assert ": error:" not in line
+    assert line.lstrip().startswith("error: ")
+    # The parser must now catch it (regression: previously returned []).
+    errors = _parse_lean_errors(line + "\n")
+    assert len(errors) == 1, errors
+    assert errors[0]["line"] == 2940, errors
+    assert errors[0]["message"].endswith("Application type mismatch"), errors
+    # A mixed stream must count BOTH the lake-prefix and a standard line:col.
+    raw = (
+        "info: compiling\n"
+        f"{line}\n"
+        "Foo.lean:12:3: error: unsolved goals\n"
+    )
+    errors = _parse_lean_errors(raw)
+    assert len(errors) == 2, errors
+    assert {e["line"] for e in errors} == {2940, 12}, errors
+
+
+def test_extract_errors_catches_lake_prefix_format_authority():
+    """Grain a-2 alignment (#6790): the authoritative ``LeanVerifier.
+    _extract_errors`` must catch the lake-prefix format too, keeping parity
+    with ``_parse_lean_errors`` so the two never disagree again."""
+    from lean_server import LeanVerifier
+
+    line = "error: Conway/Life/HashlifeCorrectness.lean:2940:79: Application type mismatch"
+    assert ": error:" not in line  # pin the hole
+    extracted = LeanVerifier._extract_errors(line + "\n")
+    assert len(extracted) == 1, extracted
+    assert extracted[0].startswith("error:"), extracted
+
+
 def test_reverify_compiles_clean_false_on_fresh_build_failure(monkeypatch):
     """#6790 interim guard hardening: the re-verify trust gate must return False
     when the independent fresh build FAILS — this is the case where the

@@ -401,7 +401,6 @@ def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool:
     """
     from .verifier import get_verifier
     from .tools import _parse_lean_errors  # authoritative parser (#6831)
-    from .lean_utils import resolve_lake_module
     try:
         verifier = get_verifier()
         if verifier is not None:
