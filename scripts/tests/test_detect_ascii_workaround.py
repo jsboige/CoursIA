@@ -19,7 +19,7 @@ import pytest
 # (ImportError "unknown location" en CI Scripts Tests).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
 
-from detect_ascii_workaround import SKIP_DIRS, _should_skip, _iter_notebooks
+from detect_ascii_workaround import SKIP_DIRS, _should_skip, _iter_notebooks, detect_cell
 
 
 class TestSkipDirs:
@@ -74,4 +74,50 @@ class TestIterNotebooksExcludesOutput:
 
         walked = [p.name for p in _iter_notebooks(tmp_path, family="Fam")]
         assert walked == ["Nb.ipynb"], f"_output artifact leaked into walk: {walked}"
+
+
+class TestCSharpBarDetection:
+    """C# (.NET Interactive) data-bar idiom `new string('#', barLen)` — closes the
+    documented C# blind spot. Same discriminator as the Python forms: FILL char
+    (not separator) repeated by a DATA-derived length (not a bare int literal).
+
+    Calibrated against the current corpus (329 `new string`/`Enumerable.Repeat`/
+    `PadLeft` occurrences, all separator chars -> 0 live hits): a capability
+    extension + anti-regression guard for a future `new string('#', barLen)`.
+    """
+
+    def test_new_string_fill_char_data_length_is_defect(self):
+        """`new string('#', barLen)` — fill char + data-derived length -> DEFECT."""
+        assert detect_cell("var bar = new string('#', barLen);") is not None
+
+    def test_new_string_fill_char_computed_expr_is_defect(self):
+        """`new string('#', (int)(score*W))` — computed length -> DEFECT."""
+        assert detect_cell("var b = new string('#', (int)(score*W));") is not None
+
+    def test_enumerable_repeat_fill_char_is_defect(self):
+        """`Enumerable.Repeat('|', score)` — .NET fill-repeat -> DEFECT."""
+        assert detect_cell("var b = new string(Enumerable.Repeat('|', score).ToArray());") is not None
+
+    def test_new_string_separator_dash_is_not_defect(self):
+        """`new string('-', 60)` — separator char -> table border, NOT a data bar."""
+        assert detect_cell("Console.WriteLine(new string('-', 60));") is None
+
+    def test_new_string_separator_width_is_not_defect(self):
+        """`new string('=', width)` — separator char (even with a variable) -> NOT a bar."""
+        assert detect_cell("var line = new string('=', width);") is None
+
+    def test_new_string_fill_char_constant_width_is_not_defect(self):
+        """`new string('#', 40)` — fill char but FIXED literal width -> decorative border, NOT data."""
+        assert detect_cell("var x = new string('#', 40);") is None
+        assert detect_cell("var x = new string('#', 40 );") is None
+
+    def test_padleft_separator_is_not_defect(self):
+        """`.PadLeft(10, '=')` — padding, not a repeated data bar."""
+        assert detect_cell("s.PadLeft(10, '=')") is None
+
+    def test_signature_label_reported(self):
+        """A C# data-bar hit carries the `csharp_new_string_bar` signature."""
+        finding = detect_cell("var bar = new string('#', barLen);")
+        assert finding is not None
+        assert "csharp_new_string_bar" in finding["signatures"]
 
