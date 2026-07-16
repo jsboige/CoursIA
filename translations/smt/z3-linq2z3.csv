@@ -459,15 +459,15 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1ba631d6,code
 // using (var ctx = new Z3Context()) { ... }
 
 Console.WriteLine(""Exercice a completer : loups, chevres et choux avec Z3.Linq"");",,,,,,,,84e038c7d6d9b98e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,af7cac81,markdown,fr,68d241d6a3e2fc3d,"## B9 - Environnements `record` positionnels (DSL `NewTheorem<PositionalRecord>`)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,af7cac81,markdown,fr,f4872f8badf4f803,"## B9 - Environnements `record` positionnels (DSL `NewTheorem<PositionalRecord>`)
 
-L'environnement d'un théorème (le type `T` passe a `NewTheorem<T>`) peut etre un **record positionnel** C# -- par exemple `record Point(int X, int Y)` -- et non une `class` mutable. La reconstruction de la solution passe alors par une branche dediee du solveur ([`Theorem.cs:993-1099`](../../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993)) qui selectionne le *primary constructor* du record, evalue chaque parametre depuis le modele Z3, puis invoque `Activator.CreateInstance(t, args)` avec les valeurs positionnelles -- l'ancienne branche `Activator.CreateInstance(t)` throw sur un record sans constructeur sans parametre (un positional record n'expose que des `init`-only setters).
+L'environnement d'un théorème (le type `T` passe a `NewTheorem<T>`) peut etre un **record positionnel** C# -- par exemple `record Point(int X, int Y)` -- et non une `class` mutable. La reconstruction de la solution passe alors par une branche dediee du solveur ([`Theorem.cs:993-1099`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993)) qui selectionne le *primary constructor* du record, evalue chaque parametre depuis le modele Z3, puis invoque `Activator.CreateInstance(t, args)` avec les valeurs positionnelles -- l'ancienne branche `Activator.CreateInstance(t)` throw sur un record sans constructeur sans parametre (un positional record n'expose que des `init`-only setters).
 
 Le mini-probleme : sur un point `(X, Y)` dans le plan, trouver le point satisfaisant `X + Y = 12` **et** `X = 2·Y` (solution unique attendue : `X = 8, Y = 4`).
 
 > **Stack : A+B** -- le raw doit gerer manuellement la reconstruction via `Model.Eval` sur chaque `IntExpr`, tandis que le DSL `NewTheorem<Point>().Where(...)` invoque la branche `ConstructFromModel` automatiquement ; l'objet rendu (`Point { X = 8, Y = 4 }`) est type C#, pas une paire de `IntNum`.
 
-**Ancre fork** : `Theorem.cs:993-1099` (branche `ConstructFromModel`), tests `Z3.Linq.Tests/RecordEnvTheoryTests.cs:18-91` (4 cas : positional standard, scalaires mixtes int+bool, trois parametres, UNSAT). La feature etait listee dans le backlog `B9` d'[#4688](https://github.com/jsboige/CoursIA/issues/4688) avec une ancre « a confirmer » -- le grep la trouve dans la branche reconstruction, **pas** dans la declaration de type (qui est du C# standard).",,,,,,,,68d241d6a3e2fc3d,,,,,,,
+**Ancre fork** : `Theorem.cs:993-1099` (branche `ConstructFromModel`), tests `Z3.Linq.Tests/RecordEnvTheoryTests.cs:18-91` (4 cas : positional standard, scalaires mixtes int+bool, trois parametres, UNSAT). La feature etait listee dans le backlog `B9` d'[#4688](https://github.com/jsboige/CoursIA/issues/4688) avec une ancre « a confirmer » -- le grep la trouve dans la branche reconstruction, **pas** dans la declaration de type (qui est du C# standard).",,,,,,,,f4872f8badf4f803,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,999c4775,code,fr,1642dddcb8763e73,"// B9 - Record positionnel ""deux stacks"" sur le meme probleme (X+Y=12, X=2Y).
 //   Un point (X, Y) dans le plan, soumis a 2 contraintes lineaires.
 //   Solution unique attendue : X=8, Y=4.
@@ -528,7 +528,7 @@ public record PointRecord(int X, int Y) { }
     sUn.Assert(z3.MkLt(x, z3.MkInt(0)));
     Console.WriteLine($""[RAW]   X>=0 et X<0 : {sUn.Check()}   (aucune affectation)"");
 }",,,,,,,,1642dddcb8763e73,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,4ab72a78,markdown,fr,ee1fd8be466e3760,"### Lecture B9 - deux ecritures d'un meme record, un meme resultat
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,4ab72a78,markdown,fr,62aaa153f8fada23,"### Lecture B9 - deux ecritures d'un meme record, un meme resultat
 
 Les deux ecritures resolvent **le meme systeme** (`X + Y = 12`, `X = 2·Y`) et produisent **le meme temoin** (`X = 8, Y = 4`), mais leur cout d'ecriture est asymetrique :
 
@@ -541,7 +541,7 @@ Les deux ecritures resolvent **le meme systeme** (`X + Y = 12`, `X = 2·Y`) et p
 | Surface code | ~10 lignes significatives + risque d'erreur de typage des `IntNum` | 3 lignes de contraintes |
 | Constructeur sans parametre | non requis (le raw n'instancie jamais d'objet C#) | **necessaire dans le cas d'une `class` mutable**, **interdit dans le cas d'un record** (l'ancienne branche `Activator.CreateInstance(t)` throw) |
 
-> **Ligne de contraste** : la valeur ajoutee du DSL ici n'est pas une fecondation d'expression (comme `Sum` qui replie N termes en un seul `MkAdd`), mais le **routage de reconstruction** -- la detection du type d'environnement (`class` mutable avec setter vs `record` positionnel vs type anonyme) et l'invocation de la bonne branche de [`Theorem.cs:993-1099`](../../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993). Cote raw, c'est au chercheur de coder la reconstruction -- cote DSL, elle est *incluse par defaut* dans `NewTheorem<T>()`. Les tests unitaires `RecordEnvTheoryTests` (4 cas) verifient que la branche positionnelle couvre records a 2-3 params, scalaires mixtes (int + bool), et le retour `null` sur UNSAT.",,,,,,,,ee1fd8be466e3760,,,,,,,
+> **Ligne de contraste** : la valeur ajoutee du DSL ici n'est pas une fecondation d'expression (comme `Sum` qui replie N termes en un seul `MkAdd`), mais le **routage de reconstruction** -- la detection du type d'environnement (`class` mutable avec setter vs `record` positionnel vs type anonyme) et l'invocation de la bonne branche de [`Theorem.cs:993-1099`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993). Cote raw, c'est au chercheur de coder la reconstruction -- cote DSL, elle est *incluse par defaut* dans `NewTheorem<T>()`. Les tests unitaires `RecordEnvTheoryTests` (4 cas) verifient que la branche positionnelle couvre records a 2-3 params, scalaires mixtes (int + bool), et le retour `null` sur UNSAT.",,,,,,,,62aaa153f8fada23,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,68738069,markdown,fr,f49117462f86284b,"### Exercice 4 : record positionnel a 3 parametres (stability of constructor order)
 
 Reproduisez la demarche ci-dessus avec un record a **trois** parametres -- par exemple `record Triple(int A, int B, int C)` -- et trois contraintes scalaires (par exemple `A == 1, B == 2, C == 3`). Le solveur doit rendre un `Triple { A = 1, B = 2, C = 3 }`.

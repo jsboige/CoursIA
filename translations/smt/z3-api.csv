@@ -3991,45 +3991,53 @@ for (int i = 0; i < front.Count; i++) {
 Console.WriteLine($""\n{front.Count} points Pareto-optimaux trouves (qualites distinctes)."");
 Console.WriteLine(""Chaque point est un compromis : pour baisser le cout, il faut"");
 Console.WriteLine(""sacrifier de la qualite (puisque cout_min = 2 * qualite)."");",,,,,,,,f4afe24f020f29bd,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,db8cd9f9,markdown,fr,c25462b8c2ea5960,"### Visualiser le front de Pareto
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,db8cd9f9,markdown,fr,fabd638e7d2a636f,"### Visualiser le front de Pareto
 
 Un tableau de nombres ne rend pas justice au concept de **compromis**. En projetant chaque point Pareto-optimal dans le plan (qualite, cout), le front devient une courbe descendante : chaque pas vers un cout plus bas coute de la qualite. La droite `cout_min = 2 * qualite` (la frontiere de faisabilite imposee par le modele) apparait en pointille : on voit immediatement que certains points Pareto-optimaux sont *strictement au-dessus* de cette borne minimale -- Z3 les a choisis parce qu'a qualite fixee, plusieurs couts sont Pareto-equivalents, et le solveur en echantillonne un. C'est precisement ce que le front de Pareto revele qu'un simple « minimiser le cout » cacherait.
 
-> Le twin Python trace cette courbe avec **matplotlib** (rendu PNG). Le twin C# utilise un rendu **ASCII** (matrice de caracteres) pour rester autonome, sans dependance graphique.",,,,,,,,c25462b8c2ea5960,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,e3af6499,code,fr,a16fbe033d7991a5,"// Visualisation ASCII du front de Pareto : qualite (x) vs cout (y).
-// 'O' = points Pareto-optimaux ; '.' = droite cout_min = 2*qualite.
-void AfficherFrontPareto(List<(long q, long c)> front) {
-    int W = 34, H = 16;            // largeur / hauteur (caracteres)
-    long qMax = 10, cMax = 20;
-    var grille = new char[H, W];
-    for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++) grille[y, x] = ' ';
-    // Front de Pareto (O)
-    foreach (var (q, c) in front) {
-        int x = (int)(q * (W - 1) / qMax);
-        int y = (int)(c * (H - 1) / cMax);   // y=0 en haut = cout max
-        if (y >= 0 && y < H && x >= 0 && x < W) grille[y, x] = 'O';
-    }
-    // Borne cout_min = 2*qualite (.)
-    for (long q = 0; q <= qMax; q++) {
-        long c = 2 * q;
-        if (c < 0 || c > cMax) continue;
-        int x = (int)(q * (W - 1) / qMax);
-        int y = (int)(c * (H - 1) / cMax);
-        if (y >= 0 && y < H && x >= 0 && x < W && grille[y, x] == ' ') grille[y, x] = '.';
-    }
-    Console.WriteLine(""Front de Pareto (O) vs cout_min = 2*qualite (.)"");
-    Console.WriteLine($""cout {cMax,3} +"");
-    for (int y = 0; y < H; y++) {
-        Console.Write(""       |"");
-        for (int x = 0; x < W; x++) Console.Write(grille[y, x]);
-        Console.WriteLine();
-    }
-    Console.WriteLine($""cout {0,3} +{new string('-', W)}  qualite -> {qMax}"");
+> Le twin Python trace cette courbe avec **matplotlib** (rendu PNG). Le twin C# utilise **Plotly** (rendu HTML via le formatteur builtin du kernel .NET, sans dependance NuGet additionnelle) -- les deux twins offrent maintenant une vraie courbe, pas un tableau de nombres.",,,,,,,,fabd638e7d2a636f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,e3af6499,code,fr,dfbce36b7e1bff83,"// Visualisation Plotly du front de Pareto : qualite (x) vs cout (y).
+// Prong-A (#3801) : remplace la matrice ASCII (Console.WriteLine) par un vrai rendu Plotly.
+// C548-L2 zero-restore : Formatter.Register (builtin) + System.Text.Json, aucun #r nuget charting.
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml), (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// Donnees : front (points Pareto-optimaux) + droite cout_min = 2*qualite (frontiere de faisabilite)
+var opt = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+string[] qualiteX = front.Select(p => p.qualite.ToString()).ToArray();
+double[] coutFront = front.Select(p => (double)p.cout).ToArray();
+
+// Droite cout_min = 2*qualite (de q=0 a q=10)
+int qMaxLine = 10;
+string[] qualiteLine = Enumerable.Range(0, qMaxLine + 1).Select(q => q.ToString()).ToArray();
+double[] coutMinLine = Enumerable.Range(0, qMaxLine + 1).Select(q => (double)(2 * q)).ToArray();
+
+string Trace(string name, string[] x, double[] y, string mode, string color, int? size=null) {
+    var d = new Dictionary<string, object> {
+        [""name""]=name, [""x""]=x, [""y""]=y.Select(v=>System.Math.Round(v,3)).ToArray(),
+        [""type""]=""scatter"", [""mode""]=mode, [""line""]=new Dictionary<string,object>{{""color"",color}}
+    };
+    if (size.HasValue) d[""marker""]=new Dictionary<string,object>{{""size"",size.Value},{""color"",color}};
+    return System.Text.Json.JsonSerializer.Serialize(d, opt);
 }
-AfficherFrontPareto(front);
-Console.WriteLine($""\nLe front comporte {front.Count} compromis Pareto-optimaux."");
-Console.WriteLine(""La pente descendante illustre le trade-off : baisser le cout degrade la qualite."");",,,,,,,,a16fbe033d7991a5,,,,,,,
+string trFront = Trace(""Front de Pareto"", qualiteX, coutFront, ""lines+markers"", ""#1f77b4"", 10);
+string trBound = Trace(""cout_min = 2*qualite"", qualiteLine, coutMinLine, ""lines"", ""#d62728"");
+
+string layout = ""{\""title\"":{\""text\"":\""Front de Pareto : qualite vs cout\""},"" +
+    ""\""xaxis\"":{\""title\"":{\""text\"":\""qualite\""}},"" +
+    ""\""yaxis\"":{\""title\"":{\""text\"":\""cout\""}},"" +
+    ""\""legend\"":{\""x\"":0.02,\""xanchor\"":\""left\"",\""y\"":0.98}}"";
+
+string divId = ""pltPareto"";
+string markup =
+    ""<div id=\""""+divId+""\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    ""<script>Plotly.newPlot('""+divId+""',[""+trFront+"",""+trBound+""],""+layout+"",{responsive:true})</script>"";
+display(new PlotlyHtml(markup));
+",,,,,,,,dfbce36b7e1bff83,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,ce51dd89,markdown,fr,1f0b0c5a0b3dbe03,"### Interpretation : front de Pareto
 
 **Sortie obtenue** : une liste de points `(qualite, cout)` tries par cout decroissant. Chaque point est Pareto-optimal : on ne peut pas ameliorer un objectif sans degrader l'autre.
