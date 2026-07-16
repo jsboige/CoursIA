@@ -2986,6 +2986,93 @@ private theorem p4_nw_membership_arm
     rw [hbridge]
     omega
 
+/-- **P4.4 NE-quadrant shift lemma (factorisé, c.552 — rebase de #6944 sur main post-#6955).**
+    Caractérise l'appartenance pointwise `p ∈ (hashlifeResultAux (k+1) q_ne).toGrid (2^k, 2^k + 2^(k-1))`
+    du quadrant NE (offset `(2^k, 2^k + 2^(k-1))` via `mem_toGrid_node`) en une
+    conjonction `isAlive ... ∧ bounds`. La super-cellule opaque `q_ne` =
+    `hashlifeResultAux (k+1) (node ...)` (level `k`) passe par
+    `p4_wave2_ih_step` (ih sur la super-cellule) puis
+    `centralCorrect_mem_shift` pour réancrer l'offset `(2^k, 2^k + 2^(k-1))`.
+
+    Pattern cohérent avec `p4_nw_shift_lemma` (c.488) — seul l'offset
+    `(a, b)` change pour atteindre le quadrant NE. Sorry-free. -/
+private theorem p4_ne_shift_lemma
+    (k : Nat) (hk1 : 1 ≤ k)
+    (r1 r2 r4 r5 : MacroCell)
+    (hr1_l : r1.level = k) (hr2_l : r2.level = k)
+    (hr4_l : r4.level = k) (hr5_l : r5.level = k)
+    (hr1_w : r1.wf = true) (hr2_w : r2.wf = true)
+    (hr4_w : r4.wf = true) (hr5_w : r5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int) :
+    p ∈ (hashlifeResultAux ((k - 1) + 2) (node r1 r2 r4 r5)).toGrid
+          ((2^k : Int), (2^k + (2^(k - 1) : Int))) ↔
+      isAlive (evolve (2^(k - 1)) ((node r1 r2 r4 r5).toGrid (0, 0)))
+        (p.1 - (2^k : Int) + (2^(k - 1) : Int),
+         p.2 - ((2^k + (2^(k - 1) : Int))) + (2^(k - 1) : Int)) = true ∧
+      (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+      ((2^k + (2^(k - 1) : Int))) ≤ p.2 ∧
+        p.2 < ((2^k + (2^(k - 1) : Int))) + 2^((k - 1) + 1) := by
+  have hcc : centralCorrect (node r1 r2 r4 r5) (k - 1) :=
+    p4_wave2_ih_step k hk1 r1 r2 r4 r5
+      hr1_l hr2_l hr4_l hr5_l hr1_w hr2_w hr4_w hr5_w ih
+  exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
+    (2^k) (2^k + (2^(k - 1) : Int)) p hcc
+
+/-- **P4.4 SW-quadrant shift lemma (factorisé, c.552 — rebase de #6944 sur main post-#6955).**
+    Symétrique au `p4_ne_shift_lemma` pour l'offset SW `(2^k + 2^(k-1), 2^k)`. Sorry-free. -/
+private theorem p4_sw_shift_lemma
+    (k : Nat) (hk1 : 1 ≤ k)
+    (r1 r2 r4 r5 : MacroCell)
+    (hr1_l : r1.level = k) (hr2_l : r2.level = k)
+    (hr4_l : r4.level = k) (hr5_l : r5.level = k)
+    (hr1_w : r1.wf = true) (hr2_w : r2.wf = true)
+    (hr4_w : r4.wf = true) (hr5_w : r5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int) :
+    p ∈ (hashlifeResultAux ((k - 1) + 2) (node r1 r2 r4 r5)).toGrid
+          ((2^k + (2^(k - 1) : Int), (2^k : Int))) ↔
+      isAlive (evolve (2^(k - 1)) ((node r1 r2 r4 r5).toGrid (0, 0)))
+        (p.1 - ((2^k + (2^(k - 1) : Int))) + (2^(k - 1) : Int),
+         p.2 - (2^k : Int) + (2^(k - 1) : Int)) = true ∧
+      ((2^k + (2^(k - 1) : Int))) ≤ p.1 ∧
+        p.1 < ((2^k + (2^(k - 1) : Int))) + 2^((k - 1) + 1) ∧
+      (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1) := by
+  have hcc : centralCorrect (node r1 r2 r4 r5) (k - 1) :=
+    p4_wave2_ih_step k hk1 r1 r2 r4 r5
+      hr1_l hr2_l hr4_l hr5_l hr1_w hr2_w hr4_w hr5_w ih
+  exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
+    (2^k + (2^(k - 1) : Int)) (2^k) p hcc
+
+/-- **P4.4 SE-quadrant shift lemma (factorisé, c.552 — rebase de #6944 sur main post-#6955).**
+    Symétrique au `p4_ne_shift_lemma` pour l'offset SE `(2^k + 2^(k-1), 2^k + 2^(k-1))`. Sorry-free. -/
+private theorem p4_se_shift_lemma
+    (k : Nat) (hk1 : 1 ≤ k)
+    (r1 r2 r4 r5 : MacroCell)
+    (hr1_l : r1.level = k) (hr2_l : r2.level = k)
+    (hr4_l : r4.level = k) (hr5_l : r5.level = k)
+    (hr1_w : r1.wf = true) (hr2_w : r2.wf = true)
+    (hr4_w : r4.wf = true) (hr5_w : r5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int) :
+    p ∈ (hashlifeResultAux ((k - 1) + 2) (node r1 r2 r4 r5)).toGrid
+          ((2^k + (2^(k - 1) : Int), 2^k + (2^(k - 1) : Int))) ↔
+      isAlive (evolve (2^(k - 1)) ((node r1 r2 r4 r5).toGrid (0, 0)))
+        (p.1 - ((2^k + (2^(k - 1) : Int))) + (2^(k - 1) : Int),
+         p.2 - ((2^k + (2^(k - 1) : Int))) + (2^(k - 1) : Int)) = true ∧
+      ((2^k + (2^(k - 1) : Int))) ≤ p.1 ∧
+        p.1 < ((2^k + (2^(k - 1) : Int))) + 2^((k - 1) + 1) ∧
+      ((2^k + (2^(k - 1) : Int))) ≤ p.2 ∧
+        p.2 < ((2^k + (2^(k - 1) : Int))) + 2^((k - 1) + 1) := by
+  have hcc : centralCorrect (node r1 r2 r4 r5) (k - 1) :=
+    p4_wave2_ih_step k hk1 r1 r2 r4 r5
+      hr1_l hr2_l hr4_l hr5_l hr1_w hr2_w hr4_w hr5_w ih
+  exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
+    (2^k + (2^(k - 1) : Int)) (2^k + (2^(k - 1) : Int)) p hcc
+
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
