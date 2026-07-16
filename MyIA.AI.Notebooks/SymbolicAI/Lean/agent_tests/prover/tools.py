@@ -103,7 +103,7 @@ def _count_sorries_from_build_output(raw_output: str) -> int:
 
 
 
-def _parse_lean_errors(raw_output: str) -> list:
+def _parse_lean_errors(raw_output) -> list:
     """Parse Lean/Lake error lines from build output.
 
     Root-cause fix for the metrics=0 / false-negative integrity bug (#6790):
@@ -136,7 +136,20 @@ def _parse_lean_errors(raw_output: str) -> list:
     two positional regexes (standard ``<f>:<l>:<c>: error:`` and lake-prefix
     ``error: <f>:<l>:<c>:``) on every line regardless of substring, then fall
     back to substring / line-start detection for non-positional errors.
+
+    Crash fix (#6790 forensic, BG run-4, exit 1): the preserve/revert gate
+    ``_reverify_compiles_clean`` falls back to the pre-parsed ``errors`` LIST
+    when ``raw_output`` is empty (``rv.get("raw_output", "") or
+    rv.get("errors", "")``) — a list has no ``.split`` and the resulting
+    ``AttributeError`` escaped the gate's try/except (the parse happens after
+    it) and killed the whole run, losing the trace and the [BG] postlude.
+    Normalize list/tuple input to one line per entry so every call site parses
+    identically whether it feeds raw build output or an already-split list.
     """
+    if raw_output is None:
+        raw_output = ""
+    elif isinstance(raw_output, (list, tuple)):
+        raw_output = "\n".join(str(item) for item in raw_output)
     errors = []
     for line in raw_output.split("\n"):
         # Standard positional: <file>:<line>:<col>: error: <msg>

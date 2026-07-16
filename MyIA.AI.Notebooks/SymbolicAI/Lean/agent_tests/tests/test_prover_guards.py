@@ -3218,3 +3218,68 @@ def test_reverify_compiles_clean_requires_zero_errors_even_on_success(monkeypatc
         "re-verify must return False when level_1_build=True but raw_output "
         "still carries a parseable error line"
     )
+
+
+def test_parse_lean_errors_accepts_list_input():
+    """Crash regression (#6790 forensic, BG run-4 exit 1, provers.py:417).
+
+    ``_reverify_compiles_clean`` falls back to the pre-parsed ``errors`` LIST
+    when ``raw_output`` is empty (``rv.get("raw_output", "") or
+    rv.get("errors", "")``).  ``_parse_lean_errors`` did ``raw_output.split``
+    unconditionally -> ``AttributeError: 'list' object has no attribute
+    'split'`` -> the whole run crashed at the preserve/revert gate (trace +
+    [BG] postlude lost).  The parser must accept str, list/tuple, and None.
+    """
+    from prover.tools import _parse_lean_errors
+
+    # Verbatim error shape from the real run-4 rv["errors"] fallback.
+    err_list = [
+        "error: Conway/Life/HashlifeCorrectness.lean:2860:85: (deterministic) timeout",
+        "Foo.lean:12:3: error: unsolved goals",
+    ]
+    errors = _parse_lean_errors(err_list)  # must NOT raise AttributeError
+    assert len(errors) == 2, errors
+    assert {e["line"] for e in errors} == {2860, 12}, errors
+
+    # Tuple input parses identically to list input.
+    assert _parse_lean_errors(tuple(err_list)) == errors
+
+    # None degrades to "no errors", not a crash.
+    assert _parse_lean_errors(None) == []
+
+    # Plain-string behavior is unchanged (same two errors via a joined stream).
+    assert _parse_lean_errors("\n".join(err_list)) == errors
+
+
+def test_reverify_survives_errors_list_fallback(monkeypatch):
+    """End-to-end crash regression (#6790, BG run-4): ``_reverify_compiles_clean``
+    must survive a compile() result with NO raw_output and a LIST ``errors``
+    (the exact run-4 shape) and return False (errors present -> revert), not
+    die with AttributeError past its try/except."""
+    import json
+    import prover.verifier as vmod
+    from prover.provers import _reverify_compiles_clean
+
+    class _Verifier:
+        @classmethod
+        def invalidate(cls, filepath):
+            pass
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _Verifier())
+
+    class _TacticTools:
+        def compile(self, check_axioms=False):
+            # Run-4 shape: empty raw_output -> the `or` picks the errors LIST.
+            return json.dumps({
+                "level_1_build": False,
+                "raw_output": "",
+                "errors": [
+                    "error: Conway/Life/HashlifeCorrectness.lean:2860:85: (deterministic) timeout",
+                ],
+            })
+
+    result = _reverify_compiles_clean("dummy/path.lean", _TacticTools())
+    assert result is False, (
+        "re-verify must return False (revert) on a broken snapshot reported "
+        "via the errors-list fallback -- and must not crash with AttributeError"
+    )
