@@ -1140,6 +1140,38 @@ def test_delta0_hardcap_yields_and_skips_agent():
     agent.run.assert_not_awaited()  # no compute wasted past the cap
 
 
+def test_hardcap_yield_syncs_remaining_iterations():
+    """metrics=0 (#6790 bug 4): a run that ends via an AgentExecutor hard-cap
+    (here delta0_stagnation) yields BEFORE reaching DiagnosisExecutor, which
+    was previously the sole site syncing state.remaining_iterations. The result
+    then computed ``iterations = max_iterations - max_iterations = 0`` even
+    though msg.iteration had advanced. The fix mirrors the sync into
+    AgentExecutor.handle on every hop; this test asserts the field is no longer
+    stale after a hard-cap yield."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, DELTA0_STAGNATION_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    # Simulate the init that prove_sorry sets (provers.py:504): budget=10.
+    state.remaining_iterations = 10
+    state.consecutive_delta0_compiles = DELTA0_STAGNATION_HARDCAP
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+    ctx = _run_handle(ex, msg)
+
+    ctx.yield_output.assert_awaited_once()          # hard-cap fired
+    agent.run.assert_not_awaited()                  # no work past the cap
+    # One iteration consumed (msg.iteration 0 -> 1 inside handle), so the
+    # reporting field must reflect 10 - 1 = 9, NOT the stale init 10.
+    assert state.remaining_iterations == 9, (
+        f"expected remaining_iterations synced to 9 after one consumed "
+        f"iteration, got {state.remaining_iterations} (metrics=0 regression: "
+        f"hard-cap-ending runs would report iterations=0)"
+    )
+
+
 def test_delta0_below_hardcap_runs_agent_normally():
     """One short of the cap, the run continues — the agent executes as usual."""
     from prover.workflow import (
