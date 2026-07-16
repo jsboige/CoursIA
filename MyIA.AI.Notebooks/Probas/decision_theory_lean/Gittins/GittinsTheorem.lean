@@ -2,65 +2,68 @@ import Gittins.Basic
 import Gittins.Discount
 
 /-!
-# Gittins Index Theorem — structural facts + INTRINSIC optimality
+# Théorème de l'indice de Gittins — faits structurels + optimalité INTRINSÈQUE
 
-This file formalizes the Gittins index for multi-armed bandits with geometric
-discounting, split into two layers:
+Ce fichier formalise l'indice de Gittins pour les bandits manchots à actualisation
+géométrique, divisé en deux couches :
 
-* **Provable structural facts (known-mean model).** `BanditArm` carries only the
-  true mean — no posterior distribution — so the model it represents is the
-  *known-arm* setting. There the Gittins index equals the true mean (the
-  retirement value at which playing vs. retiring is indifferent under geometric
-  discounting): `gittins_index_known_arm` holds definitionally and
-  `gittins_index_monotone_discount` holds because the index is `γ`-independent
-  for a known arm — the classical `γ`-dependence lives in the *exploration* term,
-  which is absent here (see `discount_monotone` in `Discount.lean` for the
-  `γ`-dependence of the discounted value on the `ℝ` side).
+* **Faits structurels prouvables (modèle à moyenne connue).** `BanditArm` ne porte
+  que la moyenne réelle — pas de distribution a posteriori — le modèle représenté
+  est donc le régime *à bras connus*. Là, l'indice de Gittins égal la moyenne
+  réelle (la valeur de retraite rendant indifférentes les actions jouer vs.
+  retirer sous actualisation géométrique) : `gittins_index_known_arm` tient
+  définitionnellement et `gittins_index_monotone_discount` tient parce que
+  l'indice est indépendant de `γ` pour un bras connu — la dépendance classique
+  en `γ` vit dans le terme d'*exploration*, absent ici (voir `discount_monotone`
+  dans `Discount.lean` pour la dépendance en `γ` de la valeur actualisée du côté
+  `ℝ`).
 
-* **INTRINSIC optimality (MDP-gated, court-terme).** The central
-  `gittins_optimality` theorem — the Gittins index policy maximizes the expected
-  discounted reward — requires the value-function / Bellman / optimal-stopping
-  machinery, which is absent from Mathlib. Its two `sorry` sites (the expected-
-  value operator `V` and the optimality proof) are recorded honestly as the
-  INTRINSIC barrier, not as placeholder workarounds (see #4039).
+* **Optimalité INTRINSÈQUE (gâtée MDP, court-terme).** Le théorème central
+  `gittins_optimality` — la politique de l'indice de Gittins maximise la
+  récompense actualisée espérée — requiert la machinerie fonction de valeur /
+  Bellman / arrêt optimal, absente de Mathlib. Ses deux sites `sorry` (l'opérateur
+  de valeur espérée `V` et la preuve d'optimalité) sont enregistrés honnêtement
+  comme la barrière INTRINSÈQUE, non comme des rustines placeholder (voir #4039).
 -/
 
 namespace Gittins
 
 /-!
-## Gittins Index Definition
+## Définition de l'indice de Gittins
 
-The Gittins index of an arm is the supremum of "retirement values"
-such that continuing to play the arm is better than retiring with that value.
+L'indice de Gittins d'un bras est le supremum des « valeurs de retraite »
+telles que continuer à jouer le bras vaut mieux que retirer à cette valeur.
 -/
 
-/-- The Gittins index of a bandit arm.
+/-- L'indice de Gittins d'un bras de bandit.
 
-    In the **known-mean model** that `BanditArm` represents (an arm carrying only
-    its true mean — no posterior uncertainty), the Gittins index equals the true
-    mean. It is the retirement value `λ` at which playing the arm forever
-    (`μ · Σ γⁿ = μ / (1 - γ)`, see `present_value_constant` in `Discount.lean`)
-    is indifferent to retiring at `λ` (`λ / (1 - γ)`), i.e. `λ = μ`.
+    Dans le **modèle à moyenne connue** que représente `BanditArm` (un bras ne
+    portant que sa moyenne réelle — pas d'incertitude a posteriori), l'indice de
+    Gittins égale la moyenne réelle. C'est la valeur de retraite `λ` à laquelle
+    jouer le bras indéfiniment (`μ · Σ γⁿ = μ / (1 - γ)`, voir
+    `present_value_constant` dans `Discount.lean`) est indifférent à retirer à
+    `λ` (`λ / (1 - γ)`), i.e. `λ = μ`.
 
-    The `γ`-dependence and the non-triviality of the classical Gittins index live
-    entirely in the *exploration* term, which requires an uncertain posterior
-    (e.g. Beta–Bernoulli) and the optimal-stopping / Bellman machinery that is
-    absent from Mathlib. That barrier is recorded at `gittins_optimality` below
-    (INTRINSIC, court-terme, #4039). -/
+    La dépendance en `γ` et la non-trivialité de l'indice de Gittins classique
+    vivent entièrement dans le terme d'*exploration*, qui requiert un posterior
+    incertain (par ex. Beta–Bernoulli) et la machinerie arrêt optimal / Bellman
+    absente de Mathlib. Cette barrière est enregistrée à `gittins_optimality`
+    ci-dessous (INTRINSIC, court-terme, #4039). -/
 def gittinsIndex (arm : BanditArm) (γ : ℝ) (history : RewardHistory) : ℝ :=
   arm.trueMean
 
 /-!
-## Optimality Theorem
+## Théorème d'optimalité
 
-The Gittins index policy (play the arm with highest Gittins index)
-is optimal for the discounted infinite-horizon multi-armed bandit.
+La politique de l'indice de Gittins (jouer le bras d'indice de Gittins le plus
+élevé) est optimale pour le bandit manchot multi-bras actualisé à horizon infini.
 -/
 
-/-- A Gittins index policy: at each step, play the arm with highest Gittins index. -/
+/-- Une politique d'indice de Gittins : à chaque pas, jouer le bras d'indice de Gittins le plus élevé. -/
 noncomputable def gittinsPolicy (inst : BanditInstance) (histories : Array RewardHistory) : Nat :=
-  -- Argmax of the Gittins index over the arms (in the known-mean model this is
-  -- the highest-`trueMean` arm, i.e. the greedy arm — correct for known arms).
+  -- Argmax de l'indice de Gittins sur les bras (dans le modèle à moyenne connue,
+  -- c'est le bras de `trueMean` le plus élevé, i.e. le bras glouton — correct
+  -- pour les bras connus).
   ((Array.range inst.arms.size).foldl
     (fun (best : Nat × ℝ) i =>
       match inst.arms[i]? with
@@ -70,27 +73,29 @@ noncomputable def gittinsPolicy (inst : BanditInstance) (histories : Array Rewar
         if g > best.2 then (i, g) else best)
     (0, 0)).1
 
-/-- **Gittins Index Theorem** (Gittins 1979, Weber 1992): the Gittins index
-    policy maximizes the total expected discounted reward for the multi-armed
-    bandit with geometric discounting.
+/-- **Théorème de l'indice de Gittins** (Gittins 1979, Weber 1992) : la politique
+    de l'indice de Gittins maximise la récompense actualisée totale espérée pour
+    le bandit manchot multi-bras à actualisation géométrique.
 
-    **INTRINSIC (MDP-gated, court-terme, #4039).** This is the central result of
-    the theory and the genuine formalization barrier. The two `sorry` sites below
-    are NOT placeholder workarounds; they record precisely what Mathlib lacks:
+    **INTRINSIC (gâtée MDP, court-terme, #4039).** C'est le résultat central de la
+    théorie et la véritable barrière de formalisation. Les deux sites `sorry`
+    ci-dessous ne sont PAS des rustines placeholder ; ils enregistrent précisément
+    ce qui manque à Mathlib :
 
-    * `V` (the expected-value operator): formalizing `E[Σ γⁿ · r_{policy n}]`
-      requires a bandit reward-process type, a probability-coupling / expectation
-      operator over reward distributions, and an infinite-horizon discounted sum
-      over `Float` (`Discount.lean` has the `ℝ` side via Mathlib's `tsum`, not
-      the `Float` side nor the expectation).
-    * the optimality proof: requires the Bellman / dynamic-programming operator,
-      index decomposability across arms, and induction on the planning horizon —
-      i.e. a full MDP / optimal-stopping formalization.
+    * `V` (l'opérateur de valeur espérée) : formaliser `E[Σ γⁿ · r_{policy n}]`
+      requiert un type de processus de récompense de bandit, un opérateur de
+      couplage probabiliste / espérance sur les distributions de récompense, et
+      une somme actualisée à horizon infini sur `Float` (`Discount.lean` a le côté
+      `ℝ` via le `tsum` de Mathlib, pas le côté `Float` ni l'espérance).
+    * la preuve d'optimalité : requiert l'opérateur de Bellman / programmation
+      dynamique, la décomposabilité de l'indice à travers les bras, et une
+      récurrence sur l'horizon de planification — i.e. une formalisation MDP /
+      arrêt optimal complète.
 
-    `BanditArm` carries only `trueMean`, so even stating `V` faithfully needs
-    infrastructure beyond the current model. A complete proof is estimated at
-    ~2000–5000 lines of supporting definitions; this is left as the INTRINSIC
-    court-terme target rather than a degraded workaround.
+    `BanditArm` ne porte que `trueMean`, donc même énoncer `V` fidèlement
+    nécessite une infrastructure au-delà du modèle courant. Une preuve complète est
+    estimée à ~2000–5000 lignes de définitions supports ; ceci est laissé comme
+    cible INTRINSIC court-terme plutôt qu'une rustine dégradée.
 -/
 theorem gittins_optimality {γ : ℝ} (hγ : 0 < γ ∧ γ < 1)
     (inst : BanditInstance) :
@@ -103,44 +108,47 @@ theorem gittins_optimality {γ : ℝ} (hγ : 0 < γ ∧ γ < 1)
   sorry
 
 /-!
-## Structural Properties (proven, known-mean model)
+## Propriétés structurelles (prouvées, modèle à moyenne connue)
 
-These are the provable properties of the Gittins index in the known-mean model
-that `BanditArm` represents. They hold definitionally / by reflexivity because
-the index equals `trueMean`; the remaining open question is the MDP-gated
-`gittins_optimality` above (INTRINSIC, #4039).
+Ce sont les propriétés prouvables de l'indice de Gittins dans le modèle à moyenne
+connue que représente `BanditArm`. Elles tiennent définitionnellement / par
+réflexivité parce que l'indice égale `trueMean` ; la question ouverte restante est
+`gittins_optimality` ci-dessus, gâtée MDP (INTRINSIC, #4039).
 -/
 
-/-- The Gittins index of a known arm (empty history — no posterior uncertainty)
-    equals its true mean. Definitional in the known-mean model: the index is
-    calibrated to the retirement value `μ`, independent of `history` and `γ`. -/
+/-- L'indice de Gittins d'un bras connu (historique vide — pas d'incertitude a
+    posteriori) égale sa moyenne réelle. Définitionnel dans le modèle à moyenne
+    connue : l'indice est calibré à la valeur de retraite `μ`, indépendant de
+    `history` et `γ`. -/
 theorem gittins_index_known_arm (arm : BanditArm) (γ : ℝ) :
     gittinsIndex arm γ [] = arm.trueMean := by
   rfl
 
-/-- The Gittins index is non-decreasing in the discount factor `γ`.
+/-- L'indice de Gittins est non-décroissant en le facteur d'actualisation `γ`.
 
-    In the known-mean model the index is `γ`-independent (it equals `trueMean`
-    regardless of patience), so the inequality holds *with equality* — the
-    `γ`-dependence of the classical index arises purely from the exploration
-    value, absent for a known arm (`discount_monotone` in `Discount.lean` captures
-    the `γ`-dependence of the *discounted value* on the `ℝ` side).
+    Dans le modèle à moyenne connue, l'indice est indépendant de `γ` (il égale
+    `trueMean` quelle que soit la patience), donc l'inégalité tient *avec
+    égalité* — la dépendance en `γ` de l'indice classique provient purement de la
+    valeur d'exploration, absente pour un bras connu (`discount_monotone` dans
+    `Discount.lean` capture la dépendance en `γ` de la *valeur actualisée* du
+    côté `ℝ`).
 
-    **Proven (#4039 Barrier B closed).** After the `Float → ℝ` port of
-    `BanditArm.trueMean` / `BanditInstance.discount`, the goal reduces to
-    `arm.trueMean ≤ arm.trueMean` on `ℝ`, which holds by reflexivity (`le_refl`).
-    The earlier `Float`-order wart (IEEE 754 `≤` not reflexive, no `Preorder Float`
-    instance) is gone: a bandit mean is a real number, never `NaN`. -/
+    **Prouvé (#4039 Barrière B close).** Après le port `Float → ℝ` de
+    `BanditArm.trueMean` / `BanditInstance.discount`, le but se réduit à
+    `arm.trueMean ≤ arm.trueMean` sur `ℝ`, qui tient par réflexivité (`le_refl`).
+    L'ancienne verrue d'ordre sur `Float` (`≤` IEEE 754 non réflexif, pas
+    d'instance `Preorder Float`) est partie : une moyenne de bandit est un nombre
+    réel, jamais `NaN`. -/
 theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : ℝ)
     (h : γ₁ ≤ γ₂) :
     gittinsIndex arm γ₁ [] ≤ gittinsIndex arm γ₂ [] := by
   simp only [gittinsIndex]
   apply le_refl
 
-/-- For the 2-armed bandit, the Gittins policy outperforms the greedy policy. -/
+/-- Pour le bandit à 2 bras, la politique de Gittins surpasse la politique gloutonne. -/
 theorem gittins_beats_greedy (inst : BanditInstance)
     (h : inst.arms.size = 2) :
-    True := by  -- Placeholder: the actual statement needs V(gittins) ≥ V(greedy)
+    True := by  -- Placeholder : l'énoncé réel nécessite V(gittins) ≥ V(greedy)
   trivial
 
 end Gittins
