@@ -70,13 +70,32 @@ class PercentSlippageModel:
 #   - post-mica-coinbase-2018-2025-5050: 610 orders, net ₮81,591, Sharpe 0.362
 #   - Phase3-OOS-2023-2025-5050: 289 orders, Sharpe 1.321, PSR 77.98%, net ₮107,955
 # The net profit corroborates the order count (the two fields are read from the
-# same real QC fields by #6196), so the strategy is NOT a phantom. The OOS
-# metrics still require the EPIC's multi-seed walk-forward + transaction-cost
-# discipline before any "BEATS" verdict (currently single-variant in-sample
-# OOS), but they are genuine trading results, not artifacts.
+# same real QC fields by #6196), so the strategy is NOT a phantom -- these are
+# genuine trading results, not artifacts.
+#
+# Phase 3 validation VERDICT (2026-07-16, both axes complete): NO BEATS.
+#   Axis 1 -- walk-forward (4 rolling 3y windows, transaction costs in):
+#     2019-21 Sharpe 0.834 / 2020-22 -0.193 / 2021-23 0.346 / 2022-24 0.391.
+#     Cross-window mean 0.344, stdev 0.421 -> edge/sigma ~0.82 (< 2 sigma);
+#     0/4 windows PSR>50%; one window negative. The single OOS 2023-25 anchor
+#     (Sharpe 1.321, PSR 78%) is a +2.3 sigma regime outlier, not the norm.
+#   Axis 2 -- parameter sensitivity (this composite is DETERMINISTIC: 0 RNG, so
+#     the generic ">=4 seeds" gate is substituted by perturbing ibkr_alloc, the
+#     dominant free knob; signal lookbacks are hardcoded, not param-exposed):
+#     ibkr_alloc 0.30/0.40/0.50/0.60/0.70 -> Sharpe 0.333/0.347/0.362/0.375/0.379,
+#     monotonic & stable (spread 0.046), NOT a knife-edge peak at 0.50 -- so the
+#     edge is ROBUST to the allocation (not an overfit artifact), yet PSR<2% at
+#     EVERY allocation -- robust-but-insignificant. Textbook risk-return: more
+#     crypto lifts return (+108.8% @0.30) and drawdown (48.6%); more equity
+#     trims both (+94.7% / 31.3% @0.70).
+#   Verdict: the strategy trades genuinely (580-621 orders/run, CoinbaseFeeModel
+#     0.8% taker + 5bps IBKR costs included) and yields a stable ~0.36 Sharpe
+#     that is NOT statistically significant (PSR<2%) and regime-dependent --
+#     NO BEATS, no "promising". Not a knife-edge overfit (Axis 2 clears that),
+#     just a genuinely weak edge below the significance bar.
 # (The earlier "USDT restores trades" note was itself wrong in a different way
 # -- the USDT-cash-marking-as-phantom theory does not hold given real profit.)
-# See #1027 (self-correction comment 2026-07-16).
+# See #1027 (Phase 3 verdict comment 2026-07-16).
 #
 # MiCA migration (2026-06-28): crypto sleeve migrated Binance -> Coinbase.
 # Binance France services cease 2026-07-01 (no CASP MiCA licence); Coinbase
