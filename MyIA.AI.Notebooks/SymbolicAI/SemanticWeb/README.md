@@ -204,6 +204,7 @@ Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Py
 | 8 | **SW-8-Python-SHACL** | 45 min | Validation de données avec pySHACL |
 | 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
 | 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
+| 9 (C#) | **SW-9-CSharp-JSONLD** | 40 min | Jumeau .NET de SW-9 : parsing/écriture JSON-LD avec dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`) |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
 | 10 (C#) | **SW-10-CSharp-RDFStar** | 40 min | Jumeau .NET de SW-10 : réification + annotations de confiance avec dotNetRDF (`Graph`, `TripleStore`, graphes nommés) |
 
@@ -496,6 +497,7 @@ SemanticWeb/
 │   ├── movies.csv           # Dataset pour KG
 │   ├── temp_company.ttl     # Données Turtle entreprise (SW-7b)
 │   ├── temp_company.owl     # Ontologie OWL entreprise (SW-7b)
+│   ├── pizza.owl            # Ontologie pizza OWL (exemple classique, SW-7)
 │   ├── pizza_test.owl       # Ontologie test reasoners (SW-13)
 │   ├── product.jsonld       # Exemple JSON-LD (SW-9)
 │   ├── example.srj          # Résultats SPARQL JSON (SW-5)
@@ -520,6 +522,7 @@ SemanticWeb/
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-10-CSharp-RDFStar.ipynb       # Twin C# (marathon #4956 Prong B)
 ├── SW-11-Python-KnowledgeGraphs.ipynb
+├── SW-11-CSharp-KnowledgeGraphs.ipynb   # Twin C# (marathon #4956 Prong B)
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
 ├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
@@ -630,10 +633,10 @@ Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 
 |----------------|-----------|--------|-------------------------------|
 | Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
 | Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | PRODUCTION=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
-| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=5 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
+| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=3, BETA=2 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) — SW-11-CSharp et SW-13-Reasoners-CSharp en BETA |
 | Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | PRODUCTION=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
 | Setup / legacy .NET (RDF.Net) | 1 | PRODUCTION=1 | Démonstration RDF.Net historique |
-| **Total** | **25** | **PRODUCTION=25** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
+| **Total** | **25** | **PRODUCTION=23, BETA=2** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
 
 **Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
 
