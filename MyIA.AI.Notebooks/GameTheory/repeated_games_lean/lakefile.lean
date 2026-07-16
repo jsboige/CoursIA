@@ -8,7 +8,7 @@ package «repeated_games» where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
 
 -- Convention i18n EPIC #4980 (ratifiee ai-01 2026-07-04, comment-4881909354) :
 -- chaque `Foo.lean` FR canonique a un sibling `Foo_en.lean` (miroir EN, namespace
