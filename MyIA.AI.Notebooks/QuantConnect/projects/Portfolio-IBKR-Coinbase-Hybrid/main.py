@@ -52,24 +52,31 @@ class PercentSlippageModel:
 # Alpha-framework attempt (CompositeAlphaModel + HybridPortfolioPCM) produced
 # 0 total orders across 6 backtest iterations (v1-v6) -- the Insight -> PCM
 # plumbing never emitted trades. The direct composite calls set_holdings()
-# explicitly each month, so it trades by construction. This is the live
-# equivalent of the MultiAlphaModel aggregation in the Phase 1 bridge table
-# (cell 2581bd22): each strategy contributes its within-strategy target weights,
-# blended by the fixed portfolio weights.
+# explicitly each month, so it is INTENDED to trade by construction. NOTE
+# (diagnostic 2026-07-05, see #1027 c.11): this composite STILL emits 0 orders
+# in practice -- even a minimal `add_equity("SPY", DAILY) + schedule + single
+# set_holdings(spy, 0.5)` produces 0 orders on this project, so the root cause
+# is NOT the strategy structure but an upstream data/runtime condition (see
+# "Status" below).
 #
 # Brokerage: the DEFAULT model (no set_brokerage_model), because IBKR margin
 # REJECTS Crypto ("Unsupported security type: Crypto"). The default authorizes
 # both equities and crypto; the explicit PercentFeeModel/PercentSlippageModel
 # (equities) + CoinbaseFeeModel (crypto) apply the README cost basis.
 #
-# Account currency USDT (NOT USD). Findings firsthand (2026-06-28): with
-# Market.COINBASE + add_crypto("BTCUSD") + set_account_currency("USD"), the
-# backtest produces 0 trades (warmup never completes -- cash-settlement
-# bookkeeping collides when the account currency equals the BTCUSD quote
-# currency USD). set_account_currency("USDT") restores trades (QC auto-converts
-# USD quote -> USDT account, exactly like the Binance canonical converts equity
-# USD -> USDT). CoinbaseBrokerageModel enforces NO account currency, so this is
-# a settlement-layer subtlety, not a brokerage-model constraint.
+# Status -- 0 orders / phantom baseline (diagnostic 2026-07-05, see #1027 c.11
+# and c.12, 8 backtests QC Cloud firsthand): this algorithm produces 0 orders
+# across ALL variants tested since Phase 3 (14/06). The "leader 1.153 Sharpe /
+# 61.95% PSR" previously reported is a PHANTOM ARTIFACT, not real trading.
+# CORRECTION of the earlier (2026-06-28) note: set_account_currency("USDT")
+# does NOT "restore trades" -- with USDT the 100k starting cash is marked in
+# USDT and, with no USDTUSD pair subscribed, acts as a volatile-valuation proxy
+# that fabricates a non-flat equity curve (the phantom). set_account_currency
+# ("USD") reveals the truth: 0 orders, empty equity, all stats `-`. The root
+# cause is suspected to be an org-level data permission/subscription gap (or a
+# project flag / data-window coverage issue), NOT the account currency and NOT
+# the algorithm logic. Confirming requires QC runtime logs (qc-mcp-lite returns
+# statistics only, not AlgorithmLogs -- needs qc-mcp Docker or the QC web UI).
 #
 # MiCA migration (2026-06-28): crypto sleeve migrated Binance -> Coinbase.
 # Binance France services cease 2026-07-01 (no CASP MiCA licence); Coinbase
