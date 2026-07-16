@@ -19,20 +19,41 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+# The launcher-wiring tests below exercise prover/run_prover_bg.py, whose import
+# chain pulls the prover LLM stack (agent_framework / agent_framework_openai).
+# That stack is present on the worker/coordinator machines but NOT on a bare CI
+# runner, so those three tests importorskip on it (skip cleanly off-stack) while
+# the 14 tree_lock.py tests are stdlib-only and run everywhere.
+_LLM_STACK = "agent_framework"
+
 # Make `prover/` importable regardless of how pytest was invoked.
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from prover.tree_lock import (  # noqa: E402
-    LOCK_BASENAME,
-    acquire_tree_lock,
-    find_lean_project_root,
-    host_id,
-    pid_alive,
-    read_lock,
-    release_tree_lock,
+# Load tree_lock.py DIRECTLY by file path, bypassing prover/__init__.py — that
+# package-init eagerly imports the LLM stack (prover.provers -> agent_framework,
+# prover.config -> agent_framework_openai), which is absent on a bare CI runner.
+# tree_lock.py is stdlib-only and self-contained, so the 14 lock-lifecycle tests
+# below run everywhere; only the 3 launcher-wiring tests (which import
+# prover.run_prover_bg) need the full stack and importorskip on it.
+import importlib.util  # noqa: E402
+
+_tl_spec = importlib.util.spec_from_file_location(
+    "prover_tree_lock", ROOT / "prover" / "tree_lock.py"
 )
+_tree_lock = importlib.util.module_from_spec(_tl_spec)
+_tl_spec.loader.exec_module(_tree_lock)
+
+LOCK_BASENAME = _tree_lock.LOCK_BASENAME
+acquire_tree_lock = _tree_lock.acquire_tree_lock
+find_lean_project_root = _tree_lock.find_lean_project_root
+host_id = _tree_lock.host_id
+pid_alive = _tree_lock.pid_alive
+read_lock = _tree_lock.read_lock
+release_tree_lock = _tree_lock.release_tree_lock
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -214,6 +235,7 @@ def test_release_none_is_noop():
 def test_inner_launcher_refuses_locked_tree(tmp_path):
     """prover/run_prover_bg.run_prover must refuse a tree whose lock is held
     (returns result_kind='locked' BEFORE touching the file or any LLM)."""
+    pytest.importorskip(_LLM_STACK, reason="prover LLM stack absent (bare CI)")
     from prover.run_prover_bg import run_prover
 
     (tmp_path / "lakefile.lean").write_text("-- lake", encoding="utf-8")
@@ -233,6 +255,7 @@ def test_inner_launcher_refuses_locked_tree(tmp_path):
 
 
 def test_inner_launcher_signature_has_force_lock():
+    pytest.importorskip(_LLM_STACK, reason="prover LLM stack absent (bare CI)")
     import inspect
     from prover.run_prover_bg import run_prover
 
@@ -244,6 +267,7 @@ def test_inner_launcher_signature_has_force_lock():
 def test_launcher_exposes_force_lock_flag():
     """The launcher must accept --force-lock (operator override, exit 3
     contract documented in the module docstring)."""
+    pytest.importorskip(_LLM_STACK, reason="prover LLM stack absent (bare CI)")
     import importlib
 
     mod = importlib.import_module("run_prover_bg")
