@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-15 05:56
-Total notebooks: 820
+Generated: 2026-07-16 06:02
+Total notebooks: 821
 
 ## Status Summary
 
-- **READY**: 664
+- **READY**: 665
 - **DEMO**: 154
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,7 +13,7 @@ Total notebooks: 820
 ## Maturity Summary
 
 - **PRODUCTION**: 605
-- **BETA**: 163
+- **BETA**: 164
 - **TEMPLATE**: 4
 - **ALPHA**: 44
 - **DRAFT**: 4
@@ -733,7 +733,7 @@ Total notebooks: 820
 | 4 | Sudoku-10 : Résolution avec OR-Tools (C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 5 | Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python | Python 3 | READY | BETA | 30min | po-2023 |
 | 6 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 7 | Notebook 11: Resolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 7 | Notebook 11: Résolution de Sudoku avec Choco Const | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 8 | Sudoku-12 : Résolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 9 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 10 | Sudoku-13 : Le Sudoku comme Regex Symbolique - l'é | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
@@ -827,7 +827,7 @@ Total notebooks: 820
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
-### IIT (30 notebooks) — READY:30 | ALPHA:1, BETA:19, PRODUCTION:10
+### IIT (31 notebooks) — READY:31 | ALPHA:1, BETA:20, PRODUCTION:10
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -849,18 +849,19 @@ Total notebooks: 820
 | 16 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
 | 17 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
 | 18 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
-| 19 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 20 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
-| 21 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
-| 22 | ICT-6 — Du tri a la chaine de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
-| 23 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 24 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 25 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 26 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 27 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 28 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
-| 29 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
-| 30 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 19 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
+| 20 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 21 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
+| 22 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 23 | ICT-6 — Du tri a la chaine de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
+| 24 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 25 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 26 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 27 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 28 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 29 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
+| 30 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
+| 31 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
 ### RL (17 notebooks) — DEMO:1, READY:16 | BETA:2, PRODUCTION:15
 
@@ -888,7 +889,7 @@ Total notebooks: 820
 ## Requirements
 
 - **API**: 134 notebooks
-- **GPU**: 92 notebooks
+- **GPU**: 93 notebooks
 - **Cloud**: 105 notebooks
 - **WSL**: 42 notebooks
 - **Local**: 509 notebooks
