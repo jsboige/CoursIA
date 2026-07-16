@@ -7,8 +7,13 @@ package «conway» where
     ⟨`autoImplicit, false⟩
   ]
 
+-- Pin explicite v4.31.0-rc1 (harmonisation #4362) : sans `@`, lake resout la
+-- require sur `master` par defaut alors que lake-manifest.json est epingle sur
+-- v4.31.0-rc1 (rev d568c8c0) -> warning `manifest out of date: git revision of
+-- dependency 'mathlib' changed` a CHAQUE lake build (bruit dans les logs du
+-- prover BG, et un `lake update` accidentel sauterait sur master).
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
 
 @[default_target]
 lean_lib «Conway» where
