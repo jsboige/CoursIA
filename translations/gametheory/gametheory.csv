@@ -283,18 +283,54 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb,ed0aec80,markdown,fr,1901a
 
 **Versions** : Les versions installes sont recentes et compatibles avec Nashpy et OpenSpiel.",,,,,,,,1901a283d92cf6e6,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb,44aa4162,markdown,fr,218935555e8ee0e9,### 2.5 Verification de game_theory_utils.py (alternative a OpenSpiel),,,,,,,,218935555e8ee0e9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb,8279ff44,code,fr,9ab21e4e94bec655,"# Verification de game_theory_utils.py
+MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb,8279ff44,code,fr,804ffe80b7d14b31,"# Verification de game_theory_utils.py
 # Ce module fournit des implementations Python pures des algorithmes avances
 # si OpenSpiel n'est pas disponible
 
+import os
+import sys
+from pathlib import Path
+
+
+def _find_gametheory_dir():
+    """"""Trouve le repertoire contenant game_theory_utils.py (walk parent dirs).
+
+    Robuste au CWD : marche meme si le kernel n'est pas lance depuis GameTheory/
+    (cas des kernels WSL). Mirroir du pattern canonique de GameTheory-15.
+    """"""
+    cwd = Path.cwd().resolve()
+    search = cwd
+    for _ in range(10):
+        if (search / ""game_theory_utils.py"").is_file():
+            return search
+        parent = search.parent
+        if parent == search:
+            break
+        search = parent
+    # VSCode injecte __vsc_ipynb_file__ (chemin absolu du notebook)
+    nb_file = globals().get(""__vsc_ipynb_file__"")
+    if nb_file:
+        search = Path(nb_file).resolve().parent
+        for _ in range(5):
+            if (search / ""game_theory_utils.py"").is_file():
+                return search
+            search = search.parent
+    return None
+
+
 UTILS_OK = False
 try:
+    _gametheory_dir = _find_gametheory_dir()
+    if _gametheory_dir and str(_gametheory_dir) not in sys.path:
+        sys.path.insert(0, str(_gametheory_dir))
     from game_theory_utils import (
         CFRSolver, FictitiousPlay, create_rps_matrix,
         VCGAuction, gale_shapley,
         stackelberg_duopoly, cournot_duopoly
     )
     print(""game_theory_utils.py charge avec succes"")
+    if _gametheory_dir:
+        print(f""  Module localise: {_gametheory_dir.name}"")
     print(""  Classes disponibles:"")
     print(""    - CFRSolver: Counterfactual Regret Minimization"")
     print(""    - FictitiousPlay: Apprentissage fictif"")
@@ -304,7 +340,8 @@ try:
     UTILS_OK = True
 except ImportError as e:
     print(f""game_theory_utils.py non disponible: {e}"")
-    print(""Les notebooks avances (12-15) pourraient ne pas fonctionner."")",,,,,,,,9ab21e4e94bec655,,,,,,,
+    print(""Les notebooks avances (12-15) pourraient ne pas fonctionner."")
+",,,,,,,,804ffe80b7d14b31,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb,6b4fefe8,markdown,fr,5d026490754c04db,"### Interpretation : Alternative a OpenSpiel
 
 **Resultat** : `game_theory_utils.py` n'est pas disponible dans cet environnement.
