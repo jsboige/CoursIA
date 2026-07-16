@@ -20,4 +20,5 @@ name = "LeanGameDefs"
 roots = [
   "Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret",
   "Nash_en", "Combinatorial_en", "Basic_en", "SocialChoice_en", "Bayesian_en",
+  "Regret_en",
 ]
