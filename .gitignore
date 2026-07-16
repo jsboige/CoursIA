@@ -705,6 +705,8 @@ best_generation_*.png
 # Lean prover history & analysis
 **/.prover_history/
 **/PORT_ANALYSIS.md
+# Advisory per-tree lock of prover BG runs (See #6790)
+**/.prover.lock
 
 # GameTheory generated plots
 cfr_variants_comparison.png
