@@ -13,16 +13,34 @@ Output format (parseable by harvest scripts):
     [BG] FINAL ok=<bool> sorry=<final> elapsed=<s>
     [BG] OTEL_PATH=<absolute path>
     [BG] TRACE_PATH=<absolute path>
+    [BG] TREE_LOCK <path>          (advisory lock taken, See #6790)
+    [BG] LOCKED <reason>           (another prover holds the tree -> exit 3)
+    [BG] EXIT code=<rc>            (always printed, even on exception path)
+
+Launch WITHOUT piping through `tail`/`head`: `... | tee log | tail -30`
+makes the task exit code tail's (0) and loses python's real one (run-6
+forensic, #6790). Use `set -o pipefail` + `tee` alone, or redirect to a
+file and Read it.
+
+Concurrency: at most ONE prover run per Lean project tree. A second launch
+on the same tree is refused (exit 3) while the first holds
+`<lake_root>/.prover.lock` — run-7's cleanup destroyed run-6's
+build-passing candidate when both ran on the same tree (#6790).
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import faulthandler
 import os
 import sys
 import time
 from pathlib import Path
+
+# Dump native tracebacks on fatal signals (SIGSEGV/SIGABRT...) so a future
+# run-6-style silent death leaves a signature in the log (#6790).
+faulthandler.enable()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
@@ -36,6 +54,11 @@ os.environ.setdefault("LEAN_PROJECT", str(DEFAULT_LEAN_PROJECT))
 from prover.config import DEMOS  # noqa: E402
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
+from prover.tree_lock import (  # noqa: E402
+    acquire_tree_lock,
+    find_lean_project_root,
+    release_tree_lock,
+)
 
 
 def _bg(line: str) -> None:
@@ -68,6 +91,29 @@ async def main(args: argparse.Namespace) -> int:
         f"max_iter={args.max_iter} workflow_timeout={args.workflow_timeout}s"
     )
 
+    # One prover per tree (#6790): lock the lake root the run will mutate.
+    tree_root = None
+    if demo.get("file"):
+        tree_root = find_lean_project_root(demo["file"])
+    if tree_root is None:
+        tree_root = Path(os.environ["LEAN_PROJECT"])
+    lock_path, lock_msg = acquire_tree_lock(
+        tree_root, args.demo_id, force=args.force_lock
+    )
+    if lock_path is None:
+        _bg(f"LOCKED {lock_msg}")
+        return 3
+    _bg(f"TREE_LOCK {lock_path}")
+    try:
+        return await _run_locked(args, demo, file_target)
+    finally:
+        release_tree_lock(lock_path)
+
+
+async def _run_locked(
+    args: argparse.Namespace, demo: dict, file_target: str
+) -> int:
+    """The original run body, executed while holding the tree lock."""
     pre_sorry = _peek_sorry_count(file_target) if demo.get("file") else None
     if pre_sorry is not None:
         _bg(f"PRE_FILE_SORRY_COUNT {pre_sorry}")
@@ -144,8 +190,22 @@ def parse_args() -> argparse.Namespace:
                    help="Provider for TacticAgent (default: openrouter). "
                         "#1289: GLM-5.1 (zai) times out at 1680s on tactic generation; "
                         "GPT-5.5 via openrouter expected ~60-120s.")
+    p.add_argument("--force-lock", action="store_true",
+                   help="Break an existing .prover.lock even if its holder "
+                        "looks alive or is on a foreign host (WSL<->Windows). "
+                        "Operator decision — see #6790.")
     return p.parse_args()
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main(parse_args())))
+    # 130 is the sentinel for "died before returning" — the postlude below
+    # prints it on the exception path so a log NEVER ends without an EXIT
+    # marker on a python-level failure (run-6 silent-death forensic, #6790;
+    # a SIGKILL still can't be caught — that's what the lock staleness +
+    # faulthandler cover).
+    _rc = 130
+    try:
+        _rc = asyncio.run(main(parse_args()))
+    finally:
+        _bg(f"EXIT code={_rc}")
+    sys.exit(_rc)

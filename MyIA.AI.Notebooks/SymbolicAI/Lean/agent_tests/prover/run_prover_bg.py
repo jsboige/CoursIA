@@ -23,6 +23,11 @@ from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
 from prover.lean_utils import count_real_sorries
+from prover.tree_lock import (
+    acquire_tree_lock,
+    find_lean_project_root,
+    release_tree_lock,
+)
 
 TRACES_DIR = Path(__file__).parent / "traces"
 TRACES_DIR.mkdir(exist_ok=True)
@@ -64,7 +69,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                coordinator_provider: str = None,
                tactic_provider: str = None,
                use_diagnosis_agent: bool = False,
-               concurrent_search_count: int = 0):
+               concurrent_search_count: int = 0,
+               force_lock: bool = False):
     """Run the prover on a target."""
     if demo_num is not None:
         if demo_num not in DEMOS:
@@ -85,6 +91,32 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         print("Must specify --demo or --file/--line")
         sys.exit(1)
 
+    # One prover per tree (#6790): run-7 was launched through THIS launcher
+    # while run-6 held the same tree — run-7's cleanup reverted run-6's
+    # build-passing candidate. Refuse the second run instead.
+    tree_root = find_lean_project_root(filepath) or Path(filepath).resolve().parent
+    lock_path, lock_msg = acquire_tree_lock(
+        tree_root, demo_num if demo_num is not None else name, force=force_lock,
+    )
+    if lock_path is None:
+        print(f"[LOCKED] {lock_msg}")
+        return {"name": name, "result_kind": "locked", "reason": lock_msg}
+    print(f"[TREE_LOCK] {lock_path}")
+    try:
+        return _run_prover_locked(
+            demo, name, filepath, line, mode, iterations, provider,
+            local_provider, director_provider, coordinator_provider,
+            tactic_provider, use_diagnosis_agent, concurrent_search_count,
+        )
+    finally:
+        release_tree_lock(lock_path)
+
+
+def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
+                       local_provider, director_provider, coordinator_provider,
+                       tactic_provider, use_diagnosis_agent,
+                       concurrent_search_count):
+    """The original run body, executed while holding the tree lock."""
     original = Path(filepath).read_text(encoding="utf-8")
     original_sorry = count_real_sorries(original)
     print(f"Target: {name}")
@@ -260,9 +292,13 @@ if __name__ == "__main__":
                              "parallel (B.7). 0 = single search (default). "
                              "E.g. --concurrent-search 2 = 3 total search agents. "
                              "Only used in --mode multi.")
+    parser.add_argument("--force-lock", action="store_true",
+                        help="Break an existing .prover.lock even if its holder "
+                             "looks alive or is on a foreign host (WSL<->Windows). "
+                             "Operator decision — see #6790.")
     args = parser.parse_args()
 
-    run_prover(
+    summary = run_prover(
         demo_num=args.demo,
         filepath=args.file,
         line=args.line,
@@ -276,4 +312,7 @@ if __name__ == "__main__":
         tactic_provider=args.tactic_provider,
         use_diagnosis_agent=args.use_diagnosis_agent,
         concurrent_search_count=args.concurrent_search,
+        force_lock=args.force_lock,
     )
+    if isinstance(summary, dict) and summary.get("result_kind") == "locked":
+        sys.exit(3)  # same contract as the outer launcher (#6790)
