@@ -15925,7 +15925,15 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,b1d70ed3,m
 ## 9. Comparaison des 4 méthodes sur RPS
 
 Comparons l'évolution de l'**exploitabilité** pour Self-Play naif, FP, NFSP et PSRO sur Roche-Papier-Ciseaux. Une méthode converge vers Nash si son exploitabilité décroît vers 0.",,,,,,,,3357a7638049ed79,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,f488d536d587c376,"// Comparaison : ASCII plot de lexploitabilite (substitut documente de matplotlib)
+MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,2bb9c4230d548da8,"// Comparaison : courbes d'exploitabilite (Plotly) - Self-Play naif vs FP vs NFSP sur RPS.
+// Prong-A (#3801) : remplace le dump texte Console.WriteLine par un vrai rendu Plotly.
+// Dynamique inchangee (meme computation, meme graine) : FP -> 0 (Robinson 1951),
+// Self-Play naif oscille (cycle), NFSP chute puis plafonne (version tabulaire non stationnaire).
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml), (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
 int N = 300;
 var spC = new NaiveSelfPlay(rps, 0.3);
 var fpC = new FictitiousPlay(rps);
@@ -15937,21 +15945,37 @@ for (int t=0;t<N;t++) {
     nfspC.Step();
     if (t%10==0) {
         int idx=t/10;
-        // exploitabilite self-play (cycle, non decroissante)
         var s1=spC.S1; var s2=spC.S2;
         spE[idx]=ComputeExploitability(rps,s1,s2);
         fpE[idx]=fpC.Exploitability();
         nfspE[idx]=nfspC.Exploitability();
     }
 }
-Console.WriteLine(""Exploitabilite (echelle 0-2) - Self-Play naif vs FP vs NFSP sur RPS :"");
-Console.WriteLine(""iter   SP    FP    NFSP"");
-for (int idx=0; idx<spE.Length; idx+=3) {
-    Console.WriteLine((idx*10) + ""   "" + spE[idx].ToString(""F3"") + "" "" + fpE[idx].ToString(""F3"") + "" "" + nfspE[idx].ToString(""F3""));
-}
-Console.WriteLine(""\nLecture : FP decroit regulierement vers 0 (convergence prouvee, Robinson 1951)."");
-Console.WriteLine(""Self-Play naif oscille (cycle, ~0.59). NFSP chute a ~0.41 puis PLAFONNE (non-convergence"" );
-Console.WriteLine(""de la version tabulaire ; BR apprise cycle en env non-stationnaire)."" );",,,,,,,,f488d536d587c376,,,,,,,
+
+// Axe x = iteration (0..290 par pas de 10)
+int M = spE.Length;
+double[] xs = Enumerable.Range(0, M).Select(i => (double)(i*10)).ToArray();
+string[] xlab = xs.Select(x => x.ToString(""0"")).ToArray();
+
+var opt = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+string Tr(string name, double[] y, System.Text.Json.JsonSerializerOptions o) =>
+    System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object> {
+        [""name""]=name, [""x""]=xlab, [""y""]=y.Select(v=>Math.Round(v,4)).ToArray(), [""type""]=""scatter"", [""mode""]=""lines+markers""
+    }, o);
+string trSP=Tr(""Self-Play naif"", spE, opt), trFP=Tr(""Fictitious Play"", fpE, opt), trNFSP=Tr(""NFSP (tabulaire)"", nfspE, opt);
+
+string layout = ""{\""title\"":{\""text\"":\""Exploitabilite (RPS) - convergence vs cycles\""},"" +
+    ""\""xaxis\"":{\""title\"":{\""text\"":\""iteration\""}},"" +
+    ""\""yaxis\"":{\""title\"":{\""text\"":\""exploitabilite\""},\""range\"":[0,0.7]},"" +
+    ""\""legend\"":{\""x\"":0.98,\""xanchor\"":\""right\"",\""y\"":0.98}}"";
+
+string divId = ""pltExpl"";
+string markup =
+    ""<div id=\""""+divId+""\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    ""<script>Plotly.newPlot('""+divId+""',[""+trSP+"",""+trFP+"",""+trNFSP+""],""+layout+"",{responsive:true})</script>"";
+display(new PlotlyHtml(markup));
+",,,,,,,,2bb9c4230d548da8,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,d11ea592,markdown,fr,e8e364afaab0379b,"---
 
 ## Conclusion
@@ -17630,7 +17654,7 @@ A la fin de cette tranche, vous saurez :
 ### Duree estimee : 45 minutes
 
 > **Note** : Un **equilibre de Nash** (Nash, 1950) est un profil de strategies dont **aucun joueur n'a interet a devier unilateralement**. C'est le concept central de la theorie des jeux non-cooperatifs. Etonnamment, Nash a prouve que **tout jeu fini admet au moins un equilibre** (pur ou mixte) — un resultat d'existence puissant.",,,,,,,,43687411fe36a5b8,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c02,code,fr,a5f56f67d15c52eb,"// Setup : aucune dependance externe — theorie des jeux from-scratch, uniquement la BCL .NET.
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c02,code,fr,53d5014e85ae31cc,"// Setup : aucune dépendance externe — théorie des jeux from-scratch, uniquement la BCL .NET.
 using Microsoft.DotNet.Interactive;
 using System;
 using System.Collections.Generic;
@@ -17640,7 +17664,7 @@ using System.Text;
 
 // Culture invariant pour les formats numeriques (eviter ""0,5"" vs ""0.5"").
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-""Environnement pret — theorie des jeux strategique from-scratch (BCL .NET seule)."".Display();",,,,,,,,a5f56f67d15c52eb,,,,,,,
+""Environnement pret — theorie des jeux strategique from-scratch (BCL .NET seule)."".Display();",,,,,,,,53d5014e85ae31cc,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c03,markdown,fr,e97b707b33dcbd02,"## 1. Jeux sous forme normale
 
 Un **jeu sous forme normale** a 2 joueurs est defini par :
@@ -17962,21 +17986,21 @@ Le jeu **Chicken** (Hawk-Dove) modele le bras de fer automobile : deux joueurs s
 | **Dove** | (1, 3) | (2, 2) |
 
 Completez le stub pour : (1) construire le jeu, (2) enumerer les equilibres de Nash purs, (3) calculer l'equilibre mixte. Combien d'equilibres au total ?",,,,,,,,dd4205c191d98936,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c20,code,fr,810aaf347182aedd,"// Exercice 1 : Chicken / Hawk-Dove (etudiant a completer)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c20,code,fr,bc6abbef437bff66,"// Exercice 1 : Chicken / Hawk-Dove (etudiant a completer)
 // Indice 1 : construire NormalFormGame avec la bimatrice ci-dessus.
 // Indice 2 : appeler PureNashEquilibria + MixedNash2x2, afficher avec FmtNash / FmtMixed.
-// Etape 1 : var chicken = new NormalFormGame(...)
-// Etape 2 : PureNashEquilibria(chicken) + MixedNash2x2(chicken)
+// Étape 1 : var chicken = new NormalFormGame(...)
+// Étape 2 : PureNashEquilibria(chicken) + MixedNash2x2(chicken)
 // TODO etudiant
-""Exercice 1 a completer — Chicken : enumerer equilibres purs + mixte."".Display();",,,,,,,,810aaf347182aedd,,,,,,,
+""Exercice 1 a completer — Chicken : enumerer equilibres purs + mixte."".Display();",,,,,,,,bc6abbef437bff66,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c21,markdown,fr,a9b2207c24fde9e6,"### Exercice 2 : Dominance solvability du Dilemme du Prisonnier
 
 Verifiez firsthand que le Dilemme du Prisonnier est **dominance-solvable** : appliquez IESDS manuellement etape par etape. Combien d'etapes faut-il pour converger vers (Defect, Defect) ? L'equilibre obtenu par IESDS coincide-t-il avec l'equilibre de Nash ? (Theoreme : si IESDS donne un profil unique, c'est l'unique equilibre de Nash.)",,,,,,,,a9b2207c24fde9e6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c22,code,fr,3832076c2dd646c6,"// Exercice 2 : trace IESDS etape par etape sur le Dilemme du Prisonnier (etudiant a completer)
-// Indice : la fonction IESDS retourne l'etat final ; pour tracer les etapes, ajouter un affichage
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c22,code,fr,6589076515afd87b,"// Exercice 2 : trace IESDS étape par étape sur le Dilemme du Prisonnier (étudiant à compléter)
+// Indice : la fonction IESDS retourne l'état final ; pour tracer les étapes, ajouter un affichage
 //          intermediaire dans la boucle while, ou reimplementer une version qui log chaque elimination.
 // TODO etudiant
-""Exercice 2 a completer — tracer les etapes IESDS sur le Dilemme du Prisonnier."".Display();",,,,,,,,3832076c2dd646c6,,,,,,,
+""Exercice 2 a completer — tracer les etapes IESDS sur le Dilemme du Prisonnier."".Display();",,,,,,,,6589076515afd87b,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c23,markdown,fr,f56e30d04bdadeca,"### Exercice 3 : Stag Hunt
 
 Le jeu **Stag Hunt** (chasse au cerf) : deux chasseurs peuvent cooperer pour attraper un cerf (gros gain) ou chasser seul le lievre (gain modere mais sur). Matrice :
@@ -19954,7 +19978,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,208d63db,mark
 
 Un **swap adjacent** échange deux rangs consécutifs (1↔2, 2↔3, 3↔4) dans les gains d'un seul joueur. Ce sont les **arêtes** du graphe des swaps. Appliquer un swap à un jeu donne un jeu voisin (toujours une permutation valide de 1-4).
 ",,,,,,,,f405bb5c1fcadfd9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,29350523,code,fr,caba070df086f316,"// Cellule 3 — Swaps de rangs (transformations elementaires)
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,29350523,code,fr,b40d8c39b2569c7f,"// Cellule 3 — Swaps de rangs (transformations élémentaires)
 static int[] SwapRanks(int[] payoffs, int rank1, int rank2)
 {
     var r = (int[])payoffs.Clone();
@@ -19974,11 +19998,11 @@ static OrdinalGame ApplyColSwap(OrdinalGame g, int r1, int r2)
 
 // Demonstration : un swap sur le Dilemme du Prisonnier
 var pd = ClassicGames[""Prisoner's Dilemma""];
-var pdR34 = ApplyRowSwap(pd, 3, 4);   // echange Reward<->Temptation cote Ligne
+var pdR34 = ApplyRowSwap(pd, 3, 4);   // échange Reward<->Temptation côté Ligne
 $""PD original          : {pd}"".Display();
 $""PD apres swap Row 3-4: {pdR34}  (Row devient {string.Join("","", pdR34.Row)})"".Display();
 ""Les 3 swaps adjacents possibles : (1,2), (2,3), (3,4) — par joueur."".Display();
-",,,,,,,,caba070df086f316,,,,,,,
+",,,,,,,,b40d8c39b2569c7f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,8de7f262,markdown,fr,be620d6e22db998f,"## 4. Plus court chemin de swaps — BFS
 
 Le graphe des swaps connecte les 576 jeux : chaque arête = un swap adjacent (Row ou Col). Trouver la **distance** entre deux jeux = BFS shortest-path. Le twin Python utilise `networkx.shortest_path_length` ; ici on implémente le BFS **from-scratch** (`Queue` + `HashSet` des visités).
@@ -20062,7 +20086,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,c0973729,mark
 
 Un équilibre de Nash pur est une cellule $(i,j)$ où aucun joueur n'a intérêt à dévier unilatéralement : $A[i,j]$ est le max de sa colonne (Ligne) ET $B[i,j]$ est le max de sa ligne (Colonne). On les trouve par **best-response** check sur les 4 cellules.
 ",,,,,,,,cc2c605cf82c7c87,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,d60b84c5,code,fr,d78cb9277fc1d3d2,"// Cellule 6 — Equilibres de Nash purs (best response)
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,d60b84c5,code,fr,d2e07629dfbb51e5,"// Cellule 6 — Équilibres de Nash purs (best response)
 static List<(int i, int j)> FindPureNash(OrdinalGame g)
 {
     var A = g.RowMatrix();   // A[i,j] = gain Ligne
@@ -20071,8 +20095,8 @@ static List<(int i, int j)> FindPureNash(OrdinalGame g)
     for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
     {
-        bool rowBR = A[i, j] >= A[1 - i, j];   // Ligne best-response a Colonne=j
-        bool colBR = B[i, j] >= B[i, 1 - j];   // Colonne best-response a Ligne=i
+        bool rowBR = A[i, j] >= A[1 - i, j];   // Ligne best-response à Colonne=j
+        bool colBR = B[i, j] >= B[i, 1 - j];   // Colonne best-response à Ligne=i
         if (rowBR && colBR) eq.Add((i, j));
     }
     return eq;
@@ -20092,12 +20116,12 @@ foreach (var kv in ClassicGames)
 }
 sb6.ToString().Display();
 ""Note : ces 5 jeux classiques ont tous 1 ou 2 Nash purs. Les jeux SANS aucun Nash pur (cycles de best-response) existent mais ne sont pas dans ce catalogue — voir l'histogramme cellule 7 (72/576 = 12,5% des jeux ordinaux ont 0 Nash pur)."".Display();
-",,,,,,,,d78cb9277fc1d3d2,,,,,,,
+",,,,,,,,d2e07629dfbb51e5,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,a9aa71af,markdown,fr,adb841935210a9a6,"## 7. Classification par structure de Nash
 
 Sur les 576 jeux, on compte combien ont 0, 1, 2, 3 ou 4 équilibres purs. Cette distribution révèle la **topologie de l'espace** : la plupart des jeux ont 1-2 équilibres, une minorité n'en a aucun (Matching Pennies et voisins).
 ",,,,,,,,adb841935210a9a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,181ffda8b3d5caa2,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,84500fc70611aa54,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
 // (rendu Plotly, technique C548-L2 : formatter HTML integre au kernel, zero dependence NuGet charting)
 using Microsoft.DotNet.Interactive.Formatting;
 using System.IO;
@@ -20124,9 +20148,9 @@ foreach (var kv in histogram.OrderBy(x => x.Key))
 }
 sb7.ToString().Display();
 
-// Bar chart Plotly : nombre de jeux par nombre d'equilibres de Nash purs.
-// Le recensement exhaustif des 576 jeux 2x2 revele la distribution des nombres
-// d'equilibres (0, 1, 2, ...) -- la majorite des jeux a 0 ou 1 equilibre pur.
+// Bar chart Plotly : nombre de jeux par nombre d'équilibres de Nash purs.
+// Le recensement exhaustif des 576 jeux 2x2 révèle la distribution des nombres
+// d'équilibres (0, 1, 2, ...) -- la majorité des jeux à 0 ou 1 équilibre pur.
 {
     var ordered = histogram.OrderBy(x => x.Key).ToList();
     var keys = ordered.Select(kv => kv.Key.ToString()).Select(v => (object)v).ToArray();
@@ -20151,12 +20175,12 @@ int totalChecked = histogram.Values.Sum();
 $""Total verifie : {totalChecked}/576 (attendu 576)"".Display();
 int gamesWithNash = histogram.Where(x => x.Key >= 1).Sum(x => x.Value);
 $""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0*gamesWithNash/allGames.Count:F1}%)."".Display();
-",,,,,,,,181ffda8b3d5caa2,,,,,,,
+",,,,,,,,84500fc70611aa54,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,67963dee,markdown,fr,777281bf8f7a073d,"## 8. Connexité du graphe des swaps
 
 Le graphe des swaps (576 nœuds, arêtes = swaps adjacents) est-il **connexe** ? C'est-à-dire : peut-on transformer n'importe quel jeu en n'importe quel autre par une séquence de swaps ? On le vérifie par BFS depuis un nœud — si on atteint les 576, le graphe est connexe.
 ",,,,,,,,777281bf8f7a073d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,d4cbc52d,code,fr,7056905344fe300f,"// Cellule 8 — Connexite du graphe des swaps (BFS flood-fill depuis 1 noeud)
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,d4cbc52d,code,fr,b497365f41c31069,"// Cellule 8 — Connexité du graphe des swaps (BFS flood-fill depuis 1 nœud)
 static int ReachableCount(OrdinalGame start)
 {
     var swaps = new[] { (1,2), (2,3), (3,4) };
@@ -20182,7 +20206,7 @@ $""BFS flood-fill depuis PD : {reachable} jeux atteignables / 576"".Display();
 display(reachable == 576
     ? ""[OK] Graphe des swaps CONNEXE : tout jeu est transformable en tout autre par swaps.""
     : $""[WARN] Graphe NON connexe : {reachable}/576 atteignables (composantes disjointes)."");
-",,,,,,,,7056905344fe300f,,,,,,,
+",,,,,,,,b497365f41c31069,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,60d8ab70,markdown,fr,227e5a3dc9eba7f5,"## 9. Matrice des distances entre jeux classiques
 
 Tableau croisé : distance (en nombre de swaps) entre chaque paire de jeux classiques. Les jeux « proches » partagent une structure stratégique similaire ; les jeux « éloignés » (ex. Matching Pennies vs Stag Hunt) diffèrent radicalement.
@@ -20218,11 +20242,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,0bd2e514,mark
 
 > **Indice :** itérer sur les 3 paires de swaps, appliquer `ApplyRowSwap` et `ApplyColSwap`, puis `FindPureNash` sur chaque voisin.
 ",,,,,,,,01c65ab6ad2ccd08,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,e0b1a31a,code,fr,7af8a2d8f8bcc9ef,"// Cellule 10 — Exercice 1 (a completer) : voisinage de swap
-// TODO etudiant : implementer ExploreSwapNeighbors(game) -> liste de voisins classes
-// Etape 1 : iterer sur swaps [(1,2), (2,3), (3,4)].
-// Etape 2 : pour chaque swap, calculer le voisin Row et le voisin Col.
-// Etape 3 : pour chaque voisin, compter les Nash purs via FindPureNash.
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,e0b1a31a,code,fr,63a83af238797b1f,"// Cellule 10 — Exercice 1 (à compléter) : voisinage de swap
+// TODO étudiant : implémenter ExploreSwapNeighbors(game) -> liste de voisins classés
+// Étape 1 : itérer sur swaps [(1,2), (2,3), (3,4)].
+// Étape 2 : pour chaque swap, calculer le voisin Row et le voisin Col.
+// Étape 3 : pour chaque voisin, compter les Nash purs via FindPureNash.
 public List<(OrdinalGame neighbor, string swap, int nashCount)> ExploreSwapNeighbors(OrdinalGame g)
 {
     // TODO etudiant
@@ -20230,17 +20254,17 @@ public List<(OrdinalGame neighbor, string swap, int nashCount)> ExploreSwapNeigh
 }
 
 display(""Exercice 1 (voisinage de swap) : stub a completer."");
-",,,,,,,,7af8a2d8f8bcc9ef,,,,,,,
+",,,,,,,,63a83af238797b1f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,88dbe623,markdown,fr,77d4deab91b2f1b6,"### Exercice 2 — Jeux sans équilibre pur
 
 Combien des 576 jeux n'ont **aucun** Nash pur ? Lesquels sont « proches » de Matching Pennies (distance ≤ 2) ?
 
 > **Indice :** filtrer `allGames` par `FindPureNash(g).Count == 0`, puis `SwapDistance` vs Matching Pennies.
 ",,,,,,,,77d4deab91b2f1b6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,927f16c6,code,fr,4a9863d809444b1c,"// Cellule 11 — Exercice 2 (a completer) : jeux sans Nash pur
-// TODO etudiant : denombrer les jeux sans Nash pur et identifier les proches de Matching Pennies
-// Etape 1 : filtrer allGames pour FindPureNash == 0.
-// Etape 2 : calculer SwapDistance vs Matching Pennies pour chaque jeu sans Nash.
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,927f16c6,code,fr,8053448207fd240e,"// Cellule 11 — Exercice 2 (à compléter) : jeux sans Nash pur
+// TODO étudiant : dénombrer les jeux sans Nash pur et identifier les proches de Matching Pennies
+// Étape 1 : filtrer allGames pour FindPureNash == 0.
+// Étape 2 : calculer SwapDistance vs Matching Pennies pour chaque jeu sans Nash.
 public int CountNoNashGames()
 {
     // TODO etudiant
@@ -20248,17 +20272,17 @@ public int CountNoNashGames()
 }
 
 display(""Exercice 2 (jeux sans Nash) : stub a completer."");
-",,,,,,,,4a9863d809444b1c,,,,,,,
+",,,,,,,,8053448207fd240e,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,01d879f6,markdown,fr,a72ff990697c66e7,"### Exercice 3 — Équivalence par renommage des joueurs
 
 Deux jeux sont **stratégiquement équivalents** si l'échange Ligne↔Colonne (transposée) donne le même jeu. Compter les classes d'équivalence des 576 jeux sous cette relation.
 
 > **Indice :** pour chaque jeu, calculer sa transposée (échanger rôles + transposer matrices), regrouper par `HashSet` de représentants canoniques.
 ",,,,,,,,a72ff990697c66e7,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,c7e3ef80,code,fr,cf83259217189013,"// Cellule 12 — Exercice 3 (a completer) : equivalence par renommage
-// TODO etudiant : compter les classes d'equivalence sous echange Ligne<->Colonne
-// Etape 1 : definir la transposee (swap des roles : Row<->Col + reindexation des cellules).
-// Etape 2 : regrouper les 576 jeux en classes (un representant canonique par classe).
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,c7e3ef80,code,fr,7e49ca186316cccc,"// Cellule 12 — Exercice 3 (à compléter) : équivalence par renommage
+// TODO étudiant : compter les classes d'équivalence sous échange Ligne<->Colonne
+// Étape 1 : définir la transposée (swap des rôles : Row<->Col + réindexation des cellules).
+// Étape 2 : regrouper les 576 jeux en classes (un représentant canonique par classe).
 public int CountPlayerSwapClasses()
 {
     // TODO etudiant
@@ -20266,7 +20290,7 @@ public int CountPlayerSwapClasses()
 }
 
 display(""Exercice 3 (equivalence renommage) : stub a completer."");
-",,,,,,,,cf83259217189013,,,,,,,
+",,,,,,,,7e49ca186316cccc,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,091171e8,markdown,fr,014c46b02178a225,"## 11. Résumé
 
 Ce twin C# a reconstruit from-scratch (BCL .NET 9, 0 NuGet) toute la topologie des jeux 2×2 ordinaux :
@@ -24028,40 +24052,57 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,de39c7a4,m
 Le notebook Python trace la trajectoire 2D sur le simplexe `[P(Heads), P(Tails)]`.
 En C# pur (sans matplotlib), on visualise la convergence avec une grille ASCII : chaque
 `#` est un pas de la trajectoire, `N` est le Nash, `D` le départ.",,,,,,,,19d1faf4df702cfb,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,44e3e9663a40958d,"// Visualisation ASCII de la trajectoire sur le simplexe 2D.
-void DrawTrajectoryASCII(double[] start) {
-    const int W = 21, H = 9;  // grille W x H
-    var grid = new char[H, W];
-    for (int r = 0; r < H; r++) for (int c = 0; c < W; c++) grid[r, c] = '.';
-    // Axes : x = P(Heads) [0,1], y = P(Tails) [0,1].
-    int Col(double x) => Math.Clamp((int)Math.Round(x * (W - 1)), 0, W - 1);
-    int Row(double y) => Math.Clamp(H - 1 - (int)Math.Round(y * (H - 1)), 0, H - 1);
-    // Nash (0.5, 0.5)
-    grid[Row(0.5), Col(0.5)] = 'N';
-    // Depart
-    grid[Row(start[1]), Col(start[0])] = 'D';
-    // Trajectoire
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,f6d186fc5a11acec,"// Visualisation Plotly de la trajectoire sur le simplexe 2D (remplace l'ASCII art -- EPIC #3801 Prong A).
+// Chaque depart converge vers l'equilibre de Nash (0.5, 0.5) : illustration du theoreme du point fixe de Brouwer.
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+// Options JSON sans echappement HTML (retablit le + litteral dans ""lines+markers"").
+var opt = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+// Trajectoire de n iterations de la dynamique de meilleure reponse depuis un point de depart.
+List<(double x, double y)> Trajectory(double[] start, int n = 50) {
+    var pts = new List<(double, double)> { (start[0], start[1]) };
     double[] s = (double[])start.Clone();
-    for (int i = 0; i < 50; i++) {
-        s = NashDynamicsStep(s, U1, U2);
-        int r = Row(s[1]), c = Col(s[0]);
-        if (grid[r, c] == '.') grid[r, c] = '#';
-    }
-    grid[Row(0.5), Col(0.5)] = 'N';  // re-stamp Nash par-dessus
-    Console.WriteLine($""Depart {FmtV(start)} -> Nash (0.5, 0.5)"");
-    Console.WriteLine($""  P(Tails)"");
-    for (int r = 0; r < H; r++) {
-        Console.Write($""  {1.0 - (double)r/(H-1):F1} "");
-        for (int c = 0; c < W; c++) Console.Write(grid[r, c]);
-        Console.WriteLine();
-    }
-    Console.WriteLine($""    0.0{"" "".PadLeft(W/2)}1.0  P(Heads)"");
-    Console.WriteLine(""    D=depart  #=trajectoire  N=Nash(0.5,0.5)\n"");
+    for (int i = 0; i < n; i++) { s = NashDynamicsStep(s, U1, U2); pts.Add((s[0], s[1])); }
+    return pts;
 }
 
-DrawTrajectoryASCII(new[]{0.9, 0.1});
-DrawTrajectoryASCII(new[]{0.1, 0.9});
-",,,,,,,,44e3e9663a40958d,,,,,,,
+var t1 = Trajectory(new[] { 0.9, 0.1 });
+var t2 = Trajectory(new[] { 0.1, 0.9 });
+double[] xs1 = t1.Select(p => p.x).ToArray(), ys1 = t1.Select(p => p.y).ToArray();
+double[] xs2 = t2.Select(p => p.x).ToArray(), ys2 = t2.Select(p => p.y).ToArray();
+
+string tr1 = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""name""] = ""Depart (0.9, 0.1)"", [""x""] = xs1, [""y""] = ys1, [""mode""] = ""lines+markers"",
+    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
+    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
+string tr2 = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""name""] = ""Depart (0.1, 0.9)"", [""x""] = xs2, [""y""] = ys2, [""mode""] = ""lines+markers"",
+    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
+    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
+string trNash = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""name""] = ""Nash (0.5, 0.5)"", [""x""] = new double[] { 0.5 }, [""y""] = new double[] { 0.5 },
+    [""mode""] = ""markers"",
+    [""marker""] = new Dictionary<string, object> { [""size""] = 16, [""color""] = ""red"", [""symbol""] = ""star"" } }, opt);
+string layout = JsonSerializer.Serialize(new Dictionary<string, object> {
+    [""title""] = new Dictionary<string, string> { [""text""] = ""Convergence vers l'equilibre de Nash (Matching Pennies)"" },
+    [""xaxis""] = new Dictionary<string, object> { [""title""] = ""P(Heads)"", [""range""] = new double[] { 0, 1 } },
+    [""yaxis""] = new Dictionary<string, object> { [""title""] = ""P(Tails)"", [""range""] = new double[] { 0, 1 } },
+    [""width""] = 540, [""height""] = 460 }, opt);
+
+string markup = ""<div id=\""pltNash\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    $""<script>Plotly.newPlot('pltNash',[{tr1},{tr2},{trNash}],{layout});</script>"";
+
+Console.WriteLine(""Trajectoires depuis (0.9,0.1) et (0.1,0.9) -> Nash (0.5, 0.5)"");
+new PlotlyHtml(markup)",,,,,,,,f6d186fc5a11acec,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,dab67d51,markdown,fr,8ec25f9a7952028e,"## Exercice 1 : équilibre de Chicken (Guerre froide)
 
 Appliquez `FindFixedPointSimplex` au jeu **Chicken** ( Hawk-Dove) :
@@ -38049,9 +38090,9 @@ def verifier_pareto(regle, profil, cand_x, cand_y):
 # Concluez sur le theoreme d'Arrow.
 print(""Exercice a completer : Theoreme d Arrow et proprietes d agregation"")
 ",,,,,,,,6cb89dbeb0e90ce9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,2fbfc213,markdown,fr,ea1912bd1a8f0e58,"
-> **Lien avec la formalisation Lean** : Les concepts de ce notebook — cycles de Condorcet, regles de vote (pluralite, Borda, Copeland), criteres d'agregation (Pareto, IIA, non-dictature), preferences unimodales et theoreme de l'electeur median — sont formalises dans [`social_choice_lean/SocialChoice/Voting.lean`](../social_choice_lean/SocialChoice/Voting.lean) (875 lignes, 0 sorry). On y trouve les definitions de `margin`, `condorcet_winner`, `condorcet_loser`, le type `SCC` (Social Choice Correspondence), les criteres de Condorcet et de monotonicite, ainsi que le theoreme `median_voter_theorem_strict` (preferences unimodales). Les axiomes d'Arrow (Pareto, IIA, non-dictature) sont definis dans [`Framework.lean`](../social_choice_lean/SocialChoice/Framework.lean) (266 lignes, 0 sorry) comme `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`. Le theoreme de Sen (liberte minimale + Pareto + transitivite) est prouve dans [`Sen.lean`](../social_choice_lean/SocialChoice/Sen.lean) (358 lignes, 0 sorry).
-",,,,,,,,ea1912bd1a8f0e58,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,2fbfc213,markdown,fr,0bdb4b86bad6bead,"
+> **Lien avec la formalisation Lean** : Les concepts de ce notebook — cycles de Condorcet, regles de vote (pluralite, Borda, Copeland), criteres d'agregation (Pareto, IIA, non-dictature), preferences unimodales et theoreme de l'electeur median — sont formalises dans [`game_theory_lean/SocialChoice/Voting.lean`](../game_theory_lean/SocialChoice/Voting.lean) (875 lignes, 0 sorry). On y trouve les definitions de `margin`, `condorcet_winner`, `condorcet_loser`, le type `SCC` (Social Choice Correspondence), les criteres de Condorcet et de monotonicite, ainsi que le theoreme `median_voter_theorem_strict` (preferences unimodales). Les axiomes d'Arrow (Pareto, IIA, non-dictature) sont definis dans [`Framework.lean`](../game_theory_lean/SocialChoice/Framework.lean) (266 lignes, 0 sorry) comme `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`. Le theoreme de Sen (liberte minimale + Pareto + transitivite) est prouve dans [`Sen.lean`](../game_theory_lean/SocialChoice/Sen.lean) (358 lignes, 0 sorry).
+",,,,,,,,0bdb4b86bad6bead,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb,cad1728e,markdown,fr,bd7ab88fafbfa2c4,"---
 
 ## Resume
@@ -40225,9 +40266,9 @@ Les techniques presentees ici ouvrent la voie a des applications plus larges de 
 - Ignatiev, A., Morgado, A. & Marques-Silva, J. (2018). PySAT: A Python Toolkit for Prototyping with SAT Oracles. In: SAT 2018, LNCS 10929:428-437.
 
 ",,,,,,,,67ad7df472c67f2a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,aaf5be7b,markdown,fr,bce4e3f4207f1cae,"
-> **Lien avec la formalisation Lean** : Les memes theoremes d'impossibilite (Arrow, Sen) verifies par SAT/SMT dans ce notebook sont prouves **constructivement** dans la serie Lean du choix social ([`social_choice_lean/`](../social_choice_lean/)). L'encodage SAT traduit les axiomes en clauses CNF booleennes ; l'encodage SMT utilise des variables entieres pour les rangs. La formalisation Lean, elle, definit les memes concepts ([`Framework.lean`](../social_choice_lean/SocialChoice/Framework.lean), 266 lignes, 0 sorry : `Profile`, `SWF`, `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`) et prouve les theoremes pour **tous** les parametres, pas seulement les instances finies : [`Arrow.lean`](../social_choice_lean/SocialChoice/Arrow.lean) (701 lignes, 0 sorry) et [`Sen.lean`](../social_choice_lean/SocialChoice/Sen.lean) (358 lignes, 0 sorry). Les trois approches (SAT, SMT, Lean) sont complementaires : SAT fournit une verification exhaustive sur petites instances, SMT un encodage compact avec modeles, Lean une preuve universelle certifiee.
-",,,,,,,,bce4e3f4207f1cae,,,,,,,
+MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,aaf5be7b,markdown,fr,3af933ae4c3fd50b,"
+> **Lien avec la formalisation Lean** : Les memes theoremes d'impossibilite (Arrow, Sen) verifies par SAT/SMT dans ce notebook sont prouves **constructivement** dans la serie Lean du choix social ([`game_theory_lean/`](../game_theory_lean/)). L'encodage SAT traduit les axiomes en clauses CNF booleennes ; l'encodage SMT utilise des variables entieres pour les rangs. La formalisation Lean, elle, definit les memes concepts ([`Framework.lean`](../game_theory_lean/SocialChoice/Framework.lean), 266 lignes, 0 sorry : `Profile`, `SWF`, `weak_pareto`, `ind_of_irr_alts`, `is_dictatorship`) et prouve les theoremes pour **tous** les parametres, pas seulement les instances finies : [`Arrow.lean`](../game_theory_lean/SocialChoice/Arrow.lean) (701 lignes, 0 sorry) et [`Sen.lean`](../game_theory_lean/SocialChoice/Sen.lean) (358 lignes, 0 sorry). Les trois approches (SAT, SMT, Lean) sont complementaires : SAT fournit une verification exhaustive sur petites instances, SMT un encodage compact avec modeles, Lean une preuve universelle certifiee.
+",,,,,,,,3af933ae4c3fd50b,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb,sc-04-footer,markdown,fr,a93ca84c2f78b586,"---
 
 **Navigation** : [<< 03-Voting-Methods.ipynb](03-Voting-Methods.ipynb) | [Index](../README.md)
