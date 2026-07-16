@@ -47,8 +47,11 @@ Usage
 out-of-scope trees (``.lake/``, ``_peters/``, ``reference_docs/``, ...).
 
 Exit code ``0`` if every discovered pair matches (or none is found), ``1`` on any
-body drift or on an orphan ``_en`` file (a ``*_en.lean`` whose FR sibling is
-missing).
+body drift, on an orphan ``_en`` file (a ``*_en.lean`` whose FR sibling is
+missing), or on an *unbuilt* ``_en`` file (a ``*_en.lean`` whose module is
+neither an explicit lake root nor covered by a parent glob, so ``lake build``
+never compiles it and a green ``Lean CI`` is a false pass for it — the #6749
+orphan-trap, which the body comparison alone cannot catch).
 """
 from __future__ import annotations
 
@@ -323,6 +326,96 @@ def fr_sibling(en_path: Path) -> Path:
     return en_path.with_name(en_path.name[: -len("_en.lean")] + ".lean")
 
 
+# --- Orphan-trap guard: an `_en` mirror that `lake build` never compiles (#6749)
+# A `*_en.lean` whose module is neither an explicit lake root nor covered by a
+# parent glob is never built — so a green ``Lean CI (<lake>)`` is a FALSE PASS
+# for that sibling (the job only cold-builds the declared roots/globs, and Lake
+# matches roots by EXACT module name, not stem). This guard reproduces the
+# by-hand roots-array check that gated the #6752 / #6749 / #6753 duplicates,
+# which the ``OK``/``DRIFT`` body comparison alone cannot catch: bodies can be
+# byte-identical while the mirror silently sits outside the build.
+_LAKEFILE_NAMES = ("lakefile.toml", "lakefile.lean")
+
+# `.lean` glob tokens inside `globs := #[...]` / `roots := #[...]`:
+#   `Foo          → exact        Foo
+#   `Foo_en       → exact        Foo_en
+#   `Foo.*  `Foo.+ → glob-prefix Foo   (Foo and its submodules)
+#   .submodules `Foo / .andSubmodules `Foo → glob-prefix Foo
+_LEAN_BACKTICK = re.compile(
+    r"(?P<sub>\.submodules\s+|\.andSubmodules\s+)?"
+    r"`(?P<name>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)"
+    r"(?P<glob>\.\*|\.\+)?"
+)
+_LEAN_LIB = re.compile(r"lean_lib\s+«?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)»?")
+# `.toml` arrays: roots = [ "A", "B" ]  /  globs = [ "A.*" ]
+_TOML_ARRAY = re.compile(r"\b(?:roots|globs)\s*=\s*\[(.*?)\]", re.DOTALL)
+
+
+def lake_targets(lakefile: Path) -> tuple[set[str], set[str]]:
+    """Parse a lakefile into ``(exact, glob_prefixes)`` — the modules Lake will
+    compile. ``exact`` are single modules (``Foo``, ``Foo_en``); each entry of
+    ``glob_prefixes`` is a parent whose subtree is globbed (``Foo`` from
+    ``Foo.*`` / ``.submodules `Foo``). Returns empty sets when nothing parses,
+    so the caller can conservatively skip rather than false-flag."""
+    exact: set[str] = set()
+    globs: set[str] = set()
+    text = lakefile.read_text(encoding="utf-8", errors="replace")
+    if lakefile.name == "lakefile.toml":
+        # Drop `#` comments, then read quoted entries of roots/globs arrays.
+        text = re.sub(r"#[^\n]*", "", text)
+        for arr in _TOML_ARRAY.finditer(text):
+            for m in re.finditer(r'"([^"]+)"', arr.group(1)):
+                name = m.group(1)
+                if name.endswith((".*", ".+")):
+                    globs.add(name[:-2])
+                else:
+                    exact.add(name)
+    else:
+        # `.lean`: strip comments first (doc comments quote example globs, e.g.
+        # conway_cgt_lean's ``globs := #[`Foo, `Foo_en]`` in prose).
+        code = strip_comments(text)
+        for m in _LEAN_LIB.finditer(code):
+            exact.add(m.group(1))  # a lib with no globs roots at its own name
+        for m in _LEAN_BACKTICK.finditer(code):
+            if m.group("sub") or m.group("glob"):
+                globs.add(m.group("name"))
+            else:
+                exact.add(m.group("name"))
+    return exact, globs
+
+
+def enclosing_lake(en_path: Path, repo_root: Path) -> Path | None:
+    """Nearest ancestor directory (up to ``repo_root``) holding a lakefile."""
+    for d in [en_path.parent, *en_path.parents]:
+        for name in _LAKEFILE_NAMES:
+            if (d / name).is_file():
+                return d / name
+        if d == repo_root:
+            break
+    return None
+
+
+def check_en_built(en_path: Path, repo_root: Path) -> tuple[bool | None, str]:
+    """Is ``en_path``'s module compiled by its lake? ``(True, "")`` when a root
+    or glob covers it, ``(False, reason)`` when it is an orphan Lake never
+    builds (the #6749 trap), ``(None, reason)`` when undeterminable (no lakefile
+    / unparsable) — the caller skips those rather than false-flag."""
+    en_path = en_path.resolve()
+    lakefile = enclosing_lake(en_path, repo_root)
+    if lakefile is None:
+        return None, "no enclosing lakefile"
+    exact, globs = lake_targets(lakefile)
+    if not exact and not globs:
+        return None, f"no roots/globs parsed from {lakefile.name}"
+    module = ".".join(en_path.relative_to(lakefile.parent).with_suffix("").parts)
+    if module in exact or any(
+            module == g or module.startswith(g + ".") for g in globs):
+        return True, ""
+    return False, (
+        f"module `{module}` absent from {lakefile.name} roots/globs "
+        "-> never compiled by `lake build` (a green Lean CI is a false pass)")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="*", help="files or directories to scan")
@@ -343,13 +436,21 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = 0
+    passed = consumer = failed = orphan = unbuilt = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
             orphan += 1
             print(f"ORPHAN  {en}  (no FR sibling {fr.name})")
             continue
+        # Orphan-trap guard (#6749): flag an `_en` mirror Lake never compiles.
+        # Orthogonal to the body check below — a pair can be byte-identical yet
+        # sit outside the build, which is exactly the failure CI misses.
+        built, why = check_en_built(en, repo_root)
+        if built is False:
+            unbuilt += 1
+            print(f"UNBUILT {en}")
+            print(f"        {why}")
         status, detail = check_pair(fr, en)
         if status == "OK":
             passed += 1
@@ -363,8 +464,9 @@ def main(argv: list[str] | None = None) -> int:
             print(detail)
     total = passed + consumer + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
-          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan")
-    return 0 if (failed == 0 and orphan == 0) else 1
+          f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
+          f" | {unbuilt} unbuilt")
+    return 0 if (failed == 0 and orphan == 0 and unbuilt == 0) else 1
 
 
 if __name__ == "__main__":

@@ -13,10 +13,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_i18n_siblings import (  # noqa: E402
     _drift_detail,
+    check_en_built,
     check_pair,
+    enclosing_lake,
     find_en_files,
     fr_sibling,
     imports_fr_sibling,
+    lake_targets,
     normalize_body,
     split_decls,
     strip_comments,
@@ -379,6 +382,103 @@ def test_real_conway_pairs_are_byte_identical():
         if status == "DRIFT":
             failures.append(f"DRIFT {en.name}\n{detail}")
     assert not failures, "\n".join(failures)
+
+
+# --- Orphan-trap guard (#6749): an `_en` mirror `lake build` never compiles ---
+
+
+def test_lake_targets_toml_roots(tmp_path):
+    """`.toml` `roots = [...]` → exact names; a `"Foo.*"` entry → glob prefix."""
+    lf = tmp_path / "lakefile.toml"
+    lf.write_text(
+        '# comment with roots = ["ignored"] in prose\n'
+        '[[lean_lib]]\nname = "L"\n'
+        'roots = [\n  "Basic", "Nash",\n  "Nash_en",\n]\n'
+        'globs = ["Extra.*"]\n',
+        encoding="utf-8",
+    )
+    exact, globs = lake_targets(lf)
+    assert exact == {"Basic", "Nash", "Nash_en"}
+    assert globs == {"Extra"}
+
+
+def test_lake_targets_lean_globs(tmp_path):
+    """`.lean` backtick tokens: bare → exact, `.*` / `.submodules` → glob-prefix;
+    doc-comment example globs are stripped and must not leak into the sets."""
+    lf = tmp_path / "lakefile.lean"
+    lf.write_text(
+        "import Lake\nopen Lake DSL\n"
+        "-- doc: `globs := #[`Ghost, `Ghost_en]` appears only in prose\n"
+        "lean_lib «Foo» where\n"
+        "  globs := #[.submodules `Foo, `Foo_en]\n"
+        "lean_lib «Bar» where\n"
+        "  globs := #[`Bar.*]\n",
+        encoding="utf-8",
+    )
+    exact, globs = lake_targets(lf)
+    assert "Foo_en" in exact and "Foo" in exact and "Bar" in exact
+    assert "Foo" in globs and "Bar" in globs
+    assert "Ghost" not in exact and "Ghost_en" not in exact  # comment stripped
+
+
+def test_check_en_built_flags_orphan_toml(tmp_path):
+    """The #6749 trap: a root-level `_en` absent from `roots` is UNBUILT."""
+    lake = tmp_path / "mylake"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text(
+        '[[lean_lib]]\nname = "L"\nroots = ["Basic", "Nash", "Nash_en"]\n',
+        encoding="utf-8",
+    )
+    (lake / "Basic_en.lean").write_text("-- orphan\n", encoding="utf-8")
+    built, why = check_en_built(lake / "Basic_en.lean", tmp_path)
+    assert built is False
+    assert "Basic_en" in why and "never compiled" in why
+
+
+def test_check_en_built_passes_when_in_roots(tmp_path):
+    """A root-level `_en` explicitly listed in `roots` is built (no flag)."""
+    lake = tmp_path / "mylake"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text(
+        '[[lean_lib]]\nname = "L"\nroots = ["Nash", "Nash_en"]\n',
+        encoding="utf-8",
+    )
+    (lake / "Nash_en.lean").write_text("-- covered\n", encoding="utf-8")
+    built, why = check_en_built(lake / "Nash_en.lean", tmp_path)
+    assert built is True and why == ""
+
+
+def test_check_en_built_glob_covers_submodule(tmp_path):
+    """A submodule `_en` under a `.submodules`/`.*` parent glob is built — the
+    guard must NOT flag it (matches game_theory_lean `RepeatedGames.*`)."""
+    lake = tmp_path / "glake"
+    (lake / "Foo").mkdir(parents=True)
+    (lake / "lakefile.lean").write_text(
+        "lean_lib «Foo» where\n  globs := #[.submodules `Foo]\n",
+        encoding="utf-8",
+    )
+    (lake / "Foo" / "Bar_en.lean").write_text("-- sub\n", encoding="utf-8")
+    built, _ = check_en_built(lake / "Foo" / "Bar_en.lean", tmp_path)
+    assert built is True
+
+
+def test_check_en_built_skips_without_lakefile(tmp_path):
+    """No enclosing lakefile → undeterminable → skip (None), never false-flag."""
+    (tmp_path / "Loose_en.lean").write_text("-- x\n", encoding="utf-8")
+    built, why = check_en_built(tmp_path / "Loose_en.lean", tmp_path)
+    assert built is None
+    assert "lakefile" in why
+
+
+def test_enclosing_lake_walks_up_to_nearest(tmp_path):
+    """`enclosing_lake` returns the nearest ancestor lakefile, stopping at root."""
+    lake = tmp_path / "l"
+    (lake / "sub").mkdir(parents=True)
+    lf = lake / "lakefile.lean"
+    lf.write_text("lean_lib «L» where\n", encoding="utf-8")
+    found = enclosing_lake(lake / "sub" / "X_en.lean", tmp_path)
+    assert found == lf
+    assert enclosing_lake(tmp_path / "Nowhere_en.lean", tmp_path) is None
 
 
 def _run_direct() -> int:
