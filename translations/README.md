@@ -7,15 +7,15 @@
 ```text
 translations/
 ├── README.md                 ← ce fichier
-├── casestudies/              ├─ gametheory/        ├─ iit/
-├── mlnet/                    ├─ planners/          ├─ probas-infer/
-├── probas-pymc/              ├─ quantconnect/      ├─ rl/
-├── search-applications/      ├─ search-part1/      ├─ search-part2/
-├── search-part3/             ├─ search-part4/      ├─ semanticweb/
-├── smartcontracts/           ├─ smt/               ├─ sudoku/
-├── symbolicai/               ├─ symboliclearning/  └─ tweety/
-├── genai/        (texte, finetuning, posttraining)
-├── genai-audio/              └── genai-image/
+├── casestudies/              ├─ gametheory/        ├─ genai/ (texte, finetuning, posttraining)
+├── genai-audio/              ├─ genai-image/       ├─ iit/
+├── ml-datascience/           ├─ mlnet/             ├─ planners/
+├── probas-decinfer/          ├─ probas-infer/      ├─ probas-pymc/
+├── quantconnect/             ├─ rl/                ├─ search-applications/
+├── search-part1/             ├─ search-part2/      ├─ search-part3/
+├── search-part4/             ├─ semanticweb/       ├─ smartcontracts/
+├── smt/ (z3-api, z3-linq2z3) ├─ sudoku/            ├─ symbolicai/
+├── symboliclearning/         └─ tweety/
 ```
 
 Sous-répertoire par famille (`translations/<famille>/`), un CSV par série pédagogique. `smt/` porte deux séries (`z3-api`, `z3-linq2z3`) et `genai/` en porte trois (`texte`, `finetuning`, `posttraining`).
@@ -24,7 +24,7 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 
 ## Familles couvertes (T1 baseline)
 
-**27 CSV, 21 174 cellules** au total (extraction `src_lang=fr`, comptage lignes hors en-tête). Regroupement par domaine pédagogique :
+**29 CSV, 22 265 cellules** au total (extraction `src_lang=fr`, comptage lignes hors en-tête). Regroupement par domaine pédagogique :
 
 | Domaine | CSV | Cellules | Série source |
 |---------|-----|---------:|--------------|
@@ -44,8 +44,10 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | Search — Applications | `search-applications/search-applications.csv` | 1468 | `Search/Applications/` |
 | Probas — Infer.NET | `probas-infer/probas_infer.csv` | 940 | `Probas/` |
 | Probas — PyMC | `probas-pymc/probas_pymc.csv` | 571 | `Probas/` |
+| Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 383 | `Probas/DecisionTheory/DecInfer/` |
 | IIT / ICT | `iit/iit.csv` | 776 | `IIT/ICT-Series/` |
 | ML.NET | `mlnet/mlnet.csv` | 599 | `ML/` |
+| ML — Data Science with Agents | `ml-datascience/ml-datascience.csv` | 708 | `ML/DataScienceWithAgents/` |
 | RL | `rl/rl.csv` | 513 | `RL/` |
 | Sudoku | `sudoku/sudoku.csv` | 1325 | `Sudoku/` |
 | GameTheory | `gametheory/gametheory.csv` | 1897 | `GameTheory/` |
@@ -62,7 +64,7 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 
 | T# | Script | Statut |
 |----|--------|--------|
-| **T1** | `scripts/translation/extract_cells_to_csv.py` | **Livré** (Phase 1 INFRA, PR #5657) — 27 séries extraites |
+| **T1** | `scripts/translation/extract_cells_to_csv.py` | **Livré** (Phase 1 INFRA, PR #5657) — 29 séries extraites |
 | **T2** | `scripts/translation/check_translation_sync.py` | **Livré**, CI non-bloquante `.github/workflows/translation-drift.yml` |
 | **T3** | Moteur Argumentum `datasetupdater` (8 langues) | À venir (gated #1650 Phase 1 connecteur) |
 
