@@ -8,4 +8,7 @@ defaultTargets = ["LeanGameDefs"]
 
 [[lean_lib]]
 name = "LeanGameDefs"
-roots = ["Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret"]
+# `Basic_en` is the English twin of `Basic` (EPIC #4980 sibling-pair, namespace
+# `LeanGameDefs_en`). Listed as a root so the twin is built by CI (anti-ORPHAN-TRAP,
+# cf L504 root-twin-glob-pattern). The other 5 leaves are migrated in follow-up PRs.
+roots = ["Basic", "Basic_en", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret"]
