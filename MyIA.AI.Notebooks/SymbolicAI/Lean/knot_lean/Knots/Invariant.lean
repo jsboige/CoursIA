@@ -988,13 +988,19 @@ d'arc-égalité `c₂ = c₄`), c'est le témoin de distinction canonique : le m
 permissif antérieur laissait passer une tricoloration parasite `(0,0,0,1,0,0,1,2)`
 (README §Path B), que la contrainte d'arc exclut désormais.
 
-Preuve par énumération finie (`decide`) : l'espace des coloriages `Fin 8 → TriColor`
-(3⁸ = 6561) est parcouru, et pour chacun la conjonction d'arc-égalité + Fox aux 4
-croisements est réfutée — soit l'arc-continuité casse, soit Fox force le monochrome
-(contrredisant « ≥ 2 couleurs »). Témoin de non-régression Path B (#2874). -/
+Preuve par énumération finie (`native_decide`) : l'espace des coloriages
+`Fin 8 → TriColor` (3⁸ = 6561) est parcouru, et pour chacun la conjonction
+d'arc-égalité + Fox aux 4 croisements est réfutée — soit l'arc-continuité casse,
+soit Fox force le monochrome (contredisant « ≥ 2 couleurs »). On emploie
+`native_decide` (et non `decide`) : l'existentiel porte sur le type-fonction
+`Fin 8 → TriColor`, dont l'instance `Decidable` repose sur `Fintype.piFinset` ; le
+noyau ne réduit pas cette énumération (`decide` échoue avec « did not reduce to
+'isTrue' or 'isFalse' »), là où l'évaluateur natif la traite en quelques ms —
+même outil que les lemmes de calibration finie de `conway_lean/Angel.lean`.
+Témoin de non-régression Path B (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable IsTricolorable IsTriColoring figureEight
-  decide
+  native_decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 

@@ -951,13 +951,19 @@ continuity conjunct), this is the canonical distinguishing witness: the earlier
 permissive model admitted a spurious tricoloring `(0,0,0,1,0,0,1,2)` (README
 §Path B), which the arc constraint now excludes.
 
-Proof by finite enumeration (`decide`): the coloring space `Fin 8 → TriColor`
-(3⁸ = 6561) is exhausted, and for each the arc-continuity + Fox conjunction at
-all 4 crossings is refuted — either arc-continuity breaks, or Fox forces
-monochrome (contradicting "≥ 2 colors"). Path-B non-regression witness (#2874). -/
+Proof by finite enumeration (`native_decide`): the coloring space
+`Fin 8 → TriColor` (3⁸ = 6561) is exhausted, and for each the arc-continuity +
+Fox conjunction at all 4 crossings is refuted — either arc-continuity breaks, or
+Fox forces monochrome (contradicting "≥ 2 colors"). We use `native_decide` (not
+`decide`): the existential ranges over the function type `Fin 8 → TriColor`, whose
+`Decidable` instance rests on `Fintype.piFinset`; the kernel does not reduce that
+enumeration (`decide` fails with "did not reduce to 'isTrue' or 'isFalse'"),
+whereas the native evaluator handles it in a few ms — the same tool used by the
+finite-calibration lemmas in `conway_lean/Angel.lean`. Path-B non-regression
+witness (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable IsTricolorable IsTriColoring figureEight
-  decide
+  native_decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 
