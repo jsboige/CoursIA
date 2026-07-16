@@ -36,8 +36,14 @@
                           la minimisation de regret / CFR) : borne
                           définissante, caractérisation par le max, exemples
                           certifiés par `decide` (phase 6, cible GT-13)
+  - `Bayesian.FictitiousPlay` — algorithme fondateur de l'apprentissage
+                          no-regret : état born-correct, croyances
+                          empiriques, étape élémentaire, invariant de
+                          comptage certifié par `decide`, exemple 2×2
+                          (phase 7, cible GT-17)
 
-  Voir #2610 (formalisation GT-Lean, phases 1-6 : jeux bayésiens + regret).
+  Voir #2610 (formalisation GT-Lean, phases 1-7 : jeux bayésiens + regret
+  + Fictitious Play).
 
   ---
   English:
@@ -75,8 +81,13 @@
                           of regret minimization / CFR): defining bound,
                           max-characterization, `decide`-certified examples
                           (phase 6, GT-13 target)
+  - `Bayesian.FictitiousPlay` — foundational no-regret learning algorithm:
+                          born-correct state, empirical beliefs, elementary
+                          step, counting invariant certified by `decide`,
+                          2×2 example (phase 7, GT-17 target)
 
-  See #2610 (GT-Lean formalization, phases 1-6: Bayesian games + regret).
+  See #2610 (GT-Lean formalization, phases 1-7: Bayesian games + regret +
+  Fictitious Play).
 -/
 
 import Bayesian.Sum
@@ -90,3 +101,4 @@ import Bayesian.Information
 import Bayesian.InfoGames
 import Bayesian.Reputation
 import Bayesian.Regret
+import Bayesian.FictitiousPlay
