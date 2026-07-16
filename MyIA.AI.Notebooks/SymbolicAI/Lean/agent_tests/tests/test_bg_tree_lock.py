@@ -206,8 +206,39 @@ def test_release_none_is_noop():
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# run_prover_bg CLI wiring
+# run_prover_bg CLI wiring — BOTH launchers (the run-7 result JSON came from
+# the INNER prover/run_prover_bg.py, so that one is the actual incident path)
 # ──────────────────────────────────────────────────────────────────────────
+
+
+def test_inner_launcher_refuses_locked_tree(tmp_path):
+    """prover/run_prover_bg.run_prover must refuse a tree whose lock is held
+    (returns result_kind='locked' BEFORE touching the file or any LLM)."""
+    from prover.run_prover_bg import run_prover
+
+    (tmp_path / "lakefile.lean").write_text("-- lake", encoding="utf-8")
+    target = tmp_path / "Foo.lean"
+    target.write_text("theorem t : True := by sorry", encoding="utf-8")
+
+    # Simulate run-6 already active on this tree (live pid = our own).
+    lock_path, _ = acquire_tree_lock(tmp_path, demo_id="run-6")
+    try:
+        summary = run_prover(filepath=str(target), line=1)
+        assert summary["result_kind"] == "locked"
+        assert "REFUSED" in summary["reason"]
+        # The first holder's lock is untouched.
+        assert read_lock(lock_path)["demo_id"] == "run-6"
+    finally:
+        release_tree_lock(lock_path)
+
+
+def test_inner_launcher_signature_has_force_lock():
+    import inspect
+    from prover.run_prover_bg import run_prover
+
+    sig = inspect.signature(run_prover)
+    assert "force_lock" in sig.parameters
+    assert sig.parameters["force_lock"].default is False
 
 
 def test_launcher_exposes_force_lock_flag():
