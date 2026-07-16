@@ -16665,14 +16665,14 @@ Console.WriteLine(""Sur ce KG, les regles sont non-recursives : 1 seule iteratio
 Console.WriteLine(""suffit. clingo ferait la meme chose (point fixe) MAIS saurait"");
 Console.WriteLine(""aussi resoudre ancestorOf recursif et le repair minimal —"");
 Console.WriteLine(""cas honnetement hors scope du twin C# (INTRINSIC sans clingo natif)."");",,,,,,,,6f492197d4aaed20,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,7795167a,markdown,fr,c71c6fbfdb08d5af,"---
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,7795167a,markdown,fr,279d3adf6421f84a,"---
 ## Exercices
 
-> **Convention** (cf [notebook-conventions.md](../../../../../.claude/rules/notebook-conventions.md) C.1) : les stubs d'exercice utilisent `pass`-equivalents C# (`// TODO etudiant`, commentaire sans erreur). Le notebook s'execute de bout en bout meme exercices non completes.
+> **Convention** (cf [notebook-conventions.md](../../../.claude/rules/notebook-conventions.md) C.1) : les stubs d'exercice utilisent `pass`-equivalents C# (`// TODO etudiant`, commentaire sans erreur). Le notebook s'execute de bout en bout meme exercices non completes.
 
 ### Exemple guide 1 : Ajouter `uncleOf` et rediscover sa regle
 
-> Solution demontree ci-dessous (See #2161). `uncleOf(X,Y) :- parentOf(Z,Y), siblingOf(Z,X)` (le frere d'un parent est l'oncle).",,,,,,,,c71c6fbfdb08d5af,,,,,,,
+> Solution demontree ci-dessous (See #2161). `uncleOf(X,Y) :- parentOf(Z,Y), siblingOf(Z,X)` (le frere d'un parent est l'oncle).",,,,,,,,279d3adf6421f84a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,d378262a,code,fr,2e449424114d7fd4,"// Exemple guide 1 : uncleOf(X,Y) :- parentOf(Z,Y) ^ siblingOf(Z,X)
 // Variante : on ajoute manuellement quelques uncleOf, puis on verifie
 // si le mineur retrouve la regle parentOf(B,Y) ^ siblingOf(A,B) => uncleOf(A,Y).
