@@ -13,8 +13,9 @@ name = "LeanGameDefs"
 # an explicit root, a `*_en.lean` mirror is an orphan that Lake never builds
 # and whose compile errors stay invisible. `Nash_en` reuses the FR `Basic`
 # identifiers (reuse-FR-names variant) so it imports `Basic`, not `Basic_en`.
-# `Combinatorial_en` is self-contained (no import), so it builds standalone.
+# `Combinatorial_en` and `SocialChoice_en` are self-contained (no import), so
+# they build standalone.
 roots = [
   "Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret",
-  "Nash_en", "Combinatorial_en",
+  "Nash_en", "Combinatorial_en", "SocialChoice_en",
 ]
