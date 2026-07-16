@@ -16779,7 +16779,7 @@ A la fin de ce notebook, vous saurez :
 - Wei et al., *Chain-of-Thought Prompting Elicits Reasoning in Large Language Models* (2022)
 - Muggleton, *Inductive Logic Programming* (1991)
 - Pan et al., *Unifying Large Language Models and Knowledge Graphs: A Roadmap* (2024)",,,,,,,,cbfbcf0bdce3ff32,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3dc32d19,code,fr,8ca83df87568cde0,"# Imports et configuration
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3dc32d19,code,fr,b36849c5e5fe35c1,"# Imports et configuration
 from typing import Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -16789,10 +16789,10 @@ import re
 import os
 from dotenv import load_dotenv, find_dotenv
 
-# --- Acces au LLM : VRAI modele via .env, repli deterministe hors-ligne/CI ---
+# --- Accès au LLM : VRAI modèle via .env, repli déterministe hors-ligne/CI ---
 # Ce notebook appelle un vrai LLM comme generateur d'hypotheses (sections 2 a 7).
 # Sans cle (pas de .env, ou environnement CI), il bascule automatiquement sur un
-# generateur deterministe de reference : le notebook reste executable de bout en
+# generateur déterministe de référence : le notebook reste executable de bout en
 # bout partout, et la cle API n'est JAMAIS affichee.
 load_dotenv(find_dotenv(usecwd=True))
 LLM_API_KEY = os.getenv(""OPENAI_API_KEY"")
@@ -16821,7 +16821,7 @@ if LLM_AVAILABLE:
 else:
     print(""Generateur d'hypotheses : repli deterministe (pas de .env / OPENAI_API_KEY)"")
     print(""  Copiez .env.example -> .env pour activer le vrai LLM."")
-print(""Verificateur : oracle symbolique deterministe (section 3) -- toujours actif."")",,,,,,,,8ca83df87568cde0,,,,,,,
+print(""Verificateur : oracle symbolique deterministe (section 3) -- toujours actif."")",,,,,,,,b36849c5e5fe35c1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,23731406,markdown,fr,520f3d282663ac17,"---
 
 ## 1. Introduction : LLMs comme moteurs de raisonnement symbolique
@@ -16847,9 +16847,9 @@ Les grands modeles de langage (LLMs) comme GPT-4, Claude ou Gemini sont capables
 Dans les notebooks precedents, nous avons etudie comment un agent peut apprendre des regles a partir d'exemples (SL-1), de connaissances de fond (SL-2), ou par programmation logique inductive (SL-4). Ce notebook montre comment les LLMs peuvent servir de **generateur d'hypotheses** dans ce cadre, en remplacement ou en complement des methodes de recherche classique.
 
 > **Note** : Ce notebook appelle un **vrai LLM** (configure via `.env`, cf. cellule precedente) comme generateur d'hypotheses dans toutes les sections. Sans `.env` (par ex. en CI), il bascule sur un **generateur deterministe de reference** afin de rester executable de bout en bout ; les sorties committees, elles, proviennent d'un run reel du modele.",,,,,,,,520f3d282663ac17,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,f1d96718,code,fr,eab1ffec57e09a97,"# Le paradigme neuro-symbolique, quantifie : pourquoi deleguer la GENERATION ?
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,f1d96718,code,fr,8649e17530ad6f6c,"# Le paradigme neuro-symbolique, quantifie : pourquoi deleguer la GENERATION ?
 # Cout de l'approche classique = explorer un espace d'hypotheses qui explose
-# combinatoirement ; cout de l'approche LLM = quelques candidats cibles a verifier.
+# combinatoirement ; cout de l'approche LLM = quelques candidats cibles a vérifier.
 
 from math import prod
 
@@ -16890,7 +16890,7 @@ print(""    Exemples -> LLM (genere ~5 candidats) -> verif symbolique -> regles"
 print(""    Avantage : creativite, contexte naturel ; risque : hallucinations"")
 print(""  Approche hybride = generation neuronale + filtre symbolique :"")
 print(""    le meilleur des deux mondes"")
-",,,,,,,,eab1ffec57e09a97,,,,,,,
+",,,,,,,,8649e17530ad6f6c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3827f67e,markdown,fr,45827311e655a71f,"### Interpretation : Le paradigme neuro-symbolique
 
 | Approche | Creativite | Fiabilite | Vitesse | Domaine couvert |
@@ -17025,7 +17025,7 @@ l'oracle (section 3).
 Sans cle API, `llm_generate_rules` bascule sur `reference_rules_offline`, un
 generateur deterministe qui sert a la fois de **repli** (notebook executable en CI)
 et de **point de comparaison** au vrai modele (section 7).",,,,,,,,3518d7acb654b8f3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,1c109513,code,fr,c60742cacfa9d012,"# Generateur d'hypotheses : appel du VRAI LLM + repli deterministe
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,1c109513,code,fr,8feccd501694516d,"# Generateur d'hypotheses : appel du VRAI LLM + repli déterministe
 
 @dataclass
 class HornClause:
@@ -17103,7 +17103,7 @@ def llm_chat(prompt: str, max_tokens: int = 4000) -> Optional[str]:
             model=LLM_MODEL,
             messages=[{""role"": ""user"", ""content"": prompt}],
             temperature=0,
-            max_tokens=max_tokens,  # large : les modeles 'reasoning' depensent
+            max_tokens=max_tokens,  # large : les modèles 'reasoning' depensent
         )                           # des tokens de reflexion avant la reponse
         return resp.choices[0].message.content
     except Exception as exc:
@@ -17128,7 +17128,7 @@ def llm_generate_rules(prompt: str) -> tuple[str, list[HornClause]]:
     return ""\n"".join(str(r) for r in rules) + ""\n(generateur de reference)"", rules
 
 
-# Generation des hypotheses candidates (vrai LLM si configure)
+# Génération des hypotheses candidates (vrai LLM si configure)
 raw_response, candidate_rules = llm_generate_rules(prompt)
 
 source = LLM_MODEL if LLM_AVAILABLE else ""generateur de reference (hors-ligne)""
@@ -17138,7 +17138,7 @@ print(raw_response[:1200])
 print(""="" * 60)
 print(f""\nRegles candidates parsees : {len(candidate_rules)}"")
 for i, rule in enumerate(candidate_rules):
-    print(f""  R{i+1}: {rule}"")",,,,,,,,c60742cacfa9d012,,,,,,,
+    print(f""  R{i+1}: {rule}"")",,,,,,,,8feccd501694516d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,bf930a24,markdown,fr,c8018b42b7bd49bd,"### Interpretation : Generation d'hypotheses par le LLM
 
 Le LLM (ou le generateur de reference hors-ligne) a propose quelques clauses de
@@ -17164,7 +17164,7 @@ Pour chaque regle candidate, on verifie :
 2. **Correction negative** : la regle exclut-elle tous les exemples negatifs ?
 3. **Consistance** : la regle est-elle libre de contradictions internes ?
 4. **Parsimonie** : la regle est-elle minimale (pas de conditions redondantes) ?",,,,,,,,ea399deb748e88ce,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,2c0873ae,code,fr,cc37773460e23bb4,"# Oracle symbolique : verification des regles candidates
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,2c0873ae,code,fr,b20439eaf7cd8e58,"# Oracle symbolique : vérification des regles candidates
 
 @dataclass
 class VerificationResult:
@@ -17237,7 +17237,7 @@ def verify_rule(rule: HornClause, examples: list[dict], rule_idx: int) -> Verifi
     )
 
 
-# Verification de toutes les regles candidates
+# Vérification de toutes les regles candidates
 print(""Verification symbolique des regles candidates"")
 print(""="" * 70)
 print()
@@ -17252,7 +17252,7 @@ for i, rule in enumerate(candidate_rules):
     print(f""R{i+1}: {vr.rule_str:36s} | {vr.tp:>3} | {vr.fp:>3} | {vr.fn:>3} | {vr.precision:>5.2f} | {vr.recall:>6.2f} | {ok_str:>3}"")
 
 print()
-print(""Legende : TP=Vrais Positifs, FP=Faux Positifs, FN=Faux Negatifs, OK=Consistante"")",,,,,,,,cc37773460e23bb4,,,,,,,
+print(""Legende : TP=Vrais Positifs, FP=Faux Positifs, FN=Faux Negatifs, OK=Consistante"")",,,,,,,,b20439eaf7cd8e58,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,0f9984a1,markdown,fr,acd4088b671208b0,"### Interpretation : Verification symbolique
 
 L'oracle symbolique a identifie les regles correctes et incorrectes :
@@ -17337,7 +17337,7 @@ L'idee est de :
 1. Demander au LLM de raisonner sur un exemple (CoT)
 2. Parser les etapes du raisonnement comme des etapes de preuve
 3. Extraire une structure logique de la trace",,,,,,,,4de50e3d5004616b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,83e5f5eb,code,fr,5d8c6d3159e183d2,"# Chain-of-Thought : raisonnement etape par etape du LLM (vrai modele + repli)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,83e5f5eb,code,fr,be69926138a6a2e5,"# Chain-of-Thought : raisonnement étape par étape du LLM (vrai modèle + repli)
 
 @dataclass
 class CoTStep:
@@ -17405,7 +17405,7 @@ def llm_cot_classification(example: dict, idx: int) -> CoTTrace:
             rule = parsed[0] if parsed else None
         else:
             steps.append(CoTStep(len(steps) + 1, line[:80], line, """"))
-    if rule is None:  # le LLM n'a pas donne de regle exploitable -> reference
+    if rule is None:  # le LLM n'a pas donne de regle exploitable -> référence
         return reference_cot_classification(example, idx)
     desc = f""Pat={example['Patrons']}, Type={example['Type']}, Hungry={example['Hungry']}""
     return CoTTrace(idx, desc, steps[:3], answer, rule)
@@ -17436,7 +17436,7 @@ for idx in test_indices:
             print(f""    Raisonnement : {step.reasoning}"")
     print(f""  => Decision : WillWait={trace.final_answer}"")
     if trace.extracted_rule:
-        print(f""  => Regle extraite : {trace.extracted_rule}"")",,,,,,,,5d8c6d3159e183d2,,,,,,,
+        print(f""  => Regle extraite : {trace.extracted_rule}"")",,,,,,,,be69926138a6a2e5,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3653b321,markdown,fr,d0dff982dedc29f0,"### Interpretation : Chain-of-Thought et EBL
 
 Chaque trace CoT est structuree comme un **arbre de preuve EBL** :
@@ -17540,7 +17540,7 @@ Exemples d'entrainement
         v
 [5. Selection]           -- Regles validees + score de confiance
 ```",,,,,,,,9616f213d0b57094,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,f9d67f71,code,fr,ed41029a0769ecd1,"# Pipeline complet Neuro-Symbolique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,f9d67f71,code,fr,ed730330b10b527f,"# Pipeline complet Neuro-Symbolique
 
 @dataclass
 class PipelineResult:
@@ -17568,17 +17568,17 @@ class NeuroSymbolicPipeline:
     ) -> PipelineResult:
         """"""Execute le pipeline complet.""""""
 
-        # Etape 1 : Construction du prompt
+        # Étape 1 : Construction du prompt
         prompt = build_rule_prompt(examples, target)
 
-        # Etape 2 : Generation LLM (vrai modele si configure, repli sinon)
+        # Étape 2 : Génération LLM (vrai modèle si configure, repli sinon)
         _, candidates = llm_generate_rules(prompt)
         candidates = list(candidates)
 
-        # Etape 2b (optionnel) : Generation CoT
+        # Étape 2b (optionnel) : Génération CoT
         if self.use_cot:
             # CoT sur un mix de positifs ET de negatifs : les traces sur les
-            # negatifs produisent des regles negatives que la generation
+            # negatifs produisent des regles negatives que la génération
             # directe peut manquer. Deduplication contre les candidates
             # directes pour ne garder que l'apport reel du CoT.
             positives = [e for e in examples if e[target]]
@@ -17591,17 +17591,17 @@ class NeuroSymbolicPipeline:
                     seen.add(str(rule))
                     candidates.append(rule)
 
-        # Etape 3 : Verification
+        # Étape 3 : Vérification
         verified = []
         for i, rule in enumerate(candidates):
             vr = verify_rule(rule, examples, i)
             verified.append((rule, vr))
 
-        # Etape 4 : Selection
+        # Étape 4 : Selection
         validated = [(r, v) for r, v in verified if v.is_consistent]
         rejected = [(r, v) for r, v in verified if not v.is_consistent]
 
-        # Etape 5 : Calcul de la couverture
+        # Étape 5 : Calcul de la couverture
         positive_indices = {i for i, e in enumerate(examples) if e[target]}
         covered = set()
         for rule, vr in validated:
@@ -17645,9 +17645,9 @@ class NeuroSymbolicPipeline:
                 print(f""  [KO] {rule}  (FP={vr.fp})"")
 
 
-# Execution du pipeline
+# Exécution du pipeline
 pipeline = NeuroSymbolicPipeline(use_cot=False)
-result = pipeline.run(EXAMPLES)",,,,,,,,ed41029a0769ecd1,,,,,,,
+result = pipeline.run(EXAMPLES)",,,,,,,,ed730330b10b527f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,2f9d2c01,markdown,fr,8019c500cf680bca,"### Execution du pipeline avec Chain-of-Thought
 
 Le pipeline `NeuroSymbolicPipeline` ci-dessus a ete execute **sans** l'option
@@ -17664,13 +17664,13 @@ C'est le point interessant : la generation directe, focalisee sur ""expliquer le
 positifs"", avait manque cette regle negative. Le raisonnement exemple-par-exemple
 du CoT la fait apparaitre -- et l'oracle la valide.
 ",,,,,,,,8019c500cf680bca,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,8917b738,code,fr,e26a0871d7a812e3,"# Execution avec Chain-of-Thought active
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,8917b738,code,fr,b55acd8250749956,"# Exécution avec Chain-of-Thought active
 print(""\n"")
 pipeline_cot = NeuroSymbolicPipeline(use_cot=True)
 result_cot = pipeline_cot.run(EXAMPLES)
 
 print(f""\nComparaison : sans CoT ({result.n_validated} validees) ""
-      f""vs avec CoT ({result_cot.n_validated} validees)"")",,,,,,,,e26a0871d7a812e3,,,,,,,
+      f""vs avec CoT ({result_cot.n_validated} validees)"")",,,,,,,,b55acd8250749956,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,a2edb6e2,markdown,fr,21761ed95ef8442b,"### Interpretation : Pipeline complet
 
 Le pipeline automatise le cycle generate-and-test :
@@ -17693,7 +17693,7 @@ tolerance aux faux positifs, qui assemble plusieurs clauses pour couvrir les pos
 > **Point cle** : le pipeline est **iterable**. Si la couverture est insuffisante,
 > on re-prompte le LLM avec les erreurs residuelles pour generer de nouvelles
 > hypotheses --- c'est exactement la section suivante.",,,,,,,,21761ed95ef8442b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,54a6b7c4,code,fr,18b4e364e2e947a6,"# Analyse quantitative des resultats
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,54a6b7c4,code,fr,c07504020b0d04f2,"# Analyse quantitative des résultats
 
 print(""Analyse quantitative du pipeline"")
 print(""="" * 55)
@@ -17712,7 +17712,7 @@ print(""Metriques par regle validee (sans CoT) :"")
 print(f""  {'Regle':35s} | {'Precision':>9} | {'Recall':>6} | {'F1':>4}"")
 print(""  "" + ""-"" * 62)
 for rule, vr in result.validated_rules:
-    print(f""  {str(rule):35s} | {vr.precision:>9.2f} | {vr.recall:>6.2f} | {vr.f1:>4.2f}"")",,,,,,,,18b4e364e2e947a6,,,,,,,
+    print(f""  {str(rule):35s} | {vr.precision:>9.2f} | {vr.recall:>6.2f} | {vr.f1:>4.2f}"")",,,,,,,,c07504020b0d04f2,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,d74db354,markdown,fr,df94fb1f9011e4a9,"### Interpretation : Metriques quantitatives
 
 | Metrique | Signification | Valeur ideale |
@@ -17735,7 +17735,7 @@ Le pipeline precedent est **a un seul passage**. En pratique, on peut l'ameliore
 3. **Raffinant** les regles existantes (specialisation si trop generales)
 
 Ce processus est analogue au **CBH** de SL-1 : on ajuste incrementalement les hypotheses.",,,,,,,,962715970408650c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,dada4cc8,code,fr,9028e8b5dcf613ef,"# Pipeline iteratif avec raffinement par le VRAI LLM
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,dada4cc8,code,fr,42bcc41e9504cb8a,"# Pipeline iteratif avec raffinement par le VRAI LLM
 
 def build_refinement_prompt(examples, uncovered, validated, target=""WillWait""):
     """"""Prompt cible : montre les positifs encore non couverts + les regles deja
@@ -17806,7 +17806,7 @@ def run_iterative_pipeline(examples, max_fp=1, max_iterations=3, verbose=True):
     return all_validated
 
 
-# Execution du pipeline iteratif
+# Exécution du pipeline iteratif
 print(""Pipeline iteratif avec raffinement (re-prompt sur les erreurs residuelles)"")
 print(""="" * 72)
 print(""(Tolerance : max 1 faux positif par regle)"")
@@ -17817,7 +17817,7 @@ print(f""\nRegles finales : {len(final_rules)}"")
 for i, (rule, vr) in enumerate(final_rules):
     print(f""  F{i+1}: {rule}  (TP={vr.tp}, FP={vr.fp})"")
 
-# Verifier la couverture finale
+# Vérifier la couverture finale
 total_covered = sum(
     1 for ex in POSITIVES
     if any(r.evaluate(ex) for r, _ in final_rules)
@@ -17830,7 +17830,7 @@ for rule, vr in final_rules:
     for j, ex in enumerate(EXAMPLES):
         if not ex[""WillWait""] and rule.evaluate(ex):
             all_fp_indices.add(j)
-print(f""Faux positifs totaux (union) : {len(all_fp_indices)} (indices: {sorted(all_fp_indices)})"")",,,,,,,,9028e8b5dcf613ef,,,,,,,
+print(f""Faux positifs totaux (union) : {len(all_fp_indices)} (indices: {sorted(all_fp_indices)})"")",,,,,,,,42bcc41e9504cb8a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3cc1a67b,markdown,fr,582276c942dcebfc,"### Interpretation : Pipeline iteratif
 
 Le pipeline iteratif ajoute progressivement des regles en **re-promptant le LLM**
@@ -17900,7 +17900,7 @@ if N_RUNS > 1 and runs:
     print(""le meme verdict -- c'est lui qui rend le resultat reproductible."")
 else:
     print(""\n(1 seul run : generateur deterministe, stabilite triviale a 100%.)"")",,,,,,,,c8115c2f11bc55fb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,426133ee,code,fr,16ea3ba8aae79712,"# Robustesse 2 : vrai LLM vs generateur de reference, juges par le MEME oracle
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,426133ee,code,fr,087747968fa7218e,"# Robustesse 2 : vrai LLM vs generateur de référence, juges par le MEME oracle
 
 _, llm_rules = llm_generate_rules(prompt)
 ref_rules = reference_rules_offline(prompt)
@@ -17921,8 +17921,8 @@ summarize(""Vrai LLM"" if LLM_AVAILABLE else ""Reference (pas de cle)"", llm_rul
 summarize(""Reference deterministe"", ref_rules)
 print()
 print(""Deux generateurs, un seul juge : l'oracle symbolique. C'est lui qui rend"")
-print(""le verdict comparable et fiable, quel que soit le producteur d'hypotheses."")",,,,,,,,16ea3ba8aae79712,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,6e670307,code,fr,a3d5eb20fb653e4e,"# Le schema generer->verifier est generique : un generateur, un verificateur
+print(""le verdict comparable et fiable, quel que soit le producteur d'hypotheses."")",,,,,,,,087747968fa7218e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,6e670307,code,fr,17f72022c28a13d7,"# Le schema générer->vérifier est generique : un generateur, un verificateur
 
 def generate_and_verify(generator, verifier, prompt: str):
     """"""Boucle neuro-symbolique minimale, agnostique au generateur ET au verifieur.
@@ -17947,7 +17947,7 @@ print()
 print(""Memes deux lignes, autres (generateur, verificateur) ailleurs dans le depot :"")
 print(""  - Preuve Lean   : un LLM propose des tactiques  -> le noyau Lean verifie"")
 print(""  - Argumentation : un LLM propose des arguments   -> le solveur d'acceptabilite verifie"")
-print(""  - ILP (SL-4)    : la recherche propose des clauses -> le test de couverture verifie"")",,,,,,,,a3d5eb20fb653e4e,,,,,,,
+print(""  - ILP (SL-4)    : la recherche propose des clauses -> le test de couverture verifie"")",,,,,,,,17f72022c28a13d7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,d4216022,markdown,fr,bbaf80029c164f5b,"### Interpretation : un generateur faillible, un verificateur de confiance
 
 Le point pedagogique central, maintenant que le vrai LLM est le moteur de tout le
@@ -17982,16 +17982,16 @@ Nous appliquons le pipeline des sections 2-3 a un **nouveau domaine** : la predi
 2. Creer 6 exemples (3 positifs, 3 negatifs)
 3. Generer 3 regles candidates (simulees)
 4. Verifier chaque regle avec l'oracle symbolique (cible `bon_film`)",,,,,,,,f3f74ed8f205c2d8,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,5101d0d6,code,fr,4dbf04e03819370a,"# Exemple guide 1 : domaine film -- generation + verification symbolique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,5101d0d6,code,fr,6fb17ee7f36ff37b,"# Exemple guide 1 : domaine film -- génération + vérification symbolique
 #
 # On reprend l'architecture des sections 2-3 sur un nouveau domaine.
 # Concept sous-jacent (que l'oracle doit isoler) : un bon film est simplement
 # bien critique, independamment du genre, de la duree ou du budget.
 
-# Etape 1 : les 4 attributs du domaine film
+# Étape 1 : les 4 attributs du domaine film
 FILM_ATTRIBUTES = [""genre"", ""duree"", ""budget"", ""critique""]
 
-# Etape 2 : 6 exemples (3 positifs, 3 negatifs)
+# Étape 2 : 6 exemples (3 positifs, 3 negatifs)
 film_examples = [
     {""genre"": ""drama"",  ""duree"": ""long"",  ""budget"": ""high"", ""critique"": ""good"", ""bon_film"": True},
     {""genre"": ""drama"",  ""duree"": ""court"", ""budget"": ""low"",  ""critique"": ""good"", ""bon_film"": True},
@@ -18001,7 +18001,7 @@ film_examples = [
     {""genre"": ""action"", ""duree"": ""court"", ""budget"": ""high"", ""critique"": ""bad"",  ""bon_film"": False},
 ]
 
-# Etape 3 : 3 regles candidates (comme ce que produirait un LLM) :
+# Étape 3 : 3 regles candidates (comme ce que produirait un LLM) :
 # une correcte (R1), une consistante mais incomplete (R2), une erronee (R3).
 film_rules = [
     HornClause([""critique=good""], ""bon_film""),   # R1
@@ -18009,7 +18009,7 @@ film_rules = [
     HornClause([""budget=high""], ""bon_film""),     # R3
 ]
 
-# Etape 4 : verification. La cible change (""bon_film""), on generalise donc
+# Étape 4 : vérification. La cible change (""bon_film""), on generalise donc
 # verify_rule en parametrant la cle cible -- meme logique TP/FP/FN/TN qu'en
 # section 3, appliquee a un domaine quelconque.
 def verify_film_rule(rule, examples, target=""bon_film""):
@@ -18055,7 +18055,7 @@ print(""Lecture : R1 (critique=good) est a la fois consistante (FP=0) ET complet
 print(""(FN=0) : c'est la regle cherchee. R2 est consistante mais incomplete"")
 print(""(elle oublie la comedie positive) ; R3 est incoherente (budget=high couvre"")
 print(""aussi des exemples negatifs). L'oracle isole donc R1, exactement comme en"")
-print(""section 3 sur le domaine du restaurant."")",,,,,,,,4dbf04e03819370a,,,,,,,
+print(""section 3 sur le domaine du restaurant."")",,,,,,,,6fb17ee7f36ff37b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,a5281a2e,markdown,fr,d44c37084c94b1bb,"### Exercice 1 (variation) : Domaine ""activite en plein air""
 
 Reproduisez l'exemple guide ci-dessus sur un **domaine different** : decider si l'on fait une activite en plein air (`dehors`). Vous choisissez les attributs, vous construisez 6 exemples equilibres (3 ou l'on sort, 3 ou l'on reste) caches derriere un concept simple, puis vous proposez 3 regles candidates dont une seule est parfaite. Adaptez la verification a la cible `dehors`.
@@ -18068,25 +18068,25 @@ Reproduisez l'exemple guide ci-dessus sur un **domaine different** : decider si 
 
 **Indice :** un concept mono-attribut (un seul predicat decisif, ex `meteo=soleil`)
 est le plus simple a isoler -- comme `critique=good` dans l'exemple.",,,,,,,,d44c37084c94b1bb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,0abbe4b6,code,fr,54fc623bf781558d,"# Exercice 1 (variation) : domaine ""activite en plein air""
-# TODO etudiant : definissez le domaine, 6 exemples, 3 candidats, puis verifiez.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,0abbe4b6,code,fr,6c0d5243aa67262b,"# Exercice 1 (variation) : domaine ""activite en plein air""
+# TODO étudiant : definissez le domaine, 6 exemples, 3 candidats, puis verifiez.
 
-# Etape 1 : attributs
-OUTDOOR_ATTRIBUTES = []  # TODO etudiant : ex [""meteo"", ""vent"", ""temperature"", ""weekend""]
+# Étape 1 : attributs
+OUTDOOR_ATTRIBUTES = []  # TODO étudiant : ex [""meteo"", ""vent"", ""temperature"", ""weekend""]
 
-# Etape 2 : 6 exemples (3 dehors=True, 3 dehors=False)
+# Étape 2 : 6 exemples (3 dehors=True, 3 dehors=False)
 outdoor_examples = [
-    # TODO etudiant : ex {""meteo"": ""soleil"", ""vent"": ""non"", ""temperature"": ""douce"",
+    # TODO étudiant : ex {""meteo"": ""soleil"", ""vent"": ""non"", ""temperature"": ""douce"",
     #                      ""weekend"": ""oui"", ""dehors"": True}
 ]
 
-# Etape 3 : 3 regles candidates (1 parfaite, 1 incomplete, 1 incoherente)
-outdoor_rules = []  # TODO etudiant : ajoutez vos HornClause
+# Étape 3 : 3 regles candidates (1 parfaite, 1 incomplete, 1 incoherente)
+outdoor_rules = []  # TODO étudiant : ajoutez vos HornClause
 
-# Etape 4 : verification (adaptez verify_film_rule avec target=""dehors"")
-# TODO etudiant : affichez le tableau TP/FP/FN/OK/Couverture comme ci-dessus.
+# Étape 4 : verification (adaptez verify_film_rule avec target=""dehors"")
+# TODO étudiant : affichez le tableau TP/FP/FN/OK/Couverture comme ci-dessus.
 
-print(""Exercice a completer : domaine activite en plein air"")",,,,,,,,54fc623bf781558d,,,,,,,
+print(""Exercice a completer : domaine activite en plein air"")",,,,,,,,6c0d5243aa67262b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,2936e442,markdown,fr,36ced9c0d27d0119,"### Exemple guide 2 : Comparer prompt direct vs Chain-of-Thought (CoT)
 
 Cet exemple guide compare les regles produites par une **generation directe** (`use_cot=False`) a celles enrichies par des **traces Chain-of-Thought** (`use_cot=True`). Les deux lots sont verifies par le meme oracle symbolique ; on compare ensuite le nombre de regles validees, le taux d'acceptation et la couverture des exemples positifs.
@@ -18096,22 +18096,22 @@ Cet exemple guide compare les regles produites par une **generation directe** (`
 2. Executer le pipeline avec CoT (`verbose=False`)
 3. Comparer le nombre de regles validees, le taux d'acceptation et la couverture
 ",,,,,,,,36ced9c0d27d0119,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,174aa8b0,code,fr,753cc504bef88a73,"# Exemple guide 2 : Comparaison generation directe vs Chain-of-Thought (CoT)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,174aa8b0,code,fr,e352537c38acd7b4,"# Exemple guide 2 : Comparaison génération directe vs Chain-of-Thought (CoT)
 #
 # On execute deux fois le pipeline Neuro-Symbolique sur le meme jeu
-# d'exemples (EXAMPLES) : en generation directe, puis en ajoutant les
+# d'exemples (EXAMPLES) : en génération directe, puis en ajoutant les
 # regles issues des traces CoT. Le meme oracle verifie les deux lots.
 # On compare alors n_validated, le taux d'acceptation et la couverture.
 
-# Etape 1 : Pipeline sans CoT (generation directe)
+# Étape 1 : Pipeline sans CoT (génération directe)
 p_direct = NeuroSymbolicPipeline(use_cot=False)
 r_direct = p_direct.run(EXAMPLES, verbose=False)
 
-# Etape 2 : Pipeline avec CoT (traces sur positifs ET negatifs)
+# Étape 2 : Pipeline avec CoT (traces sur positifs ET negatifs)
 p_cot = NeuroSymbolicPipeline(use_cot=True)
 r_cot = p_cot.run(EXAMPLES, verbose=False)
 
-# Etape 3 : Taux d'acceptation = regles valides / candidates generees
+# Étape 3 : Taux d'acceptation = regles valides / candidates generees
 def taux_acceptation(result):
     return result.n_validated / result.n_candidates if result.n_candidates else 0.0
 
@@ -18138,7 +18138,7 @@ print(""regle negative supplementaire (3 validees vs 2 en direct), d'ou un"")
 print(""taux d'acceptation plus eleve (50% vs 40%). La couverture des positifs"")
 print(""reste 0% dans les deux cas : c'est une limite du formalisme Horn sur un"")
 print(""concept disjonctif, pas une defaillance du CoT."")
-",,,,,,,,753cc504bef88a73,,,,,,,
+",,,,,,,,e352537c38acd7b4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex2var-md,markdown,fr,7cd20c1ee6a4db81,"### Exercice 2 (variation) : Effet du nombre d'exemples sur la couverture
 
 Au lieu de comparer deux modes de generation (direct vs CoT), comparez le comportement du pipeline quand on lui donne **un nombre croissant d'exemples**. On s'attend a ce que la couverture des positifs augmente avec le nombre d'exemples, jusqu'a un plateau une fois toutes les sous-classes couvertes.
@@ -18149,21 +18149,21 @@ Au lieu de comparer deux modes de generation (direct vs CoT), comparez le compor
 3. Afficher l'evolution de `n_validated` et de `coverage` selon la taille
 
 ",,,,,,,,7cd20c1ee6a4db81,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex2var-code,code,fr,b91c41c2ec48d551,"# Exercice 2 (variation) : effet du nombre d'exemples sur la couverture
-# TODO etudiant : comparez le pipeline sur des sous-ensembles croissants
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex2var-code,code,fr,8cb93f5a438dbbd9,"# Exercice 2 (variation) : effet du nombre d'exemples sur la couverture
+# TODO étudiant : comparez le pipeline sur des sous-ensembles croissants
 
-# Etape 1 : sous-ensembles de tailles 3, 5, puis len(EXAMPLES)
+# Étape 1 : sous-ensembles de tailles 3, 5, puis len(EXAMPLES)
 # tailles = [3, 5, len(EXAMPLES)]
 # sous_ensembles = {k: EXAMPLES[:k] for k in tailles}
 
-# Etape 2 : pipeline en generation directe sur chaque sous-ensemble
+# Étape 2 : pipeline en génération directe sur chaque sous-ensemble
 # resultats = []
 # for k, exs in sous_ensembles.items():
 #     p = NeuroSymbolicPipeline(use_cot=False)
 #     r = p.run(exs, verbose=False)
 #     resultats.append((k, r.n_validated, r.coverage))
 
-# Etape 3 : afficher l'evolution de n_validated et coverage selon la taille
+# Étape 3 : afficher l'evolution de n_validated et coverage selon la taille
 print(""Exercice a completer : effet du nombre d'exemples sur la couverture"")
 print(""Etape 1 : construisez des sous-ensembles de tailles 3, 5, len(EXAMPLES)"")
 print(""Etape 2 : executez le pipeline (direct) sur chaque sous-ensemble"")
@@ -18171,8 +18171,8 @@ print(""Etape 3 : affichez l'evolution de n_validated et coverage"")
 
 # Indice : la couverture des positifs augmente avec le nombre d'exemples,
 # puis se stabilise (plateau) une fois toutes les sous-classes couvertes.
-# result = None  # TODO etudiant : liste de tuples (taille, n_validated, coverage)
-",,,,,,,,b91c41c2ec48d551,,,,,,,
+# result = None  # TODO étudiant : liste de tuples (taille, n_validated, coverage)
+",,,,,,,,8cb93f5a438dbbd9,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,0962260b,markdown,fr,fe279286ca2629db,"### Exemple guide 3 : Detecter les hallucinations du LLM
 
 Un LLM peut generer des regles qui semblent correctes mais qui sont en fait des **hallucinations** : conditions impossibles (contradiction sur un meme attribut), attributs hors domaine, ou tautologie (regle sans condition, qui conclut toujours). Cet exemple guide implemente un detecteur qui parcourt les conditions d'une regle et signale ces trois familles de problemes.
@@ -18182,7 +18182,7 @@ Un LLM peut generer des regles qui semblent correctes mais qui sont en fait des 
 2. Implementer `detect_hallucination()`
 3. Tester sur des regles problematiques (contradiction, attribut inexistant, tautologie)
 ",,,,,,,,fe279286ca2629db,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3548d43c,code,fr,b1157b0231adde0b,"# Exemple guide 3 : Detection d'hallucinations
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3548d43c,code,fr,0b2fb88d9f2112fe,"# Exemple guide 3 : Detection d'hallucinations
 
 
 def detect_hallucination(rule: HornClause, valid_attrs: list[str], valid_values: dict) -> list[str]:
@@ -18202,7 +18202,7 @@ def detect_hallucination(rule: HornClause, valid_attrs: list[str], valid_values:
     if not rule.conditions:
         problems.append(""Tautologie : la regle n'a aucune condition ""
                         ""(elle conclut toujours, sans specialisation)"")
-        return problems  # rien d'autre a verifier
+        return problems  # rien d'autre a vérifier
 
     seen: dict[str, str] = {}  # attribut -> premiere valeur vue
     for cond in rule.conditions:
@@ -18215,7 +18215,7 @@ def detect_hallucination(rule: HornClause, valid_attrs: list[str], valid_values:
         # Attribut invalide : hors du domaine d'attributs connus
         if attr not in valid_attrs:
             problems.append(f""Attribut invalide : '{attr}' (hors du domaine connu)"")
-            continue  # inutile de verifier la valeur d'un attribut inconnu
+            continue  # inutile de vérifier la valeur d'un attribut inconnu
 
         # Valeur hors domaine
         if attr in valid_values and value not in valid_values[attr]:
@@ -18265,7 +18265,7 @@ print(""specialise rien). Un oracle symbolique seul ne detecte pas ces defauts""
 print(""(il mesure TP/FP/FN) : ce detecteur complementaire filtre les candidats"")
 print(""du LLM AVANT la verification, pour eviter de valider des regles vides"")
 print(""de sens."")
-",,,,,,,,b1157b0231adde0b,,,,,,,
+",,,,,,,,0b2fb88d9f2112fe,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex3var-md,markdown,fr,2f8b89e3bc003dc9,"### Exercice 3 (variation) : Detecter une regle non confirmee par les donnees
 
 Une regle peut etre **formellement valide** (pas de contradiction, attributs corrects, conditions presentes) et pourtant constituer une **hallucination vis-a-vis des donnees** : si AUCUN exemple d'entrainement ne satisfait toutes ses conditions, la regle n'est jamais declenchee et n'est pas confirmee par l'experience. Etendez le detecteur pour signaler ces regles ""mortes"".
@@ -18276,23 +18276,23 @@ Une regle peut etre **formellement valide** (pas de contradiction, attributs cor
 3. Distinguer les deux types de problemes dans l'affichage
 
 ",,,,,,,,2f8b89e3bc003dc9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex3var-code,code,fr,d7648190a1b616d2,"# Exercice 3 (variation) : regle non confirmee par les donnees
-# TODO etudiant : une regle formellement valide peut etre ""morte"" si
-# aucun exemple d'entrainement ne satisfait toutes ses conditions.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex3var-code,code,fr,9359a2e3fd3e0046,"# Exercice 3 (variation) : regle non confirmee par les données
+# TODO étudiant : une regle formellement valide peut etre ""morte"" si
+# aucun exemple d'entraînement ne satisfait toutes ses conditions.
 
-# Etape 1 : fonction de couverture par les donnees
+# Étape 1 : fonction de couverture par les données
 def regle_non_confirmee(rule, examples):
     """"""Retourne True si AUCUN exemple ne satisfait toutes les conditions.""""""
-    # TODO etudiant : parcourez examples, testez rule.evaluate(ex)
-    return None  # TODO etudiant
+    # TODO étudiant : parcourez examples, testez rule.evaluate(ex)
+    return None  # TODO étudiant
 
-# Etape 2 : combiner detection formelle + couverture donnees
+# Étape 2 : combiner detection formelle + couverture données
 # for rule in regles_test:
 #     formel = detect_hallucination(rule, valid_attrs, valid_values)
 #     morte = regle_non_confirmee(rule, EXAMPLES)
 #     ...
 
-# Etape 3 : afficher les deux types de problemes distinctement
+# Étape 3 : afficher les deux types de problemes distinctement
 print(""Exercice a completer : detecter les regles non confirmees par les donnees"")
 print(""Etape 1 : ecrivez regle_non_confirmee(rule, examples)"")
 print(""Etape 2 : combinez detect_hallucination (formel) et regle_non_confirmee (donnees)"")
@@ -18300,8 +18300,8 @@ print(""Etape 3 : affichez les deux types de problemes distinctement"")
 
 # Indice : HornClause.evaluate(ex) retourne True si toutes les conditions
 # sont satisfaites ; une regle ""morte"" n'a aucun exemple qui l'active.
-# result = None  # TODO etudiant
-",,,,,,,,d7648190a1b616d2,,,,,,,
+# result = None  # TODO étudiant
+",,,,,,,,9359a2e3fd3e0046,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,3818d99f,markdown,fr,b72bdfc0e1f834a0,"### Exemple guide 4 : Mesurer le taux d'hallucination du generateur
 
 La section 7 a valide **UN** lot de regles du vrai LLM. Un seul tirage ne mesure rien : la generation est stochastique. Cet exemple guide rejoue plusieurs tirages et mesure quelle fraction des regles produites survit a l'oracle symbolique, puis comment ce taux evolve avec le ""bruit"" de la generation.
@@ -18314,12 +18314,12 @@ Sans `.env`, on substitue la stochasticite de la **graine** a celle de la temper
 3. Afficher par regime : total genere, total valide, taux de validation
 4. L'oracle rend-il le pipeline insensible au bruit de generation ? Qu'est-ce qui change vraiment (cout, diversite) ?
 ",,,,,,,,b72bdfc0e1f834a0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,b1ef475c,code,fr,55aca489396f25de,"# Exemple guide 4 : Taux d'hallucination du generateur (l'oracle comme filtre)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,b1ef475c,code,fr,c07718db46f4e469,"# Exemple guide 4 : Taux d'hallucination du generateur (l'oracle comme filtre)
 #
 # La section 7 a valide UN seul tirage du LLM. Un seul tirage ne mesure
-# rien : la generation est stochastique. Ici on rejoue plusieurs tirages
+# rien : la génération est stochastique. Ici on rejoue plusieurs tirages
 # et on mesure quelle fraction des regles produites survit a l'oracle
-# symbolique, et comment ce taux evolve avec le ""bruit"" de generation.
+# symbolique, et comment ce taux evolve avec le ""bruit"" de génération.
 #
 # Sans .env (pas de vrai LLM), on substitue la stochasticite de la GRAINE
 # a celle de la temperature (cf. indice) : la question posee est identique.
@@ -18392,7 +18392,7 @@ print(""regle utile, au prix de plus de bruit)."")
 print()
 print(""Conclusion : un seul tirage (section 7) n'est PAS representatif. Seul"")
 print(""l'oracle rend le pipeline robuste a la stochasticite de la generation."")
-",,,,,,,,55aca489396f25de,,,,,,,
+",,,,,,,,c07718db46f4e469,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex4var-md,markdown,fr,de4842ae09882e67,"### Exercice 4 (variation) : Stabilite du taux de validation (intervalle de confiance)
 
 Le taux de validation mesure sur 5 tirages reste une estimation bruitee. Combien de tirages faut-il pour l'estimer fiablement ? Etendez l'etude : tirez `N=20` fois a un regime fixe, calculez la **moyenne** et l'**ecart-type** du taux de validation par tirage, et donnez un intervalle de confiance approximatif (moyenne +/- ecart-type).
@@ -18403,22 +18403,22 @@ Le taux de validation mesure sur 5 tirages reste une estimation bruitee. Combien
 3. Afficher l'intervalle moyenne +/- ecart-type et commenter la stabilite de l'estimation
 
 ",,,,,,,,de4842ae09882e67,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex4var-code,code,fr,de631172079881c1,"# Exercice 4 (variation) : stabilite du taux de validation
-# TODO etudiant : estimez le taux de validation avec un intervalle de confiance.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,sl7ex4var-code,code,fr,831109994e6c1df0,"# Exercice 4 (variation) : stabilite du taux de validation
+# TODO étudiant : estimez le taux de validation avec un intervalle de confiance.
 
-# Etape 1 : N=20 tirages a un regime fixe (reutilisez generate_rules + stats_tirage)
+# Étape 1 : N=20 tirages a un regime fixe (reutilisez generate_rules + stats_tirage)
 # taux_par_tirage = []
 # for draw in range(20):
 #     rules = generate_rules(1000 + draw, bruit=True)
 #     g, v = stats_tirage(rules)
 #     taux_par_tirage.append(v / g)
 
-# Etape 2 : moyenne et ecart-type du taux de validation
+# Étape 2 : moyenne et ecart-type du taux de validation
 # moyenne = sum(taux_par_tirage) / len(taux_par_tirage)
 # variance = sum((t - moyenne) ** 2 for t in taux_par_tirage) / len(taux_par_tirage)
 # ecart_type = variance ** 0.5
 
-# Etape 3 : intervalle moyenne +/- ecart-type
+# Étape 3 : intervalle moyenne +/- ecart-type
 print(""Exercice a completer : stabilite du taux de validation sur N=20 tirages"")
 print(""Etape 1 : calculez le taux de validation de chacun des 20 tirages"")
 print(""Etape 2 : derivez moyenne et ecart-type"")
@@ -18426,8 +18426,8 @@ print(""Etape 3 : affichez l'intervalle moyenne +/- ecart-type"")
 
 # Indice : plus l'ecart-type est petit devant la moyenne, plus l'estimation
 # est stable -- et moins il faut de tirages pour conclure.
-# result = None  # TODO etudiant : (moyenne, ecart_type)
-",,,,,,,,de631172079881c1,,,,,,,
+# result = None  # TODO étudiant : (moyenne, ecart_type)
+",,,,,,,,831109994e6c1df0,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb,7cb00ad4,markdown,fr,2a81990522702bd4,"---
 
 ## 9. Conclusion
