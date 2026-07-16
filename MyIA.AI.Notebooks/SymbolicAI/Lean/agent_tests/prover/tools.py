@@ -1085,7 +1085,19 @@ class TacticTools:
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
             relative_path = f"{subdir}/{Path(self._filepath).name}"
-            result = verifier.verify_project_file(relative_path)
+            # Bug 2 (#6790 forensic): force an INDEPENDENT fresh lake build as the
+            # sole snapshot-promotion gate. verify_project_file() caches results by
+            # content hash; without force=True, re-writing content X (e.g. after a
+            # prior compile() cached hash(X) => success) returns the STALE cached
+            # result with NO fresh build. That cached "success" is a CLAIM, not a
+            # proof — and in a worktree/copy-cache scenario where the dependency
+            # manifest drifts ("manifest out of date"), the cached verdict can be
+            # wrong, promoting _last_build_ok_content on an un-verified basis
+            # (DEMO 62: file_replace_lines build_check="passed" was a cache hit,
+            # not a fresh build). compile() already passes force=True (tools.py
+            # 1763/1843); the structural-edit gate must be equally authoritative
+            # — the snapshot it promotes is what the finally-block commits.
+            result = verifier.verify_project_file(relative_path, force=True)
         except Exception as e:
             # Verifier itself blew up — revert defensively and surface the error.
             Path(self._filepath).write_text(original_content, encoding="utf-8")
