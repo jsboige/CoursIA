@@ -8,14 +8,16 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-07-16, standalone-tactic mode, baseline=8):
-# conway has 7 real tactic sorries, ALL in HashlifeCorrectness.lean. The
-# standalone-tactic filter now also counts the Lean case-bullet form `· sorry`
-# (fixed in lean-build.yml, See #2747); the prior regex silently dropped it, so
-# CI reported 6 while the real count was 7 (1 unit of hidden slack). Prose
-# mentions ("Each sorry is a target", "Left as sorry", "remain sorry-gated")
-# are excluded by the sole-token check. Breakdown of the 7:
-#   - HashlifeCorrectness.lean: 7 (6 standalone P4/P5 + 1 case-bullet P5)
+# Sorry profile (re-verified 2026-07-16 post-#6792, standalone-tactic mode,
+# baseline=8): conway has 8 real tactic sorries, ALL in HashlifeCorrectness.lean.
+# The standalone-tactic filter also counts the Lean case-bullet form `· sorry`
+# (fixed in lean-build.yml, See #2747). Prose mentions ("Each sorry is a
+# target", "Left as sorry", "remain sorry-gated") are excluded by the
+# sole-token check. Breakdown of the 8:
+#   - HashlifeCorrectness.lean: 8 = 5 sub-goals of the p4_succ_membership
+#     decomposition (#6792: 4 mp quadrant cases + 1 mpr routing case)
+#     + 3 downstream P4-gated (p5_large_n_jump, hashlife_correctN,
+#     p5_large_n_jumpN)
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
 #   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
 # Raising this baseline requires a documented justification in the PR body.
