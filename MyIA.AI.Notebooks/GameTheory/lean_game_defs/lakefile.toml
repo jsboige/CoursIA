@@ -8,4 +8,12 @@ defaultTargets = ["LeanGameDefs"]
 
 [[lean_lib]]
 name = "LeanGameDefs"
-roots = ["Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret"]
+# Roots include the `_en` i18n siblings (EPIC #4980 sibling-pair Pattern A) so
+# that `lake build` (the CI verification path) actually compiles them — without
+# an explicit root, a `*_en.lean` mirror is an orphan that Lake never builds
+# and whose compile errors stay invisible. `Combinatorial_en` is self-contained
+# (no import), so it builds standalone.
+roots = [
+  "Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret",
+  "Combinatorial_en",
+]
