@@ -40,7 +40,20 @@ def _count_axiom_declarations(content: str) -> int:
 # the legitimate scaffolding pattern. Only top-level `lemma`/`def` sorry
 # definitions indicate relocation (the prover creates a separate named lemma
 # instead of decomposing inline).
-_SORRY_DEF_RE = re.compile(r'(?:lemma|def)\s+(\w+)\b[^:]*:=\s*by\s+sorry', re.MULTILINE)
+#
+# The body segment `(?:[^:=]|:[^=])*?` matches chars that are neither `:`
+# nor `=`, OR a `:` NOT followed by `=` (i.e. one colon per `:=` candidate).
+# This allows optional type annotations like
+#     `lemma foo : P := by sorry`
+#     `lemma mul (n m : Nat) : Nat := by sorry`
+# while still stopping at the real `:=` token. Anchored with `re.MULTILINE`
+# so multi-line annotations like `lemma qux\n  : P\n  := by sorry` work too.
+# Empirically validated against 12 cases (annotation, nested binders,
+# multi-line, `have`/`theorem` exclusion). See #6790 / PR follow-up to #6907.
+_SORRY_DEF_RE = re.compile(
+    r'(?:lemma|def)\s+(\w+)\b(?:[^:=]|:[^=])*?\s*:=\s*by\s+sorry',
+    re.MULTILINE,
+)
 
 
 def _find_sorry_definitions(content: str) -> set:
