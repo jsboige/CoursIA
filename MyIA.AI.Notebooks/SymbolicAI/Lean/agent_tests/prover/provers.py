@@ -341,6 +341,39 @@ def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
     )
 
 
+def _final_verify_is_false_negative(final_verify: dict) -> bool:
+    """Bug 1b (#6790 forensic): detect an incoherent final-verify false-negative.
+
+    Founding incident (DEMO 62, conway_lean L2892, 2026-07-16, trace
+    ``ai01_demo62_wt2_1784170024.log``): the mandatory final verify reported
+    ``level_1_build=False`` with ``errors=[]`` (zero compile errors) on a
+    snapshot whose tool ``build_check`` had passed ~20 min earlier on the
+    exact same content. The blind revert at the verify site destroyed a
+    real 5-sub-goal decomposition (structural progress lost, exhumed only by
+    manual span extraction).
+
+    Root cause: ``level_1_build`` is derived from ``verifier.success`` (see
+    ``tools.py::compile``), whose parsing is sensitive to the worktree
+    ``warning: manifest out of date`` prefix / cache state — while
+    ``error_count`` is regex-parsed directly from the raw lake output. When
+    the two disagree with zero errors, NO compile error exists in the output,
+    so the build actually passed; the ``level_1_build=False`` is the
+    false-negative.
+
+    A genuine build failure always produces >=1 parseable compile error
+    (tools.py error regex), so this guard never masks a real breakage. The
+    crash-synthetic verify dict (``errors=[{"message": "final-verify
+    crashed: ..."}]``, no ``error_count``) yields err_count=1 -> not a
+    false-negative -> still reverts, preserving the prior safe behavior.
+    """
+    if final_verify.get("level_1_build", False):
+        return False  # build reported ok — not a false-negative
+    err_count = final_verify.get("error_count")
+    if err_count is None:
+        err_count = len(final_verify.get("errors", []))
+    return err_count == 0
+
+
 class MultiAgentSorryProver:
     """Multi-agent sorry replacement using WorkflowBuilder graph.
 
@@ -797,16 +830,34 @@ class MultiAgentSorryProver:
             final_build_ok = bool(final_verify.get("level_1_build", False))
             if not final_build_ok:
                 _errs = final_verify.get("errors", [])[:5]
-                print(
-                    f"  FINAL VERIFY FAILED ({len(_errs)} compile errors). "
-                    f"Reverting to original to avoid leaving the file broken."
-                )
-                Path(filepath).write_text(original_content, encoding="utf-8")
-                final_sorry = original_sorry_count
-                structural_progress = False
-                # Force-clear best snapshot so callers don't claim spurious progress
-                tactic_tools._best_content = None
-                tactic_tools._best_sorry_count = original_sorry_count
+                if _final_verify_is_false_negative(final_verify):
+                    # Bug 1b (#6790): level_1_build=False but 0 compile errors
+                    # = false-negative verify (worktree manifest warning / cache
+                    # state), on content the tool build_check had passed. Do NOT
+                    # revert — reverting here destroyed a build-passing snapshot
+                    # (DEMO 62: 5-sub-goal decomposition lost). Preserve the
+                    # committed file + structural_progress; log raw verify for
+                    # diagnosis. Treat as build-ok so the success gate below can
+                    # fire on the preserved structural progress.
+                    print(
+                        f"  FINAL VERIFY INCOHERENT: level_1_build=False but 0 "
+                        f"compile errors — false-negative verify (worktree "
+                        f"manifest warning / cache state), build-passing snapshot "
+                        f"PRESERVED, not reverted (#6790). Raw verify preview: "
+                        f"{final_verify_raw[:400]}"
+                    )
+                    final_build_ok = True
+                else:
+                    print(
+                        f"  FINAL VERIFY FAILED ({len(_errs)} compile errors). "
+                        f"Reverting to original to avoid leaving the file broken."
+                    )
+                    Path(filepath).write_text(original_content, encoding="utf-8")
+                    final_sorry = original_sorry_count
+                    structural_progress = False
+                    # Force-clear best snapshot so callers don't claim spurious progress
+                    tactic_tools._best_content = None
+                    tactic_tools._best_sorry_count = original_sorry_count
             else:
                 # Build passed — but a passing build can still hide an IMPLICIT
                 # sorry: when the agent replaces an explicit `sorry` with a search
