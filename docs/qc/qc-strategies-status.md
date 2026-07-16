@@ -71,7 +71,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 2, backtests QC Cloud MCP) | 5 | métriques réelles (Sharpe/CAGR/MaxDD) — **toutes Needs-improvement** (PSR < 50 %, pas d'edge statistique) |
 | Vérifié (tranche 3, backtests QC Cloud MCP) | 5 | cohorte Momentum/Factor/Composite — **1 edge significatif** (BlackLitterman PSR 51 %), 2 Needs-improvement, 2 BROKEN |
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 2 BROKEN ; Multi-Layer-EMA revendication README confirmée |
-| Vivant (best-guess, non vérifié) | 68 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
+| Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
+| Vivant (best-guess, non vérifié) | 63 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -154,7 +155,25 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | **Needs-improvement / near-cash** | 2768 j. ; Sharpe 0.278 ; CAGR 5.60 % ; MaxDD 14.7 % ; PSR 3.7 % ; NP 82.1 % — edge nul, sous-performant |
 | `MeanReversion` | `projects/MeanReversion/` | Mean reversion | **BROKEN** | 2845 j. ; **Sharpe −0.082** ; CAGR 3.00 % ; MaxDD 17.5 % ; PSR 1.3 % ; NP 39.7 % — Sharpe négatif, edge nul |
 
-#### Vivant (best-guess, non vérifié) (68)
+#### Vérifié (tranche 5, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 5 (#1621)** : 5 stratégies promues via backtests QC Cloud réels (MCP `qc-mcp`,
+> backtests existants relus firsthand). Cohorte **Trend / Macro-Régime / Options / Causal / Factor**
+> (5 domaines distincts des tranches 2 Vol, 3 Momentum/Factor, 4 MeanReversion/Macro). Métriques
+> pleine période in-sample (non walk-forward OOS). **0 edge statistiquement significative** (PSR <
+> 50 % partout — comme les tranches 2 et 4 ; seule la tranche 3 BlackLitterman atteignait PSR 51 %).
+> GlobalMacro-Regime PSR 16.7 % = la plus élevée de la cohorte mais reste sous le seuil de
+> significativité. CausalEventAlpha : CAGR 11.7 % / NP 255 % élevés MAIS drawdown 38.8 % inacceptable.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `FuturesTrend` | `projects/FuturesTrend/` | Trend futures | **Needs-improvement / near-cash** | 2823 j. ; Sharpe 0.223 ; CAGR 5.69 % ; MaxDD 10.9 % ; PSR 4.3 % ; NP 86.2 % ($75 455) — drawdown modéré mais edge nul, quasi-cash |
+| `GlobalMacro-Regime` | `projects/GlobalMacro-Regime/` | Macro / Régime | **Needs-improvement** | 1761 j. (2018–2025) ; Sharpe 0.454 ; CAGR 9.80 % ; MaxDD 22.8 % ; PSR 16.7 % ; NP 92.5 % ($77 374) — décent mais edge non significative |
+| `Dynamic-Options-Wheel` | `projects/Dynamic-Options-Wheel/` | Options (wheel) | **Needs-improvement / near-BROKEN** | 1508 j. ; Sharpe 0.119 ; CAGR 5.59 % ; **MaxDD 31.4 %** ; PSR 3.8 % ; NP 38.7 % ($37 946) — retour faible + drawdown inacceptable |
+| `CausalEventAlpha` | `projects/CausalEventAlpha/` | Causal alpha | **Needs-improvement** | 2878 j. ; Sharpe 0.447 ; CAGR 11.71 % ; **MaxDD 38.8 %** ; PSR 5.5 % ; NP 255.5 % ($225 496) — NP/CAGR élevés mais drawdown catastrophique, edge non significative |
+| `FamaFrench` | `projects/FamaFrench/` | Factor rotation | **Needs-improvement** | 1761 j. (2018–2025) ; Sharpe 0.445 ; CAGR 11.11 % ; MaxDD 24.1 % ; PSR 11.9 % ; NP 109.2 % ($72 725) — décent mais edge non significative |
+
+#### Vivant (best-guess, non vérifié) (63)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -162,7 +181,6 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | Vivant | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
-| `CausalEventAlpha` | `projects/CausalEventAlpha/` | Causal alpha | Vivant | main.py: class CausalEventAlphaAlgorithm(QCAlgorithm) ; aucun notebook compagnon |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | Vivant | main.py: class VolTargetingAlgorithm(QCAlgorithm) |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
@@ -170,16 +188,12 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | Vivant | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | Vivant | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | Vivant | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) |
-| `Dynamic-Options-Wheel` | `projects/Dynamic-Options-Wheel/` | Options (wheel) | Vivant | main.py: class DynamicOptionsWheel(QCAlgorithm) |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | Vivant | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `FamaFrench` | `projects/FamaFrench/` | Factor rotation | Vivant | main.py: class FactorETFRotation(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | Vivant | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb |
 | `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | Vivant | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb |
 | `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | Vivant | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb |
-| `FuturesTrend` | `projects/FuturesTrend/` | Trend futures | Vivant | main.py: class FuturesTrendFollowing(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
-| `GlobalMacro-Regime` | `projects/GlobalMacro-Regime/` | Macro / Régime | Vivant | main.py: class GlobalMacroRegime(QCAlgorithm) |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | Vivant | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) |
 | `HMM-KMeans-Voting` | `projects/HMM-KMeans-Voting/` | Régime (HMM) | Vivant | main.py: class HMMKMeansVoting(QCAlgorithm) (helpers KMeans/GaussianHMM en amont) |
 | `HighBookToMarketFScore-QC` | `projects/HighBookToMarketFScore-QC/` | Factor (Piotroski) | Vivant | main.py: class PiotroskiScoreAlgorithm(QCAlgorithm) |
