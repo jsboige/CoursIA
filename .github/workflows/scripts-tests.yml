@@ -25,6 +25,12 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # #6790 prover tree-lock: the offline lock-lifecycle tests + the two
+      # source files they guard (see the pytest step for why only this one
+      # agent_tests file is included, not the whole dir).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/tree_lock.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/run_prover_bg.py'
   pull_request:
     branches: [main]
     paths:
@@ -32,6 +38,9 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/tree_lock.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/run_prover_bg.py'
   workflow_dispatch:
 
 jobs:
@@ -99,6 +108,16 @@ jobs:
         # is empty under POSIX. Both are fixed; papermill/nbformat are now
         # installed above. The 7 suites run here green (354 tests, validated
         # under WSL ubuntu + CI deps). genai -> po-2023, wsl -> po-2025.
+        #
+        # #6790 tree-lock guard: only test_bg_tree_lock.py is included from
+        # agent_tests/tests/, NOT the whole dir. That file loads tree_lock.py by
+        # file path (stdlib-only) and importorskips the LLM stack for its 3
+        # launcher-wiring tests, so on a bare runner it is hermetic: 14 pass,
+        # 3 skip. Its sibling test_prover_guards.py imports prover.state/.tools,
+        # which pull prover/__init__.py -> agent_framework at collection time and
+        # would abort the whole pytest session with a collection error (masking
+        # every other result) — the exact failure mode this workflow exists to
+        # prevent. agent_tests owner: po-2026 (Lean lane).
         run: |
           pytest \
             scripts/tests \
@@ -106,4 +125,5 @@ jobs:
             scripts/lean/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             --tb=short -q
