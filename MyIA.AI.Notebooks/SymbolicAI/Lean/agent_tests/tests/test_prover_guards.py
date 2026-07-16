@@ -1589,6 +1589,58 @@ def test_build_check_or_revert_real_solve_records_zero(tmp_path, monkeypatch):
     assert tt._min_compile_sorry_count == 0
 
 
+def test_build_check_or_revert_forces_independent_build(tmp_path, monkeypatch):
+    """Bug 2 (#6790 forensic): the snapshot-promotion gate must force a FRESH
+    lake build, not trust a cached content-hash verdict.
+
+    DEMO 62: file_replace_lines reported build_check="passed" on a cache hit
+    (hash(X) was cached by an earlier compile()), so _last_build_ok_content
+    was promoted with NO fresh build — the "passed" was a CLAIM, not a proof.
+    In a worktree/copy-cache scenario with dependency-manifest drift, that
+    stale cache can be wrong. compile() already passes force=True; the
+    structural-edit gate (_build_check_or_revert, shared by file_replace_lines
+    / file_insert_lines / file_replace_sorry) must be equally authoritative.
+
+    This test asserts the fix by recording the force kwarg the gate actually
+    passes to verify_project_file: before the fix it was False (cache trusted),
+    after the fix it must be True (independent fresh build).
+    """
+    import prover.verifier as vmod
+
+    proved = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+    )
+    fake = tmp_path / "ForceGate.lean"
+    fake.write_text(proved, encoding="utf-8")
+
+    force_seen = []
+
+    class _RecordingFakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            force_seen.append(force)
+            return {"success": True, "errors": "", "raw_output": "ok"}
+
+    monkeypatch.setattr(
+        vmod, "get_verifier", lambda *a, **k: _RecordingFakeVerifier())
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=3, indentation=2,
+        indent_str="  ", full_file=proved,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    original = proved.replace("  trivial\n", "  sorry\n")
+    assert tt._build_check_or_revert(original, "test") is None
+    assert force_seen == [True], (
+        f"_build_check_or_revert must call verify_project_file(force=True) so "
+        f"the snapshot-promotion gate is an INDEPENDENT fresh lake build, not "
+        f"a cached content-hash claim (got force={force_seen})"
+    )
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # FX-6 (#1453) — statement-mutation false success. Founding incident
 # (Reidemeister.lean L545, 2026-07-02, trace
