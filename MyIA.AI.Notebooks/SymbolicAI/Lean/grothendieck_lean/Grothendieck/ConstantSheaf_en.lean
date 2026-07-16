@@ -1,37 +1,33 @@
 /-
-Grothendieck Partie 18 — Le faisceau constant
+Grothendieck Part 18 — The constant sheaf
 
-La Partie 17 (SheafHom.lean) a introduit le hom interne des faisceaux,
-première étape vers une structure cartésienne fermée sur Sheaf J (Type _).
+Part 17 (SheafHom.lean) introduced the internal hom of sheaves, the first step
+toward Cartesian closed structure on Sheaf J (Type _).
 
-Ce module introduit le **foncteur faisceau constant** `constantSheaf J D`,
-défini comme la faisceautisation du préfaisceau constant. Il est adjoint à
-gauche de l'évaluation en un objet terminal (constantSheafAdj), établissant
-une adjonction fondamentale en théorie des topos de Grothendieck.
+This module introduces the **constant sheaf functor** `constantSheaf J D`,
+defined as the sheafification of the constant presheaf. It is left adjoint
+to evaluation at a terminal object (constantSheafAdj), establishing a
+fundamental adjunction in Grothendieck topos theory.
 
-Constructions clés pontées depuis Mathlib (`CategoryTheory.Sites.ConstantSheaf`) :
+Key constructions bridged from Mathlib (`CategoryTheory.Sites.ConstantSheaf`):
 
-  - `constantPresheafAdj` : préfaisceau constant ⊣ évaluation en objet terminal
-  - `constantSheaf J D` : le foncteur faisceau constant D ⥤ Sheaf J D
-  - `constantSheafAdj` : constantSheaf ⊣ sheafSections en objet terminal
-  - `Sheaf.IsConstant` : prédicat pour les faisceaux dans l'image essentielle
-  - `Sheaf.isConstant_iff_isIso_counit_app` : constance ↔ counit est iso
-  - `Sheaf.isConstant_iff_of_equivalence` : constance invariante par équivalence
-  - `Sheaf.isConstant_iff_forget` : constance à travers les foncteurs d'oubli
+  - `constantPresheafAdj` : constant presheaf ⊣ evaluation at terminal object
+  - `constantSheaf J D` : the constant sheaf functor D ⥤ Sheaf J D
+  - `constantSheafAdj` : constantSheaf ⊣ sheafSections at terminal object
+  - `Sheaf.IsConstant` : predicate for sheaves in the essential image
+  - `Sheaf.isConstant_iff_isIso_counit_app` : constancy ↔ counit is iso
+  - `Sheaf.isConstant_iff_of_equivalence` : constancy invariant under equivalence
+  - `Sheaf.isConstant_iff_forget` : constancy through forgetful functors
 
-C'est un ingrédient clé pour comprendre la nature « localement constante » des
-faisceaux et pour connecter la théorie des faisceaux à la cohomologie (SGA 4 II, IV).
+This is a key ingredient for understanding the "locally constant" nature of
+sheaves and for connecting sheaf theory to cohomology (SGA 4 II, IV).
 
-Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
--/
+Epic #1646, See #2159. All `sorry`s eliminated at creation.
 
-/-
-  English mirror of `ConstantSheaf.lean` (EN canonical, header mono-lingual EN).
-  Convention EPIC #4980 (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n) :
-  distinct FR + EN sibling files — no inline bilingual block in a single file
-  (Option B rejected). The module docstring above is the FR translation of the
-  EN canonical docstring; the body signatures, def signatures, theorem docstrings,
-  and sorries remain byte-identical between the two files (anti-§D byte-identity invariant).
+Convention i18n (EPIC #4980 ratified by user 2026-07-04, cf `code-style.md`
+§Lean i18n) : miroir anglais du canonical francophone `ConstantSheaf.lean`
+(sibling pair model). Les signatures, énoncés de théorèmes et tactiques
+restent byte-identiques entre les deux fichiers (invariant anti-§D).
 -/
 
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
