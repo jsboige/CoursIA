@@ -1936,7 +1936,16 @@ class TacticTools:
         text_sorry_count = count_real_sorries(content)
         build_sorry_count = _count_sorries_from_build_output(raw_output)
         sorry_count = max(text_sorry_count, build_sorry_count)
-        implicit_sorry = build_sorry_count - text_sorry_count
+        # Grain (b1) #6790 (ai-01 msg-20260716T110247): implicit_sorry counts
+        # the sorries Lake's warnings surface that the text scan missed
+        # (implicit sorry from apply?/exact?/solve_by_elim). On a FAILED build
+        # Lake never reaches the warning pass -> build_sorry_count == 0 while
+        # text_sorry_count == N -> implicit = -N (absurd negative, observed as
+        # implicit_sorry_count: -8 in BG run-3). Gate on the build outcome: 0
+        # when the build did not pass, else max(0, build - text). The reported
+        # sorry_count = max(text, build) above is already conservative-correct
+        # and is unaffected, so this only fixes the cosmetic negative.
+        implicit_sorry = 0 if not success else max(0, build_sorry_count - text_sorry_count)
 
         sorry_delta = self._original_sorry_count - sorry_count
         level_1 = success

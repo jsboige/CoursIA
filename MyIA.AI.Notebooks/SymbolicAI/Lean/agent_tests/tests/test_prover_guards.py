@@ -1621,6 +1621,56 @@ def test_build_check_or_revert_real_solve_records_zero(tmp_path, monkeypatch):
     assert tt._min_compile_sorry_count == 0
 
 
+def test_compile_implicit_sorry_clamped_on_build_failure(tmp_path, monkeypatch):
+    """Grain (b1) #6790 (ai-01 msg-20260716T110247 / T105900-ba9llf): on a FAILED
+    build, Lake never reaches the 'uses sorry' warning pass -> build_sorry_count
+    is 0 while text_sorry_count is N -> the naive ``build - text`` underflows
+    to a negative (observed as ``implicit_sorry_count: -8`` in BG run-3). The
+    clamp ``0 if not success else max(0, build - text)`` must yield 0, not -N.
+
+    sorry_count = max(text, build) is conservative-correct and unaffected, so
+    this only fixes the cosmetic negative (no consumer branches on it -- the
+    field is trace/report-only).
+    """
+    import json
+    import prover.verifier as vmod
+    import prover.tools as tmod
+
+    # File with 8 explicit sorries -> text_sorry_count = 8.
+    sorries = "theorem t : True := by sorry\n" * 8
+    fake = tmp_path / "Clamp.lean"
+    fake.write_text(sorries, encoding="utf-8")
+
+    # Build FAIL + empty raw_output (Lake exited before the warning pass) ->
+    # build_sorry_count = 0. The naive formula would give 0 - 8 = -8.
+    class _FailVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": False, "errors": "", "raw_output": ""}
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FailVerifier())
+    # compile() calls resolve_lake_module(self._filepath) -- mock it so the
+    # fake path resolves without a real lake project.
+    monkeypatch.setattr(
+        tmod, "resolve_lake_module", lambda fp: (str(tmp_path), "Clamp"),
+    )
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=1, indentation=0,
+        indent_str="", full_file=sorries,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    out = json.loads(tt.compile())
+    # The regression: implicit_sorry_count must NOT be negative on build-fail.
+    assert out["implicit_sorry_count"] == 0, (
+        f"build-fail must clamp implicit_sorry to 0, not underflow to negative "
+        f"(got {out['implicit_sorry_count']}); #6790 grain b1"
+    )
+    # The conservative reported sorry_count is unaffected (text count carried).
+    assert out["sorry_count"] == 8, out
+
+
 def test_build_check_or_revert_forces_independent_build(tmp_path, monkeypatch):
     """Bug 2 (#6790 forensic): the snapshot-promotion gate must force a FRESH
     lake build, not trust a cached content-hash verdict.
