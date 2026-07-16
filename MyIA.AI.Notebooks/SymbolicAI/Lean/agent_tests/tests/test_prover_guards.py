@@ -3099,6 +3099,38 @@ def test_extract_errors_catches_lake_prefix_format_authority():
     assert extracted[0].startswith("error:"), extracted
 
 
+def test_parse_lean_errors_type_safe_on_list_fallback():
+    """Run-4 crash regression (#6790 gate preserve): several callers use the
+    pattern ``result.get("raw_output", "") or result.get("errors", "")``.
+    ``errors`` is a **list** of pre-extracted error lines, so when
+    ``raw_output`` is empty the fallback passes a list to
+    ``_parse_lean_errors`` -> ``.split("\\n")`` raised ``AttributeError:
+    'list' object has no attribute 'split'`` -> Run-4 exit 1 at the preserve
+    gate (``provers.py:_reverify_compiles_clean``).  The parser must now coerce
+    a list/tuple to a joined string and never crash."""
+    from prover.tools import _parse_lean_errors, _count_sorries_from_build_output
+
+    # The crash input: a list (as produced by the `errors` fallback).
+    crashed = _parse_lean_errors(["error: Foo.lean:1:2: type mismatch"])
+    assert len(crashed) == 1, crashed
+    assert crashed[0]["line"] == 1, crashed
+
+    # The exact Run-4 gate scenario: empty raw_output OR list of errors.
+    rv = {"raw_output": "", "errors": ["error: Foo.lean:1:2: boom"]}
+    fresh = _parse_lean_errors(rv.get("raw_output", "") or rv.get("errors", ""))
+    assert len(fresh) == 1 and fresh[0]["line"] == 1, fresh
+
+    # Empty list / empty str / None-ish -> [] (no crash).
+    assert _parse_lean_errors([]) == []
+    assert _parse_lean_errors("") == []
+
+    # Same coercion for the sorry-counter (shares the `or errors` fallback).
+    assert _count_sorries_from_build_output(
+        ["warning: declaration uses 'sorry'", "warning: bar uses sorry"]
+    ) == 2
+    assert _count_sorries_from_build_output([]) == 0
+
+
 def test_reverify_compiles_clean_false_on_fresh_build_failure(monkeypatch):
     """#6790 interim guard hardening: the re-verify trust gate must return False
     when the independent fresh build FAILS — this is the case where the
