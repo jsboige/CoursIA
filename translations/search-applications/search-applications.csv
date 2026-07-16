@@ -2465,7 +2465,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-11-Picross.ipynb,759c3dab,markdown
 - [Google OR-Tools - CP-SAT](https://developers.google.com/optimization/cp/cp_solver) : documentation officielle
 - [Nonogram - Wikipedia](https://en.wikipedia.org/wiki/Nonogram) : theorie et histoire des nonogrammes
 - [Survey of Paint-by-Numbers Puzzle Solvers](https://webpbn.com/survey/) : etat de l'art des solveurs",,,,,,,,1119b587df0131b9,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,b414a521-1570-42c3-a8bc-0e9ca24dcaba,markdown,fr,ca88a32200d8d729,"# App-11b : Picross (Nonogrammes) — Jumeau C#
+MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,b414a521-1570-42c3-a8bc-0e9ca24dcaba,markdown,fr,f35924a69f7ac60a,"# App-11b : Picross (Nonogrammes) — Jumeau C#
 
 > **Twin C#** de [`App-11-Picross`](App-11-Picross.ipynb) (Python + OR-Tools CP-SAT + numpy + matplotlib).
 > Suite du marathon **.NET ⇄ Python** (#4956), volet **Search / Applications / CSP**.
@@ -2486,8 +2486,8 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,b414a521-
 
 Le twin Python **appelle** CP-SAT et constate un speedup de plusieurs millions ; ce twin **déroule** l'algorithme de propagation qui produit ce speedup, rendant la mécanique explicite.
 
-**Durée estimée : 40 min.** Prérequis : [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb) (CSP).
-",,,,,,,,ca88a32200d8d729,,,,,,,
+**Durée estimée : 40 min.** Prérequis : [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+",,,,,,,,f35924a69f7ac60a,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,3c1f79a3-614d-4c4c-86fa-7cf65caae1b1,markdown,fr,dd9e23a2820d5d05,"## 1. Représentation et énumération des motifs d'une ligne
 
 Un puzzle Picross est défini par les **indices** de chaque ligne et colonne : la liste des longueurs des blocs de cellules remplies (contigües). Par exemple, l'indice `[2, 1]` sur une ligne de longueur 5 signifie : un bloc de 2, un bloc de 1, séparés par au moins une cellule vide.
@@ -2805,7 +2805,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,412d0030-
 // Etape 3 : tester sur un puzzle ambigu (plusieurs solutions).
 Show(""Exercice 3 à compléter — propagation + branchement sur résiduel."");
 ",,,,,,,,fdaf66de543da3f4,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,d65f6aa5-208e-404d-96aa-66ada5377abd,markdown,fr,41cc785140cd249e,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb,d65f6aa5-208e-404d-96aa-66ada5377abd,markdown,fr,e01ef2c480342572,"## Conclusion
 
 Ce twin C# a **déroulé from-scratch** la mécanique de résolution des nonogrammes :
 
@@ -2816,11 +2816,11 @@ Ce twin C# a **déroulé from-scratch** la mécanique de résolution des nonogra
 
 ★ **Leçon** : la propagation de contraintes (déduction locale itérée) transforme un problème exponentiel en problème polynomial — c'est exactement ce que CP-SAT industrialise, et dont le « speedup spectaculaire » du twin Python n'est que la manifestation mesurée.
 
-**Lien avec les Foundations** : CSP ⇄ [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb), propagation ⇄ [`Search-9` §consistance arc](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), propagation ⇄ [`Search-9` §consistance arc](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), CP-SAT ⇄ [`App-11-Picross`](App-11-Picross.ipynb) (twin Python, solveur industriel).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications, tranche Picross / nonogrammes. See #4956, #3801.*
-",,,,,,,,41cc785140cd249e,,,,,,,
+",,,,,,,,e01ef2c480342572,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,68af8eb4,markdown,fr,dde889be712d5ea7,"# App-15 : Planification de Calendrier Sportif (CSP)
 
 **Navigation** : [<< App-11 Picross](App-11-Picross.ipynb) | [Index](../../README.md) | [App-16 Crossword >>](App-16-Crossword-CSP.ipynb)
@@ -6943,7 +6943,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb,
 - **Parallelisation** : CP-SAT supporte `num_search_workers=N` pour exploiter les CPU multi-coeurs.
 
 Ce notebook a montré comment formuler un problème de génération procédurale (typiquement traité par des heuristiques ad-hoc) comme un **CSP canonique** résolu par un solveur industriel (OR-Tools). C'est un pattern transférable à de nombreux domaines : placement de composants en VLSI, allocation de fréquences, planification de tâches.",,,,,,,,3dd5f1d65ff66422,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,b6601688-9f2f-4570-bae4-202df6e512ee,markdown,fr,2ec3d668fe2004bb,"# App-1b : Le problème des N-Reines — Jumeau C#
+MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,b6601688-9f2f-4570-bae4-202df6e512ee,markdown,fr,d69828aa720cf21c,"# App-1b : Le problème des N-Reines — Jumeau C#
 
 > **Twin C#** de [`App-1-NQueens`](App-1-NQueens.ipynb) (Python + OR-Tools + numpy + matplotlib).
 > Suite du marathon **.NET ⇄ Python** (#4956), volet **Search / Applications / CSP**.
@@ -6964,8 +6964,8 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,b6601688-9
 
 Le twin Python **appelle** un solveur ; ce twin **déroule** les algorithmes. Les deux se complètent : on voit ici *ce que fait* CP-SAT sous le capot (propagation, énumération, brisure de symétrie).
 
-**Durée estimée : 35 min.** Prérequis : [`Search-1`](../../Part1-Foundations/Search-1-UninformedSearch.ipynb), [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb) (CSP).
-",,,,,,,,2ec3d668fe2004bb,,,,,,,
+**Durée estimée : 35 min.** Prérequis : [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+",,,,,,,,d69828aa720cf21c,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,2dbf824b-edff-40bc-b080-e8615eae95ab,markdown,fr,89397304a4f6f2c9,"## 1. Représentation du problème
 
 On représente un plateau par `queens[col] = row` : **une reine par colonne** (la contrainte « une par colonne » est donc satisfaite par construction). Il reste à vérifier les conflits de **ligne** et de **diagonales**.
@@ -7153,11 +7153,11 @@ Show(""Interprétation : simple explose (croissance ~factorielle), MRV et FC la 
 Show(""MRV et FC sont comparables : selon l'instance, l'un ou l'autre gagne (la propagation de FC et"");
 Show(""l'ordonnancement de MRV coupent l'arbre différemment). Le gain dominant vient de l'heuristique vs simple."");
 ",,,,,,,,1f6d121a8d08f13a,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,bce02a5c-0337-45ab-a84d-4582816ae6e8,markdown,fr,91f8916bce27025c,"## 3. Approche 2 : Min-Conflicts (recherche locale)
+MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,bce02a5c-0337-45ab-a84d-4582816ae6e8,markdown,fr,d08d5a757d4ea40a,"## 3. Approche 2 : Min-Conflicts (recherche locale)
 
 idée radicalement différente : on part d'une affectation **aléatoire** (une reine par colonne, ligne aléatoire), puis on **répare**. À chaque itération, on choisit une colonne en conflit et on déplace sa reine vers la ligne qui **minimise** le nombre de conflits. Pas de retour arrière : c'est une **marche** dans l'espace des configurations.
 
-C'est l'ancêtre des métaheuristiques (proche du hill-climbing stochastique, cf [`Search-11`](../../Part3-Advanced/Search-11-Metaheuristics.ipynb)).",,,,,,,,91f8916bce27025c,,,,,,,
+C'est l'ancêtre des métaheuristiques (proche du hill-climbing stochastique, cf [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb)).",,,,,,,,d08d5a757d4ea40a,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,ad3526c7-24b4-44bd-b71a-932a8d9b6872,code,fr,76acc9713055b0c5,"// Conflits maintenus incrémentalement via compteurs par ligne / diagonale (O(1) par requête)
 //  - rowConf[r]      = nombre de reines dans la ligne r
 //  - diag1Conf[r-c+n]= nombre de reines sur la diagonale NO-SE (différence r-c constante)
@@ -7347,7 +7347,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,80e9b3f8-f
 // Etape 2 : le compte doit donner directement 12 pour N = 8 (sans HashSet).
 Show(""Exercice 3 à compléter — briser la symétrie à l'énumération."");
 ",,,,,,,,6fcffc94fa85e247,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,5c7651cc-0be9-471c-b8e6-eda1558d9630,markdown,fr,780ae15b379d7f8a,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb,5c7651cc-0be9-471c-b8e6-eda1558d9630,markdown,fr,52af4904cafce8f8,"## Conclusion
 
 Ce twin C# a **déroulé à la main** ce que le solveur industriel OR-Tools CP-SAT (twin Python) automatise :
 
@@ -7355,7 +7355,7 @@ Ce twin C# a **déroulé à la main** ce que le solveur industriel OR-Tools CP-S
 - **Min-Conflicts** = la recherche locale qui passe à l'échelle (le « miracle » N = 1000) ;
 - **Énumération + brisure de symétrie D4** = le comptage exact des solutions fondamentales (12 pour N = 8).
 
-**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-UninformedSearch.ipynb) (DFS), CSP ⇄ [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb), Min-Conflicts ⇄ [`Search-11`](../../Part3-Advanced/Search-11-Metaheuristics.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb) (DFS), CSP ⇄ [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), Min-Conflicts ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb) (métaheuristiques), CP-SAT ⇄ [`App-1-NQueens`](App-1-NQueens.ipynb) (twin Python, solveur industriel).
 
 ### Pour aller plus loin
 - Ajouter la **propagation AC-3** (arc-consistency) avant le backtracking.
@@ -7364,7 +7364,7 @@ Ce twin C# a **déroulé à la main** ce que le solveur industriel OR-Tools CP-S
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications, tranche N-Reines. See #4956, #3801.*
-",,,,,,,,780ae15b379d7f8a,,,,,,,
+",,,,,,,,52af4904cafce8f8,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring.ipynb,c135d868,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
@@ -9729,7 +9729,7 @@ static int[,] GeneratePuzzle(int k, int seed)
 
 Console.WriteLine(""Exercice 3 : methode GeneratePuzzle definie (stub). A implementer."");
 ",,,,,,,,94eafa224cbbf6c4,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb,2fc6ad9c5164,markdown,fr,885f5523d21e9e7b,"---
+MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb,2fc6ad9c5164,markdown,fr,e03cfc58d90fde43,"---
 ## Conclusion
 
 Ce twin C# a reconstruit depuis zero les quatre solveurs Sudoku du notebook Python :
@@ -9749,7 +9749,7 @@ Ce twin C# a reconstruit depuis zero les quatre solveurs Sudoku du notebook Pyth
 ### Ponts inter-series
 
 - **Dancing Links / couverture exacte** : cf. la formalisation DLX dans la serie Search et l'algorithme X de Knuth (cf. App-11 Picross pour une autre application de DLX) ;
-- **AC-3 / propagation de contraintes** : cf. [Partie 2 (CSP)](../../../Part2-CSP/README.md) pour la theorie de la consistance d'arc ;
+- **AC-3 / propagation de contraintes** : cf. [Partie 2 (CSP)](../../Part2-CSP/README.md) pour la theorie de la consistance d'arc ;
 - **App-20 Python** : la version originale avec la stdlib Python donne les memes nombres d'appels.
 
 ### Prochaines etapes
@@ -9763,8 +9763,8 @@ Ce twin C# a reconstruit depuis zero les quatre solveurs Sudoku du notebook Pyth
 [<< App-20 Python](App-20-SudokuBenchmark-Python.ipynb) | [Index](../../README.md) | [App-7 Wordle >>](App-7-Wordle.ipynb)
 
 *Marathon #4956 -- parite .NET / Python, volet Search / Applications / CSP.*
-",,,,,,,,885f5523d21e9e7b,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,e3f8db16-dec3-4bc7-b5c6-73f276281201,markdown,fr,b485a05e00b31ccd,"# App-2b : Coloration de graphes — Jumeau C#
+",,,,,,,,e03cfc58d90fde43,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,e3f8db16-dec3-4bc7-b5c6-73f276281201,markdown,fr,181389bee4bc8d70,"# App-2b : Coloration de graphes — Jumeau C#
 
 > **Twin C#** de [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (Python + networkx + OR-Tools CP-SAT + matplotlib).
 > Suite du marathon **.NET ⇄ Python** (#4956), volet **Search / Applications / CSP**.
@@ -9785,8 +9785,8 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,e3f8
 
 Le twin Python **appelle** networkx (graphes) et CP-SAT (optimum) ; ce twin **déroule** les heuristiques et le branch-and-bound. ★ **Amélioration pédagogique** : utilisation de **graphes canoniques à χ connu** (Petersen=3, K4=4, Mycielski-4 triangle-free χ=4) plutôt qu'un graphe ad hoc — on peut **vérifier** que chaque heuristique atteint (ou non) l'optimum.
 
-**Durée estimée : 40 min.** Prérequis : [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb) (CSP).
-",,,,,,,,b485a05e00b31ccd,,,,,,,
+**Durée estimée : 40 min.** Prérequis : [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb) (CSP).
+",,,,,,,,181389bee4bc8d70,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,88f85eca-0022-4692-8f6b-bb3343d50953,markdown,fr,0272b12c2c418745,"## 1. Représentation du graphe
 
 Un graphe non orienté est stocké comme un dictionnaire d'adjacence : `adj[v]` = liste des voisins de `v`. On construit ensuite des **graphes canoniques** dont le nombre chromatique est connu, ce qui permet de valider les heuristiques.",,,,,,,,0272b12c2c418745,,,,,,,
@@ -10101,7 +10101,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,ab37
 // Etape 2 : comparer RLF vs DSATUR sur M_4 (χ=4) et M_5 (χ=5).
 Show(""Exercice 3 à compléter — RLF vs DSATUR."");
 ",,,,,,,,d1307aca4e4727f4,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,19c1e03f-c36c-41ad-aa7c-258dad234645,markdown,fr,88ec38be48380f1a,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/CSP/App-2b-GraphColoring-CSharp.ipynb,19c1e03f-c36c-41ad-aa7c-258dad234645,markdown,fr,fa6af65164e7234e,"## Conclusion
 
 Ce twin C# a **déroulé from-scratch** les heuristiques de coloration et la recherche du nombre chromatique :
 
@@ -10112,11 +10112,11 @@ Ce twin C# a **déroulé from-scratch** les heuristiques de coloration et la rec
 
 ★ **Leçon paradoxe** : les graphes de **Mycielski** (triangle-free, χ arbitrairement grand) montrent que la complexité chromatique **ne se réduit pas** à la densité de triangles — un résultat fondamental que la sortie du notebook rend tangible.
 
-**Lien avec les Foundations** : CSP ⇄ [`Search-9`](../../Part2-CSP/Search-9-ConstraintSatisfaction.ipynb), backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-UninformedSearch.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
+**Lien avec les Foundations** : CSP ⇄ [`Search-9`](../../Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb), backtracking ⇄ [`Search-1`](../../Part1-Foundations/Search-1-StateSpace-Csharp.ipynb), CP-SAT ⇄ [`App-2-GraphColoring`](App-2-GraphColoring.ipynb) (twin Python, solveur industriel).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications, tranche coloration de graphes. See #4956, #3801.*
-",,,,,,,,88ec38be48380f1a,,,,,,,
+",,,,,,,,fa6af65164e7234e,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb,62a43efe,code,fr,184ec71aef0df721,"# Parameters
 BATCH_MODE = ""true""
 
@@ -13518,7 +13518,7 @@ foreach (var tname in teacherNames)
 MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,4b5c6d7e,markdown,fr,dc7248773c7a63a5,"### Interpretation : MRV revele par la structure
 
 On observe que **Reseaux, Securite, Web** (cours ""labo"") ont moins de salles compatibles : 2 au lieu de 3-4. Ces cours sont les plus contraints — l'heuristique MRV (Minimum Remaining Values) du notebook suivant les placera en premier.",,,,,,,,dc7248773c7a63a5,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,4c5d6e7f,markdown,fr,40b3b5a43efc28d4,"---
+MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,4c5d6e7f,markdown,fr,705af8f756e2e94a,"---
 
 ## 4. Approche 1 : Heuristique gloutonne MRV
 
@@ -13528,7 +13528,7 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,4c5d6e7
 2. **Pour chaque cours**, parcourir les creneaux et salles dans l'ordre, et affecter au premier creneau+salle disponible (sans conflit salle ni enseignant)
 3. **Pas de backtracking** : si echec, le cours reste non place
 
-C'est la version sequentielle de l'algorithme MRV deja vu dans [CSP-1-NQueens-CSharp](../../Part2-CSP/CSP-1-NQueens-CSharp.ipynb) et [CSP-3-Advanced](../../Part2-CSP/CSP-3-Advanced.ipynb).",,,,,,,,40b3b5a43efc28d4,,,,,,,
+C'est la version sequentielle de l'algorithme MRV deja vu dans [CSP-1-NQueens-CSharp](App-1b-NQueens-CSharp.ipynb) et [CSP-3-Advanced](../../Part2-CSP/CSP-3-Advanced.ipynb).",,,,,,,,705af8f756e2e94a,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,5d6e7f8a,code,fr,98998b9bac0d6c37,"// === Heuristique gloutonne MRV ===
 
 (Dictionary<string, (string Room, int Slot)> Schedule, bool Success) GreedyTimetable()
@@ -13867,7 +13867,7 @@ List<(Dictionary<string, (string, int)>, int)> BranchAndBoundWithGroups(int maxS
 var bbGroups = BranchAndBoundWithGroups(maxSolutions: 2);
 Console.WriteLine($""Solutions avec groupes : {bbGroups.Count} (STUB — exercice a completer)"");
 ",,,,,,,,0242a1455c7c4906,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,7f8a9b0c,markdown,fr,8e71b13e2011d934,"---
+MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb,7f8a9b0c,markdown,fr,d56071d3d6edde71,"---
 
 ## Conclusion
 
@@ -13888,13 +13888,13 @@ Le notebook assume cette posture dans la cellule d'introduction (verdict RECOVER
 
 ### References
 
-- [CSP-1-NQueens-CSharp](../../Part2-CSP/CSP-1-NQueens-CSharp.ipynb) — backtracking + MRV
+- [CSP-1-NQueens-CSharp](App-1b-NQueens-CSharp.ipynb) — backtracking + MRV
 - [CSP-3-Advanced](../../Part2-CSP/CSP-3-Advanced.ipynb) — propagation de contraintes
 - [App-4-JobShopScheduling.ipynb](App-4-JobShopScheduling.ipynb) — jumeau Python avec OR-Tools
 - [App-4b-JobShopScheduling-CSharp.ipynb](App-4b-JobShopScheduling-CSharp.ipynb) — jumeau C# App-4b (dispatching + B&B)
 - [EPIC #3801 — SOTA ledger](../README.md)
 - [EPIC #4956 — Marathon parite .NET ⇄ Python](../README.md)
-",,,,,,,,8e71b13e2011d934,,,,,,,
+",,,,,,,,d56071d3d6edde71,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb,30fad090,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
@@ -19583,7 +19583,7 @@ static List<string> Solve6Letters(List<string> wordList6, string answer)
 
 Console.WriteLine(""Exercice 3 : methode Solve6Letters definie (stub). A implementer."");
 ",,,,,,,,29e036bd02d85372,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,c0cfcdd6a99b,markdown,fr,120fd4e9dde60ebb,"---
+MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,c0cfcdd6a99b,markdown,fr,1f0cca0cbd26f464,"---
 ## Conclusion
 
 Ce twin C# a reconstruit depuis zero les trois familles de solveurs Wordle du notebook Python :
@@ -19606,7 +19606,7 @@ Les quantites **aleatoires** (simple filtrage, solveur CSP avec tirage) differen
 ### Ponts inter-series
 
 - **Theorie de l'information** : cf. serie Search et la formalisation de l'entropie (Cover & Thomas) ;
-- **CSP** : cf. [Partie 2 (CSP)](../../../Part2-CSP/README.md) pour les domaines, la propagation et la consistence ;
+- **CSP** : cf. [Partie 2 (CSP)](../../Part2-CSP/README.md) pour les domaines, la propagation et la consistence ;
 - **App-7 Python** : la version originale avec `numpy`/`matplotlib` donne les memes resultats deterministes.
 
 ### Prochaines etapes
@@ -19620,7 +19620,7 @@ Les quantites **aleatoires** (simple filtrage, solveur CSP avec tirage) differen
 [<< App-7 Python](App-7-Wordle.ipynb) | [Index](../../README.md) | [App-8 MiniZinc >>](App-8-MiniZinc.ipynb)
 
 *Marathon #4956 -- parite .NET / Python, volet Search / Applications / CSP.*
-",,,,,,,,120fd4e9dde60ebb,,,,,,,
+",,,,,,,,1f0cca0cbd26f464,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,94cce746,markdown,fr,b0e5a6f71f142823,"# App-8 : Modelisation declarative par contraintes (twin C# .NET)
 
 > **Twin C# .NET de `App-8-MiniZinc.ipynb`** (marathon parite #4956). Kernel `.net-csharp`. Ce notebook utilise **Google.OrTools CP-SAT** (Prong A, EPIC #3801) -- le vrai moteur industriel de programmation par contraintes, accessible en .NET via NuGet. MiniZinc etant un langage de modelisation independant sans binding .NET officiel, ce twin exprime les memes modeles declaratifs via OR-Tools CP-SAT, qui partage le paradigme : **declarer les contraintes, laisser le solveur chercher**. Les graphiques matplotlib du twin Python sont remplaces par un rendu ASCII autonome.
@@ -19958,37 +19958,47 @@ Console.WriteLine(new string('=', 86));
 MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,0cccf684,markdown,fr,ef48a860b8481be5,"## 5. Sudoku 4x4
 
 Le twin Python pilote MiniZinc depuis Python (modele + donnees `.dzn`). En CP-SAT C#, le modele et les donnees vivent dans le meme code : on fixe les cases initiales par `Add(var == valeur)`, puis `AddAllDifferent` sur lignes, colonnes et blocs 2x2.",,,,,,,,ef48a860b8481be5,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,c5217853,code,fr,3bb6478b86731a6b,"// Visualisation ASCII (remplace matplotlib) : concision et score multi-criteres.
-static string Bar(int filled, int maxBars, char c = '#')
-    => new string(c, filled) + new string(' ', maxBars - filled);
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,c5217853,code,fr,0c4916f1f5e072bb,"// Visualisation Plotly (remplace l'ASCII art -- EPIC #3801 Prong A) :
+// concision du modele (lignes de code) + evaluation multi-criteres (score 1-5).
+// Technique C548-L2 : Plotly.js via Formatter.Register (kernel builtin, aucun #r nuget).
+using Microsoft.DotNet.Interactive.Formatting;
+using System.IO;
+using System.Text.Json;
 
-Console.WriteLine(""Concision du modele (lignes de code estimees)\n"" + new string('-', 50));
+record PlotlyHtml(string Markup);
+Formatter.Register(typeof(PlotlyHtml),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+
+static string Trace(string name, string[] x, double[] y) =>
+    JsonSerializer.Serialize(new Dictionary<string, object> { [""name""]=name, [""x""]=x, [""y""]=y, [""type""]=""bar"" });
+
+// --- (1) Concision du modele : lignes de code estimees (grouped bars) ---
 var problems = new[] { ""N-Reines"", ""Emploi du temps"", ""Sudoku"" };
-var linesPy = new[] { 20, 60, 50 };
-var linesCp = new[] { 12, 45, 35 };
-var linesMz = new[] { 5, 25, 20 };
-int maxL = 60;
-for (int i = 0; i < 3; i++)
-{
-    Console.WriteLine($""\n{problems[i]}:"");
-    Console.WriteLine($""  Python pur {Bar(linesPy[i], maxL),-62} {linesPy[i]}"");
-    Console.WriteLine($""  CP-SAT     {Bar(linesCp[i], maxL),-62} {linesCp[i]}"");
-    Console.WriteLine($""  MiniZinc   {Bar(linesMz[i], maxL),-62} {linesMz[i]}"");
-}
+string tConcPy = Trace(""Python pur"", problems, new double[]{20,60,50});
+string tConcCp = Trace(""CP-SAT"", problems, new double[]{12,45,35});
+string tConcMz = Trace(""MiniZinc"", problems, new double[]{5,25,20});
+string layoutConc = JsonSerializer.Serialize(new Dictionary<string,object>{
+    [""title""]=new Dictionary<string,string>{[""text""]=""Concision du modele (lignes de code estimees)""},
+    [""barmode""]=""group"", [""yaxis""]=new Dictionary<string,string>{[""title""]=""Lignes de code""}});
 
-Console.WriteLine(""\n\nEvaluation multi-criteres (score 1-5)\n"" + new string('-', 50));
+// --- (2) Evaluation multi-criteres (score 1-5, grouped bars) ---
 var criteria = new[] { ""Concision"", ""Lisibilite"", ""Portabilite"", ""Integr. .NET"", ""Performance"" };
-var scPy = new[] { 2, 2, 1, 5, 2 };
-var scCp = new[] { 3, 3, 2, 5, 5 };
-var scMz = new[] { 5, 5, 5, 3, 4 };
-for (int i = 0; i < 5; i++)
-{
-    Console.WriteLine($""\n{criteria[i]}:"");
-    Console.WriteLine($""  Python pur {Bar(scPy[i], 5)}"");
-    Console.WriteLine($""  CP-SAT     {Bar(scCp[i], 5)}"");
-    Console.WriteLine($""  MiniZinc   {Bar(scMz[i], 5)}"");
-}
-",,,,,,,,3bb6478b86731a6b,,,,,,,
+string tScPy = Trace(""Python pur"", criteria, new double[]{2,2,1,5,2});
+string tScCp = Trace(""CP-SAT"", criteria, new double[]{3,3,2,5,5});
+string tScMz = Trace(""MiniZinc"", criteria, new double[]{5,5,5,3,4});
+string layoutScore = JsonSerializer.Serialize(new Dictionary<string,object>{
+    [""title""]=new Dictionary<string,string>{[""text""]=""Evaluation multi-criteres (score 1-5)""},
+    [""barmode""]=""group"", [""yaxis""]=new Dictionary<string,object>{[""title""]=""Score"",[""range""]=new double[]{0,5}}});
+
+string markup = ""<h4>Concision du modele</h4>"" +
+    ""<div id=\""pltConcision\""></div>"" +
+    ""<h4>Evaluation multi-criteres</h4>"" +
+    ""<div id=\""pltScore\""></div>"" +
+    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
+    $""<script>Plotly.newPlot('pltConcision',[{tConcPy},{tConcCp},{tConcMz}],{layoutConc});"" +
+    $""Plotly.newPlot('pltScore',[{tScPy},{tScCp},{tScMz}],{layoutScore});</script>"";
+
+new PlotlyHtml(markup)",,,,,,,,0c4916f1f5e072bb,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,1f289c86,markdown,fr,cac1fac7af00e007,"## 6. Comparaison : imperatif vs declaratif
 
 On resout N-Reines des deux facons pour comparer. Le backtracking pur (imperatif) est plus lent et moins declaratif ; CP-SAT (declaratif) delegue au solveur. La troisieme approche du twin Python (MiniZinc) est omise ici (pas de binding .NET) -- CP-SAT la represente dans le paradigme declaratif.
@@ -23927,7 +23937,7 @@ L'algorithme genetique seul est le plus faible (2.64x optimal), mais **combine a
 Le TSP illustre le compromis fondamental : les methodes exactes garantissent l'optimalite mais explosent au-dela de n~10-12 villes, tandis que les metaheuristiques scalement mais sans garantie.
 
 **Suite** : [App-14 - Connect Four adversarial](../Search/App-14-ConnectFour-Adversarial.ipynb) | [Retour au sommaire](../../README.md)",,,,,,,,02754dd76f85355e,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,6a1e3f6d-397a-4d21-9131-c59b1ef7a99c,markdown,fr,f66b4524b1b458bd,"# App-13b : TSP (Voyageur de Commerce) — Jumeau C#
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,6a1e3f6d-397a-4d21-9131-c59b1ef7a99c,markdown,fr,2a770b06dd8df2df,"# App-13b : TSP (Voyageur de Commerce) — Jumeau C#
 
 > **Twin C#** de [`App-13-TSP-Metaheuristics`](App-13-TSP-Metaheuristics.ipynb) (Python : brute force, plus-proche-voisin, 2-opt, recuit simulé, GA, ACO, OR-Tools).
 > Suite du marathon **.NET ⇄ Python** (#4956), volet **Search / Applications / Hybrid**.
@@ -23953,8 +23963,8 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.i
 
 ★ Le twin Python **appelle** OR-Tools ; les autres twins C# appellent **GeneticSharp**. Ce twin **déroule les heuristiques à la main** (2-opt = inversion de segment, recuit simulé = move 2-opt + critère de Metropolis) — la mécanique que les librairies cachent.
 
-**Durée estimée : 45 min.** Prérequis : [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb) (recherche locale), [`Search-11`](../../Part3-Advanced/Search-11-SimulatedAnnealing.ipynb) (recuit simulé).
-",,,,,,,,f66b4524b1b458bd,,,,,,,
+**Durée estimée : 45 min.** Prérequis : [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb) (recherche locale), [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb) (recuit simulé).
+",,,,,,,,2a770b06dd8df2df,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,1f6f5a78-1d31-41ad-829a-305804699c6f,markdown,fr,e90c27606cc35397,"## 1. Représentation du problème
 
 Le TSP : étant donné N villes et les distances entre elles, trouver la tournée fermée la plus courte passant par chaque ville exactement une fois. NP-dur. On travaille en Euclidien : les villes sont des points du plan, la distance est la distance Euclidienne.",,,,,,,,e90c27606cc35397,,,,,,,
@@ -24187,7 +24197,7 @@ MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.i
 // Etape 3 : verifier que 2-opt converge vers le perimetre (gap ~0%).
 Show(""Exercice 3 a completer - circularite => 2-opt atteint l'optimum."");
 ",,,,,,,,75bc11a253f2b4a9,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,b98dcdc8-a03a-454d-94d1-fed637e98c27,markdown,fr,0147d9860f9fe4fb,"## Conclusion
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb,b98dcdc8-a03a-454d-94d1-fed637e98c27,markdown,fr,e50ba6ca8114afd8,"## Conclusion
 
 Ce twin C# a **déroulé from-scratch** les piliers de la résolution approchée du TSP :
 
@@ -24198,11 +24208,11 @@ Ce twin C# a **déroulé from-scratch** les piliers de la résolution approchée
 
 ★ **Leçon** : le TSP cristallise le basculement exact ↔ approché. Les solveurs industriels (OR-Tools, twin Python ; GeneticSharp, autres twins C#) combinent ces briques à grande échelle ; ce twin les **expose individuellement** pour qu'on saisisse la mécanique de chaque heuristique.
 
-**Lien avec les Foundations** : recherche locale ⇄ [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb), recuit simulé ⇄ [`Search-11`](../../Part3-Advanced/Search-11-SimulatedAnnealing.ipynb), solveur industriel ⇄ [`App-13-TSP-Metaheuristics`](App-13-TSP-Metaheuristics.ipynb) (twin Python).
+**Lien avec les Foundations** : recherche locale ⇄ [`Search-4`](../../Part1-Foundations/Search-4-LocalSearch.ipynb), recuit simulé ⇄ [`Search-11`](../../Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb), solveur industriel ⇄ [`App-13-TSP-Metaheuristics`](App-13-TSP-Metaheuristics.ipynb) (twin Python).
 
 ---
 *Marathon .NET ⇄ Python #4956 — Search/Applications/Hybrid, tranche TSP / voyageur de commerce. See #4956, #3801.*
-",,,,,,,,0147d9860f9fe4fb,,,,,,,
+",,,,,,,,e50ba6ca8114afd8,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb,c889dd4f,markdown,fr,ca43a3053d7a4d5f,"# App-17 : Vehicle Routing Problem (VRP)
 
 **Navigation** : [<< App-16 Crossword CSP](../CSP/App-16-Crossword-CSP.ipynb) | [Index](../../README.md) | [App-18 Hyperparameter Tuning >>](App-18-HyperparameterTuning.ipynb)
@@ -26229,9 +26239,9 @@ Dans ce notebook, nous avons explore cinq methodes d'optimisation d'hyperparamet
 - Les **metaheuristiques** (GA, PSO) sont adaptees aux problemes complexes
 - La **parallelisation** peut grandement accelerer le processus
 - Il n'y a pas de methode universelle: **adapter au probleme**",,,,,,,,76241aa9723a7fea,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb,47e4092d,markdown,fr,a1a8b2b9c722860b,"# App-18b : Optimisation d'Hyperparametres - Jumeau C#
+MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb,47e4092d,markdown,fr,f6236724a66b9b6e,"# App-18b : Optimisation d'Hyperparametres - Jumeau C#
 
-> **Twin C#** de [`App-18-HyperparameterTuning`](App-18-HyperparameterTuning.ipynb) (Python / scikit-learn + Optuna). Navigation : [<< App-17b VRP](App-17b-VRP-Logistics-Csharp.ipynb) | [Index](../../README.md) | [App-19 WFC >>](App-19-ProceduralGeneration-WFC-Csharp.ipynb)
+> **Twin C#** de [`App-18-HyperparameterTuning`](App-18-HyperparameterTuning.ipynb) (Python / scikit-learn + Optuna). Navigation : [<< App-17b VRP](App-17b-VRP-Logistics-Csharp.ipynb) | [Index](../../README.md) | [App-19 WFC >>](../CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb)
 
 ## Objectif pedagogique
 
@@ -26245,7 +26255,7 @@ Ce jumeau C# reprend **la meme structure pedagogique** en **pur BCL .NET 9 (from
 > **Pourquoi Bayesian Optimization ici ?** L'optimisation d'hyperparametres est un cas canonique d'**optimisation boite-noire couteuse** : chaque evaluation = une CV complete (des milliers de calculs), et le budget d'evaluations est limite. C'est exactement le regime ou un *surrogate* probabiliste (Gaussian Process) + une fonction d'acquisition (EI/UCB) **surpassent** Grid/Random Search. La comparaison des courbes de convergence (section 8) le demontre.
 
 **Parite .NET / Python** (Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956)) : les ancres deterministes (precision des configurations de reference, trajectoires de convergence) sont reproduites a l'identique dans les deux langues par construction (RNG a graine fixee, pas de derive).
-",,,,,,,,a1a8b2b9c722860b,,,,,,,
+",,,,,,,,f6236724a66b9b6e,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb,87ca09dc,markdown,fr,e098c5b8a77286d7,"## 1. Configuration et jeu de donnees
 
 Nous generons un jeu de donnees de **classification binaire 2D** deterministe (deux amas gaussiens chevauchants, pour que la precision du k-NN depende sensiblement des hyperparametres). Un generateur pseudo-aleatoire **LCG a graine fixee** garantit la reproductibilite bit-par-bit des ancres committes.
