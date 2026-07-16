@@ -57,6 +57,18 @@ ALLOW_NULL_EXEC_COUNT_KERNELS = {"lean4", "lean4-wsl", "lean"}
 # H.3 is advisory-only for these — they can only be executed via QC Cloud.
 QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
 
+# Research-exploration archive snapshots (path suffix). An `*_archive.ipynb` is
+# a frozen log of exploratory iteration; its error outputs (KeyError/NameError
+# from cells run out of order, a missing data field, ...) are a RECORD of what
+# happened, not a bug to fix — the live counterpart (`research.ipynb`) carries
+# the clean run. The H.1 error-output check is ADVISORY for these so a future
+# nbformat pass / enrichment does not re-trip on the deliberate snapshot. C.1
+# (no intentional-error source) and H.3 (execution_count != null) stay enforced
+# — an archive was still executed and must not embed forbidden patterns. Scope
+# is deliberately tight (path suffix) so only explicit archives opt out. See
+# #6803.
+ARCHIVE_NOTEBOOK_SUFFIX = "_archive.ipynb"
+
 # Kernels that render errors as TEXT, not as output_type=="error" (#5151).
 # Lean via lean4_jupyter/alectryon embeds the compiler's own message severity
 # in the cell output (text/plain + text/html). A `severity: error` message is
@@ -165,6 +177,9 @@ def validate_notebook(nb_path: Path) -> dict:
     # kernel/runtime). Covers .NET, Lean, QC Cloud, qc_reference templates.
     qc_cloud = _is_qc_cloud(rel_path, data)
     ci_reexec_skipped = any(k in kernel for k in SKIP_EXEC_KERNELS) or qc_cloud
+    # Research archive snapshot: error outputs are a deliberate record, not a
+    # bug (#6803). H.1 is advisory; H.3 + C.1 still enforced below.
+    is_archive = rel_path.replace("\\", "/").endswith(ARCHIVE_NOTEBOOK_SUFFIX)
     # "A null execution_count is tolerated" — STRICTER than ci_reexec_skipped.
     # Only where local execution is ALSO impossible (QC Cloud needs QuantBook;
     # Lean kept advisory for now — own rendering subtleties, out of #5214).
@@ -241,6 +256,11 @@ def validate_notebook(nb_path: Path) -> dict:
                 if ci_reexec_skipped:
                     result["errors"].append(
                         f"cell {i}: has error output — {ename} (advisory, QC Cloud)"
+                    )
+                elif is_archive:
+                    result["errors"].append(
+                        f"cell {i}: has error output — {ename} "
+                        f"(advisory, research archive snapshot — See #6803)"
                     )
                 else:
                     result["passed"] = False
