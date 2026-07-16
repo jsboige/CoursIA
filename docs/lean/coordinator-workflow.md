@@ -109,3 +109,31 @@ Lancer avec `Bash run_in_background=true`. Sauvegarder `bash_id` + path `.output
 - **Anti-pattern interdit** : "Le BG a deja FAILED hier, pas la peine de relancer". Le contexte change a chaque iteration manual po-2026.
 - **Reporting** : status BG (DELTA sorry, RESULT_SUCCESS, elapsed) dans dashboard cycle suivant. Ne PAS reporter "BG running, voila".
 - **Fin de cycle** : avant `[DONE]`, repondre "Est-ce qu'il y a eu un PR ou msg po-2026 ce cycle ? Si oui, BG iter a-t-il ete lance ?".
+
+---
+
+## 3. Gotchas operationnels — dual-session & prover BG
+
+Lecons durables tirees d'un episode ou deux sessions coordinateur ai-01 ont tourne simultanement sur la meme machine en partageant UN working tree. Les `#PR`/SHA ephemeres vivent sur le dashboard ; ici, seulement les mecanismes durables et les pieges reproductibles.
+
+### 3.1 Dual-session sur arbre partage = destruction mutuelle
+
+Deux REPL ai-01 sur le meme `d:\CoursIA` se detruisent : un `run` prover ecrase le candidat build-passing d'un autre via contention `.lake` + line-drift ; deux merges/closes concurrents = les deux fermes (incident SocialChoice : deux PRs jumelles fermees simultanement en double-yield, module orphelin, `reopenPullRequest` refuse sur PR DIRTY-at-close).
+
+Regles :
+- **Un seul** REPL porte `/coordinate` + le BG prover **par arbre**. L'autre YIELD (pas de merge/tree/gh/prover concurrents).
+- **Signal d'activite peer** : le HEAD du working tree qui **bouge sans ton propre `pull`** (`git fetch`/reads ne deplacent pas le HEAD) = un peer opere a l'instant → YIELD ou isole.
+- Toute PR individuelle sous dual-session = **worktree isole** (`git worktree add <path> -b <branch> origin/main`), **docs-only** de preference (pas de build → pas de contention `.lake`), push + PR comme `jsboige` **sans `gh auth switch`** (le peer garde `jsboige` pour ses merges), laissee **OPEN** pour la passe de merge du peer. Un worktree a son propre HEAD/index : le peer qui avance `main` ne peut pas le corrompre.
+- Le **lockfile par-arbre** `agent_tests/prover/tree_lock.py` (`.prover.lock`, exit 3, `--force-lock`) garde le prover : un exit 3 = « un autre acteur tient l'arbre » → attendre/escalader, **jamais forcer**.
+- **Dedup = decision user** : chaque session ne voit que SON `CronList` (le cron du peer vit dans SA session). Garder UNE session, stopper l'autre REPL — **jamais** un `CronDelete` aveugle (supprimer sa propre cron = risque zero-coordinateur).
+
+### 3.2 Line-drift → AutoFix cible le mauvais sorry
+
+Le harness AutoFix vise le sorry le plus proche d'une ligne cible. Un scaffolding inline **decale les lignes** : un `--line N` cale sur une ligne CLEAN devient, apres insertion, « le sorry le plus proche » = un AUTRE quadrant (cas vecu sur la decomposition P4 de `HashlifeCorrectness.lean` : une DEMO pointee sur le quadrant `ne` a derive vers `nw`, un grain DO-NOT-TARGET du bridge G3 manuel po-2026).
+
+- **Factoriser le lemme AVANT tout BG** (pattern `p4_nw_shift_lemma` : sortir les steps hors du monolithe). Le monolithe P4 inline est **INTRACTABLE** : budget whnf (~200000 heartbeats) epuise sur la tete de declaration ; le budget se **reinitialise par declaration** → un lemme court compile la ou l'inline timeout. La voie productive est le **factoring manuel** (grains po-2026), pas le BG inline.
+- `--demo N` **OVERRIDE** `--line` : re-pointer la DEMO dans `prover/config.py` (`DEMOS` dict), ne pas passer `--line` a la main sur un fichier au layout mouvant.
+
+### 3.3 Logs BG = arbre du lanceur, pas l'arbre principal
+
+Un BG lance depuis la copie `agent_tests` d'un worktree (`/mnt/c/dev/CoursIA-*`, `C:/wtprover`) logue dans le `bg_logs/` de CE worktree, pas dans celui de `d:\CoursIA`. Un `bg_logs/` du tree principal qui ne montre que des logs anciens **n'est pas** la preuve « aucun run » — chercher dans l'arbre du lanceur. Cross-checker l'outcome via le dashboard/DM du peer plutot que relancer un BG redondant (le lockfile 3.1 le refuserait de toute facon).
