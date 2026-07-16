@@ -36,8 +36,13 @@
                           la minimisation de regret / CFR) : borne
                           définissante, caractérisation par le max, exemples
                           certifiés par `decide` (phase 6, cible GT-13)
+  - `Bayesian.FictitiousPlay` — fictitious play born-correct : état de comptes,
+                          meilleure réponse empirique (argmax) et son optimalité,
+                          transition de ronde, Dilemme du Prisonnier certifié par
+                          `decide` (phase 7, cible GT-17 — hors convergence)
 
-  Voir #2610 (formalisation GT-Lean, phases 1-6 : jeux bayésiens + regret).
+  Voir #2610 (formalisation GT-Lean, phases 1-7 : jeux bayésiens, regret,
+  fictitious play).
 
   ---
   English:
@@ -75,8 +80,13 @@
                           of regret minimization / CFR): defining bound,
                           max-characterization, `decide`-certified examples
                           (phase 6, GT-13 target)
+  - `Bayesian.FictitiousPlay` — born-correct fictitious play: count state,
+                          empirical best response (argmax) and its optimality,
+                          round transition, Prisoner's Dilemma certified by
+                          `decide` (phase 7, GT-17 target — convergence excluded)
 
-  See #2610 (GT-Lean formalization, phases 1-6: Bayesian games + regret).
+  See #2610 (GT-Lean formalization, phases 1-7: Bayesian games, regret,
+  fictitious play).
 -/
 
 import Bayesian.Sum
@@ -90,3 +100,4 @@ import Bayesian.Information
 import Bayesian.InfoGames
 import Bayesian.Reputation
 import Bayesian.Regret
+import Bayesian.FictitiousPlay
