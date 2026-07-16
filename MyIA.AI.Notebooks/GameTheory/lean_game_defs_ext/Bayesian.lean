@@ -32,8 +32,12 @@
                           établie : BNE crédible unique avec et sans
                           incertitude sur le type, la réputation paie 5 > 4
                           (phase 5)
+  - `Bayesian.Regret`   — regret externe d'une suite finie de jeu (base de
+                          la minimisation de regret / CFR) : borne
+                          définissante, caractérisation par le max, exemples
+                          certifiés par `decide` (phase 6, cible GT-13)
 
-  Voir #2610 (formalisation GT-Lean, phases 1-5 : jeux bayésiens).
+  Voir #2610 (formalisation GT-Lean, phases 1-6 : jeux bayésiens + regret).
 
   ---
   English:
@@ -67,8 +71,12 @@
   - `Bayesian.Reputation` — entry deterrence / chain-store reputation:
                           unique credible BNE with and without type
                           uncertainty, reputation pays 5 > 4 (phase 5)
+  - `Bayesian.Regret`   — external regret of a finite play sequence (basis
+                          of regret minimization / CFR): defining bound,
+                          max-characterization, `decide`-certified examples
+                          (phase 6, GT-13 target)
 
-  See #2610 (GT-Lean formalization, phases 1-5: Bayesian games).
+  See #2610 (GT-Lean formalization, phases 1-6: Bayesian games + regret).
 -/
 
 import Bayesian.Sum
@@ -81,3 +89,4 @@ import Bayesian.Max
 import Bayesian.Information
 import Bayesian.InfoGames
 import Bayesian.Reputation
+import Bayesian.Regret
