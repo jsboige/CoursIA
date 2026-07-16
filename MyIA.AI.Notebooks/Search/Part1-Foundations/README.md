@@ -93,7 +93,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `mealpy` | Search-11 (Métaheuristiques) |
 | `z3-solver` | Search-10 (Symbolic Automata) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
-| `QuikGraph 2.5.0` (NuGet) | Search-13 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `QuikGraph 2.5.0` (NuGet) | Search-16 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
 
