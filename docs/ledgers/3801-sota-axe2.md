@@ -2708,3 +2708,77 @@ La série **exerce des capacités d'orchestration agentique distinctives** sans 
 - **Cumulatif** : entry #029 = **SemanticKernel standalone** (12 nb) → 1re famille **GenAI agentique** dans le registre axe-2 (rejoint Texte #022/Image #023/PostTraining #024/Video #025/Audio #026 = couverture GenAI élargie). Reste non-audité : GenAI/RAG, Open-WebUI, FineTuning (grains futurs).
 
 Part of #3801, #1385
+
+
+## Entry #030 — Probas/PyMC-5-Causal-Inference (owner po-2025 strict, c.538)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Kernel | `python3` |
+| Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
+| Date audit | 2026-07-16 (c.538) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (SOTA-OK, DISCRIMINATING) |
+
+### Synthèse (1 notebook, 30 cellules, 14 cellules code)
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| PyMC-5-Causal-Inference | 30 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | **PyMC `pm.do`/`pm.observe` (Pearl)** + énumération exacte SCM + `pm.sample_prior_predictive` ; 3 niveaux de Pearl | **SOTA-OK** |
+| **TOTAL** | **30** | **14** | **14/14** | **0** | **0** | python3 | PyMC + ArviZ + NumPy | **SOTA-OK 1/1** |
+
+- **EXEC_PROVED** : 14/14 (100%) — `execution_count != null` sur 14/14 cellules code.
+- **Erreurs runtime** : 0.
+- **Violations C.1** : 0 (regex `raise NotImplementedError|assert False|1/0` = 0 hit ; 4 stubs `print("Exercice N a completer...")` + `# TODO etudiant` conformes).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
+
+- **PyMC** (`import pymc as pm`, `from pymc import do, observe`) — **opérateurs causaux natifs de Pearl** `pm.do` (intervention/mutilation) + `pm.observe` (conditionnement). 22 hits `pm.`, 6 `pm.do`, 1 `observe(`. Modélisation `pm.Model`/`pm.Bernoulli`/`pm.math.switch` ; échantillonnage `pm.sample_prior_predictive(draws=40000)`.
+- **ArviZ** (`import arviz as az`) — importé et version imprimée.
+- **NumPy/itertools** — moteur `enumerate_scm` d'inférence exacte par énumération sur SCM booléen (ordre topologique, `evidence`/`do_vars`), cross-validé contre `pm.do`.
+
+### Disclosures honnêtes vérifiées
+
+- **PyMC-5 = notebook do-calculus canonique** : démontre les **3 niveaux de l'échelle de Pearl** avec outputs numériques cohérents :
+  - **Niveau 1 (observation)** cell 9 : `P(tempete | barometre baisse) = 0.656` via `pm.observe` + énumération exacte → « le baromètre prédit la tempête » (conclusion naive).
+  - **Niveau 2 (intervention)** cell 11 : `P(tempete | do(barometre baisse)) = 0.310` (exact) vs `~0.314` (`pm.do` + `pm.sample_prior_predictive` 40000 draws) — **les deux méthodes convergent** (0.310 ~ 0.314), prouvant le MCMC réel. Conclusion : « Observer=0.656, Provoquer=0.310 (= marginale). Voir != Faire (Pearl 2000). »
+  - **Niveau 3 (contrefactuel)** cell 23 : patient guéri AVEC médicament → ~42% de guérison sans (contrefactuel Pearl).
+- **Backdoor adjustment** cell 16 : `P(tempete|do(barometre))=0.310` via formule de Somme vs `pm.do` direct → « Les deux méthodes coïncident (0.310 ~ 0.310) : vérification de cohérence. »
+- **Front-door adjustment** cell 18 : smoke→tar→cancer + U genotype non observé, formule front-door restitue `do(X=1)=0.689` = mutilation directe → « la formule front-door restitue l'effet causal. »
+- **Paradoxe de Simpson** cell 20 : `P(Rec|do(Drug))=0.700` vs `P(Rec|do(NoDrug))=0.500` → « le médicament AIDE causalement » (renversement agrégé vs conditionnel démontré).
+- **Cross-check PyMC-4** cell 14 : réseau Sprinkler sous-graphe `Cloudy→Rain`, pointe `../PyMC/PyMC-4-Bayesian-Networks.ipynb` (cross-family validation, pas fallback).
+
+### Prong B — problème non-trivial (DISCRIMINATING)
+
+Le do-calculus **est la capacité distinctive** de la causalité — il n'existe **aucune baseline triviale** : `P(Y|X) != P(Y|do(X))` est le point entier (0.656 vs 0.310 sur le baromètre). L'opérateur `pm.do` (mutilation de graphe) n'a pas d'équivalent dans l'inférence observationnelle standard. Les 3 niveaux de Pearl (association → intervention → contrefactuel) sont chacun démontrés avec leurs outils dédiés (`pm.observe`, `pm.do`, abduction-contrefactuelle). **Aucun cas dégénéré** — le notebook évite même l'écueil du SCM trivial en couvrant backdoor, front-door ET Simpson (3 adjustments distincts avec vérification de cohérence exacte vs MCMC).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 (pas d'erreur volontaire) | **CONFORME** | 0 `raise NotImplementedError`/`assert False`/`1/0` ; 4 stubs `print`+`# TODO` |
+| C.2 (notebooks AVEC outputs) | **CONFORME** | 14/14 exec_count!=null + outputs cohérents (probas 0.656/0.310/0.314/0.689/0.700/0.500) |
+| Anti-regression | **CONFORME** | Audit read-only, 0 code notebook modifié |
+| SOTA Prong A (5 verdicts) | **CONFORME** | SOTA-OK (vrai PyMC `pm.do`/`pm.observe` + énumération exacte + MCMC convergent) |
+| SOTA Prong B (non-trivial) | **CONFORME** | DISCRIMINATING (do-calculus = capacité distinctive native) |
+| Stop & Repair (secrets §6) | **CONFORME** | 0 hand-edit sortie ; 0 machine-path/secret dans outputs ; 0 `metadata.papermill` |
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Recensement worker firsthand** (script python3 sur `origin/main` HEAD `09adbfcec`) : 30 cells, 14 code, **14/14 EXEC_PROVED**, 0 err, 0 C.1. SOTA counts : 22 `pm.`, 6 `pm.do`, 27 `do(`, 1 `observe(`, 1 `az.`, 2 `pm.sample`.
+- **Vérification substance cellule-par-cellule** : imports cell 3 (versions PyMC/ArviZ/NumPy imprimées + « pm.do (intervention), pm.observe (conditionnement) ») ; modélisation cell 9 (`pm.Model`/`pm.Bernoulli`/`pm.math.switch`/`observe`) ; intervention cell 11 (`do(m_baro,{baro:1})` + `pm.sample_prior_predictive(draws=40000)`, convergence exact 0.310 ~ MCMC 0.314) ; backdoor/front-door/Simpson/contrefactuel cells 16/18/20/23 (outputs numériques cohérents tous vérifiés).
+- **Stop & Repair scan** : 0 hit machine-path/secret dans outputs ; `metadata.papermill` absent (clean).
+
+### Owner-lane volet
+
+**po-2025 strict** — Probas/PyMC = lane bayésienne Python native de po-2025. Audit consultatif additif (0 code modifié), safe owner-lane. **Contexte du gap** : entry #028 (c.411) listait « PyMC-1..15 hors PyMC-5 absent ». G.1 firsthand : PyMC-5 a été **créé 2026-06-29 (#4593, nommé « PyMC-22 Causal Inference »)** puis **renommé PyMC-5 au refactor #4956** (commit `25812f1c9`, 2026-07-10, « full 12-move PyMC mirror of Infer renum ») — post-renum, le recensement #028 l'a manqué (probablement glob/path issue Windows post-rename, mémoire `feedback_recensement_glob_windows`). Cette entry comble le gap : **famille Probas/PyMC désormais 15/15 couverte** (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5).
+
+### Conclusions audit
+
+- **PyMC-5-Causal-Inference = substance causale solide**, 14/14 EXEC_PROVED, PyMC `pm.do`/`pm.observe` (opérateurs Pearl natifs) + énumération exacte cross-validée, Prong-B DISCRIMINATING (do-calculus). **Pas de fix nécessaire** : audit = SOTA-OK, 0 PR de substance.
+- **Continuité c.538** : greenlight ai-01 (DM `msg-20260716T045341-edgoyo`) pour série PyMC SOTA audit — mais dispatch pointait PyMC-12/18 (déjà #028/#018 SOTA-OK, 4e dispatch stale ce motif) ; **G.1 firsthand** a identifié PyMC-5 comme le **vrai gap non-audité**. R6 anti-monotony : famille probabiliste PyMC (substance) après forensic-docs GameTheory c.537.
+- **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
+- **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
+
+Part of #3801, #4956
