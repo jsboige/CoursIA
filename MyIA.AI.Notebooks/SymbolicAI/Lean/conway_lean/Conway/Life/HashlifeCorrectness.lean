@@ -2889,7 +2889,30 @@ noncomputable def p4_succ_membership
   -- q_* (k-1)` from `_h3`, then bridged to the RHS window via `evolve_half_step`
   -- (the `2^k` half-step) + `evolve_add` (G1). The offsets `2^out_*.level` vs
   -- `2^k` and the ih at level (k-1) vs goal at level k are the matching core.
-  sorry
+  -- G3 wave-assembly: decomposed into 5 named sub-sorries (4 quadrants + mpr),
+  -- per the ai-01 plan step 8. Each sub-sorry is independently attackable:
+  -- the 4 mp cases apply centralCorrect_mem_shift (G2) on the corresponding
+  -- q_j from _h3, then evolve_half_step (G3) + evolve_cone_agree (locality)
+  -- to bridge to the global evolve 2^k window; mpr uses quad_partition_bounds
+  -- to route p to the correct quadrant.
+  refine ⟨?mp, ?mpr⟩
+  case mp =>
+    intro hlhs
+    rcases hlhs with hnw | hne | hsw | hse
+    · -- nw quadrant: p ∈ out_nw.toGrid (2^k, 2^k)
+      -- goal: p ∈ restrictGridTo (evolve (2^k) (toGrid (0,0) <c destructuré en nodes>)) (2^k) (2^(k+1))
+      sorry
+    · -- ne quadrant: p ∈ out_ne.toGrid (2^k, 2^k + 2^level)
+      sorry
+    · -- sw quadrant: p ∈ out_sw.toGrid (2^k + 2^level, 2^k)
+      sorry
+    · -- se quadrant: p ∈ out_se.toGrid (2^k + 2^level, 2^k + 2^level)
+      sorry
+  case mpr =>
+    intro _hrhs
+    -- quad_partition_bounds routes p to its quadrant; then the reciprocal chain
+    -- G2+G1+G3 gives the corresponding disjunct.
+    sorry
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
