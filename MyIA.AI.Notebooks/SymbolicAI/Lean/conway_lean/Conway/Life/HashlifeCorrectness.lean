@@ -2825,6 +2825,47 @@ private theorem window_cone_in_domain (k : Nat) (p q : Int × Int)
   refine ⟨?_, ?_, ?_, ?_⟩
   all_goals linarith
 
+/-- **P4.4 NW-quadrant shift lemma (factorisé, c.488).** Caractérise l'appartenance
+    pointwise `p ∈ (hashlifeResultAux (k+1) q_nw).toGrid (2^k, 2^k)` du quadrant NW
+    (offset `(2^k, 2^k)` via `mem_toGrid_node`) en une conjonction `isAlive ... ∧
+    bounds`, où `q_nw = node r1 r2 r4 r5` est la super-cellule des quatre résultats
+    wave-1.
+
+    **Pourquoi factoriser hors `p4_succ_membership`** : ces étapes (construire
+    `centralCorrect q_nw (k-1)` via `p4_wave2_ih_step`, puis appliquer
+    `centralCorrect_mem_shift` pour réancrer l'offset `(2^k, 2^k)`) étaient inline
+    dans `p4_succ_membership` (snapshot #6724 run-4) et déclenchaient un whnf
+    timeout (200000 heartbeats) sur la tête de la déclaration monolithique. Le
+    budget heartbeats se réinitialise **par déclaration** : un lemme standalone au
+    corps court compile sans timeout, et `p4_succ_membership` n'a plus qu'à
+    l'appliquer (`have hnw_shift := p4_nw_shift_lemma ...`) sans ré-encourir le
+    coût d'élaboration inline. Pattern cohérent avec `p4_wave2_ih_step` (c.142).
+
+    **Corps** : `p4_wave2_ih_step` (ih sur la super-cellule opaque) →
+    `centralCorrect_mem_shift` (réancrage offset, G2 congruence). Sorry-free. -/
+private theorem p4_nw_shift_lemma
+    (k : Nat) (hk1 : 1 ≤ k)
+    (r1 r2 r4 r5 : MacroCell)
+    (hr1_l : r1.level = k) (hr2_l : r2.level = k)
+    (hr4_l : r4.level = k) (hr5_l : r5.level = k)
+    (hr1_w : r1.wf = true) (hr2_w : r2.wf = true)
+    (hr4_w : r4.wf = true) (hr5_w : r5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int) :
+    p ∈ (hashlifeResultAux ((k - 1) + 2) (node r1 r2 r4 r5)).toGrid
+          ((2^k : Int), (2^k : Int)) ↔
+      isAlive (evolve (2^(k - 1)) ((node r1 r2 r4 r5).toGrid (0, 0)))
+        (p.1 - (2^k : Int) + (2^(k - 1) : Int),
+         p.2 - (2^k : Int) + (2^(k - 1) : Int)) = true ∧
+      (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+      (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1) := by
+  have hcc : centralCorrect (node r1 r2 r4 r5) (k - 1) :=
+    p4_wave2_ih_step k hk1 r1 r2 r4 r5
+      hr1_l hr2_l hr4_l hr5_l hr1_w hr2_w hr4_w hr5_w ih
+  exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
+    (2^k) (2^k) p hcc
+
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
