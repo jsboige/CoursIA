@@ -45,10 +45,15 @@ et plusieurs emetteurs .NET tracent leur contenu dans des groupes
 Lire les coords brutes sans resoudre la pile de transforms flague a tort
 Infer-5/6/7/8/9, Search-10, etc. Un test transform-aware est hors scope, et le
 signal dimension-negative attrape deja la classe GroupedBar-logY de maniere
-decisive. Blind spot assume : un BoxPlot dont les boites partent hors-champ mais
-avec des dimensions POSITIVES n'est pas flage isolement -- il l'est par ricochet
-(Sudoku-18 echoue deja sur les cells GroupedBar) et par le backstop vision-QA
-periodique (svg-6927-canon §5).
+decisive. L'angle mort residuel -- un element aux dimensions POSITIVES projete
+hors-champ (BoxPlot dont les boites partent hors du plot) -- est desormais
+couvert MECANIQUEMENT pour les SVG PLATS par le detecteur frere
+`detect_svg_offscreen_flat.py` (#7008 suite), qui applique le bound-check
+viewBox UNIQUEMENT quand aucun transform deplacant n'est present (le cas ou il
+est zero-FP). Reste defere au backstop vision-QA periodique (svg-6927-canon §5)
+le seul cas encore non mecanisable : un SVG a transform-groups (matplotlib /
+emetteurs .NET a `<g translate>`) dont la geometrie sort apres resolution de la
+pile de transforms.
 
 Ce qu'il NE corrige PAS
 -----------------------
@@ -77,6 +82,7 @@ Voir aussi
 ----------
 - `detect_svg_decimal_commas.py` (#6959) -- virgule decimale SVG fr-FR
 - `detect_svg_empty_display.py` (#6971) -- output SVG vide (display sans capture)
+- `detect_svg_offscreen_flat.py` (#7008 suite) -- frere : geometrie hors viewBox (SVG plats)
 - `detect_blank_figures.py` (#3801) -- figures PNG degenerees (1x1, 70 o)
 - `.claude/rules/sota-not-workaround.md` -- Prong-A : vrai outil, pas rendu casse
 - PR #7007 / EPIC #6927 -- incident fondateur (logY layout lineaire vs YF log10)
