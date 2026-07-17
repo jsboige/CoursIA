@@ -27,11 +27,8 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 ## Prérequis
 
 ### API Keys
-```bash
-# Dans GenAI/.env
-OPENAI_API_KEY=sk-...
-COMFYUI_BEARER_TOKEN=...
-```
+
+Voir [`scripts/secrets/render_envs.py`](../../../../scripts/secrets/render_envs.py) + [`.claude/rules/secrets-hygiene.md`](../../../../.claude/rules/secrets-hygiene.md). Les clés sont centralisées dans `.secrets/master.env` (gitignored) et propagées via `python scripts/secrets/render_envs.py` vers `GenAI/.env`. **Jamais de littéraux inline** (`sk-...`, `Bearer ...`) ni dans ce README, ni dans le code, ni dans les cellules notebooks (cf incident 2026-05-14).
 
 ### Docker Services (optionnel)
 ```bash
