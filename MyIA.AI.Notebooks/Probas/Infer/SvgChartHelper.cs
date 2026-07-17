@@ -96,6 +96,18 @@ public static class SvgChartHelper
         IReadOnlyList<SvgSeries> series, int width = 820, int height = 480)
         => new SvgChart(BuildOverlay(title, xLabel, yLabel, series, width, height));
 
+    /// <summary>
+    /// Carte de chaleur (heatmap) sur une grille categorielle : <paramref name="values"/>[ligne][colonne]
+    /// mappee a une palette sequentielle interpolant <paramref name="colorLow"/> (valeur min) vers
+    /// <paramref name="colorHigh"/> (valeur max). Les lignes = <paramref name="yLabels"/> (ex. variantes),
+    /// les colonnes = <paramref name="xLabels"/> (ex. positions N). Rend les bandes de periodicite
+    /// d'une sequence (ex. valeurs de Grundy) visibles d'un coup d'oeil. SVG inline statique.
+    /// </summary>
+    public static SvgChart Heatmap(string title, string[] xLabels, string[] yLabels,
+        double[][] values, int width = 640, int height = 320,
+        string colorLow = "#F7FBFF", string colorHigh = "#08306B")
+        => new SvgChart(BuildHeatmap(title, xLabels, yLabels, values, width, height, colorLow, colorHigh));
+
     // ---------------------------------------------------------------------------------------------
     // Generateurs
     // ---------------------------------------------------------------------------------------------
@@ -353,6 +365,81 @@ public static class SvgChartHelper
 
     // Format invariant (point decimal) pour les nombres dans les attributs SVG.
     private static string F(double v) => v.ToString("0.###", CultureInfo.InvariantCulture);
+
+    // Carte de chaleur : grille de cellules colorees par interpolation sequentielle colorLow->colorHigh.
+    private static string BuildHeatmap(string title, string[] xLabels, string[] yLabels,
+        double[][] values, int w, int h, string colorLow, string colorHigh)
+    {
+        int nR = yLabels.Length, nC = xLabels.Length;
+        if (values == null || values.Length != nR)
+            throw new ArgumentException("Heatmap: values doit avoir yLabels.Length lignes.");
+        foreach (var row in values)
+            if (row == null || row.Length != nC)
+                throw new ArgumentException("Heatmap: chaque ligne de values doit avoir xLabels.Length colonnes.");
+
+        double vMin = double.PositiveInfinity, vMax = double.NegativeInfinity;
+        foreach (var row in values)
+            foreach (var v in row) { vMin = Math.Min(vMin, v); vMax = Math.Max(vMax, v); }
+        double vRange = (vMax - vMin == 0 ? 1 : vMax - vMin);
+
+        int padL = 104, padR = 16, padT = 34, padB = 52;
+        double plotW = w - padL - padR, plotH = h - padT - padB;
+        double cellW = plotW / nC, cellH = plotH / nR;
+
+        var sb = new StringBuilder();
+        sb.Append(OpenSvg(w, h, title));
+        for (int r = 0; r < nR; r++)
+        {
+            double yTop = padT + r * cellH;
+            for (int c = 0; c < nC; c++)
+            {
+                double xLeft = padL + c * cellW;
+                double t = (values[r][c] - vMin) / vRange;
+                string fill = InterpolateHex(colorLow, colorHigh, t);
+                sb.Append($"<rect x='{F(xLeft)}' y='{F(yTop)}' width='{F(cellW)}' height='{F(cellH)}' fill='{fill}'/>");
+            }
+        }
+        // Labels de colonnes (axe X) sous la grille.
+        for (int c = 0; c < nC; c++)
+        {
+            double cx = padL + (c + 0.5) * cellW;
+            sb.Append($"<text x='{F(cx)}' y='{h - padB + 16}' text-anchor='middle' fill='{ColorText}'>{Esc(xLabels[c])}</text>");
+        }
+        // Labels de lignes (axe Y) a gauche de la grille.
+        for (int r = 0; r < nR; r++)
+        {
+            double cy = padT + (r + 0.5) * cellH;
+            sb.Append($"<text x='{padL - 6}' y='{F(cy + 4)}' text-anchor='end' fill='{ColorText}'>{Esc(yLabels[r])}</text>");
+        }
+        // Bordure de grille + legende de l'echelle (min/max).
+        sb.Append($"<rect x='{padL}' y='{padT}' width='{F(plotW)}' height='{F(plotH)}' fill='none' stroke='{ColorAxis}' stroke-width='1'/>");
+        sb.Append($"<text x='{padL}' y='{h - padB + 34}' text-anchor='start' fill='{ColorText}'>{F(vMin)} (min)</text>");
+        sb.Append($"<text x='{w - padR}' y='{h - padB + 34}' text-anchor='end' fill='{ColorText}'>(max) {F(vMax)}</text>");
+        sb.Append(CloseSvg());
+        return sb.ToString();
+    }
+
+    // Interpolation lineaire entre deux couleurs hex (#RRGGBB ou #RGB) au facteur t dans [0,1].
+    private static string InterpolateHex(string hexLow, string hexHigh, double t)
+    {
+        t = Math.Max(0, Math.Min(1, t));
+        var (lr, lg, lb) = ParseHex(hexLow);
+        var (hr, hg, hb) = ParseHex(hexHigh);
+        int r = (int)Math.Round(lr + (hr - lr) * t);
+        int g = (int)Math.Round(lg + (hg - lg) * t);
+        int b = (int)Math.Round(lb + (hb - lb) * t);
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    private static (int r, int g, int b) ParseHex(string hex)
+    {
+        string h = (hex ?? "#000000").TrimStart('#');
+        if (h.Length == 3) h = string.Concat($"{h[0]}", $"{h[0]}", $"{h[1]}", $"{h[1]}", $"{h[2]}", $"{h[2]}");
+        int r = Convert.ToInt32(h.Substring(0, 2), 16);
+        int g = Convert.ToInt32(h.Substring(2, 2), 16);
+        int b = Convert.ToInt32(h.Substring(4, 2), 16);
+        return (r, g, b);
+    }
 
     // Echappement XML du texte (titres, labels) : manuel, zero-dependance (pas de System.Xml.Linq,
     // non reference par defaut dans le kernel .NET Interactive -> evite un hang de resolution).
