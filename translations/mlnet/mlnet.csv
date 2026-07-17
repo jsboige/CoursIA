@@ -3269,7 +3269,12 @@ Visualisons les ventes sur la période complète pour identifier :
 - La **tendance** à long terme
 - La **saisonnalité** hebdomadaire
 - Les **anomalies** éventuelles",,,,,,,,5da3aa6a200c323a,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,b3de7349,code,fr,aacc9c2c6cc9662d,"// Extraire les données pour la visualisation
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,b3de7349,code,fr,fdf227536c79c6f3,"#load ""../../Probas/Infer/SvgChartHelper.cs""
+
+// Visualisation SVG statique (remplace Plotly-CDN qui rend BLANC en consultation statique --
+// GitHub sandbox les <script>; EPIC #3801 Prong A + EPIC #6927). Technique #6942 : <svg> inline
+// via SvgChartHelper (zero-dependance, rend sur GitHub/nbviewer/offline, aucun CDN ni <script>).
+
 var allData = mlContext.Data.CreateEnumerable<DailySalesData>(fullData, reuseRowObject: false)
     .OrderBy(x => x.Date)
     .ToArray();
@@ -3277,27 +3282,8 @@ var allData = mlContext.Data.CreateEnumerable<DailySalesData>(fullData, reuseRow
 var dates = allData.Select(x => x.Date.ToString(""yyyy-MM-dd"")).ToArray();
 var sales = allData.Select(x => (double)x.Sales).ToArray();
 
-// Créer le graphique
-var trace = new Scatter
-{
-    x = dates,
-    y = sales,
-    mode = ""lines"",
-    name = ""Ventes quotidiennes"",
-    line = new Line { width = 1 }
-};
-
-var layout = new Layout.Layout
-{
-    title = ""Ventes quotidiennes (2023-2024)"",
-    xaxis = new Xaxis { title = ""Date"" },
-    yaxis = new Yaxis { title = ""Nombre de ventes"" },
-    height = 400,
-    width = 1200
-};
-
-var chart = Chart.Plot(trace, layout);
-display(chart);",,,,,,,,aacc9c2c6cc9662d,,,,,,,
+display(SvgChartHelper.Line(""Ventes quotidiennes (2023-2024)"", dates, sales, width: 1200, height: 400));
+",,,,,,,,fdf227536c79c6f3,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,0b87ca96,markdown,fr,38ed5795975b410a,"### Interprétation du graphique
 
 **Observations attendues** :
@@ -3424,7 +3410,7 @@ Console.WriteLine(""Exercice a completer : calcul du MAPE et analyse d'erreur pa
 MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,f5ebbf28,markdown,fr,27218f9fc258b278,"## Partie 5 : Visualisation des prévisions
 
 Comparons les prévisions aux valeurs réelles pour les 30 premiers jours de 2024.",,,,,,,,27218f9fc258b278,,,,,,,
-MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,c5fd5311,code,fr,f8850ee3e2532c3b,"// Extraire les 30 premiers jours de 2024
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,c5fd5311,code,fr,137cc9333d83515d,"// Extraire les 30 premiers jours de 2024
 var comparisonData = mlContext.Data.CreateEnumerable<DailySalesData>(testData, reuseRowObject: false)
     .OrderBy(x => x.Date)
     .Take(30)
@@ -3434,41 +3420,31 @@ var comparisonDates = comparisonData.Select(x => x.Date.ToString(""MM-dd"")).ToA
 var comparisonActual = comparisonData.Select(x => (double)x.Sales).ToArray();
 
 // Récupérer les prévisions correspondantes
+// EPIC #6927 : correction bug logique PR #7016 (commit c48a2eee4) -- l'ordre Take(30).SelectMany
+// produisait 30 rows * 7 horizon = 210 valeurs alors que xs est 1..30 (30 elements). Le mismatch
+// ""de meme longueur"" declenchait System.ArgumentException dans SvgChartHelper.BuildOverlay.
+// Fix : Take(30) APRES SelectMany pour flatten d'abord (30 * 7 = 210), puis Take(30) pour
+// ne garder que la première prévision par jour réel. 1:1 alignement avec comparisonActual (30).
+// Note : SSA produit horizon=7 forecasts par observation ; on prend les 30 premières valeurs.
 var comparisonForecast = mlContext.Data.CreateEnumerable<SalesForecast>(predictions, reuseRowObject: false)
-    .Take(30)
     .SelectMany(x => x.ForecastedSales)
-    .ToArray();
+    .Take(30)
+    .Select(x => (double)x).ToArray();
 
-// Créer le graphique de comparaison
-var actualTrace = new Scatter
-{
-    x = comparisonDates,
-    y = comparisonActual,
-    mode = ""lines+markers"",
-    name = ""Ventes réelles"",
-    line = new Line { color = ""blue"" }
-};
-
-var forecastTrace = new Scatter
-{
-    x = comparisonDates,
-    y = comparisonForecast,
-    mode = ""lines+markers"",
-    name = ""Prévisions"",
-    line = new Line { color = ""orange"", dash = ""dash"" }
-};
-
-var layout = new Layout.Layout
-{
-    title = ""Comparaison : Réel vs Prévisions (30 premiers jours de 2024)"",
-    xaxis = new Xaxis { title = ""Date (2024)"" },
-    yaxis = new Yaxis { title = ""Nombre de ventes"" },
-    height = 400,
-    width = 1000
-};
-
-var chart = Chart.Plot(new[] { actualTrace, forecastTrace }, layout);
-display(chart);",,,,,,,,f8850ee3e2532c3b,,,,,,,
+// Créer le graphique de comparaison (SVG inline via SvgChartHelper - EPIC #6927)
+// Visualisation statique : zero-dependance, rend sur GitHub/nbviewer/offline, aucun CDN.
+var xs = Enumerable.Range(1, 30).Select(i => (double)i).ToArray();
+display(SvgChartHelper.Overlay(
+    ""Comparaison : Réel vs Prévisions (30 premiers jours de 2024)"",
+    ""Date (Janvier 2024)"",
+    ""Nombre de ventes"",
+    new[]
+    {
+        new SvgSeries(""Ventes réelles"", xs, comparisonActual, TraceStyle.LineMarkers, ""#4C72B0""),
+        new SvgSeries(""Prévisions"", xs, comparisonForecast, TraceStyle.Line, ""#DD8452""),
+    },
+    width: 1000,
+    height: 400));",,,,,,,,137cc9333d83515d,,,,,,,
 MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb,3838c507,markdown,fr,eb6eabd1573eb902,"### Interprétation du graphique
 
 **Analyse visuelle** :
