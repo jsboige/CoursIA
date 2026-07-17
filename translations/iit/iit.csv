@@ -9869,7 +9869,7 @@ MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb,d0948bcb,markdown,fr,abd00e26f562
 
 **Fin du notebook**. 
 Merci pour votre attention !",,,,,,,,abd00e26f56287e8,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3cab92ae,markdown,fr,f37f8051928e7f1d,"# IIT - Sujets Avances : Partitionnement, Repertoires Cause-Effet et Reseaux Elargis
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3cab92ae,markdown,fr,4a637c3887e44d16,"# IIT - Sujets Avances : Partitionnement, Repertoires Cause-Effet et Reseaux Elargis
 
 ## Navigation
 
@@ -9890,22 +9890,22 @@ Ce notebook est le **deuxieme volet** de la serie IIT. Il approfondit les concep
 2. **Partitionnement et MIP** - Comment PyPhi cherche la coupe minimale d'information
 3. **Repertoires cause-effet** - Distributions de probabilites sur les causes et effets possibles
 4. **MICE et concepts** - Mechanismes maximalement irreductibles
-5. **Big Phi vs Small Phi** - Difference entre integration systeme et integration mecanisme
-6. **Reseaux elargis** - Systemes a 4+ noeuds et interpretation
-7. **Performance et coarse-graining** - Strategies pour traiter de grands systemes
-8. **Vers IIT 4.0** - Apercu des evolutions recentes de la theorie",,,,,,,,f37f8051928e7f1d,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,bb121255,markdown,fr,b83cc3341b2608f7,"<a id=""sec1""></a>
+5. **Big Phi vs Small Phi** - Différence entre integration système et integration mécanisme
+6. **Reseaux elargis** - Systèmes a 4+ noeuds et interpretation
+7. **Performance et coarse-graining** - Stratégies pour traiter de grands systèmes
+8. **Vers IIT 4.0** - Apercu des evolutions recentes de la théorie",,,,,,,,4a637c3887e44d16,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,bb121255,markdown,fr,4a6db1d50e9760b8,"<a id=""sec1""></a>
 ## 1. Rappels et configuration
 
-Dans le notebook precedent, nous avons vu :
+Dans le notebook précédent, nous avons vu :
 
 - **Reseau (Network)** : un ensemble de noeuds binaires connectes, decrit par une TPM
-- **Sous-systeme (Subsystem)** : un sous-ensemble de noeuds dans un etat donne
-- **Phi (big Phi, $\Phi$)** : mesure de l'integration irreductible du systeme
-- **CES (Cause-Effect Structure)** : l'ensemble des concepts du systeme
-- **Concept** : un mecanisme avec son cause et son effet maximalement irreductibles
+- **Sous-système (Subsystem)** : un sous-ensemble de noeuds dans un etat donne
+- **Phi (big Phi, $\Phi$)** : mesure de l'integration irreductible du système
+- **CES (Cause-Effect Structure)** : l'ensemble des concepts du système
+- **Concept** : un mécanisme avec son cause et son effet maximalement irreductibles
 
-Reprenons avec notre reseau XOR et configurons PyPhi.",,,,,,,,b83cc3341b2608f7,,,,,,,
+Reprenons avec notre reseau XOR et configurons PyPhi.",,,,,,,,4a6db1d50e9760b8,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,00e5af6c,code,fr,f5bd28910c45c2a3,"import warnings
 warnings.filterwarnings(""ignore"", message="".*pkg_resources is deprecated.*"", category=UserWarning)
 
@@ -9929,19 +9929,19 @@ print(""Etat initial :"", state)
 print(""Noeuds du sous-systeme :"", subsystem.node_indices)
 print(""Connectivite (CM) :"")
 print(network.cm)",,,,,,,,ef4fe4b300f5705f,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,d0b16bff,markdown,fr,3527a31d0f5d9201,"<a id=""sec2""></a>
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,d0b16bff,markdown,fr,6f0fb797a1687bf8,"<a id=""sec2""></a>
 ## 2. Partitionnement et MIP (Minimum Information Partition)
 
-Le coeur du calcul de $\Phi$ repose sur la recherche de la **partition minimale d'information (MIP)**. La MIP est la facon de couper le systeme en deux qui **detruit le moins d'information**. Si cette coupe minimale detruit beaucoup d'information, c'est que le systeme est fortement integre.
+Le coeur du calcul de $\Phi$ repose sur la recherche de la **partition minimale d'information (MIP)**. La MIP est la facon de couper le système en deux qui **detruit le moins d'information**. Si cette coupe minimale detruit beaucoup d'information, c'est que le système est fortement integre.
 
 ### 2.1. Types de partitions
 
 PyPhi supporte plusieurs types de partitions :
-- **Bipartition** : couper le systeme en 2 parties
+- **Bipartition** : couper le système en 2 parties
 - **Tripartition** : couper en 3 parties
 - **K-partition** : couper en K parties
 
-Pour chaque partition, on mesure l'information detruite par la coupe. La MIP est celle qui minimise cette perte.",,,,,,,,3527a31d0f5d9201,,,,,,,
+Pour chaque partition, on mesure l'information detruite par la coupe. La MIP est celle qui minimise cette perte.",,,,,,,,6f0fb797a1687bf8,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,4daea783,code,fr,d72ad2b95a0cd77e,"# Calculer l'analyse d'irreductibilite du systeme (SIA)
 sia = pyphi.compute.sia(subsystem)
 
@@ -9950,17 +9950,17 @@ print(f""Big Phi: {sia.phi}"")
 print(f""Coupe (MIP): {sia.cut}"")
 print(f""Partie from: {sia.cut.from_nodes}"")
 print(f""Partie to: {sia.cut.to_nodes}"")",,,,,,,,d72ad2b95a0cd77e,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,5f61aeeb,markdown,fr,e1e597eb1a4308cd,"### 2.2. Interpretation de la MIP
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,5f61aeeb,markdown,fr,93640ab9fe5ba305,"### 2.2. Interpretation de la MIP
 
-La MIP nous dit **ou le systeme est le plus faiblement integre**. Dans notre reseau XOR :
+La MIP nous dit **ou le système est le plus faiblement integre**. Dans notre reseau XOR :
 
 - Si la coupe separe les noeuds {A, B} de {C}, cela signifie que le lien A,B -> C est le plus faible
-- Plus $\Phi$ est eleve, plus le systeme est irreductiblement integre
-- Un $\Phi = 0$ signifie que le systeme est completement decomposable (pas d'integration)
+- Plus $\Phi$ est eleve, plus le système est irreductiblement integre
+- Un $\Phi = 0$ signifie que le système est completement decomposable (pas d'integration)
 
 ### 2.3. Complexite du partitionnement
 
-Le nombre de partitions possibles croit exponentiellement avec la taille du systeme (nombre de Bell). C'est pourquoi le calcul exact de $\Phi$ est **intractable** pour de grands reseaux.",,,,,,,,e1e597eb1a4308cd,,,,,,,
+Le nombre de partitions possibles croit exponentiellement avec la taille du système (nombre de Bell). C'est pourquoi le calcul exact de $\Phi$ est **intractable** pour de grands reseaux.",,,,,,,,93640ab9fe5ba305,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,2b5a3aa3,code,fr,56468687797cf5b9,"# Enumerer toutes les bipartitions possibles du sous-systeme
 from pyphi.partition import bipartition
 
@@ -9976,14 +9976,14 @@ bell = [1, 1, 2, 5, 15, 52, 203]
 print(f""\nNombres de Bell (nombre total de partitions):"")
 for n in range(len(bell)):
     print(f""  {n} noeuds -> {bell[n]} partitions"")",,,,,,,,56468687797cf5b9,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,68b8975d,markdown,fr,fc9afc18a7bb9edf,"<a id=""sec3""></a>
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,68b8975d,markdown,fr,ef3b84f6cc3bccb7,"<a id=""sec3""></a>
 ## 3. Repertoires cause-effet
 
-Les **repertoires cause et effet** sont les distributions de probabilite qui decrivent comment un mecanisme contraint les etats passes (cause) et futurs (effet) d'un purview.
+Les **repertoires cause et effet** sont les distributions de probabilite qui decrivent comment un mécanisme contraint les etats passes (cause) et futurs (effet) d'un purview.
 
 ### 3.1. Repertoire cause
 
-Le repertoire cause repond a la question : etant donne le mecanisme dans son etat actuel, quelles sont les probabilites des etats anterieurs possibles du purview ?",,,,,,,,fc9afc18a7bb9edf,,,,,,,
+Le repertoire cause repond a la question : etant donne le mécanisme dans son etat actuel, quelles sont les probabilites des etats anterieurs possibles du purview ?",,,,,,,,ef3b84f6cc3bccb7,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,57384b10,code,fr,925ba982c9506b9d,"# Calculer le repertoire cause pour le mecanisme {A, B} et le purview {A}
 mechanism = (0, 1)
 purview = (0,)
@@ -10005,19 +10005,19 @@ for i, label in enumerate(['A=0', 'A=1']):
     c_val = cause_rep.flatten()[i]
     e_val = effect_rep.flatten()[i]
     print(f""  {label}: cause={c_val:.3f}, effet={e_val:.3f}"")",,,,,,,,2ef57f9cdd9f903b,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,2f73fae8,markdown,fr,ece98ec9369bf7e1,"### Interpretation : un mecanisme qui ne specifie aucune information
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,2f73fae8,markdown,fr,7400fccf5d06788b,"### Interpretation : un mécanisme qui ne specifie aucune information
 
-Les deux repertoires sont **uniformes** (`[0.5, 0.5]`) : le mecanisme {A, B} dans son etat actuel ne contraint **ni** le passe **ni** le futur du purview {A}.
+Les deux repertoires sont **uniformes** (`[0.5, 0.5]`) : le mécanisme {A, B} dans son etat actuel ne contraint **ni** le passe **ni** le futur du purview {A}.
 
 - En **cause**, savoir que {A, B} = (0, 1) ne modifie pas la probabilite des etats anterieurs de A : les deux restent equiprobables.
-- En **effet**, ce meme mecanisme ne biaise pas davantage l'etat futur de A.
+- En **effet**, ce même mécanisme ne biaise pas davantage l'etat futur de A.
 
-Autrement dit, ce couple (mecanisme, purview) **ne specifie aucune information** : son repertoire contraint est identique au repertoire non-perturbe (uniforme). C'est exactement ce que la section suivante va quantifier — la distance EMD entre le repertoire contraint et le repertoire non-perturbe sera **nulle**, confirmant l'absence d'information specifiee.
+Autrement dit, ce couple (mécanisme, purview) **ne specifie aucune information** : son repertoire contraint est identique au repertoire non-perturbe (uniforme). C'est exactement ce que la section suivante va quantifier — la distance EMD entre le repertoire contraint et le repertoire non-perturbe sera **nulle**, confirmant l'absence d'information specifiee.
 
-> A l'inverse, un purview informatif produirait une distribution **non uniforme** (par exemple `[0.75, 0.25]`), revelant que le mecanisme penche vers un etat particulier du purview. C'est ce contraste qui fonde la notion de *small phi* ($\varphi$) etudiee plus loin.",,,,,,,,ece98ec9369bf7e1,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,657313aa,markdown,fr,f8f3d95ecc196a5c,"### 3.2. Repertoire non-perturbe (unconstrained)
+> A l'inverse, un purview informatif produirait une distribution **non uniforme** (par exemple `[0.75, 0.25]`), revelant que le mécanisme penche vers un etat particulier du purview. C'est ce contraste qui fonde la notion de *small phi* ($\varphi$) etudiee plus loin.",,,,,,,,7400fccf5d06788b,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,657313aa,markdown,fr,6a1430d9a25a38a5,"### 3.2. Repertoire non-perturbe (unconstrained)
 
-Le repertoire **non-perturbe** est la distribution uniforme - ce qu'on attendrait sans aucune contrainte. La difference entre le repertoire contraint et le repertoire non-perturbe mesure **l'information specifiee** par le mecanisme.",,,,,,,,f8f3d95ecc196a5c,,,,,,,
+Le repertoire **non-perturbe** est la distribution uniforme - ce qu'on attendrait sans aucune contrainte. La différence entre le repertoire contraint et le repertoire non-perturbe mesure **l'information specifiee** par le mécanisme.",,,,,,,,6a1430d9a25a38a5,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,df6b5078,code,fr,6debafc98d61bd8f,"# Repertoire non-perturbe (uniforme)
 unconstrained = subsystem.unconstrained_cause_repertoire(purview)
 print(f""Repertoire non-perturbe pour purview {purview}:"")
@@ -10027,9 +10027,9 @@ from pyphi.distance import hamming_emd
 distance = hamming_emd(cause_rep, unconstrained)
 print(f""\nDistance EMD (cause contrainte vs non-perturbe): {distance:.4f}"")
 print(""Cette valeur mesure l'information cause specifiee par le mecanisme."")",,,,,,,,6debafc98d61bd8f,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,37ab70b5,markdown,fr,348601d798a9bba5,"### Exercice 1 : Explorer les repertoires d'un mecanisme different
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,37ab70b5,markdown,fr,e0bbf6254d7a7d02,"### Exercice 1 : Explorer les repertoires d'un mécanisme différent
 
-Calculez les repertoires cause et effet pour le mecanisme `{A, C}` (noeuds 0 et 2) avec le purview `{B, C}` (noeuds 1 et 2).
+Calculez les repertoires cause et effet pour le mécanisme `{A, C}` (noeuds 0 et 2) avec le purview `{B, C}` (noeuds 1 et 2).
 
 **Objectifs** :
 1. Calculer le repertoire cause et le repertoire effet
@@ -10039,7 +10039,7 @@ Calculez les repertoires cause et effet pour le mecanisme `{A, C}` (noeuds 0 et 
 **Indices** :
 - Utilisez `subsystem.cause_repertoire(mechanism, purview)` et `subsystem.effect_repertoire(mechanism, purview)`
 - Les noeuds sont indices par des tuples d'entiers : `(0, 2)` pour {A, C}
-- Pour identifier l'etat le plus probable, utilisez `np.argmax(rep.flatten())`",,,,,,,,348601d798a9bba5,,,,,,,
+- Pour identifier l'etat le plus probable, utilisez `np.argmax(rep.flatten())`",,,,,,,,e0bbf6254d7a7d02,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,d2e2ca39,code,fr,529fc133f4283138,"# Exercice 1 : Repertoires cause-effet pour le mecanisme {A, C} et purview {B, C}
 # TODO etudiant : remplacez les valeurs None par votre code
 
@@ -10058,12 +10058,12 @@ if mechanism_ex1 is not None and purview_ex1 is not None:
     print(f""Etat le plus probable (effet): {np.argmax(effect_rep_ex1.flatten())}"")
 else:
     print(""Exercice a completer : definissez mechanism_ex1 et purview_ex1"")",,,,,,,,529fc133f4283138,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,794af9b1,markdown,fr,deca7991dd91d2db,"<a id=""sec4""></a>
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,794af9b1,markdown,fr,3801909cd4407c56,"<a id=""sec4""></a>
 ## 4. MICE et Concepts
 
-Un **MICE** (Maximally Irreducible Cause or Effect) est un couple (mecanisme, purview) qui maximise l'information irreductible. Un **concept** est forme d'un MICE cause et d'un MICE effet pour le meme mecanisme.
+Un **MICE** (Maximally Irreducible Cause or Effect) est un couple (mécanisme, purview) qui maximise l'information irreductible. Un **concept** est forme d'un MICE cause et d'un MICE effet pour le même mécanisme.
 
-### 4.1. Trouver le MICE pour un mecanisme",,,,,,,,deca7991dd91d2db,,,,,,,
+### 4.1. Trouver le MICE pour un mécanisme",,,,,,,,3801909cd4407c56,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,db338713,code,fr,8e27f22ddc890989,"# Trouver le MICE (cause et effet) pour le mecanisme {A, B}
 mechanism = (0, 1)
 
@@ -10091,26 +10091,26 @@ for i, concept in enumerate(ces):
     if concept.effect:
         print(f""    Effet purview: {concept.effect.purview}, phi={concept.effect.phi:.4f}"")
     print(f""    Phi du concept: {concept.phi:.4f}"")",,,,,,,,4a0ef6f2aaeaef1e,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,65b3f11e,markdown,fr,d5c042f84fb4ea3a,"### 4.2. Interpretation des MICE
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,65b3f11e,markdown,fr,2fba258194cbe22b,"### 4.2. Interpretation des MICE
 
 Chaque concept decrit une **unite d'information cause-effet** :
-- Le **mecanisme** est l'ensemble de noeuds qui specifie de l'information
-- Le **purview cause** est l'ensemble de noeuds dont le mecanisme contraint les etats passes
-- Le **purview effet** est l'ensemble de noeuds dont le mecanisme contraint les etats futurs
+- Le **mécanisme** est l'ensemble de noeuds qui specifie de l'information
+- Le **purview cause** est l'ensemble de noeuds dont le mécanisme contraint les etats passes
+- Le **purview effet** est l'ensemble de noeuds dont le mécanisme contraint les etats futurs
 - Le **small phi** ($\varphi$) mesure la quantite d'information irreductible du concept
 
-Un concept avec $\varphi > 0$ existe dans la CES du systeme. La somme de tous les $\varphi$ des concepts ne donne PAS le big $\Phi$.",,,,,,,,d5c042f84fb4ea3a,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,05b9d9f3,markdown,fr,916688e70c719ac0,"<a id=""sec5""></a>
+Un concept avec $\varphi > 0$ existe dans la CES du système. La somme de tous les $\varphi$ des concepts ne donne PAS le big $\Phi$.",,,,,,,,2fba258194cbe22b,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,05b9d9f3,markdown,fr,a5e8a27426fecf5e,"<a id=""sec5""></a>
 ## 5. Big Phi vs Small Phi
 
 La distinction entre **big Phi** ($\Phi$) et **small phi** ($\varphi$) est fondamentale :
 
 | | Big Phi ($\Phi$) | Small phi ($\varphi$) |
 |---|---|---|
-| **Niveau** | Systeme entier | Mecanisme individuel |
-| **Mesure** | Integration irreductible du systeme | Information irreductible d'un concept |
-| **Question** | Le systeme est-il integre ? | Ce mecanisme specifie-t-il de l'information ? |
-| **Calcul** | SIA sur toutes les partitions | EMD entre repertoire contraint et partitionne |",,,,,,,,916688e70c719ac0,,,,,,,
+| **Niveau** | Système entier | Mécanisme individuel |
+| **Mesure** | Integration irreductible du système | Information irreductible d'un concept |
+| **Question** | Le système est-il integre ? | Ce mécanisme specifie-t-il de l'information ? |
+| **Calcul** | SIA sur toutes les partitions | EMD entre repertoire contraint et partitionne |",,,,,,,,a5e8a27426fecf5e,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,ff8235a8,code,fr,c30ecf378f211aad,"# Comparaison Big Phi vs Small Phi
 print(""=== Big Phi (niveau systeme) ==="")
 print(f""  Phi du systeme (SIA): {sia.phi:.4f}"")
@@ -10125,19 +10125,19 @@ for i, c in enumerate(ces):
 
 print(f""\nBig Phi ({sia.phi:.4f}) != somme des small phi ({total_small_phi:.4f})"")
 print(""Ce sont deux mesures differentes a des niveaux differents."")",,,,,,,,c30ecf378f211aad,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,66feddff,markdown,fr,289dded7a6e333ed,"### Exercice 2 : Comparer Phi pour deux etats du reseau
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,66feddff,markdown,fr,0ad66ccd8c9784b4,"### Exercice 2 : Comparer Phi pour deux etats du reseau
 
 Calculez le big Phi et la CES pour le reseau XOR dans l'etat `(1, 1, 1)` et comparez avec l'etat `(0, 0, 0)`.
 
 **Objectifs** :
-1. Creer un nouveau sous-systeme pour l'etat `(1, 1, 1)`
+1. Créer un nouveau sous-système pour l'etat `(1, 1, 1)`
 2. Calculer le SIA (big Phi) et la CES (concepts)
-3. Comparer les resultats avec l'etat `(0, 0, 0)`
+3. Comparer les résultats avec l'etat `(0, 0, 0)`
 
 **Indices** :
-- `pyphi.Subsystem(network, state)` pour creer le sous-systeme
+- `pyphi.Subsystem(network, state)` pour créer le sous-système
 - `pyphi.compute.sia(subsystem)` pour le big Phi
-- `pyphi.compute.ces(subsystem)` pour les concepts",,,,,,,,289dded7a6e333ed,,,,,,,
+- `pyphi.compute.ces(subsystem)` pour les concepts",,,,,,,,0ad66ccd8c9784b4,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,061f5587,code,fr,990a726ba5189a47,"# Exercice 2 : Comparer Phi pour deux etats
 # TODO etudiant : remplacez les valeurs None par votre code
 
@@ -10153,14 +10153,14 @@ if state_2 is not None:
     print(f""\nDifference Big Phi: {abs(sia.phi - sia_2.phi):.4f}"")
 else:
     print(""Exercice a completer : definissez state_2 = (1, 1, 1)"")",,,,,,,,990a726ba5189a47,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,f7ad96c3,markdown,fr,8ea4ad05e15b1822,"<a id=""sec6""></a>
-## 6. Reseaux elargis : systemes a 4+ noeuds
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,f7ad96c3,markdown,fr,fe17174e0b6e0e96,"<a id=""sec6""></a>
+## 6. Reseaux elargis : systèmes a 4+ noeuds
 
-Explorons un systeme plus grand pour observer comment la complexite de la CES evolue.
+Explorons un système plus grand pour observer comment la complexite de la CES evolue.
 
 ### 6.1. Reseau XOR cyclique (4 noeuds)
 
-Nous construisons un reseau a 4 noeuds en anneau ou chaque noeud depend de lui-meme et de son voisin de gauche via XOR.",,,,,,,,8ea4ad05e15b1822,,,,,,,
+Nous construisons un reseau a 4 noeuds en anneau ou chaque noeud depend de lui-même et de son voisin de gauche via XOR.",,,,,,,,fe17174e0b6e0e96,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,7c3636e5,code,fr,c70cd3a4ce4268e1,"# Reseau 4 noeuds en anneau - chaque noeud depend de lui-meme et de son voisin
 tpm_4 = np.zeros((16, 4))
 for i in range(16):
@@ -10206,27 +10206,27 @@ print(f""Coupe MIP: {sia_4.cut}"")
 print(f""\nComparaison:"")
 print(f""  3 noeuds (XOR): Big Phi = {sia.phi:.4f}"")
 print(f""  4 noeuds (anneau): Big Phi = {sia_4.phi:.4f}"")",,,,,,,,ca5848df8dbdb65f,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3b319dc9,markdown,fr,37993e81c8a7fb07,"### 6.2. Interpreter les resultats
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3b319dc9,markdown,fr,a2d9378dafe4c733,"### 6.2. Interpreter les résultats
 
 Quelques observations importantes :
 
 1. **Plus de noeuds ne signifie pas plus de Phi** : la valeur de $\Phi$ depend de la structure causale, pas de la taille
 2. **Les reseaux feed-forward ont Phi = 0** : pas de boucle causale = pas d'integration
 3. **Les reseaux recurrents** (comme notre anneau) peuvent avoir Phi > 0
-4. **La symetrie** de la connectivite influence la distribution des concepts",,,,,,,,37993e81c8a7fb07,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,cb35e6b0,markdown,fr,2888d726dbd4c846,"<a id=""sec7""></a>
+4. **La symetrie** de la connectivite influence la distribution des concepts",,,,,,,,a2d9378dafe4c733,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,cb35e6b0,markdown,fr,5bfaaff58fad3f8b,"<a id=""sec7""></a>
 ## 7. Performance et coarse-graining
 
 Le calcul exact de $\Phi$ croit de maniere **super-exponentielle** avec la taille du reseau. Pour des reseaux de plus de ~6-8 noeuds, le calcul devient intractable.
 
-### 7.1. Strategies de gestion de la complexite
+### 7.1. Stratégies de gestion de la complexite
 
-| Strategie | Principe | Utilite |
+| Stratégie | Principe | Utilite |
 |-----------|----------|----------|
 | **Coarse-graining** | Grouper les noeuds en macro-noeuds | Reduire la dimensionnalite |
 | **Blackboxing** | Ignorer certains noeuds | Se concentrer sur les noeuds pertinents |
 | **Parallelisation** | Repartir les calculs | Accelerer sur multi-coeur |
-| **Caching** | Stocker les resultats intermediaires | Eviter les recalculs |",,,,,,,,2888d726dbd4c846,,,,,,,
+| **Caching** | Stocker les résultats intermediaires | Eviter les recalculs |",,,,,,,,5bfaaff58fad3f8b,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,9b87e0b1,code,fr,b9969faecb57c142,"# Demonstration du module macro
 print(""=== Module pyphi.macro ==="")
 print(""Le module macro offre des outils pour le coarse-graining et blackboxing."")
@@ -10261,17 +10261,17 @@ Cette complexite computationnelle a des implications directes :
 - Les **approximations** (coarse-graining, echantillonnage) sont necessaires
 - Le **Perturbational Complexity Index (PCI)** est une approximation clinique inspiree de $\Phi$
 - Le debat entre **exactitude mathematique** et **applicabilite pratique** est central",,,,,,,,a467db7203992a7b,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3c659a56,markdown,fr,939c1cea3d1dd6b7,"<a id=""sec8""></a>
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3c659a56,markdown,fr,5088f23677d2876c,"<a id=""sec8""></a>
 ## 8. Vers IIT 4.0
 
 ### 8.1. D'IIT 3.0 a IIT 4.0
 
 | Aspect | IIT 3.0 (PyPhi) | IIT 4.0 (2024+) |
 |--------|-----------------|------------------|
-| **Identite** | Le complexe maximise $\Phi$ | Le systeme EST sa structure cause-effet |
+| **Identite** | Le complexe maximise $\Phi$ | Le système EST sa structure cause-effet |
 | **Existence intrinseque** | Via les concepts | Axiome fondamental |
 | **Coupes** | Bipartitions | Coupes directionnelles |
-| **Extension** | Potentiel a Phi maximal | Ensemble des systemes qui existent |",,,,,,,,939c1cea3d1dd6b7,,,,,,,
+| **Extension** | Potentiel a Phi maximal | Ensemble des systèmes qui existent |",,,,,,,,5088f23677d2876c,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,0a3f0486,code,fr,999d356a918155ed,"# Apercu : le concept-style (vers IIT 4.0)
 try:
     cs_sia = pyphi.compute.sia_concept_style(subsystem)
@@ -10283,19 +10283,19 @@ try:
     print(""Le concept-style utilise un schema de partition different."")
 except Exception as e:
     print(f""Concept-style non disponible: {e}"")",,,,,,,,999d356a918155ed,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,c27d7dde,markdown,fr,89b815e68a66ea56,"### Exercice 3 : Explorer un reseau feed-forward
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,c27d7dde,markdown,fr,4e087a7b32234e98,"### Exercice 3 : Explorer un reseau feed-forward
 
 Construisez un reseau feed-forward a 3 noeuds (A -> B -> C) et verifiez que son big Phi est egal a 0.
 
 **Objectifs** :
-1. Creer la TPM d'un reseau ou A influence B et B influence C (pas de boucle)
-2. Creer le reseau PyPhi avec la connectivite appropriee
+1. Créer la TPM d'un reseau ou A influence B et B influence C (pas de boucle)
+2. Créer le reseau PyPhi avec la connectivite appropriee
 3. Calculer le big Phi et verifier qu'il vaut 0
 
 **Indices** :
 - La matrice de connectivite est triangulaire : `[[0,1,0], [0,0,1], [0,0,0]]`
 - Pour la TPM : B_next = A, C_next = B, A_next = A (ou une constante)
-- Utilisez `pyphi.compute.sia(subsystem)` pour calculer big Phi",,,,,,,,89b815e68a66ea56,,,,,,,
+- Utilisez `pyphi.compute.sia(subsystem)` pour calculer big Phi",,,,,,,,4e087a7b32234e98,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,49e7ee5e,code,fr,583d753ff3235640,"# Exercice 3 : Reseau feed-forward (Phi attendu = 0)
 # TODO etudiant : construisez le reseau et verifiez Phi = 0
 
@@ -10314,17 +10314,17 @@ if tpm_ff is not None and cm_ff is not None:
     print(""Un reseau sans boucle causale n'a pas d'integration."")
 else:
     print(""Exercice a completer : definissez tpm_ff et cm_ff"")",,,,,,,,583d753ff3235640,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,887aaea8,markdown,fr,acf69ccae6176a1a,"### 8.2. Limites et debats
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,887aaea8,markdown,fr,af7f9323a6681094,"### 8.2. Limites et debats
 
-L'IIT est une theorie active et debattue :
+L'IIT est une théorie active et debattue :
 
 - **Lettre ouverte de 2023** : ~120 signataires qualifiant l'IIT de pseudoscience
 - **Reponse des partisans** : l'IIT fait des predictions falsifiables (PCI, activations)
 - **Programme Templeton** : tests adversariaux IIT vs Global Workspace Theory
 - **Enjeu IA** : l'IIT predit que les reseaux feed-forward (comme les LLMs) ont $\Phi = 0$
 
-Ces debats illustrent la tension entre **rigueur mathematique** et **applicabilite empirique**.",,,,,,,,acf69ccae6176a1a,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3363b7ca,markdown,fr,6ebca8c4b394c1b1,"---
+Ces debats illustrent la tension entre **rigueur mathematique** et **applicabilite empirique**.",,,,,,,,af7f9323a6681094,,,,,,,
+MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb,3363b7ca,markdown,fr,3a3d12003b4fd8d1,"---
 
 ## Bilan et perspectives
 
@@ -10334,16 +10334,16 @@ Dans ce deuxieme notebook, nous avons approfondi :
 2. **Les repertoires cause-effet** - les distributions de probabilite au coeur de l'analyse IIT
 3. **Les MICE et concepts** - les unites d'information irreductible dans la CES
 4. **Big Phi vs Small Phi** - deux niveaux de mesure complementaires
-5. **Les reseaux elargis** - comment la complexite croit avec la taille du systeme
-6. **Le coarse-graining** - strategies pour gerer l'intractabilite du calcul
-7. **IIT 4.0** - les evolutions recentes de la theorie
+5. **Les reseaux elargis** - comment la complexite croit avec la taille du système
+6. **Le coarse-graining** - stratégies pour gerer l'intractabilite du calcul
+7. **IIT 4.0** - les evolutions recentes de la théorie
 
 ### Pour aller plus loin
 
 - **Documentation PyPhi** : [pyphi.readthedocs.io](https://pyphi.readthedocs.io/en/stable/)
 - **Article fondateur** : Oizumi, Albantakis, Tononi (2014). *From the Phenomenology to the Mechanisms of Consciousness*
 - **IIT 4.0** : Albantakis et al. (2023). *Integrated information theory (IIT) 4.0*
-- **Series connexes** : [Probas](../Probas/README.md), [GameTheory](../GameTheory/README.md)",,,,,,,,6ebca8c4b394c1b1,,,,,,,
+- **Series connexes** : [Probas](../Probas/README.md), [GameTheory](../GameTheory/README.md)",,,,,,,,3a3d12003b4fd8d1,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb,title,markdown,fr,5d19f5df2c58380a,"# IIT-3. Coarse-graining, blackboxing et l'échelle du $\Phi$ — le module `pyphi.macro`
 
 Les notebooks [Intro](IIT-1-IntroToPyPhi.ipynb) et [Sujets avancés](IIT-2-AdvancedTopics.ipynb) ont calculé $\Phi$ à l'**échelle micro** : un réseau de $N$ éléments binaires, et l'on partitionne, mesure la cause-effet structure, etc. Mais l'IIT pose une question plus profonde : **à quelle échelle spatiale l'information intégrée est-elle maximale ?** Un système de neurones microscopiques, une population neuronale coarse-grainée, ou une région macroscopique ?
