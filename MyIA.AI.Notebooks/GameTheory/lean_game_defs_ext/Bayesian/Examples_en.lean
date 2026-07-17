@@ -19,7 +19,7 @@
   Mirrors GameTheory-11-BayesianGames.ipynb. See #2610.
 -/
 
-import Bayesian.BNE
+import Bayesian.BNE_en
 
 /-- Battle of the Sexes where player 2's desire to meet or avoid
     player 1 is private information (uniform prior over both types).
@@ -34,9 +34,11 @@ def bosIncomplete : BayesGame2 where
     if a1.val = a2.val then (if a1.val = 0 then 2 else 1) else 0
   u2 := fun _ t2 a1 a2 =>
     if t2.val = 0 then
+      -- "meet" type: wants to match, prefers Football
       -- "meet" type: wants to coordinate, prefers Football
       if a1.val = a2.val then (if a1.val = 0 then 1 else 2) else 0
     else
+      -- "avoid" type: wants to MISmatch
       -- "avoid" type: wants to MISmatch
       if a1.val = 0 ∧ a2.val = 1 then 2
       else if a1.val = 1 ∧ a2.val = 0 then 1

@@ -16,24 +16,6 @@
     proportionnelle).
 
   Voir #2610 (formalisation GT-Lean, phase bayésienne 1).
-
-  ---
-  English:
-  Bayesian Nash Equilibrium (interim formulation)
-  ===============================================
-
-  - `isBNE`: a strategy profile is a BNE when no type of either player
-    has a profitable unilateral action deviation, in interim expected
-    utility. Quantifiers range over `Fin` types and actions only, so
-    the property is decidable (`decide` works on concrete games).
-  - `exAnteU1_le_of_interim_best`: the one-shot deviation principle in
-    this finite setting — interim optimality implies ex-ante optimality
-    against arbitrary type-contingent deviations.
-  - `isBNE_scaleW`: BNE is invariant under rescaling the prior weights
-    by a positive constant (normalization-independence: the `Nat`
-    weights stand in for any probability measure proportional to them).
-
-  See #2610 (GT-Lean formalization, Bayesian phase 1).
 -/
 
 import Bayesian.Types
@@ -43,14 +25,7 @@ import Bayesian.Types
     face à la stratégie de l'adversaire.
 
     Réductible pour que l'instance `Decidable` soit trouvée par dépliage
-    (conjonction de `∀` sur `Fin` de comparaisons `Int` décidables).
-
-    English: Bayesian Nash equilibrium, interim formulation: for every type of
-    each player, the prescribed action maximizes interim expected
-    utility against the opponent's strategy.
-
-    Reducible so that the `Decidable` instance is found by unfolding
-    (conjunction of `∀` over `Fin` of decidable `Int` comparisons). -/
+    (conjonction de `∀` sur `Fin` de comparaisons `Int` décidables). -/
 @[reducible] def isBNE (g : BayesGame2) (s1 : Strategy1 g) (s2 : Strategy2 g) : Prop :=
   (∀ t1 : Fin g.nT1, ∀ a : Fin g.nA1,
       interimU1 g t1 a s2 ≤ interimU1 g t1 (s1 t1) s2) ∧
@@ -59,10 +34,7 @@ import Bayesian.Types
 
 /-- Principe de déviation unique, côté joueur 1 : si chaque type du
     joueur 1 joue une meilleure réponse interimaire, alors aucune déviation
-    contingente au type `s1'` n'améliore l'utilité espérée ex-ante du joueur 1.
-    English: One-shot deviation principle, player 1 side: if every type of
-    player 1 plays an interim best response, then no type-contingent
-    deviation `s1'` improves player 1's ex-ante expected utility. -/
+    contingente au type `s1'` n'améliore l'utilité espérée ex-ante du joueur 1. -/
 theorem exAnteU1_le_of_interim_best (g : BayesGame2)
     {s1 : Strategy1 g} {s2 : Strategy2 g}
     (h : ∀ t1 a, interimU1 g t1 a s2 ≤ interimU1 g t1 (s1 t1) s2)
@@ -70,8 +42,7 @@ theorem exAnteU1_le_of_interim_best (g : BayesGame2)
     exAnteU1 g s1' s2 ≤ exAnteU1 g s1 s2 :=
   sumFin_mono (fun t1 => h t1 (s1' t1))
 
-/-- Principe de déviation unique, côté joueur 2.
-    English: One-shot deviation principle, player 2 side. -/
+/-- Principe de déviation unique, côté joueur 2. -/
 theorem exAnteU2_le_of_interim_best (g : BayesGame2)
     {s1 : Strategy1 g} {s2 : Strategy2 g}
     (h : ∀ t2 a, interimU2 g t2 a s1 ≤ interimU2 g t2 (s2 t2) s1)
@@ -80,17 +51,14 @@ theorem exAnteU2_le_of_interim_best (g : BayesGame2)
   sumFin_mono (fun t2 => h t2 (s2' t2))
 
 /-- Un BNE est aussi un équilibre de Nash ex-ante : aucun joueur ne gagne
-    à dévier unilatéralement de façon contingente au type.
-    English: A BNE is also an ex-ante Nash equilibrium: no player gains from
-    any type-contingent unilateral deviation. -/
+    à dévier unilatéralement de façon contingente au type. -/
 theorem bne_exAnte (g : BayesGame2) {s1 : Strategy1 g} {s2 : Strategy2 g}
     (h : isBNE g s1 s2) :
     (∀ s1', exAnteU1 g s1' s2 ≤ exAnteU1 g s1 s2) ∧
     (∀ s2', exAnteU2 g s1 s2' ≤ exAnteU2 g s1 s2) :=
   ⟨exAnteU1_le_of_interim_best g h.1, exAnteU2_le_of_interim_best g h.2⟩
 
-/-- Le même jeu avec tous les poids du prior multipliés par `c`.
-    English: The same game with all prior weights multiplied by `c`. -/
+/-- Le même jeu avec tous les poids du prior multipliés par `c`. -/
 @[reducible] def scaleW (g : BayesGame2) (c : Nat) : BayesGame2 :=
   { g with w := fun t1 t2 => c * g.w t1 t2 }
 
@@ -114,10 +82,7 @@ theorem interimU2_scaleW (g : BayesGame2) (c : Nat)
 
 /-- Le BNE est invariant par remise à l'échelle positive des poids du prior.
     C'est ce qui fait des poids `Nat` non normalisés un encodage fidèle
-    d'un prior commun : seuls les rapports des poids importent.
-    English: BNE is invariant under positive rescaling of the prior weights.
-    This is what makes unnormalized `Nat` weights a faithful encoding
-    of a common prior: only ratios of weights matter. -/
+    d'un prior commun : seuls les rapports des poids importent. -/
 theorem isBNE_scaleW (g : BayesGame2) (c : Nat) (hc : 0 < c)
     (s1 : Strategy1 g) (s2 : Strategy2 g) :
     isBNE (scaleW g c) s1 s2 ↔ isBNE g s1 s2 := by
