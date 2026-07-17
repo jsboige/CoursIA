@@ -21,9 +21,11 @@ name: SVG empty-display gate
 # payload. The same code may render fine in a different setup (proven #6967
 # DecInfer-7 cell[32] by po-2025: `display()` returns SVG `<text/html>` 3563
 # chars when the helper is `#load`-ed from the right cwd). The defect class is
-# SYMPTOM (empty output) cause-agnostic — it catches all empty-display failures,
-# including the `display()`-vs-`return` pitfall, the `#load` path-failure, and
-# the kernel cwd path-resolution failure.
+# SYMPTOM (empty output) cause-agnostic — it catches all empty-display failures
+# rooted in the helper/Formatter-not-loaded pitfall (`#load` unresolved from
+# the kernel's real cwd at exec time, so `Formatter.Register` never runs and
+# `SvgChartHelper.<chart>` falls through to a no-op). See ai-01 canon
+# `svg-6927-canon.md` §4 (cause-racine helper-load).
 #
 # Why this is NOT a regression of `svg-decimal-comma-gate.yml`
 # -------------------------------------------------------------
@@ -59,13 +61,15 @@ name: SVG empty-display gate
 # notebook is a defect introduced or carried by the PR and must be fixed
 # before merge. A new notebook must commit real SVG output, not empty lists.
 #
-# Fix (mirror ai-01 `svg-6927-canon.md` point 1)
-# ------------------------------------------------
-# Make the chart the LAST EXPRESSION of the cell (drop `display(chart)`,
-# leave the chart object as the cell's final value -> `execute_result`
-# carries the `<svg>`), OR investigate why the helper does not emit under
-# the headless exec and re-execute the .NET kernel -> the committed output
-# then carries the SVG. Common root causes:
+# Fix (mirror ai-01 `svg-6927-canon.md` §4 — cause-racine helper-load)
+# --------------------------------------------------------------------
+# The empty `outputs` list means the helper's `Formatter.Register` did NOT
+# run during exec — `#load "SvgChartHelper.cs"` did not resolve from the
+# kernel's real cwd (the notebook dir at exec time). `display(chart)` AND
+# last-expression BOTH render once the helper is loaded (proof: MERGED
+# `#6967` DecInfer-7 cell[32] uses `display(SvgChartHelper...)` and captures
+# the `<svg>`). Discriminator = helper-load, NOT display-vs-expression.
+# Common root causes:
 #  (A) `.NET Interactive` / nbclient kernel cwd is wrong: helper
 #      `#load "SvgChartHelper.cs"` resolves only if the kernel's cwd is the
 #      directory containing the helper (or a path-relative one that
@@ -75,9 +79,6 @@ name: SVG empty-display gate
 #      fails (file not found), the helper types exist in source but
 #      `Formatter.Register` is never executed -> `display(...)` falls
 #      through to a no-op -> empty outputs.
-#  (C) `display(...)` captures `display_data` only for SOME object types
-#      under nbclient. Make the chart the LAST EXPRESSION of the cell
-#      instead -> `execute_result` always carries the SVG.
 # Stop&Repair (secrets-hygiene rule 6): fix the cause + re-execute, NEVER
 # scrub the output by hand. A hand-edited `outputs: [<svg>]` would falsify
 # the proof of execution and resurface on the next exec.
@@ -165,7 +166,7 @@ jobs:
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: make the chart the LAST EXPRESSION of the cell (drop \`display(chart)\` -> leave the chart object as the cell's final value -> \`execute_result\` carries the \`<svg>\`), OR re-execute the .NET kernel with the helper \`#load\`-ed from the correct cwd (verify \`Environment.CurrentDirectory\` matches the helper folder, e.g. \`Probas/Infer/\`). See ai-01 canon \`svg-6927-canon.md\` (point 1) and the detector docstring. Stop&Repair: fix the cause + re-execute, never scrub the output by hand (secrets-hygiene rule 6)." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: the empty \`outputs\` list means the helper's \`Formatter.Register\` did NOT run in this exec — \`#load \"SvgChartHelper.cs\"\` did not resolve from the kernel's real cwd (the notebook dir at exec time). Make the \`#load\` resolve (helper in the notebook dir, OR relative \`#load \"../<family>/SvgChartHelper.cs\"\` that reaches it, OR re-execute via Papermill/ExecutePreprocessor with \`resources.metadata.path\` set to the helper dir), then re-execute the .NET kernel and confirm \`out_len>0\` (\`<svg>\` present in the cell \`outputs\`). \`display(chart)\` AND last-expression BOTH render once the helper is loaded (proof: MERGED \`#6967\` DecInfer-7 cell[32] uses \`display()\` and captures the \`<svg>\`); the discriminator is helper-load, NOT display-vs-expression. See ai-01 canon \`svg-6927-canon.md\` §4 (cause-racine helper-load) and the detector docstring. Stop&Repair: fix the cause + re-execute, never scrub the output by hand (secrets-hygiene rule 6)." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "::notice title=SVG empty-display gate::Checked $checked changed notebook(s); no empty-display SVG defect."
