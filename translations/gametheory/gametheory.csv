@@ -18052,7 +18052,7 @@ Cette tranche a pose les **concepts fondamentaux de la theorie des jeux strategi
 ---
 
 *Tranche 1 du twin .NET⇄Python (#4956 marathon). Theorie des jeux strategique = 1er concept. from-scratch = la valeur pedagogique de ce twin, complementaire au solveur nashpy.*",,,,,,,,07bead319fd99b34,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,e49fec96e3e76b95,"# GameTheory-2-NormalForm
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,4b02745d62981363,"# GameTheory-2-NormalForm
 
 **Navigation** : [<< 1-Setup](GameTheory-1-Setup.ipynb) | [Index](README.md) | [3-Topology2x2 >>](GameTheory-3-Topology2x2.ipynb)
 
@@ -18060,23 +18060,23 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,
 
 ## Jeux en Forme Normale
 
-Ce notebook introduit la representation des jeux en **forme normale** (ou forme strategique), la facon standard de decrire les interactions strategiques.
+Ce notebook introduit la representation des jeux en **forme normale** (ou forme stratégique), la facon standard de decrire les interactions stratégiques.
 
 ### Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. **Definir** formellement un jeu en forme normale (joueurs, strategies, gains)
+1. **Définir** formellement un jeu en forme normale (joueurs, stratégies, gains)
 2. **Representer** un jeu par des matrices de gains et l'implementer en Python
-3. **Identifier** les strategies dominantes et dominees
+3. **Identifier** les stratégies dominantes et dominees
 4. **Calculer** les meilleures reponses (best response) d'un joueur
-5. **Appliquer** l'elimination iteree des strategies dominees (IESDS)
+5. **Appliquer** l'elimination iteree des stratégies dominees (IESDS)
 6. **Reconnaitre** les jeux classiques : Dilemme du Prisonnier, Stag Hunt, Chicken, etc.
 
 ### Concepts cles
 - **Forme normale** : representation complete d'un jeu par ses matrices
-- **Dominance** : une strategie toujours meilleure qu'une autre
-- **Best response** : strategie optimale face a un choix adverse donne
-- **IESDS** : simplification par elimination des strategies irrationnelles
+- **Dominance** : une stratégie toujours meilleure qu'une autre
+- **Best response** : stratégie optimale face a un choix adverse donne
+- **IESDS** : simplification par elimination des stratégies irrationnelles
 
 ### Duree estimee : 45 minutes
 
@@ -18085,7 +18085,7 @@ A la fin de ce notebook, vous saurez :
 - Notions de base en algebre lineaire (matrices)
 
 
-> *Ancres savantes -- von Neumann, J. (1928), Zur Theorie der Gesellschaftsspiele, Mathematische Annalen 100:295-320 (theoreme du minimax pour les jeux a somme nulle, deja nomme ci-dessus — toute matrice de gains admet une valeur en strategies mixtes) ; von Neumann, J. & Morgenstern, O. (1944), Theory of Games and Economic Behavior, Princeton University Press (acte de naissance de la theorie des jeux moderne : formalisme des jeux en forme normale G=(N,S,u) enseigne dans ce notebook, axiomes d'utilite esperee justifiant la maximisation du gain esperer) ; Nash, J.F. (1950), Equilibrium Points in N-Person Games, Proceedings of the National Academy of Sciences 36(1):48-49 (theoreme d'existence de l'equilibre de Nash, deja nomme ci-dessus — tout jeu fini possede au moins un equilibre en strategies mixtes) ; Nash, J.F. (1951), Non-Cooperative Games, Annals of Mathematics 54(2):286-295 (version journal, preuve via le theoreme du point fixe de Brouwer ; prix Nobel d'economie 1994).*",,,,,,,,e49fec96e3e76b95,,,,,,,
+> *Ancres savantes -- von Neumann, J. (1928), Zur Théorie der Gesellschaftsspiele, Mathematische Annalen 100:295-320 (theoreme du minimax pour les jeux a somme nulle, déjà nomme ci-dessus — toute matrice de gains admet une valeur en stratégies mixtes) ; von Neumann, J. & Morgenstern, O. (1944), Theory of Games and Economic Behavior, Princeton University Press (acte de naissance de la théorie des jeux moderne : formalisme des jeux en forme normale G=(N,S,u) enseigne dans ce notebook, axiomes d'utilite esperee justifiant la maximisation du gain esperer) ; Nash, J.F. (1950), Equilibrium Points in N-Person Games, Proceedings of the National Academy of Sciences 36(1):48-49 (theoreme d'existence de l'equilibre de Nash, déjà nomme ci-dessus — tout jeu fini possede au moins un equilibre en stratégies mixtes) ; Nash, J.F. (1951), Non-Cooperative Games, Annals of Mathematics 54(2):286-295 (version journal, preuve via le theoreme du point fixe de Brouwer ; prix Nobel d'economie 1994).*",,,,,,,,4b02745d62981363,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,6d1f609c,code,fr,31dd958c3fc1c6db,"# Imports
 import numpy as np
 import nashpy as nash
@@ -18095,27 +18095,27 @@ import warnings
 warnings.filterwarnings('ignore')
 print(""Imports OK : numpy, matplotlib, itertools"")
 ",,,,,,,,31dd958c3fc1c6db,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,133a6fb2,markdown,fr,0263e4bc00b3475f,"## 1. Definition formelle
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,133a6fb2,markdown,fr,ae92b08729d45a63,"## 1. Definition formelle
 
 ### Jeu en forme normale
 
-Un jeu en forme normale est defini par un triplet $G = (N, S, u)$ :
+Un jeu en forme normale est défini par un triplet $G = (N, S, u)$ :
 
 - $N = \{1, 2, ..., n\}$ : ensemble des **joueurs**
-- $S = S_1 \times S_2 \times ... \times S_n$ : espace des **strategies**
-  - $S_i$ : strategies disponibles pour le joueur $i$
+- $S = S_1 \times S_2 \times ... \times S_n$ : espace des **stratégies**
+  - $S_i$ : stratégies disponibles pour le joueur $i$
 - $u = (u_1, u_2, ..., u_n)$ : fonctions d'**utilite** (gains)
-  - $u_i : S \to \mathbb{R}$ : gain du joueur $i$ pour chaque profil de strategies
+  - $u_i : S \to \mathbb{R}$ : gain du joueur $i$ pour chaque profil de stratégies
 
-**Source primaire.** La representation d'un jeu en forme normale (ou strategique) par le triplet $G = (N, S, u)$ -- joueurs, strategies, fonctions d'utilite -- est codifiee par John von Neumann et Oskar Morgenstern dans *Theory of Games and Economic Behavior* (Princeton University Press, 1944), l'ouvrage fondateur de la theorie des jeux. Ce cadre, qui systematise l'usage des matrices de gains et de l'utilite esperee, demeure la definition standard de reference ; les notions de meilleure reponse et d'equilibre etudiees plus loin dans cette serie s'appuient directement sur ce formalisme.
+**Source primaire.** La representation d'un jeu en forme normale (ou stratégique) par le triplet $G = (N, S, u)$ -- joueurs, stratégies, fonctions d'utilite -- est codifiee par John von Neumann et Oskar Morgenstern dans *Theory of Games and Economic Behavior* (Princeton University Press, 1944), l'ouvrage fondateur de la théorie des jeux. Ce cadre, qui systematise l'usage des matrices de gains et de l'utilite esperee, demeure la definition standard de reference ; les notions de meilleure reponse et d'equilibre etudiees plus loin dans cette serie s'appuient directement sur ce formalisme.
 
 ### Cas particulier : jeux 2 joueurs
 
-Pour 2 joueurs avec $m$ et $n$ strategies, on represente le jeu par deux matrices :
+Pour 2 joueurs avec $m$ et $n$ stratégies, on represente le jeu par deux matrices :
 - $A \in \mathbb{R}^{m \times n}$ : gains du joueur Ligne (Row)
 - $B \in \mathbb{R}^{m \times n}$ : gains du joueur Colonne (Column)
 
-$A_{ij}$ = gain de Ligne quand Ligne joue $i$ et Colonne joue $j$",,,,,,,,0263e4bc00b3475f,,,,,,,
+$A_{ij}$ = gain de Ligne quand Ligne joue $i$ et Colonne joue $j$",,,,,,,,ae92b08729d45a63,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,94d5ccf5,code,fr,7ca0dc4b524b1d04,"class NormalFormGame:
     """"""
     Representation d'un jeu en forme normale pour 2 joueurs.
@@ -18189,9 +18189,9 @@ La sortie affiche la **matrice de gains** du Dilemme du Prisonnier. Chaque cellu
 | (Defaire, Cooperer) | (5, 0) | Trahison du joueur Ligne |
 
 **Observation** : L'issue (Cooperer, Cooperer) donne le meilleur gain total (6), mais chaque joueur a une **incitation à dévier** pour obtenir 5 au lieu de 3.",,,,,,,,cd60087e2e3e451a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c7d73a7b,markdown,fr,fe4a2e777e8cf2c4,"## 2. Jeux classiques 2x2
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c7d73a7b,markdown,fr,cd11cdfd97e9e8ab,"## 2. Jeux classiques 2x2
 
-Explorons plusieurs jeux classiques pour comprendre les differentes structures possibles.",,,,,,,,fe4a2e777e8cf2c4,,,,,,,
+Explorons plusieurs jeux classiques pour comprendre les différentes structures possibles.",,,,,,,,cd11cdfd97e9e8ab,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f3f1e4f2,code,fr,2f90edba3971d273,"# Collection de jeux classiques
 
 def create_prisoners_dilemma():
@@ -18256,18 +18256,18 @@ Les 5 jeux affichés illustrent différentes **structures d'interaction stratég
 - Dans **Stag Hunt**, (Cerf, Cerf) donne 4 à chacun, mais (Lièvre, Lièvre) est plus sûr (gain garanti 3)
 - Dans **Bataille des Sexes**, les deux joueurs préfèrent se coordonner (Opera ou Football) plutôt que se décoordiner
 - Dans **Chicken**, le pire résultat (-10, -10) survient si les deux joueurs continuent",,,,,,,,8db46657ba8ab5d3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5aaa76ce,markdown,fr,6d51cb40fa0a7cb2,"## 3. Dominance
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5aaa76ce,markdown,fr,d56dbb900aedf729,"## 3. Dominance
 
 ### Definitions
 
-Une strategie $s_i$ **domine strictement** une strategie $s_i'$ si :
+Une stratégie $s_i$ **domine strictement** une stratégie $s_i'$ si :
 $$u_i(s_i, s_{-i}) > u_i(s_i', s_{-i}) \quad \forall s_{-i} \in S_{-i}$$
 
-Une strategie $s_i$ **domine faiblement** une strategie $s_i'$ si :
+Une stratégie $s_i$ **domine faiblement** une stratégie $s_i'$ si :
 $$u_i(s_i, s_{-i}) \geq u_i(s_i', s_{-i}) \quad \forall s_{-i}$$
 avec au moins une inegalite stricte.
 
-Une strategie est **dominante** si elle domine toutes les autres strategies.",,,,,,,,6d51cb40fa0a7cb2,,,,,,,
+Une stratégie est **dominante** si elle domine toutes les autres stratégies.",,,,,,,,d56dbb900aedf729,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d3e87111,code,fr,d244c6e5d2e48071,"def is_strictly_dominated(game: NormalFormGame, player: int, strategy: int) -> Tuple[bool, Optional[int]]:
     """"""
     Verifie si une strategie est strictement dominee.
@@ -18402,11 +18402,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4b86c761,markdown,fr,
 **Implications** :
 - Dans le **Dilemme du Prisonnier**, un joueur rationnel doit toujours jouer ""Defaire"", indépendamment de ce que fait l'adversaire
 - Dans les autres jeux, le choix optimal **dépend** de la stratégie de l'adversaire → besoin du concept de **meilleure réponse**",,,,,,,,7b590f15686f167e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f62f0e8,markdown,fr,e7e5fd3c69bc7084,"### Observation
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f62f0e8,markdown,fr,74a4ca636e0c6125,"### Observation
 
-Seul le **Dilemme du Prisonnier** a une strategie dominante pour les deux joueurs (""Defaire"").
+Seul le **Dilemme du Prisonnier** a une stratégie dominante pour les deux joueurs (""Defaire"").
 
-Les autres jeux necessitent des concepts plus raffines pour predire le comportement.",,,,,,,,e7e5fd3c69bc7084,,,,,,,
+Les autres jeux necessitent des concepts plus raffines pour predire le comportement.",,,,,,,,74a4ca636e0c6125,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,60a55803,markdown,fr,710e051f1457dc48,"### Interprétation - Visualisations
 
 Les graphiques montrent les **meilleures réponses** et **équilibres de Nash** :
@@ -18420,16 +18420,16 @@ Les graphiques montrent les **meilleures réponses** et **équilibres de Nash** 
 1. **Dilemme du Prisonnier** : (Defaire, Defaire) a les deux soulignements → unique Nash
 2. **Bataille des Sexes** : Deux cellules vertes (Opera, Opera) et (Football, Football)
 3. **Stag Hunt** : Deux équilibres, mais (Cerf, Cerf) donne des gains supérieurs",,,,,,,,710e051f1457dc48,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9b99f44,markdown,fr,179eaaa15e607d63,"## 4. Meilleure Reponse (Best Response)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9b99f44,markdown,fr,01f4910604d20964,"## 4. Meilleure Reponse (Best Response)
 
 ### Definition
 
-La **meilleure reponse** du joueur $i$ a la strategie $s_{-i}$ des autres joueurs est :
+La **meilleure reponse** du joueur $i$ a la stratégie $s_{-i}$ des autres joueurs est :
 $$BR_i(s_{-i}) = \arg\max_{s_i \in S_i} u_i(s_i, s_{-i})$$
 
 Pour les jeux 2x2 :
-- $BR_{Ligne}(j)$ = strategie de Ligne maximisant son gain quand Colonne joue $j$
-- $BR_{Col}(i)$ = strategie de Colonne maximisant son gain quand Ligne joue $i$",,,,,,,,179eaaa15e607d63,,,,,,,
+- $BR_{Ligne}(j)$ = stratégie de Ligne maximisant son gain quand Colonne joue $j$
+- $BR_{Col}(i)$ = stratégie de Colonne maximisant son gain quand Ligne joue $i$",,,,,,,,01f4910604d20964,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,b8e131a0,markdown,fr,dd40b308c1c987c9,"### Interprétation - Simplification par IESDS
 
 **Résultat** : Le processus d'IESDS a réduit le jeu 3×3 en un jeu **1×1** avec une issue unique.
@@ -18512,12 +18512,12 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,e061e72d,code,fr,4cf5
 bos = create_battle_of_sexes()
 bos.display()
 analyze_best_responses(bos)",,,,,,,,4cf5cf4d5e37cc4c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9a8f9d7,markdown,fr,a90a34345f91ff08,"### Relation avec l'equilibre de Nash
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9a8f9d7,markdown,fr,77b01c9aef1f0415,"### Relation avec l'equilibre de Nash
 
-Un profil de strategies $(s_i^*, s_{-i}^*)$ est un **equilibre de Nash** si et seulement si :
+Un profil de stratégies $(s_i^*, s_{-i}^*)$ est un **equilibre de Nash** si et seulement si :
 $$s_i^* \in BR_i(s_{-i}^*) \quad \forall i \in N$$
 
-Autrement dit, chaque joueur joue une meilleure reponse a ce que jouent les autres.",,,,,,,,a90a34345f91ff08,,,,,,,
+Autrement dit, chaque joueur joue une meilleure reponse a ce que jouent les autres.",,,,,,,,77b01c9aef1f0415,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,271fb8a5,markdown,fr,1f49caddeb6c4e2a,"### Interprétation - Coordination parfaite
 
 **Observation** : Dans la Bataille des Sexes, les meilleures réponses sont **alignées** :
@@ -18639,9 +18639,9 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c9ac80b3,code,fr,fc17
 plot_game_with_br(create_prisoners_dilemma())
 plot_game_with_br(create_battle_of_sexes())
 plot_game_with_br(create_stag_hunt())",,,,,,,,fc173b090b4a70a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f2cddcb,markdown,fr,9886d83a3b4fde20,"## 6. Elimination iteree des strategies dominees (IESDS)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f2cddcb,markdown,fr,5320f6835cdb13e4,"## 6. Elimination iteree des stratégies dominees (IESDS)
 
-L'**Iterated Elimination of Strictly Dominated Strategies** permet de simplifier un jeu en eliminant successivement les strategies qu'aucun joueur rationnel ne jouerait.",,,,,,,,9886d83a3b4fde20,,,,,,,
+L'**Iterated Elimination of Strictly Dominated Stratégies** permet de simplifier un jeu en eliminant successivement les stratégies qu'aucun joueur rationnel ne jouerait.",,,,,,,,5320f6835cdb13e4,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,46286901,code,fr,825bc86ed5d1b8b9,"def eliminate_dominated_strategies(A: np.ndarray, B: np.ndarray, 
                                     row_names: List[str], col_names: List[str],
                                     verbose: bool = True) -> Tuple[np.ndarray, np.ndarray, List[str], List[str]]:
@@ -18761,9 +18761,9 @@ print(f""\nEquilibres de Nash purs: {eq if eq else 'Aucun'}"")
 
 # Meilleures reponses
 analyze_best_responses(rps)",,,,,,,,08bd6894c961b081,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,fef37857c531c0a0,"### Interpretation - Structure cyclique de RPS
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,5c9591d2beedb3d1,"### Interpretation - Structure cyclique de RPS
 
-**Resultat** : Pierre-Feuille-Ciseaux n'a **aucun equilibre de Nash en strategies pures**.
+**Résultat** : Pierre-Feuille-Ciseaux n'a **aucun equilibre de Nash en stratégies pures**.
 
 **Analyse des meilleures reponses** :
 
@@ -18777,11 +18777,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,
 $$\text{Pierre} \xrightarrow{BR} \text{Feuille} \xrightarrow{BR} \text{Ciseaux} \xrightarrow{BR} \text{Pierre}$$
 
 **Pourquoi aucun equilibre pur ?**
-- Pour tout profil de strategies pures $(s_L, s_C)$, au moins un joueur veut devier
+- Pour tout profil de stratégies pures $(s_L, s_C)$, au moins un joueur veut devier
 - Exemple : Si les deux jouent Pierre, chacun prefere jouer Feuille (gain +1 au lieu de 0)
 - La structure cyclique garantit qu'il existe toujours une deviation profitable
 
-> **Consequence** : L'equilibre doit etre en strategies **mixtes** (randomisation)",,,,,,,,fef37857c531c0a0,,,,,,,
+> **Consequence** : L'equilibre doit etre en stratégies **mixtes** (randomisation)",,,,,,,,5c9591d2beedb3d1,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,18ef8f3d,code,fr,911008946ac34761,"# Equilibres mixtes avec Nashpy
 print(""\nEquilibres de Nash (purs et mixtes):"")
 print(""-"" * 40)
@@ -18797,9 +18797,9 @@ for eq in rps.nash_game.support_enumeration():
         # Gain espere (devrait etre 0 dans un jeu symetrique a somme nulle)
         exp_payoff = sigma_row @ A_rps @ sigma_col
         print(f""   Gain espere: {exp_payoff:.3f}"")",,,,,,,,911008946ac34761,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,eb9d39e266a58212,"### Interpretation - Pierre-Feuille-Ciseaux
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,5e5a617749124077,"### Interpretation - Pierre-Feuille-Ciseaux
 
-**Resultat cle** : L'unique equilibre de Nash de RPS est en strategies **mixtes** avec probabilites uniformes (1/3, 1/3, 1/3).
+**Résultat cle** : L'unique equilibre de Nash de RPS est en stratégies **mixtes** avec probabilites uniformes (1/3, 1/3, 1/3).
 
 **Structure cyclique des meilleures reponses** :
 
@@ -18811,7 +18811,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,
 
 **Observations** :
 - Les meilleures reponses forment un **cycle** : Pierre -> Feuille -> Ciseaux -> Pierre
-- Aucun profil de strategies pures n'est stable (chaque joueur veut toujours devier)
+- Aucun profil de stratégies pures n'est stable (chaque joueur veut toujours devier)
 - L'equilibre mixte uniforme est la seule configuration stable
 
 **Proprietes de l'equilibre mixte** :
@@ -18824,34 +18824,34 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,
 
 **Intuition** :
 - Si un joueur **favorise** une action (ex: jouer Pierre avec probabilite > 1/3), l'adversaire peut l'**exploiter** en augmentant sa probabilite de jouer Feuille
-- Le seul equilibre est de jouer chaque action avec la meme probabilite, rendant le comportement **imprevisible**
+- Le seul equilibre est de jouer chaque action avec la même probabilite, rendant le comportement **imprevisible**
 - Dans tout jeu a somme nulle **symetrique**, l'equilibre mixte donne un gain espere de 0 a chaque joueur
 
-> **Theoreme de minimax (von Neumann, 1928)** : Dans un jeu a somme nulle, la valeur du jeu est unique et peut etre atteinte par des strategies mixtes optimales.",,,,,,,,eb9d39e266a58212,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,95af00c2,markdown,fr,56dbf0ed362072a6,"## 8. Resume
+> **Theoreme de minimax (von Neumann, 1928)** : Dans un jeu a somme nulle, la valeur du jeu est unique et peut etre atteinte par des stratégies mixtes optimales.",,,,,,,,5e5a617749124077,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,95af00c2,markdown,fr,3d481f6ead25b8a7,"## 8. Resume
 
 ### Concepts cles
 
 | Concept | Definition |
 |---------|------------|
 | **Forme normale** | Representation par matrices de gains |
-| **Strategie dominante** | Toujours optimale, independamment des autres |
-| **Strategie dominee** | Jamais optimale, toujours battue |
-| **Meilleure reponse** | Strategie optimale etant donne les choix des autres |
+| **Stratégie dominante** | Toujours optimale, independamment des autres |
+| **Stratégie dominee** | Jamais optimale, toujours battue |
+| **Meilleure reponse** | Stratégie optimale etant donne les choix des autres |
 | **Equilibre de Nash** | Profil ou chacun joue une meilleure reponse |
-| **IESDS** | Simplification par elimination des strategies irrationnelles |
+| **IESDS** | Simplification par elimination des stratégies irrationnelles |
 
 ### Types de jeux rencontres
 
-| Jeu | Caracteristique | Equilibres Nash |
+| Jeu | Caractéristique | Equilibres Nash |
 |----|-----------------|------------------|
-| Dilemme du Prisonnier | Strategie dominante | 1 pur (Defaire, Defaire) |
+| Dilemme du Prisonnier | Stratégie dominante | 1 pur (Defaire, Defaire) |
 | Stag Hunt | Coordination avec risque | 2 purs + 1 mixte |
 | Bataille des Sexes | Coordination pure | 2 purs + 1 mixte |
 | Chicken | Anti-coordination | 2 purs + 1 mixte |
 | Matching Pennies | Somme nulle | 1 mixte |
-| RPS | Somme nulle symetrique | 1 mixte |",,,,,,,,56dbf0ed362072a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,1927212d,markdown,fr,a59ba2013cdc285b,"## 9. Exercices
+| RPS | Somme nulle symetrique | 1 mixte |",,,,,,,,3d481f6ead25b8a7,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,1927212d,markdown,fr,d55a52a8bb35f3b2,"## 9. Exercices
 
 Quatre exercices pour mettre en pratique les outils du notebook (`NormalFormGame`, `find_dominant_strategy`, `find_pure_nash_equilibria`, `best_response_*`, `support_enumeration`). Les solutions ne sont pas fournies : chaque cellule de code est un squelette a completer (`# TODO`).
 
@@ -18865,7 +18865,7 @@ Analysez une variante du Dilemme du Prisonnier avec 3 actions (Cooperer, Defaire
 | **Defaire** | (5,0) | (1,1) | (0,0) |
 | **Punir** | (2,0) | (0,0) | (0,0) |
 
-Questions : strategie(s) dominante(s) ? Equilibres de Nash purs ? L'ajout de l'action 'Punir' change-t-il l'analyse ?
+Questions : stratégie(s) dominante(s) ? Equilibres de Nash purs ? L'ajout de l'action 'Punir' change-t-il l'analyse ?
 
 ### Exercice 2 : Matching Pennies generalise (3 faces)
 
@@ -18875,14 +18875,14 @@ Questions : equilibres purs ? equilibre mixte ? gain espere ?
 
 ### Exercice 3 : Jeu de Coordination avec Communication (cheap talk)
 
-Trois entreprises doivent choisir un standard technologique commun. Identifiez les equilibres de Nash purs et mixtes, l'equilibre Pareto-dominant, et discutez du role d'un signal non contraignant (cheap talk) dans la selection d'equilibre.
+Trois entreprises doivent choisir un standard technologique commun. Identifiez les equilibres de Nash purs et mixtes, l'equilibre Pareto-dominant, et discutez du rôle d'un signal non contraignant (cheap talk) dans la sélection d'equilibre.
 
 ### Exercice 4 : IEWDS
 
-Implementez l'elimination iteree des strategies **faiblement** dominees (IEWDS) et comparez le resultat avec l'IESDS (strict).",,,,,,,,a59ba2013cdc285b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4201db36,markdown,fr,7397f61a5d98a177,"### Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
+Implementez l'elimination iteree des stratégies **faiblement** dominees (IEWDS) et comparez le résultat avec l'IESDS (strict).",,,,,,,,d55a52a8bb35f3b2,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4201db36,markdown,fr,ea5eff98cc2624bd,"### Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
 
-Reprenez la variante a 3 actions (Cooperer, Defaire, Punir) decrite ci-dessus. Tous les outils necessaires ont ete construits dans les sections precedentes et restent disponibles : la classe `NormalFormGame` (section 1), `find_dominant_strategy` (section 3), `find_pure_nash_equilibria` (section 4) et `best_response_row` / `best_response_col`. Completez les `# TODO` ci-dessous.",,,,,,,,7397f61a5d98a177,,,,,,,
+Reprenez la variante a 3 actions (Cooperer, Defaire, Punir) decrite ci-dessus. Tous les outils necessaires ont ete construits dans les sections précédentes et restent disponibles : la classe `NormalFormGame` (section 1), `find_dominant_strategy` (section 3), `find_pure_nash_equilibria` (section 4) et `best_response_row` / `best_response_col`. Completez les `# TODO` ci-dessous.",,,,,,,,ea5eff98cc2624bd,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4e505ffd,code,fr,58aeb5ea054e8ef4,"# Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
 # ===========================================================
 # Matrice de gains (Ligne, Colonne) :
@@ -18909,7 +18909,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4e505ffd,code,fr,58ae
 # TODO: enumerer les equilibres de Nash purs (find_pure_nash_equilibria)
 # Question d'analyse: l'ajout de l'action 'Punir' cree-t-il de nouveaux equilibres ?
 print(""Exercice 1 a completer : Variante du Dilemme du Prisonnier (3 actions)"")",,,,,,,,58aeb5ea054e8ef4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-md,markdown,fr,4d50397b93892b41,"### Exercice 2 : Matching Pennies generalise (3 faces)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-md,markdown,fr,af59ca9151760354,"### Exercice 2 : Matching Pennies generalise (3 faces)
 
 Etudiez une version a 3 faces du jeu de Matching Pennies : un jeu a **somme nulle** 3x3.
 Le joueur Ligne gagne +1 lorsqu'il ""matche"" la face choisie par Colonne (diagonale) et perd -1 sinon ;
@@ -18917,10 +18917,10 @@ les gains de Colonne sont l'oppose ($B = -A$).
 
 **Questions** :
 
-1. Definissez `A_ex2` (+1 sur la diagonale, -1 ailleurs) puis `B_ex2 = -A_ex2`, et creez le jeu.
-2. Combien d'equilibres de Nash **purs** ? (anticipez le resultat par analogie avec le cas 2x2.)
-3. Trouvez l'equilibre en strategies **mixtes** via `support_enumeration()`.
-4. Calculez le gain espere a l'equilibre mixte. Que vaut-il pour un jeu somme nulle symetrique ?",,,,,,,,4d50397b93892b41,,,,,,,
+1. Definissez `A_ex2` (+1 sur la diagonale, -1 ailleurs) puis `B_ex2 = -A_ex2`, et créez le jeu.
+2. Combien d'equilibres de Nash **purs** ? (anticipez le résultat par analogie avec le cas 2x2.)
+3. Trouvez l'equilibre en stratégies **mixtes** via `support_enumeration()`.
+4. Calculez le gain espere a l'equilibre mixte. Que vaut-il pour un jeu somme nulle symetrique ?",,,,,,,,af59ca9151760354,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-code,code,fr,364dc1c5f5436331,"# Exercice 2 : Matching Pennies generalise (3 faces)
 # ====================================================
 # Jeu a somme nulle 3x3 : Ligne gagne +1 s'il matche la face de Colonne (diagonale), -1 sinon.
@@ -18942,13 +18942,13 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-code,code,fr,3
 # TODO: gain espere a l'equilibre mixte
 # Indice: sigma_row @ A_ex2 @ sigma_col ; pour un jeu somme nulle symetrique il vaut 0.
 print(""Exercice 2 a completer : Matching Pennies generalise (3 faces)"")",,,,,,,,364dc1c5f5436331,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,fa6aa1ba,markdown,fr,0226361134f53b39,"### Exercice 3 : Jeu de Coordination avec Communication
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,fa6aa1ba,markdown,fr,2950f63c8573c8a2,"### Exercice 3 : Jeu de Coordination avec Communication
 
 Dans certains jeux, les joueurs peuvent envoyer des **signaux non contraignants** (cheap talk) avant de jouer.
 Cela peut aider a resoudre les problemes de coordination.
 
 **Contexte** : Trois entreprises doivent choisir un standard technologique commun.
-Chaque entreprise a une preference differente, mais toutes preferent un standard unifie a la fragmentation.
+Chaque entreprise a une préférence différente, mais toutes preferent un standard unifie a la fragmentation.
 
 **Matrice des gains (3 joueurs simplifie en 2 joueurs avec 3 actions)** :
 
@@ -18960,14 +18960,14 @@ Chaque entreprise a une preference differente, mais toutes preferent un standard
 
 **Questions** :
 
-1. Definissez les matrices `A_coord` et `B_coord` et creez le jeu avec `NormalFormGame`
-2. Trouvez tous les equilibres de Nash en strategies pures (utilisez `find_pure_nash_equilibria`)
-3. Trouvez l'equilibre en strategies mixtes avec `support_enumeration()`
+1. Definissez les matrices `A_coord` et `B_coord` et créez le jeu avec `NormalFormGame`
+2. Trouvez tous les equilibres de Nash en stratégies pures (utilisez `find_pure_nash_equilibria`)
+3. Trouvez l'equilibre en stratégies mixtes avec `support_enumeration()`
 4. Calculez le gain espere de chaque joueur a l'equilibre mixte
 5. Quel equilibre pur est **Pareto-dominant** ? (c'est-a-dire, aucun joueur ne peut gagner plus sans qu'un autre perde)
-6. Appliquez l'IESDS : peut-on eliminer des strategies dans ce jeu ? Pourquoi ?
+6. Appliquez l'IESDS : peut-on eliminer des stratégies dans ce jeu ? Pourquoi ?
 
-**Bonus** : Si les joueurs pouvaient communiquer (cheap talk), quel equilibre serait selectionne ? Justifiez.",,,,,,,,0226361134f53b39,,,,,,,
+**Bonus** : Si les joueurs pouvaient communiquer (cheap talk), quel equilibre serait selectionne ? Justifiez.",,,,,,,,2950f63c8573c8a2,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f37ff4c0,code,fr,218967eeb584bcce,"# Exercice 3 : Jeu de Coordination avec Communication
 
 # TODO: Definir les matrices de gains A_coord et B_coord
@@ -18998,16 +18998,16 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f37ff4c0,code,fr,2189
 # Ecrivez votre reponse en commentaire
 print(""Exercice 3 a completer : Jeu de Coordination avec Communication"")
 ",,,,,,,,218967eeb584bcce,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-md,markdown,fr,ea4a0153fcc50167,"### Exercice 4 : Elimination iteree des strategies faiblement dominees (IEWDS)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-md,markdown,fr,3c40f220a4842c23,"### Exercice 4 : Elimination iteree des stratégies faiblement dominees (IEWDS)
 
-L'elimination des strategies **faiblement** dominees est plus subtile que l'IESDS (strict). Une strategie $s_i$ est *faiblement dominee* par $s_i'$ si $u_i(s_i', s_{-i}) \geq u_i(s_i, s_{-i})$ pour tout $s_{-i}$, avec inegalite stricte pour au moins un profil.
+L'elimination des stratégies **faiblement** dominees est plus subtile que l'IESDS (strict). Une stratégie $s_i$ est *faiblement dominee* par $s_i'$ si $u_i(s_i', s_{-i}) \geq u_i(s_i, s_{-i})$ pour tout $s_{-i}$, avec inegalite stricte pour au moins un profil.
 
-**Objectif** : Implementer `eliminate_weakly_dominated` qui elimine iterativement les strategies faiblement dominees et comparer le resultat avec l'IESDS.
+**Objectif** : Implementer `eliminate_weakly_dominated` qui elimine iterativement les stratégies faiblement dominees et comparer le résultat avec l'IESDS.
 
-- **Indice :** La difference cle avec l'IESDS est le test de dominance faible (>= partout, > au moins une fois)
-- **Etape 1 :** Ecrire une fonction `is_weakly_dominated(A, row, player)` qui verifie si une strategie est faiblement dominee
-- **Etape 2 :** Eliminer iterativement les strategies faiblement dominees
-- **Etape 3 :** Comparer le resultat de l'IEWDS avec l'IESDS sur la matrice `A_test` fournie",,,,,,,,ea4a0153fcc50167,,,,,,,
+- **Indice :** La différence cle avec l'IESDS est le test de dominance faible (>= partout, > au moins une fois)
+- **Étape 1 :** Ecrire une fonction `is_weakly_dominated(A, row, player)` qui verifie si une stratégie est faiblement dominee
+- **Étape 2 :** Eliminer iterativement les stratégies faiblement dominees
+- **Étape 3 :** Comparer le résultat de l'IEWDS avec l'IESDS sur la matrice `A_test` fournie",,,,,,,,3c40f220a4842c23,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-code,code,fr,b3794dfb49e9f77b,"# Exercice 4 : IEWDS (Elimination des strategies faiblement dominees)
 
 def eliminate_weakly_dominated(A: np.ndarray, B: np.ndarray) -> tuple:
@@ -19037,28 +19037,28 @@ print(f""\nResultat IEWDS : {len(elim)} elimination(s)"")
 print(f""A_reduced = \n{A_red}"")
 print(f""B_reduced = \n{B_red}"")
 print(f""Eliminations : {elim}"")",,,,,,,,b3794dfb49e9f77b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,33048a4b,markdown,fr,5a803ffba17a2c58,"## Resume et perspectives
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,33048a4b,markdown,fr,89a7cc52602f0e2c,"## Resume et perspectives
 
-Ce notebook a pose les fondements de la representation des jeux en forme normale, le formalisme de base de la theorie des jeux strategique. Nous avons defini le triplet $G = (N, S, u)$ et implemente une classe Python pour manipuler les matrices de gains de jeux a deux joueurs. L'etude des jeux classiques -- Dilemme du Prisonnier, Chasse au Cerf, Bataille des Sexes, Jeu du Poulet, Matching Pennies -- a revele la diversite des structures d'interaction : dominance strategique, probleme de coordination, anti-coordination et competition pure. Les concepts de strategie dominante, meilleure reponse et elimination iteree des strategies dominees (IESDS) fournissent les premiers outils de prediction du comportement rationnel.
+Ce notebook a pose les fondements de la representation des jeux en forme normale, le formalisme de base de la théorie des jeux stratégique. Nous avons défini le triplet $G = (N, S, u)$ et implemente une classe Python pour manipuler les matrices de gains de jeux a deux joueurs. L'étude des jeux classiques -- Dilemme du Prisonnier, Chasse au Cerf, Bataille des Sexes, Jeu du Poulet, Matching Pennies -- a revele la diversite des structures d'interaction : dominance stratégique, problème de coordination, anti-coordination et competition pure. Les concepts de stratégie dominante, meilleure reponse et elimination iteree des stratégies dominees (IESDS) fournissent les premiers outils de prediction du comportement rationnel.
 
-L'analyse de Pierre-Feuille-Ciseaux a introduit la necessite des strategies mixtes : lorsque les meilleures reponses forment un cycle, aucun equilibre en strategies pures n'existe, et la randomisation uniforme constitue le seul equilibre stable. Cette observation motive naturellement l'etude systematique des equilibres de Nash dans les notebooks suivants.
+L'analyse de Pierre-Feuille-Ciseaux a introduit la necessite des stratégies mixtes : lorsque les meilleures reponses forment un cycle, aucun equilibre en stratégies pures n'existe, et la randomisation uniforme constitue le seul equilibre stable. Cette observation motive naturellement l'étude systématique des equilibres de Nash dans les notebooks suivants.
 
 Le notebook suivant, [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb), approfondit la classification topologique des jeux 2x2 en etudiant les 144 configurations possibles des matrices de gains, leurs symetries et les relations entre types de jeux.
 
 
 ### References academiques
 
-- von Neumann, J. (1928). Zur Theorie der Gesellschaftsspiele. Mathematische Annalen 100:295-320.
+- von Neumann, J. (1928). Zur Théorie der Gesellschaftsspiele. Mathematische Annalen 100:295-320.
 - von Neumann, J. & Morgenstern, O. (1944). Theory of Games and Economic Behavior. Princeton University Press.
 - Nash, J.F. (1950). Equilibrium Points in N-Person Games. Proceedings of the National Academy of Sciences 36(1):48-49.
 - Nash, J.F. (1951). Non-Cooperative Games. Annals of Mathematics 54(2):286-295.
 
-",,,,,,,,5a803ffba17a2c58,,,,,,,
+",,,,,,,,89a7cc52602f0e2c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa3557a1,markdown,fr,1f0f3a80d0f8fad9,"> **Lien avec la formalisation Lean** : Les concepts de ce notebook — jeu en forme normale, stratégies pures et mixtes, équilibre de Nash — sont formalisés dans le notebook compagnon [GT-2b-Lean-Definitions](GameTheory-2b-Lean-Definitions.ipynb) (46 cellules, kernel Lean 4). On y trouve les structures `NormalFormGame`, `FiniteGame`, `Game2x2`, les types `PureStrategy`, `MixedStrategy`, le simplexe standard, et la définition `isNashEquilibrium` pour jeux 2×2, le tout construit interactivement depuis zéro (sans import Mathlib). Le Dilemme du Prisonnier, la Bataille des Sexes et le jeu du Poulet y sont prouvés comme équilibres de Nash en stratégies pures.",,,,,,,,1f0f3a80d0f8fad9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,cbd1ee05,markdown,fr,9f6bc700164d9bde,"---
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,cbd1ee05,markdown,fr,41f78b2f89f32220,"---
 
-**Notebook precedent**: [GameTheory-1-Setup](GameTheory-1-Setup.ipynb)  
-**Notebook suivant**: [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb)",,,,,,,,9f6bc700164d9bde,,,,,,,
+**Notebook précédent**: [GameTheory-1-Setup](GameTheory-1-Setup.ipynb)  
+**Notebook suivant**: [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb)",,,,,,,,41f78b2f89f32220,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2b-Lean-Definitions.ipynb,84ba1c43,markdown,fr,1b2189d0c5b855e8,"# GameTheory 2b - Formalisation Lean : Definitions de Base
 
 **Navigation** : [<< 2-NormalForm (track principal)](GameTheory-2-NormalForm.ipynb)) | [Index](README.md)
