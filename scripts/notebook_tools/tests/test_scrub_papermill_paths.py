@@ -498,3 +498,75 @@ def test_scrub_outputs_repo_regex_does_not_span_newlines(tmp_path):
     assert out_text.count("proj") == 2
     # source cell byte-identical
     assert json.loads(after)["cells"][0]["source"] == ["show()"]
+
+
+# ---------------------------------------------------------------------------
+# CLI contract: --apply accepts a LIST of paths (the pre-commit-hook wiring).
+# pre-commit runs `... scrub_papermill_paths.py --apply <file1> <file2> ...`
+# with pass_filenames: true, so the tool must fix every staged notebook in a
+# single invocation, not just the first. tmp_path is typically on a different
+# Windows drive than the repo, which also exercises the cross-drive relpath
+# guard (_display) in main().
+# ---------------------------------------------------------------------------
+
+import subprocess
+
+_SCRIPT = str(Path(__file__).resolve().parent.parent / "scrub_papermill_paths.py")
+
+
+def _write_leaked(path: Path, name: str) -> Path:
+    absp = "C:/Users/jsboi/CoursIA/%s.ipynb" % name
+    return _write_nb(path, pm={"input_path": absp, "output_path": absp})
+
+
+def _pm(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))["metadata"]["papermill"]
+
+
+def test_cli_apply_scrubs_multiple_files_in_one_invocation(tmp_path):
+    a = _write_leaked(tmp_path / "nbA.ipynb", "nbA")
+    b = _write_leaked(tmp_path / "nbB.ipynb", "nbB")
+    r = subprocess.run(
+        [sys.executable, _SCRIPT, "--apply", str(a), str(b)],
+        capture_output=True, text=True,
+    )
+    assert r.returncode == 0, r.stderr
+    # BOTH files scrubbed to their basename, not just the first positional arg.
+    for p, name in ((a, "nbA.ipynb"), (b, "nbB.ipynb")):
+        pm = _pm(p)
+        assert pm["input_path"] == name
+        assert pm["output_path"] == name
+
+
+def test_cli_apply_leaves_clean_notebook_untouched(tmp_path):
+    leaked = _write_leaked(tmp_path / "leaked.ipynb", "leaked")
+    clean = _write_nb(tmp_path / "clean.ipynb", pm={"output_path": "clean.ipynb"})
+    clean_before = clean.read_bytes()
+    r = subprocess.run(
+        [sys.executable, _SCRIPT, "--apply", str(leaked), str(clean)],
+        capture_output=True, text=True,
+    )
+    assert r.returncode == 0, r.stderr
+    assert _pm(leaked)["output_path"] == "leaked.ipynb"
+    # A notebook with no absolute papermill path is a byte-for-byte no-op.
+    assert clean.read_bytes() == clean_before
+
+
+def test_cli_apply_is_idempotent(tmp_path):
+    a = _write_leaked(tmp_path / "nbA.ipynb", "nbA")
+    for _ in range(2):
+        r = subprocess.run(
+            [sys.executable, _SCRIPT, "--apply", str(a)],
+            capture_output=True, text=True,
+        )
+        assert r.returncode == 0, r.stderr
+    assert _pm(a)["output_path"] == "nbA.ipynb"
+
+
+def test_cli_apply_requires_at_least_one_path(tmp_path):
+    r = subprocess.run(
+        [sys.executable, _SCRIPT, "--apply"],
+        capture_output=True, text=True,
+    )
+    assert r.returncode != 0
+    assert "at least one argument" in r.stderr
