@@ -8,19 +8,21 @@ C.1-C.3 (notebooks), D (anti-regression), sota-not-workaround (#3801),
 anti-banner (#6309), secrets-hygiene.
 
 Le seul sous-dossier `scripts/` sans `README.md` avant ce fichier :
-8 detecteurs + 3 validateurs + 2 scanners + 56 scripts utilitaires.
-L'inventaire ci-dessous remplace la lecture en aveugle de 69 fichiers.
+6 detecteurs + 4 validateurs CI + 2 scanners + 51 scripts utilitaires,
++ 2 fichiers `golden_set.yml` / `golden_set.lock.txt` non-`.py` en
+complement. L'inventaire ci-dessous remplace la lecture en aveugle de
+65 fichiers.
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_svg_decimal_commas.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #4970 |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #3801 / #4970 / **#6927** (SVG inline rollout) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
 | **Catalogue & dashboards** | `generate_catalog.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Artefacts catalogue (#2632) + figures README + dashboards |
-| **Audit & regression** | `audit_c1_c3.py`, `regression_scan.py`, `forensic_scan.py`, `diagnose_broken.py` | Audits structurels C.1/C.3 + regression cluster + diagnostics |
+| **Audit & regression** | `audit_c1_c3.py`, `audit_solution_leaks.py`, `regression_scan.py`, `forensic_scan.py`, `diagnose_broken.py` | Audits structurels C.1/C.3 + fuite solution (#4970) + regression cluster + diagnostics |
 | **Extraction & parsing** | `notebook_tools.py`, `notebook_helpers.py`, `notebook_lint.py`, `extract_notebook_skeleton.py`, `count_exercises.py`, `count_notebooks_by_series.py`, `expand_catalog_markers.py`, `golden_set.yml`, `golden_set.lock.txt` | CLI multi-famille + helpers parsing + golden set |
 | **C# / .NET persistence** | `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) |
 | **Leak-fix batch (legacy)** | `_fix_leaks_batch{1,2_probas,3_sudoku,4_remaining}.py`, `restructure_sw_2613.py` | Migration SW (#2613) + de-leak batchs legacy 2026 |
@@ -32,7 +34,7 @@ Tests unitaires dans `scripts/notebook_tools/tests/`.
 
 ## Detecteurs anti-regression (l'axe **DETECT**, jamais scrub)
 
-Les 5 detecteurs implementent le **Prong A** de
+Les 6 detecteurs implementent le **Prong A** de
 [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) :
 detecter les sorties degradees qu'un notebook commit sans avoir execute le
 vrai outil SOTA. Chaque detecteur a un **verdict deterministe** (zero faux
@@ -258,6 +260,12 @@ Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
 
 - `audit_c1_c3.py` : audit structurel conformite C.1 (pas d'erreur
   volontaire) + C.3 (scope re-exec). Verdict par notebook.
+- `audit_solution_leaks.py` : audit fuite solution pedagogique (#362,
+  Planners de-leak #4970/#1344) — 3 patterns detectes : function body
+  leak (>3 lignes logique sous `# Exercice N`), commented-out solution
+  leak (`#` blocks >3 lignes code/data), pre-resolved cells (`# Solution`
+  / `# Exemple resolu` reponse complete). Sortie = JSON par notebook +
+  rapport agrege `audit_solution_leaks_results.json`.
 - `regression_scan.py` : scan cluster des symbols touches dans un diff
   vs reste du depot (regle B.5 anti-regression).
 - `forensic_scan.py` : scanner forensics pour audit automatise (avec
