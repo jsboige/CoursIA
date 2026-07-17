@@ -17,11 +17,19 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
 - **Type** : Projet Lake multi-module (multi `lean_lib`, racine agrégée)
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (cf `lean-toolchain`)
 - **Mathlib** : `v4.31.0-rc1` (cf `lake-manifest.json`)
-- **Compte de `sorry`** : 6 (3 dans `StableMarriage.Lattice` + son
-  sibling `_en` ; énoncés **contrefactuels documentés** dans le module —
-  voir `StableMarriage/Lattice.lean:778-784` — ni eux ni leur traduction
-  anglaise ne sont prouvables, pas un oubli)
-- **Lignes** : 11 099 (FR + EN confondus, modules frères)
+- **Compte de `sorry`** : 2 (1 dans `RepeatedGames/Folk.lean` + son
+  sibling `_en` ; théorème **STRETCH** `folk_theorem_discounted` — Folk
+  theorem en jeux répétés actualisés, preuve Fudenberg-Maskin 1986 sur
+  plusieurs pages, scaffold documenté comme stretch avec sorries comptés
+  per l'Issue [#4880](https://github.com/jsboige/CoursIA/issues/4880) ;
+  placeholder pour le harnais BG prover, pas un oubli). Les énoncés
+  contrefactuels qui occupaient auparavant `StableMarriage/Lattice`
+  (`man_optimality_key_step`, `doctor_optimal_eq_top`) ont été **retirés** :
+  ils étaient FAUX tels qu'énoncés et sont réfutés par
+  `NoCrossCounterexample` (carré latin 3×3, cf `StableMarriage/Lattice.lean`
+  bloc « Man-optimalité, version honnête »). `Lattice` est désormais
+  sorry-free.
+- **Lignes** : ~17 890 (FR + EN confondus, modules frères, hors `lakefile.lean`)
 - **CI** : `lean-social-choice.yml` ne build PAS ce projet (cf
   [lean-merge-discipline.md](../../../.claude/rules/lean-merge-discipline.md) — seul
   `lake build <module>` local fait foi)
@@ -46,8 +54,8 @@ Le track Lean de GameTheory accueillait six projets Lake avant le regroupement :
 
 `game_theory_lean/` est la **cible de regroupement** qui résout ces trois
 points : un seul `lakefile.lean`, une seule toolchain, un seul
-`lake-manifest.json`, et **deux `lean_lib` distincts** (`StableMarriage` +
-`CooperativeGames`) qui cohabitent comme modules siblings sans coupler leurs
+`lake-manifest.json`, et **quatre `lean_lib` distincts** (`StableMarriage` +
+`CooperativeGames` + `SocialChoice` + `RepeatedGames`) qui cohabitent comme modules siblings sans coupler leurs
 preuves ni leurs imports Mathlib. Le squelette a été posé en c.299 (PR #5902)
 puis rempli incrémentalement c.300–c.308 (PRs #5904 → #5940 + suppression du
 doublon `stable_marriage_lean/` via PR #5971).
@@ -70,12 +78,21 @@ package «game_theory_lean» where
   @[default_target]
   lean_lib CooperativeGames where
     globs := #[`CooperativeGames.*]    -- auto-découverte siblings _en
+
+  @[default_target]
+  lean_lib SocialChoice where
+    globs := #[`SocialChoice.*]        -- auto-découverte siblings _en (absorbé c.300, PR #6058)
+
+  @[default_target]
+  lean_lib RepeatedGames where
+    globs := #[`RepeatedGames.*]       -- auto-découverte siblings _en (absorbé c.371 depuis repeated_games_lean)
 ```
 
 Le pattern Lake retenu est celui de `decision_theory_lean/` : plusieurs
 `lean_lib` cohabitent comme **points d'entrée indépendants** vers Mathlib,
 sans coupler les graphes d'imports. Chaque `lean_lib` racine
-(`StableMarriage.lean` / `CooperativeGames.lean` / `GameTheory.lean`)
+(`StableMarriage.lean` / `CooperativeGames.lean` / `SocialChoice.lean` /
+`RepeatedGames.lean`, le tout ré-importé par l'agrégateur `GameTheory.lean`)
 sert d'**agrégateur** qui re-importe ses sous-modules FR ; les siblings
 `_en.lean` restent accessibles via `import <Module>.<SousModule>_en`
 direct.
@@ -277,20 +294,26 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 `game_theory_lean/` est la **cible de regroupement** du track Lean de
 GameTheory (EPIC #4365) : un seul projet Lake multi-`lean_lib` qui
 absorbe les preuves formelles de **mariage stable** (Gale-Shapley,
-treillis des mariages, optimalité) et de **jeux coopératifs** (valeur
-de Shapley, cône de Bondareva-Shapley, décomposition de Möbius), avec
-**11 sous-modules** totalisant 11 099 lignes, **6 sorries documentées**
-(3 paires FR/EN d'énoncés contrefactuels dans `StableMarriage.Lattice`),
-et **convention i18n FR/EN sibling pair** (EPIC #4980). Le pattern Lake
-multi-lib retenu est calqué sur `decision_theory_lean/` (modèle éprouvé
-c.299–c.308), avec deux `lean_lib` distincts (`StableMarriage` +
-`CooperativeGames`) qui cohabitent sans coupler leurs imports Mathlib.
+treillis des mariages, optimalité), de **jeux coopératifs** (valeur
+de Shapley, cône de Bondareva-Shapley, décomposition de Möbius), de
+**choix social** (Arrow, Sen, vote, Vickrey) et de **jeux répétés**
+(folk theorem, grim trigger, actualisation), avec une vingtaine de
+sous-modules totalisant ~17 890 lignes, **2 sorries** (théorème
+**STRETCH** `folk_theorem_discounted` dans `RepeatedGames/Folk` + son
+sibling `_en`, Issue [#4880](https://github.com/jsboige/CoursIA/issues/4880) ;
+les anciens énoncés contrefactuels de `StableMarriage.Lattice` ont été
+retirés car réfutés par `NoCrossCounterexample`), et **convention i18n
+FR/EN sibling pair** (EPIC #4980). Le pattern Lake multi-lib retenu est
+calqué sur `decision_theory_lean/` (modèle éprouvé c.299–c.308), avec
+**quatre `lean_lib` distincts** (`StableMarriage` + `CooperativeGames`
++ `SocialChoice` + `RepeatedGames`) qui cohabitent sans coupler leurs
+imports Mathlib.
 **État actuel** : squelette posé en c.299, remplissage incrémental c.300
 → c.308, doublon `stable_marriage_lean/` supprimé via PR #5971,
-`social_choice_lean/` absorbé sous `SocialChoice/` via PR #6058 ;
-l'absorption restante (`social_choice_lean_peters/`) reste une **PR
-dédiée** trackée séparément et pinnée sur la convergence v4.31.0-rc1
-de Mathlib.
+`social_choice_lean/` absorbé sous `SocialChoice/` via PR #6058,
+`repeated_games_lean/` absorbé sous `RepeatedGames/` (c.371) ; l'absorption
+restante (`social_choice_lean_peters/`) reste une **PR dédiée** trackée
+séparément et pinnée sur la convergence v4.31.0-rc1 de Mathlib.
 
 ### Ce qu'il couvre
 
