@@ -78,11 +78,15 @@ public static class SvgChartHelper
     /// Quand fourni, prime sur <paramref name="color"/> et sur la couleur negative automatique.</para>
     /// <para><paramref name="legend"/> (optionnel) : entrees (couleur, label) rendues dans un encart
     /// de legende SVG inline (haut-droite) pour expliciter le code couleur, sans legende console ASCII.</para>
+    /// <para><paramref name="yMax"/> (optionnel) : force le sommet de l'echelle Y (au lieu de la borne
+    /// calculee automatiquement), pour comparer visuellement des barres entre plusieurs charts sur une
+    /// echelle Y commune. Quand <c>null</c>, l'echelle est calculee comme avant (retro-compatible).</para>
     /// </summary>
     public static SvgChart Bar(string title, string[] categories, double[] values,
         int width = 560, int height = 320, string color = null,
-        string[] colors = null, IReadOnlyList<(string Color, string Label)> legend = null)
-        => new SvgChart(BuildBar(title, categories, values, width, height, color ?? ColorPrimary, colors, legend));
+        string[] colors = null, IReadOnlyList<(string Color, string Label)> legend = null,
+        double? yMax = null)
+        => new SvgChart(BuildBar(title, categories, values, width, height, color ?? ColorPrimary, colors, legend, yMax));
 
     /// <summary>Graphique lineaire (polyline + marqueurs).</summary>
     public static SvgChart Line(string title, string[] categories, double[] values,
@@ -123,12 +127,15 @@ public static class SvgChartHelper
 
     private static string BuildBar(string title, string[] categories, double[] values,
         int w, int h, string color, string[] colors = null,
-        IReadOnlyList<(string Color, string Label)> legend = null)
+        IReadOnlyList<(string Color, string Label)> legend = null, double? yMaxOverride = null)
     {
         int n = AssertPairs(categories, values);
         if (colors != null && colors.Length != n)
             throw new ArgumentException("Bar: colors doit avoir la meme longueur que values (une couleur par barre).");
         var (yMin, yMax) = NiceBounds(values);
+        // Echelle Y commune optionnelle : si un sommet est impose, il prime sur la borne calculee
+        // (permet de comparer des barres entre charts). Chemin null = comportement precedent inchange.
+        if (yMaxOverride.HasValue) yMax = yMaxOverride.Value;
         var layout = new PlotLayout(w, h, yMin, yMax, categories.Length);
 
         var sb = new StringBuilder();
