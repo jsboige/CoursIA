@@ -17,6 +17,7 @@ Exit codes:
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -81,6 +82,20 @@ ARCHIVE_NOTEBOOK_SUFFIX = "_archive.ipynb"
 # notebooks). A cell tagged "raises-exception" (the standard Jupyter/nbval
 # marker for an intentionally-erroring teaching cell) is exempt.
 TEXT_RENDERED_ERROR_SIGNATURES = ('"severity": "error"', '"severity":"error"')
+
+# A display(...) / .Display(...) call MUST emit a rich-render output. In .NET
+# Interactive the HTML formatter is registered for every object, so display()
+# always produces a non-empty text/html when it actually renders (SvgChartHelper
+# emits the <svg> markup as text/html). A display() cell with exec_count set but
+# NO rich-render output = the render silently no-op'd (SvgChartHelper not loaded,
+# dead kernel, or outputs stripped) = STRUCTURAL_ONLY disguised as EXEC_PROVED
+# (#7016: ML-5 cell[22] display(SvgChartHelper.Overlay(...)) at exec_count=9 with
+# outputs:[]). Word-boundary on `display` rejects `mydisplay(`; `.Display` is the
+# C# extension-method form.
+DISPLAY_CALL_RE = re.compile(r'(\bdisplay|\.Display)\s*\(')
+RICH_RENDER_MIMES = frozenset({
+    "text/html", "image/svg+xml", "image/png", "image/jpeg", "image/webp",
+})
 
 
 def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Path]:
@@ -147,6 +162,37 @@ def _is_qc_cloud(rel_path: str, data: dict) -> bool:
     return data.get("metadata", {}).get("qc_reference") is True
 
 
+def _is_dotnet(kernel: str) -> bool:
+    """True for .NET Interactive kernels (.net-csharp/-fsharp/-powershell).
+    These run locally on every worker (#5214) and use display() as the canonical
+    render primitive (SvgChartHelper emits SVG via text/html)."""
+    return kernel.startswith(".net")
+
+
+def _calls_display(source: str) -> bool:
+    """Source calls display(...) (polyglot/IPython lowercase form) or .Display(...)
+    (C# extension form). Word boundary on `display` rejects `mydisplay(`."""
+    return bool(DISPLAY_CALL_RE.search(source))
+
+
+def _has_rich_render_output(outputs: list) -> bool:
+    """True iff outputs contain a display_data entry with a non-empty rich-render
+    MIME (html/svg/image). display() in .NET Interactive always emits one when it
+    actually renders; absence (with exec_count set) means the render silently
+    no-op'd (#7016)."""
+    for out in outputs:
+        if out.get("output_type") != "display_data":
+            continue
+        data = out.get("data", {})
+        for mime, payload in data.items():
+            if mime not in RICH_RENDER_MIMES:
+                continue
+            text = "".join(payload) if isinstance(payload, list) else str(payload)
+            if text.strip():
+                return True
+    return False
+
+
 def validate_notebook(nb_path: Path) -> dict:
     """Validate a single notebook for H.1/H.3 compliance.
 
@@ -191,6 +237,7 @@ def validate_notebook(nb_path: Path) -> dict:
         any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
     )
     saw_null_exec = False  # for the forensic verdict (H.5)
+    saw_display_without_output = False  # display() w/o render = fake EXEC_PROVED (#7016)
 
     for i, cell in enumerate(data.get("cells", [])):
         if cell.get("cell_type") != "code":
@@ -235,6 +282,28 @@ def validate_notebook(nb_path: Path) -> dict:
                     f"cell {i}: execution_count is null "
                     f"(H.3/C.2 violation — {kernel} executes locally; "
                     f"commit execution proof, See #5214)"
+                )
+            elif (
+                _is_dotnet(kernel)
+                and _calls_display(source)
+                and not _has_rich_render_output(cell.get("outputs", []))
+            ):
+                # H.3b (#7016): display(...) / .Display(...) ran (exec_count is
+                # set) but produced no rich-render output (text/html or image/*).
+                # In .NET Interactive display() always emits text/html, so
+                # absence = the render silently no-op'd (SvgChartHelper not
+                # loaded / dead kernel / outputs stripped). This is
+                # STRUCTURAL_ONLY disguised as EXEC_PROVED — exec_count alone is
+                # not proof the render happened. A pure `var x = 5;` cell (no
+                # display call, legitimately empty outputs) is unaffected.
+                saw_display_without_output = True
+                result["passed"] = False
+                result["errors"].append(
+                    f"cell {i}: display(...) call produced no rich-render "
+                    f"output (text/html or image/* with content) — "
+                    f"execution_count is set but the display silently "
+                    f"no-op'd (helper not loaded / dead kernel / outputs "
+                    f"stripped); EXEC_PROVED requires the render, See #7016"
                 )
 
         # H.1 check: no error outputs. Two rendering paths:
@@ -283,7 +352,9 @@ def validate_notebook(nb_path: Path) -> dict:
     # reviewers and bots apply CHANGES_REQUESTED on the second (#5214).
     if allow_null_exec_count:
         result["forensic_verdict"] = "ADVISORY_NON_EXEC"
-    elif saw_null_exec:
+    elif saw_null_exec or saw_display_without_output:
+        # STRUCTURAL_ONLY also covers a display() cell whose exec_count is set
+        # but produced no render — execution not actually proven (#7016).
         result["forensic_verdict"] = "STRUCTURAL_ONLY"
     else:
         result["forensic_verdict"] = "EXEC_PROVED"

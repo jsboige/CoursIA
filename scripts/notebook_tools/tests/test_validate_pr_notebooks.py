@@ -505,3 +505,112 @@ class TestValidateNotebookLeanTextErrors:
         ])
         result = validate_notebook(nb)
         assert result["passed"] is True
+
+
+# ---------------------------------------------------------------------------
+# validate_notebook — display() rich-render check (H.3b, #7016)
+# ---------------------------------------------------------------------------
+
+class TestValidateNotebookDisplayRender:
+    """A display(...) / .Display(...) cell whose execution_count is set but that
+    produced NO rich-render output (html/svg/image) is STRUCTURAL_ONLY disguised
+    as EXEC_PROVED. In .NET Interactive display() always emits text/html, so an
+    empty render means the call silently no-op'd (SvgChartHelper not loaded /
+    dead kernel / outputs stripped).
+
+    Regression guard for #7016: ML-5 cell[22] = display(SvgChartHelper.Overlay(
+    ...)) at execution_count=9 with outputs:[] — the validator returned
+    EXEC_PROVED + passed=True, hiding that the SVG migration never rendered.
+    """
+
+    def test_dotnet_display_empty_outputs_fails_7016(self, tmp_path):
+        """The #7016 case: .NET display(...) cell, exec_count set, outputs:[]."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('display(SvgChartHelper.Overlay("t", "x", "y", new[] {}));',
+                  exec_count=9, outputs=[]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("display(...) call produced no rich-render" in e and "#7016" in e
+                   for e in result["errors"])
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+
+    def test_dotnet_display_with_html_render_passes(self, tmp_path):
+        """display(...) that DID emit a non-empty text/html render is EXEC_PROVED."""
+        html_out = {"output_type": "display_data",
+                    "data": {"text/html": ["<svg xmlns='...'>...</svg>"]}}
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('display(chart);', exec_count=3, outputs=[html_out]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_dotnet_display_with_image_render_passes(self, tmp_path):
+        """An image/* render also satisfies the check."""
+        img_out = {"output_type": "display_data",
+                   "data": {"image/png": ["iVBORw0KGgoAAAANSUhEUg=="]}}
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('img.Display();', exec_count=2, outputs=[img_out]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_dotnet_display_empty_html_mime_fails(self, tmp_path):
+        """display_data present but the text/html payload is empty/whitespace =
+        render produced a broken stub, not a real render. Still STRUCTURAL_ONLY."""
+        empty_html = {"output_type": "display_data", "data": {"text/html": ["  "]}}
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('display(broken);', exec_count=4, outputs=[empty_html]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+
+    def test_dotnet_display_null_exec_count_reports_null_first(self, tmp_path):
+        """display() + execution_count=None: the H.3 null-exec error takes
+        precedence (elif); the verdict is still STRUCTURAL_ONLY, and the error
+        message is the H.3 null-exec one, not the render one."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('display(x);', exec_count=None, outputs=[]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+        assert not any("rich-render" in e for e in result["errors"])
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+
+    def test_python_display_empty_outputs_not_checked(self, tmp_path):
+        """The display-render check is deliberately .NET-scoped (per #7016 body):
+        Python render paths vary (plt.show() emits display_data without a
+        display() call; display(dict) may emit text/plain only), so a python3
+        display(...) cell with empty outputs is NOT flagged here. Documenting the
+        scope boundary so a future generalization is a conscious decision."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('display({"a": 1})', exec_count=1, outputs=[]),
+        ], kernelspec={"name": "python3", "language": "python"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_display_word_boundary_no_false_positive(self, tmp_path):
+        """`mydisplay(` (no word boundary before `display`) and `display_name =`
+        must NOT be treated as a display() call — guards the regex boundary."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('mydisplay(42)\ndisplay_name = "chart"\n', exec_count=1),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_dotnet_pure_assignment_still_exec_proved(self, tmp_path):
+        """Re-affirm: a .NET cell with NO display() call and empty outputs (e.g.
+        `var x = 5;`) stays EXEC_PROVED — execution_count is the proof, a non-
+        empty outputs list is not required for non-display cells (#5214)."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code('var x = 5;', exec_count=1),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
