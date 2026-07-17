@@ -1,0 +1,113 @@
+name: SVG offscreen-flat gate
+
+# Purpose
+# -------
+# Per-PR gate for the §5b residual of the SVG render-suite: a FLAT inline `<svg>`
+# whose DATA geometry (rect/line/circle) is projected far OFF the viewBox
+# (>15% of its height) while the SVG is non-empty, has positive dimensions, and
+# no fr-FR decimal comma -- so it passes the four sibling gates yet renders as an
+# amputated figure (bars/points drawn outside the visible frame). This is the
+# blind spot that `detect_svg_broken_geometry.py` (#7008) explicitly documented
+# and deferred to periodic vision-QA; this gate makes it mechanical and CI-
+# enforceable for the class where it is detectable without false positives:
+# FLAT SVGs (the `SvgChartHelper.cs` .NET canon, absolute coordinates, no
+# translate/matrix/scale group -- exactly where the logY layout/projection
+# mismatch of #7007 originates).
+#
+# This is the 5th mechanical detector of the SVG/figure render-suite:
+#   - svg-decimal-comma-gate.yml   (#6959  detect_svg_decimal_commas.py)
+#   - svg-empty-display-gate.yml   (#6971  detect_svg_empty_display.py)
+#   - svg-broken-geometry-gate.yml (#7008  detect_svg_broken_geometry.py)  [neg-dim]
+#   - degenerate-figure-gate.yml   (#6918  detect_blank_figures.py)        [raster placeholder]
+#   - svg-offscreen-flat-gate.yml  (this   detect_svg_offscreen_flat.py)   [flat offscreen]
+# Each catches a DISTINCT, non-overlapping failure mode. This one complements the
+# negative-dimension check: a POSITIVE-dimension element thrown off-canvas.
+#
+# Detector: scripts/notebook_tools/detect_svg_offscreen_flat.py, run in --check
+# mode (exit 0 clean, exit 1 on defect) on every notebook changed by the PR.
+# Anti-FP: SVGs with translate/matrix/scale group transforms are SKIPPED
+# (deferred to vision); only flat SVGs are bounds-checked, with a conservative
+# 15%-of-height overshoot margin. ZERO false positives verified across the full
+# 944-notebook tree 2026-07-17 (only gross §5b projection escapes flag).
+#
+# Diff-scoped: the gate only inspects notebooks CHANGED by the PR, so a NEW
+# offscreen-flat regression anywhere is blocked immediately while unrelated PRs
+# are unaffected.
+#
+# See EPIC #3801 (registre axe-2 SOTA / Prong-A), issue #6927 (SVG inline
+# rollout), PR #7007 (founding logY layout/projection-mismatch incident).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_svg_offscreen_flat.py'
+      - '.github/workflows/svg-offscreen-flat-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  svg-offscreen-flat:
+    name: "No offscreen-flat SVG in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=SVG offscreen-flat gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=SVG offscreen-flat gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## SVG offscreen-flat gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_svg_offscreen_flat.py --check "$nb" 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=SVG offscreen-flat::$nb commits a flat SVG whose data geometry is projected off the viewBox (>15%) — figure renders amputated on GitHub/nbviewer."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=SVG offscreen-flat gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX (Stop&Repair): rebuild the PlotLayout in the correct space (log10 for logY, cf Overlay(logY:true) #7006) and RE-EXECUTE the .NET kernel. Never scrub/delete the output to hide it (secrets-hygiene rule 6). See PR #7007 / EPIC #6927." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=SVG offscreen-flat gate::Checked $checked changed notebook(s); no offscreen-flat SVG."
