@@ -8014,7 +8014,7 @@ Ce notebook a permis d explorer les aspects essentiels de 02 3 wan video generat
 - Les resultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,1f0abdae3dce9961,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-0,markdown,fr,2d290c4436df2ad8,"# SVD - Stable Video Diffusion (Image-to-Video)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-0,markdown,fr,aa3581fc88fdcf6d,"# SVD - Stable Video Diffusion (Image-to-Video)
 
 **Module :** 02-Video-Advanced  
 **Niveau :** Intermediaire  
@@ -8038,7 +8038,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-0,m
 - Notebooks 02-1 a 02-3 completes pour comparaison
 - Packages : `diffusers>=0.30`, `transformers`, `torch`, `accelerate`, `imageio`, `imageio-ffmpeg`, `Pillow`
 
-**Navigation :** [<< 02-3](02-3-Wan-Video-Generation.ipynb) | [Index](../README.md) | [Suivant >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)",,,,,,,,2d290c4436df2ad8,,,,,,,
+**Navigation :** [<< 02-3](02-3-Wan-Video-Generation.ipynb) | [Index](../README.md) | [02-5 LTX-2 >>](02-5-LTX2-Audiovisual.ipynb)",,,,,,,,aa3581fc88fdcf6d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb,cell-1,code,fr,744bc8d40dd6ca41,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -10116,7 +10116,7 @@ Une fois **un** des deux debloque, basculer `run_generation=True` (et choisir `r
 ---
 
 **Navigation :** [<< 02-4 SVD](02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Comparaison multi-modeles >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)",,,,,,,,d89d861e9e3c550e,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-header,markdown,fr,89e3c740fc1e316b,"# Comparaison Multi-Modeles de Generation Video
+MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-header,markdown,fr,1e0998a4df5d31b3,"# Comparaison Multi-Modeles de Generation Video
 
 **Module :** 03-Video-Orchestration  
 **Niveau :** Avance  
@@ -10136,10 +10136,10 @@ MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison
 ## Prerequis
 
 - GPU avec 18+ GB VRAM (RTX 3090 / RTX 4090)
-- Module 02-Advanced complete (notebooks 02-1 a 02-4)
+- Module 02-Advanced complete (notebooks 02-1 a 02-5)
 - Packages : `diffusers>=0.32`, `transformers`, `torch`, `accelerate`, `bitsandbytes`, `imageio`, `imageio-ffmpeg`
 
-**Navigation :** [<< 02-4](../02-Advanced/02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Suivant >>](03-2-Video-Workflow-Orchestration.ipynb)",,,,,,,,89e3c740fc1e316b,,,,,,,
+**Navigation :** [<< 02-5 LTX-2](../02-Advanced/02-5-LTX2-Audiovisual.ipynb) | [Index](../README.md) | [Suivant >>](03-2-Video-Workflow-Orchestration.ipynb)",,,,,,,,1e0998a4df5d31b3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb,cell-params,code,fr,60911a579ea44765,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
