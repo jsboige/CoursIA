@@ -28,9 +28,21 @@ WHISPER_KEY = os.getenv("WHISPER_API_KEY", "")
 
 
 def _normalize_text(text: str) -> str:
-    """Normalize text for comparison: lowercase, strip punctuation, collapse whitespace."""
+    """Normalize text for comparison: lowercase, strip punctuation, collapse whitespace.
+
+    Em-dashes / long dashes are treated as WORD SEPARATORS, not kept as part of a
+    token. Keeping ``-`` in the allowed-character set (the previous behavior) fused
+    ``Défaite--les Citoyens`` into the single token ``défaite--les`` while Whisper
+    transcribes the same span as ``défaite les`` -> every dash-joined span was
+    counted as a substitution, inflating the WER on French dialog text and producing
+    false failures (observed firsthand on audiobook #1028: raw WER 17.24% on a
+    segment whose semantic word match was 32/32 identical).
+    """
     text = text.lower().strip()
-    text = re.sub(r"[^\w\sàâéèêëïîôùûüÿçœæ-]", " ", text)
+    # Turn dash runs (em-dash, en-dash, double hyphen, isolated hyphen between letters)
+    # into spaces BEFORE stripping punctuation, so they split tokens instead of fusing.
+    text = re.sub(r"[—–‒―]|--+", " ", text)
+    text = re.sub(r"[^\w\sàâéèêëïîôùûüÿçœæ]", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
