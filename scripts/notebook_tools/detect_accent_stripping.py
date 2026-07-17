@@ -181,6 +181,91 @@ ACCENT_PAIRS = {
     "role": "rôle",
     "roles": "rôles",
     "gite": "gîte",
+    # --- Extension c.589 (#2876, PR accent-dict-extension) ---
+    # Conservative pairs whose stripped form is NEITHER a valid FR word NOR a
+    # common EN word (so no FP in bilingual/code context). The -tion/-ence
+    # anglicisms (generation/evaluation/implementation/reference/sequence/
+    # definition/integration/prediction/regression/representation/...) are
+    # deliberately EXCLUDED: their stripped form is a common EN word -> FP risk
+    # in EN prose or code identifiers (the silent-corruption class flagged by
+    # po-2025 c.591). Verified >=3 notebooks / >=5 hits each across the corpus.
+    # strategie (not FR strategie, not EN strategy)
+    "strategie": "stratégie",
+    "strategies": "stratégies",
+    "strategique": "stratégique",
+    "strategiques": "stratégiques",
+    # controle (not FR controle, not EN control)
+    "controle": "contrôle",
+    "controles": "contrôles",
+    "controler": "contrôler",
+    # definir family (not FR, not EN define)
+    "definir": "définir",
+    "definit": "définit",
+    "defini": "défini",
+    "definie": "définie",
+    "definis": "définis",
+    "definies": "définies",
+    # mecanisme (not FR, not EN mechanism)
+    "mecanisme": "mécanisme",
+    "mecanismes": "mécanismes",
+    # criteres (not FR criteres, not EN criteria)
+    "criteres": "critères",
+    # creez/creee/creent (conjugated creer forms missing from existing cree/cres)
+    "creez": "créez",
+    "creee": "créée",
+    "creees": "créées",
+    "creent": "créent",
+    # operateur (not FR, not EN operator)
+    "operateur": "opérateur",
+    "operateurs": "opérateurs",
+    # theorique (not FR, not EN theoretic)
+    "theorique": "théorique",
+    "theoriques": "théoriques",
+    # caracteristique (not FR, not EN characteristic)
+    "caracteristique": "caractéristique",
+    "caracteristiques": "caractéristiques",
+    # numerique (not FR, not EN numeric)
+    "numerique": "numérique",
+    "numeriques": "numériques",
+    # systematique (not FR, not EN systematic)
+    "systematique": "systématique",
+    "systematiques": "systématiques",
+    # metaheuristique (not FR, not EN)
+    "metaheuristique": "métaheuristique",
+    "metaheuristiques": "métaheuristiques",
+    # genetique (not FR, not EN genetic)
+    "genetique": "génétique",
+    "genetiques": "génétiques",
+    # hierarchie (not FR, not EN hierarchy)
+    "hierarchie": "hiérarchie",
+    "hierarchies": "hiérarchies",
+    "hierarchique": "hiérarchique",
+    "hierarchiques": "hiérarchiques",
+    # semantique (not FR, not EN semantic)
+    "semantique": "sémantique",
+    "semantiques": "sémantiques",
+    # specifique (not FR, not EN specific)
+    "specifique": "spécifique",
+    "specifiques": "spécifiques",
+    # interet (not FR, not EN interest)
+    "interet": "intérêt",
+    "interets": "intérêts",
+    # precis (not FR precis, not EN precise)
+    "precis": "précis",
+    "precisement": "précisément",
+    # egalement (not FR egalement, not EN)
+    "egalement": "également",
+    # sequentiel (not FR, not EN sequential)
+    "sequentiel": "séquentiel",
+    "sequentielle": "séquentielle",
+    "sequentielles": "séquentielles",
+    "sequentiels": "séquentiels",
+    # deterministe (not FR, not EN deterministic)
+    "deterministe": "déterministe",
+    "deterministes": "déterministes",
+    # regle (not FR regle, not EN rule)
+    "regle": "règle",
+    "regles": "règles",
 }
 
 
