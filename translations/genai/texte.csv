@@ -2,9 +2,9 @@ notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,tex
 MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb,0fc96fdf,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb,1b3337d8,markdown,fr,7fc25f7f525b0d17,"# 1. Introduction a l'IA generative avec l'API OpenAI
+MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb,1b3337d8,markdown,fr,c407d144bb5d7ecd,"# 1. Introduction a l'IA generative avec l'API OpenAI
 
-**Navigation** : [Index](../../README.md) | [Suivant >>](2_PromptEngineering.ipynb)
+**Navigation** : [Index](README.md) | [Suivant >>](2_PromptEngineering.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -19,7 +19,7 @@ A la fin de ce notebook, vous saurez :
 - Cle API OpenAI configuree (fichier `.env`)
 - Connaissance de base de Python
 
-### Duree estimee : 50 minutes",,,,,,,,7fc25f7f525b0d17,,,,,,,
+### Duree estimee : 50 minutes",,,,,,,,c407d144bb5d7ecd,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/1_OpenAI_Intro.ipynb,902813b9,markdown,fr,5f23a1ba4937a574,"## Plan global du Notebook
 
 1. **Introduction Générale**  
@@ -682,7 +682,7 @@ Nous avons couvert les points suivants :
 ---
 
 Merci d'avoir suivi cette introduction au monde de l'IA générative !",,,,,,,,8eb400a04134c47b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,24f3d574,markdown,fr,7549f353204270b3,"**Navigation** : [Index](../../README.md) | [<< Precedent](9_Production_Patterns.ipynb)
+MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,24f3d574,markdown,fr,7785128946ed2541,"**Navigation** : [Index](README.md) | [<< Precedent](9_Production_Patterns.ipynb) | [Suivant >>](11_Quantization.ipynb)
 
 # 10. Hébergement Local de Modèles Génératifs
 
@@ -748,7 +748,7 @@ On installe/importe ce qui est nécessaire :
 > **Reference** : vLLM et son kernel `PagedAttention` sont decrits par Kwon et al.
 > 2023, *Efficient Memory Management for Large Language Model Serving with
 > PagedAttention*, SOSP'23, arXiv:2309.06180.
-",,,,,,,,7549f353204270b3,,,,,,,
+",,,,,,,,7785128946ed2541,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,d21f5ebb,markdown,fr,525d2e5d3463210d,"## Concepts Clés
 
 ### vLLM (Very Large Language Models)
@@ -3133,9 +3133,9 @@ BATCH_MODE = False
 MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb,ca3c45ce,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb,b2c3d4e5,markdown,fr,ec6a58f9f16228ca,"# 11. Quantization des LLMs
+MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb,b2c3d4e5,markdown,fr,f9511855047a465d,"# 11. Quantization des LLMs
 
-**Navigation** : [<< 10. Hebergement Local](10_LocalLlama.ipynb) | [Index](../../README.md)
+**Navigation** : [Index](README.md) | [<< Precedent](10_LocalLlama.ipynb) | [Suivant >>](12_Test_Time_Scaling.ipynb)
 
 **Duree estimee** : 60 minutes
 
@@ -3159,7 +3159,7 @@ A la fin de ce notebook, vous saurez :
 Dans le notebook precedent, nous avons deploye des LLMs localement avec vLLM.
 Vous avez peut-etre remarque que nos modeles etaient en **AWQ 4-bit** ou **GPTQ 4-bit**.
 Ce notebook explique **pourquoi** et **comment** on passe d'un modele BF16 de 16 GB
-a un modele 4-bit de 5 GB -- et pourquoi cela **accelere** l'inference au lieu de la ralentir.",,,,,,,,ec6a58f9f16228ca,,,,,,,
+a un modele 4-bit de 5 GB -- et pourquoi cela **accelere** l'inference au lieu de la ralentir.",,,,,,,,f9511855047a465d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb,c3d4e5f6,markdown,fr,8a92f272a6ba8c54,"## Concepts cles
 
 ### Pourquoi quantifier ?
@@ -4218,9 +4218,9 @@ Explorez les couches d'un modele VL :
 MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,10ffd100,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,c0abf549,markdown,fr,eb75325a5da93dcd,"# 12 - Test-Time Scaling : le second axe de mise a l'echelle
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,c0abf549,markdown,fr,934295270c676fbb,"# 12 - Test-Time Scaling : le second axe de mise a l'echelle
 
-**Navigation** : [Index](README.md) | [<< Precedent](11_Quantization.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](11_Quantization.ipynb) | [Suivant >>](13_Agentic_Orchestration.ipynb)
 
 Jusqu'ici nous avons mis a l'echelle les LLM en augmentant leur **taille** (parametres, donnees d'entrainement) : c'est le **size-scaling**. Snell et al. (2024), dans *Scaling LLM Test-Time Compute Optimally*, ont formalise un **second axe** : depenser davantage de **calcul a l'inference** (test-time compute). Au lieu d'un seul appel direct, on orchestre plusieurs appels : Best-of-N, Reflexion, Tree-of-Thoughts...
 
@@ -4232,7 +4232,7 @@ La performance d'un LLM n'est pas une fonction de sa seule taille. Elle se negoc
 
 **Note importante** : `gpt-4o-mini` est desormais **deprécie** (2026). Nous comparons :
 - **Llama-3.3-70b** (modele bon marche, non-raisonnant) ;
-- **gpt-5-nano** (modele raisonnant, plus couteux, qui consomme des tokens de raisonnement invisibles).",,,,,,,,eb75325a5da93dcd,,,,,,,
+- **gpt-5-nano** (modele raisonnant, plus couteux, qui consomme des tokens de raisonnement invisibles).",,,,,,,,934295270c676fbb,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,ea659be3,markdown,fr,20552bf4e3a9b3f1,"## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
@@ -4917,7 +4917,7 @@ Nous avons reconstruit les **4 moteurs** de test-time scaling et mesure leurs co
 - Courbes de scaling test-time (Snell 2024) ;
 - Test-time scaling vs modeles raisonnants natifs (gpt-5-nano) ;
 - Encapsulation des moteurs en plugin Semantic Kernel.",,,,,,,,8a69f9ab13784dc1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,92731b56f2c55b5d,"## References
+MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,f657b609fd5dab64,"## References
 
 - **Snell, Charikar, Xu (2024)** - *Scaling LLM Test-Time Compute Optimally*. Formalise le second axe de scaling (calcul a l'inference).
 - **Wang et al. (2022)** - *Self-Consistency Improves Chain of Thought Reasoning*. Best-of-N par vote.
@@ -4928,8 +4928,10 @@ MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb,700d2c98,markdown,fr,92
 
 ---
 
-**Navigation** : [Index](README.md) | [<< Precedent](11_Quantization.ipynb)",,,,,,,,92731b56f2c55b5d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb,37079b89,markdown,fr,db18120f037cb4f3,"# 13. Orchestration agentique du test-time scaling
+**Navigation** : [Index](README.md) | [<< Precedent](11_Quantization.ipynb) | [Suivant >>](13_Agentic_Orchestration.ipynb)",,,,,,,,f657b609fd5dab64,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb,37079b89,markdown,fr,6814aefd7630adac,"# 13. Orchestration agentique du test-time scaling
+
+**Navigation** : [Index](README.md) | [<< Precedent](12_Test_Time_Scaling.ipynb) | [Suivant >>](14_Persistent_Memory.ipynb)
 
 **Pont entre NB-12 (les quatre moteurs) et NB-04 (Function Calling) / NB-09 (Production).**
 
@@ -4952,7 +4954,7 @@ qui, via l'**API de function calling** (pont NB-04), choisit lui-meme quel moteu
 2. Definition des **outils** (schemas JSON pour le function calling).
 3. La **boucle agentique** : le routeur raisonne, choisit un outil, l'execute, observe.
 4. Demonstration sur trois types de taches (raisonnement, echantillonnage, combinatoire).
-5. Pont production (NB-09) : garde-fou de cout, fallback, retris.",,,,,,,,db18120f037cb4f3,,,,,,,
+5. Pont production (NB-09) : garde-fou de cout, fallback, retris.",,,,,,,,6814aefd7630adac,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb,b6f850d7,markdown,fr,058bd60ddabf5168,"## 0. Setup — meme infrastructure que NB-12
 
 On reutilise le client **OpenRouter** et le chargeur `.env` robuste de NB-12
@@ -5426,7 +5428,9 @@ pilote du code"".
 
 **References :** ICR repo ; Snell et al. 2024 ; Yao et al. 2023 (ToT) ; Wang et al. 2022
 (Self-Consistency) ; Shinn et al. 2023 (Reflexion). Anchors : NB-04, NB-05, NB-09, NB-12.",,,,,,,,c0960e9d553cbaeb,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,3cd4db0c,markdown,fr,f36a801546cbe994,"# 14. Memoire persistante pour le test-time scaling
+MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,3cd4db0c,markdown,fr,d36b320028e71caa,"# 14. Memoire persistante pour le test-time scaling
+
+**Navigation** : [Index](README.md) | [<< Precedent](13_Agentic_Orchestration.ipynb) | [Suivant >>](15_Tree_of_Thoughts_Search.ipynb)
 
 **Phase 2 de l'epic #2926** — pont entre **NB-12** (moteur Reflexion, memoire *in-memory*),
 **NB-13** (routeur agentique) et **NB-05** (RAG : embeddings + vector store).
@@ -5454,7 +5458,7 @@ que ce notebook implemente (Phase 2 de #2926).
 3. **Memoire vectorielle persistante** (stockage JSON cross-run + retrieval cosinus top-k).
 4. **Reflexion avec memoire** : injection des lecons retrocede.
 5. Demonstration : la memoire accelere un probleme similaire (transfer de lecon).
-6. Pont production (NB-05 embeddings, NB-09 cout) + limites honnetes.",,,,,,,,f36a801546cbe994,,,,,,,
+6. Pont production (NB-05 embeddings, NB-09 cout) + limites honnetes.",,,,,,,,d36b320028e71caa,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,206cb565,markdown,fr,310d575616c0129e,"## 0. Setup — meme infrastructure que NB-12 / NB-13
 
 Client **OpenRouter** (claudish-proof) + chargeur `.env` robuste. La couche memoire
@@ -5880,7 +5884,9 @@ injectees dans le generateur quand un probleme apparente se presente.
 
 **References :** ICR repo ; Shinn et al. 2023 (Reflexion) ; Snell et al. 2024 (scaling) ;
 NB-05 (RAG embeddings), NB-12 (moteurs), NB-13 (routeur agentique).",,,,,,,,2a1ecdd86d678e19,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,122864fa,markdown,fr,e63b806a27cf2bf3,"# 15. Tree-of-Thoughts sur de vrais problemes de recherche
+MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,122864fa,markdown,fr,380ba70d7c171592,"# 15. Tree-of-Thoughts sur de vrais problemes de recherche
+
+**Navigation** : [Index](README.md) | [<< Precedent](14_Persistent_Memory.ipynb) | [Suivant >>](16_Scaling_Test_Time_Compute.ipynb)
 
 **Phase 3 de l'epic #2926** — pont entre **NB-12** (ToT demontre sur le 24-game), **NB-13/NB-14**
 (routeur + memoire agentiques) et les series **Search (CSP)** / **Sudoku**.
@@ -5917,7 +5923,7 @@ il hallucine des chiffres, viole la regle ""chaque lettre = un chiffre distinct"
 1. **Single-shot** : le LLM resout un cryptarithme en un appel -> on mesure sa fiabilite (basse).
 2. **ToT** : recherche structuree (DFS colonne par colonne + retenue) -> solution **garantie**.
 3. **Comparaison** ToT vs single-shot (le livrable Phase 3).
-4. **Pont** Search/Sudoku : c'est du CSP, les LLM sont faibles sur les CSP exacts -> solveurs formels.",,,,,,,,e63b806a27cf2bf3,,,,,,,
+4. **Pont** Search/Sudoku : c'est du CSP, les LLM sont faibles sur les CSP exacts -> solveurs formels.",,,,,,,,380ba70d7c171592,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,de8fabd7,markdown,fr,a53ce74e28ce60fa,## 0. Setup — meme infrastructure que NB-12 a NB-14,,,,,,,,a53ce74e28ce60fa,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,c2afe112,code,fr,cc2e6982bce7b821,"%pip install -q openai python-dotenv
 
@@ -6224,7 +6230,9 @@ de la recherche structuree : sur un CSP exact, ToT **garantit** la solution, le 
 
 **Ressources internes :** series Search (CSP) / Sudoku de ce depot ; NB-12 (moteurs ToT
 LLM-guide), NB-13 (routeur), NB-14 (memoire).",,,,,,,,1b4d4724b9293824,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,eee91f89,markdown,fr,547947e79cdc56c2,"# 16. Scaling du test-time compute (Snell 2024)
+MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,eee91f89,markdown,fr,5ce145be6b301444,"# 16. Scaling du test-time compute (Snell 2024)
+
+**Navigation** : [Index](README.md) | [<< Precedent](15_Tree_of_Thoughts_Search.ipynb) | [Suivant >>](17_Native_Reasoning_vs_Scaling.ipynb)
 
 **Phase 4 de l'epic #2926** — suite de **NB-12** (moteurs), **NB-13** (routeur), **NB-14**
 (memoire), **NB-15** (ToT sur CSP).
@@ -6254,7 +6262,7 @@ maximise le taux de succes depend de la difficulte.
    asymptotiques ; ce notebook est **illustratif**, pas une replication a l'echelle.
 
 > Pont Phase 5 : comparer a un **modele a raisonnement natif** (le raisonnement est alors
-> ""interne"" au modele, compute decale dans les tokens de pensée).",,,,,,,,547947e79cdc56c2,,,,,,,
+> ""interne"" au modele, compute decale dans les tokens de pensée).",,,,,,,,5ce145be6b301444,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,60591a16,markdown,fr,f2863b4ed4118fd2,## 0. Setup — meme infrastructure que NB-12 a NB-15,,,,,,,,f2863b4ed4118fd2,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,556b8f60,code,fr,46c984bb4666490c,"%pip install -q openai python-dotenv matplotlib numpy
 
@@ -6558,7 +6566,9 @@ transferable a un plus grand modele et une suite plus difficile.
 **References :** Snell, Lee, Xu, Kumar, *""Scaling LLM Test-Time Compute Optimally""* (2024) ;
 Chen et al., *""Evaluating Large Language Models Trained on Code""* (HumanEval, pass@k, 2021) ;
 Yao et al., *""Tree of Thoughts""* (2023) ; NB-12/13/14/15 de cette serie.",,,,,,,,35d2306cf935c18f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,9a460dd7,markdown,fr,58a4b487b0de8cb5,"# 17. Modeles a raisonnement natif vs scaling du test-time compute
+MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,9a460dd7,markdown,fr,fed5c2147b7046ba,"# 17. Modeles a raisonnement natif vs scaling du test-time compute
+
+**Navigation** : [Index](README.md) | [<< Precedent](16_Scaling_Test_Time_Compute.ipynb) | [Suivant >>](18_Semantic_Kernel_Plugins.ipynb)
 
 **Phase 5 de l'epic #2926** — suite de **NB-12** (moteurs), **NB-16** (scaling pass@k).
 
@@ -6584,7 +6594,7 @@ on compare, sur la meme suite graduee, le **BoN** d'un modele standard (llama-3.
 2. **Baseline non-reasoning** : BoN pass@k sur llama-3.3-70b, **cout en tokens cumules**.
 3. **Raisonnement natif** : single-shot deepseek-r1, cout = prompt + completion + **reasoning tokens**.
 4. **Comparaison cost-normalisee** : courbe tokens-vs-pass du BoN + point du modele a raisonnement.
-5. Limites honnetes (G.2) + pont Phase 6 (plugin Semantic Kernel).",,,,,,,,58a4b487b0de8cb5,,,,,,,
+5. Limites honnetes (G.2) + pont Phase 6 (plugin Semantic Kernel).",,,,,,,,fed5c2147b7046ba,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,3ef08a82,markdown,fr,c70be7ae3e92d345,## 0. Setup,,,,,,,,c70be7ae3e92d345,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,0e45f46d,code,fr,98edc402d9a00c9f,"%pip install -q openai python-dotenv matplotlib numpy
 
@@ -6890,7 +6900,9 @@ lire avec prudence et l'etendre (exercices 1-3) avant de generaliser.
 
 **References :** Snell et al. 2024 (test-time compute scaling) ; NB-12 (moteurs), NB-16 (pass@k
 scaling), NB-13/14/15 (routeur, memoire, ToT-CSP) de cette serie.",,,,,,,,42a568087d12192c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,f1fed449,markdown,fr,b9db6083d9420eb4,"# 18. Plugins Semantic Kernel pour le test-time scaling
+MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,f1fed449,markdown,fr,2b4a9634c430c51f,"# 18. Plugins Semantic Kernel pour le test-time scaling
+
+**Navigation** : [Index](README.md) | [<< Precedent](17_Native_Reasoning_vs_Scaling.ipynb) | [Suivant >>](19_OWUI_Orchestration.ipynb)
 
 **Phase 6 (finale) de l'epic #2926** — suite de **NB-12** (moteurs) a **NB-17** (raisonnement natif).
 Ce notebook **clot #2926** en exposant les moteurs de test-time scaling (BoN, Reflexion, routeur)
@@ -6916,7 +6928,7 @@ exposer en **plugins SK** les rend :
 2. Plugin **BoN** (`best_of_n`).
 3. Plugin **Reflexion** (`reflexion` avec verificateur).
 4. Plugin **Routeur** (compose : invoque BoN ou Reflexion selon la strategie).
-5. Composition via le kernel + pont auto-function-calling (exercice) vers la serie SemanticKernel.",,,,,,,,b9db6083d9420eb4,,,,,,,
+5. Composition via le kernel + pont auto-function-calling (exercice) vers la serie SemanticKernel.",,,,,,,,2b4a9634c430c51f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,2b94a092,markdown,fr,17ebe68aa3f2d8d8,"## 0. Setup — Kernel Semantic Kernel + service OpenRouter
 
 Semantic Kernel (Python, v1.x) se connecte a OpenAI. On le branche sur **OpenRouter** (comme
@@ -7170,9 +7182,9 @@ plugins SK (NB-18, ce notebook).
 
 **References :** Semantic Kernel (Microsoft) — serie `SemanticKernel/` du depot ; Snell et al. 2024
 (test-time scaling) ; Yao et al. 2023 (Tree of Thoughts) ; NB-12 a NB-17 de cette serie.",,,,,,,,e2366c414795f393,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,043cdbc6,markdown,fr,d9c4ff20ee6bf89a,"# 19. Orchestration et tâches planifiées avec Open WebUI v0.9.0
+MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,043cdbc6,markdown,fr,285bab9b911bfd00,"# 19. Orchestration et tâches planifiées avec Open WebUI v0.9.0
 
-**Navigation** : [Index](README.md) | [<< Précédent](18_Semantic_Kernel_Plugins.ipynb)
+**Navigation** : [Index](README.md) | [<< Précédent](18_Semantic_Kernel_Plugins.ipynb) | [Suivant >>](20_OWUI_Native_API.ipynb)
 
 Le notebook **`13_Agentic_Orchestration.ipynb`** montrait comment un **agent planificateur**
 choisit, en code, quel moteur de test-time scaling invoquer. Ce notebook **NB-19** ouvre une
@@ -7208,7 +7220,7 @@ donnent les frameworks code-level (**LangChain / LangGraph**, **CrewAI**).
   est conçue pour **s'exécuter même sans clé** (skip gracieux documenté, règle C.1).
 
 ### Durée estimée : 60 minutes
-",,,,,,,,d9c4ff20ee6bf89a,,,,,,,
+",,,,,,,,285bab9b911bfd00,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,2cb3e87a,markdown,fr,65a78403fe176159,"## 0. Setup - infrastructure et convention d'exécution
 
 On installe trois dépendances légères : `python-dateutil` (manipulation RRULE), `openai`
@@ -7812,7 +7824,7 @@ code - avec un trade-off **facilité vs contrôle fin**.
 - **Phase 3** - croiser avec la serie `GenAI/Playwright-OWUI` qui couvre OWUI sous l'angle
   **tests E2E** (Playwright) : un même use-case teste E2E vient valider l'automation.
 ",,,,,,,,1c0aa5b219b08b95,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,f72fd9b6,markdown,fr,da08f6ad0ac4cb8e,"## Références
+MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,f72fd9b6,markdown,fr,1e14f617240d8296,"## Références
 
 - **Open WebUI - Automations** : https://docs.openwebui.com/features/chat-conversations/chat-features/automations/
 - **Open WebUI - Task Management** : https://docs.openwebui.com/features/chat-conversations/chat-features/task-management/
@@ -7827,10 +7839,10 @@ MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,f72fd9b6,markdown,fr,d
 
 ---
 
-**Navigation** : [Index](README.md) | [<< Précédent](18_Semantic_Kernel_Plugins.ipynb)
-",,,,,,,,da08f6ad0ac4cb8e,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,2a3f26e6,markdown,fr,981680b9a6146268,"# 2. Prompt Engineering : Techniques Avancées
-**Navigation** : [Index](../../README.md) | [<< Precedent](1_OpenAI_Intro.ipynb) | [Suivant >>](3_Structured_Outputs.ipynb)
+**Navigation** : [Index](README.md) | [<< Précédent](18_Semantic_Kernel_Plugins.ipynb) | [Suivant >>](20_OWUI_Native_API.ipynb)
+",,,,,,,,1e14f617240d8296,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,2a3f26e6,markdown,fr,e1506a3ca387d430,"# 2. Prompt Engineering : Techniques Avancées
+**Navigation** : [Index](README.md) | [<< Precedent](1_OpenAI_Intro.ipynb) | [Suivant >>](3_Structured_Outputs.ipynb)
 
 ## Prompt Engineering : Advanced Prompting avec OpenAI
 
@@ -7841,9 +7853,9 @@ Dans ce notebook, nous allons tester différentes techniques avancées de **prom
 - **Self-refine** (ou auto-amélioration)
 
 Nous utiliserons la **nouvelle API** de la bibliothèque `openai` (>=1.0.0) via la classe `OpenAI` et ses méthodes de chat (`client.chat.completions.create`).
-",,,,,,,,981680b9a6146268,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,eee4b75c,markdown,fr,d6325dd1dabd01e2,"
-**Navigation** : [<< Precedent](1_OpenAI_Intro.ipynb) | [Index](../../README.md) | [Suivant >>](3_Structured_Outputs.ipynb)
+",,,,,,,,e1506a3ca387d430,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,eee4b75c,markdown,fr,6e9484bf3614f011,"
+**Navigation** : [<< Precedent](1_OpenAI_Intro.ipynb) | [Index](README.md) | [Suivant >>](3_Structured_Outputs.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -7862,7 +7874,7 @@ A la fin de ce notebook, vous saurez :
 
 ---
 
-## Prompt Engineering : Advanced Prompting avec OpenAI",,,,,,,,d6325dd1dabd01e2,,,,,,,
+## Prompt Engineering : Advanced Prompting avec OpenAI",,,,,,,,6e9484bf3614f011,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,e7e31e04,markdown,fr,792887240d395675,"## Installation des dépendances
 
 Avant de commencer, nous devons installer les bibliothèques Python nécessaires.
@@ -9091,7 +9103,9 @@ MyIA.AI.Notebooks/GenAI/Texte/2_PromptEngineering.ipynb,azmvkdeyp78,code,fr,f2c3
 # print(f""Version initiale: ..."")
 # print(f""Version finale (score {score}): ..."")
 ",,,,,,,,f2c351c9b2026af5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb,title,markdown,fr,864f4aef9bd6fed7,"# 20. OWUI Native API v0.9.6 — introspection REST et surface authentifiee
+MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb,title,markdown,fr,bb9e700e6c555e2a,"# 20. OWUI Native API v0.9.6 — introspection REST et surface authentifiee
+
+**Navigation** : [Index](README.md) | [<< Precedent](19_OWUI_Orchestration.ipynb)
 
 Le notebook [19_OWUI_Orchestration](19_OWUI_Orchestration.ipynb) orchestrait des LLM via l'**endpoint OpenAI-compatible** `POST /api/chat/completions` d'Open WebUI. Cet endpoint est pratique (un SDK `openai` standard suffit) mais il ne couvre qu'une fraction de ce qu'OWUI expose.
 
@@ -9100,7 +9114,7 @@ Ce notebook compagnon explore la **vraie surface API native d'OWUI v0.9.6** : le
 - une **couche publique (sans authentification)** : `GET /health`, `GET /api/version`, `GET /api/config` — assez pour introspecter un deploiement (version, locale, features actives, mode d'auth) ;
 - une **couche authentifiee (Bearer token)** : `GET /api/v1/models`, `GET /api/v1/automations`, `GET /api/v1/tools` — le CRUD natif sur les ressources de la plateforme.
 
-L'objectif pedagogique : apprendre a **decouvrir et interroger une API web** de maniere methodique, en separant ce qui est public de ce qui exige des identifiants — une competence transferable a n'importe quel service REST.",,,,,,,,864f4aef9bd6fed7,,,,,,,
+L'objectif pedagogique : apprendre a **decouvrir et interroger une API web** de maniere methodique, en separant ce qui est public de ce qui exige des identifiants — une competence transferable a n'importe quel service REST.",,,,,,,,bb9e700e6c555e2a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb,setup-md,markdown,fr,ab300d9abc86740e,"## 0. Setup — conventions d'acces
 
 On utilise la bibliotheque standard `urllib` (aucune dependance externe) pour construire des requetes HTTP explicites. L'URL du tenant OWUI est lue depuis l'environnement ; la cle d'API (Bearer) est **optionnelle** ici — sa presence controle simplement si l'on peut franchir la couche authentifiee.
@@ -9297,8 +9311,8 @@ MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb,refs-md,markdown,fr,658ac
 - Notebook frere : `19_OWUI_Orchestration.ipynb` (endpoint OpenAI-compatible, Scheduled Automations, Task Management).
 - RFC 5545 — RRULE (recurrence rules), utilise par les automations OWUI.
 - OWUI v0.9.0 release notes — introduction de Scheduled Automations, Task Management, Calendar.",,,,,,,,658ac96231e37ed4,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb,87b89626,markdown,fr,ee207098a81257aa,"# 3. Structured Outputs : Sorties JSON Garanties
-**Navigation** : [Index](../../README.md) | [<< Precedent](2_PromptEngineering.ipynb) | [Suivant >>](4_Function_Calling.ipynb)
+MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb,87b89626,markdown,fr,e4921849b173134d,"# 3. Structured Outputs : Sorties JSON Garanties
+**Navigation** : [Index](README.md) | [<< Precedent](2_PromptEngineering.ipynb) | [Suivant >>](4_Function_Calling.ipynb)
 
 ## Structured Outputs : Sorties JSON Garanties avec OpenAI
 
@@ -9312,9 +9326,9 @@ Dans ce notebook, nous explorons les **Structured Outputs**, une fonctionnalité
 
 **Prérequis :** Notebook 1 (OpenAI Intro)
 
-**Durée estimée :** 55 minutes",,,,,,,,ee207098a81257aa,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb,f7fea02b,markdown,fr,dca939eac0239558,"
-**Navigation** : [<< Precedent](2_PromptEngineering.ipynb) | [Index](../../README.md) | [Suivant >>](4_Function_Calling.ipynb)
+**Durée estimée :** 55 minutes",,,,,,,,e4921849b173134d,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb,f7fea02b,markdown,fr,5466aa5f3f31b345,"
+**Navigation** : [<< Precedent](2_PromptEngineering.ipynb) | [Index](README.md) | [Suivant >>](4_Function_Calling.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -9333,7 +9347,7 @@ A la fin de ce notebook, vous saurez :
 
 ---
 
-## Structured Outputs : Sorties JSON Garanties avec OpenAI",,,,,,,,dca939eac0239558,,,,,,,
+## Structured Outputs : Sorties JSON Garanties avec OpenAI",,,,,,,,5466aa5f3f31b345,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/3_Structured_Outputs.ipynb,33dfba62,code,fr,2914fb73f49d67ed,"# Verification des dependances (import guards)
 try:
     from openai import OpenAI
@@ -10272,7 +10286,7 @@ Bonus : Ajouter des contraintes Pydantic (ex: `@field_validator`)
 ---
 
 **Prochaine étape :** Notebook 4 - Function Calling et Agents",,,,,,,,0fb1ce5ccbf8f7ae,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb,5b84890e,markdown,fr,d28f66708b957b8d,"**Navigation** : [Index](../../README.md) | [<< Precedent](3_Structured_Outputs.ipynb) | [Suivant >>](5_RAG_Modern.ipynb)
+MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb,5b84890e,markdown,fr,42c393bc85e6edc8,"**Navigation** : [Index](README.md) | [<< Precedent](3_Structured_Outputs.ipynb) | [Suivant >>](5_RAG_Modern.ipynb)
 
 # Function Calling : Connecter les LLMs au Monde Réel
 
@@ -10286,7 +10300,7 @@ Dans ce notebook, nous explorons le **Function Calling** (appel de fonctions), q
 
 **Prérequis :** Notebook 1 (OpenAI Intro), Notebook 3 (Structured Outputs)
 
-**Durée estimée :** 60 minutes",,,,,,,,d28f66708b957b8d,,,,,,,
+**Durée estimée :** 60 minutes",,,,,,,,42c393bc85e6edc8,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb,48290080,code,fr,8871c2302e0bbaa0,"# Verification des dependances (import guards)
 try:
     from openai import OpenAI
@@ -11532,9 +11546,9 @@ MyIA.AI.Notebooks/GenAI/Texte/4_Function_Calling.ipynb,vgvqp2b6vjn,code,fr,e7ae4
 # print(f""Étapes: {result['steps']}"")
 print(""Challenge a completer"")
 ",,,,,,,,e7ae4dc74af66aae,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,1ca3b30f,markdown,fr,84a24d19c9668ba4,"# 5. RAG Modern - Retrieval Augmented Generation
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,1ca3b30f,markdown,fr,0b1c3cd64071dfa3,"# 5. RAG Modern - Retrieval Augmented Generation
 
-**Navigation** : [Index](../README.md) | [<< Precedent](4_Function_Calling.ipynb) | [Suivant >>](6_PDF_Web_Search.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](4_Function_Calling.ipynb) | [Suivant >>](6_PDF_Web_Search.ipynb)
 
 
 **Durée estimée** : 65 minutes
@@ -11562,7 +11576,7 @@ La **RAG** (Retrieval Augmented Generation) permet d'enrichir les réponses d'un
 | Connaissances figées (cutoff date) | Données actualisées en temps réel |
 | Hallucinations fréquentes | Réponses basées sur sources vérifiables |
 | Pas de données privées | Accès à vos documents internes |
-| Contexte limité | Fenêtre étendue via retrieval |",,,,,,,,84a24d19c9668ba4,,,,,,,
+| Contexte limité | Fenêtre étendue via retrieval |",,,,,,,,0b1c3cd64071dfa3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,c034ac9a,markdown,fr,37f210b46aa90130,## Configuration,,,,,,,,37f210b46aa90130,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,5346fbaf,code,fr,8af352a5bbb7745a,"# Dépendances pré-provisionnées (openai, tiktoken, python-dotenv, scikit-learn, numpy, pandas, requests, beautifulsoup4, lxml) : voir GenAI/requirements.txt
 import openai, tiktoken, dotenv, sklearn, numpy, pandas, requests, bs4, lxml
@@ -13190,9 +13204,9 @@ Ce notebook montre:
 
 **Soumission** : PR avec titre ""Challenge #5 - [Votre Nom]"", sujet de la FAQ et exemple de requête
 ",,,,,,,,7b51eae92913823a,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb,9e872efc,markdown,fr,aee0383f5c36a855,"# PDF et Web Search : Sources Documentaires avec OpenAI
+MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb,9e872efc,markdown,fr,add63eb561e6db2a,"# PDF et Web Search : Sources Documentaires avec OpenAI
 
-**Navigation** : [Index](../README.md) | [<< Precedent](5_RAG_Modern.ipynb) | [Suivant >>](7_Code_Interpreter.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](5_RAG_Modern.ipynb) | [Suivant >>](7_Code_Interpreter.ipynb)
 
 
 Ce notebook explore deux fonctionnalités puissantes de l'API OpenAI :
@@ -13206,7 +13220,7 @@ Ce notebook explore deux fonctionnalités puissantes de l'API OpenAI :
 
 **Prérequis :** Notebook 1 (OpenAI Intro)
 
-**Durée estimée :** 50 minutes",,,,,,,,aee0383f5c36a855,,,,,,,
+**Durée estimée :** 50 minutes",,,,,,,,add63eb561e6db2a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb,5393353b,code,fr,3cfdd7e0185d2065,"# Installation des dépendances
 from pathlib import Path
 %pip install openai python-dotenv reportlab pillow -q
@@ -14045,9 +14059,9 @@ MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb,22d53b5a,markdown,fr,3f2a42
 - [Documentation OpenAI - Vision](https://platform.openai.com/docs/guides/vision)
 - [Responses API Reference](https://platform.openai.com/docs/api-reference/responses)
 - [Guide des prix OpenAI](https://openai.com/api/pricing/)",,,,,,,,3f2a425f6931de91,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,77be8d13,markdown,fr,dbed8ac2629461dd,"# Code Interpreter : Exécution de Code avec OpenAI
+MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,77be8d13,markdown,fr,09727b03b657ce31,"# Code Interpreter : Exécution de Code avec OpenAI
 
-**Navigation** : [Index](../README.md) | [<< Precedent](6_PDF_Web_Search.ipynb) | [Suivant >>](8_Reasoning_Models.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](6_PDF_Web_Search.ipynb) | [Suivant >>](8_Reasoning_Models.ipynb)
 
 
 Le **Code Interpreter** est un outil intégré qui permet au modèle d'exécuter du code Python dans un environnement sandbox sécurisé. Il est particulièrement utile pour l'analyse de données, les calculs complexes, et la génération de visualisations.
@@ -14073,7 +14087,7 @@ Le **Code Interpreter** est un outil intégré qui permet au modèle d'exécuter
 > formalisé par Schick et al. 2023, *Toolformer: Language Models Can Teach Themselves
 > to Use Tools*, arXiv:2302.04761. Le Code Interpreter est documenté par OpenAI 2023,
 > *Assistants API — Code Interpreter*, platform.openai.com/docs/assistants/tools/code-interpreter.
-",,,,,,,,dbed8ac2629461dd,,,,,,,
+",,,,,,,,09727b03b657ce31,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/7_Code_Interpreter.ipynb,bf96e167,code,fr,bc0fc46ff9a24765,"%pip install openai python-dotenv pandas matplotlib -q
 from pathlib import Path
 import os
@@ -15137,9 +15151,9 @@ BATCH_MODE = ""true""
 MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb,23382fbb,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb,9e2bcb04,markdown,fr,8462f10f01d9eea4,"# Modèles de Raisonnement : gpt-5-mini
+MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb,9e2bcb04,markdown,fr,a93be825e8da2c9e,"# Modèles de Raisonnement : gpt-5-mini
 
-**Navigation** : [Index](../README.md) | [<< Precedent](7_Code_Interpreter.ipynb) | [Suivant >>](9_Production_Patterns.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](7_Code_Interpreter.ipynb) | [Suivant >>](9_Production_Patterns.ipynb)
 
 
 Les **modèles de raisonnement** représentent une évolution majeure des LLMs. Ils s'appuient sur le **chain-of-thought** (Wei et al., 2022) -- démontrer le raisonnement étape par étape améliore la précision -- et sur l'idée que l'on peut **échanger du temps de calcul contre de la qualité** (Snell et al., 2024). La sortie des modèles de type **o1** (OpenAI, 2024, *Learning to Reason with LLMs*) a institutionnalisé ce paradigme : le modèle produit un raisonnement interne (caché) avant de répondre. Contrairement aux modèles de chat classiques, ils prennent le temps de ""réfléchir"" avant de répondre, ce qui améliore significativement leurs performances sur les tâches complexes.
@@ -15152,7 +15166,7 @@ Les **modèles de raisonnement** représentent une évolution majeure des LLMs. 
 
 **Prérequis :** Notebook 2 (Prompt Engineering)
 
-**Durée estimée :** 60 minutes",,,,,,,,8462f10f01d9eea4,,,,,,,
+**Durée estimée :** 60 minutes",,,,,,,,a93be825e8da2c9e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/8_Reasoning_Models.ipynb,da485373,code,fr,3ed69b0fc7e00751,"from pathlib import Path
 %pip install openai python-dotenv --quiet
 
@@ -16208,9 +16222,9 @@ Cette approche reflète l'évolution de l'API OpenAI où les modèles de raisonn
 MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb,5262fec3,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb,cd8cea6d,markdown,fr,6667f31872529391,"# Patterns de Production : APIs Avancées OpenAI
+MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb,cd8cea6d,markdown,fr,bdcd31191bcfce2d,"# Patterns de Production : APIs Avancées OpenAI
 
-**Navigation** : [Index](../README.md) | [<< Precedent](8_Reasoning_Models.ipynb)
+**Navigation** : [Index](README.md) | [<< Precedent](8_Reasoning_Models.ipynb) | [Suivant >>](10_LocalLlama.ipynb)
 
 
 Ce notebook couvre les fonctionnalités avancées nécessaires pour des applications en production :
@@ -16227,7 +16241,7 @@ Ce notebook couvre les fonctionnalités avancées nécessaires pour des applicat
 
 **Prérequis :** Notebooks 1-4
 
-**Durée estimée :** 70 minutes",,,,,,,,6667f31872529391,,,,,,,
+**Durée estimée :** 70 minutes",,,,,,,,bdcd31191bcfce2d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb,1e533d50,code,fr,c7004ca7ae62eae6,"from pathlib import Path
 %pip install -q openai python-dotenv tenacity
 
