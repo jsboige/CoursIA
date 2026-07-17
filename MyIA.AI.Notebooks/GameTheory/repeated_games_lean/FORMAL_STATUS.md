@@ -1,5 +1,14 @@
 # Repeated Games Lean — Formal Verification Status
 
+> **⚑ Archive — formal status figé à l'absorption.** Depuis la PR [#6146](https://github.com/jsboige/CoursIA/pull/6146)
+> (EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4), les sources (`Stage`,
+> `Discounting`, `GrimTrigger`, `Folk`) ont été absorbées byte-identique dans le home canonique
+> [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/). Ce présent fichier documente
+> l'état **historique** tel qu'il existait ici au moment de l'absorption ; le statut formel **actif**
+> (no-sorry `grim_trigger_sustains_iff`, build Lake) est désormais maintenu depuis le home canonique.
+> Voir [README.md](README.md) (bannière archive) pour le contexte de la coquille archive.
+
+
 **Mise à jour 2026-07-05 (post-#5362)** : les 4 sorries GrimTrigger + le sorry Discounting (`discount_threshold_rewrite`) sont **clos**. État courant vérifié firsthand (line-by-line, docstring-aware) :
 
 - `Stage.lean` : **0 sorry** · `Discounting.lean` (+`_en`) : **0 sorry** · `GrimTrigger.lean` (+`_en`) : **0 sorry** (théorème-phare `grim_trigger_sustains_iff` certified) · `Folk.lean` : **1 sorry STRETCH** (`folk_theorem_discounted` L33, toléré).
