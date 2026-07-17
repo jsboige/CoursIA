@@ -21223,9 +21223,9 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb,conclu
 - Browne, C.B., Powley, E., Whitehouse, D. et al. (2012). A Survey of Monte Carlo Tree Search Methods. IEEE Transactions on Computational Intelligence and AI in Games 4(1):1-43.
 
 ",,,,,,,,d12cb75fa9538af2,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,l1i6cpxssef,markdown,fr,bd1ecd17b885fd1b,"# Search-8-DancingLinks : L'algorithme X et Dancing Links de Knuth
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,l1i6cpxssef,markdown,fr,2e14f92af72873a0,"# Search-8-DancingLinks : L'algorithme X et Dancing Links de Knuth
 
-**Navigation** : [<< Metaheuristiques](Search-11-Metaheuristics.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-9-LinearProgramming.ipynb)
+**Navigation** : [<< MCTS](Search-7-MCTS-And-Beyond.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-9-LinearProgramming.ipynb)
 
 ## L'algorithme X et Dancing Links (DLX)
 
@@ -21252,7 +21252,7 @@ A la fin de ce notebook, vous saurez :
 
 - **Original paper** : Knuth, D. E. (2000). *Dancing Links*. arXiv:cs/0011047
 - **Applications** : Sudoku, N-Queens, Pentominoes, Exact Cover
-- **Notebook connexe** : [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)",,,,,,,,bd1ecd17b885fd1b,,,,,,,
+- **Notebook connexe** : [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)",,,,,,,,2e14f92af72873a0,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ahuwgpl0co,code,fr,fbde0ee781bd1b85,"# Imports
 import sys
 import time
@@ -23026,13 +23026,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,1w8yt0v6t
 - **Notebook Sudoku** : [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb)
 - **Notebook suivant** : [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) - Programmation lineaire
 - **Applications** : [App-11-Picross](../Applications/CSP/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,4e9edc5e652158e9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ly6c9tsgai,markdown,fr,b2ce2024ab45e7a0,"---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,ly6c9tsgai,markdown,fr,a593fcd7ad476145,"---
 
-**Navigation** : [<< Metaheuristiques](Search-11-Metaheuristics.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-9-LinearProgramming.ipynb)
+**Navigation** : [<< MCTS](Search-7-MCTS-And-Beyond.ipynb) | [Index](../README.md) | [Programmation lineaire >>](Search-9-LinearProgramming.ipynb)
 
 **Series connexes** : 
 - [Sudoku-2-DancingLinks-Python](../../Sudoku/Sudoku-2-DancingLinks-Python.ipynb) - Application complete pour Sudoku
-- [Search-App-11-Picross](../Applications/CSP/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,b2ce2024ab45e7a0,,,,,,,
+- [Search-App-11-Picross](../Applications/CSP/App-11-Picross.ipynb) - DLX pour Picross",,,,,,,,a593fcd7ad476145,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb,d1a4b81e,markdown,fr,1f252590ddd1e9f9,"## Conclusion
 
 Ce notebook a presente l'**Algorithme X** de Knuth et les **Dancing Links (DLX)**, la structure de donnees qui le rend efficace pour les problemes de couverture exacte.
