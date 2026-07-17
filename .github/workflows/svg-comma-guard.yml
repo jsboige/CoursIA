@@ -1,0 +1,74 @@
+name: svg-comma-guard
+
+# Durable render-regression guard for the SVG decimal-comma defect in .NET
+# Interactive notebook outputs (code-style.md #6927 canon, secrets-hygiene.md
+# Stop & Repair). On a fr-FR (or any comma-decimal) machine, C# `:F1`/`:F3`/
+# `ToString()` are culture-sensitive and emit `cx="70,0"`. In an SVG coordinate a
+# comma is a TOKEN SEPARATOR, so `cx="70,0"` is parsed as two numbers by Chromium
+# (the GitHub / nbviewer render engine) and the figure renders zigzagged or blank.
+#
+# This defect is INVISIBLE to every existing check: notebook-validation only parses
+# structure, notebook-execution-required only proves the kernel ran, and there is no
+# visual-render gate -- so 20 green checks can sit on top of a broken figure. Only a
+# vision-QA pass (a human or a vision-capable model) or this mechanical detector
+# catches it. This workflow closes the gap by FAILING any PR that commits an SVG
+# output whose coordinates carry decimal commas.
+#
+# The fix is a Stop & Repair source fix, NOT a hand-edit of the committed output:
+# force InvariantCulture in the cell (or reuse the canon SvgChartHelper.cs #6942,
+# whose F() already formats with dots) and RE-EXECUTE the .NET kernel so the
+# committed output carries dot-decimals.
+#
+# Scope: main-repo notebooks only. `actions/checkout@v4` does not initialise
+# submodules, so the detector's rglob over MyIA.AI.Notebooks/ naturally sees no
+# submodule notebooks (their working trees are absent) -- same main-repo-only design
+# as banner-guard.yml. Sibling detector of detect_blank_figures.py (#6918); the
+# detector itself is #6959. Registre #3801 / rollout #6927.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_svg_decimal_commas.py'
+      - '.github/workflows/svg-comma-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_svg_decimal_commas.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: svg-comma-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  svg-comma-scan:
+    name: "SVG decimal-comma guard (main-repo notebooks)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Default checkout does not initialise submodules -- the guard stays
+      # main-repo-only (submodules carry their own CI).
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Fail if any SVG output carries decimal-comma coordinates"
+        run: |
+          if ! python scripts/notebook_tools/detect_svg_decimal_commas.py --check; then
+            echo ""
+            echo "::error::An SVG output was committed with decimal-comma coordinates (e.g. cx=\"70,0\") -- the figure renders zigzagged or blank on GitHub / nbviewer (Chromium parses the comma as a coordinate separator)."
+            echo "Fix (Stop & Repair source fix, NOT a hand-edit of the output):"
+            echo "    force InvariantCulture in the cell (F(double)=v.ToString(\"0.###\", CultureInfo.InvariantCulture))"
+            echo "    or reuse the canon SvgChartHelper.cs (#6942) whose F() already formats with dots,"
+            echo "    then RE-EXECUTE the .NET kernel so the committed output carries dot-decimals."
+            exit 1
+          fi
