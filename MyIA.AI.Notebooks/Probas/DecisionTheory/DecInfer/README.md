@@ -69,6 +69,12 @@ Les loteries comme représentation des choix stochastiques ; les **axiomes de Vo
 
 Paradoxe de Saint-Petersbourg (valeur espérée infinie), fonctions **CARA** et **CRRA**, coefficients Arrow-Pratt (aversion absolue/relative), dominance stochastique (1er et 2nd ordre), équivalent certain et prime de risque. Application : sélection de portefeuille (Livret A vs Fonds vs Actions).
 
+La concavité de la fonction d'utilité — fondement de l'aversion au risque et de l'utilité marginale décroissante — s'illustre par les trois fonctions fondamentales `U(x) = √x`, `U(x) = ln(x)` (toutes deux strictement concaves) et `U(x) = x` (neutre au risque, en référence) tracées côte-à-côte sur la figure de la racine Probas :
+
+![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente, tandis que la linéaire reste constante.](../../assets/readme/probas-utility-functions.png)
+
+*Figure reprise de la racine Probas (MANIFEST c.491 audit G.1, 1/1 ACCURATE). Source originale : [`DecPyMC-2-Utility-Money.ipynb`](../../DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb), cellule 10 « Démonstration numérique : utilité marginale décroissante ». Voir aussi le [README racine Probas § De la distribution à l'utilité](../../README.md#de-la-distribution-à-lutilité--pourquoi-la-courbe-est-concave) pour le cadrage théorique (Pratt 1964, Arrow 1965).*
+
 ### DecInfer-4 : Utilité multi-attributs
 
 **Durée** : 50 min | **Prérequis** : DecInfer-1, DecInfer-3
