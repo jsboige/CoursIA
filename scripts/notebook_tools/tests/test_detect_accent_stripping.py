@@ -297,6 +297,52 @@ class TestAccentPairs:
         leaks = forbidden & set(ACCENT_PAIRS.keys())
         assert not leaks, f"FP-prone words in dictionary: {leaks}"
 
+    def test_extension_c589_pairs_present(self):
+        # PR accent-dict-extension (#2876): 55 conservative pairs added whose
+        # stripped form is neither a valid FR word nor a common EN word.
+        added = {
+            "strategie": "stratégie", "controle": "contrôle",
+            "definir": "définir", "mecanisme": "mécanisme",
+            "criteres": "critères", "operateur": "opérateur",
+            "theorique": "théorique", "caracteristique": "caractéristique",
+            "numerique": "numérique", "systematique": "systématique",
+            "metaheuristique": "métaheuristique", "genetique": "génétique",
+            "hierarchie": "hiérarchie", "semantique": "sémantique",
+            "specifique": "spécifique", "interet": "intérêt",
+            "precis": "précis", "egalement": "également",
+            "sequentiel": "séquentiel", "deterministe": "déterministe",
+            "regle": "règle",
+        }
+        for k, v in added.items():
+            assert k in ACCENT_PAIRS, f"missing extension pair {k!r}"
+            assert ACCENT_PAIRS[k] == v, f"wrong mapping for {k!r}"
+
+    def test_accented_forms_are_idempotent(self):
+        # CRITICAL anti-loop invariant: the accented suggestion MUST NOT itself
+        # match _STRIP_RE (otherwise restoration would re-trigger on the cured
+        # text, looping forever / flagging already-correct prose). Verified
+        # across the WHOLE dictionary, not just the extension.
+        violations = [(k, v) for k, v in ACCENT_PAIRS.items() if _STRIP_RE.search(v)]
+        assert not violations, (
+            f"Accented forms match the strip regex (restoration loop risk): {violations[:5]}"
+        )
+
+    def test_excludes_en_valid_words(self):
+        # PR accent-dict-extension: the -tion/-ence anglicisms whose stripped
+        # form is a common ENGLISH word are deliberately EXCLUDED (FP risk in
+        # EN prose or code identifiers — the silent-corruption class flagged
+        # by po-2025 c.591). They must NOT be in the dictionary.
+        en_valid_risky = {
+            "generation", "evolution", "resolution", "evaluation",
+            "implementation", "reference", "sequence", "definition",
+            "integration", "prediction", "regression", "representation",
+            "optimization", "decomposition", "detection",
+        }
+        leaks = en_valid_risky & set(ACCENT_PAIRS.keys())
+        assert not leaks, (
+            f"EN-valid words leaked into dict (FP risk in bilingual/code context): {leaks}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # main() exit codes
