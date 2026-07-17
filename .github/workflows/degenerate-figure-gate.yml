@@ -1,0 +1,124 @@
+name: Degenerate figure gate
+
+# Purpose
+# -------
+# Per-PR gate for committed image outputs that are DEGENERATE placeholders
+# masquerading as real figures: a 1x1 (or otherwise tiny) `image/png` of a few
+# dozen bytes committed where the cell source builds a real chart
+# (`plt.subplots(...)`, `SvgChartHelper`, matplotlib/plotly). Such an output
+# renders as a blank/white speck on GitHub and nbviewer -- the PR's literal
+# pedagogical goal (a figure that renders) is unmet even though the notebook is
+# well-formed and CI passes. This is the Prong-A defect class of registre #3801
+# (a substitution output committed as if it were the real SOTA tool's output).
+#
+# This gate is the 4th and final mechanical detector of the SVG/figure
+# render-suite, completing:
+#   - svg-decimal-comma-gate.yml   (#6959  detect_svg_decimal_commas.py)
+#   - svg-empty-display-gate.yml   (#6971  detect_svg_empty_display.py)
+#   - svg-broken-geometry-gate.yml (#7008  detect_svg_broken_geometry.py)
+#   - degenerate-figure-gate.yml   (#6918  detect_blank_figures.py)   <- this
+# The comma/empty-display/broken-geometry detectors catch DISTINCT failure
+# modes (comma-zigzag, empty output, off-viewBox/negative-dim geometry); this
+# one catches the degenerate raster placeholder (1x1 / tiny-payload PNG),
+# complementary and non-overlapping.
+#
+# Root cause: a cell that builds a matplotlib/plotly figure can commit a
+# degenerate 1x1 PNG when the plot backend produced no real canvas at exec
+# time -- typically a QuantBook research cell whose figure was fabricated or
+# whose kernel captured an empty display payload, then committed. The FIX is
+# Stop&Repair: re-execute the cell in the REAL environment (QC Cloud research
+# for QuantBook, local kernel for matplotlib) and commit the real figure --
+# never scrub/delete the output to hide it (secrets-hygiene rule 6).
+#
+# Detector: scripts/notebook_tools/detect_blank_figures.py (#6918), run in
+# --check mode (exit 0 clean, exit 1 on defect) on every notebook changed by
+# the PR. Deterministic dimension/size check -- ZERO false positives verified
+# across the full 945-notebook tree 2026-07-17 (only genuine degenerate
+# figures flag; no legit small GenAI image is 1x1/tiny-payload).
+#
+# Diff-scoped (not clean-baseline-absolute): `main` currently carries 8 known
+# degenerate figures in QuantConnect quantbooks (issue #6891, Stop&Repair via
+# QC research kernel pending). Those are GRANDFATHERED -- the gate only
+# inspects notebooks CHANGED by a PR, so the 8 sit dormant until their
+# notebook is next touched, at which point the gate correctly enforces the
+# #6891 fix. Every OTHER PR is unaffected; a NEW degenerate figure anywhere is
+# blocked immediately. This is a ratchet: it stops new Prong-A regressions
+# fleet-wide today and makes the #6891 cleanup enforceable on-touch.
+#
+# See EPIC #3801 (registre axe-2 SOTA / Prong-A), issue #6891 (the 8 QC
+# quantbook degenerate figures), rollout #6927 (SVG inline fleet-wide).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_blank_figures.py'
+      - '.github/workflows/degenerate-figure-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  degenerate-figure:
+    name: "No degenerate figure in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Degenerate figure gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Degenerate figure gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## Degenerate figure gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_blank_figures.py --check "$nb" 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Degenerate figure::$nb commits a degenerate placeholder figure (1x1 / tiny-payload PNG) that renders blank on GitHub/nbviewer."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Degenerate figure gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX (Stop&Repair): re-execute the cell in the REAL environment (QC Cloud research for QuantBook, local kernel for matplotlib) and commit the real figure. Never scrub/delete the output to hide it (secrets-hygiene rule 6). See issue #6891 for the QC quantbook batch." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Degenerate figure gate::Checked $checked changed notebook(s); no degenerate figure."
