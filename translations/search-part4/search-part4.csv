@@ -686,13 +686,17 @@ foreach (var (optName, opt) in optimizers)
 Console.WriteLine();
 Console.WriteLine(""--- Suite terminee : 8 optimiseurs x 3 fonctions, chacune en centre + deplace ---"");
 ",,,,,,,,006a5ba7ec541d9a,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c08,code,fr,e5b8eaf605e8d626,"// Tableau de synthese : le delta (signature du biais) par fonction x optimiseur + moyenne par optimiseur.
-// (rendu Plotly du chart de biais en fin de cellule, technique C548-L2 : formatter HTML integre au kernel, zero NuGet charting)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c08,code,fr,2599e71ee8af8eea,"// Tableau de synthese : le delta (signature du biais) par fonction x optimiseur + moyenne par optimiseur.
+// (Chart de biais en fin de cellule : SVG inline zero-dep via display(HTML(...)), technique C548-L2.
+//  Rend sur GitHub/nbviewer/offline - remplace le CDN-script Plotly (<script src=cdn.plot.ly>
+//  sandboxe par GitHub -> rendu BLANC en consultation statique). Cf #6927 / #3801 Prong-A.)
 using Microsoft.DotNet.Interactive.Formatting;
 using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+using System.Globalization;
+using System.Text;
+// Format invariant (decimal DOT) : critique pour le rendu SVG (comma = separateur de coordonnee
+// -> casse le parse Chromium sur machine fr-FR). Idiome canon SvgChartHelper.cs (#6942).
+string F(double v) => v.ToString(""0.###"", CultureInfo.InvariantCulture);
 
 var functions = rows.Select(r => r.R.Function).Distinct().ToList();
 
@@ -719,26 +723,60 @@ foreach (var g in byOpt)
 // le chart SIGNE montre les deux sens du biais : >0 = tire vers le centre (WOA, Random),
 // <0 = anti-centre (DE, BBPSO). La ligne zero (zeroline) separe les deux regimes.
 {
+    // Barres horizontales SIGNEES en SVG inline : >0 = tire vers le centre (bleu),
+    // <0 = anti-centre (orange). La zeroline (x=0) separe les deux regimes - contrairement
+    // a la barre ASCII (Math.Max(0, mean)) qui masquait les deltas negatifs.
     var ordered = byOpt.OrderByDescending(g => g.Average(x => x.R.Delta)).ToList();
-    var names = ordered.Select(g => g.Key).Select(v => (object)v).ToArray();
-    var means = ordered.Select(g => (object)Math.Round(g.Average(x => x.R.Delta), 3)).ToArray();
-    var colors = ordered.Select(g => g.Average(x => x.R.Delta) >= 0 ? (object)""#2a6dba"" : (object)""#e8743b"").ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""y""] = names, [""x""] = means, [""type""] = ""bar"", [""orientation""] = ""h"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""] = colors },
-                                         [""text""] = means, [""textposition""] = ""auto"" });
-    var layout = ""{\""title\"":{\""text\"":\""Signature de biais moyenne par optimiseur (delta > 0 = centre, < 0 = anti-centre)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Delta moyen (objectif deplace - objectif centre)\""},"" +
-                 ""\""zeroline\"":true,\""zerolinewidth\"":2,\""zerolinecolor\"":\""#444\""},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Optimiseur\""}},"" +
-                 ""\""margin\"":{\""l\"":120,\""r\"":40}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
+    var names = ordered.Select(g => g.Key).ToArray();
+    var means = ordered.Select(g => Math.Round(g.Average(x => x.R.Delta), 3)).ToArray();
+    int n = ordered.Count;
+    int W = 720, marginL = 110, marginR = 70, marginT = 54, marginB = 48;
+    int plotW = W - marginL - marginR;
+    int rowH = 34;
+    int H = marginT + marginB + n * rowH;
+    int plotH = H - marginT - marginB;
+    double absMax = means.Max(mv => Math.Abs(mv)); if (absMax < 1e-9) absMax = 1;
+    double zeroX = marginL + plotW / 2.0;
+    double BarW(double v) => (Math.Abs(v) / absMax) * (plotW / 2.0);
+    double BarX(double v) => v >= 0 ? zeroX : zeroX - BarW(v);
+    double RowY(int i) => marginT + i * rowH + rowH / 2.0;
+
+    var sb = new StringBuilder();
+    sb.Append($""<svg viewBox='0 0 {W} {H}' xmlns='http://www.w3.org/2000/svg' "" +
+              $""font-family='-apple-system,Segoe UI,sans-serif' font-size='12'>"");
+    sb.Append($""<rect width='{W}' height='{H}' fill='white'/>"");
+    sb.Append($""<text x='{W/2}' y='20' text-anchor='middle' font-size='14' font-weight='bold' fill='#333'>"" +
+              $""Signature de biais moyenne par optimiseur</text>"");
+    sb.Append($""<text x='{W/2}' y='38' text-anchor='middle' font-size='11' fill='#666'>"" +
+              $""delta &gt; 0 = centre, &lt; 0 = anti-centre</text>"");
+    // Grille verticale (5 lignes) + labels axe x
+    for (int g = 0; g <= 4; g++)
+    {
+        double v = -absMax + (2 * absMax) * g / 4.0;
+        double gx = marginL + plotW * g / 4.0;
+        bool isZero = Math.Abs(v) < absMax * 1e-6;
+        sb.Append($""<line x1='{F(gx)}' y1='{marginT}' x2='{F(gx)}' y2='{marginT + plotH}' "" +
+                  $""stroke='{(isZero ? ""#444"" : ""#e8e8e8"")}' stroke-width='{(isZero ? 2 : 1)}'/>"");
+        sb.Append($""<text x='{F(gx)}' y='{H - marginB + 16}' text-anchor='middle' fill='#666'>{F(Math.Round(v,2))}</text>"");
+    }
+    sb.Append($""<text x='{W/2}' y='{H - 8}' text-anchor='middle' fill='#555'>Delta moyen (objectif deplace - objectif centre)</text>"");
+    // Barres + labels
+    for (int i = 0; i < n; i++)
+    {
+        double ymid = RowY(i);
+        double bw = BarW(means[i]);
+        double bx = BarX(means[i]);
+        string color = means[i] >= 0 ? ""#2a6dba"" : ""#e8743b"";
+        sb.Append($""<rect x='{F(bx)}' y='{F(ymid - 11)}' width='{F(bw)}' height='22' fill='{color}' rx='2'/>"");
+        bool rightSide = means[i] >= 0;
+        double lx = rightSide ? bx + bw + 5 : bx - 5;
+        string anchor = rightSide ? ""start"" : ""end"";
+        sb.Append($""<text x='{F(lx)}' y='{F(ymid + 4)}' text-anchor='{anchor}' fill='#333' font-size='11'>{F(means[i])}</text>"");
+        sb.Append($""<text x='{marginL - 8}' y='{F(ymid + 4)}' text-anchor='end' fill='#333'>{names[i]}</text>"");
+    }
+    display(HTML($""<div>{sb}</div>""));
 }
-",,,,,,,,e5b8eaf605e8d626,,,,,,,
+",,,,,,,,2599e71ee8af8eea,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c09,markdown,fr,cd6cc33948914724,"## Lecture : que dit réellement le delta ?
 
 Le tableau révèle une histoire **plus nuancée** que le scénario « propre » (Random ≈ 0, tous les autres ≫ 0) — et c'est précisément cette nuance qui fait la valeur du protocole. Trois régimes apparaissent, selon que l'optimiseur **résout ou non** la fonction à ce budget (NFE = 5000, dimension 5) :
@@ -2190,7 +2228,12 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,cce
 La FDC condense le paysage en un seul nombre ; le **nuage** (fitness vs distance à l'optimum) montre *pourquoi*. Un paysage facile dessine une relation propre (fitness croît avec la distance) ; un paysage multimodal disperse le nuage (à distance égale, des fitness très différentes selon le bassin).
 
 On rend ce nuage en **SVG inline** (aucune dépendance de tracé, cf leçon MGS papermill : les backends `#r nuget` se bloquent).",,,,,,,,13758f0c46768259,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,8ac959bc,code,fr,8605466ba29262a0,"// Nuage fitness-vs-distance en SVG inline, 3 sous-figures côte à côte (une par benchmark).
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,8ac959bc,code,fr,a87e61f8e04a6adc,"// Nuage fitness-vs-distance en SVG inline, 3 sous-figures côte à côte (une par benchmark).
+// Format invariant (decimal DOT) : critique pour le rendu SVG. Sur machine fr-FR,
+// :F1/:F3 emettent une virgule -> cx='70,0' = ""Expected length"" (defaults 0), nuage casse.
+// Idiome du canon SvgChartHelper.cs (#6942). Cf finding vision-QA po-2024 c.581 / Infer-17 #6946.
+string F(double v) => v.ToString(""0.###"", System.Globalization.CultureInfo.InvariantCulture);
+
 string ScatterSvg(string title, double[] dists, double[] fits, string color)
 {
     // Normalisation vers la zone [10,290] x [20,170] (pixels).
@@ -2202,7 +2245,7 @@ string ScatterSvg(string title, double[] dists, double[] fits, string color)
     {
         double px = 10 + 280 * (dists[i] - dmin) / dx;
         double py = 170 - 150 * (fits[i] - fmin) / dy;
-        pts.Append($""<circle cx='{px:F1}' cy='{py:F1}' r='1.4' fill='{color}' opacity='0.55'/>"");
+        pts.Append($""<circle cx='{F(px)}' cy='{F(py)}' r='1.4' fill='{color}' opacity='0.55'/>"");
     }
     return $""<div style='display:inline-block;vertical-align:top;margin:6px'>""
          + $""<svg width='300' height='190' style='border:1px solid #ccc;background:#fafafa'>""
@@ -2220,12 +2263,12 @@ foreach (var (name, fdc, s) in results)
 {
     var dists = s.Select(t => t.DistToOptimum).ToArray();
     var fits  = s.Select(t => t.RawFitness).ToArray();
-    svgs.Append(ScatterSvg($""{name}  FDC={fdc:F3}"", dists, fits, colors[name]));
+    svgs.Append(ScatterSvg($""{name}  FDC={F(fdc)}"", dists, fits, colors[name]));
 }
 display(HTML($""<div>{svgs}</div><div style='font:12px sans-serif;color:#555;clear:both'>""
            + $""<b>Sphere</b> : nuage en croissant propre (fitness ~ distance²). ""
            + $""<b>Rastrigin</b> : nuage dispersé verticalement (à distance égale, plusieurs bassins). ""
-           + $""<b>Ackley</b> : dispersion intermédiaire avec structure.</div>""));",,,,,,,,8605466ba29262a0,,,,,,,
+           + $""<b>Ackley</b> : dispersion intermédiaire avec structure.</div>""));",,,,,,,,a87e61f8e04a6adc,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,5a46c9a8,markdown,fr,4d11cf2456914a96,"### Exercice 1 — FDC de Griewank
 
 Calculez la FDC de `GriewankFitness` (dimension 2, N=600) en réutilisant `SampleLandscape` et `Fdc`. *Indice* : Griewank a une structure particulière (beaucoup de local optima qui se annulent loin de l'optimum). Prédisez d'abord la valeur attendue, puis vérifiez.
@@ -2942,13 +2985,11 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m3,m
 Un schedule exponentiel : `p(g) = p_max * exp(-k * g/G)`, avec `p_max = 0.5`, `k = 3` -> `p(0)=0.5`, `p(G) ~= 0.025`.
 
 Le fork expose ce mecanisme via **`ProbabilityConfig.Mutation.DynamicProbability : Func<IEvolutionContext, float, float>`** combine a `Strategy = OverwriteProbability`. A chaque evaluation de la probabilite, le moteur appelle notre fonction avec le contexte d'evolution (`ctx.Population.GenerationsNumber`).",,,,,,,,751f641d0b56f7eb,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c04,code,fr,890e53992ccd413e,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
-// (Zero `#r ""nuget:""` sur une charting-lib : cf #3801 / C548-L2.)
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c04,code,fr,e4687ec4e0377adf,"// Visualisation SVG inline du schedule deterministe : p(g) = 0.5 * exp(-3 * g/G).
+// Prong-A (#3801, #6927) : rendu SVG statique zero-dependance (rend sur GitHub/nbviewer/offline).
+// Remplace le chart Plotly-CDN (C548-L2) dont le script externe rendait BLANC en consultation statique.
+// Helper canon SvgChartHelper.cs (#6942 MERGED) ; primitive Overlay multi-series (#6958 MERGED).
+#load ""../../Probas/Infer/SvgChartHelper.cs""
 
 // === CONTROL DETERMINISTE === schedule decroissant p(g) = 0.5 * exp(-3 * g/G)
 IMetaHeuristic BuildDecay(int maxGen)
@@ -2966,28 +3007,16 @@ int G = NFE / PopSize;
 double Decay(int g) => 0.5 * Math.Exp(-3.0 * (double)g / G);
 var gAxis = Enumerable.Range(0, G + 1).Select(g => (double)g).ToArray();
 var pCurve = gAxis.Select(g => Decay((int)g)).ToArray();
-string traceJson = System.Text.Json.JsonSerializer.Serialize(
-    new Dictionary<string, object> { [""name""] = ""p(g) (probabilite de mutation)"", [""x""] = gAxis, [""y""] = pCurve,
-                                     [""type""] = ""scatter"", [""mode""] = ""lines"",
-                                     [""line""] = new { color = ""#4C72B0"", width = 2.5 } });
-// Marqueurs explore (p~0.5 tot) / exploit (p~0.025 tard).
-string mkExplore = System.Text.Json.JsonSerializer.Serialize(
-    new Dictionary<string, object> { [""name""] = ""Exploration (debut, p=0.5)"", [""x""] = new[] { 0.0 }, [""y""] = new[] { Decay(0) },
-                                     [""type""] = ""scatter"", [""mode""] = ""markers"",
-                                     [""marker""] = new { color = ""#DD8452"", size = 12 } });
-string mkExploit = System.Text.Json.JsonSerializer.Serialize(
-    new Dictionary<string, object> { [""name""] = ""Exploitation (fin, p=0.025)"", [""x""] = new[] { (double)G }, [""y""] = new[] { Decay(G) },
-                                     [""type""] = ""scatter"", [""mode""] = ""markers"",
-                                     [""marker""] = new { color = ""#C44E52"", size = 12 } });
-var layout = ""{\""title\"":{\""text\"":\""Schedule deterministe : p(g) = 0.5 * exp(-3 * g/G) (G="" + G + "")\""},"" +
-             ""\""xaxis\"":{\""title\"":{\""text\"":\""generation g\""}},"" +
-             ""\""yaxis\"":{\""title\"":{\""text\"":\""p(g)\""},\""range\"":[0,0.55]},"" +
-             ""\""showlegend\"":true}"";
-var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-             ""<script>Plotly.newPlot('"" + divId + ""',["" + traceJson + "","" + mkExplore + "","" + mkExploit + ""],"" + layout + "")</script>"";
-display(new PlotlyHtml(markup));
+
+// 3 series sur axe X numerique partage (generation g) -> SvgChartHelper.Overlay (pattern canon #6927).
+var series = new SvgSeries[]
+{
+    new SvgSeries(""p(g) (probabilite de mutation)"", gAxis, pCurve, TraceStyle.Line, ""#4C72B0""),
+    new SvgSeries(""Exploration (debut, p=0.5)"", new[] { 0.0 }, new[] { Decay(0) }, TraceStyle.Markers, ""#DD8452""),
+    new SvgSeries(""Exploitation (fin, p~0.025)"", new[] { (double)G }, new[] { Decay(G) }, TraceStyle.Markers, ""#C44E52""),
+};
+display(SvgChartHelper.Overlay($""Schedule deterministe : p(g) = 0.5 * exp(-3 * g/G) (G={G})"", ""generation g"", ""p(g)"", series));
+
 Console.WriteLine($""Schedule deterministe p(g) = 0.5 * exp(-3 * g/G),  G="" + G);
 Console.WriteLine($""  Exploration tot (p=0.5) -> Exploitation tard (p={Decay(G):F3}) : le mecanisme f(generation) est valide par la courbe."");
 
@@ -2996,7 +3025,7 @@ Console.WriteLine();
 Console.WriteLine($""Rastrigin -- controle deterministe (decay) : objectif {decayObj:F3}"");
 Console.WriteLine($""  vs meilleur reglage fixe p={bestP:F2}      : objectif {bestFixed:F3}"");
 Console.WriteLine($""  => le deterministe {(decayObj < bestFixed ? ""BAT"" : ""est competitif avec (a bruit pres)"")} le meilleur fixe (delta {decayObj-bestFixed:+0.000;-0.000;0.000:F3})."");
-",,,,,,,,890e53992ccd413e,,,,,,,
+",,,,,,,,e4687ec4e0377adf,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m4,markdown,fr,70b81149ee98d548,"Le decay est **competitif** avec le meilleur reglage fixe (a bruit pres, NFE=5000) — il ne le domine pas nettement. Ce n'est pas un echec du controle deterministe, mais un indice honnete : sur ce paysage et ce budget, un schedule simple n'apporte pas un avantage massif. Le controle qui dominera arrive au §4 (self-adaptatif). Ce que cette section etablit est surtout le **mecanisme** : `DynamicProbability = f(generation)` produit bien un taux continu decroissant (trace ci-dessus), et le moteur l'invoque reellement chaque generation.",,,,,,,,70b81149ee98d548,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m5,markdown,fr,684313c6b55c7e47,"## 3. Controle adaptatif — la diversite pilote le taux
 
