@@ -47,6 +47,14 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
+- **Couverture i18n (EPIC #4980)** : **bilingue complet — Pattern A**. Les 3 modules
+  `Minimax/ZeroSum.lean`, `Minimax/Concavity.lean`, `Minimax/SionApplication.lean`
+  ont chacun un miroir `_en.lean` (`ZeroSum_en`, `Concavity_en`, `SionApplication_en`),
+  plus les deux agrégateurs `Minimax.lean` (FR canonique) et `Minimax_en.lean` (miroir
+  EN, namespace `MinimaxLean_en` anti-collision). Convention ratifiée par ai-01
+  (2026-07-04, #4980) : contenu non-docstring byte-identique entre siblings FR↔EN
+  (dérive détectable par CI), docstrings/commentaires traduits manuellement ; les deux
+  compilent dans le même lake. Posés par PR #5363.
 
 ## Stratégie de formalisation
 
@@ -90,6 +98,9 @@ flowchart TD
 
 ## Ce qui est formalisé (`Minimax/ZeroSum.lean`, 0 sorry)
 
+> **Miroir EN** : `Minimax/ZeroSum_en.lean` (Pattern A #4980, contenu non-docstring
+> byte-identique, docstrings traduits).
+
 - **Matrice de gains** `PayoffMatrix m n = Matrix m n ℝ` : `A i j` = gain du
   joueur-ligne quand `i` joue la ligne `i` et `j` la colonne `j` (somme nulle : le
   joueur-colonne reçoit `-A i j`).
@@ -108,6 +119,9 @@ flowchart TD
   `fun_prop`).
 
 ## Ce qui est formalisé (`Minimax/Concavity.lean`, 0 sorry) — glue Sion (itérations 1 & 2)
+
+> **Miroir EN** : `Minimax/Concavity_en.lean` (Pattern A #4980, byte-identique hors
+> docstrings).
 
 Les **4 hyps analytiques** de `Sion.exists_isSaddlePointOn'`, dérivées de la
 bilinéarité ci-dessus :
@@ -142,6 +156,9 @@ toutes prouvées 0 sorry.**
   multiplie à droite ⟹ `mul_add`.
 
 ## Ce qui est formalisé (`Minimax/SionApplication.lean`, 0 sorry) — itération 3 du glue Sion
+
+> **Miroir EN** : `Minimax/SionApplication_en.lean` (Pattern A #4980, byte-identique hors
+> docstrings).
 
 Le **théorème de von Neumann (forme point-selle)** — le milestone final de #4054,
 démontré en une application de `Sion.exists_isSaddlePointOn` :
