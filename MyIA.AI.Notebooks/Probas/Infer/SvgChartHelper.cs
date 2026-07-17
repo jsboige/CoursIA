@@ -26,6 +26,17 @@ using Microsoft.DotNet.Interactive.Formatting;
 /// </summary>
 public record SvgChart(string Markup);
 
+/// <summary>Style de trace pour <see cref="SvgChartHelper.Overlay"/>.</summary>
+public enum TraceStyle { Line, Markers, LineMarkers }
+
+/// <summary>
+/// Une serie de <see cref="SvgChartHelper.Overlay"/> : label (legende) + points (xs, ys) sur un
+/// axe X numerique partage, style de trace, couleur (null = palette auto) et sigma optionnel
+/// (barres d'erreur +-1 sigma tracees par point).
+/// </summary>
+public sealed record SvgSeries(string Label, double[] Xs, double[] Ys,
+    TraceStyle Style = TraceStyle.LineMarkers, string Color = null, double[] Sigma = null);
+
 /// <summary>
 /// Generateur de graphiques SVG statiques zero-dependance. Rend sur GitHub/nbviewer/offline.
 /// <example>
@@ -73,6 +84,17 @@ public static class SvgChartHelper
     public static SvgChart Scatter(string title, double[] xs, double[] ys,
         int width = 560, int height = 320, string color = null)
         => new SvgChart(BuildScatter(title, xs, ys, width, height, color ?? ColorAccent));
+
+    /// <summary>
+    /// Superposition multi-series sur un axe X numerique partage. Chaque serie se trace en ligne,
+    /// marqueurs, ou ligne+marqueurs, avec des barres d'erreur +-sigma optionnelles. Une legende
+    /// est generee automatiquement a partir des labels. Rend un SVG inline statique (GitHub /
+    /// nbviewer / offline), unique primitive multi-trace du helper (les series a courbe unique
+    /// restent servies par <see cref="Line"/> / <see cref="Scatter"/> / <see cref="Bar"/>).
+    /// </summary>
+    public static SvgChart Overlay(string title, string xLabel, string yLabel,
+        IReadOnlyList<SvgSeries> series, int width = 820, int height = 480)
+        => new SvgChart(BuildOverlay(title, xLabel, yLabel, series, width, height));
 
     // ---------------------------------------------------------------------------------------------
     // Generateurs
@@ -159,6 +181,103 @@ public static class SvgChartHelper
             double py = layout.Y(ys[i]);
             sb.Append($"<circle cx='{F(px)}' cy='{F(py)}' r='4' fill='{color}'/>");
         }
+        sb.Append(CloseSvg());
+        return sb.ToString();
+    }
+
+    private static string BuildOverlay(string title, string xLabel, string yLabel,
+        IReadOnlyList<SvgSeries> series, int w, int h)
+    {
+        if (series == null || series.Count == 0)
+            throw new ArgumentException("Overlay: au moins une serie requise.");
+        foreach (var s in series)
+            if (s.Xs == null || s.Ys == null || s.Xs.Length != s.Ys.Length || s.Xs.Length == 0)
+                throw new ArgumentException($"Overlay: serie '{s.Label}' doit avoir xs/ys de meme longueur non nulle.");
+
+        // Bornes X (union de toutes les series) et Y (union ys +- sigma).
+        double xMin = double.PositiveInfinity, xMax = double.NegativeInfinity;
+        double yLo = double.PositiveInfinity, yHi = double.NegativeInfinity;
+        foreach (var s in series)
+            for (int i = 0; i < s.Xs.Length; i++)
+            {
+                xMin = Math.Min(xMin, s.Xs[i]); xMax = Math.Max(xMax, s.Xs[i]);
+                double sig = (s.Sigma != null && i < s.Sigma.Length) ? Math.Abs(s.Sigma[i]) : 0.0;
+                yLo = Math.Min(yLo, s.Ys[i] - sig); yHi = Math.Max(yHi, s.Ys[i] + sig);
+            }
+        double xRange = xMax - xMin; if (xRange == 0) xRange = 1;
+        double ypad = (yHi - yLo) * 0.06; if (ypad == 0) ypad = Math.Max(1, Math.Abs(yHi) * 0.1);
+        var layout = new PlotLayout(w, h, yLo - ypad, yHi + ypad, series.Count);
+        Func<double, double> PX = x => layout.PadL + (x - xMin) / xRange * layout.PlotW;
+
+        var sb = new StringBuilder();
+        sb.Append(OpenSvg(w, h, title));
+        sb.Append(GridAndYAxis(layout));
+
+        // Graduations X numeriques (5 ticks) + labels d'axes.
+        for (int g = 0; g <= 4; g++)
+        {
+            double xv = xMin + xRange * g / 4.0;
+            double pxg = layout.PadL + layout.PlotW * g / 4.0;
+            sb.Append($"<text x='{F(pxg)}' y='{h - layout.PadB + 16}' text-anchor='middle' fill='{ColorText}'>{F(xv)}</text>");
+        }
+        if (!string.IsNullOrEmpty(xLabel))
+            sb.Append($"<text x='{F(layout.PadL + layout.PlotW / 2.0)}' y='{h - 6}' text-anchor='middle' fill='{ColorText}'>{Esc(xLabel)}</text>");
+        if (!string.IsNullOrEmpty(yLabel))
+        {
+            double cy = layout.PadT + layout.PlotH / 2.0;
+            sb.Append($"<text x='14' y='{F(cy)}' text-anchor='middle' fill='{ColorText}' transform='rotate(-90 14 {F(cy)})'>{Esc(yLabel)}</text>");
+        }
+
+        string[] palette = { ColorPrimary, ColorAccent, "#DD8452", ColorNegative, "#8172B3", "#937860" };
+        for (int si = 0; si < series.Count; si++)
+        {
+            var s = series[si];
+            string color = s.Color ?? palette[si % palette.Length];
+            var pts = new List<string>(s.Xs.Length);
+            for (int i = 0; i < s.Xs.Length; i++)
+                pts.Add($"{F(PX(s.Xs[i]))},{F(layout.Y(s.Ys[i]))}");
+            bool line = s.Style == TraceStyle.Line || s.Style == TraceStyle.LineMarkers;
+            bool marks = s.Style == TraceStyle.Markers || s.Style == TraceStyle.LineMarkers;
+
+            if (line)
+                sb.Append($"<polyline points='{string.Join(" ", pts)}' fill='none' stroke='{color}' stroke-width='2'/>");
+
+            // Barres d'erreur +-sigma (tracees avant les marqueurs pour rester dessous).
+            if (s.Sigma != null)
+                for (int i = 0; i < s.Xs.Length && i < s.Sigma.Length; i++)
+                {
+                    double xp = PX(s.Xs[i]);
+                    double yTop = layout.Y(s.Ys[i] + Math.Abs(s.Sigma[i]));
+                    double yBot = layout.Y(s.Ys[i] - Math.Abs(s.Sigma[i]));
+                    sb.Append($"<line x1='{F(xp)}' y1='{F(yTop)}' x2='{F(xp)}' y2='{F(yBot)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
+                    sb.Append($"<line x1='{F(xp - 3)}' y1='{F(yTop)}' x2='{F(xp + 3)}' y2='{F(yTop)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
+                    sb.Append($"<line x1='{F(xp - 3)}' y1='{F(yBot)}' x2='{F(xp + 3)}' y2='{F(yBot)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
+                }
+
+            if (marks)
+                foreach (var p in pts)
+                {
+                    var xy = p.Split(',');
+                    sb.Append($"<circle cx='{xy[0]}' cy='{xy[1]}' r='3' fill='{color}'/>");
+                }
+        }
+
+        // Legende (haut-droite de la zone de plot), une entree par serie.
+        double lx = layout.PadL + layout.PlotW - 172, ly = layout.PadT + 8;
+        double lh = 14 + series.Count * 18;
+        sb.Append($"<rect x='{F(lx)}' y='{F(ly)}' width='168' height='{F(lh)}' fill='white' stroke='{ColorGrid}' stroke-width='1'/>");
+        for (int si = 0; si < series.Count; si++)
+        {
+            var s = series[si];
+            string color = s.Color ?? palette[si % palette.Length];
+            double ey = ly + 16 + si * 18;
+            if (s.Style == TraceStyle.Markers)
+                sb.Append($"<circle cx='{F(lx + 22)}' cy='{F(ey - 4)}' r='3' fill='{color}'/>");
+            else
+                sb.Append($"<line x1='{F(lx + 10)}' y1='{F(ey - 4)}' x2='{F(lx + 34)}' y2='{F(ey - 4)}' stroke='{color}' stroke-width='2'/>");
+            sb.Append($"<text x='{F(lx + 42)}' y='{F(ey)}' fill='{ColorText}'>{Esc(s.Label)}</text>");
+        }
+
         sb.Append(CloseSvg());
         return sb.ToString();
     }
