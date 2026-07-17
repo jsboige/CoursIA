@@ -27,6 +27,7 @@ from pathlib import Path
 # dates like "21/02/2022" because "1/0" is a substring of "1/02").
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from notebook_lint import scan_c1_source
+from detect_svg_empty_display import detect_cell as _is_empty_svg_display
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -191,6 +192,7 @@ def validate_notebook(nb_path: Path) -> dict:
         any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
     )
     saw_null_exec = False  # for the forensic verdict (H.5)
+    saw_empty_display = False  # #6971 blank-render signature (see verdict below)
 
     for i, cell in enumerate(data.get("cells", [])):
         if cell.get("cell_type") != "code":
@@ -236,6 +238,24 @@ def validate_notebook(nb_path: Path) -> dict:
                     f"(H.3/C.2 violation — {kernel} executes locally; "
                     f"commit execution proof, See #5214)"
                 )
+
+        # Blank-render check (#6971): a locally-executable figure cell that
+        # display()s a chart but committed an EMPTY output renders BLANK on
+        # GitHub/nbviewer — the exact #6927 defect. Because execution_count is
+        # non-null, H.3 passes and (without this) the forensic verdict below
+        # falsely reads EXEC_PROVED even though the figure is blank (L644-L1,
+        # po-2025 on #7009/#7016). Reuse the zero-FP detector (3 co-necessary
+        # conditions: exec'd + outputs==[] + display(chart) source) so the
+        # verdict, this validator, and the sibling gate stay consistent.
+        if not allow_null_exec_count and _is_empty_svg_display(cell):
+            saw_empty_display = True
+            result["passed"] = False
+            result["errors"].append(
+                f"cell {i}: display(chart) executed but output is EMPTY — "
+                f"blank render on GitHub (#6927/#6971; helper Formatter.Register "
+                f"did not run in exec, See svg-6927-canon). Re-execute so the "
+                f"<svg> is committed; never hand-edit outputs (Stop&Repair)."
+            )
 
         # H.1 check: no error outputs. Two rendering paths:
         #  (a) output_type == "error" — Python/IPython, .NET Interactive.
@@ -284,6 +304,12 @@ def validate_notebook(nb_path: Path) -> dict:
     if allow_null_exec_count:
         result["forensic_verdict"] = "ADVISORY_NON_EXEC"
     elif saw_null_exec:
+        result["forensic_verdict"] = "STRUCTURAL_ONLY"
+    elif saw_empty_display:
+        # Every cell carries execution_count (H.3 passes), but a figure cell
+        # rendered BLANK (empty output) — structural-only in substance, NOT the
+        # real-output proof EXEC_PROVED asserts. Downgrade so reviewers/bots
+        # apply CHANGES_REQUESTED (#5214/#6971) instead of trusting a blank render.
         result["forensic_verdict"] = "STRUCTURAL_ONLY"
     else:
         result["forensic_verdict"] = "EXEC_PROVED"

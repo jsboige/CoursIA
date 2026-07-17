@@ -505,3 +505,56 @@ class TestValidateNotebookLeanTextErrors:
         ])
         result = validate_notebook(nb)
         assert result["passed"] is True
+
+
+# ---------------------------------------------------------------------------
+# validate_notebook — blank-render forensic verdict (#6971 / L644-L1)
+# ---------------------------------------------------------------------------
+
+class TestBlankRenderVerdict:
+    """A .NET `display(chart)` cell that ran (execution_count set) but committed
+    an EMPTY output renders BLANK on GitHub — the exact #6927 defect. Before this
+    guard the forensic verdict falsely read EXEC_PROVED because H.3 only checks
+    execution_count != null (po-2025, #7009/#7016)."""
+
+    def test_empty_display_downgrades_verdict_and_fails(self, tmp_path):
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("display(SvgChartHelper.Bar(\"t\", xs, ys));", exec_count=9),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+        assert any("output is EMPTY" in e and "#6971" in e
+                   for e in result["errors"])
+
+    def test_display_with_svg_output_stays_exec_proved(self, tmp_path):
+        """The same display(chart) cell WITH a real <svg> output is legitimate —
+        it must stay EXEC_PROVED (guards against over-flagging rendered figures)."""
+        svg_out = {"output_type": "display_data",
+                   "data": {"text/html": ["<svg width='100' height='80'></svg>"]}}
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("display(SvgChartHelper.Bar(\"t\", xs, ys));", exec_count=9,
+                  outputs=[svg_out]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_non_chart_empty_output_unaffected(self, tmp_path):
+        """A plain empty-output cell (no display(chart) source) is NOT the
+        blank-render signature — stays EXEC_PROVED (zero-FP contract of #6971)."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("var x = 5;", exec_count=1),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_empty_display_advisory_kernel_unaffected(self, tmp_path):
+        """Lean/QC (allow_null_exec_count) stay advisory — the blank-render guard
+        is gated on locally-executable kernels only, matching the H.3 carve-out."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("display(SvgChartHelper.Bar(\"t\", xs, ys));", exec_count=None),
+        ], kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["forensic_verdict"] == "ADVISORY_NON_EXEC"
