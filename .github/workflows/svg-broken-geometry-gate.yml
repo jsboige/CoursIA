@@ -1,0 +1,122 @@
+name: SVG broken-geometry gate
+
+# Purpose
+# -------
+# Per-PR gate for inline SVG outputs whose GEOMETRY is broken: any element with
+# a NEGATIVE width/height (`height='-893'`, `width='-...'`). Per the SVG spec a
+# negative width/height is an error -> the element does not render (rect, use,
+# image, foreignObject...). This is a render-broken output that the two other
+# SVG gates MISS: it is non-empty (passes svg-empty-display-gate #6971) and
+# carries no decimal comma / no CDN script (passes svg-decimal-comma-gate #6959
+# and the no-cdn check). "Non-empty" is not "correct".
+#
+# Root cause it catches: a logY/log-scale chart whose PlotLayout is built in
+# LINEAR bounds while the projection function maps in LOG10 space. Values more
+# than one decade below the max fall below the plot floor and are emitted as
+# `<rect>` with a NEGATIVE height -> the bar is invisible. The chart looks fine
+# to CI (out_len>0, 0 comma, no cdn) while the committed figure is missing its
+# small-value bars (H.1 violation).
+#
+# This gate runs scripts/notebook_tools/detect_svg_broken_geometry.py in --check
+# mode on every notebook changed by the PR and FAILs if any commits an SVG with
+# a negative-dimension element. The detector is deterministic and ZERO-FP:
+# width/height are never moved by a transform (translate/rotate act on position,
+# not on intrinsic size), so -- unlike raw x/y coordinates inside a
+# `<g transform>` -- a negative width/height is unambiguously broken regardless
+# of the transform stack. Validated clean across 945 notebooks; only the broken
+# render is flagged. (A "coordinate outside viewBox" heuristic was evaluated and
+# REJECTED: matplotlib/.NET charts legitimately emit negative raw coords inside
+# translated/rotated groups -> real false positives. See the detector docstring.)
+#
+# Absolute (not regression) semantics: baseline `main` carries 0 negative-dim
+# defects except the known #7007 logY regression being fixed; any negative-dim
+# SVG in a changed notebook is a defect introduced or carried by the PR and must
+# be fixed before merge. A new notebook must be clean.
+#
+# Fix: build the PlotLayout in the correct space (for logY: a single log-aware
+# grid method drawing gridlines AND labels at the same decade positions,
+# geometry fully in log space -- cf GridAndYAxisLog/LogTicks/PYy of
+# Overlay(logY:true), #7006), then re-execute the .NET kernel. Stop&Repair: fix
+# the cause + re-execute, never scrub the output by hand.
+#
+# Incident: PR #7007 (Sudoku-18, GroupedBar/BoxPlot logY) committed cells 39/55
+# with 15/20 negative-height rects -> fast-solver bars invisible. The migration
+# replaced CDN-blank-in-static Plotly with permanently-broken SVG. Caught by
+# vision-QA forensic (po-2024); the three mechanical SVG gates before this one
+# all passed. See EPIC #3801, rollout #6927 (SVG inline fleet-wide),
+# svg-6927-canon (detectors necessary-but-not-sufficient).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_svg_broken_geometry.py'
+      - '.github/workflows/svg-broken-geometry-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  svg-broken-geometry:
+    name: "No SVG broken-geometry (negative-dim) defect in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=SVG broken-geometry gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=SVG broken-geometry gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## SVG broken-geometry gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_svg_broken_geometry.py "$nb" --check 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=SVG broken-geometry defect::$nb commits an inline SVG with a negative-dimension element (renders invisible; broken logY/log-scale layout)."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=SVG broken-geometry gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: build the PlotLayout in the correct space (for logY, a single log-aware grid method drawing gridlines AND labels at the same decade positions, geometry fully in log space -- cf \`GridAndYAxisLog\`/\`LogTicks\`/\`PYy\` of \`Overlay(logY:true)\`, #7006) then re-execute the .NET kernel. Stop&Repair: fix the cause + re-execute, never scrub the output by hand. See the detector docstring." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=SVG broken-geometry gate::Checked $checked changed notebook(s); no negative-dimension SVG defect."
