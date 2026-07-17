@@ -7,13 +7,15 @@ execution, parsing, audits pedagogiques. **Cluster worker canonique**
 C.1-C.3 (notebooks), D (anti-regression), sota-not-workaround (#3801),
 anti-banner (#6309), secrets-hygiene.
 
-Le seul sous-dossier `scripts/` sans `README.md` avant ce fichier :
-8 detecteurs + 3 validateurs + 2 scanners + 56 scripts utilitaires.
-L'inventaire ci-dessous remplace la lecture en aveugle de 69 fichiers.
+L'inventaire ci-dessous remplace la lecture en aveugle de 63 fichiers
+`.py` (6 detecteurs + 4 validateurs CI + 2 scanners + 51 scripts
+utilitaires ; + 2 fichiers `golden_set.yml` / `golden_set.lock.txt`
+non-`.py` en complement). Avant cette fiche, c'etait le seul sous-dossier
+`scripts/` sans `README.md`.
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_svg_decimal_commas.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #4970 |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #3801 / #4970 / **#6927** (SVG inline rollout) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -32,7 +34,7 @@ Tests unitaires dans `scripts/notebook_tools/tests/`.
 
 ## Detecteurs anti-regression (l'axe **DETECT**, jamais scrub)
 
-Les 5 detecteurs implementent le **Prong A** de
+Les 6 detecteurs implementent le **Prong A** de
 [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) :
 detecter les sorties degradees qu'un notebook commit sans avoir execute le
 vrai outil SOTA. Chaque detecteur a un **verdict deterministe** (zero faux
@@ -68,6 +70,39 @@ python scripts/notebook_tools/detect_svg_decimal_commas.py --check
 [Infer/SvgChartHelper.cs](../../MyIA.AI.Notebooks/Probas/Infer/SvgChartHelper.cs)
 qui formate avec `.` en `private static string F(double v)` ligne 355,
 cause-level propagation post-c.628).
+
+### `detect_svg_empty_display.py` (#3801, EPIC #6927 — defense-in-depth chain)
+
+**Jumeau structurel** de `detect_svg_decimal_commas.py` : couvre la **2ᵉ classe
+de defaut** du rollout SVG inline — une cellule qui `display()` un chart SVG
+mais produit un output **VIDE** (`outputs == []` avec `execution_count != null`).
+La cellule execute sans erreur, mais le kernel n'a pas capture le SVG -> **figure
+BLANCHE sur GitHub/nbviewer** alors que CI verte et code correct. Cause-agnostique :
+attrape `display()`-vs-`return` (L633), helper non `#load` (cwd ou fichier
+introuvable, voir L542b/L543c/L544-L1 ★★★), kernel cwd path-resolution failure,
+toute combinaison execution-reussie + zero-output.
+
+Signature 3 conditions **STRICTES** (zero faux-positif sur des sorties legitimes) :
+`execution_count != null` ET `outputs == []` ET source contient un pattern de
+DISPLAY de chart (`display(SvgChartHelper.`, `display(HTML(` ou builder
+`ScatterSvg`/`PlotSvg`/`BuildScatterSvg`). Aucun legitimate notebook ne coche
+les 3 sans defaut reel.
+
+```bash
+python scripts/notebook_tools/detect_svg_empty_display.py NB.ipynb --check
+# sweep canon : 19/19 pytest PASS, TN baseline main 0/930, TP #6963 = 4 hits (cells 29/35/45/49)
+```
+
+**Incident fondateur** : PR #6963 (DecInfer-6, po-2023) — 4 cellules
+`display(SvgChartHelper.Bar(...))` avec `ec != null` mais `outputs == []`. Les
+2 detecteurs voisins (`detect_svg_decimal_commas.py` #6959 + `check_plotly_static_risk.py`)
+**PASSENT** sur cette PR (pas de decimal-comma a flagger, plus de Plotly-CDN).
+**Figure BLANCHE sur GitHub** invisible a la review de code et a la validation
+structurelle, detectee uniquement par vision-QA. **Symptome-level detector
+canonique** (cause fixee par `svg-6927-canon.md` pt 1 : chart comme derniere
+expression de cellule, OU `#load` cdw resolu + re-exec). Defense-in-depth chain
+#6927 = helper canon (`SvgChartHelper.cs` #6942) → detecteur classe 1 (#6959
++ gate #6965) → detecteur classe 2 (#6971 + gate #6981) → 5/5 complete.
 
 ### `detect_ascii_workaround.py` (#3801 Prong-A)
 
@@ -130,6 +165,29 @@ Flag les notebooks Plotly.js-CDN (`<script src="https://cdn.plot.ly/...">`)
 qui rendent en BLANC en static rendering GitHub/nbviewer. Issue : le
 helper canon `SvgChartHelper.cs` (Infer) + pattern MIME `text/html` +
 InvariantCulture est la voie de migration (Epic #6927).
+
+### Hook CI SVG (`.github/workflows/svg-*-gate.yml`) — defense-in-depth #6927
+
+Le rollout SVG inline (#6927) a **2 classes de defaut** qui rendent BLANC sur
+GitHub/nbviewer mais passent silencieusement le code-review et la validation
+structurelle. Chacune a son detecteur dedie + son **hook CI per-PR** qui
+FAIL la PR avant merge si un notebook touche committe le defaut :
+
+- `.github/workflows/svg-decimal-comma-gate.yml` (#6965) — sweep
+  `detect_svg_decimal_commas.py --check` sur les notebooks modifies. Cible
+  le **contenu SVG** (attributs `cx="170,9"` zigzag sur Chromium). **MERGED.**
+- `.github/workflows/svg-empty-display-gate.yml` (#6981) — sweep
+  `detect_svg_empty_display.py --check` sur les notebooks modifies. Cible
+  la **structure cellulaire** (`display(chart)` + `outputs: []` = cellule
+  rendue vide). **PR en cours de merge** (open 2026-07-17) ; ajouter le
+  workflow a `main` des que #6981 est mergee.
+
+Les deux gates sont **complementaires** (contenu vs structure), ni redondants
+ni suffisants seuls. Defense-in-depth chain canon : helper canon
+(`SvgChartHelper.cs` #6942) → 2 detecteurs + 2 gates = **5 maillons** (helper
+canon + 2 detecteurs + 2 hooks CI). Toute PR qui convertit un notebook
+Plotly-CDN vers SVG inline doit passer **les deux gates** + visualiser le
+rendu sur GitHub/nbviewer (`?clicks=99`) avant merge.
 
 ---
 
@@ -219,6 +277,12 @@ Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
 
 - `audit_c1_c3.py` : audit structurel conformite C.1 (pas d'erreur
   volontaire) + C.3 (scope re-exec). Verdict par notebook.
+- `audit_solution_leaks.py` : audit fuite solution pedagogique (#362,
+  Planners de-leak #4970/#1344) — 3 patterns detectes : function body
+  leak (>3 lignes logique sous `# Exercice N`), commented-out solution
+  leak (`#` blocks >3 lignes code/data), pre-resolved cells (`# Solution`
+  / `# Exemple resolu` reponse complete). Sortie = JSON par notebook +
+  rapport agrege `audit_solution_leaks_results.json`.
 - `regression_scan.py` : scan cluster des symbols touches dans un diff
   vs reste du depot (regle B.5 anti-regression).
 - `forensic_scan.py` : scanner forensics pour audit automatise (avec
