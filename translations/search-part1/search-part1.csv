@@ -1007,31 +1007,31 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb,f63f
 **Serie Search** : [Part1-Foundations](../README.md) | [EPIC parite .NET #4956](https://github.com/jsboige/CoursIA/issues/4956).
 
 **Genere avec .NET Interactive** (kernel `.net-csharp`). Conventions : [C.1](https://github.com/jsboige/CoursIA/blob/main/CLAUDE.md) (stubs sans `raise NotImplementedError`) / [#2161](https://github.com/jsboige/CoursIA/issues/2161) (>= 3 exos par notebook) / [#5214](https://github.com/jsboige/CoursIA/issues/5214) (`.NET execution_count != null`).",,,,,,,,50f5674c7d350d28,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,nav-header,markdown,fr,8995eb4c79107030,"# Search-1 : Espaces d'etats et formulation de problemes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,nav-header,markdown,fr,9d98898cb9ec4460,"# Search-1 : Espaces d'etats et formulation de problemes
 
 **Navigation** : [Index](../README.md) | [Suivant >>](Search-2-Uninformed.ipynb)
 
 ## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. **Definir** formellement un probleme de recherche comme un 5-tuple (S, s0, A, T, G)
+1. **Definir** formellement un problème de recherche comme un 5-tuple (S, s0, A, T, G)
 2. **Modeliser** des problemes concrets (aspirateur, taquin, itineraire) comme des espaces d'etats
-3. **Implementer** en Python les composants d'un probleme de recherche (etats, actions, transitions)
+3. **Implementer** en Python les composants d'un problème de recherche (etats, actions, transitions)
 4. **Analyser** les proprietes d'un espace d'etats (taille, observabilite, determinisme)
 
 ### Prerequis
 - Python 3.10+ (bases du langage)
-- Structures de donnees de base (listes, dictionnaires, ensembles)
-- Notions elementaires de theorie des graphes
+- Structures de données de base (listes, dictionnaires, ensembles)
+- Notions elementaires de théorie des graphes
 
-### Duree estimee : 40 minutes",,,,,,,,8995eb4c79107030,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,intro-section,markdown,fr,f16937ebd34da222,"## 1. Introduction
+### Duree estimee : 40 minutes",,,,,,,,9d98898cb9ec4460,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,intro-section,markdown,fr,66e18d8ecccbb9dc,"## 1. Introduction
 
-### Qu'est-ce qu'un probleme de recherche ?
+### Qu'est-ce qu'un problème de recherche ?
 
-Un **probleme de recherche** consiste a trouver une sequence d'actions menant d'une situation initiale a une situation desiree. Ce cadre general permet de modeliser un grand nombre de problemes :
+Un **problème de recherche** consiste a trouver une sequence d'actions menant d'une situation initiale a une situation desiree. Ce cadre general permet de modeliser un grand nombre de problemes :
 
-| Domaine | Probleme | Etat | Action |
+| Domaine | Problème | Etat | Action |
 |---------|----------|------|--------|
 | Navigation | GPS, itineraire | Position actuelle | Se deplacer vers une ville voisine |
 | Jeux | Taquin, echecs | Configuration du plateau | Deplacer une piece |
@@ -1040,15 +1040,15 @@ Un **probleme de recherche** consiste a trouver une sequence d'actions menant d'
 
 ### Pourquoi formaliser ?
 
-La formalisation d'un probleme en **espace d'etats** offre plusieurs avantages :
-- **Generalite** : un seul algorithme (BFS, A*, etc.) peut resoudre de nombreux problemes differents
+La formalisation d'un problème en **espace d'etats** offre plusieurs avantages :
+- **Generalite** : un seul algorithme (BFS, A*, etc.) peut resoudre de nombreux problemes différents
 - **Rigueur** : la solution est un chemin verifiable dans un graphe bien defini
 - **Analyse** : on peut raisonner sur la completude, l'optimalite et la complexite
 
 > **Reference** : Ce notebook suit le chapitre 3 de *Artificial Intelligence: A Modern Approach* (Russell & Norvig).
 
 
-> *Ancres savantes -- Newell, A. & Simon, H.A. (1961), GPS, A Program That Simulates Human Thought, in R. Gunbaum & E. Paul (eds.), Thinking Machines, Basic Books (formalisation pionnière du state-space search : état initial, opérateurs, état-but) ; Amarel, S. (1968), On Representations of Problems of Reasoning About Actions, Machine Intelligence 3:131-171 (représentation d'état et importance de la formulation pour la complexité de recherche) ; Russell, S. & Norvig, P. (2020), Artificial Intelligence: A Modern Approach (4th ed.), Pearson (cadre formel du problème de recherche : états, actions, coût, heuristique, chapitre 3).*",,,,,,,,f16937ebd34da222,,,,,,,
+> *Ancres savantes -- Newell, A. & Simon, H.A. (1961), GPS, A Program That Simulates Human Thought, in R. Gunbaum & E. Paul (eds.), Thinking Machines, Basic Books (formalisation pionnière du state-space search : état initial, opérateurs, état-but) ; Amarel, S. (1968), On Representations of Problems of Reasoning About Actions, Machine Intelligence 3:131-171 (représentation d'état et importance de la formulation pour la complexité de recherche) ; Russell, S. & Norvig, P. (2020), Artificial Intelligence: A Modern Approach (4th ed.), Pearson (cadre formel du problème de recherche : états, actions, coût, heuristique, chapitre 3).*",,,,,,,,66e18d8ecccbb9dc,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,imports,code,fr,7a7354ffa2f56d95,"# Imports
 import sys
 sys.path.insert(0, '..')
@@ -1069,11 +1069,11 @@ except ImportError:
     print(""networkx non disponible. Installer avec : pip install networkx"")
 
 print(""Environnement pret."")",,,,,,,,7a7354ffa2f56d95,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,formal-section,markdown,fr,2ff5e86795b835de,"## 2. Formalisation d'un probleme de recherche
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,formal-section,markdown,fr,c6b65599fe692162,"## 2. Formalisation d'un problème de recherche
 
 ### Le 5-tuple $(S, s_0, A, T, G)$
 
-Un probleme de recherche se definit formellement par cinq composants :
+Un problème de recherche se definit formellement par cinq composants :
 
 | Composant | Notation | Description |
 |-----------|----------|-------------|
@@ -1089,10 +1089,10 @@ On ajoute souvent une **fonction de cout** $c(s, a, s') \geq 0$ qui associe un c
 
 - Une **solution** est un chemin $(s_0, a_1, s_1, a_2, ..., a_n, s_n)$ tel que $G(s_n) = vrai$
 - Le **cout d'une solution** est $\sum_{i=1}^{n} c(s_{i-1}, a_i, s_i)$
-- Une **solution optimale** est une solution de cout minimal",,,,,,,,2ff5e86795b835de,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,abstract-class-intro,markdown,fr,5ea045311de2429a,"### Classe abstraite
+- Une **solution optimale** est une solution de cout minimal",,,,,,,,c6b65599fe692162,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,abstract-class-intro,markdown,fr,4fe4aa167275468d,"### Classe abstraite
 
-Nous allons d'abord definir une classe abstraite `SearchProblem` qui capture cette formalisation. Chaque probleme concret heritera de cette classe.",,,,,,,,5ea045311de2429a,,,,,,,
+Nous allons d'abord definir une classe abstraite `SearchProblem` qui capture cette formalisation. Chaque problème concret heritera de cette classe.",,,,,,,,4fe4aa167275468d,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,abstract-class,code,fr,d6db0bb1c16a02ed,"class SearchProblem:
     """"""
     Classe abstraite representant un probleme de recherche.
@@ -1132,11 +1132,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,abstract-cl
 
 print(""Classe SearchProblem definie."")
 print(""Methodes : initial_state(), actions(s), transition(s,a), is_goal(s), cost(s,a,s')"")",,,,,,,,d6db0bb1c16a02ed,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-section,markdown,fr,e58b39271d6ae561,"## 3. Exemple 1 : Le monde de l'aspirateur
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-section,markdown,fr,bf1eb3394e935536,"## 3. Exemple 1 : Le monde de l'aspirateur
 
 ### Description
 
-Le **monde de l'aspirateur** (Vacuum World) est un probleme classique de Russell & Norvig :
+Le **monde de l'aspirateur** (Vacuum World) est un problème classique de Russell & Norvig :
 
 - **2 pieces** : Gauche (G) et Droite (D)
 - Chaque piece peut etre **propre** ou **sale**
@@ -1149,7 +1149,7 @@ Le **monde de l'aspirateur** (Vacuum World) est un probleme classique de Russell
 Un etat est un triplet : (position, etat_gauche, etat_droite)
 - Position : G ou D (2 valeurs)
 - Etat de chaque piece : propre ou sale (2 valeurs chacune)
-- **Nombre total d'etats** : $2 \times 2 \times 2 = 8$",,,,,,,,e58b39271d6ae561,,,,,,,
+- **Nombre total d'etats** : $2 \times 2 \times 2 = 8$",,,,,,,,bf1eb3394e935536,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-impl,code,fr,5898a4c012f1eacd,"class VacuumWorld(SearchProblem):
     """"""
     Monde de l'aspirateur a 2 pieces.
@@ -1216,7 +1216,7 @@ print(f""  -> Position: {s0[0]}, Gauche sale: {s0[1]}, Droite sale: {s0[2]}"")
 print(f""Actions possibles : {vacuum.actions(s0)}"")
 print(f""Est-ce un but ? {vacuum.is_goal(s0)}"")
 print(f""Taille de l'espace d'etats : {vacuum.state_space_size()}"")",,,,,,,,5898a4c012f1eacd,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-interpretation,markdown,fr,4130686014ab9003,"### Interpretation : Etat initial du monde de l'aspirateur
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-interpretation,markdown,fr,8b49c80d2901bc3c,"### Interpretation : Etat initial du monde de l'aspirateur
 
 **Sortie obtenue** : L'aspirateur demarre dans la piece gauche, les deux pieces sont sales.
 
@@ -1228,10 +1228,10 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-inte
 | Actions | [Aspirer, Droite] | Aspirer sur place ou se deplacer a droite |
 | But atteint | Non | Les deux pieces doivent etre propres |
 
-**Point cle** : L'action ""Gauche"" n'est pas disponible car l'aspirateur est deja dans la piece gauche. Les actions dependent de l'etat courant.",,,,,,,,4130686014ab9003,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trace-intro,markdown,fr,9387a1ad3653d780,"### Trace d'execution
+**Point cle** : L'action ""Gauche"" n'est pas disponible car l'aspirateur est déjà dans la piece gauche. Les actions dependent de l'etat courant.",,,,,,,,8b49c80d2901bc3c,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trace-intro,markdown,fr,8d7cbc0766a562ae,"### Trace d'exécution
 
-Simulons une sequence d'actions pour resoudre le probleme et observons l'evolution de l'etat.",,,,,,,,9387a1ad3653d780,,,,,,,
+Simulons une sequence d'actions pour resoudre le problème et observons l'evolution de l'etat.",,,,,,,,8d7cbc0766a562ae,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trace,code,fr,22089a93227d9bc7,"def trace_solution(problem: SearchProblem, actions: List[str]):
     """"""Execute une sequence d'actions et affiche la trace.""""""
     state = problem.initial_state()
@@ -1261,11 +1261,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trac
 # Solution optimale
 print(""Solution optimale :\n"")
 trace_solution(vacuum, ['Aspirer', 'Droite', 'Aspirer'])",,,,,,,,22089a93227d9bc7,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trace-interpretation,markdown,fr,3086745de656b60c,"### Interpretation : Solution du monde de l'aspirateur
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trace-interpretation,markdown,fr,3dade0154b22649b,"### Interpretation : Solution du monde de l'aspirateur
 
-**Sortie obtenue** : La solution optimale est Aspirer, Droite, Aspirer en 3 etapes.
+**Sortie obtenue** : La solution optimale est Aspirer, Droite, Aspirer en 3 étapes.
 
-| Etape | Etat avant | Action | Etat apres | Effet |
+| Étape | Etat avant | Action | Etat après | Effet |
 |-------|------------|--------|------------|-------|
 | 1 | (G, sale, sale) | Aspirer | (G, propre, sale) | Nettoie la piece gauche |
 | 2 | (G, propre, sale) | Droite | (D, propre, sale) | Se deplace sans nettoyer |
@@ -1274,7 +1274,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-trac
 **Points cles** :
 1. La solution a un cout de 3 (une unite par action)
 2. C'est une solution **optimale** : on ne peut pas nettoyer les deux pieces en moins de 3 actions
-3. La sequence (Droite, Aspirer, Gauche, Aspirer) est aussi une solution valide, mais de cout 4",,,,,,,,3086745de656b60c,,,,,,,
+3. La sequence (Droite, Aspirer, Gauche, Aspirer) est aussi une solution valide, mais de cout 4",,,,,,,,3dade0154b22649b,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-graph-intro,markdown,fr,bbb7e9d9a9cdcaeb,"### Visualisation du graphe d'etats
 
 Avec seulement 8 etats, nous pouvons visualiser l'integralite de l'espace d'etats sous forme de graphe oriente.",,,,,,,,bbb7e9d9a9cdcaeb,,,,,,,
@@ -1376,7 +1376,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-grap
 
 
 visualize_vacuum_state_space(vacuum)",,,,,,,,be7485a4e1cfe64f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-graph-interpretation,markdown,fr,cc26d8745e3e9461,"### Interpretation : Graphe d'etats de l'aspirateur
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-graph-interpretation,markdown,fr,528295aac0a7662f,"### Interpretation : Graphe d'etats de l'aspirateur
 
 **Sortie obtenue** : Le graphe complet montre les 8 etats et les transitions possibles.
 
@@ -1388,10 +1388,10 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,vacuum-grap
 | Transitions Gauche/Droite | Changent uniquement la position (fleches vertes/orange) |
 
 **Points cles** :
-1. L'action ""Aspirer"" dans une piece deja propre ne change pas l'etat (auto-boucle, non affichee)
+1. L'action ""Aspirer"" dans une piece déjà propre ne change pas l'etat (auto-boucle, non affichée)
 2. Depuis l'etat initial, il y a exactement **2 chemins optimaux** de longueur 3 vers un but
-3. Le graphe est **connexe** : depuis tout etat, on peut atteindre un etat but",,,,,,,,cc26d8745e3e9461,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-section,markdown,fr,f07fac78377d57c0,"## 4. Exemple 2 : Le taquin (8-Puzzle)
+3. Le graphe est **connexe** : depuis tout etat, on peut atteindre un etat but",,,,,,,,528295aac0a7662f,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-section,markdown,fr,923d5fc695d8a76b,"## 4. Exemple 2 : Le taquin (8-Puzzle)
 
 ### Description
 
@@ -1404,11 +1404,11 @@ Le **taquin** (8-Puzzle) est un casse-tete classique :
 
 | Composant | Definition |
 |-----------|------------|
-| Etat | Tuple de 9 elements (0 = case vide) |
+| Etat | Tuple de 9 éléments (0 = case vide) |
 | Actions | Haut, Bas, Gauche, Droite (deplace la case vide) |
 | Transition | Echange la case vide avec la tuile adjacente |
 | But | Configuration $(1, 2, 3, 4, 5, 6, 7, 8, 0)$ |
-| Taille | $\frac{9!}{2} = 181\,440$ etats accessibles |",,,,,,,,f07fac78377d57c0,,,,,,,
+| Taille | $\frac{9!}{2} = 181\,440$ etats accessibles |",,,,,,,,923d5fc695d8a76b,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-impl,code,fr,a81162b1dc762e93,"class EightPuzzle(SearchProblem):
     """"""
     Le taquin (8-Puzzle).
@@ -1468,9 +1468,9 @@ print(f""Taille de l'espace d'etats : {puzzle.state_space_size():,} etats"")
 print(f""Etat initial : {s0}"")
 print(f""Etat but :     {EightPuzzle.GOAL}"")
 print(f""Actions depuis l'etat initial : {puzzle.actions(s0)}"")",,,,,,,,a81162b1dc762e93,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-viz-intro,markdown,fr,bcac3de5babfe510,"### Affichage visuel du taquin
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-viz-intro,markdown,fr,9e4a4705dc8f04bd,"### Affichage visuel du taquin
 
-Pour mieux comprendre le probleme, affichons les etats du taquin sous forme de grilles graphiques.",,,,,,,,bcac3de5babfe510,,,,,,,
+Pour mieux comprendre le problème, affichons les etats du taquin sous forme de grilles graphiques.",,,,,,,,9e4a4705dc8f04bd,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-viz,code,fr,50e2f1532dd256a9,"def draw_puzzle_state(state: tuple, ax=None, title=""""):
     """"""Affiche un etat du taquin sous forme de grille 3x3.""""""
     if ax is None:
@@ -1569,11 +1569,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,puzzle-move
 3. La profondeur maximale de la solution optimale pour le 8-puzzle est de 31 coups
 
 > **Note** : Le 15-puzzle (grille 4x4) a environ $10^{13}$ etats et le 24-puzzle (grille 5x5) environ $10^{25}$ etats.",,,,,,,,99a2df0608d2739f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-section,markdown,fr,694ba5dd2b8c5c15,"## 5. Exemple 3 : Recherche d'itineraire
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-section,markdown,fr,17e70f9de86c229c,"## 5. Exemple 3 : Recherche d'itineraire
 
 ### Description
 
-Le probleme de **recherche d'itineraire** consiste a trouver le chemin le plus court entre deux villes dans un reseau routier. C'est l'application la plus intuitive de la recherche dans un espace d'etats.
+Le problème de **recherche d'itineraire** consiste a trouver le chemin le plus court entre deux villes dans un reseau routier. C'est l'application la plus intuitive de la recherche dans un espace d'etats.
 
 ### Modelisation
 
@@ -1583,7 +1583,7 @@ Le probleme de **recherche d'itineraire** consiste a trouver le chemin le plus c
 | Actions | Se deplacer vers une ville voisine |
 | Transition | Changer de ville |
 | Cout | Distance entre les deux villes |
-| But | Arriver a la ville de destination |",,,,,,,,694ba5dd2b8c5c15,,,,,,,
+| But | Arriver a la ville de destination |",,,,,,,,17e70f9de86c229c,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-impl,code,fr,09504a8b85501419,"class RouteFinding(SearchProblem):
     """"""
     Probleme de recherche d'itineraire dans un graphe de villes.
@@ -1745,7 +1745,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-viz,c
 
 # Afficher la carte
 visualize_route_graph(france_graph, start='Bordeaux', goal='Strasbourg')",,,,,,,,9979cdf8fb2b6bec,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-viz-interpretation,markdown,fr,357beca3591c930b,"### Interpretation : Reseau routier
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-viz-interpretation,markdown,fr,409371d3f0fdd051,"### Interpretation : Reseau routier
 
 **Sortie obtenue** : La carte montre 11 villes et les liaisons routieres avec distances en km.
 
@@ -1757,12 +1757,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-viz-i
 | | Via Toulouse-Lyon (Bordeaux-Toulouse-Montpellier-Marseille-Lyon-Strasbourg) |
 
 **Points cles** :
-1. Le cout (distance) est **variable** : contrairement a l'aspirateur et au taquin, chaque action a un cout different
+1. Le cout (distance) est **variable** : contrairement a l'aspirateur et au taquin, chaque action a un cout différent
 2. Le graphe n'est pas complet : toutes les villes ne sont pas directement reliees
-3. La solution la plus courte en nombre d'etapes n'est pas forcement la plus courte en distance",,,,,,,,357beca3591c930b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-path-intro,markdown,fr,0d2c040b6ac1ee69,"### Comparaison de deux itineraires
+3. La solution la plus courte en nombre d'étapes n'est pas forcement la plus courte en distance",,,,,,,,409371d3f0fdd051,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-path-intro,markdown,fr,e4f3e15e6a46f0c4,"### Comparaison de deux itineraires
 
-Comparons un itineraire direct (peu d'etapes) et un itineraire avec plus d'etapes pour illustrer la difference entre nombre d'etapes et cout total.",,,,,,,,0d2c040b6ac1ee69,,,,,,,
+Comparons un itineraire direct (peu d'étapes) et un itineraire avec plus d'étapes pour illustrer la différence entre nombre d'étapes et cout total.",,,,,,,,e4f3e15e6a46f0c4,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-comparison,code,fr,d9e8d4db61b13d17,"def evaluate_path(problem: RouteFinding, path: List[str]):
     """"""Evalue un itineraire : cout total et nombre d'etapes.""""""
     total_cost = 0
@@ -1799,20 +1799,20 @@ print(f""  Distance totale : {cost2} km"")
 
 print(f""\nDifference : {abs(cost1 - cost2)} km"")
 print(f""Le chemin le plus court est l'itineraire {'1 (via Paris)' if cost1 <= cost2 else '2 (via le sud)'}"")",,,,,,,,d9e8d4db61b13d17,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-comparison-interpretation,markdown,fr,316d089f3e0741e1,"### Interpretation : Nombre d'etapes vs cout
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-comparison-interpretation,markdown,fr,31c88640ddae2062,"### Interpretation : Nombre d'étapes vs cout
 
-**Sortie obtenue** : Deux itineraires de longueurs differentes en nombre d'etapes et en distance.
+**Sortie obtenue** : Deux itineraires de longueurs différentes en nombre d'étapes et en distance.
 
-| Itineraire | Etapes | Distance totale | Commentaire |
+| Itineraire | Étapes | Distance totale | Commentaire |
 |------------|--------|-----------------|-------------|
-| Via Paris | 2 | 1075 km | Peu d'etapes, mais long |
-| Via le sud | 5 | 1465 km | Plus d'etapes et plus long |
+| Via Paris | 2 | 1075 km | Peu d'étapes, mais long |
+| Via le sud | 5 | 1465 km | Plus d'étapes et plus long |
 
-**Lecon fondamentale** : La distinction entre **recherche en largeur** (minimise le nombre d'etapes) et **recherche au cout uniforme** (minimise le cout total) est cruciale. Dans cet exemple :
-- BFS choisirait l'itineraire 1 (2 etapes)
+**Lecon fondamentale** : La distinction entre **recherche en largeur** (minimise le nombre d'étapes) et **recherche au cout uniforme** (minimise le cout total) est cruciale. Dans cet exemple :
+- BFS choisirait l'itineraire 1 (2 étapes)
 - La recherche au cout uniforme pourrait trouver un chemin moins cher en explorant d'autres options
 
-> L'algorithme **A*** combine les deux en utilisant une heuristique pour guider la recherche. Nous l'etudierons dans le notebook suivant.",,,,,,,,316d089f3e0741e1,,,,,,,
+> L'algorithme **A*** combine les deux en utilisant une heuristique pour guider la recherche. Nous l'etudierons dans le notebook suivant.",,,,,,,,31c88640ddae2062,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,route-viz-path,code,fr,9867df60cb827b19,"# Afficher le chemin via Paris sur la carte
 visualize_route_graph(france_graph, start='Bordeaux', goal='Strasbourg',
                       path=['Bordeaux', 'Paris', 'Strasbourg'])",,,,,,,,9867df60cb827b19,,,,,,,
@@ -1843,38 +1843,38 @@ print(""="" * 70)
 
 for row in properties:
     print(f""{row[0]:<20} {row[1]:<15} {row[2]:<15} {row[3]:<15}"")",,,,,,,,1ca61baff6704d72,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,properties-interpretation,markdown,fr,6158b8021aeeaf7a,"### Interpretation : Comparaison des proprietes
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,properties-interpretation,markdown,fr,12bdfdeb3a04ec16,"### Interpretation : Comparaison des proprietes
 
 Les trois problemes partagent des proprietes importantes qui les rendent accessibles aux algorithmes de recherche classiques :
 
 | Propriete | Signification | Consequence algorithmique |
 |-----------|---------------|---------------------------|
 | **Observable** | L'agent connait l'etat complet | Pas besoin de perception partielle |
-| **Deterministe** | Chaque action a un resultat unique | Pas de probabilites a gerer |
+| **Deterministe** | Chaque action a un résultat unique | Pas de probabilites a gerer |
 | **Discret** | Nombre fini d'etats et d'actions | Enumeration possible |
 | **Statique** | Le monde ne change pas entre les actions | L'agent peut planifier hors-ligne |
-| **Agent unique** | Pas d'adversaire | Pas besoin de theorie des jeux |
+| **Agent unique** | Pas d'adversaire | Pas besoin de théorie des jeux |
 
-**Differences significatives** :
+**Différences significatives** :
 
-| Difference | Impact |
+| Différence | Impact |
 |------------|--------|
 | Taille de l'espace | Le 8-puzzle est 22 000 fois plus grand que l'aspirateur |
 | Cout uniforme ou non | L'itineraire necessite UCS ou A* (BFS ne suffit pas pour l'optimalite) |
 | Reversibilite | Le taquin est totalement reversible, l'aspirateur ne l'est que partiellement |
 
-> **Problemes plus complexes** : Quand ces proprietes ne sont pas satisfaites (non-determinisme, observabilite partielle, multi-agents), il faut des algorithmes specialises (POMDP, jeux, planification probabiliste).",,,,,,,,6158b8021aeeaf7a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercises-section,markdown,fr,86835abdb032bdd6,"## 7. Exercices
+> **Problemes plus complexes** : Quand ces proprietes ne sont pas satisfaites (non-determinisme, observabilite partielle, multi-agents), il faut des algorithmes specialises (POMDP, jeux, planification probabiliste).",,,,,,,,12bdfdeb3a04ec16,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercises-section,markdown,fr,8d7ce60c24ad30b0,"## 7. Exercices
 
 ### Exercice 1 : Missionnaires et Cannibales
 
 Trois missionnaires et trois cannibales doivent traverser une riviere dans un bateau qui ne peut transporter que 2 personnes. Si les cannibales sont plus nombreux que les missionnaires sur une rive, les missionnaires sont devores.
 
-**Tache** : Modelisez ce probleme comme un `SearchProblem`.
+**Tâche** : Modelisez ce problème comme un `SearchProblem`.
 
 - Etat : `(m_gauche, c_gauche, bateau)` ou `m_gauche` = missionnaires sur la rive gauche, `c_gauche` = cannibales sur la rive gauche, `bateau` = 'G' ou 'D'
 - Actions : nombre de missionnaires et cannibales dans le bateau
-- Contrainte : jamais plus de cannibales que de missionnaires sur une rive (sauf si 0 missionnaires)",,,,,,,,86835abdb032bdd6,,,,,,,
+- Contrainte : jamais plus de cannibales que de missionnaires sur une rive (sauf si 0 missionnaires)",,,,,,,,8d7ce60c24ad30b0,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise1,code,fr,526bb3de4c41459f,"class MissionariesCannibals(SearchProblem):
     """"""
     Exercice 1 : Missionnaires et Cannibales.
@@ -2006,21 +2006,21 @@ if solution:
 else:
     if 'mc' in dir():
         print(""Pas de solution trouvee."")",,,,,,,,d5d4d662079704d6,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise1-interpretation,markdown,fr,2e19fba2446fa630,"### Interpretation : Missionnaires et Cannibales
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise1-interpretation,markdown,fr,becdc98759a48120,"### Interpretation : Missionnaires et Cannibales
 
 **Sortie obtenue** : (Exercice non complete) - la classe MissionariesCannibals etant un squelette, BFS ne trouve aucune solution. Une fois completee, l'etudiant doit obtenir la solution optimale connue de 11 traversees.
 
 **Points cles** :
 1. L'espace d'etats est petit mais les contraintes le rendent non trivial
-2. Le probleme est **reversible** : le bateau doit revenir pour continuer les traversees
+2. Le problème est **reversible** : le bateau doit revenir pour continuer les traversees
 3. La contrainte de securite (pas plus de cannibales que de missionnaires) elimine de nombreux etats
 
-> Ce probleme illustre que la **taille de l'espace d'etats** ne determine pas a elle seule la difficulte. Les contraintes jouent un role crucial.",,,,,,,,2e19fba2446fa630,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise2,markdown,fr,b6ae1dfb6f571c55,"### Exercice 2 : Taille de l'espace d'etats du 15-puzzle
+> Ce problème illustre que la **taille de l'espace d'etats** ne determine pas a elle seule la difficulte. Les contraintes jouent un rôle crucial.",,,,,,,,becdc98759a48120,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise2,markdown,fr,fb0a79b803d1c918,"### Exercice 2 : Taille de l'espace d'etats du 15-puzzle
 
 **Question** : Calculez la taille de l'espace d'etats du **15-puzzle** (grille 4x4).
 
-**Indice** : Le 8-puzzle a $\frac{9!}{2}$ etats accessibles. Le meme raisonnement s'applique.",,,,,,,,b6ae1dfb6f571c55,,,,,,,
+**Indice** : Le 8-puzzle a $\frac{9!}{2}$ etats accessibles. Le même raisonnement s'applique.",,,,,,,,fb0a79b803d1c918,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise2-solution,code,fr,70f1bad152627822,"import math
 
 # Exercice 2 : Taille de l'espace d'etats
@@ -2054,14 +2054,14 @@ print(""\nConclusion :"")
 print(""- Le nombre d'etats explose factorialement (n!)"")
 print(""- Seule la moitie des etats est atteignable"")
 print(""- La recherche exhaustive devient rapidement impossible"")",,,,,,,,70f1bad152627822,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3,markdown,fr,417a10ff49d9b368,"### Exercice 3 : Labyrinthe comme probleme de recherche
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3,markdown,fr,11e889731ae31eda,"### Exercice 3 : Labyrinthe comme problème de recherche
 
-**Tache** : Modelisez un labyrinthe sous forme de grille comme un `SearchProblem`.
+**Tâche** : Modelisez un labyrinthe sous forme de grille comme un `SearchProblem`.
 
 - Etat : position (ligne, colonne)
 - Actions : Haut, Bas, Gauche, Droite
 - Contraintes : ne pas sortir de la grille, ne pas traverser de murs
-- But : atteindre la sortie",,,,,,,,417a10ff49d9b368,,,,,,,
+- But : atteindre la sortie",,,,,,,,11e889731ae31eda,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3-solution,code,fr,c729b95003db6818,"class MazeProblem(SearchProblem):
     """"""
     Exercice 3 : Labyrinthe comme probleme de recherche.
@@ -2203,7 +2203,7 @@ try:
     visualize_maze(maze, solution)
 except (NameError, NotImplementedError, TypeError):
     print(""Completez la classe MazeProblem pour voir la visualisation du labyrinthe."")",,,,,,,,5944127848406fe6,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3-interpretation,markdown,fr,36884dbaa31ce236,"### Interpretation : Labyrinthe comme espace d'etats
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3-interpretation,markdown,fr,dc5f23a311541aa0,"### Interpretation : Labyrinthe comme espace d'etats
 
 **Sortie obtenue** : (Exercice non complete) - la classe MazeProblem etant un squelette, BFS n'est pas lancee et aucun chemin n'est produit. Une fois completee sur la grille prevue (5x7), l'etudiant doit obtenir et visualiser le chemin le plus court.
 
@@ -2217,16 +2217,16 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,exercise3-i
 **Points cles** :
 1. Le labyrinthe est un cas particulier de graphe implicite : les aretes sont definies par la structure de la grille
 2. La BFS garantit la solution optimale car le cout est uniforme
-3. Ce meme modele peut representer des problemes de robotique, de pathfinding dans les jeux video, etc.",,,,,,,,36884dbaa31ce236,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,summary-section,markdown,fr,2ac923a873c8ce07,"## 8. Resume
+3. Ce même modèle peut representer des problemes de robotique, de pathfinding dans les jeux video, etc.",,,,,,,,dc5f23a311541aa0,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,summary-section,markdown,fr,d1364cae30e6ec61,"## 8. Resume
 
 ### Concepts cles
 
 | Concept | Definition |
 |---------|------------|
-| **Espace d'etats** $S$ | Ensemble de toutes les configurations possibles du probleme |
+| **Espace d'etats** $S$ | Ensemble de toutes les configurations possibles du problème |
 | **Etat initial** $s_0$ | Configuration de depart |
-| **Actions** $A(s)$ | Operations applicables dans un etat |
+| **Actions** $A(s)$ | Opérations applicables dans un etat |
 | **Transition** $T(s,a)$ | Fonction qui produit le nouvel etat |
 | **Test de but** $G(s)$ | Determine si un etat est une solution |
 | **Fonction de cout** $c(s,a,s')$ | Cout associe a une transition |
@@ -2235,9 +2235,9 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,summary-sec
 
 ### Problemes etudies
 
-| Probleme | Taille $|S|$ | Cout | Difficulte principale |
+| Problème | Taille $|S|$ | Cout | Difficulte principale |
 |----------|-------------|------|-----------------------|
-| Aspirateur | 8 | Uniforme | Trivial, sert de modele pedagogique |
+| Aspirateur | 8 | Uniforme | Trivial, sert de modèle pedagogique |
 | 8-Puzzle | 181 440 | Uniforme | Taille de l'espace, profondeur des solutions |
 | Itineraire | Variable | Distances | Couts non uniformes, necessite UCS ou A* |
 | Missionnaires | ~16 | Uniforme | Contraintes de validite des etats |
@@ -2245,7 +2245,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,summary-sec
 
 ### Ce qu'il faut retenir
 
-1. **Tout probleme de planification** peut se formaliser comme un probleme de recherche dans un espace d'etats
+1. **Tout problème de planification** peut se formaliser comme un problème de recherche dans un espace d'etats
 2. **La taille de l'espace** determine la complexite computationnelle
 3. **Le type de cout** (uniforme ou non) determine le choix de l'algorithme
 4. **Les proprietes** (observable, deterministe, discret) conditionnent les algorithmes applicables
@@ -2253,12 +2253,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,summary-sec
 ### Pour aller plus loin
 
 - **Notebook suivant** : [Search-2-Uninformed](Search-2-Uninformed.ipynb) - Algorithmes de recherche non informee (BFS, DFS, UCS)
-- **Reference** : Russell & Norvig, *Artificial Intelligence: A Modern Approach*, Chapitre 3",,,,,,,,2ac923a873c8ce07,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,1fd61d48,markdown,fr,1068406b3d25bdba,"## Resume et perspectives
+- **Reference** : Russell & Norvig, *Artificial Intelligence: A Modern Approach*, Chapitre 3",,,,,,,,d1364cae30e6ec61,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,1fd61d48,markdown,fr,8fe5d7a9977229af,"## Resume et perspectives
 
 Ce notebook a pose les fondements de la recherche dans les espaces d'etats : la formalisation en 5-tuple $(S, s_0, A, T, G)$, la modelisation de problemes concrets (aspirateur, taquin, itineraire), et l'analyse des proprietes qui influencent le choix algorithmique. La distinction entre cout uniforme et cout variable, illustree par l'exemple de l'itineraire, sera determinante dans les prochains notebooks.
 
-**Le passage au [notebook Search-2-Uninformed](Search-2-Uninformed.ipynb)** aborde les algorithmes systematiques -- BFS, DFS, UCS -- qui exploitent uniquement la structure du graphe d'etats, sans connaissance specifique du probleme, pour garantir completude et optimalite selon les conditions.
+**Le passage au [notebook Search-2-Uninformed](Search-2-Uninformed.ipynb)** aborde les algorithmes systematiques -- BFS, DFS, UCS -- qui exploitent uniquement la structure du graphe d'etats, sans connaissance specifique du problème, pour garantir completude et optimalite selon les conditions.
 
 
 
@@ -2268,7 +2268,7 @@ Ce notebook a pose les fondements de la recherche dans les espaces d'etats : la 
 - Amarel, S. (1968). On Representations of Problems of Reasoning About Actions. Machine Intelligence 3:131-171.
 - Russell, S. & Norvig, P. (2020). Artificial Intelligence: A Modern Approach (4th ed.). Pearson.
 
-",,,,,,,,1068406b3d25bdba,,,,,,,
+",,,,,,,,8fe5d7a9977229af,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb,nav-footer,markdown,fr,148e073f11437615,"---
 
 **Navigation** : [Index](../README.md) | [Suivant >>](Search-2-Uninformed.ipynb)",,,,,,,,148e073f11437615,,,,,,,
