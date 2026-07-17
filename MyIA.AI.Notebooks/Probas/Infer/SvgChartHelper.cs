@@ -70,10 +70,19 @@ public static class SvgChartHelper
     // API publique
     // ---------------------------------------------------------------------------------------------
 
-    /// <summary>Diagramme en barres verticales. Valeurs negatives tracees vers le bas.</summary>
+    /// <summary>
+    /// Diagramme en barres verticales. Valeurs negatives tracees vers le bas.
+    /// <para><paramref name="colors"/> (optionnel) : une couleur hex par barre (meme longueur que
+    /// <paramref name="values"/>), pour porter une semantique par-barre — ex. bleu <c>#4C72B0</c> =
+    /// rentable / orange <c>#DD8452</c> = non rentable — qu'une couleur unique ne peut exprimer.
+    /// Quand fourni, prime sur <paramref name="color"/> et sur la couleur negative automatique.</para>
+    /// <para><paramref name="legend"/> (optionnel) : entrees (couleur, label) rendues dans un encart
+    /// de legende SVG inline (haut-droite) pour expliciter le code couleur, sans legende console ASCII.</para>
+    /// </summary>
     public static SvgChart Bar(string title, string[] categories, double[] values,
-        int width = 560, int height = 320, string color = null)
-        => new SvgChart(BuildBar(title, categories, values, width, height, color ?? ColorPrimary));
+        int width = 560, int height = 320, string color = null,
+        string[] colors = null, IReadOnlyList<(string Color, string Label)> legend = null)
+        => new SvgChart(BuildBar(title, categories, values, width, height, color ?? ColorPrimary, colors, legend));
 
     /// <summary>Graphique lineaire (polyline + marqueurs).</summary>
     public static SvgChart Line(string title, string[] categories, double[] values,
@@ -113,9 +122,12 @@ public static class SvgChartHelper
     // ---------------------------------------------------------------------------------------------
 
     private static string BuildBar(string title, string[] categories, double[] values,
-        int w, int h, string color)
+        int w, int h, string color, string[] colors = null,
+        IReadOnlyList<(string Color, string Label)> legend = null)
     {
         int n = AssertPairs(categories, values);
+        if (colors != null && colors.Length != n)
+            throw new ArgumentException("Bar: colors doit avoir la meme longueur que values (une couleur par barre).");
         var (yMin, yMax) = NiceBounds(values);
         var layout = new PlotLayout(w, h, yMin, yMax, categories.Length);
 
@@ -132,10 +144,13 @@ public static class SvgChartHelper
             // y = sommet (SVG) de la barre : Y(v) si v>=0 (croit vers le haut depuis 0),
             // Y(0) si v<0 (croit vers le bas depuis 0). Hauteur = barH.
             double y = v >= 0 ? layout.Y(v) : layout.Y(0);
-            string c = v >= 0 ? color : ColorNegative;
+            // Couleur par-barre (colors[i]) si fournie, sinon couleur unique / rouge auto pour negatifs.
+            string c = colors != null ? colors[i] : (v >= 0 ? color : ColorNegative);
             sb.Append($"<rect x='{F(x)}' y='{F(y)}' width='{F(barW)}' height='{F(barH)}' fill='{c}'/>");
             sb.Append(CategoryLabel(layout, x + barW / 2.0, categories[i]));
         }
+        if (legend != null && legend.Count > 0)
+            sb.Append(LegendBox(layout, legend));
         sb.Append(CloseSvg());
         return sb.ToString();
     }
@@ -344,6 +359,26 @@ public static class SvgChartHelper
 
     private static string CategoryLabel(PlotLayout l, double x, string label)
         => $"<text x='{F(x)}' y='{l.H - l.PadB + 16}' text-anchor='middle' fill='{ColorText}'>{Esc(label)}</text>";
+
+    // Encart de legende SVG inline (coin haut-droit de la zone de plot) : une pastille coloree +
+    // label par entree. Utilise par Bar() pour expliciter une semantique de couleur par-barre
+    // (ex. bleu=rentable / orange=non rentable) sans recourir a une legende console ASCII degradee.
+    private static string LegendBox(PlotLayout l, IReadOnlyList<(string Color, string Label)> entries)
+    {
+        var sb = new StringBuilder();
+        int maxLabel = entries.Max(e => (e.Label ?? "").Length);
+        double boxW = 30 + maxLabel * 6.6;
+        double boxH = 8 + entries.Count * 17;
+        double lx = l.PadL + l.PlotW - boxW - 4, ly = l.PadT + 6;
+        sb.Append($"<rect x='{F(lx)}' y='{F(ly)}' width='{F(boxW)}' height='{F(boxH)}' fill='white' fill-opacity='0.85' stroke='{ColorGrid}' stroke-width='1'/>");
+        for (int i = 0; i < entries.Count; i++)
+        {
+            double ey = ly + 13 + i * 17;
+            sb.Append($"<rect x='{F(lx + 7)}' y='{F(ey - 9)}' width='12' height='12' fill='{entries[i].Color}'/>");
+            sb.Append($"<text x='{F(lx + 24)}' y='{F(ey)}' fill='{ColorText}'>{Esc(entries[i].Label)}</text>");
+        }
+        return sb.ToString();
+    }
 
     // Bornes Y "propres" : incluent 0 si les valeurs le traversent ou sont toutes >=0,
     // avec une petite marge pour ne pas coller au bord.
