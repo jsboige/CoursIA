@@ -4,7 +4,13 @@ import json, os, time, re, sys
 import requests
 
 WHISPER_URL = "http://localhost:8190/v1/audio/transcriptions"
-API_KEY = "ucoQtp68sir65NNPmxP-Ef_BOKNsEebDlHTB9ytCKT_UYR6HQ7yDXF9lgR5zz6R6"
+API_KEY = os.getenv("WHISPER_API_KEY")
+if not API_KEY:
+    raise ValueError(
+        "WHISPER_API_KEY manquant (secrets-hygiene.md). "
+        "Definir dans .secrets/master.env puis python scripts/secrets/render_envs.py "
+        "+ docker compose restart whisper-api."
+    )
 THRESHOLD = 0.15
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
