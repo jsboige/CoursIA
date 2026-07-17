@@ -29,22 +29,22 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 
 | Lake | FR canonique | EN sibling | Couverture fichiers | Statut |
 |------|-------------:|-----------:|--------------------:|--------|
-| `learning_theory_lean` | 19 | 18 | 18/19 = **95 %** | EXCELLENT |
-| `game_theory_lean` | 26 | 21 | 21/26 = **81 %** | EXCELLENT (multi-lib ; a absorbé RepeatedGames #6146 + CooperativeGames + SocialChoice) |
-| `sudoku_lean` | 5 | 4 | 4/5 = **80 %** | BON |
-| `minimax_lean` | 5 | 4 | 4/5 = **80 %** | BON |
-| `knot_lean` | 8 | 6 | 6/8 = **75 %** | **BON** (⬆ 0→6 : po-2025 #6429/#6440 livrés — bilinguisation quasi complète) |
-| `sensitivity_lean` | 6 | 4 | 4/6 = **67 %** | BON (root bilingue inline) |
-| `conway_lean` | 28 | 18 | 18/28 = **64 %** | PARTIEL (⬆ 11→18 : #6412/#6413/#6442 et successeurs ; 9 siblings restants) |
-| `calibration_lean` | 5 | 3 | 3/5 = **60 %** | BON (root bilingue inline) |
-| `grothendieck_lean` | 26 | 15 | 15/26 = **58 %** | PARTIEL (⬆ 12→15 : #6304/#6284/#6280 et successeurs ; 10 restants) |
+| `learning_theory_lean` | 18 | 18 | 18/18 = **100 %** | EXCELLENT ↻07-17 |
+| `game_theory_lean` | 25 | 21 | 21/25 = **84 %** | EXCELLENT (multi-lib ; a absorbé RepeatedGames #6146 + CooperativeGames + SocialChoice) ↻07-17 |
+| `sudoku_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
+| `minimax_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
+| `knot_lean` | 7 | 7 | 7/7 = **100 %** | EXCELLENT (⬆ 0→6 : po-2025 #6429/#6440 livrés — bilinguisation complète) ↻07-17 |
+| `sensitivity_lean` | 5 | 5 | 5/5 = **100 %** | EXCELLENT ↻07-17 |
+| `conway_lean` | 27 | 26 | 26/27 = **96 %** | EXCELLENT (les « 5 grains type-C » Doomsday/Fractran/FreeWillTheorem/LookAndSay/Nim sont **livrés** ; seul `HashlifeCorrectness.lean` 3790-L recherche reste sans EN) ↻07-17 |
+| `calibration_lean` | 4 | 4 | 4/4 = **100 %** | EXCELLENT ↻07-17 |
+| `grothendieck_lean` | 25 | 23 | 23/25 = **92 %** | EXCELLENT (les 2 restants sont type-B EN-canon → FR-flip recherche, basse priorité) ↻07-17 |
 | `conway_cgt_lean` | 2 | 1 | 1/1 hors lakefile = **100 %** | **FAIT** (⬆ 0→1 : `CGTTour_en.lean` livré — l'ancien « pilote #1 » est clos) |
-| `finiteness_lean` | 3 | 1 | 1/3 = **33 %** | BON (2 utilitaires internes non traduits) |
-| `mathlib_examples` | 3 | 0 | 0/3 = **0 %** | **À FAIRE** (trivial, faible priorité) |
+| `finiteness_lean` | 2 | 1 | 1/2 = **50 %** | BON (1 utilitaire interne non traduit) ↻07-17 |
+| `mathlib_examples` | 2 | 1 | 1/2 = **50 %** | BON (`Basic_en.lean` livré #6664 ; seul le root umbrella `MathLibExamples.lean` reste sans sibling) ↻07-17 |
 | `repeated_games_lean` | 1 | 1 | — | **ABSORBÉ** dans `game_theory_lean` (#6146, cf. #4365) — legacy quasi-vide |
 | `social_choice_lean` | 1 | 0 | — | **ABSORBÉ** dans `game_theory_lean` (#6040, cf. #4365) — legacy quasi-vide |
 | `cooperative_games_lean` | — | — | — | **ABSORBÉ / lake supprimé** — plus de `lakefile.lean` standalone ; contenu migré dans `game_theory_lean/CooperativeGames/` (cf. `code-style.md` §Lean) |
-| `social_choice_lean_peters` | 2 | 0 | 0/2 = **0 %** | **HORS SCOPE** (vendored, `_peters`) |
+| `social_choice_lean_peters` | 1 | 0 | 0/1 = **0 %** | **HORS SCOPE** (vendored, `_peters`) |
 
 > **Refresh 2026-07-15 (ai-01, See #4980)** : recompte firsthand sur `origin/main`
 > @ `77294f5941`. Changements majeurs vs epoch 2026-07-14 (`455492afa`) : (a)
@@ -57,6 +57,33 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 > complète #6274, disparu du scan) — retiré de « BON », reclassé ABSORBÉ. Les comptes
 > `fr_files` incluent `lakefile.lean` (aglistique) — un `fr=en=1` sur un legacy
 > signifie « dir quasi-vide post-absorption », pas « lake actif sans i18n ».
+
+> **Refresh 2026-07-17 (po-2024, See #4980)** : recompte firsthand sur `origin/main`
+> @ `aede9bfc7` (scan `find … *.lean` hors `.lake`, FR = hors `*_en.lean` et hors
+> `lakefile`, EN = `*_en.lean`, couverture = FR ayant un sibling `${base}_en.lean`).
+> La table ci-dessus est **corrigée** — l'inventaire 2026-07-15 sous-estimait
+> massivement la couverture réelle. Principaux écarts : (a) **`conway_lean` 64 %→96 %**
+> — les 5 grains type-C propres identifiés le 15/07 (`Doomsday`, `Fractran`,
+> `FreeWillTheorem`, `LookAndSay`, `Nim`) sont **désormais livrés** ; seul
+> `Conway/Life/HashlifeCorrectness.lean` (3790 lignes, preuve recherche EPIC #6724
+> GOL-S4) reste sans sibling — cible prover, pas un grain i18n. (b) **`grothendieck_lean` 58 %→92 %**
+> (+8 siblings livrés). (c) **`knot_lean` 75 %→100 %**, **`decision_theory_lean` 92 %→100 %**
+> (Coherence/Gittins/Utility complets via #6154/#6138). (d) **`mathlib_examples` 0 %→50 %**
+> (`Basic_en.lean` livré #6664 — n'est plus « À FAIRE 0 % »). **Bilan** : le rollout
+> i18n pédagogique (#4980) est **quasi-complet** ; il ne reste **aucun grain type-A
+> clean** sur les lakes suivis sauf `lean_game_defs_ext` (voir table hors scope
+> ci-après) et les type-B FR-flips recherche (grothendieck, basse priorité).
+>
+> ⚠ **Nouveau grain découvert — `lean_game_defs_ext` (GameTheory/), 0/13 = 0 %** :
+> lake bayésien FR-canon (docstrings FR, type-A léger), **absent de l'inventaire
+> 2026-07-15**. Le root `Bayesian.lean` est **bilingue inline (Option B)** — un
+> grain clean = split en sibling pair FR-seul + `Bayesian_en.lean` (le bloc EN
+> migre, pas de régression). **Caveat build** : `lakefile.toml` n'a pas de `globs`
+> → le sibling root `_en` ne serait PAS type-checké par la CI sans ajouter
+> `globs = ["Bayesian.*", "Bayesian_en"]` (pattern #6585, cf `decision_theory_lean`).
+> Syntaxe TOML globs **non encore éprouvée dans le repo** (aucun lakefile.toml
+> n'utilise globs) → router vers une lane Lean-build-capable (po-2023/po-2026) pour
+> livrer le grain + vérifier le build.
 
 ---
 
@@ -129,6 +156,8 @@ sibling s'est propagée au-delà du périmètre initial). Ils sont désormais su
 | `kelly_lean` | `QuantConnect/` | 4 | 3 | 3/4 = **75 %** | BON |
 | `argumentation_lean` | `SymbolicAI/Tweety/` | 7 | 5 | 5/7 = **71 %** | BON |
 | `erc20_lean` | `SymbolicAI/SmartContracts/` | 5 | 3 | 3/5 = **60 %** | BON |
+| `lean_game_defs` | `GameTheory/` | 6 | 6 | 6/6 = **100 %** | EXCELLENT ↻07-17 |
+| `lean_game_defs_ext` | `GameTheory/` | 13 | 0 | 0/13 = **0 %** | **À FAIRE** — root `Bayesian.lean` bilingue inline (type-C clean, Option B à splitter) ; docstrings FR-canon (type-A léger). ⚠ `lakefile.toml` sans `globs` → sibling root `_en` non type-checké par CI sans ajout globs (router vers lane Lean-build, cf refresh 07-17). See #2610. |
 
 > Aucun de ces lakes n'était « à 0 % » : la couverture i18n du repo est **plus
 > avancée** que ne le laissait croire le périmètre de scan initial. Le reste à faire
@@ -217,8 +246,13 @@ Look-and-Say + Nim + Angel), ~1894 lignes FR canoniques, 4 sorries Hashlife
 pédagogique élevé (lake le plus visité après `learning_theory_lean`).
 
 **Stratégie recommandée** : poursuivre la bilinguisation par **PR incrémentaux**
-sous-série par sous-série. **9 siblings restants** — c'est le principal chantier
-i18n substantiel du repo à ce stade.
+sous-série par sous-série. ~~**9 siblings restants** — c'est le principal chantier
+i18n substantiel du repo à ce stade.~~ **↻07-17 SUPERSEDÉ** : recompte firsthand =
+**26/27 = 96 %**. Les 5 grains type-C propres identifiés le 15/07 (`Doomsday`,
+`Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`) sont **livrés**. **Seul
+`Conway/Life/HashlifeCorrectness.lean` (3790 lignes, preuve recherche EPIC #6724
+GOL-S4) reste sans sibling** — cible prover, pas un grain i18n. Le « principal
+chantier i18n » conway est **effectivement clos** côté pédagogique.
 
 ### 8. `calibration_lean` — PARTIEL (60 %)
 
@@ -261,11 +295,13 @@ si modification.
 3 fichiers FR canoniques, 1 fichier EN sibling. Ratio faible parce que les 2
 fichiers non-traduits sont des utilitaires internes. ~17 lignes FR uniquement.
 
-### 12. `mathlib_examples` — À FAIRE (0 %)
+### 12. `mathlib_examples` — BON (50 %) ↻07-17
 
-3 fichiers FR canoniques, **0 fichier EN sibling**. Lake = référence (quelques
-exemples Mathlib re-formatés). Contenu FR quasi-nul (code sans docstring
-utilisateur). **Bilinguisation = faible priorité**.
+2 fichiers FR canoniques, **1 fichier EN sibling** (`Basic_en.lean`, livré #6664
++ root Basic_en #6780). Lake = référence (quelques exemples Mathlib
+re-formatés). Seul le root umbrella `MathLibExamples.lean` reste sans sibling
+(aglistique). **L'ancien statut « À FAIRE 0 % » est supersédé** — `Basic_en`
+est livré.
 
 ### 13. Legacy absorbés (`repeated_games_lean`, `social_choice_lean`, `cooperative_games_lean`)
 
@@ -292,6 +328,19 @@ les plus avancés ; `erc20_lean` (60 %, SmartContracts) le moins.
 ---
 
 ## Cibles PR pilote (cycles suivants) — révisées 2026-07-15
+
+> **↻07-17 SUPERSEDÉ (po-2024, firsthand disk-recount)** : la table et la
+> recommandation ci-dessous datent du 2026-07-15 et sont **largement caduques**.
+> (a) La cible #1 `conway_lean` « 5 grains type-C clean » (`Doomsday`,
+> `Fractran`, `FreeWillTheorem`, `LookAndSay`, `Nim`) est **ENTIÈREMENT LIVRÉE** —
+> recompte = 26/27 = 96 %, seul `HashlifeCorrectness.lean` (3790 L recherche
+> EPIC #6724) reste. (b) La « vraie » prochaine cible type-A clean est
+> **`lean_game_defs_ext` (0/13)** — lake bayésien FR-canon **manquant de
+> l'inventaire 2026-07-15** parce que le script de reproduction (§ « Inventaire
+> brut ») ne scanne que `lakefile.lean`, **pas `lakefile.toml`** — blind spot
+> TOML. (c) `grothendieck_lean` reste type-B FR-flip recherche (basse priorité),
+> inchangé. **Ne pas re-miner conway type-C** (livré) ni mathlib (livré) — voir
+> refresh 07-17 en tête de document.
 
 Les cibles #1 (`conway_cgt_lean`) et #3 (`knot_lean`) de la version 14/07 sont
 **livrées**. Le reste à faire substantiel se concentre sur les deux gros lakes
@@ -337,9 +386,11 @@ for lake in \
     MyIA.AI.Notebooks/Probas/*/ MyIA.AI.Notebooks/Search/*/ \
     MyIA.AI.Notebooks/SymbolicAI/Planners/*/ MyIA.AI.Notebooks/SymbolicAI/SmartContracts/*/ \
     MyIA.AI.Notebooks/SymbolicAI/Tweety/*/ MyIA.AI.Notebooks/QuantConnect/*/; do
-  if [ -f "$lake/lakefile.lean" ]; then
+  # ↻07-17 : accepter lakefile.lean ET lakefile.toml (sinon lakes TOML comme
+  # lean_game_defs_ext sont invisibles au scan → inventaire incomplet)
+  if [ -f "$lake/lakefile.lean" ] || [ -f "$lake/lakefile.toml" ]; then
     lake_name=$(basename "$lake")
-    fr=$(find "$lake" -name '*.lean' -not -path '*.lake*' -not -name '*_en.lean' 2>/dev/null | wc -l)
+    fr=$(find "$lake" -name '*.lean' -not -path '*.lake*' -not -name '*_en.lean' -not -name 'lakefile.lean' 2>/dev/null | wc -l)
     en=$(find "$lake" -name '*_en.lean' -not -path '*.lake*' 2>/dev/null | wc -l)
     echo "$lake_name: fr_files=$fr en_files=$en"
   fi
