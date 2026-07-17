@@ -6681,15 +6681,15 @@ System.Console.WriteLine($""KB entail (alice : exists hasParent . Human) : {labe
 System.Console.WriteLine(""Exercice a completer"")
 
 ",,,,,,,,b4e48074a42a6804,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb,8fdf7ad47367,markdown,fr,47886d87ba47c956,"### Exercice 3 — Cohabitation exemple + exercice (multi-formules)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb,8fdf7ad47367,markdown,fr,e7485597507bffae,"### Exercice 3 — Cohabitation exemple + exercice (multi-formules)
 
-Demontrer la cohabitation (cf [exercise-example-labeling.md](.claude/rules/exercise-example-labeling.md)) :
+Demontrer la cohabitation (cf [exercise-example-labeling.md](../../../.claude/rules/exercise-example-labeling.md)) :
 ci-dessus on a deja **un exemple resolu** (sections 2-3 : chainage direct alice-Mortal). Ajoutez ici un **exercice non resolu** qui exige l'etudiant de raisonner sur la **conjonction de concepts** :
 
 Construisez un concept `EtudiantSalarie = Human ⊓ Salarie`, et testez si une ABox avec `alice : EtudiantSalarie` est consistante (ne cree pas de contradiction) avec une TBox contenant `Human ⊑ Personne`.
 
 **Indice** : `Concept.AND(humanConcept, salarieConcept)` permet de construire le concept compose, mais ici on peut utiliser directement le parser : `""alice : Human ⊓ Salarie""` n'est pas une formule DL valide en ALC standard ; utilisez `parser.parseBeliefSet` ou composez deux formules distinctes.
-",,,,,,,,47886d87ba47c956,,,,,,,
+",,,,,,,,e7485597507bffae,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb,b9e13b0d6ff0,code,fr,cfddfe00e3d9ea25,"// TODO etudiant : conjonction de concepts (alice : Human ET alice : Salarie),
 // verifier la consistance avec une TBox simple.
 object estConsistant = null;     // TODO etudiant : bool, KB entail (alice : Human), KB entail (alice : Salarie)
