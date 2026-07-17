@@ -7,56 +7,60 @@
 ```text
 translations/
 ├── README.md                 ← ce fichier
-├── casestudies/              ├─ gametheory/        ├─ genai/ (texte, finetuning, posttraining)
-├── genai-audio/              ├─ genai-image/       ├─ iit/
-├── ml-datascience/           ├─ mlnet/             ├─ planners/
-├── probas-decinfer/          ├─ probas-infer/      ├─ probas-pymc/
-├── quantconnect/             ├─ rl/                ├─ search-applications/
-├── search-part1/             ├─ search-part2/      ├─ search-part3/
-├── search-part4/             ├─ semanticweb/       ├─ smartcontracts/
-├── smt/ (z3-api, z3-linq2z3) ├─ sudoku/            ├─ symbolicai/
+├── casestudies/              ├─ gametheory/        ├─ genai/ (7 séries : audio, casestudies, finetuning, image, posttraining, texte, video)
+├── iit/                      ├─ ml-datascience/    ├─ mlnet/
+├── partner-course-quant-...  ├─ planners/          ├─ probas-decinfer/
+├── probas-infer/             ├─ probas-pymc/       ├─ quantconnect/
+├── rl/                       ├─ search-applications/ ├─ search-part1/
+├── search-part2/             ├─ search-part3/      ├─ search-part4/
+├── semanticweb/              ├─ smartcontracts/    ├─ smt/ (z3-api, z3-linq2z3)
+├── sudoku/                   ├─ symbolicai/        ├─ symbolicai-lean/
 ├── symboliclearning/         └─ tweety/
 ```
 
-Sous-répertoire par famille (`translations/<famille>/`), un CSV par série pédagogique. `smt/` porte deux séries (`z3-api`, `z3-linq2z3`) et `genai/` en porte trois (`texte`, `finetuning`, `posttraining`).
+Sous-répertoire par famille (`translations/<famille>/`), un CSV par série pédagogique. `smt/` porte deux séries (`z3-api`, `z3-linq2z3`) et `genai/` en porte **sept** (`audio`, `casestudies`, `finetuning`, `image`, `posttraining`, `texte`, `video` — consolidation 2026-07-17, cf `genai/README.md`).
 
 Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de notebook. Cf. `scripts/translation/README.md` pour le schéma détaillé.
 
 ## Familles couvertes (T1 baseline)
 
-**29 CSV, 22 265 cellules** au total (extraction `src_lang=fr`, comptage lignes hors en-tête). Regroupement par domaine pédagogique :
+**33 CSV, 24 254 cellules** au total (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête). Regroupement par domaine pédagogique :
 
 | Domaine | CSV | Cellules | Série source |
 |---------|-----|---------:|--------------|
 | SymbolicAI — Tweety | `tweety/tweety.csv` | 864 | `SymbolicAI/Tweety/` |
 | SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1193 | `SymbolicAI/SemanticWeb/` |
 | SymbolicAI — Planning | `planners/planners.csv` | 1006 | `SymbolicAI/Planners/` |
-| SymbolicAI — SMT/Z3-API | `smt/z3-api.csv` | 541 | `SymbolicAI/SMT/` |
-| SymbolicAI — SMT/Z3.Linq | `smt/z3-linq2z3.csv` | 525 | `SymbolicAI/SMT/` |
+| SymbolicAI — SMT/Z3-API | `smt/z3-api.csv` | 541 | `SymbolicAI/SMT/Z3-API/` |
+| SymbolicAI — SMT/Z3.Linq | `smt/z3-linq2z3.csv` | 525 | `SymbolicAI/SMT/Z3-Linq2Z3/` |
 | SymbolicAI — Argument | `symbolicai/argument_analysis.csv` | 421 | `SymbolicAI/Argument_Analysis/` |
+| SymbolicAI — Lean | `symbolicai-lean/symbolicai-lean.csv` | 1178 | `SymbolicAI/Lean/` |
 | SymbolicLearning | `symboliclearning/symboliclearning.csv` | 738 | `SymbolicAI/SymbolicLearning/` |
 | SmartContracts | `smartcontracts/smartcontracts.csv` | 965 | `SymbolicAI/SmartContracts/` |
 | CaseStudies | `casestudies/casestudies.csv` | 149 | `CaseStudies/` |
-| Search — Part 1 | `search-part1/search-part1.csv` | 1168 | `Search/Part1-Foundations/` |
+| Search — Part 1 | `search-part1/search-part1.csv` | 1170 | `Search/Part1-Foundations/` |
 | Search — Part 2 | `search-part2/search-part2.csv` | 784 | `Search/Part2-CSP/` |
 | Search — Part 3 | `search-part3/search-part3.csv` | 131 | `Search/Part3-Advanced/` |
 | Search — Part 4 | `search-part4/search-part4.csv` | 453 | `Search/Part4-Metaheuristics/` |
 | Search — Applications | `search-applications/search-applications.csv` | 1468 | `Search/Applications/` |
-| Probas — Infer.NET | `probas-infer/probas_infer.csv` | 940 | `Probas/` |
-| Probas — PyMC | `probas-pymc/probas_pymc.csv` | 571 | `Probas/` |
+| Probas — Infer.NET | `probas-infer/probas_infer.csv` | 940 | `Probas/Infer/` |
+| Probas — PyMC | `probas-pymc/probas_pymc.csv` | 571 | `Probas/PyMC/` |
 | Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 383 | `Probas/DecisionTheory/DecInfer/` |
 | IIT / ICT | `iit/iit.csv` | 776 | `IIT/ICT-Series/` |
-| ML.NET | `mlnet/mlnet.csv` | 599 | `ML/` |
+| ML.NET | `mlnet/mlnet.csv` | 599 | `ML/ML.Net/` |
 | ML — Data Science with Agents | `ml-datascience/ml-datascience.csv` | 708 | `ML/DataScienceWithAgents/` |
 | RL | `rl/rl.csv` | 513 | `RL/` |
-| Sudoku | `sudoku/sudoku.csv` | 1325 | `Sudoku/` |
+| Sudoku | `sudoku/sudoku.csv` | 1337 | `Sudoku/` |
 | GameTheory | `gametheory/gametheory.csv` | 1897 | `GameTheory/` |
+| GenAI — Audio | `genai/audio.csv` | 1128 | `GenAI/Audio/` |
+| GenAI — CaseStudies | `genai/casestudies.csv` | 113 | `GenAI/CaseStudies/` |
+| GenAI — FineTuning | `genai/finetuning.csv` | 161 | `GenAI/FineTuning/` |
+| GenAI — Image | `genai/image.csv` | 533 | `GenAI/Image/` |
+| GenAI — PostTraining | `genai/posttraining.csv` | 171 | `GenAI/PostTraining/` |
 | GenAI — Texte | `genai/texte.csv` | 718 | `GenAI/Texte/` |
-| GenAI — FineTuning | `genai/finetuning.csv` | 161 | `GenAI/Texte/` |
-| GenAI — PostTraining | `genai/posttraining.csv` | 171 | `GenAI/Texte/` |
-| GenAI — Image | `genai-image/genai-image.csv` | 533 | `GenAI/Image/` |
-| GenAI — Audio | `genai-audio/genai-audio.csv` | 1128 | `GenAI/Audio/` |
-| QuantConnect — Python | `quantconnect/quantconnect-py.csv` | 1436 | `QuantConnect/` (QC-Py-01..41) |
+| GenAI — Video | `genai/video.csv` | 486 | `GenAI/Video/` |
+| QuantConnect — Python | `quantconnect/quantconnect-py.csv` | 1436 | `QuantConnect/Python/` |
+| QuantConnect — Partner Course | `partner-course-quant-trading/partner-course.csv` | 198 | `QuantConnect/partner-course-quant-trading/` |
 
 > Note : les séries **QuantConnect C# / QuantBooks** et **partner-course** ne sont pas couvertes par l'extraction T1 (exécution gated QC Cloud). Les sous-séries QC-Py-Cloud-* et partner-course sont en follow-up.
 
