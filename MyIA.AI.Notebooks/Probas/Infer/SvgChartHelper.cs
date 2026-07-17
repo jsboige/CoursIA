@@ -104,10 +104,17 @@ public static class SvgChartHelper
     /// est generee automatiquement a partir des labels. Rend un SVG inline statique (GitHub /
     /// nbviewer / offline), unique primitive multi-trace du helper (les series a courbe unique
     /// restent servies par <see cref="Line"/> / <see cref="Scatter"/> / <see cref="Bar"/>).
+    /// <para><paramref name="logY"/> (opt-in, defaut <c>false</c>) : echelle Y logarithmique (base 10).
+    /// Necesaire quand les Y couvrent un grand rapport (ex. 0.55 -> 34.38, ~63x) qu'une echelle lineaire
+    /// ecrase. Exige des POINTS Y strictement positifs ; les barres d'erreur +-sigma qui croisent zero
+    /// (borne inferieure negative) sont clippees au sol de l'axe plutot que de rejeter la donnee. Les graduations sont
+    /// placees aux valeurs "propres" 1-2-5 x 10^k, labellees en valeur originale. Les barres d'erreur
+    /// +-sigma deviennent asymetriques (correct en log). Backward-compatible : tous les appels existants
+    /// sans <paramref name="logY"/> rendent en echelle lineaire, inchanges.</para>
     /// </summary>
     public static SvgChart Overlay(string title, string xLabel, string yLabel,
-        IReadOnlyList<SvgSeries> series, int width = 820, int height = 480)
-        => new SvgChart(BuildOverlay(title, xLabel, yLabel, series, width, height));
+        IReadOnlyList<SvgSeries> series, int width = 820, int height = 480, bool logY = false)
+        => new SvgChart(BuildOverlay(title, xLabel, yLabel, series, width, height, logY));
 
     /// <summary>
     /// Carte de chaleur (heatmap) sur une grille categorielle : <paramref name="values"/>[ligne][colonne]
@@ -295,7 +302,7 @@ public static class SvgChartHelper
     }
 
     private static string BuildOverlay(string title, string xLabel, string yLabel,
-        IReadOnlyList<SvgSeries> series, int w, int h)
+        IReadOnlyList<SvgSeries> series, int w, int h, bool logY = false)
     {
         if (series == null || series.Count == 0)
             throw new ArgumentException("Overlay: au moins une serie requise.");
@@ -303,7 +310,7 @@ public static class SvgChartHelper
             if (s.Xs == null || s.Ys == null || s.Xs.Length != s.Ys.Length || s.Xs.Length == 0)
                 throw new ArgumentException($"Overlay: serie '{s.Label}' doit avoir xs/ys de meme longueur non nulle.");
 
-        // Bornes X (union de toutes les series) et Y (union ys +- sigma).
+        // Bornes X (union de toutes les series) et Y (union ys +- sigma), en espace original.
         double xMin = double.PositiveInfinity, xMax = double.NegativeInfinity;
         double yLo = double.PositiveInfinity, yHi = double.NegativeInfinity;
         foreach (var s in series)
@@ -314,13 +321,56 @@ public static class SvgChartHelper
                 yLo = Math.Min(yLo, s.Ys[i] - sig); yHi = Math.Max(yHi, s.Ys[i] + sig);
             }
         double xRange = xMax - xMin; if (xRange == 0) xRange = 1;
-        double ypad = (yHi - yLo) * 0.06; if (ypad == 0) ypad = Math.Max(1, Math.Abs(yHi) * 0.1);
-        var layout = new PlotLayout(w, h, yLo - ypad, yHi + ypad, series.Count);
+
+        // Bornes Y : lineaires (defaut) ou log10 (opt-in logY). L'echelle log est necessaire pour
+        // les rapports grands (ex. 0.55 -> 34.38, ~63x, ou le lineaire ecrase le regime convergent
+        // contre le point aberrant). Exige des Y strictement positifs (couvre aussi y+-sigma, pour
+        // que les barres d'erreur restent definies en log). Le layout est alors en espace log10 ;
+        // PYy mappe une valeur originale -> y SVG via log10(v), et les graduations sont placees aux
+        // valeurs "propres" 1-2-5 x 10^k (labellees en valeur originale, pas en log10).
+        double bMin, bMax;
+        if (logY)
+        {
+            // Echelle log : les POINTS (ys) doivent etre strictement positifs. Les barres d'erreur
+            // +-sigma peuvent croiser zero (ex. limite=50 : moyenne 0.90, std 1.00 -> borne inf -0.10) ;
+            // leur segment inferieur est clippe au sol de l'axe plutot que de rejeter la donnee (comportement
+            // matplotlib / Plotly en axe log avec barres d'erreur asymetriques). Bornes en espace log10
+            // calculees sur les candidats positifs (points + bornes d'erreur restant positives).
+            foreach (var s in series)
+                for (int i = 0; i < s.Ys.Length; i++)
+                    if (s.Ys[i] <= 0)
+                        throw new ArgumentException("Overlay logY: les valeurs Y (points) doivent etre strictement positives.");
+            double posLo = double.PositiveInfinity, posHi = double.NegativeInfinity;
+            foreach (var s in series)
+                for (int i = 0; i < s.Ys.Length; i++)
+                {
+                    double sig = (s.Sigma != null && i < s.Sigma.Length) ? Math.Abs(s.Sigma[i]) : 0.0;
+                    posLo = Math.Min(posLo, s.Ys[i]);
+                    posHi = Math.Max(posHi, s.Ys[i] + sig);
+                    if (s.Ys[i] - sig > 0) posLo = Math.Min(posLo, s.Ys[i] - sig);
+                }
+            double lgLo = Math.Log10(posLo), lgHi = Math.Log10(posHi);
+            double lgPad = (lgHi - lgLo) * 0.06; if (lgPad == 0) lgPad = 0.2;
+            bMin = lgLo - lgPad; bMax = lgHi + lgPad;
+        }
+        else
+        {
+            double ypad = (yHi - yLo) * 0.06; if (ypad == 0) ypad = Math.Max(1, Math.Abs(yHi) * 0.1);
+            bMin = yLo - ypad; bMax = yHi + ypad;
+        }
+        var layout = new PlotLayout(w, h, bMin, bMax, series.Count);
+        // PYy : valeur originale -> y SVG (lineaire, ou via log10(v) en echelle log). En log, une valeur
+        // non positive (segment inferieur d'une barre d'erreur croisant zero) est clippee au sol de l'axe ;
+        // les points etant valides > 0, ils ne declenchent jamais ce clip.
+        Func<double, double> PYy;
+        if (logY) PYy = v => v > 0 ? layout.Y(Math.Log10(v)) : (layout.PadT + layout.PlotH);
+        else PYy = v => layout.Y(v);
         Func<double, double> PX = x => layout.PadL + (x - xMin) / xRange * layout.PlotW;
 
         var sb = new StringBuilder();
         sb.Append(OpenSvg(w, h, title));
-        sb.Append(GridAndYAxis(layout));
+        sb.Append(logY ? GridAndYAxisLog(layout, LogTicks(Math.Pow(10, bMin), Math.Pow(10, bMax)))
+                       : GridAndYAxis(layout));
 
         // Graduations X numeriques (5 ticks) + labels d'axes.
         for (int g = 0; g <= 4; g++)
@@ -344,7 +394,7 @@ public static class SvgChartHelper
             string color = s.Color ?? palette[si % palette.Length];
             var pts = new List<string>(s.Xs.Length);
             for (int i = 0; i < s.Xs.Length; i++)
-                pts.Add($"{F(PX(s.Xs[i]))},{F(layout.Y(s.Ys[i]))}");
+                pts.Add($"{F(PX(s.Xs[i]))},{F(PYy(s.Ys[i]))}");
             bool line = s.Style == TraceStyle.Line || s.Style == TraceStyle.LineMarkers;
             bool marks = s.Style == TraceStyle.Markers || s.Style == TraceStyle.LineMarkers;
 
@@ -356,8 +406,8 @@ public static class SvgChartHelper
                 for (int i = 0; i < s.Xs.Length && i < s.Sigma.Length; i++)
                 {
                     double xp = PX(s.Xs[i]);
-                    double yTop = layout.Y(s.Ys[i] + Math.Abs(s.Sigma[i]));
-                    double yBot = layout.Y(s.Ys[i] - Math.Abs(s.Sigma[i]));
+                    double yTop = PYy(s.Ys[i] + Math.Abs(s.Sigma[i]));
+                    double yBot = PYy(s.Ys[i] - Math.Abs(s.Sigma[i]));
                     sb.Append($"<line x1='{F(xp)}' y1='{F(yTop)}' x2='{F(xp)}' y2='{F(yBot)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
                     sb.Append($"<line x1='{F(xp - 3)}' y1='{F(yTop)}' x2='{F(xp + 3)}' y2='{F(yTop)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
                     sb.Append($"<line x1='{F(xp - 3)}' y1='{F(yBot)}' x2='{F(xp + 3)}' y2='{F(yBot)}' stroke='{color}' stroke-opacity='0.4' stroke-width='1.5'/>");
@@ -437,6 +487,43 @@ public static class SvgChartHelper
         double axisY = (l.YMin <= 0 && l.YMax >= 0) ? l.Y(0) : (l.H - l.PadB);
         sb.Append($"<line x1='{l.PadL}' y1='{F(axisY)}' x2='{l.W - l.PadR}' y2='{F(axisY)}' stroke='{ColorAxis}' stroke-width='1'/>");
         return sb.ToString();
+    }
+
+    // Grille + axe Y en echelle log : une ligne horizontale par graduation "propre" (1-2-5 x 10^k)
+    // dans la plage [vLo, vHi], labellee en valeur originale (pas en log10). Le layout est en espace
+    // log10 (YMin/YMax = log10 des bornes). Pas d'axe horizontal a y=0 (indefini en log) : la ligne
+    // de base reste en bas de la zone. Utilisee par Overlay(logY: true).
+    private static string GridAndYAxisLog(PlotLayout l, IReadOnlyList<double> ticks)
+    {
+        var sb = new StringBuilder();
+        foreach (double t in ticks)
+        {
+            double py = l.Y(Math.Log10(t));
+            sb.Append($"<line x1='{l.PadL}' y1='{F(py)}' x2='{l.W - l.PadR}' y2='{F(py)}' stroke='{ColorGrid}' stroke-width='1'/>");
+            sb.Append($"<text x='{l.PadL - 8}' y='{F(py + 4)}' text-anchor='end' fill='{ColorText}'>{F(t)}</text>");
+        }
+        sb.Append($"<line x1='{l.PadL}' y1='{l.PadT}' x2='{l.PadL}' y2='{l.H - l.PadB}' stroke='{ColorAxis}' stroke-width='1'/>");
+        sb.Append($"<line x1='{l.PadL}' y1='{l.H - l.PadB}' x2='{l.W - l.PadR}' y2='{l.H - l.PadB}' stroke='{ColorAxis}' stroke-width='1'/>");
+        return sb.ToString();
+    }
+
+    // Graduations "propres" d'une echelle log (base 10) sur [vLo, vHi] : les multiples 1, 2, 5 de
+    // chaque decade (ex. 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50). Convention par defaut de matplotlib
+    // en echelle log ; garde les ticks dans la plage visible.
+    private static List<double> LogTicks(double vLo, double vHi)
+    {
+        var ticks = new List<double>();
+        if (vLo <= 0) vLo = 1e-9;
+        int kLo = (int)Math.Floor(Math.Log10(vLo));
+        int kHi = (int)Math.Ceiling(Math.Log10(vHi));
+        for (int k = kLo; k <= kHi; k++)
+            foreach (double m in new[] { 1.0, 2.0, 5.0 })
+            {
+                double t = m * Math.Pow(10, k);
+                if (t >= vLo && t <= vHi) ticks.Add(t);
+            }
+        if (ticks.Count == 0) { ticks.Add(vLo); ticks.Add(vHi); }
+        return ticks;
     }
 
     private static string CategoryLabel(PlotLayout l, double x, string label)
