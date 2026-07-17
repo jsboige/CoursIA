@@ -54,12 +54,12 @@ les patterns identifiés** côté CoursIA, en s'appuyant sur l'exploration du
 3. **Script natif dans la langue cible** : Cyrillic (ru), CJK (zh), arabe (ar/fa).
 4. **Fallback provider** : OpenAI direct en primaire, OpenRouter en fallback
    401/429. Conservé dans le fork.
-5. **Gating `Enabled=false`** jusqu'à GO user ([457-document-tier-translation-workflow.md](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/docs/dnn-localization/457-document-tier-translation-workflow.md) §3) : le fork
+5. **Gating `Enabled=false`** jusqu'à GO user (Argumentum `docs/dnn-localization/457-document-tier-translation-workflow.md` §3, submodule `ArgumentumGames/Argumentum`) : le fork
    ajoute un double gate `ENABLED=False` (module) + `--dry-run` (défaut CLI).
 
 ## 5. Séquencement T0 → T3
 
-```
+```text
 T0  (manuel)      notebooks source FR = source canonique
 T1  extract       extract_cells_to_csv.py  →  CSV pivot (text_fr + hash_fr)         [livré]
 T2  drift-check   check_translation_sync.py → verdicts IN_SYNC / SRC_DRIFT / ...    [livré, CI non-bloquant]
@@ -68,6 +68,7 @@ T4  re-import     patcher xxx_<lang>.ipynb depuis le CSV + Papermill re-exec    
 ```
 
 **Activation T3** (moyen terme, après GO user) :
+
 1. Éditer `ENABLED = True` dans `translate_csv.py`.
 2. Définir `OPENAI_API_KEY` (env, jamais de littéral).
 3. Premier run sur 1 CSV test : `python translate_csv.py --csv <x.csv> --smoke --apply`.
