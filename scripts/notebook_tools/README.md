@@ -69,6 +69,26 @@ python scripts/notebook_tools/detect_svg_decimal_commas.py --check
 qui formate avec `.` en `private static string F(double v)` ligne 355,
 cause-level propagation post-c.628).
 
+### `detect_svg_empty_display.py` (#6971, EPIC #6927)
+
+Flag l'autre mode d'echec du rollout #6927 : une cellule qui INTENDE
+d'afficher une figure SVG mais commite un output VIDE (`execution_count`
+non-null AND `outputs == []` AND source match un pattern d'emission de
+chart). 0 faux positif. Complementaire de `detect_svg_decimal_commas.py`
+et `check_plotly_static_risk.py` : ces deux-la passent AUSSI sur un output
+vide (rien a flaguer) -> ce detecteur mecanise le gate `out_len > 0`.
+
+```bash
+python scripts/notebook_tools/detect_svg_empty_display.py NB.ipynb --check
+# exit 1 si une figure attendue rend vide
+```
+
+**Cause canon** (adjugee firsthand 2026-07-17) : le vide n'est PAS
+`display()` vs derniere-expression (les deux rendent), mais le helper /
+`Formatter.Register(..., "text/html")` non charge dans l'exec (`#load`
+non resolu depuis le cwd reel). Fix RECOVERABLE-LOCAL : resoudre le
+`#load` depuis le cwd reel + re-exec + verifier `out_len > 0`.
+
 ### `detect_ascii_workaround.py` (#3801 Prong-A)
 
 Detecte les charts ASCII (tableaux de caracteres, blocs Unicode) dans les
@@ -130,6 +150,25 @@ Flag les notebooks Plotly.js-CDN (`<script src="https://cdn.plot.ly/...">`)
 qui rendent en BLANC en static rendering GitHub/nbviewer. Issue : le
 helper canon `SvgChartHelper.cs` (Infer) + pattern MIME `text/html` +
 InvariantCulture est la voie de migration (Epic #6927).
+
+### Merge-gate #6927 (sequence deterministe)
+
+Le merge-gate d'une conversion #6927 (Plotly-CDN -> SVG inline) est une
+**sequence deterministe**, verifiable par une lane no-vision :
+
+1. `out_len > 0` (le SVG est bien dans l'output) -> `detect_svg_empty_display.py == 0`
+2. `detect_svg_decimal_commas.py == 0` (pas de virgule-coord fr-FR)
+3. `detect_blank_figures.py == 0` (pas de PNG degenere)
+4. `check_plotly_static_risk.py == 0` (plus de `<script src=cdn.plot.ly>`)
+5. banniere probeAddresses strippee (`strip_probe_banner.py --apply` post re-exec)
+
+**Design-gate tranche (ai-01 2026-07-17)** : ces gates deterministes SONT
+le merge-gate. Comma + blanc -- les deux seuls defauts vision-only -- sont
+desormais mecaniquement detectables (1 + 2), donc le **vision-QA est un
+backstop PERIODIQUE** (spot-check de batch) et non un gate par-PR bloquant
+chaque merge. Une lane vision (MiniMax / ai-01) self-vision-QA sa propre
+figure en bonus ; une lane no-vision merge sur la sequence + spot-check
+aval. Reference canon : `svg-6927-canon` (memoire ai-01).
 
 ---
 
