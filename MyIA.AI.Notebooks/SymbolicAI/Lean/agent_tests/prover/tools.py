@@ -178,6 +178,19 @@ def _parse_lean_errors(raw_output) -> list:
         raw_output = "\n".join(str(item) for item in raw_output)
     errors = []
     for line in raw_output.split("\n"):
+        # Probe scratch files emit errors BY DESIGN, never a real target error
+        # (#6790 forensic, GoalExtract miscount / Pathologie 1b).  The goal-
+        # extraction probe (``_GoalExtract.lean``) forces a deliberate type
+        # mismatch via ``exact ()`` to make Lean print the current goal, and the
+        # sorry-verify probe (``_SorryVerify.lean``) is a throwaway compile unit;
+        # both live in ``lean_utils.py`` and parse their own output with a
+        # separate inline regex.  Counting their intentional errors here as
+        # target errors produced the illegible "FINAL VERIFY FAILED (0 compile
+        # errors)" signature that misled the forensic read of DEMO 62.  Skip any
+        # line naming a probe scratch file so ``_parse_lean_errors`` only ever
+        # reports errors from the module actually under proof.
+        if "_GoalExtract.lean" in line or "_SorryVerify.lean" in line:
+            continue
         # Standard positional: <file>:<line>:<col>: error: <msg>
         m = re.search(r"(\d+):(\d+): error: (.*)", line)
         if m:

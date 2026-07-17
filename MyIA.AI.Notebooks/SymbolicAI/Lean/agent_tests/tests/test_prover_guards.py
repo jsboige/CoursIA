@@ -3136,6 +3136,63 @@ def test_parse_lean_errors_catches_lake_prefix_format():
     assert {e["line"] for e in errors} == {2940, 12}, errors
 
 
+def test_parse_lean_errors_skips_goal_extract_probe_errors():
+    """GoalExtract probe errors are BY DESIGN, never target errors (#6790).
+
+    The goal-extraction probe (``_GoalExtract.lean``, emitted by
+    ``lean_utils.py``) forces a deliberate type mismatch via ``exact ()`` so
+    that Lean prints the current goal.  That intentional error must NOT be
+    counted by ``_parse_lean_errors`` as a compile error of the module under
+    proof -- doing so produced the illegible "FINAL VERIFY FAILED (0 compile
+    errors)" signature that misled the forensic read of DEMO 62 (Pathologie
+    1b / GoalExtract miscount).  The probe parses its own output with a
+    separate inline regex in ``lean_utils.py``, so filtering the probe file
+    here does not affect goal extraction."""
+    from prover.tools import _parse_lean_errors
+
+    # Probe-only output: the deliberate mismatch must be ignored -> [].
+    probe_only = (
+        "info: compiling\n"
+        "Conway/Life/_GoalExtract.lean:2973:6: error: type mismatch\n"
+        "  ()\n"
+    )
+    assert _parse_lean_errors(probe_only) == [], _parse_lean_errors(probe_only)
+
+    # Probe line mixed with a REAL target error: only the real one survives.
+    mixed = (
+        "Conway/Life/_GoalExtract.lean:2973:6: error: type mismatch\n"
+        "Conway/Life/HashlifeCorrectness.lean:2940:79: error: unsolved goals\n"
+    )
+    errors = _parse_lean_errors(mixed)
+    assert len(errors) == 1, errors
+    assert errors[0]["line"] == 2940, errors
+    assert "unsolved goals" in errors[0]["message"], errors
+
+
+def test_parse_lean_errors_skips_sorry_verify_probe_errors():
+    """The sorry-verify probe (``_SorryVerify.lean``) is a throwaway compile
+    unit whose errors are never target errors either (#6790).  Filter it the
+    same way, across every error format (lake-prefix included), so a probe
+    line can never inflate the error count of the module under proof."""
+    from prover.tools import _parse_lean_errors
+
+    # Lake-prefix form referencing the sorry-verify probe -> ignored.
+    probe = "error: Foo/_SorryVerify.lean:5:1: unexpected token\n"
+    assert _parse_lean_errors(probe) == [], _parse_lean_errors(probe)
+
+    # Module-level (no line:col) probe form -> ignored.
+    module_probe = "Foo/_SorryVerify.lean: error: cannot find file\n"
+    assert _parse_lean_errors(module_probe) == [], _parse_lean_errors(module_probe)
+
+    # A real error alongside the probe still counts.
+    raw = (
+        "Foo/_SorryVerify.lean:5:1: error: unexpected token\n"
+        "Real.lean:7:2: error: type mismatch\n"
+    )
+    errors = _parse_lean_errors(raw)
+    assert len(errors) == 1 and errors[0]["line"] == 7, errors
+
+
 def test_extract_errors_catches_lake_prefix_format_authority():
     """Grain a-2 alignment (#6790): the authoritative ``LeanVerifier.
     _extract_errors`` must catch the lake-prefix format too, keeping parity
