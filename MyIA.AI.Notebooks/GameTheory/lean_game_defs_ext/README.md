@@ -3,8 +3,8 @@
 Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
 de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.31.0-rc1`, core
 uniquement — évite la mutualisation des checkouts Mathlib, cf #2611).
-Compagnon formel de `GameTheory-11-BayesianGames.ipynb`. Phase 1 de
-l'Epic #2610.
+Compagnon formel de `GameTheory-11-BayesianGames.ipynb`. Phases 1-7 de
+l'Epic #2610 livrées (cf [Lien avec `lean_game_defs/`](#lien-avec-lean_game_defs)).
 
 ## Contenu
 
@@ -20,6 +20,8 @@ l'Epic #2610.
 | `Bayesian/Information.lean` | Valeur de l'information pour un décideur seul : signaux déterministes = partitions des états, `valueNoInfo ≤ valueSignal ≤ valuePerfect`, **monotonie de Blackwell** (`valueSignal_mono` : un signal plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ), exemple parapluie chiffré par `decide` (phase 4) |
 | `Bayesian/InfoGames.lean` | **L'information peut nuire dans un jeu** : contre-exemple 2 états / 2×2 où le BNE est unique dans chaque scénario (certifié `decide` + eta-expansion des stratégies) et le joueur informé gagne strictement moins (3 < 5) que s'il ne voyait rien — contraste kernel-checked avec la monotonie à un joueur (phase 4) |
 | `Bayesian/Reputation.lean` | **Réputation et dissuasion d'entrée** (chain-store à 2 périodes, forme stratégique réduite) : incumbent à 2 types (rationnel / *tough*), raffinement décidable de crédibilité (rationalité séquentielle en dernière période), BNE crédible **unique** dans chaque scénario — avec incertitude le type rationnel *poole* (il combat alors que combattre est myopiquement dominé) et dissuade l'entrée (paiement 5) ; en information complète l'entrée a lieu (paiement 4) : `reputation_pays` 5 > 4 (phase 5) |
+| `Bayesian/Regret.lean` | **Regret externe pour une suite finie de jeu** (phase 6 — cible GT-13 `minimisation de regret`) : `realizedTotal` (somme des paiements perçus), primitives de regret (`regretExternal`, somme des écarts à la meilleure action *a posteriori* par profil) ; briques arithmétiques certifiées par `decide` sur les exemples concrets |
+| `Bayesian/FictitiousPlay.lean` | **Fictitious Play pour un jeu normal-fin 2×2** (phase 7 — cible GT-17, après GT-13) : type état `FictitiousPlayState`, distribution empirique (`empiricalDist`), meilleure réponse à l'empirique (`bestResponseToEmpirical`), étape de mise à jour (`stepFictitiousPlay`) — **born-correctness** (le code simule bien la dynamique, pas la convergence) |
 
 ## Choix de conception
 
@@ -48,11 +50,13 @@ standalone-tactic).
 `lean_game_defs/` (jeux sous forme normale, Nash, social choice,
 Kuhn poker — cf #2748 / PR #2752) reste le socle « phase 0 ». Ce
 projet-ci accueille les extensions de l'Epic #2610 (phases livrées :
+1 — Harsanyi types + BNE décidable + rescaling,
 2 — enchère au premier prix discret, 3 — enchère de Vickrey et
 dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 à un joueur + contre-exemple « l'information nuit » en jeu,
 5 — réputation et dissuasion d'entrée, BNE crédible unique et
-`reputation_pays`).
+`reputation_pays`, 6 — regret externe (cible GT-13),
+7 — Fictitious Play *born-correct* (cible GT-17, après GT-13)).
 
 ## Conclusion
 
@@ -60,10 +64,16 @@ dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 uniquement) la théorie des **jeux bayésiens** à information incomplète — du
 cadre des types de Harsanyi jusqu'aux applications d'enchères et de réputation.
 Compagnon formel de `GameTheory-11-BayesianGames.ipynb`, il couvre l'Epic #2610
-(phases 1-5 livrées).
+(phases 1-7 livrées).
 
 ### Ce qui est prouvé
 
+- **Briques arithmétiques** (`Sum.lean`, `Max.lean`) : sommes finies
+  `sumFin` + maxima finis `maxFin` sur `Fin` avec lemmes maîtres
+  `monotonie`, `factorisation scalaire`, `max d'une somme ≤ somme des
+  maxima par groupe` (`maxFin_sumFin_le`) et identité de
+  double-comptage `sumFin_partition` — l'arithmétique sous-jacente sur
+  laquelle reposent toutes les preuves bayésiennes et info-théoriques.
 - **Cadre BNE** (`Types.lean`, `BNE.lean`) : `isBNE` (équilibre de Nash bayésien
   *interim*) est **décidable** sur le fragment `Fin`/`Int`. Le **principe de
   déviation unique** (`bne_exAnte`) — un profil interim-optimal est aussi
@@ -91,6 +101,14 @@ Compagnon formel de `GameTheory-11-BayesianGames.ipynb`, il couvre l'Epic #2610
   périodes, le BNE crédible **unique** fait *pooler* le type rationnel (il combat
   bien que ce soit myopiquement dominé) et dissuade l'entrée (`reputation_pays` :
   5 > 4 en information incomplète vs 4 en information complète).
+- **Regret externe** (`Regret.lean`, phase 6) : primitives `realizedTotal` et
+  `regretExternal` pour une suite finie de jeu — base du critère
+  *no-regret learning* (cible GT-13 ; les bornes de Hannan / Blackwell
+  approchable restent en extension).
+- **Fictitious Play** (`FictitiousPlay.lean`, phase 7) : état `FictitiousPlayState`,
+  distribution empirique, meilleure réponse à l'empirique et étape
+  `stepFictitiousPlay` — **born-correctness** (le code simule bien la dynamique,
+  pas la convergence ; cible GT-17 post GT-13).
 
 ### Pourquoi ça marche
 
@@ -109,3 +127,12 @@ jeux bayésiens (enchères au troisième prix, signaux corrélés, mécanismes V
 allocation multi-objet) tant qu'elles tiennent dans le fragment `Fin`/`Int`, ou
 l'ajout de la dépendance Mathlib pour des résultats structurels non décidables
 (typage polymorphe sur `V`, `A`, `Fintype`).
+
+**i18n FR/EN** : chaque module de ce dossier est désormais doublé d'un sibling
+anglais `Bayesian/Foo_en.lean` (namespace `Bayesian` ↔ `Bayesian_en`,
+imports `_en`-suffixés, byte-identical hors docstrings/commentaires), livré
+sous l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04) —
+pilote : `Sum_en.lean`, `Max_en.lean`, `Information_en.lean`,
+`FictitiousPlay_en.lean`, `Regret_en.lean`, etc. Conséquence : les futurs
+raffinements doivent conserver la symétrie FR/EN (les deux fichiers évoluent
+ensemble ou pas du tout).
