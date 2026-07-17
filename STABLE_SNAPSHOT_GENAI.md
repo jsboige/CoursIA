@@ -1,95 +1,79 @@
 # STABLE_SNAPSHOT_GENAI — Execution Coverage Inventory
 
-**Generated**: 2026-05-14
-**SHA**: `04d2d6b3` (branch `fix/sc-alpha-promotion-batch5`)
-**Scope**: `MyIA.AI.Notebooks/GenAI/` (Image, Audio, Video, Texte)
-**Per**: CLAUDE.md H.7 P1 — forensique massif HEAD courant
+**Generated**: 2026-07-17
+**SHA**: `d8ea11a2c` (`d8ea11a2cf1290b7ee19c93c075ca4abc3463b05`, HEAD main)
+**Scope**: `MyIA.AI.Notebooks/GenAI/` (all sub-families)
+**Tool**: `scripts/notebook_tools/forensic_scan.py --with-git --json-out`
+**Per**: CLAUDE.md H.7 P4 — monthly regen
+**Previous snapshot**: 2026-05-14 (`04d2d6b3`, 130 notebooks)
 
 ## Summary
 
-| Metric | Value |
-|--------|-------|
-| Total notebooks | 130 |
-| ALL_EXEC | **130 (100%)** |
-| PARTIAL | 0 |
-| ALL_NULL | 0 |
-| Total code cells | 1475 |
-| Cells with errors | **0** |
-| Cells without outputs | 292 |
-| Notebooks with `_output` duplicates | ~40 |
+| Metric | May 2026 | July 2026 | Delta |
+|--------|----------|-----------|-------|
+| Total notebooks | 130 | **144** | +14 |
+| ALL_EXEC | 130 (100%) | **144 (100%)** | +14 |
+| PARTIAL | 0 | 0 | — |
+| ALL_NULL | 0 | 0 | — |
+| Total code cells | 1475 | **1795** | +320 |
+| Cells with errors | 0 | **0** | — |
+| Cells without outputs | 292 (19.8%) | **247 (13.7%)** | −45 (−6.1pp) |
+
+GenAI remains the healthiest family in the repo: 100% ALL_EXEC_OK, 0 error cells, and the no-output rate dropped from 19.8% to 13.7% as more cells received captured outputs.
 
 ## Per-Family Breakdown
 
-| Family | Notebooks | Code Cells | No-Output Cells | Error Cells | Status |
-|--------|-----------|------------|-----------------|-------------|--------|
-| Image | 38 | 388 | 68 | 0 | ALL_EXEC |
-| Audio | 42 | 485 | 105 | 0 | ALL_EXEC |
-| Video | 32 | 382 | 102 | 0 | ALL_EXEC |
-| Texte | 18 | 220 | 17 | 0 | ALL_EXEC |
-| **Total** | **130** | **1475** | **292** | **0** | **ALL_EXEC** |
+| Family | Notebooks | Code Cells | Cells w/ Output | No-Output Cells | No-Output % | Status |
+|--------|-----------|------------|-----------------|-----------------|-------------|--------|
+| Audio | 30 | 431 | 370 | 61 | 14.2% | ALL_EXEC |
+| Texte | 20 | 269 | 259 | 10 | 3.7% | ALL_EXEC |
+| Image | 20 | 257 | 219 | 38 | 14.8% | ALL_EXEC |
+| SemanticKernel | 20 | 204 | 152 | 52 | 25.5% | ALL_EXEC |
+| Video | 17 | 233 | 181 | 52 | 22.3% | ALL_EXEC |
+| Vibe-Coding | 6 | 86 | 79 | 7 | 8.1% | ALL_EXEC |
+| PostTraining | 7 | 69 | 69 | 0 | 0.0% | ALL_EXEC |
+| FineTuning | 5 | 71 | 70 | 1 | 1.4% | ALL_EXEC |
+| Open-WebUI | 7 | 56 | 56 | 0 | 0.0% | ALL_EXEC |
+| CaseStudies | 4 | 54 | 41 | 13 | 24.1% | ALL_EXEC |
+| 00-GenAI-Environment | 6 | 48 | 35 | 13 | 27.1% | ALL_EXEC |
+| RAG-et-Memoire-Semantique | 1 | 10 | 10 | 0 | 0.0% | ALL_EXEC |
+| *(loose file)* | 1 | 7 | 7 | 0 | 0.0% | ALL_EXEC |
+| **Total** | **144** | **1795** | **1548** | **247** | **13.7%** | **ALL_EXEC** |
 
 ## No-Output Cell Analysis
 
-The 292 cells without outputs fall into these categories:
+The 247 cells without outputs (down from 292) fall into these categories:
 
-1. **Exercise stubs** (`# TODO` / `# A completer`): cells intentionally left for student completion, typically with `print("Exercice a completer")` or `pass`
-2. **API-dependent cells**: cells calling external services (Qwen, Whisper, Kokoro, etc.) where outputs were stripped or API was unavailable during execution
-3. **Display cells**: `display(Audio(...))`, `display(Image(...))` where rich outputs don't serialize to JSON
+1. **Exercise stubs** (`# TODO` / `# A completer`): cells intentionally left for student completion (`print("Exercice a completer")`, `pass`, `return None`)
+2. **API-dependent cells**: cells calling external services (Qwen, Whisper, Kokoro, ComfyUI) where the API was unavailable during batch execution or outputs were media not serializable to JSON
+3. **Display cells**: `display(Audio(...))`, `display(Image(...))` where rich outputs (audio/video/image) don't serialize to notebook JSON
 4. **Long-running cells**: training/generation cells that time out or are skipped in batch execution
 
-### Per-Notebook No-Output Counts
-
-#### Image (38 notebooks, 68 no-output cells)
-
-Key notebooks with highest no-output counts:
-- `Image/08-1-Qwen-VL-Edit/08-1-Qwen-VL-Edit.ipynb`: exercise cells
-- `Image/03-2-ControlNet/03-2-ControlNet.ipynb`: API-dependent generation
-- `Image/04-2-Inpainting/04-2-Inpainting.ipynb`: API-dependent generation
-
-Most Image notebooks (25/38) have 0-2 no-output cells.
-
-#### Audio (42 notebooks, 105 no-output cells)
-
-Key notebooks with highest no-output counts:
-- `Audio/02-5-STT/02-5-STT.ipynb`: Whisper API calls
-- `Audio/03-1-TTS/03-1-TTS.ipynb`: Kokoro API calls
-- `Audio/04-1-MusicGen/04-1-MusicGen.ipynb`: MusicGen generation
-- Various exercise notebooks with TODO stubs
-
-#### Video (32 notebooks, 102 no-output cells)
-
-Key notebooks with highest no-output counts:
-- `Video/01-3-Qwen-VL/01-3-Qwen-VL.ipynb`: Qwen VL API
-- `Video/02-1-ComfyUI/02-1-ComfyUI-Video.ipynb`: ComfyUI workflows
-- `Video/03-1-MoviePy/03-1-MoviePy.ipynb`: video processing outputs
-
-#### Texte (18 notebooks, 17 no-output cells)
-
-Texte family has the best coverage — most notebooks are fully executed with complete outputs.
+SemanticKernel (25.5%) and Video (22.3%) carry the highest no-output rates — concentrated in SemanticKernel plugin demos (rich object outputs) and ComfyUI/Qwen-VL video generation (media outputs).
 
 ## LAST_REAL_EXEC Assessment
 
-Since all 130 notebooks have `ALL_EXEC` status with 0 errors:
+Since all 144 notebooks have `A_ALL_EXEC_OK` status with 0 errors:
 
-- **Every notebook has been executed at least once** with all code cells having `execution_count != null`
-- **No NEVER_EXECUTED notebooks** found in the GenAI family
-- Outputs may be partial (292/1475 cells without outputs = 19.8% no-output rate)
-- The no-output rate is primarily attributable to exercise stubs and API-dependent cells
-
-## `_output` Duplicate Files
-
-Approximately 40 notebooks have corresponding `_output.ipynb` versions (e.g., `01-1-DALL-E.ipynb` → `01-1-DALL-E_output.ipynb`). These are execution artifacts that may contain outputs where the main notebook doesn't. They should not be counted as separate notebooks.
+- **Every GenAI notebook has been executed** with all code cells having `execution_count != null`
+- **No NEVER_EXECUTED notebooks** in the GenAI family
+- The no-output rate (13.7%) is primarily attributable to exercise stubs (rule C.1) and media/API cells whose outputs don't serialize
 
 ## Methodology
 
-1. Scanned all `.ipynb` files under `MyIA.AI.Notebooks/GenAI/` (excluding `.ipynb_checkpoints/`, `archive/`, `_output.ipynb` duplicates)
-2. For each notebook: counted code cells, cells with `execution_count != null`, cells with `output_type: error`, cells with empty `outputs: []`
-3. Classified as: `ALL_EXEC` (all code cells have execution_count), `PARTIAL` (some null), `ALL_NULL` (all null)
+1. **Tool**: `scripts/notebook_tools/forensic_scan.py --with-git --json-out`
+2. Scanned all `.ipynb` files under `MyIA.AI.Notebooks/GenAI/` (excluding `.ipynb_checkpoints/`, `archive/`, `_output.ipynb`, `TrashBin/`)
+3. Per code cell measured: `execution_count`, presence of `outputs`, `output_type: error`
+4. `n_outputs` = count of code cells with at least one output entry; no-output cells = `n_code − n_outputs`
+5. Family breakdown aggregated from notebook path prefix under `GenAI/`
 
 ## Action Items
 
-- [ ] Review 292 no-output cells: classify as exercise-stub vs API-failure vs stripped-output
-- [ ] For API-dependent cells: verify services are running and re-execute
-- [ ] For exercise stubs: confirm output injection is appropriate (cf CLAUDE.md C.1/C.2)
-- [ ] Remove `_output.ipynb` duplicates if main notebooks have adequate outputs
-- [ ] Regenerate this snapshot after each Sprint batch
+- [ ] Review the 247 no-output cells: classify as exercise-stub (C.1 OK) vs media/API-serializable-failure
+- [ ] For media cells (Audio/Video display): confirm output capture is appropriate (rich outputs may be intentionally non-serialized)
+- [ ] SemanticKernel (25.5%) and Video (22.3%) no-output cells: verify these are stubs/media, not failed executions
+- [ ] Regenerate this snapshot monthly (H.7 P4)
+
+---
+
+*Regenerated by po-2025 agent — H.7 STABLE_SNAPSHOT P4 monthly regen (originally generated 2026-05-14).*
