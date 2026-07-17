@@ -25,7 +25,7 @@ Intelligence Artificielle -- S4
 # Plan
 
 1. **Workflow du trader quant** (3 slides)
-   - Du concept au code : les 6 etapes
+   - Du concept au code : les 6 étapes
 
 2. **Plateforme Lean/QuantConnect** (15 slides)
    - Setup, algorithmes, framework Alpha, notebooks, projets
@@ -37,13 +37,13 @@ Intelligence Artificielle -- S4
    - Agent IA codeur, architecture VSCode/CC/MCP, demo live
 
 5. **ML accessible : features et RandomForest** (4 slides)
-   - Feature engineering, pipeline RF, ML vs regles simples
+   - Feature engineering, pipeline RF, ML vs règles simples
 
 6. **Composites avances** (4 slides)
    - C4.1/C4.2/C4.3, architecture multi-Alpha
 
 7. **Preparation projet et soutenance** (3 slides)
-   - Criteres, anti-biais, troubleshooting, ressources
+   - Critères, anti-biais, troubleshooting, ressources
 
 ---
 layout: section
@@ -59,7 +59,7 @@ layout: section
   - "Les actions qui baissent de plus de 5% en 3 jours tendent a rebondir"
 <div v-click="1">
 
-- **2. Recherche** : Valider l'hypothese sur les donnees (notebooks Jupyter)
+- **2. Recherche** : Valider l'hypothèse sur les données (notebooks Jupyter)
   - Statistiques, visualisations, tests de significativite
 </div>
 <div v-click="2">
@@ -69,17 +69,17 @@ layout: section
 </div>
 <div v-click="3">
 
-- **4. Backtest** : Simuler sur donnees historiques
+- **4. Backtest** : Simuler sur données historiques
   - Sharpe, drawdown, nombre de trades, couts
 </div>
 <div v-click="4">
 
-- **5. Paper Trading** : Tester en temps reel sans capital
+- **5. Paper Trading** : Tester en temps réel sans capital
   - Derniere validation avant engagement de capital
 </div>
 <div v-click="5">
 
-- **6. Live Trading** : Deployer avec capital reel, monitorer en continu
+- **6. Live Trading** : Déployer avec capital réel, monitorer en continu
 
 </div>
 
@@ -99,13 +99,13 @@ layout: section
 </div>
 <div v-click="2">
 
-- **Fonctionnalites Principales**
+- **Fonctionnalités Principales**
   - Notebooks d'analyse, Backtesting, optimisation, paper et live trading
 </div>
 <div v-click="3">
 
 - **Data Library**
-  - Donnees historiques de plusieurs marches (actions, forex, crypto, options, futures)
+  - Données historiques de plusieurs marchés (actions, forex, crypto, options, futures)
 </div>
 <div v-click="4">
 
@@ -141,7 +141,7 @@ layout: section
 <div v-click="2">
 
 - **Pourquoi le Cloud d'abord ?**
-  - Zero configuration, donnees incluses
+  - Zéro configuration, données incluses
   - Backtests rapides sans installation locale
   - Creez un compte gratuit sur quantconnect.com
 
@@ -202,18 +202,18 @@ layout: section
 # Environnement d'Algorithme (1/2)
 
 - **QCAlgorithm** : la classe de base de tout algorithme Lean
-  - Modele **evenementiel** : votre code reagit aux donnees de marche, pas de lookahead possible
+  - Modele **evenementiel** : votre code réagit aux données de marché, pas de lookahead possible
   - Le moteur garantit que vous ne voyez jamais le futur -- elimine le look-ahead bias par design
   - Strategic Development Framework integre (5 composants modulaires)
 
 <div v-click="1">
 
 - **Objets fondamentaux**
-  - `self.time` : horloge du backtest (pas le temps reel)
+  - `self.time` : horloge du backtest (pas le temps réel)
   - `self.symbol` / `self.symbols` : identifiants des actifs
   - `self.portfolio` : etat courant du portefeuille
-  - `self.securities` : donnees des actifs souscrits
-  - Brokerage : modele de frais et de marche
+  - `self.securities` : données des actifs souscrits
+  - Brokerage : modèle de frais et de marche
 
 </div>
 
@@ -225,11 +225,11 @@ layout: section
 
 - **Objets fondamentaux (suite)**
   - Indicateurs techniques (EMA, RSI, MACD, Bollinger...)
-  - `self.history(symbol, period, resolution)` : donnees historiques sous forme DataFrame
+  - `self.history(symbol, period, resolution)` : données historiques sous forme DataFrame
 <div v-click="1">
 
 - **Membres locaux de l'algorithme**
-  - Declares dans `initialize`, manipules par les methodes
+  - Déclarés dans `initialize`, manipulés par les méthodes
   - Possibilite de les parametrer via `self.get_parameter("nom", default)`
   - Herites de QCAlgorithm ou ajoutes par le developpeur
 
@@ -247,7 +247,7 @@ layout: section
 
 <div v-click="1">
 
-- **on_data** : traitement des donnees a chaque pas de temps
+- **on_data** : traitement des données à chaque pas de temps
   - `slice` contient des Ticks, TradeBars, QuoteBars
   - Acces par symbole : `data[self.symbol]`
   - Prix de cloture : `self.securities[symbol].price`
@@ -300,7 +300,7 @@ layout: section
 <div v-click="2">
 
 - **Bonnes pratiques**
-  - Toujours laisser au moins 7 jours avant aujourd'hui (donnees non finalisees)
+  - Toujours laisser au moins 7 jours avant aujourd'hui (données non finalisées)
   - Definir la monnaie AVANT le cash initial
   - Pour les crypto : `self.set_account_currency("BTC")`
 
@@ -358,7 +358,7 @@ layout: section
   ```python
   self.settings.automatic_indicator_warm_up = True
   ```
-  - Chaque indicateur est automatiquement prechauffe selon sa periode
+  - Chaque indicateur est automatiquement préchauffé selon sa période
   - Evite les signaux parasites au debut du backtest
 
 </div>
@@ -398,8 +398,8 @@ layout: section
 
 # Framework de Haut Niveau
 
-- **Architecture modulaire en 5 etapes** -- la force de Lean est cette separation des responsabilites
-  - **Universe Selection** : *Quels actifs surveiller ?* (filtrage dynamique, screening)
+- **Architecture modulaire en 5 étapes** -- la force de Lean est cette separation des responsabilites
+  - **Universe Sélection** : *Quels actifs surveiller ?* (filtrage dynamique, screening)
   - **Alpha Creation** : *Quels signaux generer ?* (insights : direction, magnitude, confiance)
   - **Portfolio Construction** : *Comment allouer le capital ?* (equal weight, optimisation Markowitz, risk parity)
   - **Risk Management** : *Comment limiter les pertes ?* (drawdown max, trailing stop, exposure sectorielle)
@@ -423,7 +423,7 @@ layout: section
 
 - **Classes chargees de generer des signaux**
   - Insights : direction, amplitude et confiance
-  - Bases sur des indicateurs, des modeles ML, ou des regles metier
+  - Bases sur des indicateurs, des modèles ML, ou des règles métier
 <div v-click="1">
 
 - **Alpha personnalise**
@@ -442,7 +442,7 @@ layout: section
   ```python
   insight = Insight.price("IBM", timedelta(minutes=20), InsightDirection.UP)
   ```
-  - Parametres : Direction, Period, Magnitude, Confidence, Weight
+  - Paramètres : Direction, Period, Magnitude, Confidence, Weight
   - Regroupement : `Insight.group([insight1, insight2, insight3])`
 
 </div>
@@ -460,13 +460,13 @@ layout: section
   ```
 <div v-click="1">
 
-- **Modeles de portefeuille**
+- **Modèles de portefeuille**
   - EqualWeighting, ConfidenceWeighted, InsightWeighting
   - MeanVarianceOptimization, BlackLittermanOptimization, RiskParity
 </div>
 <div v-click="2">
 
-- **Modeles de risque**
+- **Modèles de risque**
   - MaximumDrawdownPercentPerSecurity, MaximumDrawdownPercentPortfolio
   - MaximumSectorExposureRiskManagementModel, TrailingStopRiskManagementModel
 
@@ -540,12 +540,12 @@ layout: section
 
 - **Deux modes dans QuantConnect** :
   - `QCAlgorithm` : backtest evenementiel, pas de lookahead possible
-  - `QuantBook` : exploration libre, pandas direct, pas de contrainte temps reel
+  - `QuantBook` : exploration libre, pandas direct, pas de contrainte temps réel
 
 <div v-click="1">
 
 - **Pourquoi explorer avant de coder ?**
-  - Valider votre intuition sur les donnees avant d'ecrire un algorithme
+  - Valider votre intuition sur les données avant d'ecrire un algorithme
   - Visualiser les correlations, la distribution des returns, les regimes
   - Eviter de coder une strategie sur une idee fausse
 
@@ -731,7 +731,7 @@ layout: section
 <div v-click="1">
 
 - **Cycle complet en ~5 minutes** (vs 30-60 min manuellement)
-- L'agent connait les bonnes pratiques : warmup, resolution, parametres
+- L'agent connait les bonnes pratiques : warmup, resolution, paramètres
 - Il evite les erreurs courantes : look-ahead bias, manque de warmup
 
 </div>
@@ -740,17 +740,17 @@ layout: section
 
 # Configuration : ce qu'il vous faut
 
-- **Etape 1** : Installer VSCode + extension Claude Code
+- **Étape 1** : Installer VSCode + extension Claude Code
   - `code --install-extension anthropic.claude-code`
 <div v-click="1">
 
-- **Etape 2** : Installer Docker Desktop
+- **Étape 2** : Installer Docker Desktop
   - Necessaire pour le serveur MCP QuantConnect
   - `docker pull quantconnect/mcp-server`
 </div>
 <div v-click="2">
 
-- **Etape 3** : Configurer `.mcp.json` a la racine du projet
+- **Étape 3** : Configurer `.mcp.json` a la racine du projet
   ```json
   {
     "mcpServers": {
@@ -768,7 +768,7 @@ layout: section
 </div>
 <div v-click="3">
 
-- **Etape 4** : Ouvrir le depot dans VSCode, lancer Claude Code (`Ctrl+Shift+P` > "Claude")
+- **Étape 4** : Ouvrir le dépôt dans VSCode, lancer Claude Code (`Ctrl+Shift+P` > "Claude")
 
 </div>
 
@@ -799,7 +799,7 @@ et backteste-le sur 2015-2025 avec 100k USD"
 
 # Demo Live : le Cycle Complet (2/2)
 
-**Etape backtest** :
+**Étape backtest** :
 
 - L'agent appelle `create_backtest(projectId, compileId, name)`
 - Puis `read_backtest(projectId, backtestId)` pour les resultats
@@ -833,7 +833,7 @@ et backteste-le sur 2015-2025 avec 100k USD"
   - Corriger les erreurs de syntaxe et de compilation
   - Lancer des backtests et lire les resultats
   - Proposer des ameliorations basees sur les metriques
-  - Adapter les parametres pour optimiser les performances
+  - Adapter les paramètres pour optimiser les performances
 <div v-click="1">
 
 - **Ne peut pas faire** :
@@ -854,7 +854,7 @@ layout: section
 
 # Feature Engineering : transformer les prix en signaux
 
-- **3 familles de features** sur donnees OHLCV :
+- **3 familles de features** sur données OHLCV :
 
 <div v-click="1">
 
@@ -869,7 +869,7 @@ layout: section
 
 - **39 features** dans `QC-Py-18-ML-Features-Engineering.ipynb` (21/22 cellules executees)
 - **Triple Barrier** (Lopez de Prado) : label 1/0/-1 selon stop-loss, take-profit ou expiration
-- La qualite des features > le choix du modele
+- La qualite des features > le choix du modèle
 
 </div>
 
@@ -927,7 +927,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 
 - **Lecon cle** : le ML seul ne suffit pas — v3 (ML naif) est pire que v2b (momentum pur)
 - L'iteration sur le feature engineering et le regime fait passer de 0.29 a 0.47
-- Une regle simple bien calibree (Trend-Following) bat le ML sur ce probleme
+- Une règle simple bien calibrée (Trend-Following) bat le ML sur ce probleme
 
 </div>
 <div v-click="2">
@@ -942,15 +942,15 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 # Ce que ML apporte (et ce qu'il n'apporte pas)
 
 - **ML apporte** :
-  - Signaux adaptatifs : le modele se reentrainement sur le marche recent
-  - Patterns non-lineaires : interactions entre features inaccessibles aux regles
-  - Probabilites : `predict_proba()` donne un score de confiance, pas juste 0/1
+  - Signaux adaptatifs : le modèle se réentraine sur le marche recent
+  - Patterns non-lineaires : interactions entre features inaccessibles aux règles
+  - Probabilités : `predict_proba()` donne un score de confiance, pas juste 0/1
 
 <div v-click="1">
 
 - **ML n'apporte pas** :
   - Sharpe garanti — un RF mal feature-engineere est pire qu'une EMA
-  - Interpretabilite facile — savoir *pourquoi* le modele achete est dur
+  - Interpretabilite facile — savoir *pourquoi* le modèle achète est dur
   - Robustesse automatique — overfitting sur le train set = desastre hors-sample
 
 </div>
@@ -972,7 +972,7 @@ layout: section
 
 <br>
 
-> 8 stages, 84 backtests, 4 seeds, walk-forward 5-fold — methode rigoureuse, verdicts honnetes
+> 8 stages, 84 backtests, 4 seeds, walk-forward 5-fold — méthode rigoureuse, verdicts honnêtes
 
 ---
 
@@ -1045,7 +1045,7 @@ layout: section
 **Ce qui marche :**
 1. **Detection de regime** (S3 HMM) : signal le plus fort (+0.669)
 2. **Inverse-vol weighting** (S4 v2) : reduit MaxDD de 79%
-3. **Modeles simples** : HMM 3-etats + Ridge bat LSTM+GBDT composite
+3. **Modèles simples** : HMM 3-états + Ridge bat LSTM+GBDT composite
 4. **Rigueur methodologique** : walk-forward 5-fold, 4 seeds, OOS strict
 
 </div>
@@ -1054,7 +1054,7 @@ layout: section
 **Ce qui ne marche PAS :**
 1. **Predire la direction** : dir_acc = 93% mais delta Sharpe < 0
 2. **Combiner tout** : S7 composite = pire que S4 seul
-3. **Modeles complexes** : GBDT, LSTM heavy, multi-alpha → overfit
+3. **Modèles complexes** : GBDT, LSTM heavy, multi-alpha → overfit
 4. **Stop-loss LASSO** : degrade la performance (-0.311)
 
 </div>
@@ -1174,7 +1174,7 @@ layout: section
 <div v-click="2">
 
 - **Pour votre projet** : inspirez-vous de ces architectures
-  - Vous pouvez les cloner, modifier les parametres, changer les actifs
+  - Vous pouvez les cloner, modifier les paramètres, changer les actifs
   - L'agent peut vous aider a les adapter a votre idee
 
 </div>
@@ -1205,7 +1205,7 @@ layout: section
 
 - **Workflow recommande pour le projet** :
   1. Choisir une strategie de base parmi les projets du depot
-  2. Utiliser l'agent pour personnaliser (actifs, periodes, seuils)
+  2. Utiliser l'agent pour personnaliser (actifs, périodes, seuils)
   3. Valider manuellement : relire le code, verifier les metriques
   4. Documenter vos choix et limites identifiees
 
@@ -1217,14 +1217,14 @@ layout: section
 
 # Bonnes Pratiques Anti-Biais
 
-- **Look-ahead bias** : ne jamais utiliser les donnees du jour pour decider aujourd'hui
+- **Look-ahead bias** : ne jamais utiliser les données du jour pour decider aujourd'hui
   - Lean le previent par design (moteur evenementiel)
   - Mais vos notebooks de recherche peuvent le presenter
 <div v-click="1">
 
 - **Overfitting** : Sharpe > 3 sur un backtest = probablement surajuste
-  - Tester sur des periodes differentes (in-sample / out-of-sample)
-  - Un bon Sharpe reel : 0.5-1.5 pour une strategie robuste
+  - Tester sur des périodes différentes (in-sample / out-of-sample)
+  - Un bon Sharpe réel : 0.5-1.5 pour une strategie robuste
 </div>
 <div v-click="2">
 
@@ -1248,7 +1248,7 @@ layout: section
   - Oublier `self.set_warm_up()` = signaux parasites au debut
   - Resolution incorrecte : `Resolution.DAILY` vs `Resolution.HOUR`
   - `self.add_equity("SPY")` sans resolution = valeur par defaut (Minute)
-  - Oublier de declarer les parametres dans le code ET dans config.json
+  - Oublier de déclarer les paramètres dans le code ET dans config.json
 
 </div>
 
