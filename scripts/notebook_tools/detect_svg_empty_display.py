@@ -7,10 +7,18 @@ Le rollout SVG inline (#6927) remplace les graphiques Plotly.js-CDN par du SVG
 inline `text/html` qui rend partout. Le canon (ai-01, `svg-6927-canon.md`) pose
 deux regles mecaniques pour qu'un notebook converti rende REELLEMENT :
 
-  1. Le SVG doit etre la **derniere expression de cellule** (`execute_result`),
-     PAS `display(chart)` -> sous .NET Interactive headless, `display(chartObj)`
-     produit frequemment un **output vide** (`outputs: []`) alors meme que la
-     cellule s'execute sans erreur (`execution_count` set).
+  1. Le **helper** (`SvgChartHelper.cs` #6942, via son `Formatter.Register`) doit
+     etre **charge dans l'exec** : c'est lui qui fait qu'un objet chart emet le
+     `<svg>` (que la cellule l'affiche via `display(chart)` OU comme derniere
+     expression). Si le `#load "SvgChartHelper.cs"` ne resout pas depuis le cwd
+     reel du kernel (= le dossier du notebook a l'exec), le helper n'est pas
+     charge et la cellule emet un **output vide** (`outputs: []`) alors meme
+     qu'elle s'execute sans erreur (`execution_count` set).
+     NB : le canon initial disait « derniere expression PAS display() » -- ai-01
+     l'a CORRIGE (2026-07-17) : `display()` REND quand le helper est charge
+     (preuve #6967 DecInfer-7 cell[32] `display(SvgChartHelper...)` capture le
+     `<svg>`, 26 outputs) ; le vrai discriminant du blanc est **helper non
+     charge**, pas display-vs-expression.
   2. no-cdn + no-comma sont **necessaires PAS suffisantes** : un output vide
      passe les deux detecteurs (`detect_svg_decimal_commas.py` #6959 n'a aucun
      SVG a verifier ; `detect_blank_figures.py` #6918 cible les PNG degenerees,
@@ -23,10 +31,11 @@ deux regles mecaniques pour qu'un notebook converti rende REELLEMENT :
      0 chart = regression nette (Plotly-blanc -> rien du tout).
 
 Portee cluster : tous les workers po-* convergent les notebooks Plotly-CDN vers
-SvgChartHelper.cs (#6942) ou des builders inline. Une conversion qui utilise
-`display(chart)` au lieu d'une derniere expression peut silencieusement produire
-un output vide -> l'objectif explicite de la PR « render on GitHub/nbviewer »
-est non atteint. Les 21 PRs soeurs du rollout #6927 sont a risque.
+SvgChartHelper.cs (#6942) ou des builders inline. Une conversion dont le `#load`
+du helper ne resout pas dans l'exec headless (helper absent du dossier du
+notebook, path relatif casse, cross-family sans override de cwd) emet
+silencieusement un output vide -> l'objectif explicite de la PR « render on
+GitHub/nbviewer » est non atteint. Les 21 PRs soeurs du rollout #6927 sont a risque.
 
 Ce que l'outil DETECTE (DETERMINISTE, zero faux-positif)
 -------------------------------------------------------
@@ -55,13 +64,18 @@ vraies SIMULTANEMENT :
 
 Ce qu'il NE corrige PAS
 -----------------------
-Il DETECTE, il ne CORRIGE PAS. La correction = faire du chart la **derniere
-expression** de la cellule (retirer le `display(...)` et laisser l'objet chart
-comme valeur de finalisation -> `execute_result` porte le SVG), OU investiguer
-pourquoi le helper n'emet pas sous l'exec headless, puis **re-executer** le
-kernel .NET -> l'output committee porte le `<svg>`. Stop&Repair : on repare la
-cause et on re-execute, jamais scrubber la sortie a la main (regle
-secrets-hygiene 6).
+Il DETECTE, il ne CORRIGE PAS. La cause-racine d'un output vide = le **helper
+n'est pas charge dans l'exec** (son `Formatter.Register` ne tourne pas, donc
+l'objet chart n'a pas de formatteur `<svg>`). La correction = faire en sorte que
+le `#load "SvgChartHelper.cs"` **resoute depuis le cwd reel du kernel** (= le
+dossier du notebook a l'exec, cf lecon durable #6972) : soit le helper vit dans
+le dossier du notebook, soit un `#load` relatif
+(`#load "../<famille>/SvgChartHelper.cs"`), soit re-exec via ExecutePreprocessor
+avec `resources.metadata.path` = dossier du helper ; puis **re-executer** le
+kernel .NET -> `Formatter.Register` tourne -> l'output committee porte le `<svg>`
+(QUE la cellule utilise `display(chart)` OU une derniere expression -- les deux
+rendent, preuve #6967). Stop&Repair : on repare la cause et on re-execute, jamais
+scrubber la sortie a la main (regle secrets-hygiene 6).
 
 Known blind spots (hors scope par design)
 -----------------------------------------
@@ -271,10 +285,14 @@ def _human_report(results: list[dict]) -> str:
             )
         lines.append("")
     lines.append(
-        "FIX: make the chart the LAST EXPRESSION of the cell (drop `display(chart)` -> "
-        "leave the chart object as the cell's final value -> `execute_result` carries "
-        "the <svg>), then re-execute the .NET kernel -- the committed output then carries "
-        "the SVG. See ai-01 canon `svg-6927-canon.md` (point 1). "
+        "FIX: the empty output means the helper's `Formatter.Register` did NOT run in "
+        "the exec -- the `#load \"SvgChartHelper.cs\"` did not resolve from the kernel's "
+        "real cwd (notebook dir at exec time). Make the `#load` resolve (helper in the "
+        "notebook dir, OR relative `#load \"../<family>/SvgChartHelper.cs\"`, OR re-exec "
+        "via ExecutePreprocessor with `resources.metadata.path` = helper dir), then "
+        "re-execute the .NET kernel. `display(chart)` AND last-expression BOTH render "
+        "once the helper is loaded (proof #6967) -- the discriminator is helper-load, "
+        "NOT display-vs-expression (ai-01 canon `svg-6927-canon.md` corrected 2026-07-17). "
         "Stop&Repair: fix cause + re-execute, never scrub the output by hand "
         "(secrets-hygiene rule 6)."
     )
