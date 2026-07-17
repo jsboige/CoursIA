@@ -11,28 +11,36 @@ fondamentaux de **théorie de l'apprentissage** sous un même umbrella général
    est **serrée** (atteinte avec égalité par un témoin concret sur `ℂ`).
 2. **Module `PacLearning`** — théorie PAC (Valiant, 1984) : cadre de la
    **généralisation** — *quand* une hypothèse bien classée sur l'échantillon
-   généralise-t-elle, et avec *combien d'exemples* ? Ce module pose le modèle
-   (distribution, erreur vraie `trueError`, erreur empirique `empError`) et les
-   propriétés élémentaires ; la **borne de complexité d'échantillon** classe finie
-   `m ≥ (1/ε)(ln|H| + ln(1/δ))` (Hoeffding + union bound) est itération suivante.
+   généralise-t-elle, et avec *combien d'exemples* ? Le module pose le modèle
+   (distribution, erreur vraie `trueError`, erreur empirique `empError`) et livre
+   la chaîne complète de la **borne de complexité d'échantillon** classe finie
+   `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + union
+   bound, `PacFiniteBound.lean`) ainsi que la **borne de généralisation
+   agnostic** (`Agnostic.lean`, itération 2) — toutes deux **0-sorry**.
 
 C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
 roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
 deux inégalités de croissance du vecteur de poids `wₖ`, combinées par
 Cauchy–Schwarz, donnent la borne. Les deux modules sont **entièrement 0-sorry**
 sur leur périmètre prouvé : le module `Perceptron` est complet (Novikoff +
-serrage `Tightness`) ; le module `PacLearning` livre son itération 1 (modèle +
-propriétés élémentaires), la borne phare de Valiant étant documentée OPEN (pas
-sorry-backed).
+serrage `Tightness`) ; le module `PacLearning` livre la chaîne complète —
+modèle (`Data`), échantillonnage (`Sample`/`SampleExpect`), concentration
+(`Concentration` Markov + `MGF`/`BernoulliMGF`/`Hoeffding`), union bound
+(`UnionBound`), concentration uniforme (`UniformConcentration`), puis les deux
+bornes phares **0-sorry** : `PacFiniteBound` (Valiant classe finie,
+`m ≥ (1/ε)(ln|H| + ln(1/δ))`) et `Agnostic` (généralisation agnostic itération 2,
+argument ERM dans `ERM`).
 
 ## Statut
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
-- **Sorry** : **0** sur tout le module. La borne `novikoff_mistake_bound`
-  (`n · γ² ≤ R²`), le Lemme A d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme
-  (`‖wₖ‖² ≤ kR²`) sont entièrement prouvés, ainsi que le **serrage**
-  `novikoff_bound_is_sharp` (témoin sur `ℂ` atteignant l'égalité `n·γ² = R²`).
-- **Build** : `lake build Perceptron` (dépend de Mathlib4)
+- **Sorry** : **0** sur tout le module (comptage code-only, voir § Modules).
+  Côté Perceptron, la borne `novikoff_mistake_bound` (`n · γ² ≤ R²`), le Lemme A
+  d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme (`‖wₖ‖² ≤ kR²`) sont
+  entièrement prouvés, ainsi que le **serrage** `novikoff_bound_is_sharp` (témoin
+  sur `ℂ` atteignant l'égalité `n·γ² = R²`). Côté PacLearning, les deux bornes
+  phares `PacFiniteBound` (Valiant) et `Agnostic` sont 0-sorry.
+- **Build** : `lake build Perceptron` / `lake build PacLearning` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
 
@@ -103,6 +111,13 @@ Mathlib.
 
 ## Modules
 
+Tous les fichiers listés ci-dessous sont **0-sorry** (comptage code-only, après
+suppression des commentaires/docstrings — le grep brut sur-compte via la prose
+des docstrings « 0-sorry »). Chaque fichier FR possède un **sibling anglais**
+`Foo_en.lean` (voir § i18n FR/EN plus bas).
+
+### Module `Perceptron` (théorème de Novikoff)
+
 | Fichier | sorry | Contenu |
 |---------|-------|---------|
 | `Perceptron/Data.lean` | 0 | Espace préhilbertien réel, `norm_sq_eq_inner_self`, développement `norm_add_sq_eq` (`‖a+b‖² = ‖a‖² + 2⟪a,b⟫ + ‖b‖²`), étiquettes `±1` (`IsLabel`, `LabeledPoint`). |
@@ -110,8 +125,42 @@ Mathlib.
 | `Perceptron/Convergence.lean` | 0 | Lemme A `align_growth` (`⟪wₖ,u⟫ ≥ kγ`), Lemme B `norm_bound` (`‖wₖ‖² ≤ kR²`), Cauchy–Schwarz ⟹ **`novikoff_mistake_bound`** (`n · γ² ≤ R²`). |
 | `Perceptron/Tightness.lean` | 0 | **Saturation de la borne** : témoin concret sur `ℂ` (`x₀ = 1+I`, `x₁ = 1−I`, séparés par `u = 1`, `n = 2`, `γ = 1`, `R = √2`) atteignant l'égalité `n·γ² = R²` ⟹ **`novikoff_bound_is_sharp`** (la borne `(R/γ)²` est optimale — aucune constante `< 1` ne l'améliore). Utilitaire `complex_inner_re` (produit scalaire réel de `ℂ` en coordonnées). |
 | `Perceptron.lean` | 0 | Imports parapluie + doc de statut. |
-| `PacLearning/Data.lean` | 0 | Cadre PAC (Valiant 1984) : `Distribution` (poids normalisé `X → ℝ`), erreur vraie `trueError` (masse des instances mal classées), erreur empirique `empError` (proportion d'erreurs sur un échantillon). Propriétés élémentaires symétriques pour les deux erreurs : `trueError_nonneg`/`empError_nonneg` (`≥ 0`), `trueError_le_one`/`empError_le_one` (`≤ 1`), `trueError_self`/`empError_self` (`h=f ⟹ 0`), `trueError_comm`/`empError_comm` (symétrie `h↔f`). |
+
+### Module `PacLearning` (théorie PAC, chaîne complète)
+
+| Fichier | sorry | Contenu |
+|---------|-------|---------|
+| `PacLearning/Data.lean` | 0 | Cadre PAC (Valiant 1984) : `Distribution` (poids normalisé `X → ℝ`), erreur vraie `trueError`, erreur empirique `empError`. Propriétés symétriques (`nonneg`, `le_one`, `self`, `comm`). |
+| `PacLearning/Sample.lean` | 0 | Distribution produit sur l'espace des échantillons (tirage iid). |
+| `PacLearning/SampleExpect.lean` | 0 | Espérance empirique sur l'espace des échantillons. |
+| `PacLearning/Concentration.lean` | 0 | Espérance et inégalité de Markov (poids ℝ). |
+| `PacLearning/MGF.lean` | 0 | Fonction génératrice de moments de l'indicateur (brique Hoeffding 2a). |
+| `PacLearning/BernoulliMGF.lean` | 0 | Borne analytique de la MGF de Bernoulli (brique Hoeffding 2c/3). |
+| `PacLearning/Hoeffding.lean` | 0 | Concentration de Hoeffding-for-Bernoulli (brique 2c/3). |
+| `PacLearning/UnionBound.lean` | 0 | Probabilité d'échantillon + union bound (inégalités de Boole). |
+| `PacLearning/UniformConcentration.lean` | 0 | Concentration uniforme sur une classe finie. |
+| `PacLearning/PacFiniteBound.lean` | 0 | **Borne de complexité d'échantillon** (flagship PAC) : `m ≥ (1/ε)(ln|H| + ln(1/δ))`. |
+| `PacLearning/Agnostic.lean` | 0 | **Borne de généralisation PAC agnostic** (flagship itération 2). |
+| `PacLearning/ERM.lean` | 0 | Argument ERM (Empirical Risk Minimization) — brique agnostic 6/6. |
 | `PacLearning.lean` | 0 | Imports parapluie + doc de statut. |
+
+### i18n FR/EN
+
+Chaque module est doublé d'un **sibling anglais** `Foo_en.lean` (namespace
+`PacLearning` ↔ `PacLearning_en`, `Perceptron` ↔ `Perceptron_en`, imports
+`_en`-suffixés, **byte-identical hors docstrings/commentaires**) — livré sous
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04). Les 18
+fichiers `_en` couvrent l'intégralité des 18 modules feuilles + agrégateurs :
+
+`PacLearning_en.lean`, `PacLearning/{Agnostic,BernoulliMGF,Concentration,Data,
+ERM,Hoeffding,MGF,PacFiniteBound,Sample,SampleExpect,UniformConcentration,
+UnionBound}_en.lean`, `Perceptron_en.lean`,
+`Perceptron/{Convergence,Data,Perceptron,Tightness}_en.lean`.
+
+**Conséquence** : les futurs raffinements doivent conserver la symétrie FR/EN
+(les deux fichiers évoluent ensemble ou pas du tout). La CI `check_i18n_siblings`
+vérifie l'absence de drift (164/166 byte-identical, 0 orphan cluster-wide au
+2026-07-17).
 
 ## Build
 
