@@ -8,7 +8,7 @@ Alexandre Grothendieck (1928-2014).
 - **Sorry** : **0 sorry, 0 axiome** — les 24 modules sont complets à la création (Parties 1-24 mergées)
 - **Build** : `lake build Grothendieck` — compile les 24 modules (~3350 lignes)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **Couverture i18n (EPIC #4980)** : couverture étendue — **24 modules `.lean`** + **15 siblings `_en.lean`** sur `main`. Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN), 12 modules sont déjà bilingues au pattern A : `Calibration`, `CategoryAndSites`, `CoverageGen`, `DenseTopology`, `LeftExact`, `SchemesTour`, `SheafHom`, `SitePoints`, `Subcanonical`, `ZariskiSite`, `SheafCohomology/Basic`, `SheafCohomology/Cech`. 3 modules additionnels ont un sibling `_en` (`ConstantSheaf`, `Conservative`, `MayerVietorisSquare`) — leur direction FR/EN est en cours d'harmonisation avec ai-01 (cf conflit de convention signalé) ; namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI. Les 9 modules restants sont FR-only à ce stade du rollout. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
+- **Couverture i18n (EPIC #4980)** : couverture quasi-complète — **24 modules `.lean`** + **23 siblings `_en.lean`** sur `main`. Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN), 23 modules sur 24 sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). Le seul module encore FR-only est `SheafCohomology/MayerVietoris` (son sibling `_en` est en attente de merge via PR [#7089](https://github.com/jsboige/CoursIA/pull/7089)). **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Objectif
 
@@ -50,16 +50,16 @@ flowchart LR
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 106 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 79 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 84 |
-| 4 | `Grothendieck/MathlibMap.lean` | — | Index `#check` des définitions Mathlib liées à Grothendieck | 90 |
+| 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | Index `#check` des définitions Mathlib liées à Grothendieck | 90 |
 | 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve pour le harnais du prouveur (Epic #1453) | 80 |
-| 6 | `Grothendieck/SieveLattice.lean` | — | Identités de pullback de cribles : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
-| 7 | `Grothendieck/SheafBasics.lean` | — | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 128 |
-| 8 | `Grothendieck/SieveOps.lean` | — | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 124 |
+| 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Identités de pullback de cribles : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
+| 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 128 |
+| 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 124 |
 | 9 | `Grothendieck/CoverageGen.lean` | `CoverageGen_en.lean` | Coverage-vers-topologie, caractérisation des faisceaux, sup de coverages | 148 |
-| 10 | `Grothendieck/CanonicalProps.lean` | — | Topologie canonique, sous-canoïcité, faisceaux représentables | 133 |
-| 11 | `Grothendieck/SieveGenerate.lean` | — | Identités de génération de cribles | 128 |
+| 10 | `Grothendieck/CanonicalProps.lean` | `CanonicalProps_en.lean` | Topologie canonique, sous-canoïcité, faisceaux représentables | 133 |
+| 11 | `Grothendieck/SieveGenerate.lean` | `SieveGenerate_en.lean` | Identités de génération de cribles | 128 |
 | 12 | `Grothendieck/DenseTopology.lean` | `DenseTopology_en.lean` | La topologie dense | 131 |
-| 13 | `Grothendieck/Sheafification.lean` | — | Faisceautisation (le foncteur faisceau associé) | 175 |
+| 13 | `Grothendieck/Sheafification.lean` | `Sheafification_en.lean` | Faisceautisation (le foncteur faisceau associé) | 175 |
 | 14 | `Grothendieck/LeftExact.lean` | `LeftExact_en.lean` | Exactitude à gauche de la faisceautisation | 133 |
 | 15 | `Grothendieck/SitePoints.lean` | `SitePoints_en.lean` | Points d'un site (foncteurs fibres) | 220 |
 | 16 | `Grothendieck/Subcanonical.lean` | `Subcanonical_en.lean` | Topologies de Grothendieck sous-canoniques | 88 |
@@ -70,7 +70,7 @@ flowchart LR
 | 21 | `Grothendieck/MayerVietorisSquare.lean` | `MayerVietorisSquare_en.lean` | Carrés de Mayer-Vietoris | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Suite exacte longue de Mayer-Vietoris | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Cohomologie de Čech | 123 |
-| 24 | `Grothendieck/YonedaLemma.lean` | — | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
+| 24 | `Grothendieck/YonedaLemma.lean` | `YonedaLemma_en.lean` | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
 
 L'extension (Parties 6-24) a été développée sous l'Issue #2159 / Epic #1646 et
 est **complète** : tous les 24 modules mergés, 0 `sorry`, 0 axiome ajouté.
@@ -111,7 +111,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
 - Epic #1453 (calibration du harnais prouveur)
 - Workspace hommage Conway (`../conway_lean/`)
-- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 15 siblings `_en.lean` sur `main` dans cette lake)
+- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 23 siblings `_en.lean` sur `main` dans cette lake)
 - **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 - Série de notebooks Lean (`../README.md`)
 

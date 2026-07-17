@@ -8,7 +8,7 @@ Alexandre Grothendieck (1928-2014).
 - **Sorry**: **0 sorry, 0 axiom** — all 24 modules are complete at creation (Parts 1-24 merged)
 - **Build**: `lake build Grothendieck` — compiles the 24 modules (~3350 lines)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n coverage (EPIC #4980)**: extended coverage — **24 `.lean` modules** + **15 `_en.lean` siblings** on `main`. Per the ratified convention (Option A: `Foo.lean` FR-canonical + `Foo_en.lean` EN mirror), 12 modules are already bilingual in Pattern A: `Calibration`, `CategoryAndSites`, `CoverageGen`, `DenseTopology`, `LeftExact`, `SchemesTour`, `SheafHom`, `SitePoints`, `Subcanonical`, `ZariskiSite`, `SheafCohomology/Basic`, `SheafCohomology/Cech`. 3 additional modules have an `_en` sibling (`ConstantSheaf`, `Conservative`, `MayerVietorisSquare`) — their FR/EN direction is being harmonized with ai-01 (convention conflict flagged); `_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable. The remaining 9 modules stay FR-only at this stage of the rollout. **`README.md`** present (FR-canonical sibling of this file). Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n coverage (EPIC #4980)**: near-complete coverage — **24 `.lean` modules** + **23 `_en.lean` siblings** on `main`. Per the ratified convention (Option A: `Foo.lean` FR-canonical + `Foo_en.lean` EN mirror), 23 of the 24 modules are already bilingual in Pattern A (`_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable). The only remaining FR-only module is `SheafCohomology/MayerVietoris` (its `_en` sibling awaits merge via PR [#7089](https://github.com/jsboige/CoursIA/pull/7089)). **`README.md`** present (FR-canonical sibling of this file). Out-of-scope: `.lake/packages/`, vendored libs.
 
 ## Purpose
 
@@ -35,16 +35,16 @@ in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its h
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 106 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 79 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 84 |
-| 4 | `Grothendieck/MathlibMap.lean` | — | `#check` index of Grothendieck-related Mathlib definitions | 90 |
+| 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | `#check` index of Grothendieck-related Mathlib definitions | 90 |
 | 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 80 |
-| 6 | `Grothendieck/SieveLattice.lean` | — | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
-| 7 | `Grothendieck/SheafBasics.lean` | — | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 128 |
-| 8 | `Grothendieck/SieveOps.lean` | — | Topology ordering, covering closure, sieve composition | 124 |
+| 6 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
+| 7 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 128 |
+| 8 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Topology ordering, covering closure, sieve composition | 124 |
 | 9 | `Grothendieck/CoverageGen.lean` | `CoverageGen_en.lean` | Coverage-to-topology, sheaf characterization, sup of coverages | 148 |
-| 10 | `Grothendieck/CanonicalProps.lean` | — | Canonical topology, subcanonicity, representable sheaves | 133 |
-| 11 | `Grothendieck/SieveGenerate.lean` | — | Sieve generation identities | 128 |
+| 10 | `Grothendieck/CanonicalProps.lean` | `CanonicalProps_en.lean` | Canonical topology, subcanonicity, representable sheaves | 133 |
+| 11 | `Grothendieck/SieveGenerate.lean` | `SieveGenerate_en.lean` | Sieve generation identities | 128 |
 | 12 | `Grothendieck/DenseTopology.lean` | `DenseTopology_en.lean` | The dense topology | 131 |
-| 13 | `Grothendieck/Sheafification.lean` | — | Sheafification (the associated sheaf functor) | 175 |
+| 13 | `Grothendieck/Sheafification.lean` | `Sheafification_en.lean` | Sheafification (the associated sheaf functor) | 175 |
 | 14 | `Grothendieck/LeftExact.lean` | `LeftExact_en.lean` | Left exactness of sheafification | 133 |
 | 15 | `Grothendieck/SitePoints.lean` | `SitePoints_en.lean` | Points of a site (fiber functors) | 220 |
 | 16 | `Grothendieck/Subcanonical.lean` | `Subcanonical_en.lean` | Subcanonical Grothendieck topologies | 88 |
@@ -55,7 +55,7 @@ in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its h
 | 21 | `Grothendieck/MayerVietorisSquare.lean` | `MayerVietorisSquare_en.lean` | Mayer-Vietoris squares | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Mayer-Vietoris long exact sequence | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Čech cohomology | 123 |
-| 24 | `Grothendieck/YonedaLemma.lean` | — | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
+| 24 | `Grothendieck/YonedaLemma.lean` | `YonedaLemma_en.lean` | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
 
 The extension (Parts 6-24) was developed under Issue #2159 / Epic #1646 and is
 **complete**: all 24 modules merged, 0 `sorry`, 0 axiom added.
@@ -96,7 +96,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)
-- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 15 `_en.lean` siblings on `main` in this lake)
+- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 23 `_en.lean` siblings on `main` in this lake)
 - **[`README.md`](./README.md)** — FR canonical sibling of this file
 
 ## Conclusion
