@@ -1,0 +1,150 @@
+name: Bare cross-dir #load gate
+
+# Purpose
+# -------
+# Per-PR gate for .NET Interactive cells that carry a BARE `#load "X.cs"`
+# directive (bare filename, no path separator) whose `.cs` source is NOT
+# present in the notebook's own directory. Such a `#load` resolves ONLY when
+# the kernel's cwd already happens to contain the file; in a clean headless
+# re-exec from the notebook's directory it fails with CS1504 (source file not
+# found), the helper's `Formatter.Register` never runs, and the chart cell
+# renders BLANK. This is the SOURCE-CLASS root cause upstream of the empty
+# SVG output caught by `svg-empty-display-gate.yml` (#6971): that gate catches
+# the SYMPTOM (empty `outputs`), this one catches the CAUSE (the unresolvable
+# `#load`) at the source line, before exec.
+#
+# Root cause
+# ----------
+# The SVG inline rollout (#6927) makes dozens of .NET notebooks converge on
+# the shared `SvgChartHelper.cs`, which lives in ONE place
+# (`MyIA.AI.Notebooks/Probas/Infer/`, 0 copies elsewhere). The
+# `dotnet-interactive` kernel resolves `#load "X"` RELATIVE to the notebook's
+# directory (its real cwd at headless exec). A notebook in a DIFFERENT family
+# (e.g. `GameTheory/`) that loads the helper via a bare
+# `#load "SvgChartHelper.cs"` therefore cannot resolve it from its own
+# directory — it only rendered because the kernel happened to run from a cwd
+# that found the file. Same defect class as the DecInfer portability batch
+# (10+ merged PRs), but CROSS-FAMILY (the `.cs` lives in a different folder
+# than the notebook).
+#
+# Why this is NOT redundant with svg-empty-display-gate.yml
+# ---------------------------------------------------------
+# `svg-empty-display-gate.yml` inspects the OUTPUT (a cell with a chart
+# `display()` and `outputs == []`). It only fires AFTER a bad exec has been
+# committed, and only if the notebook was executed with the wrong cwd. This
+# gate inspects the SOURCE `#load` directive and fires DETERMINISTICALLY on
+# the unresolvable-bare-load pattern regardless of whether the notebook was
+# executed — catching the defect at its cause, one step earlier in the
+# pipeline. The two gates are COMPLEMENTARY: source-cause vs output-symptom.
+#
+# This gate runs scripts/notebook_tools/detect_bare_cross_dir_load.py in
+# --check mode on every notebook changed by the PR and FAILs if any code cell
+# carries a bare `#load "X.cs"` whose `.cs` is not in the notebook's directory.
+# The detector is deterministic and zero-FP:
+#  - Explicit-path loads (`#load "../Probas/Infer/SvgChartHelper.cs"`, any
+#    load whose target contains `/` or `\`) are NOT flagged — they carry a
+#    human's resolution intent; the recommended fix form has separators and
+#    passes by construction.
+#  - Co-located bare loads (`#load "Foo.cs"` where `Foo.cs` IS in the
+#    notebook's directory) are NOT flagged — they resolve in headless exec.
+#  - Non-source targets (`#r "nuget:..."`, `.dll`) are NOT `#load` of a
+#    source file and are out of scope.
+#
+# Absolute (not regression) semantics: on `main` the only residual bare
+# cross-dir loads are the 4 GameTheory notebooks (4c/8c/15c/17) being drained
+# by #7052 / #7049 (issue #7050). This gate is DIFF-SCOPED — it only checks
+# notebooks changed by the PR — so it does not fail unrelated PRs on the
+# pre-existing baseline; it prevents NEW bare cross-dir loads and enforces the
+# fix on the 4 residuals as they are touched.
+#
+# Fix (design-gate tranched by ai-01, issue #7050)
+# ------------------------------------------------
+# Replace the bare `#load "X.cs"` with an EXPLICIT relative path that reaches
+# the source file from the notebook's directory, e.g.
+# `#load "../Probas/Infer/SvgChartHelper.cs"` (the single SvgChartHelper.cs
+# lives in MyIA.AI.Notebooks/Probas/Infer/). Rejected alternatives: copying
+# the helper next to each notebook (4 divergent copies, DRY violation);
+# a centralised refactor (over-engineering for 4 call sites). Source-only fix
+# (the `#load` line only; execution_count/outputs unchanged — run a separate
+# verification re-exec with the notebook dir as cwd and confirm 0 errors, do
+# NOT commit it). Stop&Repair (secrets-hygiene rule 6): fix the cause +
+# re-execute, never scrub the output by hand.
+#
+# See EPIC #3801 (SOTA/portability), rollout #6927 (SVG inline fleet-wide),
+# issue #7050 (design-gate + class closure), sibling gate
+# svg-empty-display-gate.yml (#6971).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_bare_cross_dir_load.py'
+      - '.github/workflows/bare-cross-dir-load-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bare-cross-dir-load:
+    name: "No bare cross-dir #load in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Bare cross-dir #load gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Bare cross-dir #load gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## Bare cross-dir #load gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_bare_cross_dir_load.py "$nb" --check 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Bare cross-dir #load::$nb carries a bare \`#load \"X.cs\"\` whose source is not in the notebook's directory (breaks headless re-exec, CS1504; renders BLANK)."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Bare cross-dir #load gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: replace the bare \`#load \"X.cs\"\` with an EXPLICIT relative path that reaches the source file from the notebook's directory (e.g. \`#load \"../Probas/Infer/SvgChartHelper.cs\"\` — the single SvgChartHelper.cs lives in MyIA.AI.Notebooks/Probas/Infer/). Design-gate tranched by ai-01 (issue #7050): explicit relative path is canonical (copying the helper = divergent copies / DRY violation; centralised refactor = over-engineering, both rejected). Source-only fix (the \`#load\` line; execution_count/outputs unchanged — run a separate verification re-exec with the notebook dir as cwd, confirm 0 errors, do NOT commit it). Stop&Repair: fix the cause + re-execute, never scrub the output by hand (secrets-hygiene rule 6)." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Bare cross-dir #load gate::Checked $checked changed notebook(s); no bare cross-dir #load."
