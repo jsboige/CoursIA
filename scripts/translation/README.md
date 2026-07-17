@@ -1,6 +1,6 @@
 # Scripts de synchro traduction (Epic #4957 / #1650)
 
-Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. Le moteur de traduction (datasetupdater Argumentum, v0.9.0, 8 langues) n'est PAS réécrit ici — ces scripts en sont la couche d'**alignement** : ils maintiennent le CSV source de vérité et détectent le drift.
+Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. Trois couches : **T1/T2** (alignement — maintiennent le CSV source de vérité `fr` et détectent le drift) + **T3** (`translate_csv.py`, fork Argumentum `translate_game_rules.py`, moteur de traduction gated). Mapping complet Argumentum → CoursIA : [`docs/translation/argumentum-fork-mapping.md`](../../docs/translation/argumentum-fork-mapping.md).
 
 ## Workflow en 3 couches (T1 → T2 → T3)
 
@@ -8,7 +8,7 @@ Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. 
 |--------|--------|------|--------|
 | **T1** | `extract_cells_to_csv.py` | Extrait les cellules des notebooks vers le CSV (langue pivot `fr`) | Livré |
 | **T2** | `check_translation_sync.py` | Détecte le drift (source modifiée / trad éditée / cellule supprimée) | Livré (non-bloquant, CI) |
-| **T3** | moteur Argumentum | Resync des langues cibles sur les lignes flaggées | À venir (gated #1650 Phase 1) |
+| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
 
 ## Schéma CSV (ratified #4957 §1)
 
