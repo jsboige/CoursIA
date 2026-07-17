@@ -108,6 +108,20 @@ public static class SvgChartHelper
         string colorLow = "#F7FBFF", string colorHigh = "#08306B")
         => new SvgChart(BuildHeatmap(title, xLabels, yLabels, values, width, height, colorLow, colorHigh));
 
+    /// <summary>
+    /// Barres groupees : pour chaque categorie, plusieurs series tracees cote a cote (ex.
+    /// comparaison de N solveurs sur une meme famille de problemes, ou score multi-criteres par
+    /// methode). Une legende (haut-droite) identifie chaque serie par sa couleur. SVG inline statique.
+    /// </summary>
+    /// <param name="categories">Labels de l'axe X (une entree par groupe).</param>
+    /// <param name="seriesValues">Une sous-liste par serie ; chaque sous-liste a une valeur par categorie.</param>
+    /// <param name="seriesLabels">Nom de chaque serie (legende), une entree par serie.</param>
+    /// <param name="colors">Couleurs optionnelles par serie (defaut = palette SvgChartHelper).</param>
+    public static SvgChart GroupedBar(string title, string[] categories,
+        double[][] seriesValues, string[] seriesLabels,
+        int width = 640, int height = 360, string[] colors = null)
+        => new SvgChart(BuildGroupedBar(title, categories, seriesValues, seriesLabels, width, height, colors));
+
     // ---------------------------------------------------------------------------------------------
     // Generateurs
     // ---------------------------------------------------------------------------------------------
@@ -136,6 +150,67 @@ public static class SvgChartHelper
             sb.Append($"<rect x='{F(x)}' y='{F(y)}' width='{F(barW)}' height='{F(barH)}' fill='{c}'/>");
             sb.Append(CategoryLabel(layout, x + barW / 2.0, categories[i]));
         }
+        sb.Append(CloseSvg());
+        return sb.ToString();
+    }
+
+    private static string BuildGroupedBar(string title, string[] categories,
+        double[][] seriesValues, string[] seriesLabels, int w, int h, string[] colors)
+    {
+        int catCount = categories?.Length ?? 0;
+        int seriesCount = seriesValues?.Length ?? 0;
+        if (catCount == 0 || seriesCount == 0)
+            throw new ArgumentException("GroupedBar: categories et seriesValues ne doivent pas etre vides.");
+        if (seriesLabels == null || seriesLabels.Length != seriesCount)
+            throw new ArgumentException("GroupedBar: seriesLabels doit avoir une entree par serie.");
+        for (int j = 0; j < seriesCount; j++)
+            if (seriesValues[j] == null || seriesValues[j].Length != catCount)
+                throw new ArgumentException("GroupedBar: chaque serie doit avoir une valeur par categorie.");
+
+        // Bornes Y sur l'union de toutes les series (NiceBounds attend un double[] plat).
+        double[] all = new double[catCount * seriesCount];
+        int k = 0;
+        for (int j = 0; j < seriesCount; j++)
+            for (int i = 0; i < catCount; i++)
+                all[k++] = seriesValues[j][i];
+        var (yMin, yMax) = NiceBounds(all);
+        var layout = new PlotLayout(w, h, yMin, yMax, catCount);
+
+        string[] palette = { ColorPrimary, ColorAccent, "#DD8452", ColorNegative, "#8172B3", "#937860" };
+        string SeriesColor(int j) => colors != null && j < colors.Length ? colors[j] : palette[j % palette.Length];
+
+        var sb = new StringBuilder();
+        sb.Append(OpenSvg(w, h, title));
+        sb.Append(GridAndYAxis(layout));
+
+        // Groupe = 80% de la cellule categorie ; sous-barres cote a cote, centrees sur CatX(i).
+        double groupW = (layout.PlotW / (double)catCount) * 0.80;
+        double barW = groupW / seriesCount;
+        for (int i = 0; i < catCount; i++)
+        {
+            double gx = layout.CatX(i) - groupW / 2.0;
+            for (int j = 0; j < seriesCount; j++)
+            {
+                double v = seriesValues[j][i];
+                double barH = Math.Abs(v - 0) / layout.YRange * layout.PlotH;
+                // y = sommet (SVG) de la barre : Y(v) si v>=0, Y(0) si v<0 (geometrie = BuildBar).
+                double y = v >= 0 ? layout.Y(v) : layout.Y(0);
+                sb.Append($"<rect x='{F(gx + j * barW)}' y='{F(y)}' width='{F(barW)}' height='{F(barH)}' fill='{SeriesColor(j)}'/>");
+            }
+            sb.Append(CategoryLabel(layout, layout.CatX(i), categories[i]));
+        }
+
+        // Legende (haut-droite de la zone de plot), une entree par serie : carre couleur + label.
+        double lx = layout.PadL + layout.PlotW - 172, ly = layout.PadT + 8;
+        double lh = 14 + seriesCount * 18;
+        sb.Append($"<rect x='{F(lx)}' y='{F(ly)}' width='168' height='{F(lh)}' fill='white' stroke='{ColorGrid}' stroke-width='1'/>");
+        for (int j = 0; j < seriesCount; j++)
+        {
+            double ey = ly + 16 + j * 18;
+            sb.Append($"<rect x='{F(lx + 12)}' y='{F(ey - 9)}' width='12' height='8' fill='{SeriesColor(j)}'/>");
+            sb.Append($"<text x='{F(lx + 30)}' y='{F(ey)}' fill='{ColorText}'>{Esc(seriesLabels[j])}</text>");
+        }
+
         sb.Append(CloseSvg());
         return sb.ToString();
     }
