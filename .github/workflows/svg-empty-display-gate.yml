@@ -1,0 +1,172 @@
+name: SVG empty-display gate
+
+# Purpose
+# -------
+# Per-PR gate for .NET Interactive cells that `display()` an SVG chart but
+# commit an EMPTY output list (`outputs: []`). Such cells render as a
+# BLANK/white figure on GitHub and nbviewer: the PR's literal goal "render on
+# GitHub/nbviewer" is unmet even though the XML would be well-formed, the code
+# executes successfully (`execution_count != null`), and CI passes. This is the
+# SYMPTOM-CLASS 2 of the SVG inline fleet-wide rollout #6927 (the SYMPTOM-CLASS
+# 1 = SVG emitted with French decimal commas that render as a zigzag, caught
+# by `svg-decimal-comma-gate.yml` / `#6959`).
+#
+# Root cause
+# ----------
+# .NET Interactive / nbclient headless kernels can capture `display_data` for
+# some object types but not others. Empirically (incident #6963 DecInfer-6,
+# po-2025 fr-FR), `display(SvgChartHelper.Bar(...))` in some execution contexts
+# succeeds (`execution_count` set, no exception raised) yet produces an EMPTY
+# `outputs` list because the kernel's display-capture path missed the SVG
+# payload. The same code may render fine in a different setup (proven #6967
+# DecInfer-7 cell[32] by po-2025: `display()` returns SVG `<text/html>` 3563
+# chars when the helper is `#load`-ed from the right cwd). The defect class is
+# SYMPTOM (empty output) cause-agnostic — it catches all empty-display failures
+# rooted in the helper/Formatter-not-loaded pitfall (`#load` unresolved from
+# the kernel's real cwd at exec time, so `Formatter.Register` never runs and
+# `SvgChartHelper.<chart>` falls through to a no-op). See ai-01 canon
+# `svg-6927-canon.md` §4 (cause-racine helper-load).
+#
+# Why this is NOT a regression of `svg-decimal-comma-gate.yml`
+# -------------------------------------------------------------
+# `svg-decimal-comma-gate.yml` (`#6965`) inspects the OUTPUT PAYLOAD and parses
+# SVG coordinate attributes. It CANNOT detect an empty output list (there is no
+# SVG to parse). `check_plotly_static_risk.py` inspects the SOURCE for
+# `<script src="cdn.plot.ly">`; it ALSO cannot detect the empty-output defect.
+# Both gates passed on PR #6963 (4 cells), which then rendered BLANK on GitHub.
+# `detect_svg_empty_display.py` is the structural counterpart: 3-condition
+# zero-FP signature on the CELL (not the SVG payload) =
+# `execution_count != null` AND `outputs == []` AND source contains a chart
+# `display()` pattern (`display(SvgChartHelper.<chart>)`, `display(HTML(<svg>))`,
+# or builder patterns `ScatterSvg` / `PlotSvg` / `BuildScatterSvg`). The two
+# detectors are COMPLEMENTARY, not redundant: one inspects the SVG content,
+# the other inspects the cell rendering pipeline.
+#
+# This gate runs scripts/notebook_tools/detect_svg_empty_display.py (`#6971`)
+# in --check mode on every notebook changed by the PR and FAILs if any cell
+# commits an empty display. The detector is deterministic and zero-FP:
+#  - Cells with `execution_count: null` (not yet executed) are NOT flagged
+#    (legitimate un-run notebook, the empty output is expected).
+#  - Cells with non-empty outputs (stream, error, display_data with SVG,
+#    etc.) are NOT flagged (the empty-display defect requires STRICT zero
+#    outputs — a stream-only cell emitting `Console.WriteLine` is not a
+#    white figure on GitHub).
+#  - Cells whose source does NOT contain a chart-display pattern are NOT
+#    flagged (a legitimately silent cell defining a helper function, or
+#    computing a value without displaying, has no display intention).
+#
+# Absolute (not regression) semantics: baseline `main` carries 0 defects
+# (the detector was validated clean across 930 notebooks at #6971: 0 false
+# positives across the partition). Any empty-display cell in a changed
+# notebook is a defect introduced or carried by the PR and must be fixed
+# before merge. A new notebook must commit real SVG output, not empty lists.
+#
+# Fix (mirror ai-01 `svg-6927-canon.md` §4 — cause-racine helper-load)
+# --------------------------------------------------------------------
+# The empty `outputs` list means the helper's `Formatter.Register` did NOT
+# run during exec — `#load "SvgChartHelper.cs"` did not resolve from the
+# kernel's real cwd (the notebook dir at exec time). `display(chart)` AND
+# last-expression BOTH render once the helper is loaded (proof: MERGED
+# `#6967` DecInfer-7 cell[32] uses `display(SvgChartHelper...)` and captures
+# the `<svg>`). Discriminator = helper-load, NOT display-vs-expression.
+# Common root causes:
+#  (A) `.NET Interactive` / nbclient kernel cwd is wrong: helper
+#      `#load "SvgChartHelper.cs"` resolves only if the kernel's cwd is the
+#      directory containing the helper (or a path-relative one that
+#      reaches it). Verify with `Environment.CurrentDirectory` first.
+#  (B) Helper never compiled: `Formatter.Register` is the linchpin that
+#      wires up `SvgChartHelper.Bar` rendering. If the `#load` silently
+#      fails (file not found), the helper types exist in source but
+#      `Formatter.Register` is never executed -> `display(...)` falls
+#      through to a no-op -> empty outputs.
+# Stop&Repair (secrets-hygiene rule 6): fix the cause + re-execute, NEVER
+# scrub the output by hand. A hand-edited `outputs: [<svg>]` would falsify
+# the proof of execution and resurface on the next exec.
+#
+# Incident: PR #6963 (DecInfer-6, po-2025 fr-FR) committed 4 cells
+# (29/35/45/49) with `display(SvgChartHelper.Bar(...))` and ran
+# successfully (`execution_count` set, validator EXEC_PROVED), but
+# `outputs == []` for each — the kernel's display-capture missed the SVG
+# payload under the chosen setup. Baseline main was clean (0/930). The
+# `svg-decimal-comma-gate` (`#6965`) and `check_plotly_static_risk.py`
+# both passed. Result: 4 white figures on GitHub, invisible to code
+# review and structural validation. Detected by vision-QA only.
+# Followup: PR #6967 (DecInfer-7, po-2025) rendered correctly with the
+# same `display(...)` pattern under a different cwd setup (proving the
+# defect is cause-agnostic, not pattern-specific). See EPIC #3801,
+# rollout #6927 (SVG inline fleet-wide), canon ai-01 `svg-6927-canon.md`.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_svg_empty_display.py'
+      - '.github/workflows/svg-empty-display-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  svg-empty-display:
+    name: "No SVG empty-display defect in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=SVG empty-display gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=SVG empty-display gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## SVG empty-display gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_svg_empty_display.py "$nb" --check 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=SVG empty-display defect::$nb commits a code cell with a chart-display pattern but EMPTY output list (renders BLANK on GitHub/nbviewer)."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=SVG empty-display gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: the empty \`outputs\` list means the helper's \`Formatter.Register\` did NOT run in this exec — \`#load \"SvgChartHelper.cs\"\` did not resolve from the kernel's real cwd (the notebook dir at exec time). Make the \`#load\` resolve (helper in the notebook dir, OR relative \`#load \"../<family>/SvgChartHelper.cs\"\` that reaches it, OR re-execute via Papermill/ExecutePreprocessor with \`resources.metadata.path\` set to the helper dir), then re-execute the .NET kernel and confirm \`out_len>0\` (\`<svg>\` present in the cell \`outputs\`). \`display(chart)\` AND last-expression BOTH render once the helper is loaded (proof: MERGED \`#6967\` DecInfer-7 cell[32] uses \`display()\` and captures the \`<svg>\`); the discriminator is helper-load, NOT display-vs-expression. See ai-01 canon \`svg-6927-canon.md\` §4 (cause-racine helper-load) and the detector docstring. Stop&Repair: fix the cause + re-execute, never scrub the output by hand (secrets-hygiene rule 6)." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=SVG empty-display gate::Checked $checked changed notebook(s); no empty-display SVG defect."
