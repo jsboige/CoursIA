@@ -1,0 +1,117 @@
+name: SVG decimal-comma gate
+
+# Purpose
+# -------
+# Per-PR gate for inline SVG outputs that carry French decimal commas in
+# coordinate attributes (polyline/polygon points, circle cx/cy, line x1/y1,
+# ...). Such SVGs render BROKEN on Chromium (the engine behind GitHub and
+# nbviewer): per the SVG spec, comma AND whitespace are BOTH coordinate
+# separators, so `points="70,0,334,4"` parses as 4 numbers = 2 points
+# (70,0)(334,4) instead of 1 point (70.0, 334.4) -> chaotic zigzag; a
+# single-coord attribute like `cx="70,0"` errors "Expected length" and
+# defaults to 0. The PR's literal goal "render on GitHub/nbviewer" is then
+# unmet even though the XML is well-formed and the code executes.
+#
+# Root cause: C# :F1/:F2 / default double.ToString() are culture-sensitive;
+# on a fr-FR machine they emit a comma. All po-* workers run fr-FR, so any
+# inline-SVG helper using :F* will emit commas -> broken on GitHub.
+#
+# This gate runs scripts/notebook_tools/detect_svg_decimal_commas.py (#6959)
+# in --check mode on every notebook changed by the PR and FAILs if any
+# commits a decimal-comma SVG. The detector is deterministic and zero-FP
+# (integer pairs "70,334" and dot-decimals "70.0,334.4" are NOT flagged;
+# rgba()/rgb() colors and transform are excluded; path `d` is a documented
+# blind spot, NOT flagged).
+#
+# Absolute (not regression) semantics: baseline `main` carries 0 defects
+# (the detector was validated clean across 930 notebooks at #6959), so any
+# decimal-comma SVG in a changed notebook is a defect introduced or carried
+# by the PR and must be fixed before merge. A new notebook must be clean.
+#
+# Fix: force InvariantCulture in the cell source
+# (xp.ToString("F1", CultureInfo.InvariantCulture) or
+# FormattableString.Invariant(...), or CultureInfo.DefaultThreadCurrentCulture
+# = InvariantCulture at cell top) then re-execute the .NET kernel -- the
+# committed output then carries dot-decimals. Or reuse the canon
+# SvgChartHelper.cs (#6942) which already formats with dots. Stop&Repair:
+# fix the cause + re-execute, never scrub the output by hand.
+#
+# Incident: PR #6946 (Infer-17 Kalman, po-2023 fr-FR) committed 1485
+# decimal-commas in cell[8]; chart rendered as a 44-point zigzag (22
+# intended). Caught by vision-QA only (4 code-forensics missed it).
+# See EPIC #3801, rollout #6927 (SVG inline fleet-wide).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_svg_decimal_commas.py'
+      - '.github/workflows/svg-decimal-comma-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  svg-decimal-comma:
+    name: "No SVG decimal-comma defect in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=SVG decimal-comma gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=SVG decimal-comma gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## SVG decimal-comma gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_svg_decimal_commas.py "$nb" --check 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=SVG decimal-comma defect::$nb commits an inline SVG with French decimal commas (renders broken on GitHub/nbviewer)."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=SVG decimal-comma gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: force InvariantCulture in the cell source (\`xp.ToString(\"F1\", CultureInfo.InvariantCulture)\`, \`FormattableString.Invariant\`, or \`CultureInfo.DefaultThreadCurrentCulture = InvariantCulture\` at cell top) then re-execute the .NET kernel. Or reuse the canon \`SvgChartHelper.cs\` (#6942). See the detector docstring." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=SVG decimal-comma gate::Checked $checked changed notebook(s); no decimal-comma SVG defect."
