@@ -23,15 +23,15 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,ab8b7b64,markdown,fr,5484c583
 | - | [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) |
 
 ---",,,,,,,,5484c58365e6fa27,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,42dba707,markdown,fr,b33c67a9c11dabb9,"## 1. Introduction a la Programmation Probabiliste
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,42dba707,markdown,fr,79143ec3432a73ab,"## 1. Introduction a la Programmation Probabiliste
 
-### Le probleme de l'incertitude
+### Le problème de l'incertitude
 
 Les ordinateurs sont rigoureusement logiques, mais le monde reel ne l'est pas. Considerez ces exemples :
 
-- Un systeme de reconnaissance d'ecriture manuscrite : le gribouillis peut correspondre a ""hill"", ""bull"" ou ""hello""
+- Un système de reconnaissance d'ecriture manuscrite : le gribouillis peut correspondre a ""hill"", ""bull"" ou ""hello""
 - Un diagnostic medical : les symptomes peuvent indiquer plusieurs maladies possibles
-- Un systeme de recommandation : les préférences de l'utilisateur sont partiellement connues
+- Un système de recommandation : les préférences de l'utilisateur sont partiellement connues
 
 Dans tous ces cas, nous devons raisonner avec de l'**incertitude**.
 
@@ -51,7 +51,7 @@ Variable<bool> estFace = Variable.Bernoulli(0.5);  // 50% de chance
 
 1. **Modèles probabilistes** : Definissent comment les observations sont générées
 2. **Inférence bayesienne** : Raisonne de l'effet vers la cause
-3. **Apprentissage** : Les paramètres eux-memes sont des variables aléatoires",,,,,,,,b33c67a9c11dabb9,,,,,,,
+3. **Apprentissage** : Les paramètres eux-memes sont des variables aléatoires",,,,,,,,79143ec3432a73ab,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,01b459aa,markdown,fr,f39f88680a5338c2,"## 2. Presentation d'Infer.NET
 
 ### Qu'est-ce que Infer.NET ?
@@ -137,18 +137,18 @@ catch
 { 
     Console.WriteLine(""Graphviz non disponible (optionnel pour visualisation)""); 
 }",,,,,,,,d22c1c34e5e12ce2,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,b85npb17cng,markdown,fr,985524adca405bc1,"### Verification de la configuration Graphviz
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,b85npb17cng,markdown,fr,b2a4c34b82d9d91c,"### Verification de la configuration Graphviz
 
 La cellule precedente a configure le PATH pour Graphviz. Voici comment interpreter la sortie :
 
 | Message | Signification |
 |---------|---------------|
 | `Graphviz configure : C:\Program Files\Graphviz\bin` | Chemin ajoute au PATH - Graphviz sera utilisable |
-| `Graphviz deja dans le PATH` | Deja configure dans une session precedente |
+| `Graphviz deja dans le PATH` | Déjà configure dans une session precedente |
 | `Graphviz non disponible` | Non installe - les graphes seront generes en `.gv` uniquement |
 | `Verification OK : dot - graphviz version X.X` | Installation fonctionnelle |
 
-> **Note** : Si Graphviz n'est pas installe, ce n'est pas bloquant. Les fichiers `.gv` peuvent etre visualises sur [viz-js.com](https://viz-js.com/).",,,,,,,,985524adca405bc1,,,,,,,
+> **Note** : Si Graphviz n'est pas installe, ce n'est pas bloquant. Les fichiers `.gv` peuvent être visualises sur [viz-js.com](https://viz-js.com/).",,,,,,,,b2a4c34b82d9d91c,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,18ff7a16,code,fr,504e6b578df42ff4,"// Installation des packages NuGet Infer.NET
 #r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""",,,,,,,,504e6b578df42ff4,,,,,,,
@@ -187,9 +187,9 @@ La cellule precedente a importe les espaces de noms essentiels. Voici leur role 
 | `Microsoft.ML.Probabilistic.Math` | Fonctions mathematiques | Operations sur distributions |
 
 > **Architecture Infer.NET** : Le moteur d'inférence compile votre modèle en code C# optimise, stocke dans `GeneratedSource/`. Cette approche ""compile une fois, execute plusieurs fois"" offre d'excellentes performances.",,,,,,,,2d3fa986637fa75a,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,92dccdbd,markdown,fr,352b9d70ed229ea0,"## 4. Premier Exemple : Le Lancer de Deux Pieces
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,92dccdbd,markdown,fr,70068b3b72e06a4d,"## 4. Premier Exemple : Le Lancer de Deux Pieces
 
-### Enonce du probleme
+### Enonce du problème
 
 Quelle est la probabilité d'obtenir **deux faces** lors du lancer de deux pieces non biaisées ?
 
@@ -197,31 +197,31 @@ Quelle est la probabilité d'obtenir **deux faces** lors du lancer de deux piece
 
 $$P(\text{deux faces}) = P(\text{face}_1) \times P(\text{face}_2) = 0.5 \times 0.5 = 0.25$$
 
-### Solution avec Infer.NET",,,,,,,,352b9d70ed229ea0,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,24e5f668,code,fr,1b60213531606aa4,"// Etape 1 : Definition du modele probabiliste
+### Solution avec Infer.NET",,,,,,,,70068b3b72e06a4d,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,24e5f668,code,fr,5d0c144840124e47,"// Étape 1 : Définition du modèle probabiliste
 Variable<bool> premierePiece = Variable.Bernoulli(0.5);   // Piece 1 : 50% face
 Variable<bool> deuxiemePiece = Variable.Bernoulli(0.5);   // Piece 2 : 50% face
 Variable<bool> deuxFaces = premierePiece & deuxiemePiece; // ET logique
 
-// Etape 2 : Creation du moteur d'inference
+// Étape 2 : Création du moteur d'inference
 InferenceEngine moteur = new InferenceEngine();
 moteur.Compiler.CompilerChoice = CompilerChoice.Roslyn;  // Necessaire pour .NET Interactive
 
-// Etape 3 : Execution de l'inference
+// Étape 3 : Execution de l'inference
 var resultat = moteur.Infer(deuxFaces);
-Console.WriteLine($""Probabilite d'obtenir deux faces : {resultat}"");",,,,,,,,1b60213531606aa4,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,j1nrzm34c2f,markdown,fr,723ec551ab5bd343,"### Analyse de la sortie
+Console.WriteLine($""Probabilite d'obtenir deux faces : {resultat}"");",,,,,,,,5d0c144840124e47,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,j1nrzm34c2f,markdown,fr,1b046448a4563501,"### Analyse de la sortie
 
 Le résultat `Bernoulli(0,25)` représente une **distribution de Bernoulli** avec paramètre p = 0.25 :
 
-- **Interpretation** : La variable `deuxFaces` a 25% de chance d'etre vraie
+- **Interpretation** : La variable `deuxFaces` a 25% de chance d'être vraie
 - **Coherence mathematique** : 0.5 × 0.5 = 0.25 ✓
 
 Remarquez les messages ""Compiling model... done."" lors de la première exécution. Infer.NET **compile dynamiquement** votre modèle en code C# optimise, stocke dans un répertoire `GeneratedSource/`. Cette compilation n'a lieu qu'une fois par modèle.
 
 > **Pourquoi une distribution et pas juste 0.25 ?**  
-> Infer.NET retourne toujours des **distributions complètes**, pas seulement des valeurs ponctuelles. Cela permet de propager l'incertitude dans des modèles plus complexes.",,,,,,,,723ec551ab5bd343,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,7d81c7cb,markdown,fr,0d1c82ed7449e6e2,"## 5. Les 3 Étapes Fondamentales
+> Infer.NET retourne toujours des **distributions complètes**, pas seulement des valeurs ponctuelles. Cela permet de propager l'incertitude dans des modèles plus complexes.",,,,,,,,1b046448a4563501,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,7d81c7cb,markdown,fr,27def2e979360b90,"## 5. Les 3 Étapes Fondamentales
 
 Tout programme Infer.NET suit ces 3 étapes :
 
@@ -238,7 +238,7 @@ Variable<bool> B = Variable.Bernoulli(0.5);
 Variable<bool> C = A & B;  // C depend de A et B
 ```
 
-**Étape 2 : Creation du Moteur d'Inférence**
+**Étape 2 : Création du Moteur d'Inférence**
 
 Le moteur compile le modèle et prepare l'algorithme d'inférence.
 
@@ -253,22 +253,22 @@ Demandez au moteur de calculer la distribution d'une variable.
 
 ```csharp
 var résultat = moteur.Infer(C);  // Distribution marginale de C
-```",,,,,,,,0d1c82ed7449e6e2,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,3b0d2370,markdown,fr,7d9b9aaabc493679,"## 6. Types de Distributions Fondamentales
+```",,,,,,,,27def2e979360b90,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,3b0d2370,markdown,fr,fcc686b118296199,"## 6. Types de Distributions Fondamentales
 
 Infer.NET supporte de nombreuses distributions. Voici les plus courantes :
 
 | Distribution | Type | Usage | Exemple |
 |--------------|------|-------|--------|
-| **Bernoulli** | Discrete | Evenement binaire | Pile/Face, Vrai/Faux |
-| **Discrete** | Discrete | Categorie parmi N | Choix d'un jour, couleur |
+| **Bernoulli** | Discrete | Événement binaire | Pile/Face, Vrai/Faux |
+| **Discrete** | Discrete | Catégorie parmi N | Choix d'un jour, couleur |
 | **Gaussian** | Continue | Valeur reelle avec incertitude | Taille, temperature |
 | **Gamma** | Continue | Precision, variance | Bruit, fiabilite |
 | **Beta** | Continue | Probabilité inconnue | Taux de succes |
-| **Dirichlet** | Continue | Vecteur de probabilités | Poids de mélange |",,,,,,,,7d9b9aaabc493679,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,ebf38ca6,code,fr,8642658b5798ec15,"// Exemples de creation de variables aleatoires
+| **Dirichlet** | Continue | Vecteur de probabilités | Poids de mélange |",,,,,,,,fcc686b118296199,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,ebf38ca6,code,fr,f56939c653d5dc5c,"// Exemples de création de variables aleatoires
 
-// Bernoulli : probabilite d'un evenement binaire
+// Bernoulli : probabilité d'un événement binaire
 Variable<bool> pluie = Variable.Bernoulli(0.3);  // 30% de chance de pluie
 
 // Discrete : choix parmi N options
@@ -280,7 +280,7 @@ Variable<double> temperature = Variable.GaussianFromMeanAndVariance(20, 4);  // 
 // Gamma : precision (inverse de la variance)
 Variable<double> precision = Variable.GammaFromShapeAndScale(2, 0.5);
 
-Console.WriteLine(""Variables creees avec succes !"");",,,,,,,,8642658b5798ec15,,,,,,,
+Console.WriteLine(""Variables creees avec succes !"");",,,,,,,,f56939c653d5dc5c,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,hifwis3sou8,markdown,fr,4248c5a2f0aa9f1d,"### Interpretation des variables créées
 
 La cellule precedente a crée quatre variables aléatoires. Voici ce que représente chacune :
@@ -311,9 +311,9 @@ Le code suivant illustre les étapes clés d'un modèle bayesien :
 4. **Inférence** : Calcul de la distribution posterieure du biais
 
 > **Beta(1,1)** est un prior ""non-informatif"" : il donne la meme probabilité a toutes les valeurs de biais entre 0 et 1. C'est equivalent a dire ""je n'ai aucune idee a priori du biais de la pièce"".",,,,,,,,a0274673590c2ca9,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,632d5091,code,fr,2beb36e7d7ff355c,"// Modele pour estimer le biais d'une piece
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,632d5091,code,fr,4f1ac5982cd0f128,"// Modèle pour estimer le biais d'une piece
 
-// A priori : le biais peut etre n'importe quelle valeur entre 0 et 1
+// A priori : le biais peut être n'importe quelle valeur entre 0 et 1
 // Beta(1,1) = distribution uniforme sur [0,1]
 Variable<double> biais = Variable.Beta(1, 1);
 
@@ -338,10 +338,10 @@ moteur.Compiler.CompilerChoice = CompilerChoice.Roslyn;
 Beta biaisPosterieur = moteur.Infer<Beta>(biais);
 Console.WriteLine($""Distribution a posteriori du biais : {biaisPosterieur}"");
 Console.WriteLine($""Moyenne estimee du biais : {biaisPosterieur.GetMean():F3}"");
-Console.WriteLine($""Intervalle de confiance (ecart-type) : +/- {Math.Sqrt(biaisPosterieur.GetVariance()):F3}"");",,,,,,,,2beb36e7d7ff355c,,,,,,,
+Console.WriteLine($""Intervalle de confiance (ecart-type) : +/- {Math.Sqrt(biaisPosterieur.GetVariance()):F3}"");",,,,,,,,4f1ac5982cd0f128,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,12e14487,markdown,fr,b2c6429dc54c6be8,Visualisation du graphe de facteurs du modèle de biais de pièce.,,,,,,,,b2c6429dc54c6be8,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,1j3d7ypvqqb,code,fr,8c733953f8f36134,"// Visualisation du factor graph pour le modele de piece biaisee
-// Recreons le modele avec ShowFactorGraph = true
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,1j3d7ypvqqb,code,fr,e865e9261c7de9e9,"// Visualisation du factor graph pour le modèle de piece biaisée
+// Recreons le modèle avec ShowFactorGraph = true
 
 Variable<double> biaisViz = Variable.Beta(1, 1).Named(""biais"");
 int nLancers = 10;
@@ -361,7 +361,7 @@ Beta biaisPost = moteurViz.Infer<Beta>(biaisViz);
 Console.WriteLine($""Biais estime: {biaisPost}"");
 
 // Afficher le factor graph
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,8c733953f8f36134,,,,,,,
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,e865e9261c7de9e9,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,blaktc15im5,markdown,fr,8f215bf2f204a5fc,"### Factor Graph : Modèle de Pièce Biaisée
 
 Le graphe de facteurs ci-dessus illustre la structure du modèle bayesien :
@@ -387,7 +387,7 @@ Le graphe de facteurs ci-dessus illustre la structure du modèle bayesien :
 - Le facteur Beta combine ces messages avec le prior pour produire le posterior Beta(8,4)
 
 > **Rendu Graphviz** : ce graphe factoriel n'est pas affiche dans le notebook car le binaire `dot` est absent du PATH du kernel .net-csharp (cellule de configuration Graphviz + `FactorGraphHelper` renvoient « non disponible », cf issue #3473). Infer.NET génère bien un fichier `.gv` a cote du notebook (visualisable sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/)), mais affiche a la place un avertissement « Problem with converting DOT to SVG ». La description textuelle de la structure ci-dessus reste valable.",,,,,,,,8f215bf2f204a5fc,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,c23c8e87,markdown,fr,2e4ce81c85a8b57d,"### Analyse detaillee du résultat
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,c23c8e87,markdown,fr,831e6ae3e7a644eb,"### Analyse detaillee du résultat
 
 **Sortie obtenue** : `Beta(8,4)[mean=0,6667]`
 
@@ -402,13 +402,13 @@ La distribution **Beta(α, β)** représente notre croyance mise a jour sur le b
 
 **Pourquoi Beta(8,4) et pas simplement 7/10 ?**
 
-1. **Integration du prior** : Nous avons commence avec Beta(1,1), equivalent a avoir deja observe 1 face et 1 pile
+1. **Integration du prior** : Nous avons commence avec Beta(1,1), equivalent a avoir déjà observe 1 face et 1 pile
 2. **Formule de mise a jour** : Beta(α + n_faces, β + n_piles) = Beta(1+7, 1+3) = Beta(8,4)
 3. **Moyenne legerement biaisée** : 0.667 vs 0.700 (l'effet du prior diminue avec plus d'observations)
 
 > **Concept clé : Conjugaison**  
 > La distribution Beta est **conjuguee** a Bernoulli : prior Beta + observations Bernoulli = posterior Beta.  
-> Cette propriete permet une mise a jour analytique exacte, sans approximation.",,,,,,,,2e4ce81c85a8b57d,,,,,,,
+> Cette propriete permet une mise a jour analytique exacte, sans approximation.",,,,,,,,831e6ae3e7a644eb,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,d42fe2e7,markdown,fr,180887deb9f0e15a,"## 8. Exemple guide : Trois Pieces
 
 ### Enonce
@@ -424,13 +424,13 @@ Pour ""au moins deux faces"", vous pouvez utiliser plusieurs variables derivees 
 - `deuxOuTrois = (p1 & p2) | (p1 & p3) | (p2 & p3)`
 
 ### Solution",,,,,,,,180887deb9f0e15a,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,p4eyf2b3his,markdown,fr,8ed2f8160afdfd14,"### Code de l'exercice
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,p4eyf2b3his,markdown,fr,f6e5f3395e18bcef,"### Code de l'exercice
 
 La cellule suivante contient la solution de référence. Essayez de comprendre chaque ligne avant de l'executer :
 
-- **Lignes 4-6** : Creation de trois variables Bernoulli independantes
+- **Lignes 4-6** : Création de trois variables Bernoulli independantes
 - **Ligne 9** : Conjonction logique (AND) des trois variables
-- **Ligne 13** : Disjonction logique (OR) de paires - structure plus complexe",,,,,,,,8ed2f8160afdfd14,,,,,,,
+- **Ligne 13** : Disjonction logique (OR) de paires - structure plus complexe",,,,,,,,f6e5f3395e18bcef,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,09f88a13,code,fr,72e2da7036fb65a4,"// Exemple guide : Completez ce code
 
 // 1. Definir les trois pieces
@@ -474,7 +474,7 @@ Pour ""au moins deux faces"", la vraie probabilité est :
 L'ecart vient de la complexite des **correlations entre variables** dans l'expression `(p1&p2) | (p1&p3) | (p2&p3)`. Les memes variables apparaissent dans plusieurs termes, creant des dépendances que l'algorithme EP approxime.
 
 > **Bon a savoir** : Infer.NET utilise des algorithmes d'inférence **variationnelle** qui peuvent introduire de legeres erreurs sur des modèles avec des structures de dépendance complexes. Pour des calculs exacts sur des modèles discrets simples, d'autres approches (enumeration, junction tree) seraient plus précises.",,,,,,,,ccac11af7d066f18,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,88j4a6u22li,markdown,fr,9f5ae3e9c8010077,"## 8bis. Troubleshooting et Debogage
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,88j4a6u22li,markdown,fr,67d8756d0afdf88f,"## 8bis. Troubleshooting et Debogage
 
 Cette section couvre les problemes courants avec Infer.NET et leurs solutions.
 
@@ -508,8 +508,8 @@ moteur.Algorithm = new VariationalMessagePassing();
 moteur.Algorithm = new GibbsSampling();
 ```
 
-> **Note** : La configuration de Graphviz a ete effectuee en section 3. Les fichiers `.gv` generes peuvent etre visualises sur [viz-js.com](https://viz-js.com/) si Graphviz n'est pas installe.",,,,,,,,9f5ae3e9c8010077,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,5r5yxxb87f9,code,fr,1b8e3db9e71356cc,"// Inspection du code genere et du factor graph
+> **Note** : La configuration de Graphviz a ete effectuee en section 3. Les fichiers `.gv` generes peuvent être visualises sur [viz-js.com](https://viz-js.com/) si Graphviz n'est pas installe.",,,,,,,,67d8756d0afdf88f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,5r5yxxb87f9,code,fr,06afac71979d869d,"// Inspection du code genere et du factor graph
 
 Console.WriteLine(""=== Options de Debug Infer.NET ===\n"");
 
@@ -546,7 +546,7 @@ if (!graphvizInstalle)
 }
 Console.WriteLine();
 
-// Creation d'un modele simple pour demonstration
+// Création d'un modèle simple pour demonstration
 Variable<double> x = Variable.GaussianFromMeanAndPrecision(0, 1).Named(""x"");
 Variable<double> y = Variable.GaussianFromMeanAndPrecision(x, 1).Named(""y"");
 y.ObservedValue = 2.0;
@@ -578,11 +578,11 @@ Console.WriteLine(""--- Execution avec options debug ---\n"");
 var xPost = moteurDebug.Infer<Gaussian>(x);
 Console.WriteLine($""\nResultat : x ~ {xPost}"");
 
-// Note : Le FactorGraphHelper est defini plus bas dans ce notebook.
+// Note : Le FactorGraphHelper est défini plus bas dans ce notebook.
 // Une fois charge, utilisez : display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()))
 Console.WriteLine(""\n--- Factor Graph ---"");
-Console.WriteLine(""Fichiers .gv generes. Voir section FactorGraphHelper ci-dessous pour l'affichage inline."");",,,,,,,,1b8e3db9e71356cc,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,q2l9lsexdsl,markdown,fr,eeb8822bc6c6593b,"### Interpretation du résultat d'inférence en mode debug
+Console.WriteLine(""Fichiers .gv generes. Voir section FactorGraphHelper ci-dessous pour l'affichage inline."");",,,,,,,,06afac71979d869d,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,q2l9lsexdsl,markdown,fr,a17611f3c86e48ae,"### Interpretation du résultat d'inférence en mode debug
 
 **Sortie obtenue** : `x ~ Gaussian(1, 0.5)`
 
@@ -595,7 +595,7 @@ Ce résultat représente la **distribution posterieure** de la variable `x` apr�
 
 **Pourquoi cette mise a jour ?**
 
-1. **Prior** : x ~ N(0, 1) - nous pensions que x etait proche de 0
+1. **Prior** : x ~ N(0, 1) - nous pensions que x était proche de 0
 2. **Observation** : y = 2.0, avec y ~ N(x, 1)
 3. **Posterior** : x ~ N(1, 0.5) - compromis entre le prior et l'observation
 
@@ -603,8 +603,8 @@ Le posterior est ""tire"" vers l'observation (moyenne passe de 0 a 1) tout en re
 
 > **Formule analytique** (cas gaussien) :  
 > La moyenne posterieure = (prior_precision × prior_mean + likelihood_precision × observation) / (prior_precision + likelihood_precision)  
-> Soit : (1×0 + 1×2) / (1+1) = 1",,,,,,,,eeb8822bc6c6593b,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,1ks1d2mjbd3,markdown,fr,9eab17e7f0b15712,"### Utilisation des Options de Debug
+> Soit : (1×0 + 1×2) / (1+1) = 1",,,,,,,,a17611f3c86e48ae,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,1ks1d2mjbd3,markdown,fr,3610536a2b467aaa,"### Utilisation des Options de Debug
 
 **Quand utiliser chaque option** :
 
@@ -628,7 +628,7 @@ Lorsque `ShowFactorGraph = true` est active, Infer.NET génère des fichiers `.g
 
 **Avec Graphviz installe** : La conversion en SVG est automatique.
 
-**Sans Graphviz** : Les fichiers `.gv` peuvent etre visualises sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
+**Sans Graphviz** : Les fichiers `.gv` peuvent être visualises sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
 
 **Structure d'un Factor Graph** :
 
@@ -639,7 +639,7 @@ Lorsque `ShowFactorGraph = true` est active, Infer.NET génère des fichiers `.g
 Dans ce graphe :
 - Les **rectangles** représentent les facteurs (distributions)
 - Les **cercles** représentent les variables aléatoires
-- Les **fleches** indiquent le flux de messages entre facteurs et variables",,,,,,,,9eab17e7f0b15712,,,,,,,
+- Les **fleches** indiquent le flux de messages entre facteurs et variables",,,,,,,,3610536a2b467aaa,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,3olme3xdb2s,markdown,fr,9e9bbd27da176dc1,"### Helper : Affichage inline des Factor Graphs
 
 Le code suivant definit un helper `FactorGraphHelper` pour afficher les graphes de facteurs directement dans les cellules du notebook. Ce helper :
@@ -892,7 +892,7 @@ Modelisez le lancer de **deux des a 6 faces** avec Infer.NET.
 4. Conditionnez sur le fait que le premier de affiche 6 (valeur = 5 en 0-indexe) et re-inferez
 
 **Indice** : Utilisez `Variable.DiscreteUniform(6)` et `Variable.If()` pour conditionner.",,,,,,,,745b9d5605c01d16,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,0dc25f62,code,fr,7508f8ab8bc8b5fc,"// Exercice : Modele de deux des a 6 faces
+MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,0dc25f62,code,fr,5e174c841fb24b6b,"// Exercice : Modèle de deux des a 6 faces
 
 // TODO: Creer le moteur d inference avec Roslyn
 // Indice: InferenceEngine + CompilerChoice.Roslyn
@@ -912,7 +912,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,0dc25f62,code,fr,7508f8ab8bc8
 
 // Question: La distribution de de2 change-t-elle apres observation de de1 ? Pourquoi ?
 Console.WriteLine(""Exercice a completer"");
-",,,,,,,,7508f8ab8bc8b5fc,,,,,,,
+",,,,,,,,5e174c841fb24b6b,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb,d78060c4,markdown,fr,52e92eba73638625,"## Conclusion
 
 Ce notebook d'introduction a pose les fondements de la programmation probabiliste avec Infer.NET :
