@@ -1,0 +1,5 @@
+notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
+Series/Foo.ipynb,abc12345,markdown,fr,ec9615f904e04755,"## Introduction au machine learning",## Introduction to machine learning,,,,,,,,,ec9615f904e04755,6d00fbd33a36b21d,,,,,,,
+Series/Foo.ipynb,def67890,markdown,fr,bf21b6b03c8569ce,"Les reseaux de neurones profonds apprennent des representations hierarchiques.",,,,,,,,,bf21b6b03c8569ce,,,,,,,,
+Series/Foo.ipynb,code1111,code,fr,,# commentaire de code,,,,,,,,,,,,,,,,
+Series/Foo.ipynb,empty222,markdown,fr,,,,,,,,,,,,,,,,,
