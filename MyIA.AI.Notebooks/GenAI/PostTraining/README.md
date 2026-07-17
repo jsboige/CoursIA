@@ -25,7 +25,7 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 
 ## Notebooks
 
-| # | Notebook | Sujet | Technique | Modele cible | PR |
+| # | Notebook | Sujet | Technique | Modèle cible | PR |
 |---|----------|-------|-----------|--------------|----|
 | PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Théorique (markdown + figures) | N/A | — |
 | PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` | Qwen2.5-0.5B-Instruct | #1764 |
@@ -196,9 +196,9 @@ Alternatives écartées et raisons : Llama-3.2-1B (gated, friction d'inscription
 
 Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la série indique en encart les hyperparamètres à modifier pour scaler à Qwen2.5-7B sans changer la structure pédagogique.
 
-## References academiques
+## Références académiques
 
-| Reference | Couverture |
+| Référence | Couverture |
 |-----------|------------|
 | Christiano et al., "Deep RL from human preferences" (NeurIPS 2017) | Origine RLHF |
 | Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | RLHF appliquée aux LMs |
