@@ -102,14 +102,18 @@ _SVG_MIMES = ("image/svg+xml", "text/html")
 # un output = typiquement un seul <svg> racine).
 _SVG_BLOCK_RE = re.compile(r"<svg\b.*?</svg>", re.DOTALL)
 
-# Attribut points (polyline/polygon).
-_POINTS_RE = re.compile(r"<(?:polyline|polygon)\b[^>]*\bpoints\s*=\s*\"([^\"]*)\"", re.IGNORECASE)
+# Attribut points (polyline/polygon). Les valeurs sont delimitees par des
+# simples OU doubles quotes (les deux sont valides en SVG/XML ; les notebooks
+# C# emettent l'un ou l'autre selon la string interpolation : cx='{v}' (MGS-15)
+# vs cx="{v}" (Infer-17). La backreference (\1) referme le meme quote ouvert.
+_POINTS_RE = re.compile(r"<(?:polyline|polygon)\b[^>]*\bpoints\s*=\s*([\"'])(.*?)\1", re.IGNORECASE)
 
 # Attributs mono-coordonnee dont une virgule est toujours un defaut.
 _COORD_ATTRS = ("cx", "cy", "x", "y", "x1", "y1", "x2", "y2", "r", "rx", "ry",
                 "width", "height", "fx", "fy")
+# Idem: simples OU doubles quotes. group(1) = quote ouvrant, group(2) = valeur.
 _COORD_ATTR_RE = {
-    a: re.compile(rf"\b{a}\s*=\s*\"([^\"]*)\"")
+    a: re.compile(rf"\b{a}\s*=\s*([\"'])(.*?)\1")
     for a in _COORD_ATTRS
 }
 # Signature d'une virgule decimale dans une valeur mono-coord : digit,virgule,digit.
@@ -149,7 +153,7 @@ def _coord_attr_commas(svg: str) -> list[dict]:
     findings = []
     for attr, rx in _COORD_ATTR_RE.items():
         for m in rx.finditer(svg):
-            value = m.group(1)
+            value = m.group(2)
             if _DECIMAL_COMMA_RE.search(value):
                 findings.append({"attr": attr, "value": value})
     return findings
@@ -160,7 +164,7 @@ def detect_svg(svg: str) -> dict | None:
     # 1. points attribute (polyline/polygon)
     points_bugs = []
     for m in _POINTS_RE.finditer(svg):
-        buggy = _points_tokens_with_bug(m.group(1))
+        buggy = _points_tokens_with_bug(m.group(2))
         if buggy:
             points_bugs.append({"sample_tokens": buggy[:5], "count": len(buggy)})
     # 2. mono-coord attributes
