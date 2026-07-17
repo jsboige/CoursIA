@@ -31,14 +31,14 @@ Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` (our 
 ## Notes
 
 - Backend Lake for a (planned, not yet created) tour companion notebook
-- Peters' repo pinned at commit `d679d950` for reproducibility
+- Peters' repo pinned at commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` for reproducibility
 - Peters uses `LinearOrder` (strict, Mathlib); we use `PrefOrder` (reflexive, total, transitif)
 
 ## Conclusion
 
 This project is a **reference tour** of
 [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean),
-imported as a Lake dependency (pinned at commit `d679d950`, toolchain
+imported as a Lake dependency (pinned at commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776`, toolchain
 `v4.27.0-rc1`) and exhibited via `#check`s in `PetersTour.lean` — **0 `sorry`**,
 `lake build` SUCCESS. It is **not** original formalization: it presents Peters'
 results, the current reference implementation of social-choice theory in Lean 4.
