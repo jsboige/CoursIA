@@ -137,10 +137,31 @@ public static class SvgChartHelper
     /// <param name="seriesValues">Une sous-liste par serie ; chaque sous-liste a une valeur par categorie.</param>
     /// <param name="seriesLabels">Nom de chaque serie (legende), une entree par serie.</param>
     /// <param name="colors">Couleurs optionnelles par serie (defaut = palette SvgChartHelper).</param>
+    /// <param name="logY">Si <c>true</c>, axe Y en echelle logarithmique (base 10). Adapté aux
+    /// distributions de temps de calcul sur plusieurs ordres de grandeur (ex. benchmark de solveurs
+    /// ou BT explose a 10000 ms pendant que Norvig reste a 3 ms). Valeurs <= 0 sont exclues de la
+    /// borne basse avec clipping (cf L641-L3★ borne INF Math.Max) pour eviter l'explosion des ticks.
+    /// Defaut <c>false</c> (retro-compatible).</param>
     public static SvgChart GroupedBar(string title, string[] categories,
         double[][] seriesValues, string[] seriesLabels,
-        int width = 640, int height = 360, string[] colors = null)
-        => new SvgChart(BuildGroupedBar(title, categories, seriesValues, seriesLabels, width, height, colors));
+        int width = 640, int height = 360, string[] colors = null, bool logY = false)
+        => new SvgChart(BuildGroupedBar(title, categories, seriesValues, seriesLabels, width, height, colors, logY));
+
+    /// <summary>
+    /// Boites a moustaches (boxplots) : pour chaque categorie (ex. difficultes), une boite
+    /// Q1..Q3, une medianne, des moustaches min/max, et un point individuel par observation
+    /// (jitter horizontal aleatoire pour eviter le chevauchement). Une legende par serie
+    /// (categorie de boxplot). SVG inline statique.
+    /// </summary>
+    /// <param name="categories">Labels de l'axe X (une entree par groupe de boites).</param>
+    /// <param name="samples">Pour chaque categorie, une liste d'observations (les valeurs tracees).
+    /// Si <paramref name="samples"/> est vide pour une categorie, la boite est omise.</param>
+    /// <param name="logY">Si <c>true</c>, axe Y en echelle log10. Convention identique a
+    /// <see cref="GroupedBar"/> : valeurs &lt;= 0 ramenees a la borne basse clippee, graduations
+    /// en decades (cf L641-L3★ anti-explosion). Defaut <c>false</c>.</param>
+    public static SvgChart BoxPlot(string title, string[] categories,
+        IReadOnlyList<double[]> samples, int width = 720, int height = 400, bool logY = false)
+        => new SvgChart(BuildBoxPlot(title, categories, samples, width, height, logY));
 
     // ---------------------------------------------------------------------------------------------
     // Generateurs
@@ -184,7 +205,7 @@ public static class SvgChartHelper
     }
 
     private static string BuildGroupedBar(string title, string[] categories,
-        double[][] seriesValues, string[] seriesLabels, int w, int h, string[] colors)
+        double[][] seriesValues, string[] seriesLabels, int w, int h, string[] colors, bool logY)
     {
         int catCount = categories?.Length ?? 0;
         int seriesCount = seriesValues?.Length ?? 0;
@@ -205,12 +226,65 @@ public static class SvgChartHelper
         var (yMin, yMax) = NiceBounds(all);
         var layout = new PlotLayout(w, h, yMin, yMax, catCount);
 
+        // Mode logY : on transforme les bornes et la fonction Y(v) en log10. Convention :
+        // - si toutes les valeurs sont <= 0, retomber sur le mode lineaire (defensif).
+        // - sinon, calculer yLoLog = log10(min_positif), borne inf clippee vers le haut via
+        //   Math.Max(yLoRaw, yLoClipped) (cf L641-L3★ : anti-explosion des graduations).
+        // - toutes les barres <=0 sont ramenees a la borne basse en log (pas affichees).
+        bool useLog = logY && all.Any(v => v > 0);
+        double yLoPlot = yMin, yHiPlot = yMax;
+        Func<double, double> YF;
+        if (useLog)
+        {
+            double minPos = all.Where(v => v > 0).Min();
+            double yLoRaw = Math.Log10(minPos);
+            double yLoClipped = Math.Log10(yMax) - 1.0;  // 1 decade en dessous du max (defaut raisonnable)
+            yLoPlot = Math.Max(yLoRaw, yLoClipped);
+            yHiPlot = Math.Log10(yMax);
+            double range = yHiPlot - yLoPlot; if (range == 0) range = 1;
+            YF = v => layout.PadT + layout.PlotH * (1 - (Math.Log10(Math.Max(v, minPos)) - yLoPlot) / range);
+        }
+        else
+        {
+            YF = v => layout.Y(v);
+        }
+
         string[] palette = { ColorPrimary, ColorAccent, "#DD8452", ColorNegative, "#8172B3", "#937860" };
         string SeriesColor(int j) => colors != null && j < colors.Length ? colors[j] : palette[j % palette.Length];
 
         var sb = new StringBuilder();
         sb.Append(OpenSvg(w, h, title));
-        sb.Append(GridAndYAxis(layout));
+        if (useLog)
+        {
+            // Graduations Y en log : 3 decades (10^-1, 10^0, 10^1, ...) jusqu'a yHiPlot.
+            // Chaque decade est affichee comme une ligne de grille + un label.
+            int expLo = (int)Math.Floor(yLoPlot);
+            int expHi = (int)Math.Ceiling(yHiPlot);
+            // Re-render : on doit placer manuellement les graduations, GridAndYAxis etant lineaire.
+            // Astuce : on appelle GridAndYAxis avec le layout lineaire d'origine pour la grille
+            // horizontale, puis on annote par-dessus les labels de decades logarithmiques.
+            sb.Append(GridAndYAxis(layout));
+            // Labels de decades logarithmiques : pour chaque exposant dans [expLo..expHi], calculer
+            // la position SVG via YF(10^exp) -- YF est lineaire en log, donc inverse lineaire.
+            double yHiSvg = layout.Y(yMax);  // sommet du plot (lineaire)
+            double yLoSvg = layout.Y(yMin);  // base du plot (lineaire)
+            double yHiLogSvg = layout.PadT;
+            double yLoLogSvg = layout.PadT + layout.PlotH;
+            Func<double, double> YSvgForDecade = logVal =>
+                yLoLogSvg + (yHiLogSvg - yLoLogSvg) * (1 - (logVal - yLoPlot) / (yHiPlot - yLoPlot));
+            for (int exp = expLo; exp <= expHi; exp++)
+            {
+                double v = Math.Pow(10, exp);
+                double py = YSvgForDecade(Math.Log10(v));
+                string lbl = exp == 0 ? "1" : exp == 1 ? "10" : exp == -1 ? "0.1" : $"10^{exp}";
+                sb.Append($"<text x='{layout.PadL - 8}' y='{F(py + 4)}' text-anchor='end' fill='{ColorText}'>{lbl}</text>");
+                sb.Append($"<line x1='{layout.PadL - 4}' y1='{F(py)}' x2='{layout.PadL}' y2='{F(py)}' stroke='{ColorAxis}' stroke-width='1'/>");
+            }
+        }
+        else
+        {
+            sb.Append(GridAndYAxis(layout));
+        }
 
         // Groupe = 80% de la cellule categorie ; sous-barres cote a cote, centrees sur CatX(i).
         double groupW = (layout.PlotW / (double)catCount) * 0.80;
@@ -221,10 +295,21 @@ public static class SvgChartHelper
             for (int j = 0; j < seriesCount; j++)
             {
                 double v = seriesValues[j][i];
-                double barH = Math.Abs(v - 0) / layout.YRange * layout.PlotH;
-                // y = sommet (SVG) de la barre : Y(v) si v>=0, Y(0) si v<0 (geometrie = BuildBar).
-                double y = v >= 0 ? layout.Y(v) : layout.Y(0);
-                sb.Append($"<rect x='{F(gx + j * barW)}' y='{F(y)}' width='{F(barW)}' height='{F(barH)}' fill='{SeriesColor(j)}'/>");
+                // Hauteur en mode log : si v<=0, la barre va jusqu'a la borne basse clippee.
+                // Si v>0, on calcule la hauteur entre YF(v) et la base du plot.
+                double yTop, barH;
+                if (useLog)
+                {
+                    double vEff = v > 0 ? v : Math.Pow(10, yLoPlot);
+                    yTop = YF(vEff);
+                    barH = (layout.PadT + layout.PlotH) - yTop;
+                }
+                else
+                {
+                    yTop = v >= 0 ? YF(v) : YF(0);
+                    barH = Math.Abs(v - 0) / (yMax - yMin == 0 ? 1 : yMax - yMin) * layout.PlotH;
+                }
+                sb.Append($"<rect x='{F(gx + j * barW)}' y='{F(yTop)}' width='{F(barW)}' height='{F(barH)}' fill='{SeriesColor(j)}'/>");
             }
             sb.Append(CategoryLabel(layout, layout.CatX(i), categories[i]));
         }
@@ -242,6 +327,140 @@ public static class SvgChartHelper
 
         sb.Append(CloseSvg());
         return sb.ToString();
+    }
+
+    private static string BuildBoxPlot(string title, string[] categories,
+        IReadOnlyList<double[]> samples, int w, int h, bool logY)
+    {
+        int n = categories?.Length ?? 0;
+        if (n == 0 || samples == null || samples.Count != n)
+            throw new ArgumentException("BoxPlot: categories et samples doivent avoir la meme longueur non nulle.");
+
+        // Aplatir toutes les observations pour calculer les bornes Y sur l'union.
+        int total = 0;
+        for (int i = 0; i < n; i++) if (samples[i] != null) total += samples[i].Length;
+        double[] all = new double[total];
+        int p = 0;
+        for (int i = 0; i < n; i++)
+            if (samples[i] != null)
+                for (int j = 0; j < samples[i].Length; j++)
+                    all[p++] = samples[i][j];
+
+        if (all.Length == 0)
+            throw new ArgumentException("BoxPlot: aucune observation dans samples.");
+
+        // Borne basse en log : minPositif. Si toutes <= 0, retomber sur lineaire.
+        bool useLog = logY && all.Any(v => v > 0);
+        double yMin, yMax;
+        if (useLog)
+        {
+            double minPos = all.Where(v => v > 0).Min();
+            double yLoRaw = Math.Log10(minPos);
+            double yLoClipped = Math.Log10(all.Max()) - 1.0;
+            yMin = Math.Max(yLoRaw, yLoClipped);
+            yMax = Math.Log10(all.Max());
+        }
+        else
+        {
+            var nb = NiceBounds(all);
+            yMin = nb.min; yMax = nb.max;
+        }
+
+        var layout = new PlotLayout(w, h, yMin, yMax, n);
+        // Fonction Y adaptee au mode log.
+        Func<double, double> YF;
+        if (useLog)
+        {
+            double minPos = all.Where(v => v > 0).Min();
+            double range = yMax - yMin; if (range == 0) range = 1;
+            YF = v => layout.PadT + layout.PlotH * (1 - (Math.Log10(Math.Max(v, minPos)) - yMin) / range);
+        }
+        else
+        {
+            YF = v => layout.Y(v);
+        }
+
+        string[] palette = { ColorPrimary, ColorAccent, "#DD8452", ColorNegative, "#8172B3", "#937860" };
+
+        var sb = new StringBuilder();
+        sb.Append(OpenSvg(w, h, title));
+        // Grille + axe Y. En mode log on conserve la grille lineaire (esthetique homogene avec
+        // les autres primitives), et on annote par-dessus les decades comme dans BuildGroupedBar.
+        sb.Append(GridAndYAxis(layout));
+        if (useLog)
+        {
+            int expLo = (int)Math.Floor(yMin);
+            int expHi = (int)Math.Ceiling(yMax);
+            for (int exp = expLo; exp <= expHi; exp++)
+            {
+                double v = Math.Pow(10, exp);
+                double py = YF(v);
+                string lbl = exp == 0 ? "1" : exp == 1 ? "10" : exp == -1 ? "0.1" : $"10^{exp}";
+                sb.Append($"<text x='{layout.PadL - 8}' y='{F(py + 4)}' text-anchor='end' fill='{ColorText}'>{lbl}</text>");
+            }
+        }
+
+        // Pour chaque categorie : 5 statistiques + points individuels + labels.
+        double catW = layout.PlotW / (double)n;
+        var rnd = new Random(42);  // graine fixe pour jitter reproductible
+        for (int i = 0; i < n; i++)
+        {
+            double[] data = samples[i];
+            if (data == null || data.Length == 0) continue;
+            // Filtrer <= 0 en log pour les stats (sinon min/max = 0 = indetermine).
+            double[] valid = useLog ? data.Where(v => v > 0).ToArray() : data;
+            if (valid.Length == 0) continue;
+            Array.Sort(valid);
+            double q1 = Quantile(valid, 0.25);
+            double med = Quantile(valid, 0.50);
+            double q3 = Quantile(valid, 0.75);
+            double iqr = q3 - q1;
+            double whiskerLo = Math.Max(valid.Min(), q1 - 1.5 * iqr);
+            double whiskerHi = Math.Min(valid.Max(), q3 + 1.5 * iqr);
+
+            double cx = layout.CatX(i);
+            string c = palette[i % palette.Length];
+            double halfBox = catW * 0.20;
+            // Boite Q1..Q3
+            double yQ1 = YF(q1), yQ3 = YF(q3);
+            double yMid = YF(med);
+            sb.Append($"<rect x='{F(cx - halfBox)}' y='{F(yQ3)}' width='{F(2 * halfBox)}' height='{F(Math.Max(0, yQ1 - yQ3))}' fill='{c}' fill-opacity='0.6' stroke='{c}' stroke-width='1.5'/>");
+            // Mediane (ligne horizontale epaisse)
+            sb.Append($"<line x1='{F(cx - halfBox)}' y1='{F(yMid)}' x2='{F(cx + halfBox)}' y2='{F(yMid)}' stroke='{ColorText}' stroke-width='2'/>");
+            // Moustaches
+            double yWhLo = YF(whiskerLo), yWhHi = YF(whiskerHi);
+            sb.Append($"<line x1='{F(cx)}' y1='{F(yQ1)}' x2='{F(cx)}' y2='{F(yWhLo)}' stroke='{c}' stroke-width='1.5'/>");
+            sb.Append($"<line x1='{F(cx)}' y1='{F(yQ3)}' x2='{F(cx)}' y2='{F(yWhHi)}' stroke='{c}' stroke-width='1.5'/>");
+            // Capuches des moustaches (petites barres horizontales)
+            sb.Append($"<line x1='{F(cx - halfBox * 0.5)}' y1='{F(yWhLo)}' x2='{F(cx + halfBox * 0.5)}' y2='{F(yWhLo)}' stroke='{c}' stroke-width='1.5'/>");
+            sb.Append($"<line x1='{F(cx - halfBox * 0.5)}' y1='{F(yWhHi)}' x2='{F(cx + halfBox * 0.5)}' y2='{F(yWhHi)}' stroke='{c}' stroke-width='1.5'/>");
+
+            // Points individuels (jitter horizontal +/- 30% de halfBox).
+            foreach (var v in valid)
+            {
+                double jx = cx + (rnd.NextDouble() - 0.5) * 0.6 * halfBox;
+                double py = YF(v);
+                sb.Append($"<circle cx='{F(jx)}' cy='{F(py)}' r='2.5' fill='{c}' fill-opacity='0.5'/>");
+            }
+            // Label de categorie
+            sb.Append(CategoryLabel(layout, cx, categories[i]));
+        }
+
+        sb.Append(CloseSvg());
+        return sb.ToString();
+    }
+
+    // Quantile par interpolation lineaire (Type 7, convention R/numpy).
+    private static double Quantile(double[] sorted, double q)
+    {
+        if (sorted.Length == 0) return double.NaN;
+        if (sorted.Length == 1) return sorted[0];
+        double pos = q * (sorted.Length - 1);
+        int lo = (int)Math.Floor(pos);
+        int hi = (int)Math.Ceiling(pos);
+        if (lo == hi) return sorted[lo];
+        double frac = pos - lo;
+        return sorted[lo] + (sorted[hi] - sorted[lo]) * frac;
     }
 
     private static string BuildLine(string title, string[] categories, double[] values,
