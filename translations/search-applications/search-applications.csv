@@ -19304,14 +19304,17 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,4752abea370
 
 Evaluation de l'entropie des 296 mots sur la liste complete. Ce calcul est **deterministe** : il doit concorder exactement avec le notebook Python (cf. § parite ci-dessous).
 ",,,,,,,,c35743e430c0dc67,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,78cb164e3164,code,fr,016f6151f7019818,"// Top 10 des meilleurs premiers mots par entropie (point de parite Python/C#).
+MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,78cb164e3164,code,fr,5658c3c73aeca7f6,"// Top 10 des meilleurs premiers mots par entropie (point de parite Python/C#).
 // Technique C548-L2 : formatter HTML integre au kernel (Microsoft.DotNet.Interactive.Formatting),
-// zero dependence NuGet cote charting. Rendu Plotly.js brut. (Infra definie ici, reutilisee plus bas.)
+// zero dependence NuGet cote charting. SVG inline (MIME text/html) -> rend sur GitHub/nbviewer/offline
+// (le CDN-script Plotly precedent rendait BLANC en rendu statique : la balise script externe ne
+// s'execute pas hors-browser). Infra PlotSvg definie ici, reutilisee cell[33]. Cf #6927 / #6946.
 using Microsoft.DotNet.Interactive.Formatting;
 using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+using System.Text;
+record PlotSvg(string Markup);
+Formatter.Register(typeof(PlotSvg),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotSvg)obj).Markup), ""text/html"");
 
 var topWords = RankByEntropy(WORD_LIST, WORD_LIST, topN: 10);
 Console.WriteLine(""Top 10 des meilleurs premiers mots"");
@@ -19325,29 +19328,49 @@ foreach (var (w, h) in topWords)
     rank++;
 }
 
-// Bar chart horizontal Plotly : entropie (bits) par mot. L'entropie = information
+// Bar chart horizontal SVG inline : entropie (bits) par mot. L'entropie = information
 // moyenne que chaque mot extrait par essai (plus grand = meilleur partitionnement).
+string BuildBarSvgH(string[] labels, double[] values, string title, string xLabel) {
+    const int W = 720, H = 460;
+    const int mL = 110, mR = 40, mT = 50, mB = 60;
+    int pW = W - mL - mR, pH = H - mT - mB;
+    int n = labels.Length;
+    double vMax = values.Max();
+    double barH = (pH / (double)n) * 0.68;
+    Func<double, double> px = v => mL + (v / vMax) * pW;
+    var sb = new StringBuilder();
+    sb.Append($""<svg viewBox=\""0 0 {W} {H}\"" xmlns=\""http://www.w3.org/2000/svg\"" style=\""font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 13px;\"">"");
+    sb.Append($""<rect x=\""0\"" y=\""0\"" width=\""{W}\"" height=\""{H}\"" fill=\""white\"" stroke=\""#ddd\""/>"");
+    for (int i = 0; i < n; i++) {
+        double yC = mT + (i + 0.5) * (pH / (double)n);
+        double bw = px(values[i]) - mL;
+        sb.Append($""<text x=\""{mL - 8:F1}\"" y=\""{yC + 4:F1}\"" fill=\""#333\"" text-anchor=\""end\"">{labels[i]}</text>"");
+        sb.Append($""<rect x=\""{mL:F1}\"" y=\""{yC - barH / 2:F1}\"" width=\""{bw:F1}\"" height=\""{barH:F1}\"" fill=\""#2a6dba\""/>"");
+        sb.Append($""<text x=\""{mL + bw + 6:F1}\"" y=\""{yC + 4:F1}\"" fill=\""#333\"">{values[i]:F3}</text>"");
+    }
+    const int gx = 5;
+    for (int g = 0; g <= gx; g++) {
+        double xv = vMax * g / gx;
+        double xp = px(xv);
+        sb.Append($""<line x1=\""{xp:F1}\"" y1=\""{mT}\"" x2=\""{xp:F1}\"" y2=\""{mT + pH}\"" stroke=\""#e8e8e8\"" stroke-width=\""1\""/>"");
+        sb.Append($""<text x=\""{xp:F1}\"" y=\""{mT + pH + 16}\"" fill=\""#666\"" text-anchor=\""middle\"">{xv:F2}</text>"");
+    }
+    sb.Append($""<line x1=\""{mL}\"" y1=\""{mT + pH}\"" x2=\""{mL + pW}\"" y2=\""{mT + pH}\"" stroke=\""#333\"" stroke-width=\""1.5\""/>"");
+    sb.Append($""<text x=\""{mL + pW / 2.0}\"" y=\""{H - 14}\"" fill=\""#333\"" text-anchor=\""middle\"">{xLabel}</text>"");
+    sb.Append($""<text x=\""{W / 2.0}\"" y=\""28\"" fill=\""#222\"" font-size=\""15\"" font-weight=\""bold\"" text-anchor=\""middle\"">{title}</text>"");
+    sb.Append(""</svg>"");
+    return sb.ToString();
+}
+
 {
     var words = topWords.Select(t => t.word).Reverse().ToArray();
-    var ents  = topWords.Select(t => Math.Round(t.h, 4)).Reverse().Select(v => (object)v).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = ents, [""y""] = words, [""type""] = ""bar"",
-                                         [""orientation""] = ""h"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
-    var layout = ""{\""title\"":{\""text\"":\""Top 10 premiers mots par entropie (H en bits)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Entropie (bits)\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Mot\""}},\""margin\"":{\""l\"":90,\""r\"":40}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
+    var ents  = topWords.Select(t => Math.Round(t.h, 4)).Reverse().ToArray();
+    display(new PlotSvg(BuildBarSvgH(words, ents, ""Top 10 premiers mots par entropie (H en bits)"", ""Entropie (bits)"")));
 }
 
 var (bestWord, bestH) = topWords[0];
 Console.WriteLine($""\nMeilleur premier mot : {bestWord} (H = {bestH:F4} bits)"");
-Console.WriteLine($""Reduction attendue : {WORD_LIST.Count} -> ~{WORD_LIST.Count / Math.Pow(2, bestH):F0} candidats en moyenne"");
-",,,,,,,,016f6151f7019818,,,,,,,
+Console.WriteLine($""Reduction attendue : {WORD_LIST.Count} -> ~{WORD_LIST.Count / Math.Pow(2, bestH):F0} candidats en moyenne"");",,,,,,,,5658c3c73aeca7f6,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,632962a5d7bd,markdown,fr,7c796e008227884b,"### Interpretation : meilleurs premiers mots
 
 Ces valeurs concordent **au bit pres** avec le notebook Python (LAINE en tete, vers 5.50 bits). C'est le point de parite cles du twin : l'algorithme etant purement deterministe (aucun PRNG), les deux implementations independantes C# et Python doivent produire le meme classement. Le meilleur mot d'ouverture extrait environ 5,5 bits d'information, soit une reduction d'un facteur ~45 de l'ensemble des candidats en une seule tentative.
@@ -19496,34 +19519,53 @@ Console.WriteLine($""  {best} disperse les secrets (information elevee), {worst}
 MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,72f10fcd841e,markdown,fr,5cf0d2d9251b61e6,"### 7.1 Visualisation : histogramme (distribution des feedbacks)
 
 L'histogramme ci-dessous montre la distribution des feedbacks du **meilleur** mot d'ouverture (haute entropie) et d'un mot **peu informatif** (entropie minimale), sous forme de barres. L'interet pedagogique porte sur la **forme** de la distribution : le meilleur mot disperse ses feedbacks (distribution plate = information maximale, chaque feedback elimine a peu pres autant de candidats), tandis que le pire mot les concentre sur 1-2 patterns (distribution pointue = information minimale, la plupart des feedbacks sont identiques). Le rendu Plotly (technique C548-L2 : formatter HTML integre au kernel, zero dependence NuGet cote charting) remplace l'ancien rendu ASCII qui masquait la forme reelle de la distribution derriere une echelle lineaire de `#`.",,,,,,,,5cf0d2d9251b61e6,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,6d6111204218,code,fr,c8a5b7fd480179be,"// Histogramme (rendu Plotly) : nombre de mots par pattern de feedback, trie par frequence decroissante.
-// (PlotlyHtml + Formatter.Register definis en cell[21], technique C548-L2.)
-static void HistogramPlotly(string word, Dictionary<string,int> dist)
-{
+MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,6d6111204218,code,fr,a4087f1fb750eceb,"// Histogramme (rendu SVG inline) : nombre de mots par pattern de feedback, trie par frequence decroissante.
+// (PlotSvg + Formatter.Register definis en cell[21], technique C548-L2, MIME text/html.)
+static string BuildBarSvgV(string[] labels, int[] values, string title, string yLabel) {
+    const int W = 820, H = 470;
+    const int mL = 70, mR = 40, mT = 50, mB = 135;
+    int pW = W - mL - mR, pH = H - mT - mB;
+    int n = labels.Length;
+    if (n == 0) return ""<svg viewBox=\""0 0 10 10\""></svg>"";
+    double vMax = values.Max();
+    double barW = (pW / (double)n) * 0.72;
+    Func<double, double> py = v => mT + pH - (v / vMax) * pH;
+    var sb = new StringBuilder();
+    sb.Append($""<svg viewBox=\""0 0 {W} {H}\"" xmlns=\""http://www.w3.org/2000/svg\"" style=\""font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 12px;\"">"");
+    sb.Append($""<rect x=\""0\"" y=\""0\"" width=\""{W}\"" height=\""{H}\"" fill=\""white\"" stroke=\""#ddd\""/>"");
+    const int gy = 5;
+    for (int g = 0; g <= gy; g++) {
+        double yv = vMax * g / gy;
+        double yp = py(yv);
+        sb.Append($""<line x1=\""{mL}\"" y1=\""{yp:F1}\"" x2=\""{mL + pW}\"" y2=\""{yp:F1}\"" stroke=\""#e8e8e8\"" stroke-width=\""1\""/>"");
+        sb.Append($""<text x=\""{mL - 8:F1}\"" y=\""{yp + 4:F1}\"" fill=\""#666\"" text-anchor=\""end\"">{(int)yv}</text>"");
+    }
+    for (int i = 0; i < n; i++) {
+        double xC = mL + (i + 0.5) * (pW / (double)n);
+        double yp = py(values[i]);
+        double bh = (mT + pH) - yp;
+        sb.Append($""<rect x=\""{xC - barW / 2:F1}\"" y=\""{yp:F1}\"" width=\""{barW:F1}\"" height=\""{bh:F1}\"" fill=\""#3b82f6\""/>"");
+        sb.Append($""<text x=\""{xC:F1}\"" y=\""{mT + pH + 8:F1}\"" fill=\""#333\"" text-anchor=\""end\"" transform=\""rotate(-45 {xC:F1} {mT + pH + 8:F1})\"">{labels[i]}</text>"");
+    }
+    sb.Append($""<line x1=\""{mL}\"" y1=\""{mT + pH}\"" x2=\""{mL + pW}\"" y2=\""{mT + pH}\"" stroke=\""#333\"" stroke-width=\""1.5\""/>"");
+    sb.Append($""<line x1=\""{mL}\"" y1=\""{mT}\"" x2=\""{mL}\"" y2=\""{mT + pH}\"" stroke=\""#333\"" stroke-width=\""1.5\""/>"");
+    sb.Append($""<text x=\""18\"" y=\""{mT + pH / 2.0:F1}\"" fill=\""#333\"" text-anchor=\""middle\"" transform=\""rotate(-90 18 {mT + pH / 2.0:F1})\"">{yLabel}</text>"");
+    sb.Append($""<text x=\""{W / 2.0}\"" y=\""28\"" fill=\""#222\"" font-size=\""15\"" font-weight=\""bold\"" text-anchor=\""middle\"">{title}</text>"");
+    sb.Append(""</svg>"");
+    return sb.ToString();
+}
+
+static void HistogramSvg(string word, Dictionary<string, int> dist) {
     double h = ComputeEntropy(word, WORD_LIST);
     var vals = dist.OrderByDescending(kv => kv.Value).Take(15).ToList();
-    int maxV = vals.Count > 0 ? vals[0].Value : 1;
     var labels = vals.Select(kv => kv.Key).ToArray();
     var counts = vals.Select(kv => kv.Value).ToArray();
     string title = $""{word} ({dist.Count} patterns, H = {h:F3} bits)"";
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labels, [""y""] = counts, [""type""] = ""bar"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#3b82f6"" } });
-    var layout = ""{\""title\"":{\""text\"":"" + System.Text.Json.JsonSerializer.Serialize(title) + ""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Pattern de feedback\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Nombre de mots\""}},"" +
-                 ""\""margin\"":{\""b\"":120}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout +
-                 "",{xaxis:{tickangle:-45}})</script>"";
-    display(new PlotlyHtml(markup));
+    display(new PlotSvg(BuildBarSvgV(labels, counts, title, ""Nombre de mots"")));
 }
 
-HistogramPlotly(best, distBest);
-HistogramPlotly(worst, distWorst);
-",,,,,,,,c8a5b7fd480179be,,,,,,,
+HistogramSvg(best, distBest);
+HistogramSvg(worst, distWorst);",,,,,,,,a4087f1fb750eceb,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb,aa2daef17794,markdown,fr,79daee96e6071a68,"---
 ## 8. Exercices
 
@@ -19958,47 +20000,28 @@ Console.WriteLine(new string('=', 86));
 MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,0cccf684,markdown,fr,ef48a860b8481be5,"## 5. Sudoku 4x4
 
 Le twin Python pilote MiniZinc depuis Python (modele + donnees `.dzn`). En CP-SAT C#, le modele et les donnees vivent dans le meme code : on fixe les cases initiales par `Add(var == valeur)`, puis `AddAllDifferent` sur lignes, colonnes et blocs 2x2.",,,,,,,,ef48a860b8481be5,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,c5217853,code,fr,0c4916f1f5e072bb,"// Visualisation Plotly (remplace l'ASCII art -- EPIC #3801 Prong A) :
-// concision du modele (lignes de code) + evaluation multi-criteres (score 1-5).
-// Technique C548-L2 : Plotly.js via Formatter.Register (kernel builtin, aucun #r nuget).
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-using System.Text.Json;
+MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,c5217853,code,fr,db2e602003f87481,"#load ""../../../Probas/Infer/SvgChartHelper.cs""
+// Visualisation SVG statique (remplace Plotly-CDN qui rend BLANC en consultation statique --
+// GitHub sandbox les <script>; EPIC #3801 Prong A + EPIC #6927). Technique #6942 : <svg> inline
+// via SvgChartHelper (zero-dependance, rend sur GitHub/nbviewer/offline, aucun CDN ni <script>).
 
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
-
-static string Trace(string name, string[] x, double[] y) =>
-    JsonSerializer.Serialize(new Dictionary<string, object> { [""name""]=name, [""x""]=x, [""y""]=y, [""type""]=""bar"" });
-
-// --- (1) Concision du modele : lignes de code estimees (grouped bars) ---
+// (1) Concision du modele : lignes de code estimees, 3 solveurs groupes par famille de probleme.
 var problems = new[] { ""N-Reines"", ""Emploi du temps"", ""Sudoku"" };
-string tConcPy = Trace(""Python pur"", problems, new double[]{20,60,50});
-string tConcCp = Trace(""CP-SAT"", problems, new double[]{12,45,35});
-string tConcMz = Trace(""MiniZinc"", problems, new double[]{5,25,20});
-string layoutConc = JsonSerializer.Serialize(new Dictionary<string,object>{
-    [""title""]=new Dictionary<string,string>{[""text""]=""Concision du modele (lignes de code estimees)""},
-    [""barmode""]=""group"", [""yaxis""]=new Dictionary<string,string>{[""title""]=""Lignes de code""}});
+display(SvgChartHelper.GroupedBar(
+    ""Concision du modele (lignes de code estimees)"",
+    problems,
+    new double[][] { new double[]{20,60,50}, new double[]{12,45,35}, new double[]{5,25,20} },
+    new[] { ""Python pur"", ""CP-SAT"", ""MiniZinc"" },
+    width: 720, height: 340));
 
-// --- (2) Evaluation multi-criteres (score 1-5, grouped bars) ---
+// (2) Evaluation multi-criteres (score 1-5) : 3 solveurs groupes par critere.
 var criteria = new[] { ""Concision"", ""Lisibilite"", ""Portabilite"", ""Integr. .NET"", ""Performance"" };
-string tScPy = Trace(""Python pur"", criteria, new double[]{2,2,1,5,2});
-string tScCp = Trace(""CP-SAT"", criteria, new double[]{3,3,2,5,5});
-string tScMz = Trace(""MiniZinc"", criteria, new double[]{5,5,5,3,4});
-string layoutScore = JsonSerializer.Serialize(new Dictionary<string,object>{
-    [""title""]=new Dictionary<string,string>{[""text""]=""Evaluation multi-criteres (score 1-5)""},
-    [""barmode""]=""group"", [""yaxis""]=new Dictionary<string,object>{[""title""]=""Score"",[""range""]=new double[]{0,5}}});
-
-string markup = ""<h4>Concision du modele</h4>"" +
-    ""<div id=\""pltConcision\""></div>"" +
-    ""<h4>Evaluation multi-criteres</h4>"" +
-    ""<div id=\""pltScore\""></div>"" +
-    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-    $""<script>Plotly.newPlot('pltConcision',[{tConcPy},{tConcCp},{tConcMz}],{layoutConc});"" +
-    $""Plotly.newPlot('pltScore',[{tScPy},{tScCp},{tScMz}],{layoutScore});</script>"";
-
-new PlotlyHtml(markup)",,,,,,,,0c4916f1f5e072bb,,,,,,,
+display(SvgChartHelper.GroupedBar(
+    ""Evaluation multi-criteres (score 1-5)"",
+    criteria,
+    new double[][] { new double[]{2,2,1,5,2}, new double[]{3,3,2,5,5}, new double[]{5,5,5,3,4} },
+    new[] { ""Python pur"", ""CP-SAT"", ""MiniZinc"" },
+    width: 720, height: 340))",,,,,,,,db2e602003f87481,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb,1f289c86,markdown,fr,cac1fac7af00e007,"## 6. Comparaison : imperatif vs declaratif
 
 On resout N-Reines des deux facons pour comparer. Le backtracking pur (imperatif) est plus lent et moins declaratif ; CP-SAT (declaratif) delegue au solveur. La troisieme approche du twin Python (MiniZinc) est omise ici (pas de binding .NET) -- CP-SAT la represente dans le paradigme declaratif.
