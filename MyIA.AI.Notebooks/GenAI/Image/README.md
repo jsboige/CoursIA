@@ -66,11 +66,11 @@ Une fois le cloud maîtrisé, la génération **locale** via ComfyUI ouvre le co
   <em>Sortie du notebook <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb">01-4</a> : chalet hivernal produit localement par SD XL Turbo, sans appel d'API.</em>
 </p>
 
-L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous illustre une **limitation assumée** : la cellule 18 output 3 du notebook a produit deux blocs bleus plats identiques (le pipeline n'a pas reçu d'image source pour ce test d'inpainting) :
+L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous montre un **rendu réel** d'inpainting Qwen : à gauche, le portrait original d'un pêcheur au coucher de soleil sur le port ; à droite, la même scène avec un prompt d'édition (denoise=0.5) qui augmente le contraste et révèle des reflets chauds en arrière-plan — le sujet reste préservé tout en intégrant la modification :
 
 <p align="center">
-  <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Panneau avant/après Qwen Image Edit — limitation illustrée : deux blocs bleus plats identiques (sortie de cellule sans contenu généré, le pipeline n'a pas reçu d'image source)."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5</a> : panneau Originale/Editée — limitation assumée, blocs bleus plats identiques (cellule sans image source).</em>
+  <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Panneau avant/après Qwen Image Edit — rendu réel : portrait Originale (pêcheur au coucher de soleil sur le port) et Image Editée denoise=0.5 (même sujet, contraste renforcé, reflets chauds en arrière-plan), sujet préservé par Qwen Phase 29."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5</a> : panneau Originale/Editée — vrai inpainting Qwen, sujet préservé, modification contrôlée par denoise=0.5 (figure régénérée post-#7003 sur stack ComfyUI-Qwen Phase 29).</em>
 </p>
 
 ### 02-Advanced - Modèles avancés
@@ -103,11 +103,11 @@ Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advance
 
 ### 03-Orchestration - Multi-modèles
 
-En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible. **Figure dégradée** : `workflow-orchestration.png` est un rendu de fallback (trois blocs de couleur plats au lieu des trois variations SD35 attendues) — régénération suivie par [#6901](https://github.com/jsboige/CoursIA/issues/6901). Le bon rendu du même concept (trois variations de style réussies) existe déjà côté [03-Orchestration](03-Orchestration/README.md) (`img3-workflow4.webp`) :
+En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible. Le panneau ci-dessous illustre le concept de **multi-variations** appliqué à SD35 : trois exécutions du même prompt « chalet en bois dans une forêt de conifères sous la neige » avec des prompts de style distincts (`photorealistic` / `watercolor` / `anime`) produisent trois rendus différenciés tout en préservant le sujet — c'est exactement le scénario qu'un workflow ComfyUI orchestre de façon reproductible :
 
 <p align="center">
-  <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb"><img src="assets/readme/workflow-orchestration.png" width="420" alt="Multi-Variations sd35 — rendu dégradé : trois blocs de couleur plats (olive « photorealistic », violet « watercolor », vert « anime ») au lieu des trois images attendues ; sortie de fallback matplotlib, régénération suivie par l'issue #6901."></a><br>
-  <em>Sortie dégradée du notebook <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb">03-2</a> : la cellule multi-variations devrait produire trois vraies déclinaisons de style SD35 (chalet enneigé), mais le fichier sur disque est un fallback en blocs plats. Régénération sur la stack GenAI tracée par <a href="https://github.com/jsboige/CoursIA/issues/6901">#6901</a>.</em>
+  <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb"><img src="assets/readme/workflow-orchestration.png" width="420" alt="Multi-Variations SD35 — rendu réel : trois variations de style sur le même sujet (chalet en bois sous la neige), labels sd35 photorealistic / watercolor / anime, orchestration reproductible d'un même prompt avec variations de style."></a><br>
+  <em>Sortie du notebook <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb">03-2</a> : trois variations de style SD35 sur le même sujet (chalet enneigé), obtenues par orchestration ComfyUI du même prompt avec prompts de style distincts — la différenciation visuelle valide l'apport de l'orchestration multi-modèles (figure régénérée post-#7003 sur stack ComfyUI-Qwen Phase 29).</em>
 </p>
 
 | Notebook | Contenu |
@@ -157,9 +157,9 @@ Applications directes par domaine : histoire-géographie (cartes, reconstitution
 ### API Keys
 
 ```bash
-# Dans GenAI/.env
-OPENAI_API_KEY=sk-...
-COMFYUI_BEARER_TOKEN=...
+# Dans GenAI/.env (jamais de littéral en clair dans le repo — voir .gitignore)
+# OPENAI_API_KEY et COMFYUI_BEARER_TOKEN sont configurés via .secrets/master.env
+# et propagés par `python scripts/secrets/render_envs.py` (cf secrets-hygiene.md).
 ```
 
 ### Docker Services
