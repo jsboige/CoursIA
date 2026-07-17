@@ -223,68 +223,46 @@ public static class SvgChartHelper
         for (int j = 0; j < seriesCount; j++)
             for (int i = 0; i < catCount; i++)
                 all[k++] = seriesValues[j][i];
-        var (yMin, yMax) = NiceBounds(all);
-        var layout = new PlotLayout(w, h, yMin, yMax, catCount);
 
-        // Mode logY : on transforme les bornes et la fonction Y(v) en log10. Convention :
-        // - si toutes les valeurs sont <= 0, retomber sur le mode lineaire (defensif).
-        // - sinon, calculer yLoLog = log10(min_positif), borne inf clippee vers le haut via
-        //   Math.Max(yLoRaw, yLoClipped) (cf L641-L3★ : anti-explosion des graduations).
-        // - toutes les barres <=0 sont ramenees a la borne basse en log (pas affichees).
+        // Mode logY (pattern BuildOverlay #7006) : bornes en espace log10 (log10 des extremes
+        // positifs) + PlotLayout sur bornes log + GridAndYAxisLog. Si toutes les valeurs sont
+        // <= 0, on retombe sur le mode lineaire (defensif). Les barres <= 0 sont ramenees a la
+        // base du plot (non dessinees en log). Fix #7007 : l'ancien code melait un PlotLayout
+        // lineaire avec un YF en log10 et une grille lineaire -> axe Y double + barres hors champ.
         bool useLog = logY && all.Any(v => v > 0);
-        double yLoPlot = yMin, yHiPlot = yMax;
-        Func<double, double> YF;
+        double yLoPlot, yHiPlot;
         if (useLog)
         {
-            double minPos = all.Where(v => v > 0).Min();
-            double yLoRaw = Math.Log10(minPos);
-            double yLoClipped = Math.Log10(yMax) - 1.0;  // 1 decade en dessous du max (defaut raisonnable)
-            yLoPlot = Math.Max(yLoRaw, yLoClipped);
-            yHiPlot = Math.Log10(yMax);
-            double range = yHiPlot - yLoPlot; if (range == 0) range = 1;
-            YF = v => layout.PadT + layout.PlotH * (1 - (Math.Log10(Math.Max(v, minPos)) - yLoPlot) / range);
+            double posLo = all.Where(v => v > 0).Min();
+            double posHi = all.Where(v => v > 0).Max();
+            yLoPlot = Math.Log10(posLo);
+            yHiPlot = Math.Log10(posHi);
+            double pad = (yHiPlot - yLoPlot) * 0.06; if (pad == 0) pad = 1;
+            yLoPlot -= pad; yHiPlot += pad;
         }
         else
         {
-            YF = v => layout.Y(v);
+            var nb = NiceBounds(all);
+            yLoPlot = nb.min; yHiPlot = nb.max;
         }
+        var layout = new PlotLayout(w, h, yLoPlot, yHiPlot, catCount);
+        // YF : valeur originale -> y SVG. En log, via log10(v) mappe par le layout log-borne ;
+        // les valeurs <= 0 sont envoyees a la base du plot (non dessinees en log).
+        Func<double, double> YF = useLog
+            ? (Func<double, double>)(v => v > 0 ? layout.Y(Math.Log10(v)) : (layout.PadT + layout.PlotH))
+            : v => layout.Y(v);
 
         string[] palette = { ColorPrimary, ColorAccent, "#DD8452", ColorNegative, "#8172B3", "#937860" };
         string SeriesColor(int j) => colors != null && j < colors.Length ? colors[j] : palette[j % palette.Length];
 
         var sb = new StringBuilder();
         sb.Append(OpenSvg(w, h, title));
+        // Grille + axe Y. En log, GridAndYAxisLog (layout log-borne + ticks 1-2-5 x 10^k labelles
+        // en valeur originale) ; en lineaire, GridAndYAxis standard. (Fix #7007.)
         if (useLog)
-        {
-            // Graduations Y en log : 3 decades (10^-1, 10^0, 10^1, ...) jusqu'a yHiPlot.
-            // Chaque decade est affichee comme une ligne de grille + un label.
-            int expLo = (int)Math.Floor(yLoPlot);
-            int expHi = (int)Math.Ceiling(yHiPlot);
-            // Re-render : on doit placer manuellement les graduations, GridAndYAxis etant lineaire.
-            // Astuce : on appelle GridAndYAxis avec le layout lineaire d'origine pour la grille
-            // horizontale, puis on annote par-dessus les labels de decades logarithmiques.
-            sb.Append(GridAndYAxis(layout));
-            // Labels de decades logarithmiques : pour chaque exposant dans [expLo..expHi], calculer
-            // la position SVG via YF(10^exp) -- YF est lineaire en log, donc inverse lineaire.
-            double yHiSvg = layout.Y(yMax);  // sommet du plot (lineaire)
-            double yLoSvg = layout.Y(yMin);  // base du plot (lineaire)
-            double yHiLogSvg = layout.PadT;
-            double yLoLogSvg = layout.PadT + layout.PlotH;
-            Func<double, double> YSvgForDecade = logVal =>
-                yLoLogSvg + (yHiLogSvg - yLoLogSvg) * (1 - (logVal - yLoPlot) / (yHiPlot - yLoPlot));
-            for (int exp = expLo; exp <= expHi; exp++)
-            {
-                double v = Math.Pow(10, exp);
-                double py = YSvgForDecade(Math.Log10(v));
-                string lbl = exp == 0 ? "1" : exp == 1 ? "10" : exp == -1 ? "0.1" : $"10^{exp}";
-                sb.Append($"<text x='{layout.PadL - 8}' y='{F(py + 4)}' text-anchor='end' fill='{ColorText}'>{lbl}</text>");
-                sb.Append($"<line x1='{layout.PadL - 4}' y1='{F(py)}' x2='{layout.PadL}' y2='{F(py)}' stroke='{ColorAxis}' stroke-width='1'/>");
-            }
-        }
+            sb.Append(GridAndYAxisLog(layout, LogTicks(Math.Pow(10, yLoPlot), Math.Pow(10, yHiPlot))));
         else
-        {
             sb.Append(GridAndYAxis(layout));
-        }
 
         // Groupe = 80% de la cellule categorie ; sous-barres cote a cote, centrees sur CatX(i).
         double groupW = (layout.PlotW / (double)catCount) * 0.80;
@@ -295,19 +273,19 @@ public static class SvgChartHelper
             for (int j = 0; j < seriesCount; j++)
             {
                 double v = seriesValues[j][i];
-                // Hauteur en mode log : si v<=0, la barre va jusqu'a la borne basse clippee.
-                // Si v>0, on calcule la hauteur entre YF(v) et la base du plot.
+                // Hauteur : yTop = YF(v), barre croit depuis la base du plot vers YF(v).
+                // En log, YF envoie v<=0 a la base (barH=0, non dessinee). En lineaire,
+                // barH proportionnel a |v| sur layout.YRange.
                 double yTop, barH;
                 if (useLog)
                 {
-                    double vEff = v > 0 ? v : Math.Pow(10, yLoPlot);
-                    yTop = YF(vEff);
+                    yTop = YF(v);
                     barH = (layout.PadT + layout.PlotH) - yTop;
                 }
                 else
                 {
                     yTop = v >= 0 ? YF(v) : YF(0);
-                    barH = Math.Abs(v - 0) / (yMax - yMin == 0 ? 1 : yMax - yMin) * layout.PlotH;
+                    barH = Math.Abs(v) / layout.YRange * layout.PlotH;
                 }
                 sb.Append($"<rect x='{F(gx + j * barW)}' y='{F(yTop)}' width='{F(barW)}' height='{F(barH)}' fill='{SeriesColor(j)}'/>");
             }
@@ -349,16 +327,20 @@ public static class SvgChartHelper
         if (all.Length == 0)
             throw new ArgumentException("BoxPlot: aucune observation dans samples.");
 
-        // Borne basse en log : minPositif. Si toutes <= 0, retomber sur lineaire.
+        // Bornes Y. En mode log, espace log10 (log10 des extremes positifs + marge 6%), pattern
+        // identique a BuildGroupedBar / BuildOverlay (#7006) pour la coherence des 3 primitives.
+        // Si toutes <= 0, retomber sur lineaire. (Fix #7007 : l'ancien clip log10(max)-1 ecrasait
+        // les valeurs basses hors du plot.)
         bool useLog = logY && all.Any(v => v > 0);
         double yMin, yMax;
         if (useLog)
         {
-            double minPos = all.Where(v => v > 0).Min();
-            double yLoRaw = Math.Log10(minPos);
-            double yLoClipped = Math.Log10(all.Max()) - 1.0;
-            yMin = Math.Max(yLoRaw, yLoClipped);
-            yMax = Math.Log10(all.Max());
+            double posLo = all.Where(v => v > 0).Min();
+            double posHi = all.Where(v => v > 0).Max();
+            yMin = Math.Log10(posLo);
+            yMax = Math.Log10(posHi);
+            double pad = (yMax - yMin) * 0.06; if (pad == 0) pad = 1;
+            yMin -= pad; yMax += pad;
         }
         else
         {
@@ -384,21 +366,13 @@ public static class SvgChartHelper
 
         var sb = new StringBuilder();
         sb.Append(OpenSvg(w, h, title));
-        // Grille + axe Y. En mode log on conserve la grille lineaire (esthetique homogene avec
-        // les autres primitives), et on annote par-dessus les decades comme dans BuildGroupedBar.
-        sb.Append(GridAndYAxis(layout));
+        // Grille + axe Y. En log, GridAndYAxisLog (layout log-borne + ticks 1-2-5 x 10^k) ;
+        // en lineaire, GridAndYAxis standard. (Fix #7007 : l'ancien GridAndYAxis lineaire sur
+        // un layout log-borne produisait un double-axe Y + graduations en log10 bruts.)
         if (useLog)
-        {
-            int expLo = (int)Math.Floor(yMin);
-            int expHi = (int)Math.Ceiling(yMax);
-            for (int exp = expLo; exp <= expHi; exp++)
-            {
-                double v = Math.Pow(10, exp);
-                double py = YF(v);
-                string lbl = exp == 0 ? "1" : exp == 1 ? "10" : exp == -1 ? "0.1" : $"10^{exp}";
-                sb.Append($"<text x='{layout.PadL - 8}' y='{F(py + 4)}' text-anchor='end' fill='{ColorText}'>{lbl}</text>");
-            }
-        }
+            sb.Append(GridAndYAxisLog(layout, LogTicks(Math.Pow(10, yMin), Math.Pow(10, yMax))));
+        else
+            sb.Append(GridAndYAxis(layout));
 
         // Pour chaque categorie : 5 statistiques + points individuels + labels.
         double catW = layout.PlotW / (double)n;
