@@ -1,5 +1,13 @@
 name = "lean_game_defs_ext"
 defaultTargets = ["Bayesian"]
 
+# Convention i18n EPIC #4980 (ratifiée user 04/07, pattern #6585 cf
+# decision_theory_lean/lakefile.lean) : `globs` (et non `roots`) pour que
+# `lake build` auto-découvre le sibling `_en` racine (miroir EN, module
+# `Bayesian_en`). Sans globs, le sibling racine `Bayesian_en.lean` (namespace
+# distinct, hors `Bayesian/`) n'est PAS type-checké par la CI (orphan-trap,
+# faux-green — cf conway #6678). `Bayesian.*` couvre les modules imbriqués,
+# `Bayesian_en` couvre le root aggregator EN doc-only.
 [[lean_lib]]
 name = "Bayesian"
+globs = ["Bayesian.*", "Bayesian_en"]
