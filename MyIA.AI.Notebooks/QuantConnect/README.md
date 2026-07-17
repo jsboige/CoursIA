@@ -21,7 +21,7 @@ maturity: PRODUCTION=59, ALPHA=35, BETA=8, DRAFT=2, TEMPLATE=1
 
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
 
-La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
+La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe sélection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
 
 **À qui s'adresse cette série** : étudiants en finance quantitative, ingénieurs ML souhaitant appliquer leurs compétences aux marchés, et développeurs curieux de trading algorithmique. Les notebooks Python s'exécutent sur QuantConnect Cloud (gratuit) ou localement avec le LEAN engine. Le livre de référence est *"Hands-On AI Trading"* (Jared Broad, 2025). Aucun capital de départ nécessaire : tout se passe en backtest et paper trading.
 
@@ -81,7 +81,7 @@ Sélection dynamique d'univers, comprendre les particularités de chaque classe 
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Manual universe, coarse/fine selection, dynamic rebalancing |
+| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Manual universe, coarse/fine sélection, dynamic rebalancing |
 | 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | 75 min | Options chains, Greeks, covered calls, protective puts |
 | 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | 75 min | Futures contracts, rollover, Forex pairs, leverage |
 | 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | 75 min | Portfolio Equity + Options + Futures, corrélations |
@@ -459,7 +459,7 @@ Après completion de cette série, vous maîtriserez :
 
 ### Compétences Techniques
 
-- ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe selection
+- ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe sélection
 - ✅ **Risk Management** : Position sizing, stop-loss, take-profit
 - ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Execution, Risk
 - ✅ **Machine Learning** : Supervised (RF, XGBoost), Deep Learning (LSTM), RL (PPO)
@@ -581,7 +581,7 @@ Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/40
 
 Cette série vous a fait traverser **l'arc complet du trading algorithmique moderne** — de la gestion d'un événement de marché à la production d'un agent RL déployé en live. L'arc pédagogique :
 
-- **Les fondations LEAN** (phases 1-4) : maîtriser le `QCAlgorithm` lifecycle, l'univers selection, les asset classes (equities, crypto, options, futures), le risk management (drawdown, exposure, stop-loss) et l'Algorithm Framework modulaire (Alpha + Portfolio Construction + Risk Management). On apprend à *écrire un algo propre*, pas à empiler des règles ad hoc.
+- **Les fondations LEAN** (phases 1-4) : maîtriser le `QCAlgorithm` lifecycle, l'univers sélection, les asset classes (equities, crypto, options, futures), le risk management (drawdown, exposure, stop-loss) et l'Algorithm Framework modulaire (Alpha + Portfolio Construction + Risk Management). On apprend à *écrire un algo propre*, pas à empiler des règles ad hoc.
 - **La préparation ML** (phase 5) : les données alternatives (sentiment, fundamentals, FRED) et le feature engineering. On apprend que **80% de la performance ML vient de la qualité des features**, pas du modèle.
 - **Le machine learning** (phases 6-7) : Random Forest et XGBoost classiques, puis deep learning (LSTM, Transformers, autoencoders pour l'anomaly detection). On apprend que les modèles de deep learning sont **fragiles aux coûts de transaction réels** et au changement de régime — un edge apparent en backtest peut s'évaporer une fois les frais appliqués (cf. les baselines vérifiées dans le tableau comparatif ci-dessus).
 - **La production** (phase 8 + compléments RL) : Reinforcement Learning (DQN, PPO, SAC/A2C), LLMs pour signaux de trading, et déploiement live (paper trading, brokers IBKR/Binance). On apprend que **la stratégie ne se juge pas sur le Sharpe brut mais sur le Sharpe net** après frais, slippage et impact de marché.
