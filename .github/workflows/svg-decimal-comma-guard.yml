@@ -1,0 +1,72 @@
+name: svg-decimal-comma-guard
+
+# Durable anti-regression guard for the SVG ``decimal-comma`` rendering defect
+# (cf #6946 Infer-17, #6960 MGS-15; found by po-2024 vision-QA c.581). An
+# inline-C# SVG builder that formats coordinates with culture-sensitive ``:F1``
+# emits a decimal COMMA on a fr-FR worker -> per SVG spec comma = coordinate
+# separator, so Chromium parses ``cx='70,0'`` as 2 values (console
+# ``Expected length`` -> default 0) and a polyline ``70,0,334,4`` as 4 zigzag
+# points instead of 2. The chart silently mis-renders, defeating the PR's goal
+# "render on GitHub/nbviewer".
+#
+# The defect is INVISIBLE to every code forensic: CI validates structure +
+# source, the JSON is well-formed, the SVG tag is present. Only render QA
+# (vision-capable lane) catches it -- by which time the broken chart is
+# committed. This guard closes that gap by FAILING any PR that commits a
+# decimal-comma SVG coordinate into a main-repo notebook output.
+#
+# Scope: main-repo notebooks only (``--exclude-submodules``), same boundary as
+# banner-guard.yml. Submodules are separate repos with their own CI.
+#
+# Note on the fix: unlike the probeAddresses banner (deterministic output-only
+# strip), the decimal-comma defect's durable fix is at the SOURCE (replace
+# ``:F*`` with ``v.ToString("0.###", CultureInfo.InvariantCulture)``) + a
+# re-exec of the cell. There is no honest output-only patch (hand-editing the
+# output would falsify execution evidence, banned by secrets-hygiene.md rule 6
+# / Stop & Repair). The scan flags the defect; the author fixes the source.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_svg_decimal_comma.py'
+      - '.github/workflows/svg-decimal-comma-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_svg_decimal_comma.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: svg-decimal-comma-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  svg-decimal-scan:
+    name: "SVG decimal-comma render guard (main-repo notebooks)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Fail if any SVG decimal-comma coordinate is committed"
+        run: |
+          if ! python scripts/notebook_tools/detect_svg_decimal_comma.py --scan-all --check --exclude-submodules; then
+            echo ""
+            echo "::error::A committed SVG coordinate uses a decimal comma (fr-FR culture bug) -- it mis-renders on Chromium (comma = coordinate separator)."
+            echo "Fix (source-level, then re-exec -- NOT an output patch):"
+            echo "    string F(double v) => v.ToString(\"0.###\", System.Globalization.CultureInfo.InvariantCulture);"
+            echo "then replace {expr:F1}/{expr:F2}/{expr:F3} with {F(expr)} in the cell source and re-execute it."
+            echo "There is no honest output-only strip (hand-editing cell outputs falsifies execution evidence, banned by Stop & Repair)."
+            exit 1
+          fi
