@@ -1,8 +1,23 @@
 # Repeated Games — Lean (compagnon formel GT-6c)
 
-> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
-> Série GameTheory regroupe 7 lakes (`conway_cgt`, `cooperative_games`, `minimax`, `repeated_games`, `social_choice`, `social_choice_lean_peters`, `stable_marriage`).
-> Aucun autre ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
+> **⚑ Archive — home canonique déplacé.** Depuis la PR [#6146](https://github.com/jsboige/CoursIA/pull/6146)
+> (EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4), les quatre modules sources
+> (`Stage`, `Discounting`, `GrimTrigger`, `Folk`) ont été **absorbés byte-identique** dans
+> **[`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/)** (FR canonique + miroirs
+> `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)), qui est désormais le
+> home canonique (`@[default_target] lean_lib RepeatedGames` dans le lakefile de `game_theory_lean`).
+> Ce répertoire `repeated_games_lean/` est conservé comme **coquille archive** : son `package`, son
+> `require mathlib`, son manifest et sa documentation restent préservés, mais la `lean_lib` est
+> **neutralisée** dans le `lakefile.lean` (ses `globs` pointaient vers des sources déplacées et
+> matchaient 0 fichier, ce qui aurait provoqué une collision de module-path). La certification
+> no-sorry (`grim_trigger_sustains_iff`, théorème-phare) et le build Lake sont repris par
+> `game_theory_lean` via `.github/workflows/lean-repeated-games.yml`.
+>
+> La suite de ce README décrit les formalisations telles qu'elles existent **historiquement** ici —
+> le contenu mathématique (théorème grim-trigger, principe de déviation one-shot, seuil δ) reste
+> **entièrement valable** et se retrouve à l'identique dans le home canonique.
+
+> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré). Les sources actives vivent dans [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
 ## Théorème-phare
 

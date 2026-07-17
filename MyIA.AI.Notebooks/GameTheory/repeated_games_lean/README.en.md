@@ -1,7 +1,22 @@
 # Repeated Games — Lean (formal companion of GT-6c)
 
-> **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma).
-> This companion fills the gap in the GameTheory series (which has 7 Lean lakes: `conway_cgt`, `cooperative_games`, `minimax`, `repeated_games`, `social_choice`, `social_choice_lean_peters`, `stable_marriage`).
+> **⚑ Archive — canonical home moved.** As of PR [#6146](https://github.com/jsboige/CoursIA/pull/6146)
+> (EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4), the four source modules
+> (`Stage`, `Discounting`, `GrimTrigger`, `Folk`) have been **absorbed byte-identical** into
+> **[`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/)** (canonical FR + `_en.lean`
+> mirrors Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)), which is now the canonical
+> home (`@[default_target] lean_lib RepeatedGames` in the `game_theory_lean` lakefile). This
+> `repeated_games_lean/` directory is kept as an **archive shell**: its `package`, `require mathlib`,
+> manifest and documentation are preserved, but the `lean_lib` is **neutralized** in `lakefile.lean`
+> (its `globs` pointed to moved sources and matched 0 files). The no-sorry certification
+> (`grim_trigger_sustains_iff`, headline theorem) and the Lake build are now carried by
+> `game_theory_lean` via `.github/workflows/lean-repeated-games.yml`.
+>
+> The rest of this README describes the formalizations as they **historically** existed here — the
+> mathematical content (grim-trigger theorem, one-shot deviation principle, threshold δ) remains
+> **fully valid** and is found identically in the canonical home.
+
+> **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma). The active sources live in [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
 ## Headline theorem
 
