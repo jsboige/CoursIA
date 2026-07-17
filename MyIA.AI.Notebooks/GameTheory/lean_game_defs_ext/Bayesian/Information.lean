@@ -49,19 +49,25 @@ structure DecisionProblem where
 def wu (D : DecisionProblem) (s : Fin D.nS) (a : Fin (D.nA + 1)) : Int :=
   (D.w s : Int) * D.u s a
 
-/-- Un signal déterministe avec `m + 1` réalisations possibles : il -/
+/-- Un signal déterministe avec `m + 1` réalisations possibles : il
+    annonce une réalisation dans chaque état, i.e. partitionne l'espace
+    d'états en (au plus) `m + 1` cellules. -/
 def Signal (D : DecisionProblem) (m : Nat) := Fin D.nS → Fin (m + 1)
 
-/-- Paiement espéré (non normalisé) d'un décideur non informé : -/
+/-- Paiement espéré (non normalisé) d'un décideur non informé :
+    choisir l'action unique qui maximise le paiement pondéré par la prior. -/
 def valueNoInfo (D : DecisionProblem) : Int :=
   maxFin D.nA (fun a => sumFin D.nS (fun s => wu D s a))
 
-/-- Paiement espéré d'un décideur observant le signal `σ` : à l'intérieur -/
+/-- Paiement espéré d'un décideur observant le signal `σ` : à l'intérieur
+    de chaque cellule `k` de la partition, choisir la meilleure action
+    pour la prior restreinte à cette cellule, puis sommer sur les cellules. -/
 def valueSignal (D : DecisionProblem) {m : Nat} (σ : Signal D m) : Int :=
   sumFin (m + 1) (fun k => maxFin D.nA (fun a =>
     sumFin D.nS (fun s => if σ s = k then wu D s a else 0)))
 
-/-- Paiement espéré d'un décideur pleinement informé : choisir la meilleure -/
+/-- Paiement espéré d'un décideur pleinement informé : choisir la
+    meilleure action séparément dans chaque état. -/
 def valuePerfect (D : DecisionProblem) : Int :=
   sumFin D.nS (fun s => maxFin D.nA (fun a => wu D s a))
 
