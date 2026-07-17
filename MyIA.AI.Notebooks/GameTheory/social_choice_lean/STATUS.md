@@ -1,5 +1,10 @@
 # Social Choice Lean - Status
 
+> **⚑ Archive (PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)).** Sources déplacées
+> byte-identique vers [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/)
+> (home canonique). Statut figé à la date d'absorption ; voir `game_theory_lean/` pour le statut
+> actif (CI `lean-social-choice.yml`).
+
 ## Build Info
 
 | Item | Value |

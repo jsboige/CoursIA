@@ -1,6 +1,22 @@
 # Théorie du Choix Social — Formulations Lean 4
 
-Ce répertoire contient les formalisations mathématiques de la théorie du choix social en Lean 4, développées dans le cadre de la série GameTheory.
+> **⚑ Archive — home canonique déplacé.** Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)
+> (EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4, 2026-07-11), les sept modules
+> (Basic, Framework, Arrow, Sen, Voting, MechanismDesign, SortedListCounting) ont été **absorbés
+> byte-identique** dans **[`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/)**
+> (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
+> qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
+> `game_theory_lean`). Ce répertoire `social_choice_lean/` est conservé comme **coquille archive** :
+> son `package`, son `require mathlib`, son manifest et sa documentation restent préservés, mais la
+> `lean_lib` est **neutralisée** dans le `lakefile.lean` (ses `globs` pointaient vers des sources
+> déplacées et provoquaient une collision de module-path). La certification no-sorry et le build Lake
+> sont repris par `game_theory_lean` via `.github/workflows/lean-social-choice.yml`.
+>
+> La suite de ce README décrit les formalisations telles qu'elles existent **historiquement** ici —
+> le contenu mathématique (théorèmes, preuves, choix de design) reste **entièrement valable** et se
+> retrouve à l'identique dans le home canonique.
+
+Ce répertoire est l'**archive** des formalisations mathématiques de la théorie du choix social en Lean 4, développées dans le cadre de la série GameTheory. Les sources actives vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
 
 ## Vue d'ensemble
 
@@ -134,28 +150,41 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 
 ## Structure des fichiers
 
+> **⚑ Archive** — l'arborescence ci-dessous reflète la structure **historique** de ce lake.
+> Depuis l'absorption [#6058](https://github.com/jsboige/CoursIA/pull/6058), les fichiers
+> `SocialChoice.lean`, `SocialChoice/*.lean` et `examples/*.lean` ne sont **plus présents
+> ici** : ils vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
+> Seuls `README.md`, `lakefile.lean` (lib neutralisée), `lean-toolchain`, `lake-manifest.json`,
+> `FORMAL_STATUS.md`, `STATUS.md`, `NOTICE.md` et `LEAN_PREREQUISITES.md` subsistent comme
+> coquille archive.
+
 ```text
-social_choice_lean/
-├── README.md                          # Documentation générale
-├── lakefile.lean                      # Configuration du projet Lake
+social_choice_lean/                     (archive — coquille)
+├── README.md                          # Documentation générale (cette archive)
+├── lakefile.lean                      # package + require mathlib ; lean_lib NEUTRALISÉE
+├── lake-manifest.json                 # Manifest préservé
 ├── lean-toolchain                     # Version de Lean (v4.31.0-rc1)
-├── SocialChoice.lean                  # Fichier d'imports principaux
-├── SocialChoice/                      # Module principal (7 fichiers, 0 sorry)
-│   ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
-│   │                                 # lemmes de transitivité, best/maximal elements)
-│   ├── Framework.lean                # Cadre SWF (Profile, SWF, weak_pareto, IIA,
-│   │                                 # is_dictatorship, maketop/makebot/makeabove)
-│   ├── Arrow.lean                   # Théorème d'Arrow (Geanakoplos 2005, 4 étapes)
-│   ├── Sen.lean                     # Paradoxe de Sen (décisivité bidirectionnelle)
-│   ├── Voting.lean                  # Théorie du vote : margins, Condorcet (unique),
-│   │                                 # single-peaked, théorème de l'électeur médian,
-│   │                                 # Split Cycle, clones, tournois de Banks
-│   ├── MechanismDesign.lean         # Théorie des mécanismes : Vickrey (véridicité),
-│   │                                 # first-price non-véridique
-│   └── SortedListCounting.lean      # Lemmes de comptage médian (noyau du median voter)
-└── examples/
-    ├── arrow_simple.lean            # Exemple simple d'Arrow
-    └── sen_liberal_paradox.lean     # Exemple du paradoxe de Sen
+├── FORMAL_STATUS.md                   # Statut formel (historique, voir game_theory_lean)
+├── STATUS.md                          # Statut (historique)
+├── NOTICE.md                          # Licence MIT (DominikPeters)
+├── LEAN_PREREQUISITES.md              # Prérequis Lean
+│
+│   ── sources déplacées vers game_theory_lean/SocialChoice/ (PR #6058) ──
+│
+├── SocialChoice.lean                  # [DÉPLACÉ] Fichier d'imports principaux
+└── SocialChoice/                      # [DÉPLACÉ] Module principal (7 fichiers, 0 sorry)
+    ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
+    │                                 # lemmes de transitivité, best/maximal elements)
+    ├── Framework.lean                # Cadre SWF (Profile, SWF, weak_pareto, IIA,
+    │                                 # is_dictatorship, maketop/makebot/makeabove)
+    ├── Arrow.lean                   # Théorème d'Arrow (Geanakoplos 2005, 4 étapes)
+    ├── Sen.lean                     # Paradoxe de Sen (décisivité bidirectionnelle)
+    ├── Voting.lean                  # Théorie du vote : margins, Condorcet (unique),
+    │                                 # single-peaked, théorème de l'électeur médian,
+    │                                 # Split Cycle, clones, tournois de Banks
+    ├── MechanismDesign.lean         # Théorie des mécanismes : Vickrey (véridicité),
+    │                                 # first-price non-véridique
+    └── SortedListCounting.lean      # Lemmes de comptage médian (noyau du median voter)
 ```
 
 Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
@@ -200,11 +229,17 @@ Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/a
 
 ## Construction et compilation
 
+> **⚑ Archive** — depuis [#6058](https://github.com/jsboige/CoursIA/pull/6058), la `lean_lib` est
+> **neutralisée** dans ce lakefile : `lake build` **ne compile plus la lib** ici (les sources ont
+> été déplacées). Pour compiler et vérifier les preuves, utiliser le home canonique
+> [`game_theory_lean/`](../game_theory_lean/) (`lake build SocialChoice`). Les commandes
+> ci-dessous restent documentées à titre historique.
+
 ```bash
 # Récupérer le cache Mathlib (première fois)
 lake exe cache get
 
-# Compiler le projet
+# Compiler le projet (archive : lib neutralisée — utiliser game_theory_lean pour compiler)
 lake build
 
 # Exécuter les tests

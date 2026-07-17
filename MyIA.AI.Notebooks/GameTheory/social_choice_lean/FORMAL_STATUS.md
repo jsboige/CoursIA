@@ -1,5 +1,13 @@
 # Social Choice Lean - Formal Verification Status
 
+> **⚑ Archive (PR [#6058](https://github.com/jsboige/CoursIA/pull/6058), EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4).**
+> Les sept modules ont été absorbés byte-identique dans
+> [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (home canonique).
+> Ce statut est **figé à la date d'absorption** (CI du 2026-05-26, pré-déplacement) ; le statut
+> formel **actif** se lit désormais dans `game_theory_lean/` (CI repris par
+> `lean-social-choice.yml`, `lake build SocialChoice`). Les chiffres ci-dessous restent exacts
+> pour le contenu absorbé (0 sorry, 76 théorèmes, 7 modules).
+
 ## Build Info
 
 | Item | Value |
