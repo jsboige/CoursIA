@@ -229,3 +229,77 @@ def test_main_smoke_limits_to_one_cell(monkeypatch, tmp_path, capsys):
     err = capsys.readouterr().err
     # The plan line reports the count after smoke reduction.
     assert "7 traductions nécessaires" in err or " 7 " in err
+
+
+# ---------------------------------------------------------------------------
+# 5. Extra contract coverage (ported from a short-lived duplicate test file
+#    that consolidated here: CRLF/LF hash stability, anchored regression value,
+#    ENABLED-default via module reload, schema alignment, env-only provider
+#    keys, and plan exclusion of already-translated langs).
+# ---------------------------------------------------------------------------
+def test_cell_hash_ignores_crlf_vs_lf():
+    # CRLF vs LF must NOT create faux drift across Windows/POSIX checkouts.
+    assert tc.cell_hash("ligne un\r\nligne deux") == tc.cell_hash("ligne un\nligne deux")
+
+
+def test_cell_hash_anchored_value():
+    # Anchored regression value : locks the hash algorithm itself (16 hex sha256
+    # of the normalized text). Changing normalize/cell_hash breaks drift-detection
+    # parity with T1/T2, so this must stay stable.
+    assert tc.cell_hash("## Introduction au machine learning") == "ec9615f904e04755"
+
+
+def test_enabled_is_false_by_default_on_fresh_module_load():
+    # Reload the module to read its pristine default (a prior test may have
+    # monkeypatched tc.ENABLED). The gate must ship disabled.
+    import importlib
+    fresh = importlib.reload(tc)
+    assert fresh.ENABLED is False
+
+
+def test_targets_are_the_seven_canonical_languages():
+    # T1/T2/T3 must agree on the 7 target languages (order matters for CSV cols).
+    assert tc.TARGETS == ["en", "ru", "pt", "es", "ar", "fa", "zh"]
+
+
+def test_every_target_has_text_and_hash_column():
+    for lang in tc.TARGETS:
+        assert f"text_{lang}" in tc.CSV_COLUMNS, f"missing text_{lang}"
+        assert f"hash_{lang}" in tc.CSV_COLUMNS, f"missing hash_{lang}"
+
+
+def test_provider_keys_empty_without_env(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    assert tc._provider_keys() == []
+
+
+def test_provider_keys_read_openai_env(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-only-in-env")
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    provs = tc._provider_keys()
+    assert len(provs) == 1
+    _model, key, base = provs[0]
+    assert key == "sk-test-only-in-env"
+    assert base == "https://api.openai.com/v1"
+
+
+def test_provider_keys_have_no_literal_default_in_source():
+    # secrets-hygiene rule 1-3 : never os.getenv("KEY", "<literal>"). The key
+    # must come from env only (no inline fallback that could leak a real secret).
+    src = Path(tc.__file__).read_text(encoding="utf-8")
+    assert 'getenv("OPENAI_API_KEY"' in src
+    assert 'getenv("OPENAI_API_KEY", "' not in src  # no literal default
+
+
+def test_plan_excludes_already_translated_language():
+    # A cell with text_en filled must NOT be re-queued for 'en' (resume cache),
+    # but an untranslated cell in the same CSV is still queued.
+    rows = [
+        _row("c1", "markdown", "Bonjour", text_en="Hello", hash_en=tc.cell_hash("Hello")),
+        _row("c2", "markdown", "Salut"),
+    ]
+    plan = list(tc.translation_plan(rows, ["en"]))
+    idxs = {i for i, _ in plan}
+    assert 0 not in idxs  # c1 already translated to en
+    assert 1 in idxs      # c2 still needs en
