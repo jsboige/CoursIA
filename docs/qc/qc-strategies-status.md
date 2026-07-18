@@ -73,7 +73,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 56 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
+| Vérifié (tranche 14, backtests QC Cloud MCP) | 4 | cohorte DL Chronos Foundation / Régime Switching / ML Trend Scanning — **0 edge significative** (PSR max 13.79 %), 4 Needs-improvement |
+| Vivant (best-guess, non vérifié) | 52 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -193,7 +194,36 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
-#### Vivant (best-guess, non vérifié) (56)
+#### Vérifié (tranche 14, backtests QC Cloud via MCP) (4)
+
+> **Périmètre tranche 14** : 4 stratégies best-guess du bucket « Vivant » promues via lecture directe
+> des backtests QC Cloud existants via MCP `qc-mcp-lite` (`read_backtest`). **0 QCC dépensé**
+> (lecture seule de backtests déjà réalisés). Cohorte **DL Foundation Model (Chronos) / Régime
+> Switching / ML Trend Scanning** (4 sous-familles distinctes des tranches 7 ML Trend/FeatureEng/
+> SVM-Wavelet, 8 Trend+Regime+Vol risk, 9 Composite+Options+Vol/Momentum, 10 DL/LSTM/Temporal-CNN,
+> 11 Crypto BTC + IBKR-Binance-Hybrid, 12 ML NLP + RL, 13 ML Classification/Clustering/Hybrid).
+> Métriques pleine période in-sample (non walk-forward OOS). **0 edge significative cohorte** :
+> PSR max 13.79 % (`Chronos-Foundation-Forecasting` post-#2801 SMA200 regime threshold 0.02),
+> toutes < 50 %. Confirme pour cette cohorte DL Foundation / Régime Switching / ML Trend Scanning
+> ce que les tranches 7-13 confirmaient : les backtests in-sample pleine période **ne valident
+> aucun edge** sur la cohorte. Walk-forward multi-seed OOS requis avant toute promotion production.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `RegimeSwitching` | `projects/RegimeSwitching/` | Régime (Markov switching) | **Needs-improvement** | 4642 j. (long record cohorte, projet 1630-post2801 verify) ; Sharpe 0.581 (max cohorte) ; CAGR 12.29 % ; MaxDD 33.0 % ; PSR 7.04 % ; NP 750.7 % ($656 416) — record durée tradeable, Sharpe max cohorte, PSR sous 50 % |
+| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | **Needs-improvement** | 2878 j. (post-#2801 verify) ; Sharpe 0.328 ; CAGR 7.09 % ; MaxDD 29.4 % ; PSR 7.84 % ; NP 119.0 % ($115 983) — profile trend modéré, edge statistique non significative |
+| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | **Needs-improvement** | période projet 29443479 batch 4 (tradeableDates=0 anomalie champ MCP, ~2018–2025 aligned) ; Sharpe 0.277 ; CAGR 7.23 % ; **MaxDD 13.5 % (min cohorte)** ; **PSR 13.79 % (max cohorte)** ; NP 63.0 % ($62 626) — meilleur MaxDD cohorte + meilleur PSR, edge statistique non confirmée |
+| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | **Needs-improvement** | 2766 j. (projet 29936072 Ex18-Chronos-Foundation batch 4) ; Sharpe 0.253 ; CAGR 6.28 % ; MaxDD 22.4 % ; PSR 3.12 % (min cohorte) ; NP 95.5 % ($94 994) — Sharpe min cohorte, PSR quasi-nul |
+
+**Verdict honnête : 0 edge cohorte**. PSR max 13.79 % (`Chronos-Foundation-Forecasting`), aucune > 50 %.
+Observations pédagogiques :
+
+- **`RegimeSwitching` (Sharpe 0.581 / PSR 7.04 %)** : **meilleur Sharpe cohorte** mais PSR 7.04 % = edge statistique quasi-nulle. Pattern « Sharpe décent mais PSR ne suit pas » récurrent ML/DL post-2020. Record durée tradeable (4642 j.) = robustesse long-terme du post-#2801 verify (projet 1630-post2801).
+- **`Chronos-Foundation-Forecasting` (Sharpe 0.277 / PSR 13.79 %)** : **PSR max cohorte** + **MaxDD min cohorte 13.5 %** = profil drawdown-containment le plus discipliné. MAIS PSR 13.79 % reste < 50 %, edge statistique non confirmée. Foundation model Chronos = SOTA 2024-2025 (Amazon) pour forecasting zero-shot, intégration QC Cloud prometteuse mais validation OOS requise.
+- **`ML-Chronos-Foundation` (Sharpe 0.253 / PSR 3.12 %)** vs **`Chronos-Foundation-Forecasting` (0.277 / 13.79 %)** : **2 stratégies Chronos**, profil proche (Sharpe ~0.27, NP ~80-95 %), mais **`Chronos-Foundation-Forecasting` 4.4× meilleur PSR** = feature engineering spécifique (post-#2801 SMA200 regime threshold 0.02) fait la différence malgré Sharpe quasi-identique. Variante HandsOn Ex09 (sans SMA200 regime filter) sous-performe statistiquement.
+- **`ML-Trend-Scanning` (Sharpe 0.328 / PSR 7.84 %)** : profile trend scanning (ML supervisé sur trends actions) = médian cohorte. PSR 7.84 % = edge non significative. post-#2801 verify confirme stabilité long-terme (2878 j. tradeable).
+
+#### Vivant (best-guess, non vérifié) (52)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -201,7 +231,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | Vivant | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
-| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
+| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | **Vérifié tranche 14** | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | Vivant | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb |
 | `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | Vivant | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
@@ -215,7 +245,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | Vivant | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | Vivant | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb |
-| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | Vivant | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
+| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | **Vérifié tranche 14** | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
 | `ML-Classification` | `projects/ML-Classification/` | ML supervisé | Vivant | main.py: class MLClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-DeepLearning` | `projects/ML-DeepLearning/` | DL | Vivant | main.py: class SimpleLSTM(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
 | `ML-EnhancedPairs` | `projects/ML-EnhancedPairs/` | ML pairs | Vivant | main.py: class MLEnhancedPairsAlgorithm(QCAlgorithm) + quantbook.ipynb |
@@ -231,7 +261,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-SVM` | `projects/ML-SVM/` | ML supervisé (SVM) | Vivant | main.py: class MLSVMAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | Vivant | main.py: class MLTrendScanning(QCAlgorithm) |
+| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | **Vérifié tranche 14** | main.py: class MLTrendScanning(QCAlgorithm) |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
 | `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | Vivant | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
@@ -240,7 +270,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
 | `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | Vivant | main.py: class PuppiesOfTheDow(QCAlgorithm) |
 | `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | Vivant | main.py: class ReinforcementLearningTrading(QCAlgorithm) |
-| `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | Vivant | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb |
+| `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | **Vérifié tranche 14** | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | Vivant | main.py: class SectorMLClassificationAlgorithm(QCAlgorithm) + research.ipynb |
 | `Stoploss-Volatility-ML` | `projects/Stoploss-Volatility-ML/` | ML risk | Vivant | main.py: class StoplossVolatilityMLAlgorithm(QCAlgorithm) + research.ipynb |
