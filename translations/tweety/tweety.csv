@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cbaf7ae,markdown,fr,b72e8ff537d950da,"# Tweety-10 — Markov Logic Networks (MLN)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cbaf7ae,markdown,fr,e80a3a8d5af86b2b,"# Tweety-10 — Markov Logic Networks (MLN)
 
 **Navigation** : [← Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | [Index](Tweety-1-Setup.ipynb) | [README](README.md)
 
@@ -8,10 +8,10 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cbaf7ae,markdown,fr,b72
 ## Objectifs pedagogiques
 
 1. Comprendre ce qu'est un **Markov Logic Network** : une formule de logique du premier ordre **associee a un poids**
-2. Distinguer regle **stricte** (contrainte dure) et regle **ponderee** (tendance statistique)
+2. Distinguer règle **stricte** (contrainte dure) et règle **pondérée** (tendance statistique)
 3. Calculer la **probabilite marginale** d'un atome via un reasoner MLN
 4. Comprendre comment les poids **modelent la croyance** (spectre logique ↔ statistique)
-5. Resoudre le **paradoxe des exceptions** (le pingouin qui ne vole pas) grace a la logique ponderee
+5. Resoudre le **paradoxe des exceptions** (le pingouin qui ne vole pas) grace a la logique pondérée
 
 ## Prerequis
 
@@ -24,7 +24,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cbaf7ae,markdown,fr,b72
 > **Position dans la serie** : ce notebook 10 est le **capstone de synthese**. Il realise concretement
 > le pont evoke dans l'introduction du README — *« L'intersection [symbolique / statistique] est le front
 > actif de la recherche »* — en reunissant la logique du premier ordre (Phase 1, NB 2) et le raisonnement
-> probabiliste (Phase 4, NB 7b) au sein d'un meme formalisme : la **FOL ponderee**.",,,,,,,,b72e8ff537d950da,,,,,,,
+> probabiliste (Phase 4, NB 7b) au sein d'un même formalisme : la **FOL pondérée**.",,,,,,,,e80a3a8d5af86b2b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,d7490a5c,code,fr,234e4ec523fce6d3,"# --- Initialisation JVM Tweety (cf. Tweety-1-Setup) + imports MLN ---
 import os, sys
 TWEETY_DIR = os.path.dirname(os.path.abspath(""__file__"")) if ""__file__"" in dir() else os.getcwd()
@@ -60,7 +60,7 @@ from org.tweetyproject.logics.fol.parser import FolParser
 FolFormula_class = jpype.JClass(""org.tweetyproject.logics.fol.syntax.FolFormula"")
 
 print(""Imports MLN reussis : MlnFormula, MarkovLogicNetwork, reasoners (naive + sampling)."")",,,,,,,,234e4ec523fce6d3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ee5fc466,markdown,fr,224d59d4f7a7ce97,"### Interpretation de l'initialisation
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ee5fc466,markdown,fr,be923d1d7d4016f8,"### Interpretation de l'initialisation
 
 **Succes** : la JVM est demarree avec les **42 JARs** Tweety 1.30 (dont `mln-1.30.jar`), et le module
 MLN est charge.
@@ -75,28 +75,28 @@ MLN est charge.
 | `SimpleSamplingMlnReasoner` | Inference par echantillonnage (grands domaines) | equivalent des solveurs SAT modernes (CaDiCaL) |
 
 > **Pourquoi aucun `MlnParser` ?** Tweety represente un MLN comme une collection de formules FOL
-> deja parsees, chacune enveloppee dans un `MlnFormula` avec son poids. On construit donc le reseau
+> deja parsees, chacune enveloppee dans un `MlnFormula` avec son poids. On construit donc le réseau
 > **par programmation** : on parse une `FolFormula` (syntaxe du NB 2) puis on l'enveloppe.
-> C'est plus transparent pedagogiquement : on voit le poids etre associe explicitement.",,,,,,,,224d59d4f7a7ce97,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c22c7095,markdown,fr,55b577c1ea7a2e96,"## Partie 1 : De la logique du premier ordre a la logique ponderee
+> C'est plus transparent pedagogiquement : on voit le poids etre associe explicitement.",,,,,,,,be923d1d7d4016f8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c22c7095,markdown,fr,3f1e012661166e4c,"## Partie 1 : De la logique du premier ordre a la logique pondérée
 
 ### 1.1 Le constat : la FOL est binaire (et donc fragile)
 
-En logique du premier ordre (Tweety-2), une regle comme :
+En logique du premier ordre (Tweety-2), une règle comme :
 
 ```
 forall X: (Oiseau(X) => Vole(X))
 ```
 
 est une **contrainte dure** : tout oiseau vole, sans exception. C'est mathematiquement propre,
-mais **brittle** face au monde reel :
+mais **brittle** face au monde réel :
 
 - Un pingouin est un oiseau... qui ne vole pas.
-- La regle stricte force alors `Vole(pingouin) = Vrai`, **une contradiction**.
+- La règle stricte force alors `Vole(pingouin) = Vrai`, **une contradiction**.
 
-Pour sauver la coherence, il faut soit nier que le pingouin est un oiseau (faux), soit admettre
-que la regle a des **exceptions**. La FOL classique n'a pas de mecanisme natif pour dire
-« *en general*, les oiseaux volent ».
+Pour sauver la cohérence, il faut soit nier que le pingouin est un oiseau (faux), soit admettre
+que la règle a des **exceptions**. La FOL classique n'a pas de mécanisme natif pour dire
+« *en général*, les oiseaux volent ».
 
 ### 1.2 L'idee des MLN : une formule + un poids
 
@@ -108,26 +108,26 @@ ou $w_i$ est le poids de la formule $i$ et $n_i(\text{monde})$ est le nombre de 
 est satisfaite dans ce monde (ses *groundings* satisfaits).
 
 **Lecture** :
-- Un **poids eleve** $\Rightarrow$ les mondes violant la formule sont fortement penalises $\Rightarrow$ la formule
+- Un **poids élevé** $\Rightarrow$ les mondes violant la formule sont fortement penalises $\Rightarrow$ la formule
   est *presque* toujours vraie (proche d'une contrainte logique).
 - Un **poids faible** $\Rightarrow$ la formule n'est qu'une **tendance** : elle peut etre violee sans catastrophe.
 - Un **poids infini** ($=$ formule **stricte**) $\Rightarrow$ contrainte dure classique : tout monde la violant
   a une probabilite **nulle**.
 
-> **Le decalage conceptuel** : en FOL, une regle est vraie ou fausse. En MLN, une regle a un **poids** qui
+> **Le decalage conceptuel** : en FOL, une règle est vraie ou fausse. En MLN, une règle a un **poids** qui
 > controle *a quel point* elle est vraie. La logique devient une limite (poids $\to \infty$) d'un
-> raisonnement fondamentalement **probabiliste**.",,,,,,,,55b577c1ea7a2e96,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,25b61506,markdown,fr,226b7e0e3151c5fe,"### 1.3 Construire une `MlnFormula` : stricte vs ponderee
+> raisonnement fondamentalement **probabiliste**.",,,,,,,,3f1e012661166e4c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,25b61506,markdown,fr,f2f808f309fe52e7,"### 1.3 Construire une `MlnFormula` : stricte vs pondérée
 
-On reutilise le `FolParser` du notebook 2 pour obtenir une `FolFormula`, puis on l'enveloppe.
+On réutilise le `FolParser` du notebook 2 pour obtenir une `FolFormula`, puis on l'enveloppe.
 Deux constructeurs importants :
 
 | Constructeur | Sens | `isStrict()` |
 |--------------|------|--------------|
 | `MlnFormula(formula)` | **Strict** (poids infini) — contrainte dure | `True` |
-| `MlnFormula(formula, weight)` | **Ponderee** — tendance de force `weight` | `False` |
+| `MlnFormula(formula, weight)` | **pondérée** — tendance de force `weight` | `False` |
 
-Verifions-le sur une meme formule.",,,,,,,,226b7e0e3151c5fe,,,,,,,
+Verifions-le sur une même formule.",,,,,,,,f2f808f309fe52e7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,1290b553,code,fr,644887f66e26ae8a,"# --- 1.3 Strict vs pondere : deux facettes d'une meme regle ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree. Executez la cellule d'initialisation."")
@@ -159,33 +159,33 @@ else:
     print(""   isStrict ="", f_pond.isStrict(), ""| getWeight ="", f_pond.getWeight())
 
     print(""\n=> Meme formule FOL, deux statuts logiques differents selon le poids."")",,,,,,,,644887f66e26ae8a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ef6ba7c3,markdown,fr,11189a5642479ce4,"### Interpretation : deux statuts pour une meme formule
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ef6ba7c3,markdown,fr,9af19a73bc1ca4af,"### Interpretation : deux statuts pour une même formule
 
 **Sortie attendue** :
 ```
 Formule STRICTE :
    Oiseau(X) => Vole(X)   [poids = infini]
    isStrict = True | getWeight = None (infini)
-Formule PONDEREE (poids 2.5) :
+Formule pondérée (poids 2.5) :
    Oiseau(X) => Vole(X)   [poids = 2.5]
    isStrict = False | getWeight = 2.5
 ```
 
 **Point cles** :
 
-- `getWeight()` renvoie `None` pour une formule stricte (poids infini, non representable comme un reel).
+- `getWeight()` renvoie `None` pour une formule stricte (poids infini, non representable comme un réel).
   C'est un **drapeau** : le reasoner traite les formules strictes en eliminant purement les mondes
   qui les violent (poids = 0), plutot qu'en appliquant `exp(inf)`.
-- `getWeight()` renvoie un `Double` pour une formule ponderee.
+- `getWeight()` renvoie un `Double` pour une formule pondérée.
 
-> **Piege evite (regle F, fail-loud)** : ne JAMAIS simuler une regle stricte avec un poids
+> **piège evite (règle F, fail-loud)** : ne JAMAIS simuler une règle stricte avec un poids
 > numerique arbitrairement grand (ex. `1000.0`). Comme $P \propto \exp(\sum w_i n_i)$, un poids de 1000
 > produit $\exp(1000) = \infty$, donc un calcul $\infty/\infty = \texttt{nan}$. Le reasoner renvoie
-> alors des probabilites `nan` — un echec bruyant et correct. La regle stricte se declenche avec le
-> **constructeur sans poids**, pas avec un gros nombre.",,,,,,,,11189a5642479ce4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,4c99baa1,markdown,fr,ea316158771e766b,"## Partie 2 : L'exemple canonique — friends / smokers / cancer
+> alors des probabilites `nan` — un echec bruyant et correct. La règle stricte se déclenche avec le
+> **constructeur sans poids**, pas avec un gros nombre.",,,,,,,,9af19a73bc1ca4af,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,4c99baa1,markdown,fr,24f2c7ede030fd12,"## Partie 2 : L'exemple canonique — friends / smokers / cancer
 
-L'exemple de reference de Richardson & Domingos (2006) modelise l'influence sociale sur le tabagisme
+L'exemple de référence de Richardson & Domingos (2006) modelise l'influence sociale sur le tabagisme
 et le cancer. Trois predicats :
 
 | Predicat | Arite | Sens |
@@ -194,7 +194,7 @@ et le cancer. Trois predicats :
 | `Cancer(X)` | 1 | X a un cancer |
 | `Friends(X,Y)` | 2 | X et Y sont amis |
 
-**Regles** (poids choisis pour l'exemple) :
+**règles** (poids choisis pour l'exemple) :
 
 1. `Smokes(X) => Cancer(X)` **[poids 3.0]** — fumer augmente fortement le risque de cancer
 2. `(Smokes(X) && Friends(X,Y)) => Smokes(Y)` **[poids 2.0]** — les amis s'influencent
@@ -202,7 +202,7 @@ et le cancer. Trois predicats :
 **Faits** (stricts) : `Smokes(anna)`, `Friends(anna,bob)`, `Friends(bob,carl)`.
 
 On s'attend a ce que le tabagisme (puis le cancer) se **propagent** le long de la chaine d'amitie
-`anna → bob → carl`, avec une probabilite decroissante.",,,,,,,,ea316158771e766b,,,,,,,
+`anna → bob → carl`, avec une probabilite decroissante.",,,,,,,,24f2c7ede030fd12,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,94bba1d0,code,fr,c260c2ab4b4c2a11,"# --- 2. Exemple guide : friends / smokers / cancer (Richardson & Domingos) ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
@@ -241,7 +241,7 @@ else:
                   ""Cancer(anna)"", ""Cancer(bob)"", ""Cancer(carl)""]:
         p = float(reasoner_sc.query(mln_sc, pf_sc(atome)))
         print(f""  P({atome:16s}) = {p:.4f}"")",,,,,,,,c260c2ab4b4c2a11,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,5a5dd2ec,markdown,fr,7ae7781f7114fa53,"### Interpretation : propagation d'influence le long du reseau
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,5a5dd2ec,markdown,fr,cfeed603d2fdc6e8,"### Interpretation : propagation d'influence le long du réseau
 
 **Sortie typique** :
 
@@ -249,32 +249,32 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,5a5dd2ec,markdown,fr,7ae
 |-------|-------------|---------|
 | `P(Smokes(anna))` | **1.0000** | Fait strict (observe) |
 | `P(Smokes(bob))` | ~0.73 | Ami d'anna (qui fume) → influence a la hausse |
-| `P(Smokes(carl))` | ~0.73 | Ami de bob → meme niveau (chaine symetrique) |
-| `P(Cancer(anna))` | ~0.95 | Fume certain → cancer tres probable |
+| `P(Smokes(carl))` | ~0.73 | Ami de bob → même niveau (chaine symetrique) |
+| `P(Cancer(anna))` | ~0.95 | Fume certain → cancer très probable |
 | `P(Cancer(bob))` | ~0.83 | Fume probablement → cancer probable |
 | `P(Cancer(carl))` | ~0.83 | Idem (propagation a 2 sauts) |
 
 **Ce qui est remarquable** (Prong B — *non-trivial*) :
 
 - `P(Cancer(carl))` **n'est pas un fait ni une consequence logique certaine**. C'est une **probabilite
-  marginale** qui emerge du mecanisme : carl n'est pas directement relie a anna (le fumeur certain),
+  marginale** qui emerge du mécanisme : carl n'est pas directement relie a anna (le fumeur certain),
   mais *via* bob. Sa probabilite de cancer resulte d'une **inference bayesienne a 2 sauts** dans le
   graphe d'influence.
 - La decroissance `anna (0.95) → bob (0.83) ≈ carl (0.83)` reflète la « dilution » de la certitude
   le long de la chaine. Avec un poids d'influence plus faible, la dilution serait plus rapide.
 
-**Contraste avec la FOL classique** (NB 2) : la regle `Smokes(X) => Cancer(X)` en FOL **stricte**
+**Contraste avec la FOL classique** (NB 2) : la règle `Smokes(X) => Cancer(X)` en FOL **stricte**
 impliquerait `Cancer(carl)` de maniere binaire (Vrai/False) des qu'on peut etablir `Smokes(carl)`.
-Ici, comme `Smokes(carl)` n'est lui-meme que *probable*, le cancer de carl l'est aussi — la certitude
+Ici, comme `Smokes(carl)` n'est lui-même que *probable*, le cancer de carl l'est aussi — la certitude
 se **propage de maniere graduee**, ce qu'aucune logique pure ne sait faire.
 
-> C'est tout l'apport des MLN : **unifier le raisonnement logique (structure des regles) et
-> l'inference probabiliste (gestion de l'incertitude)**.",,,,,,,,7ae7781f7114fa53,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ae2ab80b,markdown,fr,09c178e567c4d718,"## Partie 3 : Comment les poids modelent la croyance
+> C'est tout l'apport des MLN : **unifier le raisonnement logique (structure des règles) et
+> l'inference probabiliste (gestion de l'incertitude)**.",,,,,,,,cfeed603d2fdc6e8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ae2ab80b,markdown,fr,b3e64e6fc1a134e0,"## Partie 3 : Comment les poids modelent la croyance
 
-La meme regle, selon son poids, se comporte differemment. Faisons varier le poids de la regle
-`Smokes(X) => Cancer(X)` de `0` (regle inexistante) a `5` (regle quasi-strict) et observons
-l'effet sur `P(Cancer(bob))`.",,,,,,,,09c178e567c4d718,,,,,,,
+La même règle, selon son poids, se comporte differemment. Faisons varier le poids de la règle
+`Smokes(X) => Cancer(X)` de `0` (règle inexistante) a `5` (règle quasi-strict) et observons
+l'effet sur `P(Cancer(bob))`.",,,,,,,,b3e64e6fc1a134e0,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,ed316df0,code,fr,ddcfdeb028df6af3,"# --- 3. Sweep du poids : du purement statistique au quasi-logique ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
@@ -320,7 +320,7 @@ else:
     plt.tight_layout()
     plt.show()
 ",,,,,,,,ddcfdeb028df6af3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,92435341,markdown,fr,c86e8e2cd476763f,"### Interpretation : le spectre logique ↔ statistique
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,92435341,markdown,fr,dfe7a1227e1a6a2d,"### Interpretation : le spectre logique ↔ statistique
 
 **Sortie typique** :
 
@@ -339,36 +339,36 @@ Poids 'Smokes=>Cancer' | P(Cancer(bob))
 
 | Regime | Poids | Comportement | Equivalent |
 |--------|-------|--------------|------------|
-| **Statistique pur** | $w = 0$ | La regle n'a aucun effet ; `P(Cancer)` = prior (~0.5) | Aucune connaissance |
-| **Tendance faible** | $w \in [0.5, 2]$ | La regle **incline** la croyance sans l'imposer | Heuristique |
-| **Tendance forte** | $w \in [3, 5]$ | La regle est *presque* toujours vraie | Quasi-certitude |
-| **Logique** | $w \to \infty$ (strict) | La regle devient une **contrainte dure** | FOL classique |
+| **Statistique pur** | $w = 0$ | La règle n'a aucun effet ; `P(Cancer)` = prior (~0.5) | Aucune connaissance |
+| **Tendance faible** | $w \in [0.5, 2]$ | La règle **incline** la croyance sans l'imposer | Heuristique |
+| **Tendance forte** | $w \in [3, 5]$ | La règle est *presque* toujours vraie | Quasi-certitude |
+| **Logique** | $w \to \infty$ (strict) | La règle devient une **contrainte dure** | FOL classique |
 
 **Le point fondamental** : la logique du premier ordre est la **limite** ($w \to \infty$) d'un
-raisonnement pondere. Les MLN ne remplacent pas la logique — ils la **generalisent** en ajoutant
+raisonnement pondéré. Les MLN ne remplacent pas la logique — ils la **generalisent** en ajoutant
 un continuum de « force de croyance » entre *faux* (0) et *vrai* (1).
 
-> **Analogie avec les SAT solvers (NB 2)** : de meme que Sat4j (Java, portable) et CaDiCaL (C++,
-> performant) resolvent le meme probleme SAT a des vitesses differentes, ici le **naive reasoner**
+> **Analogie avec les SAT solvers (NB 2)** : de même que Sat4j (Java, portable) et CaDiCaL (C++,
+> performant) resolvent le même problème SAT a des vitesses differentes, ici le **naive reasoner**
 > (exact, lent sur grands domaines) et le **sampling reasoner** (rapide, approximatif) donnent le
-> meme resultat a une precision pres. On compare les deux dans la partie 5.",,,,,,,,c86e8e2cd476763f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cca5242,markdown,fr,88912e929c1f3cd3,"## Partie 4 : Le paradoxe des exceptions — le pingouin qui ne vole pas
+> même resultat a une precision pres. On compare les deux dans la partie 5.",,,,,,,,dfe7a1227e1a6a2d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,8cca5242,markdown,fr,2e2f77e7a1173a1f,"## Partie 4 : Le paradoxe des exceptions — le pingouin qui ne vole pas
 
 Voici le cas ou les MLN brillent et ou la FOL classique echoue.
 
-**Le probleme en FOL stricte** : si on ecrit `Oiseau(X) => Vole(X)` comme contrainte dure,
+**Le problème en FOL stricte** : si on ecrit `Oiseau(X) => Vole(X)` comme contrainte dure,
 et qu'on sait que `Oiseau(pingouin)` est vrai, alors la FOL **force** `Vole(pingouin) = Vrai`.
-Or les pingouins ne volent pas. Pour sauver la coherence, il faut ajouter des dispositifs ad hoc
-(default logic, prioritaires sur les regles...).
+Or les pingouins ne volent pas. Pour sauver la cohérence, il faut ajouter des dispositifs ad hoc
+(default logic, prioritaires sur les règles...).
 
-**La solution MLN** : on ecrit **deux regles** :
+**La solution MLN** : on ecrit **deux règles** :
 
 1. `Penguin(X) => ¬Vole(X)` — **STRICTE** (les pingouins ne volent jamais, loi dure)
-2. `Oiseau(X) => Vole(X)` — **PONDEREE** (la *plupart* des oiseaux volent, avec exceptions)
+2. `Oiseau(X) => Vole(X)` — **pondérée** (la *plupart* des oiseaux volent, avec exceptions)
 
-Un pingouin (qui est aussi un oiseau) declenche les deux regles, mais la regle stricte
-**domine** : il ne vole pas. Un oiseau ordinaire ne declenche que la regle ponderee : il vole
-*probablement*, sans certitude.",,,,,,,,88912e929c1f3cd3,,,,,,,
+Un pingouin (qui est aussi un oiseau) déclenche les deux règles, mais la règle stricte
+**domine** : il ne vole pas. Un oiseau ordinaire ne déclenche que la règle pondérée : il vole
+*probablement*, sans certitude.",,,,,,,,2e2f77e7a1173a1f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,49e0a657,code,fr,df0a542d3d7f2857,"# --- 4. Le paradoxe du pingouin : exception stricte vs regle ponderee ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
@@ -409,52 +409,52 @@ else:
 
     print(""\n=> tweety (pingouin) ne vole pas : 0.0 (l'exception stricte domine)."")
     print(""=> robin (oiseau ordinaire) vole probablement : ~0.79 (regle ponderee seule)."")",,,,,,,,df0a542d3d7f2857,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,d32a84d1,markdown,fr,c66288c800f40fb0,"### Interpretation : la logique ponderee gere les exceptions nativement
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,d32a84d1,markdown,fr,99ee66a0113f58e7,"### Interpretation : la logique pondérée gere les exceptions nativement
 
 **Sortie typique** :
 ```
   P(Flies(tweety)) = 0.0000   ← pingouin : exception stricte domine
-  P(Flies(robin))  = 0.7870   ← oiseau ordinaire : regle ponderee seule
+  P(Flies(robin))  = 0.7870   ← oiseau ordinaire : règle pondérée seule
 ```
 
 **Pourquoi tweety obtient `0.0` et pas une petite valeur non nulle ?**
-Parce que la regle `Penguin(X) => ¬Vole(X)` est **stricte** (constructeur sans poids) : tout monde
-ou un pingouin vole a une probabilite **nulle**, point. La regle ponderee `Bird(X) => Vole(X)`
+Parce que la règle `Penguin(X) => ¬Vole(X)` est **stricte** (constructeur sans poids) : tout monde
+ou un pingouin vole a une probabilite **nulle**, point. La règle pondérée `Bird(X) => Vole(X)`
 n'a aucun moyen de « rehausser » un monde interdit par une contrainte stricte.
 
 **Pourquoi robin obtient `0.79` et pas `1.0` ?**
-Parce que la regle `Bird(X) => Vole(X)` est **ponderee** ($w = 2$), pas stricte. Le reasoner ponderent
+Parce que la règle `Bird(X) => Vole(X)` est **pondérée** ($w = 2$), pas stricte. Le reasoner pondère
 tous les mondes ou robin vole contre ceux ou il ne vole pas ; le poids 2 favorise le vol sans
 l'imposer. D'ou une forte probabilite, mais non certaine — refletant que *la plupart* (pas *tous*)
 les oiseaux volent.
 
 **Le contraste avec la FOL classique** :
 
-| Situation | FOL stricte (`Bird=>Flies` dur) | MLN (pondere + exception stricte) |
+| Situation | FOL stricte (`Bird=>Flies` dur) | MLN (pondéré + exception stricte) |
 |-----------|----------------------------------|------------------------------------|
 | Oiseau ordinaire | `Flies = Vrai` (certain) | `P(Flies) ≈ 0.79` (probable) |
 | Pingouin | **`Flies = Vrai` (contradictoire !)** | `P(Flies) = 0` (correct) |
 | Cas « la plupart » | Impossible a exprimer | Naturel via le poids |
 
 > **Leçon** : les exceptions sont le talon d'Achille de la logique classique. Les MLN les absorbent
-> en faisant varier le **poids** des regles — un oiseau vole *en general* (poids), un pingouin *jamais*
+> en faisant varier le **poids** des règles — un oiseau vole *en général* (poids), un pingouin *jamais*
 > (strict). C'est aussi la graine de l'**argumentation defeasible** (cf. [Tweety-6](Tweety-6-Structured-Argumentation.ipynb)),
-> ou les regles ont des priorites.",,,,,,,,c66288c800f40fb0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,bf2ebbac,markdown,fr,7d5e9b863da4851b,"## Partie 5 : Trois familles de reasoners MLN
+> ou les règles ont des priorites.",,,,,,,,99ee66a0113f58e7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,bf2ebbac,markdown,fr,a190ead9544044f0,"## Partie 5 : Trois familles de reasoners MLN
 
 Comme pour les solveurs SAT du notebook 2 (Sat4j portable vs CaDiCaL natif), Tweety propose
 plusieurs reasoners MLN aux compromis differents :
 
-| Reasoner | Methode | Exactitude | Domaine typique |
+| Reasoner | méthode | Exactitude | Domaine typique |
 |----------|---------|------------|-----------------|
 | `ApproximateNaiveMlnReasoner` | Enumeration (sous-echantillonnee si trop grand) | **Exact** si domaine ≤ seuil | Petits domaines (≤ ~5 constantes) |
-| `SimpleSamplingMlnReasoner` | Echantillonnage type MC | **Approximatif** (parametre de precision) | Grands domaines |
+| `SimpleSamplingMlnReasoner` | Echantillonnage type MC | **Approximatif** (paramètre de precision) | Grands domaines |
 | `SimpleMlnReasoner` | Invocation d'un outil externe (Alchemy) | Exact | Necessite l'outil installe |
 
 > **Note** : `SimpleMlnReasoner` requiert un binaire externe (Alchemy) non installe ici.
 > `ApproximateNaive` et `SimpleSampling` sont **purement Java** (dans le JAR) et tournent partout.
 
-Comparons les deux reasoners Java sur la meme requete (`P(Cancer(carl))` du reseau de la partie 2) :",,,,,,,,7d5e9b863da4851b,,,,,,,
+Comparons les deux reasoners Java sur la même requete (`P(Cancer(carl))` du réseau de la partie 2) :",,,,,,,,a190ead9544044f0,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,6350c0ea,code,fr,13626bdd7f7043ae,"# --- 5. Comparaison naive (exact) vs sampling (approximatif) ---
 if not jvm_ready:
     print(""ERREUR: JVM non demarree."")
@@ -503,11 +503,11 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,f182b31e,markdown,fr,c6b
 > Comme au notebook 2 (ou l'on choisissait Sat4j pour la portabilite et CaDiCaL pour la vitesse),
 > le choix du reasoner MLN depend du **domaine** : petit → exact ; grand → sampling. C'est une
 > decision d'ingenierie, pas un defaut de l'outil.",,,,,,,,c6b8b70fe789c876,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,49c879e8,markdown,fr,5256a88a60834e54,"## Exercice 1 : Etendre le reseau social
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,49c879e8,markdown,fr,e1e5b393d370ce57,"## Exercice 1 : Etendre le réseau social
 
 ### Contexte
 
-Le reseau de la partie 2 contient 3 personnes. On veut y ajouter un 4e individu **dave**, ami de
+Le réseau de la partie 2 contient 3 personnes. On veut y ajouter un 4e individu **dave**, ami de
 **carl**, et etudier comment le cancer se propage a un 3e saut de la chaine.
 
 ### Objectifs
@@ -518,15 +518,15 @@ Le reseau de la partie 2 contient 3 personnes. On veut y ajouter un 4e individu 
 
 ### Indices
 
-- Reutilisez exactement la signature `sig_sc` et le parser `p_sc` de la partie 2 (ajoutez juste la constante et le fait)
-- Reconstruisez un nouveau `MarkovLogicNetwork` avec les memes regles ponderees + le fait supplementaire",,,,,,,,5256a88a60834e54,,,,,,,
+- réutilisez exactement la signature `sig_sc` et le parser `p_sc` de la partie 2 (ajoutez juste la constante et le fait)
+- Reconstruisez un nouveau `MarkovLogicNetwork` avec les mêmes règles pondérées + le fait supplémentaire",,,,,,,,e1e5b393d370ce57,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,2bc6ded2,code,fr,3285aa7881bbf2ef,"# --- Exercice 1 : etendre le reseau social a un 4e individu ---
 # TODO etudiant : ajoutez dave, le fait Friends(carl,dave), et requerer P(Cancer(dave))
 # Etape 1 : sig_sc.add(Constant(""dave"", person))
 # Etape 2 : construire un nouveau MLN avec le fait supplementaire Friends(carl,dave)
 # Etape 3 : requerir P(Cancer(dave)) avec ApproximateNaiveMlnReasoner
 print(""Exercice a completer"")",,,,,,,,3285aa7881bbf2ef,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c10884c9,markdown,fr,fb5322a22646ba16,"## Exercice 2 : Un MLN de diagnostic medical
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,c10884c9,markdown,fr,826ca1e3a6ac72b2,"## Exercice 2 : Un MLN de diagnostic medical
 
 ### Contexte
 
@@ -539,78 +539,78 @@ Construisez un MLN sur la signature `Maladie(X)`, `Symptome(X)` (predicats unair
 avec :
 
 1. Un fait strict `Maladie(grippe)` (un patient a la grippe)
-2. Une regle ponderee `Maladie(X) => Symptome(X)` de poids `2.0`
-3. Une regle de ""symptome sans maladie"" : `!Maladie(X) => !Symptome(X)` de poids `1.0`
+2. Une règle pondérée `Maladie(X) => Symptome(X)` de poids `2.0`
+3. Une règle de ""symptome sans maladie"" : `!Maladie(X) => !Symptome(X)` de poids `1.0`
 
-Querir `P(Symptome(grippe))`. Faites varier le poids de la regle 2 et observez l'effet.
+Querir `P(Symptome(grippe))`. Faites varier le poids de la règle 2 et observez l'effet.
 
 ### Indices
 
-- Suivez le meme patron que la partie 2 : `FolSignature` + `Predicate` + `MlnFormula`
-- La regle `!Maladie(X) => !Symptome(X)` represente l'absence de maladie comme cause d'absence de symptome",,,,,,,,fb5322a22646ba16,,,,,,,
+- Suivez le même patron que la partie 2 : `FolSignature` + `Predicate` + `MlnFormula`
+- La règle `!Maladie(X) => !Symptome(X)` represente l'absence de maladie comme cause d'absence de symptome",,,,,,,,826ca1e3a6ac72b2,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,33d6928f,code,fr,87804cb22c6a43a8,"# --- Exercice 2 : MLN de diagnostic medical ---
 # TODO etudiant : construisez le MLN de diagnostic et requerir P(Symptome(grippe))
 # Etape 1 : signature (sort Patient, predicats Maladie/1, Symptome/1, constante grippe)
 # Etape 2 : MLN avec fait strict + 2 regles ponderees
 # Etape 3 : sweep du poids de ""Maladie=>Symptome"" et afficher P(Symptome(grippe))
 print(""Exercice a completer"")",,,,,,,,87804cb22c6a43a8,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,2c9879e2,markdown,fr,2cfcad2062623c2e,"## Exercice 3 : Trouver le seuil ou une regle devient ""effet strict""
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,2c9879e2,markdown,fr,4d2be5f0d912ea1c,"## Exercice 3 : Trouver le seuil ou une règle devient ""effet strict""
 
 ### Contexte
 
-Dans la partie 3, on a vu que `P(Cancer(bob))` augmente avec le poids de la regle `Smokes=>Cancer`.
-A partir de quel poids la regle est-elle *pratiquement* stricte (i.e. `P(Cancer(bob)) > 0.99`) ?
+Dans la partie 3, on a vu que `P(Cancer(bob))` augmente avec le poids de la règle `Smokes=>Cancer`.
+A partir de quel poids la règle est-elle *pratiquement* stricte (i.e. `P(Cancer(bob)) > 0.99`) ?
 
 ### Objectifs
 
-1. Ecrivez une boucle qui teste les poids `[3, 5, 7, 10, 15, 20]` pour la regle `Smokes=>Cancer`
+1. Ecrivez une boucle qui teste les poids `[3, 5, 7, 10, 15, 20]` pour la règle `Smokes=>Cancer`
 2. Affichez `P(Cancer(bob))` pour chaque poids
-3. Identifiez le seuil a partir duquel la regle est « effectivement stricte »
-4. Comparez ce seuil avec le resultat *strict* (constructeur sans poids) — sont-ils coherents ?
+3. Identifiez le seuil a partir duquel la règle est « effectivement stricte »
+4. Comparez ce seuil avec le resultat *strict* (constructeur sans poids) — sont-ils cohérents ?
 
 ### Indices
 
-- Reutilisez le code du sweep de la partie 3
-- Le poids « effectivement strict » est celui ou `P > 0.99` et cesse d'augmenter de maniere sensible",,,,,,,,2cfcad2062623c2e,,,,,,,
+- réutilisez le code du sweep de la partie 3
+- Le poids « effectivement strict » est celui ou `P > 0.99` et cesse d'augmenter de maniere sensible",,,,,,,,4d2be5f0d912ea1c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,a7a4e79c,code,fr,2bcf0e892ce73e61,"# --- Exercice 3 : seuil ou une regle ponderee devient quasi-strict ---
 # TODO etudiant : bouclez sur les poids [3,5,7,10,15,20] et trouvez le seuil P>0.99
 # Etape 1 : reprendre la construction MLN de la partie 3
 # Etape 2 : pour chaque poids, calculer P(Cancer(bob))
 # Etape 3 : identifier le seuil et le comparer a la version strict
 print(""Exercice a completer"")",,,,,,,,2bcf0e892ce73e61,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,47e3fbba,markdown,fr,493193dbe3ef5251,"---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb,47e3fbba,markdown,fr,a51eda8d1e5c9df8,"---
 
 ## Resume
 
 Ce notebook a couvert :
 - **Le concept de MLN** : une formule FOL + un poids, unifiant logique symbolique et raisonnement probabiliste
-- **Strict vs pondere** : la regle stricte (constructeur sans poids) elimine les mondes violents ;
-  la regle ponderee ($w$) module la croyance via $\exp(w)$
-- **L'exemple friends/smokers/cancer** : propagation graduee de l'incertitude le long d'un reseau
+- **Strict vs pondéré** : la règle stricte (constructeur sans poids) elimine les mondes violents ;
+  la règle pondérée ($w$) module la croyance via $\exp(w)$
+- **L'exemple friends/smokers/cancer** : propagation graduee de l'incertitude le long d'un réseau
 - **Le spectre des poids** : de la tendance statistique ($w \approx 0$) a la contrainte logique ($w \to \infty$)
-- **Le paradoxe du pingouin** : les MLN gerent les exceptions nativement (exception stricte + regle ponderee)
+- **Le paradoxe du pingouin** : les MLN gerent les exceptions nativement (exception stricte + règle pondérée)
 - **Trois familles de reasoners** : exact (naive), approximatif (sampling), externe (Alchemy)
 
 **Points cles** :
 - Tweety represente un MLN comme un `MarkovLogicNetwork` de `MlnFormula`, chacune enveloppant une
   `FolFormula` (parsee avec le `FolParser` du NB 2) et un poids.
-- La logique du premier ordre est la **limite** ($w \to \infty$) du raisonnement pondere.
+- La logique du premier ordre est la **limite** ($w \to \infty$) du raisonnement pondéré.
 - Les MLN comblent la lacune majeure de la FOL : la gestion des **exceptions** et de l'**incertitude**.
 
-## Prochaines etapes
+## Prochaines étapes
 
-- **Argumentation defeasible** : le paradoxe du pingouin (exception stricte vs regle generale) est
+- **Argumentation defeasible** : le paradoxe du pingouin (exception stricte vs règle générale) est
   exactement le terrain de l'argumentation structurée → [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb)
   (ASPIC+, DeLP)
 - **Argumentation probabiliste** : les MLN pondérent les formules ; l'argumentation probabiliste
-  (NB 7b) pondere les *arguments* — deux facettes de l'incertitude → [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb)
+  (NB 7b) pondère les *arguments* — deux facettes de l'incertitude → [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb)
 - **Application au texte** : la serie [Argument_Analysis](../Argument_Analysis/) utilise Tweety comme
   backend ; les MLN y fourniraient un raisonnement plausible sur des faits extraits de texte (une
   porte d'entree « neuro-symbolique » au-dessus des LLMs)
 
 ---
 
-**Navigation** : [← Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | [Index](Tweety-1-Setup.ipynb) | [README](README.md)",,,,,,,,493193dbe3ef5251,,,,,,,
+**Navigation** : [← Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | [Index](Tweety-1-Setup.ipynb) | [README](README.md)",,,,,,,,a51eda8d1e5c9df8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,4b764a33,markdown,fr,1f3b8d7fedc60549,"# Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / IKVM)**Navigation** : [← Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | [Index](./README.md) | [Tweety-11-Causal →](Tweety-11-Causal.ipynb)**Module** : `org.tweetyproject.logics.mln` (Tweety 1.30) — compilé via IKVM 8.15 + .NET 8.0**Clé** : `See #4667` (EPIC Tweety .NET — 11ème port C#)**Recette build** : `dotnet-build/build-tweety-mln-shade.pom.xml` (maven-shade-plugin 3.5.3) + `dotnet-build/build-TweetyMlnShade.csproj` (IKVM 8.15.0, net8.0)## Objectifs pedagogiquesA la fin de ce notebook, vous saurez :1. **Construire un MLN** : faits stricts (poids = infini) et règles pondérées (poids fini) à partir de formules FOL2. **Interroger un MLN** : `query(mln, formula)` retourne une probabilité marginale3. **Comprendre le spectre logique ↔ statistique** : un poids croissant rend la règle de plus en plus stricte4. **Diagnostiquer un domaine** : utiliser le réseau de Markov pour propager des croyances (ex. médical, social, fraude)## Prérequis- Avoir exécuté [Tweety-2-Basic-Logics-Csharp.ipynb](Tweety-2-Basic-Logics-Csharp.ipynb) (notebook 2) pour `FolSignature`/`FolParser`/`FolFormula`- Avoir exécuté [Tweety-3-ModalLogic-Csharp.ipynb](Tweety-3-ModalLogic-Csharp.ipynb) (notebook 3) pour la logique modale (transversale)- Notions de base en FOL et en réseaux de Markov (loi de Boltzmann sur les mondes possibles)",,,,,,,,1f3b8d7fedc60549,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb,4f5ecc42,code,fr,3929c19c98d59e9c,"// --- Initialisation runtime IKVM + chargement DLL MLN (rebuild C190 IKVM 8.14) ---
 #r ""nuget: IKVM, 8.14.0""
