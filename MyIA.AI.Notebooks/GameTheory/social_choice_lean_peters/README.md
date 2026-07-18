@@ -33,14 +33,14 @@ Complémentaire, sans doublon. `social_choice_lean` utilise un `PrefOrder` perso
 ## Notes
 
 - Backend Lake pour un notebook compagnon de tour (prévu, pas encore créé)
-- Le dépôt de Peters est pinné au commit `d679d950` pour la reproductibilité
+- Le dépôt de Peters est pinné au commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776` pour la reproductibilité
 - Peters utilise `LinearOrder` (strict, Mathlib) ; nous utilisons `PrefOrder` (réflexif, total, transitif)
 
 ## Conclusion
 
 Ce projet est une **visite de référence** de
 [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean),
-importée comme dépendance Lake (pinnée au commit `d679d950`, toolchain
+importée comme dépendance Lake (pinnée au commit `355075e3e35f940a2ade0cbfb5be27b4a53c6776`, toolchain
 `v4.27.0-rc1`) et exhibée via des `#check` dans `PetersTour.lean` — **0 `sorry`**,
 `lake build` SUCCESS. Ce n'est **pas** une formalisation originale : il présente
 les résultats de Peters, l'implémentation de référence actuelle de la théorie du
