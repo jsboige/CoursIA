@@ -1,28 +1,28 @@
 /-
-  Tour of DominikPeters/SocialChoiceLean Results
-  ===============================================
+  Visite guidée des résultats de DominikPeters/SocialChoiceLean
+  =============================================================
 
-  This file provides a curated tour of the main results formalized in
-  DominikPeters/SocialChoiceLean, imported as a Lake dependency.
+  Ce fichier propose une présentation commentée des principaux résultats
+  formalisés dans DominikPeters/SocialChoiceLean, importé comme dépendance Lake.
 
-  Repository: https://github.com/DominikPeters/SocialChoiceLean
-  Authors: Dominik Peters (University of Glasgow)
-  License: MIT
+  Dépôt : https://github.com/DominikPeters/SocialChoiceLean
+  Auteur : Dominik Peters (Université de Glasgow)
+  Licence : MIT
 
-  Key contributions:
-  1. Gibbard-Satterthwaite theorem (strategyproofness => dictatorship)
-  2. 4 Condorcet impossibilities
-  3. Duggan-Schwartz theorem (multi-winner strategyproofness)
-  4. Holliday's impossibility (Split Cycle resolvability)
-  5. 15+ voting rules with verified axiom satisfaction
+  Contributions majeures :
+  1. Théorème de Gibbard-Satterthwaite (non-manipulabilité ⇒ dictature)
+  2. 4 impossibilités de Condorcet
+  3. Théorème de Duggan-Schwartz (non-manipulabilité multi-vainqueurs)
+  4. Impossibilité de Holliday (résolvabilité du Split Cycle)
+  5. 15+ règles de vote avec satisfaction d'axiomes vérifiée
 -/
 
--- Core framework
+-- Cadre de base
 import SocialChoice.Profile
 import SocialChoice.Margin
 import SocialChoice.Rules
 
--- Axioms
+-- Axiomes
 import SocialChoice.Axioms.Core
 import SocialChoice.Axioms.Pareto
 import SocialChoice.Axioms.Dictatorship
@@ -33,10 +33,10 @@ import SocialChoice.Axioms.Neutrality
 import SocialChoice.Axioms.Anonymity
 import SocialChoice.Axioms.Clones
 
--- Impossibility theorems
+-- Théorèmes d'impossibilité
 import SocialChoice.Impossibilities.GibbardSatterthwaite.Main
 
--- Voting rules
+-- Règles de vote
 import SocialChoice.Rules.SplitCycle.Defs
 import SocialChoice.Rules.Schulze.Defs
 import SocialChoice.Rules.Black.Defs
@@ -49,33 +49,33 @@ namespace PetersTour
 
 open SocialChoice
 
-/-! ## 1. Framework Overview
+/-! ## 1. Vue d'ensemble du cadre
 
-DominikPeters uses a polymorphic `VotingRule` type:
+DominikPeters utilise un type `VotingRule` polymorphe :
 ```
 abbrev VotingRule := ∀ {V A : Type} [Fintype V] [Fintype A], Profile V A → Finset A
 ```
 
-A `Profile V A` maps each voter `v : V` to a `LinearOrder A` (strict linear order).
-This differs from our `PrefOrder`-based framework (which uses reflexive+total+transitive
-relations via `R x y : Prop`).
+Un `Profile V A` associe chaque votant `v : V` à un `LinearOrder A` (ordre linéaire strict).
+Cela diffère de notre cadre fondé sur `PrefOrder` (qui utilise des relations réflexives +
+totales + transitives via `R x y : Prop`).
 
-Key differences with our port (asouther4/chasenorman):
-- Peters: `LinearOrder A` (Lean 4 Mathlib class, decidable)
-- Ours: `PrefOrder α` (custom structure, `R x y : Prop`)
-- Peters: `VotingRule` polymorphic over all V, A
-- Ours: `SCC ι σ` fixed types, `PrefOrder`-based
+Différences clés avec notre port (asouther4/chasenorman) :
+- Peters : `LinearOrder A` (classe Mathlib Lean 4, décidable)
+- Notre : `PrefOrder α` (structure personnalisée, `R x y : Prop`)
+- Peters : `VotingRule` polymorphe sur tous V, A
+- Notre : `SCC ι σ` types fixes, fondé sur `PrefOrder`
 
 -/
 
 
-/-! ## 2. Gibbard-Satterthwaite Theorem
+/-! ## 2. Théorème de Gibbard-Satterthwaite
 
-**Theorem** (Gibbard 1973, Satterthwaite 1975):
-Every resolute voting rule with >= 3 candidates that satisfies
-Unanimity and Strategyproofness must be dictatorial.
+**Théorème** (Gibbard 1973, Satterthwaite 1975) :
+Toute règle de vote résolue avec ≥ 3 candidats qui satisfait
+l'Unanimité et la Non-manipulabilité doit être dictatoriale.
 
-This is formalized in `SocialChoice.Impossibilities.GibbardSatterthwaite.Main`:
+Ceci est formalisé dans `SocialChoice.Impossibilities.GibbardSatterthwaite.Main` :
 ```
 theorem gibbard_satterthwaite
     {V A : Type} [Fintype V] [Nonempty V] [Fintype A] [Nonempty A]
@@ -87,114 +87,114 @@ theorem gibbard_satterthwaite
     ∃ d : V, ∀ P : Profile V A, f P = {topChoice P d}
 ```
 
-Proof structure:
-- Strong induction on the number of voters
-- Base case (1 voter): trivially dictatorial
-- Inductive step: clone a voter, apply IH to reduced electorate,
-  then analyze whether the dictator is the cloned voter (Case 2)
-  or another voter (Case 1)
+Structure de la preuve :
+- Récurrence forte sur le nombre de votants
+- Cas de base (1 votant) : trivialement dictatoriale
+- Pas inductif : cloner un votant, appliquer l'hypothèse de récurrence à
+  l'électorat réduit, puis analyser si le dictateur est le votant cloné (Cas 2)
+  ou un autre votant (Cas 1)
 -/
 
 
-/-! ## 3. Condorcet Impossibilities
+/-! ## 3. Impossibilités de Condorcet
 
-DominikPeters formalizes 4 Condorcet-related impossibility results:
+DominikPeters formalise 4 résultats d'impossibilité liés à Condorcet :
 
-1. **Condorcet + Participation => impossible** (Moulin 1988)
+1. **Condorcet + Participation ⇒ impossible** (Moulin 1988)
    `SocialChoice.Impossibilities.CondorcetParticipation`
 
-2. **Condorcet + Reinforcement => impossible** (Young 1975)
+2. **Condorcet + Renforcement ⇒ impossible** (Young 1975)
    `SocialChoice.Impossibilities.CondorcetReinforcement`
 
-3. **Condorcet + Strategyproofness => impossible** (Gibbard-Satterthwaite variant)
+3. **Condorcet + Non-manipulabilité ⇒ impossible** (variante de Gibbard-Satterthwaite)
    `SocialChoice.Impossibilities.CondorcetStrategyproofness`
 
-4. **Anonymous + Neutral + Resolute => impossible** (for even number of voters)
+4. **Anonyme + Neutre + Résolu ⇒ impossible** (pour un nombre pair de votants)
    `SocialChoice.Impossibilities.AnonymousNeutralResolute`
 -/
 
 
-/-! ## 4. Duggan-Schwartz Theorem
+/-! ## 4. Théorème de Duggan-Schwartz
 
-The Duggan-Schwartz theorem extends Gibbard-Satterthwaite to multi-winner rules:
-if a voting rule satisfies OptimistStrategyproof AND PessimistStrategyproof
-and is non-trivial and onto, then it has a "nominating set" that acts as a
-dictating coalition.
+Le théorème de Duggan-Schwartz étend Gibbard-Satterthwaite aux règles multi-vainqueurs :
+si une règle de vote satisfait OptimistStrategyproof ET PessimistStrategyproof,
+est non triviale et surjective, alors elle admet un « ensemble nominatif » qui agit
+comme une coalition dictatoriale.
 
-Formalized in `SocialChoice.Impossibilities.DugganSchwartz.Main`.
+Formalisé dans `SocialChoice.Impossibilities.DugganSchwartz.Main`.
 -/
 
 
-/-! ## 5. Voting Rules and Their Properties
+/-! ## 5. Règles de vote et leurs propriétés
 
-DominikPeters verifies axiom satisfaction for 15+ voting rules:
+DominikPeters vérifie la satisfaction d'axiomes pour 15+ règles de vote :
 
-### Condorcet-Consistent Rules
-- **Split Cycle** (Holliday & Pacuit 2023): Acyclic method using margin comparison
+### Règles consistantes avec Condorcet
+- **Split Cycle** (Holliday & Pacuit 2023) : méthode acyclique par comparaison de marges
   `SocialChoice.Rules.SplitCycle`
-  Verified: Condorcet, Monotonicity, Pareto, Neutrality, Smith, Clones
+  Vérifié : Condorcet, Monotonicité, Pareto, Neutralité, Smith, Clones
 
-- **Schulze** (Schulze 2011): Path-based comparison
+- **Schulze** (Schulze 2011) : comparaison par chemins
   `SocialChoice.Rules.Schulze`
-  Verified: Condorcet, Monotonicity, Neutrality, Smith, Clones, Transitivity
+  Vérifié : Condorcet, Monotonicité, Neutralité, Smith, Clones, Transitivité
 
-- **Copeland**: Win/loss scoring
+- **Copeland** : score victoires/défaites
   `SocialChoice.Rules.Copeland`
-  Verified: Condorcet, Monotonicity, Neutrality, Pareto, Smith
+  Vérifié : Condorcet, Monotonicité, Neutralité, Pareto, Smith
 
-- **Top Cycle** (Smith set): Maximal element of the majority relation
+- **Top Cycle** (ensemble de Smith) : élément maximal de la relation de majorité
   `SocialChoice.Rules.TopCycle`
-  Verified: Condorcet, Monotonicity, Smith, MutualMajority
+  Vérifié : Condorcet, Monotonicité, Smith, Majorité mutuelle
 
-- **Uncovered Set**: Based on covering relation
+- **Uncovered Set** : fondé sur la relation de couverture
   `SocialChoice.Rules.UncoveredSet`
-  Verified: Condorcet, Monotonicity, Neutrality, Smith, Clones
+  Vérifié : Condorcet, Monotonicité, Neutralité, Smith, Clones
 
-- **Black**: Condorcet winner if exists, else Borda
+- **Black** : vainqueur de Condorcet s'il existe, sinon Borda
   `SocialChoice.Rules.Black`
-  Verified: Condorcet, Monotonicity, Neutrality, Pareto
+  Vérifié : Condorcet, Monotonicité, Neutralité, Pareto
 
-### Elimination Rules
-- **Instant Runoff Voting (IRV)**: Sequential elimination
+### Règles à élimination
+- **Instant Runoff Voting (IRV)** : élimination séquentielle
   `SocialChoice.Rules.ScoringElimination.InstantRunoffVoting`
-  Verified: CondorcetLoser, Majority, MutualMajority, Clones
+  Vérifié : CondorcetLoser, Majorité, Majorité mutuelle, Clones
 
-- **Baldwin**: Borda-based elimination
+- **Baldwin** : élimination fondée sur Borda
   `SocialChoice.Rules.ScoringElimination.Baldwin`
-  Verified: Condorcet, CondorcetLoser, Smith
+  Vérifié : Condorcet, CondorcetLoser, Smith
 
-- **Coombs**: Last-place elimination
+- **Coombs** : élimination du dernier rang
   `SocialChoice.Rules.ScoringElimination.Coombs`
-  Verified: Condorcet, CondorcetLoser, Majority
+  Vérifié : Condorcet, CondorcetLoser, Majorité
 
-### Scoring Rules
-- **Borda count**: `SocialChoice.Rules.ScoringRules.Borda`
-  Verified: Monotonicity, Neutrality, Pareto, Participation
+### Règles de score
+- **Compte de Borda** : `SocialChoice.Rules.ScoringRules.Borda`
+  Vérifié : Monotonicité, Neutralité, Pareto, Participation
 
-- **Plurality**: `SocialChoice.Rules.ScoringRules.Plurality`
-  Verified: Monotonicity, Majority
+- **Pluralité** : `SocialChoice.Rules.ScoringRules.Plurality`
+  Vérifié : Monotonicité, Majorité
 
-- **Veto/Anti-plurality**: `SocialChoice.Rules.ScoringRules.Veto`
-  Verified: Monotonicity, Majority
+- **Veto/Anti-pluralité** : `SocialChoice.Rules.ScoringRules.Veto`
+  Vérifié : Monotonicité, Majorité
 -/
 
 
-/-! ## 6. Key Definitions Reference
+/-! ## 6. Référence des définitions clés
 
 ```
--- Profile: maps voters to strict linear orders
+-- Profile : associe les votants à des ordres linéaires stricts
 structure Profile (V A : Type) [Fintype V] [Fintype A] where
   pref : V → LinearOrder A
 
--- Margin: difference in pairwise support
+-- Margin : différence de soutien par paires
 noncomputable def margin {V A} [Fintype V] [Fintype A]
     (P : Profile V A) (a b : A) : Int
 
--- Condorcet winner: beats every other by strict majority
+-- Condorcet winner : bat tous les autres à la majorité stricte
 def CondorcetWinner {V A} [Fintype V] [Fintype A]
     (P : Profile V A) (c : A) : Prop
 
--- Split Cycle defeat: positive margin, no stronger cycle
+-- Split Cycle defeat : marge positive, pas de cycle plus fort
 noncomputable def splitCycleDefeats {V A} [Fintype V] [Fintype A]
     (P : Profile V A) (x y : A) : Prop :=
   margin_pos P x y ∧
@@ -204,31 +204,31 @@ noncomputable def splitCycleDefeats {V A} [Fintype V] [Fintype A]
 -/
 
 
-/-! ## 7. Axiom Summary Table
+/-! ## 7. Tableau récapitulatif des axiomes
 
-The `@[scAxiom]` and `@[scRule]` attributes mark definitions for the
-axiom verification framework. Each rule file proves axiom satisfaction
-using `PreservedUnderRefinement` lemmas for compositional reasoning.
+Les attributs `@[scAxiom]` et `@[scRule]` marquent les définitions pour le
+cadre de vérification d'axiomes. Chaque fichier de règle prouve la satisfaction
+d'axiomes à l'aide de lemmes `PreservedUnderRefinement` pour un raisonnement compositionnel.
 
-| Axiom | Definition |
+| Axiome | Définition |
 |-------|------------|
-| Resolute | Single winner for every profile |
-| NonTrivial | Some candidate can lose |
-| Onto | Every candidate can win |
-| Unanimity | If all rank c first, c wins |
-| ParetoEfficiency | Unanimously dominated candidates lose |
-| CondorcetConsistency | Condorcet winner uniquely wins |
-| CondorcetLoserCriterion | Condorcet losers never win |
-| Monotonicity | Raising c preserves c winning |
-| Neutrality | Permuting candidates permutes winners |
-| Anonymity | Permuting voters doesn't change outcome |
-| Strategyproofness | No voter can gain by misreporting |
-| Clones | Cloning a candidate preserves outcome |
-| Smith | Smith set candidates only win |
-| Reinforcement | Union of disjoint electorates => intersection |
-| Participation | Adding voters with c on top preserves c winning |
-| Reversal | Reversing all ballots reverses losers |
-| Resolvability | Non-singleton output can be resolved |
+| Resolute | Vainqueur unique pour chaque profil |
+| NonTrivial | Un candidat peut perdre |
+| Onto | Chaque candidat peut gagner |
+| Unanimity | Si tous classent c premier, c gagne |
+| ParetoEfficiency | Les candidats unanimement dominés perdent |
+| CondorcetConsistency | Le vainqueur de Condorcet gagne uniquement |
+| CondorcetLoserCriterion | Les perdants de Condorcet ne gagnent jamais |
+| Monotonicity | Monter c préserve la victoire de c |
+| Neutrality | Permuter les candidats permute les vainqueurs |
+| Anonymity | Permuter les votants ne change pas le résultat |
+| Strategyproofness | Aucun votant ne peut gagner en mentant |
+| Clones | Cloner un candidat préserve le résultat |
+| Smith | Seuls les candidats de l'ensemble de Smith gagnent |
+| Reinforcement | Union d'électorats disjoints ⇒ intersection |
+| Participation | Ajouter des votants avec c en tête préserve c gagnant |
+| Reversal | Inverser tous les bulletins inverse les perdants |
+| Resolvability | Une sortie non singleton peut être résolue |
 -/
 
 end PetersTour
