@@ -3892,7 +3892,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetwo
 - SL-11 (capstone neuro-symbolique) : pipeline complet.
 - Archive `SymbolicAI/SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` : la veille EML/NAND qui a inspire ce notebook (consolidee).
 - Registre SOTA axe-2 : #3801.",,,,,,,,14a169161a84d4a9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fee,markdown,fr,7d62c249edb1292e,"# SL-1 - Apprentissage Logique : CBH Search et Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fee,markdown,fr,7fc859b58a921c99,"# SL-1 - Apprentissage Logique : CBH Search et Version Space
 
 **Navigation** : [Index](./README.md) | [EBL & RBL >>](SL-2-KnowledgeBasedLearning.ipynb)
 
@@ -3900,7 +3900,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fe
 
 A la fin de ce notebook, vous saurez :
 1. Representer des hypotheses comme des formules logiques (conjonctions de predicats)
-2. Definir la notion de consistance d'une hypothese (faux positifs / faux negatifs)
+2. Définir la notion de consistance d'une hypothese (faux positifs / faux negatifs)
 3. Implementer l'algorithme **Current-Best-Hypothesis** (CBH) search avec generalisation et specialisation
 4. Implementer l'algorithme **Version Space / Candidate Elimination** avec G-set et S-set
 5. Comprendre les limites de l'apprentissage par espace de versions (bruit, disjonctions)
@@ -3915,12 +3915,12 @@ A la fin de ce notebook, vous saurez :
 
 ### References
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 3e ed., Chapitre 19.1
-- Tom Mitchell, *Machine Learning*, Chapitre 2 (Concept Learning)",,,,,,,,7d62c249edb1292e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2b4d29e4,markdown,fr,a08a22e7cdc1a637,"---
+- Tom Mitchell, *Machine Learning*, Chapitre 2 (Concept Learning)",,,,,,,,7fc859b58a921c99,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2b4d29e4,markdown,fr,47ddd6459dddc0c1,"---
 
-## 1. Le probleme restaurant (AIMA)
+## 1. Le problème restaurant (AIMA)
 
-L'exemple classique de l'AIMA pour l'apprentissage logique est le **probleme du restaurant** : etant donne un ensemble d'experiences de restaurant (decrites par des attributs), apprendre la regle **WillWait** qui predit si on attendra ou non pour une table.
+L'exemple classique de l'AIMA pour l'apprentissage logique est le **problème du restaurant** : etant donne un ensemble d'expériences de restaurant (decrites par des attributs), apprendre la règle **WillWait** qui predit si on attendra ou non pour une table.
 
 ### Attributs du domaine
 
@@ -3940,12 +3940,12 @@ L'exemple classique de l'AIMA pour l'apprentissage logique est le **probleme du 
 ### Hypotheses comme conjonctions
 
 Une hypothese est une **conjonction de contraintes** sur les attributs. Chaque contrainte peut etre :
-- Une valeur specifique : `Patrons = Full`
+- Une valeur spécifique : `Patrons = Full`
 - Un joker (`?`) : n'importe quelle valeur (attribut ignore)
 - Une valeur `None` : aucun exemple ne doit avoir cette valeur
 
-L'hypothese la plus generale est `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` — elle accepte tout.
-L'hypothese la plus specifique est `(None, None, None, None, None, None, None, None, None, None)` — elle refuse tout.",,,,,,,,a08a22e7cdc1a637,,,,,,,
+L'hypothese la plus générale est `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)` — elle accepte tout.
+L'hypothese la plus spécifique est `(None, None, None, None, None, None, None, None, None, None)` — elle refuse tout.",,,,,,,,47ddd6459dddc0c1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,dc85e1f5,code,fr,668dcbb82f2a78c5,"# Definition du domaine : attributs et leurs valeurs possibles
 ATTRIBUTES = [
     ""Alternate"",    # Yes, No
@@ -4005,32 +4005,32 @@ EXAMPLES = [parse_example(ex) for ex in RAW_EXAMPLES]
 print(f""Domaine : {len(ATTRIBUTES)} attributs"")
 print(f""Exemples : {len(EXAMPLES)} ({sum(1 for e in EXAMPLES if e['WillWait'])} positifs, ""
       f""{sum(1 for e in EXAMPLES if not e['WillWait'])} negatifs)"")",,,,,,,,668dcbb82f2a78c5,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,62d393f1,markdown,fr,d37a93fe2877a3fd,"### Interpretation : Domaine du restaurant
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,62d393f1,markdown,fr,d3bbf48804af866d,"### Interpretation : Domaine du restaurant
 
-| Element | Valeur | Signification |
+| Élément | Valeur | Signification |
 |---------|--------|---------------|
-| Attributs | 10 | Description complete de chaque experience restaurant |
-| Exemples | 12 (6 positifs, 6 negatifs) | Donnees d'apprentissage |
-| Tache | Classifier WillWait | Predire s'il faut attendre une table |
+| Attributs | 10 | Description complete de chaque expérience restaurant |
+| Exemples | 12 (6 positifs, 6 negatifs) | Données d'apprentissage |
+| Tâche | Classifier WillWait | Predire s'il faut attendre une table |
 
 Les exemples positifs (WillWait=True) sont des situations ou on a attendu avec satisfaction, les negatifs (WillWait=False) des situations ou l'attente n'en valait pas la peine.
 
-> **Note** : En comptant le joker `?` et la valeur interdite `None` par attribut, l'espace **syntaxique** des hypotheses conjonctives compte `prod(|valeurs_i| + 2)` combinaisons, soit `4^6 * 5^2 * 6^2 = 3 686 400` (6 attributs binaires, 2 attributs a 3 valeurs, 2 attributs a 4 valeurs). L'espace **semantique** (hypotheses distinctes en extension) est plus petit : toute hypothese contenant un `None` rejette tous les exemples, elles sont donc toutes equivalentes a une unique hypothese vide, d'ou `prod(|valeurs_i| + 1) + 1 = 3^6 * 4^2 * 5^2 + 1 = 291 601`. L'espace des hypotheses est borne mais immense au regard des 12 exemples.
-",,,,,,,,d37a93fe2877a3fd,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ee8b228d,markdown,fr,03afd0ae781a1e2d,"---
+> **Note** : En comptant le joker `?` et la valeur interdite `None` par attribut, l'espace **syntaxique** des hypotheses conjonctives compte `prod(|valeurs_i| + 2)` combinaisons, soit `4^6 * 5^2 * 6^2 = 3 686 400` (6 attributs binaires, 2 attributs a 3 valeurs, 2 attributs a 4 valeurs). L'espace **sémantique** (hypotheses distinctes en extension) est plus petit : toute hypothese contenant un `None` rejette tous les exemples, elles sont donc toutes equivalentes a une unique hypothese vide, d'ou `prod(|valeurs_i| + 1) + 1 = 3^6 * 4^2 * 5^2 + 1 = 291 601`. L'espace des hypotheses est borne mais immense au regard des 12 exemples.
+",,,,,,,,d3bbf48804af866d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ee8b228d,markdown,fr,c20c280d6e859408,"---
 
 ## 2. Representation des hypotheses et consistance
 
 Une **hypothese** est un tuple de contraintes, une par attribut. Trois valeurs possibles par position :
 - `""?""` (joker) : accepte n'importe quelle valeur
-- Une valeur specifique (ex `""Full""`) : accepte uniquement cette valeur
+- Une valeur spécifique (ex `""Full""`) : accepte uniquement cette valeur
 - `None` : valeur speciale impossible (utilisee pour le S-set initial)
 
 ### Consistance
 
 Une hypothese est **consistante** avec un exemple si :
 - L'exemple est **positif** et l'hypothese le couvre (pas de faux negatif)
-- L'exemple est **negatif** et l'hypothese ne le couvre pas (pas de faux positif)",,,,,,,,03afd0ae781a1e2d,,,,,,,
+- L'exemple est **negatif** et l'hypothese ne le couvre pas (pas de faux positif)",,,,,,,,c20c280d6e859408,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,4b2b04b5,code,fr,f1a251436dacc407,"from typing import Optional
 
 # Type alias pour les hypotheses
@@ -4085,37 +4085,37 @@ print(f""S0 (plus specifique) : {S0}"")
 print(f""  Couvre exemple 1 : {covers(S0, EXAMPLES[0])}"")
 print(f""  Faux positifs / Faux negatifs : {count_errors(S0, EXAMPLES)}"")
 print(f""  Consistante : {is_consistent(S0, EXAMPLES)}"")",,,,,,,,f1a251436dacc407,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,3fcf13d2,markdown,fr,41fa6c2a108fe4f7,"### Interpretation : Consistance
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,3fcf13d2,markdown,fr,3bdf89716a46826b,"### Interpretation : Consistance
 
 | Hypothese | Couvre | Faux positifs | Faux negatifs | Consistante |
 |-----------|--------|---------------|---------------|-------------|
 | G0 (tout `?`) | Tout | 6 (tous les negatifs) | 0 | Non |
 | S0 (tout `None`) | Rien | 0 | 6 (tous les positifs) | Non |
 
-**G0** est trop generale : elle couvre tous les exemples, y compris les negatifs (6 faux positifs).
-**S0** est trop specifique : elle ne couvre aucun exemple, meme pas les positifs (6 faux negatifs).
+**G0** est trop générale : elle couvre tous les exemples, y compris les negatifs (6 faux positifs).
+**S0** est trop spécifique : elle ne couvre aucun exemple, même pas les positifs (6 faux negatifs).
 
-L'objectif des algorithmes CBH et Version Space est de trouver une hypothese **entre les deux** qui minimise ces erreurs.",,,,,,,,41fa6c2a108fe4f7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,3fb92770,markdown,fr,1d4bade39eb1ca86,"---
+L'objectif des algorithmes CBH et Version Space est de trouver une hypothese **entre les deux** qui minimise ces erreurs.",,,,,,,,3bdf89716a46826b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,3fb92770,markdown,fr,7567abd4d01e79b5,"---
 
 ## 3. Generalisation et specialisation
 
-Les deux operations fondamentales pour manipuler les hypotheses :
+Les deux opérations fondamentales pour manipuler les hypotheses :
 
-- **Generaliser** : remplacer une contrainte specifique par `?` (accepter plus d'exemples)
-- **Specialiser** : remplacer un `?` par une valeur specifique (accepter moins d'exemples)
+- **Generaliser** : remplacer une contrainte spécifique par `?` (accepter plus d'exemples)
+- **Specialiser** : remplacer un `?` par une valeur spécifique (accepter moins d'exemples)
 
-### Hierarchie de generalisation
+### Hiérarchie de generalisation
 
 ```
-(?, ?, ?, ...)           <- plus generale
+(?, ?, ?, ...)           <- plus générale
   |                       (generalisation)
 (Full, ?, ?, ...)
   |
-(Full, $, ?, ...)        <- plus specifique
+(Full, $, ?, ...)        <- plus spécifique
 ```
 
-Une hypothese h1 est **plus generale que** h2 (notation h1 >= h2) si h2 couvre un sous-ensemble des exemples couverts par h1.",,,,,,,,1d4bade39eb1ca86,,,,,,,
+Une hypothese h1 est **plus générale que** h2 (notation h1 >= h2) si h2 couvre un sous-ensemble des exemples couverts par h1.",,,,,,,,7567abd4d01e79b5,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e4d6947a,code,fr,72ad1d62947960b0,"def is_more_general_than(h1: Hypothesis, h2: Hypothesis) -> bool:
     """"""h1 est-elle plus generale que h2 ? (h1 >= h2)""""""
     for i in range(len(ATTRIBUTES)):
@@ -4181,23 +4181,23 @@ for s in specs[:5]:
     print(f""  {s}"")
 if len(specs) > 5:
     print(f""  ... et {len(specs) - 5} autres"")",,,,,,,,72ad1d62947960b0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b1a2400b,markdown,fr,bf4b70f1e3a91f69,"### Interpretation : Generalisation et specialisation
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b1a2400b,markdown,fr,eca0811fefb9a3e1,"### Interpretation : Generalisation et specialisation
 
-| Operation | Effet | Quand l'utiliser |
+| Opération | Effet | Quand l'utiliser |
 |-----------|-------|------------------|
-| **Generaliser** | Remplace les contraintes differentes par `?` | Quand un faux negatif est detecte (exemple positif non couvert) |
-| **Specialiser** | Remplace un `?` par une valeur specifique | Quand un faux positif est detecte (exemple negatif couvert) |
+| **Generaliser** | Remplace les contraintes différentes par `?` | Quand un faux negatif est detecte (exemple positif non couvert) |
+| **Specialiser** | Remplace un `?` par une valeur spécifique | Quand un faux positif est detecte (exemple negatif couvert) |
 
 **Observations** :
-- La generalisation est **deterministe** : une seule generalisation minimale
-- La specialisation est **non deterministe** : plusieurs specialisations possibles (une par valeur d'attribut eligible)
+- La generalisation est **déterministe** : une seule generalisation minimale
+- La specialisation est **non déterministe** : plusieurs specialisations possibles (une par valeur d'attribut eligible)
 - Le nombre de specialisations croit rapidement : pour un attribut binaire, 1 specialisation; pour un attribut a 4 valeurs, 3 specialisations
 
-> **Point cle** : Cette asymetrie entre generalisation (unique) et specialisation (multiple) est la raison pour laquelle CBH peut revenir en arriere (backtracking) tandis que le Version Space evite ce probleme en gardant les deux frontieres.",,,,,,,,bf4b70f1e3a91f69,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2381abd1,markdown,fr,b9286db2ab8dc55b,"### Les deux sens de chaque operation : croissance vs reduction de l'enonce
+> **Point cle** : Cette asymetrie entre generalisation (unique) et specialisation (multiple) est la raison pour laquelle CBH peut revenir en arriere (backtracking) tandis que le Version Space evite ce problème en gardant les deux frontieres.",,,,,,,,eca0811fefb9a3e1,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2381abd1,markdown,fr,a0c76fe80d9a0b98,"### Les deux sens de chaque opération : croissance vs reduction de l'enonce
 
 La section ci-dessus a presente generaliser et specialiser chacune comme **une seule**
-operation. C'est suffisant pour faire tourner CBH (section 4) et le Version Space (section 5)
+opération. C'est suffisant pour faire tourner CBH (section 4) et le Version Space (section 5)
 sur une representation **conjonctive**. Mais le cours IAMA souligne une structure plus riche :
 **chaque direction admet deux sens**, selon qu'elle **augmente** ou **reduit** la taille de
 l'enonce logique.
@@ -4211,46 +4211,46 @@ l'enonce logique.
   **generaliser-reduire** (relacher `?`) et **specialiser-augmenter** (epingler `?` vers une valeur).
 - Les deux autres cases exigent une representation **disjonctive** (une hypothese = une liste de
   conjonctions reliees par OU). Elles apparaissent en section 9, via l'algorithme de reference
-  aima-python et son operation `add_or`.
+  aima-python et son opération `add_or`.
 
 > **Point cle pour la suite.** Toute croissance de l'enonce (ajout d'une exception, positive ou
-> negative) a un **cout** : un modele plus long est plus fragile, il memorise au lieu de
+> negative) a un **cout** : un modèle plus long est plus fragile, il memorise au lieu de
 > generaliser. Un algorithme prudent pese donc ce cout au moyen d'une **metrique de complexite**
 > (la taille de l'enonce) et **recommence les reductions** chaque fois qu'elles restent possibles
-> sans casser la consistance, car un **modele simple consistant generalise mieux** (rasoir
+> sans casser la consistance, car un **modèle simple consistant generalise mieux** (rasoir
 > d'Occam / MDL). Ce principe est rendu operationnel en section 9, une fois la representation
 > disjonctive disponible. Et il faut le souligner d'emblee : **parfois l'exception est la seule
-> facon de gagner la consistance** ; dans ce cas la metrique ne l'interdit pas, elle la minimise.",,,,,,,,b9286db2ab8dc55b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,77fbb6ab,markdown,fr,45d3f7066d69a601,"---
+> facon de gagner la consistance** ; dans ce cas la metrique ne l'interdit pas, elle la minimise.",,,,,,,,a0c76fe80d9a0b98,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,77fbb6ab,markdown,fr,08ad00f333eabf63,"---
 
 ## 4. Algorithme Current-Best-Hypothesis (CBH)
 
 L'algorithme CBH (AIMA Figure 19.2) maintient **une seule hypothese** et l'ajuste incrementalement :
 
-1. Commencer avec la premiere hypothese consistante avec les exemples vus
+1. Commencer avec la première hypothese consistante avec les exemples vus
 2. Pour chaque nouvel exemple :
    - Si **positif** et non couvert -> **generaliser** l'hypothese
    - Si **negatif** et couvert -> **specialiser** l'hypothese
-   - Si l'ajustement introduit des incoherences avec les exemples precedents -> **backtracking**
+   - Si l'ajustement introduit des incoherences avec les exemples précédents -> **backtracking**
 
 ### Pseudo-code (AIMA 19.2)
 
 ```
 function CBH(examples) returns hypothesis
-    h <- premiere hypothese consistante avec examples[0]
+    h <- première hypothese consistante avec examples[0]
     for each example in examples[1:]:
         if example est positif:
             if h ne couvre pas example:
                 h <- generaliser(h, example)  // minimale
-                if h inconsistante avec exemples precedents:
+                if h inconsistante avec exemples précédents:
                     BACKTRACK (pas de solution simple)
         else:  // exemple negatif
             if h couvre example:
                 h <- specialiser(h, example)  // minimale
-                if h inconsistante avec exemples precedents:
+                if h inconsistante avec exemples précédents:
                     BACKTRACK
     return h
-```",,,,,,,,45d3f7066d69a601,,,,,,,
+```",,,,,,,,08ad00f333eabf63,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ebd916fe,code,fr,7e2c7c97eb53a486,"def current_best_hypothesis(
     examples: list[dict],
     verbose: bool = True
@@ -4328,7 +4328,7 @@ print(f""\nHypothese finale CBH : {cbh_result}"")
 fp, fn = count_errors(cbh_result, EXAMPLES)
 print(f""Faux positifs : {fp}, Faux negatifs : {fn}"")
 print(f""Consistante : {is_consistent(cbh_result, EXAMPLES)}"")",,,,,,,,7e2c7c97eb53a486,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,462c713b,markdown,fr,29131435f5ae0b82,"### Interpretation : Resultat CBH
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,462c713b,markdown,fr,f3a96c1141a31a73,"### Interpretation : Résultat CBH
 
 L'algorithme CBH ajuste progressivement l'hypothese a chaque nouvel exemple :
 
@@ -4336,47 +4336,47 @@ L'algorithme CBH ajuste progressivement l'hypothese a chaque nouvel exemple :
 |-----------|--------|-------|
 | Exemple positif non couvert | Generaliser | Elargir l'hypothese pour couvrir |
 | Exemple negatif couvert | Specialiser | Restreindre l'hypothese pour exclure |
-| Deja consistent | Garder | Aucun changement |
+| Déjà consistent | Garder | Aucun changement |
 
 **Limites du CBH** :
 1. **Backtracking** : Quand aucune specialisation n'est consistante, il faut revenir en arriere (couteux)
-2. **Ordre-dependance** : Le resultat depend de l'ordre des exemples
+2. **Ordre-dépendance** : Le résultat depend de l'ordre des exemples
 3. **Hypothese unique** : On ne garde qu'une seule hypothese, pas l'espace complet
 
-> **Note** : CBH est un algorithme glouton qui ne retient qu'une seule hypothèse. Le **Version Space** (section 5) lève cette limite *algorithmique* en gardant **toutes** les hypothèses consistantes à la fois — mais il partage le même **espace d'hypothèses conjonctif** : sur les 12 exemples du restaurant, il s'effondre lui aussi (G et S deviennent vides). La limite de fond n'est donc pas l'algorithme mais la **représentation** ; c'est la **section 9** (hypothèses disjonctives) qui la résout vraiment.",,,,,,,,29131435f5ae0b82,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,22c65a7f,markdown,fr,db12878231a85586,"---
+> **Note** : CBH est un algorithme glouton qui ne retient qu'une seule hypothèse. Le **Version Space** (section 5) lève cette limite *algorithmique* en gardant **toutes** les hypothèses consistantes à la fois — mais il partage le même **espace d'hypothèses conjonctif** : sur les 12 exemples du restaurant, il s'effondre lui aussi (G et S deviennent vides). La limite de fond n'est donc pas l'algorithme mais la **représentation** ; c'est la **section 9** (hypothèses disjonctives) qui la résout vraiment.",,,,,,,,f3a96c1141a31a73,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,22c65a7f,markdown,fr,c63dfa39e5925641,"---
 
 ## 5. Algorithme Version Space / Candidate Elimination
 
-L'algorithme **Candidate Elimination** (AIMA Figure 19.3) resout le probleme du CBH en representant **tout l'espace des hypotheses consistantes** au moyen de deux frontieres :
+L'algorithme **Candidate Elimination** (AIMA Figure 19.3) resout le problème du CBH en representant **tout l'espace des hypotheses consistantes** au moyen de deux frontieres :
 
-- **G-set** (General boundary) : hypotheses les plus generales encore consistantes
-- **S-set** (Specific boundary) : hypotheses les plus specifiques encore consistantes
+- **G-set** (General boundary) : hypotheses les plus générales encore consistantes
+- **S-set** (Specific boundary) : hypotheses les plus spécifiques encore consistantes
 
 Toute hypothese consistante se situe **entre** G et S : pour tout h consistant, il existe g dans G et s dans S tels que g >= h >= s.
 
-> **Origine.** La theorie des *version spaces* et de l'algorithme *Candidate Elimination* (frontieres G/S) est formalisee par Mitchell, T. M. (1982), *Generalization as search*, Artificial Intelligence 18(2):203-226 --- ou l'apprentissage de concept est vu comme une recherche dans l'espace des hypotheses.
+> **Origine.** La théorie des *version spaces* et de l'algorithme *Candidate Elimination* (frontieres G/S) est formalisee par Mitchell, T. M. (1982), *Generalization as search*, Artificial Intelligence 18(2):203-226 --- ou l'apprentissage de concept est vu comme une recherche dans l'espace des hypotheses.
 
 ### Algorithme
 
 ```
-G <- {G0}  (hypothese la plus generale)
-S <- {S0}  (hypothese la plus specifique)
+G <- {G0}  (hypothese la plus générale)
+S <- {S0}  (hypothese la plus spécifique)
 
 for each example:
     if POSITIF:
         G <- retirer de G les hypotheses qui ne couvrent pas l'exemple
         Pour chaque s dans S qui ne couvre pas l'exemple:
             s <- generaliser(s) minimale pour couvrir l'exemple
-            Retirer s si aucun element de G n'est plus general ou egal a s
+            Retirer s si aucun élément de G n'est plus general ou egal a s
         Retirer de S les hypotheses doublons ou non minimales
     if NEGATIF:
         S <- retirer de S les hypotheses qui couvrent l'exemple (inchange)
         Pour chaque g dans G qui couvre l'exemple:
             Remplacer g par ses specialisations qui ne couvrent pas l'exemple
-            Retirer celles qui sont plus specifiques qu'un element de S
+            Retirer celles qui sont plus spécifiques qu'un élément de S
         Retirer de G les hypotheses doublons ou non maximales
-```",,,,,,,,db12878231a85586,,,,,,,
+```",,,,,,,,c63dfa39e5925641,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,cf277e5b,code,fr,947fa88905b0aeca,"def candidate_elimination(
     examples: list[dict],
     verbose: bool = True
@@ -4494,14 +4494,14 @@ for g in sorted(G_final):
 print(f""\nS-set final ({len(S_final)} hypotheses) :"")
 for s in sorted(S_final):
     print(f""  {s}"")",,,,,,,,947fa88905b0aeca,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,98b8d953,markdown,fr,c0cd1b8bc569e57c,"### Interpretation : Resultat du Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,98b8d953,markdown,fr,5cfb7d4a5ab560d8,"### Interpretation : Résultat du Version Space
 
 L'algorithme Candidate Elimination converge vers un ensemble d'hypotheses consistantes bornees par G et S :
 
-| Ensemble | Role | Taille |
+| Ensemble | Rôle | Taille |
 |----------|------|--------|
-| **G-set** | Frontieres les plus generales | Variable |
-| **S-set** | Frontieres les plus specifiques | Variable |
+| **G-set** | Frontieres les plus générales | Variable |
+| **S-set** | Frontieres les plus spécifiques | Variable |
 | **Version Space** | Toutes les hypotheses entre G et S | Grand mais implicite |
 
 **Proprietes** :
@@ -4509,21 +4509,21 @@ L'algorithme Candidate Elimination converge vers un ensemble d'hypotheses consis
 - Si G = S (frontieres identiques), une seule hypothese est consistante -> **convergence**
 - Si G ou S devient vide, l'espace de version est vide -> pas de hypothese consistante
 
-> **Point cle** : Le Version Space represente **implicitement** toutes les hypotheses consistantes. Meme s'il y en a des milliers, seules les frontieres G et S sont stockees.
-> **Resultat observe ici** : sur les exemples du restaurant, G et S s'effondrent
+> **Point cle** : Le Version Space represente **implicitement** toutes les hypotheses consistantes. Même s'il y en a des milliers, seules les frontieres G et S sont stockees.
+> **Résultat observe ici** : sur les exemples du restaurant, G et S s'effondrent
 > a l'exemple 9 (`|G| = |S| = 0`) : **aucune conjonction unique ne peut representer
 > WillWait**. Le concept reel (AIMA 19.3) est un arbre de decision, c'est-a-dire
 > une combinaison disjonctive de cas --- le biais de representation conjonctif est
-> trop fort pour ce domaine. C'est un resultat pedagogique important, pas un bug :
+> trop fort pour ce domaine. C'est un résultat pedagogique important, pas un bug :
 > il motive les representations plus riches (arbres de decision, clauses multiples
 > en SL-4). La section 6 contourne l'effondrement en apprenant le VS sur les
 > 4 premiers exemples seulement --- la ou il est encore large.
-",,,,,,,,c0cd1b8bc569e57c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e4ab2892,markdown,fr,5ff70d1b8e1ac997,"---
+",,,,,,,,5cfb7d4a5ab560d8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e4ab2892,markdown,fr,75aeb8e7a9134a89,"---
 
 ## 6. Prediction avec le Version Space
 
-Pour classifier un nouvel exemple, on peut utiliser 3 strategies :
+Pour classifier un nouvel exemple, on peut utiliser 3 stratégies :
 
 1. **Unanime** : Predict positif si TOUTE hypothese dans VS couvre, negatif si AUCUNE ne couvre
 2. **Majorite** : Vote majoritaire parmi les hypotheses du VS
@@ -4531,10 +4531,10 @@ Pour classifier un nouvel exemple, on peut utiliser 3 strategies :
 > Le VS appris sur les 12 exemples etant **vide** (effondrement, section 5), on
 > apprend ici les frontieres sur les **4 premiers exemples** et on evalue sur les
 > 8 suivants, jamais vus (**test**). Pourquoi 4 et pas 9 ? A 9 exemples le VS a
-> deja converge vers une hypothese unique : les trois strategies deviendraient
+> déjà converge vers une hypothese unique : les trois stratégies deviendraient
 > identiques. A 4 exemples le VS est encore large (7 hypotheses) et les
-> strategies divergent reellement --- c'est ce qu'on veut observer.
-",,,,,,,,5ff70d1b8e1ac997,,,,,,,
+> stratégies divergent reellement --- c'est ce qu'on veut observer.
+",,,,,,,,75aeb8e7a9134a89,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e5d20a7a,code,fr,5e6555bc5c1760a5,"# Le VS sur les 12 exemples s'est effondre (section 5), et apres 9 exemples
 # il a deja converge vers une hypothese unique (strategies identiques).
 # Pour comparer les strategies, on se place la ou le VS est encore LARGE :
@@ -4639,21 +4639,21 @@ for role in (""train"", ""TEST""):
         uncertain = sum(1 for r in subset if r[k] is None)
         print(f""  {name:12s} ({role:5s}) : {correct}/{n} corrects, {uncertain} incertains"")
 ",,,,,,,,5e6555bc5c1760a5,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,15fc8c86,markdown,fr,cb097cbcec257ec0,"### Interpretation : Prediction
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,15fc8c86,markdown,fr,8b70aed1e8bcb90d,"### Interpretation : Prediction
 
-| Strategie | Principe | Resultat (test, 8 ex.) | Avantage | Inconvenient |
+| Stratégie | Principe | Résultat (test, 8 ex.) | Avantage | Inconvenient |
 |-----------|----------|------------------------|----------|--------------|
 | **Unanime** | Positif si tout le VS couvre, negatif si rien ne couvre | 2/8 corrects, **6 incertains** | Ne se prononce jamais a tort | Abstient des que le VS est large |
 | **Majorite** | Vote des 7 hypotheses du VS | **5/8 corrects, 0 incertain** | Tranche toujours | Peut se tromper (ex. 5 et 7 : vrais positifs predits negatifs) |
-| **Conservateur** | S-set couvre -> positif ; G-set ne couvre pas -> negatif | 2/8 corrects, 6 incertains | Bonne calibration | Memes abstentions que l'unanime ici |
+| **Conservateur** | S-set couvre -> positif ; G-set ne couvre pas -> negatif | 2/8 corrects, 6 incertains | Bonne calibration | Mêmes abstentions que l'unanime ici |
 
 **Observations** :
 
-- Sur le **train**, les trois strategies font 4/4 : toute hypothese du VS est consistante avec ces exemples **par construction**.
-- Sur le **test**, l'unanime et le conservateur ne se prononcent que sur les 2 negatifs flagrants (hors de portee meme de G) --- et ont raison. Les 6 autres exemples tombent dans la zone d'incertitude du VS.
-- La **majorite** tranche toujours, mais penche vers le ""non"" : la plupart des 7 hypotheses restent proches du S-set (tres specifiques), donc couvrent peu. Elle rate ainsi les positifs 5 et 7.
-- Le compromis est classique : **ne jamais se tromper** (unanime) contre **toujours repondre** (majorite). Plus on ajoute d'exemples, plus le VS se resserre et plus les strategies se rejoignent --- ici, des 9 exemples, le VS converge vers une hypothese unique et les trois strategies deviennent identiques.
-",,,,,,,,cb097cbcec257ec0,,,,,,,
+- Sur le **train**, les trois stratégies font 4/4 : toute hypothese du VS est consistante avec ces exemples **par construction**.
+- Sur le **test**, l'unanime et le conservateur ne se prononcent que sur les 2 negatifs flagrants (hors de portee même de G) --- et ont raison. Les 6 autres exemples tombent dans la zone d'incertitude du VS.
+- La **majorite** tranche toujours, mais penche vers le ""non"" : la plupart des 7 hypotheses restent proches du S-set (très spécifiques), donc couvrent peu. Elle rate ainsi les positifs 5 et 7.
+- Le compromis est classique : **ne jamais se tromper** (unanime) contre **toujours repondre** (majorite). Plus on ajoute d'exemples, plus le VS se resserre et plus les stratégies se rejoignent --- ici, des 9 exemples, le VS converge vers une hypothese unique et les trois stratégies deviennent identiques.
+",,,,,,,,8b70aed1e8bcb90d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ccca7f32,markdown,fr,c2a0f19347998244,"---
 
 ## 7. Visualisation de l'evolution du Version Space
@@ -4721,7 +4721,7 @@ for idx, ex in enumerate(EXAMPLES):
     if not G_run or not S_run:
         print(""  ** VERSION SPACE VIDE **"")
         break",,,,,,,,c2d21380991e5ac6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,de22cbc0,markdown,fr,d3802a3fb3cb1e66,"### Interpretation : Evolution du Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,de22cbc0,markdown,fr,41ab98dd87c21560,"### Interpretation : Evolution du Version Space
 
 L'evolution du Version Space suit un schema previsible :
 
@@ -4733,9 +4733,9 @@ L'evolution du Version Space suit un schema previsible :
 
 **Indicateurs** :
 - Si `|G|` et `|S|` restent petits : l'espace est bien contraint
-- Si `|G|` explose : trop d'hypotheses generales possibles (besoin de plus d'exemples negatifs)
-- Si le VS devient vide : les donnees sont bruitees ou l'hypothese n'est pas representable en conjonction pure",,,,,,,,d3802a3fb3cb1e66,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,f98934d2,markdown,fr,7d385f98a9352fb6,"---
+- Si `|G|` explose : trop d'hypotheses générales possibles (besoin de plus d'exemples negatifs)
+- Si le VS devient vide : les données sont bruitees ou l'hypothese n'est pas representable en conjonction pure",,,,,,,,41ab98dd87c21560,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,f98934d2,markdown,fr,d9fc7fb822a21815,"---
 
 ## 8. Limites du Version Space conjonctif
 
@@ -4743,14 +4743,14 @@ Les sections 4 et 5 ont travaille sur une representation **conjonctive** des hyp
 Cette section recense ses limites en distinguant deux natures :
 
 - des limites **fondamentales**, partagees par CBH et le Version Space, qui ont reellement
-  motive le passage a d'autres familles de modeles (8.1, 8.3, 8.4 ci-dessous) ;
+  motive le passage a d'autres familles de modèles (8.1, 8.3, 8.4 ci-dessous) ;
 - une limite de **representation** --- l'impossibilite des disjonctions (8.2) --- qui n'est
-  *pas* une impasse : elle se leve en enrichissant le langage d'hypotheses, ce que fait deja
-  l'operation `add_or` introduite en section 3 et exercee en section 9.
+  *pas* une impasse : elle se leve en enrichissant le langage d'hypotheses, ce que fait déjà
+  l'opération `add_or` introduite en section 3 et exercee en section 9.
 
 ### 8.1 Sensibilite au bruit
 
-Un seul exemple mal etiquete peut vider le Version Space completement.",,,,,,,,7d385f98a9352fb6,,,,,,,
+Un seul exemple mal etiquete peut vider le Version Space completement.",,,,,,,,d9fc7fb822a21815,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,0ff352e0,code,fr,c2b5bf45ab8c8ea6,"# Demonstration : ajout d'un exemple bruite
 noisy_examples = EXAMPLES.copy()
 
@@ -4771,7 +4771,7 @@ if not G_noisy or not S_noisy:
 else:
     print(f""G-set : {len(G_noisy)} hypotheses"")
     print(f""S-set : {len(S_noisy)} hypotheses"")",,,,,,,,c2b5bf45ab8c8ea6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ce6eb73f,markdown,fr,cdcd588b305646b3,"### 8.2 Incapacite de la representation conjonctive a exprimer les disjonctions
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ce6eb73f,markdown,fr,1ae36201af635ff3,"### 8.2 Incapacite de la representation conjonctive a exprimer les disjonctions
 
 Une hypothese **conjonctive** unique (sections 4-5) ne peut pas exprimer un concept
 disjonctif comme ""Patrons=Some OU (Patrons=Full ET Fri/Sat=Yes)"". C'est exactement ce qui
@@ -4779,12 +4779,12 @@ disjonctif comme ""Patrons=Some OU (Patrons=Full ET Fri/Sat=Yes)"". C'est exacte
 
 Mais c'est une limite du **langage d'hypotheses**, pas une impasse de l'apprentissage par
 generalisation/specialisation. Il suffit d'**enrichir la representation** : autoriser une
-hypothese a etre une *liste* de conjonctions reliees par OU, et ajouter l'operation **`add_or`**
+hypothese a etre une *liste* de conjonctions reliees par OU, et ajouter l'opération **`add_or`**
 (le sens « augmenter l'enonce » de la generalisation, tableau de la section 3). La section 9 le
 verifie : avec cette seule extension, `current_best_learning` trouve une hypothese **100%
 consistante** la ou le VS conjonctif s'effondrait. Le prix n'est donc pas l'impossibilite, mais
-le **controle de la complexite** --- une representation disjonctive peut toujours memoriser les
-exemples au lieu de generaliser, d'ou la necessite du rasoir d'Occam / MDL (section 9).",,,,,,,,cdcd588b305646b3,,,,,,,
+le **contrôle de la complexite** --- une representation disjonctive peut toujours memoriser les
+exemples au lieu de generaliser, d'ou la necessite du rasoir d'Occam / MDL (section 9).",,,,,,,,1ae36201af635ff3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ad095fa3,code,fr,d57c74f9a1985dbd,"# Demonstration : concept disjonctif
 # Le vrai concept AIMA est disjonctif :
 # WillWait si (Patrons=Some) OU (Patrons=Full ET Hungry=Yes)
@@ -4811,22 +4811,22 @@ print(""Solutions possibles :"")
 print(""  1. Arbres de decision (peuvent representer les disjonctions)"")
 print(""  2. Apprentissage d'ensembles de regles (separate-and-conquer)"")
 print(""  3. Modeles probabilistes (naive Bayes, regression logistique)"")",,,,,,,,d57c74f9a1985dbd,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,0ec254c5,markdown,fr,ba81bc432c7c14f2,"### Interpretation : Limites du Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,0ec254c5,markdown,fr,789bd709aa3970e9,"### Interpretation : Limites du Version Space
 
 | Limite | Nature | Cause | Consequence | Reponse |
 |--------|--------|-------|-------------|---------|
-| **Bruit** | Fondamentale | Un seul exemple errone | VS vide | Modeles probabilistes (tolerance aux erreurs) |
-| **Disjonctions** | Representation | Langage **conjonctif** (pas l'algorithme) | Effondrement du VS conjonctif (section 5) | Enrichir le langage : disjonctions + `add_or` (sections 3 et 9, **resolu dans ce notebook**), puis arbres de decision / regles pour la compacite |
-| **Explosion combinatoire** | Fondamentale | Nombre de specialisations | G-set tres grand | Heuristiques, attribution de probabilites |
+| **Bruit** | Fondamentale | Un seul exemple errone | VS vide | Modèles probabilistes (tolerance aux erreurs) |
+| **Disjonctions** | Representation | Langage **conjonctif** (pas l'algorithme) | Effondrement du VS conjonctif (section 5) | Enrichir le langage : disjonctions + `add_or` (sections 3 et 9, **resolu dans ce notebook**), puis arbres de decision / règles pour la compacite |
+| **Explosion combinatoire** | Fondamentale | Nombre de specialisations | G-set très grand | Heuristiques, attribution de probabilites |
 | **Attributs continus** | Fondamentale | Besoin de seuils discrets | Non applicable directement | Arbres de decision avec seuils |
 
 > **Note historique** : le Version Space reste un pilier conceptuel de l'apprentissage
 > symbolique --- frontieres G/S, ordre de generalite, convergence. Ses limites fondamentales
 > (bruit, explosion, attributs continus) ont motive des familles plus robustes (arbres de
-> decision ID3/C4.5, modeles probabilistes), tandis que sa limite de representation --- les
+> decision ID3/C4.5, modèles probabilistes), tandis que sa limite de representation --- les
 > disjonctions --- se leve directement en enrichissant le langage d'hypotheses, comme le
-> montre la section 9.",,,,,,,,ba81bc432c7c14f2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,92096025,markdown,fr,715de64be0fe013c,"---
+> montre la section 9.",,,,,,,,789bd709aa3970e9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,92096025,markdown,fr,48b74da698a9a6ff,"---
 
 ## 9. L'implementation de reference : aima-python
 
@@ -4838,12 +4838,12 @@ attribution) est vendore dans [`reference/aima_knowledge.py`](./reference/aima_k
 FOIL (Figure 19.12) en est exclu : il depend de tout `logic.py` ; l'induction de
 clauses de Horn est traitee en SL-4.
 
-La difference cle avec notre implementation des sections 4-5 : l'espace d'hypotheses
+La différence cle avec notre implementation des sections 4-5 : l'espace d'hypotheses
 d'AIMA est **disjonctif**. Une hypothese y est une *liste* de conjonctions
 (dictionnaires attribut -> valeur, avec `'!'` pour une valeur interdite), et la
 generalisation peut **ajouter une disjonction** (`add_or`) au lieu de seulement
 relacher des contraintes. Or la section 8 a montre que sur nos 12 exemples, aucune
-conjonction unique n'est consistante --- c'est precisement ce qui effondre notre
+conjonction unique n'est consistante --- c'est précisément ce qui effondre notre
 Version Space conjonctif. L'algorithme de la Figure 19.2, lui, devrait reussir.
 
 > **Note d'honnetete intellectuelle** : le vendoring a revele un bug dans le code
@@ -4854,7 +4854,7 @@ Version Space conjonctif. L'algorithme de la Figure 19.2, lui, devrait reussir.
 > depot AIMA ne couvrent jamais ces branches. La copie vendoree est corrigee
 > (commentaires `CoursIA fix` dans le fichier) --- relire le code de reference
 > qu'on importe n'est jamais du temps perdu.
-",,,,,,,,715de64be0fe013c,,,,,,,
+",,,,,,,,48b74da698a9a6ff,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,927a1be6,code,fr,b871531a7498486b,"# L'algorithme de la Figure 19.2 (depot AIMA) sur NOS 12 exemples
 import random
 import sys
@@ -4885,7 +4885,7 @@ for i, d in enumerate(h, 1):
 
 correct = sum(guess_value(e, h) == e[""GOAL""] for e in aima_examples)
 print(f""\nAccuracy sur les 12 exemples : {correct}/{len(aima_examples)}"")",,,,,,,,b871531a7498486b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2c82c885,markdown,fr,f109178920a156cc,"### Interpretation : ce que la disjonction debloque
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2c82c885,markdown,fr,abac49ffb2cf02b8,"### Interpretation : ce que la disjonction debloque
 
 La ou notre Version Space conjonctif s'est **effondre** (section 5 : aucune
 conjonction unique n'est consistante avec les 12 exemples), `current_best_learning`
@@ -4896,38 +4896,38 @@ nouvelle disjonction (`add_or`), construite a partir de ses propres attributs.
 Trois observations :
 
 1. **Le biais de representation etait la vraie limite.** Le passage conjonctif ->
-   disjonctif suffit : meme strategie de recherche (specialiser sur faux positif,
+   disjonctif suffit : même stratégie de recherche (specialiser sur faux positif,
    generaliser sur faux negatif, backtracking), espace d'hypotheses plus riche.
    C'est la reponse directe a la limite n. 1 du tableau de la section 8.
 
-2. **Pas de biais d'Occam.** L'algorithme retourne la *premiere* hypothese
-   consistante trouvee, pas la plus simple : plusieurs disjonctions tres
-   specifiques (proches d'un par-coeur des exemples positifs) plutot qu'une regle
+2. **Pas de biais d'Occam.** L'algorithme retourne la *première* hypothese
+   consistante trouvee, pas la plus simple : plusieurs disjonctions très
+   spécifiques (proches d'un par-coeur des exemples positifs) plutot qu'une règle
    compacte. Une hypothese disjonctive consistante existe toujours --- au pire, la
-   liste des exemples positifs eux-memes. La *compression* (peu de disjonctions,
-   chacune generale) est ce que viseront les arbres de decision (ID3/C4.5) et
-   l'induction de regles.
+   liste des exemples positifs eux-mêmes. La *compression* (peu de disjonctions,
+   chacune générale) est ce que viseront les arbres de decision (ID3/C4.5) et
+   l'induction de règles.
 
-3. **Recherche stochastique.** Le `shuffle()` interne rend le resultat dependant
+3. **Recherche stochastique.** Le `shuffle()` interne rend le résultat dependant
    de la graine : changez `random.seed(42)` et vous obtiendrez une autre hypothese
    consistante --- une illustration concrete du fait que l'espace contient
-   beaucoup de solutions, sans preference entre elles.
-",,,,,,,,f109178920a156cc,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b74b7ea1,markdown,fr,03463d55b0c67e10,"### Complexite de l'enonce, rasoir d'Occam et MDL
+   beaucoup de solutions, sans préférence entre elles.
+",,,,,,,,abac49ffb2cf02b8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b74b7ea1,markdown,fr,d1bc8ae6aa76a801,"### Complexite de l'enonce, rasoir d'Occam et MDL
 
 La section 9 a montre que `current_best_learning` **reussit** la ou notre Version Space
 conjonctif s'effondrait. Mais relisez l'observation n. 2 ci-dessus : l'algorithme retourne la
-**premiere** hypothese consistante trouvee, **sans biais de simplicite**. C'est precisement le
+**première** hypothese consistante trouvee, **sans biais de simplicite**. C'est précisément le
 fil conducteur annonce en section 3 qu'il faut maintenant rendre operationnel.
 
 **Le cout d'une exception.** Ajouter un conjoint (specialiser) ou un disjonct (generaliser par
 `add_or`) fait **grandir l'enonce**. Un enonce plus long couvre ses exemples d'entrainement en
-les **memorisant** plutot qu'en capturant la regle sous-jacente : il generalise mal. D'ou le
+les **memorisant** plutot qu'en capturant la règle sous-jacente : il generalise mal. D'ou le
 principe du **rasoir d'Occam** (ou, plus formellement, de la **longueur de description
 minimale**, MDL) : parmi les hypotheses consistantes, preferer la plus simple.
 
 **Recommencer les reductions.** Un algorithme qui tient ce biais ne se contente pas d'ajouter
-des exceptions : apres chaque croissance, il **recommence les reductions** (enlever un conjoint,
+des exceptions : après chaque croissance, il **recommence les reductions** (enlever un conjoint,
 supprimer un disjonct) tant que la consistance est preservee. C'est ce que fait **FOIL**
 (AIMA 19.5, induction logique inductive top-down), dont l'heuristique de gain d'information
 penalise les clauses longues ; FOIL est traite en SL-4. La metrique `statement_size` ci-dessous
@@ -4939,9 +4939,9 @@ conjonction unique** n'est consistante avec les 12 exemples (le Version Space s'
 la section 9 vient de montrer que la **seule** voie vers une hypothese 12/12 consistante est
 d'ajouter des disjonctions. La metrique d'Occam n'**interdit** donc pas les exceptions, elle
 les **minimise** sous contrainte de consistance. En cas de conflit, **la consistance l'emporte
-sur la simplicite** (un modele complexe mais juste bat un modele simple mais faux) ; Occam sert
+sur la simplicite** (un modèle complexe mais juste bat un modèle simple mais faux) ; Occam sert
 alors a departager les hypotheses consistantes entre elles, en privilegiant celle qui emploie
-le moins d'exceptions.",,,,,,,,03463d55b0c67e10,,,,,,,
+le moins d'exceptions.",,,,,,,,d1bc8ae6aa76a801,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2ba3456c,code,fr,6c93d98f05d5fa70,"# Complexite de l'enonce : un rasoir d'Occam operationnel (Minimum Description Length)
 #
 # Toute croissance de l'hypothese (ajout d'un conjoint ou d'un disjonct) a un cout :
@@ -5021,14 +5021,14 @@ Avec les négatifs en premier, CBH retombe sur **exactement le même résultat**
 Le point pédagogique n'est donc **pas** l'instabilité de CBH selon l'ordre, mais ce que cette *stabilité-dans-l'échec* révèle : le faux positif n'est pas un accident d'ordre, c'est la **signature du biais de représentation conjonctif**. Aucune conjonction unique ne sépare les 12 exemples — précisément l'effondrement diagnostiqué à la section 5 (Version Space vide) et formalisé au tableau de la section 8.
 
 Et ce mur n'est pas une fatalité de l'algorithme : c'est une limite de **l'espace d'hypothèses**. La **section 9** le franchit *sans changer de stratégie de recherche* — `current_best_learning` (Figure 19.2 d'AIMA) autorise les **disjonctions** (`add_or`) et atteint **100 % de consistance (12/12)** sur ces mêmes 12 exemples. C'est le passage conjonctif → disjonctif, et non un réglage d'ordre ou un autre algorithme conjonctif comme le Version Space, qui résout réellement le problème.",,,,,,,,dc5a7d723922328b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e767a280,markdown,fr,76c3177eadbae4e9,"### Exemple guide 1 : CBH avec ordre aleatoire
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e767a280,markdown,fr,4e126ba6fa91296d,"### Exemple guide 1 : CBH avec ordre aleatoire
 
-Une intuition courante : comme CBH ne garde qu'**une seule** hypothese et l'ajuste au gre des exemples, son resultat pourrait dependre fortement de l'ordre d'arrivee. Verifions-le en relancant CBH sur **trois ordres aleatoires** (seeds distinctes) et en comparant les hypotheses finales. Le resultat est surprenant et revele la vraie limite de CBH sur ces donnees.
+Une intuition courante : comme CBH ne garde qu'**une seule** hypothese et l'ajuste au gre des exemples, son résultat pourrait dependre fortement de l'ordre d'arrivee. Verifions-le en relancant CBH sur **trois ordres aleatoires** (seeds distinctes) et en comparant les hypotheses finales. Le résultat est surprenant et revele la vraie limite de CBH sur ces données.
 
-**Etapes (resolues ci-dessous)** :
+**Étapes (resolues ci-dessous)** :
 1. Melangez les exemples avec `import random; random.shuffle(shuffled)`
 2. Executez CBH sur les exemples melanges
-3. Repetez 3 fois et comparez les resultats",,,,,,,,76c3177eadbae4e9,,,,,,,
+3. Repetez 3 fois et comparez les résultats",,,,,,,,4e126ba6fa91296d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,f2c3a922,code,fr,47011c137b4c8758,"import random
 
 # Exemple guide : CBH avec ordre aleatoire -- intuition d'instabilite a l'epreuve
@@ -5066,15 +5066,15 @@ print()
 print(""Le Version Space (section 5) garde TOUTES les hypotheses consistantes : il"")
 print(""caracterise exactement ce qu'une conjonction peut representer, et permet de"")
 print(""mesurer si une seule conjonction suffit pour ce concept."")",,,,,,,,47011c137b4c8758,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex1-variation-md,markdown,fr,cb4e55199d24d089,"### Exercice 1 (variation) : Taux de consistance de CBH
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex1-variation-md,markdown,fr,bec47c5b4f7a6fca,"### Exercice 1 (variation) : Taux de consistance de CBH
 
-L'exemple guide compare 3 ordres et trouve une hypothese stable mais NON consistante. Generalisez la mesure : executez CBH sur **20 graines** differentes et calculez le **taux de consistance** -- la proportion de graines pour lesquelles CBH aboutit a une hypothese **consistante** (`is_consistent` vrai). Affichez aussi le nombre d'hypotheses distinctes produites.
+L'exemple guide compare 3 ordres et trouve une hypothese stable mais NON consistante. Generalisez la mesure : executez CBH sur **20 graines** différentes et calculez le **taux de consistance** -- la proportion de graines pour lesquelles CBH aboutit a une hypothese **consistante** (`is_consistent` vrai). Affichez aussi le nombre d'hypotheses distinctes produites.
 
 **Indices** :
 1. Boucle `for seed in range(20)` : `random.seed(seed)`, copiez + melangez `EXAMPLES`, lancez `current_best_hypothesis`.
 2. Comptez les `is_consistent(h, EXAMPLES)` vrais -> taux = `nb_consistantes / 20`.
 3. Comptez les hypotheses distinctes avec un `set`.
-4. Conclusion : un taux faible confirme que le concept depasse l'espace d'une seule conjonction -- c'est alors le Version Space (section 5) qui le met en evidence.",,,,,,,,cb4e55199d24d089,,,,,,,
+4. Conclusion : un taux faible confirme que le concept depasse l'espace d'une seule conjonction -- c'est alors le Version Space (section 5) qui le met en evidence.",,,,,,,,bec47c5b4f7a6fca,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex1-variation-stub,code,fr,396d951b5b36c210,"# Exercice 1 (variation) : Taux de consistance de CBH
 # TODO etudiant : executez CBH sur 20 graines, mesurez le taux de consistance
 # Etape 1 : for seed in range(20): random.seed(seed); melangez EXAMPLES; current_best_hypothesis
@@ -5082,9 +5082,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex1
 # Etape 3 : comptez les hypotheses distinctes (len(set(...)))
 # Indice : un taux faible confirme que le concept depasse l'espace d'une seule conjonction.
 print(""Exercice a completer : mesurez le taux de consistance de CBH sur 20 graines"")",,,,,,,,396d951b5b36c210,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,4bfff412,markdown,fr,571cabd79f5f83d3,"### Exemple guide 2 : Version Space sur un sous-ensemble
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,4bfff412,markdown,fr,16050cb6d5e759b3,"### Exemple guide 2 : Version Space sur un sous-ensemble
 
-L'intuition naive dit qu'avec **moins d'exemples**, le Version Space est plus grand (moins contraint). Verifions-le : lancons Candidate Elimination sur les 6 premiers exemples seulement, puis comparons au resultat sur les 12. La surprise -- que nous allons interpreter -- est que le Version Space ne fait pas que retroceder : il peut **converger** (G == S) puis s'**effondrer** (G et S vides).",,,,,,,,571cabd79f5f83d3,,,,,,,
+L'intuition naive dit qu'avec **moins d'exemples**, le Version Space est plus grand (moins contraint). Verifions-le : lancons Candidate Elimination sur les 6 premiers exemples seulement, puis comparons au résultat sur les 12. La surprise -- que nous allons interpreter -- est que le Version Space ne fait pas que retroceder : il peut **converger** (G == S) puis s'**effondrer** (G et S vides).",,,,,,,,16050cb6d5e759b3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,883aa023,code,fr,5b15f5fdc32f737d,"# Exemple guide 2 : Version Space sur un sous-ensemble
 # On lance Candidate Elimination sur les 6 premiers exemples, puis on compare
 # au resultat sur les 12 exemples (section precedente).
@@ -5124,15 +5124,15 @@ for k in range(1, len(EXAMPLES) + 1):
 # s'effondre au 10e exemple (k=10). Le concept WillWait n'est PAS
 # representable par une seule conjonction : meme limite d'expression que
 # CBH (Ex1), mais Version Space la revele comme |G| = |S| = 0 (VS vide).",,,,,,,,5b15f5fdc32f737d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex2-variation-md,markdown,fr,d3a7a8d28d859c67,"### Exercice 2 (variation) : Le Version Space depend-il de l'ordre des exemples ?
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex2-variation-md,markdown,fr,9fe347b4689093c4,"### Exercice 2 (variation) : Le Version Space depend-il de l'ordre des exemples ?
 
-Current-Best-Hypothesis (Exercice 1) produit une hypothese unique qui peut **dependre de l'ordre** des exemples. Le Version Space, lui, conserve **toutes** les hypotheses coherentes. L'ensemble final est-il invariant quand on reordonnance les exemples ? Fixez une graine, melangez une **copie** de `EXAMPLES`, relancez `candidate_elimination` sur les 12 exemples melanges, et comparez la taille finale du Version Space au resultat en ordre original.
+Current-Best-Hypothesis (Exercice 1) produit une hypothese unique qui peut **dependre de l'ordre** des exemples. Le Version Space, lui, conserve **toutes** les hypotheses coherentes. L'ensemble final est-il invariant quand on reordonnance les exemples ? Fixez une graine, melangez une **copie** de `EXAMPLES`, relancez `candidate_elimination` sur les 12 exemples melanges, et comparez la taille finale du Version Space au résultat en ordre original.
 
 **Indices** :
 1. `random.seed(42)` puis copiez `EXAMPLES` et `random.shuffle` la copie (ne mutez pas l'original).
 2. Appelez `candidate_elimination(shuffled)` et lisez `|G|` final.
 3. Refaites avec 2 autres graines. Que constatez-vous sur `|G|` final ?
-4. Conclusion : l'ensemble des hypotheses coherentes est une propriete du **jeu de donnees** (intersection d'ensembles), pas de l'ordre de parcours -- contrairement a CBH.",,,,,,,,d3a7a8d28d859c67,,,,,,,
+4. Conclusion : l'ensemble des hypotheses coherentes est une propriete du **jeu de données** (intersection d'ensembles), pas de l'ordre de parcours -- contrairement a CBH.",,,,,,,,9fe347b4689093c4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,sl1-ex2-variation-stub,code,fr,2864376daf5df35f,"# Exercice 2 (variation) : Le Version Space depend-il de l'ordre des exemples ?
 # TODO etudiant : melanger EXAMPLES (sur une COPIE), relancer candidate_elimination, comparer |G| final
 import random
@@ -5150,18 +5150,18 @@ else:
 # Indice : l'ensemble des hypotheses coherentes avec un jeu de donnees est une
 # propriete du JEU de donnees (intersection d'ensembles), pas de l'ordre.
 # Comparez au comportement order-dependant de CBH (Ex1).",,,,,,,,2864376daf5df35f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a483cb1cf590,markdown,fr,beaad0d009f2bb16,"### Exemple guide 3 : Apprentissage de regles par couverture sequentielle
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a483cb1cf590,markdown,fr,33d552c5f4114b1c,"### Exemple guide 3 : Apprentissage de règles par couverture séquentielle
 
-Jusqu'ici, CBH (section 4) et le Version Space (section 5) cherchent **une seule hypothese conjonctive**. Or la section 5 a montre qu'aucune conjonction unique n'est consistante avec nos 12 exemples : le Version Space s'effondre (ensemble vide). Comment apprendre malgre tout ? En relachant l'hypothese d'unicite : on apprend une **disjonction de regles** -- c'est l'algorithme de **couverture sequentielle** (AIMA 19.5, famille de FOIL).
+Jusqu'ici, CBH (section 4) et le Version Space (section 5) cherchent **une seule hypothese conjonctive**. Or la section 5 a montre qu'aucune conjonction unique n'est consistante avec nos 12 exemples : le Version Space s'effondre (ensemble vide). Comment apprendre malgre tout ? En relachant l'hypothese d'unicite : on apprend une **disjonction de règles** -- c'est l'algorithme de **couverture séquentielle** (AIMA 19.5, famille de FOIL).
 
-**Principe**. Une *regle* est une conjonction (une `Hypothesis`). L'apprenant :
+**Principe**. Une *règle* est une conjonction (une `Hypothesis`). L'apprenant :
 1. Part de l'ensemble des exemples positifs.
-2. Apprend **une regle** qui couvre des positifs et **aucun** negatif (regle pure), en demarrant de la regle la plus generale (`G0`) et en **specialisant** contre les negatifs couverts.
-3. Retire les positifs couverts par cette regle, puis recommence (etape 2) tant qu'il reste des positifs.
+2. Apprend **une règle** qui couvre des positifs et **aucun** negatif (règle pure), en demarrant de la règle la plus générale (`G0`) et en **specialisant** contre les negatifs couverts.
+3. Retire les positifs couverts par cette règle, puis recommence (étape 2) tant qu'il reste des positifs.
 
-L'union (disjonction) des regles produites couvre alors tous les positifs sans toucher les negatifs -- la ou une conjonction unique echouait.
+L'union (disjonction) des règles produites couvre alors tous les positifs sans toucher les negatifs -- la ou une conjonction unique echouait.
 
-**Indice** (origine de la solution) : pour apprendre une regle, partez de `G0` et appelez `specialize_against` contre chaque negatif couvert ; gardez la specialisation qui couvre le **plus de positifs** (couverture maximale), puis reiterez jusqu'a zero negatif couvert.",,,,,,,,beaad0d009f2bb16,,,,,,,
+**Indice** (origine de la solution) : pour apprendre une règle, partez de `G0` et appelez `specialize_against` contre chaque negatif couvert ; gardez la specialisation qui couvre le **plus de positifs** (couverture maximale), puis reiterez jusqu'a zero negatif couvert.",,,,,,,,33d552c5f4114b1c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a66db8dd23f7,code,fr,7b7de49d78d56861,"# Exemple guide 3 : Apprentissage de regles par couverture sequentielle
 # Adaptation de l'algorithme de couverture sequentielle (AIMA 19.5 / FOIL) au
 # domaine conjonctif du notebook. Une REGLE = une Hypothese (conjonction) ; la
@@ -5248,50 +5248,50 @@ print(f""  Vrais positifs : {tp}/6 | Faux positifs : {fp}/6 | Faux negatifs : {f
 print(f""  Accuracy : {(tp + tn) / len(EXAMPLES):.3f}"")
 print(f""  => {len(regles)} regles suffisent la ou le Version Space (1 conjonction) s'effondrait."")
 ",,,,,,,,7b7de49d78d56861,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,cell-c7d9cb50,markdown,fr,860416f2063a27d4,"### Interpretation : la disjonction debloque ce que la conjonction ne peut exprimer
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,cell-c7d9cb50,markdown,fr,c2ee280a10613010,"### Interpretation : la disjonction debloque ce que la conjonction ne peut exprimer
 
-L'algorithme apprend typiquement **3 regles** dont l'union couvre les 6 positifs sans aucun faux positif (accuracy 1.000), par exemple :
+L'algorithme apprend typiquement **3 règles** dont l'union couvre les 6 positifs sans aucun faux positif (accuracy 1.000), par exemple :
 
 - **R1** : `Bar=No ET Hungry=Yes` (couvre la majorite des positifs),
 - **R2** : `Alternate=No ET Hungry=Yes`,
 - **R3** : une conjonction plus fine pour les positifs restants.
 
-C'est precisement la lecon annoncee en section 5 : aucune **conjonction unique** n'etait consistante avec les 12 exemples (le Version Space etait **vide**), mais une **disjonction de quelques regles** y parvient parfaitement. La couverture sequentielle relache l'hypothese d'unicite de l'hypothese -- c'est le pont vers FOIL (AIMA 19.5) et l'apprentissage de regles en general.
+C'est précisément la lecon annoncee en section 5 : aucune **conjonction unique** n'etait consistante avec les 12 exemples (le Version Space etait **vide**), mais une **disjonction de quelques règles** y parvient parfaitement. La couverture séquentielle relache l'hypothese d'unicite de l'hypothese -- c'est le pont vers FOIL (AIMA 19.5) et l'apprentissage de règles en general.
 
 **Deux points de vigilance** :
-1. **Biais de couverture** : a chaque etape, on garde la specialisation qui couvre le *plus* de positifs. Ce greedy est rapide mais n'est pas optimal -- un choix different produirait un autre jeu de regles. C'est l'equivalent, pour les regles, du biais de simplicite absent de CBH (cf. section 9 et l'Exercice 5).
-2. **Surapprentissage** : si l'on ancre chaque regle sur un seul positif (en partant de `S0` au lieu de `G0`), on obtient 6 regles de 1 positif chacune -- une memorisation inutile. Partir de `G0` et specialiser produit des regles **generales** : c'est la difference entre apprendre un concept et recopier les donnees.",,,,,,,,860416f2063a27d4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ec85b3dd,markdown,fr,054493cc4ffec79d,"### Exemple guide : Reflexion corrigee (synthese)
+1. **Biais de couverture** : a chaque étape, on garde la specialisation qui couvre le *plus* de positifs. Ce greedy est rapide mais n'est pas optimal -- un choix différent produirait un autre jeu de règles. C'est l'equivalent, pour les règles, du biais de simplicite absent de CBH (cf. section 9 et l'Exercice 5).
+2. **Surapprentissage** : si l'on ancre chaque règle sur un seul positif (en partant de `S0` au lieu de `G0`), on obtient 6 règles de 1 positif chacune -- une memorisation inutile. Partir de `G0` et specialiser produit des règles **générales** : c'est la différence entre apprendre un concept et recopier les données.",,,,,,,,c2ee280a10613010,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ec85b3dd,markdown,fr,b4cbadae4a2f6780,"### Exemple guide : Reflexion corrigee (synthese)
 
-Pour conclure, voici une demonstration de la demarche attendue sur trois questions de synthese, avec leur correction. Observez la structure des reponses : un **mecanisme precis** (pas une generalite), puis sa **consequence pratique**. L'exercice 4 ci-dessous vous propose trois questions du meme type --- mais distinctes --- a traiter de la meme maniere.
+Pour conclure, voici une demonstration de la demarche attendue sur trois questions de synthese, avec leur correction. Observez la structure des reponses : un **mécanisme précis** (pas une generalite), puis sa **consequence pratique**. L'exercice 4 ci-dessous vous propose trois questions du même type --- mais distinctes --- a traiter de la même maniere.
 
 | Question | Reponse |
 |----------|--------|
-| Pourquoi CBH depend de l'ordre des exemples, mais pas le Version Space ? | Le VS maintient TOUTES les hypotheses consistantes, pas une seule. L'ordre n'affecte que la vitesse de convergence, pas le resultat final. |
-| Pourquoi la prediction par vote majoritaire (section 6) peut-elle etre utile alors meme que le Version Space n'a pas converge ? | Chaque hypothese consistante ""vote"" sur le nouvel exemple : si une large majorite predit la meme classe, la prediction est fiable sans attendre la convergence. Seuls les cas partages (vote proche de 50/50) doivent etre refuses ou renvoyes a l'acquisition de nouveaux exemples. |
-| Pourquoi le Version Space est-il fragile face au bruit ? | Un seul exemple contradictoire elimine TOUTES les hypotheses, vidant le VS. Pas de mecanisme de tolerance. |
-",,,,,,,,054493cc4ffec79d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b7e4d1a9,markdown,fr,3fd1454c2d1b3835,"### Exercice 4 : Reflexion
+| Pourquoi CBH depend de l'ordre des exemples, mais pas le Version Space ? | Le VS maintient TOUTES les hypotheses consistantes, pas une seule. L'ordre n'affecte que la vitesse de convergence, pas le résultat final. |
+| Pourquoi la prediction par vote majoritaire (section 6) peut-elle etre utile alors même que le Version Space n'a pas converge ? | Chaque hypothese consistante ""vote"" sur le nouvel exemple : si une large majorite predit la même classe, la prediction est fiable sans attendre la convergence. Seuls les cas partages (vote proche de 50/50) doivent etre refuses ou renvoyes a l'acquisition de nouveaux exemples. |
+| Pourquoi le Version Space est-il fragile face au bruit ? | Un seul exemple contradictoire elimine TOUTES les hypotheses, vidant le VS. Pas de mécanisme de tolerance. |
+",,,,,,,,b4cbadae4a2f6780,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,b7e4d1a9,markdown,fr,beaaab6851043b17,"### Exercice 4 : Reflexion
 
-A votre tour, sur le modele de l'exemple guide ci-dessus. Repondez aux questions suivantes en vous appuyant sur les algorithmes implementes plus haut (CBH, Candidate Elimination) : pour chaque reponse, identifiez le mecanisme en jeu, puis sa consequence pratique.
+A votre tour, sur le modèle de l'exemple guide ci-dessus. Repondez aux questions suivantes en vous appuyant sur les algorithmes implementes plus haut (CBH, Candidate Elimination) : pour chaque reponse, identifiez le mécanisme en jeu, puis sa consequence pratique.
 
 | Question | Reponse |
 |----------|--------|
 | Donnez une sequence concrete d'exemples (positifs/negatifs) qui force CBH a backtracker, alors que le Version Space converge sans jamais revenir en arriere. | _(a completer)_ |
 | Un concept disjonctif comme ""animal = chien OU chat"" n'est pas capturable par une hypothese conjonctive unique. Pourquoi ? Que faudrait-il changer dans la representation des hypotheses pour le permettre ? | _(a completer)_ |
 | La complexite memoire du Version Space est O(\|G\| + \|S\|). Decrivez un cas ou \|G\| ou \|S\| explose, et la consequence pratique sur l'apprentissage. | _(a completer)_ |
-",,,,,,,,3fd1454c2d1b3835,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,8c843445,markdown,fr,56760b3d918dd412,"### Exemple guide 5 : La consistance sans Occam (mesure sur 20 graines)
+",,,,,,,,beaaab6851043b17,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,8c843445,markdown,fr,9952bdd59df93290,"### Exemple guide 5 : La consistance sans Occam (mesure sur 20 graines)
 
-La section 9 a montre que `current_best_learning` est **stochastique** (shuffle interne des candidats) et **sans biais de simplicite** : il retourne la premiere hypothese consistante trouvee. Transformons ces deux observations en **mesure**.
+La section 9 a montre que `current_best_learning` est **stochastique** (shuffle interne des candidats) et **sans biais de simplicite** : il retourne la première hypothese consistante trouvee. Transformons ces deux observations en **mesure**.
 
-**Principe**. Pour 20 graines differentes :
+**Principe**. Pour 20 graines différentes :
 1. Fixer `random.seed(seed)` -- seul le *shuffle* interne change, `initial_h` (construit sur le premier positif) reste invariant d'une graine a l'autre.
 2. Relancer `current_best_learning(aima_examples, initial_h)`.
 3. Mesurer la **taille** de l'hypothese via `statement_size_disjunctive` (somme des conditions de chaque disjonction) et le nombre de **branches**.
 4. Verifier que chaque hypothese reste **12/12 consistante** (via `guess_value`).
 
-On obtient ainsi la distribution des tailles d'enonce parmi toutes les solutions que l'algorithme juge ""aussi bonnes"" -- une mesure directe du vide laisse par l'absence de rasoir d'Occam.",,,,,,,,56760b3d918dd412,,,,,,,
+On obtient ainsi la distribution des tailles d'enonce parmi toutes les solutions que l'algorithme juge ""aussi bonnes"" -- une mesure directe du vide laisse par l'absence de rasoir d'Occam.",,,,,,,,9952bdd59df93290,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,ef84c058,code,fr,1d4b76c09912424c,"# Exemple guide 5 : La consistance sans Occam (mesure sur 20 graines)
 # On transforme les 2 observations de la section 9 (recherche stochastique + absence
 # de biais de simplicite) en mesure : echantillonner current_best_learning sur 20 graines,
@@ -5341,29 +5341,29 @@ print(f""\nHypothese la plus compacte : seed={plus_compacte['seed']}, ""
 print(f""\nConcept cible reel (section 8) : 2 clauses, 3 conditions au total."")
 print(f""  => Occam prefererait cette forme compacte ; current_best_learning ne la cherche pas."")
 ",,,,,,,,1d4b76c09912424c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,cell-20649579,markdown,fr,bb79bc3edbc48e9c,"### Interpretation : toutes les solutions consistentes ne se valent pas
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,cell-20649579,markdown,fr,82e12163f2876e78,"### Interpretation : toutes les solutions consistentes ne se valent pas
 
 La mesure confirme quantitativement les deux observations de la section 9 :
 
-1. **Absence de biais de simplicite (observation n.2)** : les **20 graines produisent 20 hypotheses TOUTES 12/12 consistantes**, mais de tailles tres differentes (typiquement de ~16 a ~44 conditions, soit un facteur ~3). L'algorithme n'en prefere aucune : il s'arrete a la premiere solution trouvee, sans chercher la plus compacte.
+1. **Absence de biais de simplicite (observation n.2)** : les **20 graines produisent 20 hypotheses TOUTES 12/12 consistantes**, mais de tailles très différentes (typiquement de ~16 a ~44 conditions, soit un facteur ~3). L'algorithme n'en prefere aucune : il s'arrete a la première solution trouvee, sans chercher la plus compacte.
 
-2. **Recherche stochastique (observation n.3)** : la dispersion de la taille (ecart-type non negligeable) illustre que le shuffle interne explore des regions differentes de l'espace des hypotheses a chaque graine -- l'espace contient beaucoup de solutions, sans hierarchie entre elles.
+2. **Recherche stochastique (observation n.3)** : la dispersion de la taille (ecart-type non negligeable) illustre que le shuffle interne explore des regions différentes de l'espace des hypotheses a chaque graine -- l'espace contient beaucoup de solutions, sans hiérarchie entre elles.
 
-**Ce qu'ajouterait le rasoir d'Occam (MDL)**. Le concept cible reel de la section 8 (`Patrons=Some OU (Patrons=Full ET Hungry=Yes)`) tient en **2 clauses / 3 conditions**. L'hypothese la plus compacte trouvee ici fait ~16 conditions -- soit ~5 fois plus. Un biais de simplicite (comme celui de **FOIL**, AIMA 19.5, ou des arbres de decision ID3/C4.5) chercherait explicitement la solution consistante **la plus courte**, au lieu de memoriser les exemples positifs sous forme de disjonctions tres specifiques.
+**Ce qu'ajouterait le rasoir d'Occam (MDL)**. Le concept cible reel de la section 8 (`Patrons=Some OU (Patrons=Full ET Hungry=Yes)`) tient en **2 clauses / 3 conditions**. L'hypothese la plus compacte trouvee ici fait ~16 conditions -- soit ~5 fois plus. Un biais de simplicite (comme celui de **FOIL**, AIMA 19.5, ou des arbres de decision ID3/C4.5) chercherait explicitement la solution consistante **la plus courte**, au lieu de memoriser les exemples positifs sous forme de disjonctions très spécifiques.
 
-**Lien avec les exercices de reflexion (Ex4, Ex6)**. Cette mesure donne la matiere concrete pour repondre : la consistance seule est insuffisante -- il faut un **critere de selection** parmi les hypotheses consistantes, et Occam/MDL en est un. C'est aussi le pont avec la couverture sequentielle de l'Exemple guide 3, ou le tie-break ""couverture maximale"" etait une forme embryonnaire de ce biais.",,,,,,,,bb79bc3edbc48e9c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e6380160,markdown,fr,2a57c780c2e6bd85,"### Exercice 6 : Les quatre operations et la tension Occam vs consistance
+**Lien avec les exercices de reflexion (Ex4, Ex6)**. Cette mesure donne la matiere concrete pour repondre : la consistance seule est insuffisante -- il faut un **critere de sélection** parmi les hypotheses consistantes, et Occam/MDL en est un. C'est aussi le pont avec la couverture séquentielle de l'Exemple guide 3, ou le tie-break ""couverture maximale"" etait une forme embryonnaire de ce biais.",,,,,,,,82e12163f2876e78,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,e6380160,markdown,fr,02da7f8c71681738,"### Exercice 6 : Les quatre opérations et la tension Occam vs consistance
 
-Repondez aux questions suivantes en vous appuyant sur le tableau des 4 operations (section 3)
-et la discussion rasoir d'Occam / MDL (section 9). Pour chaque reponse, identifiez le mecanisme
+Repondez aux questions suivantes en vous appuyant sur le tableau des 4 opérations (section 3)
+et la discussion rasoir d'Occam / MDL (section 9). Pour chaque reponse, identifiez le mécanisme
 en jeu, puis sa consequence pratique --- comme dans l'exemple guide de reflexion ci-dessus.
 
 | Question | Reponse |
 |----------|--------|
-| La section 5 montre qu'ajouter la condition `Hungry=Yes` (specialiser par conjonction) ne suffit pas a rendre une conjonction consistante. Selon le tableau des 4 operations (section 3), a quel sens de la specialisation correspond cet ajout, et pourquoi cet echec pousse-t-il a recourir a l'autre sens (generaliser par disjonction, `add_or`) ? | _(a completer)_ |
-| Un etudiant propose d'eliminer toute erreur en ajoutant une exception (une disjonction) pour CHAQUE exemple positif mal classe. Quel est le cout de cette strategie au sens du rasoir d'Occam (MDL) ? A partir de quand devient-elle neanmoins la seule option acceptable ? | _(a completer)_ |
-| CBH (section 4) et le Version Space (section 5) n'implantent aucun biais de simplicite. Donnez une situation concrete (sur le domaine du restaurant ou un autre) ou cela conduit a retenir une hypothese manifestement trop longue, et expliquez pourquoi FOIL (AIMA 19.5) l'eviterait. | _(a completer)_ |",,,,,,,,2a57c780c2e6bd85,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a464171c,markdown,fr,738c0751888fd68d,"---
+| La section 5 montre qu'ajouter la condition `Hungry=Yes` (specialiser par conjonction) ne suffit pas a rendre une conjonction consistante. Selon le tableau des 4 opérations (section 3), a quel sens de la specialisation correspond cet ajout, et pourquoi cet echec pousse-t-il a recourir a l'autre sens (generaliser par disjonction, `add_or`) ? | _(a completer)_ |
+| Un etudiant propose d'eliminer toute erreur en ajoutant une exception (une disjonction) pour CHAQUE exemple positif mal classe. Quel est le cout de cette stratégie au sens du rasoir d'Occam (MDL) ? A partir de quand devient-elle neanmoins la seule option acceptable ? | _(a completer)_ |
+| CBH (section 4) et le Version Space (section 5) n'implantent aucun biais de simplicite. Donnez une situation concrete (sur le domaine du restaurant ou un autre) ou cela conduit a retenir une hypothese manifestement trop longue, et expliquez pourquoi FOIL (AIMA 19.5) l'eviterait. | _(a completer)_ |",,,,,,,,02da7f8c71681738,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a464171c,markdown,fr,64d953f4d27087dc,"---
 
 ## 11. Resume
 
@@ -5375,7 +5375,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a464171
 | **Consistance** | Pas de faux positifs ni de faux negatifs |
 | **Generalisation** | Remplacer une contrainte par `?` (couvrir plus) |
 | **Specialisation** | Remplacer `?` par une valeur (couvrir moins) |
-| **Generalisation/Specialisation : 2 sens** | Chaque direction admet une operation qui **reduit** l'enonce et une qui l'**augmente** (exception positive par disjonction, negative par conjonction) |
+| **Generalisation/Specialisation : 2 sens** | Chaque direction admet une opération qui **reduit** l'enonce et une qui l'**augmente** (exception positive par disjonction, negative par conjonction) |
 | **Rasoir d'Occam (MDL)** | Parmi les hypotheses consistantes, preferer la plus simple ; **minimiser** les exceptions (cf. FOIL, AIMA 19.5), non les interdire |
 | **CBH** | Maintient une seule hypothese, ajustee incrementalement |
 | **Version Space** | Maintient G-set et S-set, represente toutes les hypotheses consistantes |
@@ -5386,18 +5386,18 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,a464171
 | Critere | CBH | Version Space |
 |---------|-----|---------------|
 | Nombre d'hypotheses | 1 | Toutes (via frontieres) |
-| Ordre-dependance | Oui | Non |
+| Ordre-dépendance | Oui | Non |
 | Backtracking | Possible | Jamais |
 | Bruit | Robuste (peut revenir) | Fragile (VS vide) |
-| Complexite memoire | O(1) | O(|G| + |S|) |",,,,,,,,738c0751888fd68d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,410e5149,markdown,fr,edd9d1c24ab611cb,"### Perspectives
+| Complexite memoire | O(1) | O(|G| + |S|) |",,,,,,,,64d953f4d27087dc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,410e5149,markdown,fr,fe5cde6a27c4d9f7,"### Perspectives
 
-Ce notebook a explore les methodes d'apprentissage logique symbolique dans le cadre de la contrainte d'entrainement : trouver une hypothese H telle que H et les descriptions entrainent logiquement les classifications. L'algorithme CBH (Current-Best-Hypothesis) maintient une unique hypothese ajustee incrementalement par generalisation et specialisation, avec un risque de backtracking lorsque aucune specialisation consistante n'existe. L'algorithme Candidate Elimination resout ce probleme en representant l'ensemble complet des hypotheses consistantes via les frontieres G-set et S-set, garantissant qu'aucune hypothese valide n'est oubliee. Cependant, les deux approches partagent des limites fondamentales : la fragilite face au bruit (un seul exemple mal etiquete vide le Version Space) et l'incapacite a representer des concepts disjonctifs avec des conjonctions pures.
+Ce notebook a explore les méthodes d'apprentissage logique symbolique dans le cadre de la contrainte d'entrainement : trouver une hypothese H telle que H et les descriptions entrainent logiquement les classifications. L'algorithme CBH (Current-Best-Hypothesis) maintient une unique hypothese ajustee incrementalement par generalisation et specialisation, avec un risque de backtracking lorsque aucune specialisation consistante n'existe. L'algorithme Candidate Elimination resout ce problème en representant l'ensemble complet des hypotheses consistantes via les frontieres G-set et S-set, garantissant qu'aucune hypothese valide n'est oubliee. Cependant, les deux approches partagent des limites fondamentales : la fragilite face au bruit (un seul exemple mal etiquete vide le Version Space) et l'incapacite a representer des concepts disjonctifs avec des conjonctions pures.
 
-Ces limites ont historiquement motive le passage a des modeles plus robustes : arbres de decision (ID3/C4.5) pour les disjonctions, modeles probabilistes (naive Bayes, regression logistique) pour la tolerance au bruit, et plus recemment les reseaux de neurones pour l'apprentissage de representations continues. Neanmoins, les concepts de generalisation, specialisation et espace de versions restent fondamentaux en apprentissage automatique symbolique et informent les methodes avancees comme la programmation logique inductive (ILP) et l'apprentissage neuro-symbolique.
+Ces limites ont historiquement motive le passage a des modèles plus robustes : arbres de decision (ID3/C4.5) pour les disjonctions, modèles probabilistes (naive Bayes, regression logistique) pour la tolerance au bruit, et plus recemment les reseaux de neurones pour l'apprentissage de representations continues. Neanmoins, les concepts de generalisation, specialisation et espace de versions restent fondamentaux en apprentissage automatique symbolique et informent les méthodes avancees comme la programmation logique inductive (ILP) et l'apprentissage neuro-symbolique.
 
-Le notebook suivant, [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb), depasse le cadre inductif pur en integrant la connaissance prealable du domaine. Nous y decouvrirons l'apprentissage base sur les explications (EBL), qui extrait une regle generale d'un seul exemple par deduction, et l'apprentissage base sur la pertinence (RBL), qui reduit exponentiellement l'espace des hypotheses grace aux determinations.",,,,,,,,edd9d1c24ab611cb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,315ebc46,markdown,fr,9b7bbf41e70e6982,"---
+Le notebook suivant, [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb), depasse le cadre inductif pur en integrant la connaissance prealable du domaine. Nous y decouvrirons l'apprentissage base sur les explications (EBL), qui extrait une règle générale d'un seul exemple par deduction, et l'apprentissage base sur la pertinence (RBL), qui reduit exponentiellement l'espace des hypotheses grace aux determinations.",,,,,,,,fe5cde6a27c4d9f7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,315ebc46,markdown,fr,4df3ebc6ce0b077c,"---
 
 ## Defi presentation
 
@@ -5408,12 +5408,12 @@ Elle fait partie integrante de la presentation attendue.
 
 | Exercice | Question-twist a traiter en plus |
 |----------|----------------------------------|
-| **Ex. 1 (CBH, ordre personnalise)** | Montrez deux ordres de presentation des exemples qui menent le CBH a des hypotheses finales differentes, puis changez la graine `random.seed(42)` de la section 9 (AIMA) : pourquoi l'hypothese change-t-elle alors que l'accuracy reste 12/12 ? |
+| **Ex. 1 (CBH, ordre personnalise)** | Montrez deux ordres de presentation des exemples qui menent le CBH a des hypotheses finales différentes, puis changez la graine `random.seed(42)` de la section 9 (AIMA) : pourquoi l'hypothese change-t-elle alors que l'accuracy reste 12/12 ? |
 | **Ex. 2 (Version Space, sous-ensemble)** | Sur votre sous-ensemble, identifiez l'exemple dont l'ajout reduit le plus le Version Space. Qu'est-ce qui rend un exemple *informatif* (raisonnez avec les frontieres S et G) ? |
-| **Ex. 3 (regles avec couverture)** | Comparez vos regles a l'hypothese disjonctive AIMA de la section 9 : laquelle est la plus compacte ? Quel biais (rasoir d'Occam) ferait preferer l'une a l'autre, et lequel des deux algorithmes l'implemente ? |
+| **Ex. 3 (règles avec couverture)** | Comparez vos règles a l'hypothese disjonctive AIMA de la section 9 : laquelle est la plus compacte ? Quel biais (rasoir d'Occam) ferait preferer l'une a l'autre, et lequel des deux algorithmes l'implemente ? |
 | **Ex. 4 (reflexion)** | Donnez un domaine concret ou le biais conjonctif de ce notebook est le bon choix, et un ou il est catastrophique. Reliez votre reponse au theoreme *no free lunch*. |
 | **Ex. 5 (consistance sans Occam)** | La section 8 prouve qu'aucune conjonction unique n'est consistante : la borne inferieure est donc 2 disjonctions. Votre echantillonnage de graines l'atteint-il ? Pourquoi un echantillonnage ne prouve jamais la minimalite, et quel type d'algorithme (exact, a la Popper de SL-4) fournirait ce certificat ? |
-| **Ex. 6 (4 operations et tension Occam)** | Parmi les 4 operations du tableau de la section 3, lesquelles CBH (section 4) sait-il effectivement realiser avec sa representation conjonctive, et lesquelles lui sont interdites (d'ou son effondrement en section 5) ? Illustrez avec un exemple du restaurant ou la seule operation capable de restaurer la consistance est une croissance de l'enonce (une exception), et justifiez pourquoi le rasoir d'Occam l'accepte tout de meme. |",,,,,,,,9b7bbf41e70e6982,,,,,,,
+| **Ex. 6 (4 opérations et tension Occam)** | Parmi les 4 opérations du tableau de la section 3, lesquelles CBH (section 4) sait-il effectivement realiser avec sa representation conjonctive, et lesquelles lui sont interdites (d'ou son effondrement en section 5) ? Illustrez avec un exemple du restaurant ou la seule opération capable de restaurer la consistance est une croissance de l'enonce (une exception), et justifiez pourquoi le rasoir d'Occam l'accepte tout de même. |",,,,,,,,4df3ebc6ce0b077c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,902a1f86,markdown,fr,44d9766f34221c2a,"---
 
 ## Ressources
@@ -7779,7 +7779,7 @@ règle apprise ne s'applique jamais sur N nouveaux exemples, la retirer.
 - Notebook Python : [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
 - Marathon parité : #4956.
 ",,,,,,,,1cacbce0c41bda76,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,dbf96c32,markdown,fr,25e94f4baf3010cc,"# SL-3 --- Apprentissage Base sur la Pertinence (RBL Approfondi)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,dbf96c32,markdown,fr,4a413d65ec75f69d,"# SL-3 --- Apprentissage Base sur la Pertinence (RBL Approfondi)
 
 **Navigation** : [Index](./README.md) | [<< SL-2](SL-2-KnowledgeBasedLearning.ipynb) | [SL-4 >>](SL-4-InductiveLogicProgramming.ipynb)
 
@@ -7788,16 +7788,16 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,dbf96
 A la fin de ce notebook, vous saurez :
 1. Formaliser les **determinations** et leurs proprietes mathematiques
 2. Implementer et visualiser le **treillis des determinations**
-3. Appliquer l'algorithme **MINIMAL-CONSISTENT-DET** sur des donnees reelles
-4. Comparer la selection d'attributs guidee par la connaissance (**RBL**) vs la selection aveugle (**sklearn**)
+3. Appliquer l'algorithme **MINIMAL-CONSISTENT-DET** sur des données réelles
+4. Comparer la sélection d'attributs guidee par la connaissance (**RBL**) vs la sélection aveugle (**sklearn**)
 5. Quantifier la **reduction exponentielle** de l'espace des hypotheses
 
 ### Prerequis
 - SL-1 (apprentissage logique, espaces d'hypotheses)
 - SL-2 section 7 (introduction aux determinations)
-- Bases de Python et structures de donnees
+- Bases de Python et structures de données
 
-### Duree estimee : 50 minutes",,,,,,,,25e94f4baf3010cc,,,,,,,
+### Duree estimee : 50 minutes",,,,,,,,4a413d65ec75f69d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,4eb99804,code,fr,e4afe02eb912addb,"# Imports et configuration
 from typing import Optional
 from dataclasses import dataclass, field
@@ -7816,45 +7816,45 @@ NOTEBOOK_INFO = {
 
 print(f""Notebook : {NOTEBOOK_INFO['title']}"")
 print(f""Chapitre AIMA : {', '.join(NOTEBOOK_INFO['aima_chapters'])}"")",,,,,,,,e4afe02eb912addb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,359e4cd2,markdown,fr,d668ee10d35d9887,"---
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,359e4cd2,markdown,fr,e6fb7bce5bf428c9,"---
 
 ## 1. Introduction --- Pourquoi la pertinence ?
 
-Dans SL-2, nous avons introduit le concept de **determination**. Ce notebook approfondit le cadre formel du **Relevance-Based Learning** (RBL, AIMA 19.4) : proprietes mathematiques, treillis, algorithme MINIMAL-CONSISTENT-DET et selection d'attributs.
+Dans SL-2, nous avons introduit le concept de **détermination**. Ce notebook approfondit le cadre formel du **Relevance-Based Learning** (RBL, AIMA 19.4) : proprietes mathematiques, treillis, algorithme MINIMAL-CONSISTENT-DET et sélection d'attributs.
 
-### Le probleme central
+### Le problème central
 
 Soit un ensemble de $n$ attributs decrivant chaque exemple. L'espace des hypotheses est de taille $O(2^n)$ --- il croit **exponentiellement** avec le nombre d'attributs.
 
-La question cle : **quels attributs sont pertinents** pour predire la cible ?
+La question cle : **quels attributs sont pertinents** pour prédire la cible ?
 
-### L'equation fondamentale du RBL
+### L'équation fondamentale du RBL
 
 RBL repose sur la relation de consequence logique (*entailment*, AIMA Eq. 19.4) :
 
 $$
-\text{Background} \wedge \text{Descriptions} \wedge \text{Classifications} \models \text{Hypothesis}
+\text{Background} \wedge \text{descriptions} \wedge \text{Classifications} \models \text{Hypothesis}
 $$
 
-La difference avec EBL : dans EBL, Background **explique** completement la classification. Dans RBL, Background **contraint la forme** de l'hypothese sans la determiner entierement --- il nous dit quels attributs considerer, mais pas la regle exacte.
+La difference avec EBL : dans EBL, Background **explique** complètement la classification. Dans RBL, Background **contraint la forme** de l'hypothese sans la déterminer entierement --- il nous dit quels attributs considerer, mais pas la règle exacte.
 
 ### Plan de ce notebook
 
 | Section | Contenu | Duree |
 |---------|---------|-------|
-| 2. Determinations | Formalisme, proprietes, verification | 10 min |
+| 2. Determinations | Formalisme, proprietes, vérification | 10 min |
 | 3. Treillis des determinations | Visualisation, relations d'inclusion | 10 min |
 | 4. Algorithme MINIMAL-CONSISTENT-DET | Implementation detaillee | 10 min |
-| 5. Selection d'attributs guidee | RBL vs sklearn, comparaison | 10 min |
+| 5. sélection d'attributs guidee | RBL vs sklearn, comparaison | 10 min |
 | 6. Determinations et semantique web | Parallel RBL <-> OWL | 5 min |
-| 7. Exercices | 3 exercices pratiques | 10 min |",,,,,,,,d668ee10d35d9887,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3a901336,markdown,fr,cfc8a60efd4167c2,"---
+| 7. Exercices | 3 exercices pratiques | 10 min |",,,,,,,,e6fb7bce5bf428c9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3a901336,markdown,fr,dff3ae2a42f59f20,"---
 
 ## 2. Determinations --- Formalisme et proprietes
 
 ### Definition formelle
 
-Un ensemble d'attributs $X = \{x_1, \ldots, x_k\}$ **determine** l'attribut cible $Y$ (note $X > Y$) si pour toute paire d'exemples qui ont les memes valeurs pour tous les attributs dans $X$, ils ont aussi la meme valeur pour $Y$ :
+Un ensemble d'attributs $X = \{x_1, \ldots, x_k\}$ **détermine** l'attribut cible $Y$ (note $X > Y$) si pour toute paire d'exemples qui ont les mêmes valeurs pour tous les attributs dans $X$, ils ont aussi la même valeur pour $Y$ :
 
 $$
 \forall e_1, e_2 \in D : \left(\forall x_i \in X : e_1[x_i] = e_2[x_i]\right) \Rightarrow e_1[Y] = e_2[Y]
@@ -7862,13 +7862,13 @@ $$
 
 ### Proprietes importantes
 
-**Monotonie** : Si $X > Y$ et $X \subseteq X'$, alors $X' > Y$. Ajouter des attributs a une determination valide conserve sa validite.
+**Monotonie** : Si $X > Y$ et $X \subseteq X'$, alors $X' > Y$. Ajouter des attributs a une détermination valide conserve sa validite.
 
-**Minimalite** : Une determination $X > Y$ est **minimale** si aucun sous-ensemble strict de $X$ ne determine $Y$. C'est la determination la plus petite.
+**Minimalite** : Une détermination $X > Y$ est **minimale** si aucun sous-ensemble strict de $X$ ne détermine $Y$. C'est la détermination la plus petite.
 
-**Unicite** : La determination minimale n'est pas forcement unique --- il peut exister plusieurs ensembles minimaux differents.
+**Unicite** : La détermination minimale n'est pas forcement unique --- il peut exister plusieurs ensembles minimaux differents.
 
-> **Origine.** Le formalisme logique des *determinations* ($X > Y$) comme base de l'apprentissage base sur la pertinence (RBL) vient de Davies, T. R. & Russell, S. J. (1987), *A logical approach to reasoning by analogy*, Proceedings of IJCAI-87 --- qui montre comment une determination connue rend l'apprentissage independant des attributs non-pertinents.",,,,,,,,cfc8a60efd4167c2,,,,,,,
+> **Origine.** Le formalisme logique des *determinations* ($X > Y$) comme base de l'apprentissage base sur la pertinence (RBL) vient de Davies, T. R. & Russell, S. J. (1987), *A logical approach to reasoning by analogy*, Proceedings of IJCAI-87 --- qui montre comment une détermination connue rend l'apprentissage indépendant des attributs non-pertinents.",,,,,,,,dff3ae2a42f59f20,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,6b2244c7,code,fr,4af7d9836f7a3e00,"# Implementation : verification de determination avec diagnostic
 
 @dataclass
@@ -7938,9 +7938,9 @@ for attrs in [(""metal"",), (""density"",), (""color"",), (""state"",), (""metal
     result = check_determination(copper_data, list(attrs), ""conductivity"")
     status = ""OUI"" if result.holds else ""NON""
     print(f""  {str(attrs):30s} -> conductivity : {status} ({result.coverage} groupes)"")",,,,,,,,4af7d9836f7a3e00,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3fd9dbce,markdown,fr,49f4bf26f3c4abb4,"### Interpretation : Determinations sur les metaux
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3fd9dbce,markdown,fr,e0e838f04439dfa3,"### Interprétation : Determinations sur les metaux
 
-| Attributs testes | Determine conductivite ? | Raison |
+| Attributs testes | détermine conductivite ? | Raison |
 |-----------------|-------------------------|--------|
 | `metal` | **Oui** | Chaque metal a une conductivite unique |
 | `density` | **Non** | Cu et Fe ont tous deux density=high mais conductivites differentes |
@@ -7948,7 +7948,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3fd9d
 | `state` | **Non** | Cu et Na sont tous deux solid mais conductivites differentes |
 | `metal, density` | **Oui** | Surensemble de `metal` seul, donc toujours valide (monotonie) |
 
-> **Point cle** : La determination minimale est `{metal}`. Les autres attributs (density, color, state) sont des **epiphenomenes** --- ils correlent avec la conductivite mais ne la determinent pas fonctionnellement. La monotonie garantit que tout surensemble d'une determination valide est aussi valide.",,,,,,,,49f4bf26f3c4abb4,,,,,,,
+> **Point cle** : La détermination minimale est `{metal}`. Les autres attributs (density, color, state) sont des **epiphenomenes** --- ils correlent avec la conductivite mais ne la déterminent pas fonctionnellement. La monotonie garantit que tout surensemble d'une détermination valide est aussi valide.",,,,,,,,e0e838f04439dfa3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,29d1b9a6,markdown,fr,3bba40d1f9d5bf10,"---
 
 ## 3. Treillis des determinations
@@ -8028,17 +8028,17 @@ print()
 
 lattice = build_determination_lattice(copper_data, METAL_ATTRS, ""conductivity"")
 display_lattice(lattice, METAL_ATTRS)",,,,,,,,6648341db460e8eb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,1bfe64c6,markdown,fr,d33983e9fb911907,"### Interpretation : Structure du treillis
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,1bfe64c6,markdown,fr,8c4f40b129d7f88a,"### Interprétation : Structure du treillis
 
 Le treillis revele la structure de la connaissance de pertinence :
 
 | Propriete | Observation |
 |-----------|-------------|
 | **Up-set** | Tout surensemble de `{metal}` est aussi valide (monotonie) |
-| **Determination minimale** | `{metal}` est le plus petit ensemble valide |
-| **Bruit** | Les ensembles sans `metal` sont generalement invalides |
+| **détermination minimale** | `{metal}` est le plus petit ensemble valide |
+| **Bruit** | Les ensembles sans `metal` sont généralement invalides |
 
-> **Analogie mathematique** : Le treillis des determinations est isomorphe a la relation d'inclusion sur $\mathcal{P}(\{x_1, \ldots, x_n\})$. La connaissance de pertinence identifie un **filtre** dans ce treillis : les ensembles d'attributs a partir desquels on peut predire la cible.",,,,,,,,d33983e9fb911907,,,,,,,
+> **Analogie mathematique** : Le treillis des determinations est isomorphe a la relation d'inclusion sur $\mathcal{P}(\{x_1, \ldots, x_n\})$. La connaissance de pertinence identifie un **filtre** dans ce treillis : les ensembles d'attributs a partir desquels on peut prédire la cible.",,,,,,,,8c4f40b129d7f88a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,0aecc697,code,fr,c21961e3c43dae55,"# Representation ASCII du treillis
 
 def ascii_lattice(
@@ -8083,11 +8083,11 @@ def ascii_lattice(
 
 
 ascii_lattice(lattice, METAL_ATTRS)",,,,,,,,c21961e3c43dae55,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5ea54d7e,markdown,fr,11819c583b24e039,"---
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5ea54d7e,markdown,fr,d46f156497e0e51c,"---
 
 ## 4. Algorithme MINIMAL-CONSISTENT-DET
 
-L'algorithme MINIMAL-CONSISTENT-DET (AIMA Figure 19.4) trouve la determination minimale en explorant les sous-ensembles par taille croissante.
+L'algorithme MINIMAL-CONSISTENT-DET (AIMA Figure 19.4) trouve la détermination minimale en explorant les sous-ensembles par taille croissante.
 
 ### Principe
 
@@ -8095,7 +8095,7 @@ L'algorithme MINIMAL-CONSISTENT-DET (AIMA Figure 19.4) trouve la determination m
 MINIMAL-CONSISTENT-DET(E, A, Y):
     Pour k = 1, 2, ..., |A|:
         Pour chaque sous-ensemble S de A de taille k:
-            Si S determine Y dans E:
+            Si S détermine Y dans E:
                 retourner S
     retourner None
 ```
@@ -8104,11 +8104,11 @@ MINIMAL-CONSISTENT-DET(E, A, Y):
 
 | Cas | Complexite | Explication |
 |-----|------------|-------------|
-| Pire cas | $O(2^n)$ | Aucune determination n'existe |
-| Determination de taille $d$ | $O(n^d)$ | Arret apres niveau $d$ |
+| Pire cas | $O(2^n)$ | Aucune détermination n'existe |
+| détermination de taille $d$ | $O(n^d)$ | Arret apres niveau $d$ |
 | $d \ll n$ | Polynomiale | Gain majeur par rapport a l'exhaustion |
 
-> **Origine.** L'idee de chercher la determination *minimale* (moins d'attributs pertinents possible) et l'algorithme MIN-FEATURES/FOCUS sous-jacent sont dus a Almuallim, H. & Dietterich, T. G. (1991), *Learning with many irrelevant features*, Proceedings of AAAI-91, pp. 547-552 --- qui demontrent le gain de complexite quand peu d'attributs sont pertinents.",,,,,,,,11819c583b24e039,,,,,,,
+> **Origine.** L'idee de chercher la détermination *minimale* (moins d'attributs pertinents possible) et l'algorithme MIN-FEATURES/FOCUS sous-jacent sont dus a Almuallim, H. & Dietterich, T. G. (1991), *Learning with many irrelevant features*, Proceedings of AAAI-91, pp. 547-552 --- qui demontrent le gain de complexite quand peu d'attributs sont pertinents.",,,,,,,,d46f156497e0e51c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,6319964e,code,fr,d3001fadddea3411,"# Implementation amelioree de MINIMAL-CONSISTENT-DET
 
 @dataclass
@@ -8199,21 +8199,21 @@ if mol_result.determination:
 else:
     print(""\nAucune determination fonctionnelle trouvee."")
     print(""-> Le concept est probablement disjonctif ou depend d'interactions."")",,,,,,,,d3001fadddea3411,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,1ed6994f,markdown,fr,4a3350e02e20104c,"### Interpretation : Determination moleculaire
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,1ed6994f,markdown,fr,0fc9ea7153ed2d10,"### Interprétation : Détermination moleculaire
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Determination minimale | `{logp}` | La lipophilite seule suffit a predire l'activite |
+| détermination minimale | `{logp}` | La lipophilite seule suffit a prédire l'activite |
 | Sous-ensembles testes | $O(n^d)$ | Bien moins que $2^n - 1 = 15$ |
 | Reduction d'espace | $O(2^4) \to O(2^1)$ | Facteur 8x |
 
-> **Point cle** : Si on sait que `logp` determine l'activite, on peut ignorer `mw`, `hbd`, `hba` dans notre modele. L'espace des hypotheses passe de $2^4 = 16$ a $2^1 = 2$ --- un seul attribut a considerer.
+> **Point cle** : Si on sait que `logp` détermine l'activite, on peut ignorer `mw`, `hbd`, `hba` dans notre modèle. L'espace des hypotheses passe de $2^4 = 16$ a $2^1 = 2$ --- un seul attribut a considerer.
 
-> **Connexion moderne** : En chimoinformatique, c'est l'idee de la **regle de Lipinski** (""Rule of Five"") : certaines proprietes moleculaires sont plus pertinentes que d'autres pour predire l'absorption orale. Le RBL formalise cette intuition.",,,,,,,,4a3350e02e20104c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,88f1d020,markdown,fr,6195b2f7ca2f364f,"### Cas d'echec : le concept disjonctif du restaurant
+> **Connexion moderne** : En chimoinformatique, c'est l'idee de la **règle de Lipinski** (""Rule of Five"") : certaines proprietes moleculaires sont plus pertinentes que d'autres pour prédire l'absorption orale. Le RBL formalise cette intuition.",,,,,,,,0fc9ea7153ed2d10,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,88f1d020,markdown,fr,f1981bdd7842b8bd,"### Cas d'échec : le concept disjonctif du restaurant
 
-Reprenons les donnees du restaurant (SL-1, AIMA Table 19.1). Le concept cible est **disjonctif** : `WillWait` si `Patrons=Some` **ou** (`Patrons=Full` **et** `Hungry=Yes`). Une telle logique n'est une fonction d'aucun petit sous-ensemble d'attributs : que trouve MINIMAL-CONSISTENT-DET ?
-",,,,,,,,6195b2f7ca2f364f,,,,,,,
+Reprenons les données du restaurant (SL-1, AIMA Table 19.1). Le concept cible est **disjonctif** : `WillWait` si `Patrons=Some` **ou** (`Patrons=Full` **et** `Hungry=Yes`). Une telle logique n'est une fonction d'aucun petit sous-ensemble d'attributs : que trouve MINIMAL-CONSISTENT-DET ?
+",,,,,,,,f1981bdd7842b8bd,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,57161fdd,code,fr,a149a8eb6b806705,"# Cas d'echec : concept disjonctif du restaurant (donnees SL-1, AIMA Table 19.1)
 restaurant_data = [
     {""Alternate"": ""Yes"", ""Bar"": ""No"",  ""Fri/Sat"": ""No"",  ""Hungry"": ""Yes"", ""Patrons"": ""Some"", ""Price"": ""$$$"", ""Raining"": ""No"",  ""Reservation"": ""Yes"", ""Type"": ""French"",  ""WaitEstimate"": ""0-10"",  ""WillWait"": ""Yes""},
@@ -8253,28 +8253,28 @@ print(""Avec seulement 12 exemples et 10 attributs, de nombreux triplets"")
 print(""d'attributs separent les exemples par pur hasard, sans rapport avec"")
 print(""le vrai concept (qui depend de Patrons et Hungry)."")
 ",,,,,,,,a149a8eb6b806705,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,03c12410,markdown,fr,da368ef4092d55f6,"### Interpretation : echec et determination fallacieuse
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,03c12410,markdown,fr,0fd4b41b35cf0ae1,"### Interprétation : échec et détermination fallacieuse
 
-| Recherche | Resultat | Lecture |
+| Recherche | résultat | Lecture |
 |-----------|----------|--------|
-| 5 premiers attributs (31 tests) | Aucune determination | Le concept `WillWait` est disjonctif (`Patrons=Some OU (Patrons=Full ET Hungry=Yes)`) : ce n'est une fonction d'aucun petit sous-ensemble de ces attributs |
-| 10 attributs (66 tests) | `{Alternate, Fri/Sat, Price}` | Determination **fallacieuse** : 29 triplets distincts ""determinent"" la cible sur ce petit echantillon, par pure coincidence |
+| 5 premiers attributs (31 tests) | Aucune détermination | Le concept `WillWait` est disjonctif (`Patrons=Some OU (Patrons=Full ET Hungry=Yes)`) : ce n'est une fonction d'aucun petit sous-ensemble de ces attributs |
+| 10 attributs (66 tests) | `{Alternate, Fri/Sat, Price}` | détermination **fallacieuse** : 29 triplets distincts ""déterminent"" la cible sur ce petit échantillon, par pure coincidence |
 
-> **Point cle** : une determination n'a de valeur que si l'echantillon est assez grand pour la contraindre. Sur 12 exemples, beaucoup de triplets d'attributs separent les exemples par coincidence --- c'est l'analogue logique du **sur-apprentissage**. La comparaison statistique de la section 5 ci-dessous (information mutuelle, sklearn) aide precisement a detecter ce piege : les attributs d'une determination fallacieuse ont des scores MI faibles.
+> **Point cle** : une détermination n'a de valeur que si l'échantillon est assez grand pour la contraindre. Sur 12 exemples, beaucoup de triplets d'attributs separent les exemples par coincidence --- c'est l'analogue logique du **sur-apprentissage**. La comparaison statistique de la section 5 ci-dessous (information mutuelle, sklearn) aide precisement a détecter ce piège : les attributs d'une détermination fallacieuse ont des scores MI faibles.
 
-> **Deux lecons** : (1) l'absence de determination signale un concept disjonctif ou bruite --- il faut alors passer aux arbres de decision ou a l'ILP ([SL-4](SL-4-InductiveLogicProgramming.ipynb)) ; (2) la presence d'une determination sur un petit echantillon ne prouve rien --- il faut la valider statistiquement.
-",,,,,,,,da368ef4092d55f6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,72861666,markdown,fr,c5d77baefb137938,"---
+> **Deux lecons** : (1) l'absence de détermination signale un concept disjonctif ou bruite --- il faut alors passer aux arbres de decision ou a l'ILP ([SL-4](SL-4-InductiveLogicProgramming.ipynb)) ; (2) la presence d'une détermination sur un petit échantillon ne prouve rien --- il faut la valider statistiquement.
+",,,,,,,,0fd4b41b35cf0ae1,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,72861666,markdown,fr,0350359713e6284c,"---
 
-## 5. Selection d'attributs guidee par la connaissance
+## 5. Sélection d'attributs guidee par la connaissance
 
-Le RBL offre un cadre theorique pour la **selection d'attributs**. Comparons trois approches :
+Le RBL offre un cadre theorique pour la **sélection d'attributs**. Comparons trois approches :
 
 1. **Aveugle** : Enumeration exhaustive de tous les sous-ensembles
-2. **Statistique** : Selection par sklearn (mutual information, chi-squared)
-3. **Guidee (RBL)** : Utilisation de determinations comme contraintes
+2. **Statistique** : sélection par sklearn (mutual information, chi-squared)
+3. **Guidee (RBL)** : utilisation de determinations comme contraintes
 
-Nous allons mesurer l'impact sur un jeu de donnees synthetique ou seul un petit sous-ensemble d'attributs determine reellement la cible.",,,,,,,,c5d77baefb137938,,,,,,,
+Nous allons mesurer l'impact sur un jeu de données synthetique ou seul un petit sous-ensemble d'attributs détermine réellement la cible.",,,,,,,,0350359713e6284c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,8352f3b5,code,fr,bb6695b0e8d287d0,"# Generation de donnees synthetiques avec attributs pertinents et bruit
 
 random.seed(42)
@@ -8323,7 +8323,7 @@ print(f""  {header}"")
 for row in synth_data[:5]:
     vals = "" | "".join(f""{row[a]:>4s}"" for a in ATTR_NAMES[:4]) + f"" | {row['Y']}""
     print(f""  {vals}"")",,,,,,,,bb6695b0e8d287d0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,61cf237e,markdown,fr,5ea807dcc803c08f,"Les donnees sont pretes, avec seulement 2 attributs pertinents parmi 10. La cellule suivante applique MINIMAL-CONSISTENT-DET pour retrouver automatiquement cette determination.",,,,,,,,5ea807dcc803c08f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,61cf237e,markdown,fr,9e3303982eee663b,"Les données sont pretes, avec seulement 2 attributs pertinents parmi 10. La cellule suivante applique MINIMAL-CONSISTENT-DET pour retrouver automatiquement cette détermination.",,,,,,,,9e3303982eee663b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,bad47a00,code,fr,376822aac084cd3c,"# Approche RBL : recherche de determination minimale
 
 print(""Approche RBL : MINIMAL-CONSISTENT-DET"")
@@ -8343,11 +8343,11 @@ if rbl_result.determination:
     print(f""Facteur de reduction : {2**(n-d)}x"")
 else:
     print(""Aucune determination trouvee."")",,,,,,,,376822aac084cd3c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3913ca3c,markdown,fr,58745107e578ccac,"### Selection statistique : Information Mutuelle avec sklearn
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,3913ca3c,markdown,fr,c2323497be51ebe4,"### Sélection statistique : Information Mutuelle avec sklearn
 
-L'approche RBL a identifie `{R1, R2}` comme determination minimale avec une **garantie logique** (si determination il y a, RBL la trouve). Mais que se passe-t-il si les donnees sont bruitees ou que la determination exacte n'existe pas ?
+L'approche RBL a identifié `{R1, R2}` comme détermination minimale avec une **garantie logique** (si détermination il y a, RBL la trouve). Mais que se passe-t-il si les données sont bruitees ou que la détermination exacte n'existe pas ?
 
-L'**information mutuelle** (sklearn) mesure la dependance statistique entre chaque attribut et la cible, sans exiger de determination fonctionnelle exacte. La cellule suivante calcule ces scores et compare les attributs selectionnes par sklearn avec la determination RBL.",,,,,,,,58745107e578ccac,,,,,,,
+L'**information mutuelle** (sklearn) mesure la dépendance statistique entre chaque attribut et la cible, sans exiger de détermination fonctionnelle exacte. La cellule suivante calcule ces scores et compare les attributs selectionnes par sklearn avec la détermination RBL.",,,,,,,,c2323497be51ebe4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,7c8627eb,code,fr,388531d338993fdf,"# Approche 2 : Selection statistique avec sklearn
 # Encodage des donnees categorielles pour sklearn
 
@@ -8384,24 +8384,24 @@ rbl_set = set(rbl_result.determination) if rbl_result.determination else set()
 print(f""\nTop-{N_RELEVANT} sklearn : {sklearn_top}"")
 print(f""Determination RBL : {rbl_set}"")
 print(f""Concordance : {sklearn_top == rbl_set}"")",,,,,,,,388531d338993fdf,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,cf88517c,markdown,fr,7a70e020b485b9fd,"### Interpretation : RBL vs selection statistique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,cf88517c,markdown,fr,4cbea74a2d9afca0,"### Interprétation : RBL vs sélection statistique
 
-| Approche | Methode | Attributs selectionnes | Garantie |
+| approche | méthode | Attributs selectionnes | Garantie |
 |----------|---------|----------------------|----------|
-| **RBL** | Determination fonctionnelle | Les attributs qui determinent *exactement* la cible | Completude (si determination existe) |
+| **RBL** | détermination fonctionnelle | Les attributs qui déterminent *exactement* la cible | Completude (si détermination existe) |
 | **sklearn (MI)** | Information mutuelle | Les attributs les plus *correles* avec la cible | Statistique (pas de garantie fonctionnelle) |
 
 **Avantages du RBL** :
-- **Garantie logique** : si une determination existe, RBL la trouve
-- **Interpretabilite** : le resultat est un ensemble d'attributs, pas un score flou
+- **Garantie logique** : si une détermination existe, RBL la trouve
+- **Interpretabilite** : le résultat est un ensemble d'attributs, pas un score flou
 - **Parsimonie** : trouve le plus petit ensemble
 
 **Limites du RBL** :
-- Suppose une **determination fonctionnelle** exacte (pas de bruit)
-- **Casse en presence de bruit** : un seul contre-exemple invalide une determination
-- Complexite $O(n^d)$ qui reste elevee pour $d$ grand
+- Suppose une **détermination fonctionnelle** exacte (pas de bruit)
+- **Casse en presence de bruit** : un seul contre-exemple invalide une détermination
+- Complexite $O(n^d)$ qui reste élevée pour $d$ grand
 
-> **Synthese** : RBL et sklearn sont **complementaires**. RBL excelle quand on a des connaissances de domaine (determinations connues). Sklearn excelle quand les donnees sont bruitees ou que la determination fonctionnelle n'existe pas.",,,,,,,,7a70e020b485b9fd,,,,,,,
+> **Synthese** : RBL et sklearn sont **complementaires**. RBL excelle quand on a des connaissances de domaine (determinations connues). Sklearn excelle quand les données sont bruitees ou que la détermination fonctionnelle n'existe pas.",,,,,,,,4cbea74a2d9afca0,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,ffe3e3fe,code,fr,07d23324ecf4bcdf,"# Quantification de l'avantage : nombre d'exemples necessaires
 
 import math
@@ -8437,31 +8437,31 @@ print(""et le nombre d'exemples requis devient LINEAIRE en d au lieu de n :"")
 print(f""pour n=100 et d=5, il faut {pac_bound(100)} exemples sans RBL""
       f"" contre {pac_bound(5)} avec la determination."")
 ",,,,,,,,07d23324ecf4bcdf,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,79de4eaf,markdown,fr,55266f03606b86a6,"### Interpretation : Impact quantitatif
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,79de4eaf,markdown,fr,c5b7f865650a36f0,"### Interprétation : Impact quantitatif
 
-La connaissance de pertinence (sous forme de determination) a un impact **exponentiel** sur l'apprentissage :
+La connaissance de pertinence (sous forme de détermination) a un impact **exponentiel** sur l'apprentissage :
 
 | Dimension | Sans RBL | Avec RBL (d=3) | Gain |
 |-----------|----------|----------------|------|
 | Espace hypotheses | $2^{20} \approx 10^6$ | $2^3 = 8$ | $125\,000$x |
 | Espace hypotheses | $2^{100} \approx 10^{30}$ | $2^5 = 32$ | $3 \times 10^{28}$x |
 
-> **Point cle** : C'est la raison fondamentale pour laquelle la **connaissance de domaine** est si precieuse en apprentissage automatique. La determination agit comme un **filtre exponentiel** sur l'espace de recherche. En pratique, cette idee se retrouve dans le **feature engineering** moderne : selectionner les bons attributs est souvent plus important que le choix de l'algorithme.",,,,,,,,55266f03606b86a6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,6d1d952f,markdown,fr,2f115d7f68622674,"---
+> **Point cle** : C'est la raison fondamentale pour laquelle la **connaissance de domaine** est si precieuse en apprentissage automatique. La détermination agit comme un **filtre exponentiel** sur l'espace de recherche. En pratique, cette idee se retrouve dans le **feature engineering** moderne : selectionner les bons attributs est souvent plus important que le choix de l'algorithme.",,,,,,,,c5b7f865650a36f0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,6d1d952f,markdown,fr,71adac84ec262209,"---
 
 ## 6. Determinations et semantique web
 
-Les determinations du RBL ont un parallele direct dans les technologies du Web Semantique :
+Les determinations du RBL ont un parallèle direct dans les technologies du Web Semantique :
 
 | Concept RBL | Equivalent Web Semantique |
 |-------------|--------------------------|
-| Determination $X > Y$ | Propriete fonctionnelle `owl:FunctionalProperty` |
-| Attribut determinant | Cle candidate (`owl:hasKey`) |
+| détermination $X > Y$ | Propriete fonctionnelle `owl:FunctionalProperty` |
+| Attribut déterminant | Cle candidate (`owl:hasKey`) |
 | Monotonie | Subpropriete (si $X > Y$ et $X \subset X'$, $X' > Y$) |
 
-En OWL, declarer qu'une propriete est **fonctionnelle** equivaut a affirmer une determination : pour un individu donne, il n'existe qu'une seule valeur. C'est la meme intuition que RBL.
+En OWL, declarer qu'une propriete est **fonctionnelle** equivaut a affirmer une détermination : pour un individu donne, il n'existe qu'une seule valeur. C'est la même intuition que RBL.
 
-> **Connexion inter-series** : Les notebooks SemanticWeb (SW-13) couvrent les reasoners OWL qui exploitent ces proprietes fonctionnelles pour inferer de nouveaux faits. Le RBL fournit le cadre theorique sous-jacent.",,,,,,,,2f115d7f68622674,,,,,,,
+> **Connexion inter-series** : Les notebooks SemanticWeb (SW-13) couvrent les reasoners OWL qui exploitent ces proprietes fonctionnelles pour inférer de nouveaux faits. Le RBL fournit le cadre theorique sous-jacent.",,,,,,,,71adac84ec262209,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,7c4e0e96,code,fr,5315511ee01fcc48,"# Le parallele RBL <-> OWL, demontre computationnellement
 # Cote OWL : un mini triple-store (sujet, predicat, objet) en pur Python.
 # La determination  metal > conductivite  (RBL) correspond a declarer la
@@ -8516,7 +8516,7 @@ print(""Les deux detecteurs flaguent la MEME incoherence. Difference cle :"")
 print(""RBL DECOUVRE la determination a partir des donnees, tandis qu'OWL"")
 print(""la DECLARE explicitement dans l'ontologie (cf. SW-13, reasoners)."")
 ",,,,,,,,5315511ee01fcc48,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,b2ed3f33,markdown,fr,e08a7f92980d244e,"---
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,b2ed3f33,markdown,fr,99337109ab79470b,"---
 
 ## 7. Exercices
 
@@ -8524,10 +8524,10 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,b2ed3
 
 | Concept | Formule | Implementation |
 |---------|---------|----------------|
-| Determination | $X > Y$ ssi $\forall e_1, e_2 : X(e_1) = X(e_2) \Rightarrow Y(e_1) = Y(e_2)$ | `check_determination()` |
+| détermination | $X > Y$ ssi $\forall e_1, e_2 : X(e_1) = X(e_2) \Rightarrow Y(e_1) = Y(e_2)$ | `check_determination()` |
 | Treillis | $\mathcal{P}(A)$ avec inclusion | `build_determination_lattice()` |
 | MINIMAL-CONSISTENT-DET | Parcourir par taille croissante | `minimal_consistent_det()` |
-| Reduction d'espace | $2^n \to 2^d$ | Analyse PAC |",,,,,,,,e08a7f92980d244e,,,,,,,
+| Reduction d'espace | $2^n \to 2^d$ | Analyse PAC |",,,,,,,,99337109ab79470b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5f23755b,code,fr,b2fd8b3036d6e83e,"# Exemple guide 1 : Determinations dans un jeu de donnees meteorologiques
 # Resolution de l'Exercice 1 (See #2161) : solution demontree ci-dessous.
 #
@@ -8616,7 +8616,7 @@ print('Question : pourquoi RBL exclut-il naturellement les attributs non-pertine
 # Indice : un attribut non-pertinent augmente le nombre de groupes sans reduire
 # les violations ; la recherche par taille croissante le saute.
 # result = None  # TODO etudiant : (determination_brute, determination_bruitee)",,,,,,,,1830670cf1aca45e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,68e70655,markdown,fr,7740348b4fbeecae,L'exercice suivant compare l'approche RBL a une selection aleatoire d'attributs pour mesurer concretement le benefice de la connaissance de pertinence.,,,,,,,,7740348b4fbeecae,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,68e70655,markdown,fr,53d8bebe21666301,L'exercice suivant compare l'approche RBL a une sélection aléatoire d'attributs pour mesurer concretement le benefice de la connaissance de pertinence.,,,,,,,,53d8bebe21666301,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,cc196778,code,fr,bae6bb627c6dd81f,"# Exemple guide 2 : RBL vs selection aleatoire d'attributs
 # Resolution de l'Exercice 2 (See #2161) : on mesure CONCRETEMENT le benefice
 # de connaitre les attributs pertinents. Sur les donnees synthetiques de la
@@ -8843,7 +8843,7 @@ print('Exercice a completer : comparer MI pure / RBL / selecteur guide avec un a
 print('Question : pourquoi le tie-break par parcimonie est-il indispensable des qu il y a redondance ?')
 
 # result = None  # TODO etudiant : (top2_mi, rbl_red, guided_red)",,,,,,,,268fa71e5af55771,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5eba2e20,markdown,fr,d4c5aa4a3a0eadb3,"---
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5eba2e20,markdown,fr,a2dd37419cc7e945,"---
 
 ## 8. Conclusion
 
@@ -8851,15 +8851,15 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,5eba2
 
 Ce notebook a approfondi le cadre du **Relevance-Based Learning** (AIMA 19.4) :
 
-1. **Determinations** : un ensemble d'attributs $X$ determine $Y$ si connaitre $X$ suffit pour determiner $Y$ sans ambiguite. La propriete de **monotonie** garantit que tout surensemble d'une determination est aussi une determination.
+1. **Determinations** : un ensemble d'attributs $X$ détermine $Y$ si connaitre $X$ suffit pour déterminer $Y$ sans ambiguite. La propriete de **monotonie** garantit que tout surensemble d'une détermination est aussi une détermination.
 
 2. **Treillis des determinations** : l'ensemble des sous-ensembles d'attributs forme un treillis sous l'inclusion. Les determinations valides forment un filtre (up-set) dans ce treillis.
 
-3. **MINIMAL-CONSISTENT-DET** : algorithme qui trouve la determination minimale en explorant par taille croissante. Complexite $O(n^d)$ quand la determination est de taille $d$.
+3. **MINIMAL-CONSISTENT-DET** : algorithme qui trouve la détermination minimale en explorant par taille croissante. Complexite $O(n^d)$ quand la détermination est de taille $d$.
 
-4. **Reduction exponentielle** : la connaissance de pertinence reduit l'espace des hypotheses de $O(2^n)$ a $O(2^d)$, un gain exponentiel quand $d \ll n$.
+4. **Reduction exponentielle** : la connaissance de pertinence réduit l'espace des hypotheses de $O(2^n)$ a $O(2^d)$, un gain exponentiel quand $d \ll n$.
 
-5. **RBL vs sklearn** : RBL offre des garanties logiques mais exige des donnees propres (pas de bruit). Sklearn est robuste au bruit mais sans garantie fonctionnelle. Les deux approches sont **complementaires**.
+5. **RBL vs sklearn** : RBL offre des garanties logiques mais exige des données propres (pas de bruit). Sklearn est robuste au bruit mais sans garantie fonctionnelle. Les deux approches sont **complementaires**.
 
 ### Connexions
 
@@ -8868,34 +8868,34 @@ Ce notebook a approfondi le cadre du **Relevance-Based Learning** (AIMA 19.4) :
 | Suite de la serie | **ILP** (Inductive Logic Programming) | [SL-4](SL-4-InductiveLogicProgramming.ipynb) |
 | Prerequis | EBL & introduction RBL | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) |
 | Web Semantique | Proprietes fonctionnelles OWL | SW-13 Reasoners |
-| Machine Learning | Feature selection moderne | sklearn.feature_selection |",,,,,,,,d4c5aa4a3a0eadb3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,b421cbe4,markdown,fr,c5c3dee21e81d148,"---
+| Machine Learning | Feature sélection moderne | sklearn.feature_selection |",,,,,,,,a2dd37419cc7e945,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,b421cbe4,markdown,fr,e5519ebb84e7bb31,"---
 
-## Defi presentation
+## Defi présentation
 
 Modalite du cours : chaque groupe choisit **un exercice** de la serie, le prepare,
-et le presente en seance. Resoudre l'exercice est le minimum ; ce qui distingue une
-presentation qui maitrise le sujet, c'est la **question-twist** associee ci-dessous.
-Elle fait partie integrante de la presentation attendue.
+et le présente en seance. résoudre l'exercice est le minimum ; ce qui distingue une
+présentation qui maitrise le sujet, c'est la **question-twist** associee ci-dessous.
+Elle fait partie integrante de la présentation attendue.
 
 | Exercice | Question-twist a traiter en plus |
 |----------|----------------------------------|
-| **Ex. 1 (determinations meteo)** | Ajoutez UNE observation bruitee a vos donnees : quelle determination minimale survit ? Qu'est-ce que cela illustre de la fragilite du cadre logique face au cadre statistique ? |
-| **Ex. 2 (RBL vs selection aleatoire)** | Faites varier le ratio attributs-bruit / attributs-pertinents jusqu'au point de croisement ou la selection statistique bat le RBL. Ou est ce point sur vos donnees, et qu'est-ce qui le determine ? |
+| **Ex. 1 (determinations meteo)** | Ajoutez UNE observation bruitee a vos données : quelle détermination minimale survit ? Qu'est-ce que cela illustre de la fragilite du cadre logique face au cadre statistique ? |
+| **Ex. 2 (RBL vs sélection aléatoire)** | Faites varier le ratio attributs-bruit / attributs-pertinents jusqu'au point de croisement ou la sélection statistique bat le RBL. Ou est ce point sur vos données, et qu'est-ce qui le détermine ? |
 | **Ex. 3 (selecteur hybride)** | Votre selecteur hybride herite-t-il des garanties logiques des determinations, de la robustesse de l'information mutuelle, des deux, ou d'aucune ? Justifiez avec un contre-exemple construit. |
-",,,,,,,,c5c3dee21e81d148,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,730925ce,markdown,fr,f56e10c88f03696b,"---
+",,,,,,,,e5519ebb84e7bb31,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,730925ce,markdown,fr,4c81ca7124ec12f5,"---
 
 ## Ressources
 
 - Russell & Norvig, *AI: A Modern Approach*, 3e ed., Section 19.4
 - T. Mitchell, *Machine Learning*, Chapitre 11 (Computational Learning Theory)
 - M. Kearns & U. Vazirani, *An Introduction to Computational Learning Theory*
-- [AIMA Python Code](https://github.com/aimacode/aima-python) - Implementations de reference
+- [AIMA Python Code](https://github.com/aimacode/aima-python) - Implementations de référence
 
 ---
 
-**Retour** : [Index SymbolicLearning](./README.md) | [<< SL-2](SL-2-KnowledgeBasedLearning.ipynb) | [SL-4 >>](SL-4-InductiveLogicProgramming.ipynb)",,,,,,,,f56e10c88f03696b,,,,,,,
+**Retour** : [Index SymbolicLearning](./README.md) | [<< SL-2](SL-2-KnowledgeBasedLearning.ipynb) | [SL-4 >>](SL-4-InductiveLogicProgramming.ipynb)",,,,,,,,4c81ca7124ec12f5,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,50a20e10,markdown,fr,b28e4a4c3240bf69,"# SL-3 — Apprentissage basé sur la pertinence (twin C# from-scratch)
 
 Ce notebook est le **jumeau C# / .NET** de [SL-3-RelevanceLearning.ipynb](SL-3-RelevanceLearning.ipynb) — marathon de parité #4956.
