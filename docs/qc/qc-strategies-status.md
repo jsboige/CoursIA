@@ -76,7 +76,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 7, backtests QC Cloud MCP) | 5 | cohorte **ML supervisé / DL / SVM-wavelet** (5 stratégies best-guess ML du bucket Vivant promues) — **0 edge significative** (PSR max = 29.3 % Sector-ML-Classification ; 2/5 PSR < 10 % ; aucune > 50 %), 5 Needs-improvement — confirme que le ML in-sample sans walk-forward multi-seed ne surfit pas la cohorte |
 | Vérifié (tranche 8, backtests QC Cloud MCP) | 5 | cohorte **Trend + Régime + Vol risk** (5 stratégies best-guess du bucket Vivant promues) — **0 edge significative** (PSR < 50 % partout), 4 Needs-improvement, 1 BROKEN (VIX-TermStructure Sharpe négatif −0.125, PSR 0.18 %) ; max PSR 24.99 % TrendStocksLite |
 | Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
-| Vivant (best-guess, non vérifié) | 41 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
+| Vérifié (tranche 10, backtests QC Cloud MCP) | 5 | cohorte DeepLearning+LSTM+Temporal-CNN — **1 BROKEN** (Crypto-LSTM-Prediction Sharpe -0.021) ; PSR max 28.70 % (Temporal-CNN-Prediction) |
+| Vivant (best-guess, non vérifié) | 36 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -256,7 +257,28 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.258 ; CAGR 6.49 % ; MaxDD 17.0 % ; PSR 8.69 % ; NP 55.3 % ($53 295) — modeste, edge nul |
 | `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | **Needs-improvement** | 4100 j. (2015–2026) ; Sharpe 0.213 ; CAGR 5.50 % ; MaxDD 17.5 % ; PSR 4.43 % ; NP 82.5 % ($-7 452) — **NP absolu négatif** (`netProfitAbsolute` = $-7 452) ; edge nul |
 
-#### Vivant (best-guess, non vérifié) (41)
+#### Vérifié (tranche 10, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 10 (#1621)** : 5 stratégies promues via backtests QC Cloud réels (MCP `qc-mcp`,
+> backtests existants relus firsthand). Cohorte **DeepLearning + LSTM + Temporal-CNN** (5 variantes
+> DL distinctes des tranches 2-9 — focus sur réseaux récurrents / convolutifs temporels).
+> Métriques pleine période in-sample (non walk-forward OOS). **0 edge statistiquement significative**
+> (PSR < 50 % partout — PSR max 28.70 % `Temporal-CNN-Prediction`). **1 BROKEN** :
+> `Crypto-LSTM-Prediction` Sharpe -0.021 (légèrement négatif, drawdown 27.4 %).
+> Walk-forward multi-seed OOS requis avant toute promotion production. Identité de profil
+> `DL-LSTM` ↔ `LSTM-Forecasting` (Sharpe 0.525 / MaxDD 32.5 % / PSR ~13.4 % quasi-identiques)
+> = cohérent ; mais **divergence** `ML-Temporal-CNN` (Sharpe 0.161) vs `Temporal-CNN-Prediction`
+> (Sharpe 0.734) → deux variantes divergentes (hand-rolled vs MLPClassifier sklearn).
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM PyTorch bi-dir 2×50) | **Needs-improvement** | 2766 j. ; Sharpe 0.525 ; CAGR 11.29 % ; MaxDD 32.5 % ; PSR 13.42 % ; NP 224.7 % ($227 577) — profil identique à `LSTM-Forecasting` ci-dessous |
+| `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (MLPClassifier sklearn) | **Needs-improvement** | 2766 j. ; Sharpe 0.525 ; CAGR 11.30 % ; MaxDD 32.5 % ; PSR 13.44 % ; NP 224.9 % ($227 712) — quasi-identique à `DL-LSTM` (hand-rolled vs sklearn convergent) |
+| `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (DLinear/LSTM crypto) | **BROKEN** | 2313 j. ; **Sharpe -0.021** ; CAGR 3.40 % ; MaxDD 27.4 % ; **PSR 1.21 %** ; NP 23.6 % ($25 198) — Sharpe négatif, PSR quasi-nul, edge absent |
+| `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN hand-rolled) | **Needs-improvement** | post-#2801 (tradeableDates=0) ; Sharpe 0.161 ; CAGR 4.81 % ; MaxDD 31.7 % ; PSR 2.68 % ; NP 26.5 % ($30 099) — Sharpe faible, edge absent |
+| `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | **Needs-improvement (max cohorte)** | post-#2801 (tradeableDates=0) ; **Sharpe 0.734** ; **CAGR 20.51 %** ; **MaxDD 21.6 %** (min cohorte) ; **PSR 28.70 %** ; NP 154.1 % ($169 062) — meilleur Sharpe/CAGR/MaxDD cohorte mais PSR < 50 % |
+
+#### Vivant (best-guess, non vérifié) (36)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -266,9 +288,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
-| `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | Vivant | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb |
+| `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | **Vérifié tranche 10** | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | Vivant | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
-| `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | Vivant | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
+| `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb — voir section tranche 10 |
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | Vivant | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | Vivant | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb |
@@ -277,7 +299,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | Vivant | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb |
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | **Vérifié tranche 8** | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) — voir section tranche 8 |
-| `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | Vivant | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb |
+| `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | Vivant | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
 | `ML-Classification` | `projects/ML-Classification/` | ML supervisé | Vivant | main.py: class MLClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-DeepLearning` | `projects/ML-DeepLearning/` | DL | Vivant | main.py: class SimpleLSTM(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
@@ -292,7 +314,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Regression` | `projects/ML-Regression/` | ML supervisé | Vivant | main.py: class MLRegressionAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 25.06 %) |
 | `ML-SVM` | `projects/ML-SVM/` | ML supervisé (SVM) | Vivant | main.py: class MLSVMAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
+| `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | **Vérifié tranche 10** | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) — voir section tranche 10 |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 7.84 %) |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | **Vérifié tranche 9** | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 9 |
@@ -307,7 +329,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 29.34 %, période ESGF 2024–2026 585 j.) |
 | `Stoploss-Volatility-ML` | `projects/Stoploss-Volatility-ML/` | ML risk | Vivant | main.py: class StoplossVolatilityMLAlgorithm(QCAlgorithm) + research.ipynb |
-| `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPrediction(QCAlgorithm) + research.ipynb |
+| `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | **Vérifié tranche 10** | main.py: class TemporalCNNPrediction(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Commodities (term structure) | Vivant | main.py: class CommodityTermStructureAlgorithm(QCAlgorithm) |
 | `Trend-Following` | `projects/Trend-Following/` | Trend (AQR) | Vivant | main.py: class TrendFollowingAQR(QCAlgorithm) + quantbook.ipynb |
 | `TrendFilteredMeanReversion` | `projects/TrendFilteredMeanReversion/` | Mean reversion filtré | Vivant | main.py: class TrendFilteredMeanReversion(QCAlgorithm) + research.ipynb |
