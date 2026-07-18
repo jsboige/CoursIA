@@ -9271,7 +9271,7 @@ else:
 - Kokoro est le plus stable et le plus rapide, donc bon fallback
 
 > **Note technique** : Ajoutez un systeme de cache pour les textes repetitifs. Utilisez un hash du texte comme cle de cache pour eviter de regenerer le meme audio.",,,,,,,,0b72a2a197525284,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2724266b,markdown,fr,3c33df3e8efa896c,"# Generation MIDI avec midi-model (SkyTNT)
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2724266b,markdown,fr,ffb4f2ae4f9daba9,"# Generation MIDI avec midi-model (SkyTNT)
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -9281,21 +9281,21 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2724266b,ma
 ## Objectifs d'Apprentissage
 
 - [ ] Comprendre la difference entre generation symbolique (MIDI) et generation audio directe
-- [ ] Installer et charger le modele midi-model (architecture dual-transformer)
-- [ ] Generer des sequences MIDI multi-instruments de maniere inconditionnelle
+- [ ] Installer et charger le modèle midi-model (architecture dual-transformer)
+- [ ] générer des sequences MIDI multi-instruments de maniere inconditionnelle
 - [ ] Configurer des prompts musicaux (tempo, instruments, tonalite)
-- [ ] Maitriser les parametres de sampling (temperature, top_k, top_p)
+- [ ] Maitriser les paramètres de sampling (temperature, top_k, top_p)
 - [ ] Synthetiser le MIDI en audio avec FluidSynth
 - [ ] Comparer generation symbolique (MIDI) vs generation audio directe (MusicGen)
 
 ## Prerequis
 
 - GPU NVIDIA avec au moins 2 GB VRAM (ou CPU, plus lent)
-- FluidSynth >= 2.0 installe au niveau systeme
+- FluidSynth >= 2.0 installe au niveau système
 - `pip install torch safetensors peft transformers pyfluidsynth tqdm huggingface_hub`
 - Connaissances de base en theorie musicale (gammes, accords) utiles mais pas indispensables
 
-**Navigation :** [<< 02-5](02-5-Multi-Model-TTS-Gateway.ipynb) | [Index](../README.md) | [03-1 >>](../03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb)",,,,,,,,3c33df3e8efa896c,,,,,,,
+**Navigation :** [<< 02-5](02-5-Multi-Model-TTS-Gateway.ipynb) | [Index](../README.md) | [03-1 >>](../03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb)",,,,,,,,ffb4f2ae4f9daba9,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,bdd0ca09,code,fr,3061d97a2dfbd2fb,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -9324,7 +9324,7 @@ BATCH_MODE = ""true""
 skip_widgets = True
 notebook_mode = ""batch""
 ",,,,,,,,55eaf3dee475f6ef,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2d932353,markdown,fr,266417c115f5721b,"Les parametres Papermill definissent le modele midi-model (`skytnt/midi-model-tv2o-medium`), les parametres de sampling (temperature, top_k, top_p) et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,266417c115f5721b,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2d932353,markdown,fr,11b96398f1c523ee,"Les paramètres Papermill definissent le modèle midi-model (`skytnt/midi-model-tv2o-medium`), les paramètres de sampling (temperature, top_k, top_p) et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,11b96398f1c523ee,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0a84bc93,code,fr,b736dd2247174c47,"# Setup environnement et imports
 import os
 import sys
@@ -9390,18 +9390,18 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Modele : {model_id}"")
 print(f""Max events : {max_len}, Temperature : {temperature}"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT)}"")",,,,,,,,b736dd2247174c47,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,924a3dc1,markdown,fr,082fc60ff7f3f4b7,"### Interpretation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,924a3dc1,markdown,fr,5a91eb1b720117dc,"### Interpretation : Configuration de l'environnement
 
 L'environnement est correctement configure avec les elements suivants :
 
 | Composant | Statut | Role |
 |-----------|--------|------|
 | GPU RTX 3090 | 24 GB VRAM | Generation rapide (5-30s vs 1-5min CPU) |
-| Repertoires | Crees | Stockage des fichiers MIDI generes |
+| Repertoires | Crees | Stockage des fichiers MIDI générés |
 | Helpers audio | Importes | Fonctions de lecture audio |
 | Device | cuda | Utilisation du GPU pour l'inference |
 
-**Verification GPU** : La presence d'un GPU avec suffisamment de VRAM est critique pour la generation MIDI. Le modele medium (~100M parametres) necessite environ 0.5-2 GB de VRAM en bfloat16, bien moins que MusicGen (10-20 GB).",,,,,,,,082fc60ff7f3f4b7,,,,,,,
+**Verification GPU** : La presence d'un GPU avec suffisamment de VRAM est critique pour la generation MIDI. Le modèle medium (~100M paramètres) necessite environ 0.5-2 GB de VRAM en bfloat16, bien moins que MusicGen (10-20 GB).",,,,,,,,5a91eb1b720117dc,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,1c474dcc,markdown,fr,b1db234789de6fea,"L'environnement Python est initialise et les repertoires de sortie sont crees. La cellule suivante charge le fichier `.env` pour recuperer le token HuggingFace, utile pour le telechargement des poids de `skytnt/midi-model`.",,,,,,,,b1db234789de6fea,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,1d5b8b74,code,fr,a7367a0bec6411ef,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -9428,23 +9428,23 @@ if hf_token:
     print(""Token HuggingFace disponible"")
 else:
     print(""Token HuggingFace non disponible (telechargement public uniquement)"")",,,,,,,,a7367a0bec6411ef,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,bfc6056b,markdown,fr,a8c2c83d32fee59c,"### Interpretation : Chargement .env
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,bfc6056b,markdown,fr,f2c1c38be9648696,"### Interpretation : Chargement .env
 
 Le fichier `.env` n'a pas ete trouve dans ce repertoire. Les variables d'environnement sont utilisees en fallback. Pour le telechargement depuis HuggingFace :
 
 | Scenario | Token requis | Notes |
 |----------|--------------|-------|
-| Modele public midi-model | Non | Le modele est accessible sans authentification |
-| Modeles prives | Oui | Necessite `HUGGINGFACE_TOKEN` ou `HF_TOKEN` |
+| modèle public midi-model | Non | Le modèle est accessible sans authentification |
+| modèles prives | Oui | Necessite `HUGGINGFACE_TOKEN` ou `HF_TOKEN` |
 | Rate limits | Oui | Token recommande pour eviter les limitations |
 
-**Prochaine etape** : Telechargement des fichiers sources du modele depuis le depot HuggingFace `skytnt/midi-model-tv2o-medium`.",,,,,,,,a8c2c83d32fee59c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a2e688fd,markdown,fr,7ce3a474795b81d2,"## Dependances GPU Optionnelles
-Ce notebook utilise un modele Transformer leger (~200 MB). GPU recommande pour la vitesse, mais le CPU fonctionne.
-FluidSynth est requis au niveau systeme pour la synthese audio des fichiers MIDI.",,,,,,,,7ce3a474795b81d2,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,d1730602,markdown,fr,20e9e127f89f517a,"## Section 1 : Generation symbolique vs generation audio
+**Prochaine étape** : Telechargement des fichiers sources du modèle depuis le depot HuggingFace `skytnt/midi-model-tv2o-medium`.",,,,,,,,f2c1c38be9648696,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a2e688fd,markdown,fr,458483a634af958a,"## Dependances GPU Optionnelles
+Ce notebook utilise un modèle Transformer leger (~200 MB). GPU recommande pour la vitesse, mais le CPU fonctionne.
+FluidSynth est requis au niveau système pour la synthese audio des fichiers MIDI.",,,,,,,,458483a634af958a,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,d1730602,markdown,fr,9fe413eb0375f3d7,"## Section 1 : Generation symbolique vs generation audio
 
-Il existe deux approches fondamentalement differentes pour generer de la musique par IA :
+Il existe deux approches fondamentalement differentes pour générer de la musique par IA :
 
 | Aspect | Generation symbolique (MIDI) | Generation audio (MusicGen) |
 |--------|------------------------------|-----------------------------|
@@ -9462,10 +9462,10 @@ midi-model utilise une architecture **dual-transformer** basee sur LLaMA :
 | Composant | Role | Taille (medium) |
 |-----------|------|------------------|
 | **net** (Main) | Traite la sequence d'evenements MIDI | 12 couches, 16 tetes, 1024 hidden |
-| **net_token** (Token) | Genere les tokens individuels par evenement | 3 couches, 4 tetes, 1024 hidden |
+| **net_token** (Token) | généré les tokens individuels par evenement | 3 couches, 4 tetes, 1024 hidden |
 | **Tokenizer V2** | Encode/decode les evenements MIDI | Vocabulaire : 3406 tokens |
 
-Le tokenizer V2 represente chaque evenement MIDI par jusqu'a 8 tokens : type, temps, piste, canal, pitch, velocity, duree.",,,,,,,,20e9e127f89f517a,,,,,,,
+Le tokenizer V2 represente chaque evenement MIDI par jusqu'a 8 tokens : type, temps, piste, canal, pitch, velocity, duree.",,,,,,,,9fe413eb0375f3d7,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,15722022,code,fr,3554b09a96c3fe6d,"# Installation et telechargement du modele
 print(""INSTALLATION ET CHARGEMENT"")
 print(""="" * 45)
@@ -9541,15 +9541,15 @@ if synthesize_audio:
 
 if model_files_ready:
     print(f""\nFichiers source prets dans : {MIDI_MODEL_DIR.relative_to(GENAI_ROOT)}"")",,,,,,,,3554b09a96c3fe6d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,3cdb91e2,markdown,fr,9eee0acdc9d68b7e,"Cette section prepare l'environnement pour midi-model en verifiant les dependances et en telechargeant les fichiers sources necessaires. Le modele midi-model est distribue sous forme de fichiers Python source plutot que de package pip, necessitant un telechargement manuel depuis HuggingFace.
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,3cdb91e2,markdown,fr,20b04b12e94d9665,"Cette section prepare l'environnement pour midi-model en verifiant les dependances et en telechargeant les fichiers sources necessaires. Le modèle midi-model est distribue sous forme de fichiers Python source plutot que de package pip, necessitant un telechargement manuel depuis HuggingFace.
 
 **Dependances critiques** :
-- `safetensors` : Chargement securise des poids du modele
+- `safetensors` : Chargement securise des poids du modèle
 - `peft` : Parameter-Efficient Fine-Tuning (optionnel pour LoRA)
 - `pyfluidsynth` : Synthese audio MIDI (optionnel)
 - `transformers` : Infrastructure Transformer (optionnel)
-- `FluidSynth` : Synthetiseur systeme (requis pour audio)",,,,,,,,9eee0acdc9d68b7e,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a94ddbb7,markdown,fr,fa986ea4bc3048b4,"Les dependances Python (`peft`, `pyfluidsynth`) et les fichiers sources du depot `midi-model` sont telecharges. La cellule suivante charge le modele en memoire et initialise le tokenizer V2 (vocabulaire de 3406 tokens).",,,,,,,,fa986ea4bc3048b4,,,,,,,
+- `FluidSynth` : Synthetiseur système (requis pour audio)",,,,,,,,20b04b12e94d9665,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a94ddbb7,markdown,fr,e4d07b4d878c44ad,"Les dependances Python (`peft`, `pyfluidsynth`) et les fichiers sources du depot `midi-model` sont telecharges. La cellule suivante charge le modèle en memoire et initialise le tokenizer V2 (vocabulaire de 3406 tokens).",,,,,,,,e4d07b4d878c44ad,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,cf31a143,code,fr,ce8cabe8245116a5,"# Chargement du modele midi-model
 print(""CHARGEMENT DU MODELE"")
 print(""="" * 45)
@@ -9612,25 +9612,25 @@ if model_files_ready:
         print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")
 else:
     print(""Fichiers source non disponibles"")",,,,,,,,ce8cabe8245116a5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,844269d8,markdown,fr,2e2298ec9ae1bdd3,"### Interpretation : Chargement du modele
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,844269d8,markdown,fr,505fc327cbf2f138,"### Interpretation : Chargement du modèle
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
-| Parametres | ~100M (medium) | Beaucoup plus leger que MusicGen (300M-3.3B) |
+| paramètres | ~100M (medium) | Beaucoup plus leger que MusicGen (300M-3.3B) |
 | VRAM | ~0.5-2 GB | Accessible sur la plupart des GPU |
 | Vocabulaire | 3406 tokens | Couvre tous les evenements MIDI standard |
 
-Le modele medium offre un bon equilibre entre qualite et rapidite. La variante ""o"" (optimised) reorganise les pistes et canaux MIDI pour de meilleurs resultats.",,,,,,,,2e2298ec9ae1bdd3,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,8507ba72,markdown,fr,41014006206850ee,"## Section 2 : Generation inconditionnelle
+Le modèle medium offre un bon equilibre entre qualite et rapidite. La variante ""o"" (optimised) reorganise les pistes et canaux MIDI pour de meilleurs resultats.",,,,,,,,505fc327cbf2f138,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,8507ba72,markdown,fr,6de38706670f670e,"## Section 2 : Generation inconditionnelle
 
-La generation inconditionnelle laisse le modele composer librement sans contrainte. Le modele choisit le tempo, les instruments, la tonalite et le style.
+La generation inconditionnelle laisse le modèle composer librement sans contrainte. Le modèle choisit le tempo, les instruments, la tonalite et le style.
 
-| Parametre | Valeur | Role |
+| paramètre | Valeur | Role |
 |-----------|--------|------|
-| `max_len` | 512 | Nombre max d'evenements MIDI a generer |
+| `max_len` | 512 | Nombre max d'evenements MIDI a générer |
 | `temp` | 1.0 | Diversite du sampling |
 | `top_k` | 20 | Filtre les k tokens les plus probables |
-| `top_p` | 0.98 | Nucleus sampling |",,,,,,,,41014006206850ee,,,,,,,
+| `top_p` | 0.98 | Nucleus sampling |",,,,,,,,6de38706670f670e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,36d1e860,code,fr,50d509623ad7d7ff,"# Fonctions utilitaires pour la generation et la synthese
 
 def generate_and_save(model, tokenizer, prompt=None, max_len=512,
@@ -9712,20 +9712,20 @@ def play_midi(mid_score, soundfont_path, sample_rate=44100, preview_seconds=3):
 
 
 print(""Fonctions utilitaires definies"")",,,,,,,,50d509623ad7d7ff,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4bd1435b,markdown,fr,9a1c611c13a7d635,"Cette section definit les fonctions utilitaires pour la generation MIDI et la synthese audio. Trois fonctions principales sont implementees :
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4bd1435b,markdown,fr,d70412f2e7a26a30,"Cette section definit les fonctions utilitaires pour la generation MIDI et la synthese audio. Trois fonctions principales sont implementees :
 
-| Fonction | Role | Parametres cles |
+| Fonction | Role | paramètres cles |
 |----------|------|-----------------|
-| `generate_and_save()` | Genere une sequence MIDI et sauvegarde le fichier | `prompt`, `max_len`, `temp`, `top_k`, `top_p` |
+| `generate_and_save()` | généré une sequence MIDI et sauvegarde le fichier | `prompt`, `max_len`, `temp`, `top_k`, `top_p` |
 | `synthesize_midi()` | Convertit un score MIDI en audio via FluidSynth | `mid_score`, `soundfont_path` |
 | `play_midi()` | Synthetise et affiche un lecteur audio dans le notebook | `mid_score`, `soundfont_path` |
 
 Le processus complet est :
-1. **Generation** : Le modele cree des tokens MIDI
+1. **Generation** : Le modèle cree des tokens MIDI
 2. **Detokenization** : Conversion des tokens en score MIDI
 3. **Serialisation** : Export en fichier .mid
-4. **Synthese** : Conversion audio via FluidSynth (optionnel)",,,,,,,,9a1c611c13a7d635,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,ffcd1bc9,markdown,fr,8b54bc9bc185318f,Les fonctions de generation MIDI et de synthese audio FluidSynth sont definies. La cellule suivante lance la generation inconditionnelle : le modele compose 3 morceaux sans contrainte de style ou d'instrument.,,,,,,,,8b54bc9bc185318f,,,,,,,
+4. **Synthese** : Conversion audio via FluidSynth (optionnel)",,,,,,,,d70412f2e7a26a30,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,ffcd1bc9,markdown,fr,b0a5100a4730e7d7,Les fonctions de generation MIDI et de synthese audio FluidSynth sont definies. La cellule suivante lance la generation inconditionnelle : le modèle compose 3 morceaux sans contrainte de style ou d'instrument.,,,,,,,,b0a5100a4730e7d7,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,f23543ac,code,fr,8a78181a1ec8adf9,"# Generation inconditionnelle
 print(""GENERATION INCONDITIONNELLE"")
 print(""="" * 45)
@@ -9765,34 +9765,34 @@ if midi_model_loaded and generate_midi:
               f""{data['gen_time']:<12.2f} {data['file_size']:<12}"")
 else:
     print(""Modele non charge ou generation desactivee"")",,,,,,,,8a78181a1ec8adf9,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4586a5dc,markdown,fr,58e729eb97982ecd,"### Interpretation : Generation inconditionnelle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4586a5dc,markdown,fr,6880bd0899889aac,"### Interpretation : Generation inconditionnelle
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
-| Evenements | 200-512 | Nombre de notes/changements generes |
-| Pistes | 2-8 | Le modele attribue automatiquement les instruments |
+| Evenements | 200-512 | Nombre de notes/changements générés |
+| Pistes | 2-8 | Le modèle attribue automatiquement les instruments |
 | Temps | 5-30s (GPU) | Beaucoup plus rapide que MusicGen |
 | Taille .mid | 1-10 KB | Extremement compact vs audio |
 
 **Points cles** :
 1. Chaque generation est unique et non-deterministe
-2. Le modele choisit librement les instruments, le tempo et la structure
-3. Les fichiers MIDI sont editables dans n'importe quel DAW (FL Studio, Ableton, MuseScore)",,,,,,,,58e729eb97982ecd,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,88ce3eb6,markdown,fr,84546b4791c8432c,"### Exercice 1 : Construction d'un prompt musical personnalise
+2. Le modèle choisit librement les instruments, le tempo et la structure
+3. Les fichiers MIDI sont editables dans n'importe quel DAW (FL Studio, Ableton, MuseScore)",,,,,,,,6880bd0899889aac,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,88ce3eb6,markdown,fr,71622e90b352faa2,"### Exercice 1 : Construction d'un prompt musical personnalise
 
-**Objectif** : Creer un prompt MIDI qui contraint le modele a generer dans un style musical precis, en utilisant les fonctions `create_music_prompt()` et le dictionnaire `INSTRUMENTS`.
+**Objectif** : Creer un prompt MIDI qui contraint le modèle a générer dans un style musical precis, en utilisant les fonctions `create_music_prompt()` et le dictionnaire `INSTRUMENTS`.
 
-Le dictionnaire `INSTRUMENTS` contient les mappings nom -> numero de patch MIDI (ex: `""Violin"": 40`, `""Trumpet"": 56`). La fonction `create_music_prompt()` accepte les parametres `tempo`, `time_sig`, `key`, et `instruments`.
+Le dictionnaire `INSTRUMENTS` contient les mappings nom -> numero de patch MIDI (ex: `""Violin"": 40`, `""Trumpet"": 56`). La fonction `create_music_prompt()` accepte les paramètres `tempo`, `time_sig`, `key`, et `instruments`.
 
 **Indices** :
 - Le format `instruments` est une liste de tuples `(canal, patch_number)`
 - Les canaux MIDI vont de 0 a 15 (maximum 16 instruments simultanes)
 - La tonalite est un tuple `(note, mode)` avec mode = `""major""` ou `""minor""`
-- # Etape 1 : Choisir un style musical (ex: bossa nova, metal, baroque)
-- # Etape 2 : Selectionner 2-4 instruments coherents avec ce style
-- # Etape 3 : Construire le prompt avec tempo et tonalite adaptes
-- # Etape 4 : Generer et analyser si le resultat correspond au style vise
-- # Indice : La bossa nova utilise typiquement guitare nylon (24) + flute (73), tempo ~130",,,,,,,,84546b4791c8432c,,,,,,,
+- # étape 1 : Choisir un style musical (ex: bossa nova, metal, baroque)
+- # étape 2 : Selectionner 2-4 instruments coherents avec ce style
+- # étape 3 : Construire le prompt avec tempo et tonalite adaptes
+- # étape 4 : générer et analyser si le resultat correspond au style vise
+- # Indice : La bossa nova utilise typiquement guitare nylon (24) + flute (73), tempo ~130",,,,,,,,71622e90b352faa2,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,90997f31,code,fr,d337deab37c98d8d,"# Exercice 3 : Construction d'un prompt musical personnalise
 # TODO etudiant : Creer un prompt musical pour un style de votre choix
 
@@ -9825,22 +9825,22 @@ def create_custom_style_prompt(tokenizer, style_name):
 # if prompt is not None and midi_model_loaded:
 #     result = generate_and_save(model, tokenizer, prompt=prompt, filename=""custom_style"")
 print(""Exercice a completer"")",,,,,,,,d337deab37c98d8d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,7cb19993,markdown,fr,fb5cb7243b9b4872,"### Exercice 2 : Exploration des parametres de generation MIDI
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,7cb19993,markdown,fr,57fff98d25c7da60,"### Exercice 2 : Exploration des paramètres de generation MIDI
 
-**Objectif** : Analyser l'impact du parametre `max_len` (nombre d'evenements MIDI) sur la duree, la complexite et la coherence musicale d'une generation.
+**Objectif** : Analyser l'impact du paramètre `max_len` (nombre d'evenements MIDI) sur la duree, la complexite et la coherence musicale d'une generation.
 
-Le parametre `max_len` controle directement le nombre d'evenements MIDI generes. Un nombre faible (128) produit un court fragment, tandis qu'un nombre eleve (1024) genere un morceau complet mais potentiellement moins coherent. L'objectif est de trouver le point d'equilibre entre duree suffisante et coherence musicale.
+Le paramètre `max_len` controle directement le nombre d'evenements MIDI générés. Un nombre faible (128) produit un court fragment, tandis qu'un nombre élevé (1024) généré un morceau complet mais potentiellement moins coherent. L'objectif est de trouver le point d'equilibre entre duree suffisante et coherence musicale.
 
 **Indices** :
 - Chaque evenement MIDI correspond environ a 0.05-0.2 seconde selon le tempo
-- Avec `max_len=128` : on obtient generalement 5-15 secondes de musique
-- Avec `max_len=512` : on obtient generalement 20-60 secondes
+- Avec `max_len=128` : on obtient généralement 5-15 secondes de musique
+- Avec `max_len=512` : on obtient généralement 20-60 secondes
 - Avec `max_len=1024` : le morceau peut durer 1-3 minutes mais des repetitions apparaissent
-- # Etape 1 : Fixer un prompt musical simple (piano solo, 120 BPM)
-- # Etape 2 : Generer avec max_len = 128, 256, 512 et 1024
-- # Etape 3 : Pour chaque generation, noter le nombre de pistes et la taille du fichier
-- # Etape 4 : Identifier le max_len optimal pour un morceau coherent de 30-60s
-- # Indice : `generate_and_save()` retourne un dict avec `num_events`, `num_tracks`, `gen_time`",,,,,,,,fb5cb7243b9b4872,,,,,,,
+- # étape 1 : Fixer un prompt musical simple (piano solo, 120 BPM)
+- # étape 2 : générer avec max_len = 128, 256, 512 et 1024
+- # étape 3 : Pour chaque generation, noter le nombre de pistes et la taille du fichier
+- # étape 4 : Identifier le max_len optimal pour un morceau coherent de 30-60s
+- # Indice : `generate_and_save()` retourne un dict avec `num_events`, `num_tracks`, `gen_time`",,,,,,,,57fff98d25c7da60,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,ac98e0cd,code,fr,68824b88b09cc0cb,"# Exercice 4 : Exploration des parametres de generation MIDI
 # TODO etudiant : Analyser l'impact de max_len sur la generation
 
@@ -9875,18 +9875,18 @@ def analyze_max_len_impact(model, tokenizer, prompt=None, lengths=None):
 # Test (decommenter quand le modele est charge)
 # results = analyze_max_len_impact(model, tokenizer)
 print(""Exercice a completer"")",,,,,,,,68824b88b09cc0cb,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,b8b2f5bf,markdown,fr,fd68b9ef0c2cac49,"## Section 3 : Prompts musicaux
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,b8b2f5bf,markdown,fr,6bad9975380fbe79,"## Section 3 : Prompts musicaux
 
 Contrairement a MusicGen qui utilise des descriptions textuelles, midi-model accepte des **prompts symboliques** : des sequences d'evenements MIDI qui definissent le contexte musical.
 
 On peut specifier :
 
-| Element | Methode | Exemple |
+| Element | méthode | Exemple |
 |---------|---------|--------|
 | Tempo | `set_tempo` | 120 BPM |
 | Signature | `time_signature` | 4/4, 3/4, 6/8 |
 | Tonalite | `key_signature` | Do majeur, La mineur |
-| Instruments | `patch_change` | Piano (0), Guitare (25), Violon (40) |",,,,,,,,fd68b9ef0c2cac49,,,,,,,
+| Instruments | `patch_change` | Piano (0), Guitare (25), Violon (40) |",,,,,,,,6bad9975380fbe79,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,d9ede666,code,fr,5e45d46a40428cfd,"# Prompts musicaux - Configuration d'instruments et de tempo
 print(""GENERATION AVEC PROMPTS MUSICAUX"")
 print(""="" * 45)
@@ -10013,7 +10013,7 @@ if midi_model_loaded and generate_midi and test_prompts:
               f""{data['gen_time']:<12.2f}"")
 else:
     print(""Modele non charge, generation desactivee, ou prompts desactives"")",,,,,,,,5e45d46a40428cfd,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,c6da3f03,markdown,fr,8c76d7e051a4dcba,"### Interpretation : Prompts musicaux
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,c6da3f03,markdown,fr,84715f9f501d2405,"### Interpretation : Prompts musicaux
 
 | Preset | Observation attendue |
 |--------|---------------------|
@@ -10024,14 +10024,14 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,c6da3f03,ma
 
 **Points cles** :
 1. Le prompt definit le **contexte initial**, pas le contenu exact
-2. Le modele peut ajouter des instruments supplementaires au-dela du prompt
-3. Le tempo et la tonalite sont generalement respectes
-4. La signature temporelle influence fortement le ressenti rhythmique",,,,,,,,8c76d7e051a4dcba,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,98696d2c,markdown,fr,65f8cc7591bbac8d,"## Section 4 : Parametres de sampling
+2. Le modèle peut ajouter des instruments supplementaires au-dela du prompt
+3. Le tempo et la tonalite sont généralement respectes
+4. La signature temporelle influence fortement le ressenti rhythmique",,,,,,,,84715f9f501d2405,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,98696d2c,markdown,fr,48c57807d5156e20,"## Section 4 : Paramètres de sampling
 
-Comme pour les LLM textuels, les parametres de sampling controlent la diversite et la qualite de la generation.
+Comme pour les LLM textuels, les paramètres de sampling controlent la diversite et la qualite de la generation.
 
-| Parametre | Valeur par defaut | Plage | Impact |
+| paramètre | Valeur par defaut | Plage | Impact |
 |-----------|-------------------|-------|--------|
 | `temp` | 1.0 | 0.1-1.2 | Diversite globale |
 | `top_k` | 20 | 1-128 | Filtre les tokens improbables |
@@ -10043,7 +10043,7 @@ Comme pour les LLM textuels, les parametres de sampling controlent la diversite 
 |-------|------|-------|-------|----------|
 | Conservateur | 1.0 | 128 | 0.94 | Previsible, classique |
 | Equilibre | 1.0 | 20 | 0.98 | Bon compromis |
-| Creatif | 1.0 | 12 | 0.98 | Surprenant, varie |",,,,,,,,65f8cc7591bbac8d,,,,,,,
+| Creatif | 1.0 | 12 | 0.98 | Surprenant, varie |",,,,,,,,48c57807d5156e20,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4b9e69b8,code,fr,53af7522372f3aa3,"# Test des parametres de sampling
 print(""TEST DES PARAMETRES DE SAMPLING"")
 print(""="" * 45)
@@ -10091,7 +10091,7 @@ if midi_model_loaded and generate_midi:
               f""{data['num_events']:<10} {data['num_tracks']:<10}"")
 else:
     print(""Modele non charge ou generation desactivee"")",,,,,,,,53af7522372f3aa3,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4b0bc028,markdown,fr,4543144acea3eb3c,"### Interpretation : Parametres de sampling
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4b0bc028,markdown,fr,4baaaec7990b5b06,"### Interpretation : Paramètres de sampling
 
 | Configuration | Observation |
 |--------------|-------------|
@@ -10102,21 +10102,21 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4b0bc028,ma
 **Points cles** :
 1. Contrairement aux LLM textuels, la temperature n'a pas besoin d'etre tres basse pour des resultats coherents
 2. Le `top_k` a plus d'impact que la temperature sur la diversite instrumentale
-3. Un `top_p` proche de 1.0 permet plus de diversite harmonique",,,,,,,,4543144acea3eb3c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,f085ede8,markdown,fr,32f1567253259ca0,"### Exercice 3 : Comparaison de strategies de sampling
+3. Un `top_p` proche de 1.0 permet plus de diversite harmonique",,,,,,,,4baaaec7990b5b06,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,f085ede8,markdown,fr,c79f76f8d93b46c5,"### Exercice 3 : Comparaison de strategies de sampling
 
-**Objectif** : Comparer l'impact des parametres de sampling (`temp`, `top_k`, `top_p`) sur la qualite musicale et la coherence d'une generation MIDI.
+**Objectif** : Comparer l'impact des paramètres de sampling (`temp`, `top_k`, `top_p`) sur la qualite musicale et la coherence d'une generation MIDI.
 
-On dispose de 3 presets de sampling (Conservateur, Equilibre, Creatif). L'objectif est de generer un morceau avec chacun, puis d'analyser les differences observables dans les fichiers MIDI produits.
+On dispose de 3 presets de sampling (Conservateur, Equilibre, Creatif). L'objectif est de générer un morceau avec chacun, puis d'analyser les differences observables dans les fichiers MIDI produits.
 
 **Indices** :
 - `top_k` filtre les k tokens les plus probables : une valeur basse limite la diversite
 - La `temperature` controle la ""platitude"" de la distribution de probabilite
-- Pour comparer objectivement, utilisez le meme `seed` et le meme prompt musical
-- # Etape 1 : Definir un prompt musical simple (piano solo, 100 BPM)
-- # Etape 2 : Generer 3 morceaux avec les 3 presets de sampling
-- # Etape 3 : Comparer le nombre d'evenements, le nombre de pistes, la taille du fichier
-- # Indice : Un morceau ""creatif"" aura generalement plus de pistes et d'evenements inattendus",,,,,,,,32f1567253259ca0,,,,,,,
+- Pour comparer objectivement, utilisez le même `seed` et le même prompt musical
+- # étape 1 : Definir un prompt musical simple (piano solo, 100 BPM)
+- # étape 2 : générer 3 morceaux avec les 3 presets de sampling
+- # étape 3 : Comparer le nombre d'evenements, le nombre de pistes, la taille du fichier
+- # Indice : Un morceau ""creatif"" aura généralement plus de pistes et d'evenements inattendus",,,,,,,,c79f76f8d93b46c5,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,27978852,code,fr,42405f828f94715b,"# Exercice 2 : Comparaison de strategies de sampling
 # TODO etudiant : Implementer la comparaison des 3 presets de sampling
 
@@ -10148,16 +10148,16 @@ def compare_sampling_strategies(model, tokenizer, base_prompt=None):
 # Test (decommenter quand le modele est charge)
 # results = compare_sampling_strategies(model, tokenizer)
 print(""Exercice a completer"")",,,,,,,,42405f828f94715b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,cad46693,markdown,fr,f61acba5879478db,"## Section 5 : Continuation de MIDI existant
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,cad46693,markdown,fr,fd4f5caa646de502,"## Section 5 : Continuation de MIDI existant
 
-midi-model peut continuer une sequence MIDI existante. On tokenise un fichier MIDI, on en prend les premiers evenements comme prompt, et le modele genere la suite.
+midi-model peut continuer une sequence MIDI existante. On tokenise un fichier MIDI, on en prend les premiers evenements comme prompt, et le modèle généré la suite.
 
-| Etape | Description |
+| étape | Description |
 |-------|-------------|
 | 1. Charger | Lire le fichier .mid |
 | 2. Tokeniser | Convertir en tokens via MIDITokenizerV2 |
 | 3. Tronquer | Garder les N premiers evenements comme contexte |
-| 4. Generer | Le modele complete la sequence |",,,,,,,,f61acba5879478db,,,,,,,
+| 4. générer | Le modèle complete la sequence |",,,,,,,,fd4f5caa646de502,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,9a68984e,code,fr,3894b6d82a54e99a,"# Continuation d'un MIDI genere precedemment
 print(""CONTINUATION MIDI"")
 print(""="" * 45)
@@ -10209,23 +10209,23 @@ if midi_model_loaded and generate_midi and uncond_results:
         print(""Pas de morceau source disponible"")
 else:
     print(""Modele non charge, generation desactivee, ou pas de morceaux precedents"")",,,,,,,,3894b6d82a54e99a,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,b39b1ee3,markdown,fr,9ed2f6ac9f2c3b5f,"### Interpretation : Continuation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,b39b1ee3,markdown,fr,fd8ead31952ee436,"### Interpretation : Continuation
 
 | Aspect | Observation |
 |--------|-------------|
 | Coherence stylistique | La continuation conserve le style du morceau source |
-| Instruments | Les memes instruments sont generalement maintenus |
+| Instruments | Les mêmes instruments sont généralement maintenus |
 | Transitions | Parfois abruptes, surtout avec peu de contexte |
 
 **Points cles** :
 1. Plus le prompt est long, plus la continuation est coherente
 2. La fenetre de contexte est limitee a 4096 evenements
-3. On peut utiliser un fichier MIDI externe (composition personnelle, partition)",,,,,,,,9ed2f6ac9f2c3b5f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,cd829610,markdown,fr,8f6d17df39fbfb31,"## Section 6 : Comparaison MIDI vs Audio (MusicGen)
+3. On peut utiliser un fichier MIDI externe (composition personnelle, partition)",,,,,,,,fd8ead31952ee436,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,cd829610,markdown,fr,b160b06808523f58,"## Section 6 : Comparaison MIDI vs Audio (MusicGen)
 
 Recapitulatif comparatif entre l'approche symbolique (ce notebook) et l'approche audio directe (notebook 02-3).
 
-| Critere | midi-model (MIDI) | MusicGen (Audio) |
+| critère | midi-model (MIDI) | MusicGen (Audio) |
 |---------|-------------------|------------------|
 | **Entree** | Prompt symbolique (instruments, tempo) | Description textuelle naturelle |
 | **Sortie** | Fichier .mid (notes, durees) | Fichier .wav (signal audio) |
@@ -10246,7 +10246,7 @@ Recapitulatif comparatif entre l'approche symbolique (ce notebook) et l'approche
 | Prototypage rapide | midi-model (leger, rapide) |
 | Qualite production | MusicGen + post-production audio |
 | Education musicale | midi-model (visualisation des notes) |
-| GPU limite | midi-model (~2 GB vs ~10 GB) |",,,,,,,,8f6d17df39fbfb31,,,,,,,
+| GPU limite | midi-model (~2 GB vs ~10 GB) |",,,,,,,,b160b06808523f58,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,7d61e470,code,fr,d1a346df015cf1e7,"# Mode interactif - Generation personnalisee
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF - GENERATION MIDI PERSONNALISEE"")
@@ -10323,7 +10323,7 @@ Le mode interactif permet d'experimenter rapidement avec differentes configurati
 - Commencer par 2-3 instruments maximum
 - Utiliser des instruments de familles differentes (rythmique + melodie + accompagnement)
 - Ajuster le tempo en fonction du style (jazz ~130, classique ~90-120, ambient ~70-90)",,,,,,,,739a4fdbd08b06ed,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0bc8205d,markdown,fr,eea528e5283fefea,"## Bonnes pratiques et guide de generation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0bc8205d,markdown,fr,37656a7083f72263,"## Bonnes pratiques et guide de generation
 
 ### Construire de bons prompts
 
@@ -10331,7 +10331,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0bc8205d,ma
 |---------|------------|----------------|
 | Instruments | 2-4 instruments complementaires | 10 instruments simultanes |
 | Tempo | Adapte au genre (jazz ~130, ambient ~80) | Tempo extreme (>200 ou <40) |
-| Tonalite | Coherente avec le genre | Tonalite aleatoire |
+| Tonalite | Coherente avec le genre | Tonalite aléatoire |
 
 ### Limites actuelles
 
@@ -10340,7 +10340,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,0bc8205d,ma
 | Pas de texte | Prompt symbolique, pas de description textuelle | Utiliser MusicGen pour text-to-music |
 | Duree variable | Le nombre d'evenements ne correspond pas a une duree fixe | Ajuster `max_len` iterativement |
 | Qualite son | Depend du SoundFont utilise | Utiliser des SoundFont de haute qualite |
-| Pas de paroles | MIDI est instrumental | Combiner avec un modele vocal |",,,,,,,,eea528e5283fefea,,,,,,,
+| Pas de paroles | MIDI est instrumental | Combiner avec un modèle vocal |",,,,,,,,37656a7083f72263,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,874efc03,markdown,fr,289a428bf6c89119,"**Note technique : Format de fichier MIDI**
 
 Le format MIDI (Musical Instrument Digital Interface) stocke la musique de facon symbolique :
@@ -10399,13 +10399,13 @@ print(f""3. Explorer les LoRA J-Pop et Touhou pour des styles specifiques"")
 print(f""4. Combiner MIDI + TTS pour des compositions avec voix"")
 
 print(f""\nNotebook Generation MIDI termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,98612bd6d78f7ee0,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,3b5910ab,markdown,fr,45afd606c045dac1,"---
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,3b5910ab,markdown,fr,b6cfabc3ec3b0ddb,"---
 
 ## EXERCICE - Composition guidee multi-instruments
 
 ### Objectif
 
-Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et comparer differents parametres de sampling.
+Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et comparer differents paramètres de sampling.
 
 ### Consignes
 
@@ -10419,10 +10419,10 @@ Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et c
    - Definir le tempo, la tonalite et la signature temporelle
    - Justifier vos choix musicaux
 
-3. **Generer 3 variations** :
-   - Variation A : parametres conservateurs (top_k=128, temp=0.8)
-   - Variation B : parametres equilibres (top_k=20, temp=1.0)
-   - Variation C : parametres creatifs (top_k=12, temp=1.1)
+3. **générer 3 variations** :
+   - Variation A : paramètres conservateurs (top_k=128, temp=0.8)
+   - Variation B : paramètres equilibres (top_k=20, temp=1.0)
+   - Variation C : paramètres creatifs (top_k=12, temp=1.1)
 
 4. **Analyser et comparer** :
    - Ecouter les 3 variations synthetisees
@@ -10432,20 +10432,20 @@ Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et c
 ### Indices
 
 - Utilisez `create_music_prompt()` pour configurer le prompt
-- Utilisez `generate_and_save()` avec differents parametres
+- Utilisez `generate_and_save()` avec differents paramètres
 - Utilisez `play_midi()` pour ecouter les resultats
 - Consultez le dictionnaire `INSTRUMENTS` pour les numeros de patch MIDI
 
-### Criteres de succes
+### Critères de succes
 
 - [ ] Prompt musical coherent avec le contexte choisi
-- [ ] 3 variations generees avec parametres differents
+- [ ] 3 variations générées avec paramètres differents
 - [ ] Tableau comparatif avec notes et justification
 - [ ] Fichiers .mid et .wav sauvegardes
 
 ---
 
-**Soumission** : PR avec titre ""Exercice MIDI - [Votre Nom]"", fichiers generes et tableau comparatif",,,,,,,,45afd606c045dac1,,,,,,,
+**Soumission** : PR avec titre ""Exercice MIDI - [Votre Nom]"", fichiers générés et tableau comparatif",,,,,,,,b6cfabc3ec3b0ddb,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,1749c38e,markdown,fr,8d807cfd5f5444fe,"# Generation de Chansons Completes : YuE vs SongGeneration 2
 
 **Module :** 02-Audio-Advanced  
