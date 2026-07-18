@@ -83,15 +83,20 @@ from pathlib import Path
 # au moins un est candidat a une regression d'accent.
 ACCENT_CHARS = set("àâäéèêëïîôöùûüçÀÂÄÉÈÊËÏÎÔÖÙÛÜÇœŒæÆ")
 
-# Regex unique eliminant chaines + commentaires (Python / C# / F# / Lisp).
+# Regex unique eliminant chaines + commentaires (Python / C# / F# / Lean / F# / Lisp).
 # Ordre des alternatives important : les formes longues (triple-quoted, blocs)
 # doivent venir avant les formes courtes.
+# Note Lean : `--` est un commentaire ligne en Lean 4 (et Haskell/SQL). Python n'a
+# PAS d'operateur `--` (post-decrement n'existe pas en Py), donc ajouter `--` comme
+# commentaire ligne est safe pour les notebooks Python ; en C# le risque residual
+# (`i--` post-decrement) n'affecte que du code invalide (identifiant apres `i--`).
 _STRIP_RE = re.compile(
     r"""
       (?P<py_triple>\"\"\"[\s\S]*?\"\"\"|\'\'\'[\s\S]*?\'\'\')   # Python triple-quoted
     | (?P<cs_block>/\*[\s\S]*?\*/)                               # C#/F# /* */ bloc
+    | (?P<lean_block>/-[\s\S]*?-/)                               # Lean/Coq /- -/ bloc
     | (?P<fs_block>\(\*[\s\S]*?\*\))                             # F#/OCaml (* *) bloc
-    | (?P<line_comment>\#.*?$|//.*?$|;;.*?$)                     # commentaires ligne
+    | (?P<line_comment>\#.*?$|--.*?$|//.*?$|;;.*?$)              # commentaires ligne (#/--//// ;;)
     | (?P<string>[@$]?[rfbFRB]{0,2}\"(?:[^\"\\]|\\.)*\"          # chaines "..."
         | [@$]?[rfbFRB]{0,2}\'(?:[^\'\\]|\\.)*\')                 # chaines '...'
     """,

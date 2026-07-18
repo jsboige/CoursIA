@@ -348,3 +348,29 @@ class TestRegressionCov:
             assert tok == "préférences"
             assert line == 4  # apres les 3 lignes internes du bloc + fermeture
             assert "préférences = 1" in ctx
+
+    def test_lean_line_comment_excludes_accented_prose(self):
+        # BUGFIX c.609 : Lean `--` commentaires n'etaient pas stirpes -> faux positif
+        # sur la prose de commentaire (ex GameTheory-4b-Lean). `stratégies` dans un
+        # commentaire Lean N'est PAS un identifiant structurel.
+        src = "-- # Étape 3 : L'espace de stratégies d'un jeu\naxiom foo : Nat"
+        ids = cir.code_identifiers(src)
+        assert "stratégies" not in ids
+        assert "strategies" not in ids  # forme desaccentuee aussi absente (commentaire)
+        assert "foo" in ids and "Nat" in ids  # vrais identifiants Lean preserves
+
+    def test_lean_line_comment_regression_is_false_positive_fixed(self):
+        # Cas reel #7171 : un Lean notebook ou `stratégies` n'apparait QUE dans des
+        # commentaires `--` ne doit PLUS etre flagge comme regression identifiant.
+        old = _nb([("code", "-- Profil de strategies mixtes\naxiom foo : Nat")])
+        new = _nb([("code", "-- Profil de stratégies mixtes\naxiom foo : Nat")])
+        regs, susp = cir.scan(old, new)
+        assert regs == []  # PAS de regression : strategies n'est pas structurel en base
+
+    def test_lean_block_comment_excludes_accented_prose(self):
+        # Lean block comment /- ... -/ : contenu exclue (multiline).
+        src = "/- strategie\nmulti\nligne -/\naxiom résultat : Nat"
+        ids = cir.code_identifiers(src)
+        assert "strategie" not in ids  # dans le bloc /- -/
+        assert "résultat" in ids or "resultat" in ids  # axiom résultat est structurel
+        assert "axiom" in ids
