@@ -1,6 +1,6 @@
 # QuantConnect Algorithmic Trading Projects
 
-**116 projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste.
+**112 projets** de trading algorithmique sur QuantConnect Cloud. Chaque stratégie illustre un concept pédagogique ; les performances varient volontairement pour montrer ce qui survive au backtest réaliste.
 
 > **Visiteur ?** Lire le [Quick Tour](../QUICK_TOUR.md) (2 min) pour comprendre l'ensemble.
 
@@ -111,7 +111,7 @@ MonProjet/
 
 ### Ce que vous avez appris
 
-Ce catalogue de **116 projets** est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). La classification elle-même est la leçon :
+Ce catalogue de **112 projets** est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). La classification elle-même est la leçon :
 
 - **La robustesse prime sur le Sharpe brut** : une stratégie à Sharpe 1.6 qui s'effondre hors-échantillon vaut moins qu'une stratégie à Sharpe 0.6 stable à travers les régimes. Le label *Robuste* (> 0.5 soutenu) est la barre pédagogique, pas le chiffre spectaculaire.
 - **Les contre-exemples sont aussi importants que les succès** : les stratégies *Exploratoire* (Sharpe < 0) et *Historique* (0-0.5) sont conservées **délibérément** pour montrer *ce qui ne marche pas* et pourquoi — PairsTrading sur ETF corrélés, ForexCarry, MeanReversion naïf. On apprend autant d'un edge négatif bien diagnostiqué que d'un edge positif.
@@ -126,7 +126,7 @@ Le fil rouge : **chaque projet est reproductible** — `main.py` (ou `Main.cs`) 
 3. **Consulter le détail** : `STRATEGIES_DETAIL.md` donne le contexte complet de chaque stratégie (catégorie, ML/DL/RL, clones QC Library).
 4. **Reproduire sur QC Cloud** : créer un projet, copier le `main.py`, lancer le backtest, et comparer vos métriques au tableau ci-dessus.
 5. **Étendre un projet Robuste** : choisir une stratégie *Robuste* (ex. `RegimeSwitching`, `SectorMomentum`) et itérer — changer l'univers, ajouter un filtre de risque, tester la sensibilité aux coûts de transaction.
-6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers ces 116 projets.
+6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers ces 112 projets.
 
 > **Rappel honnête** : un Sharpe de backtest, même *Robuste*, n'est pas une garantie live. Les coûts de transaction réels, le slippage et l'impact de marché dégradent systématiquement la performance paper. La barre *Robuste* (> 0.5 soutenu sur la période) est nécessaire mais pas suffisante — le walk-forward et l'out-of-sample strict restent obligatoires avant tout déploiement.
 
