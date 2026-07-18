@@ -78,7 +78,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
 | Vérifié (tranche 10, backtests QC Cloud MCP) | 5 | cohorte DeepLearning+LSTM+Temporal-CNN — **1 BROKEN** (Crypto-LSTM-Prediction Sharpe -0.021) ; PSR max 28.70 % (Temporal-CNN-Prediction) |
 | Vérifié (tranche 11, backtests QC Cloud MCP) | 4 | cohorte Crypto BTC + IBKR-Binance-Hybrid — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement (1 MaxDD catastrophique 72.7 %) ; cohorte limitée à 4 stratégies vérifiables firsthand (les 5ᵉ `Crypto-LSTM-Prediction` overlap tranche 10) |
-| Vivant (best-guess, non vérifié) | 31 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
+| Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
+| Vivant (best-guess, non vérifié) | 26 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -306,7 +307,21 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 - **`Portfolio-IBKR-Binance-Hybrid`** : seul backtest walk-forward WF 2022-2024 50/50 de la cohorte (= méthodologie OOS distincte du training), Sharpe 0.391 / CAGR 14.11 % décent mais PSR < 50 %. Distribution stable multi-actifs (IBKR equity + Binance crypto) vs concentration BTC mono-actif.
 - **Note méthodologique** : `Crypto-LSTM-Prediction` (BTC LSTM/DLinear, projet 31855350) **est éligible à la cohorte BTC/Crypto** mais déjà promu en tranche 10 (#7249 OPEN, cohorte DL/LSTM/Temporal-CNN) — promotion redondante évitée pour préserver l'atomicité inter-tranches.
 
-#### Vivant (best-guess, non vérifié) (31)
+#### Vérifié (tranche 12, backtests QC Cloud via MCP) (3 + 2 hors-Vivant)
+
+> **Scope tranche 12 (#1621)** : 3 stratégies « Vivant » promues + 2 vérifications hors-Vivant (1 Stub + 1 Squelette) via lecture directe des backtests QC Cloud existants via MCP `qc-mcp-lite` (`read_backtest`). Cohorte **ML NLP + Reinforcement Learning** (différente des tranches 7 ML standard et 10 DL/LSTM/Temporal-CNN, ciblant les paradigmes NLP FinBERT / LLM summarization et RL DQN renforcé + hedging options). **0 QCC dépensé** (lecture seule). **3 promotions Vivant nettes** : `ML-FinBERT-Sentiment` (Vivant) ; `ML-LLM-Summarization` (Vivant) ; `RL-DQN-Trading` (Vivant). 2 vérifications hors-Vivant : `RL-Options-Hedging` (Stub, code non créé → backtest POC déployé sur projet QC 30800109 par ailleurs) **BROKEN** ; `Reinforcement-Learning-Trading` (Squelette) **Needs-improvement / near-cash**.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM summarization) | **Needs-improvement** | 2558 j. ; **Sharpe 0.686** ; CAGR 15.45 % ; MaxDD 22.7 % ; **PSR 37.14 %** ; NP 173.6 % ($173 595) — **max Sharpe/PSR cohorte** ; MaxDD contenu ; edge non significative (PSR < 50 %) |
+| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | **Needs-improvement** | pleine période (tradeableDates=0, anomalie MCP) ; Sharpe 0.584 ; **CAGR 22.10 %** ; **MaxDD 43.0 %** ; PSR 12.18 % ; NP 304.9 % mais **NP absolu -$210 456** — CAGR le plus élevé cohorte mais drawdown élevé + **NP absolu négatif** = levier amplifie gains ET pertes |
+| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN MLPRegressor) | **Needs-improvement** | 2766 j. (2015–2026) ; Sharpe 0.533 ; CAGR 10.89 % ; MaxDD 25.8 % ; PSR 15.60 % ; NP 211.8 % ($212 287) — v2.0.1 « MLPRegressor DQN, 5-ETF, risk-adj, target-fix, 2015-2026 », profil décent mais edge non significative |
+| `Reinforcement-Learning-Trading` | `projects/Reinforcement-Learning-Trading/` | RL (DQN Squelette — *hors-Vivant*) | **Needs-improvement / near-cash** | 1509 j. ; Sharpe 0.131 ; CAGR 4.40 % ; MaxDD 27.1 % ; PSR 2.19 % ; NP 29.4 % ($29 321) — DQN basic Ch07 SPY-seul, Sharpe near-zero ; vérifié OK malgré statut Squelette local (le main.py déployé tourne, mais sans « stratégie active » pédagogique) |
+| `RL-Options-Hedging` | `projects/RL-Options-Hedging/` | RL (options hedging — *hors-Vivant Stub*) | **BROKEN** | 1761 j. ; **Sharpe −1.264** ; CAGR 1.41 % ; MaxDD 2.5 % ; PSR 20.22 % ; NP 10.3 % ($95 818) — **Sharpe négatif manifeste**, MaxDD très bas (2.5 %) mais retour brut faible et PSR médiocre → **vraiment BROKEN**, pas seulement marginal ; code local absent (Stub) mais backtest POC déployé sur QC Cloud projet 30800109 « RL-Options-Hedging-Ch07 » confirme l'échec du paradigme « RL hedging options » sur ce squelette |
+
+**Verdict honnête : 1 BROKEN + 2 Needs-improvement (Vivant) + 2 Needs-improvement (hors-Vivant).** PSR max 37.14 % (`ML-LLM-Summarization`), aucune > 50 %. Confirme pour la cohorte ML NLP + RL ce que les tranches 7-11 confirment : les backtests in-sample pleine période **ne valident aucun edge** sur la cohorte, et le cas `RL-Options-Hedging` (Sharpe négatif sur 1761 j.) démontre qu'un POC RL sur options **n'aboutit pas** sans feature engineering substantiel (univers d'options large, Greeks dynamiques, scénario hedging adaptatif). Walk-forward multi-seed OOS requis avant toute promotion production. **Aucun Stripe des 5 backtests = 4 stratégies cohérentes avec ledger cohort** (alignement période 2558-2766 j. cohérent avec tranches 7-11).
+
+#### Vivant (best-guess, non vérifié) (26)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -335,10 +350,10 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Ensemble` | `projects/ML-Ensemble/` | ML ensemble | Vivant | main.py: class MLEnsembleAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 0.39 %) |
 | `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 14.79 %) |
-| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | Vivant | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb |
+| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | **Vérifié tranche 12** | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 12 |
 | `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification | Vivant | main.py: class GaussianNaiveBayesAlgorithm(QCAlgorithm) |
 | `ML-HeadShoulders-CNN` | `projects/ML-HeadShoulders-CNN/` | DL (CNN patterns) | Vivant | main.py: class CNNPatternDetectionAlgorithm(QCAlgorithm) + research.ipynb |
-| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | Vivant | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) |
+| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | **Vérifié tranche 12** | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) — voir section tranche 12 |
 | `ML-Regression` | `projects/ML-Regression/` | ML supervisé | Vivant | main.py: class MLRegressionAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 25.06 %) |
 | `ML-SVM` | `projects/ML-SVM/` | ML supervisé (SVM) | Vivant | main.py: class MLSVMAlgorithm(QCAlgorithm) + quantbook.ipynb |
@@ -352,7 +367,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Portfolio-IBKR-Coinbase-Hybrid` | `projects/Portfolio-IBKR-Coinbase-Hybrid/` | Hybrid crypto/broker | Vivant | main.py: class PortfolioHybridIBKRCoinbase(QCAlgorithm) (helpers FeeModel/Slippage en amont) + research.ipynb + quantbook.ipynb |
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
 | `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | Vivant | main.py: class PuppiesOfTheDow(QCAlgorithm) |
-| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | Vivant | main.py: class ReinforcementLearningTrading(QCAlgorithm) |
+| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | **Vérifié tranche 12** | main.py: class ReinforcementLearningTrading(QCAlgorithm) — voir section tranche 12 |
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | **Vérifié tranche 8** | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb — voir section tranche 8 |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 29.34 %, période ESGF 2024–2026 585 j.) |
