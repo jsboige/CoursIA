@@ -73,7 +73,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 56 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
+| Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
+| Vivant (best-guess, non vérifié) | 53 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -193,7 +194,34 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
-#### Vivant (best-guess, non vérifié) (56)
+#### Vérifié (tranche 12, backtests QC Cloud via MCP) (3 + 2 hors-Vivant)
+
+> **Scope tranche 12 (#1621)** : 3 stratégies « Vivant » promues + 2 vérifications hors-Vivant (1 Stub + 1 Squelette) via lecture directe des backtests QC Cloud existants via MCP `qc-mcp-lite` (`read_backtest`). Cohorte **ML NLP + Reinforcement Learning** (différente des tranches 7 ML standard et 10 DL/LSTM/Temporal-CNN, ciblant les paradigmes NLP FinBERT / LLM summarization et RL DQN renforcé + hedging options). **0 QCC dépensé** (lecture seule). **3 promotions Vivant nettes** : `ML-FinBERT-Sentiment` (Vivant) ; `ML-LLM-Summarization` (Vivant) ; `RL-DQN-Trading` (Vivant). 2 vérifications hors-Vivant : `RL-Options-Hedging` (Stub, code non créé → backtest POC déployé sur projet QC 30800109 par ailleurs) **BROKEN** ; `Reinforcement-Learning-Trading` (Squelette) **Needs-improvement / near-cash**.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM summarization) | **Needs-improvement** | 2558 j. ; **Sharpe 0.686** ; CAGR 15.45 % ; MaxDD 22.7 % ; **PSR 37.14 %** ; NP 173.6 % ($173 595) — **max Sharpe/PSR cohorte** ; MaxDD contenu ; edge non significative (PSR < 50 %) |
+| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | **Needs-improvement** | pleine période (tradeableDates=0, anomalie MCP) ; Sharpe 0.584 ; **CAGR 22.10 %** ; **MaxDD 43.0 %** ; PSR 12.18 % ; NP 304.9 % mais **NP absolu -$210 456** — CAGR le plus élevé cohorte mais drawdown élevé + **NP absolu négatif** = levier amplifie gains ET pertes |
+| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN MLPRegressor) | **Needs-improvement** | 2766 j. (2015–2026) ; Sharpe 0.533 ; CAGR 10.89 % ; MaxDD 25.8 % ; PSR 15.60 % ; NP 211.8 % ($212 287) — v2.0.1 « MLPRegressor DQN, 5-ETF, risk-adj, target-fix, 2015-2026 », profil décent mais edge non significative |
+| `Reinforcement-Learning-Trading` | `projects/Reinforcement-Learning-Trading/` | RL (DQN Squelette — *hors-Vivant*) | **Needs-improvement / near-cash** | 1509 j. ; Sharpe 0.131 ; CAGR 4.40 % ; MaxDD 27.1 % ; PSR 2.19 % ; NP 29.4 % ($29 321) — DQN basic Ch07 SPY-seul, Sharpe near-zero ; vérifié OK malgré statut Squelette local (le main.py déployé tourne, mais sans « stratégie active » pédagogique) |
+| `RL-Options-Hedging` | `projects/RL-Options-Hedging/` | RL (options hedging — *hors-Vivant Stub*) | **BROKEN** | 1761 j. ; **Sharpe −1.264** ; CAGR 1.41 % ; MaxDD 2.5 % ; PSR 20.22 % ; NP 10.3 % ($95 818) — **Sharpe négatif manifeste**, MaxDD très bas (2.5 %) mais retour brut faible et PSR médiocre → **vraiment BROKEN**, pas seulement marginal ; code local absent (Stub) mais backtest POC déployé sur QC Cloud projet 30800109 « RL-Options-Hedging-Ch07 » confirme l'échec du paradigme « RL hedging options » sur ce squelette |
+
+**Verdict honnête : 1 BROKEN + 2 Needs-improvement (Vivant) + 2 Needs-improvement (hors-Vivant).** PSR max 37.14 % (`ML-LLM-Summarization`), aucune > 50 %. Confirme pour la cohorte ML NLP + RL ce que les tranches 7-11 confirment : les backtests in-sample pleine période **ne valident aucun edge** sur la cohorte, et le cas `RL-Options-Hedging` (Sharpe négatif sur 1761 j.) démontre qu'un POC RL sur options **n'aboutit pas** sans feature engineering substantiel (univers d'options large, Greeks dynamiques, scénario hedging adaptatif). Walk-forward multi-seed OOS requis avant toute promotion production. **Aucun Stripe des 5 backtests = 4 stratégies cohérentes avec ledger cohort** (alignement période 2558-2766 j. cohérent avec tranches 7-11).
+
+#### Observations pédagogiques
+
+- **`ML-LLM-Summarization` PSR 37.14 %** : meilleure PSR cohorte, juste sous le seuil 50 % (edge « candidat non confirmé »). Summarisation via LLM = information condensée vs FinBERT → plus de signal par trade, d'où Sharpe > FinBERT (0.686 vs 0.584). Approche pédagogique valide mais edge statistique non démontrée.
+- **`ML-FinBERT-Sentiment` NP absolu **−$210 456** vs NP relatif +304.9 %** : paradoxe levier. La stratégie **perd en absolu** malgré gains relatifs, suggérant que le sizing/levier applique du mark-to-market sur position courte cachée (inverse P&L = NP positif relatif + NP négatif absolu = sortie crypto/levier incontrôlée). Pattern red flag à investiguer avant toute promotion.
+- **`RL-DQN-Trading` 2015–2026 (2766 j.)** : 11 ans de données, 1944 ordres (sur-investissement). CAGR 10.89 % / Sharpe 0.533 = décent mais **PSR 15.60 % = 0.5σ** = pas de skill distinct du hasard, conforme au pattern « RL surapprend le régime dominant in-sample ».
+- **`Reinforcement-Learning-Trading` PSR 2.19 % near-cash** : DQN basique Ch07 SPY-seul (squelette Hands-On AI Trading). Sharpe 0.131 confirme que **sans feature engineering ni risk-adj**, le DQN vanilla échoue à distinguer signal du bruit.
+- **`RL-Options-Hedging` Sharpe −1.264 sur 1761 j.** : POC RL sur hedging options = **vraiment BROKEN**. MaxDD très bas (2.5 %) cache un profil Sharpe négatif = l'agent prend des positions perdantes systematiquement (sans doute débit de prime d'option à chaque re-hedge).
+
+#### Notes atomicité
+
+- **Pivot 3+2** (Vivant vs hors-Vivant) : cohorte ML NLP + RL strictement définie = 3 stratégies Vivant vérifiables firsthand (Bucket Vivant + projet QC Cloud dispo) + 2 vérifications hors-Vivant (1 Stub + 1 Squelette, mentionnées dans le tableau tranche 12 pour traçabilité mais **pas promues** du bucket Vivant). Pas de promotion de bucket non-Vivant → Vivant pour préserver la sémantique bucket.
+- **Cohorte NLP-Finance distincte** : Les 3 autres stratégies ML NLP (`Chronos-Foundation-Forecasting`, `ML-TextClassification` — Vivant) restent en bucket Vivant car (a) `Chronos-Foundation` = DL foundation (déjà couvert tranche 10 DL/LSTM/Temporal-CNN), (b) `ML-TextClassification` = pas de projet QC Cloud déployé (non vérifiable firsthand sans cloud backtest dispo). Promotion serait redondante/non vérifiable.
+
+#### Vivant (best-guess, non vérifié) (53)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -222,10 +250,10 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Ensemble` | `projects/ML-Ensemble/` | ML ensemble | Vivant | main.py: class MLEnsembleAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecastingAlgorithm(QCAlgorithm) (helper SVMWavelet en amont) |
 | `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features | Vivant | main.py: class MLFeatureEngineeringAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | Vivant | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb |
+| `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | **Vérifié tranche 12** | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb ; backtest QC Cloud 29936073 `52252ad2...` (Needs-improvement, PSR 12.18 %) |
 | `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification | Vivant | main.py: class GaussianNaiveBayesAlgorithm(QCAlgorithm) |
 | `ML-HeadShoulders-CNN` | `projects/ML-HeadShoulders-CNN/` | DL (CNN patterns) | Vivant | main.py: class CNNPatternDetectionAlgorithm(QCAlgorithm) + research.ipynb |
-| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | Vivant | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) |
+| `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | **Vérifié tranche 12** | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) ; backtest QC Cloud 29936071 `804566ae...` (Needs-improvement, PSR 37.14 % max cohorte) |
 | `ML-Regression` | `projects/ML-Regression/` | ML supervisé | Vivant | main.py: class MLRegressionAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification | Vivant | main.py: class MLReversionTrendingClassifier(QCAlgorithm) + research.ipynb |
 | `ML-SVM` | `projects/ML-SVM/` | ML supervisé (SVM) | Vivant | main.py: class MLSVMAlgorithm(QCAlgorithm) + quantbook.ipynb |
@@ -239,7 +267,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Portfolio-IBKR-Coinbase-Hybrid` | `projects/Portfolio-IBKR-Coinbase-Hybrid/` | Hybrid crypto/broker | Vivant | main.py: class PortfolioHybridIBKRCoinbase(QCAlgorithm) (helpers FeeModel/Slippage en amont) + research.ipynb + quantbook.ipynb |
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
 | `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | Vivant | main.py: class PuppiesOfTheDow(QCAlgorithm) |
-| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | Vivant | main.py: class ReinforcementLearningTrading(QCAlgorithm) |
+| `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | **Vérifié tranche 12** | main.py: class ReinforcementLearningTrading(QCAlgorithm) ; backtest QC Cloud 29443478 `75d98cc4...` (Needs-improvement, PSR 15.60 %) |
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | Vivant | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | Vivant | main.py: class SectorMLClassificationAlgorithm(QCAlgorithm) + research.ipynb |
@@ -282,7 +310,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `RL-Portfolio` | `projects/RL-Portfolio/` | RL (squelette) | Squelette | README : « Template/skeleton (no active strategy) » + main.py: class RLPortfolioAlgorithm(QCAlgorithm) |
-| `Reinforcement-Learning-Trading` | `projects/Reinforcement-Learning-Trading/` | RL (squelette) | Squelette | README : « Template/skeleton (no active strategy) » + main.py: class ReinforcementLearningTrading(QCAlgorithm) |
+| `Reinforcement-Learning-Trading` | `projects/Reinforcement-Learning-Trading/` | RL (squelette) | **Vérifié (squelette) tranche 12** | README : « Template/skeleton (no active strategy) » + main.py: class ReinforcementLearningTrading(QCAlgorithm) ; backtest QC Cloud 29687000 `a31c9d56...` (Needs-improvement, PSR 2.19 %) |
 
 #### Contre-exemple pédagogique (BROKEN) (2)
 
