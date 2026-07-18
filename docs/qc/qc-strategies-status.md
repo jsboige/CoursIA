@@ -79,7 +79,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 10, backtests QC Cloud MCP) | 5 | cohorte DeepLearning+LSTM+Temporal-CNN — **1 BROKEN** (Crypto-LSTM-Prediction Sharpe -0.021) ; PSR max 28.70 % (Temporal-CNN-Prediction) |
 | Vérifié (tranche 11, backtests QC Cloud MCP) | 4 | cohorte Crypto BTC + IBKR-Binance-Hybrid — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement (1 MaxDD catastrophique 72.7 %) ; cohorte limitée à 4 stratégies vérifiables firsthand (les 5ᵉ `Crypto-LSTM-Prediction` overlap tranche 10) |
 | Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
-| Vivant (best-guess, non vérifié) | 26 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
+| Vérifié (tranche 13, backtests QC Cloud MCP) | 4 | cohorte ML Classification / Clustering / Hybrid — **0 edge significative** (PSR max 22.74 %), 4 Needs-improvement |
+| Vivant (best-guess, non vérifié) | 21 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -321,7 +322,26 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 **Verdict honnête : 1 BROKEN + 2 Needs-improvement (Vivant) + 2 Needs-improvement (hors-Vivant).** PSR max 37.14 % (`ML-LLM-Summarization`), aucune > 50 %. Confirme pour la cohorte ML NLP + RL ce que les tranches 7-11 confirment : les backtests in-sample pleine période **ne valident aucun edge** sur la cohorte, et le cas `RL-Options-Hedging` (Sharpe négatif sur 1761 j.) démontre qu'un POC RL sur options **n'aboutit pas** sans feature engineering substantiel (univers d'options large, Greeks dynamiques, scénario hedging adaptatif). Walk-forward multi-seed OOS requis avant toute promotion production. **Aucun Stripe des 5 backtests = 4 stratégies cohérentes avec ledger cohort** (alignement période 2558-2766 j. cohérent avec tranches 7-11).
 
-#### Vivant (best-guess, non vérifié) (26)
+#### Vérifié (tranche 13, backtests QC Cloud via MCP) (4)
+
+> **Scope tranche 13 (#1621)** : 4 stratégies « Vivant » promues au statut vérifié via backtests
+> QC Cloud réels (MCP `qc-mcp-lite`, backtests existants relus firsthand). Cohorte **ML Classification
+> / Clustering / Hybrid** (4 sous-familles distinctes des tranches 7 ML Trend/FeatureEng/SVM-Wavelet,
+> 8 Trend+Regime, 9 Composite+Options, 10 DL+LSTM, 11 Crypto BTC, 12 ML NLP + RL). Métriques **non
+> walk-forward OOS** (backtest pleine période in-sample) — suffisantes pour classer Alive /
+> Needs-improvement / BROKEN, insuffisantes pour un verdict de production. **0 edge statistiquement
+> significative** (PSR < 50 % partout) — confirme pour la cohorte ML Classification / Clustering ce
+> que les tranches 7-12 confirmaient. `Gaussian-Direction-Classifier` post-#2801 (Sharpe 0.761) =
+> meilleure candidate de la cohorte, mais PSR 22.74 % reste sous le seuil edge.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification (GaussianNB direction) | **Needs-improvement** | 2018–2026 (2766 j.) ; **Sharpe 0.761** ; CAGR 23.10 % ; MaxDD 25.6 % ; PSR 22.74 % ; NP 884.7 % ($8 908 659) — meilleure candidate cohorte, NP absolu record mais edge non significative |
+| `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML hybrid (dividendes + ranking) | **Needs-improvement** | 2015–2026 (~2833 ordres) ; Sharpe 0.468 ; CAGR 12.66 % ; MaxDD 30.6 % ; PSR 5.46 % ; NP 278.5 % ($2 240 249) — profil dividendes + Sharpe correct, edge non significative |
+| `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification (GaussianNB features) | **Needs-improvement** | 2015–2026 (2375 ordres) ; Sharpe 0.361 ; CAGR 12.49 % ; **MaxDD 47.4 %** ; PSR 4.73 % ; NP 128.1 % ($131 679) — drawdown élevé, edge non significative |
+| `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé (KMeans + PCA) | **Needs-improvement** | 2015–2026 (2308 ordres, v3 robust-nan-handling) ; Sharpe 0.142 ; CAGR 3.37 % ; **MaxDD 65.3 %** ; **PSR 0.09 %** ; NP 44.7 % ($30 130) — MaxDD catastrophique, PSR quasi-nul, edge nulle |
+
+#### Vivant (best-guess, non vérifié) (21)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -330,17 +350,17 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | **Vérifié tranche 11** | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md — voir section tranche 11 |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
-| `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
+| `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | **Vérifié tranche 13** | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | **Vérifié tranche 10** | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | **Vérifié tranche 11** | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 11 |
 | `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb — voir section tranche 10 |
-| `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | Vivant | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) |
+| `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | **Vérifié tranche 13** | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | Vivant | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | **Vérifié tranche 9** | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb — voir section tranche 9 |
 | `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | Vivant | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb |
 | `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | Vivant | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb |
-| `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
+| `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | **Vérifié tranche 13** | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb — voir section tranche 13 |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | **Vérifié tranche 8** | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) — voir section tranche 8 |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | Vivant | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
@@ -351,7 +371,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 0.39 %) |
 | `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 14.79 %) |
 | `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | **Vérifié tranche 12** | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 12 |
-| `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification | Vivant | main.py: class GaussianNaiveBayesAlgorithm(QCAlgorithm) |
+| `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification | **Vérifié tranche 13** | main.py: class GaussianNaiveBayesAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `ML-HeadShoulders-CNN` | `projects/ML-HeadShoulders-CNN/` | DL (CNN patterns) | Vivant | main.py: class CNNPatternDetectionAlgorithm(QCAlgorithm) + research.ipynb |
 | `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | **Vérifié tranche 12** | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) — voir section tranche 12 |
 | `ML-Regression` | `projects/ML-Regression/` | ML supervisé | Vivant | main.py: class MLRegressionAlgorithm(QCAlgorithm) + quantbook.ipynb |
