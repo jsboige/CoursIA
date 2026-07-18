@@ -1,36 +1,36 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,f7ec05c8,markdown,fr,6c9e093987323ca0,"# ICT-1 — Trajectoires de $\Phi$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,f7ec05c8,markdown,fr,7de8a6495afa4e2c,"# ICT-1 — Trajectoires de $\Phi$
 
 > Notebook de la serie **ICT** (*Integrated Causal Trajectories*, Epic #4588).
 > Cadrage de la serie : [ICT-0-Framing.md](ICT-0-Framing.md). Fondations PyPhi :
 > [IIT-1-IntroToPyPhi.ipynb](../IIT-1-IntroToPyPhi.ipynb).
 
-La serie [IIT](README.md) mesure l'organisation causale d'un systeme **a un etat
+La serie [IIT](README.md) mesure l'organisation causale d'un système **a un etat
 donne** : sa valeur d'information integree $\Phi$. C'est une *photographie*.
 
-Ce notebook applique la notion de **trajectoire** a $\Phi$ lui-meme. Quand un
-systeme deterministe evolue, il parcourt une suite d'etats
+Ce notebook applique la notion de **trajectoire** a $\Phi$ lui-même. Quand un
+système déterministe evolue, il parcourt une suite d'etats
 
 $$ s_0 \rightarrow s_1 \rightarrow s_2 \rightarrow \dots $$
 
 et a chaque etat correspond une valeur de $\Phi$. On obtient donc une
 **trajectoire de $\Phi$** — le *film* de l'information integree pendant que le
-systeme se deplace dans son espace d'etats.
+système se deplace dans son espace d'etats.
 
 Trois questions guident le notebook :
 
 1. **Le paysage de $\Phi$** — comment $\Phi$ varie-t-il d'un etat a l'autre ?
    Est-il plat ou accidente ?
 2. **La trajectoire de $\Phi$** — que devient $\Phi$ le long d'une trajectoire,
-   en particulier sur l'**attracteur** ou le systeme finit par tourner ?
-3. **La robustesse de $\Phi$** — apres une perturbation, la trajectoire (et donc
+   en particulier sur l'**attracteur** ou le système finit par tourner ?
+3. **La robustesse de $\Phi$** — après une perturbation, la trajectoire (et donc
    le profil de $\Phi$) se reconstitue-t-elle ?
 
 On utilise le **vrai** moteur [PyPhi](https://pyphi.readthedocs.io) pour tous les
-calculs de $\Phi$ : aucun substitut, aucune valeur fabriquee. Les systemes
+calculs de $\Phi$ : aucun substitut, aucune valeur fabriquee. Les systèmes
 restent volontairement minuscules (3 noeuds, $2^3 = 8$ etats) car le calcul de
 $\Phi$ est exponentiel — c'est une contrainte intrinseque de l'IIT, discutee en
-conclusion.",,,,,,,,6c9e093987323ca0,,,,,,,
+conclusion.",,,,,,,,7de8a6495afa4e2c,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,982d42e5,markdown,fr,265144f5e4b55c6c,"## Repères IIT canoniques
 
 > Vocabulaire de référence pour rattacher ce notebook à la colonne vertébrale de la série (mandat user *2026-07-03, directive 1 — recadrage IIT/$\Phi$*). Sources : [IIT-1-IntroToPyPhi](../IIT-1-IntroToPyPhi.ipynb) (fondations), [ICT-0-Framing](ICT-0-Framing.md) § *« Double lecture du sigle »*, [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md) (texte fondateur, $\Phi_{\text{dyn}}$).
@@ -74,19 +74,19 @@ for _attr in (""PARALLEL_CONCEPT_EVALUATION"", ""PARALLEL_CUT_EVALUATION"",
         setattr(pyphi.config, _attr, False)
 
 print(""PyPhi"", pyphi.__version__, ""| numpy"", np.__version__)",,,,,,,,6e98b2050608f3a4,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,b13d2309,markdown,fr,94b57c7cc7cf42df,"### Deux reseaux a 3 noeuds
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,b13d2309,markdown,fr,adf218474096716c,"### Deux reseaux a 3 noeuds
 
-On compare deux architectures causales deterministes, toutes deux integrees mais
-de structures tres differentes :
+On compare deux architectures causales déterministes, toutes deux integrees mais
+de structures très différentes :
 
 - **AND/OR** : un petit reseau ou les noeuds combinent leurs entrees par des
   portes logiques mixtes.
 - **XOR** : l'exemple canonique de PyPhi, ou chaque noeud est le OU-exclusif des
-  deux autres — un reseau tres symetrique.
+  deux autres — un reseau très symetrique.
 
 Pour chacun, `network.tpm` est la matrice de transition au format *state-by-node*
 de PyPhi : indexee par un tuple d'etat, elle donne l'etat suivant (les reseaux
-sont deterministes).",,,,,,,,94b57c7cc7cf42df,,,,,,,
+sont déterministes).",,,,,,,,adf218474096716c,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,58810305,code,fr,ef0b3fdff095a55d,"# reseau AND/OR (TPM state-by-node, lignes indexees en little-endian)
 andor_tpm = np.array([
     [0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0],
@@ -99,14 +99,14 @@ xor = pyphi.examples.xor_network()
 
 print(""AND/OR : noeuds"", andor.node_labels, ""| matrice de connectivite\n"", andor.cm)
 print(""\nXOR    : noeuds"", xor.node_labels, ""| matrice de connectivite\n"", xor.cm)",,,,,,,,ef0b3fdff095a55d,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,6be9f034,markdown,fr,ed28aca089fa8245,"## 1. Le paysage de $\Phi$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,6be9f034,markdown,fr,a6380f56cb2e5892,"## 1. Le paysage de $\Phi$
 
-$\Phi$ depend du systeme **et de son etat**. Avant de parler de trajectoire,
+$\Phi$ depend du système **et de son etat**. Avant de parler de trajectoire,
 cartographions $\Phi$ sur **tous** les etats : c'est le *paysage de $\Phi$*.
 
 La fonction ci-dessous calcule $\Phi$ pour chacun des $2^n$ etats. C'est le seul
 endroit ou PyPhi travaille vraiment ; le reste du notebook ne fait que relire
-cette carte.",,,,,,,,ed28aca089fa8245,,,,,,,
+cette carte.",,,,,,,,a6380f56cb2e5892,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,a83a67da,code,fr,4f23a16aebd16ee2,"def phi_landscape(network, n):
     # carte etat (tuple) -> Phi (float), calculee par PyPhi sur tous les etats
     nodes = tuple(range(n))
@@ -148,24 +148,24 @@ axes[0].set_ylabel(""$\\Phi$"")
 fig.suptitle(""Le paysage de $\\Phi$ : accidente (AND/OR) vs plat (XOR)"")
 plt.tight_layout()
 plt.show()",,,,,,,,be81a4ea472a4804,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,a3aa413b,markdown,fr,7df8a8bed9da494a,"**Lecture.** Les deux paysages sont radicalement differents :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,a3aa413b,markdown,fr,724dd921923900ec,"**Lecture.** Les deux paysages sont radicalement différents :
 
 - **AND/OR** est **accidente** : la plupart des etats ont un $\Phi$ faible
   ($\approx 0{,}19$), mais un etat — `100`, soit $A$ seul actif — culmine a
   $\Phi \approx 2{,}31$, et `101` forme un relief intermediaire ($\approx 0{,}69$).
-  L'information integree du systeme **depend fortement de l'etat ou il se trouve**.
+  L'information integree du système **depend fortement de l'etat ou il se trouve**.
 - **XOR** est un **plateau** : $\Phi = 1{,}875$ pour *tous* les etats (amplitude
   nulle). La symetrie du OU-exclusif rend l'information integree **independante de
   l'etat**.
 
-Un meme nombre de noeuds, deux ""personnalites causales"" opposees. C'est ce
-paysage qui va donner son relief aux trajectoires de $\Phi$.",,,,,,,,7df8a8bed9da494a,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,82f2b1d8,markdown,fr,85bd7203da4634e9,"## 2. La trajectoire de $\Phi$
+Un même nombre de noeuds, deux ""personnalites causales"" opposees. C'est ce
+paysage qui va donner son relief aux trajectoires de $\Phi$.",,,,,,,,724dd921923900ec,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,82f2b1d8,markdown,fr,6ffa0ae1f0430ee1,"## 2. La trajectoire de $\Phi$
 
-Un reseau deterministe, lache depuis un etat de depart, suit un chemin unique
+Un reseau déterministe, lache depuis un etat de depart, suit un chemin unique
 jusqu'a tomber dans un **attracteur** (un point fixe ou un cycle). Le module
 `ict.trajectories` reconstruit ce chemin en lisant la TPM, puis on relit la carte
-de $\Phi$ le long du chemin.",,,,,,,,85bd7203da4634e9,,,,,,,
+de $\Phi$ le long du chemin.",,,,,,,,6ffa0ae1f0430ee1,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,b5c5c5b1,code,fr,4e035c14acbc55f7,"# trajectoires de quelques etats de depart du reseau AND/OR
 departs = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 1)]
 for start in departs:
@@ -193,30 +193,30 @@ ax.legend()
 ax.grid(alpha=0.3)
 plt.tight_layout()
 plt.show()",,,,,,,,191a2ec8ae6e6d64,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,8e145534,markdown,fr,018014282177850c,"**Lecture.** Le resultat le plus parlant concerne l'**attracteur** du reseau
-AND/OR. Sept des huit etats finissent dans le **meme cycle de longueur 3** :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,8e145534,markdown,fr,367297c3ff4962de,"**Lecture.** Le résultat le plus parlant concerne l'**attracteur** du reseau
+AND/OR. Sept des huit etats finissent dans le **même cycle de longueur 3** :
 
 $$ 100 \rightarrow 001 \rightarrow 110 \rightarrow 100 \rightarrow \dots $$
 
 et la trajectoire de $\Phi$ sur ce cycle **pulse** : $2{,}31 \rightarrow 0{,}19
 \rightarrow 0{,}19 \rightarrow 2{,}31 \dots$ L'information integree n'est donc
-**pas un badge fixe** du systeme : elle monte en fleche un pas sur trois, quand le
-systeme traverse l'etat-pic `100`, puis retombe. Un systeme dynamique peut etre
+**pas un badge fixe** du système : elle monte en fleche un pas sur trois, quand le
+système traverse l'etat-pic `100`, puis retombe. Un système dynamique peut etre
 ""fortement integre par intermittence"".
 
 Le huitieme etat, `000`, est un **point fixe** isole ($\Phi$ constant a $0{,}19$) :
 un petit bassin a part. Sur XOR, au contraire, toutes les trajectoires atteignent
 un point fixe en un ou deux pas, et comme le paysage est plat, $\Phi$ y reste
-**rigoureusement constant** a $1{,}875$ : un film sans relief.",,,,,,,,018014282177850c,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,e36be3f0,markdown,fr,a608a7bbd53f4e31,"## 3. Robustesse : $\Phi$ apres une perturbation
+**rigoureusement constant** a $1{,}875$ : un film sans relief.",,,,,,,,367297c3ff4962de,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,e36be3f0,markdown,fr,9e50bdb93e516056,"## 3. Robustesse : $\Phi$ après une perturbation
 
 La serie ICT s'interesse aux trajectoires qui **se reparent** (cf. ICT-2/ICT-3
-pour le toy-model de tri). Posons ici la meme question avec de l'information
-integree *reelle* : si l'on perturbe le systeme une fois installe sur son
+pour le toy-model de tri). Posons ici la même question avec de l'information
+integree *reelle* : si l'on perturbe le système une fois installe sur son
 attracteur, sa trajectoire de $\Phi$ se reconstitue-t-elle ?
 
 On part du cycle AND/OR, on bascule **un seul noeud** (perturbation 1-bit), puis
-on laisse le systeme re-evoluer.",,,,,,,,a608a7bbd53f4e31,,,,,,,
+on laisse le système re-evoluer.",,,,,,,,9e50bdb93e516056,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,4e05e822,code,fr,2302b6644a321bd0,"# perturbation 1-bit a partir d'un etat de l'attracteur, puis recuperation
 attr = T.attractor_of(andor.tpm, (1, 1, 1))
 base = attr[0]                       # un etat du cycle attracteur
@@ -243,21 +243,21 @@ ax.legend()
 ax.grid(alpha=0.3)
 plt.tight_layout()
 plt.show()",,,,,,,,2302b6644a321bd0,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,dd93ce72,markdown,fr,b8f5f68f143190b0,"**Lecture.** Les **trois** perturbations 1-bit possibles depuis l'etat `110`
-du cycle ramenent le systeme **au meme attracteur** : la trajectoire de $\Phi$ se
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,dd93ce72,markdown,fr,ff11e5049c2629cd,"**Lecture.** Les **trois** perturbations 1-bit possibles depuis l'etat `110`
+du cycle ramenent le système **au même attracteur** : la trajectoire de $\Phi$ se
 reconstitue dans tous les cas. Le profil pulsatile de $\Phi$ est donc une
 propriete **robuste** de la dynamique, pas un accident de l'etat initial.
 
-Les chemins de retour different : basculer le noeud 1 (`110 \to 100`) place
-directement le systeme sur l'etat-pic, et $\Phi$ remonte immediatement a $2{,}31$ ;
+Les chemins de retour différent : basculer le noeud 1 (`110 \to 100`) place
+directement le système sur l'etat-pic, et $\Phi$ remonte immediatement a $2{,}31$ ;
 basculer le noeud 0 (`110 \to 010`) impose un detour plus long avant que le pic ne
 revienne. La *forme* du transitoire depend de la perturbation, mais la
-*destination* — le cycle et son profil de $\Phi$ — est invariante.",,,,,,,,b8f5f68f143190b0,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,763ab875,markdown,fr,1e199ec16946a603,"## 4. Exercices
+*destination* — le cycle et son profil de $\Phi$ — est invariante.",,,,,,,,ff11e5049c2629cd,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,763ab875,markdown,fr,970c525ad134f611,"## 4. Exercices
 
-Trois exercices pour manipuler vous-meme le paysage et les trajectoires de $\Phi$.
+Trois exercices pour manipuler vous-même le paysage et les trajectoires de $\Phi$.
 Completez le corps de chaque fonction (remplacez le `return None`). Le notebook
-s'execute de bout en bout meme sans les completer.",,,,,,,,1e199ec16946a603,,,,,,,
+s'execute de bout en bout même sans les completer.",,,,,,,,970c525ad134f611,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,3535b6d0,markdown,fr,401c56a87ba54b11,"### Exercice 1 — Amplitude du paysage de $\Phi$
 
 Le paysage AND/OR est accidente (amplitude $\approx 2{,}12$), celui de XOR est
@@ -315,30 +315,30 @@ if n_pulses is not None:
     print(f""Nombre de pics de Phi (depart 010) : {n_pulses}"")
 else:
     print(""Exercice a completer"")",,,,,,,,473d8c053245c653,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,12ac8ab9,markdown,fr,293997604a021581,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-1-PhiTrajectories.ipynb,12ac8ab9,markdown,fr,08e0454d52df484e,"## Conclusion
 
-En appliquant la notion de **trajectoire** a $\Phi$ lui-meme, on a vu que :
+En appliquant la notion de **trajectoire** a $\Phi$ lui-même, on a vu que :
 
-1. **$\Phi$ a un paysage.** Pour un meme nombre de noeuds, ce paysage peut etre
+1. **$\Phi$ a un paysage.** Pour un même nombre de noeuds, ce paysage peut etre
    accidente (AND/OR : un pic a $2{,}31$, le reste a $0{,}19$) ou parfaitement plat
    (XOR : $1{,}875$ partout). L'information integree est une fonction de l'etat,
    pas seulement du cablage.
 2. **$\Phi$ a une trajectoire.** Sur l'attracteur d'AND/OR — un cycle de longueur
-   3 — $\Phi$ **pulse**. Un systeme peut donc etre *integre par intermittence* :
-   l'integration est un evenement dans le temps, pas une etiquette permanente.
+   3 — $\Phi$ **pulse**. Un système peut donc etre *integre par intermittence* :
+   l'integration est un événement dans le temps, pas une etiquette permanente.
 3. **La trajectoire de $\Phi$ est robuste.** Les trois perturbations 1-bit du
-   cycle ramenent au meme attracteur : le profil pulsatile de $\Phi$ se repare.
+   cycle ramenent au même attracteur : le profil pulsatile de $\Phi$ se repare.
 
-**La limite intrinseque.** Tous les systemes de ce notebook ont 3 noeuds. Le
+**La limite intrinseque.** Tous les systèmes de ce notebook ont 3 noeuds. Le
 calcul de $\Phi$ est **super-exponentiel** : il faut considerer toutes les
-partitions du systeme pour chaque etat. Au-dela d'une dizaine de noeuds, PyPhi
+partitions du système pour chaque etat. Au-dela d'une dizaine de noeuds, PyPhi
 devient impraticable. C'est *la* raison pour laquelle l'IIT exacte se cantonne aux
-petits systemes — et c'est le probleme que les notebooks suivants attaquent :
+petits systèmes — et c'est le problème que les notebooks suivants attaquent :
 
 - **ICT-5/ICT-6** : trouver une **macro-description** (coarse-graining,
   pont tri $\to$ TPM) ou $\Phi$ redevient calculable a plus grande echelle.
-- **ICT-2/ICT-3** : etudier des trajectoires riches sur des modeles *jouets*
-  (tri auto-organise) qui se passent de PyPhi, quand le systeme est trop grand
+- **ICT-2/ICT-3** : etudier des trajectoires riches sur des modèles *jouets*
+  (tri auto-organise) qui se passent de PyPhi, quand le système est trop grand
   pour l'IIT exacte.
 
 Conformement au principe de la serie ([ICT-0](ICT-0-Framing.md)) : tout ce qui
@@ -347,12 +347,12 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
 ## Voir aussi
 
 - [ICT-0-Framing.md](ICT-0-Framing.md) — cadrage de la serie ICT.
-- [IIT-1-IntroToPyPhi.ipynb](../IIT-1-IntroToPyPhi.ipynb) — TPM, sous-systeme, $\Phi$, CES.
+- [IIT-1-IntroToPyPhi.ipynb](../IIT-1-IntroToPyPhi.ipynb) — TPM, sous-système, $\Phi$, CES.
 - [ICT-2-SelfSortingMorphogenesis.ipynb](ICT-2-SelfSortingMorphogenesis.ipynb) /
   [ICT-3-RobustnessDelayedGratification.ipynb](ICT-3-RobustnessDelayedGratification.ipynb)
   — trajectoires et robustesse sur le toy-model de tri.
 - Zhang, Goldstein & Levin (2025), *Classical sorting algorithms as a model of
-  morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,293997604a021581,,,,,,,
+  morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,08e0454d52df484e,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb,420be610,markdown,fr,86b7588a7eadd377,"# ICT-10 — Grammaire des catastrophes : *l'obstacle qui engendre les formes, le verbe qui les fait basculer*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) — **charniere strate 2 -> strate 3**.
@@ -1065,7 +1065,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles.ipynb,59303ef0,code
 # et comparer les pics. Le verdict ""granularite privilegiee"" est-il invariant ?",,,,,,,,c13a39d28c23b07b,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles.ipynb,14f9d0c8,markdown,fr,480e73f9692d9546,"---
 *ICT-11 — Profils d'agence causale. Epic #4588, strate 3. Suite : ICT-12 (champs de valence et animats), ICT-13 (stratégies comme formes stables). Voir [ICT-0-Framing](ICT-0-Framing.md) pour le cadrage de la série.*",,,,,,,,480e73f9692d9546,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,f42cc0ee,markdown,fr,aeacaa85fe7d198c,"# ICT-12 — Champs de valence et animats : roles mesures, modele interne payant ou ruineux
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,f42cc0ee,markdown,fr,556e87272c2ff4da,"# ICT-12 — Champs de valence et animats : rôles mesures, modèle interne payant ou ruineux
 
 **Sous-serie ICT** (trajectoires integrees, Epic #4588, strate 3). Suite du Cran A
 ICT-10 (durcissement du banc $\hat{p}$, verdict honnete « avantage regime-dependant »)
@@ -1075,13 +1075,13 @@ et d'ICT-11 (profils d'agence multi-echelle). Voir [#4588](../README.md), [#4878
 
 Premier toy model **actantiel spatial** : des animats evoluent dans un **champ de
 valence** (source attractive + obstacles repulsifs). La scene actantielle de Thom
-cesse d'etre une correspondance nommee : les **roles deviennent des grandeurs
-mesurees** sur trajectoires. Le $\hat{p}$ d'ICT-10 devient le **modele interne
+cesse d'etre une correspondance nommee : les **rôles deviennent des grandeurs
+mesurees** sur trajectoires. Le $\hat{p}$ d'ICT-10 devient le **modèle interne
 optionnel** de l'animat :
 
-> *Dans quels environnements un modele interne (anticipateur) paie-t-il son cout ?*
+> *Dans quels environnements un modèle interne (anticipateur) paie-t-il son cout ?*
 
-Deux animats, un meme environnement :
+Deux animats, un même environnement :
 - le **reactif** suit le gradient de valence (il vise la ou la source *est*) ;
   c'est la version spatiale de la baseline *persistance* du Cran A ;
 - l'**anticipateur $\hat{p}$** extrapole la position future de la source et vise
@@ -1091,15 +1091,15 @@ Deux animats, un meme environnement :
 
 1. **Pas de cas degenere** (#3801 prong B) : >= 3 regimes, dont au moins un ou
    $\hat{p}$ **perd** contre le reactif. Verdict **par regime, jamais agrege**.
-2. **Roles mesures, pas declares** : chaque role lisible depuis la trajectoire
-   seule (4 metriques) avec controle d'ablation (marche aleatoire).
+2. **Rôles mesures, pas declares** : chaque rôle lisible depuis la trajectoire
+   seule (4 metriques) avec contrôle d'ablation (marche aleatoire).
 3. **Baselines adverses du Cran A** (persistance, moyenne mobile, AR(1)) pour
    tout claim d'anticipation 2D.
 4. **Verdict sans complaisance** : la ou $\hat{p}$ echoue, c'est visible en
    sortie commitee.
 
 **Kernel** : Python 3 (numpy CPU pur, gel GPU respecte). Module : `ict/valence.py`.
-",,,,,,,,aeacaa85fe7d198c,,,,,,,
+",,,,,,,,556e87272c2ff4da,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,d75553ca,code,fr,d6556a29e7772a97,"import sys, os
 sys.path.insert(0, os.getcwd())  # ICT-Series/ pour `from ict import valence`
 
@@ -1155,13 +1155,13 @@ ax.legend(loc=""upper right"", fontsize=9); ax.set_title(""Poursuite vs intercep
 ax.set_xticks([]); ax.set_yticks([])
 fig.tight_layout(); plt.show()
 ",,,,,,,,7d4ea5bb0f15b6d3,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,8000cfdf,markdown,fr,a4ed95831d88d1d6,"## 3. Gate 1 — capture par regime (verdict jamais agrege)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,8000cfdf,markdown,fr,6180da2fd8b006a4,"## 3. Gate 1 — capture par regime (verdict jamais agrege)
 
-**Cadence de capture** sur la fenetre post-convergence (burn-in exclu, rayon
+**Cadence de capture** sur la fenêtre post-convergence (burn-in exclu, rayon
 serre) : une mesure de **precision de poursuite**, pas de decouverte. On cherche
 les regimes ou $\hat{p}$ **gagne** et ceux ou il **perd**.
 
-### Vitesse attrapable (source ~ animat)",,,,,,,,a4ed95831d88d1d6,,,,,,,
+### Vitesse attrapable (source ~ animat)",,,,,,,,6180da2fd8b006a4,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,7690f2f6,code,fr,4c17e7c201f220c0,"rng = np.random.default_rng(42)
 print(f""{'regime':11s} | {'reactif':>8s} | {'phat':>8s} | {'aleatoire':>9s} | verdict"")
 print(""-"" * 64)
@@ -1226,12 +1226,12 @@ ax.set_xticks(x); ax.set_xticklabels(labels); ax.set_ylabel(""erreur d'anticipat
 ax.set_title(""Gate 3 : p_hat vs baselines adverses (Cran A)""); ax.legend(fontsize=8)
 fig.tight_layout(); plt.show()
 ",,,,,,,,cc969f8e4bb171bd,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,94402dae,markdown,fr,ca62761e032d6227,"## 5. Gate 2 — quatre grandeurs de role (mesurees) + controle d'ablation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,94402dae,markdown,fr,9a96eda3c7b3a892,"## 5. Gate 2 — quatre grandeurs de rôle (mesurees) + contrôle d'ablation
 
-Chaque role doit etre lisible depuis la trajectoire seule via quatre grandeurs :
+Chaque rôle doit etre lisible depuis la trajectoire seule via quatre grandeurs :
 `capture_rate`, `escape_rate`, `path_irreversibility`, `role_switching`. La
-**marche aleatoire** est le controle d'ablation : sans modele ni gradient, elle
-ne doit porter aucune signature de role.",,,,,,,,ca62761e032d6227,,,,,,,
+**marche aleatoire** est le contrôle d'ablation : sans modèle ni gradient, elle
+ne doit porter aucune signature de rôle.",,,,,,,,9a96eda3c7b3a892,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,f2e71006,code,fr,98b5a9c5d6de6c39,"rng = np.random.default_rng(77)
 print(f""{'animat':10s} | {'capture':>8s} | {'escape':>7s} | {'irrevers':>8s} | {'switch':>7s}"")
 print(""-"" * 52)
@@ -1246,7 +1246,7 @@ print(""Controle d'ablation : la marche aleatoire capture ~0 (pas de signature d
 print(""tandis que les deux animats orientes portent une capture elevee. Les roles se"")
 print(""distinguent dans l'espace (capture, irreversibilite, switching) sans etiquette."")
 ",,,,,,,,98b5a9c5d6de6c39,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,f690c709,markdown,fr,7cf5e0de8537cffe,"## 6. Verdict sans complaisance
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,f690c709,markdown,fr,055af24b6067bf8a,"## 6. Verdict sans complaisance
 
 Le banc croise 4 regimes (statique, balistique, erratique, bruite) et un axe de
 vitesse. Le verdict est **regime-dependant**, coherent avec le fil court depuis
@@ -1257,29 +1257,29 @@ ICT-10 (le $\hat{p}$ durci du Cran A) :
   ce regime et **perd en erratique** (predictions trompees par les demi-tours).
   En revanche, quand la source **depasse** le reactif (speed > step), l'interception
   de $\hat{p}$ paye nettement en balistique (capture x10) : c'est le regime ou le
-  modele interne est necessaire.
+  modèle interne est necessaire.
 - **Anticipation (gate 3)** : $\hat{p}$ ecrase les baselines en balistique
   (erreur ~6x inferieure a la persistance) mais **perd en bruite** (la vitesse EMA
-  amplifie le bruit de position : persistance plus precise). Le modele interne
+  amplifie le bruit de position : persistance plus precise). Le modèle interne
   paie en prediction **la ou la source est previsible**, exactement l'inverse sinon.
-- **Roles (gate 2)** : les 4 grandeurs separent reactif / $\hat{p}$ / marche
-  aleatoire sans etiquette ; le controle d'ablation (capture ~0 pour la marche
+- **Rôles (gate 2)** : les 4 grandeurs separent reactif / $\hat{p}$ / marche
+  aleatoire sans etiquette ; le contrôle d'ablation (capture ~0 pour la marche
   aleatoire) confirme que la signature est non-triviale.
 
-**Conclusion** : le modele interne $\hat{p}$ n'est ni universellement avantageux
+**Conclusion** : le modèle interne $\hat{p}$ n'est ni universellement avantageux
 ni universellement ruineux. Il paie son cout la ou (a) la source echappe au
 suivi reactif **et** (b) sa cinematique reste previsible. Ailleurs, la baseline
 reactive (persistance spatiale) est egale ou meilleure. C'est la discipline
 « sans complaisance » de la serie : aucune granularite privilegiee decretee,
 un verdict honnete, par regime.
-",,,,,,,,7cf5e0de8537cffe,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,85826b56,markdown,fr,64f29b885a215188,"## 7. Exercices
+",,,,,,,,055af24b6067bf8a,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,85826b56,markdown,fr,88a691df49ed9806,"## 7. Exercices
 
 Trois exercices (a completer). Conventions : stub **sans erreur volontaire**
 (`pass` / `return None` / `# TODO etudiant`) ; le notebook s'execute de bout en
-bout meme non complete.
-",,,,,,,,64f29b885a215188,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,ff5993c6,markdown,fr,9951b8bdfa469836,"### Exercice 1 — obstacles et role « proie »
+bout même non complete.
+",,,,,,,,88a691df49ed9806,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,ff5993c6,markdown,fr,70949dbc086f483b,"### Exercice 1 — obstacles et rôle « proie »
 
 Ajoutez deux obstacles repulsifs et mesurez l'`escape_rate` du reactif vs $\hat{p}$.
 Un bon « proie » doit sortir vite des regions repulsives. Objectif : trouver une
@@ -1288,7 +1288,7 @@ configuration d'obstacles ou $\hat{p}$ (evitement dedie) devance le reactif sur
 
 *Indice* : `V.simulate_reactive` et `V.simulate_phat` acceptent `obstacles=` ;
 `V.escape_rate(traj, src, obstacles=...)` renvoie la fraction de pas hors danger.
-",,,,,,,,9951b8bdfa469836,,,,,,,
+",,,,,,,,70949dbc086f483b,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,170adfe6,code,fr,0222048169241d60,"# Exercice 1 : a completer
 obstacles = None  # TODO etudiant : np.array([[...], [...]], dtype=float)
 escape_reactif = None  # TODO etudiant
@@ -1309,15 +1309,15 @@ leads = [1, 2, 4, 8]
 captures_phat = []  # TODO etudiant : capturer rep['phat']['capture'] par lead
 print(""Exercice 2 a completer"")
 ",,,,,,,,d1f76adca2b41047,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,7d171d57,markdown,fr,5612b209d21e3a10,"### Exercice 3 — cinquieme regime
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,7d171d57,markdown,fr,6a4ad841037ad504,"### Exercice 3 — cinquieme regime
 
 Ajoutez un regime « orbital » (la source decrit un cercle a vitesse constante)
 dans `V.source_trajectory`. Objectif : predire si $\hat{p}$ doit y gagner (mouvement
 periodique previsible) puis verifier.
 
-*Etape 1* : implementer le cercle dans `source_trajectory` (nouveau `kind=""orbital""`).
-*Etape 2* : lancer le banc `regime_report(""orbital"")` et comparer au verdict balistique.
-",,,,,,,,5612b209d21e3a10,,,,,,,
+*Étape 1* : implementer le cercle dans `source_trajectory` (nouveau `kind=""orbital""`).
+*Étape 2* : lancer le banc `regime_report(""orbital"")` et comparer au verdict balistique.
+",,,,,,,,6a4ad841037ad504,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,115aeca5,code,fr,0131e6ff56293ef6,"# Exercice 3 : a completer
 # TODO etudiant : ajouter le kind ""orbital"" dans ict/valence.py::source_trajectory,
 # puis mesurer regime_report(""orbital"") et comparer au balistique.
@@ -7800,41 +7800,41 @@ niveau d'echelles au **do-calculus** (la meme intervention uniforme `do` levee a
 - [ICT-5 — emergence causale (pyphi.macro)](ICT-5-CausalEmergence.ipynb) — l'approche bornee complementaire.
 - [Notebook-pont — du graphe causal au do-calculus](../../Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) — l'EI estimée ici repose sur des **interventions uniformes** (`do(s)` sur chaque état, maximum-entropy) : le pont donne l'armature formelle de ce même opérateur `do` (échelle de Pearl + 3 règles, exécutées sur `dowhy`) et relie cette série à Tweety-11, Infer-5 et PyMC-5.
 - Erik Hoel, *Causal Emergence 2.0*, [arXiv:2503.13395](https://arxiv.org/abs/2503.13395), 2025.",,,,,,,,8f486364847d1f71,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,ec41a453,markdown,fr,e019f96f8e28a5d9,"# ICT-7 — Signatures *scale-free* & criticalite
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,ec41a453,markdown,fr,819f82eb1ffc5626,"# ICT-7 — Signatures *scale-free* & criticalite
 
 > Septieme notebook de la serie **Integrated Causal Trajectories** (Epic #4588),
-> qui prolonge [IIT / PyPhi](README.md) de l'etude d'une structure causale *a un
+> qui prolonge [IIT / PyPhi](README.md) de l'étude d'une structure causale *a un
 > instant* vers ses *trajectoires* multi-echelles. Cadrage : [ICT-0](ICT-0-Framing.md).
 
-Une des questions ouvertes du cadrage : *certains systemes produisent-ils
+Une des questions ouvertes du cadrage : *certains systèmes produisent-ils
 spontanement des signatures multi-echelles, voire **scale-free** (sans echelle
-caracteristique) ?* Une signature scale-free — une loi de puissance, un objet
+caractéristique) ?* Une signature scale-free — une loi de puissance, un objet
 auto-similaire — est le marqueur d'une organisation qui se repete a toutes les
-echelles, souvent associee a la **criticalite** (un systeme poise au bord d'une
+echelles, souvent associee a la **criticalite** (un système poise au bord d'une
 transition). C'est un fil direct vers l'emergence causale d'[ICT-5](ICT-5-CausalEmergence.ipynb)
 et [ICT-6](ICT-6-SortingToTPM-CausalEmergence.ipynb) : Jansma & Hoel rappellent
 qu'une vraie organisation multi-echelle est **rare et particuliere**, pas generique.
 
-**Mais ce notebook porte d'abord sur une competence, pas sur un resultat :
+**Mais ce notebook porte d'abord sur une competence, pas sur un résultat :
 detecter une signature scale-free *sans se faire avoir*.** Le piege est partout :
 une multitude de distributions a queue lourde **paraissent une droite** sur un
 trace log-log sans etre des lois de puissance. La discipline de la serie ICT —
-*executer, mesurer, narrer le resultat reel* — exige ici une methode, pas un coup
+*executer, mesurer, narrer le résultat reel* — exige ici une méthode, pas un coup
 d'oeil. On suit la demarche de **Clauset, Shalizi & Newman (2009)** : estimer
 l'exposant par maximum de vraisemblance, choisir le seuil de queue par minimisation
 de l'ecart, mesurer la qualite d'ajustement, et **comparer** la loi de puissance a
 une alternative.
 
-Plan : (1) la boite a outils de diagnostic et le piege du log-log ; (2) un systeme
+Plan : (1) la boite a outils de diagnostic et le piege du log-log ; (2) un système
 **reellement** scale-free (branchement critique, exposant connu) ; (3) le retour au
 tri auto-organise d'ICT-2 — qui *parait* a queue lourde mais possede une echelle
-caracteristique ; (4) auto-similarite et effondrement d'echelle ; (5) trois exercices.",,,,,,,,e019f96f8e28a5d9,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,67d511f5,markdown,fr,8c7ccd1647716259,"## 1. Mise en place
+caractéristique ; (4) auto-similarite et effondrement d'echelle ; (5) trois exercices.",,,,,,,,819f82eb1ffc5626,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,67d511f5,markdown,fr,79b91675111a6791,"## 1. Mise en place
 
 On charge le package `ict` (couche legere a cote de PyPhi, cf. ICT-0). Le module
-`ict.scale_free` fournit les generateurs de reference et les estimateurs ; il ne
+`ict.scale_free` fournit les générateurs de reference et les estimateurs ; il ne
 depend que de la bibliotheque standard. `numpy`/`matplotlib` ne servent qu'au
-notebook (calcul leger et figures).",,,,,,,,8c7ccd1647716259,,,,,,,
+notebook (calcul leger et figures).",,,,,,,,79b91675111a6791,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,c51ab142,code,fr,ec551fcb27336a81,"import os, sys, random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7863,13 +7863,13 @@ def deplacements_tri(n, n_runs, seed0=0, max_steps=30000):
     return [x for x in d if x >= 1]
 
 print(""Modules charges. Algotypes du modele de tri :"", ALGOTYPES)",,,,,,,,ec551fcb27336a81,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,7b6d3e66,markdown,fr,96132d6c6715c53e,"## 2. Le piege du log-log, et la boite a outils
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,7b6d3e66,markdown,fr,10f064fc4ca4809f,"## 2. Le piege du log-log, et la boite a outils
 
-Deux echantillons de meme taille : l'un tire d'une **vraie loi de puissance**
+Deux echantillons de même taille : l'un tire d'une **vraie loi de puissance**
 (exposant $\alpha = 2.5$), l'autre d'une **exponentielle**. Tracons leurs CCDF
 (fonction de repartition complementaire $P(X \ge x)$) en log-log. Une loi de
 puissance y est une droite ; une exponentielle, une courbe qui plonge. Le but :
-voir que **a l'oeil, sur la partie basse, les deux peuvent tromper**.",,,,,,,,96132d6c6715c53e,,,,,,,
+voir que **a l'oeil, sur la partie basse, les deux peuvent tromper**.",,,,,,,,10f064fc4ca4809f,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,51e5681a,code,fr,ea20fa2ba860c020,"rng = random.Random(GRAINE)
 ech_pl  = sf.sample_powerlaw(2.5, 1.0, 4000, rng)   # vraie loi de puissance
 ech_exp = sf.sample_exponential(0.5, 1.0, 4000, rng)  # echelle caracteristique 1/0.5
@@ -7880,7 +7880,7 @@ trace_ccdf(ax, ech_exp, ""exponentielle (taux=0.5)"", ""s"")
 ax.set_xlabel(""x""); ax.set_ylabel(""P(X >= x)"")
 ax.set_title(""Figure 1 - CCDF en log-log : qui est scale-free ?"")
 ax.legend(); fig.tight_layout(); plt.show()",,,,,,,,ea20fa2ba860c020,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,051fe0a2,markdown,fr,f6713c926100e966,"On ne tranche pas a l'oeil. La methode (Clauset, Shalizi & Newman) :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,051fe0a2,markdown,fr,495f8b576166ba41,"On ne tranche pas a l'oeil. La méthode (Clauset, Shalizi & Newman) :
 
 1. **Choisir le seuil de queue** $x_{\min}$ qui *minimise* la distance de
    Kolmogorov-Smirnov entre la queue et sa loi de puissance ajustee
@@ -7892,20 +7892,20 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,051fe0a2,markdo
 4. **Comparer** loi de puissance vs exponentielle par rapport de log-vraisemblance
    $R$. La fonction `compare_powerlaw_exponential` enchaine tout : elle ne declare
    *scale-free* que si l'ajustement tient (KS faible) **et** que la loi de
-   puissance bat l'exponentielle.",,,,,,,,f6713c926100e966,,,,,,,
+   puissance bat l'exponentielle.",,,,,,,,495f8b576166ba41,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,41f3b5ba,code,fr,439d87526dbf2dd2,"for nom, ech, disc in [(""loi de puissance"", ech_pl, False), (""exponentielle"", ech_exp, False)]:
     xm = sf.select_xmin(ech, discrete=disc)
     d = sf.compare_powerlaw_exponential(ech, xmin=xm, discrete=disc)
     print(f""{nom:18s} xmin*={xm:6.2f}  alpha={d['alpha']:.2f}  ""
           f""KS={d['ks']:.3f}  R={d['loglik_ratio']:+.0f}  ->  {d['verdict']}"")",,,,,,,,439d87526dbf2dd2,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,24046d68,markdown,fr,2fd0c01eacf96fdb,"La boite a outils retrouve la verite : l'exposant de la loi de puissance est
-estime a ~2.5 (sa vraie valeur) avec un KS minuscule et un $R$ tres positif —
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,24046d68,markdown,fr,cddb446408c009ce,"La boite a outils retrouve la verite : l'exposant de la loi de puissance est
+estime a ~2.5 (sa vraie valeur) avec un KS minuscule et un $R$ très positif —
 **scale-free** ; pour l'exponentielle, l'ajustement reste passable mais
 l'exponentielle **est preferee** a la loi de puissance ($R<0$) — **echelle
-caracteristique**. C'est l'etalonnage : la methode classe correctement des cas dont
-on connait la reponse. On peut maintenant l'appliquer a des systemes ou on ne la
-connait pas.",,,,,,,,2fd0c01eacf96fdb,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,b9a5bcbf,markdown,fr,cc954b9eed25e130,"## 3. Un systeme reellement scale-free : le branchement critique
+caractéristique**. C'est l'etalonnage : la méthode classe correctement des cas dont
+on connait la reponse. On peut maintenant l'appliquer a des systèmes ou on ne la
+connait pas.",,,,,,,,cddb446408c009ce,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,b9a5bcbf,markdown,fr,f3c722fe989c7b60,"## 3. Un système reellement scale-free : le branchement critique
 
 Le banc d'essai canonique de la criticalite est le **processus de branchement**
 (Galton-Watson) : une graine engendre un nombre aleatoire de descendants
@@ -7913,14 +7913,14 @@ Le banc d'essai canonique de la criticalite est le **processus de branchement**
 d'avalanche** est le nombre total de noeuds.
 
 - $\mu < 1$ (sous-critique) : les avalanches s'eteignent vite — **echelle
-  caracteristique**.
-- $\mu = 1$ (**critique**) : la theorie est exacte. La taille totale suit la loi de
+  caractéristique**.
+- $\mu = 1$ (**critique**) : la théorie est exacte. La taille totale suit la loi de
   Borel $P(s) = s^{s-1} e^{-s}/s!$, dont la queue est $\sim s^{-3/2}$ : une **loi de
   puissance d'exposant $\tau = 3/2$**. Aucune echelle ne domine.
 - $\mu > 1$ (sur-critique) : des avalanches geantes apparaissent.
 
 C'est notre etalon de *vrai* scale-free, avec un exposant connu d'avance ($1.5$) :
-le diagnostic doit le retrouver.",,,,,,,,cc954b9eed25e130,,,,,,,
+le diagnostic doit le retrouver.",,,,,,,,f3c722fe989c7b60,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,7477262b,code,fr,8df0ccf9b69ab636,"rng = random.Random(GRAINE + 1)
 N_AVAL = 15000
 # on compare les deux regimes nets : sous-critique (echelle caracteristique) et
@@ -7943,29 +7943,29 @@ for mu in (0.5, 1.0):
     d = sf.compare_powerlaw_exponential(finis, xmin=xm, discrete=True)
     a = f""{d['alpha']:.2f}"" if d['alpha'] else ""NA""
     print(f""mu={mu}  xmin*={xm}  alpha={a}  KS={d['ks']:.3f}  ->  {d['verdict']}"")",,,,,,,,8df0ccf9b69ab636,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,64bf01b9,markdown,fr,4c923f6d27eaf3ea,"Le verdict suit la theorie. Le cas critique $\mu = 1$ est declare **scale-free**, et
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,64bf01b9,markdown,fr,a637d6498dc1f93d,"Le verdict suit la théorie. Le cas critique $\mu = 1$ est declare **scale-free**, et
 surtout l'exposant estime tombe sur $\alpha \approx 1.5$ — exactement le $\tau = 3/2$
 de la loi de Borel : ce n'est pas seulement le verdict qui colle, c'est la *valeur*
 predite d'avance qui est retrouvee. La courbe critique longe la droite de pente
 $-1/2$ sur plusieurs decades. Le cas sous-critique $\mu = 0.5$, lui, **echoue** au
 test de loi de puissance (KS trop grand) : ses avalanches s'eteignent vite, ce qui
-impose une **echelle caracteristique**.
+impose une **echelle caractéristique**.
 
 C'est le bon reflexe : ne pas se fier au seul mot *scale-free* mais a l'**exposant**.
-Pres de la criticalite, une loi de puissance a coupure tres lointaine peut tromper
-le verdict localement ; seul $\mu = 1$ produit le $\tau = 3/2$ theorique, signe que
+Pres de la criticalite, une loi de puissance a coupure très lointaine peut tromper
+le verdict localement ; seul $\mu = 1$ produit le $\tau = 3/2$ théorique, signe que
 la signature est reelle et non un artefact d'ajustement (l'**Exercice 1** fait
-explorer cette fenetre). Le scale-free n'est donc **pas** un regime generique : il
-vit sur un point precis. C'est tout l'argument de Jansma & Hoel — une organisation
-multi-echelle nette est un accident finement regle, pas la regle.",,,,,,,,4c923f6d27eaf3ea,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,1236161c,markdown,fr,3ea76802c5cb594e,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
+explorer cette fenêtre). Le scale-free n'est donc **pas** un regime generique : il
+vit sur un point précis. C'est tout l'argument de Jansma & Hoel — une organisation
+multi-echelle nette est un accident finement règle, pas la règle.",,,,,,,,a637d6498dc1f93d,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,1236161c,markdown,fr,331036591fd78374,"## 4. Retour au tri auto-organise : a queue lourde, mais *pas* scale-free
 
-Reprenons le systeme vedette de la serie : le **tri auto-organise** vue-cellule
+Reprenons le système vedette de la serie : le **tri auto-organise** vue-cellule
 d'[ICT-2](ICT-2-SelfSortingMorphogenesis.ipynb) (tableaux chimeriques alternant
 les algotypes `bubble`/`insertion`). On en extrait une signature naturelle : le
 **deplacement net** de chaque cellule, $|{\rm position\ initiale} - {\rm position\
 finale}|$, sur de nombreuses permutations aleatoires. Certaines cellules voyagent
-loin, d'autres a peine : la distribution a une queue. Est-elle scale-free ?",,,,,,,,3ea76802c5cb594e,,,,,,,
+loin, d'autres a peine : la distribution a une queue. Est-elle scale-free ?",,,,,,,,331036591fd78374,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,b60798e8,code,fr,f96a0905845162b1,"rng = random.Random(GRAINE + 2)
 dep = deplacements_tri(n=32, n_runs=140, seed0=0)
 
@@ -7982,30 +7982,30 @@ d = sf.compare_powerlaw_exponential(dep, xmin=xm, discrete=True)
 print(f""deplacements du tri : xmin*={xm}  alpha={d['alpha']:.2f}  ""
       f""KS={d['ks']:.3f}  R={d['loglik_ratio']:+.0f}  ->  {d['verdict']}"")
 print(f""deplacement maximal observe = {max(dep)}  (borne par n-1 = {32-1})"")",,,,,,,,f96a0905845162b1,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,bd2cf5bd,markdown,fr,24ee37f43232d84e,"Le piege se referme — et le diagnostic le detecte. A l'oeil, la courbe du tri a bien
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,bd2cf5bd,markdown,fr,7552c11d18096075,"Le piege se referme — et le diagnostic le detecte. A l'oeil, la courbe du tri a bien
 une allure de queue lourde, comparable a celle de l'avalanche critique sur la
 gauche. Mais l'ajustement par loi de puissance **echoue** (KS au-dessus du seuil),
-et la cause saute aux yeux dans la derniere ligne : le deplacement est **borne par
-la taille du systeme** ($n-1$). Cette borne *est* l'echelle caracteristique. Un
-systeme scale-free n'a, par definition, aucune echelle privilegiee ; ici il y en a
+et la cause saute aux yeux dans la dernière ligne : le deplacement est **borne par
+la taille du système** ($n-1$). Cette borne *est* l'echelle caractéristique. Un
+système scale-free n'a, par definition, aucune echelle privilegiee ; ici il y en a
 une, imposee par la taille.
 
-Lecon de fond pour ICT : des **regles locales a une seule echelle** (chaque cellule
+Lecon de fond pour ICT : des **règles locales a une seule echelle** (chaque cellule
 ne voit que ses voisins immediats, cf. ICT-2/ICT-4) trient efficacement et reparent,
 mais ne s'auto-organisent **pas** vers la criticalite. Le scale-free demande un
-reglage particulier (etre poise au bord d'une transition) que ces regles minimales
+reglage particulier (etre poise au bord d'une transition) que ces règles minimales
 ne possedent pas. Mesurer la signature plutot que la supposer evite de prendre une
-queue lourde banale pour une organisation multi-echelle profonde.",,,,,,,,24ee37f43232d84e,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,a6538aa6,markdown,fr,570b8ae8fee51263,"## 5. Auto-similarite et effondrement d'echelle (le cote fractal)
+queue lourde banale pour une organisation multi-echelle profonde.",,,,,,,,7552c11d18096075,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,a6538aa6,markdown,fr,6ed1227c5058aa6a,"## 5. Auto-similarite et effondrement d'echelle (le cote fractal)
 
 Une signature scale-free est **auto-similaire** : zoomer ne change pas la forme.
-Une signature a echelle caracteristique, au contraire, possede *une* echelle qui,
+Une signature a echelle caractéristique, au contraire, possede *une* echelle qui,
 une fois retiree, fait coincider les distributions. Le test fractal canonique est
-l'**effondrement d'echelle** (data collapse) : on fait varier la taille du systeme
+l'**effondrement d'echelle** (data collapse) : on fait varier la taille du système
 et on renormalise l'axe des x.
 
 Pour le tri, l'echelle candidate est la taille $n$. Tracons les CCDF des
-deplacements pour $n \in \{20, 30, 40\}$, brutes puis renormalisees par $x/n$.",,,,,,,,570b8ae8fee51263,,,,,,,
+deplacements pour $n \in \{20, 30, 40\}$, brutes puis renormalisees par $x/n$.",,,,,,,,6ed1227c5058aa6a,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,86fe7bca,code,fr,20fd87b4c2bbaa02,"rng = random.Random(GRAINE + 3)
 deps = {n: deplacements_tri(n=n, n_runs=120, seed0=1000 + n) for n in (20, 30, 40)}
 
@@ -8020,17 +8020,17 @@ axes[1].set_title(""CCDF renormalisees x/n (effondrement)""); axes[1].set_xlabel
 axes[1].set_ylabel(""CCDF""); axes[1].legend()
 fig.suptitle(""Figure 4 - Effondrement d'echelle : le tri a une echelle caracteristique (= n)"")
 fig.tight_layout(); plt.show()",,,,,,,,20fd87b4c2bbaa02,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,cd3f9984,markdown,fr,17e40c5302e4ea3e,"Les CCDF brutes se separent (a gauche) : plus le tableau est grand, plus les
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,cd3f9984,markdown,fr,0db5a1194ace6d81,"Les CCDF brutes se separent (a gauche) : plus le tableau est grand, plus les
 deplacements peuvent etre grands. Renormalisees par $x/n$ (a droite), elles **se
 superposent** : il existait une seule echelle, la taille $n$, et l'avoir retiree
-fait coincider les courbes. C'est la signature meme d'une **echelle
-caracteristique** — l'oppose du scale-free, qui ne se laisse reduire par aucune
-renormalisation unique (l'avalanche critique de la Figure 2 garde la meme forme a
-toutes les echelles, sa coupure ne faisant que reculer avec la taille du systeme).",,,,,,,,17e40c5302e4ea3e,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,c7bf25e7,markdown,fr,9e5866b466454cd0,"## 6. Garde-fou avance : le test d'adequation par bootstrap
+fait coincider les courbes. C'est la signature même d'une **echelle
+caractéristique** — l'oppose du scale-free, qui ne se laisse reduire par aucune
+renormalisation unique (l'avalanche critique de la Figure 2 garde la même forme a
+toutes les echelles, sa coupure ne faisant que reculer avec la taille du système).",,,,,,,,0db5a1194ace6d81,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,c7bf25e7,markdown,fr,464bfd3e5b6f7b26,"## 6. Garde-fou avance : le test d'adequation par bootstrap
 
-Le KS et le rapport $R$ comparent deux modeles ; on peut aller plus loin et demander
-si la loi de puissance ajustee est, *a elle seule*, un modele credible. `scale_free`
+Le KS et le rapport $R$ comparent deux modèles ; on peut aller plus loin et demander
+si la loi de puissance ajustee est, *a elle seule*, un modèle credible. `scale_free`
 fournit pour cela un test d'adequation par bootstrap (`gof_pvalue`, facon Clauset et
 al.) : on simule de nombreux echantillons issus de la loi de puissance ajustee et on
 mesure la fraction dont l'ecart KS est *au moins aussi grand* que celui observe. Une
@@ -8038,7 +8038,7 @@ mesure la fraction dont l'ecart KS est *au moins aussi grand* que celui observe.
 puissance (on ne la rejette pas) ; une **p-valeur proche de 0** la rejette.
 
 Appliquons-le aux deux cas tranches du notebook : le branchement **critique**
-(qu'on attend *confirme*) et les **deplacements du tri** (qu'on attend *rejetes*).",,,,,,,,9e5866b466454cd0,,,,,,,
+(qu'on attend *confirme*) et les **deplacements du tri** (qu'on attend *rejetes*).",,,,,,,,464bfd3e5b6f7b26,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,b093e1cc,code,fr,50570caae433259b,"boot = random.Random(GRAINE + 4)
 
 # (a) branchement critique : on attend une confirmation (p-valeur elevee)
@@ -8053,53 +8053,53 @@ xm_d = sf.select_xmin(dep, discrete=True)
 d_d = sf.compare_powerlaw_exponential(dep, xmin=xm_d, discrete=True, rng=boot, gof_boot=200)
 print(f""deplacements du tri   : alpha={d_d['alpha']:.2f}  KS={d_d['ks']:.3f}  ""
       f""p-GoF={d_d['gof_pvalue']}  ->  {d_d['verdict']}"")",,,,,,,,50570caae433259b,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,034865ba,markdown,fr,0e19a0f65d6f55ca,"Le test tranche dans le bon sens : il **confirme** le branchement critique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,034865ba,markdown,fr,482bdcbb9e15d38c,"Le test tranche dans le bon sens : il **confirme** le branchement critique
 (p-valeur elevee — l'ecart KS est celui d'une vraie loi de puissance) et **rejette**
 les deplacements du tri (p-valeur effondree). C'est le troisieme angle, concordant
-avec le KS et le rapport $R$ : les trois outils designent le meme coupable.
+avec le KS et le rapport $R$ : les trois outils designent le même coupable.
 
 Une mise en garde demeure, a enseigner : la p-valeur bootstrap est **sensible au
 choix de $x_{\min}$**. Applique a un segment trop court ou trop bas (mauvais
-$x_{\min}$), le test sur-rejette, meme un vrai scale-free, car la loi de puissance
-n'est exacte qu'asymptotiquement. D'ou la regle de la serie : choisir $x_{\min}$ par
+$x_{\min}$), le test sur-rejette, même un vrai scale-free, car la loi de puissance
+n'est exacte qu'asymptotiquement. D'ou la règle de la serie : choisir $x_{\min}$ par
 minimisation du KS *d'abord*, puis lire le bootstrap comme un troisieme avis — jamais
-comme un juge unique.",,,,,,,,0e19a0f65d6f55ca,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,aef3988e,markdown,fr,aa6dfc2407641412,"## 7. Exercices
+comme un juge unique.",,,,,,,,482bdcbb9e15d38c,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,aef3988e,markdown,fr,e8d86c25a32199a1,"## 7. Exercices
 
 Trois exercices pour s'approprier la detection scale-free. Les solutions ne sont
-pas fournies (cellules a completer) ; le notebook s'execute de bout en bout meme
-laissees en l'etat.",,,,,,,,aa6dfc2407641412,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,60222370,markdown,fr,d5ffc83c29a9143c,"### Exercice 1 — Localiser la criticalite
+pas fournies (cellules a completer) ; le notebook s'execute de bout en bout même
+laissees en l'etat.",,,,,,,,e8d86c25a32199a1,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,60222370,markdown,fr,5ed15956a63bb337,"### Exercice 1 — Localiser la criticalite
 
 Le branchement est scale-free **exactement** a $\mu = 1$. Balayez $\mu$ de $0.85$ a
 $1.15$ par pas de $0.05$ ; pour chaque valeur, generez un echantillon d'avalanches,
-appliquez la chaine `select_xmin` + `compare_powerlaw_exponential`, et reperez ou le
+appliquez la chaîne `select_xmin` + `compare_powerlaw_exponential`, et reperez ou le
 verdict bascule vers *scale-free* et ou l'exposant estime s'approche de $1.5$.
 
 ```
 # Indice : reutilisez sf.branching_avalanche_sizes(mu, N, rng) et filtrez s < 100000.
 # Indice : stockez (mu, verdict, alpha, KS) puis affichez le tableau.
-# Etape 1 : construire la liste des mu.
-# Etape 2 : pour chaque mu, diagnostiquer.
-# Etape 3 : conclure sur la fenetre de mu compatible avec le scale-free.
-```",,,,,,,,d5ffc83c29a9143c,,,,,,,
+# Étape 1 : construire la liste des mu.
+# Étape 2 : pour chaque mu, diagnostiquer.
+# Étape 3 : conclure sur la fenêtre de mu compatible avec le scale-free.
+```",,,,,,,,5ed15956a63bb337,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,1b42a3f7,code,fr,50b6ba365a8981f8,"# Exercice 1 : a completer.
 # resultat attendu : un tableau (mu, verdict, alpha, KS) montrant la bascule autour de mu=1.
 resultat_ex1 = None  # TODO etudiant
 print(""Exercice 1 a completer"")",,,,,,,,50b6ba365a8981f8,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,c70299d4,markdown,fr,54cc10dab67f207b,"### Exercice 2 — Classer un echantillon mystere
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,c70299d4,markdown,fr,0b5ea2b075af27c5,"### Exercice 2 — Classer un echantillon mystere
 
 On vous donne un echantillon `mystere` (genere ci-dessous sans vous dire son
-origine). Appliquez la **chaine complete** de diagnostic et concluez : scale-free ou
-echelle caracteristique ? Justifiez avec l'exposant, le KS, et le rapport $R$.
+origine). Appliquez la **chaîne complete** de diagnostic et concluez : scale-free ou
+echelle caractéristique ? Justifiez avec l'exposant, le KS, et le rapport $R$.
 
 ```
 # Indice : ne tranchez pas sur le trace log-log seul (c'est tout l'enjeu du notebook).
 # Indice : sf.select_xmin puis sf.compare_powerlaw_exponential.
-# Etape 1 : tracer la CCDF (pour l'intuition).
-# Etape 2 : diagnostiquer quantitativement.
-# Etape 3 : ecrire le verdict argumente.
-```",,,,,,,,54cc10dab67f207b,,,,,,,
+# Étape 1 : tracer la CCDF (pour l'intuition).
+# Étape 2 : diagnostiquer quantitativement.
+# Étape 3 : ecrire le verdict argumente.
+```",,,,,,,,0b5ea2b075af27c5,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,23c36fbe,code,fr,3fadba05512e85a6,"# Echantillon mystere (ne regardez pas comment il est fait avant d'avoir conclu) :
 _rng_mystere = random.Random(2024)
 mystere = sf.branching_avalanche_sizes(1.0, 8000, _rng_mystere)
@@ -8108,38 +8108,38 @@ mystere = [s for s in mystere if s < 100000]
 # Exercice 2 : a completer.
 resultat_ex2 = None  # TODO etudiant
 print(""Exercice 2 a completer -"", len(mystere), ""observations a classer"")",,,,,,,,3fadba05512e85a6,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,be191021,markdown,fr,bdf2d70712266d6a,"### Exercice 3 — Effondrement d'echelle de votre cru
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,be191021,markdown,fr,dc34fcd1401634c3,"### Exercice 3 — Effondrement d'echelle de votre cru
 
 Reproduisez l'idee de la Figure 4 sur une autre signature du tri : par exemple le
 **nombre total d'echanges** pour trier (au lieu du deplacement). Variez $n$,
-verifiez si la distribution possede une echelle caracteristique en cherchant la
+verifiez si la distribution possede une echelle caractéristique en cherchant la
 renormalisation qui fait coincider les courbes. Si oui, quelle puissance de $n$ ?
 
 ```
-# Indice : arr.probe.swaps donne le nombre d'echanges d'une execution.
+# Indice : arr.probe.swaps donne le nombre d'echanges d'une exécution.
 # Indice : pour un tri, le nombre d'echanges croit comme une puissance de n -- testez x / n**k.
-# Etape 1 : collecter les nombres d'echanges pour plusieurs n.
-# Etape 2 : tracer brut puis renormalise.
-# Etape 3 : identifier l'echelle (la puissance k) qui fait l'effondrement.
-```",,,,,,,,bdf2d70712266d6a,,,,,,,
+# Étape 1 : collecter les nombres d'echanges pour plusieurs n.
+# Étape 2 : tracer brut puis renormalise.
+# Étape 3 : identifier l'echelle (la puissance k) qui fait l'effondrement.
+```",,,,,,,,dc34fcd1401634c3,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,556d32d5,code,fr,22102ddd58a8bd49,"# Exercice 3 : a completer.
 resultat_ex3 = None  # TODO etudiant
 print(""Exercice 3 a completer"")",,,,,,,,22102ddd58a8bd49,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdown,fr,1a7afc5014ec20f8,"## Conclusion & ponts
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdown,fr,2135090a1fd86607,"## Conclusion & ponts
 
 - **Detecter une signature scale-free est une competence, pas un coup d'oeil.** Le
   trace log-log trompe : on a vu une queue lourde banale (les deplacements du tri,
-  bornes par la taille) ressembler a une avalanche critique. Seule la chaine
+  bornes par la taille) ressembler a une avalanche critique. Seule la chaîne
   *choix de $x_{\min}$ par minimisation du KS -> exposant par maximum de
-  vraisemblance -> qualite d'ajustement -> comparaison de modeles* tranche
+  vraisemblance -> qualite d'ajustement -> comparaison de modèles* tranche
   honnetement.
-- **Le scale-free est rare et regle.** Notre seul vrai cas sans echelle est le
+- **Le scale-free est rare et règle.** Notre seul vrai cas sans echelle est le
   branchement **a la criticalite** ($\mu = 1$, exposant $3/2$ retrouve). De part et
-  d'autre, une echelle caracteristique reapparait. C'est l'argument de Jansma &
+  d'autre, une echelle caractéristique reapparait. C'est l'argument de Jansma &
   Hoel : une organisation multi-echelle nette est particuliere, pas generique.
-- **Les regles locales mono-echelle du tri ne s'auto-organisent pas vers la
+- **Les règles locales mono-echelle du tri ne s'auto-organisent pas vers la
   criticalite.** Elles trient, reparent (ICT-2/ICT-4), mais leur signature a une
-  echelle caracteristique : la taille du systeme, revelee par l'effondrement
+  echelle caractéristique : la taille du système, revelee par l'effondrement
   d'echelle.
 
 **Ponts dans la serie ICT :**
@@ -8147,10 +8147,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdo
 - [ICT-5](ICT-5-CausalEmergence.ipynb) / [ICT-6](ICT-6-SortingToTPM-CausalEmergence.ipynb) :
   l'emergence causale y est, elle aussi, *discriminante* — un macro-niveau n'est
   pertinent que s'il bat le micro, exactement comme une signature n'est scale-free
-  que si elle survit au diagnostic. Meme discipline anti-complaisance.
-- **Criticalite auto-organisee** (Bak, Tang & Wiesenfeld 1987) : certains systemes
+  que si elle survit au diagnostic. Même discipline anti-complaisance.
+- **Criticalite auto-organisee** (Bak, Tang & Wiesenfeld 1987) : certains systèmes
   *se conduisent* vers la criticalite sans reglage externe. Un prolongement
-  naturel : un modele de tri/morphogenese qui s'auto-organiserait vers le scale-free
+  naturel : un modèle de tri/morphogenese qui s'auto-organiserait vers le scale-free
   produirait-il une emergence causale plus forte (au sens d'ICT-5/6) ?
 - [ICT-0](ICT-0-Framing.md) : ce notebook clot la question des signatures
   multi-echelles posee dans le cadrage.
@@ -8158,13 +8158,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-7-ScaleFreeSignatures.ipynb,d0f7e15a,markdo
 **References :**
 
 - A. Clauset, C. R. Shalizi, M. E. J. Newman, *Power-law distributions in empirical
-  data*, SIAM Review 51(4), 2009 — methode de diagnostic suivie ici.
+  data*, SIAM Review 51(4), 2009 — méthode de diagnostic suivie ici.
 - A. Jansma, E. Hoel, *Engineering Emergence*, 2025 — emergence multi-echelle,
   rarete des organisations causales nettes.
 - P. Bak, C. Tang, K. Wiesenfeld, *Self-organized criticality*, Phys. Rev. Lett.
   59, 1987 — criticalite et signatures sans echelle.
 - T. E. Harris, *The Theory of Branching Processes*, 1963 — loi de Borel, exposant
-  $3/2$ a la criticalite.",,,,,,,,1a7afc5014ec20f8,,,,,,,
+  $3/2$ a la criticalite.",,,,,,,,2135090a1fd86607,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-8-AttractorLandscapesEWS.ipynb,de10a093,markdown,fr,a97d1b13368d00d6,"# ICT-8 — Paysages d'attracteurs & signaux precurseurs : *les deux tressees*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) — strate 2 : *morphogenese dynamique*.
@@ -10568,13 +10568,13 @@ maximale — là où la mesure d'agence et la mesure causale de Hoel convergent 
 est le seul moyen honnête de distinguer une vraie réparation d'un artefact de
 moyennage.
 ",,,,,,,,29fe3782afe6b905,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,cell-dd02f4ec,markdown,fr,6ee3d4740d890341,"## Bilan -- ICT-12 : la valence est un signal, pas une garantie (modele interne payant ou ruineux ?)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb,cell-dd02f4ec,markdown,fr,1f0d5aac3fd78e66,"## Bilan -- ICT-12 : la valence est un signal, pas une garantie (modèle interne payant ou ruineux ?)
 
 Ce notebook installe un **toy model** intermediaire entre ICT-11 (profils
-d'agence multi-echelle) et ICT-13 (strategies comme formes stables) : deux
+d'agence multi-echelle) et ICT-13 (stratégies comme formes stables) : deux
 animats sur une source balistique dans un **champ de valence** (bosse gaussienne
 attractive a la source, repulsive aux obstacles, gradient analytique). La
-question : un **modele interne** (anticipation $\hat p$) est-il payant ou
+question : un **modèle interne** (anticipation $\hat p$) est-il payant ou
 ruineux face a un reactif a gradient instantane ? Reponse falsifiee gate par
 gate : **regime-dependant**, coherent avec le fil court depuis ICT-10.
 
@@ -10583,45 +10583,45 @@ gate : **regime-dependant**, coherent avec le fil court depuis ICT-10.
 | Gate | Test | Verdict |
 |------|------|---------|
 | **Gate 1** (capture par regime) | Cadence de capture (precision poursuite) | Reactif gradient = baseline proche de l'optimal a vitesse attrapable ; $\hat p$ **ne la bat nulle part** et **perd en erratique** |
-| **Gate 2** (quatre grandeurs de role) | capture_rate, escape_rate, path_irreversibility, role_switching | Lisible depuis la trajectoire seule ; la marche aleatoire (controle d'ablation) ne porte aucune signature de role |
+| **Gate 2** (quatre grandeurs de rôle) | capture_rate, escape_rate, path_irreversibility, role_switching | Lisible depuis la trajectoire seule ; la marche aleatoire (contrôle d'ablation) ne porte aucune signature de rôle |
 | **Gate 3** (anticipation 2D) | $\hat p$ vs baselines adverses (persistance, MM, AR(1)) sur EQM position | Baselines avantagees in-sample ; $\hat p$ doit battre des adversaires severes, pas des hommes de paille |
 
-### La lecon centrale : un modele interne ruineux en regime erratique
+### La lecon centrale : un modèle interne ruineux en regime erratique
 
 L'anticipation $\hat p$ **n'est pas universellement payante**. Dans les regimes
-attrapables (vitesse source ~ animat), le reactif a gradient instantane est deja
-proche de l'optimal -- le cout d'entretenir un modele interne (memoire,
-projection) n'est pas compense. C'est en regime **erratique** que le modele
+attrapables (vitesse source ~ animat), le reactif a gradient instantane est déjà
+proche de l'optimal -- le cout d'entretenir un modèle interne (memoire,
+projection) n'est pas compense. C'est en regime **erratique** que le modèle
 interne **perd** : il projette sur une dynamique qui n'a plus de structure, et
 la prediction devient bruit. Le verdict est **regime-dependant**, comme tout le
 fil court depuis ICT-10.
 
-### Pourquoi le controle d'ablation importe (Gate 2)
+### Pourquoi le contrôle d'ablation importe (Gate 2)
 
-Les quatre grandeurs de role ne sont **valides** que si la marche aleatoire
-(controle sans modele ni gradient) n'en porte aucune signature. Si la marche
-aleatoire produisait un faux « role », les grandeurs mesureraient du bruit, pas
-de l'agentivite. Ce controle d'ablation est la **preuve negative** qui distingue
-un role emergent d'un artefact de trajectoire.
+Les quatre grandeurs de rôle ne sont **valides** que si la marche aleatoire
+(contrôle sans modèle ni gradient) n'en porte aucune signature. Si la marche
+aleatoire produisait un faux « rôle », les grandeurs mesureraient du bruit, pas
+de l'agentivite. Ce contrôle d'ablation est la **preuve negative** qui distingue
+un rôle emergent d'un artefact de trajectoire.
 
 ### Lien avec le cursus
 
 - **ICT-10** (Cran A, $\hat p$ durci, verdict honnete « avantage regime-dependant ») :
-  ICT-12 confirme et etend ce verdict au couple valence + role.
-- **ICT-11** (agence multi-echelle) -> **ICT-12** (valence + role sur banc
-  balistique) -> **ICT-13** (strategies comme formes stables) : la serie passe
-  de l'agence a la valence puis a la strategie, toujours regime-dependante.
-- [#4878](https://github.com/jsboige/CoursIA/issues/4878) : gate specifique de
+  ICT-12 confirme et etend ce verdict au couple valence + rôle.
+- **ICT-11** (agence multi-echelle) -> **ICT-12** (valence + rôle sur banc
+  balistique) -> **ICT-13** (stratégies comme formes stables) : la serie passe
+  de l'agence a la valence puis a la stratégie, toujours regime-dependante.
+- [#4878](https://github.com/jsboige/CoursIA/issues/4878) : gate spécifique de
   cette strate.
 
 ### A retenir
 
-Un champ de valence + un modele interne ne font pas un agent. La valence est un
+Un champ de valence + un modèle interne ne font pas un agent. La valence est un
 **signal** (gradient exploitable), pas une **garantie** de performance. Le
-verdict « payant ou ruineux » ne se declare qu'apres avoir croise les regimes
-(4) et l'axe de vitesse, et confronte le modele interne a des baselines
+verdict « payant ou ruineux » ne se declare qu'après avoir croise les regimes
+(4) et l'axe de vitesse, et confronte le modèle interne a des baselines
 **adverses severes** -- pas a des hommes de paille.
-",,,,,,,,6ee3d4740d890341,,,,,,,
+",,,,,,,,1f0d5aac3fd78e66,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb,cell-a19bcce2,markdown,fr,54186f60739d5725,"## Bilan — ICT-13 : une stratégie n'est PAS une forme stable, elle est régime-dépendante
 
 Ce notebook pose la question centrale de la strate 3 : **une stratégie est-elle
