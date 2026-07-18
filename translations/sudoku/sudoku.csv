@@ -1033,13 +1033,13 @@ print(f""Appels récursifs: {solver.call_count}"")
 print(f""Temps: {elapsed*1000:.2f} ms"")
 print(""\nSolution:"")
 print(test_grid)",,,,,,,,3d60e4263beef7c1,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,gvgjjn1vllp,markdown,fr,1c692f25fb842759,"### Interpretation : Resultat du backtracking simple
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,gvgjjn1vllp,markdown,fr,2feed10144088766,"### Interpretation : Résultat du backtracking simple
 
 Le solveur a resolu un puzzle facile avec seulement 49 appels recursifs en moins d'une milliseconde.
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| **Appels recursifs** | 49 | Tres peu d'explorations necessaires |
+| **Appels recursifs** | 49 | Très peu d'explorations necessaires |
 | **Temps** | <1 ms | Resolution quasi-instantanee |
 | **Cases vides initiales** | 36 | Puzzle relativement facile |
 
@@ -1048,13 +1048,13 @@ Le solveur a resolu un puzzle facile avec seulement 49 appels recursifs en moins
 2. **Peu de backtracks** : L'algorithme fait les bons choix rapidement
 3. **Performance acceptable** : Pour les puzzles faciles, le backtracking simple suffit
 
-> **Note technique** : Sur ce puzzle, la premiere branche de l'arbre de recherche mene directement a la solution. C'est typique des puzzles faciles ou les contraintes locales guident bien le solveur.
-",,,,,,,,1c692f25fb842759,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,1ddd1ba4,markdown,fr,cda529c76030ee3f,"## Exercice : Verifier qu'une grille est valide
+> **Note technique** : Sur ce puzzle, la première branche de l'arbre de recherche mene directement a la solution. C'est typique des puzzles faciles ou les contraintes locales guident bien le solveur.
+",,,,,,,,2feed10144088766,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,1ddd1ba4,markdown,fr,858ba3f93930c751,"## Exercice : Verifier qu'une grille est valide
 
 ### Enonce
 
-Apres avoir resolu un Sudoku avec le backtracking, il est essentiel de verifier que la solution obtenue est bien valide. Implementez une fonction `is_valid_solution(grid)` qui verifie **toutes** les contraintes du Sudoku sur une grille censee etre complete.
+Après avoir resolu un Sudoku avec le backtracking, il est essentiel de verifier que la solution obtenue est bien valide. Implementez une fonction `is_valid_solution(grid)` qui verifie **toutes** les contraintes du Sudoku sur une grille censee etre complete.
 
 ### Ce que la fonction doit verifier
 
@@ -1067,7 +1067,7 @@ Apres avoir resolu un Sudoku avec le backtracking, il est essentiel de verifier 
 
 - Utilisez `set(range(1, 10))` comme reference pour comparer chaque ligne/colonne/bloc
 - Pour acceder au bloc 3x3 : `box_row, box_col = 3 * (i // 3), 3 * (j // 3)`
-- La fonction retourne `True` si **toutes** les contraintes sont respectees, `False` sinon",,,,,,,,cda529c76030ee3f,,,,,,,
+- La fonction retourne `True` si **toutes** les contraintes sont respectees, `False` sinon",,,,,,,,858ba3f93930c751,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,faac36bc,code,fr,ab23c8e798bbb9ee,"# EXERCICE : Vérifier qu'une grille est valide
 
 def is_valid_solution(grid: SudokuGrid) -> bool:
@@ -1140,7 +1140,7 @@ print(f""Puzzles faciles chargés: {len(easy_puzzles)}"")
 # Charger les puzzles difficiles
 hard_puzzles = load_puzzles(str(PUZZLES_DIR / 'Sudoku_hardest.txt'))
 print(f""Puzzles difficiles chargés: {len(hard_puzzles)}"")",,,,,,,,ba7c28ea5c1e4b3a,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,adb22aed,markdown,fr,4275c192974e4342,"### Interpretation : Chargement des puzzles
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,adb22aed,markdown,fr,269e1c62ca68c7a6,"### Interpretation : Chargement des puzzles
 
 Les fichiers de puzzles ont ete charges avec succes.
 
@@ -1153,14 +1153,14 @@ Les fichiers de puzzles ont ete charges avec succes.
 **Points cles** :
 1. **Echantillonnage** : On charge 10 puzzles faciles pour un benchmark rapide
 2. **Collection complete** : Les 11 puzzles ""hardest"" sont tous charges pour tester les limites
-3. **Format valide** : Tous les fichiers respectent le format 81 caracteres par ligne
+3. **Format valide** : Tous les fichiers respectent le format 81 caractères par ligne
 
-**Strategie de benchmark** :
+**Stratégie de benchmark** :
 - Les puzzles faciles (10) permettent de verifier la correction de base
 - Les puzzles difficiles (11) testent les performances et la robustesse
 - La troisieme collection (top95) n'est pas utilisee ici mais reste disponible
 
-> **Note technique** : La fonction `load_puzzles` utilise un parametre `max_puzzles` pour limiter le nombre de puzzles charges. Cela evite de charger inutilement les 51 puzzles faciles quand on veut seulement faire un test rapide. Le format du fichier est robuste : il accepte les caracteres '0' ou '.' pour les cases vides.",,,,,,,,4275c192974e4342,,,,,,,
+> **Note technique** : La fonction `load_puzzles` utilise un paramètre `max_puzzles` pour limiter le nombre de puzzles charges. Cela evite de charger inutilement les 51 puzzles faciles quand on veut seulement faire un test rapide. Le format du fichier est robuste : il accepte les caractères '0' ou '.' pour les cases vides.",,,,,,,,269e1c62ca68c7a6,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,c8b16827,markdown,fr,f01a0e3563eab1f3,"## 4. Benchmark sur plusieurs puzzles
 
 Le benchmark permet de comparer objectivement les performances du solveur sur différents niveaux de difficulté.
@@ -1213,9 +1213,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,d6bd419d,code,fr,3a8
 solver = BacktrackingSolver()
 benchmark_solver(solver, easy_puzzles, ""Puzzles Faciles"")
 benchmark_solver(solver, hard_puzzles, ""Puzzles Difficiles"")",,,,,,,,3a840661847f0e3f,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,e1xke5h5g5i,markdown,fr,f3d9b364ebb4803a,"### Interpretation : Benchmark du backtracking simple
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,e1xke5h5g5i,markdown,fr,c79523f0eb678083,"### Interpretation : Benchmark du backtracking simple
 
-Les resultats montrent une difference enorme entre les puzzles faciles et difficiles.
+Les résultats montrent une différence enorme entre les puzzles faciles et difficiles.
 
 | Type | Appels moyens | Temps moyen | Analyse |
 |------|---------------|-------------|---------|
@@ -1229,8 +1229,8 @@ Les resultats montrent une difference enorme entre les puzzles faciles et diffic
 
 **Exemple de puzzle difficile** : Puzzle 1 avec 59 cases vides necessite 335,638 appels (~1.9 secondes).
 
-> **Note technique** : Le backtracking simple explore l'arbre de recherche de gauche a droite, sans strategie intelligente. Sur les puzzles difficiles, cela signifie explorer des milliers de branches infructueuses avant de trouver la solution.
-",,,,,,,,f3d9b364ebb4803a,,,,,,,
+> **Note technique** : Le backtracking simple explore l'arbre de recherche de gauche a droite, sans stratégie intelligente. Sur les puzzles difficiles, cela signifie explorer des milliers de branches infructueuses avant de trouver la solution.
+",,,,,,,,c79523f0eb678083,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,df19e441,markdown,fr,74c2b2c0341332ad,"## 5. Optimisation: Backtracking avec MRV (Minimum Remaining Values)
 
 L'heuristique **MRV** (aussi appelée ""Most Constrained Variable"" ou ""Fail-First"") est l'une des améliorations les plus efficaces du backtracking.
@@ -1363,7 +1363,7 @@ for i, puzzle_str in enumerate(hard_puzzles[:5]):
     print(f""  Simple: {simple_solver.call_count} appels, {t1:.2f} ms"")
     print(f""  MRV:    {mrv_solver.call_count} appels, {t2:.2f} ms"")
     print(f""  Speedup: {simple_solver.call_count / mrv_solver.call_count:.1f}x"")",,,,,,,,0c6cccdfdbb30562,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,y355a2qsplr,markdown,fr,6f26b2013de98f26,"### Interpretation : Impact de l'heuristique MRV
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,y355a2qsplr,markdown,fr,49a0676847d3f11a,"### Interpretation : Impact de l'heuristique MRV
 
 La comparaison montre que **MRV est l'optimisation la plus impactante** pour le backtracking Sudoku.
 
@@ -1383,10 +1383,10 @@ La comparaison montre que **MRV est l'optimisation la plus impactante** pour le 
 **Pourquoi MRV fonctionne si bien?**
 - Les cases avec peu de valeurs possibles sont les plus contraintes
 - Les echecs sont detectes tot, avant d'explier des branches inutiles
-- Sur Sudoku, les contraintes locales creent rapidement des ""singletons""
+- Sur Sudoku, les contraintes locales créent rapidement des ""singletons""
 
-> **Note technique** : MRV est une heuristique ""fail-first"" : elle privilegie les variables les plus susceptibles d'echouer, ce qui permet d'elaguer l'arbre de recherche des le debut. C'est particulierement efficace sur Sudoku car les contraintes sont tres locales.
-",,,,,,,,6f26b2013de98f26,,,,,,,
+> **Note technique** : MRV est une heuristique ""fail-first"" : elle privilegie les variables les plus susceptibles d'echouer, ce qui permet d'elaguer l'arbre de recherche des le debut. C'est particulierement efficace sur Sudoku car les contraintes sont très locales.
+",,,,,,,,49a0676847d3f11a,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,4072c0bd,markdown,fr,4154de26ca810998,"## 6. Visualisation avec matplotlib
 
 La visualisation graphique aide à comprendre la structure d'un Sudoku et distinguer les valeurs initiales des valeurs trouvées par le solveur.
@@ -1449,7 +1449,7 @@ solver.solve(solved_grid)
 
 plot_sudoku(initial_grid, ""Puzzle Initial"")
 plot_sudoku(solved_grid, ""Solution (bleu = valeurs ajoutées)"", initial_grid)",,,,,,,,8d3304319e9fc8c0,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,26ceb5e6,markdown,fr,e4db196402f7be6f,"### Interpretation : Visualisation de la solution
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,26ceb5e6,markdown,fr,124a19e9ca3a1485,"### Interpretation : Visualisation de la solution
 
 La visualisation graphique permet de distinguer clairement les valeurs initiales des valeurs trouvees par le solveur.
 
@@ -1469,7 +1469,7 @@ La visualisation graphique permet de distinguer clairement les valeurs initiales
 - La solution respecte toutes les contraintes (lignes, colonnes, blocs)
 - Le temps de resolution est imperceptible pour l'utilisateur
 
-> **Note technique** : La visualisation utilise matplotlib pour generer deux grilles cote a cote. La fonction `plot_sudoku` accepte un parametre optionnel `initial` pour colorer differentement les valeurs ajoutees par le solveur. C'est un outil pedagogique excellent pour comprendre la progression de l'algorithme.",,,,,,,,e4db196402f7be6f,,,,,,,
+> **Note technique** : La visualisation utilise matplotlib pour generer deux grilles cote a cote. La fonction `plot_sudoku` accepte un paramètre optionnel `initial` pour colorer differentement les valeurs ajoutees par le solveur. C'est un outil pedagogique excellent pour comprendre la progression de l'algorithme.",,,,,,,,124a19e9ca3a1485,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,10e891bf,markdown,fr,dbe7860085dd7a1b,"## Navigation
 
 ### Notebooks Python de cette série
@@ -1484,13 +1484,13 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,10e891bf,markdown,fr
 - [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) - OR-Tools en C#
 - [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) - Z3 en C#
 - [Sudoku-2-DancingLinks-Csharp](Sudoku-2-DancingLinks-Csharp.ipynb) - DLX en C#",,,,,,,,dbe7860085dd7a1b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,r0g3bnhfwk7,markdown,fr,489798e0af1bba91,"## Exercice : Compter le nombre de solutions
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,r0g3bnhfwk7,markdown,fr,2da554ccf99c3f3f,"## Exercice : Compter le nombre de solutions
 
 ### Principe
 
 Un Sudoku bien forme a exactement une solution. La fonction `count_solutions(grid)` compte le nombre de solutions d'un puzzle en utilisant le backtracking avec l'heuristique MRV.
 
-L'idee est de modifier l'algorithme de backtracking pour **ne pas s'arreter** apres la premiere solution, mais continuer a explorer toutes les branches possibles en incrementant un compteur a chaque grille complete. Pour eviter les calculs infinis, on plafonne la recherche a `max_solutions` solutions.
+L'idee est de modifier l'algorithme de backtracking pour **ne pas s'arreter** après la première solution, mais continuer a explorer toutes les branches possibles en incrementant un compteur a chaque grille complete. Pour eviter les calculs infinis, on plafonne la recherche a `max_solutions` solutions.
 
 ### Points techniques
 
@@ -1498,10 +1498,10 @@ L'idee est de modifier l'algorithme de backtracking pour **ne pas s'arreter** ap
 - **MRV** : On reutilise `find_mrv_empty` pour choisir la case la plus contrainte
 - **Arret anticipé** : Des que `max_solutions` sont trouvees, on arrete la recherche
 
-### Resultats attendus
+### Résultats attendus
 
 - Un puzzle bien forme (1 seule solution) retourne `1`
-- Un puzzle mal forme (trous importants) peut retourner `2` ou plus",,,,,,,,489798e0af1bba91,,,,,,,
+- Un puzzle mal forme (trous importants) peut retourner `2` ou plus",,,,,,,,2da554ccf99c3f3f,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,lni75htlvgp,code,fr,1a75fd1cb4588159,"# EXERCICE : Compter le nombre de solutions
 
 def get_possible_values(grid: SudokuGrid, row: int, col: int) -> List[int]:
@@ -1593,21 +1593,21 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,Gb46apf58toW,code,fr
 invalid_grid = SudokuGrid.from_string(sudoku)
 nb = count_solutions(invalid_grid)
 print(f""Nombre de solutions: {nb}"")  # Doit afficher 2",,,,,,,,69a08e6e302f9230,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,65a70ce6,markdown,fr,a8516243d797340e,"## Exercice : Nombre de placements valides pour la premiere colonne
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,65a70ce6,markdown,fr,896b50224011c8ac,"## Exercice : Nombre de placements valides pour la première colonne
 
 ### Enonce
 
-Etant donnee une grille de Sudoku partiellement remplie, ecrivez une fonction `count_first_col_placements(grid)` qui compte le nombre de **facons valides et distinctes** de remplir toutes les cases vides de la **premiere colonne** (colonne d'indice 0).
+Etant donnee une grille de Sudoku partiellement remplie, ecrivez une fonction `count_first_col_placements(grid)` qui compte le nombre de **facons valides et distinctes** de remplir toutes les cases vides de la **première colonne** (colonne d'indice 0).
 
-Contrairement a `count_solutions` qui resout toute la grille, ici vous ne vous interressez qu'a la premiere colonne. Pour chaque case vide de la colonne 0, essayez les valeurs possibles en respectant les contraintes du Sudoku, puis comptez le nombre total de combinaisons valides.
+Contrairement a `count_solutions` qui resout toute la grille, ici vous ne vous interressez qu'a la première colonne. Pour chaque case vide de la colonne 0, essayez les valeurs possibles en respectant les contraintes du Sudoku, puis comptez le nombre total de combinaisons valides.
 
 ### Indices
 
-- Parcourez la premiere colonne case par case (ligne 0 a ligne 8)
+- Parcourez la première colonne case par case (ligne 0 a ligne 8)
 - Pour chaque case vide, determinez les valeurs possibles avec `is_valid_placement`
 - Utilisez un backtracking qui ne porte que sur les 9 cases de la colonne 0
-- Les cases deja remplies dans la colonne 0 sont des contraintes fixees (a exclure des valeurs possibles)
-- Le resultat est le nombre de combinaisons valides pour remplir toute la colonne",,,,,,,,a8516243d797340e,,,,,,,
+- Les cases déjà remplies dans la colonne 0 sont des contraintes fixees (a exclure des valeurs possibles)
+- Le résultat est le nombre de combinaisons valides pour remplir toute la colonne",,,,,,,,896b50224011c8ac,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,767b48fb,code,fr,518e9dd9169bceff,"# EXERCICE : Nombre de placements valides pour la premiere colonne
 
 def count_first_col_placements(grid: SudokuGrid) -> int:
@@ -1636,13 +1636,13 @@ print(f""Nombre de placements valides pour la colonne 0: {nb_col}"")
 grid_col2 = SudokuGrid.from_string(hard_puzzles[0])
 nb_col2 = count_first_col_placements(grid_col2)
 print(f""Nombre de placements valides (puzzle difficile): {nb_col2}"")",,,,,,,,518e9dd9169bceff,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,7eb54fb5,markdown,fr,769286f29d486113,"## Resume et perspectives
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,7eb54fb5,markdown,fr,05ae922a646e16d9,"## Resume et perspectives
 
-Ce notebook a explore l'algorithme de backtracking pour la resolution de Sudoku, depuis l'implementation recursive naive jusqu'a l'optimisation par l'heuristique MRV (Minimum Remaining Values). Les benchmarks ont montre une difference spectaculaire : le backtracking simple peut necessiter jusqu'a 335 000 appels recursifs sur les puzzles difficiles, tandis que MRV reduit ce nombre a quelques dizaines ou centaines, avec des speedup allant jusqu'a 2 600x. La visualisation matplotlib a permis de distinguer clairement les valeurs initiales des valeurs deduites par le solveur.
+Ce notebook a explore l'algorithme de backtracking pour la resolution de Sudoku, depuis l'implementation récursive naive jusqu'a l'optimisation par l'heuristique MRV (Minimum Remaining Values). Les benchmarks ont montre une différence spectaculaire : le backtracking simple peut necessiter jusqu'a 335 000 appels recursifs sur les puzzles difficiles, tandis que MRV reduit ce nombre a quelques dizaines ou centaines, avec des speedup allant jusqu'a 2 600x. La visualisation matplotlib a permis de distinguer clairement les valeurs initiales des valeurs deduites par le solveur.
 
 L'heuristique MRV illustre le principe ""fail-first"" fondamental en recherche : en traitant d'abord les variables les plus contraintes, on detecte les impasses plus tot et on elague massivement l'arbre de recherche. Cette lecon s'applique au-dela du Sudoku a tous les problemes de satisfaction de contraintes. Les exercices proposes (comptage de solutions, placements valides sur une colonne) approfondissent la maitrise du backtracking et de ses variantes.
 
-Le notebook suivant, [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb), aborde une approche radicalement differente : la reformulation du Sudoku comme probleme de couverture exacte, resolue par l'algorithme X de Knuth et la technique des Dancing Links (DLX).",,,,,,,,769286f29d486113,,,,,,,
+Le notebook suivant, [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb), aborde une approche radicalement différente : la reformulation du Sudoku comme problème de couverture exacte, resolue par l'algorithme X de Knuth et la technique des Dancing Links (DLX).",,,,,,,,05ae922a646e16d9,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb,9987f17e,markdown,fr,9af2edcce3da94ff,"# Sudoku-10 : Résolution avec OR-Tools (C#)
 
 **Navigation** : [<< Sudoku-9 Graph Coloring C#](Sudoku-9-GraphColoring-Csharp.ipynb) | [Index](README.md) | [Sudoku-11 Choco C# >>](Sudoku-11-Choco-Csharp.ipynb)
@@ -11425,21 +11425,21 @@ A la fin de ce notebook, vous saurez :
 
 ### Contexte
 Ce notebook s'inspire du projet [jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV) (module `Sudoku.NeuralNetwork`) qui explore 4 architectures de réseaux de neurones entraînés sur 17 millions de puzzles. Ici, nous reproduisons les idées clés sur un dataset réduit pour rester exécutable en quelques minutes.",,,,,,,,15b7fc36505ebcc6,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,intro-section,markdown,fr,ace4f627f54ebb16,"## 1. Introduction : le Sudoku vu comme un probleme de reconnaissance de motifs
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,intro-section,markdown,fr,fe8742103d5ff358,"## 1. Introduction : le Sudoku vu comme un problème de reconnaissance de motifs
 
 Les notebooks precedents de cette serie resolvent le Sudoku par des approches algorithmiques : backtracking, programmation par contraintes, recherche locale. Mais peut-on **apprendre** a resoudre un Sudoku ?
 
-### Pourquoi un reseau de neurones ?
+### Pourquoi un réseau de neurones ?
 
-Un reseau de neurones ne ""comprend"" pas les regles du Sudoku. Il apprend des **correlations statistiques** entre les grilles partielles et leurs solutions a partir de milliers d'exemples. C'est une approche fondamentalement differente :
+Un réseau de neurones ne ""comprend"" pas les règles du Sudoku. Il apprend des **correlations statistiques** entre les grilles partielles et leurs solutions a partir de milliers d'exemples. C'est une approche fondamentalement differente :
 
-| Approche | Mecanisme | Garantie de solution valide |
+| Approche | mécanisme | Garantie de solution valide |
 |----------|-----------|-----------------------------|
 | **Backtracking** | Exploration exhaustive des possibilites | Oui |
 | **CP-SAT / Z3** | Satisfaction de contraintes formelles | Oui |
-| **Reseau de neurones** | Apprentissage de motifs a partir de donnees | Non |
+| **réseau de neurones** | Apprentissage de motifs a partir de données | Non |
 
-### Formulation du probleme
+### Formulation du problème
 
 - **Entree** : une grille 9x9 avec des cases vides (valeur 0)
 - **Sortie** : pour chaque case, une distribution de probabilite sur les chiffres 1-9
@@ -11452,7 +11452,7 @@ Grille brute :     Tenseur one-hot (9x9x10) :
                     etc.
 ```
 
-L'idee cle est que le reseau apprend a ""deviner"" le bon chiffre pour chaque case en s'appuyant sur le contexte spatial (ligne, colonne, bloc 3x3).",,,,,,,,ace4f627f54ebb16,,,,,,,
+L'idee cle est que le réseau apprend a ""deviner"" le bon chiffre pour chaque case en s'appuyant sur le contexte spatial (ligne, colonne, bloc 3x3).",,,,,,,,fe8742103d5ff358,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,imports,code,fr,acbbb80c99401574,"import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -11476,22 +11476,22 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f""PyTorch {torch.__version__}"")
 print(f""Device : {device}"")
 print(f""BATCH_MODE : {BATCH_MODE}"")",,,,,,,,acbbb80c99401574,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,data-section,markdown,fr,878e624735f9fe97,"## 2. Preparation des donnees
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,data-section,markdown,fr,41822a62d6acb149,"## 2. Preparation des données
 
-Pour entrainer un reseau de neurones, il faut un **dataset** de paires (puzzle, solution). Plutot que de telecharger un fichier externe, nous generons nos donnees de maniere programmatique grace a un solveur par backtracking.
+Pour entrainer un réseau de neurones, il faut un **dataset** de paires (puzzle, solution). Plutot que de telecharger un fichier externe, nous générons nos données de maniere programmatique grace a un solveur par backtracking.
 
-### Strategie de generation
+### Stratégie de génération
 
-1. **Generer une grille complete valide** : remplir une grille vide par backtracking avec un ordre aleatoire des chiffres
+1. **générer une grille complete valide** : remplir une grille vide par backtracking avec un ordre aléatoire des chiffres
 2. **Creer le puzzle** : retirer aleatoirement entre 40 et 55 cases
 3. **Stocker la paire** : (puzzle, solution_complete)
 
 ### Taille du dataset
 
-Le projet de reference utilise 17 millions de puzzles. Ici, nous travaillons avec **50 000 puzzles** (40 000 train / 10 000 test), un compromis entre qualite d'apprentissage et temps d'entrainement raisonnable (~5-15 min selon l'architecture). La litterature (Park 2018) montre que 50K-100K exemples suffisent pour atteindre >99% de precision par case avec un CNN profond.",,,,,,,,878e624735f9fe97,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,generator-intro,markdown,fr,59ffaf4d5a36cf32,"### 2.1 Generateur de puzzles
+Le projet de référence utilise 17 millions de puzzles. Ici, nous travaillons avec **50 000 puzzles** (40 000 train / 10 000 test), un compromis entre qualite d'apprentissage et temps d'entrainement raisonnable (~5-15 min selon l'architecture). La littérature (Park 2018) montre que 50K-100K exemples suffisent pour atteindre >99% de precision par case avec un CNN profond.",,,,,,,,41822a62d6acb149,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,generator-intro,markdown,fr,570d3851f2cd2f61,"### 2.1 Générateur de puzzles
 
-Le generateur utilise un backtracking classique avec une astuce : les chiffres sont testes dans un **ordre aleatoire** a chaque appel, ce qui produit une grille complete differente a chaque execution.",,,,,,,,59ffaf4d5a36cf32,,,,,,,
+Le générateur utilise un backtracking classique avec une astuce : les chiffres sont testes dans un **ordre aléatoire** a chaque appel, ce qui produit une grille complete differente a chaque execution.",,,,,,,,570d3851f2cd2f61,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,generator,code,fr,d6c076d1277b0ea3,"def is_valid(grid: np.ndarray, row: int, col: int, num: int) -> bool:
     """"""Verifie si placer num a (row, col) est valide.""""""
     # Ligne
@@ -11552,18 +11552,18 @@ print(""\nPuzzle :"")
 print(test_puzzle)
 print(""\nSolution :"")
 print(test_solution)",,,,,,,,d6c076d1277b0ea3,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-intro,markdown,fr,73be3dbba6d966b8,"### 2.2 Construction du dataset
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-intro,markdown,fr,b967627fabfcf8d4,"### 2.2 Construction du dataset
 
-Nous generons **50 000 puzzles** et les separons en 40 000 pour l'entrainement et 10 000 pour le test.
+Nous générons **50 000 puzzles** et les separons en 40 000 pour l'entrainement et 10 000 pour le test.
 
-**Pourquoi 50K ?** Avec 1000 puzzles, le CNN sur-apprend massivement (train_loss ~0.001 vs test_loss ~2.7). La litterature (Park 2018, Palm 2018) montre qu'un CNN bien entraine necessite 50K-100K exemples pour generaliser.
+**Pourquoi 50K ?** Avec 1000 puzzles, le CNN sur-apprend massivement (train_loss ~0.001 vs test_loss ~2.7). La littérature (Park 2018, Palm 2018) montre qu'un CNN bien entraine necessite 50K-100K exemples pour généraliser.
 
 **Encodage one-hot** :
 - **Puzzle** : tenseur `(9, 9, 10)` -- le canal 0 represente ""case vide"", les canaux 1-9 representent les chiffres
 - **Solution** : tenseur `(9, 9)` avec les chiffres 1-9 decales en indices 0-8 pour la cross-entropy
-- **Masque** : tenseur `(9, 9)` booleen -- True pour les cases vides (a predire), False pour les cases donnees
+- **Masque** : tenseur `(9, 9)` booleen -- True pour les cases vides (a prédire), False pour les cases données
 
-Le masque permet de calculer la loss **uniquement sur les cases a predire**, evitant que le modele apprenne a recopier les indices fournis plutot qu'a raisonner sur le puzzle.",,,,,,,,73be3dbba6d966b8,,,,,,,
+Le masque permet de calculer la loss **uniquement sur les cases a prédire**, evitant que le modèle apprenne a recopier les indices fournis plutot qu'a raisonner sur le puzzle.",,,,,,,,b967627fabfcf8d4,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-generation,code,fr,428da4e38058fcc2,"def encode_puzzle(puzzle: np.ndarray) -> np.ndarray:
     """"""Encode un puzzle en one-hot (9, 9, 10).
     Canal 0 = case vide, canaux 1-9 = chiffres.""""""
@@ -11624,7 +11624,7 @@ print(f""  Test  : {X_test.shape[0]} puzzles"")
 print(f""  X shape : {X_train.shape}"")
 print(f""  y shape : {y_train.shape}"")
 print(f""  masks   : {masks_train.shape} ({masks_train.sum()/masks_train.size:.1%} de cases vides)"")",,,,,,,,428da4e38058fcc2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-interp,markdown,fr,af85bb1b90f84ca5,"### Interpretation : encodage des donnees
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-interp,markdown,fr,f5122f30b2b95b05,"### Interpretation : encodage des données
 
 | Element | Shape | Description |
 |---------|-------|-------------|
@@ -11632,7 +11632,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dataset-interp,mar
 | Puzzle encode | `(9, 9, 10)` | One-hot, canal 0 = vide |
 | Solution cible | `(9, 9)` | Indices 0-8 (chiffre - 1) |
 
-Le one-hot encoding est essentiel : sans lui, le reseau traiterait les chiffres comme des valeurs ordonnees (5 > 3) alors qu'en Sudoku ils sont simplement des **etiquettes** sans relation d'ordre.",,,,,,,,af85bb1b90f84ca5,,,,,,,
+Le one-hot encoding est essentiel : sans lui, le réseau traiterait les chiffres comme des valeurs ordonnees (5 > 3) alors qu'en Sudoku ils sont simplement des **etiquettes** sans relation d'ordre.",,,,,,,,f5122f30b2b95b05,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,torch-dataset,code,fr,4d630fbd8ee0953e,"class SudokuDataset(Dataset):
     """"""Dataset PyTorch pour les puzzles de Sudoku.
     
@@ -11667,9 +11667,9 @@ print(f""Batch X : {X_batch.shape}"")   # (128, 10, 9, 9)
 print(f""Batch y : {y_batch.shape}"")   # (128, 9, 9)
 print(f""Batch mask : {m_batch.shape}"") # (128, 9, 9)
 print(f""Cases vides par batch : {m_batch.sum(1).float().mean():.0f} / 81"")",,,,,,,,4d630fbd8ee0953e,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-section,markdown,fr,713e5b64d49e3e2b,"## 3. Architecture 1 : Reseau Dense (MLP)
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-section,markdown,fr,a0cbd84869e50850,"## 3. Architecture 1 : Réseau Dense (MLP)
 
-La premiere approche est la plus naive : aplatir la grille en un vecteur et utiliser des couches denses (fully connected). Le reseau traite la grille comme un vecteur de 810 valeurs (9 x 9 x 10) et produit 729 sorties (9 x 9 x 9 = une distribution sur 9 chiffres pour chaque case).
+La première approche est la plus naive : aplatir la grille en un vecteur et utiliser des couches denses (fully connected). Le réseau traite la grille comme un vecteur de 810 valeurs (9 x 9 x 10) et produit 729 sorties (9 x 9 x 9 = une distribution sur 9 chiffres pour chaque case).
 
 ### Architecture
 
@@ -11679,7 +11679,7 @@ Input(810) -> Dense(512) -> ReLU -> Dense(512) -> ReLU -> Dense(729) -> Reshape(
 
 ### Limitations attendues
 
-Le MLP n'a **aucune notion de structure spatiale**. Il ne sait pas que la case (0,0) et la case (0,8) sont dans la meme ligne, ni que les cases forment des blocs 3x3. Tout est un vecteur plat. Malgre cela, il peut apprendre certains motifs statistiques.",,,,,,,,713e5b64d49e3e2b,,,,,,,
+Le MLP n'a **aucune notion de structure spatiale**. Il ne sait pas que la case (0,0) et la case (0,8) sont dans la même ligne, ni que les cases forment des blocs 3x3. Tout est un vecteur plat. Malgre cela, il peut apprendre certains motifs statistiques.",,,,,,,,a0cbd84869e50850,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-model,code,fr,079027cce5fd7683,"class DenseModel(nn.Module):
     """"""Reseau dense (MLP) pour la resolution de Sudoku.""""""
     
@@ -11710,13 +11710,13 @@ dense_model = DenseModel().to(device)
 n_params = sum(p.numel() for p in dense_model.parameters())
 print(f""DenseModel : {n_params:,} parametres"")
 print(dense_model)",,,,,,,,079027cce5fd7683,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,training-fn-intro,markdown,fr,6c69e7dffa83fae3,"### Fonction d'entrainement et d'evaluation
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,training-fn-intro,markdown,fr,1a1619e625ec1ba6,"### Fonction d'entrainement et d'évaluation
 
-Nous utilisons la **cross-entropy masquee** : la loss n'est calculee que sur les cases vides du puzzle. Cela force le reseau a se concentrer sur les predictions qui comptent, et non a recopier les indices fournis.
+Nous utilisons la **cross-entropy masquee** : la loss n'est calculee que sur les cases vides du puzzle. Cela force le réseau a se concentrer sur les predictions qui comptent, et non a recopier les indices fournis.
 
 Deux ameliorations cles :
 - **Early stopping** : arret automatique si la test_loss ne s'ameliore plus pendant N epochs
-- **LR scheduling** : reduction progressive du learning rate (cosine annealing) pour affiner les poids",,,,,,,,6c69e7dffa83fae3,,,,,,,
+- **LR scheduling** : reduction progressive du learning rate (cosine annealing) pour affiner les poids",,,,,,,,1a1619e625ec1ba6,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,training-fn,code,fr,bc9baba5ac1645c2,"def train_model(model, train_loader, test_loader, n_epochs=20, lr=1e-3,
                 use_mask=True, patience=10, verbose=True):
     """"""Entraine un modele avec loss masquee, early stopping et LR scheduling.
@@ -11916,9 +11916,9 @@ def plot_history(history, title=""""):
 
 print(""Fonction train_model definie (loss masquee, early stopping, LR scheduling)"")
 ",,,,,,,,bc9baba5ac1645c2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-train-intro,markdown,fr,78df35323c08d04f,"### Entrainement du MLP
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-train-intro,markdown,fr,ceccb4a008929c45,"### Entrainement du MLP
 
-Nous entrainons le reseau dense pendant 20 epochs avec l'optimiseur Adam. Observez l'ecart entre la precision par case (relativement elevee) et la precision par grille (beaucoup plus basse) : il suffit d'une seule case fausse pour qu'une grille entiere soit comptee comme incorrecte.",,,,,,,,78df35323c08d04f,,,,,,,
+Nous entrainons le réseau dense pendant 20 epochs avec l'optimiseur Adam. Observez l'ecart entre la precision par case (relativement élevée) et la precision par grille (beaucoup plus basse) : il suffit d'une seule case fausse pour qu'une grille entiere soit comptee comme incorrecte.",,,,,,,,ceccb4a008929c45,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-train,code,fr,7c44924cb0998180,"N_EPOCHS = 20
 
 print(""=== Entrainement du reseau dense (MLP) ==="")
@@ -11930,29 +11930,29 @@ dense_time = time.time() - start
 
 print(f""\nTemps d'entrainement : {dense_time:.1f}s"")
 plot_history(dense_history, ""Reseau Dense (MLP)"")",,,,,,,,7c44924cb0998180,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-interp,markdown,fr,f03a63ff536bc3b8,"### Interpretation : performances du MLP
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,dense-interp,markdown,fr,239fcc208e6c289e,"### Interpretation : performances du MLP
 
 **Observations attendues (50K puzzles, 40K train / 10K test, 20 epochs)** :
 
 | Metrique | Valeur attendue | Explication |
 |----------|----------------|-------------|
 | Precision/case (vides) | ~40-60% | Le MLP apprend des correlations basiques |
-| Precision/grille | 0-2% | Trop de cases a predire simultanement |
+| Precision/grille | 0-2% | Trop de cases a prédire simultanement |
 
 **Points cles** :
 1. Avec 40K puzzles d'entrainement, le MLP apprend mieux qu'avec 800, mais reste limite par l'absence de structure spatiale
-2. Le MLP traite la grille comme un vecteur plat : il ne sait pas que les cases (0,0) et (0,8) partagent la meme ligne
+2. Le MLP traite la grille comme un vecteur plat : il ne sait pas que les cases (0,0) et (0,8) partagent la même ligne
 3. La precision par grille reste faible car 81 predictions doivent etre simultanement correctes
 
-**Pourquoi le MLP est insuffisant** : sans notion de voisinage ni de contraintes, le MLP memorise des associations globales plutot que de comprendre la structure locale du Sudoku. Le CNN suivant corrige cette limitation.",,,,,,,,f03a63ff536bc3b8,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-section,markdown,fr,5e7c540c4c678a27,"## 4. Architecture 2 : Reseau Convolutif (CNN)
+**Pourquoi le MLP est insuffisant** : sans notion de voisinage ni de contraintes, le MLP memorise des associations globales plutot que de comprendre la structure locale du Sudoku. Le CNN suivant corrige cette limitation.",,,,,,,,239fcc208e6c289e,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-section,markdown,fr,5187d0c8d6c59669,"## 4. Architecture 2 : Réseau Convolutif (CNN)
 
-Les reseaux convolutifs sont connus pour leur capacite a capturer les **motifs spatiaux locaux**. En traitant la grille de Sudoku comme une ""image"" a 10 canaux, les filtres de convolution peuvent apprendre les interactions entre cases voisines.
+Les réseaux convolutifs sont connus pour leur capacite a capturer les **motifs spatiaux locaux**. En traitant la grille de Sudoku comme une ""image"" a 10 canaux, les filtres de convolution peuvent apprendre les interactions entre cases voisines.
 
 ### Pourquoi la convolution est pertinente
 
 Les contraintes du Sudoku sont **locales** :
-- Les cases d'un meme bloc 3x3 interagissent (filtre 3x3 capture exactement un bloc)
+- Les cases d'un même bloc 3x3 interagissent (filtre 3x3 capture exactement un bloc)
 - Les cases d'une ligne/colonne interagissent (filtres empiles capturent des contextes plus larges)
 
 ### Architecture
@@ -11968,7 +11968,7 @@ Input(10, 9, 9)
 Output(9, 9, 9)
 ```
 
-Le `padding='same'` preserve la resolution spatiale (9x9) tout au long du reseau. La derniere couche `1x1` produit 9 canaux (un par chiffre possible) pour chaque case.",,,,,,,,5e7c540c4c678a27,,,,,,,
+Le `padding='same'` preserve la resolution spatiale (9x9) tout au long du réseau. La dernière couche `1x1` produit 9 canaux (un par chiffre possible) pour chaque case.",,,,,,,,5187d0c8d6c59669,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-model,code,fr,bf5a1f2357ac8f53,"class CNNModel(nn.Module):
     """"""Reseau convolutif pour la resolution de Sudoku.""""""
     
@@ -12015,9 +12015,9 @@ cnn_model = CNNModel().to(device)
 n_params = sum(p.numel() for p in cnn_model.parameters())
 print(f""CNNModel : {n_params:,} parametres"")
 print(cnn_model)",,,,,,,,bf5a1f2357ac8f53,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-train-intro,markdown,fr,8c877204652894aa,"### Entrainement du CNN
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-train-intro,markdown,fr,a8f1bbc47b14a6a3,"### Entrainement du CNN
 
-Le CNN est entraine dans les memes conditions que le MLP (20 epochs, meme dataset). L'objectif est de comparer equitablement les deux architectures.",,,,,,,,8c877204652894aa,,,,,,,
+Le CNN est entraine dans les mêmes conditions que le MLP (20 epochs, même dataset). L'objectif est de comparer equitablement les deux architectures.",,,,,,,,a8f1bbc47b14a6a3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-train,code,fr,5f3cba0a4e0053eb,"print(""=== Entrainement du reseau convolutif (CNN) ==="")
 cnn_model = CNNModel().to(device)
 
@@ -12027,7 +12027,7 @@ cnn_time = time.time() - start
 
 print(f""\nTemps d'entrainement : {cnn_time:.1f}s"")
 plot_history(cnn_history, ""Reseau Convolutif (CNN)"")",,,,,,,,5f3cba0a4e0053eb,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-interp,markdown,fr,2df05c30e7ea7fe4,"### Interpretation : CNN vs MLP
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-interp,markdown,fr,c7b04c496a453ad7,"### Interpretation : CNN vs MLP
 
 **Comparaison attendue (50K puzzles, 20 epochs)** :
 
@@ -12035,7 +12035,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-interp,markdow
 |----------|-----|-----|-------|
 | Precision/case (vides) | ~40-60% | ~70-85% | Structure spatiale exploitee |
 | Precision/grille | 0-2% | 5-30% | Champ receptif couvre toute la grille |
-| Nombre de parametres | ~1.05M | ~1.12M | Tailles comparables |
+| Nombre de paramètres | ~1.05M | ~1.12M | Tailles comparables |
 
 **Points cles** :
 1. Le CNN surpasse le MLP grace aux filtres 3x3 qui capturent les blocs du Sudoku
@@ -12043,10 +12043,10 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,cnn-interp,markdow
 3. La precision par case augmente significativement, mais la grille complete reste difficile (1 erreur sur 81 = grille fausse)
 4. **Ecart train/test** : observez les courbes de loss pour voir si le CNN sur-apprend (courbes qui divergent)
 
-**Transition** : le CNN 5 couches est deja performant, mais la litterature montre qu'un CNN plus profond avec connexions residuelles atteint >99% par case. C'est l'architecture ResCNN de la section suivante.",,,,,,,,2df05c30e7ea7fe4,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,2b19266e,markdown,fr,78c605a8da871643,"## 5. Architecture 3 : CNN Profond avec Connexions Residuelles
+**Transition** : le CNN 5 couches est deja performant, mais la littérature montre qu'un CNN plus profond avec connexions residuelles atteint >99% par case. C'est l'architecture ResCNN de la section suivante.",,,,,,,,c7b04c496a453ad7,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,2b19266e,markdown,fr,851032d783aa55f9,"## 5. Architecture 3 : CNN Profond avec Connexions Residuelles
 
-Les architectures precedentes (MLP et CNN 5 couches) sont limitees par leur profondeur. La litterature (Park 2018, Palm 2018) montre qu'un CNN plus profond avec des **connexions residuelles** atteint des precisions par case superieures a 99%.
+Les architectures precedentes (MLP et CNN 5 couches) sont limitees par leur profondeur. La littérature (Park 2018, Palm 2018) montre qu'un CNN plus profond avec des **connexions residuelles** atteint des precisions par case superieures a 99%.
 
 ### Principe des connexions residuelles
 
@@ -12057,7 +12057,7 @@ x -> Conv -> BN -> ReLU -> Conv -> BN -> (+x) -> ReLU -> sortie
 ```
 
 **Pourquoi cela fonctionne** :
-1. **Gradient** : le gradient peut ""sauter"" des couches lors de la retropropagation, permettant d'entrainer des reseaux plus profonds
+1. **Gradient** : le gradient peut ""sauter"" des couches lors de la retropropagation, permettant d'entrainer des réseaux plus profonds
 2. **Identite** : si une couche supplementaire n'est pas utile, le bloc peut apprendre la fonction identite (sortie = entree)
 3. **Stabilite** : les connexions residuelles empechent la degradation des performances avec la profondeur
 
@@ -12073,7 +12073,7 @@ Input(10, 9, 9)
 Output(9, 9, 9)
 ```
 
-Total : 14 couches convolutionnelles (1 entree + 12 residuelles + 1 sortie) avec mecanisme de **gating** pour ponderer la contribution de chaque bloc.",,,,,,,,78c605a8da871643,,,,,,,
+Total : 14 couches convolutionnelles (1 entree + 12 residuelles + 1 sortie) avec mécanisme de **gating** pour ponderer la contribution de chaque bloc.",,,,,,,,851032d783aa55f9,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,7ee289b8,code,fr,c27371c0d03c73b3,"class ResidualBlock(nn.Module):
     """"""Bloc residual avec gating pour Sudoku.
     
@@ -12150,62 +12150,16 @@ res_cnn_time = time.time() - start
 
 print(f""\nTemps d'entrainement : {res_cnn_time:.1f}s"")
 plot_history(res_cnn_history, ""ResCNN (connexions residuelles)"")",,,,,,,,4cf232232a820c5f,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,efd3a877,markdown,fr,c0f786a02ff25cf7,"### Interpretation : impact des connexions residuelles
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,efd3a877,markdown,fr,c31a0ab835cd5112,"### Interpretation : impact des connexions residuelles
 
 **Points cles** :
-1. Le ResCNN atteint une precision par case nettement superieure au CNN simple grace a sa profondeur (14 couches vs 5)
-2. Les connexions residuelles permettent au gradient de circuler a travers toutes les couches, evitant le probleme du gradient qui s'evanouit
-3. Le mecanisme de gating permet a chaque bloc de decider dans quelle mesure sa contribution est utile
-4. Le early stopping detecte automatiquement le moment optimal pour arreter l'entrainement
+1. Le ResCNN atteint une precision par case nettement supérieure au CNN simple grace a sa profondeur (14 couches vs 5)
+2. Les connexions residuelles permettent au gradient de circuler a travers toutes les couches, evitant le problème du gradient qui s'evanouit
+3. Le mécanisme de gating permet a chaque bloc de decider dans quelle mesure sa contribution est utile
+4. Le early stopping détecte automatiquement le moment optimal pour arreter l'entrainement
 
-**Comparaison des architectures** : le ResCNN illustre un principe fondamental du deep learning -- avec suffisamment de donnees et une architecture adaptee, les reseaux de neurones peuvent apprendre des taches complexes comme le Sudoku.",,,,,,,,c0f786a02ff25cf7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,5fb9732b,markdown,fr,34a66d92150a0a55,"## 6. Architecture 4 : Reseau Relationnel Recurrent (RRN)
-
-Les architectures precedentes (MLP, CNN, ResCNN) traitent la grille comme une image 2D. Mais le Sudoku a une structure **relationnelle** : chaque case est en interaction avec exactement 20 voisins de contrainte (8 dans la meme ligne, 8 dans la meme colonne, 4 supplementaires dans le bloc 3x3, sans compter les doublons).
-
-### Le modele de Palm et al. (2018)
-
-Le **Recurrent Relational Network** (RRN) exploite directement cette structure sous forme de graphe. Au lieu de convolutions 2D, il utilise un **passage de messages** (message passing) entre les cases connectees par les regles du Sudoku.
-
-### Principe
-
-```
-Pour chaque etape de raisonnement (1 a N) :
-  1. Chaque case envoie un message a ses 20 voisins
-  2. Chaque case agrege les messages recus
-  3. Un GRU met a jour l'etat cache de chaque case
-  4. Une couche lineaire predit les logits (9 classes) depuis l'etat cache
-```
-
-**Pourquoi c'est puissant** :
-1. **Structure relationnelle explicite** : contrairement au CNN qui apprend les interactions par convolution, le RRN injecte directement le graphe de contraintes du Sudoku
-2. **Raisonnement iteratif** : a chaque etape, les cases echangent des informations et affinent leurs predictions
-3. **Partage de poids** : le meme mecanisme de message-passing est reutilise a chaque etape (poids partages), comme un RNN classique
-
-### Architecture detaillee
-
-```
-Input (batch, 81, 10)     # 81 cases, 10 features (one-hot + masque)
-  |
-  +-> Embedding (Linear 10 -> hidden_dim) + Positional Encoding
-  |
-  |  Pour chaque etape t = 1..T :
-  |    |
-  |    +-> Message MLP : concat(h_i, h_j) -> message m_ij
-  |    +-> Agregation  : sum des messages recus pour chaque case
-  |    +-> GRU Cell    : (message_agrege, h_t) -> h_{t+1}
-  |    +-> LayerNorm
-  |    +-> Prediction  : Linear(hidden_dim -> 9) -> logits
-  |
-  v
-Output : liste de (batch, 81, 9) logits pour chaque etape
-```
-
-Le graphe de contraintes contient exactement **1 620 aretes orientees** (81 cases x 20 voisins). Chaque arete represente une contrainte Sudoku (meme ligne, colonne ou bloc).
-
-### Implementation simplifiee
-
-Voici une version simplifiee du modele RRN. La version complete utilisee pour l'entrainement GPU est dans `scripts/sudoku/core/models.py`.",,,,,,,,34a66d92150a0a55,,,,,,,
+**Comparaison des architectures** : le ResCNN illustre un principe fondamental du deep learning -- avec suffisamment de données et une architecture adaptee, les réseaux de neurones peuvent apprendre des taches complexes comme le Sudoku.",,,,,,,,c31a0ab835cd5112,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,5fb9732b,markdown,fr,305ff8ae569f36fb,"## 6. Architecture 4 : Réseau Relationnel Recurrent (RRN)Les architectures precedentes (MLP, CNN, ResCNN) traitent la grille comme une image 2D. Mais le Sudoku a une structure **relationnelle** : chaque case est en interaction avec exactement 20 voisins de contrainte (8 dans la même ligne, 8 dans la même colonne, 4 supplementaires dans le bloc 3x3, sans compter les doublons).### Le modèle de Palm et al. (2018)Le **Recurrent Relational Network** (RRN) exploite directement cette structure sous forme de graphe. Au lieu de convolutions 2D, il utilise un **passage de messages** (message passing) entre les cases connectees par les règles du Sudoku.### Principe```Pour chaque étape de raisonnement (1 a N) :  1. Chaque case envoie un message a ses 20 voisins  2. Chaque case agrege les messages recus  3. Un GRU met a jour l'etat cache de chaque case  4. Une couche lineaire prédit les logits (9 classes) depuis l'etat cache```**Pourquoi c'est puissant** :1. **Structure relationnelle explicite** : contrairement au CNN qui apprend les interactions par convolution, le RRN injecte directement le graphe de contraintes du Sudoku2. **Raisonnement iteratif** : a chaque étape, les cases echangent des informations et affinent leurs predictions3. **Partage de poids** : le même mécanisme de message-passing est reutilise a chaque étape (poids partages), comme un RNN classique### Architecture detaillee```Input (batch, 81, 10)     # 81 cases, 10 features (one-hot + masque)  |  +-> Embedding (Linear 10 -> hidden_dim) + Positional Encoding  |  |  Pour chaque étape t = 1..T :  |    |  |    +-> Message MLP : concat(h_i, h_j) -> message m_ij  |    +-> Agregation  : sum des messages recus pour chaque case  |    +-> GRU Cell    : (message_agrege, h_t) -> h_{t+1}  |    +-> LayerNorm  |    +-> Prediction  : Linear(hidden_dim -> 9) -> logits  |  vOutput : liste de (batch, 81, 9) logits pour chaque étape```Le graphe de contraintes contient exactement **1 620 aretes orientees** (81 cases x 20 voisins). Chaque arete represente une contrainte Sudoku (même ligne, colonne ou bloc).### Implementation simplifieeVoici une version simplifiee du modèle RRN. La version complete utilisee pour l'entrainement GPU est dans `scripts/sudoku/core/models.py`.",,,,,,,,305ff8ae569f36fb,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,258b8406,code,fr,94e483cb4e073c19,"def build_sudoku_graph():
     """"""Construit le graphe de contraintes du Sudoku.
     
@@ -12337,17 +12291,17 @@ print(f""  SimpleRRN (pedagogique) : {n_params_rrn:>8,} params"")
 print(f""  RRN h128_s16            :   161,929 params"")
 print(f""  RRN h192_s16            :   353,481 params"")
 print(f""  RRN h256_s16            :   618,761 params"")",,,,,,,,94e483cb4e073c19,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,120a8ea9,markdown,fr,586890e6faed8cef,"### Interpretation : architecture du Reseau Relationnel Recurrent
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,120a8ea9,markdown,fr,20c645c64cb5beac,"### Interpretation : architecture du Réseau Relationnel Recurrent
 
-Le RRN de Palm et al. (2018) aborde le Sudoku sous un angle fondamentalement different des modeles precedents :
+Le RRN de Palm et al. (2018) aborde le Sudoku sous un angle fondamentalement different des modèles precedents :
 
-**1. Structure relationnelle** : Plutot que de traiter la grille comme une image (CNN) ou un vecteur plat (MLP), le RRN modelise explicitement les **contraintes du Sudoku** sous forme de graphe. Chaque cellule est un noeud connectee a ses 20 voisins (8 lignes + 8 colonnes + 4 bloc). Cette structure encode directement les regles du jeu.
+**1. Structure relationnelle** : Plutot que de traiter la grille comme une image (CNN) ou un vecteur plat (MLP), le RRN modelise explicitement les **contraintes du Sudoku** sous forme de graphe. Chaque cellule est un noeud connectee a ses 20 voisins (8 lignes + 8 colonnes + 4 bloc). Cette structure encode directement les règles du jeu.
 
-**2. Propagation iterative de messages** : A chaque etape de raisonnement, chaque cellule envoie un message a ses voisins et agrege les messages recus. Le GRU (Gated Recurrent Unit) met a jour l'etat cache de chaque cellule en fonction de ces messages. Ce mecanisme permet au reseau de **propager les deductions logiques** a travers la grille.
+**2. Propagation iterative de messages** : A chaque étape de raisonnement, chaque cellule envoie un message a ses voisins et agrege les messages recus. Le GRU (Gated Recurrent Unit) met a jour l'etat cache de chaque cellule en fonction de ces messages. Ce mécanisme permet au réseau de **propager les deductions logiques** a travers la grille.
 
-**3. Comparaison des parametres** :
+**3. Comparaison des paramètres** :
 
-| Architecture | Parametres | Cell accuracy | Grid accuracy |
+| Architecture | paramètres | Cell accuracy | Grid accuracy |
 |-------------|-----------|--------------|---------------|
 | MLP (sect. 2) | ~1.05M | ~40-60% | 0-2% |
 | CNN (sect. 3) | ~1.1M | ~70-85% | 5-30% |
@@ -12355,36 +12309,10 @@ Le RRN de Palm et al. (2018) aborde le Sudoku sous un angle fondamentalement dif
 | SimpleRRN (h=64) | ~35K | -- | -- |
 | RRN GPU (h=192) | ~353K | 89.7% | 83.5% |
 
-Le RRN atteint la meilleure precision par grille avec **environ 3 fois moins de parametres** que le CNN, grace a l'inductive bias de la structure relationnelle.
+Le RRN atteint la meilleure precision par grille avec **environ 3 fois moins de paramètres** que le CNN, grace a l'inductive bias de la structure relationnelle.
 
-**4. Avantage cle** : Le RRN genere une prediction a **chaque etape de raisonnement**, permettant d'observer comment la solution se raffine iterativement. Les modeles de production (h=192, 24 etapes) entraines sur GPU avec 400K puzzles et un apprentissage progressif (curriculum learning) atteignent **83.5% de grilles correctes en une seule passe** -- un resultat bien superieur au ResCNN entraine sur le meme dataset.",,,,,,,,586890e6faed8cef,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,5eb1e7bf,markdown,fr,2ca2a606ead87151,"## 7. Modeles entraines sur GPU : Resultats et analyse
-
-Les modeles entraines dans les sections precedentes utilisent un petit dataset (50K puzzles generes localement) et s'executent sur CPU. Pour atteindre des performances elevees, nous avons entraine des RRN sur GPU (RTX 3070, 8.6GB VRAM) avec un dataset massif.
-
-### Configuration d'entrainement GPU
-
-| Parametre | Valeur |
-|-----------|--------|
-| Dataset | 300K puzzles faciles (HF) + 100K puzzles difficiles |
-| Split | 280K train / 60K val / 60K test |
-| Optimiseur | AdamW (lr=1e-4, OneCycleLR) |
-| Curriculum | Progression easy/medium/hard sur 18 epochs |
-| GPU | NVIDIA RTX 3070 Laptop (8.6 GB VRAM) |
-| Duree | ~17 min/epoch pour h192_s24 |
-
-### Apprentissage progressif (curriculum learning)
-
-Le dataset contient des puzzles de difficultes variees (17 a 37 indices donnes). Plutot que de presenter toutes les difficultes des le debut, le curriculum learning introduit progressivement les puzzles les plus durs :
-
-| Phase | Epochs | Easy (33+ indices) | Medium (25-32) | Hard (<25) |
-|-------|--------|--------------------|-----------------|------------|
-| 1 | 1-5 | 50% | 30% | 10% |
-| 2 | 6-11 | 75% | 60% | 40% |
-| 3 | 12-17 | 90% | 80% | 70% |
-| 4 | 18+ | 100% | 100% | 100% |
-
-Cette strategie permet au modele d'apprendre d'abord les patterns simples avant de s'attaquer aux puzzles les plus difficiles.",,,,,,,,2ca2a606ead87151,,,,,,,
+**4. Avantage cle** : Le RRN génère une prediction a **chaque étape de raisonnement**, permettant d'observer comment la solution se raffine iterativement. Les modèles de production (h=192, 24 étapes) entraines sur GPU avec 400K puzzles et un apprentissage progressif (curriculum learning) atteignent **83.5% de grilles correctes en une seule passe** -- un resultat bien supérieur au ResCNN entraine sur le même dataset.",,,,,,,,20c645c64cb5beac,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,5eb1e7bf,markdown,fr,dd43d0cb30d33ef6,"## 7. Modèles entraines sur GPU : Resultats et analyseLes modèles entraines dans les sections precedentes utilisent un petit dataset (50K puzzles générés localement) et s'executent sur CPU. Pour atteindre des performances elevees, nous avons entraine des RRN sur GPU (RTX 3070, 8.6GB VRAM) avec un dataset massif.### Configuration d'entrainement GPU| paramètre | Valeur ||-----------|--------|| Dataset | 300K puzzles faciles (HF) + 100K puzzles difficiles || Split | 280K train / 60K val / 60K test || Optimiseur | AdamW (lr=1e-4, OneCycleLR) || Curriculum | Progression easy/medium/hard sur 18 epochs || GPU | NVIDIA RTX 3070 Laptop (8.6 GB VRAM) || Duree | ~17 min/epoch pour h192_s24 |### Apprentissage progressif (curriculum learning)Le dataset contient des puzzles de difficultes variees (17 a 37 indices donnes). Plutot que de presenter toutes les difficultes des le debut, le curriculum learning introduit progressivement les puzzles les plus durs :| Phase | Epochs | Easy (33+ indices) | Medium (25-32) | Hard (<25) ||-------|--------|--------------------|-----------------|------------|| 1 | 1-5 | 50% | 30% | 10% || 2 | 6-11 | 75% | 60% | 40% || 3 | 12-17 | 90% | 80% | 70% || 4 | 18+ | 100% | 100% | 100% |Cette stratégie permet au modèle d'apprendre d'abord les patterns simples avant de s'attaquer aux puzzles les plus difficiles.",,,,,,,,dd43d0cb30d33ef6,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,a97e24fc,code,fr,2e93fe49e61ad5a4,"# Resultats des modeles RRN et baselines CNN/MLP entraines sur GPU
 # Charge depuis les fichiers JSON de resultats (reproductible)
 
@@ -12500,47 +12428,47 @@ fig.legend(handles=legend_elements, loc=""lower center"", ncol=4, fontsize=9, bb
 plt.tight_layout()
 plt.subplots_adjust(bottom=0.22)
 plt.show()",,,,,,,,2e93fe49e61ad5a4,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,6a8b41a3,markdown,fr,73ec769067c90d14,"### Interpretation : facteurs cles de performance
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,6a8b41a3,markdown,fr,4317ec6186ca3aef,"### Interpretation : facteurs cles de performance
 
-**1. Impact du dataset et du curriculum** : Le saut de performance le plus significatif (x2.5 sur la grid accuracy) provient du passage de 200K a 400K puzzles avec un apprentissage progressif. Le curriculum learning permet au modele d'abord de maitriser les puzzles faciles (33+ indices) avant d'apprendre les puzzles difficiles (17-24 indices).
+**1. Impact du dataset et du curriculum** : Le saut de performance le plus significatif (x2.5 sur la grid accuracy) provient du passage de 200K a 400K puzzles avec un apprentissage progressif. Le curriculum learning permet au modèle d'abord de maitriser les puzzles faciles (33+ indices) avant d'apprendre les puzzles difficiles (17-24 indices).
 
-**2. Taille du modele vs performance** :
-- h128 (162K params) a h256 (619K params) : les modeles de base ont des performances quasi-identiques (~62.5% cell, ~33.5% grid)
+**2. Taille du modèle vs performance** :
+- h128 (162K params) a h256 (619K params) : les modèles de base ont des performances quasi-identiques (~62.5% cell, ~33.5% grid)
 - Apres fine-tuning : h192 (353K) et h256 (619K) atteignent des performances similaires (~89.7% cell, ~83.5% grid)
-- h192 avec 16 ou 24 etapes de raisonnement : quasiment identique (83.48% vs 83.51% grid)
-- **Conclusion** : la taille du modele importe moins que la strategie d'entrainement (dataset, curriculum, scheduling). Augmenter les etapes de raisonnement au-dela de 16 n'apporte pas de gain significatif pour hidden_dim=192.
+- h192 avec 16 ou 24 étapes de raisonnement : quasiment identique (83.48% vs 83.51% grid)
+- **Conclusion** : la taille du modèle importe moins que la stratégie d'entrainement (dataset, curriculum, scheduling). Augmenter les étapes de raisonnement au-dela de 16 n'apporte pas de gain significatif pour hidden_dim=192.
 
 **3. Zero-shot vs prediction iterative** : Les 83.5% de grid accuracy sont obtenus en **une seule passe forward** (zero-shot). Avec la prediction iterative (section suivante), les performances seraient encore superieures car chaque case remplie enrichit le contexte.
 
-**4. Avantage de la structure de graphe (RRN vs CNN/MLP)** : Les baselines CNN et MLP, avec un nombre comparable de parametres (~300-400K), entraines sur le meme dataset (208K puzzles) sans curriculum, obtiennent des resultats radicalement inferieurs : **~44% cell accuracy et 0% grid accuracy** pour le meilleur CNN, ~36% cell accuracy pour le MLP. Cela demontre que la structure de graphe du RRN (message passing entre cellules liees par les contraintes Sudoku) est le facteur determinant, pas simplement la taille du modele ou le volume de donnees. Le MLP, sans aucune notion de structure spatiale, performe le moins bien. Le CNN, qui capture des motifs locaux, fait mieux mais reste loin du RRN qui modelise explicitement les relations entre cases.
+**4. Avantage de la structure de graphe (RRN vs CNN/MLP)** : Les baselines CNN et MLP, avec un nombre comparable de paramètres (~300-400K), entraines sur le même dataset (208K puzzles) sans curriculum, obtiennent des resultats radicalement inferieurs : **~44% cell accuracy et 0% grid accuracy** pour le meilleur CNN, ~36% cell accuracy pour le MLP. Cela demontre que la structure de graphe du RRN (message passing entre cellules liees par les contraintes Sudoku) est le facteur déterminant, pas simplement la taille du modèle ou le volume de données. Le MLP, sans aucune notion de structure spatiale, performe le moins bien. Le CNN, qui capture des motifs locaux, fait mieux mais reste loin du RRN qui modelise explicitement les relations entre cases.
 
-**5. Limites atteintes** : Les modeles actuels peussent sur les puzzles tres difficiles (17-22 indices). La litterature (Palm 2018) montre que des modeles plus profonds (h=512, 32 etapes) sur des datasets massifs (1M+) atteignent >95% grid accuracy en zero-shot.",,,,,,,,73ec769067c90d14,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,iterative-section,markdown,fr,019156b0a91d92df,"## 8. Prediction iterative : resoudre case par case
+**5. Limites atteintes** : Les modèles actuels puissent sur les puzzles très difficiles (17-22 indices). La littérature (Palm 2018) montre que des modèles plus profonds (h=512, 32 étapes) sur des datasets massifs (1M+) atteignent >95% grid accuracy en zero-shot.",,,,,,,,4317ec6186ca3aef,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,iterative-section,markdown,fr,216a6039025ee50e,"## 8. Prediction iterative : resoudre case par case
 
-L'idee cle pour ameliorer drastiquement la precision est d'imiter la strategie humaine : **predire la case la plus certaine, la remplir, puis re-predire**.
+L'idee cle pour ameliorer drastiquement la precision est d'imiter la stratégie humaine : **prédire la case la plus certaine, la remplir, puis re-prédire**.
 
 ### Principe
 
-Au lieu de predire les 81 cases d'un coup, on procede iterativement :
+Au lieu de prédire les 81 cases d'un coup, on procede iterativement :
 
-1. Le reseau predit les probabilites pour toutes les cases vides
-2. On selectionne la prediction la plus confiante (probabilite maximale la plus elevee)
+1. Le réseau prédit les probabilites pour toutes les cases vides
+2. On selectionne la prediction la plus confiante (probabilite maximale la plus élevée)
 3. On remplit cette case dans le puzzle
 4. On re-encode le puzzle mis a jour et on recommence
 5. On repete jusqu'a ce que toutes les cases soient remplies
 
 ### Pourquoi cela fonctionne
 
-Chaque case remplie fournit un **indice supplementaire** au reseau pour les cases restantes. C'est un mecanisme d'auto-regression : les predictions les plus sures servent de base pour les predictions suivantes.
+Chaque case remplie fournit un **indice supplementaire** au réseau pour les cases restantes. C'est un mécanisme d'auto-regression : les predictions les plus sures servent de base pour les predictions suivantes.
 
 ```
-Iteration 1 : 45 cases vides -> predire la plus certaine (confiance 99%)
+Iteration 1 : 45 cases vides -> prédire la plus certaine (confiance 99%)
 Iteration 2 : 44 cases vides -> plus d'indices, predictions plus sures
 ...
 Iteration 45 : 1 case vide -> presque triviale
 ```
 
-**Risque** : si une prediction intermediaire est fausse, les erreurs se propagent. Le seuil de confiance peut attenuer ce risque.",,,,,,,,019156b0a91d92df,,,,,,,
+**Risque** : si une prediction intermediaire est fausse, les erreurs se propagent. Le seuil de confiance peut attenuer ce risque.",,,,,,,,216a6039025ee50e,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,iterative-predict,code,fr,d324b856d8ef9b3b,"def iterative_predict(model, puzzle: np.ndarray, verbose: bool = False) -> np.ndarray:
     """"""Prediction iterative : remplir une case a la fois.
     
@@ -12625,7 +12553,7 @@ for i in range(3):
     print(f""  Directe   : {direct_correct}/81 cases correctes ({direct_correct == 81})"")
     print(f""  Iterative : {iter_correct}/81 cases correctes ({iter_correct == 81})"")
     print()",,,,,,,,d324b856d8ef9b3b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,iterative-interp,markdown,fr,e43307d4a39afad0,"### Interpretation : impact de la prediction iterative
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,iterative-interp,markdown,fr,03de88142bf3bd32,"### Interpretation : impact de la prediction iterative
 
 La prediction iterative ameliore considerablement les resultats car :
 
@@ -12633,23 +12561,23 @@ La prediction iterative ameliore considerablement les resultats car :
 |--------|-------------------|---------------------|
 | Contexte utilise | Uniquement les indices initiaux | Indices + cases deja remplies |
 | Risque d'erreur | Independant par case | Risque de propagation d'erreurs |
-| Precision par grille | Faible | Nettement superieure |
+| Precision par grille | Faible | Nettement supérieure |
 
 **Points cles** :
-1. La confiance du reseau est un bon indicateur : les premieres cases remplies sont souvent correctes
-2. L'amelioration est d'autant plus forte que le modele est precis par case
-3. C'est exactement le mecanisme utilise par les humains : resoudre d'abord les cases evidentes
+1. La confiance du réseau est un bon indicateur : les premières cases remplies sont souvent correctes
+2. L'amelioration est d'autant plus forte que le modèle est precis par case
+3. C'est exactement le mécanisme utilise par les humains : resoudre d'abord les cases evidentes
 
-> **Note technique** : cette approche est similaire aux modeles auto-regressifs en NLP (GPT) qui generent un token a la fois en conditionnant sur les tokens precedents.",,,,,,,,e43307d4a39afad0,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,eval-section,markdown,fr,33901e6968c8dd06,"## 9. Evaluation comparative et analyse
+> **Note technique** : cette approche est similaire aux modèles auto-regressifs en NLP (GPT) qui génèrent un token a la fois en conditionnant sur les tokens precedents.",,,,,,,,03de88142bf3bd32,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,eval-section,markdown,fr,316126915a0eefb6,"## 9. Évaluation comparative et analyse
 
-Evaluons systematiquement les deux architectures (MLP et CNN) avec les deux strategies de prediction (directe et iterative) sur le jeu de test complet.",,,,,,,,33901e6968c8dd06,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,eval-ambiguity-note,markdown,fr,281f87c29edc6a84,"> **A lire avant d'executer la cellule suivante** : la sortie contient DEUX mesures distinctes :
+Evaluons systematiquement les deux architectures (MLP et CNN) avec les deux stratégies de prediction (directe et iterative) sur le jeu de test complet.",,,,,,,,316126915a0eefb6,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,eval-ambiguity-note,markdown,fr,41c20300860b1fbb,"> **A lire avant d'executer la cellule suivante** : la sortie contient DEUX mesures distinctes :
 >
-> - **Precision/case** (`cell_acc`) -- pourcentage de cases (1 a 81) correctement predites sur les cases vides uniquement. C'est la mesure principale.
+> - **Precision/case** (`cell_acc`) -- pourcentage de cases (1 a 81) correctement prédites sur les cases vides uniquement. C'est la mesure principale.
 > - **Precision/grille** (`grid_acc`) -- pourcentage de puzzles dont les 81 cases sont SIMULTANEMENT correctes. Avec un bon ResCNN, cette valeur peut depasser 50%.
 >
-> La prediction iterative est evaluee sur un sous-ensemble de 200 puzzles car elle est beaucoup plus lente (45+ forward passes par puzzle).",,,,,,,,281f87c29edc6a84,,,,,,,
+> La prediction iterative est evaluee sur un sous-ensemble de 200 puzzles car elle est beaucoup plus lente (45+ forward passes par puzzle).",,,,,,,,41c20300860b1fbb,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,full-eval,code,fr,7f1de15ef5e1d686,"def evaluate_model(model, puzzles, solutions, use_iterative=False):
     """"""Evalue un modele sur un ensemble de puzzles.
     
@@ -12807,7 +12735,7 @@ for i in range(2):
         puzzle, prediction, solution,
         f""Puzzle {i+1} : {n_correct}/81 cases correctes ({n_empty} vides)""
     )",,,,,,,,cd8c2d8e69d16f25,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,0871e648,markdown,fr,461be36a3a6c9959,Analyse des erreurs du modele : identification des cases les plus difficiles a predire.,,,,,,,,461be36a3a6c9959,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,0871e648,markdown,fr,c7544772b54f79df,Analyse des erreurs du modèle : identification des cases les plus difficiles a prédire.,,,,,,,,c7544772b54f79df,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,error-analysis,code,fr,5bd4e6b451fe32c3,"# Analyse des erreurs : quelles cases sont les plus difficiles ?
 error_map = np.zeros((9, 9), dtype=int)
 
@@ -12843,27 +12771,27 @@ plt.show()
 
 print(f""\nTotal erreurs : {error_map.sum()}"")
 print(f""Position la plus difficile : ligne {error_map.argmax() // 9}, colonne {error_map.argmax() % 9} ({error_map.max()} erreurs)"")",,,,,,,,5bd4e6b451fe32c3,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,error-interp,markdown,fr,dd1110ddd52870dd,"### Interpretation : carte des erreurs
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,error-interp,markdown,fr,95893475e175d8b8,"### Interpretation : carte des erreurs
 
-La heatmap revele les positions ou le reseau commet le plus d'erreurs :
+La heatmap revele les positions ou le réseau commet le plus d'erreurs :
 
 **Points cles** :
 1. Les erreurs ne sont pas uniformement reparties : certaines positions sont systematiquement plus difficiles
 2. Les cases au centre de la grille sont souvent plus difficiles car elles sont contraintes par plus de voisins
-3. Le reseau n'a pas de mecanisme pour **verifier la validite** de ses predictions (pas de contrainte AllDifferent)
+3. Le réseau n'a pas de mécanisme pour **verifier la validite** de ses predictions (pas de contrainte AllDifferent)
 
 ### Limitations fondamentales
 
 | Limitation | Consequence | Solution possible |
 |-----------|-------------|------------------|
 | Pas de contraintes explicites | Grilles invalides possibles | Hybrid NN + verificateur |
-| Dataset limite (1000) | Generalisation insuffisante | Plus de donnees (17M) |
+| Dataset limite (1000) | généralisation insuffisante | Plus de données (17M) |
 | Propagation d'erreurs | Erreur precoce = grille fausse | Seuil de confiance + backtrack |
 
-> **Vers une approche hybride** : combiner la prediction neuronale avec un verificateur de contraintes permet de garantir la validite. Le reseau propose, le solveur dispose.",,,,,,,,dd1110ddd52870dd,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercises-section,markdown,fr,c79b881820e8d732,"---
+> **Vers une approche hybride** : combiner la prediction neuronale avec un verificateur de contraintes permet de garantir la validite. Le réseau propose, le solveur dispose.",,,,,,,,95893475e175d8b8,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercises-section,markdown,fr,aa2955716f97133d,"---
 
-## Exercice : Experimentations avec les Reseaux de Neurones
+## Exercice : Experimentations avec les Réseaux de Neurones
 
 ### Exercice 1 : Experimenter avec l'architecture CNN
 
@@ -12872,7 +12800,7 @@ Modifiez l'architecture du CNN pour observer l'impact :
 - Modifier le nombre de filtres (32, 64, 128, 256)
 - Tester des kernel sizes differents (1x1, 3x3, 5x5)
 
-**Question** : quel est le nombre minimal de couches pour atteindre un champ receptif couvrant toute la grille 9x9 avec des filtres 3x3 ?",,,,,,,,c79b881820e8d732,,,,,,,
+**Question** : quel est le nombre minimal de couches pour atteindre un champ receptif couvrant toute la grille 9x9 avec des filtres 3x3 ?",,,,,,,,aa2955716f97133d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-1,code,fr,603b47a3c890320d,"# Exercice 1 : Experimentez avec l'architecture CNN
 # Indice : le champ receptif d'un filtre 3x3 apres n couches est (2n+1) x (2n+1)
 # Pour couvrir 9x9, il faut 2n+1 >= 9, soit n >= 4 couches
@@ -12899,13 +12827,13 @@ class DeepCNN(nn.Module):
 
 print(""Exercice a completer : architecture CNN plus profonde pour Sudoku"")
 ",,,,,,,,603b47a3c890320d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-2-intro,markdown,fr,9a3fbd675542239e,"### Exercice 2 : Dropout et regularisation
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-2-intro,markdown,fr,ee0ddac33650e167,"### Exercice 2 : Dropout et regularisation
 
-Ajoutez du dropout et de la batch normalization au MLP et au CNN. Comparez les courbes de train/test loss pour detecter le sur-apprentissage.
+Ajoutez du dropout et de la batch normalization au MLP et au CNN. Comparez les courbes de train/test loss pour détecter le sur-apprentissage.
 
 **Questions** :
 - Le dropout ameliore-t-il la precision sur le jeu de test ?
-- A partir de combien d'epochs observe-t-on du sur-apprentissage ?",,,,,,,,9a3fbd675542239e,,,,,,,
+- A partir de combien d'epochs observe-t-on du sur-apprentissage ?",,,,,,,,ee0ddac33650e167,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-2,code,fr,1bbd383b0efd29eb,"# Exercice 2 : Experimentez ici
 # Indice : ajoutez nn.Dropout2d(0.2) apres les couches ReLU du CNN
 # Comparez les courbes train_loss et test_loss
@@ -12925,14 +12853,14 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-2,code,fr
 
 print(""Exercice a completer - implementez CNNWithDropout"")
 ",,,,,,,,1bbd383b0efd29eb,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-3-intro,markdown,fr,f4e881cd1ce80a6e,"### Exercice 3 : Approche hybride NN + backtracking
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-3-intro,markdown,fr,00c42a5870947f4b,"### Exercice 3 : Approche hybride NN + backtracking
 
 Implementez une approche hybride :
-1. Utilisez le CNN pour predire les chiffres les plus probables
+1. Utilisez le CNN pour prédire les chiffres les plus probables
 2. Remplissez les cases ou la confiance depasse un seuil (ex: 0.95)
 3. Pour les cases restantes, utilisez le backtracking classique
 
-**Question** : cette approche garantit-elle une solution valide ? Quel est l'avantage par rapport au backtracking seul ?",,,,,,,,f4e881cd1ce80a6e,,,,,,,
+**Question** : cette approche garantit-elle une solution valide ? Quel est l'avantage par rapport au backtracking seul ?",,,,,,,,00c42a5870947f4b,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,exercise-3,code,fr,be8856a30c053a75,"# Exercice 3 : Approche hybride
 # Indice : le NN reduit le nombre de cases a explorer par backtracking
 # Votre mission : implementer hybrid_solve qui combine NN et backtracking.
@@ -12969,11 +12897,11 @@ def hybrid_solve(model, puzzle: np.ndarray, confidence_threshold: float = 0.95) 
 #     print(f""Puzzle {i}: {'OK' if correct else 'ERREUR'}"")
 print(""Exercice a completer - implementez hybrid_solve"")
 ",,,,,,,,be8856a30c053a75,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,conclusion-section,markdown,fr,ecafe7095331b443,"## Conclusion
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,conclusion-section,markdown,fr,1cc19316a80e2183,"## Conclusion
 
 ### Recapitulatif des architectures etudiees
 
-#### Modeles pedagogiques (50K puzzles, loss masquee, CPU)
+#### Modèles pedagogiques (50K puzzles, loss masquee, CPU)
 
 | Aspect | MLP | CNN | ResCNN | NeuroConstraint |
 |--------|-----|-----|--------|-----------------|
@@ -12983,9 +12911,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,conclusion-section
 | Prediction iterative | Gain modere | Gain significatif | Gain majeur | N/A (hybride) |
 | Garantie solution | Non | Non | Non | Oui |
 
-#### Modeles GPU : RRN vs baselines CNN/MLP (~350K params, meme dataset)
+#### Modèles GPU : RRN vs baselines CNN/MLP (~350K params, même dataset)
 
-| Modele | Type | Params | Cell Acc | Grid Acc | Entrainement |
+| modèle | Type | Params | Cell Acc | Grid Acc | Entrainement |
 |--------|------|--------|----------|----------|-------------|
 | MLP h200_l2 | MLP | 349K | 36.5% | **0%** | Vanilla (40 epochs) |
 | MLP h256_l3 | MLP | 409K | - | - | Vanilla (40 epochs) |
@@ -12995,24 +12923,24 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,conclusion-section
 | **RRN h192_s16 (finetune)** | **RRN** | **353K** | **89.7%** | **83.5%** | **Curriculum (20 epochs)** |
 | RRN h256_s16 (finetune) | RRN | 619K | 89.8% | 83.5% | Curriculum (26 epochs) |
 
-**Facteur cle** : avec un nombre comparable de parametres (~350K), le RRN surpasse massivement CNN et MLP. La structure de graphe (message passing entre cellules liees) est le facteur determinant, pas la taille du modele.
+**Facteur cle** : avec un nombre comparable de paramètres (~350K), le RRN surpasse massivement CNN et MLP. La structure de graphe (message passing entre cellules liees) est le facteur déterminant, pas la taille du modèle.
 
 ### Ce que nous avons appris
 
-1. **Les donnees sont essentielles** : passer de 1K a 50K puzzles transforme les resultats (sur-apprentissage massif vs generalisation correcte)
+1. **Les données sont essentielles** : passer de 1K a 50K puzzles transforme les resultats (sur-apprentissage massif vs généralisation correcte)
 2. **La structure spatiale compte** : le CNN surpasse le MLP, le ResCNN surpasse le CNN, et le RRN les surpasse tous en exploitant la structure de graphe du Sudoku
-3. **La structure de graphe est determinante** : avec ~350K parametres, le RRN atteint 83.5% grid accuracy tandis que les baselines CNN/MLP n'atteignent meme pas 1%. Le message passing entre cellules contraintes est bien plus informatif que les convolutions locales
-4. **La loss masquee est cruciale** : ne calculer la loss que sur les cases a predire empeche le reseau de ""tricher"" en recopiant les indices fournis
+3. **La structure de graphe est déterminante** : avec ~350K paramètres, le RRN atteint 83.5% grid accuracy tandis que les baselines CNN/MLP n'atteignent même pas 1%. Le message passing entre cellules contraintes est bien plus informatif que les convolutions locales
+4. **La loss masquee est cruciale** : ne calculer la loss que sur les cases a prédire empeche le réseau de ""tricher"" en recopiant les indices fournis
 5. **La prediction iterative est un multiplicateur de precision** : chaque case remplie enrichit le contexte pour les suivantes
 6. **L'hybride NN+contraintes est l'optimum** : le NN accelere la recherche, les contraintes garantissent la validite, le backtracking corrige les erreurs
-7. **Le curriculum learning est determinant** : presenter d'abord les puzzles faciles, puis progressivement les plus difficiles, ameliore significativement la convergence
+7. **Le curriculum learning est déterminant** : presenter d'abord les puzzles faciles, puis progressivement les plus difficiles, ameliore significativement la convergence
 
 ### Comparaison avec les autres approches de la serie
 
 | Solveur | Type | Fiabilite | Rapidite |
 |---------|------|-----------|----------|
 | Backtracking | Algorithmique | 100% | Rapide |
-| OR-Tools/Z3 | Contraintes | 100% | Tres rapide |
+| OR-Tools/Z3 | Contraintes | 100% | très rapide |
 | Dancing Links | Couverture exacte | 100% | Optimal |
 | Norvig | Propagation + BT | 100% | Rapide |
 | Genetique | Metaheuristique | ~50% | Lent |
@@ -13022,16 +12950,16 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,conclusion-section
 | **RRN (GPU, finetune)** | **Apprentissage** | **~83.5% grille** | **Rapide** |
 | NeuroConstraint | Hybride NN+BT | 22% (11/50) | Moyen |
 
-**Conclusion** : les reseaux de neurones purs ne garantissent pas la validite, mais combinent aux contraintes algorithmiques, ils produisent un solveur a la fois rapide et fiable. Le NN agit comme un **heuristique intelligent** qui guide le solveur vers les valeurs les plus probables, accelerant considerablement la recherche par rapport au backtracking seul.
+**Conclusion** : les réseaux de neurones purs ne garantissent pas la validite, mais combinent aux contraintes algorithmiques, ils produisent un solveur a la fois rapide et fiable. Le NN agit comme un **heuristique intelligent** qui guide le solveur vers les valeurs les plus probables, accelerant considerablement la recherche par rapport au backtracking seul.
 
-Le RRN avec curriculum learning atteint 83.5% de grilles correctes en zero-shot, un resultat notable pour une approche purement neuronale. Les baselines CNN/MLP avec le meme nombre de parametres echouent completement (0% grid accuracy), demontrant que la structure de graphe du RRN est le facteur cle de succes. En prediction iterative (remplissage case par case avec re-inference), ce score serait significativement plus eleve. La litterature (Palm et al., 2018) rapporte des scores superieurs a 95% avec des modeles plus profonds et des datasets plus vastes.
+Le RRN avec curriculum learning atteint 83.5% de grilles correctes en zero-shot, un resultat notable pour une approche purement neuronale. Les baselines CNN/MLP avec le même nombre de paramètres echouent completement (0% grid accuracy), demontrant que la structure de graphe du RRN est le facteur cle de succes. En prediction iterative (remplissage case par case avec re-inference), ce score serait significativement plus élevé. La littérature (Palm et al., 2018) rapporte des scores superieurs a 95% avec des modèles plus profonds et des datasets plus vastes.
 
 ### Pour aller plus loin
 
-- [Projet de reference : 4 architectures sur 17M puzzles](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV) - architectures plus profondes
+- [Projet de référence : 4 architectures sur 17M puzzles](https://github.com/jsboigeEpita/2024-EPITA-SCIA-PPC-Sudoku-CV) - architectures plus profondes
 - [Palm et al. (2018) : Recurrent Relational Network for Sudoku](https://arxiv.org/abs/1711.08028) - ~97% grille sur dataset massif
 - [Graph Neural Networks for combinatorial optimization](https://arxiv.org/abs/2012.01806)
-- Approches par reinforcement learning : apprendre a resoudre par essai-erreur",,,,,,,,ecafe7095331b443,,,,,,,
+- Approches par reinforcement learning : apprendre a resoudre par essai-erreur",,,,,,,,1cc19316a80e2183,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,f1mjsh2116i,code,fr,186e3fcb6bbb9cc9,"class NeuroConstraintSolver:
     """"""Solveur hybride combinant prediction neuronale et contraintes Sudoku.
     
@@ -13198,20 +13126,20 @@ print(f""NeuroConstraintSolver (ResCNN) : {correct_grids}/{n_test} grilles corre
       f""({correct_grids/n_test:.1%})"")
 print(f""  Solveur hybride : prediction NN + filtrage contraintes + backtracking"")
 print(f""  Le NN propose, les contraintes disposent, le BT corrige"")",,,,,,,,186e3fcb6bbb9cc9,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,drwlu283kyf,markdown,fr,6afbb2dba3fc380a,"---
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,drwlu283kyf,markdown,fr,51d2e687f150c8e0,"---
 
-## Exercice : Reseau de Neurones avec Contraintes Explicites (NeuroSolver)
+## Exercice : Réseau de Neurones avec Contraintes Explicites (NeuroSolver)
 
 ### Objectif
 
-Le probleme fondamental des approches purement neuronales est qu'elles ne garantissent pas des solutions valides. Votre mission est d'implementer un solveur hybride plus sophistique qui integre les contraintes du Sudoku directement dans la boucle d'inference.
+Le problème fondamental des approches purement neuronales est qu'elles ne garantissent pas des solutions valides. Votre mission est d'implementer un solveur hybride plus sophistique qui integre les contraintes du Sudoku directement dans la boucle d'inference.
 
 ### Travail demande
 
 Implementez la classe `NeuroConstraintSolver` qui combine :
 
 1. **Prediction neuronale** : utiliser le CNN entraine pour proposer des valeurs candidates
-2. **Filtrage par contraintes** : pour chaque case vide, filtrer les candidats qui violent les regles du Sudoku (lignes, colonnes, blocs)
+2. **Filtrage par contraintes** : pour chaque case vide, filtrer les candidats qui violent les règles du Sudoku (lignes, colonnes, blocs)
 3. **Beam search contraint** : maintenir les k meilleures hypotheses partielles, en eliminant celles qui violent les contraintes
 4. **Fallback backtracking** : si toutes les hypotheses echouent, utiliser le backtracking classique
 
@@ -13232,12 +13160,12 @@ class NeuroConstraintSolver:
         pass
 ```
 
-### Critere de succes
+### Critère de succes
 
 Votre solveur doit :
 - Ne jamais produire une grille invalide (contraintes respectees)
-- Avoir un meilleur taux de resolution que la prediction directe ou iterative",,,,,,,,6afbb2dba3fc380a,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdown,fr,e0b4d3b4cdfb4971,"---
+- Avoir un meilleur taux de resolution que la prediction directe ou iterative",,,,,,,,51d2e687f150c8e0,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdown,fr,89c56a76f34c64bb,"---
 
 **Navigation** : [<< Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | [Index](README.md) | [Sudoku-17-LLM-Python >>](Sudoku-17-LLM-Python.ipynb)
 
@@ -13247,9 +13175,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdow
 
 ### Notebooks associés
 - [Sudoku-1-Backtracking](Sudoku-1-Backtracking-Python.ipynb) : solveur algorithmique de référence
-- [Sudoku-Python-Backtracking](Sudoku-1-Backtracking-Python.ipynb) : backtracking en Python (meme SudokuGrid)
+- [Sudoku-Python-Backtracking](Sudoku-1-Backtracking-Python.ipynb) : backtracking en Python (même SudokuGrid)
 - [Sudoku-7-Norvig](Sudoku-7-Norvig-Python.ipynb) : propagation de contraintes
-- [Sudoku-Python-Genetic](Sudoku-3-Genetic-Python.ipynb) : autre approche non-déterministe",,,,,,,,e0b4d3b4cdfb4971,,,,,,,
+- [Sudoku-Python-Genetic](Sudoku-3-Genetic-Python.ipynb) : autre approche non-déterministe",,,,,,,,89c56a76f34c64bb,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb,intro,markdown,fr,f43fdefbd6be133c,"**Navigation** : [Index](README.md) | [<< Sudoku-16 Python](Sudoku-16-NeuralNetwork-Python.ipynb) | [Sudoku-18 >>](Sudoku-18-Comparison-Python.ipynb)
 
 # Notebook 17: Resolution de Sudoku avec Large Language Models (LLM)
@@ -15447,42 +15375,33 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,04ab291e,markdown,fr,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,5eeab716,markdown,fr,e45104b2301e841d,"### Visualisation : temps moyen par difficulte
 
 Le graphique en barres groupees montre le temps moyen de resolution pour chaque solveur sur chaque niveau de difficulte. L'echelle logarithmique permet de comparer des ordres de grandeur tres differents.",,,,,,,,e45104b2301e841d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,dc4ecdb4,code,fr,6ca195a15ff6b168,"// Graphique en barres groupees (rendu Plotly) : temps moyen par difficulte et solveur.
-// Technique C548-L2 : formatter HTML integre au kernel (Microsoft.DotNet.Interactive.Formatting),
-// evite `#r ""nuget:""` sur une charting-lib (restore lent / pin vieille beta Microsoft.DotNet.Interactive).
-// Rendu Plotly.js brut, zero dependence NuGet cote charting.
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,dc4ecdb4,code,fr,9d81297184116076,"// Graphique en barres groupees (rendu SVG inline via SvgChartHelper) : temps moyen par
+// difficulte et solveur, axe Y en echelle logarithmique (necessaire : les temps varient
+// de ~3 ms (Norvig) a ~8000 ms (Backtracking sur Medium) -- 4 ordres de grandeur).
+// EPIC #6927 : migration Plotly-CDN -> SVG inline statique. Zero-dependance (pas de
+// `<script src=""https://cdn.plot.ly/..."">` qui rend BLANC en consultation statique),
+// portable GitHub / nbviewer / offline. SvgChartHelper.GroupedBar(logY:true) gere
+// l'echelle log + clip des valeurs <= 0 (cf L641-L3★ anti-explosion des graduations).
+#load ""../Probas/Infer/SvgChartHelper.cs""
 
-// Barres groupees : une trace par solveur, x = difficultes, y = temps moyen (ms), axe Y log.
-// L'echelle logarithmique (deja dans le rendu ASCII original) rend compte des ecarts d'ordres de grandeur.
-static void PlotBenchmarkBarsPlotly(Dictionary<string, Dictionary<string, BenchResult>> results, string title)
+// Barres groupees : une serie par solveur, x = difficultes, y = temps moyen (ms).
+// Axe Y = log10 automatique (voir BuildGroupedBar avec logY:true) : graduations en
+// decades, base clippee a 1 decade sous le max (anti-explosion), valeurs <= 0 ramenees
+// a la borne basse.
+static void PlotBenchmarkBarsSvg(Dictionary<string, Dictionary<string, BenchResult>> results, string title)
 {
     var diffs = new[] { ""Easy"", ""Medium"", ""Hard"", ""Expert"" };
-    var traces = results.Keys.Select(name =>
-    {
-        var ys = diffs.Select(d => results[name][d].TimeAvgMs).ToArray();
-        return System.Text.Json.JsonSerializer.Serialize(
-            new Dictionary<string, object> { [""name""] = name, [""x""] = diffs, [""y""] = ys,
-                                             [""type""] = ""bar"" });
-    });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var layout = ""{\""title\"":{\""text\"":"" + System.Text.Json.JsonSerializer.Serialize(title) + ""},"" +
-                 ""\""barmode\"":\""group\"","" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Difficulte\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Temps moyen (ms)\""},\""type\"":\""log\""}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + string.Join("","", traces) + ""],"" + layout + "")</script>"";
-    Console.WriteLine(""Temps moyen (ms) par solveur et difficulte (axe Y log) :"");
-    display(new PlotlyHtml(markup));
+    var solverNames = results.Keys.ToArray();
+    var seriesValues = solverNames.Select(name =>
+        diffs.Select(d => results[name][d].TimeAvgMs).ToArray()).ToArray();
+    display(SvgChartHelper.GroupedBar(title, diffs, seriesValues, solverNames,
+        width: 720, height: 400, logY: true));
 }
 
-PlotBenchmarkBarsPlotly(results, ""Benchmark : temps moyen (ms) par difficulte et solveur"");
-",,,,,,,,6ca195a15ff6b168,,,,,,,
+Console.WriteLine(""Fonction definie : PlotBenchmarkBarsSvg (SvgChartHelper.GroupedBar logY)."");
+
+PlotBenchmarkBarsSvg(results, ""Benchmark : temps moyen (ms) par difficulte et solveur (axe Y log)"");
+",,,,,,,,9d81297184116076,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,d0a4ff6c,markdown,fr,3de96d967864e778,"### Interpretation : Ecarts de performance entre solveurs
 
 Le graphique en barres (echelle logarithmique) rend compte de l'ampleur des differences :
@@ -15497,34 +15416,36 @@ Le graphique en barres (echelle logarithmique) rend compte de l'ampleur des diff
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,f0ba5897,markdown,fr,3aba61bd9db46f4d,"### Visualisation : distribution des temps par solveur
 
 Les boites a moustaches (boxplots) montrent la **variabilite** des temps de resolution. Un solveur avec une boite etroite est plus **previsible** dans ses performances.",,,,,,,,3aba61bd9db46f4d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,89517112,code,fr,5d10a4d7925cd5a0,"// Boxplots (rendu Plotly) de la distribution des temps pour chaque solveur, par difficulte.
-// Une boite par solveur ; x = difficulte (un point par timing), y = temps (ms), axe Y log.
-static void PlotBoxplotsPlotly(Dictionary<string, Dictionary<string, BenchResult>> results)
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,89517112,code,fr,2b2be57a092b7de3,"// Boxplots (rendu SVG inline) de la distribution des temps pour chaque solveur, par difficulte.
+// Une categorie par solveur ; echantillons = timings agreges sur les 4 difficultes (Easy/Medium/Hard/Expert),
+// axe Y log (les temps varient sur 3-4 decades, lineaire rendrait la distribution illisible).
+// EPIC #6927 : migration Plotly-CDN -> SVG inline statique via SvgChartHelper.BoxPlot(logY:true).
+// L641-L3★ canon applique : bornes log clippees via Math.Max(yLoRaw, yLoClipped) pour eviter
+// l'explosion des graduations quand une observation bruyante ecrase sig>>yMax.
+// L642-L1★ canon applique : BoxPlot primitive -- boite rect (Q1..Q3, fill-opacity 0.6),
+// ligne mediane epaisse, moustaches (Q1-1.5*IQR, Q3+1.5*IQR), capuches, points individuels
+// avec jitter horizontal (graine RNG 42 = reproductible), Quantile Type 7 (linear interp R/numpy).
+#load ""../Probas/Infer/SvgChartHelper.cs""
+
+static void PlotBoxPlotSvg(Dictionary<string, Dictionary<string, BenchResult>> results)
 {
     var diffs = new[] { ""Easy"", ""Medium"", ""Hard"", ""Expert"" };
-    var traces = results.Keys.Select(name =>
+    var solverNames = results.Keys.ToArray();
+    var samples = solverNames.Select(name =>
     {
-        var xs = new List<string>();
-        var ys = new List<double>();
-        foreach (var d in diffs)
-            foreach (var t in results[name][d].TimesMs) { xs.Add(d); ys.Add(t); }
-        return System.Text.Json.JsonSerializer.Serialize(
-            new Dictionary<string, object> { [""name""] = name, [""x""] = xs, [""y""] = ys, [""type""] = ""box"" });
-    });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var layout = ""{\""title\"":{\""text\"":\""Distribution des temps de resolution (ms)\""},"" +
-                 ""\""boxmode\"":\""group\"","" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Difficulte\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Temps (ms)\""},\""type\"":\""log\""}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + string.Join("","", traces) + ""],"" + layout + "")</script>"";
-    Console.WriteLine(""Distribution des temps (boite = Q1..Q3, moustaches = min/max) :"");
-    display(new PlotlyHtml(markup));
+        var all = new List<double>();
+        foreach (var d in diffs) all.AddRange(results[name][d].TimesMs);
+        return all.ToArray();
+    }).ToArray();
+    int totalObs = solverNames.Sum(n => samples[Array.IndexOf(solverNames, n)].Length);
+    display(SvgChartHelper.BoxPlot(
+        $""Distribution des temps de resolution (ms) -- logY, n={totalObs} observations"",
+        solverNames, samples, width: 820, height: 420, logY: true));
+    Console.WriteLine(""Distribution des temps (boite = Q1..Q3, moustaches = 1.5*IQR) :"");
 }
 
-PlotBoxplotsPlotly(results);
-",,,,,,,,5d10a4d7925cd5a0,,,,,,,
+PlotBoxPlotSvg(results);
+",,,,,,,,2b2be57a092b7de3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,41590dbb,markdown,fr,199e6ea84f43861d,"### Interpretation : Variabilite et previsibilite des solveurs
 
 Les boxplots revelent un aspect crucial souvent neglige : la **previsibilite** des performances.
@@ -15793,10 +15714,12 @@ Console.WriteLine(""Termine.\n"");
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,31926d52,markdown,fr,2e5c917a66440ab7,"### Execution du benchmark etendu
 
 Nous relancons le benchmark avec les 5 solveurs (les 4 originaux + Norvig + Forward Checking) pour mesurer l'impact du forward checking sur les performances.",,,,,,,,2e5c917a66440ab7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,a091a298,code,fr,32208ab4c6e2700d,"// Graphique etendu (Plotly) : Norvig+FC + Simulated Annealing (Prong B #3801)
-PlotBenchmarkBarsPlotly(resultsExtended, ""Benchmark etendu : Norvig+FC + recuit simule (Prong B #3801)"");
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,a091a298,code,fr,a56bf6fd0a19e27f,"// Graphique etendu (SVG inline via SvgChartHelper.GroupedBar) : Norvig+FC + Recuit Simule
+// (Prong B #3801 -- la metaheuristique n'a aucune garantie de convergence, visible sur Expert).
+// EPIC #6927 : migration Plotly-CDN -> SVG inline. Meme helper canon que la cellule 39.
+PlotBenchmarkBarsSvg(resultsExtended, ""Benchmark etendu : Norvig+FC + recuit simule (Prong B #3801, axe Y log)"");
 Console.WriteLine(""\n(Prong B #3801 : le recuit simule n'a aucune garantie de convergence)"");
-",,,,,,,,32208ab4c6e2700d,,,,,,,
+",,,,,,,,a56bf6fd0a19e27f,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb,c43989c3,markdown,fr,e3fc03e9309fb329,"### Analyse : le solveur Norvig + FC est-il competitif ?
 
 **Reponse courte** : oui, il est competitif avec Norvig standard, mais il n'apporte pas de gain significatif sur ce benchmark.
@@ -32433,16 +32356,16 @@ public int CountSolutions(int[,] puzzle, int maxCount = 100)
     return 0; // TODO étudiant
 }
 ",,,,,,,,a47537d95758e5a3,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,cell-65d0714e,markdown,fr,5ff327698db1860c,"## Exercice : Comparer les performances Backtracking simple vs MRV
+MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,cell-65d0714e,markdown,fr,c891229aa5137432,"## Exercice : Comparer les performances Backtracking simple vs MRV
 
 **Objectif :**
 Comparez les performances du solveur backtracking simple et du solveur MRV
-sur les puzzles de differentes difficultes.
+sur les puzzles de différentes difficultes.
 
 **Indice :**
-Utilisez la fonction `benchmark_solver` deja definie avec les deux solveurs.
-Affichez les resultats dans un tableau comparatif.
-",,,,,,,,5ff327698db1860c,,,,,,,
+Utilisez la fonction `benchmark_solver` déjà définie avec les deux solveurs.
+Affichez les résultats dans un tableau comparatif.
+",,,,,,,,c891229aa5137432,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking-Python.ipynb,cell-eaef66b3,code,fr,57fd66897c08c2dc,"# EXERCICE : Comparer les performances Backtracking simple vs MRV
 def compare_solvers(puzzles: List[str]) -> dict:
     # TODO: Comparez les deux solveurs sur les memes puzzles
