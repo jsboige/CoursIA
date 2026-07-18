@@ -187,3 +187,113 @@ def test_diagnose_couples_gate_and_fold():
                        rng=np.random.default_rng(1))
     assert "fold" in rep and "events" in rep
     assert set(rep["fold"]) >= {"fold_step", "curvature", "smooth"}
+
+
+# =========================================================================== #
+#  Couche 2 -- Levin / Speed Prior / PowerPlay (estimateur MDL explicite)      #
+# =========================================================================== #
+#  La couche 1 mesure K via zlib (BRUT, sans modele). La couche 2 la remplace
+#  par le code MDL ``two_part_code`` + la ponderation de Levin Kt, et fournit le
+#  detecteur ``powerplay_events`` (meme methodologie iid-appariee que
+#  ``beauty_events``). Les gates falsifiables C5/C6 sont les duaux MDL de B1/B2.
+
+
+def test_c1_mdl_curve_shapes_and_full_windows_only():
+    seq = [i % 4 for i in range(100)]
+    steps, total, model, resid = BTY.mdl_compressibility_curve(seq, window=24)
+    assert steps[0] == pytest.approx(24)
+    assert steps[-1] == pytest.approx(100)
+    assert steps.shape == total.shape == model.shape == resid.shape
+    # total_bits peut etre NEGATIF (le terme KT ``-k*log2(k+0.5)`` credite les
+    # TPM parcimonieuses : un cycle deterministe -> model_bits tres negatif,
+    # residu ~0). On verifie la finite + la coherence model+resid, pas la
+    # signe (cf docstring de mdl_compressibility_curve).
+    assert np.all(np.isfinite(total))
+    assert np.allclose(total, model + resid)
+
+
+def test_c2_mdl_rejects_small_window():
+    with pytest.raises(ValueError):
+        BTY.mdl_compressibility_curve([0, 1, 2, 3], window=3)
+
+
+def test_c3_cycle_lower_mdl_than_noise():
+    rng = np.random.default_rng(0)
+    noise = list(rng.integers(0, 4, size=60))
+    cycle = [i % 4 for i in range(60)]
+    _, tn, _, _ = BTY.mdl_compressibility_curve(noise, window=24)
+    _, tc, _, _ = BTY.mdl_compressibility_curve(cycle, window=24)
+    # un cycle deterministe se code par une TPM de permutation (residu ~0) ->
+    # total_bits nettement inferieur au bruit iid.
+    assert tc.mean() < tn.mean()
+
+
+def test_c4_levin_ge_total_and_speed_weight_zero_equals_total():
+    seq = [i % 4 for i in range(80)]
+    _, total, _, _ = BTY.mdl_compressibility_curve(seq, window=24)
+    _, levin1 = BTY.levin_speed_prior_curve(seq, window=24, speed_weight=1.0)
+    _, levin0 = BTY.levin_speed_prior_curve(seq, window=24, speed_weight=0.0)
+    # Levin = total + speed_weight*log2(n_train) >= total ; weight=0 retombe sur total.
+    assert np.all(levin1 >= total - 1e-9)
+    assert np.allclose(levin0, total)
+
+
+def test_c5_mdl_discovery_transition_produces_event():
+    # Dual MDL de B1 : bruit iid puis cycle deterministe -> chute brusque du
+    # code MDL (residu -> 0 sur le cycle) -> evenement PowerPlay au voisinage
+    # de la transition. NB : l'estimateur MDL est plus bruité que zlib sur
+    # courtes fenetres (variance d'estimation de la TPM) ; il faut une fenetre
+    # plus large (window=80) pour stabiliser le controle iid (verifie
+    # empiriquement : a window=40 le pic reel reste sous le seuil iid).
+    rng_noise = np.random.default_rng(11)
+    n_noise, n_cycle = 400, 400
+    noise = list(rng_noise.integers(0, 4, size=n_noise))
+    cycle = [i % 4 for i in range(n_cycle)]
+    seq = noise + cycle
+    rep = BTY.powerplay_events(seq, window=80, horizon=40, n_control=12,
+                               rng=np.random.default_rng(1))
+    assert rep["n_events"] >= 1, "une transition decouverte doit produire >=1 evenement PowerPlay"
+    assert rep["method"] == "mdl"
+    first_step = rep["events"][0][0]
+    assert first_step >= n_noise, f"evenement attendu en phase cycle, recu step={first_step}"
+
+
+def test_c6_iid_noise_is_flat():
+    # Dual MDL de B2 : un bruit iid ne produit rien (pas de chute systematique
+    # du code MDL -> sous le seuil iid). window=80 (cf C5) pour stabiliser.
+    rng = np.random.default_rng(23)
+    noise = list(rng.integers(0, 4, size=800))
+    rep = BTY.powerplay_events(noise, window=80, horizon=40, n_control=12,
+                               rng=np.random.default_rng(1))
+    assert rep["n_events"] == 0
+    assert rep["verdict"] == "flat"
+
+
+def test_c7_powerplay_keys_and_types():
+    rng = np.random.default_rng(7)
+    seq = list(rng.integers(0, 4, size=400))
+    rep = BTY.powerplay_events(seq, window=40, horizon=25, n_control=8, rng=rng)
+    assert set(rep) >= {
+        "events", "steps", "gain", "control_mean", "control_std",
+        "threshold", "n_control", "k", "n_events", "verdict",
+        "method", "speed_weight",
+    }
+    assert rep["method"] == "mdl"
+    assert rep["verdict"] in ("powerplay", "flat")
+    assert rep["n_events"] == len(rep["events"])
+    assert rep["threshold"] == pytest.approx(
+        rep["control_mean"] + rep["k"] * rep["control_std"]
+    )
+
+
+def test_c8_powerplay_reproducible_with_fixed_rng():
+    rng_noise = np.random.default_rng(11)
+    n_noise, n_cycle = 400, 400
+    noise = list(rng_noise.integers(0, 4, size=n_noise))
+    seq = noise + [i % 4 for i in range(n_cycle)]
+    a = BTY.powerplay_events(seq, window=80, horizon=40, n_control=8,
+                             rng=np.random.default_rng(1))
+    b = BTY.powerplay_events(seq, window=80, horizon=40, n_control=8,
+                             rng=np.random.default_rng(1))
+    assert a["events"] == b["events"]
+    assert a["control_mean"] == pytest.approx(b["control_mean"])
