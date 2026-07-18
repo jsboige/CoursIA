@@ -1,72 +1,38 @@
 /-
-Grothendieck Part 22 -- Mayer-Vietoris long exact sequence in sheaf cohomology
+Grothendieck Partie 22 — Suite exacte longue de Mayer-Vietoris en cohomologie des faisceaux
 
-Part 21 (MayerVietorisSquare.lean) introduced Mayer-Vietoris squares: the
-geometric input (a pushout square in sheaves) and the associated short
-exact complex of free abelian sheaves.
+La Partie 21 (MayerVietorisSquare.lean) a introduit les carrés de
+Mayer-Vietoris : l'entrée géométrique (un carré pushout de faisceaux) et
+le complexe court exact de faisceaux abéliens libres associé.
 
-This module bridges the **Mayer-Vietoris long exact sequence** in sheaf
-cohomology from Mathlib (`CategoryTheory.Sites.SheafCohomology.MayerVietoris`).
+Ce module fait le pont avec la **suite exacte longue de Mayer-Vietoris**
+en cohomologie des faisceaux depuis Mathlib
+(`CategoryTheory.Sites.SheafCohomology.MayerVietoris`).
 
-Given a Mayer-Vietoris square S for a site (C, J) and an abelian sheaf F,
-there is a long exact sequence:
+Étant donné un carré de Mayer-Vietoris S pour un site (C, J) et un
+faisceau abélien F, il existe une suite exacte longue :
 
   ... ⟶ H^n(X₄, F) ⟶ H^n(X₂, F) ⊞ H^n(X₃, F) ⟶ H^n(X₁, F) ⟶ H^{n+1}(X₄, F) ⟶ ...
 
-where X₁ = intersection, X₂/X₃ = covering opens, X₄ = covered space.
+où X₁ = intersection, X₂/X₃ = ouverts du recouvrement, X₄ = espace
+recouvert.
 
-Key constructions bridged from Mathlib:
+Constructions clés récupérées de Mathlib :
 
-  - `toBiprod` : sum of restrictions H^n(X₄) → H^n(X₂) ⊞ H^n(X₃)
-  - `fromBiprod` : difference of restrictions H^n(X₂) ⊞ H^n(X₃) → H^n(X₁)
-  - `toBiprod_fromBiprod` : composition is zero
-  - `δ` : connecting homomorphism H^{n₀}(X₁) → H^{n₁}(X₄) (n₁ = n₀ + 1)
-  - `sequence` : the full long exact sequence (ComposableArrows AddCommGrp 5)
-  - `sequence_exact` : the sequence is exact
+  - `toBiprod` : somme des restrictions H^n(X₄) → H^n(X₂) ⊞ H^n(X₃)
+  - `fromBiprod` : différence des restrictions H^n(X₂) ⊞ H^n(X₃) → H^n(X₁)
+  - `toBiprod_fromBiprod` : la composition est nulle
+  - `δ` : homomorphisme de connexion H^{n₀}(X₁) → H^{n₁}(X₄) (n₁ = n₀ + 1)
+  - `sequence` : la suite exacte longue complète (ComposableArrows AddCommGrp 5)
+  - `sequence_exact` : la suite est exacte
   - `δ_toBiprod` : δ >> toBiprod = 0
   - `fromBiprod_δ` : fromBiprod >> δ = 0
 
-This completes the Mayer-Vietoris machinery: from a geometric covering
-condition (Part 21) to the cohomological consequence (this part).
+Ceci complète la machinerie de Mayer-Vietoris : de la condition
+géométrique de recouvrement (Partie 21) à la conséquence cohomologique
+(cette partie).
 
-Epic #1646, See #2159. All `sorry`s eliminated at creation.
--/
-
-/-
-  Bloc miroir FR (convention i18n EPIC #4980, Option A inline)
-  =============================================================
-
-  Hommage a Grothendieck -- Partie 22 : suite exacte longue de Mayer-Vietoris
-  en cohomologie des faisceaux.
-
-  La Partie 21 (MayerVietorisSquare.lean) a introduit les carres de
-  Mayer-Vietoris : l'entree geometrique (un carre pushout de faisceaux) et
-  le complexe court exact de faisceaux abeliens libres associe.
-
-  Ce module fait le pont avec la **suite exacte longue de Mayer-Vietoris**
-  en cohomologie des faisceaux depuis Mathlib
-  (CategoryTheory.Sites.SheafCohomology.MayerVietoris).
-
-  Etant donne un carre de Mayer-Vietoris S pour un site (C, J) et un
-  faisceau abelien F, il existe une suite exacte longue :
-
-    ... -> H^n(X_4, F) -> H^n(X_2, F) (+) H^n(X_3, F) -> H^n(X_1, F) -> H^(n+1)(X_4, F) -> ...
-
-  ou X_1 = intersection, X_2/X_3 = ouverts du recouvrement, X_4 = espace
-  recouvert.
-
-  Constructions cles recuperees de Mathlib :
-
-    - toBiprod : somme des restrictions H^n(X_4) -> H^n(X_2) (+) H^n(X_3)
-    - fromBiprod : difference des restrictions H^n(X_2) (+) H^n(X_3) -> H^n(X_1)
-    - toBiprod_fromBiprod : la composition est nulle
-    - delta : homomorphisme de connexion H^{n_0}(X_1) -> H^{n_1}(X_4) (n_1 = n_0 + 1)
-    - sequence : la suite exacte longue complete (ComposableArrows AddCommGrp 5)
-    - sequence_exact : la suite est exacte
-    - delta_toBiprod : delta >> toBiprod = 0
-    - fromBiprod_delta : fromBiprod >> delta = 0
-
-  EPIC #1646. Tous les sorry elimines a la creation.
+EPIC #1646, See #2159. Tous les `sorry` éliminés à la création.
 -/
 
 import Mathlib.CategoryTheory.Sites.SheafCohomology.MayerVietoris
@@ -81,84 +47,84 @@ variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
   [HasWeakSheafify J (Type v)] [HasSheafify J AddCommGrpCat.{v}]
   [HasExt.{w} (Sheaf J AddCommGrpCat.{v})]
 
-/-! ## 1. Restriction maps in cohomology
+/-! ## 1. Applications de restriction en cohomologie
 
-Given a Mayer-Vietoris square S and an abelian sheaf F, the maps
-between cohomology groups are induced by the restriction maps
-in the square.
+Étant donné un carré de Mayer-Vietoris S et un faisceau abélien F, les
+applications entre groupes de cohomologie sont induites par les
+applications de restriction dans le carré.
 
-`toBiprod` is the sum of restrictions:
+`toBiprod` est la somme des restrictions :
   H^n(X₄, F) ⟶ H^n(X₂, F) ⊞ H^n(X₃, F)
-sending y to (f₂₄* y, f₃₄* y).
+envoyant y sur (f₂₄* y, f₃₄* y).
 
-`fromBiprod` is the difference of restrictions:
+`fromBiprod` est la différence des restrictions :
   H^n(X₂, F) ⊞ H^n(X₃, F) ⟶ H^n(X₁, F)
-sending (y₁, y₃) to f₁₂* y₁ - f₁₃* y₃.
+envoyant (y₁, y₃) sur f₁₂* y₁ - f₁₃* y₃.
 -/
 
--- Sum of restrictions: H^n(X₄, F) ⟶ H^n(X₂, F) ⊞ H^n(X₃, F).
+-- Somme des restrictions : H^n(X₄, F) ⟶ H^n(X₂, F) ⊞ H^n(X₃, F).
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toBiprod
 
--- Explicit formula for toBiprod.
+-- Formule explicite pour toBiprod.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toBiprod_apply
 
--- Difference of restrictions: H^n(X₂, F) ⊞ H^n(X₃, F) ⟶ H^n(X₁, F).
+-- Différence des restrictions : H^n(X₂, F) ⊞ H^n(X₃, F) ⟶ H^n(X₁, F).
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.fromBiprod
 
-/-! ## 2. Composition and the zero condition
+/-! ## 2. Composition et la condition de nullité
 
-The composition toBiprod >> fromBiprod is zero:
+La composition toBiprod >> fromBiprod est nulle :
   H^n(X₄) ⟶ H^n(X₂) ⊞ H^n(X₃) ⟶ H^n(X₁)
-This is the cohomological shadow of the commutativity of the square.
+C'est l'ombre cohomologique de la commutativité du carré.
 -/
 
 -- toBiprod >> fromBiprod = 0.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toBiprod_fromBiprod
 
--- Explicit formula for fromBiprod applied to a pair.
+-- Formule explicite pour fromBiprod appliqué à un couple.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.fromBiprod_biprodIsoProd_inv_apply
 
-/-! ## 3. The connecting homomorphism
+/-! ## 3. L'homomorphisme de connexion
 
-The connecting homomorphism δ : H^{n₀}(X₁, F) ⟶ H^{n₁}(X₄, F) (where
-n₁ = n₀ + 1) is the key map in the long exact sequence. It measures
-the obstruction to lifting a cohomology class from the intersection
-to the covered space.
+L'homomorphisme de connexion δ : H^{n₀}(X₁, F) ⟶ H^{n₁}(X₄, F) (où
+n₁ = n₀ + 1) est l'application clé de la suite exacte longue. Elle mesure
+l'obstruction à relever une classe de cohomologie de l'intersection
+vers l'espace recouvert.
 
-This is defined as `shortComplex_shortExact.extClass.precomp`.
+Ceci est défini comme `shortComplex_shortExact.extClass.precomp`.
 -/
 
--- The connecting homomorphism δ : H^{n₀}(X₁) ⟶ H^{n₁}(X₄).
+-- L'homomorphisme de connexion δ : H^{n₀}(X₁) ⟶ H^{n₁}(X₄).
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.δ
 
-/-! ## 4. The long exact sequence
+/-! ## 4. La suite exacte longue
 
-The Mayer-Vietoris long exact sequence is packaged as a
-`ComposableArrows AddCommGrp 5`:
+La suite exacte longue de Mayer-Vietoris est encapsulée comme un
+`ComposableArrows AddCommGrp 5` :
 
   H^n(X₄) ⟶ H^n(X₂) ⊞ H^n(X₃) ⟶ H^n(X₁) ⟶ H^{n+1}(X₄) ⟶ H^{n+1}(X₂) ⊞ H^{n+1}(X₃) ⟶ H^{n+1}(X₁)
 
-This is `sequence S F n₀ n₁ h` where `h : n₀ + 1 = n₁`.
+Ceci est `sequence S F n₀ n₁ h` où `h : n₀ + 1 = n₁`.
 -/
 
--- The Mayer-Vietoris long exact sequence (6 terms, ComposableArrows 5).
+-- La suite exacte longue de Mayer-Vietoris (6 termes, ComposableArrows 5).
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sequence
 
-/-! ## 5. Exactness
+/-! ## 5. Exactitude
 
-The long exact sequence is exact at every position. This is the main
-theorem of the module, proven by comparison with the contravariant
-sequence of Ext-groups.
+La suite exacte longue est exacte en toute position. Ceci est le théorème
+principal du module, prouvé par comparaison avec la suite contravariante
+des groupes Ext.
 -/
 
--- The Mayer-Vietoris sequence is exact.
+-- La suite de Mayer-Vietoris est exacte.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sequence_exact
 
-/-! ## 6. Boundary conditions
+/-! ## 6. Conditions de bord
 
-The connecting homomorphism satisfies two boundary conditions:
-  - δ >> toBiprod = 0  (δ lands in the kernel of toBiprod)
-  - fromBiprod >> δ = 0  (δ factors through the cokernel of fromBiprod)
+L'homomorphisme de connexion satisfait deux conditions de bord :
+  - δ >> toBiprod = 0  (δ atterrit dans le noyau de toBiprod)
+  - fromBiprod >> δ = 0  (δ factorise par le conoyau de fromBiprod)
 -/
 
 -- δ >> toBiprod = 0.
@@ -167,31 +133,31 @@ The connecting homomorphism satisfies two boundary conditions:
 -- fromBiprod >> δ = 0.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.fromBiprod_δ
 
-/-! ## 7. Bridge theorems
+/-! ## 7. Théorèmes ponts
 
-Bridge theorems connecting the Mayer-Vietoris long exact sequence
-to concrete verification.
+Théorèmes ponts reliant la suite exacte longue de Mayer-Vietoris
+à une vérification concrète.
 -/
 
-/-- Bridge theorem: the Mayer-Vietoris sequence is exact. For a
-    Mayer-Vietoris square S and abelian sheaf F, the sequence of
-    cohomology groups is exact at every position. -/
+/-- Théorème pont : la suite de Mayer-Vietoris est exacte. Pour un
+    carré de Mayer-Vietoris S et un faisceau abélien F, la suite de
+    groupes de cohomologie est exacte en toute position. -/
 theorem mv_sequence_exact
     (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
     (n₀ n₁ : ℕ) (h : n₀ + 1 = n₁) :
     (S.sequence F n₀ n₁ h).Exact :=
   S.sequence_exact F n₀ n₁ h
 
-/-- Bridge theorem: the connecting homomorphism composed with the
-    sum of restrictions is zero: δ >> toBiprod = 0. -/
+/-- Théorème pont : l'homomorphisme de connexion composé avec la
+    somme des restrictions est nul : δ >> toBiprod = 0. -/
 theorem mv_delta_toBiprod_eq_zero
     (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
     (n₀ n₁ : ℕ) (h : n₀ + 1 = n₁) :
     S.δ F n₀ n₁ h ≫ S.toBiprod F n₁ = 0 :=
   S.δ_toBiprod F n₀ n₁ h
 
-/-- Bridge theorem: the difference of restrictions composed with the
-    connecting homomorphism is zero: fromBiprod >> δ = 0. -/
+/-- Théorème pont : la différence des restrictions composée avec
+    l'homomorphisme de connexion est nulle : fromBiprod >> δ = 0. -/
 theorem mv_fromBiprod_delta_eq_zero
     (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
     (n₀ n₁ : ℕ) (h : n₀ + 1 = n₁) :
