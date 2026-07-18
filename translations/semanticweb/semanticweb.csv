@@ -8085,47 +8085,47 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,72c9a6af,c
 // (y compris les Etudiants et Professeurs inferez comme Personnes) du graphe g.
 object exo3Result = null;  // TODO etudiant : SparqlResultSet attendu
 Console.WriteLine(exo3Result == null ? ""Exercice a completer"" : exo3Result);",,,,,,,,2da082093bdb9459,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,2b64981c,markdown,fr,d571e1c9473f0873,"# SW-1-Setup
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,2b64981c,markdown,fr,0b6f44025e084782,"# SW-1-Setup
 
 **Navigation** : [Index](README.md) | [2-RDFBasics >>](SW-2-CSharp-RDFBasics.ipynb)
 
 ## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. Situer le Web semantique dans l'histoire du Web et la vision de Tim Berners-Lee
-2. Identifier les couches de la pile technologique du Web semantique (RDF, SPARQL, OWL, SHACL)
+1. Situer le Web sémantique dans l'histoire du Web et la vision de Tim Berners-Lee
+2. Identifier les couches de la pile technologique du Web sémantique (RDF, SPARQL, OWL, SHACL)
 3. Installer et configurer la bibliotheque dotNetRDF dans un environnement .NET Interactive
-4. Creer et afficher votre premier graphe RDF (""Hello World"" semantique)
+4. Créer et afficher votre premier graphe RDF (""Hello World"" sémantique)
 
 ### Concepts cles
 
 | Concept | Description |
 |---------|-------------|
-| Web semantique | Extension du Web ou l'information est comprehensible par les machines |
-| RDF | Modele de donnees base sur des triplets (sujet-predicat-objet) |
-| dotNetRDF | Bibliotheque C# open-source pour manipuler des donnees RDF |
+| Web sémantique | Extension du Web ou l'information est comprehensible par les machines |
+| RDF | Modèle de données base sur des triplets (sujet-predicat-objet) |
+| dotNetRDF | Bibliotheque C# open-source pour manipuler des données RDF |
 | Triplet | Unite fondamentale de RDF : une assertion liant deux ressources |
 
 ### Prerequis
 - .NET 9.0 avec .NET Interactive pour Jupyter
-- Aucune connaissance prealable en Web semantique requise
+- Aucune connaissance prealable en Web sémantique requise
 
-### Duree estimee : 20 minutes",,,,,,,,d571e1c9473f0873,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41f77862,markdown,fr,3d91ba2fba8359c1,"---
+### Duree estimee : 20 minutes",,,,,,,,0b6f44025e084782,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41f77862,markdown,fr,c310e05ad40a3d05,"---
 
-## 1. Contexte historique du Web semantique
+## 1. Contexte historique du Web sémantique
 
 ### La vision de Tim Berners-Lee
 
-En 2001, Tim Berners-Lee, inventeur du World Wide Web, publie avec James Hendler et Ora Lassila un article fondateur dans *Scientific American* intitule *""The Semantic Web""*. Sa vision : un Web ou les informations ne sont pas seulement lisibles par les humains, mais egalement **comprehensibles et exploitables par les machines**.
+En 2001, Tim Berners-Lee, inventeur du World Wide Web, publie avec James Hendler et Ora Lassila un article fondateur dans *Scientific American* intitule *""The Semantic Web""*. Sa vision : un Web ou les informations ne sont pas seulement lisibles par les humains, mais également **comprehensibles et exploitables par les machines**.
 
-Le Web classique (Web 1.0/2.0) repose sur des documents HTML lies entre eux par des hyperliens. Le Web semantique ajoute une couche de **sens** en structurant les donnees selon des standards ouverts.
+Le Web classique (Web 1.0/2.0) repose sur des documents HTML lies entre eux par des hyperliens. Le Web sémantique ajoute une couche de **sens** en structurant les données selon des standards ouverts.
 
 ### La pile technologique du W3C (""Layer Cake"")
 
 > L'expression **« Layer Cake »** (gâteau en couches) désigne le diagramme d'architecture du Web sémantique, popularisé par **Tim Berners-Lee** lors de son *keynote* à la conférence XML 2000 et raffiné par la suite par le **W3C Semantic Web Activity Group**. Il représente la stratification des standards (URI -> RDF -> RDFS -> SPARQL -> OWL -> SHACL -> Trust/Proof) où chaque couche s'appuie sur les précédentes.
 
-Le W3C (World Wide Web Consortium) a defini une architecture en couches pour le Web semantique :
+Le W3C (World Wide Web Consortium) a défini une architecture en couches pour le Web sémantique :
 
 ```
  +-----------------------------------------+
@@ -8135,11 +8135,11 @@ Le W3C (World Wide Web Consortium) a defini une architecture en couches pour le 
  +-----------------------------------------+
  |    OWL (Ontologies)  |  SHACL (Shapes)  |
  +-----------------------------------------+
- |         SPARQL (Requetes)                |
+ |         SPARQL (Requêtes)                |
  +-----------------------------------------+
  |       RDFS (Schema / Vocabulaire)        |
  +-----------------------------------------+
- |         RDF (Modele de donnees)          |
+ |         RDF (Modèle de données)          |
  +-----------------------------------------+
  |     XML / JSON-LD / Turtle (Syntaxe)     |
  +-----------------------------------------+
@@ -8151,35 +8151,35 @@ Le W3C (World Wide Web Consortium) a defini une architecture en couches pour le 
 
 ### Description des couches principales
 
-| Couche | Standard | Role | Notebook(s) de la serie |
+| Couche | Standard | Rôle | Notebook(s) de la serie |
 |--------|----------|------|-------------------------|
 | **Identifiants** | URI / IRI | Nommer de facon unique chaque ressource | SW-2 |
-| **Modele de donnees** | RDF | Representer l'information en triplets | SW-2, SW-3 |
-| **Schema** | RDFS | Definir des classes et proprietes | SW-6 |
-| **Requetes** | SPARQL | Interroger des graphes RDF | SW-5 |
-| **Ontologies** | OWL | Raisonnement logique sur les donnees | SW-7 |
-| **Contraintes** | SHACL | Valider la conformite des donnees | SW-8 |
+| **Modèle de données** | RDF | Representer l'information en triplets | SW-2, SW-3 |
+| **Schema** | RDFS | Définir des classes et proprietes | SW-6 |
+| **Requêtes** | SPARQL | Interroger des graphes RDF | SW-5 |
+| **Ontologies** | OWL | Raisonnement logique sur les données | SW-7 |
+| **Contraintes** | SHACL | Valider la conformite des données | SW-8 |
 
-> **Point cle** : Chaque couche s'appuie sur les precedentes. RDF est la fondation sur laquelle repose tout le reste.
+> **Point cle** : Chaque couche s'appuie sur les précédentes. RDF est la fondation sur laquelle repose tout le reste.
 
-> La couche **RDF** (Resource Description Framework) repose sur le modèle abstrait défini dans **RDF 1.1 Concepts and Abstract Syntax** (Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 février 2014) : un graphe est un ensemble de *triplets* (sujet-prédicat-objet) dont les composants sont des IRI, des blank nodes ou des littéraux. Ce modèle est celui que la bibliothèque **dotNetRDF** (`dotnetrdf.org`, open-source) implémente et que ce notebook manipule.",,,,,,,,3d91ba2fba8359c1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c3f3a0b6,markdown,fr,07f9f1aedeb0f596,"### Pourquoi le Web semantique ?
+> La couche **RDF** (Resource Description Framework) repose sur le modèle abstrait défini dans **RDF 1.1 Concepts and Abstract Syntax** (Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 février 2014) : un graphe est un ensemble de *triplets* (sujet-prédicat-objet) dont les composants sont des IRI, des blank nodes ou des littéraux. Ce modèle est celui que la bibliothèque **dotNetRDF** (`dotnetrdf.org`, open-source) implémente et que ce notebook manipule.",,,,,,,,c310e05ad40a3d05,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c3f3a0b6,markdown,fr,648cc69ba2cfd4cc,"### Pourquoi le Web sémantique ?
 
-Le Web semantique repond a plusieurs besoins concrets :
+Le Web sémantique repond a plusieurs besoins concrets :
 
-| Probleme du Web classique | Solution du Web semantique |
+| Problème du Web classique | Solution du Web sémantique |
 |---------------------------|----------------------------|
-| Donnees en silos (chaque site a son format) | Standards ouverts (RDF, SPARQL) |
-| Liens entre documents, pas entre donnees | Liens entre entites (Linked Data) |
-| Recherche par mots-cles uniquement | Requetes structurees (SPARQL) |
+| Données en silos (chaque site a son format) | Standards ouverts (RDF, SPARQL) |
+| Liens entre documents, pas entre données | Liens entre entites (Linked Data) |
+| Recherche par mots-cles uniquement | Requêtes structurees (SPARQL) |
 | Pas de raisonnement automatique | Inference logique (OWL, RDFS) |
 
 **Exemples d'applications reelles** :
 - **Wikidata** : base de connaissances structuree de Wikipedia
-- **DBpedia** : extraction automatique de donnees RDF depuis Wikipedia
-- **Schema.org** : vocabulaire utilise par Google, Bing, Yahoo pour le SEO semantique
-- **Graphes de connaissances** : Google Knowledge Graph, Amazon Product Graph",,,,,,,,07f9f1aedeb0f596,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,7958c9cb,markdown,fr,ca1305382d960b4a,"---
+- **DBpedia** : extraction automatique de données RDF depuis Wikipedia
+- **Schema.org** : vocabulaire utilise par Google, Bing, Yahoo pour le SEO sémantique
+- **Graphes de connaissances** : Google Knowledge Graph, Amazon Product Graph",,,,,,,,648cc69ba2cfd4cc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,7958c9cb,markdown,fr,91b5500d1edd1f5b,"---
 
 ## 2. Installation de dotNetRDF
 
@@ -8188,18 +8188,18 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,7958c9cb,markdo
 **dotNetRDF** est une bibliotheque open-source C# pour travailler avec RDF. Elle fournit :
 - Manipulation de graphes RDF en memoire
 - Lecture/ecriture dans 10+ formats de serialisation
-- Moteur de requetes SPARQL
+- Moteur de requêtes SPARQL
 - Support pour les Triple Stores
-- Integration avec des bases de donnees RDF (Fuseki, Blazegraph, etc.)
+- Integration avec des bases de données RDF (Fuseki, Blazegraph, etc.)
 
-Installons le package NuGet dans notre environnement .NET Interactive.",,,,,,,,ca1305382d960b4a,,,,,,,
+Installons le package NuGet dans notre environnement .NET Interactive.",,,,,,,,91b5500d1edd1f5b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,e642d689,code,fr,03369786cec65a3d,"// Installation du package dotNetRDF (version epinglee pour reproductibilite)
 #r ""nuget: dotNetRDF, 3.2.1""",,,,,,,,03369786cec65a3d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c69b0ae1,markdown,fr,cc9ab35420d686c4,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c69b0ae1,markdown,fr,bbe60fcf0a50f4c1,"### Interpretation
 
-La commande `#r ""nuget: ...""` est specifique a .NET Interactive et permet d'installer des packages NuGet directement dans le notebook. L'installation telecharge la bibliotheque et ses dependances.
+La commande `#r ""nuget: ...""` est spécifique a .NET Interactive et permet d'installer des packages NuGet directement dans le notebook. L'installation telecharge la bibliotheque et ses dependances.
 
-> **Note technique** : Nous epinglons la version `3.2.1` pour garantir la reproductibilite. Sans version explicite, le notebook pourrait se comporter differemment dans le futur si une nouvelle version introduit des changements incompatibles.",,,,,,,,cc9ab35420d686c4,,,,,,,
+> **Note technique** : Nous epinglons la version `3.2.1` pour garantir la reproductibilite. Sans version explicite, le notebook pourrait se comporter differemment dans le futur si une nouvelle version introduit des changements incompatibles.",,,,,,,,bbe60fcf0a50f4c1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,0b2a1c00,markdown,fr,722a1269067af51d,"### Verification de l'installation
 
 Verifions que les espaces de noms principaux de dotNetRDF sont accessibles.",,,,,,,,722a1269067af51d,,,,,,,
@@ -8211,37 +8211,37 @@ using System;
 
 Console.WriteLine(""dotNetRDF charge avec succes."");
 Console.WriteLine($""Espaces de noms disponibles : VDS.RDF, VDS.RDF.Parsing, VDS.RDF.Writing"");",,,,,,,,44181fac9e590873,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c4a90ae2,markdown,fr,af86c2e726be57ef,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c4a90ae2,markdown,fr,3e4a5f21ce7022af,"### Interpretation
 
-Si l'execution s'est deroulee sans erreur, les trois espaces de noms principaux sont prets :
+Si l'exécution s'est deroulee sans erreur, les trois espaces de noms principaux sont prets :
 
 | Espace de noms | Contenu | Usage |
 |----------------|---------|-------|
 | `VDS.RDF` | Classes de base (`Graph`, `Triple`, `INode`) | Creation et manipulation de graphes |
 | `VDS.RDF.Parsing` | Parsers (`TurtleParser`, `RdfXmlParser`) | Lecture de fichiers RDF |
-| `VDS.RDF.Writing` | Writers (`NTriplesWriter`, `RdfXmlWriter`) | Serialisation de graphes |",,,,,,,,af86c2e726be57ef,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41b7fd8f,markdown,fr,56175ebc7a79d27d,"---
+| `VDS.RDF.Writing` | Writers (`NTriplesWriter`, `RdfXmlWriter`) | Serialisation de graphes |",,,,,,,,3e4a5f21ce7022af,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41b7fd8f,markdown,fr,5ca6000446e5fd1a,"---
 
-## 3. Premier graphe RDF : ""Hello World"" semantique
+## 3. Premier graphe RDF : ""Hello World"" sémantique
 
 ### Objectif
 
-Nous allons creer un graphe RDF minimal contenant deux triplets, puis les afficher. Cela illustre les operations fondamentales :
-1. Creer un graphe vide
-2. Creer des noeuds (URI et literal)
+Nous allons créer un graphe RDF minimal contenant deux triplets, puis les afficher. Cela illustre les opérations fondamentales :
+1. Créer un graphe vide
+2. Créer des noeuds (URI et literal)
 3. Asserter des triplets
-4. Parcourir et afficher les triplets",,,,,,,,56175ebc7a79d27d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,2b05ac71,markdown,fr,022f44cfe943e86c,"**Etape 1 : Creation d'un graphe vide**
+4. Parcourir et afficher les triplets",,,,,,,,5ca6000446e5fd1a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,2b05ac71,markdown,fr,2f4bcac11bbd8913,"**Étape 1 : Creation d'un graphe vide**
 
-Un graphe RDF est un conteneur de triplets. La classe `Graph` est l'implementation standard de l'interface `IGraph` dans dotNetRDF.",,,,,,,,022f44cfe943e86c,,,,,,,
+Un graphe RDF est un conteneur de triplets. La classe `Graph` est l'implementation standard de l'interface `IGraph` dans dotNetRDF.",,,,,,,,2f4bcac11bbd8913,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,27a202dd,code,fr,37dd2a18b069f6eb,"using VDS.RDF;
 
 IGraph g = new Graph();
 
 Console.WriteLine($""Graphe cree. Nombre de triplets : {g.Triples.Count}"");",,,,,,,,37dd2a18b069f6eb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,3d2f2117,markdown,fr,801309fab82b64fa,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,3d2f2117,markdown,fr,364b2bdaccff35d3,"### Interpretation
 
-A ce stade, nous avons cree un **graphe vide**. Un graphe RDF est une structure de donnees qui contiendra des triplets.
+A ce stade, nous avons créé un **graphe vide**. Un graphe RDF est une structure de données qui contiendra des triplets.
 
 | Propriete | Valeur actuelle |
 |-----------|-----------------|
@@ -8249,13 +8249,13 @@ A ce stade, nous avons cree un **graphe vide**. Un graphe RDF est une structure 
 | URI de base | null (par defaut) |
 | Espaces de noms | Predefinis (rdf, rdfs, xsd) |
 
-Le graphe est pret a recevoir des triplets que nous allons ajouter dans la cellule suivante.",,,,,,,,801309fab82b64fa,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c4ea3b05,markdown,fr,0a0981f162be9b89,"**Etape 2 : Creation de noeuds et assertion de triplets**
+Le graphe est pret a recevoir des triplets que nous allons ajouter dans la cellule suivante.",,,,,,,,364b2bdaccff35d3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c4ea3b05,markdown,fr,5dfbef2a8ae68ae1,"**Étape 2 : Creation de noeuds et assertion de triplets**
 
-Nous allons maintenant creer des noeuds et les relier par des triplets. Un triplet se compose de :
+Nous allons maintenant créer des noeuds et les relier par des triplets. Un triplet se compose de :
 - **Sujet** : la ressource decrite (un noeud URI)
 - **Predicat** : la relation/propriete (un noeud URI)
-- **Objet** : la valeur ou ressource liee (noeud URI ou noeud literal)",,,,,,,,0a0981f162be9b89,,,,,,,
+- **Objet** : la valeur ou ressource liee (noeud URI ou noeud literal)",,,,,,,,5dfbef2a8ae68ae1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,2d6dc951,code,fr,07259db49eb727a0,"using VDS.RDF;
 using System;
 
@@ -8281,9 +8281,9 @@ foreach (Triple t in g.Triples)
 {
     Console.WriteLine(t.ToString());
 }",,,,,,,,07259db49eb727a0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,fc35ac60,markdown,fr,91131e3163285df8,"### Interpretation du ""Hello World"" RDF
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,fc35ac60,markdown,fr,2603d04d84b4fb46,"### Interpretation du ""Hello World"" RDF
 
-Nous avons cree un graphe contenant **deux triplets** qui partagent le meme sujet et le meme predicat, mais different par l'objet :
+Nous avons créé un graphe contenant **deux triplets** qui partagent le même sujet et le même predicat, mais différent par l'objet :
 
 | Triplet | Sujet | Predicat | Objet |
 |---------|-------|----------|-------|
@@ -8292,20 +8292,20 @@ Nous avons cree un graphe contenant **deux triplets** qui partagent le meme suje
 
 **Types de noeuds utilises** :
 
-| Type | Interface | Exemple | Role |
+| Type | Interface | Exemple | Rôle |
 |------|-----------|---------|------|
 | URI Node | `IUriNode` | `http://www.dotnetrdf.org` | Identifie une ressource (sujet ou predicat) |
 | Literal Node | `ILiteralNode` | `""Hello World""` | Valeur textuelle (objet) |
 | Literal avec langue | `ILiteralNode` | `""Bonjour tout le Monde""@fr` | Valeur avec etiquette de langue |
 
-> **Point cle** : La methode `g.Assert()` ajoute un triplet au graphe. La methode `UriFactory.Create()` interne les URIs pour optimiser la memoire et les comparaisons d'egalite.
+> **Point cle** : La méthode `g.Assert()` ajoute un triplet au graphe. La méthode `UriFactory.Create()` interne les URIs pour optimiser la memoire et les comparaisons d'egalite.
 
-> **Attention** : La sortie affichee par `ToString()` n'est pas une syntaxe RDF standard. C'est une representation de debogage. Pour une serialisation conforme, il faut utiliser un Writer (cf. SW-2).",,,,,,,,91131e3163285df8,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,11b846cd,markdown,fr,97c021ef6c99afd2,"---
+> **Attention** : La sortie affichée par `ToString()` n'est pas une syntaxe RDF standard. C'est une representation de debogage. Pour une serialisation conforme, il faut utiliser un Writer (cf. SW-2).",,,,,,,,2603d04d84b4fb46,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,11b846cd,markdown,fr,e133fb75cecd0c1b,"---
 
 ## 4. Vue d'ensemble de la serie Semantic Web
 
-Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises en 4 parties, couvrant l'ensemble du spectre du Web semantique.
+Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises en 4 parties, couvrant l'ensemble du spectre du Web sémantique.
 
 ### Partie 1 : Fondations RDF (.NET C#)
 
@@ -8316,12 +8316,12 @@ Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises
 | 3 | [SW-3-GraphOperations](SW-3-CSharp-GraphOperations.ipynb) | 50 min | Lecture, ecriture, fusion, listes RDF |
 | 4 | [SW-4-SPARQL](SW-4-CSharp-SPARQL.ipynb) | 45 min | Query Builder, SELECT, FILTER, OPTIONAL |
 
-### Partie 2 : Donnees Liees et Ontologies (.NET C#)
+### Partie 2 : Données Liees et Ontologies (.NET C#)
 
 | # | Notebook | Duree | Sujet |
 |---|----------|-------|-------|
-| 5 | [SW-5-LinkedData](SW-5-CSharp-LinkedData.ipynb) | 50 min | DBpedia, Wikidata, requetes federees |
-| 6 | [SW-6-RDFS](SW-6-CSharp-RDFS.ipynb) | 40 min | Vocabulaire RDFS, inference, hierarchies |
+| 5 | [SW-5-LinkedData](SW-5-CSharp-LinkedData.ipynb) | 50 min | DBpedia, Wikidata, requêtes federees |
+| 6 | [SW-6-RDFS](SW-6-CSharp-RDFS.ipynb) | 40 min | Vocabulaire RDFS, inference, hiérarchies |
 | 7 | [SW-7-OWL](SW-7-CSharp-OWL.ipynb) | 50 min | OWL 2, ontologies, raisonnement |
 
 ### Partie 3 : Ecosysteme Python et Standards Modernes
@@ -8329,8 +8329,8 @@ Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises
 | # | Notebook | Duree | Sujet |
 |---|----------|-------|-------|
 | 8 | [SW-8-PythonRDF](SW-8-Python-SHACL.ipynb) | 50 min | rdflib, SPARQLWrapper, comparaison .NET/Python |
-| 9 | [SW-9-SHACL](SW-9-Python-JSONLD.ipynb) | 45 min | Validation pySHACL, qualite des donnees |
-| 10 | [SW-10-JSONLD](SW-10-Python-RDFStar.ipynb) | 40 min | JSON-LD, Schema.org, SEO semantique |
+| 9 | [SW-9-SHACL](SW-9-Python-JSONLD.ipynb) | 45 min | Validation pySHACL, qualite des données |
+| 10 | [SW-10-JSONLD](SW-10-Python-RDFStar.ipynb) | 40 min | JSON-LD, Schema.org, SEO sémantique |
 | 11 | [SW-11-RDFStar](SW-11-Python-KnowledgeGraphs.ipynb) | 40 min | RDF 1.2, quoted triples, SPARQL-Star |
 
 ### Partie 4 : Graphes de Connaissances et IA
@@ -8340,45 +8340,45 @@ Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises
 | 12 | [SW-12-KnowledgeGraphs](SW-12-Python-GraphRAG.ipynb) | 55 min | Construction KGs, OWLReady2, visualisation |
 | 13 | [SW-13-GraphRAG](SW-13-Python-Reasoners.ipynb) | 50 min | KG + LLMs, extraction d'entites, RAG |
 
-> **Duree totale estimee** : environ 10 heures de travail pratique.",,,,,,,,97c021ef6c99afd2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,64752199,markdown,fr,145e8121eb12d89b,"---
+> **Duree totale estimee** : environ 10 heures de travail pratique.",,,,,,,,e133fb75cecd0c1b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,64752199,markdown,fr,885ffb137b46d607,"---
 
 ## Resume
 
-| Element | Ce que nous avons appris |
+| Élément | Ce que nous avons appris |
 |---------|-------------------------|
-| Web semantique | Vision de Tim Berners-Lee, pile W3C, donnees comprehensibles par les machines |
+| Web sémantique | Vision de Tim Berners-Lee, pile W3C, données comprehensibles par les machines |
 | dotNetRDF | Bibliotheque C# pour RDF, installee via NuGet |
-| Graphe RDF | Conteneur de triplets, cree avec `new Graph()` |
+| Graphe RDF | Conteneur de triplets, créé avec `new Graph()` |
 | Triplet | Sujet-Predicat-Objet, asserte avec `g.Assert()` |
 | Noeuds | `IUriNode` (ressources), `ILiteralNode` (valeurs) |
 
-### Prochaine etape
+### Prochaine étape
 
 Dans le notebook suivant (**SW-2-RDFBasics**), nous approfondirons :
-- Les differents types de noeuds RDF (URI, Blank, Literal type/langue)
+- Les différents types de noeuds RDF (URI, Blank, Literal type/langue)
 - La serialisation dans plusieurs formats (NTriples, RDF/XML, Turtle)
 - La lecture de fichiers RDF existants
 
 ---
 
-**Navigation** : [Index](README.md) | [2-RDFBasics >>](SW-2-CSharp-RDFBasics.ipynb)",,,,,,,,145e8121eb12d89b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,4dbb35c2,markdown,fr,af2744c9bbf26843,"## Resume et perspectives
+**Navigation** : [Index](README.md) | [2-RDFBasics >>](SW-2-CSharp-RDFBasics.ipynb)",,,,,,,,885ffb137b46d607,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,4dbb35c2,markdown,fr,7e0fc98b0acbaf70,"## Resume et perspectives
 
-Ce premier notebook a pose les fondations du Web semantique en couvrant trois aspects essentiels. D'une part, le contexte historique : la vision de Tim Berners-Lee d'un Web comprehensible par les machines, concrétisée par la pile technologique du W3C (URI, RDF, RDFS, SPARQL, OWL, SHACL). D'autre part, l'installation et la configuration de dotNetRDF, la bibliotheque C# qui nous accompagnera tout au long de la serie. Enfin, la creation de notre premier graphe RDF, illustrant le modele fondamental des triplets (sujet-predicat-objet) et les differents types de noeuds (URI, literal, literal avec langue).
+Ce premier notebook a pose les fondations du Web sémantique en couvrant trois aspects essentiels. D'une part, le contexte historique : la vision de Tim Berners-Lee d'un Web comprehensible par les machines, concrétisée par la pile technologique du W3C (URI, RDF, RDFS, SPARQL, OWL, SHACL). D'autre part, l'installation et la configuration de dotNetRDF, la bibliotheque C# qui nous accompagnera tout au long de la serie. Enfin, la creation de notre premier graphe RDF, illustrant le modèle fondamental des triplets (sujet-predicat-objet) et les différents types de noeuds (URI, literal, literal avec langue).
 
-Les concepts maitrisés ici -- graphe, triplet, noeuds URI et literals, methode `Assert()` -- constituent le socle sur lequel s'appuient tous les notebooks suivants. La distinction entre `IUriNode` et `ILiteralNode` est particulierement importante car elle conditionne la maniere dont les donnees sont representees et interrogees.
+Les concepts maitrisés ici -- graphe, triplet, noeuds URI et literals, méthode `Assert()` -- constituent le socle sur lequel s'appuient tous les notebooks suivants. La distinction entre `IUriNode` et `ILiteralNode` est particulierement importante car elle conditionne la maniere dont les données sont representees et interrogees.
 
-Dans le notebook suivant (**SW-2-RDFBasics**), nous approfondirons ces bases avec les differents formats de serialisation (Turtle, N-Triples, RDF/XML, JSON-LD), les blank nodes, et la lecture de fichiers RDF existants.",,,,,,,,af2744c9bbf26843,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,d56e8df4,markdown,fr,b1b22fac34b2223a,"---
+Dans le notebook suivant (**SW-2-RDFBasics**), nous approfondirons ces bases avec les différents formats de serialisation (Turtle, N-Triples, RDF/XML, JSON-LD), les blank nodes, et la lecture de fichiers RDF existants.",,,,,,,,7e0fc98b0acbaf70,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,d56e8df4,markdown,fr,df213e854bcd0067,"---
 
 ## Exercice : validez votre installation dotNetRDF
 
-Pour confirmer que votre environnement est correctement configure, creez un petit graphe RDF et affichez le nombre de triplets qu'il contient.
+Pour confirmer que votre environnement est correctement configure, créez un petit graphe RDF et affichez le nombre de triplets qu'il contient.
 
-**Objectif :** creer un graphe avec un seul triplet de votre choix (par exemple `<http://example.org/moi>` `<http://xmlns.com/foaf/0.1/name>` `""Votre nom""`), puis afficher `g.Triples.Count`.
+**Objectif :** créer un graphe avec un seul triplet de votre choix (par exemple `<http://example.org/moi>` `<http://xmlns.com/foaf/0.1/name>` `""Votre nom""`), puis afficher `g.Triples.Count`.
 
-Completez la cellule ci-dessous : decommentez les etapes suggerees et remplacez les valeurs par les votres.",,,,,,,,b1b22fac34b2223a,,,,,,,
+Completez la cellule ci-dessous : decommentez les étapes suggerees et remplacez les valeurs par les votres.",,,,,,,,df213e854bcd0067,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,4a4ae99f,code,fr,1051fd6cc01d015c,"// Exercice : validez votre installation dotNetRDF
 // Etapes suggerees (decommentez et completez) :
 //   using VDS.RDF;
@@ -8390,12 +8390,12 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,4a4ae99f,code,f
 //   Console.WriteLine($""Nombre de triplets : {g.Triples.Count}"");
 
 Console.WriteLine(""Exercice a completer"");",,,,,,,,1051fd6cc01d015c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,sw1-refs-savantes-3164,markdown,fr,a95c92d880dc1c17,"## References savantes
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,sw1-refs-savantes-3164,markdown,fr,f56ac514f909eb8e,"## References savantes
 
-- **The Semantic Web** - Berners-Lee, Hendler, Lassila, *Scientific American* 284(5), mai 2001. Article fondateur exposant la vision d'un Web comprehensible par les machines (deja cite dans la section 1).
-- **RDF 1.1 Concepts and Abstract Syntax** - Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 fevrier 2014. Modele de donnees abstrait (triplets sujet-predicat-objet, IRIs, blank nodes, litteraux) qui fonde la couche RDF du Layer Cake.
-- **Semantic Web Layer Cake** - architecture en couches popularisee par Berners-Lee (keynote XML 2000) et raffinee par le W3C Semantic Web Activity Group. Represente la stratification des standards du Web semantique.
-- **dotNetRDF** - bibliotheque open-source .NET (`dotnetrdf.org`) pour la manipulation de graphes RDF, utilisee tout au long de cette serie de notebooks.",,,,,,,,a95c92d880dc1c17,,,,,,,
+- **The Semantic Web** - Berners-Lee, Hendler, Lassila, *Scientific American* 284(5), mai 2001. Article fondateur exposant la vision d'un Web comprehensible par les machines (déjà cite dans la section 1).
+- **RDF 1.1 Concepts and Abstract Syntax** - Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 fevrier 2014. Modèle de données abstrait (triplets sujet-predicat-objet, IRIs, blank nodes, litteraux) qui fonde la couche RDF du Layer Cake.
+- **Semantic Web Layer Cake** - architecture en couches popularisee par Berners-Lee (keynote XML 2000) et raffinee par le W3C Semantic Web Activity Group. Represente la stratification des standards du Web sémantique.
+- **dotNetRDF** - bibliotheque open-source .NET (`dotnetrdf.org`) pour la manipulation de graphes RDF, utilisee tout au long de cette serie de notebooks.",,,,,,,,f56ac514f909eb8e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb,header-navigation,markdown,fr,cc67e25dba6a8114,"# SW-2b-Python-RDFBasics
 
 **Navigation** : [Index](README.md) | [<< SW-2 C#](SW-2-CSharp-RDFBasics.ipynb) | [SW-3 C# >>](SW-3-CSharp-GraphOperations.ipynb)
