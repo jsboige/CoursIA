@@ -80,6 +80,7 @@ Dependances : ``compression`` (``compressed_length``, ``canonical_int_sequence``
 
 from __future__ import annotations
 
+import math
 from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -365,3 +366,245 @@ def diagnose(
     steps_k, K = local_compressibility(states, window=window, level=level)
     rep["fold"] = fold_in_compressibility_curve(steps_k, K, smooth=smooth)
     return rep
+
+
+# =========================================================================== #
+#  COUCHE 2 -- Frontiere MDL : Levin / PowerPlay / Speed Prior                 #
+#  (formalisation du compression-progress de Schmidhuber, See #7258)           #
+# =========================================================================== #
+#
+# La couche 1 operationnalise la beaute de Schmidhuber (saut de compressibilite
+# = compression-progress) de facun EMPIRIQUE : zlib sur une fenetre glissante,
+# controle iid apparie. La couche 2 en donne la formalisation MDL : la
+# *frontiere* de description d'une trajectoire a mesure qu'elle s'etend, et sa
+# derivee (compression-progress en code en deux parties). Elle ajoute aussi les
+# deux machineries de Schmidhuber qui cadrent cette frontiere :
+#
+#   - la **complexite de Levin** ``Kt = program_bits + log2(runtime)`` et la
+#     **Speed Prior** ``2^{-Kt}`` (Schmidhuber 2000) : un programme court mais
+#     lent coute plus a *trouver* qu'un programme legerement plus long mais
+#     rapide -- le cout universel de la recherche ;
+#   - la frontiere **PowerPlay** (Schmidhuber 2011) : l'agent ne garde une
+#     nouvelle theorie que si elle resout toutes les taches precedentes **et**
+#     au moins une nouvelle -- compression-progress monotone, sans abandon.
+#
+# La derivee de la frontiere PowerPlay EST le compression-progress : la beaute
+# de la couche 1, formalisee en MDL plutot qu'estimee par zlib.
+#
+# Caveat honnete (cf comments de l'issue #7258) : appliquee a la *string de
+# predictions* d'un reseau en phase de grokking, la frontiere MDL localise la
+# MEMORISATION, pas le grok -- la MDL de la string recompense la structure
+# Markovienne parcimonieuse qu'engendre la memorisation (table lookup). Sur une
+# transition de structure veritable (bruit iid -> cycle deterministe), en
+# revanche, le cycle est nettement moins couteux par symbole que le bruit
+# (gate B4 du test). Le notebook strand confronte honnetement cette limite sur
+# le grokking et explore la description length *des poids* (information de
+# Fisher) comme proxy K-modele.
+# =========================================================================== #
+
+
+def levin_complexity(program_bits: float, runtime_steps: float) -> float:
+    """Complexite de Levin ``Kt = program_bits + log2(runtime_steps)``.
+
+    Cout universel de *trouver* un programme par recherche de Levin (Levin
+    1973) : on somme la longueur du programme (simplicite) et le logarithme
+    du nombre de pas d'execution (rapidite). Un programme court mais lent
+    coute plus a decouvrir qu'un programme legerement plus long mais rapide.
+    C'est la fonction de cout sous-jacente a la **Speed Prior** de Schmidhuber
+    (2000), qui pondere chaque programme par ``2^{-Kt}`` (cf
+    ``speed_prior_weight``).
+
+    Parametres :
+      - ``program_bits`` : longueur de description du programme (>= 0).
+      - ``runtime_steps`` : nombre de pas d'execution (>= 1).
+
+    Retourne ``Kt`` en bits (log base 2).
+    """
+    if program_bits < 0:
+        raise ValueError(f"program_bits doit etre >= 0, recu {program_bits}")
+    if runtime_steps < 1:
+        raise ValueError(
+            f"runtime_steps doit etre >= 1, recu {runtime_steps}"
+        )
+    return float(program_bits) + math.log2(float(runtime_steps))
+
+
+def speed_prior_weight(program_bits: float, runtime_steps: float) -> float:
+    """Poids **Speed Prior** de Schmidhuber : ``2^{-Kt}`` avec ``Kt`` de Levin.
+
+    Probabilite a priori qu'un programme tire selon la Speed Prior soit ce
+    programme-ci : decroit exponentiellement avec la complexite de Levin
+    (longueur + log temps). Les programmes courts et rapides dominent. Cette
+    ponderation est le prior naturel sous lequel l'agent cherche le prochain
+    saut de compression (la frontiere PowerPlay).
+    """
+    return 2.0 ** (-levin_complexity(program_bits, runtime_steps))
+
+
+def powerplay_frontier(theories: Sequence) -> dict:
+    """Frontiere **PowerPlay** de Schmidhuber (2011) : compression-progress monotone.
+
+    PowerPlay est un agent qui ne garde une nouvelle theorie que si elle resout
+    **toutes** les taches deja resolues par la theorie courante **et** au moins
+    une tache nouvelle -- le progres de compression est monotone (aucune tache
+    abandonee). La *frontiere* est la suite des theories acceptees : elle
+    avance dans le plan (longueur de programme ``K``, nombre cumul de taches
+    resolues), et sa derivee **est** le compression-progress (la beaute de la
+    couche 1, ici formalisee en MDL plutot qu'estimee par zlib).
+
+    Version stricte (sans abandon de tache) : un candidat qui lache une tache
+    deja resolue est rejete, mene s'il en resout de nouvelles. L'extension
+    PowerPlay generale (abandon tolerate si le net de compression est positif)
+    est laisse au notebook.
+
+    Parametres :
+      - ``theories`` : sequence de couples ``(program_bits, solved)`` ou
+        ``solved`` est un ensemble (ou iterable) de labels de taches resolues,
+        dans l'ordre ou l'agent les rencontre.
+
+    Retourne ``{"frontier": [...], "rejected": [...], "total_accepted": int}``
+    ou chaque entree acceptee contient ``index, program_bits,
+    cumulative_solved, new`` et chaque rejet ``index, program_bits, reason``
+    (``"no_new"`` = aucune tache nouvelle ; ``"dropped_existing"`` = une tache
+    deja resolue est perdue).
+    """
+    accepted: List[dict] = []
+    rejected: List[dict] = []
+    cumulative: frozenset = frozenset()
+    for idx, entry in enumerate(theories):
+        kbits, solved = entry
+        solved_fs = frozenset(solved)
+        grows = len(solved_fs) > len(cumulative)
+        keeps_all = cumulative <= solved_fs
+        if grows and keeps_all:
+            accepted.append({
+                "index": int(idx),
+                "program_bits": float(kbits),
+                "cumulative_solved": len(solved_fs),
+                "new": len(solved_fs) - len(cumulative),
+            })
+            cumulative = solved_fs
+        else:
+            reason = "dropped_existing" if not keeps_all else "no_new"
+            rejected.append({
+                "index": int(idx),
+                "program_bits": float(kbits),
+                "reason": reason,
+            })
+    return {"frontier": accepted, "rejected": rejected,
+            "total_accepted": len(accepted)}
+
+
+def mdl_frontier(states: Sequence,
+                 prefix_schedule: Optional[Sequence[int]] = None,
+                 split: float = 0.5, n_points: int = 10) -> dict:
+    """Courbe MDL (``two_part_code``) sur des prefixes croissants de la trajectoire.
+
+    Pour chaque longueur de prefix ``L``, estime le code en deux parties
+    (``ict.mdl.two_part_code``) sur ``states[:L]`` : ``model_bits`` (TPM sous
+    prior KT) + ``residual_bits`` (-log2 proba held-out) = ``total_bits``.
+    C'est l'analogue MDL-formel de ``local_compressibility`` (couche 1 zlib) :
+    la frontiere de description de la trajectoire a mesure qu'elle s'etend. Sa
+    derivee (``mdl_compression_progress``) = compression-progress en termes de
+    code en deux parties.
+
+    **Caveat honnete (cf comments #7258)** : appliquee a la *string de
+    predictions* d'un reseau en phase de grokking, cette frontiere localise la
+    memorisation, pas le grok -- la MDL de la string recompense la structure
+    Markovienne parcimonieuse qu'engendre la memorisation. Sur une transition
+    de structure veritable (bruit iid -> cycle deterministe), en revanche, le
+    cycle est nettement moins couteux par symbole que le bruit (gate B4 du
+    test) : la machinerie est correcte, c'est son application naive au grokking
+    qui est piegeuse.
+
+    Parametres :
+      - ``states`` : trajectoire d'etats.
+      - ``prefix_schedule`` : longueurs de prefix a evaluer (defaut :
+        ``n_points`` points echantillonnes entre ~10% et 100% de la
+        trajectoire).
+      - ``split`` : proportion train/held-out pour ``two_part_code``
+        (defaut 0.5).
+      - ``n_points`` : nombre de points si ``prefix_schedule`` est None.
+
+    Retourne ``{"rows": [...]}`` ou chaque row contient ``L, model_bits,
+    residual_bits, total_bits, bits_per_symbol``.
+    """
+    from . import mdl as MDL
+
+    seq = list(states)
+    n = len(seq)
+    if n < 2:
+        raise ValueError(f"il faut au moins 2 etats, recu n={n}")
+    if prefix_schedule is None:
+        lo = max(2, int(round(0.1 * n)))
+        if n <= lo:
+            prefix_schedule = [n]
+        else:
+            grid = {int(round(lo + (n - lo) * i / max(n_points - 1, 1)))
+                    for i in range(n_points)}
+            prefix_schedule = sorted(p for p in grid if 2 <= p <= n)
+    rows: List[dict] = []
+    for L in prefix_schedule:
+        L = int(L)
+        if L < 2 or L > n:
+            continue
+        try:
+            r = MDL.two_part_code(seq[:L], split=split)
+        except ValueError:
+            continue
+        total = float(r["total_bits"])
+        rows.append({
+            "L": L,
+            "model_bits": float(r["model_bits"]),
+            "residual_bits": float(r["residual_bits"]),
+            "total_bits": total,
+            "bits_per_symbol": total / L,
+        })
+    return {"rows": rows}
+
+
+def mdl_compression_progress(states: Sequence,
+                             prefix_schedule: Optional[Sequence[int]] = None,
+                             split: float = 0.5, n_points: int = 10,
+                             horizon: int = 2) -> dict:
+    """Derivee de la frontiere MDL = compression-progress formel.
+
+    Calcule ``mdl_frontier`` puis, sur ``bits_per_symbol``,
+    ``delta[i] = bps[i-horizon] - bps[i]`` : positif quand le prefix recent se
+    decrit plus economiquement (progress de compression), negatif s'il devient
+    plus couteux. C'est l'analogue MDL de ``compressibility_gain_curve``
+    (couche 1) : la courbe porteuse de beaute, en code en deux parties plutot
+    qu'en zlib.
+
+    Pas de controle iid ici (contrairement a ``beauty_events``) : la frontiere
+    MDL est Deterministe sur une trajectoire fixee, et la quantification MDL
+    (TPM KT) est beaucoup moins bruitee que zlib -- on present le signal brut
+    a l'utilisateur du module ; le seuil/event-picking est laisse au notebook,
+    ou il se confronte au caveat grokking (comments #7258).
+
+    Retourne ``{"rows": [...], "max_progress": float, "argmax_L": int|None}``
+    ou chaque row contient ``L, bits_per_symbol, delta`` (``delta`` = ``nan``
+    pour les ``horizon`` premiers points).
+    """
+    front = mdl_frontier(states, prefix_schedule=prefix_schedule, split=split,
+                         n_points=n_points)
+    rows = front["rows"]
+    h = int(horizon)
+    if h < 1:
+        raise ValueError(f"horizon doit etre >= 1, recu {h}")
+    out: List[dict] = []
+    for i, r in enumerate(rows):
+        d = float("nan")
+        if i >= h:
+            d = float(rows[i - h]["bits_per_symbol"] - r["bits_per_symbol"])
+        out.append({
+            "L": r["L"],
+            "bits_per_symbol": r["bits_per_symbol"],
+            "delta": d,
+        })
+    finite = [(r["delta"], r["L"]) for r in out if np.isfinite(r["delta"])]
+    if finite:
+        max_d, arg_L = max(finite, key=lambda t: t[0])
+    else:
+        max_d, arg_L = float("nan"), None
+    return {"rows": out, "max_progress": float(max_d), "argmax_L": arg_L}

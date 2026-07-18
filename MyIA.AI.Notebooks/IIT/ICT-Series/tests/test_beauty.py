@@ -22,6 +22,7 @@ Numpy + pytest, comme les tests existants du package.
 
 import os
 import sys
+import math
 
 import numpy as np
 import pytest
@@ -187,3 +188,145 @@ def test_diagnose_couples_gate_and_fold():
                        rng=np.random.default_rng(1))
     assert "fold" in rep and "events" in rep
     assert set(rep["fold"]) >= {"fold_step", "curvature", "smooth"}
+
+
+# =========================================================================== #
+#  Couche 2 -- Frontiere MDL (Levin / PowerPlay / Speed Prior), See #7258      #
+# =========================================================================== #
+#
+# La couche 2 formalise en MDL le compression-progress de Schmidhuber (la
+# beaute de la couche 1 etait empirique / zlib). Trois machineries :
+#
+#   - complexite de Levin ``Kt`` + Speed Prior ``2^{-Kt}`` (deterministe) ;
+#   - frontiere PowerPlay (compression-progress monotone, sans abandon) ;
+#   - frontiere MDL ``mdl_frontier`` + sa derivee ``mdl_compression_progress``
+#     (analogue MDL de ``compressibility_gain_curve``).
+#
+# Gate falsifiable centrale : **B4** -- sur une transition de structure
+# veritable (bruit iid -> cycle deterministe), le cycle est nettement moins
+# couteux par symbole que le bruit (la machinerie MDL detecte la structure).
+# Caveat honnete (cf comments #7258) : ce qui est VRAI pour une transition de
+# structure ne l'est PAS pour la string de predictions d'un reseau grokkant --
+# la MDL de la string recompense la memorisation. On test donc la machinerie
+# sur ce qu'elle mesure correctement, sans sur-claimer le grokking.
+
+
+# --------------------------------------------------------------------------- #
+#  Complexite de Levin + Speed Prior                                          #
+# --------------------------------------------------------------------------- #
+
+
+def test_levin_complexity_formula():
+    assert BTY.levin_complexity(10.0, 1024) == pytest.approx(
+        10.0 + math.log2(1024)
+    )
+    # programme de 0 bits s'executant en 1 pas -> Kt = 0
+    assert BTY.levin_complexity(0.0, 1) == pytest.approx(0.0)
+
+
+def test_levin_complexity_rejects_bad_inputs():
+    with pytest.raises(ValueError):
+        BTY.levin_complexity(-1.0, 10)
+    with pytest.raises(ValueError):
+        BTY.levin_complexity(10.0, 0)
+
+
+def test_speed_prior_weight_is_2pow_minus_kt_and_decreases():
+    kt = BTY.levin_complexity(8.0, 16.0)
+    w = BTY.speed_prior_weight(8.0, 16.0)
+    assert w == pytest.approx(2.0 ** (-kt))
+    # un programme plus long ou plus lent est moins probable sous Speed Prior
+    assert w > BTY.speed_prior_weight(10.0, 16.0)
+    assert w > BTY.speed_prior_weight(8.0, 256.0)
+
+
+# --------------------------------------------------------------------------- #
+#  Frontiere PowerPlay                                                        #
+# --------------------------------------------------------------------------- #
+
+
+def test_powerplay_frontier_accepts_monotonic_growth():
+    # chaque theorie resout tout ce que la precedente resolait + une nouvelle
+    theories = [(100, {"A"}), (90, {"A", "B"}), (85, {"A", "B", "C"})]
+    rep = BTY.powerplay_frontier(theories)
+    assert rep["total_accepted"] == 3
+    assert rep["rejected"] == []
+    # cumulative_solved croit de 1 en 1
+    assert [f["cumulative_solved"] for f in rep["frontier"]] == [1, 2, 3]
+    assert [f["new"] for f in rep["frontier"]] == [1, 1, 1]
+
+
+def test_powerplay_frontier_rejects_dropped_task():
+    # la 2e theorie perd la tache B -> rejetee (strict, sans abandon)
+    theories = [(100, {"A", "B"}), (50, {"A"})]
+    rep = BTY.powerplay_frontier(theories)
+    assert rep["total_accepted"] == 1
+    assert rep["rejected"][0]["index"] == 1
+    assert rep["rejected"][0]["reason"] == "dropped_existing"
+
+
+def test_powerplay_frontier_rejects_no_new_task():
+    # la 2e theorie resout exactement la meme chose -> rejetee (pas de progres)
+    theories = [(100, {"A"}), (90, {"A"})]
+    rep = BTY.powerplay_frontier(theories)
+    assert rep["total_accepted"] == 1
+    assert rep["rejected"][0]["reason"] == "no_new"
+
+
+# --------------------------------------------------------------------------- #
+#  Frontiere MDL + compression-progress                                       #
+# --------------------------------------------------------------------------- #
+
+
+def test_mdl_frontier_returns_rows_with_keys():
+    seq = [i % 4 for i in range(200)]
+    rep = BTY.mdl_frontier(seq, n_points=5)
+    assert "rows" in rep and len(rep["rows"]) >= 1
+    r0 = rep["rows"][0]
+    assert set(r0) >= {"L", "model_bits", "residual_bits",
+                       "total_bits", "bits_per_symbol"}
+    assert r0["bits_per_symbol"] == pytest.approx(r0["total_bits"] / r0["L"])
+
+
+def test_mdl_frontier_rejects_short_sequence():
+    with pytest.raises(ValueError):
+        BTY.mdl_frontier([0])
+
+
+def test_b4_mdl_frontier_cycle_lower_bps_than_noise():
+    # Gate B4 (falsifiable) : la machinerie MDL detecte la structure -- un
+    # cycle deterministe est nettement moins couteux par symbole qu'un bruit
+    # iid. C'est l'analogue MDL de B1 (couche 1).
+    #
+    # Caveat grokking (cf comments #7258) : ce QUI EST VRAI pour une transition
+    # de structure ne l'est PAS pour la string de predictions d'un reseau
+    # grokkant (la MDL de la string recompense la memorisation). On test donc
+    # la machinerie sur ce qu'elle mesure correctement.
+    rng = np.random.default_rng(0)
+    noise = list(rng.integers(0, 4, size=400))
+    cycle = [i % 4 for i in range(400)]
+    fn = BTY.mdl_frontier(noise, n_points=5)["rows"]
+    fc = BTY.mdl_frontier(cycle, n_points=5)["rows"]
+    bps_noise = float(np.mean([r["bits_per_symbol"] for r in fn]))
+    bps_cycle = float(np.mean([r["bits_per_symbol"] for r in fc]))
+    assert bps_cycle < bps_noise, (
+        f"le cycle devrait etre moins couteux que le bruit, "
+        f"recu cycle={bps_cycle:.3f} noise={bps_noise:.3f}"
+    )
+
+
+def test_mdl_compression_progress_returns_delta_and_max():
+    rng = np.random.default_rng(1)
+    seq = list(rng.integers(0, 4, size=300)) + [i % 4 for i in range(300)]
+    rep = BTY.mdl_compression_progress(seq, n_points=8, horizon=2)
+    assert set(rep) >= {"rows", "max_progress", "argmax_L"}
+    deltas = [r["delta"] for r in rep["rows"]]
+    # les `horizon` premiers points sont nan, les suivants finis
+    assert np.isnan(deltas[0]) and np.isnan(deltas[1])
+    assert np.all(np.isfinite(deltas[2:]))
+    assert rep["argmax_L"] is not None
+
+
+def test_mdl_compression_progress_rejects_bad_horizon():
+    with pytest.raises(ValueError):
+        BTY.mdl_compression_progress([i % 4 for i in range(20)], horizon=0)
