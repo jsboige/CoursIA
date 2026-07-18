@@ -334,6 +334,8 @@ class TestGitRefIntegration:
         repo = tmp_path / "repo"
         repo.mkdir()
         sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        # Force the default branch to 'main' (CI runners may default to 'master').
+        sp.run(["git", "branch", "-m", "main"], cwd=repo, capture_output=True)
         for k, v in {"user.name": "t", "user.email": "t@t"}.items():
             sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
         base = {"cells": [{"cell_type": "markdown",
@@ -354,6 +356,8 @@ class TestGitRefIntegration:
         repo = tmp_path / "repo"
         repo.mkdir()
         sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        # Force the default branch to 'main' (CI runners may default to 'master').
+        sp.run(["git", "branch", "-m", "main"], cwd=repo, capture_output=True)
         for k, v in {"user.name": "t", "user.email": "t@t"}.items():
             sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
         base = {"cells": [{"cell_type": "markdown",
@@ -373,6 +377,8 @@ class TestGitRefIntegration:
         repo = tmp_path / "repo"
         repo.mkdir()
         sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        # Force the default branch to 'main' (CI runners may default to 'master').
+        sp.run(["git", "branch", "-m", "main"], cwd=repo, capture_output=True)
         for k, v in {"user.name": "t", "user.email": "t@t"}.items():
             sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
         base = {"cells": [], "metadata": {}}
