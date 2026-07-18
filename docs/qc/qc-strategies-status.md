@@ -80,7 +80,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 11, backtests QC Cloud MCP) | 4 | cohorte Crypto BTC + IBKR-Binance-Hybrid — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement (1 MaxDD catastrophique 72.7 %) ; cohorte limitée à 4 stratégies vérifiables firsthand (les 5ᵉ `Crypto-LSTM-Prediction` overlap tranche 10) |
 | Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
 | Vérifié (tranche 13, backtests QC Cloud MCP) | 4 | cohorte ML Classification / Clustering / Hybrid — **0 edge significative** (PSR max 22.74 %), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 21 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
+| Vérifié (tranche 14, backtests QC Cloud MCP) | 2 | cohorte **DL Chronos foundation** (2 stratégies Chronos du bucket Vivant promues) — **0 edge significative** (PSR max 13.79 % `ML-Chronos-Foundation`, aucune > 50 %), 2 Needs-improvement ; **le régime SMA200 (`Chronos-Foundation-Forecasting`) a le PSR le plus bas (3.12 %), pas le plus haut** — le filtre SMA200 dégrade la signification statistique vs le variant plain |
+| Vivant (best-guess, non vérifié) | 19 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL : voir sections ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -341,7 +342,32 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification (GaussianNB features) | **Needs-improvement** | 2015–2026 (2375 ordres) ; Sharpe 0.361 ; CAGR 12.49 % ; **MaxDD 47.4 %** ; PSR 4.73 % ; NP 128.1 % ($131 679) — drawdown élevé, edge non significative |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé (KMeans + PCA) | **Needs-improvement** | 2015–2026 (2308 ordres, v3 robust-nan-handling) ; Sharpe 0.142 ; CAGR 3.37 % ; **MaxDD 65.3 %** ; **PSR 0.09 %** ; NP 44.7 % ($30 130) — MaxDD catastrophique, PSR quasi-nul, edge nulle |
 
-#### Vivant (best-guess, non vérifié) (21)
+#### Vérifié (tranche 14, backtests QC Cloud via MCP) (2)
+
+> **Scope tranche 14 (#1621)** : 2 stratégies « Vivant » promues au statut vérifié via backtests
+> QC Cloud réels (MCP `qc-mcp-lite`, backtests existants relus firsthand). Cohorte **DL Chronos
+> foundation** (Amazon Chronos foundation model en forecasting financier). Métriques **non
+> walk-forward OOS** (backtest pleine période in-sample) — suffisantes pour classer Alive /
+> Needs-improvement / BROKEN, insuffisantes pour un verdict de production. **0 edge statistiquement
+> significative** (PSR < 50 % partout) — confirme pour la cohorte DL foundation-forecasting ce que
+> les tranches 7-13 confirmaient sur ML supervisé / DL LSTM / RL.
+>
+> **Leçon pédagogique clé (inversée vs l'intuition)** : le variant à **filtre de régime SMA200**
+> (`Chronos-Foundation-Forecasting`, PSR **3.12 %**) a la signification statistique la **plus basse**
+> de la cohorte, alors que le variant **plain** (`ML-Chronos-Foundation`, PSR **13.79 %**) fait
+> mieux. Le filtre SMA200 — censé ne trader que les régimes favorables — **dégrade** la signification
+> statistique au lieu de l'améliorer. Interprétation : le SMA200-regime introduit une sélection
+> d'échantillon (data-snooping sur le seuil 0.02) qui réduit le nombre de trades effectifs sans
+> gain de Sharpe proportionnel → le PSR chute. Ajouter un filtre « intelligent » à un forecast DL
+> n'est pas mécaniquement bénéfique ; la barre de signification (PSR) punit le sur-ajustement.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation + régime SMA200) | **Needs-improvement** | 2018–2026 (2766 j., 1638 ordres) ; **Sharpe 0.253** ; CAGR 6.28 % ; MaxDD 22.4 % ; **PSR 3.12 %** ; NP 95.5 % ($94 994) — variant « filtre SMA200 regime threshold 0.02 » : PSR le plus bas de la cohorte, le filtre dégrade la signification statistique |
+| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos foundation, plain) | **Needs-improvement** | 2026 (Batch4, 121 ordres) ; **Sharpe 0.277** ; CAGR 7.23 % ; MaxDD 13.5 % ; **PSR 13.79 %** ; NP 63.0 % ($62 627) — variant plain (sans filtre de régime) : meilleure PSR de la cohorte, mais fenêtre courte (Batch4) → signification fragile, edge non confirmée |
+
+
+#### Vivant (best-guess, non vérifié) (19)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -349,7 +375,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
 | `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | **Vérifié tranche 11** | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md — voir section tranche 11 |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
-| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
+| `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | **Vérifié tranche 14** | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb — voir section tranche 14 |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | **Vérifié tranche 13** | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | **Vérifié tranche 10** | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 10 |
 | `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | **Vérifié tranche 11** | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 11 |
@@ -363,7 +389,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | **Vérifié tranche 13** | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb — voir section tranche 13 |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | **Vérifié tranche 8** | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) — voir section tranche 8 |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb — voir section tranche 10 |
-| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | Vivant | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) |
+| `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos) | **Vérifié tranche 14** | main.py: class ChronosFoundationAlgorithm(QCAlgorithm) — voir section tranche 14 |
 | `ML-Classification` | `projects/ML-Classification/` | ML supervisé | Vivant | main.py: class MLClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-DeepLearning` | `projects/ML-DeepLearning/` | DL | Vivant | main.py: class SimpleLSTM(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
 | `ML-EnhancedPairs` | `projects/ML-EnhancedPairs/` | ML pairs | Vivant | main.py: class MLEnhancedPairsAlgorithm(QCAlgorithm) + quantbook.ipynb |
