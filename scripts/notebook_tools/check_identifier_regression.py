@@ -227,6 +227,77 @@ def scan(old_nb: dict, new_nb: dict):
     return regressions, suspects
 
 
+# --- Mode --scope : classification complete de la violation markdown-only STRICTE ---
+#
+# Le mode identifiant (regressions/suspects ci-dessus) ne voit QUE les identifiants
+# accentues. Mais le contrat #2876 (markdown-only STRICT, ai-01 17/07) exclut AUSSI
+# les commentaires de code et les litteraux stdout : une PR qui cure des accents
+# dans `# Etape` ou `print("Resultat :")` viole le scope meme sans toucher
+# d'identifiant. Les 6 PR problem (c.606) violent les 3 canaux (identifiant +
+# commentaire + stdout). Le mode --scope donne a ai-01 la partition COMPLETE de
+# la violation, par cellule, par canal — pour decider revert vs merge.
+
+# Regex pour classifier une ligne de code modifiee.
+# Ordre : commentaire (ligne ou debut), litteral stdout (print/Console.WriteLine
+# avec chaine), sinon "autre" (structurel = identifiant potentiel ou logique).
+_LINE_COMMENT_RE = re.compile(r"^\s*(#|//|;;)")
+_STDOUT_RE = re.compile(r"\b(print|Console\.Write(Line)?|System\.Console\.Write(Line)?)\s*\(")
+
+
+def _classify_code_line_delta(old_lines, new_lines):
+    """Pour une cellule code modifiee, yield (line_no, canal, ctx) pour chaque
+    ligne ajoutee accentuee. canal in {identifier, comment, stdout, other}.
+
+    On regarde les lignes AJOUTEES (presentes dans new, absentes de old) qui
+    contiennent au moins un caractere accentue (sinon ce n'est pas une cure
+    d'accent). On classe chaque ligne par son canal dominant."""
+    old_set = set(old_lines)
+    for idx, line in enumerate(new_lines):
+        if line in old_set:
+            continue
+        if not any(c in ACCENT_CHARS for c in line):
+            continue  # pas une cure d'accent, ignore
+        stripped = line.strip()
+        if _LINE_COMMENT_RE.match(stripped):
+            canal = "comment"
+        elif _STDOUT_RE.search(stripped):
+            canal = "stdout"
+        else:
+            canal = "other"
+        yield idx + 1, canal, stripped
+
+
+def scan_scope(old_nb: dict, new_nb: dict):
+    """Classification markdown-only STRICTE complete. Retourne (scope_violations,
+    n_code_cells_changed, n_md_cells_changed).
+
+    scope_violations : liste de dict {cell, line, canal, context} pour chaque
+    ligne de code dont le source a change et contient une cure d'accent. canal in
+    {comment, stdout, other}. (Les identifier-regressions sont couvertes par scan()
+    ; on les exclu du canal 'other' via le partitionnement identifiant pour eviter
+    le double compte — un appelant combine les deux.)
+
+    n_code_cells_changed / n_md_cells_changed : compteurs bruts pour le verdict
+    scope (markdown-only strict => code_cells doit etre 0)."""
+    scope_violations = []
+    n_code = n_md = 0
+    for i, (o, n) in enumerate(zip(old_nb.get("cells", []), new_nb.get("cells", []))):
+        if n.get("cell_type") == "code":
+            osrc, nsrc = _src_str(o), _src_str(n)
+            if osrc != nsrc:
+                n_code += 1
+                for line_no, canal, ctx in _classify_code_line_delta(
+                    osrc.split("\n"), nsrc.split("\n")
+                ):
+                    scope_violations.append(
+                        {"cell": i, "line": line_no, "canal": canal, "context": ctx}
+                    )
+        elif n.get("cell_type") != "code":
+            if _src_str(o) != _src_str(n):
+                n_md += 1
+    return scope_violations, n_code, n_md
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("notebook", help="Chemin du notebook (.ipynb)")
@@ -234,6 +305,10 @@ def main(argv=None) -> int:
     p.add_argument("--head", default=None,
                    help="Ref git de la head (defaut: working tree, lu depuis le disque)")
     p.add_argument("--check", action="store_true", help="Exit 1 si regression detectee (CI-ready)")
+    p.add_argument("--scope", action="store_true",
+                   help="Active la classification markdown-only STRICTE complete : "
+                        "detecte aussi les cures d'accents dans les commentaires de code "
+                        "et stdout (HORS scope #2876), pas seulement les identifiants")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     args = p.parse_args(argv)
 
@@ -275,6 +350,13 @@ def main(argv=None) -> int:
 
     regressions, suspects = scan(old_nb, new_nb)
 
+    scope_violations = n_code = n_md = None
+    scope_compliant = True
+    if args.scope:
+        scope_violations, n_code, n_md = scan_scope(old_nb, new_nb)
+        # markdown-only STRICT : code_cells_changed doit etre 0
+        scope_compliant = (n_code == 0)
+
     if args.json:
         out = {
             "notebook": str(nb_path),
@@ -289,6 +371,19 @@ def main(argv=None) -> int:
                 for (i, t, ln, c) in suspects
             ],
         }
+        if args.scope:
+            # partition par canal pour le verdict scope
+            by_canal = {}
+            for v in scope_violations:
+                by_canal.setdefault(v["canal"], 0)
+                by_canal[v["canal"]] += 1
+            out["scope"] = {
+                "markdown_only_strict_compliant": scope_compliant,
+                "code_cells_changed": n_code,
+                "md_cells_changed": n_md,
+                "violations": scope_violations,
+                "by_canal": by_canal,
+            }
         print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         if regressions:
@@ -303,8 +398,23 @@ def main(argv=None) -> int:
                 print(f"  cell[{i}] L{ln}: {t}   | {c[:80]}")
             if len(suspects) > 10:
                 print(f"  ... (+{len(suspects) - 10} autres)")
+        if args.scope:
+            print()
+            if scope_compliant:
+                print(f"SCOPE: markdown-only STRICT compliant (code_cells_changed=0, md={n_md})")
+            else:
+                by_canal = {}
+                for v in scope_violations:
+                    by_canal[v["canal"]] = by_canal.get(v["canal"], 0) + 1
+                print(f"SCOPE VIOLATION — code_cells_changed={n_code} (must be 0), md={n_md}")
+                print(f"  partition par canal: {by_canal}")
+                for v in scope_violations[:10]:
+                    print(f"  cell[{v['cell']}] L{v['line']} [{v['canal']}]: {v['context'][:70]}")
+                if len(scope_violations) > 10:
+                    print(f"  ... (+{len(scope_violations) - 10} autres)")
 
-    if args.check and regressions:
+    # --check exit 1 si regression identifiant OU (mode --scope) violation scope
+    if args.check and (regressions or (args.scope and not scope_compliant)):
         return 1
     return 0
 

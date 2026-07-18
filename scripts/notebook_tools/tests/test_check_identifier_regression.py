@@ -17,6 +17,8 @@ Cinq clusters :
   3. TestScan — regression vs suspect, multi-cellule, forme desaccentuee en base
   4. TestMainExitCodes — exit 0/1/2 contract (--check, ref absente)
   5. TestEdgeCases — accents legitimes pre-existants (faux positif evite)
+  6. TestScopeMode — mode --scope : classification markdown-only STRICT complete
+     (comment / stdout / other), compliant vs violation, exit code combine
 """
 import json
 import sys
@@ -177,3 +179,92 @@ class TestMainExitCodes:
         monkeypatch.setattr(cir, "_git_show_notebook", lambda ref, path: None)
         rc = cir.main([str(nb_path), "--base", "origin/ghost"])
         assert rc == 2
+
+
+# ---------------------------------------------------------------------------
+# 6. Mode --scope : classification markdown-only STRICT complete
+# ---------------------------------------------------------------------------
+class TestScopeMode:
+    def test_markdown_only_change_is_compliant(self):
+        # Seule une cellule markdown change -> scope compliant, 0 violation
+        old = _nb([("code", "x = 1"), ("markdown", "Texte sans accent")])
+        new = _nb([("code", "x = 1"), ("markdown", "Texte avec accents àéè")])
+        viols, n_code, n_md = cir.scan_scope(old, new)
+        assert n_code == 0 and n_md == 1
+        assert viols == []
+
+    def test_python_comment_cure_is_violation(self):
+        # Une cure d'accent dans un commentaire de code = HORS scope
+        old = _nb([("code", "# Etape 1 : faire X\nx = 1")])
+        new = _nb([("code", "# Étape 1 : faire X\nx = 1")])
+        viols, n_code, n_md = cir.scan_scope(old, new)
+        assert n_code == 1
+        assert len(viols) == 1
+        assert viols[0]["canal"] == "comment"
+
+    def test_python_stdout_cure_is_violation(self):
+        # Une cure d'accent dans un print = HORS scope
+        old = _nb([("code", 'print("Resultat : ok")')])
+        new = _nb([("code", 'print("Résultat : ok")')])
+        viols, n_code, _ = cir.scan_scope(old, new)
+        assert n_code == 1
+        assert len(viols) == 1
+        assert viols[0]["canal"] == "stdout"
+
+    def test_cs_console_write_cure_is_violation(self):
+        # Console.WriteLine C# = stdout
+        old = _nb([("code", 'Console.WriteLine("Resultat");')])
+        new = _nb([("code", 'Console.WriteLine("Résultat");')])
+        viols, _, _ = cir.scan_scope(old, new)
+        assert len(viols) == 1 and viols[0]["canal"] == "stdout"
+
+    def test_other_canal_for_structural_change(self):
+        # Changement de code accentue ni commentaire ni stdout = other
+        # (ex : docstring marquee 'other' car pas #/print, ou raise avec message)
+        old = _nb([("code", 'raise ValueError("Attendu 81 caracteres")')])
+        new = _nb([("code", 'raise ValueError("Attendu 81 caractères")')])
+        viols, _, _ = cir.scan_scope(old, new)
+        assert len(viols) == 1 and viols[0]["canal"] == "other"
+
+    def test_non_accented_code_change_not_flagged(self):
+        # Un changement de code SANS accent n'est pas une "cure" -> pas remonte
+        old = _nb([("code", "x = 1")])
+        new = _nb([("code", "x = 2  # no accent here")])
+        viols, n_code, _ = cir.scan_scope(old, new)
+        assert n_code == 1  # la cellule a change (compteur brut)
+        assert viols == []  # mais aucune ligne accentuee -> 0 violation scope
+
+    def test_scope_check_exit_1_on_violation(self, tmp_path, monkeypatch):
+        nb_path = tmp_path / "nb.ipynb"
+        nb_path.write_text(json.dumps(_nb([("code", "# Étape 1\nx = 1")])), encoding="utf-8")
+        monkeypatch.setattr(cir, "_git_show_notebook",
+                            lambda ref, path: _nb([("code", "# Etape 1\nx = 1")]))
+        rc = cir.main([str(nb_path), "--base", "origin/main", "--scope", "--check"])
+        assert rc == 1
+
+    def test_scope_check_exit_0_when_compliant(self, tmp_path, monkeypatch):
+        nb_path = tmp_path / "nb.ipynb"
+        nb_path.write_text(json.dumps(_nb([("code", "x = 1"), ("markdown", "àéè")])),
+                           encoding="utf-8")
+        monkeypatch.setattr(cir, "_git_show_notebook",
+                            lambda ref, path: _nb([("code", "x = 1"), ("markdown", "aee")]))
+        rc = cir.main([str(nb_path), "--base", "origin/main", "--scope", "--check"])
+        assert rc == 0
+
+    def test_scope_json_has_by_canal_partition(self, tmp_path, monkeypatch, capsys):
+        nb_path = tmp_path / "nb.ipynb"
+        # multi-line code source via explicit NL join (no backslash escapes in test literal)
+        new_lines = ["# Étape", chr(34)+"Résultat"+chr(34)+" sans effet", "z = 1"]
+        old_lines = ["# Etape", chr(34)+"Resultat"+chr(34)+" sans effet", "z = 1"]
+        new_src = chr(10).join(new_lines)
+        old_src = chr(10).join(old_lines)
+        nb_path.write_text(json.dumps(_nb([("code", new_src)])), encoding="utf-8")
+        monkeypatch.setattr(cir, "_git_show_notebook",
+                            lambda ref, path: _nb([("code", old_src)]))
+        rc = cir.main([str(nb_path), "--base", "origin/main", "--scope", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert "scope" in out
+        assert out["scope"]["code_cells_changed"] == 1
+        assert out["scope"]["markdown_only_strict_compliant"] is False
+        by_canal = out["scope"]["by_canal"]
+        assert by_canal.get("comment", 0) >= 1
