@@ -1,8 +1,8 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,cc50bb51,markdown,fr,374509470443f6ed,"# DecInfer-1-Utility-Foundations : Axiomes et Fondements
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,cc50bb51,markdown,fr,2316bd266faa1fc9,"# DecInfer-1-Utility-Foundations : Axiomes et Fondements
 **Serie** : Programmation Probabiliste avec Infer.NET (1/10)  
 **Duree estimee** : 50 minutes  
-**Prerequis** : Notebooks 1-8 (modeles probabilistes de base)
+**Prerequis** : Notebooks 1-8 (modèles probabilistes de base)
 
 ---
 
@@ -21,10 +21,10 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 |-----------|--------|
 | [Infer-6-Debugging](../../Infer/Infer-6-Debugging.ipynb) | [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb) |
 
----",,,,,,,,374509470443f6ed,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e6af883c,markdown,fr,8aed29992a8a7f66,"## 1. Introduction : Pourquoi l'Utilite ?
+---",,,,,,,,2316bd266faa1fc9,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e6af883c,markdown,fr,56e0e34fd16c491e,"## 1. Introduction : Pourquoi l'Utilite ?
 
-### Le probleme de la decision sous incertitude
+### Le problème de la decision sous incertitude
 
 Jusqu'ici, nous avons utilise Infer.NET pour calculer des distributions de probabilite. Mais comment **agir** face a l'incertitude ?
 
@@ -48,8 +48,8 @@ Le **Paradoxe de Saint-Petersbourg** (1713) illustre cette limite :
 
 $$E[\text{gain}] = \sum_{n=1}^{\infty} \frac{1}{2^n} \times 2^n = \sum_{n=1}^{\infty} 1 = \infty$$
 
-Valeur esperee infinie, mais personne ne paierait un million pour jouer. Il faut une autre approche.",,,,,,,,8aed29992a8a7f66,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1e9aeed6,markdown,fr,fd1722d0aec0fd51,"## 2. Loteries : Representation Formelle des Choix
+Valeur esperee infinie, mais personne ne paierait un million pour jouer. Il faut une autre approche.",,,,,,,,56e0e34fd16c491e,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1e9aeed6,markdown,fr,81836c3e1e90cebc,"## 2. Loteries : Representation Formelle des Choix
 
 ### Definition
 
@@ -75,7 +75,7 @@ Une **loterie composee** a d'autres loteries comme outcomes :
 
 L = [0.5 : L₁, 0.5 : L₂]
 
-Elle peut etre **reduite** en loterie simple par le calcul des probabilites totales.",,,,,,,,fd1722d0aec0fd51,,,,,,,
+Elle peut etre **réduite** en loterie simple par le calcul des probabilites totales.",,,,,,,,81836c3e1e90cebc,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,758221d8,markdown,fr,eeae57caf7a8f71d,"### Preparation de l'environnement
 
 Chargeons d'abord Infer.NET pour les demonstrations qui suivront. Bien que ce notebook soit principalement theorique, nous utiliserons Infer.NET pour illustrer comment l'inference probabiliste s'integre dans la prise de decision.",,,,,,,,eeae57caf7a8f71d,,,,,,,
@@ -95,13 +95,13 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 
 Console.WriteLine(""FactorGraphHelper charge."");
 Console.WriteLine($""Graphviz disponible : {FactorGraphHelper.IsGraphvizAvailable()}"");",,,,,,,,bd005494504ce7c5,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,14ebe53a,markdown,fr,057f4d09c239871e,"### Implementation de la classe Loterie
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,14ebe53a,markdown,fr,923dccf441daa1cd,"### Implementation de la classe Loterie
 
 Nous definissons une classe generique `Loterie<T>` qui encapsule une distribution discrete sur des outcomes de type T. Cette implementation :
 - Valide que les probabilites somment a 1
 - Fournit un affichage lisible de la forme `[p1:o1, p2:o2, ...]`
 
-Cette structure de donnees sera utilisee tout au long de ce notebook pour representer les choix sous incertitude.",,,,,,,,057f4d09c239871e,,,,,,,
+Cette structure de données sera utilisée tout au long de ce notebook pour representer les choix sous incertitude.",,,,,,,,923dccf441daa1cd,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,87ab9a83,code,fr,d8f0decdf7729440,"// Representation d'une loterie simple
 public class Loterie<T>
 {
@@ -128,9 +128,9 @@ var coinFlip = new Loterie<double>((0.5, 200), (0.5, 0));
 
 Console.WriteLine($""Certitude : {certainty}"");
 Console.WriteLine($""Pile ou face : {coinFlip}"");",,,,,,,,d8f0decdf7729440,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,ee0e1ac2,markdown,fr,375ab62682287af0,"## 3. Axiomes de Preferences Rationnelles
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,ee0e1ac2,markdown,fr,c42d8b3e93cae30b,"## 3. Axiomes de Preferences Rationnelles
 
-Von Neumann et Morgenstern (1944) ont etabli les axiomes qui definissent un **agent rationnel**. Ces quatre axiomes ne sont pas arbitraires : ils capturent les conditions **minimales** pour qu'un systeme de preferences soit coherent et non-exploitable. Un agent qui les viole peut etre ""money-pumped"" (arnaque par cycle de preferences).
+Von Neumann et Morgenstern (1944) ont etabli les axiomes qui définissent un **agent rationnel**. Ces quatre axiomes ne sont pas arbitraires : ils capturent les conditions **minimales** pour qu'un système de preferences soit cohérent et non-exploitable. Un agent qui les viole peut etre ""money-pumped"" (arnaque par cycle de preferences).
 
 ### Notation
 
@@ -148,7 +148,7 @@ Von Neumann et Morgenstern (1944) ont etabli les axiomes qui definissent un **ag
 
 **Interpretation** : L'agent peut toujours comparer deux options. Sans cet axiome, l'agent pourrait etre paralyse face a certains choix.
 
-**Pourquoi necessaire ?** Un agent incapable de comparer A et B ne peut pas prendre de decision rationnelle entre eux.
+**Pourquoi nécessaire ?** Un agent incapable de comparer A et B ne peut pas prendre de decision rationnelle entre eux.
 
 #### Axiome 2 : Transitivite
 
@@ -156,16 +156,16 @@ Von Neumann et Morgenstern (1944) ont etabli les axiomes qui definissent un **ag
 
 **Interpretation** : Les preferences sont coherentes, pas de cycles.
 
-**Pourquoi necessaire ?** Si A ≻ B ≻ C ≻ A, on peut vous faire payer pour echanger C→B, B→A, A→C et vous revenez au point de depart avec moins d'argent. C'est le ""money pump"".
+**Pourquoi nécessaire ?** Si A ≻ B ≻ C ≻ A, on peut vous faire payer pour echanger C→B, B→A, A→C et vous revenez au point de depart avec moins d'argent. C'est le ""money pump"".
 
-#### Axiome 3 : Continuite
+#### Axiome 3 : Continuité
 
 > Si A ≻ B ≻ C, alors il existe p ∈ (0,1) tel que :
 > B ~ [p:A, (1-p):C]
 
-**Interpretation** : Meme le pire outcome peut etre compense par une probabilite suffisante du meilleur.
+**Interpretation** : même le pire outcome peut etre compense par une probabilite suffisante du meilleur.
 
-**Pourquoi necessaire ?** Sans continuite, on ne pourrait pas construire une fonction d'utilite a valeurs reelles. Cet axiome garantit l'existence d'un ""equivalent certain"" pour toute loterie.
+**Pourquoi nécessaire ?** Sans continuité, on ne pourrait pas construire une fonction d'utilite a valeurs réelles. Cet axiome garantit l'existence d'un ""equivalent certain"" pour toute loterie.
 
 #### Axiome 4 : Independance
 
@@ -174,7 +174,7 @@ Von Neumann et Morgenstern (1944) ont etabli les axiomes qui definissent un **ag
 
 **Interpretation** : Les preferences ne dependent pas des alternatives non pertinentes.
 
-**Pourquoi necessaire ?** C'est l'axiome le plus controversé. Le ""paradoxe d'Allais"" (1953) montre que les humains le violent souvent, mais un agent qui le viole peut aussi etre exploite.",,,,,,,,375ab62682287af0,,,,,,,
+**Pourquoi nécessaire ?** C'est l'axiome le plus controversé. Le ""paradoxe d'Allais"" (1953) montre que les humains le violent souvent, mais un agent qui le viole peut aussi etre exploite.",,,,,,,,c42d8b3e93cae30b,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,7b2b1e5d,markdown,fr,7b13eec1fc299d9f,"### Demonstration : Verification de la transitivite
 
 Illustrons l'axiome de transitivite avec un agent simulee utilisant une fonction d'utilite concave U(x) = sqrt(x). Nous allons comparer trois loteries et verifier que les preferences sont transitives.",,,,,,,,7b13eec1fc299d9f,,,,,,,
@@ -205,9 +205,9 @@ Console.WriteLine();
 Console.WriteLine($""A ≻ B ? {UA > UB} (transitivite: si A≻B et B≻C alors A≻C)"");
 Console.WriteLine($""B ≻ C ? {UB > UC}"");
 Console.WriteLine($""A ≻ C ? {UA > UC} (verifie !)"");",,,,,,,,e88c0b09b912d05f,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,0c8b57e6,markdown,fr,8d17ec5359fb383c,"### Analyse des resultats : Transitivite et Indifference
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,0c8b57e6,markdown,fr,b1fe16b5b76d6eb3,"### Analyse des resultats : Transitivite et Indifference
 
-Les resultats ci-dessus revelent un cas interessant :
+Les resultats ci-dessus revelent un cas intéressant :
 
 | Loterie | Utilite esperee | Interpretation |
 |---------|-----------------|----------------|
@@ -222,7 +222,7 @@ La transitivite est preservee car :
 - B ~ C (7 = 7, indifference)
 - Donc A ≻ C (10 > 7), ce qui est verifie
 
-> **Note technique** : L'indifference B ~ C illustre un point subtil de la theorie. Avec une utilite concave (sqrt), la loterie B a le meme attrait que le montant certain C = 49, bien que E[B] = 98 >> 49. C'est exactement l'**aversion au risque** : l'agent prefere 49 certain a une esperance de 98 avec risque.",,,,,,,,8d17ec5359fb383c,,,,,,,
+> **Note technique** : L'indifference B ~ C illustre un point subtil de la theorie. Avec une utilite concave (sqrt), la loterie B a le même attrait que le montant certain C = 49, bien que E[B] = 98 >> 49. C'est exactement l'**aversion au risque** : l'agent prefere 49 certain a une esperance de 98 avec risque.",,,,,,,,b1fe16b5b76d6eb3,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,5a1fd559,code,fr,c6f7e3153d55e6b4,"// Exercice : Verification de l'axiome d'independance
 
 // TODO 1 : Definir trois loteries et une fonction d'utilite
@@ -243,13 +243,13 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 // Indice : verifier que l'axiome tient toujours meme quand la fonction d'utilite change
 
 Console.WriteLine(""Exercice a completer : verification de l'axiome d'independance"");",,,,,,,,c6f7e3153d55e6b4,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,79e8dc58,markdown,fr,7acf33ce2f6e73c0,"## Exercice 1 : Verification de l'axiome d'independance
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,79e8dc58,markdown,fr,dc992ba168bb5eda,"## Exercice 1 : Verification de l'axiome d'independance
 
 **Objectif** : Verifiez empiriquement l'axiome d'independance de Von Neumann-Morgenstern en construisant des loteries composees.
 
 **Contexte** : L'axiome d'independance stipule que si A > B, alors pour toute loterie C et probabilite p : [p:A, (1-p):C] > [p:B, (1-p):C]. Vous allez tester cette propriete avec differentes fonctions d'utilite.
 
-**Etapes** :
+**étapes** :
 1. Definissez trois loteries A, B, C et une fonction d'utilite
 2. Verifiez que A > B avec votre fonction d'utilite
 3. Construisez les loteries composees L1 = [0.6:A, 0.4:C] et L2 = [0.6:B, 0.4:C]
@@ -257,10 +257,10 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 5. Testez avec une fonction d'utilite convexe (amateur de risque) et observez si la propriete tient toujours
 
 **Indices** :
-- # Indice 1 : Utilisez la classe `Loterie<double>` definie precedemment
+- # Indice 1 : Utilisez la classe `Loterie<double>` définie precedemment
 - # Indice 2 : Une fonction convexe comme U(x) = x^2 correspond a un amateur de risque
-- # Indice 3 : L'axiome d'independance est toujours respecte quand on utilise une fonction d'utilite valide",,,,,,,,7acf33ce2f6e73c0,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,05b1962d,markdown,fr,6975eece5035b068,"## 4. Theoreme de Representation
+- # Indice 3 : L'axiome d'independance est toujours respecte quand on utilise une fonction d'utilite valide",,,,,,,,dc992ba168bb5eda,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,05b1962d,markdown,fr,a70a50f5fc826a75,"## 4. Theoreme de Representation
 
 ### Le theoreme fondamental
 
@@ -299,7 +299,7 @@ L'agent :
 4. **Choisit** l'action qui maximise l'utilite esperee (decision)
 5. **Agit** dans le monde
 
-C'est exactement ce que nous allons implementer dans les cellules suivantes avec Infer.NET : l'etape 2 (inference) est faite par le moteur probabiliste, et l'etape 3 (evaluation) utilise les posteriors pour calculer les utilites esperees.",,,,,,,,6975eece5035b068,,,,,,,
+C'est exactement ce que nous allons implementer dans les cellules suivantes avec Infer.NET : l'étape 2 (inference) est faite par le moteur probabiliste, et l'étape 3 (évaluation) utilise les posteriors pour calculer les utilites esperees.",,,,,,,,a70a50f5fc826a75,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,infer1-mermaid-pipeline,markdown,fr,0e93a4ee5b7f63ea,"Le même **pipeline décisionnel**, rendu sous forme de graphe : les cinq étapes
 s'enchaînent de la perception du monde jusqu'à l'action, l'inférence bayésienne (Infer.NET)
 alimentant le calcul de l'utilité espérée.
@@ -358,7 +358,7 @@ engine.Compiler.CompilerChoice = Microsoft.ML.Probabilistic.Compiler.CompilerCho
 
 Bernoulli posteriorMalade = engine.Infer<Bernoulli>(malade);
 Console.WriteLine($""Posterior P(malade|test+) = {posteriorMalade.GetProbTrue():P1}"");",,,,,,,,b38e1ba691f33545,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e77312ab,markdown,fr,8d41a12e4e56e973,"### Interpretation : Le theoreme de Bayes en action
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e77312ab,markdown,fr,f84f47b19af3d24c,"### Interpretation : Le theoreme de Bayes en action
 
 Le resultat P(malade|test+) = 65.9% illustre le theoreme de Bayes :
 
@@ -377,7 +377,7 @@ $$P(\text{malade}|\text{test}+) = \frac{0.90 \times 0.30}{0.41} = \frac{0.27}{0.
 
 > **Intuition clinique** : Malgre un test positif avec 90% de sensibilite, la probabilite de maladie n'est ""que"" de 66%. C'est parce que la maladie est relativement rare (prior 30%) et que les faux positifs (20% des sains) contribuent significativement au total des tests positifs.
 
-Infer.NET a effectue ce calcul automatiquement grace au modele graphique. C'est la puissance de l'inference probabiliste programmatique !",,,,,,,,8d41a12e4e56e973,,,,,,,
+Infer.NET a effectue ce calcul automatiquement grace au modèle graphique. C'est la puissance de l'inference probabiliste programmatique !",,,,,,,,f84f47b19af3d24c,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,a9c8ee77,code,fr,0001dd1951f1e64d,"// Visualisation du factor graph pour le modele de diagnostic medical
 // Activons ShowFactorGraph pour le prochain modele similaire
 engine.ShowFactorGraph = true;
@@ -401,7 +401,7 @@ engineViz.Infer<Bernoulli>(malade2);
 
 Console.WriteLine(""Factor graph genere pour le modele de diagnostic."");
 Console.WriteLine(""Structure : P(malade) -> Test diagnostique -> Observation"");",,,,,,,,0001dd1951f1e64d,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,a786485c,markdown,fr,30a6bac29e4da340,Affichage du graphe de facteurs du modele de diagnostic.,,,,,,,,30a6bac29e4da340,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,a786485c,markdown,fr,72a15f74698ed130,Affichage du graphe de facteurs du modèle de diagnostic.,,,,,,,,72a15f74698ed130,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,d3340dfd,code,fr,2b28300688dbea59,"// Affichage du factor graph du modele de diagnostic medical
 // Le graphe montre la structure : Prior(malade) -> Facteur conditionnel -> Observation(test)
 display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,2b28300688dbea59,,,,,,,
@@ -429,7 +429,7 @@ Console.WriteLine($""E[U(pas traiter)] = {pMalade:F2} x {U_pas_traiter_malade} +
 
 string decision = EU_traiter > EU_pas_traiter ? ""TRAITER"" : ""NE PAS TRAITER"";
 Console.WriteLine($""\nDecision optimale : {decision}"");",,,,,,,,1e43b126fc64d5cd,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,7b6284df,markdown,fr,5d5d98704e1b5612,"### Synthese : La matrice de decision medicale
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,7b6284df,markdown,fr,787a6a616b57e4ab,"### Synthese : La matrice de decision medicale
 
 L'agent rationnel (medecin) a evalue chaque action selon la **matrice de decision** :
 
@@ -443,9 +443,9 @@ L'agent rationnel (medecin) a evalue chaque action selon la **matrice de decisio
 $$E[U(\text{traiter})] = 0.659 \times 80 + 0.341 \times 60 = 52.7 + 20.5 = 73.2$$
 $$E[U(\text{ne pas traiter})] = 0.659 \times 0 + 0.341 \times 100 = 0 + 34.1 = 34.1$$
 
-> **Decision** : L'ecart de 39.1 unites d'utilite en faveur du traitement est substantiel. Meme si le patient pourrait etre sain (34% de chance), le cout asymetrique des erreurs (0 vs 60) rend le traitement rationnel.
+> **Decision** : L'ecart de 39.1 unites d'utilite en faveur du traitement est substantiel. même si le patient pourrait etre sain (34% de chance), le cout asymetrique des erreurs (0 vs 60) rend le traitement rationnel.
 
-Cette structure ""inference bayesienne + maximisation d'utilite esperee"" est le paradigme fondamental de l'**agent rationnel** en IA.",,,,,,,,5d5d98704e1b5612,,,,,,,
+Cette structure ""inference bayesienne + maximisation d'utilite esperee"" est le paradigme fondamental de l'**agent rationnel** en IA.",,,,,,,,787a6a616b57e4ab,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e9f1808c,code,fr,8eb57dce35fc1cae,"// Exercice : Decision medicale avec test sequentiel
 
 // Parametres du second test (IRM)
@@ -474,14 +474,14 @@ double coutIRM = 500;  // Cout en unite d'utilite
 // Formule : E[U(avec IRM)] = P(IRM+) x max(EU|IRM+) + P(IRM-) x max(EU|IRM-) - coutIRM
 
 Console.WriteLine(""Exercice a completer : decision medicale avec test sequentiel"");",,,,,,,,8eb57dce35fc1cae,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,b943e16e,markdown,fr,dde17ea8627c81ca,"## Exercice 2 : Decision medicale avec test sequentiel
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,b943e16e,markdown,fr,46a6766a38db2903,"## Exercice 2 : Decision medicale avec test sequentiel
 
-**Objectif** : Etendez le modele de decision medicale pour gerer deux tests sequentiels et determinez si le second test est necessaire.
+**Objectif** : Etendez le modèle de decision medicale pour gerer deux tests sequentiels et determinez si le second test est nécessaire.
 
 **Contexte** : Un medecin peut realiser un second test complementaire (IRM) apres un premier test sanguin positif. L'IRM a une sensibilite de 95% et une specificite de 90%, mais coute 500 EUR d'utilite. La decision finale (traiter ou non) doit integrer les resultats des deux tests.
 
-**Etapes** :
-1. Definissez un modele Infer.NET avec deux tests conditionnels sur la variable `malade`
+**étapes** :
+1. Definissez un modèle Infer.NET avec deux tests conditionnels sur la variable `malade`
 2. Calculez le posterior P(malade | test1+, test2+) et P(malade | test1+, test2-)
 3. Pour chaque scenario du second test, calculez l'utilite esperee de traiter vs ne pas traiter
 4. Determinez si le second test est justifie en comparant E[U(avec test)] vs E[U(sans test)]
@@ -489,33 +489,33 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 **Indices** :
 - # Indice 1 : L'esperance sur le second test utilise la loi des probabilites totales : P(test2+) x E[U|test2+] + P(test2-) x E[U|test2-]
 - # Indice 2 : Le cout du test (-500) s'ajoute a l'utilite de chaque outcome quand on fait le test
-- # Etape 3 : Utilisez `Variable.Case` ou `Variable.If` pour conditionner le second test sur la variable malade",,,,,,,,dde17ea8627c81ca,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,06cfc37b,markdown,fr,1dff41a3c5c2060e,"## 5. Calibration par Mise a l'Indifference
+- # étape 3 : Utilisez `Variable.Case` ou `Variable.If` pour conditionner le second test sur la variable malade",,,,,,,,46a6766a38db2903,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,06cfc37b,markdown,fr,c00f2956ae395db0,"## 5. Calibration par Mise a l'Indifference
 
-### Le probleme pratique
+### Le problème pratique
 
-Comment determiner la fonction d'utilite U d'un agent ? En pratique, on ne peut pas observer U directement - on ne voit que les choix de l'agent. La **calibration** permet de reconstruire U a partir de ces choix.
+Comment déterminer la fonction d'utilite U d'un agent ? En pratique, on ne peut pas observer U directement - on ne voit que les choix de l'agent. La **calibration** permet de reconstruire U a partir de ces choix.
 
-### Methode de l'indifference (Axiome de continuite)
+### Méthode de l'indifference (Axiome de continuité)
 
-Cette methode exploite l'axiome de continuite pour ""sonder"" la fonction d'utilite point par point :
+Cette méthode exploite l'axiome de continuité pour ""sonder"" la fonction d'utilite point par point :
 
-**Etape 1 : Fixer les references**
-- Choisissez deux outcomes de reference : 
+**étape 1 : Fixer les références**
+- Choisissez deux outcomes de référence : 
   - o_best (le meilleur) avec U(o_best) = 1
   - o_worst (le pire) avec U(o_worst) = 0
 
-**Etape 2 : Pour chaque outcome intermediaire**
+**étape 2 : Pour chaque outcome intermediaire**
 - Presentez le choix : 
   - Option A : outcome o avec certitude
   - Option B : loterie [p : o_best, (1-p) : o_worst]
 - Faites varier p jusqu'a trouver p* ou l'agent est indifferent
 
-**Etape 3 : En deduire l'utilite**
-- Par l'axiome de continuite : o ~ [p* : o_best, (1-p*) : o_worst]
+**étape 3 : En deduire l'utilite**
+- Par l'axiome de continuité : o ~ [p* : o_best, (1-p*) : o_worst]
 - Donc U(o) = p* × U(o_best) + (1-p*) × U(o_worst) = p* × 1 + (1-p*) × 0 = **p***
 
-**Etape 4 : Interpoler**
+**étape 4 : Interpoler**
 - Repetez pour plusieurs outcomes pour obtenir la courbe U(.)
 - Ajustez une fonction parametrique (log, CRRA, etc.)
 
@@ -530,7 +530,7 @@ Vous avez une voiture de 10 000 EUR. Probabilite de vol = 5%.
 
 Une assurance coute 600 EUR. Devez-vous la prendre ?
 
-La reponse depend de votre fonction d'utilite ! Un agent neutre au risque compare les valeurs esperees (ne pas prendre l'assurance : E = 9500, prendre : 9400). Un agent averse au risque peut preferer l'assurance malgre une valeur esperee moindre.",,,,,,,,1dff41a3c5c2060e,,,,,,,
+La reponse depend de votre fonction d'utilite ! Un agent neutre au risque compare les valeurs esperees (ne pas prendre l'assurance : E = 9500, prendre : 9400). Un agent averse au risque peut preferer l'assurance malgre une valeur esperee moindre.",,,,,,,,c00f2956ae395db0,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,3c2870f9,code,fr,534d68561f9a890c,"// Calibration de l'utilite pour la decision d'assurance
 
 // Supposons une utilite logarithmique (aversion au risque classique)
@@ -567,7 +567,7 @@ else
 // => 10000 - p = exp(EU_sansAssurance * log(10001)) - 1
 double primeMax = 10000 - (Math.Exp(EU_sansAssurance * Math.Log(10001)) - 1);
 Console.WriteLine($""\nPrime maximale acceptable : {primeMax:F0} EUR"");",,,,,,,,534d68561f9a890c,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1c6c5c9c,markdown,fr,032ebd29e5f56722,"### Analyse du resultat : Pourquoi une prime si elevee ?
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1c6c5c9c,markdown,fr,87513fc0de577186,"### Analyse du resultat : Pourquoi une prime si élevée ?
 
 Le resultat montre qu'avec une utilite logarithmique, l'agent accepterait de payer jusqu'a **3691 EUR** pour assurer une voiture de 10 000 EUR contre un risque de vol de 5%.
 
@@ -588,8 +588,8 @@ La ""prime maximale acceptable"" de 3691 EUR est le montant ou l'agent devient i
 > $$\text{Prime de risque} = E[L] - CE$$
 > Ici : Prime = 9 500 - (10 000 - 3691) = 9 500 - 6 309 = 3 191 EUR
 
-Cette valeur elevee explique pourquoi les marches de l'assurance existent : les individus averses au risque sont prets a payer significativement plus que la perte esperee pour obtenir la certitude.",,,,,,,,032ebd29e5f56722,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1af5f807,markdown,fr,9b4415e383746ece,"---
+Cette valeur élevée explique pourquoi les marches de l'assurance existent : les individus averses au risque sont prets a payer significativement plus que la perte esperee pour obtenir la certitude.",,,,,,,,87513fc0de577186,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,1af5f807,markdown,fr,c9bf80d1eef7e4cb,"---
 
 ### Transition : De la theorie a la pratique avec Infer.NET
 
@@ -599,29 +599,29 @@ Nous avons maintenant les fondations theoriques :
 |---------|----------------------------|
 | Loteries | Representation formelle des choix incertains |
 | Axiomes VNM | Garantissent l'existence d'une fonction d'utilite |
-| Calibration | Permet de determiner U empiriquement |
-| E[U] maximisation | Critere de decision |
+| Calibration | Permet de déterminer U empiriquement |
+| E[U] maximisation | critère de decision |
 
 **Comment Infer.NET s'integre-t-il ?**
 
-Infer.NET excelle dans l'**etape d'inference** : calculer les distributions posterieures sur les etats du monde. Une fois ces distributions obtenues, le calcul de l'utilite esperee devient une simple integration.
+Infer.NET excelle dans l'**étape d'inference** : calculer les distributions posterieures sur les etats du monde. Une fois ces distributions obtenues, le calcul de l'utilite esperee devient une simple intégration.
 
 ```
 Observation -> [Infer.NET: P(etat|obs)] -> [Calcul E[U]] -> Decision
 ```
 
-Dans la section suivante, nous montrons comment representer une loterie comme un modele probabiliste Infer.NET et comment exploiter l'inference pour la prise de decision.",,,,,,,,9b4415e383746ece,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,9ec14b73,markdown,fr,05c1c4ea23fa908d,"## 6. Modelisation avec Infer.NET
+Dans la section suivante, nous montrons comment representer une loterie comme un modèle probabiliste Infer.NET et comment exploiter l'inference pour la prise de decision.",,,,,,,,c9bf80d1eef7e4cb,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,9ec14b73,markdown,fr,9e3f938d498574d7,"## 6. Modelisation avec Infer.NET
 
-### Loteries comme modeles probabilistes
+### Loteries comme modèles probabilistes
 
-Une loterie peut etre naturellement modelisee comme une variable aleatoire dans Infer.NET. L'avantage de cette approche est triple :
+Une loterie peut etre naturellement modelisee comme une variable aléatoire dans Infer.NET. L'avantage de cette approche est triple :
 
 1. **Inference** : Infer.NET peut calculer les posteriors sur des variables latentes (comme dans l'exemple medical precedent)
-2. **Composition** : Les loteries composees sont modelisees par des modeles graphiques
-3. **Integration** : Le calcul de E[U] peut s'appuyer sur les distributions inferees
+2. **Composition** : Les loteries composees sont modelisées par des modèles graphiques
+3. **intégration** : Le calcul de E[U] peut s'appuyer sur les distributions inferees
 
-L'exemple suivant montre comment une loterie binaire simple est representee comme un modele conditionnel dans Infer.NET.",,,,,,,,05c1c4ea23fa908d,,,,,,,
+L'exemple suivant montre comment une loterie binaire simple est représentée comme un modèle conditionnel dans Infer.NET.",,,,,,,,9e3f938d498574d7,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,c808867b,code,fr,f1208473a883b05f,"// Loterie : 50% de gagner 1000, 50% de perdre 500
 
 Variable<bool> gagne = Variable.Bernoulli(0.5).Named(""gagne"");
@@ -661,7 +661,7 @@ Console.WriteLine();
 Console.WriteLine($""U(valeur esperee) = U(250) = {U_certain:F2}"");
 Console.WriteLine();
 Console.WriteLine($""EU < U(EV) ? {EU < U_certain} (=> agent averse au risque prefere la certitude)"");",,,,,,,,f1208473a883b05f,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e0923e05,markdown,fr,f648e62c377e6028,"### Interpretation : Equivalent certain et aversion au risque
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,e0923e05,markdown,fr,bb71c682847065b9,"### Interpretation : Equivalent certain et aversion au risque
 
 Les resultats ci-dessus illustrent un concept fondamental de la theorie de la decision :
 
@@ -685,7 +685,7 @@ L'agent averse au risque est indifferent entre :
 - Recevoir 125 EUR avec certitude
 - Jouer la loterie [50% : +1000, 50% : -500] dont E = 250 EUR
 
-> **Note Infer.NET** : Le moteur approxime la distribution bimodale par une Gaussienne (moyenne 250, variance elevee). Cette approximation suffit pour le calcul de E[X] mais pas pour les moments superieurs. Pour des calculs d'utilite precis, il vaut mieux calculer E[U] manuellement comme montre ci-dessus.",,,,,,,,f648e62c377e6028,,,,,,,
+> **Note Infer.NET** : Le moteur approxime la distribution bimodale par une Gaussienne (moyenne 250, variance élevée). Cette approximation suffit pour le calcul de E[X] mais pas pour les moments superieurs. Pour des calculs d'utilite precis, il vaut mieux calculer E[U] manuellement comme montre ci-dessus.",,,,,,,,bb71c682847065b9,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,71e38e30,code,fr,03af093794a4be3f,"// Visualisation du factor graph pour le modele de loterie
 // Generation du graphe pour la loterie gagne/gain
 
@@ -708,11 +708,11 @@ moteurViz.Infer<Gaussian>(gain2);
 
 Console.WriteLine(""Factor graph de la loterie genere."");
 Console.WriteLine(""Structure : P(gagne=0.5) -> Facteur conditionnel -> gain (+1000 ou -500)"");",,,,,,,,03af093794a4be3f,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,822d7ac1,markdown,fr,841264459ff42a3f,Affichage du graphe de facteurs du modele de loterie avec utilite.,,,,,,,,841264459ff42a3f,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,822d7ac1,markdown,fr,c863f9959f96bb3c,Affichage du graphe de facteurs du modèle de loterie avec utilite.,,,,,,,,c863f9959f96bb3c,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,a723979f,code,fr,e5fa4f24290a1b0a,"// Affichage du factor graph du modele de loterie
 // Le graphe montre la structure conditionnelle : gagne (Bernoulli) -> gain (deterministe selon l'etat)
 display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,e5fa4f24290a1b0a,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,32f3e9bd,markdown,fr,bc24b10fd1323aad,"## 7. Exemple guide : Calibrer Votre Fonction d'Utilite
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,32f3e9bd,markdown,fr,e67055aa537c9770,"## 7. Exemple guide : Calibrer Votre Fonction d'Utilite
 
 ### Enonce
 
@@ -723,13 +723,13 @@ Imaginez que vous devez choisir entre :
 
 **Question** : Pour quelle valeur de X etes-vous indifferent entre A et B ?
 
-### Methode
+### Méthode
 
 1. Si votre X* = 500, vous etes **neutre au risque**
 2. Si votre X* < 500, vous etes **averse au risque**
 3. Si votre X* > 500, vous etes **amateur de risque**
 
-### Code pour explorer",,,,,,,,bc24b10fd1323aad,,,,,,,
+### Code pour explorer",,,,,,,,e67055aa537c9770,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,200dfc6f,code,fr,fec7b632d5db1aaf,"// Exploration : trouvez votre equivalent certain
 
 // Supposons que votre equivalent certain est X* = 400 EUR
@@ -819,7 +819,7 @@ foreach (double ce in new[] { 200.0, 300.0, 400.0, 450.0, 480.0 })
     Console.WriteLine($""{ce,8:F0} | {r,10:F2} | {interp}"");
 }
 ",,,,,,,,fec7b632d5db1aaf,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,c8e03d8f,markdown,fr,db053d8aba587ced,"### Analyse du resultat : Calibration CRRA
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,c8e03d8f,markdown,fr,1b585d98217791c1,"### Analyse du resultat : Calibration CRRA
 
 Le resultat montre un coefficient rho = 0.25 pour un equivalent certain de 400 EUR, indiquant un profil **quasi-neutre au risque**.
 
@@ -846,18 +846,18 @@ Le resultat montre un coefficient rho = 0.25 pour un equivalent certain de 400 E
 | Menages americains | 1.0 - 3.0 |
 | Decisions de sante | 2.0 - 5.0 |
 
-> **Note technique** : La loterie utilise `epsilon = 1` au lieu de 0 car CRRA n'est pas definie en 0 pour rho >= 1. Cela affecte legerement les resultats numeriques mais pas l'interpretation qualitative.
+> **Note technique** : La loterie utilise `epsilon = 1` au lieu de 0 car CRRA n'est pas définie en 0 pour rho >= 1. Cela affecte legerement les resultats numeriques mais pas l'interpretation qualitative.
 
-Le notebook suivant (DecInfer-3) approfondira ces fonctions d'utilite et leurs proprietes.",,,,,,,,db053d8aba587ced,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,38977f13,markdown,fr,0862cbfa20c7625c,"## Exercice 3 : Comparer CARA et CRRA — Primes de risque
+Le notebook suivant (DecInfer-3) approfondira ces fonctions d'utilite et leurs proprietes.",,,,,,,,1b585d98217791c1,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,38977f13,markdown,fr,1c46e7fc1acc79f8,"## Exercice 3 : Comparer CARA et CRRA — Primes de risque
 
 ### Objectif
 
-Implementer et comparer deux familles de fonctions d'utilite classiques en economie pour une meme loterie, et analyser comment leurs primes de risque different.
+Implementer et comparer deux familles de fonctions d'utilite classiques en economie pour une même loterie, et analyser comment leurs primes de risque different.
 
 ### Contexte
 
-Deux grandes familles de fonctions d'utilite sont utilisees en pratique :
+Deux grandes familles de fonctions d'utilite sont utilisées en pratique :
 
 - **CARA** (Constant Absolute Risk Aversion) : U(x) = -exp(-alpha * x)
   - L'aversion absolue au risque est constante : A(x) = -U''(x)/U'(x) = alpha
@@ -871,8 +871,8 @@ Deux grandes familles de fonctions d'utilite sont utilisees en pratique :
 
 Considerez la loterie suivante : **50% de chance de gagner 2000 EUR, 50% de perdre 500 EUR** (richesse initiale = 10 000 EUR).
 
-1. **Implementer CARA** : Definir U_CARA(x, alpha) = -exp(-alpha * x) et calculer l'equivalent certain CE_CARA pour alpha = 0.001
-2. **Implementer CRRA** : Definir U_CRRA(x, rho) = x^(1-rho)/(1-rho) et calculer l'equivalent certain CE_CRRA pour rho = 2.0
+1. **Implementer CARA** : définir U_CARA(x, alpha) = -exp(-alpha * x) et calculer l'equivalent certain CE_CARA pour alpha = 0.001
+2. **Implementer CRRA** : définir U_CRRA(x, rho) = x^(1-rho)/(1-rho) et calculer l'equivalent certain CE_CRRA pour rho = 2.0
 3. **Calculer les primes de risque** : Prime = E[gain] - CE pour chaque fonction
 4. **Comparer** les primes de risque et interpreter la difference
 5. **Bonus** : Tester avec une richesse initiale differente (ex: 1000 EUR) et observer comment la prime CARA reste constante mais CRRA change
@@ -880,7 +880,7 @@ Considerez la loterie suivante : **50% de chance de gagner 2000 EUR, 50% de perd
 **Indices** :
 - # Indice 1 : Pour trouver l'equivalent certain, utilisez une recherche par dichotomie sur l'intervalle [perteBasse - 100, gainHaut + 100]
 - # Indice 2 : Pour CRRA, traitez le cas rho = 1 separement avec `Math.Abs(rho - 1) < 1e-6` et utilisez `Math.Log(x)` dans ce cas
-- # Etape 3 : Prime de risque = E[gain] - CE. Si la prime est positive, l'agent est averse au risque",,,,,,,,0862cbfa20c7625c,,,,,,,
+- # étape 3 : Prime de risque = E[gain] - CE. Si la prime est positive, l'agent est averse au risque",,,,,,,,1c46e7fc1acc79f8,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,2a15f646,code,fr,49bf32ef4dc0df43,"// Exercice 3 : Comparer les primes de risque CARA vs CRRA
 // Richesse initiale et parametres de la loterie
 double richesseInitiale = 10000.0;
@@ -911,15 +911,15 @@ Console.WriteLine();
 // Indice : observer comment la prime CARA reste constante mais CRRA change
 
 Console.WriteLine(""Exercice a completer : fonctions CARA et CRRA, calcul des equivalents certains et primes de risque"");",,,,,,,,49bf32ef4dc0df43,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,d0552d66,markdown,fr,0e9e05aec2b4b6f0,"## 8. Resume
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.ipynb,d0552d66,markdown,fr,cb6577597feb89af,"## 8. Resume
 
 | Concept | Description |
 |---------|-------------|
 | **Loterie** | Distribution de probabilite sur des outcomes |
-| **Axiomes VNM** | Completude, Transitivite, Continuite, Independance |
+| **Axiomes VNM** | Completude, Transitivite, continuité, Independance |
 | **Theoreme de representation** | Existence d'une fonction U telle que preferences = max E[U] |
 | **Agent rationnel** | Maximise l'utilite esperee de ses actions |
-| **Calibration** | Methode de l'indifference pour determiner U |
+| **Calibration** | méthode de l'indifference pour déterminer U |
 
 ---
 
@@ -928,12 +928,12 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-1-Utility-Foundations.
 | Si vous voulez... | Consultez... |
 |-------------------|-------------|
 | Approfondir l'aversion au risque | [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb) |
-| Decisions multi-criteres | [DecInfer-4-Multi-Attribute](DecInfer-4-Multi-Attribute.ipynb) |
-| Visualiser les reseaux de decision | [DecInfer-5-Decision-Networks](DecInfer-5-Decision-Networks.ipynb) |
+| Decisions multi-critères | [DecInfer-4-Multi-Attribute](DecInfer-4-Multi-Attribute.ipynb) |
+| Visualiser les réseaux de decision | [DecInfer-5-Decision-Networks](DecInfer-5-Decision-Networks.ipynb) |
 
 ---
 
-## Prochaine etape
+## Prochaine étape
 
 Dans [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb), nous approfondirons :
 
@@ -944,11 +944,11 @@ Dans [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb), nous approfondi
 
 ---
 
-## References
+## Références
 
 - Von Neumann & Morgenstern (1944) : Theory of Games and Economic Behavior
 - Russell & Norvig : Artificial Intelligence, Chapter 16
-- Bernoulli (1738) : Specimen Theoriae Novae de Mensura Sortis (Paradoxe de St-Petersbourg)",,,,,,,,0e9e05aec2b4b6f0,,,,,,,
+- Bernoulli (1738) : Specimen Theoriae Novae de Mensura Sortis (Paradoxe de St-Petersbourg)",,,,,,,,cb6577597feb89af,,,,,,,
 MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-3-Utility-Money.ipynb,8d0cf773,markdown,fr,ef48066f06df9429,"# DecInfer-3-Utility-Money : Utilite de l'Argent et Aversion au Risque
 **Serie** : Programmation Probabiliste avec Infer.NET (3/10)  
 **Duree estimee** : 45 minutes  
