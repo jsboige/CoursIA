@@ -543,3 +543,122 @@ def event_triggered_battery(
         "n_events": len(per_event),
         "n_neutral": len(per_neutral),
     }
+
+
+# --------------------------------------------------------------------------- #
+# Co-localisation d'evenements (axe derivee temporelle, capstone strate 5)
+# --------------------------------------------------------------------------- #
+def event_colocalization(
+    events_a: Sequence[int],
+    events_b: Sequence[int],
+    T: int,
+    n_null: int = 500,
+    rng: np.random.Generator | None = None,
+) -> Dict:
+    """Co-localisation **position-level** de deux flux d'evenements, null par rotation.
+
+    Question de l'**axe derivee temporelle** (capstone strate 5, Epic #4588) : les
+    evenements du flux A (p.ex. *beauty events* ``dK/dt`` de Schmidhuber, cf.
+    :mod:`ict.beauty`) tombent-ils **plus pres** des evenements du flux B (p.ex.
+    *ignition events*, pics de concentration de :func:`ignition_events`) qu'au
+    hasard ? Un meme "insight" latent vu par deux lentilles temporelles
+    co-localiserait ; deux evenements de nature distincte se dissocieraient. La
+    dissociation est un **negatif honnete** aussi precieux que le pont (elle
+    reconnecte le verdict ICT-24 ``emergence_gain`` <-> ignition au Gate 5 de la
+    synthese : la jambe temporelle discrimine orthogonalement).
+
+    Statistique : distance moyenne au plus proche voisin, **symetrisee** ::
+
+        D(A, B) = ( mean_{a in A} min_{b in B} |a - b|
+                    + mean_{b in B} min_{a in A} |a - b| ) / 2
+
+    Petite ``D`` = les deux flux s'alignent. La symetrisation evite qu'un flux
+    dense "absorbe" artificiellement un flux clairsemé.
+
+    Null par **rotation circulaire** de B : ``b -> (b + s) mod T`` pour un decalage
+    ``s`` tire uniformement dans ``[1, T)``. La rotation **preserve le compte et
+    l'espacement interne** de B (donc son autocorrelation) et ne randomise que la
+    **phase** relative a A — c'est le controle standard du co-firing de trains de
+    spikes (Grün 2009). La distance reste **lineaire** (les positions vivent sur
+    une sequence, pas un anneau) : une seule "couture" a l'origine, sans biais
+    systematique puisque A occupe aussi ``[0, T)``.
+
+    Parametres
+    ----------
+    events_a, events_b : sequences d'int
+        Indices d'evenements (p.ex. ``steps`` de ``beauty_events`` et ``center``
+        de ``ignition_events``) dans ``[0, T)``.
+    T : int
+        Longueur de la sequence porteuse (nombre de pas / positions).
+    n_null : int
+        Nombre de rotations tirees pour le null (defaut 500).
+    rng : np.random.Generator, optionnel
+        Generateur (defaut graine 0, reproductibilite).
+
+    Retour
+    ------
+    dict
+        ``obs`` : float — ``D(A, B)`` observee (``nan`` si un flux est vide).
+        ``null_mean`` / ``null_std`` : float — stats de la distribution nulle.
+        ``z`` : float — ``(null_mean - obs) / null_std`` (``> 0`` = plus proche
+        qu'au hasard = co-localise ; ``nan`` si ``null_std == 0``).
+        ``p_close`` : float — ``P(null <= obs)`` lissee, une queue (petit =
+        co-localisation significative).
+        ``p_far`` : float — ``P(null >= obs)`` lissee, une queue (petit =
+        dissociation significative).
+        ``verdict`` : ``"colocalized"`` si ``p_close < 0.05`` ; ``"dissociated"``
+        si ``p_far < 0.05`` ; ``"chance"`` sinon ; ``"undefined"`` si flux vide.
+        ``n_a`` / ``n_b`` / ``T`` / ``n_null`` : parametres records.
+
+    Notes
+    -----
+    Fonction **pure** sur deux listes d'indices : aucune dependance aux fixtures.
+    L'agregation multi-prompts (test paire obs-vs-null sur plusieurs sequences)
+    vit dans le notebook/appelant, pas ici — meme separation que
+    :func:`concentration_series` (statistique par pas) / :func:`ignition_events`.
+    """
+    rng = rng or np.random.default_rng(0)
+    a = [int(x) for x in events_a]
+    b = [int(x) for x in events_b]
+    if T < 1:
+        raise ValueError(f"T doit etre >= 1, recu {T}")
+
+    def _sym_nn(xs: List[int], ys: List[int]) -> float:
+        if not xs or not ys:
+            return float("nan")
+        xa = np.asarray(xs, dtype=float)[:, None]
+        ya = np.asarray(ys, dtype=float)[None, :]
+        d = np.abs(xa - ya)  # (|A|, |B|)
+        a_to_b = d.min(axis=1).mean()
+        b_to_a = d.min(axis=0).mean()
+        return float(0.5 * (a_to_b + b_to_a))
+
+    if not a or not b:
+        return {
+            "obs": float("nan"), "null_mean": float("nan"),
+            "null_std": float("nan"), "z": float("nan"),
+            "p_close": float("nan"), "p_far": float("nan"),
+            "verdict": "undefined",
+            "n_a": len(a), "n_b": len(b), "T": int(T), "n_null": int(n_null),
+        }
+
+    obs = _sym_nn(a, b)
+    shifts = rng.integers(1, T, size=n_null) if T > 1 else np.zeros(n_null, dtype=int)
+    null = np.array([_sym_nn(a, [(y + int(s)) % T for y in b]) for s in shifts], dtype=float)
+    null_mean = float(null.mean())
+    null_std = float(null.std())
+    z = float((null_mean - obs) / null_std) if null_std > 0 else float("nan")
+    # p lissees (+1 au numerateur et denominateur : jamais 0, cf. North 2002)
+    p_close = float((np.sum(null <= obs) + 1) / (n_null + 1))
+    p_far = float((np.sum(null >= obs) + 1) / (n_null + 1))
+    if p_close < 0.05:
+        verdict = "colocalized"
+    elif p_far < 0.05:
+        verdict = "dissociated"
+    else:
+        verdict = "chance"
+    return {
+        "obs": obs, "null_mean": null_mean, "null_std": null_std, "z": z,
+        "p_close": p_close, "p_far": p_far, "verdict": verdict,
+        "n_a": len(a), "n_b": len(b), "T": int(T), "n_null": int(n_null),
+    }

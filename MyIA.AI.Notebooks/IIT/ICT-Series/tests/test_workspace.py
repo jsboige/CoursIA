@@ -496,3 +496,87 @@ def test_event_triggered_battery_rejects_bad_window():
     rng = np.random.default_rng(0)
     with pytest.raises(ValueError, match="window >= 1"):
         ws.event_triggered_battery(states, [5], window=0, rng=rng, n_shuffles=2)
+
+
+# --------------------------------------------------------------------------- #
+# event_colocalization (axe derivee temporelle, capstone strate 5)
+# --------------------------------------------------------------------------- #
+def test_event_colocalization_planted_alignment_is_colocalized():
+    """Deux flux alignes (B a <=3 pas de chaque A) -> verdict 'colocalized'.
+
+    Valide la MECANIQUE : l'obs (distance NN symetrique) doit etre bien plus
+    petite que le null par rotation, avec ``z > 0`` et ``p_close < 0.05``.
+    """
+    a = [50, 150, 250]
+    b = [52, 148, 253]  # chaque B a <= 3 pas d'un A
+    r = ws.event_colocalization(a, b, T=300, rng=np.random.default_rng(0))
+    assert r["verdict"] == "colocalized"
+    assert r["obs"] < r["null_mean"]
+    assert r["z"] > 0
+    assert r["p_close"] < 0.05
+
+
+def test_event_colocalization_antiphase_is_dissociated():
+    """Deux peignes reguliers en anti-phase (separation locale maximale) ->
+    verdict 'dissociated'.
+
+    A et B ont la meme periode 20 mais B est decale de 10 (demi-periode) : chaque
+    B est a exactement 10 pas du plus proche A, alors que la rotation trouve des
+    phases ou ils s'alignent (distance ~5 en moyenne). L'obs est donc PLUS LOIN
+    qu'au hasard : ``z < 0`` et ``p_far < 0.05``. C'est le cas ou la jambe
+    temporelle discrimine (echo du negatif ICT-24).
+    """
+    a = list(range(0, 300, 20))    # 0, 20, ..., 280
+    b = list(range(10, 300, 20))   # 10, 30, ..., 290 (anti-phase)
+    r = ws.event_colocalization(a, b, T=300, rng=np.random.default_rng(0))
+    assert r["verdict"] == "dissociated"
+    assert r["obs"] > r["null_mean"]
+    assert r["z"] < 0
+    assert r["p_far"] < 0.05
+
+
+def test_event_colocalization_random_is_chance():
+    """Deux flux tires au hasard -> verdict 'chance' (ni co-localise ni dissocie)."""
+    g = np.random.default_rng(1)
+    a = sorted(g.choice(300, 8, replace=False).tolist())
+    b = sorted(g.choice(300, 8, replace=False).tolist())
+    r = ws.event_colocalization(a, b, T=300, rng=np.random.default_rng(0))
+    assert r["verdict"] == "chance"
+    assert r["p_close"] >= 0.05
+    assert r["p_far"] >= 0.05
+
+
+def test_event_colocalization_empty_stream_is_undefined():
+    """Un flux vide -> verdict 'undefined', obs NaN, pas de crash."""
+    r = ws.event_colocalization([], [10, 20], T=100)
+    assert r["verdict"] == "undefined"
+    assert np.isnan(r["obs"])
+    assert r["n_a"] == 0 and r["n_b"] == 2
+    # symetrie de la degenerescence : B vide aussi
+    r2 = ws.event_colocalization([10, 20], [], T=100)
+    assert r2["verdict"] == "undefined"
+    assert np.isnan(r2["obs"])
+
+
+def test_event_colocalization_symmetric_in_arguments():
+    """D(A, B) == D(B, A) : la statistique NN est symetrisee."""
+    a, b = [10, 50, 90], [12, 48, 93]
+    r1 = ws.event_colocalization(a, b, T=100, rng=np.random.default_rng(3))
+    r2 = ws.event_colocalization(b, a, T=100, rng=np.random.default_rng(3))
+    assert abs(r1["obs"] - r2["obs"]) < 1e-9
+
+
+def test_event_colocalization_reproducible_with_seed():
+    """Meme graine -> null identique (obs/null_mean/p reproductibles)."""
+    a, b = [10, 40, 70], [15, 45, 75]
+    r1 = ws.event_colocalization(a, b, T=100, n_null=200, rng=np.random.default_rng(7))
+    r2 = ws.event_colocalization(a, b, T=100, n_null=200, rng=np.random.default_rng(7))
+    assert r1["obs"] == r2["obs"]
+    assert r1["null_mean"] == r2["null_mean"]
+    assert r1["p_close"] == r2["p_close"]
+
+
+def test_event_colocalization_rejects_bad_T():
+    """T < 1 leve ValueError (sequence porteuse vide)."""
+    with pytest.raises(ValueError, match="T doit etre >= 1"):
+        ws.event_colocalization([1, 2], [1, 2], T=0)
