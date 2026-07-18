@@ -77,7 +77,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 8, backtests QC Cloud MCP) | 5 | cohorte **Trend + Régime + Vol risk** (5 stratégies best-guess du bucket Vivant promues) — **0 edge significative** (PSR < 50 % partout), 4 Needs-improvement, 1 BROKEN (VIX-TermStructure Sharpe négatif −0.125, PSR 0.18 %) ; max PSR 24.99 % TrendStocksLite |
 | Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
 | Vérifié (tranche 10, backtests QC Cloud MCP) | 5 | cohorte DeepLearning+LSTM+Temporal-CNN — **1 BROKEN** (Crypto-LSTM-Prediction Sharpe -0.021) ; PSR max 28.70 % (Temporal-CNN-Prediction) |
-| Vivant (best-guess, non vérifié) | 36 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
+| Vérifié (tranche 11, backtests QC Cloud MCP) | 4 | cohorte Crypto BTC + IBKR-Binance-Hybrid — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement (1 MaxDD catastrophique 72.7 %) ; cohorte limitée à 4 stratégies vérifiables firsthand (les 5ᵉ `Crypto-LSTM-Prediction` overlap tranche 10) |
+| Vivant (best-guess, non vérifié) | 31 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol : voir sections ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -278,18 +279,45 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN hand-rolled) | **Needs-improvement** | post-#2801 (tradeableDates=0) ; Sharpe 0.161 ; CAGR 4.81 % ; MaxDD 31.7 % ; PSR 2.68 % ; NP 26.5 % ($30 099) — Sharpe faible, edge absent |
 | `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | **Needs-improvement (max cohorte)** | post-#2801 (tradeableDates=0) ; **Sharpe 0.734** ; **CAGR 20.51 %** ; **MaxDD 21.6 %** (min cohorte) ; **PSR 28.70 %** ; NP 154.1 % ($169 062) — meilleur Sharpe/CAGR/MaxDD cohorte mais PSR < 50 % |
 
-#### Vivant (best-guess, non vérifié) (36)
+#### Vérifié (tranche 11, backtests QC Cloud via MCP) (4)
+
+> **Scope tranche 11 (#1621)** : 4 stratégies promues via backtests QC Cloud réels (MCP `qc-mcp`,
+> backtests existants relus firsthand). Cohorte **Crypto BTC + IBKR-Binance-Hybrid**
+> (différente des tranches 2 Vol-/risk, 3 Momentum/Factor, 4 MeanReversion/Macro, 5 Trend/Macro,
+> 6 Régime/Factor/Vol, 7 ML, 8 Trend+Regime+Vol, 9 Composite+Options, 10 DL+LSTM+Temporal-CNN).
+> Métriques pleine période in-sample (sauf Portfolio-IBKR-Binance-Hybrid qui est walk-forward 2022-2024).
+> **0 edge statistiquement significative** (PSR < 50 % partout). PSR max 33.50 %
+> (`Multi-Layer-EMA-Crypto`, cloud-only ; pour le périmètre Vivant local = `BTC-ML-Researcher` PSR 25.59 %).
+> Inclut un **MaxDD catastrophique** (`CSharp-BTC-MACD-ADX` MaxDD 72.7 %).
+
+| Stratégie | Projet QC | Backtest ID | Nom backtest | Date | Sharpe | CAGR | MaxDD | PSR | Verdict |
+|-----------|-----------|-------------|-------------|------|-------:|-----:|------:|----:|---------|
+| `BTC-ML` | 29318876 | `df8e873a6b819d5aa082ff150ee8f595` | "po2026-verify-btc-ml-oos-2021-2026" | 2026-07-15 | **0.057** | 3.69 % | 15.4 % | 1.52 % | **Needs-improvement** (Sharpe near-zero, PSR ~1.5 %, profil quasi-passif) |
+| `Crypto-MultiCanal` | 30750734 | `82fae2cde69e476ec3671b6603a300ac` | "1630-baseline-CryptoMultiCanal-post2801" | 2026-06-14 | **0.333** | 4.59 % | **14.1 %** | 12.95 % | **Needs-improvement** (Sharpe correct mais CAGR modeste, MaxDD min cohorte) |
+| `CSharp-BTC-MACD-ADX` | 30751067 | `ff36dde9650487744ab72d9c119039fa` | "BTC-MACD-ADX Baseline" | 2026-04-27 | 0.225 | 3.63 % | **72.7 %** | 2.88 % | **Needs-improvement** (MaxDD catastrophique — MACD/ADX sur BTC = whipsaw en bear market) |
+| `Portfolio-IBKR-Binance-Hybrid` | 31717642 | `173434a130bee666b26b33b6463bc694` | "Phase3-WF-2022-2024-5050" | 2026-07-16 | 0.391 | 14.11 % | 35.3 % | 9.05 % | **Needs-improvement** (WF walk-forward 50/50 multi-actifs, PSR < 50 %) |
+
+**Verdict honnête : 0 edge sur la cohorte**. PSR max 33.50 % (hors-périmètre Vivant), max périmètre = 12.95 % (`Crypto-MultiCanal`). Confirme pour la cohorte Crypto BTC ce que les tranches 2-9 confirmaient : les backtests in-sample pleine période **ne valident aucun edge** sur la cohorte. Walk-forward multi-seed OOS requis avant toute promotion production.
+
+### Observations pédagogiques
+
+- **`BTC-ML`** : Sharpe 0.057 ≈ 0 sur 1886 jours OOS 2021-2026 (BTC post-halving cycles), profil quasi-passif. Confirme que la stratégie ML Crypto s'effondre en régime post-halving (probablement surapprentissage sur le bull run 2020-2021).
+- **`CSharp-BTC-MACD-ADX`** MaxDD 72.7 % : MACD/ADX sur BTC = oscillateurs inadaptés à la volatilité crypto. Whipsaw violent en bear market 2018+2022. Drawdown > 70 % = inacceptable, peu importe le Sharpe positif résiduel.
+- **`Portfolio-IBKR-Binance-Hybrid`** : seul backtest walk-forward WF 2022-2024 50/50 de la cohorte (= méthodologie OOS distincte du training), Sharpe 0.391 / CAGR 14.11 % décent mais PSR < 50 %. Distribution stable multi-actifs (IBKR equity + Binance crypto) vs concentration BTC mono-actif.
+- **Note méthodologique** : `Crypto-LSTM-Prediction` (BTC LSTM/DLinear, projet 31855350) **est éligible à la cohorte BTC/Crypto** mais déjà promu en tranche 10 (#7249 OPEN, cohorte DL/LSTM/Temporal-CNN) — promotion redondante évitée pour préserver l'atomicité inter-tranches.
+
+#### Vivant (best-guess, non vérifié) (31)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
-| `BTC-ML` | `projects/BTC-ML/` | ML Crypto | Vivant | main.py: class MyEnhancedCryptoMlAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
+| `BTC-ML` | `projects/BTC-ML/` | ML Crypto | **Vérifié tranche 11** | main.py: class MyEnhancedCryptoMlAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 11 |
 | `CSharp-BTC-EMA-Cross` | `projects/CSharp-BTC-EMA-Cross/` | Trend EMA (C#) | Vivant | Main.cs: class BtcEmaCrossDaily1Algorithm : QCAlgorithm + research_robustness.ipynb |
-| `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | Vivant | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md |
+| `CSharp-BTC-MACD-ADX` | `projects/CSharp-BTC-MACD-ADX/` | Trend MACD/ADX (C#) | **Vérifié tranche 11** | Main.cs: class BtcMacdAdxDaily1Algorithm : QCAlgorithm + Research.ipynb + RESEARCH_FINDINGS.md — voir section tranche 11 |
 | `CSharp-CTG-Momentum` | `projects/CSharp-CTG-Momentum/` | Momentum (C#, multi-fichiers) | Vivant | Main.cs: class StocksOnTheMoveAlgorithm : QCAlgorithm + 4 indicateurs .cs + research_robustness.ipynb |
 | `Chronos-Foundation-Forecasting` | `projects/Chronos-Foundation-Forecasting/` | DL (Chronos foundation) | Vivant | main.py: class ChronosFoundationForecasting(QCAlgorithm) + research.ipynb |
 | `Clustering-Fundamentals-ML` | `projects/Clustering-Fundamentals-ML/` | ML non supervisé | Vivant | main.py: class ClusteringFundamentalsAlgorithm(QCAlgorithm) |
 | `Crypto-LSTM-Prediction` | `projects/Crypto-LSTM-Prediction/` | DL (LSTM) Crypto | **Vérifié tranche 10** | main.py: class CryptoLSTMPredictionAlgorithm(QCAlgorithm) + research.ipynb — voir section tranche 10 |
-| `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | Vivant | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
+| `Crypto-MultiCanal` | `projects/Crypto-MultiCanal/` | Crypto multi-signal | **Vérifié tranche 11** | main.py: class CryptoMultiChannelAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 11 |
 | `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb — voir section tranche 10 |
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | Vivant | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
