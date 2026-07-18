@@ -19,6 +19,8 @@ Cinq clusters :
   5. TestEdgeCases — accents legitimes pre-existants (faux positif evite)
   6. TestScopeMode — mode --scope : classification markdown-only STRICT complete
      (comment / stdout / other), compliant vs violation, exit code combine
+  7. TestRegressionCov — couverture linguistique F#/C#-verbatim/nbformat-list-source
+     (gaps des clusters 1-6 : F# (* *) blocks, C# @$"" verbatim, source-as-list)
 """
 import json
 import sys
@@ -268,3 +270,81 @@ class TestScopeMode:
         assert out["scope"]["markdown_only_strict_compliant"] is False
         by_canal = out["scope"]["by_canal"]
         assert by_canal.get("comment", 0) >= 1
+
+
+# ---------------------------------------------------------------------------
+# 7. Couverture linguistique F#/C#-verbatim/nbformat-list-source
+#    (gaps des clusters 1-6 : F# (* *) blocks, C# @$"" verbatim, source-as-list)
+# ---------------------------------------------------------------------------
+class TestRegressionCov:
+    DQ = chr(34)  # guillemet double, pour eviter les echappements dans les litteraux
+
+    def test_fs_block_comment_excludes_accented_ident(self):
+        # Un identifiant accentue DANS un bloc (* *) F# = commentaire, pas flagge.
+        src = "(* préférence est un commentaire F# *)\nlet x = 1"
+        ids = cir.code_identifiers(src)
+        assert "préférence" not in ids
+        assert "preferences" not in ids
+        assert "x" in ids
+
+    def test_fs_accented_ident_outside_block_is_regression(self):
+        # L'identifiant accentue est HORS du bloc -> regression si base avait unaccented.
+        old = _nb([("code", "preferences = []")])
+        new = _nb([("code", "(* note *)\npréférences = []")])
+        regs, _ = cir.scan(old, new)
+        assert len(regs) == 1 and regs[0][1] == "préférences"
+
+    def test_cs_verbatim_interp_string_not_an_ident(self):
+        # C# @$"..." (verbatim interpole) : contenu = chaine, pas un identifiant.
+        # Un 'identifiant' accentue dans @$"..." ne doit PAS etre flagge.
+        lit = "var msg = @$" + self.DQ + "{résultat}" + self.DQ + ";"
+        ids = cir.code_identifiers(lit)
+        assert "résultat" not in ids
+        assert "msg" in ids and "var" in ids
+
+    def test_accented_dict_key_is_regression(self):
+        # Cle de dictionnaire accentuee Python = identifiant structurel.
+        old = _nb([("code", "d = {'resultat': 1}")])
+        new = _nb([("code", "d = {'résultat': 1}")])
+        regs, _ = cir.scan(old, new)
+        # La cle de dict est entre quotes -> c'est une chaine, pas un identifiant.
+        # Donc PAS de regression (la cle string n'est pas un token structurel).
+        assert regs == []
+
+    def test_accented_param_rename_is_regression(self):
+        # Renommer un parametre de fonction en l'accentuant = regression d'API source.
+        # Cas #7167 : parametre `strategies` -> `stratégies` d'une signature Python.
+        old = _nb([("code", "def evaluer(strategies):\n    return strategies")])
+        new = _nb([("code", "def evaluer(stratégies):\n    return stratégies")])
+        regs, _ = cir.scan(old, new)
+        assert len(regs) == 2  # parametre + usage, les deux accentues vs base unaccented
+        assert all(r[1] == "stratégies" and r[2] == "strategies" for r in regs)
+
+    def test_nbformat_list_source_handled_e2e(self):
+        # source comme LISTE de lignes (format nbformat real) -> _src_str() + scan()
+        # doivent gerer indifferemment list-vs-str des deux cotes base/head.
+        base_list = {"cells": [
+            {"cell_type": "code", "source": ["preferences = []\n", "x = 1"], "metadata": {}}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        head_str = {"cells": [
+            {"cell_type": "code", "source": "préférences = []\nx = 1", "metadata": {}}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        # Cas 1 : base (list, unaccented) -> head (str, accented) = REGRESSION.
+        # Prouve que la base en format liste est normalisee par _src_str().
+        regs, _ = cir.scan(base_list, head_str)
+        assert len(regs) == 1 and regs[0][1] == "préférences"
+
+        # Cas 2 : base deja accented (statut quo) -> head accented = PAS de regression.
+        base_str_acc = {"cells": [
+            {"cell_type": "code", "source": "préférences = []\nx = 1", "metadata": {}}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        regs2, _ = cir.scan(base_str_acc, head_str)
+        assert regs2 == []  # statut quo : la base avait deja la forme accentuee
+
+    def test_fs_block_preserves_line_alignment(self):
+        # Un bloc F# multi-ligne ne doit pas decaler les numeros de ligne.
+        src = "(* ligne1\nligne2\nligne3 *)\npréférences = 1"
+        for tok, line, ctx in cir.accented_identifiers(src):
+            assert tok == "préférences"
+            assert line == 4  # apres les 3 lignes internes du bloc + fermeture
+            assert "préférences = 1" in ctx
