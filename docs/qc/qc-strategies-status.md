@@ -81,7 +81,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
 | Vérifié (tranche 13, backtests QC Cloud MCP) | 4 | cohorte ML Classification / Clustering / Hybrid — **0 edge significative** (PSR max 22.74 %), 4 Needs-improvement |
 | Vérifié (tranche 14, backtests QC Cloud MCP) | 2 | cohorte **DL Chronos foundation** (2 stratégies Chronos du bucket Vivant promues) — **0 edge significative** (PSR max 13.79 % `ML-Chronos-Foundation`, aucune > 50 %), 2 Needs-improvement ; **le régime SMA200 (`Chronos-Foundation-Forecasting`) a le PSR le plus bas (3.12 %), pas le plus haut** — le filtre SMA200 dégrade la signification statistique vs le variant plain |
-| Vivant (best-guess, non vérifié) | 19 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL : voir sections ci-dessous |
+| Vivant (best-guess, non vérifié) | 19 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 24 true-Vivant + 32 promues tr7-14** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `19` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -367,7 +367,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos foundation, plain) | **Needs-improvement** | 2026 (Batch4, 121 ordres) ; **Sharpe 0.277** ; CAGR 7.23 % ; MaxDD 13.5 % ; **PSR 13.79 %** ; NP 63.0 % ($62 627) — variant plain (sans filtre de régime) : meilleure PSR de la cohorte, mais fenêtre courte (Batch4) → signification fragile, edge non confirmée |
 
 
-#### Vivant (best-guess, non vérifié) (19)
+#### Vivant (best-guess, non vérifié) (56 physiques = 24 true + 32 promues tr7-14 ; voir synthèse)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
