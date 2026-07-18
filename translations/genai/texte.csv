@@ -11826,8 +11826,8 @@ MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,0101f0af,markdown,fr,2e95fd04eb
 1. **Indexation** : Documents → Chunks → Embeddings → Base vectorielle
 2. **Retrieval** : Question → Embedding → k-NN → Chunks pertinents
 3. **Generation** : Question + Chunks → LLM → Réponse augmentée",,,,,,,,2e95fd04eb545a3f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,ra6m0der,markdown,fr,a46177ac204c1897,"Le diagramme ci-dessous rend ce pipeline RAG sous forme de graphe : la phase
-d'**indexation** (Documents -> Retrieval) et la phase de **requete/generation**
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,ra6m0der,markdown,fr,1f4b4caf0e96023e,"Le diagramme ci-dessous rend ce pipeline RAG sous forme de graphe : la phase
+d'**indexation** (Documents -> Retrieval) et la phase de **requete/génération**
 (Question + Retrieval -> LLM -> Reponse).
 
 ```mermaid
@@ -11848,8 +11848,8 @@ flowchart LR
 > encodes en **embeddings** et indexes pour le **retrieval**. A la requete, la
 > **question** declenche une recherche des passages pertinents, et le **LLM** synthetise
 > la **reponse** en s'appuyant sur ces passages -- c'est l'apport du RAG : ancrer la
-> generation dans des sources externes plutot que dans la seule memoire parametrique.
-",,,,,,,,a46177ac204c1897,,,,,,,
+> génération dans des sources externes plutôt que dans la seule memoire parametrique.
+",,,,,,,,1f4b4caf0e96023e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,7328629c,markdown,fr,bc36b85cbd42314a,"## 1.2 Préparation des données
 
 Pour cet exemple, nous utilisons le débat Lincoln-Douglas (1858), un document historique public.",,,,,,,,bc36b85cbd42314a,,,,,,,
@@ -12061,9 +12061,9 @@ chunks_recursive = chunk_recursive(debate_text, max_size=500)
 print(f""\nChunking fixe (100 mots, overlap 20): {len(chunks_fixed)} chunks"")
 print(f""Chunking sémantique (3 phrases): {len(chunks_semantic)} chunks"")
 print(f""Chunking récursif (max 500 chars): {len(chunks_recursive)} chunks"")",,,,,,,,47054ac0fa9e36d9,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,9135cbc1,markdown,fr,e405470b6fa582e8,"### Exercice 1 - Strategie de chunking hybride
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,9135cbc1,markdown,fr,4152373f7618c9a4,"### Exercice 1 - Strategie de chunking hybride
 
-Le chunking fixe coupe au milieu des phrases, le semantique produit des chunks de taille variable, et le recursif necessite de bons delimiteurs. Une strategie hybride combine les avantages de plusieurs approches.
+Le chunking fixe coupe au milieu des phrases, le semantique produit des chunks de taille variable, et le recursif necessite de bons delimiteurs. Une stratégie hybride combine les avantages de plusieurs approches.
 
 **Objectif** : Implementer une fonction `chunk_hybrid(text, target_size, tolerance, overlap)` qui decoupe un texte en chunks de taille cible tout en respectant les frontieres de phrases.
 
@@ -12071,11 +12071,11 @@ Le chunking fixe coupe au milieu des phrases, le semantique produit des chunks d
 - Le chunking hybride fonctionne en deux phases : decouper par phrases (comme le semantique), puis regrouper les phrases tant que la taille reste dans `[target_size - tolerance, target_size + tolerance]`
 - Utiliser `re.split(r'(?<=[.!?])\s+', text)` pour obtenir les phrases
 - Pour chaque phrase, l'ajouter au chunk courant si `len(chunk) + len(phrase) <= target_size + tolerance`
-- Ajouter un overlap : conserver les N derniers caracteres du chunk precedent comme debut du suivant
+- Ajouter un overlap : conserver les N derniers caractères du chunk précèdent comme debut du suivant
 - `# Etape 1` : Decouper le texte en phrases avec `re.split()`
 - `# Etape 2` : Regrouper les phrases en chunks tout en respectant `target_size + tolerance`
-- `# Etape 3` : Ajouter l'overlap entre chunks consecutifs et retourner la liste
-- `# Indice` : Verifier votre resultat avec `len(chunk_hybrid(debate_text, 400, 100, 50))` et comparer avec les 51 chunks du chunking fixe",,,,,,,,e405470b6fa582e8,,,,,,,
+- `# Etape 3` : Ajouter l'overlap entre chunks consécutifs et retourner la liste
+- `# Indice` : Verifier votre résultat avec `len(chunk_hybrid(debate_text, 400, 100, 50))` et comparer avec les 51 chunks du chunking fixe",,,,,,,,4152373f7618c9a4,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,155481ca,code,fr,54a51323643cecff,"# Exercice 1 - Strategie de chunking hybride
 # TODO etudiant : implementer chunk_hybrid
 
@@ -12317,7 +12317,7 @@ Les résultats confirment une vectorisation réussie de notre base de connaissan
 **Note technique** : L'utilisation de `create_embeddings_batch()` au lieu d'appels individuels réduit le temps d'exécution de **~10 secondes à ~2 secondes** pour 51 chunks. En production avec des milliers de documents, cette optimisation est critique.
 
 **Prochaine étape** : Initialiser le VectorStore avec ces embeddings pour la recherche k-NN.",,,,,,,,329312333aac3c26,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,a488351f,markdown,fr,d94e34ae88f2834f,"### Anatomie d'une réponse RAG
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,a488351f,markdown,fr,6626208c34bb1257,"### Anatomie d'une réponse RAG
 
 Le pipeline `rag_query()` exécute 4 étapes :
 
@@ -12347,14 +12347,14 @@ response = client.chat.completions.create(...)
 ```
 Le LLM génère une réponse basée sur le contexte fourni, pas sur ses connaissances pré-entraînées.
 
-**Paramètres clés** :
-- `temperature` : Non supporté par gpt-5-mini (utilise la valeur par défaut 1.0)
+**Paramètrès clés** :
+- `température` : Non supporté par gpt-5-mini (utilise la valeur par défaut 1.0)
 - `max_completion_tokens=2000` : Budget de génération. Pour un modèle de raisonnement
   comme gpt-5-mini, ce budget doit être suffisamment large car les tokens de
   raisonnement sont déduits du même budget (un budget trop bas, ex: 500, pouvait
   être entièrement consommé par le raisonnement sans texte final visible — issue #3571).
 
-**Résultat attendu** : Une réponse précise citant les chunks utilisés, avec traçabilité complète via les métadonnées de tokens.",,,,,,,,d94e34ae88f2834f,,,,,,,
+**Résultat attendu** : Une réponse précise citant les chunks utilisés, avec traçabilité complète via les métadonnées de tokens.",,,,,,,,6626208c34bb1257,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,97dcb4af,markdown,fr,456b9ea326a963ea,"## 3.2 Recherche k-NN (k-Nearest Neighbors)
 
 Pour la recherche, on calcule la distance entre l'embedding de la question et ceux des chunks.",,,,,,,,456b9ea326a963ea,,,,,,,
@@ -12459,20 +12459,20 @@ class VectorStore:
 
 # Initialisation du VectorStore
 vector_store = VectorStore(df_chunks)",,,,,,,,633ed195fe091936,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,682bc78f,markdown,fr,7112b2a40c6abda7,"### Exercice 2 - Recherche vectorielle avec seuil de confiance
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,682bc78f,markdown,fr,f8303bb2d13ee387,"### Exercice 2 - Recherche vectorielle avec seuil de confiance
 
-Le VectorStore utilise k-NN pour trouver les chunks les plus proches, mais ne filtre pas les resultats peu pertinents. Dans un systeme de production, il est essentiel de ne retourner que les chunks dont la similarite depasse un seuil.
+Le VectorStore utilise k-NN pour trouver les chunks les plus proches, mais ne filtre pas les résultats peu pertinents. Dans un système de production, il est essentiel de ne retourner que les chunks dont la similarite depasse un seuil.
 
 **Objectif** : Implementer une fonction `search_with_confidence(vector_store, question, k, min_score)` qui effectue une recherche vectorielle et retourne uniquement les chunks dont le score depasse un seuil, avec un niveau de confiance global.
 
 **Indices** :
 - Reutiliser `create_embedding()` pour vectoriser la question, puis `vector_store.search()` pour la recherche
-- Filtrer les resultats avec `min_score` et calculer un niveau de confiance : ""haute"" si meilleur score > 0.7, ""moyenne"" si > 0.5, ""basse"" sinon
+- Filtrer les résultats avec `min_score` et calculer un niveau de confiance : ""haute"" si meilleur score > 0.7, ""moyenne"" si > 0.5, ""basse"" sinon
 - Retourner un dict `{""results"": List[Dict], ""confidence"": str, ""total_found"": int, ""kept"": int}`
 - `# Etape 1` : Creer l'embedding de la question avec `create_embedding()`
 - `# Etape 2` : Appeler `vector_store.search(query_embedding, k=k)` et filtrer par `min_score`
-- `# Etape 3` : Determiner le niveau de confiance a partir du meilleur score des resultats filtres
-- `# Indice` : Si aucun resultat ne depasse le seuil, retourner confiance ""basse"" avec liste vide",,,,,,,,7112b2a40c6abda7,,,,,,,
+- `# Etape 3` : Determiner le niveau de confiance a partir du meilleur score des résultats filtrès
+- `# Indice` : Si aucun résultat ne depasse le seuil, retourner confiance ""basse"" avec liste vide",,,,,,,,f8303bb2d13ee387,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,1e982498,code,fr,6711d55519700e17,"# Exercice 2 - Recherche vectorielle avec seuil de confiance
 # TODO etudiant : implementer search_with_confidence
 
@@ -12721,7 +12721,7 @@ Le **reranking** est une étape critique pour améliorer la précision de la RAG
 - **Temporal decay** : Préférer les chunks récents pour des données temporelles
 
 **Note** : Le simple filtrage par score est déjà très efficace et coûte 0 token supplémentaire.",,,,,,,,83370f8d9220eada,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,83eb0887,markdown,fr,2bf26638588754ae,"---
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,83eb0887,markdown,fr,d6502a1014af71f9,"---
 
 ## Partie 5 : RAG avec Responses API (Moderne)
 
@@ -12732,7 +12732,7 @@ La **Responses API** (2025) offre des avantages significatifs pour la RAG :
 | `store: true` | Persistence automatique des conversations |
 | `previous_response_id` | Multi-turn sans renvoyer l'historique |
 | Cache automatique | Économies 40-80% sur tokens répétés |
-| Outils intégrés | Web search, file search, code interpreter |",,,,,,,,2bf26638588754ae,,,,,,,
+| Outils intégrés | Web search, file search, code interprèter |",,,,,,,,d6502a1014af71f9,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,2db0c645,code,fr,d13d5cf839304bcd,"def rag_query_responses_api(
     question: str,
     vector_store: VectorStore,
@@ -13026,20 +13026,20 @@ result_reranked = rag_with_reranking(
 )
 
 print(f""\nRéponse: {result_reranked['answer'][:500]}..."")",,,,,,,,f01f820b0fc0a2d1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,c9ac10ad,markdown,fr,95c48ef6315eec29,"### Exercice 3 - Evaluation de la qualite de retrieval
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,c9ac10ad,markdown,fr,b3fdf7cc79f977f0,"### Exercice 3 - Evaluation de la qualite de retrieval
 
-Le pipeline RAG depend entierement de la qualite du retrieval. Sans bons chunks, meme le meilleur modele generera des reponses mediocre.
+Le pipeline RAG depend entierement de la qualite du retrieval. Sans bons chunks, même le meilleur modele génèrera des reponses médiocre.
 
-**Objectif** : Implementer une fonction `evaluate_retrieval(questions_references, vector_store, k)` qui mesure la precision du retrieval sur un jeu de questions avec chunks de reference attendus.
+**Objectif** : Implementer une fonction `evaluate_retrieval(questions_références, vector_store, k)` qui mesure la precision du retrieval sur un jeu de questions avec chunks de référence attendus.
 
 **Indices** :
-- Le parametre `questions_references` est une liste de dicts `{""question"": str, ""expected_chunk_ids"": List[int]}`
-- Pour chaque question, effectuer la recherche k-NN et verifier si les `expected_chunk_ids` apparaissent dans les resultats
+- Le paramètre `questions_références` est une liste de dicts `{""question"": str, ""expected_chunk_ids"": List[int]}`
+- Pour chaque question, effectuer la recherche k-NN et vérifier si les `expected_chunk_ids` apparaissent dans les résultats
 - Calculer deux metriques : **precision** (fraction des chunks trouves qui sont pertinents) et **recall** (fraction des chunks pertinents qui ont ete trouves)
 - `# Etape 1` : Construire un petit jeu de 3 questions avec chunks attendus (utiliser les chunks 0, 9, 20 par exemple)
 - `# Etape 2` : Pour chaque question, appeler `vector_store.search()` et collecter les `chunk_id` trouves
 - `# Etape 3` : Comparer avec les `expected_chunk_ids` et calculer precision et recall
-- `# Indice` : precision = `len(trouves & attendus) / len(trouves)`, recall = `len(trouves & attendus) / len(attendus)`",,,,,,,,95c48ef6315eec29,,,,,,,
+- `# Indice` : precision = `len(trouves & attendus) / len(trouves)`, recall = `len(trouves & attendus) / len(attendus)`",,,,,,,,b3fdf7cc79f977f0,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,7050cc5f,code,fr,c95810061e697ef9,"# Exercice 3 - Evaluation de la qualite de retrieval
 # TODO etudiant : implementer evaluate_retrieval
 
@@ -13117,7 +13117,7 @@ confidence = ""high"" if min_score > 0.7 else ""medium"" if min_score > 0.5 else
 ```
 
 **Prochaine étape** : La conclusion résume toutes les fonctions créées et les bonnes pratiques pour la production.",,,,,,,,f71b840c93b2b88b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,927c17e4,markdown,fr,33b67cf0903b4d0b,"---
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,927c17e4,markdown,fr,07bd643ee3d7fd3d,"---
 
 ## Conclusion
 
@@ -13145,8 +13145,8 @@ MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,927c17e4,markdown,fr,33b67cf090
 
 **Documentation API :**
 - [OpenAI Embeddings Guide](https://platform.openai.com/docs/guides/embeddings)
-- [Responses API Documentation](https://platform.openai.com/docs/api-reference/responses)
-- [RAG Best Practices](https://platform.openai.com/docs/guides/retrieval)",,,,,,,,33b67cf0903b4d0b,,,,,,,
+- [Responses API Documentation](https://platform.openai.com/docs/api-référence/responses)
+- [RAG Best Practices](https://platform.openai.com/docs/guides/retrieval)",,,,,,,,07bd643ee3d7fd3d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,74298fb7,code,fr,4eb2d77ae7ae1e63,"# Résumé des fonctions créées
 print(""=== Fonctions RAG disponibles ==="")
 print(""""""
@@ -13168,7 +13168,7 @@ RAG:
   - rag_with_citations(question, vector_store, k)  # Avec sources
   - rag_with_reranking(question, ..., min_score)   # Avec filtrage
 """""")",,,,,,,,4eb2d77ae7ae1e63,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,5axdk1j38pr,markdown,fr,7b51eae92913823a,"---
+MyIA.AI.Notebooks/GenAI/Texte/5_RAG_Modern.ipynb,5axdk1j38pr,markdown,fr,f92cab0526dfaa68,"---
 
 ## CHALLENGE BONUS - Mini Moteur FAQ avec RAG
 
@@ -13186,7 +13186,7 @@ Ce notebook montre:
 - **Section 4** : Recherche vectorielle avec la classe `VectorStore`
 - **Section 5** : Construction d'un prompt RAG avec contexte
 
-### Criteres de succes
+### Criteres de succès
 
 - [ ] Créer une mini-base de 5-8 Q/R sur un sujet de votre choix
 - [ ] Implémenter le chunking des réponses avec `chunk_recursive()`
@@ -13203,7 +13203,7 @@ Ce notebook montre:
 ---
 
 **Soumission** : PR avec titre ""Challenge #5 - [Votre Nom]"", sujet de la FAQ et exemple de requête
-",,,,,,,,7b51eae92913823a,,,,,,,
+",,,,,,,,f92cab0526dfaa68,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/6_PDF_Web_Search.ipynb,9e872efc,markdown,fr,add63eb561e6db2a,"# PDF et Web Search : Sources Documentaires avec OpenAI
 
 **Navigation** : [Index](README.md) | [<< Precedent](5_RAG_Modern.ipynb) | [Suivant >>](7_Code_Interpreter.ipynb)
