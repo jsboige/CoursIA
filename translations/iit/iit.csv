@@ -3653,7 +3653,7 @@ Une lecture complementaire est la **decomposition de Hodge** du champ de flux ne
   - Relier a England 2013 *dissipation-driven adaptation* : formaliser la derivation thermodynamique de l'auto-maintien (les systemes qui dissipent plus tendent a s'auto-organiser -- mais tous ne deviennent pas agents).
   - Croiser ICT-18 avec ICT-2/3/9 pour cartographier les systemes dans le **plan (moyen, fin)** ; l'enjeu serait alors un troisieme axe vertical (Friston free energy / cloture de contraintes), definissant un cube de la triade.
   - **ICT-19 ?** : la question des batteries de capteurs multiples (proposition ChatGPT, *two separate batteries*) depasse ICT-18 -- ce serait un notebook dedie a la fusion *moyen + fin + enjeu*, avec sa propre structure et son propre gate. ICT-18 fournit la brique ; ICT-19 l'assemblerait.",,,,,,,,f55b89865081e76d,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c6a54be62e36,markdown,fr,48ecb6769cc3a014,"# ICT-19 — Raffinement et résolution des stubs (tranche 3)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,c6a54be62e36,markdown,fr,48ecb6769cc3a014,"# ICT-19 — Raffinement et résolution des stubs (tranche 3)
 
 [← ICT-19 squelette (tranche 2)](ICT-19-EnjeuBattery.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
 
@@ -3679,7 +3679,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c6a54be62
 
 20 min (lecture + exécution séquentielle). Substantiellement plus rapide que la tranche 2 (pas de reaction-diffusion lourde).
 ",,,,,,,,48ecb6769cc3a014,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,d99d055d2fb8,code,fr,b7f11e7c4b0e8c22,"# Setup : imports + matplotlib Agg non-interactif (GPU-free, numpy only)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,d99d055d2fb8,code,fr,b7f11e7c4b0e8c22,"# Setup : imports + matplotlib Agg non-interactif (GPU-free, numpy only)
 import sys
 import numpy as np
 
@@ -3720,7 +3720,7 @@ print(f""  time_to_recover available: {time_to_recover is not None}"")
 print(f""  SelfSortingArray available: {SelfSortingArray is not None}"")
 print(f""  replicator_trajectory available: {replicator_trajectory is not None}"")
 ",,,,,,,,b7f11e7c4b0e8c22,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,a4099ad72def,markdown,fr,31ca6875688c7ce6,"## 8. Raffinement méthodologique — `repair_gain` et `time_to_recover`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,a4099ad72def,markdown,fr,0d23bd9b5610849e,"## 8. Raffinement méthodologique — `repair_gain` et `time_to_recover`
 
 La tranche 2 avait documenté un **échec de Gate ENJEU-1** sur le banc naïf (`I_stake(S4) = -0.5083`, `I_stake(S5) = -0.4651`) et l'avait attribué à une *limite physique* de Gray-Scott. **Ce diagnostic était faux.** Le résultat nul venait de deux défauts corrigés ici :
 
@@ -3734,9 +3734,9 @@ Cette tranche corrige les deux et **résout le Gate ENJEU-1 en espace de champ**
 
 ### 8.1 Mesure `repair_gain` sur S4 mature (régime de Pearson, warmup 3000 pas)
 
-On adopte le régime **taches mitotiques de Pearson** (`F=0.0367, k=0.0649`, le défaut robuste de `ict.reaction_diffusion`) sur une grille `n=64`, avec un warmup de 3000 pas pour que les taches se développent réellement. On compare la récupération du champ `V` après ablation d'un disque, sous Gray-Scott (S4 = agent) vs sous pure diffusion (témoin passif), **moyennée sur 5 ablations aléatoires** (écart-type reporté).
-",,,,,,,,31ca6875688c7ce6,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,ce0461f78012,code,fr,2c1cc74fd6de9644,"# Raffinement — regime Pearson mitotic-spots (F=0.0367, k=0.0649), n=64, warmup 3000.
+On adopte le régime **tâches mitotiques de Pearson** (`F=0.0367, k=0.0649`, le défaut robuste de `ict.reaction_diffusion`) sur une grille `n=64`, avec un warmup de 3000 pas pour que les tâches se développent réellement. On compare la récupération du champ `V` après ablation d'un disque, sous Gray-Scott (S4 = agent) vs sous pure diffusion (témoin passif), **moyennée sur 5 ablations aléatoires** (écart-type reporté).
+",,,,,,,,0d23bd9b5610849e,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,ce0461f78012,code,fr,2c1cc74fd6de9644,"# Raffinement — regime Pearson mitotic-spots (F=0.0367, k=0.0649), n=64, warmup 3000.
 # Deux corrections vs tranche 2 :
 #   (1) appel recovery_score corrige : ablated = champ ablate (Vk_t), PAS le champ relaxe ;
 #   (2) regime auto-entretenu robuste (taches de Pearson) sur grille n=64 assez grande
@@ -3781,11 +3781,11 @@ print(f""  > 0 = S4 repare activement la zone ablatee ; ~0 = passif (diffusion)"
 mask = agency.disk_mask(N, cx=N // 2, cy=N // 2, radius=RADIUS)
 Uk, Vk = agency.ablate(U, V, mask)
 ",,,,,,,,2c1cc74fd6de9644,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,df7907783e2a,markdown,fr,30b6ec05d3913a56,"### 8.2 Observable temporelle : `time_to_recover` (structure locale)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,df7907783e2a,markdown,fr,b8af094199e8aee7,"### 8.2 Observable temporelle : `time_to_recover` (structure locale)
 
-Sous une ablation *locale* (un disque de rayon 12 dans une grille 64x64 ≈ 11 % des cellules), la variance **globale** `structure(V)` bouge à peine — elle ne capte pas la perte de motif (cf. docstring `ict.agency.local_structure`). On suit donc la variance **locale au masque** : elle chute à zéro juste après l'ablation et remonte quand les taches se reforment dans la zone. `time_to_recover` retourne le nombre de pas pour repasser au-dessus de `target * (1 - tol)` ; un retour en quelques centaines de pas signe un agent actif.
-",,,,,,,,30b6ec05d3913a56,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,9efef4d06248,code,fr,03cb74efc1deb509,"# time_to_recover sur l'observable LOCALE (variance dans le masque) : la variance
+Sous une ablation *locale* (un disque de rayon 12 dans une grille 64x64 ≈ 11 % des cellules), la variance **globale** `structure(V)` bouge à peine — elle ne capte pas la perte de motif (cf. docstring `ict.agency.local_structure`). On suit donc la variance **locale au masque** : elle chute à zéro juste après l'ablation et remonte quand les tâches se reforment dans la zone. `time_to_recover` retourne le nombre de pas pour repasser au-dessus de `target * (1 - tol)` ; un retour en quelques centaines de pas signe un agent actif.
+",,,,,,,,b8af094199e8aee7,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,9efef4d06248,code,fr,03cb74efc1deb509,"# time_to_recover sur l'observable LOCALE (variance dans le masque) : la variance
 # globale bouge a peine sous une ablation locale, donc on suit local_structure(V, mask)
 # qui chute a 0 apres ablation et remonte quand les taches se reforment dans la zone.
 target_local = agency.local_structure(ref, mask)
@@ -3805,7 +3805,7 @@ if ttr_loose is not None:
 else:
     print(f""  -> Aucune reconstruction locale en {RELAX} pas."")
 ",,,,,,,,03cb74efc1deb509,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,edd8da8a271e,markdown,fr,2bc69aef9c222a37,"### 8.3 Comparaison directe `stake_index` vs `repair_gain`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,edd8da8a271e,markdown,fr,2bc69aef9c222a37,"### 8.3 Comparaison directe `stake_index` vs `repair_gain`
 
 | Mesure | S4 (Gray-Scott, agent) | Témoin | Verdict |
 |--------|------------------------|--------|---------|
@@ -3815,7 +3815,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,edd8da8a2
 
 **Ce que corrige la tranche 3.** Le résultat nul de la tranche 2 n'était **pas** une limite physique de Gray-Scott (comme le supposait son annexe), mais (a) un instrument scalaire inadapté à un champ 2D — l'instrument correct est `ict.agency.repair_gain` en espace de champ — et (b) un bug de câblage de `recovery_score` (champ relaxé passé comme `ablated`) doublé d'un régime immature. Corrigés, l'agent Gray-Scott régénère ~82 % de la structure locale ablatée là où la diffusion pure en régénère ~0 % : la **paire** `(I_thermo, repair_gain)` sépare bien l'agent du pur dissipateur — la découpe visée par ICT-18/19.
 ",,,,,,,,2bc69aef9c222a37,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,be0d9dbd5141,markdown,fr,f54d980ac4dec1e1,"## 9. Résolution S1 — tri auto-organisé (`ict.self_sorting.SelfSortingArray`)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,be0d9dbd5141,markdown,fr,f54d980ac4dec1e1,"## 9. Résolution S1 — tri auto-organisé (`ict.self_sorting.SelfSortingArray`)
 
 **Observable 1D** : taux de paires adjacentes bien ordonnées dans le tableau (`sorted_pair_rate` ∈ [0, 1]). L'attracteur = 1.0 (array complètement trié).
 
@@ -3823,7 +3823,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,be0d9dbd5
 
 **Step function** : à chaque appel, on avance `SelfSortingArray` d'un pas (un swap éventuel) puis on renvoie le nouveau `sorted_pair_rate`.
 ",,,,,,,,f54d980ac4dec1e1,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,54b5a61a3854,code,fr,3e9bbe98a0b4481f,"# S1 resolution : SelfSortingArray avec 10 cellules
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,54b5a61a3854,code,fr,3e9bbe98a0b4481f,"# S1 resolution : SelfSortingArray avec 10 cellules
 s1_state = {""values"": list(range(10)), ""ssa"": None}
 rng_init = np.random.default_rng(42)
 rng_init.shuffle(s1_state[""values""])
@@ -3862,9 +3862,9 @@ i_stake_s1 = stake_index(
 print(f""S1 I_stake = {i_stake_s1:+.4f}"")
 print(f""  Attendu : I_stake >> 0 (le tri defend son attracteur sorted)."")
 ",,,,,,,,3e9bbe98a0b4481f,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,d8dcba6dec31,markdown,fr,b3b7993838852d28,"**Interprétation S1.** Le tri auto-organisé a un *enjeu* clair : chaque cellule (vue-cellule) tend vers sa position correcte, et le système revient rapidement à l'ordre global après une perturbation locale. `I_stake ≈ 1` est la signature d'un système à *clôture de contraintes forte* — chaque swap rapproche l'ensemble d'un point fixe.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,d8dcba6dec31,markdown,fr,b3b7993838852d28,"**Interprétation S1.** Le tri auto-organisé a un *enjeu* clair : chaque cellule (vue-cellule) tend vers sa position correcte, et le système revient rapidement à l'ordre global après une perturbation locale. `I_stake ≈ 1` est la signature d'un système à *clôture de contraintes forte* — chaque swap rapproche l'ensemble d'un point fixe.
 ",,,,,,,,b3b7993838852d28,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,a43a732b6332,markdown,fr,8e2b01bb2b25146a,"## 10. Résolution S3 — Axelrod (`ict.strategic_morphodynamics`)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,a43a732b6332,markdown,fr,8e2b01bb2b25146a,"## 10. Résolution S3 — Axelrod (`ict.strategic_morphodynamics`)
 
 **Observable 1D** : fréquence de la stratégie `allc` (Always Cooperate) dans la dynamique du replicateur.
 
@@ -3872,7 +3872,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,a43a732b6
 
 **Step function** : à chaque appel, on avance la trajectoire du replicateur d'un pas et on renvoie la nouvelle fréquence.
 ",,,,,,,,8e2b01bb2b25146a,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,d8d8f95c6871,code,fr,5d84828dd25b1cad,"# S3 resolution : replicator dynamics sur Axelrod
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,d8d8f95c6871,code,fr,5d84828dd25b1cad,"# S3 resolution : replicator dynamics sur Axelrod
 rng_axelrod = np.random.default_rng(42)
 strategies = make_strategies(rng=rng_axelrod)
 n_strat = len(strategies)
@@ -3920,11 +3920,11 @@ i_stake_s3 = stake_index(
 print(f""S3 I_stake (coop_rate) = {i_stake_s3:+.4f}"")
 print(f""  Attendu : I_stake > 0 (l'ESS Axelrod defend sa structure de frequences)."")
 ",,,,,,,,5d84828dd25b1cad,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,c18600d28cdf,markdown,fr,7925afd30ed9e945,"**Interprétation S3.** La dynamique du replicateur Axelrod a un *enjeu* modéré (`I_stake ≈ 0.85`) : après une perturbation initiale des fréquences, le système converge vers l'ESS (stratégies comme `tft`, `pavlov` qui dominent `alld`). Ce n'est pas un enjeu aussi fort que S1 (tri parfait) parce que la dynamique du replicateur est *neutre* sur certaines dimensions (les stratégies qui se ressemblent en fitness coexistent).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,c18600d28cdf,markdown,fr,7925afd30ed9e945,"**Interprétation S3.** La dynamique du replicateur Axelrod a un *enjeu* modéré (`I_stake ≈ 0.85`) : après une perturbation initiale des fréquences, le système converge vers l'ESS (stratégies comme `tft`, `pavlov` qui dominent `alld`). Ce n'est pas un enjeu aussi fort que S1 (tri parfait) parce que la dynamique du replicateur est *neutre* sur certaines dimensions (les stratégies qui se ressemblent en fitness coexistent).
 
 **Note pédagogique** : Axelrod est un cas intéressant parce que la convergence est *asymptotique* — le système tend vers l'ESS mais ne s'y fixe pas exactement. C'est une différence importante avec S1 où le point fixe est net.
 ",,,,,,,,7925afd30ed9e945,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,ead6c5f208e1,markdown,fr,667f2ee2112eb734,"## 11. Résolution custom step — substrat-jouet pour calibrer l'intuition
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,ead6c5f208e1,markdown,fr,667f2ee2112eb734,"## 11. Résolution custom step — substrat-jouet pour calibrer l'intuition
 
 Le stub tranche 2 demandait un substrat custom avec `I_stake` extrême. Voici deux exemples pour calibrer :
 
@@ -3933,7 +3933,7 @@ Le stub tranche 2 demandait un substrat custom avec `I_stake` extrême. Voici de
 
 **Implémentation** : on construit le `step_fn` avec un état mutable capturé en closure (pattern déjà utilisé pour S4 dans la tranche 2).
 ",,,,,,,,667f2ee2112eb734,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,5d0797328b05,code,fr,bc7eb388a909cadd,"# Custom step resolu : ressort + bruit progressif
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,5d0797328b05,code,fr,bc7eb388a909cadd,"# Custom step resolu : ressort + bruit progressif
 rng_custom = np.random.default_rng(123)
 custom_state = {""t"": 0}
 def custom_a_step(state, _rng=rng_custom, _s=custom_state):
@@ -3968,13 +3968,13 @@ i_stake_custom_b = stake_index(
 print(f""Custom B (marche biaisee) I_stake = {i_stake_custom_b:+.4f}"")
 print(f""  Attendu : ~0 (pas de force de rappel, le substrat dissipe sans defendre de soi)."")
 ",,,,,,,,bc7eb388a909cadd,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,44f42f19ad87,markdown,fr,b3180bab7b0d8507,"**Calibration empirique**. Les deux custom steps illustrent les extrêmes du spectre :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,44f42f19ad87,markdown,fr,b3180bab7b0d8507,"**Calibration empirique**. Les deux custom steps illustrent les extrêmes du spectre :
 - **Custom A** : `I_stake ≈ +1` (enjeu fort — le substrat a un point de consigne défendu activement).
 - **Custom B** : `I_stake ≈ 0` (pur dissipateur — pas d'enjeu, simple dérive biaisée).
 
 Entre les deux : un continuum de substrats hybrides (ex: ressort faible + dérive constante). Le notebook pédagogique invite à explorer ce continuum pour développer l'intuition.
 ",,,,,,,,b3180bab7b0d8507,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,7fce2d2e4b6e,markdown,fr,fef95b9f3192d69e,"## 12. Verdict final — réconciliation tranches 2 et 3
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,7fce2d2e4b6e,markdown,fr,fef95b9f3192d69e,"## 12. Verdict final — réconciliation tranches 2 et 3
 
 ### Récapitulatif de l'enjeu mesuré — valeurs de CE notebook
 
@@ -4015,7 +4015,7 @@ Son Gate ENJEU-1 y échouait (`FAIL`) précisément parce que (a) S4 y était sc
 
 La batterie de l'ENJEU discrimine les substrats à enjeu (S1, S3, Custom A, **et S4**) du pur dissipateur (Custom B / S5), **y compris** S4 une fois mesuré avec le bon instrument. La leçon de la tranche 3 : un résultat nul doit d'abord être suspecté d'être un artefact d'instrument ou de câblage avant d'être consacré en *limite physique*. Ici, le bon instrument (`repair_gain` en champ) + le comparateur `I_thermo`-apparié (diffusion pure) + le régime de Pearson transforment un faux échec en signature d'agence nette et honnête.
 ",,,,,,,,fef95b9f3192d69e,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,6fe086cc9a49,markdown,fr,d6696e47bc7b3dae,"## 13. Annexe — limites et suites
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb,6fe086cc9a49,markdown,fr,d6696e47bc7b3dae,"## 13. Annexe — limites et suites
 
 ### Résolu dans cette tranche
 
@@ -4041,9 +4041,9 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Raffinement.ipynb,6fe086cc9
 - **Issue #5489** : tracker ICT-19 build.
 - **Issue #4588** : Epic ICT.
 ",,,,,,,,d6696e47bc7b3dae,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,41ca3ccf3fe8c3e6,"# ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur dissipateur
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,0a3ca0ff1697336a,"# ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur dissipateur
 
-[← ICT-18](ICT-18-ArrowOfTimeReversibilization.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes.ipynb) · [Raffinement tranche 3](ICT-19-EnjeuBattery-Raffinement.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
+[← ICT-18](ICT-18-ArrowOfTimeReversibilization.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-20](ICT-20-FeatureCatastrophes.ipynb) · [Raffinement tranche 3](ICT-19b-EnjeuBattery-Raffinement.ipynb) · [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)
 
 **Strate 5 — théorie fondatrice cross-substrat (GPU-free).**
 
@@ -4063,7 +4063,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,9e76e4af,markdown,fr,
 
 ## Durée estimée
 
-45 min (lecture + exécution séquentielle). GPU-free : numpy + matplotlib uniquement.",,,,,,,,41ca3ccf3fe8c3e6,,,,,,,
+45 min (lecture + exécution séquentielle). GPU-free : numpy + matplotlib uniquement.",,,,,,,,0a3ca0ff1697336a,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery.ipynb,959cedb2,markdown,fr,0f00bc909bc14404,"## 1. Théorie — la triade *moyen / fin / enjeu*
 
 ### Pourquoi ICT-18 ne suffit pas
@@ -9440,7 +9440,7 @@ def block_shuffle(states, rng, b=10):
 
 # Indice : comparer S.trajectory_battery(block_shuffle(...)) a S.trajectory_battery(states)
 print(""Exercice 3 a completer : implementer block_shuffle et comparer au controle total."")",,,,,,,,8682120d4b5e1bcf,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markdown,fr,a59f4fe437426d42,"## Pour aller plus loin
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markdown,fr,c8f54b4a18924a9c,"## Pour aller plus loin
 
 - [ICT-0 — Cadrage de la série](ICT-0-Framing.md) : les deux articles fondateurs (Levin ;
   Jansma & Hoel), le principe méthodologique *sans complaisance*, la feuille de route.
@@ -9453,7 +9453,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markd
 - [ICT-5 — Émergence causale](ICT-5-CausalEmergence.ipynb) : la batterie causale (déterminisme,
   dégénérescence, information effective) branchée ici sans modification.
 - [ICT-18 — Réversibilisation et flèche du temps](ICT-18-ArrowOfTimeReversibilization.ipynb) : la jambe temporelle de l'émergence (production d'entropie, chaîne réversibilisée) branchée au gate 5.
-- [ICT-19 — Batterie de l'ENJEU](ICT-19-EnjeuBattery.ipynb) et [son raffinement](ICT-19-EnjeuBattery-Raffinement.ipynb) : l'agence comme auto-maintien après intervention ; le scalaire discret vs la mesure de champ (`repair_gain` = +0.82 ± 0.27), gate 6.
+- [ICT-19 — Batterie de l'ENJEU](ICT-19-EnjeuBattery.ipynb) et [son raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) : l'agence comme auto-maintien après intervention ; le scalaire discret vs la mesure de champ (`repair_gain` = +0.82 ± 0.27), gate 6.
 - [ICT-21 — Trajectoires SAE](ICT-21-SAETrajectoires.ipynb) et [ICT-22 — Substrat LLM](ICT-22-LLMSubstrat.ipynb) : le quatrième substrat (activations SAE d'un LLM) intégré au gate 4 ; ICT-22 Gate 13 a posé le banc Φ/F/K 4-substrats que ce capstone relève.
 
 - Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588) — registre des livrables ICT ;
@@ -9462,7 +9462,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb,a309752b,markd
 ---
 *ICT-Synthèse — un seul appareil de mesure, cinq substrats. Epic #4588. Voir
 [ICT-0-Framing](ICT-0-Framing.md) pour le cadrage de la série.*
-",,,,,,,,a59f4fe437426d42,,,,,,,
+",,,,,,,,c8f54b4a18924a9c,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb,3653fac8,markdown,fr,c870eb55de6548a9,"# IIT - Introduction à PyPhi et Integrated Information Theory
 
 ## Navigation
