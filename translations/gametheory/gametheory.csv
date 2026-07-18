@@ -5697,17 +5697,14 @@ probabilité $\epsilon$ que l'adversaire joue **Tit-for-Tat** (TFT), alors la co
 pendant la majeure partie du jeu, même fini. ""A small amount of incomplète information can have a large effect
 on the equilibrium of a game.""
 ",,,,,,,,cf5e5e81a47a8993,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,b353dc6f4b061535,"#nullable enable
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,c99b1a78ffd53bcb,"#load ""../Probas/Infer/SvgChartHelper.cs""
+
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
 
 const int T = 20;
 const double Epsilon = 0.05;
@@ -5805,29 +5802,19 @@ sb2.AppendLine();
 sb2.Append(""  -> Cooperation elevee en debut de jeu, effondrement sur la fin (effet horizon fini)."");
 sb2.ToString().Display();
 
-// Line chart Plotly : taux de cooperation mutuelle (C,C) par tour.
+// Line chart SVG : taux de cooperation mutuelle (C,C) par tour.
 // La courbe en hockey-stick -- cooperation elevee en debut, effondrement sur la fin --
 // est la signature de KMRW : avec un peu d'incertitude sur le type (TFT), les joueurs
 // cooperent jusqu'a l'approche de l'horizon fini ou la defection retro-propage.
-{
-    var xs = Enumerable.Range(1, T).Select(t => (object)t).ToArray();
-    var ys = coopRate.Select(v => (object)Math.Round(v * 100.0, 1)).ToArray();
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = xs, [""y""] = ys, [""type""] = ""scatter"", [""mode""] = ""lines+markers"",
-                                         [""name""] = ""Cooperation mutuelle (C,C)"",
-                                         [""line""] = new Dictionary<string,object>{ [""color""] = ""#2a6dba"", [""width""] = 2 } });
-    var layout = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""KMRW : taux de cooperation par tour (effet horizon fini)"" },
-                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Tour"" }, [""dtick""] = 1 },
-                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Cooperation mutuelle (%"" }, [""range""] = new object[] { 0, 100 } },
-                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 50, [""r""] = 30, [""b""] = 50 } });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-",,,,,,,,b353dc6f4b061535,,,,,,,
+SvgChartHelper.Overlay(
+    ""KMRW : taux de cooperation par tour (effet horizon fini)"",
+    ""Tour"", ""Cooperation mutuelle (%)"",
+    new[] {
+        new SvgSeries(""Cooperation mutuelle (C,C)"",
+            Enumerable.Range(1, T).Select(t => (double)t).ToArray(),
+            coopRate.Select(v => Math.Round(v * 100.0, 1)).ToArray(),
+            TraceStyle.LineMarkers, ""#2a6dba""),
+    })",,,,,,,,c99b1a78ffd53bcb,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,9292a753,markdown,fr,638dec1c7218a9dc,"## Équilibre bayésien parfait (PBE)
 
 Un PBE precise, pour chaque ensemble d'information :
@@ -12906,40 +12893,22 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,c3e3af
 
 > **Lecon economique** : la valeur d'une ressource ne depend pas seulement de son utilite
 > intrinseque, mais de sa **rarete relative** par rapport aux ressources complementaires.",,,,,,,,a05b42c5b483450c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,6d12f18589ca161e,"// Visualisation Plotly des valeurs de Shapley (jeu de gants) -- technique C548-L2
-// (formatter HTML integre au kernel, zero dependence NuGet cote charting, rendu Plotly.js brut).
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,7ed5cb55941ca7b3,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Visualisation SVG des valeurs de Shapley (jeu de gants) -- technique C548-L2
+// (formatter HTML integre au kernel, zero dependence NuGet cote charting, rendu SVG inline).
 
 Console.WriteLine(""Valeurs de Shapley (jeu de gants) :"");
 foreach (var (lab, val) in gloveLabels.Zip(shapleyGlove))
     Console.WriteLine($""  {lab,-20} {val:F4}"");
 
-// Bar chart Plotly : le jeu de gants illustre un pouvoir asymetrique -- un seul joueur a un
+// Bar chart SVG : le jeu de gants illustre un pouvoir asymetrique -- un seul joueur a un
 // gant droit (rare) -> sa valeur (0,667) domine celle des deux joueurs au gant gauche (0,167).
 // La ligne pointillee marque le partage egal (1/3), jamais atteint ici.
-{
-    var labs = gloveLabels.ToArray();
-    var vals = shapleyGlove.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = vals, [""type""] = ""bar"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
-    var layout = ""{\""title\"":{\""text\"":\""Valeurs de Shapley - jeu de gants\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Joueur\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Valeur de Shapley\""},\""range\"":[0,0.8]},"" +
-                 ""\""shapes\"":[{\""type\"":\""line\"",\""xref\"":\""paper\"",\""x0\"":0,\""x1\"":1,"" +
-                 ""\""y0\"":0.3333,\""y1\"":0.3333,\""line\"":{\""color\"":\""#e8743b\"",\""width\"":2,\""dash\"":\""dash\""}}],"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-",,,,,,,,6d12f18589ca161e,,,,,,,
+SvgChartHelper.Bar(
+    ""Valeurs de Shapley - jeu de gants"",
+    gloveLabels.ToArray(),
+    shapleyGlove.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#2a6dba"")",,,,,,,,7ed5cb55941ca7b3,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,2a85c633,markdown,fr,1f92ee3378053f31,"### Exercice 1 : Jeu de gants etendu a 4 joueurs
 
 **Objectif** : etendre le jeu de gants a 4 joueurs (L1, L2 gauches ; R1, R2 droits).
@@ -13122,34 +13091,24 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,260a2c
 **Paradoxe classique** : les non-permanents ont **plus de pouvoir relatif** que leur poids.
 Avec 6% du poids, ils captent 13% du pouvoir. Inversement, les permanents (41% du poids) n'ont
 que 30% du pouvoir. Le poids nominal ment sur le pouvoir reel.",,,,,,,,fbb305631fd67fda,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,5e94f92a075f0644,"// Comparaison Plotly Shapley vs Banzhaf (Mini-ONU) -- (PlotlyHtml defini en cell[9], technique C548-L2).
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,209d6d3887413b9c,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Comparaison SVG Shapley vs Banzhaf (Mini-ONU) -- (SvgChartHelper charge en cell[9], technique C548-L2).
 // Deux indices de pouvoir : Shapley (valeur) et Banzhaf (pivots). Comparer les deux met en evidence
 // que le pouvoir reel differe du poids nominal, et que les deux indices divergent legerement.
 Console.WriteLine(""Comparaison Shapley vs Banzhaf (Mini-ONU) :"");
 foreach (var (lab, sh, ba) in labelsUN.Zip(shapleyUN, banzhafUN))
     Console.WriteLine($""  {lab,-8} Shapley {sh:F4}  Banzhaf {ba:F4}"");
-{
-    var labs = labelsUN.ToArray();
-    var sh = shapleyUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var ba = banzhafUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var tShapley = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = sh, [""type""] = ""bar"", [""name""] = ""Shapley"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
-    var tBanzhaf = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = ba, [""type""] = ""bar"", [""name""] = ""Banzhaf"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#e8743b"" } });
-    var layout = ""{\""barmode\"":\""group\"",\""title\"":{\""text\"":\""Mini-ONU : Shapley vs Banzhaf (2 indices de pouvoir)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Etat membre\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Indice de pouvoir\""}},"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + tShapley + "","" + tBanzhaf + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-Console.WriteLine(""\nNote : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");
-",,,,,,,,5e94f92a075f0644,,,,,,,
+display(SvgChartHelper.Bar(
+    ""Mini-ONU : indice de Shapley"",
+    labelsUN.ToArray(),
+    shapleyUN.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#2a6dba""));
+display(SvgChartHelper.Bar(
+    ""Mini-ONU : indice de Banzhaf"",
+    labelsUN.ToArray(),
+    banzhafUN.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#e8743b""));
+Console.WriteLine(""\nNote : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");",,,,,,,,209d6d3887413b9c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,8afd8af8,markdown,fr,ee1cc34608d4f348,"---
 
 ## 5. Jeux Convexes : Shapley dans le Core
@@ -15925,14 +15884,14 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,b1d70ed3,m
 ## 9. Comparaison des 4 méthodes sur RPS
 
 Comparons l'évolution de l'**exploitabilité** pour Self-Play naif, FP, NFSP et PSRO sur Roche-Papier-Ciseaux. Une méthode converge vers Nash si son exploitabilité décroît vers 0.",,,,,,,,3357a7638049ed79,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,2bb9c4230d548da8,"// Comparaison : courbes d'exploitabilite (Plotly) - Self-Play naif vs FP vs NFSP sur RPS.
-// Prong-A (#3801) : remplace le dump texte Console.WriteLine par un vrai rendu Plotly.
-// Dynamique inchangee (meme computation, meme graine) : FP -> 0 (Robinson 1951),
-// Self-Play naif oscille (cycle), NFSP chute puis plafonne (version tabulaire non stationnaire).
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml), (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,0c9585787181f6ae,"// Comparaison : courbes d'exploitabilite (SVG inline) - Self-Play naif vs FP vs NFSP sur RPS.
+// Prong-A (#3801) : remplace le dump texte Console.WriteLine par un vrai rendu (desormais SVG
+// statique zero-CDN, rend sur GitHub/nbviewer/offline). Dynamique inchangee (meme computation,
+// meme graine) : FP -> 0 (Robinson 1951), Self-Play naif oscille (cycle),
+// NFSP chute puis plafonne (version tabulaire non stationnaire).
+// Helper canon SvgChartHelper.cs (#6942 MERGED) ; Overlay multi-series (#6958 MERGED) pour les
+// 3 courbes partageant l'axe X numerique ""iteration"". Cf #6927 / #3801.
+#load ""../Probas/Infer/SvgChartHelper.cs""
 
 int N = 300;
 var spC = new NaiveSelfPlay(rps, 0.3);
@@ -15955,27 +15914,15 @@ for (int t=0;t<N;t++) {
 // Axe x = iteration (0..290 par pas de 10)
 int M = spE.Length;
 double[] xs = Enumerable.Range(0, M).Select(i => (double)(i*10)).ToArray();
-string[] xlab = xs.Select(x => x.ToString(""0"")).ToArray();
 
-var opt = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-string Tr(string name, double[] y, System.Text.Json.JsonSerializerOptions o) =>
-    System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object> {
-        [""name""]=name, [""x""]=xlab, [""y""]=y.Select(v=>Math.Round(v,4)).ToArray(), [""type""]=""scatter"", [""mode""]=""lines+markers""
-    }, o);
-string trSP=Tr(""Self-Play naif"", spE, opt), trFP=Tr(""Fictitious Play"", fpE, opt), trNFSP=Tr(""NFSP (tabulaire)"", nfspE, opt);
-
-string layout = ""{\""title\"":{\""text\"":\""Exploitabilite (RPS) - convergence vs cycles\""},"" +
-    ""\""xaxis\"":{\""title\"":{\""text\"":\""iteration\""}},"" +
-    ""\""yaxis\"":{\""title\"":{\""text\"":\""exploitabilite\""},\""range\"":[0,0.7]},"" +
-    ""\""legend\"":{\""x\"":0.98,\""xanchor\"":\""right\"",\""y\"":0.98}}"";
-
-string divId = ""pltExpl"";
-string markup =
-    ""<div id=\""""+divId+""\""></div>"" +
-    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-    ""<script>Plotly.newPlot('""+divId+""',[""+trSP+"",""+trFP+"",""+trNFSP+""],""+layout+"",{responsive:true})</script>"";
-display(new PlotlyHtml(markup));
-",,,,,,,,2bb9c4230d548da8,,,,,,,
+SvgChartHelper.Overlay(
+    ""Exploitabilite (RPS) - convergence vs cycles"",
+    ""iteration"", ""exploitabilite"",
+    new[] {
+        new SvgSeries(""Self-Play naif"", xs, spE, TraceStyle.LineMarkers, ""#C44E52""),
+        new SvgSeries(""Fictitious Play"", xs, fpE, TraceStyle.LineMarkers, ""#4C72B0""),
+        new SvgSeries(""NFSP (tabulaire)"", xs, nfspE, TraceStyle.LineMarkers, ""#55A868""),
+    })",,,,,,,,0c9585787181f6ae,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,d11ea592,markdown,fr,e8e364afaab0379b,"---
 
 ## Conclusion
@@ -20121,13 +20068,49 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,a9aa71af,mark
 
 Sur les 576 jeux, on compte combien ont 0, 1, 2, 3 ou 4 équilibres purs. Cette distribution révèle la **topologie de l'espace** : la plupart des jeux ont 1-2 équilibres, une minorité n'en a aucun (Matching Pennies et voisins).
 ",,,,,,,,adb841935210a9a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,84500fc70611aa54,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
-// (rendu Plotly, technique C548-L2 : formatter HTML integre au kernel, zero dependence NuGet charting)
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,fa262953125469f8,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
+// (rendu SVG inline, technique C548-L2 : formatter HTML integre au kernel, MIME text/html,
+//  zero dependence NuGet charting. CultureInfo.InvariantCulture sur les coordonnees -> rend
+//  correct sur GitHub/nbviewer/offline quel que soit le locale machine (fix virgule decimale FR).
+//  Migration SVG inline (#6927) : ancien <script src=cdn.plot.ly> rendait BLANC en
+//  consultation statique : GitHub sandboxe les <script> externes. Canon inline = #6954 App-7b.)
 using Microsoft.DotNet.Interactive.Formatting;
+using System.Globalization;
 using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+using System.Text;
+
+record PlotSvg(string Markup);
+Formatter.Register(typeof(PlotSvg),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotSvg)obj).Markup), ""text/html"");
+
+// Bar chart SVG inline vertical (single-serie, counts >= 0). Coordonnees en decimal invariant.
+static string BuildBarSvg(string[] cats, double[] vals, string title) {
+    const int W = 620, H = 360, mL = 56, mR = 24, mT = 48, mB = 56;
+    int pW = W - mL - mR, pH = H - mT - mB, n = cats.Length;
+    double vMax = vals.Max(); if (vMax <= 0) vMax = 1;
+    var I = CultureInfo.InvariantCulture;
+    string F(double v) => v.ToString(""0.#"", I);
+    var sb = new StringBuilder();
+    sb.Append($""<svg viewBox='0 0 {W} {H}' xmlns='http://www.w3.org/2000/svg' font-family='sans-serif' font-size='12'>"");
+    sb.Append($""<rect width='{W}' height='{H}' fill='white'/>"");
+    sb.Append($""<text x='{W/2}' y='22' text-anchor='middle' font-size='13' font-weight='bold' fill='#333'>{title}</text>"");
+    for (int g = 0; g <= 4; g++) {
+        double yv = vMax * g / 4.0, yp = mT + pH - (yv / vMax) * pH;
+        sb.Append($""<line x1='{mL}' y1='{F(yp)}' x2='{W - mR}' y2='{F(yp)}' stroke='#E5E5E5'/>"");
+        sb.Append($""<text x='{mL - 8}' y='{F(yp + 4)}' text-anchor='end' fill='#666'>{((int)yv).ToString(I)}</text>"");
+    }
+    double cell = pW / (double)n, barW = cell * 0.62;
+    for (int i = 0; i < n; i++) {
+        double bh = (vals[i] / vMax) * pH;
+        double x = mL + i * cell + (cell - barW) / 2, y = mT + pH - bh;
+        sb.Append($""<rect x='{F(x)}' y='{F(y)}' width='{F(barW)}' height='{F(bh)}' fill='#4C72B0'/>"");
+        sb.Append($""<text x='{F(x + barW / 2)}' y='{F(y - 4)}' text-anchor='middle' fill='#333'>{((int)vals[i]).ToString(I)}</text>"");
+        sb.Append($""<text x='{F(x + barW / 2)}' y='{H - mB + 18}' text-anchor='middle' fill='#333'>{cats[i]}</text>"");
+    }
+    sb.Append($""<text x='16' y='{mT + pH / 2}' text-anchor='middle' transform='rotate(-90 16 {mT + pH / 2})' fill='#666'>Nombre de jeux</text>"");
+    sb.Append(""</svg>"");
+    return sb.ToString();
+}
 
 var histogram = new Dictionary<int, int>();
 foreach (var g in allGames)
@@ -20148,34 +20131,22 @@ foreach (var kv in histogram.OrderBy(x => x.Key))
 }
 sb7.ToString().Display();
 
-// Bar chart Plotly : nombre de jeux par nombre d'équilibres de Nash purs.
-// Le recensement exhaustif des 576 jeux 2x2 révèle la distribution des nombres
-// d'équilibres (0, 1, 2, ...) -- la majorité des jeux à 0 ou 1 équilibre pur.
+// Bar chart SVG inline : nombre de jeux par nombre d'equilibres de Nash purs.
+// Le recensement exhaustif des 576 jeux 2x2 revele la distribution des nombres
+// d'equilibres (0, 1, 2, ...) -- la majorite des jeux a 0 ou 1 equilibre pur.
 {
     var ordered = histogram.OrderBy(x => x.Key).ToList();
-    var keys = ordered.Select(kv => kv.Key.ToString()).Select(v => (object)v).ToArray();
-    var counts = ordered.Select(kv => (object)(double)kv.Value).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = keys, [""y""] = counts, [""type""] = ""bar"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" },
-                                         [""text""] = ordered.Select(kv => (object)kv.Value.ToString()).ToArray(),
-                                         [""textposition""] = ""auto"" });
-    var layout = ""{\""title\"":{\""text\"":\""Recensement : nombre de jeux 2x2 par nombre d equilibres de Nash purs (sur 576)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Nombre d equilibres de Nash purs\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Nombre de jeux\""}},"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
+    var keys = ordered.Select(kv => kv.Key.ToString()).ToArray();
+    var counts = ordered.Select(kv => (double)kv.Value).ToArray();
+    display(new PlotSvg(BuildBarSvg(keys, counts,
+        ""Nombre de jeux 2x2 par nombre d equilibres de Nash purs (sur 576)"")));
 }
 
 int totalChecked = histogram.Values.Sum();
 $""Total verifie : {totalChecked}/576 (attendu 576)"".Display();
 int gamesWithNash = histogram.Where(x => x.Key >= 1).Sum(x => x.Value);
-$""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0*gamesWithNash/allGames.Count:F1}%)."".Display();
-",,,,,,,,84500fc70611aa54,,,,,,,
+$""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0 * gamesWithNash / allGames.Count:F1}%)."".Display();
+",,,,,,,,fa262953125469f8,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,67963dee,markdown,fr,777281bf8f7a073d,"## 8. Connexité du graphe des swaps
 
 Le graphe des swaps (576 nœuds, arêtes = swaps adjacents) est-il **connexe** ? C'est-à-dire : peut-on transformer n'importe quel jeu en n'importe quel autre par une séquence de swaps ? On le vérifie par BFS depuis un nœud — si on atteint les 576, le graphe est connexe.
@@ -24052,19 +24023,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,de39c7a4,m
 Le notebook Python trace la trajectoire 2D sur le simplexe `[P(Heads), P(Tails)]`.
 En C# pur (sans matplotlib), on visualise la convergence avec une grille ASCII : chaque
 `#` est un pas de la trajectoire, `N` est le Nash, `D` le départ.",,,,,,,,19d1faf4df702cfb,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,f6d186fc5a11acec,"// Visualisation Plotly de la trajectoire sur le simplexe 2D (remplace l'ASCII art -- EPIC #3801 Prong A).
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,c05ace4bd5088c3f,"// Visualisation SVG statique de la trajectoire sur le simplexe 2D (zero-dependance, EPIC #3801 Prong A).
 // Chaque depart converge vers l'equilibre de Nash (0.5, 0.5) : illustration du theoreme du point fixe de Brouwer.
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
-
-// Options JSON sans echappement HTML (retablit le + litteral dans ""lines+markers"").
-var opt = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+// Helper canon SvgChartHelper.cs (#6942 MERGED) ; Overlay multi-series (#6958 MERGED) pour les 3 traces partageant
+// l'axe X numerique P(Heads). Migration SVG inline (#6927) : ancien CDN Plotly blanc en statique.
+#load ""../Probas/Infer/SvgChartHelper.cs""
 
 // Trajectoire de n iterations de la dynamique de meilleure reponse depuis un point de depart.
 List<(double x, double y)> Trajectory(double[] start, int n = 50) {
@@ -24076,33 +24039,18 @@ List<(double x, double y)> Trajectory(double[] start, int n = 50) {
 
 var t1 = Trajectory(new[] { 0.9, 0.1 });
 var t2 = Trajectory(new[] { 0.1, 0.9 });
-double[] xs1 = t1.Select(p => p.x).ToArray(), ys1 = t1.Select(p => p.y).ToArray();
-double[] xs2 = t2.Select(p => p.x).ToArray(), ys2 = t2.Select(p => p.y).ToArray();
 
-string tr1 = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Depart (0.9, 0.1)"", [""x""] = xs1, [""y""] = ys1, [""mode""] = ""lines+markers"",
-    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
-    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
-string tr2 = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Depart (0.1, 0.9)"", [""x""] = xs2, [""y""] = ys2, [""mode""] = ""lines+markers"",
-    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
-    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
-string trNash = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Nash (0.5, 0.5)"", [""x""] = new double[] { 0.5 }, [""y""] = new double[] { 0.5 },
-    [""mode""] = ""markers"",
-    [""marker""] = new Dictionary<string, object> { [""size""] = 16, [""color""] = ""red"", [""symbol""] = ""star"" } }, opt);
-string layout = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""title""] = new Dictionary<string, string> { [""text""] = ""Convergence vers l'equilibre de Nash (Matching Pennies)"" },
-    [""xaxis""] = new Dictionary<string, object> { [""title""] = ""P(Heads)"", [""range""] = new double[] { 0, 1 } },
-    [""yaxis""] = new Dictionary<string, object> { [""title""] = ""P(Tails)"", [""range""] = new double[] { 0, 1 } },
-    [""width""] = 540, [""height""] = 460 }, opt);
-
-string markup = ""<div id=\""pltNash\""></div>"" +
-    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-    $""<script>Plotly.newPlot('pltNash',[{tr1},{tr2},{trNash}],{layout});</script>"";
-
-Console.WriteLine(""Trajectoires depuis (0.9,0.1) et (0.1,0.9) -> Nash (0.5, 0.5)"");
-new PlotlyHtml(markup)",,,,,,,,f6d186fc5a11acec,,,,,,,
+SvgChartHelper.Overlay(
+    ""Convergence vers l'equilibre de Nash (Matching Pennies)"",
+    ""P(Heads) joueur 1"", ""P(Heads) joueur 2"",
+    new[] {
+        new SvgSeries(""Depart (0.9, 0.1)"", t1.Select(p => p.x).ToArray(), t1.Select(p => p.y).ToArray(),
+                      TraceStyle.LineMarkers, ""#4C72B0""),
+        new SvgSeries(""Depart (0.1, 0.9)"", t2.Select(p => p.x).ToArray(), t2.Select(p => p.y).ToArray(),
+                      TraceStyle.LineMarkers, ""#55A868""),
+        new SvgSeries(""Nash (0.5, 0.5)"", new[] { 0.5 }, new[] { 0.5 },
+                      TraceStyle.Markers, ""#C44E52""),
+    })",,,,,,,,c05ace4bd5088c3f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,dab67d51,markdown,fr,8ec25f9a7952028e,"## Exercice 1 : équilibre de Chicken (Guerre froide)
 
 Appliquez `FindFixedPointSimplex` au jeu **Chicken** ( Hawk-Dove) :
@@ -31211,62 +31159,41 @@ L'analyse de periodicite revele des structures interessantes :
 3. **Pre-periode nulle** : Tous les exemples ont une pre-periode de 0, ce qui signifie que la periodicite commence immediatement. C'est typique des jeux de soustraction simples.
 
 > **Theoreme de Guy** : Pour tout jeu de soustraction fini, la sequence de Grundy est ultimement periodique. La periode peut etre bornee, mais les bornes exactes restent un probleme ouvert.",,,,,,,,250d40724a1e571d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,772906c5a254ee97,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
-// (Zero `#r ""nuget:""` sur une charting-lib : les charting libs pinent une vieille beta
-//  de Microsoft.DotNet.Interactive et font timeout le restore, cluster-wide. Le formatter
-//  ci-dessous emet du HTML Plotly brut, sans dependence. Cf #3801 / C548-L2.)
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
-
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,77a41e795359284c,"#load ""../Probas/Infer/SvgChartHelper.cs""
 // Visualisation de la sequence de Grundy (valeurs G(n)) et de sa structure periodique.
+// Rendu SVG inline statique via SvgChartHelper.cs (#6942/#6927) : zero dependance, s'affiche
+// sur GitHub / nbviewer / offline. L'ancien CDN Plotly rendait BLANC en sandbox statique
+// (aucun script tiers execute). Le code couleur par-barre (pre-periode / 1ere periode /
+// repetitions) est porte nativement par SvgChartHelper.Bar(colors:, legend:). Cf #3801 / C548-L2.
+
 var moves = new HashSet<int> { 1, 3, 4 };
 var (pre, period, seq) = FindPeriodicity(moves, maxN: 100);
 int show = Math.Min(35, seq.Count);
 
-var xIdx = Enumerable.Range(0, show).Select(i => (double)i).ToArray();
+var xLabels = Enumerable.Range(0, show).Select(i => i.ToString()).ToArray();
 var yGrundy = seq.GetRange(0, show).Select(v => (double)v).ToArray();
 
-// Couleur : rouge pour la pre-periode, bleu pour la premiere periode, gris pour la suite.
+// Couleur par barre : rouge = pre-periode (transitoire), bleu = 1ere periode (motif),
+// gris = repetitions du motif. Le changement de couleur materialise les frontieres
+// (fin de pre-periode, fin de la 1ere periode) sans lignes/annotations (rendu SVG inline).
 var barColors = Enumerable.Range(0, show).Select(i =>
     i < pre ? ""#C44E52""
     : i < pre + period ? ""#4C72B0""
     : ""#888888"").ToArray();
 
-var barTrace = new Dictionary<string, object> {
-    [""name""] = ""G(n) (Grundy)"", [""x""] = xIdx, [""y""] = yGrundy, [""type""] = ""bar"",
-    [""marker""] = new { color = barColors } };
-string barJson = System.Text.Json.JsonSerializer.Serialize(barTrace);
+// Legende honnete : n'inclure que les categories reellement presentes (pre-periode vide si pre=0).
+var legend8 = new List<(string, string)>();
+if (pre > 0) legend8.Add((""#C44E52"", ""pre-periode""));
+legend8.Add((""#4C72B0"", ""1ere periode""));
+if (show > pre + period) legend8.Add((""#888888"", ""repetitions""));
 
-// Lignes verticales marquant la fin de pre-periode et la fin de la premiere periode.
-string ShapeLine(double x0, string color) =>
-    $""{{\""type\"":\""line\"",\""x0\"":{x0},\""x1\"":{x0},\""y0\"":0,\""y1\"":1,\""yref\"":\""paper\"","" +
-    $""\""line\"":{{\""color\"":\""{color}\"",\""width\"":1.5,\""dash\"":\""dash\""}}}}"";
-string shapes = ""["" + ShapeLine(pre, ""#C44E52"") + "","" + ShapeLine(pre + period, ""#4C72B0"") + ""]"";
-
-var layout = ""{\""title\"":{\""text\"":\""Sequence de Grundy du jeu de soustraction S({1,3,4})\""},"" +
-             ""\""xaxis\"":{\""title\"":{\""text\"":\""n (taille du tas)\""}},"" +
-             ""\""yaxis\"":{\""title\"":{\""text\"":\""G(n)\""}},"" +
-             ""\""shapes\"":"" + shapes + "","" +
-             ""\""showlegend\"":false,"" +
-             ""\""annotations\"":["" +
-             ""{\""x\"":"" + pre + "",\""y\"":1,\""yref\"":\""paper\"",\""text\"":\""fin pre-periode\"","" +
-               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#C44E52\"",\""size\"":10}},"" +
-             ""{\""x\"":"" + (pre + period) + "",\""y\"":0.95,\""yref\"":\""paper\"",\""text\"":\""fin 1ere periode\"","" +
-               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#4C72B0\"",\""size\"":10}}"" +
-             ""]}"";
-var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-             ""<script>Plotly.newPlot('"" + divId + ""',["" + barJson + ""],"" + layout + "")</script>"";
-display(new PlotlyHtml(markup));
+display(SvgChartHelper.Bar(
+    ""Sequence de Grundy du jeu de soustraction S({1,3,4})"",
+    xLabels, yGrundy, width: 900, height: 340, colors: barColors, legend: legend8));
 
 var onePeriod = seq.GetRange(pre, period);
 Console.WriteLine($""Jeu de soustraction S({{1,3,4}}) - Periode = {period}, Pre-periode = {pre}"");
-Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");
-",,,,,,,,772906c5a254ee97,,,,,,,
+Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");",,,,,,,,77a41e795359284c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,8a938606,markdown,fr,7ea428f15bd085f1,"---
 
 ## 2. Jeu de Wythoff
@@ -31536,7 +31463,8 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,89d51
 ## 4. Visualisation interactive
 
 Creons une visualisation des valeurs de Grundy pour mieux comprendre leur structure.",,,,,,,,8d71f52facf5f0b1,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,9017e93b51b2399f,"// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,0efbc64c674aa3fc,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
 var gamesToCompare = new Dictionary<string, HashSet<int>>
 {
     [""Fibonacci-like""] = new HashSet<int> { 1, 2 },
@@ -31557,29 +31485,14 @@ foreach (var kv in gamesToCompare)
     grundyRows.Add((kv.Key, values));
 }
 
-// Heatmap Plotly : valeurs de Grundy par variante (ligne) x position N (colonne).
+// Heatmap SVG : valeurs de Grundy par variante (ligne) x position N (colonne).
 // Les bandes de couleur repetees = periodicite (caractere distinctif du solveur combinatoire).
-// (infra PlotlyHtml definie en cell[8], technique C548-L2)
-{
-    var yLabels = grundyRows.Select(r => (object)r.Item1).ToArray();
-    var xLabels = Enumerable.Range(0, maxN).Select(n => (object)n).ToArray();
-    int maxG = Math.Max(1, grundyRows.Max(r => r.Item2.Max()));
-    var z = grundyRows.Select(r => (object)r.Item2.Select(v => (object)v).ToArray()).ToArray();
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""type""] = ""heatmap"", [""z""] = z, [""x""] = xLabels, [""y""] = yLabels,
-                                         [""colorscale""] = ""Viridis"", [""zmin""] = 0, [""zmax""] = maxG,
-                                         [""colorbar""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Grundy G"" } } });
-    var layout = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""Valeurs de Grundy : periodicite des jeux de soustraction (G=0 = position P/perdante)"" },
-                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Position N"" }, [""dtick""] = 1 },
-                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Variante de jeu"" } },
-                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 140, [""r""] = 40, [""b""] = 50 } });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}",,,,,,,,9017e93b51b2399f,,,,,,,
+// (rendu SVG inline via SvgChartHelper.Heatmap, technique C548-L2)
+SvgChartHelper.Heatmap(
+    ""Valeurs de Grundy : periodicite des jeux de soustraction (G=0 = P/perdante)"",
+    Enumerable.Range(0, maxN).Select(n => n.ToString()).ToArray(),
+    grundyRows.Select(r => r.Name).ToArray(),
+    grundyRows.Select(r => r.Values.Select(v => (double)v).ToArray()).ToArray())",,,,,,,,0efbc64c674aa3fc,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,c641fe9a,markdown,fr,36242b6d0daae807,"---
 
 ## 5. Jeu de Chomp
