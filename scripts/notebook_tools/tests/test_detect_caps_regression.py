@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest  # noqa: E402 -- for pytest.raises in the no-args guard test
+
 # Allow ``import detect_caps_regression`` when run from the tests/ dir.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import detect_caps_regression as dcr  # noqa: E402
@@ -253,3 +255,185 @@ class TestPositionClassification:
 
     def test_prose_default(self):
         assert dcr._classify_position("Le systeme ici", 3, "systeme") == "prose"
+
+
+# --------------------------------------------------------------------------
+# Git-ref mode : scan_ref_mode (unit tests via monkeypatch, no real git).
+# --------------------------------------------------------------------------
+class TestScanRefMode:
+    def test_success_both_refs(self, tmp_path, monkeypatch):
+        base_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## Modele X"]}], "metadata": {}}
+        head_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## modèle X"]}], "metadata": {}}
+        calls = {"base": base_nb, "head": head_nb}
+
+        def fake_show(ref, path, cwd=None):
+            return calls.get("base") if "main" in ref else calls.get("head")
+        monkeypatch.setattr(dcr, "_git_show_notebook", fake_show)
+        res = dcr.scan_ref_mode(tmp_path / "nb.ipynb", "origin/main", "origin/branch")
+        assert res["error"] is None
+        assert len(res["regressions"]) == 1
+
+    def test_base_ref_unreadable(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(dcr, "_git_show_notebook",
+                            lambda ref, path, cwd=None: None)
+        res = dcr.scan_ref_mode(tmp_path / "nb.ipynb", "origin/main", "origin/branch")
+        assert res["error"] is not None
+        assert "base unreadable at git ref" in res["error"]
+        assert res["regressions"] == []
+
+    def test_head_ref_unreadable(self, tmp_path, monkeypatch):
+        base_nb = {"cells": [], "metadata": {}}
+
+        def fake_show(ref, path, cwd=None):
+            return base_nb if "main" in ref else None
+        monkeypatch.setattr(dcr, "_git_show_notebook", fake_show)
+        res = dcr.scan_ref_mode(tmp_path / "nb.ipynb", "origin/main", "origin/branch")
+        assert res["error"] is not None
+        assert "head unreadable at git ref" in res["error"]
+
+    def test_head_defaults_to_disk(self, tmp_path, monkeypatch):
+        """head_ref=None -> head notebook read from the on-disk file."""
+        base_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## Modele X"]}], "metadata": {}}
+        monkeypatch.setattr(dcr, "_git_show_notebook",
+                            lambda ref, path, cwd=None: base_nb)
+        head_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## modèle X"]}], "metadata": {}}
+        disk_path = tmp_path / "nb.ipynb"
+        disk_path.write_text(json.dumps(head_nb), encoding="utf-8")
+        res = dcr.scan_ref_mode(disk_path, "origin/main", None)
+        assert res["error"] is None
+        assert len(res["regressions"]) == 1
+
+    def test_head_disk_missing_no_ref(self, tmp_path, monkeypatch):
+        """head_ref=None AND notebook not on disk -> precise error."""
+        base_nb = {"cells": [], "metadata": {}}
+        monkeypatch.setattr(dcr, "_git_show_notebook",
+                            lambda ref, path, cwd=None: base_nb)
+        res = dcr.scan_ref_mode(tmp_path / "ghost.ipynb", "origin/main", None)
+        assert res["error"] is not None
+        assert "not on disk" in res["error"]
+
+
+# --------------------------------------------------------------------------
+# Git-ref mode : real tmp git repo integration (confirms the git show plumbing).
+# --------------------------------------------------------------------------
+class TestGitRefIntegration:
+    def _commit(self, repo, nb_dict, msg):
+        import subprocess as sp
+        (repo / "nb.ipynb").write_text(json.dumps(nb_dict), encoding="utf-8")
+        sp.run(["git", "add", "nb.ipynb"], cwd=repo, check=True,
+               capture_output=True)
+        sp.run(["git", "commit", "-m", msg], cwd=repo, check=True,
+               capture_output=True)
+
+    def test_real_repo_detects_regression(self, tmp_path):
+        import subprocess as sp
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        for k, v in {"user.name": "t", "user.email": "t@t"}.items():
+            sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
+        base = {"cells": [{"cell_type": "markdown",
+                           "source": ["## Modele X"]}], "metadata": {}}
+        self._commit(repo, base, "base")
+        sp.run(["git", "branch", "branch"], cwd=repo, check=True, capture_output=True)
+        sp.run(["git", "checkout", "branch"], cwd=repo, check=True, capture_output=True)
+        head = {"cells": [{"cell_type": "markdown",
+                           "source": ["## modèle X"]}], "metadata": {}}
+        self._commit(repo, head, "head")
+        res = dcr.scan_ref_mode(Path("nb.ipynb"), "main", "branch", cwd=repo)
+        assert res["error"] is None
+        assert len(res["regressions"]) == 1
+        assert res["regressions"][0]["base_token"] == "Modele"
+
+    def test_real_repo_clean_cure(self, tmp_path):
+        import subprocess as sp
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        for k, v in {"user.name": "t", "user.email": "t@t"}.items():
+            sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
+        base = {"cells": [{"cell_type": "markdown",
+                           "source": ["## Modele X"]}], "metadata": {}}
+        self._commit(repo, base, "base")
+        sp.run(["git", "branch", "branch"], cwd=repo, check=True, capture_output=True)
+        sp.run(["git", "checkout", "branch"], cwd=repo, check=True, capture_output=True)
+        head = {"cells": [{"cell_type": "markdown",
+                           "source": ["## Modèle X"]}], "metadata": {}}
+        self._commit(repo, head, "head")
+        res = dcr.scan_ref_mode(Path("nb.ipynb"), "main", "branch", cwd=repo)
+        assert res["error"] is None
+        assert res["regressions"] == []  # correct cure : capital preserved
+
+    def test_real_repo_bad_ref_error(self, tmp_path):
+        import subprocess as sp
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        sp.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+        for k, v in {"user.name": "t", "user.email": "t@t"}.items():
+            sp.run(["git", "config", k, v], cwd=repo, check=True, capture_output=True)
+        base = {"cells": [], "metadata": {}}
+        self._commit(repo, base, "base")
+        res = dcr.scan_ref_mode(Path("nb.ipynb"), "nonexistent-ref", "main", cwd=repo)
+        assert res["error"] is not None
+        assert "base unreadable at git ref" in res["error"]
+
+
+# --------------------------------------------------------------------------
+# main() git-ref-mode dispatch + --check alias + no-args guard.
+# --------------------------------------------------------------------------
+class TestMainGitRefMode:
+    def test_git_ref_mode_dispatch(self, tmp_path, capsys, monkeypatch):
+        base_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## Modele X"]}], "metadata": {}}
+        head_nb = {"cells": [{"cell_type": "markdown",
+                              "source": ["## modèle X"]}], "metadata": {}}
+
+        def fake_scan(notebook_path, base_ref, head_ref, cwd=None):
+            assert base_ref == "origin/main"
+            assert head_ref == "origin/branch"
+            return {"path": str(notebook_path),
+                    "regressions": [{"cell_index": 0, "line_no": 0, "column": 3,
+                                     "base_token": "Modele", "head_token": "modèle",
+                                     "position": "heading", "base_line": "## Modele X"}],
+                    "error": None}
+        monkeypatch.setattr(dcr, "scan_ref_mode", fake_scan)
+        rc = dcr.main(["nb.ipynb", "--base", "origin/main", "--head", "origin/branch"])
+        assert rc == 1
+        assert "Modele" in capsys.readouterr().out
+
+    def test_git_ref_mode_base_default_origin_main(self, tmp_path, monkeypatch):
+        """Positional notebook + no --base -> defaults to origin/main."""
+        seen = {}
+
+        def fake_scan(notebook_path, base_ref, head_ref, cwd=None):
+            seen["base_ref"] = base_ref
+            return {"path": str(notebook_path), "regressions": [], "error": None}
+        monkeypatch.setattr(dcr, "scan_ref_mode", fake_scan)
+        dcr.main(["nb.ipynb", "--quiet"])
+        assert seen["base_ref"] == "origin/main"
+
+    def test_check_alias_is_quiet(self, tmp_path, capsys, monkeypatch):
+        """--check (the #7197 muscle-memory alias) suppresses stdout like --quiet."""
+        monkeypatch.setattr(dcr, "scan_ref_mode",
+                            lambda p, b, h, cwd=None: {
+                                "path": str(p),
+                                "regressions": [{"cell_index": 0, "line_no": 0,
+                                                 "column": 0, "base_token": "X",
+                                                 "head_token": "x", "position": "prose",
+                                                 "base_line": "X"}],
+                                "error": None})
+        rc = dcr.main(["nb.ipynb", "--base", "origin/main", "--head", "origin/branch",
+                       "--check"])
+        out = capsys.readouterr().out
+        assert rc == 1
+        assert out == ""  # --check writes nothing, exit code only
+
+    def test_no_args_errors_exit_2(self, tmp_path, monkeypatch, capsys):
+        """No positional AND no --base/--head -> parser.error (exit 2)."""
+        with pytest.raises(SystemExit) as ei:
+            dcr.main([])
+        assert ei.value.code == 2

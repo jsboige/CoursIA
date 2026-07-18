@@ -51,12 +51,19 @@ Exit codes : 0 = clean, 1 = regression(s) found, 2 = error (unreadable base/head
 
 Usage
 -----
-    # Compare two notebooks directly
+Two invocation modes :
+
+    # 1. Direct-file mode : two explicit notebook files
     python detect_caps_regression.py --base main_nb.ipynb --head branch_nb.ipynb
-    # JSON output for CI
-    python detect_caps_regression.py --base ... --head ... --json
-    # Quiet (exit code only)
-    python detect_caps_regression.py --base ... --head ... --quiet
+
+    # 2. Git-ref mode : point at one notebook, compare two git refs of it.
+    #    Head defaults to the working-tree notebook on disk (no need to extract).
+    python detect_caps_regression.py NB.ipynb --base origin/main --head origin/branch
+    python detect_caps_regression.py NB.ipynb --base origin/main          # head = disk
+
+    # JSON output for CI  / quiet (exit code only)
+    python detect_caps_regression.py ... --json
+    python detect_caps_regression.py ... --quiet       # or --check (#7197 alias)
 
 See #2876, #3801. Companion to detect_accent_stripping.py, check_identifier_regression.py (#7157),
 restore_accents_canonical.py (#7186).
@@ -64,6 +71,7 @@ restore_accents_canonical.py (#7186).
 import argparse
 import json
 import re
+import subprocess
 import sys
 import unicodedata
 from pathlib import Path
@@ -158,29 +166,18 @@ def _cell_source_lines(cell: dict) -> list[str]:
     return out
 
 
-def scan_pair(base_path: Path, head_path: Path) -> dict:
-    """Compare base vs head notebooks, return a result dict.
+def _compare_notebooks(base_nb: dict, head_nb: dict) -> list[dict]:
+    """Compare two in-memory notebooks, return the list of regression dicts.
 
-    ``{"path": str, "regressions": [...], "error": str | None}`` where each
-    regression is ``{cell_index, line_no, base_token, head_token, column,
-    position, base_line}``.
+    Shared core of :func:`scan_pair` (direct-file mode) and :func:`scan_ref_mode`
+    (git-ref mode). Cell-by-cell : only markdown cells are in scope (code cells
+    are the identifier gate's job, #7157). If the cell counts differ we still
+    compare index-by-index up to the shorter list ; a count mismatch is itself a
+    structural signal but not this detector's concern.
     """
-    try:
-        base_nb = json.loads(base_path.read_text(encoding="utf-8"))
-    except Exception as e:  # noqa: BLE001 -- report any read/parse failure as error
-        return {"path": str(head_path), "regressions": [], "error": f"base unreadable: {e}"}
-    try:
-        head_nb = json.loads(head_path.read_text(encoding="utf-8"))
-    except Exception as e:  # noqa: BLE001
-        return {"path": str(head_path), "regressions": [], "error": f"head unreadable: {e}"}
-
     base_cells = base_nb.get("cells", [])
     head_cells = head_nb.get("cells", [])
     regressions = []
-    # Cell-by-cell : only markdown cells are in scope (code cells are the
-    # identifier gate's job, #7157). If the cell counts differ we still compare
-    # index-by-index up to the shorter list ; a count mismatch is itself a
-    # structural signal but not this detector's concern.
     for ci, (bc, hc) in enumerate(zip(base_cells, head_cells)):
         if bc.get("cell_type") != "markdown" or hc.get("cell_type") != "markdown":
             continue
@@ -199,7 +196,90 @@ def scan_pair(base_path: Path, head_path: Path) -> dict:
                     "position": pos,
                     "base_line": bl,
                 })
-    return {"path": str(head_path), "regressions": regressions, "error": None}
+    return regressions
+
+
+def scan_pair(base_path: Path, head_path: Path) -> dict:
+    """Direct-file mode : compare two notebooks on disk, return a result dict.
+
+    ``{"path": str, "regressions": [...], "error": str | None}`` where each
+    regression is ``{cell_index, line_no, base_token, head_token, column,
+    position, base_line}``.
+    """
+    try:
+        base_nb = json.loads(base_path.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001 -- report any read/parse failure as error
+        return {"path": str(head_path), "regressions": [], "error": f"base unreadable: {e}"}
+    try:
+        head_nb = json.loads(head_path.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return {"path": str(head_path), "regressions": [], "error": f"head unreadable: {e}"}
+    return {"path": str(head_path),
+            "regressions": _compare_notebooks(base_nb, head_nb), "error": None}
+
+
+def _git_show_notebook(ref: str, path: str, cwd=None):
+    """Read a notebook at a git ref via ``git show <ref>:<path>``.
+
+    Returns the parsed nbformat dict, or ``None`` if the ref/path is unreadable
+    (missing blob, bad ref, JSON parse error). ``None`` (not a raised exception)
+    lets the caller distinguish "base unreadable" from "head unreadable" and
+    surface a precise error, mirroring :func:`scan_pair`. ``cwd`` is the
+    directory to run git in (defaults to the process cwd -- for CLI use, the
+    worker is at the repo root ; exposed for testing with a tmp git repo).
+    """
+    r = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, cwd=cwd)
+    if r.returncode != 0:
+        return None
+    try:
+        return json.loads(r.stdout.decode("utf-8"))
+    except Exception:  # noqa: BLE001 -- any parse failure = "unreadable at ref"
+        return None
+
+
+def scan_ref_mode(notebook_path: Path, base_ref: str, head_ref, cwd=None) -> dict:
+    """Git-ref mode : point at ONE notebook and compare two git refs of it.
+
+    Worker-ergonomic alternative to :func:`scan_pair` -- no need to extract the
+    base/head files first. Mirrors the invocation workers learned on
+    ``check_caps_regression.py`` (#7197) so disposing that duplicate is lossless:
+
+        detect_caps_regression.py NB.ipynb --base origin/main --head origin/branch
+        detect_caps_regression.py NB.ipynb --base origin/main   # head = working tree
+
+    ``notebook_path`` : the notebook on disk (used for head when ``head_ref`` is
+    None AND to resolve the repo-relative path for ``git show``).
+    ``base_ref``     : git ref for the base (default ``origin/main`` at the CLI).
+    ``head_ref``     : git ref for the head, OR ``None`` to read the head
+                       notebook from the working tree (the on-disk file).
+    ``cwd``          : directory to run git in (defaults to process cwd).
+    """
+    # Resolve a repo-relative path for `git show` (git wants forward slashes and
+    # a path relative to the repo root, not the cwd).
+    git_path = str(notebook_path).replace("\\", "/")
+    base_nb = _git_show_notebook(base_ref, git_path, cwd=cwd)
+    if base_nb is None:
+        return {"path": str(notebook_path), "regressions": [],
+                "error": f"base unreadable at git ref {base_ref}:{git_path}"}
+
+    if head_ref is None:
+        # Head = working tree : read the on-disk notebook.
+        if not notebook_path.exists():
+            return {"path": str(notebook_path), "regressions": [],
+                    "error": f"head unreadable: {notebook_path} not on disk and no --head given"}
+        try:
+            head_nb = json.loads(notebook_path.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa: BLE001
+            return {"path": str(notebook_path), "regressions": [],
+                    "error": f"head unreadable (disk): {e}"}
+    else:
+        head_nb = _git_show_notebook(head_ref, git_path, cwd=cwd)
+        if head_nb is None:
+            return {"path": str(notebook_path), "regressions": [],
+                    "error": f"head unreadable at git ref {head_ref}:{git_path}"}
+
+    return {"path": str(notebook_path),
+            "regressions": _compare_notebooks(base_nb, head_nb), "error": None}
 
 
 def _human_report(result: dict) -> str:
@@ -224,18 +304,45 @@ def _human_report(result: dict) -> str:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="Detect markdown caps-regression in accent cures (compare base vs head).")
-    parser.add_argument("--base", required=True, help="base notebook (origin/main)")
-    parser.add_argument("--head", required=True, help="head notebook (PR branch)")
+        description=(
+            "Detect markdown caps-regression in accent cures. Two modes:\n"
+            "  direct-file : --base FILE --head FILE\n"
+            "  git-ref     : NOTEBOOK.ipynb --base origin/main --head origin/branch"
+            " (head defaults to working tree)\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("notebook", nargs="?", default=None,
+                        help="git-ref mode : point at one notebook, compare two git refs of it")
+    parser.add_argument("--base", default=None,
+                        help="direct mode = base notebook FILE ; git-ref mode = base git ref "
+                             "(default origin/main)")
+    parser.add_argument("--head", default=None,
+                        help="direct mode = head notebook FILE ; git-ref mode = head git ref "
+                             "(default = working-tree notebook on disk)")
     parser.add_argument("--json", action="store_true", help="machine-readable JSON output")
     parser.add_argument("--quiet", action="store_true", help="no stdout (exit code only)")
+    parser.add_argument("--check", action="store_true",
+                        help="alias of --quiet (CI-ready exit code) -- #7197 muscle memory")
     args = parser.parse_args(argv)
 
-    result = scan_pair(Path(args.base), Path(args.head))
+    quiet = args.quiet or args.check
+
+    if args.notebook is not None:
+        # Git-ref mode : point at one notebook, compare two git refs of it.
+        base_ref = args.base or "origin/main"
+        result = scan_ref_mode(Path(args.notebook), base_ref, args.head)
+    else:
+        # Direct-file mode : two explicit notebook files.
+        if not args.base or not args.head:
+            parser.error(
+                "direct-file mode requires --base FILE and --head FILE "
+                "(or use git-ref mode: NOTEBOOK.ipynb --base origin/main --head origin/branch)")
+        result = scan_pair(Path(args.base), Path(args.head))
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    elif not args.quiet:
+    elif not quiet:
         print(_human_report(result))
 
     if result["error"]:
