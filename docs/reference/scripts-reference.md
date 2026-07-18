@@ -100,6 +100,16 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `scan_md_hierarchy.py` | Audit **mise en forme** (EPIC #3966) : flague `HINT-AS-HEADING` (indice/objectif/etape en heading -> grande police), `H1-DEEP`, `MULTI-H1`. Render-agnostic (parse JSON). Verif visuelle finale via nbconvert+Playwright : cf [notebook-formatting.md](notebook-formatting.md) |
 | `audit_pip_install_cells.py` | Audit cellules `!pip install` (leak vector + env anti-pattern, secrets-hygiene §6 triage C = source-leak). Classifier `UNCONDITIONAL_BASH` / `UNCONDITIONAL_SYS` / `CONDITIONAL_TRY` / `NON_BASH`. Modes `--scan` / `--scan-all` / `--scan-all --check` (exit 1 si HIGH) / `--json`. Compteur initial repo = 70 HIGH-severity sur 203 notebooks (c.460). 13/13 tests unitaires PASS |
 
+### Cure des accents FR & gates de régression — #2876
+| Script | Usage |
+|--------|-------|
+| `detect_accent_stripping.py` | Détecteur historique : dictionnaire conservateur `ACCENT_PAIRS` (source de vérité partagée). Le stripped form n'est pas un mot FR valide → non-ambigu |
+| `restore_accents_canonical.py` | **CURE canonique** (PR #7186). Markdown-only STRICT by construction : skip code/outputs/link-targets, préserve casse + structure (paragraph breaks). 4 bright-lines + 1 structurelle. Référence complète : [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md) |
+| `check_identifier_regression.py` | **GATE identifiants code** (PR #7157, MERGÉ). Détecte l'over-reach (cure qui accentue un identifiant). `_STRIP_RE` retire commentaires+chaînes avant comparaison base(main) vs head(branche). CI-ready (exit 1) |
+| `check_caps_regression.py` / `detect_caps_regression.py` | **GATE caps** (PR #7197 / #7198, arbitrage ai-01). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
+
+**Workflow PR accents** : générer via `restore_accents_canonical.py` (passe les gates by construction), jamais via un script ad-hoc. Périmètre, défense-in-depth (3 rôles), 4 classes de défauts, bright-lines, méthodologie : cf [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md).
+
 ### Diagnostic / reporting / spécifiques
 | Script | Usage |
 |--------|-------|
