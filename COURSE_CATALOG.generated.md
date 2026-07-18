@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-17 06:02
+Generated: 2026-07-18 05:49
 Total notebooks: 822
 
 ## Status Summary
@@ -215,7 +215,7 @@ Total notebooks: 822
 | 43 | Search-10 (C#) : Automates Finis Classiques — jume | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 45 | Search-11 (C#) : Metaheuristiques — Optimisation p | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 46 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 46 | Search-11-métaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 47 | Search-11b (Part 2) : Particle Swarm Optimization  | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 48 | Search-11b-Metaheuristiques-Deep-Part3 : Artificia | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 49 | Search-11b-Metaheuristiques-Deep-Part4 : Benchmark | .NET (C#) | READY | BETA | 30min | po-2025 |
@@ -228,9 +228,9 @@ Total notebooks: 822
 | 56 | Search-3-Informed (C#) : Recherche Informée | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 57 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 58 | Search-4-LocalSearch (C#) : Recherche Locale et Mé | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 59 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 59 | Search-4-LocalSearch : Recherche Locale et métaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 60 | Search-5-GeneticAlgorithms-Csharp : Algorithmes Gé | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 61 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 1h | po-2025 |
+| 61 | Search-5 : Algorithmes génétiques | Python 3 | READY | PRODUCTION | 1h | po-2025 |
 | 62 | Search-6 — Recherche adversariale (jeux à somme nu | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 63 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 64 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree S | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
@@ -274,7 +274,7 @@ Total notebooks: 822
 | 102 | MGS-17 — Controle de parametres (Parameter Control | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 103 | MGS-18 — Banc CEC consolide : la combinaison des d | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 104 | MGS-19 — Recuit simulé décomposé : l'opérateur de  | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 105 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 105 | MGS-2 : Composition de métaheuristiques -- Match e | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 106 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 107 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 108 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
@@ -320,7 +320,7 @@ Total notebooks: 822
 | 31 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 33 | ML-3 (Python) : Entraînement et AutoML | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 34 | ML-4 : Evaluation des modeles (Python / sklearn) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 34 | ML-4 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 35 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
 | 36 | ML-5 (Python) : Prévision de séries temporelles (S | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 37 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
@@ -495,7 +495,7 @@ Total notebooks: 822
 | 155 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 156 | SC-14-Formal-Verification - Verification Formelle | Python 3 | DEMO | PRODUCTION | 30min | po-2024 |
 | 157 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 158 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 158 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 (SC-16 Concrete, WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 159 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 160 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 161 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -794,7 +794,7 @@ Total notebooks: 822
 | 23 | 12. Modèles Hiérarchiques Bayésiens — Pooling Part | .NET (C#) | READY | BETA | 30min | po-2023 |
 | 24 | Infer-13-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 25 | Infer-14-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 26 | Infer-15-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
+| 26 | Infer-15-Recommenders : systèmes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 27 | Infer-16-Sparse-Gaussian-Process : Processus Gauss | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 28 | Infer-17 — Filtre de Kalman : systèmes dynamiques  | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 29 | Infer-18 — Détection de Rupture (Change-Point) : i | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
@@ -835,7 +835,7 @@ Total notebooks: 822
 | 1 | ICT-1 — Trajectoires de $\Phi$ | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
 | 2 | ICT-10 — Grammaire des catastrophes : *l'obstacle  | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
 | 3 | ICT-11 — Profils d'agence causale : à quelle échel | Python 3 | READY | BETA | 30min | po-2025 |
-| 4 | ICT-12 — Champs de valence et animats : roles mesu | Python 3 | READY | BETA | 30min | po-2025 |
+| 4 | ICT-12 — Champs de valence et animats : rôles mesu | Python 3 | READY | BETA | 30min | po-2025 |
 | 5 | ICT-13 — Morphodynamique stratégique : une stratég | Python 3 | READY | BETA | 30min | po-2025 |
 | 6 | ICT-14 — Énergie libre et surprise du représentant | Python 3 | READY | BETA | 30min | po-2025 |
 | 7 | ICT-15 — Integrated Complexity : convergence Φ / F | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
