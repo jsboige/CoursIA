@@ -302,6 +302,27 @@ class TestRegressionCov:
         assert "résultat" not in ids
         assert "msg" in ids and "var" in ids
 
+    def test_cs_nested_interp_string_no_one_char_leak_fp(self):
+        # C# $"...{cond ? "a" : "b"}..." : chaines IMBRIQUEES dans l'interpolation.
+        # Les guillemets internes (des chaines "barque à gauche"/"barque à droite")
+        # cassent le strip regex (_STRIP_RE) : la chaine externe est tronquee au
+        # premier guillemet interne, et le contenu des chaines internes fuie dans
+        # le code analyse. Le token accentue 1-char qui fuie (preposition FR "à")
+        # doit etre FILTRE (len >= 2 dans accented_identifiers), pas flagge comme
+        # regression. Cas reel : Z3-Linq2Z3/04_Array_Theory cell[18] L62 (FP
+        # rapporte po-2025 c.624 ; gate signalait a->à en --base main --head main).
+        DQ = self.DQ
+        lit = ('Console.WriteLine($"Étape {t,2} : ({(t % 2 == 0 ? '
+               + DQ + 'barque à gauche' + DQ + ' : '
+               + DQ + 'barque à droite' + DQ + ')})");')
+        # 1. accented_identifiers ne doit yield AUCUN token 1-char fuyant.
+        leaks = list(cir.accented_identifiers(lit))
+        assert all(len(tok) >= 2 for tok, _, _ in leaks), f"1-char leak survived: {leaks}"
+        # 2. base == head (aucun diff possible) : scan doit retourner 0 regression.
+        nb = _nb([("code", lit)])
+        regs, _ = cir.scan(nb, nb)
+        assert regs == [], f"FP regression on nested C# interpolated string: {regs}"
+
     def test_accented_dict_key_is_regression(self):
         # Cle de dictionnaire accentuee Python = identifiant structurel.
         old = _nb([("code", "d = {'resultat': 1}")])
