@@ -19,81 +19,19 @@ from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
 from .lean_utils import count_real_sorries, resolve_lake_module
 
-# Regex to detect standalone `axiom` declarations in Lean 4 source.
-# Matches lines like `axiom foo`, `axiom bar : Prop`, `axiom baz (n : Nat) : ...`
-# but NOT lines inside comments (--) or strings, and NOT `axiom` in prose.
-_AXIOM_DECL_RE = re.compile(r'^\s*axiom\s+\w', re.MULTILINE)
-
-
-def _is_axiom_declaration(line: str) -> bool:
-    """Check if a single line is a standalone axiom declaration."""
-    return bool(_AXIOM_DECL_RE.match(line))
-
-
-def _count_axiom_declarations(content: str) -> int:
-    """Count standalone axiom declarations in Lean source content."""
-    return sum(1 for line in content.splitlines() if _is_axiom_declaration(line))
-
-
-# Regex to extract lemma/def names that contain sorry in their body.
-# NOTE: `have` is excluded because decomposition with `have h := by sorry` is
-# the legitimate scaffolding pattern. Only top-level `lemma`/`def` sorry
-# definitions indicate relocation (the prover creates a separate named lemma
-# instead of decomposing inline).
-#
-# The body segment `(?:[^:=]|:[^=])*?` matches chars that are neither `:`
-# nor `=`, OR a `:` NOT followed by `=` (i.e. one colon per `:=` candidate).
-# This allows optional type annotations like
-#     `lemma foo : P := by sorry`
-#     `lemma mul (n m : Nat) : Nat := by sorry`
-# while still stopping at the real `:=` token. Anchored with `re.MULTILINE`
-# so multi-line annotations like `lemma qux\n  : P\n  := by sorry` work too.
-# Empirically validated against 12 cases (annotation, nested binders,
-# multi-line, `have`/`theorem` exclusion). See #6790 / PR follow-up to #6907.
-_SORRY_DEF_RE = re.compile(
-    r'(?:lemma|def)\s+(\w+)\b(?:[^:=]|:[^=])*?\s*:=\s*by\s+sorry',
-    re.MULTILINE,
+# Forensic anti-gaming guards (axiom-cheat + sorry-relocation) live in the
+# stdlib-only `forensic_guards` module so their unit tests can load them by
+# file path without dragging agent_framework in at pytest collection time
+# (see forensic_guards.py docstring, #6790 / #6907). Re-imported here so the
+# runtime harness keeps using them unchanged.
+from .forensic_guards import (
+    _AXIOM_DECL_RE,
+    _SORRY_DEF_RE,
+    _check_sorry_relocation,
+    _count_axiom_declarations,
+    _find_sorry_definitions,
+    _is_axiom_declaration,
 )
-
-
-def _find_sorry_definitions(content: str) -> set:
-    """Find names of lemmas/defs/haves defined with sorry in their body.
-
-    Returns a set of identifier names that are defined as sorry in the content.
-    Used by the sorry-relocation guard to detect when the prover creates a
-    new sorry lemma and calls it to close existing sorry.
-    """
-    return set(_SORRY_DEF_RE.findall(content))
-
-
-def _check_sorry_relocation(new_content: str, original_content: str,
-                            replaced_text: str) -> tuple:
-    """Check if sorry was relocated rather than proved.
-
-    Returns (is_relocation: bool, sorry_defs: set, called_names: set).
-
-    A relocation is when:
-    1. The new file has NEW lemmas/defs/haves defined with sorry that
-       didn't exist in the original
-    2. The replacement text (which closed existing sorry) calls one of
-       those new sorry definitions
-    """
-    orig_defs = _find_sorry_definitions(original_content)
-    new_defs = _find_sorry_definitions(new_content)
-    # New sorry definitions not in original
-    fresh_sorry_defs = new_defs - orig_defs
-    if not fresh_sorry_defs:
-        return False, set(), set()
-    # Check if the replacement text references any fresh sorry definition
-    called = set()
-    for name in fresh_sorry_defs:
-        if name in replaced_text:
-            called.add(name)
-    if called:
-        return True, fresh_sorry_defs, called
-    # Also check if ANY sorry-closing text in new_content references them
-    # (for cases where the replacement spans multiple edits)
-    return False, fresh_sorry_defs, set()
 
 
 def _count_sorries_from_build_output(raw_output) -> int:

@@ -27,23 +27,31 @@ See #6790 (prover harness robustness).
 
 from __future__ import annotations
 
-import sys
+import importlib.util
 from pathlib import Path
 
 import pytest
 
-# Make `prover/` importable regardless of how pytest was invoked
-# (mirrors tests/test_prover_guards.py).
+# Load forensic_guards.py DIRECTLY by file path, bypassing prover/__init__.py.
+# The package-init (and prover.tools, where these guards are re-exported) eagerly
+# imports the LLM stack (prover.provers -> agent_framework, prover.config ->
+# agent_framework_openai), absent on a bare CI runner -- importing the guards via
+# `prover.tools` would abort collection there. forensic_guards.py is stdlib-only
+# and self-contained, so these tests run everywhere (no agent_framework / Lean /
+# network). Mirrors tests/test_bg_tree_lock.py's file-path load of tree_lock.py.
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-sys.path.insert(0, str(ROOT))
 
-from prover.tools import (  # noqa: E402
-    _check_sorry_relocation,
-    _count_axiom_declarations,
-    _find_sorry_definitions,
-    _is_axiom_declaration,
+_fg_spec = importlib.util.spec_from_file_location(
+    "prover_forensic_guards", ROOT / "prover" / "forensic_guards.py"
 )
+_forensic_guards = importlib.util.module_from_spec(_fg_spec)
+_fg_spec.loader.exec_module(_forensic_guards)
+
+_check_sorry_relocation = _forensic_guards._check_sorry_relocation
+_count_axiom_declarations = _forensic_guards._count_axiom_declarations
+_find_sorry_definitions = _forensic_guards._find_sorry_definitions
+_is_axiom_declaration = _forensic_guards._is_axiom_declaration
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -137,14 +145,21 @@ class TestFindSorryDefinitions:
 class TestFindSorryDefinitionsTypeAnnotated:
     """Type-annotated ``lemma``/``def`` with sorry — the common real-world form.
 
-    `_SORRY_DEF_RE` was broadened from `(?:lemma|def)\\s+(\\w+)\\b[^:]*:=\\s*by`
-    to `(?:lemma|def)\\s+(\\w+)\\b(?:[^:=]|:[^=])*?\\s*:=\\s*by` so it can span
-    the type-annotation colon without swallowing the `:=` token. The fix was
-    verified firsthand on 12 cases before commit (annotation only, nested
-    binders `(n m : Nat)`, instance binders `[Monad m]`, type-class binders
-    `{α : Type _}`, multi-line, `have`/`theorem` exclusion). The previous
-    xfail (PR #6907) is flipped to a passing regression test by this PR.
-    Follow-up to #6790 / closes the documented gap from #6907.
+    `_SORRY_DEF_RE`'s body segment evolved twice:
+      * `[^:]*` (original) stopped at the FIRST `:`, missing type annotations;
+      * `(?:[^:=]|:[^=])*?` (#6907) spans a `:` but still cannot cross an `=`,
+        so it silently MISSED any equation goal (`lemma bar : n = n := by sorry`);
+      * `(?:(?!:=)[\\s\\S]){0,2000}?` (current) matches any char — `:`, `=`,
+        newline — as long as it is not at the real `:=` token, via the negative
+        lookahead, so it spans annotations AND equation goals while never
+        crossing `:=`. The `{0,2000}` bound keeps it linear (no catastrophic
+        backtracking; bounded scan on input with no `:=`).
+
+    Verified firsthand on annotation-only, nested binders `(n m : Nat)`,
+    instance `[Monad m]` / type-class `{α : Type _}` binders, implication
+    arrows, equation goals, multi-line, and `have`/`theorem` exclusion.
+    The #6907 xfail was already flipped to a passing test; this PR extends the
+    fence to equation-goal types and the backtracking bound. See #6790 / #6907.
     """
 
     def test_type_annotated_lemma(self):
@@ -174,6 +189,34 @@ class TestFindSorryDefinitionsTypeAnnotated:
     def test_implication_arrow_in_signature(self):
         # `→` is not a `:` or `=`, so the body segment handles it natively.
         assert _find_sorry_definitions("lemma baz : P → Q := by sorry") == {"baz"}
+
+    def test_equation_goal_type(self):
+        # An equation goal `n = n` contains a bare `=`; the earlier
+        # `(?:[^:=]|:[^=])*?` form could not cross it and MISSED the sorry-def
+        # entirely. The `(?!:=)`-guarded body spans it while still stopping at
+        # the real `:=`. This is the gap this PR closes.
+        assert (
+            _find_sorry_definitions("lemma bar (n : Nat) : n = n := by sorry")
+            == {"bar"}
+        )
+
+    def test_equation_goal_no_spaces(self):
+        # Same, with the equation and binder written tightly (`n=n`, `(n:Nat)`).
+        assert (
+            _find_sorry_definitions("lemma eqc (n:Nat) : n=n := by sorry") == {"eqc"}
+        )
+
+    def test_arith_equation_goal(self):
+        # A richer equation goal with several `=`/`+` still resolves to one name.
+        content = "lemma addc (a b : Nat) : a + b = b + a := by sorry"
+        assert _find_sorry_definitions(content) == {"addc"}
+
+    def test_no_catastrophic_backtracking_on_missing_assign(self):
+        # A `lemma` header followed by a long run with NO `:= by sorry` must
+        # return promptly with no match — the `{0,2000}` bound + lazy `(?!:=)`
+        # keep the scan linear rather than exploding.
+        content = "lemma huge " + ("x " * 5000) + "\n"
+        assert _find_sorry_definitions(content) == set()
 
 
 # ──────────────────────────────────────────────────────────────────────────
