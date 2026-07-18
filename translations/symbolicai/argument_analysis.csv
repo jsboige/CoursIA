@@ -8224,7 +8224,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuratio
 Le notebook `Argument_Analysis_UI_configuration.ipynb` est maintenant prêt. Il contient toute la logique nécessaire pour l'interface utilisateur, la gestion des sources, le cache et le chiffrement.
 
 Le notebook exécuteur principal peut maintenant utiliser la fonction `configure_analysis_task()` définie ici pour obtenir le texte préparé avant de lancer l'analyse par les agents.",,,,,,,,bb3c9ceb42e1ae99,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e33a32b5,markdown,fr,d94dc73a9d673ec0,"# Ontologie des vertus argumentatives -- le pole miroir des sophismes (SKOS + AIF)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e33a32b5,markdown,fr,71e850f435f9ba00,"# Ontologie des vertus argumentatives -- le pole miroir des sophismes (SKOS + AIF)
 
 Le projet [Argumentum](https://www.argumentum.games/) modelise l'argumentation sur **deux poles** :
 
@@ -8233,12 +8233,12 @@ Le projet [Argumentum](https://www.argumentum.games/) modelise l'argumentation s
   a base de `NamedIndividual` reliees par un graphe dense d'`ObjectPropertyAssertion` ;
 - le pole **positif** -- les *vertus* argumentatives (virtues), objet de ce notebook.
 
-L'ontologie des vertus (`argumentum_virtues.owl`) se decrit elle-meme comme
+L'ontologie des vertus (`argumentum_virtues.owl`) se decrit elle-même comme
 *""the mirror of the fallacies axis (223 nodes, 7 families)""*. Mais son **paradigme de
-modelisation est different** : la ou les sophismes sont des individus (ABox), les vertus
+modelisation est différent** : la ou les sophismes sont des individus (ABox), les vertus
 forment un **thesaurus SKOS** (`skos:Concept`, `skos:broader`/`skos:narrower`,
-`skos:prefLabel`, `skos:definition`) -- une organisation de connaissances hierarchique et
-multilingue. Un meme projet, deux choix de modelisation opposes : c'est la lecon centrale
+`skos:prefLabel`, `skos:definition`) -- une organisation de connaissances hiérarchique et
+multilingue. Un même projet, deux choix de modelisation opposes : c'est la lecon centrale
 de ce notebook.
 
 Le lien entre les deux poles est la propriete AIF `aif:goodTenorOf` (le *bon tenor* d'un
@@ -8246,31 +8246,31 @@ schema d'argument de Walton), miroir exact du `badTenorOf` cote sophismes.
 
 **Objectifs pedagogiques**
 1. Charger une ontologie OWL/XML que `rdflib` ne parse pas nativement, via un pont vers un graphe RDF.
-2. Interroger un thesaurus SKOS avec **SPARQL** (hierarchie, langues, schemes).
+2. Interroger un thesaurus SKOS avec **SPARQL** (hiérarchie, langues, schemes).
 3. Comprendre le contraste **ABox (individus) vs thesaurus SKOS (concepts)** entre deux ontologies soeurs.
-",,,,,,,,d94dc73a9d673ec0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,822970f5,markdown,fr,1f27b2e209456055,"## 1. SKOS, AIF et le format OWL/XML
+",,,,,,,,71e850f435f9ba00,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,822970f5,markdown,fr,85aa10884c510db6,"## 1. SKOS, AIF et le format OWL/XML
 
 **SKOS** ([Simple Knowledge Organization System](https://www.w3.org/TR/skos-reference/), W3C 2009)
-est le vocabulaire standard pour publier des thesaurus, taxonomies et systemes de classification
-sur le web semantique. Ses primitives :
+est le vocabulaire standard pour publier des thesaurus, taxonomies et systèmes de classification
+sur le web sémantique. Ses primitives :
 
-| Primitive SKOS | Role |
+| Primitive SKOS | Rôle |
 |----------------|------|
 | `skos:Concept` | une unite de sens (ici : une vertu argumentative) |
 | `skos:prefLabel` | le libelle prefere, **par langue** (`@fr`, `@en`) |
 | `skos:definition` | la definition, par langue |
-| `skos:broader` / `skos:narrower` | la hierarchie (plus general / plus specifique) |
+| `skos:broader` / `skos:narrower` | la hiérarchie (plus general / plus spécifique) |
 | `skos:inScheme` / `skos:topConceptOf` | l'appartenance au schema de concepts |
 
 **AIF** (*Argument Interchange Format*, Universite de Dundee) fournit `aif:goodTenorOf` :
 elle relie chaque vertu au **schema d'argument de Walton** qu'elle instancie correctement.
 
 **Le format** : `argumentum_virtues.owl` est serialise en **OWL/XML fonctionnel** (racine
-`<Ontology>`, elements `<Declaration>`, `<AnnotationAssertion>`), **pas** en RDF/XML. C'est
+`<Ontology>`, éléments `<Declaration>`, `<AnnotationAssertion>`), **pas** en RDF/XML. C'est
 la raison pour laquelle `rdflib` -- dont le parseur natif est RDF/XML -- ne le lit pas
 directement, comme nous allons le constater.
-",,,,,,,,1f27b2e209456055,,,,,,,
+",,,,,,,,85aa10884c510db6,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,16840649,markdown,fr,7656b64707ca5895,"## 2. Charger l'ontologie : essai des outils SOTA, puis pont OWL/XML -> RDF
 
 Par honnetete methodologique, on **essaie d'abord les vrais outils** (`rdflib`, `owlready2`)
@@ -8356,14 +8356,14 @@ for b in block.findall(owl_text):
 print(f""Graphe SKOS construit : {len(g):,} triplets"")
 print(f""Concepts distincts (sujets) : {len(set(g.subjects())):,}"")
 ",,,,,,,,0bf9590f45b20ff7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,658ca1d2,markdown,fr,d3c23ae74cff06e4,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,658ca1d2,markdown,fr,7daf6fb873a29e74,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
 le contenu de ce fichier -- le premier parce que la serialisation n'est pas du RDF/XML, le second
 parce que son parseur ne reconstruit pas les `AnnotationAssertion` de cette structure. Le pont
 extrait donc les assertions OWL/XML et les charge comme **vrais triplets RDF** dans un graphe
-`rdflib` : a partir de la, toutes les operations (comptage, hierarchie, langues) se font en
+`rdflib` : a partir de la, toutes les opérations (comptage, hiérarchie, langues) se font en
 **SPARQL sur le graphe**, c'est-a-dire avec l'outil SOTA. Verdict de portee : **SOTA-OK** -- le
-pont est une passerelle d'ingestion documentee, pas un contournement du moteur de requetes.
-",,,,,,,,d3c23ae74cff06e4,,,,,,,
+pont est une passerelle d'ingestion documentee, pas un contournement du moteur de requêtes.
+",,,,,,,,7daf6fb873a29e74,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ad1c1e05,markdown,fr,d7d11c0adc7ac741,"## 3. Structure du thesaurus : inventaire des predicats SKOS
 
 Comptons chaque type de triplet pour cartographier l'ontologie et la comparer au pole sophismes.
@@ -8395,19 +8395,19 @@ print(""\n--- Contraste des paradigmes ---"")
 print(""Sophismes (Ontology_AIF) : ABox -- NamedIndividual + ObjectPropertyAssertion (graphe dense)."")
 print(""Vertus    (ce notebook)  : thesaurus SKOS -- Concept + broader/narrower (hierarchie)."")
 ",,,,,,,,07b2d8daedde8f61,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,76ec68e5,markdown,fr,4874fbcfce8b24d6,"**Lecture** : le thesaurus compte **223 concepts** (chacun avec un `prefLabel`), **446
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,76ec68e5,markdown,fr,a9840e7bc894830f,"**Lecture** : le thesaurus compte **223 concepts** (chacun avec un `prefLabel`), **446
 definitions** (223 x 2 langues), **222 relations `broader`** et autant de `narrower` -- la
-double declaration est la convention SKOS (chaque lien hierarchique est pose dans les deux
+double declaration est la convention SKOS (chaque lien hiérarchique est pose dans les deux
 sens). Contrairement au pole sophismes, il n'y a **aucun** `NamedIndividual` ni
-`ObjectPropertyAssertion` : la connaissance est portee par la **hierarchie de concepts** et les
+`ObjectPropertyAssertion` : la connaissance est portee par la **hiérarchie de concepts** et les
 **annotations multilingues**, pas par un graphe de relations entre individus. Deux ontologies
 soeurs, deux paradigmes : ABox relationnel pour les sophismes, thesaurus SKOS pour les vertus.
-",,,,,,,,4874fbcfce8b24d6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4833edd2,markdown,fr,92fad54c8dd8a738,"## 4. La hierarchie SKOS : du concept racine aux familles
+",,,,,,,,a9840e7bc894830f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4833edd2,markdown,fr,9c47f5ffb0a6fae1,"## 4. La hiérarchie SKOS : du concept racine aux familles
 
 Le thesaurus a un **concept racine** (`skos:topConceptOf`). Les concepts les plus ramifies
 (beaucoup de `narrower`) sont les tetes de **familles** de vertus. Requetons cela en SPARQL.
-",,,,,,,,92fad54c8dd8a738,,,,,,,
+",,,,,,,,9c47f5ffb0a6fae1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,c01f48b7,code,fr,0e30f094e3020421,"# --- Concept racine + familles les plus ramifiees (SPARQL) ---
 SKOS_P = ""PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n""
 
@@ -8451,13 +8451,13 @@ if leaves:
     path = [str(sample).split('#')[-1]] + [str(a).split('#')[-1] for a in ancestors(sample)]
     print(""  "" + ""  ->  "".join(path))
 ",,,,,,,,0e30f094e3020421,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e786ec67,markdown,fr,e48608c214db9caa,"**Lecture** : le concept racine est **`validArgument` (""Argument valable"")** -- toute
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e786ec67,markdown,fr,f7248937115b0b7f,"**Lecture** : le concept racine est **`validArgument` (""Argument valable"")** -- toute
 vertu est une facette de l'argument valable. Les tetes de familles (`simpleInference`,
 `thirdfigureSyllogism`, `acceptableInformalLogic`, `tangibleEvidence`, `credibleSources`...)
 recouvrent les **7 familles** annoncees : logique formelle, logique informelle, qualite des
-sources, des preuves, etc. La chaine `broader` remonte de chaque feuille jusqu'a la racine :
+sources, des preuves, etc. La chaîne `broader` remonte de chaque feuille jusqu'a la racine :
 c'est la profondeur du thesaurus, exploitable pour situer une vertu dans sa lignee.
-",,,,,,,,e48608c214db9caa,,,,,,,
+",,,,,,,,f7248937115b0b7f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,7102e28d,markdown,fr,832a6538af9d9189,"## 5. Un thesaurus bilingue : `prefLabel` et `definition` par langue
 
 SKOS attache les libelles **par langue** (`@fr`, `@en`). Verifions la couverture et affichons
@@ -8492,19 +8492,19 @@ SELECT ?c ?d WHERE {
 for r in g.query(q_def):
     print(f""\nDefinition FR de '{str(r.c).split('#')[-1]}' :\n  {r.d}"")
 ",,,,,,,,84ff7d157ad1d80c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0c5aa193,markdown,fr,58c91f626c83ef49,"**Lecture** : la couverture est **symetrique -- 223 concepts en FR et 223 en EN** pour les
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0c5aa193,markdown,fr,83dc19eaf3272a50,"**Lecture** : la couverture est **symetrique -- 223 concepts en FR et 223 en EN** pour les
 `prefLabel` comme pour les `definition`. C'est un thesaurus reellement bilingue, ou chaque vertu
-est nommee et definie dans les deux langues. Cette structure `@fr`/`@en` est exactement ce que
+est nommee et définie dans les deux langues. Cette structure `@fr`/`@en` est exactement ce que
 SKOS est concu pour porter, et ce qui rend le thesaurus directement exploitable dans une
 interface multilingue.
-",,,,,,,,58c91f626c83ef49,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,35e59e7b,markdown,fr,ff4b4fbff76f667b,"## 6. Le pont AIF `goodTenorOf` : vertus <-> schemas de Walton
+",,,,,,,,83dc19eaf3272a50,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,35e59e7b,markdown,fr,a3cc901739cc84e3,"## 6. Le pont AIF `goodTenorOf` : vertus <-> schemas de Walton
 
 Chaque vertu est le **""bon tenor""** d'un schema d'argument de Walton (`aif:goodTenorOf`) --
-la maniere correcte d'instancier ce schema. Ce sont **les memes 14 schemes** que ceux relies aux
-sophismes cote `Ontology_AIF` : `goodTenorOf` et `badTenorOf` sont les deux faces d'un meme
+la maniere correcte d'instancier ce schema. Ce sont **les mêmes 14 schemes** que ceux relies aux
+sophismes cote `Ontology_AIF` : `goodTenorOf` et `badTenorOf` sont les deux faces d'un même
 schema. Visualisons leur distribution.
-",,,,,,,,ff4b4fbff76f667b,,,,,,,
+",,,,,,,,a3cc901739cc84e3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ada48f7b,code,fr,dca2b2ea5efd4b21,"# --- Distribution des schemes de Walton portes par les vertus + graphique ---
 %matplotlib inline
 import matplotlib.pyplot as plt
@@ -8537,16 +8537,16 @@ correcte se decline en de nombreuses bonnes pratiques. La propriete `goodTenorOf
 **pivot** qui permettra, dans les exercices, de relier une vertu a son sophisme miroir via le
 schema partage.
 ",,,,,,,,593baf04a837017f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,8798c7a3,markdown,fr,17a8175b2e2a3a60,"## 7. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,8798c7a3,markdown,fr,2ae97961089e8b8d,"## 7. Exercices
 
-Trois exercices pour manipuler le thesaurus vous-meme. Les cellules sont des squelettes a
-completer -- le graphe `g` est deja charge en memoire.
-",,,,,,,,17a8175b2e2a3a60,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,363f473d,markdown,fr,cc8b49f59b3ab09c,"### Exercice 1 -- Concepts sans definition dans une langue
+Trois exercices pour manipuler le thesaurus vous-même. Les cellules sont des squelettes a
+completer -- le graphe `g` est déjà charge en memoire.
+",,,,,,,,2ae97961089e8b8d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,363f473d,markdown,fr,9a9a4d417eb6c0b1,"### Exercice 1 -- Concepts sans definition dans une langue
 
-Ecrire une requete SPARQL qui liste les concepts possedant un `skos:prefLabel` **anglais** mais
+Ecrire une requête SPARQL qui liste les concepts possedant un `skos:prefLabel` **anglais** mais
 **aucune** `skos:definition` anglaise (candidats a la traduction). Indice : `FILTER NOT EXISTS`.
-",,,,,,,,cc8b49f59b3ab09c,,,,,,,
+",,,,,,,,9a9a4d417eb6c0b1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,1c28e1e8,code,fr,ffba7a354ff75a9e,"# Exercice 1 a completer
 # Objectif : concepts avec prefLabel @en mais SANS definition @en.
 # Indice : SPARQL FILTER NOT EXISTS { ?c skos:definition ?d . FILTER(lang(?d)=""en"") }
@@ -8580,12 +8580,12 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtue
 racine_famille = None  # TODO etudiant : une URIRef de tete de famille
 print(""Exercice 2 a completer"")
 ",,,,,,,,ea40e1aa2b6c36be,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0d3f18a2,markdown,fr,082359e02be6a54b,"### Exercice 3 -- Le pont vertus <-> sophismes
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0d3f18a2,markdown,fr,66678e84d71185a8,"### Exercice 3 -- Le pont vertus <-> sophismes
 
 Pour un schema de Walton donne (p. ex. `""Argument from Sign""`), lister toutes les vertus qui en
 sont le `goodTenorOf`. Bonus : ouvrir `Argument_Analysis_Ontology_AIF.ipynb` et comparer avec les
-**sophismes** relies au **meme** schema -- vous materialisez ainsi l'axe good/bad tenor.
-",,,,,,,,082359e02be6a54b,,,,,,,
+**sophismes** relies au **même** schema -- vous materialisez ainsi l'axe good/bad tenor.
+",,,,,,,,66678e84d71185a8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,6312ff34,code,fr,8efe9b4bc2044ce3,"# Exercice 3 a completer
 # Objectif : pour un scheme de Walton, lister les vertus goodTenorOf ; comparer au pole sophismes.
 # Indice : construire une requete SPARQL avec le prefixe
@@ -8596,18 +8596,18 @@ scheme_cible = ""Argument from Sign""  # a explorer
 vertus_du_scheme = None  # TODO etudiant
 print(""Exercice 3 a completer"")
 ",,,,,,,,8efe9b4bc2044ce3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4907f827,markdown,fr,aab800cd0d81d310,"## 8. Ponts avec la serie Argument_Analysis
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4907f827,markdown,fr,bd8a1965a083a638,"## 8. Ponts avec la serie Argument_Analysis
 
 - [`Argument_Analysis_Ontology_AIF`](Argument_Analysis_Ontology_AIF.ipynb) -- le **pole sophismes**
-  (OWL2 ABox, schemes de Walton via `badTenorOf`). A lire en parallele : meme projet, paradigme oppose.
+  (OWL2 ABox, schemes de Walton via `badTenorOf`). A lire en parallele : même projet, paradigme oppose.
 - [`Argument_Analysis_Ontology_CrossLinks`](Argument_Analysis_Ontology_CrossLinks.ipynb) -- les liens
   inter-noeuds systematises (CSV canonique multilingue).
 - [`Argument_Analysis_Restitution_3_Actes`](Argument_Analysis_Restitution_3_Actes.ipynb) -- la
   restitution pedagogique en trois actes.
 
-**A retenir** : une meme famille de connaissances (l'argumentation) peut se modeliser en
+**A retenir** : une même famille de connaissances (l'argumentation) peut se modeliser en
 **ABox relationnel** (individus + relations, cote sophismes) ou en **thesaurus SKOS**
-(concepts + hierarchie + multilingue, cote vertus). SKOS n'est pas ""moins expressif"" -- il est
+(concepts + hiérarchie + multilingue, cote vertus). SKOS n'est pas ""moins expressif"" -- il est
 **adapte a une taxonomie navigable et traduisible**, la ou l'ABox convient a un graphe dense de
-relations. Le choix depend de l'usage vise, pas d'une hierarchie de valeur entre formalismes.
-",,,,,,,,aab800cd0d81d310,,,,,,,
+relations. Le choix depend de l'usage vise, pas d'une hiérarchie de valeur entre formalismes.
+",,,,,,,,bd8a1965a083a638,,,,,,,
