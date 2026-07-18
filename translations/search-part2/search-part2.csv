@@ -870,22 +870,22 @@ Ce notebook a introduit les **problemes de satisfaction de contraintes (CSP)** e
 **Voir aussi** :
 - [CSP-2-Consistency.ipynb](CSP-2-Consistency.ipynb) pour les algorithmes de consistance (AC-3, forward checking)
 - [CSP-3-Advanced-Csharp.ipynb](CSP-3-Advanced-Csharp.ipynb) - Contraintes globales et optimisation multi-objectif",,,,,,,,18348754b9a2cc47,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,41d9eb7f,markdown,fr,0da22d288e512669,"# CSP-1 : Fondamentaux des CSP
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,41d9eb7f,markdown,fr,bd3dad73f7ee5f08,"# CSP-1 : Fondamentaux des CSP
 
 **Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-5-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
 
-## Problemes de Satisfaction de Contraintes - Fondamentaux
+## Problèmes de Satisfaction de Contraintes - Fondamentaux
 
 Ce notebook introduit le formalisme des **CSP** (Constraint Satisfaction Problems) et les algorithmes de base pour les resoudre. Nous implementons tout de zero, puis decouvrons la bibliotheque `python-constraint` pour une modelisation rapide.
 
 ### Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. **Formaliser** un probleme sous forme de CSP (variables, domaines, contraintes) (Bloom : comprendre)
+1. **Formaliser** un problème sous forme de CSP (variables, domaines, contraintes) (Bloom : comprendre)
 2. **Implementer** l'algorithme de backtracking pour CSP (Bloom : appliquer)
-3. **Appliquer** les heuristiques MRV et LCV pour accelerer la recherche (Bloom : analyser)
-4. **Modeliser** des problemes classiques avec la bibliotheque `python-constraint` (Bloom : appliquer)
-5. **Comparer** les approches manuelles et bibliotheque sur des problemes concrets (Bloom : evaluer)
+3. **Appliquer** les heuristiques MRV et LCV pour accélérer la recherche (Bloom : analyser)
+4. **Modeliser** des problèmes classiques avec la bibliotheque `python-constraint` (Bloom : appliquer)
+5. **Comparer** les approches manuelles et bibliotheque sur des problèmes concrets (Bloom : evaluer)
 
 ### Prerequis
 - Bases de Python (recursion, dictionnaires)
@@ -895,37 +895,37 @@ A la fin de ce notebook, vous saurez :
 
 ### Lien avec d'autres series
 
-Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complete des CSP.",,,,,,,,0da22d288e512669,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39d1a680,markdown,fr,35dcf5318a671c3f,"---
+Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complète des CSP.",,,,,,,,bd3dad73f7ee5f08,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39d1a680,markdown,fr,a27f114059110c7d,"---
 
 ## 1. Introduction (~5 min)
 
 ### Qu'est-ce qu'un CSP ?
 
-Un **CSP** (Constraint Satisfaction Problem) est un probleme defini par un ensemble de variables qui doivent prendre des valeurs dans des domaines donnes, tout en respectant un ensemble de contraintes.
+Un **CSP** (Constraint Satisfaction Problem) est un problème défini par un ensemble de variables qui doivent prendre des valeurs dans des domaines donnes, tout en respectant un ensemble de contraintes.
 
 ### CSP vs recherche classique
 
-Dans les notebooks precedents (Search-1 a Search-3), nous avons explore la recherche dans un espace d'etats : BFS, DFS, A*. Ces methodes traitent le probleme comme un parcours de graphe. Les algorithmes genetiques (Search-5) traitent le probleme comme une optimisation.
+Dans les notebooks precedents (Search-1 a Search-3), nous avons explore la recherche dans un espace d'etats : BFS, DFS, A*. Ces méthodes traitent le problème comme un parcours de graphe. Les algorithmes genetiques (Search-5) traitent le problème comme une optimisation.
 
-Cependant, de nombreux problemes reels ont une structure particuliere que ces approches n'exploitent pas pleinement :
+Cependant, de nombreux problèmes reels ont une structure particuliere que ces approches n'exploitent pas pleinement :
 
 | Approche | Avantage | Limitation |
 |----------|----------|------------|
-| Recherche classique (BFS/DFS) | Generale | Ne tire pas parti de la structure du probleme |
+| Recherche classique (BFS/DFS) | générale | Ne tire pas parti de la structure du problème |
 | Recherche informee (A*) | Optimale avec bonne heuristique | Necessite une heuristique specifique |
 | **CSP** | Les contraintes eliminent de larges portions de l'espace | Necessite une modelisation CSP |
 
 ### Exemples concrets de CSP
 
-| Domaine | Probleme | Variables | Contraintes |
+| Domaine | problème | Variables | Contraintes |
 |---------|----------|-----------|-------------|
 | Planification | Emplois du temps | Creneaux par cours | Pas de conflit salle/enseignant |
 | Jeux | Sudoku | Cases de la grille | Chiffres distincts par ligne/colonne/bloc |
 | Cartographie | Coloration de carte | Couleur par region | Regions adjacentes de couleurs differentes |
 | Cryptographie | Cryptarithmetique | Lettres -> chiffres | L'equation arithmetique est respectee |
 
-L'avantage fondamental des CSP est que les **contraintes** permettent de detecter les impasses **avant** d'avoir complete une solution, reduisant drastiquement l'exploration.",,,,,,,,35dcf5318a671c3f,,,,,,,
+L'avantage fondamental des CSP est que les **contraintes** permettent de détecter les impasses **avant** d'avoir complète une solution, réduisant drastiquement l'exploration.",,,,,,,,a27f114059110c7d,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,73a5a80e,code,fr,545205db8fdcef4b,"# Imports pour tout le notebook
 import sys
 import copy
@@ -939,13 +939,13 @@ sys.path.insert(0, '..')
 from search_helpers import draw_csp_graph
 
 print(""Imports OK"")",,,,,,,,545205db8fdcef4b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0c3268cb,markdown,fr,49203eeb8959bcb9,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0c3268cb,markdown,fr,7265e91ce161bcae,"---
 
 ## 2. Formalisation CSP (~8 min)
 
 ### Definition
 
-Un **Probleme de Satisfaction de Contraintes** (CSP) est defini par un triplet $(X, D, C)$ :
+Un **problème de Satisfaction de Contraintes** (CSP) est défini par un triplet $(X, D, C)$ :
 
 - $X = \{X_1, X_2, \ldots, X_n\}$ : un ensemble de **variables**
 - $D = \{D_1, D_2, \ldots, D_n\}$ : un ensemble de **domaines**, ou $D_i$ est l'ensemble des valeurs possibles pour $X_i$
@@ -965,14 +965,14 @@ Un **Probleme de Satisfaction de Contraintes** (CSP) est defini par un triplet $
 |-------|------------|
 | **Assignation** | Affectation d'une valeur a une ou plusieurs variables |
 | **Assignation consistante** | Assignation qui ne viole aucune contrainte |
-| **Assignation complete** | Toutes les variables ont une valeur |
-| **Solution** | Assignation a la fois **complete** et **consistante** |
+| **Assignation complète** | Toutes les variables ont une valeur |
+| **Solution** | Assignation a la fois **complète** et **consistante** |
 
 ### Graphe de contraintes
 
 On represente un CSP binaire par un **graphe de contraintes** ou :
 - Chaque **noeud** est une variable
-- Chaque **arete** relie deux variables partageant une contrainte",,,,,,,,49203eeb8959bcb9,,,,,,,
+- Chaque **arete** relie deux variables partageant une contrainte",,,,,,,,7265e91ce161bcae,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,b57634a5,markdown,fr,01b0c9e8da530178,Implementons une classe CSP generique qui servira de base pour tout le notebook.,,,,,,,,01b0c9e8da530178,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,6bbfc428,code,fr,b01916a365b63d30,"class CSP:
     """"""Probleme de Satisfaction de Contraintes (CSP).
@@ -1037,11 +1037,11 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,6bbfc428,code,fr,b01
         return constraints
 
 print(""Classe CSP definie."")",,,,,,,,b01916a365b63d30,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cc4242f,markdown,fr,3756dbfa31dc21a8,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cc4242f,markdown,fr,2efad5427e7161da,"---
 
 ## 3. Exemple : coloration de carte de l'Australie (~8 min)
 
-Le probleme classique de coloration de carte consiste a colorier les regions d'une carte de sorte que deux regions adjacentes n'aient jamais la meme couleur. C'est l'exemple canonique du livre AIMA (Russell & Norvig), applique a la carte de l'Australie avec ses 7 etats/territoires.
+Le problème classique de coloration de carte consiste a colorier les regions d'une carte de sorte que deux regions adjacentes n'aient jamais la même couleur. C'est l'exemple canonique du livre AIMA (Russell & Norvig), applique a la carte de l'Australie avec ses 7 etats/territoires.
 
 ### Modelisation CSP
 
@@ -1049,9 +1049,9 @@ Le probleme classique de coloration de carte consiste a colorier les regions d'u
 |-----------|--------|
 | **Variables** | WA, NT, SA, Q, NSW, V, T (les 7 etats australiens) |
 | **Domaines** | {Rouge, Vert, Bleu} pour chaque variable |
-| **Contraintes** | Regions adjacentes $\neq$ meme couleur |
+| **Contraintes** | Regions adjacentes $\neq$ même couleur |
 
-Combien de combinaisons possibles (sans contraintes) ? $3^7 = 2187$. Les contraintes vont eliminer la grande majorite de ces combinaisons.",,,,,,,,3756dbfa31dc21a8,,,,,,,
+Combien de combinaisons possibles (sans contraintes) ? $3^7 = 2187$. Les contraintes vont eliminer la grande majorite de ces combinaisons.",,,,,,,,2efad5427e7161da,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,b076149b,code,fr,b960c8b85849e104,"# Definition du probleme de coloration de l'Australie
 australia_vars = ['WA', 'NT', 'SA', 'Q', 'NSW', 'V', 'T']
 
@@ -1126,13 +1126,13 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,26ebe55c,markdown,fr
 1. SA est adjacent a presque tous les etats continentaux : c'est la variable la plus contrainte
 2. T (Tasmanie) n'a aucune contrainte : n'importe quelle couleur convient
 3. Le graphe n'est pas complet : seules les paires adjacentes sont contraintes",,,,,,,,1e3d343296e3c087,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,8b8fb1c0,markdown,fr,9ea003598b1541f5,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,8b8fb1c0,markdown,fr,b65e123a0a043d18,"---
 
 ## 4. Backtracking Search (~10 min)
 
 ### Pourquoi pas la brute force ?
 
-L'approche naive (generate-and-test) consiste a generer toutes les $3^7 = 2187$ combinaisons et filtrer celles qui satisfont les contraintes. C'est intraitable pour des problemes plus grands ($10^{50}$ pour 50 variables a 10 valeurs).
+L'approche naive (generate-and-test) consiste a générer toutes les $3^7 = 2187$ combinaisons et filtrer celles qui satisfont les contraintes. C'est intraitable pour des problèmes plus grands ($10^{50}$ pour 50 variables a 10 valeurs).
 
 ### Principe du backtracking
 
@@ -1149,9 +1149,9 @@ Le **backtracking** est l'algorithme de base pour resoudre un CSP :
 
 | Aspect | DFS classique | Backtracking CSP |
 |--------|--------------|------------------|
-| Assignation | Complete d'abord, verification ensuite | Verification **a chaque etape** |
+| Assignation | complète d'abord, verification ensuite | Verification **a chaque étape** |
 | Elagage | Aucun | Elimination des branches inconsistantes |
-| Profondeur | Variable | Exactement $n$ (nombre de variables) |",,,,,,,,9ea003598b1541f5,,,,,,,
+| Profondeur | Variable | Exactement $n$ (nombre de variables) |",,,,,,,,b65e123a0a043d18,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,b634a241,markdown,fr,c8a8bad2f46308b5,"Commencons par mesurer le cout de la brute force, puis implementons le backtracking pour montrer l'amelioration.",,,,,,,,c8a8bad2f46308b5,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,5c070f40,code,fr,4425a0cac22b726a,"from itertools import product
 
@@ -1224,7 +1224,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f3e50923,code,fr,76b
     return None  # Echec : backtrack
 
 print(""Fonction backtracking_search definie."")",,,,,,,,76b409539c7fbb9b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,870c3620,markdown,fr,9f613c7642183b8b,Appliquons le backtracking au probleme de coloration de l'Australie et observons le nombre d'assignations necessaires.,,,,,,,,9f613c7642183b8b,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,870c3620,markdown,fr,de4a7e628b47d182,Appliquons le backtracking au problème de coloration de l'Australie et observons le nombre d'assignations nécessaires.,,,,,,,,de4a7e628b47d182,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,189519f8,code,fr,e86c0ec5675aa24b,"# Resolution par backtracking simple
 csp_bt = CSP(australia_vars, australia_domains,
              australia_neighbors, different_values)
@@ -1242,18 +1242,18 @@ print(f""Temps : {elapsed*1000:.2f} ms"")
 # Verification
 if solution:
     print(f""\nVerification : {'VALIDE' if csp_bt.is_solution(solution) else 'INVALIDE'}"")",,,,,,,,e86c0ec5675aa24b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,a1a62776,markdown,fr,47f3ac5c3162b0a9,"### Interpretation : backtracking simple
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,a1a62776,markdown,fr,efad64ccdcf9c036,"### Interpretation : backtracking simple
 
 **Sortie obtenue** : le backtracking trouve une solution avec beaucoup moins d'explorations que la brute force.
 
-| Methode | Essais | Amelioration |
+| méthode | Essais | Amelioration |
 |---------|--------|-------------|
-| Brute force | 2187 | reference |
+| Brute force | 2187 | référence |
 | Backtracking | ~7-15 | environ 200x moins |
 
-**Pourquoi cette reduction ?** Le backtracking detecte les inconsistances des qu'elles apparaissent. Si WA = Rouge et NT = Rouge, la contrainte `WA != NT` est violee immediatement : toutes les extensions de cette assignation partielle sont eliminees sans etre explorees.
+**Pourquoi cette reduction ?** Le backtracking détecte les inconsistances des qu'elles apparaissent. Si WA = Rouge et NT = Rouge, la contrainte `WA != NT` est violee immediatement : toutes les extensions de cette assignation partielle sont eliminees sans etre explorees.
 
-> **Question** : peut-on faire encore mieux en choisissant plus intelligemment quelle variable assigner en premier et quelle valeur essayer ?",,,,,,,,47f3ac5c3162b0a9,,,,,,,
+> **Question** : peut-on faire encore mieux en choisissant plus intelligemment quelle variable assigner en premier et quelle valeur essayer ?",,,,,,,,efad64ccdcf9c036,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,7ab77574,markdown,fr,4c973d1ef03cc1cf,"### Trace detaillee du backtracking
 
 Pour mieux comprendre le fonctionnement, implementons une version avec trace qui montre chaque decision et chaque retour en arriere.",,,,,,,,4c973d1ef03cc1cf,,,,,,,
@@ -1302,18 +1302,18 @@ print(""="" * 50)
 sol = backtracking_search_verbose(small_csp)
 print(f""\nSolution : {sol}"")
 print(f""Assignations tentees : {small_csp.n_assigns}"")",,,,,,,,e3deb776113ecc4d,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bdb687f0,markdown,fr,ee05ecb8761a8e9f,"### Interpretation : trace du backtracking
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bdb687f0,markdown,fr,8503a96a4e2dcd1d,"### Interpretation : trace du backtracking
 
 La trace montre le processus de decision pas a pas :
 
-1. L'algorithme assigne une valeur a la premiere variable
-2. Il detecte les conflits immediatement grace a la verification de consistance
+1. L'algorithme assigne une valeur a la première variable
+2. Il détecte les conflits immediatement grace a la verification de consistance
 3. Quand un conflit survient sur toutes les valeurs, il revient en arriere (backtrack)
 
 **Observations** :
 - Les conflits sont detectes **des l'assignation**, pas a la fin
 - Le ""backtrack"" est visible dans la trace par les retours en arriere
-- L'indentation montre la profondeur de recursion",,,,,,,,ee05ecb8761a8e9f,,,,,,,
+- L'indentation montre la profondeur de recursion",,,,,,,,8503a96a4e2dcd1d,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,l07u2toghu,markdown,fr,46e8216fcbc767ef,"### 4.3 Visualisation du processus de backtracking
 
 Visualiser l'arbre de recherche du backtracking permet de comprendre comment l'algorithme explore et elague l'espace de solutions.
@@ -1474,26 +1474,26 @@ print(f""Nombre de valeurs rejetees : {sum(1 for n in viz.nodes if n[3] == 'fail
 
 # Afficher l'arbre (limite a profondeur 4 pour lisibilite)
 viz.draw(max_depth=4, title=""Arbre de Backtracking - Coloration Australie"")",,,,,,,,3675ce2944f43455,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,tgyto74w32o,markdown,fr,95ee6ecd055cccbc,"### Interpretation de la visualisation
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,tgyto74w32o,markdown,fr,7a335f38d496f1a5,"### Interpretation de la visualisation
 
 L'arbre de recherche montre :
 
 - **Noeuds verts** : Assignations reussies (la valeur est coherente avec l'assignation partielle)
-- **Noeuds rouges** : Assignations echouees (conflit detecte immediatement)
+- **Noeuds rouges** : Assignations echouees (conflit détecte immediatement)
 - **Profondeur** : Correspond au nombre de variables assignees
 - **Largeur** : Correspond aux differentes valeurs essayees pour chaque variable
 
 **Observations cles** :
 
-1. L'elagage est visible : les branches rouges sont coupees des qu'un conflit est detecte
+1. L'elagage est visible : les branches rouges sont coupees des qu'un conflit est détecte
 2. Le backtrack se produit quand toutes les valeurs d'une variable echouent
 3. L'ordre des variables influence la forme de l'arbre (variables a petit domaine en premier = arbre plus etroit)
-",,,,,,,,95ee6ecd055cccbc,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,67a79e8a,markdown,fr,ad69deb6d4890e21,"---
+",,,,,,,,7a335f38d496f1a5,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,67a79e8a,markdown,fr,9fac4262190f3108,"---
 
 ## 5. Heuristiques : MRV et LCV (~8 min)
 
-Le backtracking simple fonctionne, mais deux choix strategiques peuvent considerablement l'accelerer :
+Le backtracking simple fonctionne, mais deux choix strategiques peuvent considerablement l'accélérer :
 
 1. **Quelle variable** assigner ensuite ? (variable ordering)
 2. **Quelle valeur** essayer en premier ? (value ordering)
@@ -1506,7 +1506,7 @@ Le backtracking simple fonctionne, mais deux choix strategiques peuvent consider
 
 $$\text{MRV}(X_i) = |\{v \in D_i : v \text{ est consistant avec l'assignation courante}\}|$$
 
-On choisit $X_i$ qui minimise $\text{MRV}(X_i)$.",,,,,,,,ad69deb6d4890e21,,,,,,,
+On choisit $X_i$ qui minimise $\text{MRV}(X_i)$.",,,,,,,,9fac4262190f3108,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,3c184117,code,fr,b9d5bf4cab0a0d4e,"def select_mrv(csp, assignment):
     """"""Heuristique MRV : choisir la variable avec le moins de valeurs viables.
 
@@ -1546,7 +1546,7 @@ for var in demo_csp.variables:
 
 chosen = select_mrv(demo_csp, partial)
 print(f""\n=> MRV selectionne : {chosen} (domaine le plus restreint, puis degre le plus eleve)"")",,,,,,,,5bbcf67aebef6305,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0033c586,markdown,fr,19e31a36185712e9,"### Interpretation : selection MRV
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0033c586,markdown,fr,07bb65a8a0f1e81b,"### Interpretation : sélection MRV
 
 **Sortie obtenue** : apres avoir assigne WA=Rouge et NT=Vert, SA n'a plus qu'une seule valeur viable (Bleu), car elle est adjacente aux deux regions deja coloriees.
 
@@ -1556,16 +1556,16 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0033c586,markdown,fr
 | Q, NSW | 2 valeurs | Adjacents a certaines variables assignees |
 | V, T | 3 valeurs | Pas ou peu de voisins assignes |
 
-MRV choisit SA car c'est la variable la plus contrainte. Si SA n'a aucune valeur viable, on detecte l'echec immediatement sans explorer les autres variables.",,,,,,,,19e31a36185712e9,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,c112e481,markdown,fr,dd2b7f031f697e01,"### 5.2 Value Ordering : LCV (Least Constraining Value)
+MRV choisit SA car c'est la variable la plus contrainte. Si SA n'a aucune valeur viable, on détecte l'echec immediatement sans explorer les autres variables.",,,,,,,,07bb65a8a0f1e81b,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,c112e481,markdown,fr,fb8c4dcd109d3756,"### 5.2 Value Ordering : LCV (Least Constraining Value)
 
 **Principe** : pour la variable choisie, essayer d'abord la valeur qui **elimine le moins de possibilites** pour les variables voisines non assignees.
 
-**Intuition (""succeed-first"")** : contrairement au ""fail-first"" pour les variables, pour les valeurs on prefere maximiser les chances que le reste du probleme reste soluble.
+**Intuition (""succeed-first"")** : contrairement au ""fail-first"" pour les variables, pour les valeurs on prefere maximiser les chances que le reste du problème reste soluble.
 
 $$\text{LCV}(v) = \sum_{\text{voisin } Y \text{ non assigne}} |\{w \in D_Y : \text{contrainte}(X, v, Y, w) \text{ violee}\}|$$
 
-On trie les valeurs par nombre de conflits croissant (la moins contraignante d'abord).",,,,,,,,dd2b7f031f697e01,,,,,,,
+On trie les valeurs par nombre de conflits croissant (la moins contraignante d'abord).",,,,,,,,fb8c4dcd109d3756,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e3d5f157,code,fr,6840b49ba79b40e4,"def order_lcv(csp, var, assignment):
     """"""Heuristique LCV : trier les valeurs par nombre de conflits croissant.""""""
     def conflicts(val):
@@ -1617,9 +1617,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,5a831aba,code,fr,60f
     return None
 
 print(""Backtracking ameliore defini."")",,,,,,,,60f6a682e2351da2,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,35aab441,markdown,fr,95a0233ebf2fe312,"### Benchmark : plain backtracking vs MRV vs MRV+LCV
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,35aab441,markdown,fr,6654c8dc70f30aa0,"### Benchmark : plain backtracking vs MRV vs MRV+LCV
 
-Comparons les differentes variantes sur le probleme de coloration australienne.",,,,,,,,95a0233ebf2fe312,,,,,,,
+Comparons les differentes variantes sur le problème de coloration australienne.",,,,,,,,6654c8dc70f30aa0,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,980eb07f,code,fr,e42fbb7b7ba5f4d2,"# Comparaison des variantes sur la coloration de l'Australie
 variants = [
     (""Backtracking simple"", False, False),
@@ -1650,7 +1650,7 @@ for name, mrv, lcv in variants:
     print(f""{name:<25} {csp.n_assigns:>12} {elapsed:>12.2f}"")
 
 print(f""\nToutes les variantes trouvent une solution valide."")",,,,,,,,e42fbb7b7ba5f4d2,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,121b1669,markdown,fr,85201f25194f1b6b,"### Interpretation : impact des heuristiques sur la coloration
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,121b1669,markdown,fr,4f07331eb9bb396f,"### Interpretation : impact des heuristiques sur la coloration
 
 **Sortie obtenue** : sur ce petit graphe, les heuristiques n'amelioresent pas le compte d'assignations.
 
@@ -1661,12 +1661,12 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,121b1669,markdown,fr
 | + MRV + LCV | 15 | idem, LCV ne change rien |
 
 **Points cles** :
-1. Sur ce petit probleme (7 variables, 3 couleurs, espace deja tres contraint), l'ordre naif tombe deja sur une solution en 11 assignations ; MRV ajoute ici un sur-cout de selection (15) non amorti
+1. Sur ce petit problème (7 variables, 3 couleurs, espace deja très contraint), l'ordre naif tombe deja sur une solution en 11 assignations ; MRV ajoute ici un sur-cout de sélection (15) non amorti
 2. L'effet des heuristiques est **instance-dependant** : nul ou negatif sur une instance facile, il devient dramatique sur des instances plus dures (cf. les 8-Reines ci-dessous : 876 -> 572 avec MRV)
 3. Conclusion honnete : aucune heuristique n'est monotoniquement benefique, il faut mesurer et non presupposer une amelioration
 
-> **Regle pratique** : mesurer empiriquement. MRV rapporte gros sur les instances dures (N-Reines), mais son sur-cout n'est pas amorti sur les instances faciles comme la coloration de l'Australie.",,,,,,,,85201f25194f1b6b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e0760df6,markdown,fr,b8a17c6d0247b848,Visualisons l'impact des heuristiques sur les deux problemes : coloration et N-Reines.,,,,,,,,b8a17c6d0247b848,,,,,,,
+> **règle pratique** : mesurer empiriquement. MRV rapporte gros sur les instances dures (N-Reines), mais son sur-cout n'est pas amorti sur les instances faciles comme la coloration de l'Australie.",,,,,,,,4f07331eb9bb396f,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e0760df6,markdown,fr,3ad0f50c6830bde7,Visualisons l'impact des heuristiques sur les deux problèmes : coloration et N-Reines.,,,,,,,,3ad0f50c6830bde7,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,b2945b94,code,fr,2661dcefdf4b4fa8,"# N-Reines : definition du probleme
 def make_nqueens_csp(n):
     """"""Cree un CSP pour le probleme des N-Reines.""""""
@@ -1715,7 +1715,7 @@ def draw_queens(solution, n, title=""Solution N-Reines""):
     return fig
 
 print(""Fonctions N-Reines definies."")",,,,,,,,2661dcefdf4b4fa8,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,97b9696c,markdown,fr,a32d35ab1af6262f,"Resolvons le probleme des 8-Reines et visualisons le resultat, puis comparons les variantes.",,,,,,,,a32d35ab1af6262f,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,97b9696c,markdown,fr,76a45312aeffce0c,"Resolvons le problème des 8-Reines et visualisons le resultat, puis comparons les variantes.",,,,,,,,76a45312aeffce0c,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,71b13f50,code,fr,b28cb659de097ed7,"# Resolution et visualisation des 8-Reines
 n = 8
 csp_queens = make_nqueens_csp(n)
@@ -1733,7 +1733,7 @@ print(f""Verification           : {'VALIDE' if csp_queens.is_solution(sol_queens
 
 draw_queens(sol_queens, n, f""Solution des {n}-Reines ({csp_queens.n_assigns} assignations)"")
 plt.show()",,,,,,,,b28cb659de097ed7,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39daf9c3,markdown,fr,2770395557473a6c,"### Interpretation : 8-Reines
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39daf9c3,markdown,fr,efe24add0f55180c,"### Interpretation : 8-Reines
 
 **Sortie obtenue** : le backtracking avec MRV + LCV resout les 8-Reines en 677 assignations.
 
@@ -1745,9 +1745,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39daf9c3,markdown,fr
 | + MRV + LCV | 677 assignations |
 
 **Points cles** :
-1. L'echiquier montre qu'aucune reine n'est sur la meme ligne, colonne ou diagonale
-2. La modelisation CSP (une variable par colonne) resout le probleme en ~$10^3$ assignations au lieu des $16{,}8$ millions de l'espace brut
-3. MRV (876 -> 572) reduit nettement le compte ; en revanche, ajouter LCV le remonte a 677 : l'ordonnancement des valeurs par LCV est ici moins favorable que l'ordre naif combine a MRV -- c'est un effet connu, l'ordonnancement des valeurs etant moins robuste que celui des variables",,,,,,,,2770395557473a6c,,,,,,,
+1. L'echiquier montre qu'aucune reine n'est sur la même ligne, colonne ou diagonale
+2. La modelisation CSP (une variable par colonne) resout le problème en ~$10^3$ assignations au lieu des $16{,}8$ millions de l'espace brut
+3. MRV (876 -> 572) réduit nettement le compte ; en revanche, ajouter LCV le remonte a 677 : l'ordonnancement des valeurs par LCV est ici moins favorable que l'ordre naif combine a MRV -- c'est un effet connu, l'ordonnancement des valeurs etant moins robuste que celui des variables",,,,,,,,efe24add0f55180c,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,8b79451e,code,fr,812d07eb06dd86c6,"# Comparaison des variantes sur les deux problemes
 def benchmark_csp(make_csp_func, csp_name, csp_args=None):
     """"""Benchmark des variantes de backtracking sur un CSP.""""""
@@ -1808,7 +1808,7 @@ plt.suptitle('Impact des heuristiques sur le backtracking CSP',
              fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.show()",,,,,,,,1e3e18555093ce6b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f9d09728,markdown,fr,b72f2654eb9564a5,"### Interpretation : comparaison des variantes
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f9d09728,markdown,fr,864db4512598b163,"### Interpretation : comparaison des variantes
 
 | Variante | Coloration (assigns) | 8-Reines (assigns) | Commentaire |
 |----------|---------------------|---------------------|-------------|
@@ -1817,16 +1817,16 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f9d09728,markdown,fr
 | + MRV + LCV | 15 | 677 | Succeed-first sur les valeurs |
 
 **Observations** :
-1. **MRV** aide nettement sur les 8-Reines (876 -> 572), mais pas sur la coloration (11 -> 15) : son sur-cout de selection n'est pas amorti sur une instance facile
-2. **LCV** n'apporte rien sur la coloration (15 -> 15) et fait meme regresser les 8-Reines (572 -> 677) : l'ordonnancement des valeurs est moins fiable que celui des variables
+1. **MRV** aide nettement sur les 8-Reines (876 -> 572), mais pas sur la coloration (11 -> 15) : son sur-cout de sélection n'est pas amorti sur une instance facile
+2. **LCV** n'apporte rien sur la coloration (15 -> 15) et fait même regresser les 8-Reines (572 -> 677) : l'ordonnancement des valeurs est moins fiable que celui des variables
 3. Aucune heuristique n'est universellement benefique : le benefice depend de l'instance et se mesure empiriquement
 
-> **A retenir** : les heuristiques de selection ne changent pas la correction du backtracking, mais leur benefice n'est ni garanti ni monotone. Sur les instances dures (N-Reines grand), MRV transforme un probleme intraitable en probleme resolvable ; sur les instances faciles, elles peuvent meme couter plus qu'elles ne rapportent.",,,,,,,,b72f2654eb9564a5,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f80572be,markdown,fr,5d1e64db4637b16e,"---
+> **A retenir** : les heuristiques de sélection ne changent pas la correction du backtracking, mais leur benefice n'est ni garanti ni monotone. Sur les instances dures (N-Reines grand), MRV transforme un problème intraitable en problème resolvable ; sur les instances faciles, elles peuvent même couter plus qu'elles ne rapportent.",,,,,,,,864db4512598b163,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f80572be,markdown,fr,1d6d551f60c1170e,"---
 
 ## 6. Bibliotheque python-constraint (~8 min)
 
-Jusqu'ici nous avons tout implemente de zero, ce qui est essentiel pour comprendre les mecanismes. En pratique, on utilise souvent une **bibliotheque CSP** qui fournit un solveur optimise et des contraintes predefinies.
+Jusqu'ici nous avons tout implemente de zero, ce qui est essentiel pour comprendre les mécanismes. En pratique, on utilise souvent une **bibliotheque CSP** qui fournit un solveur optimise et des contraintes predefinies.
 
 La bibliotheque [`python-constraint`](https://github.com/python-constraint/python-constraint) permet de modeliser et resoudre des CSP de maniere declarative.
 
@@ -1834,7 +1834,7 @@ La bibliotheque [`python-constraint`](https://github.com/python-constraint/pytho
 
 ```bash
 pip install python-constraint
-```",,,,,,,,5d1e64db4637b16e,,,,,,,
+```",,,,,,,,1d6d551f60c1170e,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,07ee6339,code,fr,574fc1a132f69325,"# Installation si necessaire
 import sys
 try:
@@ -1845,9 +1845,9 @@ except ImportError:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'python-constraint'])
     from constraint import Problem, AllDifferentConstraint
     print(""python-constraint installe et importe."")",,,,,,,,574fc1a132f69325,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0f7cde2f,markdown,fr,72a6b163ae936461,"### Coloration de l'Australie avec python-constraint
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0f7cde2f,markdown,fr,2dcbcf06854e52da,"### Coloration de l'Australie avec python-constraint
 
-Reecrivons le probleme de coloration de l'Australie avec la bibliotheque. Comparons la concision du code avec notre implementation manuelle.",,,,,,,,72a6b163ae936461,,,,,,,
+Reecrivons le problème de coloration de l'Australie avec la bibliotheque. Comparons la concision du code avec notre implementation manuelle.",,,,,,,,2dcbcf06854e52da,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2216a02e,code,fr,5b6324ed12674347,"from constraint import Problem, AllDifferentConstraint
 import time
 
@@ -1884,7 +1884,7 @@ elapsed_all = (time.time() - start) * 1000
 
 print(f""\nNombre total de solutions : {len(all_solutions)}"")
 print(f""Temps (toutes solutions)  : {elapsed_all:.2f} ms"")",,,,,,,,5b6324ed12674347,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fc92d505,markdown,fr,0b9f48962a5d2b20,"### Interpretation : python-constraint vs implementation manuelle
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fc92d505,markdown,fr,972c27439e350563,"### Interpretation : python-constraint vs implementation manuelle
 
 **Sortie obtenue** : la bibliotheque trouve rapidement une solution et peut enumerer toutes les solutions.
 
@@ -1892,13 +1892,13 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fc92d505,markdown,fr
 |--------|------------------------|-------------------|
 | Lignes de code | ~60 (classe CSP + backtracking) | ~10 |
 | Toutes les solutions | Necessiterait une modification | `getSolutions()` integre |
-| Contraintes predefinies | A coder soi-meme | `AllDifferentConstraint`, etc. |
-| Pedagogie | Comprendre les mecanismes | Utiliser en production |
+| Contraintes predefinies | A coder soi-même | `AllDifferentConstraint`, etc. |
+| Pedagogie | Comprendre les mécanismes | Utiliser en production |
 
 **Points cles** :
 1. La bibliotheque abstrait les details d'implementation (backtracking, heuristiques)
 2. `getSolutions()` enumere exhaustivement toutes les solutions valides
-3. L'API declarative est plus lisible et moins sujette aux erreurs",,,,,,,,0b9f48962a5d2b20,,,,,,,
+3. L'API declarative est plus lisible et moins sujette aux erreurs",,,,,,,,972c27439e350563,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,d0218284,markdown,fr,1762e8d939226e5d,"### AllDifferentConstraint
 
 La contrainte globale `AllDifferentConstraint` impose que toutes les variables d'un groupe prennent des valeurs distinctes. C'est la contrainte la plus frequente en pratique (Sudoku, emplois du temps, N-Reines).",,,,,,,,1762e8d939226e5d,,,,,,,
@@ -1914,9 +1914,9 @@ print(f""Nombre de solutions : {len(solutions)}  (= 4! = {4*3*2*1})"")
 print(f""\nExemples (3 premieres) :"")
 for s in solutions[:3]:
     print(f""  {s}"")",,,,,,,,feb3633725bdf711,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,072d8c38,markdown,fr,13ab15a54a839db7,"### 4-Reines avec python-constraint
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,072d8c38,markdown,fr,346feb9e56b48506,"### 4-Reines avec python-constraint
 
-Modelisons le probleme des 4-Reines avec la bibliotheque pour montrer sa simplicite.",,,,,,,,13ab15a54a839db7,,,,,,,
+Modelisons le problème des 4-Reines avec la bibliotheque pour montrer sa simplicite.",,,,,,,,346feb9e56b48506,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e5fae123,code,fr,40a815e32a624d58,"import matplotlib.pyplot as plt
 # 4-Reines avec python-constraint
 n = 4
@@ -1975,9 +1975,9 @@ plt.suptitle(f""Les {len(queens_solutions)} solutions du probleme des {n}-Reines
              fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.show()",,,,,,,,40a815e32a624d58,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,feb7518b,markdown,fr,60b8e1f09ba2b19a,"### Interpretation : 4-Reines avec la bibliotheque
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,feb7518b,markdown,fr,6871a9a60b59aacf,"### Interpretation : 4-Reines avec la bibliotheque
 
-**Sortie obtenue** : le probleme des 4-Reines a exactement 2 solutions (symetriques l'une de l'autre).
+**Sortie obtenue** : le problème des 4-Reines a exactement 2 solutions (symetriques l'une de l'autre).
 
 | Aspect | Valeur |
 |--------|--------|
@@ -1990,12 +1990,12 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,feb7518b,markdown,fr
 2. `getSolutions()` retourne la liste exhaustive des solutions
 3. En production, on prefere utiliser une bibliotheque pour gagner en fiabilite et en temps de developpement
 
-> **Quand utiliser quoi ?** Implementation manuelle pour **apprendre** les mecanismes. Bibliotheque pour **resoudre** des problemes reels.",,,,,,,,60b8e1f09ba2b19a,,,,,,,
+> **Quand utiliser quoi ?** Implementation manuelle pour **apprendre** les mécanismes. Bibliotheque pour **resoudre** des problèmes reels.",,,,,,,,6871a9a60b59aacf,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,nav-restored,markdown,fr,59f8787b636efe87,"---
 
 **Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-5-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
 ",,,,,,,,59f8787b636efe87,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr,a09486be2d421231,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr,2951ccf0cab57535,"---
 
 ## Recapitulatif et exercices
 
@@ -2004,33 +2004,33 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr
 | Approche | Noeuds explores | Temps | Facilite d'utilisation |
 |----------|----------------|-------|------------------------|
 | Brute force | $\prod |D_i|$ (tous) | Lent | Simple mais intraitable |
-| Backtracking simple | Reduit (elagage) | Rapide | Implementation moderee |
-| Backtracking + MRV | Tres reduit | Tres rapide | Implementation moderee |
-| Backtracking + MRV + LCV | Minimal | Tres rapide | Plus complexe a implementer |
-| python-constraint | Optimise (interne) | Rapide | Tres simple (declaratif) |
+| Backtracking simple | réduit (elagage) | Rapide | Implementation moderee |
+| Backtracking + MRV | très réduit | très rapide | Implementation moderee |
+| Backtracking + MRV + LCV | Minimal | très rapide | Plus complexe a implementer |
+| python-constraint | Optimise (interne) | Rapide | très simple (declaratif) |
 
 ### Resume du formalisme CSP
 
 | Concept | Definition | Exemple |
 |---------|------------|--------|
-| **Variable** ($X_i$) | Quantite a determiner | Region a colorier |
+| **Variable** ($X_i$) | Quantite a déterminer | Region a colorier |
 | **Domaine** ($D_i$) | Valeurs possibles pour $X_i$ | {Rouge, Vert, Bleu} |
 | **Contrainte** ($C_k$) | Restriction sur un sous-ensemble de variables | $X_1 \neq X_2$ |
-| **Solution** | Assignation complete et consistante | Toutes les regions coloriees sans conflit |
+| **Solution** | Assignation complète et consistante | Toutes les regions coloriees sans conflit |
 
 ### Resume des algorithmes
 
 | Algorithme / Heuristique | Principe | Impact |
 |--------------------------|----------|--------|
-| **Backtracking** | DFS avec verification de consistance a chaque etape | Base de toute resolution CSP |
-| **MRV** | Choisir la variable au domaine le plus restreint | Fail-first : detecte les impasses tot |
+| **Backtracking** | DFS avec verification de consistance a chaque étape | Base de toute resolution CSP |
+| **MRV** | Choisir la variable au domaine le plus restreint | Fail-first : détecte les impasses tot |
 | **LCV** | Essayer la valeur la moins contraignante | Succeed-first : maximise les chances |
-| **python-constraint** | API declarative avec solveur integre | Productivite en production |",,,,,,,,a09486be2d421231,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,3586d6ec,markdown,fr,7e161e6db8a21276,"### Exercice 1 : 4-Reines avec backtracking manuel
+| **python-constraint** | API declarative avec solveur integre | Productivite en production |",,,,,,,,2951ccf0cab57535,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,3586d6ec,markdown,fr,23702ff98ee03a5d,"### Exercice 1 : 4-Reines avec backtracking manuel
 
-**Enonce** : modelisez et resolvez le probleme des 4-Reines avec notre backtracking `backtracking_improved` (MRV + LCV). Affichez la solution avec `draw_queens`.
+**Enonce** : modelisez et resolvez le problème des 4-Reines avec notre backtracking `backtracking_improved` (MRV + LCV). Affichez la solution avec `draw_queens`.
 
-Completez la cellule ci-dessous.",,,,,,,,7e161e6db8a21276,,,,,,,
+Completez la cellule ci-dessous.",,,,,,,,23702ff98ee03a5d,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bfd0af8f,code,fr,11e290fec6bfe49c,"# Exercice 1 : 4-Reines avec backtracking manuel
 
 # A COMPLETER
@@ -2047,9 +2047,9 @@ try:
 except NameError:
     print(""Exercice a completer : implementez backtracking_improved() et make_nqueens_csp() pour resoudre les 4-Reines."")
     print(""Solution attendue : {0: 1, 1: 3, 2: 0, 3: 2} (ou equivalent)"")",,,,,,,,11e290fec6bfe49c,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,43775d9c,markdown,fr,c4ad51ebe3c940e5,"### Exercice 2 : comparer MRV sur les 4-Reines
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,43775d9c,markdown,fr,6308ab48955b21e2,"### Exercice 2 : comparer MRV sur les 4-Reines
 
-**Enonce** : resolvez les 4-Reines **sans** MRV (`use_mrv=False`) et **avec** MRV. Comparez le nombre d'assignations. Le gain est-il significatif sur ce petit probleme ?",,,,,,,,c4ad51ebe3c940e5,,,,,,,
+**Enonce** : resolvez les 4-Reines **sans** MRV (`use_mrv=False`) et **avec** MRV. Comparez le nombre d'assignations. Le gain est-il significatif sur ce petit problème ?",,,,,,,,6308ab48955b21e2,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,08fcbcc6,code,fr,90b46524b0ca2977,"# Exercice 2 : comparaison avec et sans MRV sur 4-Reines
 
 # A COMPLETER
@@ -2065,7 +2065,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,08fcbcc6,code,fr,90b
 #     print(f""Facteur  : {csp_no_mrv.n_assigns / csp_with_mrv.n_assigns:.1f}x"")
 print(""Exercice de benchmark - decommentez pour tester"")
 ",,,,,,,,90b46524b0ca2977,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,63846a3f,markdown,fr,8e03900344533f80,"### Exercice 3 : Cryptarithmetique SEND + MORE = MONEY
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,63846a3f,markdown,fr,f1f9d5b1fedc3708,"### Exercice 3 : Cryptarithmetique SEND + MORE = MONEY
 
 **Enonce** : le puzzle cryptarithmetique **SEND + MORE = MONEY** consiste a trouver l'affectation de chiffres (0-9) aux lettres telle que l'addition soit correcte. Chaque lettre represente un chiffre distinct, et S et M ne peuvent pas etre 0 (pas de zero initial).
 
@@ -2076,11 +2076,11 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,63846a3f,markdown,fr
   M O N E Y
 ```
 
-Modelisez et resolvez ce probleme avec `python-constraint`.
+Modelisez et resolvez ce problème avec `python-constraint`.
 
 **Indice** : la contrainte principale est :
 $$1000 \times S + 100 \times E + 10 \times N + D + 1000 \times M + 100 \times O + 10 \times R + E$$
-$$= 10000 \times M + 1000 \times O + 100 \times N + 10 \times E + Y$$",,,,,,,,8e03900344533f80,,,,,,,
+$$= 10000 \times M + 1000 \times O + 100 \times N + 10 \times E + Y$$",,,,,,,,f1f9d5b1fedc3708,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bcbf03dd,code,fr,705a22be66e3a381,"# Exercice 3 : SEND + MORE = MONEY
 
 # A COMPLETER
@@ -2095,11 +2095,11 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,bcbf03dd,code,fr,705
 # print(f""Solution : {sol}"")
 print(""Exercice Sudoku - decommentez pour tester"")
 ",,,,,,,,705a22be66e3a381,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fr0whufdu8r,markdown,fr,dd8bf6c7aad5cc05,"### Exercice 4 : Sudoku 4x4 avec visualisation
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fr0whufdu8r,markdown,fr,b9878686b77730a3,"### Exercice 4 : Sudoku 4x4 avec visualisation
 
 **Enonce** : Un Sudoku 4x4 est une grille 4x4 ou chaque ligne, colonne et bloc 2x2 doit contenir les chiffres 1-4 exactement une fois.
 
-Modelez ce probleme comme un CSP et utilisez le visualiseur de backtracking pour observer la resolution.
+Modelez ce problème comme un CSP et utilisez le visualiseur de backtracking pour observer la resolution.
 
 **Grille initiale** (0 = case vide) :
 ```
@@ -2109,7 +2109,7 @@ Modelez ce probleme comme un CSP et utilisez le visualiseur de backtracking pour
 0 0 | 0 0
 3 0 | 0 4
 ```
-",,,,,,,,dd8bf6c7aad5cc05,,,,,,,
+",,,,,,,,b9878686b77730a3,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,7003f1b1844033d2,"# Exercice 4 : Sudoku 4x4 avec visualisation
 
 # A COMPLETER
@@ -2146,12 +2146,12 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,
 # viz.draw(max_depth=5, title=""Arbre de Backtracking - Sudoku 4x4"")
 print(""Exercice visualisation Sudoku - decommentez pour tester"")
 ",,,,,,,,7003f1b1844033d2,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2595a953d10a,markdown,fr,99b4946c9a6acb5f,"### Exercice 5 : Modelisation CSP pour un emploi du temps
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2595a953d10a,markdown,fr,2f557087886da5f2,"### Exercice 5 : Modelisation CSP pour un emploi du temps
 
-Modeliser un probleme demploi du temps comme CSP : definir variables, domaines et contraintes.
+Modeliser un problème demploi du temps comme CSP : définir variables, domaines et contraintes.
 
 **Indice** : Variables = cours, domaines = creneaux horaires, contraintes = pas de chevauchement.
-",,,,,,,,99b4946c9a6acb5f,,,,,,,
+",,,,,,,,2f557087886da5f2,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0cb78924efa8,code,fr,e88c5e6c28607c8f,"# Exercice : Modelisation CSP pour un emploi du temps
 # TODO etudiant : Modeliser un probleme demploi du temps comme CSP : definir variables, domaines et contraintes
 # Indice : Variables = cours, domaines = creneaux horaires, contraintes = pas de chevauchement
@@ -2170,7 +2170,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,f2794796e864,code,fr
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Propagation de contraintes sur un CSP lineaire"")
 ",,,,,,,,2224f04783cbfe7a,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,46d47e13,markdown,fr,05cf6486c8f13851,"### Et ensuite ?
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,46d47e13,markdown,fr,7801eff26aed9cf7,"### Et ensuite ?
 
 Ce notebook a couvert les **fondamentaux** des CSP : formalisme, backtracking avec heuristiques, et utilisation de la bibliotheque `python-constraint`. Le notebook suivant, [CSP-2-Consistance](CSP-2-Consistency.ipynb), introduit les techniques de **propagation de contraintes** :
 
@@ -2180,11 +2180,11 @@ Ce notebook a couvert les **fondamentaux** des CSP : formalisme, backtracking av
 
 Ces techniques permettent de reduire encore davantage l'exploration en detectant les impasses plus tot.
 
-### References
+### Références
 
 - Russell, S. & Norvig, P. *Artificial Intelligence: A Modern Approach*, Chapitre 6
 - Dechter, R. *Constraint Processing*, Cambridge University Press, 2003
-- Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complete des CSP",,,,,,,,05cf6486c8f13851,,,,,,,
+- Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complète des CSP",,,,,,,,7801eff26aed9cf7,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,conclusion-restored,markdown,fr,7496837d33a17ad7,"---
 
 ## Conclusion
