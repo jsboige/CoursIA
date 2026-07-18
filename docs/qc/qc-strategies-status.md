@@ -73,7 +73,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 56 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
+| Vérifié (tranche 9, backtests QC Cloud MCP) | 5 | cohorte Composite+Options+Vol/Momentum — **0 edge** (PSR < 50 % partout) ; PSR max 19.78 % (Framework_Composite_EMATrend) |
+| Vivant (best-guess, non vérifié) | 51 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570 ; 5 basculés en tranche 9) |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -193,7 +194,27 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
-#### Vivant (best-guess, non vérifié) (56)
+#### Vérifié (tranche 9, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 9 (#1621)** : 5 stratégies « Vivant » promues via lecture directe des backtests QC
+> Cloud existants via MCP `qc-mcp-lite` (`read_backtest`). **Cohorte Composite + Options + Vol/Momentum**
+> (distincte des tranches 2-6 : Vol-/risk, Momentum/Factor, MeanReversion/Macro,
+> Trend/Macro-Régime/Options/Causal/Factor, Régime/Factor/Vol/Leveraged-Factor ; **et distincte des
+> tranches 7-8 OPEN ML et Trend+Regime+Vol risk** qui seront ajoutées à leurs merges respectifs).
+> Métriques pleine période in-sample (non walk-forward OOS). **0 edge statistiquement significative** :
+> PSR < 50 % sur toute la cohorte (max 19.78 % `Framework_Composite_EMATrend`). Confirme pour la
+> cohorte Composite+Options+Vol/Momentum ce que les tranches 2-8 confirment : les backtests in-sample
+> pleine période **ne valident aucun edge** sur la cohorte.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite EMA-Trend | **Needs-improvement** | 1761 j. (2018–2025) ; **Sharpe 0.611** (max cohorte) ; **CAGR 16.67 %** (max cohorte) ; MaxDD 27.9 % ; **PSR 19.78 %** (max cohorte) ; NP 194.5 % ($196 423) — best Sharpe/CAGR/PSR cohorte, edge non significative |
+| `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | **Needs-improvement** | 2821 j. (2015–2026) ; Sharpe 0.529 ; CAGR 12.78 % ; MaxDD 26.4 % ; PSR 10.63 % ; NP 286.0 % ($2 167 801) — bon profil long-terme mais edge non significative |
+| `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | **Needs-improvement** | 2516 j. (post-#2801) ; Sharpe 0.500 ; CAGR 11.12 % ; **MaxDD 21.2 %** (min cohorte) ; PSR 9.45 % ; NP 187.3 % ($153 977) — modeste, edge non significative |
+| `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.258 ; CAGR 6.49 % ; MaxDD 17.0 % ; PSR 8.69 % ; NP 55.3 % ($53 295) — modeste, edge nul |
+| `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | **Needs-improvement** | 4100 j. (2015–2026) ; Sharpe 0.213 ; CAGR 5.50 % ; MaxDD 17.5 % ; PSR 4.43 % ; NP 82.5 % ($-7 452) — **NP absolu négatif** (`netProfitAbsolute` = $-7 452) ; edge nul |
+
+#### Vivant (best-guess, non vérifié) (51)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -209,7 +230,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | Vivant | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | Vivant | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | Vivant | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb |
+| `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | **Vérifié tranche 9** | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb — voir section tranche 9 |
 | `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | Vivant | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb |
 | `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | Vivant | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb |
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | Vivant | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb |
@@ -232,9 +253,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | Vivant | main.py: class MLTrendScanning(QCAlgorithm) |
-| `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
+| `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | **Vérifié tranche 9** | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 9 |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
-| `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | Vivant | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
+| `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | **Vérifié tranche 9** | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 9 |
 | `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | StatArb (PCA) | Vivant | main.py: class PCAStatArbitrageAlgorithm(QCAlgorithm) |
 | `Portfolio-IBKR-Coinbase-Hybrid` | `projects/Portfolio-IBKR-Coinbase-Hybrid/` | Hybrid crypto/broker | Vivant | main.py: class PortfolioHybridIBKRCoinbase(QCAlgorithm) (helpers FeeModel/Slippage en amont) + research.ipynb + quantbook.ipynb |
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
@@ -251,8 +272,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `TrendStocks-Alpha` | `projects/TrendStocks-Alpha/` | Trend actions | Vivant | main.py: class TrendStocksAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `TrendStocksLite` | `projects/TrendStocksLite/` | Trend actions (lite) | Vivant | main.py: class TrendStocksLite(QCAlgorithm) + research.ipynb |
 | `VIX-TermStructure` | `projects/VIX-TermStructure/` | Vol (VIX term) | Vivant | main.py: class VIXTermStructureStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
-| `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | Vivant | main.py: class VolTargetMomentum(QCAlgorithm) |
-| `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | Vivant | main.py: class CompositeC1MultiAssetRotation(QCAlgorithm) |
+| `VolTarget-Momentum` | `projects/VolTarget-Momentum/` | Vol / Momentum | **Vérifié tranche 9** | main.py: class VolTargetMomentum(QCAlgorithm) — voir section tranche 9 |
+| `composite-c1-multiasset` | `projects/composite-c1-multiasset/` | Composite multi-actifs | **Vérifié tranche 9** | main.py: class CompositeC1MultiAssetRotation(QCAlgorithm) — voir section tranche 9 |
 
 #### Vivant (README revendique vérifié) (0)
 
