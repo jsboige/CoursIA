@@ -15714,7 +15714,7 @@ MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb,
     return result
 
 print(""Exercice a completer"")",,,,,,,,030e912f9a6131c0,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb,5e903283,markdown,fr,aee766c02f4085fb,"## 🏁 Résumé et Guide d'Intégration Production
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb,5e903283,markdown,fr,a834ba44120e136f,"## 🏁 Résumé et Guide d'Intégration Production
 
 ### ✅ Fonctionnalités Implémentées
 
@@ -15802,8 +15802,8 @@ results = production_engine.get_job_results(job_id)
 
 ```env
 # APIs Required
-OPENAI_API_KEY=sk-...
-OPENROUTER_API_KEY=sk-or-v1-...
+OPENAI_API_KEY=<votre-cle-openai>
+OPENROUTER_API_KEY=<votre-cle-openrouter>
 
 # Production Settings
 PRODUCTION_MODE=batch_processing
@@ -15860,7 +15860,7 @@ LOG_LEVEL=INFO
 
 ---
 
-**🎉 Le système de production integration est maintenant opérationnel pour CoursIA !**",,,,,,,,aee766c02f4085fb,,,,,,,
+**🎉 Le système de production integration est maintenant opérationnel pour CoursIA !**",,,,,,,,a834ba44120e136f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb,uv9qvjlz7dq,markdown,fr,5951b5f7c71ea795,"---
 
 ## Exercice : Système de Production avec Gestion de Budget et Alertes
