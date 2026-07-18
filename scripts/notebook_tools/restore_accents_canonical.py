@@ -158,38 +158,29 @@ def _cure_source(source) -> tuple[object, int]:
             cured_lines.append(cl)
             total += n
         return "\n".join(cured_lines), total
-    # list nbformat : chaque chunk peut porter son \n final. On cure en concatenant
-    # temporairement via splitlines (qui conserve le contenu), puis on re-decoupe
-    # au MEME nombre de chunks pour preserver la structure de liste.
+    # list nbformat : chaque chunk peut porter son \n final. On cure CHAQUE CHUNK
+    # IN-PLACE (split le chunk en lignes, cure chaque ligne, rejoinde), SANS JAMAIS
+    # concatener les chunks entre eux. Pourquoi : un join global -> split -> re-chunk
+    # perd l'alignement quand un chunk est un separateur de paragraphe nu ("\n") — le
+    # re-decoupage l'absorbe et COLLAPSE les paragraph breaks markdown ("\n\n" -> "\n").
+    # Bug firsthand sur Infer-14 (28/33 cellules avec paragraph breaks collapsees,
+    # po-2024 c.634) : le chunk standalone "\n" disparait. La cure per-chunk preserve
+    # byte-pour-byte la structure de liste (boundaries chunk + trailing \n + blank-line
+    # separators) ET applique les accents ligne-par-ligne dans chaque chunk.
     original = list(source)
-    # reconstruire la string complete en preservant l'info de split
-    joined = "".join(original)
-    lines = joined.split("\n")
-    cured_lines = []
+    new_chunks = []
     total = 0
-    for ln in lines:
-        cl, n = _cure_line(ln)
-        cured_lines.append(cl)
-        total += n
-    cured_joined = "\n".join(cured_lines)
-    if cured_joined == joined:
+    for chunk in original:
+        lines = chunk.split("\n")
+        cured_lines = []
+        for ln in lines:
+            cl, n = _cure_line(ln)
+            cured_lines.append(cl)
+            total += n
+        new_chunks.append("\n".join(cured_lines))
+    if new_chunks == original:
         return original, 0  # rien change -> retourner l'original byte-identique
-    # re-decouper au meme nombre de chunks, en preservant les longueurs originales
-    # quand possible (pour minimiser le churn nbformat). Strategie : si le nombre
-    # de chunks est identique et aucun saut de ligne n'a ete ajoute/supprime,
-    # re-appliquer chunk-par-chunk.
-    if len(cured_lines) == len(lines):
-        # re-appliquer par chunk original (un chunk peut couvrir plusieurs lignes)
-        new_chunks = []
-        idx = 0
-        for chunk in original:
-            chunk_lines = chunk.split("\n")
-            rebuilt = "\n".join(cured_lines[idx:idx + len(chunk_lines)])
-            idx += len(chunk_lines)
-            new_chunks.append(rebuilt)
-        return new_chunks, total
-    # fallback (rare) : 1 chunk = tout
-    return [cured_joined], total
+    return new_chunks, total
 
 
 def cure_notebook(path: Path, write: bool, check_scope: bool = False):

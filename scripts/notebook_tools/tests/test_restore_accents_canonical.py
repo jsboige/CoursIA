@@ -140,6 +140,29 @@ class TestNbformatStructure:
         assert len(src) == 2  # nombre de chunks preserve
         assert "paramètre" in "".join(src)
 
+    def test_paragraph_break_preserved_list_source(self, tmp_path):
+        # Regression : bug blank-line collapse firsthand sur Infer-14 (28/33 cellules,
+        # po-2024 c.634). Un chunk standalone "\n" (separateur de paragraphe) ne doit
+        # JAMAIS etre absorbe par un join->split->re-chunk. La cure per-chunk preserve
+        # byte-pour-byte le paragraph break markdown ("\n\n").
+        nb = {"cells": [
+            {"cell_type": "markdown",
+             "source": ["# Infer : Systeme de Classement\n", "\n", "**Serie** : Parametres\n"],
+             "metadata": {}}
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        cured = json.loads(p.read_text(encoding="utf-8"))
+        src = cured["cells"][0]["source"]
+        joined = "".join(src) if isinstance(src, list) else src
+        # le paragraphe break \n\n entre le titre H1 et le bloc Serie doit survivre
+        assert "\n\n" in joined, "paragraph break collapsed by cure"
+        # le chunk count doit etre preserve (3 chunks : titre, blank, serie)
+        assert isinstance(src, list) and len(src) == 3, f"chunk count drift: {src}"
+        # les accents sont quand meme appliques + casse preservee
+        assert "Système" in joined and "Paramètres" in joined
+
     def test_str_source_preserved_as_str(self, tmp_path):
         nb = {"cells": [
             {"cell_type": "markdown", "source": "Le parametre est utile.", "metadata": {}}
