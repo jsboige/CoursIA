@@ -5697,17 +5697,14 @@ probabilité $\epsilon$ que l'adversaire joue **Tit-for-Tat** (TFT), alors la co
 pendant la majeure partie du jeu, même fini. ""A small amount of incomplète information can have a large effect
 on the equilibrium of a game.""
 ",,,,,,,,cf5e5e81a47a8993,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,b353dc6f4b061535,"#nullable enable
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,c99b1a78ffd53bcb,"#load ""../Probas/Infer/SvgChartHelper.cs""
+
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
 
 const int T = 20;
 const double Epsilon = 0.05;
@@ -5805,29 +5802,19 @@ sb2.AppendLine();
 sb2.Append(""  -> Cooperation elevee en debut de jeu, effondrement sur la fin (effet horizon fini)."");
 sb2.ToString().Display();
 
-// Line chart Plotly : taux de cooperation mutuelle (C,C) par tour.
+// Line chart SVG : taux de cooperation mutuelle (C,C) par tour.
 // La courbe en hockey-stick -- cooperation elevee en debut, effondrement sur la fin --
 // est la signature de KMRW : avec un peu d'incertitude sur le type (TFT), les joueurs
 // cooperent jusqu'a l'approche de l'horizon fini ou la defection retro-propage.
-{
-    var xs = Enumerable.Range(1, T).Select(t => (object)t).ToArray();
-    var ys = coopRate.Select(v => (object)Math.Round(v * 100.0, 1)).ToArray();
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = xs, [""y""] = ys, [""type""] = ""scatter"", [""mode""] = ""lines+markers"",
-                                         [""name""] = ""Cooperation mutuelle (C,C)"",
-                                         [""line""] = new Dictionary<string,object>{ [""color""] = ""#2a6dba"", [""width""] = 2 } });
-    var layout = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""KMRW : taux de cooperation par tour (effet horizon fini)"" },
-                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Tour"" }, [""dtick""] = 1 },
-                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Cooperation mutuelle (%"" }, [""range""] = new object[] { 0, 100 } },
-                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 50, [""r""] = 30, [""b""] = 50 } });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-",,,,,,,,b353dc6f4b061535,,,,,,,
+SvgChartHelper.Overlay(
+    ""KMRW : taux de cooperation par tour (effet horizon fini)"",
+    ""Tour"", ""Cooperation mutuelle (%)"",
+    new[] {
+        new SvgSeries(""Cooperation mutuelle (C,C)"",
+            Enumerable.Range(1, T).Select(t => (double)t).ToArray(),
+            coopRate.Select(v => Math.Round(v * 100.0, 1)).ToArray(),
+            TraceStyle.LineMarkers, ""#2a6dba""),
+    })",,,,,,,,c99b1a78ffd53bcb,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,9292a753,markdown,fr,638dec1c7218a9dc,"## Équilibre bayésien parfait (PBE)
 
 Un PBE precise, pour chaque ensemble d'information :
@@ -12906,40 +12893,22 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,c3e3af
 
 > **Lecon economique** : la valeur d'une ressource ne depend pas seulement de son utilite
 > intrinseque, mais de sa **rarete relative** par rapport aux ressources complementaires.",,,,,,,,a05b42c5b483450c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,6d12f18589ca161e,"// Visualisation Plotly des valeurs de Shapley (jeu de gants) -- technique C548-L2
-// (formatter HTML integre au kernel, zero dependence NuGet cote charting, rendu Plotly.js brut).
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,11e976f1,code,fr,7ed5cb55941ca7b3,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Visualisation SVG des valeurs de Shapley (jeu de gants) -- technique C548-L2
+// (formatter HTML integre au kernel, zero dependence NuGet cote charting, rendu SVG inline).
 
 Console.WriteLine(""Valeurs de Shapley (jeu de gants) :"");
 foreach (var (lab, val) in gloveLabels.Zip(shapleyGlove))
     Console.WriteLine($""  {lab,-20} {val:F4}"");
 
-// Bar chart Plotly : le jeu de gants illustre un pouvoir asymetrique -- un seul joueur a un
+// Bar chart SVG : le jeu de gants illustre un pouvoir asymetrique -- un seul joueur a un
 // gant droit (rare) -> sa valeur (0,667) domine celle des deux joueurs au gant gauche (0,167).
 // La ligne pointillee marque le partage egal (1/3), jamais atteint ici.
-{
-    var labs = gloveLabels.ToArray();
-    var vals = shapleyGlove.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = vals, [""type""] = ""bar"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
-    var layout = ""{\""title\"":{\""text\"":\""Valeurs de Shapley - jeu de gants\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Joueur\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Valeur de Shapley\""},\""range\"":[0,0.8]},"" +
-                 ""\""shapes\"":[{\""type\"":\""line\"",\""xref\"":\""paper\"",\""x0\"":0,\""x1\"":1,"" +
-                 ""\""y0\"":0.3333,\""y1\"":0.3333,\""line\"":{\""color\"":\""#e8743b\"",\""width\"":2,\""dash\"":\""dash\""}}],"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-",,,,,,,,6d12f18589ca161e,,,,,,,
+SvgChartHelper.Bar(
+    ""Valeurs de Shapley - jeu de gants"",
+    gloveLabels.ToArray(),
+    shapleyGlove.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#2a6dba"")",,,,,,,,7ed5cb55941ca7b3,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,2a85c633,markdown,fr,1f92ee3378053f31,"### Exercice 1 : Jeu de gants etendu a 4 joueurs
 
 **Objectif** : etendre le jeu de gants a 4 joueurs (L1, L2 gauches ; R1, R2 droits).
@@ -13122,34 +13091,24 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,260a2c
 **Paradoxe classique** : les non-permanents ont **plus de pouvoir relatif** que leur poids.
 Avec 6% du poids, ils captent 13% du pouvoir. Inversement, les permanents (41% du poids) n'ont
 que 30% du pouvoir. Le poids nominal ment sur le pouvoir reel.",,,,,,,,fbb305631fd67fda,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,5e94f92a075f0644,"// Comparaison Plotly Shapley vs Banzhaf (Mini-ONU) -- (PlotlyHtml defini en cell[9], technique C548-L2).
+MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,453fcf55,code,fr,209d6d3887413b9c,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Comparaison SVG Shapley vs Banzhaf (Mini-ONU) -- (SvgChartHelper charge en cell[9], technique C548-L2).
 // Deux indices de pouvoir : Shapley (valeur) et Banzhaf (pivots). Comparer les deux met en evidence
 // que le pouvoir reel differe du poids nominal, et que les deux indices divergent legerement.
 Console.WriteLine(""Comparaison Shapley vs Banzhaf (Mini-ONU) :"");
 foreach (var (lab, sh, ba) in labelsUN.Zip(shapleyUN, banzhafUN))
     Console.WriteLine($""  {lab,-8} Shapley {sh:F4}  Banzhaf {ba:F4}"");
-{
-    var labs = labelsUN.ToArray();
-    var sh = shapleyUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var ba = banzhafUN.Select(v => Math.Round(v, 4)).Select(v => (object)v).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var tShapley = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = sh, [""type""] = ""bar"", [""name""] = ""Shapley"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" } });
-    var tBanzhaf = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = labs, [""y""] = ba, [""type""] = ""bar"", [""name""] = ""Banzhaf"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#e8743b"" } });
-    var layout = ""{\""barmode\"":\""group\"",\""title\"":{\""text\"":\""Mini-ONU : Shapley vs Banzhaf (2 indices de pouvoir)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Etat membre\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Indice de pouvoir\""}},"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + tShapley + "","" + tBanzhaf + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}
-Console.WriteLine(""\nNote : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");
-",,,,,,,,5e94f92a075f0644,,,,,,,
+display(SvgChartHelper.Bar(
+    ""Mini-ONU : indice de Shapley"",
+    labelsUN.ToArray(),
+    shapleyUN.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#2a6dba""));
+display(SvgChartHelper.Bar(
+    ""Mini-ONU : indice de Banzhaf"",
+    labelsUN.ToArray(),
+    banzhafUN.Select(v => Math.Round(v, 4)).ToArray(),
+    color: ""#e8743b""));
+Console.WriteLine(""\nNote : le pouvoir reel (Shapley/Banzhaf) peut differer du poids nominal."");",,,,,,,,209d6d3887413b9c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb,8afd8af8,markdown,fr,ee1cc34608d4f348,"---
 
 ## 5. Jeux Convexes : Shapley dans le Core
@@ -15925,14 +15884,14 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,b1d70ed3,m
 ## 9. Comparaison des 4 méthodes sur RPS
 
 Comparons l'évolution de l'**exploitabilité** pour Self-Play naif, FP, NFSP et PSRO sur Roche-Papier-Ciseaux. Une méthode converge vers Nash si son exploitabilité décroît vers 0.",,,,,,,,3357a7638049ed79,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,2bb9c4230d548da8,"// Comparaison : courbes d'exploitabilite (Plotly) - Self-Play naif vs FP vs NFSP sur RPS.
-// Prong-A (#3801) : remplace le dump texte Console.WriteLine par un vrai rendu Plotly.
-// Dynamique inchangee (meme computation, meme graine) : FP -> 0 (Robinson 1951),
-// Self-Play naif oscille (cycle), NFSP chute puis plafonne (version tabulaire non stationnaire).
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml), (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,43996f74,code,fr,0c9585787181f6ae,"// Comparaison : courbes d'exploitabilite (SVG inline) - Self-Play naif vs FP vs NFSP sur RPS.
+// Prong-A (#3801) : remplace le dump texte Console.WriteLine par un vrai rendu (desormais SVG
+// statique zero-CDN, rend sur GitHub/nbviewer/offline). Dynamique inchangee (meme computation,
+// meme graine) : FP -> 0 (Robinson 1951), Self-Play naif oscille (cycle),
+// NFSP chute puis plafonne (version tabulaire non stationnaire).
+// Helper canon SvgChartHelper.cs (#6942 MERGED) ; Overlay multi-series (#6958 MERGED) pour les
+// 3 courbes partageant l'axe X numerique ""iteration"". Cf #6927 / #3801.
+#load ""../Probas/Infer/SvgChartHelper.cs""
 
 int N = 300;
 var spC = new NaiveSelfPlay(rps, 0.3);
@@ -15955,27 +15914,15 @@ for (int t=0;t<N;t++) {
 // Axe x = iteration (0..290 par pas de 10)
 int M = spE.Length;
 double[] xs = Enumerable.Range(0, M).Select(i => (double)(i*10)).ToArray();
-string[] xlab = xs.Select(x => x.ToString(""0"")).ToArray();
 
-var opt = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-string Tr(string name, double[] y, System.Text.Json.JsonSerializerOptions o) =>
-    System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object> {
-        [""name""]=name, [""x""]=xlab, [""y""]=y.Select(v=>Math.Round(v,4)).ToArray(), [""type""]=""scatter"", [""mode""]=""lines+markers""
-    }, o);
-string trSP=Tr(""Self-Play naif"", spE, opt), trFP=Tr(""Fictitious Play"", fpE, opt), trNFSP=Tr(""NFSP (tabulaire)"", nfspE, opt);
-
-string layout = ""{\""title\"":{\""text\"":\""Exploitabilite (RPS) - convergence vs cycles\""},"" +
-    ""\""xaxis\"":{\""title\"":{\""text\"":\""iteration\""}},"" +
-    ""\""yaxis\"":{\""title\"":{\""text\"":\""exploitabilite\""},\""range\"":[0,0.7]},"" +
-    ""\""legend\"":{\""x\"":0.98,\""xanchor\"":\""right\"",\""y\"":0.98}}"";
-
-string divId = ""pltExpl"";
-string markup =
-    ""<div id=\""""+divId+""\""></div>"" +
-    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-    ""<script>Plotly.newPlot('""+divId+""',[""+trSP+"",""+trFP+"",""+trNFSP+""],""+layout+"",{responsive:true})</script>"";
-display(new PlotlyHtml(markup));
-",,,,,,,,2bb9c4230d548da8,,,,,,,
+SvgChartHelper.Overlay(
+    ""Exploitabilite (RPS) - convergence vs cycles"",
+    ""iteration"", ""exploitabilite"",
+    new[] {
+        new SvgSeries(""Self-Play naif"", xs, spE, TraceStyle.LineMarkers, ""#C44E52""),
+        new SvgSeries(""Fictitious Play"", xs, fpE, TraceStyle.LineMarkers, ""#4C72B0""),
+        new SvgSeries(""NFSP (tabulaire)"", xs, nfspE, TraceStyle.LineMarkers, ""#55A868""),
+    })",,,,,,,,0c9585787181f6ae,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb,d11ea592,markdown,fr,e8e364afaab0379b,"---
 
 ## Conclusion
@@ -18052,7 +17999,7 @@ Cette tranche a pose les **concepts fondamentaux de la theorie des jeux strategi
 ---
 
 *Tranche 1 du twin .NET⇄Python (#4956 marathon). Theorie des jeux strategique = 1er concept. from-scratch = la valeur pedagogique de ce twin, complementaire au solveur nashpy.*",,,,,,,,07bead319fd99b34,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,e49fec96e3e76b95,"# GameTheory-2-NormalForm
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,4b02745d62981363,"# GameTheory-2-NormalForm
 
 **Navigation** : [<< 1-Setup](GameTheory-1-Setup.ipynb) | [Index](README.md) | [3-Topology2x2 >>](GameTheory-3-Topology2x2.ipynb)
 
@@ -18060,23 +18007,23 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,
 
 ## Jeux en Forme Normale
 
-Ce notebook introduit la representation des jeux en **forme normale** (ou forme strategique), la facon standard de decrire les interactions strategiques.
+Ce notebook introduit la representation des jeux en **forme normale** (ou forme stratégique), la facon standard de decrire les interactions stratégiques.
 
 ### Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. **Definir** formellement un jeu en forme normale (joueurs, strategies, gains)
+1. **Définir** formellement un jeu en forme normale (joueurs, stratégies, gains)
 2. **Representer** un jeu par des matrices de gains et l'implementer en Python
-3. **Identifier** les strategies dominantes et dominees
+3. **Identifier** les stratégies dominantes et dominees
 4. **Calculer** les meilleures reponses (best response) d'un joueur
-5. **Appliquer** l'elimination iteree des strategies dominees (IESDS)
+5. **Appliquer** l'elimination iteree des stratégies dominees (IESDS)
 6. **Reconnaitre** les jeux classiques : Dilemme du Prisonnier, Stag Hunt, Chicken, etc.
 
 ### Concepts cles
 - **Forme normale** : representation complete d'un jeu par ses matrices
-- **Dominance** : une strategie toujours meilleure qu'une autre
-- **Best response** : strategie optimale face a un choix adverse donne
-- **IESDS** : simplification par elimination des strategies irrationnelles
+- **Dominance** : une stratégie toujours meilleure qu'une autre
+- **Best response** : stratégie optimale face a un choix adverse donne
+- **IESDS** : simplification par elimination des stratégies irrationnelles
 
 ### Duree estimee : 45 minutes
 
@@ -18085,7 +18032,7 @@ A la fin de ce notebook, vous saurez :
 - Notions de base en algebre lineaire (matrices)
 
 
-> *Ancres savantes -- von Neumann, J. (1928), Zur Theorie der Gesellschaftsspiele, Mathematische Annalen 100:295-320 (theoreme du minimax pour les jeux a somme nulle, deja nomme ci-dessus — toute matrice de gains admet une valeur en strategies mixtes) ; von Neumann, J. & Morgenstern, O. (1944), Theory of Games and Economic Behavior, Princeton University Press (acte de naissance de la theorie des jeux moderne : formalisme des jeux en forme normale G=(N,S,u) enseigne dans ce notebook, axiomes d'utilite esperee justifiant la maximisation du gain esperer) ; Nash, J.F. (1950), Equilibrium Points in N-Person Games, Proceedings of the National Academy of Sciences 36(1):48-49 (theoreme d'existence de l'equilibre de Nash, deja nomme ci-dessus — tout jeu fini possede au moins un equilibre en strategies mixtes) ; Nash, J.F. (1951), Non-Cooperative Games, Annals of Mathematics 54(2):286-295 (version journal, preuve via le theoreme du point fixe de Brouwer ; prix Nobel d'economie 1994).*",,,,,,,,e49fec96e3e76b95,,,,,,,
+> *Ancres savantes -- von Neumann, J. (1928), Zur Théorie der Gesellschaftsspiele, Mathematische Annalen 100:295-320 (theoreme du minimax pour les jeux a somme nulle, déjà nomme ci-dessus — toute matrice de gains admet une valeur en stratégies mixtes) ; von Neumann, J. & Morgenstern, O. (1944), Theory of Games and Economic Behavior, Princeton University Press (acte de naissance de la théorie des jeux moderne : formalisme des jeux en forme normale G=(N,S,u) enseigne dans ce notebook, axiomes d'utilite esperee justifiant la maximisation du gain esperer) ; Nash, J.F. (1950), Equilibrium Points in N-Person Games, Proceedings of the National Academy of Sciences 36(1):48-49 (theoreme d'existence de l'equilibre de Nash, déjà nomme ci-dessus — tout jeu fini possede au moins un equilibre en stratégies mixtes) ; Nash, J.F. (1951), Non-Cooperative Games, Annals of Mathematics 54(2):286-295 (version journal, preuve via le theoreme du point fixe de Brouwer ; prix Nobel d'economie 1994).*",,,,,,,,4b02745d62981363,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,6d1f609c,code,fr,31dd958c3fc1c6db,"# Imports
 import numpy as np
 import nashpy as nash
@@ -18095,27 +18042,27 @@ import warnings
 warnings.filterwarnings('ignore')
 print(""Imports OK : numpy, matplotlib, itertools"")
 ",,,,,,,,31dd958c3fc1c6db,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,133a6fb2,markdown,fr,0263e4bc00b3475f,"## 1. Definition formelle
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,133a6fb2,markdown,fr,ae92b08729d45a63,"## 1. Definition formelle
 
 ### Jeu en forme normale
 
-Un jeu en forme normale est defini par un triplet $G = (N, S, u)$ :
+Un jeu en forme normale est défini par un triplet $G = (N, S, u)$ :
 
 - $N = \{1, 2, ..., n\}$ : ensemble des **joueurs**
-- $S = S_1 \times S_2 \times ... \times S_n$ : espace des **strategies**
-  - $S_i$ : strategies disponibles pour le joueur $i$
+- $S = S_1 \times S_2 \times ... \times S_n$ : espace des **stratégies**
+  - $S_i$ : stratégies disponibles pour le joueur $i$
 - $u = (u_1, u_2, ..., u_n)$ : fonctions d'**utilite** (gains)
-  - $u_i : S \to \mathbb{R}$ : gain du joueur $i$ pour chaque profil de strategies
+  - $u_i : S \to \mathbb{R}$ : gain du joueur $i$ pour chaque profil de stratégies
 
-**Source primaire.** La representation d'un jeu en forme normale (ou strategique) par le triplet $G = (N, S, u)$ -- joueurs, strategies, fonctions d'utilite -- est codifiee par John von Neumann et Oskar Morgenstern dans *Theory of Games and Economic Behavior* (Princeton University Press, 1944), l'ouvrage fondateur de la theorie des jeux. Ce cadre, qui systematise l'usage des matrices de gains et de l'utilite esperee, demeure la definition standard de reference ; les notions de meilleure reponse et d'equilibre etudiees plus loin dans cette serie s'appuient directement sur ce formalisme.
+**Source primaire.** La representation d'un jeu en forme normale (ou stratégique) par le triplet $G = (N, S, u)$ -- joueurs, stratégies, fonctions d'utilite -- est codifiee par John von Neumann et Oskar Morgenstern dans *Theory of Games and Economic Behavior* (Princeton University Press, 1944), l'ouvrage fondateur de la théorie des jeux. Ce cadre, qui systematise l'usage des matrices de gains et de l'utilite esperee, demeure la definition standard de reference ; les notions de meilleure reponse et d'equilibre etudiees plus loin dans cette serie s'appuient directement sur ce formalisme.
 
 ### Cas particulier : jeux 2 joueurs
 
-Pour 2 joueurs avec $m$ et $n$ strategies, on represente le jeu par deux matrices :
+Pour 2 joueurs avec $m$ et $n$ stratégies, on represente le jeu par deux matrices :
 - $A \in \mathbb{R}^{m \times n}$ : gains du joueur Ligne (Row)
 - $B \in \mathbb{R}^{m \times n}$ : gains du joueur Colonne (Column)
 
-$A_{ij}$ = gain de Ligne quand Ligne joue $i$ et Colonne joue $j$",,,,,,,,0263e4bc00b3475f,,,,,,,
+$A_{ij}$ = gain de Ligne quand Ligne joue $i$ et Colonne joue $j$",,,,,,,,ae92b08729d45a63,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,94d5ccf5,code,fr,7ca0dc4b524b1d04,"class NormalFormGame:
     """"""
     Representation d'un jeu en forme normale pour 2 joueurs.
@@ -18189,9 +18136,9 @@ La sortie affiche la **matrice de gains** du Dilemme du Prisonnier. Chaque cellu
 | (Defaire, Cooperer) | (5, 0) | Trahison du joueur Ligne |
 
 **Observation** : L'issue (Cooperer, Cooperer) donne le meilleur gain total (6), mais chaque joueur a une **incitation à dévier** pour obtenir 5 au lieu de 3.",,,,,,,,cd60087e2e3e451a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c7d73a7b,markdown,fr,fe4a2e777e8cf2c4,"## 2. Jeux classiques 2x2
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c7d73a7b,markdown,fr,cd11cdfd97e9e8ab,"## 2. Jeux classiques 2x2
 
-Explorons plusieurs jeux classiques pour comprendre les differentes structures possibles.",,,,,,,,fe4a2e777e8cf2c4,,,,,,,
+Explorons plusieurs jeux classiques pour comprendre les différentes structures possibles.",,,,,,,,cd11cdfd97e9e8ab,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f3f1e4f2,code,fr,2f90edba3971d273,"# Collection de jeux classiques
 
 def create_prisoners_dilemma():
@@ -18256,18 +18203,18 @@ Les 5 jeux affichés illustrent différentes **structures d'interaction stratég
 - Dans **Stag Hunt**, (Cerf, Cerf) donne 4 à chacun, mais (Lièvre, Lièvre) est plus sûr (gain garanti 3)
 - Dans **Bataille des Sexes**, les deux joueurs préfèrent se coordonner (Opera ou Football) plutôt que se décoordiner
 - Dans **Chicken**, le pire résultat (-10, -10) survient si les deux joueurs continuent",,,,,,,,8db46657ba8ab5d3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5aaa76ce,markdown,fr,6d51cb40fa0a7cb2,"## 3. Dominance
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5aaa76ce,markdown,fr,d56dbb900aedf729,"## 3. Dominance
 
 ### Definitions
 
-Une strategie $s_i$ **domine strictement** une strategie $s_i'$ si :
+Une stratégie $s_i$ **domine strictement** une stratégie $s_i'$ si :
 $$u_i(s_i, s_{-i}) > u_i(s_i', s_{-i}) \quad \forall s_{-i} \in S_{-i}$$
 
-Une strategie $s_i$ **domine faiblement** une strategie $s_i'$ si :
+Une stratégie $s_i$ **domine faiblement** une stratégie $s_i'$ si :
 $$u_i(s_i, s_{-i}) \geq u_i(s_i', s_{-i}) \quad \forall s_{-i}$$
 avec au moins une inegalite stricte.
 
-Une strategie est **dominante** si elle domine toutes les autres strategies.",,,,,,,,6d51cb40fa0a7cb2,,,,,,,
+Une stratégie est **dominante** si elle domine toutes les autres stratégies.",,,,,,,,d56dbb900aedf729,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d3e87111,code,fr,d244c6e5d2e48071,"def is_strictly_dominated(game: NormalFormGame, player: int, strategy: int) -> Tuple[bool, Optional[int]]:
     """"""
     Verifie si une strategie est strictement dominee.
@@ -18402,11 +18349,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4b86c761,markdown,fr,
 **Implications** :
 - Dans le **Dilemme du Prisonnier**, un joueur rationnel doit toujours jouer ""Defaire"", indépendamment de ce que fait l'adversaire
 - Dans les autres jeux, le choix optimal **dépend** de la stratégie de l'adversaire → besoin du concept de **meilleure réponse**",,,,,,,,7b590f15686f167e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f62f0e8,markdown,fr,e7e5fd3c69bc7084,"### Observation
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f62f0e8,markdown,fr,74a4ca636e0c6125,"### Observation
 
-Seul le **Dilemme du Prisonnier** a une strategie dominante pour les deux joueurs (""Defaire"").
+Seul le **Dilemme du Prisonnier** a une stratégie dominante pour les deux joueurs (""Defaire"").
 
-Les autres jeux necessitent des concepts plus raffines pour predire le comportement.",,,,,,,,e7e5fd3c69bc7084,,,,,,,
+Les autres jeux necessitent des concepts plus raffines pour predire le comportement.",,,,,,,,74a4ca636e0c6125,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,60a55803,markdown,fr,710e051f1457dc48,"### Interprétation - Visualisations
 
 Les graphiques montrent les **meilleures réponses** et **équilibres de Nash** :
@@ -18420,16 +18367,16 @@ Les graphiques montrent les **meilleures réponses** et **équilibres de Nash** 
 1. **Dilemme du Prisonnier** : (Defaire, Defaire) a les deux soulignements → unique Nash
 2. **Bataille des Sexes** : Deux cellules vertes (Opera, Opera) et (Football, Football)
 3. **Stag Hunt** : Deux équilibres, mais (Cerf, Cerf) donne des gains supérieurs",,,,,,,,710e051f1457dc48,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9b99f44,markdown,fr,179eaaa15e607d63,"## 4. Meilleure Reponse (Best Response)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9b99f44,markdown,fr,01f4910604d20964,"## 4. Meilleure Reponse (Best Response)
 
 ### Definition
 
-La **meilleure reponse** du joueur $i$ a la strategie $s_{-i}$ des autres joueurs est :
+La **meilleure reponse** du joueur $i$ a la stratégie $s_{-i}$ des autres joueurs est :
 $$BR_i(s_{-i}) = \arg\max_{s_i \in S_i} u_i(s_i, s_{-i})$$
 
 Pour les jeux 2x2 :
-- $BR_{Ligne}(j)$ = strategie de Ligne maximisant son gain quand Colonne joue $j$
-- $BR_{Col}(i)$ = strategie de Colonne maximisant son gain quand Ligne joue $i$",,,,,,,,179eaaa15e607d63,,,,,,,
+- $BR_{Ligne}(j)$ = stratégie de Ligne maximisant son gain quand Colonne joue $j$
+- $BR_{Col}(i)$ = stratégie de Colonne maximisant son gain quand Ligne joue $i$",,,,,,,,01f4910604d20964,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,b8e131a0,markdown,fr,dd40b308c1c987c9,"### Interprétation - Simplification par IESDS
 
 **Résultat** : Le processus d'IESDS a réduit le jeu 3×3 en un jeu **1×1** avec une issue unique.
@@ -18512,12 +18459,12 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,e061e72d,code,fr,4cf5
 bos = create_battle_of_sexes()
 bos.display()
 analyze_best_responses(bos)",,,,,,,,4cf5cf4d5e37cc4c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9a8f9d7,markdown,fr,a90a34345f91ff08,"### Relation avec l'equilibre de Nash
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,d9a8f9d7,markdown,fr,77b01c9aef1f0415,"### Relation avec l'equilibre de Nash
 
-Un profil de strategies $(s_i^*, s_{-i}^*)$ est un **equilibre de Nash** si et seulement si :
+Un profil de stratégies $(s_i^*, s_{-i}^*)$ est un **equilibre de Nash** si et seulement si :
 $$s_i^* \in BR_i(s_{-i}^*) \quad \forall i \in N$$
 
-Autrement dit, chaque joueur joue une meilleure reponse a ce que jouent les autres.",,,,,,,,a90a34345f91ff08,,,,,,,
+Autrement dit, chaque joueur joue une meilleure reponse a ce que jouent les autres.",,,,,,,,77b01c9aef1f0415,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,271fb8a5,markdown,fr,1f49caddeb6c4e2a,"### Interprétation - Coordination parfaite
 
 **Observation** : Dans la Bataille des Sexes, les meilleures réponses sont **alignées** :
@@ -18639,9 +18586,9 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,c9ac80b3,code,fr,fc17
 plot_game_with_br(create_prisoners_dilemma())
 plot_game_with_br(create_battle_of_sexes())
 plot_game_with_br(create_stag_hunt())",,,,,,,,fc173b090b4a70a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f2cddcb,markdown,fr,9886d83a3b4fde20,"## 6. Elimination iteree des strategies dominees (IESDS)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,5f2cddcb,markdown,fr,5320f6835cdb13e4,"## 6. Elimination iteree des stratégies dominees (IESDS)
 
-L'**Iterated Elimination of Strictly Dominated Strategies** permet de simplifier un jeu en eliminant successivement les strategies qu'aucun joueur rationnel ne jouerait.",,,,,,,,9886d83a3b4fde20,,,,,,,
+L'**Iterated Elimination of Strictly Dominated Stratégies** permet de simplifier un jeu en eliminant successivement les stratégies qu'aucun joueur rationnel ne jouerait.",,,,,,,,5320f6835cdb13e4,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,46286901,code,fr,825bc86ed5d1b8b9,"def eliminate_dominated_strategies(A: np.ndarray, B: np.ndarray, 
                                     row_names: List[str], col_names: List[str],
                                     verbose: bool = True) -> Tuple[np.ndarray, np.ndarray, List[str], List[str]]:
@@ -18761,9 +18708,9 @@ print(f""\nEquilibres de Nash purs: {eq if eq else 'Aucun'}"")
 
 # Meilleures reponses
 analyze_best_responses(rps)",,,,,,,,08bd6894c961b081,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,fef37857c531c0a0,"### Interpretation - Structure cyclique de RPS
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,5c9591d2beedb3d1,"### Interpretation - Structure cyclique de RPS
 
-**Resultat** : Pierre-Feuille-Ciseaux n'a **aucun equilibre de Nash en strategies pures**.
+**Résultat** : Pierre-Feuille-Ciseaux n'a **aucun equilibre de Nash en stratégies pures**.
 
 **Analyse des meilleures reponses** :
 
@@ -18777,11 +18724,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa48b333,markdown,fr,
 $$\text{Pierre} \xrightarrow{BR} \text{Feuille} \xrightarrow{BR} \text{Ciseaux} \xrightarrow{BR} \text{Pierre}$$
 
 **Pourquoi aucun equilibre pur ?**
-- Pour tout profil de strategies pures $(s_L, s_C)$, au moins un joueur veut devier
+- Pour tout profil de stratégies pures $(s_L, s_C)$, au moins un joueur veut devier
 - Exemple : Si les deux jouent Pierre, chacun prefere jouer Feuille (gain +1 au lieu de 0)
 - La structure cyclique garantit qu'il existe toujours une deviation profitable
 
-> **Consequence** : L'equilibre doit etre en strategies **mixtes** (randomisation)",,,,,,,,fef37857c531c0a0,,,,,,,
+> **Consequence** : L'equilibre doit etre en stratégies **mixtes** (randomisation)",,,,,,,,5c9591d2beedb3d1,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,18ef8f3d,code,fr,911008946ac34761,"# Equilibres mixtes avec Nashpy
 print(""\nEquilibres de Nash (purs et mixtes):"")
 print(""-"" * 40)
@@ -18797,9 +18744,9 @@ for eq in rps.nash_game.support_enumeration():
         # Gain espere (devrait etre 0 dans un jeu symetrique a somme nulle)
         exp_payoff = sigma_row @ A_rps @ sigma_col
         print(f""   Gain espere: {exp_payoff:.3f}"")",,,,,,,,911008946ac34761,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,eb9d39e266a58212,"### Interpretation - Pierre-Feuille-Ciseaux
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,5e5a617749124077,"### Interpretation - Pierre-Feuille-Ciseaux
 
-**Resultat cle** : L'unique equilibre de Nash de RPS est en strategies **mixtes** avec probabilites uniformes (1/3, 1/3, 1/3).
+**Résultat cle** : L'unique equilibre de Nash de RPS est en stratégies **mixtes** avec probabilites uniformes (1/3, 1/3, 1/3).
 
 **Structure cyclique des meilleures reponses** :
 
@@ -18811,7 +18758,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,
 
 **Observations** :
 - Les meilleures reponses forment un **cycle** : Pierre -> Feuille -> Ciseaux -> Pierre
-- Aucun profil de strategies pures n'est stable (chaque joueur veut toujours devier)
+- Aucun profil de stratégies pures n'est stable (chaque joueur veut toujours devier)
 - L'equilibre mixte uniforme est la seule configuration stable
 
 **Proprietes de l'equilibre mixte** :
@@ -18824,34 +18771,34 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,73c26033,markdown,fr,
 
 **Intuition** :
 - Si un joueur **favorise** une action (ex: jouer Pierre avec probabilite > 1/3), l'adversaire peut l'**exploiter** en augmentant sa probabilite de jouer Feuille
-- Le seul equilibre est de jouer chaque action avec la meme probabilite, rendant le comportement **imprevisible**
+- Le seul equilibre est de jouer chaque action avec la même probabilite, rendant le comportement **imprevisible**
 - Dans tout jeu a somme nulle **symetrique**, l'equilibre mixte donne un gain espere de 0 a chaque joueur
 
-> **Theoreme de minimax (von Neumann, 1928)** : Dans un jeu a somme nulle, la valeur du jeu est unique et peut etre atteinte par des strategies mixtes optimales.",,,,,,,,eb9d39e266a58212,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,95af00c2,markdown,fr,56dbf0ed362072a6,"## 8. Resume
+> **Theoreme de minimax (von Neumann, 1928)** : Dans un jeu a somme nulle, la valeur du jeu est unique et peut etre atteinte par des stratégies mixtes optimales.",,,,,,,,5e5a617749124077,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,95af00c2,markdown,fr,3d481f6ead25b8a7,"## 8. Resume
 
 ### Concepts cles
 
 | Concept | Definition |
 |---------|------------|
 | **Forme normale** | Representation par matrices de gains |
-| **Strategie dominante** | Toujours optimale, independamment des autres |
-| **Strategie dominee** | Jamais optimale, toujours battue |
-| **Meilleure reponse** | Strategie optimale etant donne les choix des autres |
+| **Stratégie dominante** | Toujours optimale, independamment des autres |
+| **Stratégie dominee** | Jamais optimale, toujours battue |
+| **Meilleure reponse** | Stratégie optimale etant donne les choix des autres |
 | **Equilibre de Nash** | Profil ou chacun joue une meilleure reponse |
-| **IESDS** | Simplification par elimination des strategies irrationnelles |
+| **IESDS** | Simplification par elimination des stratégies irrationnelles |
 
 ### Types de jeux rencontres
 
-| Jeu | Caracteristique | Equilibres Nash |
+| Jeu | Caractéristique | Equilibres Nash |
 |----|-----------------|------------------|
-| Dilemme du Prisonnier | Strategie dominante | 1 pur (Defaire, Defaire) |
+| Dilemme du Prisonnier | Stratégie dominante | 1 pur (Defaire, Defaire) |
 | Stag Hunt | Coordination avec risque | 2 purs + 1 mixte |
 | Bataille des Sexes | Coordination pure | 2 purs + 1 mixte |
 | Chicken | Anti-coordination | 2 purs + 1 mixte |
 | Matching Pennies | Somme nulle | 1 mixte |
-| RPS | Somme nulle symetrique | 1 mixte |",,,,,,,,56dbf0ed362072a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,1927212d,markdown,fr,a59ba2013cdc285b,"## 9. Exercices
+| RPS | Somme nulle symetrique | 1 mixte |",,,,,,,,3d481f6ead25b8a7,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,1927212d,markdown,fr,d55a52a8bb35f3b2,"## 9. Exercices
 
 Quatre exercices pour mettre en pratique les outils du notebook (`NormalFormGame`, `find_dominant_strategy`, `find_pure_nash_equilibria`, `best_response_*`, `support_enumeration`). Les solutions ne sont pas fournies : chaque cellule de code est un squelette a completer (`# TODO`).
 
@@ -18865,7 +18812,7 @@ Analysez une variante du Dilemme du Prisonnier avec 3 actions (Cooperer, Defaire
 | **Defaire** | (5,0) | (1,1) | (0,0) |
 | **Punir** | (2,0) | (0,0) | (0,0) |
 
-Questions : strategie(s) dominante(s) ? Equilibres de Nash purs ? L'ajout de l'action 'Punir' change-t-il l'analyse ?
+Questions : stratégie(s) dominante(s) ? Equilibres de Nash purs ? L'ajout de l'action 'Punir' change-t-il l'analyse ?
 
 ### Exercice 2 : Matching Pennies generalise (3 faces)
 
@@ -18875,14 +18822,14 @@ Questions : equilibres purs ? equilibre mixte ? gain espere ?
 
 ### Exercice 3 : Jeu de Coordination avec Communication (cheap talk)
 
-Trois entreprises doivent choisir un standard technologique commun. Identifiez les equilibres de Nash purs et mixtes, l'equilibre Pareto-dominant, et discutez du role d'un signal non contraignant (cheap talk) dans la selection d'equilibre.
+Trois entreprises doivent choisir un standard technologique commun. Identifiez les equilibres de Nash purs et mixtes, l'equilibre Pareto-dominant, et discutez du rôle d'un signal non contraignant (cheap talk) dans la sélection d'equilibre.
 
 ### Exercice 4 : IEWDS
 
-Implementez l'elimination iteree des strategies **faiblement** dominees (IEWDS) et comparez le resultat avec l'IESDS (strict).",,,,,,,,a59ba2013cdc285b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4201db36,markdown,fr,7397f61a5d98a177,"### Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
+Implementez l'elimination iteree des stratégies **faiblement** dominees (IEWDS) et comparez le résultat avec l'IESDS (strict).",,,,,,,,d55a52a8bb35f3b2,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4201db36,markdown,fr,ea5eff98cc2624bd,"### Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
 
-Reprenez la variante a 3 actions (Cooperer, Defaire, Punir) decrite ci-dessus. Tous les outils necessaires ont ete construits dans les sections precedentes et restent disponibles : la classe `NormalFormGame` (section 1), `find_dominant_strategy` (section 3), `find_pure_nash_equilibria` (section 4) et `best_response_row` / `best_response_col`. Completez les `# TODO` ci-dessous.",,,,,,,,7397f61a5d98a177,,,,,,,
+Reprenez la variante a 3 actions (Cooperer, Defaire, Punir) decrite ci-dessus. Tous les outils necessaires ont ete construits dans les sections précédentes et restent disponibles : la classe `NormalFormGame` (section 1), `find_dominant_strategy` (section 3), `find_pure_nash_equilibria` (section 4) et `best_response_row` / `best_response_col`. Completez les `# TODO` ci-dessous.",,,,,,,,ea5eff98cc2624bd,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4e505ffd,code,fr,58aeb5ea054e8ef4,"# Exercice 1 : Variante du Dilemme du Prisonnier (3 actions)
 # ===========================================================
 # Matrice de gains (Ligne, Colonne) :
@@ -18909,7 +18856,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,4e505ffd,code,fr,58ae
 # TODO: enumerer les equilibres de Nash purs (find_pure_nash_equilibria)
 # Question d'analyse: l'ajout de l'action 'Punir' cree-t-il de nouveaux equilibres ?
 print(""Exercice 1 a completer : Variante du Dilemme du Prisonnier (3 actions)"")",,,,,,,,58aeb5ea054e8ef4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-md,markdown,fr,4d50397b93892b41,"### Exercice 2 : Matching Pennies generalise (3 faces)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-md,markdown,fr,af59ca9151760354,"### Exercice 2 : Matching Pennies generalise (3 faces)
 
 Etudiez une version a 3 faces du jeu de Matching Pennies : un jeu a **somme nulle** 3x3.
 Le joueur Ligne gagne +1 lorsqu'il ""matche"" la face choisie par Colonne (diagonale) et perd -1 sinon ;
@@ -18917,10 +18864,10 @@ les gains de Colonne sont l'oppose ($B = -A$).
 
 **Questions** :
 
-1. Definissez `A_ex2` (+1 sur la diagonale, -1 ailleurs) puis `B_ex2 = -A_ex2`, et creez le jeu.
-2. Combien d'equilibres de Nash **purs** ? (anticipez le resultat par analogie avec le cas 2x2.)
-3. Trouvez l'equilibre en strategies **mixtes** via `support_enumeration()`.
-4. Calculez le gain espere a l'equilibre mixte. Que vaut-il pour un jeu somme nulle symetrique ?",,,,,,,,4d50397b93892b41,,,,,,,
+1. Definissez `A_ex2` (+1 sur la diagonale, -1 ailleurs) puis `B_ex2 = -A_ex2`, et créez le jeu.
+2. Combien d'equilibres de Nash **purs** ? (anticipez le résultat par analogie avec le cas 2x2.)
+3. Trouvez l'equilibre en stratégies **mixtes** via `support_enumeration()`.
+4. Calculez le gain espere a l'equilibre mixte. Que vaut-il pour un jeu somme nulle symetrique ?",,,,,,,,af59ca9151760354,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-code,code,fr,364dc1c5f5436331,"# Exercice 2 : Matching Pennies generalise (3 faces)
 # ====================================================
 # Jeu a somme nulle 3x3 : Ligne gagne +1 s'il matche la face de Colonne (diagonale), -1 sinon.
@@ -18942,13 +18889,13 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex2-mp-code,code,fr,3
 # TODO: gain espere a l'equilibre mixte
 # Indice: sigma_row @ A_ex2 @ sigma_col ; pour un jeu somme nulle symetrique il vaut 0.
 print(""Exercice 2 a completer : Matching Pennies generalise (3 faces)"")",,,,,,,,364dc1c5f5436331,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,fa6aa1ba,markdown,fr,0226361134f53b39,"### Exercice 3 : Jeu de Coordination avec Communication
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,fa6aa1ba,markdown,fr,2950f63c8573c8a2,"### Exercice 3 : Jeu de Coordination avec Communication
 
 Dans certains jeux, les joueurs peuvent envoyer des **signaux non contraignants** (cheap talk) avant de jouer.
 Cela peut aider a resoudre les problemes de coordination.
 
 **Contexte** : Trois entreprises doivent choisir un standard technologique commun.
-Chaque entreprise a une preference differente, mais toutes preferent un standard unifie a la fragmentation.
+Chaque entreprise a une préférence différente, mais toutes preferent un standard unifie a la fragmentation.
 
 **Matrice des gains (3 joueurs simplifie en 2 joueurs avec 3 actions)** :
 
@@ -18960,14 +18907,14 @@ Chaque entreprise a une preference differente, mais toutes preferent un standard
 
 **Questions** :
 
-1. Definissez les matrices `A_coord` et `B_coord` et creez le jeu avec `NormalFormGame`
-2. Trouvez tous les equilibres de Nash en strategies pures (utilisez `find_pure_nash_equilibria`)
-3. Trouvez l'equilibre en strategies mixtes avec `support_enumeration()`
+1. Definissez les matrices `A_coord` et `B_coord` et créez le jeu avec `NormalFormGame`
+2. Trouvez tous les equilibres de Nash en stratégies pures (utilisez `find_pure_nash_equilibria`)
+3. Trouvez l'equilibre en stratégies mixtes avec `support_enumeration()`
 4. Calculez le gain espere de chaque joueur a l'equilibre mixte
 5. Quel equilibre pur est **Pareto-dominant** ? (c'est-a-dire, aucun joueur ne peut gagner plus sans qu'un autre perde)
-6. Appliquez l'IESDS : peut-on eliminer des strategies dans ce jeu ? Pourquoi ?
+6. Appliquez l'IESDS : peut-on eliminer des stratégies dans ce jeu ? Pourquoi ?
 
-**Bonus** : Si les joueurs pouvaient communiquer (cheap talk), quel equilibre serait selectionne ? Justifiez.",,,,,,,,0226361134f53b39,,,,,,,
+**Bonus** : Si les joueurs pouvaient communiquer (cheap talk), quel equilibre serait selectionne ? Justifiez.",,,,,,,,2950f63c8573c8a2,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f37ff4c0,code,fr,218967eeb584bcce,"# Exercice 3 : Jeu de Coordination avec Communication
 
 # TODO: Definir les matrices de gains A_coord et B_coord
@@ -18998,16 +18945,16 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,f37ff4c0,code,fr,2189
 # Ecrivez votre reponse en commentaire
 print(""Exercice 3 a completer : Jeu de Coordination avec Communication"")
 ",,,,,,,,218967eeb584bcce,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-md,markdown,fr,ea4a0153fcc50167,"### Exercice 4 : Elimination iteree des strategies faiblement dominees (IEWDS)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-md,markdown,fr,3c40f220a4842c23,"### Exercice 4 : Elimination iteree des stratégies faiblement dominees (IEWDS)
 
-L'elimination des strategies **faiblement** dominees est plus subtile que l'IESDS (strict). Une strategie $s_i$ est *faiblement dominee* par $s_i'$ si $u_i(s_i', s_{-i}) \geq u_i(s_i, s_{-i})$ pour tout $s_{-i}$, avec inegalite stricte pour au moins un profil.
+L'elimination des stratégies **faiblement** dominees est plus subtile que l'IESDS (strict). Une stratégie $s_i$ est *faiblement dominee* par $s_i'$ si $u_i(s_i', s_{-i}) \geq u_i(s_i, s_{-i})$ pour tout $s_{-i}$, avec inegalite stricte pour au moins un profil.
 
-**Objectif** : Implementer `eliminate_weakly_dominated` qui elimine iterativement les strategies faiblement dominees et comparer le resultat avec l'IESDS.
+**Objectif** : Implementer `eliminate_weakly_dominated` qui elimine iterativement les stratégies faiblement dominees et comparer le résultat avec l'IESDS.
 
-- **Indice :** La difference cle avec l'IESDS est le test de dominance faible (>= partout, > au moins une fois)
-- **Etape 1 :** Ecrire une fonction `is_weakly_dominated(A, row, player)` qui verifie si une strategie est faiblement dominee
-- **Etape 2 :** Eliminer iterativement les strategies faiblement dominees
-- **Etape 3 :** Comparer le resultat de l'IEWDS avec l'IESDS sur la matrice `A_test` fournie",,,,,,,,ea4a0153fcc50167,,,,,,,
+- **Indice :** La différence cle avec l'IESDS est le test de dominance faible (>= partout, > au moins une fois)
+- **Étape 1 :** Ecrire une fonction `is_weakly_dominated(A, row, player)` qui verifie si une stratégie est faiblement dominee
+- **Étape 2 :** Eliminer iterativement les stratégies faiblement dominees
+- **Étape 3 :** Comparer le résultat de l'IEWDS avec l'IESDS sur la matrice `A_test` fournie",,,,,,,,3c40f220a4842c23,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,ex-iewds-code,code,fr,b3794dfb49e9f77b,"# Exercice 4 : IEWDS (Elimination des strategies faiblement dominees)
 
 def eliminate_weakly_dominated(A: np.ndarray, B: np.ndarray) -> tuple:
@@ -19037,28 +18984,28 @@ print(f""\nResultat IEWDS : {len(elim)} elimination(s)"")
 print(f""A_reduced = \n{A_red}"")
 print(f""B_reduced = \n{B_red}"")
 print(f""Eliminations : {elim}"")",,,,,,,,b3794dfb49e9f77b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,33048a4b,markdown,fr,5a803ffba17a2c58,"## Resume et perspectives
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,33048a4b,markdown,fr,89a7cc52602f0e2c,"## Resume et perspectives
 
-Ce notebook a pose les fondements de la representation des jeux en forme normale, le formalisme de base de la theorie des jeux strategique. Nous avons defini le triplet $G = (N, S, u)$ et implemente une classe Python pour manipuler les matrices de gains de jeux a deux joueurs. L'etude des jeux classiques -- Dilemme du Prisonnier, Chasse au Cerf, Bataille des Sexes, Jeu du Poulet, Matching Pennies -- a revele la diversite des structures d'interaction : dominance strategique, probleme de coordination, anti-coordination et competition pure. Les concepts de strategie dominante, meilleure reponse et elimination iteree des strategies dominees (IESDS) fournissent les premiers outils de prediction du comportement rationnel.
+Ce notebook a pose les fondements de la representation des jeux en forme normale, le formalisme de base de la théorie des jeux stratégique. Nous avons défini le triplet $G = (N, S, u)$ et implemente une classe Python pour manipuler les matrices de gains de jeux a deux joueurs. L'étude des jeux classiques -- Dilemme du Prisonnier, Chasse au Cerf, Bataille des Sexes, Jeu du Poulet, Matching Pennies -- a revele la diversite des structures d'interaction : dominance stratégique, problème de coordination, anti-coordination et competition pure. Les concepts de stratégie dominante, meilleure reponse et elimination iteree des stratégies dominees (IESDS) fournissent les premiers outils de prediction du comportement rationnel.
 
-L'analyse de Pierre-Feuille-Ciseaux a introduit la necessite des strategies mixtes : lorsque les meilleures reponses forment un cycle, aucun equilibre en strategies pures n'existe, et la randomisation uniforme constitue le seul equilibre stable. Cette observation motive naturellement l'etude systematique des equilibres de Nash dans les notebooks suivants.
+L'analyse de Pierre-Feuille-Ciseaux a introduit la necessite des stratégies mixtes : lorsque les meilleures reponses forment un cycle, aucun equilibre en stratégies pures n'existe, et la randomisation uniforme constitue le seul equilibre stable. Cette observation motive naturellement l'étude systématique des equilibres de Nash dans les notebooks suivants.
 
 Le notebook suivant, [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb), approfondit la classification topologique des jeux 2x2 en etudiant les 144 configurations possibles des matrices de gains, leurs symetries et les relations entre types de jeux.
 
 
 ### References academiques
 
-- von Neumann, J. (1928). Zur Theorie der Gesellschaftsspiele. Mathematische Annalen 100:295-320.
+- von Neumann, J. (1928). Zur Théorie der Gesellschaftsspiele. Mathematische Annalen 100:295-320.
 - von Neumann, J. & Morgenstern, O. (1944). Theory of Games and Economic Behavior. Princeton University Press.
 - Nash, J.F. (1950). Equilibrium Points in N-Person Games. Proceedings of the National Academy of Sciences 36(1):48-49.
 - Nash, J.F. (1951). Non-Cooperative Games. Annals of Mathematics 54(2):286-295.
 
-",,,,,,,,5a803ffba17a2c58,,,,,,,
+",,,,,,,,89a7cc52602f0e2c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,aa3557a1,markdown,fr,1f0f3a80d0f8fad9,"> **Lien avec la formalisation Lean** : Les concepts de ce notebook — jeu en forme normale, stratégies pures et mixtes, équilibre de Nash — sont formalisés dans le notebook compagnon [GT-2b-Lean-Definitions](GameTheory-2b-Lean-Definitions.ipynb) (46 cellules, kernel Lean 4). On y trouve les structures `NormalFormGame`, `FiniteGame`, `Game2x2`, les types `PureStrategy`, `MixedStrategy`, le simplexe standard, et la définition `isNashEquilibrium` pour jeux 2×2, le tout construit interactivement depuis zéro (sans import Mathlib). Le Dilemme du Prisonnier, la Bataille des Sexes et le jeu du Poulet y sont prouvés comme équilibres de Nash en stratégies pures.",,,,,,,,1f0f3a80d0f8fad9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,cbd1ee05,markdown,fr,9f6bc700164d9bde,"---
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,cbd1ee05,markdown,fr,41f78b2f89f32220,"---
 
-**Notebook precedent**: [GameTheory-1-Setup](GameTheory-1-Setup.ipynb)  
-**Notebook suivant**: [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb)",,,,,,,,9f6bc700164d9bde,,,,,,,
+**Notebook précédent**: [GameTheory-1-Setup](GameTheory-1-Setup.ipynb)  
+**Notebook suivant**: [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb)",,,,,,,,41f78b2f89f32220,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2b-Lean-Definitions.ipynb,84ba1c43,markdown,fr,1b2189d0c5b855e8,"# GameTheory 2b - Formalisation Lean : Definitions de Base
 
 **Navigation** : [<< 2-NormalForm (track principal)](GameTheory-2-NormalForm.ipynb)) | [Index](README.md)
@@ -20121,13 +20068,49 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,a9aa71af,mark
 
 Sur les 576 jeux, on compte combien ont 0, 1, 2, 3 ou 4 équilibres purs. Cette distribution révèle la **topologie de l'espace** : la plupart des jeux ont 1-2 équilibres, une minorité n'en a aucun (Matching Pennies et voisins).
 ",,,,,,,,adb841935210a9a6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,84500fc70611aa54,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
-// (rendu Plotly, technique C548-L2 : formatter HTML integre au kernel, zero dependence NuGet charting)
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,35a0a3e2,code,fr,fa262953125469f8,"// Cellule 7 — Classification des 576 jeux 2x2 par nombre de Nash purs
+// (rendu SVG inline, technique C548-L2 : formatter HTML integre au kernel, MIME text/html,
+//  zero dependence NuGet charting. CultureInfo.InvariantCulture sur les coordonnees -> rend
+//  correct sur GitHub/nbviewer/offline quel que soit le locale machine (fix virgule decimale FR).
+//  Migration SVG inline (#6927) : ancien <script src=cdn.plot.ly> rendait BLANC en
+//  consultation statique : GitHub sandboxe les <script> externes. Canon inline = #6954 App-7b.)
 using Microsoft.DotNet.Interactive.Formatting;
+using System.Globalization;
 using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
+using System.Text;
+
+record PlotSvg(string Markup);
+Formatter.Register(typeof(PlotSvg),
+    (obj, writer) => ((TextWriter)writer).Write(((PlotSvg)obj).Markup), ""text/html"");
+
+// Bar chart SVG inline vertical (single-serie, counts >= 0). Coordonnees en decimal invariant.
+static string BuildBarSvg(string[] cats, double[] vals, string title) {
+    const int W = 620, H = 360, mL = 56, mR = 24, mT = 48, mB = 56;
+    int pW = W - mL - mR, pH = H - mT - mB, n = cats.Length;
+    double vMax = vals.Max(); if (vMax <= 0) vMax = 1;
+    var I = CultureInfo.InvariantCulture;
+    string F(double v) => v.ToString(""0.#"", I);
+    var sb = new StringBuilder();
+    sb.Append($""<svg viewBox='0 0 {W} {H}' xmlns='http://www.w3.org/2000/svg' font-family='sans-serif' font-size='12'>"");
+    sb.Append($""<rect width='{W}' height='{H}' fill='white'/>"");
+    sb.Append($""<text x='{W/2}' y='22' text-anchor='middle' font-size='13' font-weight='bold' fill='#333'>{title}</text>"");
+    for (int g = 0; g <= 4; g++) {
+        double yv = vMax * g / 4.0, yp = mT + pH - (yv / vMax) * pH;
+        sb.Append($""<line x1='{mL}' y1='{F(yp)}' x2='{W - mR}' y2='{F(yp)}' stroke='#E5E5E5'/>"");
+        sb.Append($""<text x='{mL - 8}' y='{F(yp + 4)}' text-anchor='end' fill='#666'>{((int)yv).ToString(I)}</text>"");
+    }
+    double cell = pW / (double)n, barW = cell * 0.62;
+    for (int i = 0; i < n; i++) {
+        double bh = (vals[i] / vMax) * pH;
+        double x = mL + i * cell + (cell - barW) / 2, y = mT + pH - bh;
+        sb.Append($""<rect x='{F(x)}' y='{F(y)}' width='{F(barW)}' height='{F(bh)}' fill='#4C72B0'/>"");
+        sb.Append($""<text x='{F(x + barW / 2)}' y='{F(y - 4)}' text-anchor='middle' fill='#333'>{((int)vals[i]).ToString(I)}</text>"");
+        sb.Append($""<text x='{F(x + barW / 2)}' y='{H - mB + 18}' text-anchor='middle' fill='#333'>{cats[i]}</text>"");
+    }
+    sb.Append($""<text x='16' y='{mT + pH / 2}' text-anchor='middle' transform='rotate(-90 16 {mT + pH / 2})' fill='#666'>Nombre de jeux</text>"");
+    sb.Append(""</svg>"");
+    return sb.ToString();
+}
 
 var histogram = new Dictionary<int, int>();
 foreach (var g in allGames)
@@ -20148,34 +20131,22 @@ foreach (var kv in histogram.OrderBy(x => x.Key))
 }
 sb7.ToString().Display();
 
-// Bar chart Plotly : nombre de jeux par nombre d'équilibres de Nash purs.
-// Le recensement exhaustif des 576 jeux 2x2 révèle la distribution des nombres
-// d'équilibres (0, 1, 2, ...) -- la majorité des jeux à 0 ou 1 équilibre pur.
+// Bar chart SVG inline : nombre de jeux par nombre d'equilibres de Nash purs.
+// Le recensement exhaustif des 576 jeux 2x2 revele la distribution des nombres
+// d'equilibres (0, 1, 2, ...) -- la majorite des jeux a 0 ou 1 equilibre pur.
 {
     var ordered = histogram.OrderBy(x => x.Key).ToList();
-    var keys = ordered.Select(kv => kv.Key.ToString()).Select(v => (object)v).ToArray();
-    var counts = ordered.Select(kv => (object)(double)kv.Value).ToArray();
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""x""] = keys, [""y""] = counts, [""type""] = ""bar"",
-                                         [""marker""] = new Dictionary<string,object>{ [""color""]=""#2a6dba"" },
-                                         [""text""] = ordered.Select(kv => (object)kv.Value.ToString()).ToArray(),
-                                         [""textposition""] = ""auto"" });
-    var layout = ""{\""title\"":{\""text\"":\""Recensement : nombre de jeux 2x2 par nombre d equilibres de Nash purs (sur 576)\""},"" +
-                 ""\""xaxis\"":{\""title\"":{\""text\"":\""Nombre d equilibres de Nash purs\""}},"" +
-                 ""\""yaxis\"":{\""title\"":{\""text\"":\""Nombre de jeux\""}},"" +
-                 ""\""margin\"":{\""l\"":50,\""r\"":30}}"";
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
+    var keys = ordered.Select(kv => kv.Key.ToString()).ToArray();
+    var counts = ordered.Select(kv => (double)kv.Value).ToArray();
+    display(new PlotSvg(BuildBarSvg(keys, counts,
+        ""Nombre de jeux 2x2 par nombre d equilibres de Nash purs (sur 576)"")));
 }
 
 int totalChecked = histogram.Values.Sum();
 $""Total verifie : {totalChecked}/576 (attendu 576)"".Display();
 int gamesWithNash = histogram.Where(x => x.Key >= 1).Sum(x => x.Value);
-$""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0*gamesWithNash/allGames.Count:F1}%)."".Display();
-",,,,,,,,84500fc70611aa54,,,,,,,
+$""{gamesWithNash} jeux ont au moins 1 Nash pur ({100.0 * gamesWithNash / allGames.Count:F1}%)."".Display();
+",,,,,,,,fa262953125469f8,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb,67963dee,markdown,fr,777281bf8f7a073d,"## 8. Connexité du graphe des swaps
 
 Le graphe des swaps (576 nœuds, arêtes = swaps adjacents) est-il **connexe** ? C'est-à-dire : peut-on transformer n'importe quel jeu en n'importe quel autre par une séquence de swaps ? On le vérifie par BFS depuis un nœud — si on atteint les 576, le graphe est connexe.
@@ -24052,19 +24023,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,de39c7a4,m
 Le notebook Python trace la trajectoire 2D sur le simplexe `[P(Heads), P(Tails)]`.
 En C# pur (sans matplotlib), on visualise la convergence avec une grille ASCII : chaque
 `#` est un pas de la trajectoire, `N` est le Nash, `D` le départ.",,,,,,,,19d1faf4df702cfb,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,f6d186fc5a11acec,"// Visualisation Plotly de la trajectoire sur le simplexe 2D (remplace l'ASCII art -- EPIC #3801 Prong A).
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,19a8f19a,code,fr,c05ace4bd5088c3f,"// Visualisation SVG statique de la trajectoire sur le simplexe 2D (zero-dependance, EPIC #3801 Prong A).
 // Chaque depart converge vers l'equilibre de Nash (0.5, 0.5) : illustration du theoreme du point fixe de Brouwer.
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
-
-// Options JSON sans echappement HTML (retablit le + litteral dans ""lines+markers"").
-var opt = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+// Helper canon SvgChartHelper.cs (#6942 MERGED) ; Overlay multi-series (#6958 MERGED) pour les 3 traces partageant
+// l'axe X numerique P(Heads). Migration SVG inline (#6927) : ancien CDN Plotly blanc en statique.
+#load ""../Probas/Infer/SvgChartHelper.cs""
 
 // Trajectoire de n iterations de la dynamique de meilleure reponse depuis un point de depart.
 List<(double x, double y)> Trajectory(double[] start, int n = 50) {
@@ -24076,33 +24039,18 @@ List<(double x, double y)> Trajectory(double[] start, int n = 50) {
 
 var t1 = Trajectory(new[] { 0.9, 0.1 });
 var t2 = Trajectory(new[] { 0.1, 0.9 });
-double[] xs1 = t1.Select(p => p.x).ToArray(), ys1 = t1.Select(p => p.y).ToArray();
-double[] xs2 = t2.Select(p => p.x).ToArray(), ys2 = t2.Select(p => p.y).ToArray();
 
-string tr1 = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Depart (0.9, 0.1)"", [""x""] = xs1, [""y""] = ys1, [""mode""] = ""lines+markers"",
-    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
-    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
-string tr2 = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Depart (0.1, 0.9)"", [""x""] = xs2, [""y""] = ys2, [""mode""] = ""lines+markers"",
-    [""line""] = new Dictionary<string, object> { [""width""] = 2 },
-    [""marker""] = new Dictionary<string, object> { [""size""] = 6 } }, opt);
-string trNash = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""name""] = ""Nash (0.5, 0.5)"", [""x""] = new double[] { 0.5 }, [""y""] = new double[] { 0.5 },
-    [""mode""] = ""markers"",
-    [""marker""] = new Dictionary<string, object> { [""size""] = 16, [""color""] = ""red"", [""symbol""] = ""star"" } }, opt);
-string layout = JsonSerializer.Serialize(new Dictionary<string, object> {
-    [""title""] = new Dictionary<string, string> { [""text""] = ""Convergence vers l'equilibre de Nash (Matching Pennies)"" },
-    [""xaxis""] = new Dictionary<string, object> { [""title""] = ""P(Heads)"", [""range""] = new double[] { 0, 1 } },
-    [""yaxis""] = new Dictionary<string, object> { [""title""] = ""P(Tails)"", [""range""] = new double[] { 0, 1 } },
-    [""width""] = 540, [""height""] = 460 }, opt);
-
-string markup = ""<div id=\""pltNash\""></div>"" +
-    ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-    $""<script>Plotly.newPlot('pltNash',[{tr1},{tr2},{trNash}],{layout});</script>"";
-
-Console.WriteLine(""Trajectoires depuis (0.9,0.1) et (0.1,0.9) -> Nash (0.5, 0.5)"");
-new PlotlyHtml(markup)",,,,,,,,f6d186fc5a11acec,,,,,,,
+SvgChartHelper.Overlay(
+    ""Convergence vers l'equilibre de Nash (Matching Pennies)"",
+    ""P(Heads) joueur 1"", ""P(Heads) joueur 2"",
+    new[] {
+        new SvgSeries(""Depart (0.9, 0.1)"", t1.Select(p => p.x).ToArray(), t1.Select(p => p.y).ToArray(),
+                      TraceStyle.LineMarkers, ""#4C72B0""),
+        new SvgSeries(""Depart (0.1, 0.9)"", t2.Select(p => p.x).ToArray(), t2.Select(p => p.y).ToArray(),
+                      TraceStyle.LineMarkers, ""#55A868""),
+        new SvgSeries(""Nash (0.5, 0.5)"", new[] { 0.5 }, new[] { 0.5 },
+                      TraceStyle.Markers, ""#C44E52""),
+    })",,,,,,,,c05ace4bd5088c3f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,dab67d51,markdown,fr,8ec25f9a7952028e,"## Exercice 1 : équilibre de Chicken (Guerre froide)
 
 Appliquez `FindFixedPointSimplex` au jeu **Chicken** ( Hawk-Dove) :
@@ -31211,62 +31159,41 @@ L'analyse de periodicite revele des structures interessantes :
 3. **Pre-periode nulle** : Tous les exemples ont une pre-periode de 0, ce qui signifie que la periodicite commence immediatement. C'est typique des jeux de soustraction simples.
 
 > **Theoreme de Guy** : Pour tout jeu de soustraction fini, la sequence de Grundy est ultimement periodique. La periode peut etre bornee, mais les bornes exactes restent un probleme ouvert.",,,,,,,,250d40724a1e571d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,772906c5a254ee97,"// Outil de visualisation : rendu Plotly.js via le formatter HTML integre du kernel.
-// (Zero `#r ""nuget:""` sur une charting-lib : les charting libs pinent une vieille beta
-//  de Microsoft.DotNet.Interactive et font timeout le restore, cluster-wide. Le formatter
-//  ci-dessous emet du HTML Plotly brut, sans dependence. Cf #3801 / C548-L2.)
-using Microsoft.DotNet.Interactive.Formatting;
-using System.IO;
-record PlotlyHtml(string Markup);
-Formatter.Register(typeof(PlotlyHtml),
-    (obj, writer) => ((TextWriter)writer).Write(((PlotlyHtml)obj).Markup), ""text/html"");
-
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,539733c3,code,fr,77a41e795359284c,"#load ""../Probas/Infer/SvgChartHelper.cs""
 // Visualisation de la sequence de Grundy (valeurs G(n)) et de sa structure periodique.
+// Rendu SVG inline statique via SvgChartHelper.cs (#6942/#6927) : zero dependance, s'affiche
+// sur GitHub / nbviewer / offline. L'ancien CDN Plotly rendait BLANC en sandbox statique
+// (aucun script tiers execute). Le code couleur par-barre (pre-periode / 1ere periode /
+// repetitions) est porte nativement par SvgChartHelper.Bar(colors:, legend:). Cf #3801 / C548-L2.
+
 var moves = new HashSet<int> { 1, 3, 4 };
 var (pre, period, seq) = FindPeriodicity(moves, maxN: 100);
 int show = Math.Min(35, seq.Count);
 
-var xIdx = Enumerable.Range(0, show).Select(i => (double)i).ToArray();
+var xLabels = Enumerable.Range(0, show).Select(i => i.ToString()).ToArray();
 var yGrundy = seq.GetRange(0, show).Select(v => (double)v).ToArray();
 
-// Couleur : rouge pour la pre-periode, bleu pour la premiere periode, gris pour la suite.
+// Couleur par barre : rouge = pre-periode (transitoire), bleu = 1ere periode (motif),
+// gris = repetitions du motif. Le changement de couleur materialise les frontieres
+// (fin de pre-periode, fin de la 1ere periode) sans lignes/annotations (rendu SVG inline).
 var barColors = Enumerable.Range(0, show).Select(i =>
     i < pre ? ""#C44E52""
     : i < pre + period ? ""#4C72B0""
     : ""#888888"").ToArray();
 
-var barTrace = new Dictionary<string, object> {
-    [""name""] = ""G(n) (Grundy)"", [""x""] = xIdx, [""y""] = yGrundy, [""type""] = ""bar"",
-    [""marker""] = new { color = barColors } };
-string barJson = System.Text.Json.JsonSerializer.Serialize(barTrace);
+// Legende honnete : n'inclure que les categories reellement presentes (pre-periode vide si pre=0).
+var legend8 = new List<(string, string)>();
+if (pre > 0) legend8.Add((""#C44E52"", ""pre-periode""));
+legend8.Add((""#4C72B0"", ""1ere periode""));
+if (show > pre + period) legend8.Add((""#888888"", ""repetitions""));
 
-// Lignes verticales marquant la fin de pre-periode et la fin de la premiere periode.
-string ShapeLine(double x0, string color) =>
-    $""{{\""type\"":\""line\"",\""x0\"":{x0},\""x1\"":{x0},\""y0\"":0,\""y1\"":1,\""yref\"":\""paper\"","" +
-    $""\""line\"":{{\""color\"":\""{color}\"",\""width\"":1.5,\""dash\"":\""dash\""}}}}"";
-string shapes = ""["" + ShapeLine(pre, ""#C44E52"") + "","" + ShapeLine(pre + period, ""#4C72B0"") + ""]"";
-
-var layout = ""{\""title\"":{\""text\"":\""Sequence de Grundy du jeu de soustraction S({1,3,4})\""},"" +
-             ""\""xaxis\"":{\""title\"":{\""text\"":\""n (taille du tas)\""}},"" +
-             ""\""yaxis\"":{\""title\"":{\""text\"":\""G(n)\""}},"" +
-             ""\""shapes\"":"" + shapes + "","" +
-             ""\""showlegend\"":false,"" +
-             ""\""annotations\"":["" +
-             ""{\""x\"":"" + pre + "",\""y\"":1,\""yref\"":\""paper\"",\""text\"":\""fin pre-periode\"","" +
-               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#C44E52\"",\""size\"":10}},"" +
-             ""{\""x\"":"" + (pre + period) + "",\""y\"":0.95,\""yref\"":\""paper\"",\""text\"":\""fin 1ere periode\"","" +
-               ""\""showarrow\"":false,\""xanchor\"":\""left\"",\""font\"":{\""color\"":\""#4C72B0\"",\""size\"":10}}"" +
-             ""]}"";
-var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-             ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-             ""<script>Plotly.newPlot('"" + divId + ""',["" + barJson + ""],"" + layout + "")</script>"";
-display(new PlotlyHtml(markup));
+display(SvgChartHelper.Bar(
+    ""Sequence de Grundy du jeu de soustraction S({1,3,4})"",
+    xLabels, yGrundy, width: 900, height: 340, colors: barColors, legend: legend8));
 
 var onePeriod = seq.GetRange(pre, period);
 Console.WriteLine($""Jeu de soustraction S({{1,3,4}}) - Periode = {period}, Pre-periode = {pre}"");
-Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");
-",,,,,,,,772906c5a254ee97,,,,,,,
+Console.WriteLine($""Motif periodique: [{string.Join("", "", onePeriod)}]"");",,,,,,,,77a41e795359284c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,8a938606,markdown,fr,7ea428f15bd085f1,"---
 
 ## 2. Jeu de Wythoff
@@ -31536,7 +31463,8 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,89d51
 ## 4. Visualisation interactive
 
 Creons une visualisation des valeurs de Grundy pour mieux comprendre leur structure.",,,,,,,,8d71f52facf5f0b1,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,9017e93b51b2399f,"// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,db7d14b0,code,fr,0efbc64c674aa3fc,"#load ""../Probas/Infer/SvgChartHelper.cs""
+// Visualisation comparee des valeurs de Grundy (matplotlib subplots -> barres ASCII compactes).
 var gamesToCompare = new Dictionary<string, HashSet<int>>
 {
     [""Fibonacci-like""] = new HashSet<int> { 1, 2 },
@@ -31557,29 +31485,14 @@ foreach (var kv in gamesToCompare)
     grundyRows.Add((kv.Key, values));
 }
 
-// Heatmap Plotly : valeurs de Grundy par variante (ligne) x position N (colonne).
+// Heatmap SVG : valeurs de Grundy par variante (ligne) x position N (colonne).
 // Les bandes de couleur repetees = periodicite (caractere distinctif du solveur combinatoire).
-// (infra PlotlyHtml definie en cell[8], technique C548-L2)
-{
-    var yLabels = grundyRows.Select(r => (object)r.Item1).ToArray();
-    var xLabels = Enumerable.Range(0, maxN).Select(n => (object)n).ToArray();
-    int maxG = Math.Max(1, grundyRows.Max(r => r.Item2.Max()));
-    var z = grundyRows.Select(r => (object)r.Item2.Select(v => (object)v).ToArray()).ToArray();
-    var trace = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""type""] = ""heatmap"", [""z""] = z, [""x""] = xLabels, [""y""] = yLabels,
-                                         [""colorscale""] = ""Viridis"", [""zmin""] = 0, [""zmax""] = maxG,
-                                         [""colorbar""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Grundy G"" } } });
-    var layout = System.Text.Json.JsonSerializer.Serialize(
-        new Dictionary<string, object> { [""title""] = new Dictionary<string,object>{ [""text""] = ""Valeurs de Grundy : periodicite des jeux de soustraction (G=0 = position P/perdante)"" },
-                                         [""xaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Position N"" }, [""dtick""] = 1 },
-                                         [""yaxis""] = new Dictionary<string,object>{ [""title""] = new Dictionary<string,object>{ [""text""] = ""Variante de jeu"" } },
-                                         [""margin""] = new Dictionary<string,object>{ [""l""] = 140, [""r""] = 40, [""b""] = 50 } });
-    var divId = ""plt"" + Guid.NewGuid().ToString(""N"");
-    var markup = ""<div id=\"""" + divId + ""\""></div>"" +
-                 ""<script src=\""https://cdn.plot.ly/plotly-2.35.2.min.js\""></script>"" +
-                 ""<script>Plotly.newPlot('"" + divId + ""',["" + trace + ""],"" + layout + "")</script>"";
-    display(new PlotlyHtml(markup));
-}",,,,,,,,9017e93b51b2399f,,,,,,,
+// (rendu SVG inline via SvgChartHelper.Heatmap, technique C548-L2)
+SvgChartHelper.Heatmap(
+    ""Valeurs de Grundy : periodicite des jeux de soustraction (G=0 = P/perdante)"",
+    Enumerable.Range(0, maxN).Select(n => n.ToString()).ToArray(),
+    grundyRows.Select(r => r.Name).ToArray(),
+    grundyRows.Select(r => r.Values.Select(v => (double)v).ToArray()).ToArray())",,,,,,,,0efbc64c674aa3fc,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb,c641fe9a,markdown,fr,36242b6d0daae807,"---
 
 ## 5. Jeu de Chomp
