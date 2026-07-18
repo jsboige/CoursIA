@@ -73,7 +73,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 4, backtests QC Cloud MCP) | 5 | cohorte MeanReversion/Macro/Multi-asset/Crypto — **0 edge significatif** (PSR < 50 %), 4 Needs-improvement, 1 BROKEN ; Multi-Layer-EMA revendication README confirmée |
 | Vérifié (tranche 5, backtests QC Cloud MCP) | 5 | cohorte Trend/Macro-Régime/Options/Causal/Factor — **0 edge significatif** (PSR < 50 %), 3 Needs-improvement, 1 near-cash, 1 near-BROKEN |
 | Vérifié (tranche 6, backtests QC Cloud MCP) | 5 | cohorte Régime/Factor/Vol/Leveraged-Factor — **1 edge candidat** (LeveragedETFMomentum PSR 79.8 %, ETF leveraged → flag OOS), 4 Needs-improvement |
-| Vivant (best-guess, non vérifié) | 56 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) |
+| Vérifié (tranche 7, backtests QC Cloud MCP) | 5 | cohorte **ML supervisé / DL / SVM-wavelet** (5 stratégies best-guess ML du bucket Vivant promues) — **0 edge significative** (PSR max = 29.3 % Sector-ML-Classification ; 2/5 PSR < 10 % ; aucune > 50 %), 5 Needs-improvement — confirme que le ML in-sample sans walk-forward multi-seed ne surfit pas la cohorte |
+| Vivant (best-guess, non vérifié) | 51 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML : voir section ci-dessous |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -193,7 +194,29 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
-#### Vivant (best-guess, non vérifié) (56)
+#### Vérifié (tranche 7, backtests QC Cloud via MCP) (5)
+
+> **Scope tranche 7 (#1621)** : 5 stratégies « Vivant » promues via backtests QC Cloud réels
+> (MCP `qc-mcp`, backtests existants relus firsthand). Cohorte **ML supervisé / DL / SVM-wavelet**
+> (5 sous-familles ML distinctes : trend scanning, features engineering, classification
+> reversion/trending, sector classification, SVM/wavelet FX). Métriques pleine période in-sample
+> (non walk-forward OOS). **0 edge statistiquement significative** (PSR < 50 % partout, 5/5) :
+> MaxPSR = **29.3 %** (Sector-ML-Classification, projet ESGF 581ddcf4) ; 2 stratégies PSR < 10 %
+> (ML-FX-SVM-Wavelet 0.39 % quasi-nul, ML-Trend-Scanning 7.84 %). **Confirme pour la famille ML**
+> ce que la tranche 2 confirmait pour Vol-* : les backtests in-sample pleine période ne valident
+> **aucun edge** sur la cohorte. Walk-forward multi-seed OOS requis avant toute promotion
+> « production » — ce n'est pas un jugement négatif sur les approches ML (le in-sample overfit est
+> attendu), c'est un signal honnête que **la preuve d'edge n'est pas dans ce référentiel**.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features (RF/GB Ensemble) | **Needs-improvement** | 2018–2025 (2830 j.) ; **Sharpe 0.656** (max cohorte) ; CAGR 19.06 % (max cohorte) ; MaxDD 34.8 % ; PSR 14.79 % ; NP 614.5 % ($614 544) — meilleur Sharpe/CAGR de la cohorte ML, mais PSR 14.8 % = edge non significative, drawdown 34.8 % élevé |
+| `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification reversion/trending | **Needs-improvement** | 2018–2025 (2830 j.) ; Sharpe 0.571 ; CAGR 10.51 % ; MaxDD 19.6 % (min cohorte) ; PSR 25.06 % ; NP 208.4 % ($205 971) — 2ᵉ PSR le plus élevé mais edge non significative ; version v1 avait Runtime Error, v1-fixed resolu |
+| `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel (classification multi-version v6.1–v6.5) | **Needs-improvement** | ESGF 2024–2026 (585 j., période courte) ; Sharpe 0.209 ; CAGR 10.47 % ; MaxDD 17.3 % (2ᵉ min cohorte) ; **PSR 29.34 % (max cohorte)** ; NP 26.1 % ($26 655) — meilleure PSR de la cohorte ML, edge non significative, période courte (585 j.) = OOS réduit |
+| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend scanning | **Needs-improvement** | 2018–2025 (2878 j.) ; Sharpe 0.328 ; CAGR 7.085 % ; **MaxDD 29.4 %** ; PSR 7.84 % ; NP 119.0 % ($115 983) — PSR faible, edge nul ; catalog post-#2801 confirmait Sharpe 0.66 → 0.33 (cf PR #3083jsboige MERGED 2026-06-15) |
+| `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | **Needs-improvement / near-BROKEN** | 2018–2025 (2806 j.) ; Sharpe 0.153 (min cohorte) ; CAGR 4.29 % (min cohorte) ; MaxDD 21.2 % ; **PSR 0.39 % (min cohorte, quasi-nul)** ; NP 46.0 % ($455 947) — PSR < 1 %, edge statistiquement nul, retour faible |
+
+#### Vivant (best-guess, non vérifié) (51)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -220,18 +243,18 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-DeepLearning` | `projects/ML-DeepLearning/` | DL | Vivant | main.py: class SimpleLSTM(nn.Module) + algo QCAlgorithm + quantbook.ipynb |
 | `ML-EnhancedPairs` | `projects/ML-EnhancedPairs/` | ML pairs | Vivant | main.py: class MLEnhancedPairsAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Ensemble` | `projects/ML-Ensemble/` | ML ensemble | Vivant | main.py: class MLEnsembleAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecastingAlgorithm(QCAlgorithm) (helper SVMWavelet en amont) |
-| `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features | Vivant | main.py: class MLFeatureEngineeringAlgorithm(QCAlgorithm) + quantbook.ipynb |
+| `ML-FX-SVM-Wavelet` | `projects/ML-FX-SVM-Wavelet/` | ML FX (SVM/Wavelet) | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 0.39 %) |
+| `ML-FeatureEngineering` | `projects/ML-FeatureEngineering/` | ML features | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 14.79 %) |
 | `ML-FinBERT-Sentiment` | `projects/ML-FinBERT-Sentiment/` | ML NLP (FinBERT) | Vivant | main.py: class FinBERTSentimentAlgorithm(QCAlgorithm) + research.ipynb |
 | `ML-Gaussian-Classifier` | `projects/ML-Gaussian-Classifier/` | ML classification | Vivant | main.py: class GaussianNaiveBayesAlgorithm(QCAlgorithm) |
 | `ML-HeadShoulders-CNN` | `projects/ML-HeadShoulders-CNN/` | DL (CNN patterns) | Vivant | main.py: class CNNPatternDetectionAlgorithm(QCAlgorithm) + research.ipynb |
 | `ML-LLM-Summarization` | `projects/ML-LLM-Summarization/` | ML NLP (LLM) | Vivant | main.py: class LLMNewsSentimentAlgorithm(QCAlgorithm) |
 | `ML-Regression` | `projects/ML-Regression/` | ML supervisé | Vivant | main.py: class MLRegressionAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification | Vivant | main.py: class MLReversionTrendingClassifier(QCAlgorithm) + research.ipynb |
+| `ML-Reversion-Trending` | `projects/ML-Reversion-Trending/` | ML classification | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 25.06 %) |
 | `ML-SVM` | `projects/ML-SVM/` | ML supervisé (SVM) | Vivant | main.py: class MLSVMAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Temporal-CNN` | `projects/ML-Temporal-CNN/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPredictionAlgorithm(QCAlgorithm) |
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | Vivant | main.py: class MLTrendScanning(QCAlgorithm) |
+| `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 7.84 %) |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | Vivant | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb |
 | `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
 | `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | Vivant | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb |
@@ -242,7 +265,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | Vivant | main.py: class ReinforcementLearningTrading(QCAlgorithm) |
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | Vivant | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
-| `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | Vivant | main.py: class SectorMLClassificationAlgorithm(QCAlgorithm) + research.ipynb |
+| `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 29.34 %, période ESGF 2024–2026 585 j.) |
 | `Stoploss-Volatility-ML` | `projects/Stoploss-Volatility-ML/` | ML risk | Vivant | main.py: class StoplossVolatilityMLAlgorithm(QCAlgorithm) + research.ipynb |
 | `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | Vivant | main.py: class TemporalCNNPrediction(QCAlgorithm) + research.ipynb |
 | `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Commodities (term structure) | Vivant | main.py: class CommodityTermStructureAlgorithm(QCAlgorithm) |
