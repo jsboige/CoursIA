@@ -169,11 +169,27 @@ def partitioned_idents(source: str):
 
 def accented_identifiers(source: str):
     """Yield (token_accentue, ligne, ligne_contexte) pour chaque identifiant
-    structurel accentue present dans le source code."""
+    structurel accentue present dans le source code.
+
+    Filtre len >= 2 (anti-faux-positif) : un identifiant accentue d'un seul
+    caractere (``a`` ``e`` ``c`` accentues) est statistiquement toujours une
+    fuite de chaine, pas un vrai identifiant. Le strip regex (_STRIP_RE) ne
+    gere pas les chaines C# interpolees contenant des chaines imbriquees
+    (``$\"...{cond ? \\\"a\\\" : \\\"b\\\"}...\"``) : les guillemets internes
+    cassent le match et le contenu des chaines internes (``barque a gauche``)
+    fuie dans le code analyse. Le token accentue 1-char qui en resulte
+    (preposition/article FR ``a``) est elimine ici. Les vrais identifiants
+    accentues (variables/parametres/proprietes) sont toujours > 1 char dans
+    la pratique (min historique : ``cle`` 3, ``resultat`` 7 ; Python/C#
+    autorisent ``a`` comme nom mais pedagogiquement jamais utilise). Limite
+    residuelle connue : un mot accentue > 1 char fuissant d'une chaine
+    imbriquee resterait un FP (rare ; necessiterait un parser C# leger)."""
     stripped = _strip_preserve_lines(source)
     src_lines = source.split("\n")
     for m in _IDENT_RE.finditer(stripped):
         tok = m.group(0)
+        if len(tok) < 2:
+            continue
         if _has_accent(tok):
             line_no = stripped.count("\n", 0, m.start()) + 1
             ctx = src_lines[line_no - 1].strip() if 0 < line_no <= len(src_lines) else ""
