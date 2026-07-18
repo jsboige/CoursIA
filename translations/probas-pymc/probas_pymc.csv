@@ -6471,9 +6471,9 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 ---
 
 [← PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,9458466642910b89,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,b41a3ed49f8cde2e,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,053d8f08d8dd0989,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
 
-**Serie** : Programmation Probabiliste avec PyMC (6/20)  
+**Serie** : Programmation probabiliste avec PyMC (6/20)  
 **Duree estimee** : 45 minutes  
 **Prerequis** : Avoir explore plusieurs notebooks de la serie
 
@@ -6481,20 +6481,20 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,b41a3e
 
 ## Objectifs
 
-- Diagnostiquer les problemes courants d'inference MCMC
+- Diagnostiquer les problèmes courants d'inférence MCMC
 - Comparer les algorithmes (NUTS, ADVI, SGVM)
-- Utiliser les outils de diagnostic d'ArviZ
+- utiliser les outils de diagnostic d'ArviZ
 - Appliquer les bonnes pratiques de modelisation
 
 ---
 
 ## Navigation
 
-| Precedent | Index |
+| précédent | Index |
 |-----------|-------|
 | [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) | [README](../Infer/README.md) |
 
----",,,,,,,,b41a3ed49f8cde2e,,,,,,,
+---",,,,,,,,053d8f08d8dd0989,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,81322ef1,markdown,fr,e79ffbc6e4857f98,## 1. Configuration,,,,,,,,e79ffbc6e4857f98,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8bffbe67,code,fr,05a3aabc35def4a4,"import numpy as np
 import pymc as pm
@@ -6511,20 +6511,20 @@ rng = np.random.default_rng(RANDOM_SEED)
 print(f""PyMC version : {pm.__version__}"")
 print(f""ArviZ version : {az.__version__}"")
 print(""PyMC pret !"")",,,,,,,,05a3aabc35def4a4,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,340483a5,markdown,fr,49d49e49f2494bed,"### Packages charges
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,340483a5,markdown,fr,0513459b12d99c11,"### Packages charges
 
 | Package | Role |
 |---------|------|
-| `pymc` | Modeles probabilistes, echantillonneurs (NUTS, ADVI, Metropolis) |
-| `arviz` | Diagnostics MCMC (trace plots, R-hat, ESS, divergences) |
-| `numpy` | Calculs numeriques et generation de donnees |
+| `pymc` | modèles probabilistes, échantillonneurs (NUTS, ADVI, Metropolis) |
+| `arviz` | diagnostics MCMC (trace plots, R-hat, ESS, divergences) |
+| `numpy` | Calculs numériques et génération de données |
 
 Les outils importants pour le debugging sont :
-- `pm.sample()` : echantillonnage MCMC avec NUTS par defaut
+- `pm.sample()` : échantillonnage MCMC avec NUTS par defaut
 - `az.summary()` : statistiques de diagnostic (R-hat, ESS)
 - `az.plot_trace()` : visualisation des traces
-- `az.plot_energy()` : diagnostic de l'energie du hamiltonien",,,,,,,,49d49e49f2494bed,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,26ffedb5,markdown,fr,73ba4f1b4abb53a6,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez deja explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de probleme.
+- `az.plot_energy()` : diagnostic de l'énergie du hamiltonien",,,,,,,,0513459b12d99c11,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,26ffedb5,markdown,fr,e3e01d5d327121d2,"> **Note technique** : Ce notebook est oriente *troubleshooting*. Il suppose que vous avez deja explore plusieurs notebooks de la serie et rencontre des comportements inattendus. Les exemples sont volontairement simplifies pour isoler chaque type de problème.
 
 Le debugging en programmation probabiliste differe du debugging classique :
 
@@ -6532,18 +6532,18 @@ Le debugging en programmation probabiliste differe du debugging classique :
 |---------------------|------------------------|
 | Erreur = crash ou mauvaise valeur | Erreur = divergence, R-hat > 1.01, ESS faible |
 | Cause souvent deterministe | Cause souvent liee aux priors ou a la parametrisation |
-| Solution : corriger le code | Solution : ajuster le modele ou la parametrisation |",,,,,,,,73ba4f1b4abb53a6,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a1d2727b,markdown,fr,e8a5d5f8e4720398,"## 2. Problemes Courants et Solutions
+| Solution : corriger le code | Solution : ajuster le modèle ou la parametrisation |",,,,,,,,e3e01d5d327121d2,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a1d2727b,markdown,fr,c2d8e1383717cf0a,"## 2. Problèmes Courants et Solutions
 
-### 2.1 Catalogue des Problemes
+### 2.1 Catalogue des Problèmes
 
-| Probleme | Cause | Solution |
+| problème | Cause | Solution |
 |----------|-------|----------|
-| Divergences | Neologie abrupte du posterior | Reparametriser ou augmenter `target_accept` |
-| R-hat > 1.01 | Chaines non convergees | Plus d'iterations ou reparametriser |
-| ESS faible | Autocorrelation elevee | Plus d'iterations ou thinning |
-| Erreur `SamplingError` | Prior incompatible avec les donnees | Elargir le prior ou verifier les observations |
-| Erreur `BadInitialEnergy` | Point de depart avec probabilite nulle | Changer l'initialisation ou elargir les priors |",,,,,,,,e8a5d5f8e4720398,,,,,,,
+| divergences | Neologie abrupte du posterior | Reparametriser ou augmenter `target_accept` |
+| R-hat > 1.01 | Chaines non convergees | Plus d'itérations ou reparametriser |
+| ESS faible | Autocorrelation élevée | Plus d'itérations ou thinning |
+| Erreur `SamplingError` | Prior incompatible avec les données | Elargir le prior ou vérifier les observations |
+| Erreur `BadInitialEnergy` | Point de depart avec probabilité nulle | Changer l'initialisation ou elargir les priors |",,,,,,,,c2d8e1383717cf0a,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,36b607cb,code,fr,f5c7ea700d90df4c,"# Exemple 1 : Probleme d'initialisation (BadInitialEnergy)
 
 print(""=== Probleme : Prior incompatible avec les donnees ==="")
@@ -6572,16 +6572,16 @@ print(f""Resultat avec prior large : x ~ Normal(mean={trace_narrow.posterior['x'
       f""std={trace_narrow.posterior['x'].std().values:.1f})"")
 print()
 print(""Le posterior est concentre autour de l'observation car le prior est vague."")",,,,,,,,f5c7ea700d90df4c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f52a622f,markdown,fr,1fbfa7704e7b945e,"**Interpretation des resultats** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f52a622f,markdown,fr,29f5e459daeee5f4,"**interprétation des résultats** :
 
-Avec un prior large `Normal(0, 100)`, l'observation `y=50` domine le posterior. Le resultat est coherent : la moyenne posterieure est proche de 50.
+Avec un prior large `Normal(0, 100)`, l'observation `y=50` domine le posterior. Le résultat est cohérent : la moyenne postérieure est proche de 50.
 
-> **Regle pratique** : Si votre prior a un ecart-type `sigma`, les observations situees a plus de `3*sigma` de la moyenne du prior auront une vraisemblance quasi-nulle sous le prior. Avec `sigma=0.001`, cela represente environ `0.003` unites autour de 0.",,,,,,,,1fbfa7704e7b945e,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,e728b8f5,markdown,fr,29b14d359355d4b9,"### 2.2 Divergences
+> **règle pratique** : Si votre prior a un ecart-type `sigma`, les observations situees a plus de `3*sigma` de la moyenne du prior auront une vraisemblance quasi-nulle sous le prior. Avec `sigma=0.001`, cela représente environ `0.003` unites autour de 0.",,,,,,,,29f5e459daeee5f4,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,e728b8f5,markdown,fr,e4970bb33f78976d,"### 2.2 Divergences
 
-Les divergences sont le probleme le plus courant avec NUTS. Elles indiquent que l'echantillonneur a du mal a explorer certaines regions de l'espace des parametres, souvent a cause de la **geometrie du posterior**.
+Les divergences sont le problème le plus courant avec NUTS. Elles indiquent que l'échantillonneur a du mal a explorer certaines regions de l'espace des paramètres, souvent a cause de la **geometrie du posterior**.
 
-> **Mecanisme** : Une divergence se produit lorsque l'integrateur hamiltonien de NUTS commet une erreur de simulation trop grande (erreur d'energie depassant le seuil lie a `target_accept`) en traversant une region de forte courbure - typiquement le col etroit d'un entonnoir hierarchique. La trajectoire quitte alors l'ensemble typique (*typical set*) et l'echantillon est rejete. Traitement de reference : Betancourt (2017), *A conceptual introduction to Hamiltonian Monte Carlo*, arXiv:1701.02434.",,,,,,,,29b14d359355d4b9,,,,,,,
+> **mécanisme** : Une divergence se produit lorsque l'integrateur hamiltonien de NUTS commet une erreur de simulation trop grande (erreur d'énergie depassant le seuil lie a `target_accept`) en traversant une region de forte courbure - typiquement le col etroit d'un entonnoir hierarchique. La trajectoire quitte alors l'ensemble typique (*typical set*) et l'échantillon est rejeté. Traitement de référence : Betancourt (2017), *A conceptual introduction to Hamiltonian Monte Carlo*, arXiv:1701.02434.",,,,,,,,e4970bb33f78976d,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,65e3c067,code,fr,0c43559d96e13e54,"# Exemple 2 : Divergences causees par une mauvaise parametrisation
 
 print(""=== Probleme : Divergences avec un modele mal parametrise ==="")
@@ -6614,20 +6614,20 @@ with pm.Model() as model_funnel:
 n_diverging = trace_funnel.sample_stats[""diverging""].sum().values
 print(f""\nDivergences : {n_diverging} sur {trace_funnel.posterior.dims['draw'] * trace_funnel.posterior.dims['chain']}"")
 print(""La reparametrisation et target_accept eleve reduisent les divergences."")",,,,,,,,0c43559d96e13e54,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,55b10e08,markdown,fr,28b0a17d8110e097,"## Exercice 2 : Reparametrisation non-centree
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,55b10e08,markdown,fr,50ad891267e4de9e,"## Exercice 2 : Reparametrisation non-centree
 
-Le modele hierarchique ci-dessous souffre d'un probleme d'entonnoir (funnel) :
-la variance de `theta` depend de `sigma_groupe`, ce qui cree une geometrie
+Le modèle hierarchique ci-dessous souffre d'un problème d'entonnoir (funnel) :
+la variance de `theta` dépend de `sigma_groupe`, ce qui cree une geometrie
 difficile pour NUTS. Corrigez-le en appliquant la **reparametrisation non-centree**.
 
-**Objectif** : eliminer les divergences en reformulant le modele.
+**Objectif** : eliminer les divergences en reformulant le modèle.
 
 **Indices** :
 - Remplacer `theta ~ Normal(mu_groupe, sigma_groupe)` par :
   `theta_offset ~ Normal(0, 1)` puis `theta = mu_groupe + sigma_groupe * theta_offset`
-- Utiliser `pm.Deterministic` pour declarer theta comme variable derivee
+- utiliser `pm.Deterministic` pour declarer theta comme variable dérivée
 - Echantillonner avec `target_accept=0.95`
-- Verifier que le nombre de divergences est 0 avec `trace.sample_stats[""diverging""].sum()`",,,,,,,,28b0a17d8110e097,,,,,,,
+- vérifier que le nombre de divergences est 0 avec `trace.sample_stats[""diverging""].sum()`",,,,,,,,50ad891267e4de9e,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,22538dbb,code,fr,22cf86b559c1a831,"# TODO etudiant : reparametriser un modele hierarchique avec entonnoir
 # Le modele ci-dessous a un probleme de funnel (divergences)
 # Corrigez-le en utilisant la reparametrisation non-centree
@@ -6645,38 +6645,38 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,22538dbb,code,fr,22cf86b559
 
 result = None  # TODO etudiant : remplacer par le modele reparametrise
 print(""Exercice a completer"")",,,,,,,,22cf86b559c1a831,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f9d4a6d8,markdown,fr,e31d1bbf0a5e698f,"### La reparametrisation non-centree
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,f9d4a6d8,markdown,fr,5de5f3261d4f211f,"### La reparametrisation non-centree
 
-Le probleme de l'entonnoir est un cas classique. Quand la variance d'un parametre depend d'un autre, NUTS peut ""diverger"" dans les regions etroites de l'entonnoir.
+Le problème de l'entonnoir est un cas classique. Quand la variance d'un paramètre dépend d'un autre, NUTS peut ""diverger"" dans les regions etroites de l'entonnoir.
 
-> **Origine** : L'entonnoir (*funnel*) est decrit par Neal (2003), *Slice sampling*, Annals of Statistics 31(3), et applique aux modeles hierarchiques par Betancourt & Girolami (2015), *Hamiltonian Monte Carlo for hierarchical models*, JRSS C 64(1). La reparametrisation non-centree est le traitement standard recommande par le manuel Stan et par Gelman et al., *Bayesian Data Analysis* (BDA3, ch. 5).
+> **Origine** : L'entonnoir (*funnel*) est decrit par Neal (2003), *Slice sampling*, Annals of Statistics 31(3), et applique aux modèles hierarchiques par Betancourt & Girolami (2015), *Hamiltonian Monte Carlo for hierarchical models*, JRSS C 64(1). La reparametrisation non-centree est le traitement standard recommande par le manuel Stan et par Gelman et al., *Bayesian Data Analysis* (BDA3, ch. 5).
 
 Les solutions incluent :
 
 | Solution | Avantage | Inconvenient |
 |----------|----------|--------------|
 | Reparametrisation non-centree | Elimine souvent les divergences | Necessite de reflechir a la geometrie |
-| Augmenter `target_accept` | Simple a implementer | Ralentit l'echantillonnage |
-| Changer de parametrisation | Peut simplifier la geometrie | Specifique au modele |",,,,,,,,e31d1bbf0a5e698f,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,7f697f0e,markdown,fr,8f42a228d3cbaa18,"## 3. Comparaison des Algorithmes d'Inference
+| Augmenter `target_accept` | Simple a implementer | Ralentit l'échantillonnage |
+| Changer de parametrisation | Peut simplifier la geometrie | spécifique au modèle |",,,,,,,,5de5f3261d4f211f,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,7f697f0e,markdown,fr,ebf3da20990ca658,"## 3. Comparaison des Algorithmes d'Inférence
 
 ### Quand utiliser quel algorithme ?
 
 | Algorithme | Forces | Faiblesses | Usage recommande |
 |------------|--------|------------|------------------|
-| **NUTS** | Autonome, bon pour modeles continus | Lent pour grands modeles | Defaut, modeles avec ~10-100 parametres |
-| **ADVI** | Rapide, passe a l'echelle | Approximation gaussienne, sous-estime l'incertitude | Grands modeles, prototype rapide |
-| **Metropolis** | Simple | Autocorrelation elevee, necessite tuning | Modeles discrets, verification |
+| **NUTS** | Autonome, bon pour modèles continus | lent pour grands modèles | Defaut, modèles avec ~10-100 paramètres |
+| **ADVI** | rapide, passe a l'échelle | Approximation gaussienne, sous-estime l'incertitude | Grands modèles, prototype rapide |
+| **Metropolis** | Simple | Autocorrelation élevée, necessite tuning | modèles discrets, vérification |
 
-> **References algorithmiques** : NUTS - Hoffman & Gelman (2014), *The No-U-Turn Sampler*, JMLR 15. ADVI (mean-field) - Kucukelbir, Ranganath, Gelman & Blei (2017), *Automatic variational inference in Stan*, JMLR 18 (analyse la sous-estimation de l'incertitude due a la factorisation). Metropolis-Hastings - Hastings (1970), Biometrika 57(1).",,,,,,,,8f42a228d3cbaa18,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9a6f1cae,markdown,fr,06a59b196bfaf452,"La cellule suivante compare NUTS et ADVI sur un probleme simple d'estimation de moyenne avec variance inconnue.
+> **références algorithmiques** : NUTS - Hoffman & Gelman (2014), *The No-U-Turn Sampler*, JMLR 15. ADVI (mean-field) - Kucukelbir, Ranganath, Gelman & Blei (2017), *Automatic variational inférence in Stan*, JMLR 18 (analyse la sous-estimation de l'incertitude due a la factorisation). Metropolis-Hastings - Hastings (1970), Biometrika 57(1).",,,,,,,,ebf3da20990ca658,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9a6f1cae,markdown,fr,1c259ca7219713ff,"La cellule suivante compare NUTS et ADVI sur un problème simple d'estimation de moyenne avec variance inconnue.
 
 **Configuration du test** :
 - 6 observations autour de 2.0
 - Prior vague sur la moyenne : Normal(0, 100)
 - Prior sur l'ecart-type : HalfNormal(10)
 
-Ce type de modele (donnees gaussiennes avec parametres inconnus) est un cas classique ou NUTS et ADVI donnent des resultats comparables mais avec des niveaux d'incertitude differents.",,,,,,,,06a59b196bfaf452,,,,,,,
+Ce type de modèle (données gaussiennes avec paramètres inconnus) est un cas classique ou NUTS et ADVI donnent des résultats comparables mais avec des niveaux d'incertitude differents.",,,,,,,,1c259ca7219713ff,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,b51fae2c,code,fr,ed0e31d48178a2ca,"# Comparaison NUTS vs ADVI sur un modele simple
 
 print(""=== Comparaison NUTS vs ADVI ==="")
@@ -6719,39 +6719,39 @@ print(f""  ADVI : mean = {advi_mean.mean():.3f}, std = {advi_mean.std():.4f}"")
 print()
 print(""Note : ADVI tend a avoir une variance plus faible (sous-estime l'incertitude)"")
 print(""       car il approxime par une distribution gaussienne factorisee."")",,,,,,,,ed0e31d48178a2ca,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,565c2293,markdown,fr,3b06f5d0b8346067,"**Interpretation des resultats NUTS vs ADVI** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,565c2293,markdown,fr,d97433243d504661,"**interprétation des résultats NUTS vs ADVI** :
 
-Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique), mais avec des caracteristiques differentes :
+Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique), mais avec des caractéristiques differentes :
 
-| Metrique | NUTS | ADVI | Interpretation |
+| Metrique | NUTS | ADVI | interprétation |
 |----------|------|------|----------------|
-| Moyenne posterieure | ~2.05 | ~2.05 | Accord sur l'estimation ponctuelle |
-| Ecart-type posterieur | ~0.13 (observe) | ~1.00 (observe) | Sur cet exemple n=6, ADVI deplace sa moyenne (1.56 vs 2.04) et sa variance marginale est plus large - voir note ci-dessous |
+| Moyenne postérieure | ~2.05 | ~2.05 | Accord sur l'estimation ponctuelle |
+| Ecart-type postérieur | ~0.13 (observe) | ~1.00 (observe) | Sur cet exemple n=6, ADVI deplace sa moyenne (1.56 vs 2.04) et sa variance marginale est plus large - voir note ci-dessous |
 
 > **Pourquoi ADVI sous-estime l'incertitude ?**
 > 
-> ADVI (Automatic Differentiation Variational Inference, Kucukelbir et al. 2017) approxime le posterior par une distribution gaussienne factorisee (""mean-field""). Cette hypothese d'independance ignore les correlations entre variables, ce qui conduit **en general (asymptotiquement)** a des posteriors trop ""confiants"" (variance sous-estimee).
+> ADVI (Automatic Differentiation Variational inférence, Kucukelbir et al. 2017) approxime le posterior par une distribution gaussienne factorisee (""mean-field""). Cette hypothese d'indépendance ignore les corrélations entre variables, ce qui conduit **en général (asymptotiquement)** a des posteriors trop ""confiants"" (variance sous-estimee).
 >
-> **Sur ce petit exemple (n=6)** : l'output montre l'inverse - `ADVI: std=0.9984` vs `NUTS: std=0.1321`. La cause est qu'ADVI deplace sa moyenne (1.56 vs 2.04) sur aussi peu de donnees, ce qui gonfle la variance marginale. Ce cas illustre que la sous-estimation ADVI est une **tendance asymptotique**, pas une garantie sur chaque run. Pour un diagnostic fiable, utiliser un plus grand n ou comparer les intervalles de prediction.
+> **Sur ce petit exemple (n=6)** : l'output montre l'inverse - `ADVI: std=0.9984` vs `NUTS: std=0.1321`. La cause est qu'ADVI deplace sa moyenne (1.56 vs 2.04) sur aussi peu de données, ce qui gonfle la variance marginale. Ce cas illustre que la sous-estimation ADVI est une **tendance asymptotique**, pas une garantie sur chaque run. Pour un diagnostic fiable, utiliser un plus grand n ou comparer les intervalles de prediction.
 >
-> NUTS (No-U-Turn Sampler) echantillonne directement du posterior, capturant les correlations et produisant des estimations d'incertitude plus fiables.
+> NUTS (No-U-Turn Sampler) echantillonne directement du posterior, capturant les corrélations et produisant des estimations d'incertitude plus fiables.
 
 **Quand cela importe** : La sous-estimation de l'incertitude par ADVI peut etre problematique pour :
 - La prise de decision sous incertitude
 - Les intervalles de prediction
-- La propagation de l'incertitude dans des modeles hierarchiques",,,,,,,,3b06f5d0b8346067,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8d8cbdfe,markdown,fr,f431dcd8726ca8c7,"## 4. Outils de Diagnostic avec ArviZ
+- La propagation de l'incertitude dans des modèles hierarchiques",,,,,,,,d97433243d504661,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8d8cbdfe,markdown,fr,ce8b44c979cf7943,"## 4. Outils de Diagnostic avec ArviZ
 
 ### 4.1 Indicateurs cles
 
 | Indicateur | Seuil acceptable | Signification |
 |------------|------------------|---------------|
-| `R-hat` | < 1.01 | Convergence des chaines |
-| `ESS (bulk)` | > 400 | Taille effective de l'echantillon |
-| `ESS (tail)` | > 400 | Qualite des quantiles extremes |
-| Divergences | 0 | Qualite de l'echantillonnage |
+| `R-hat` | < 1.01 | convergence des chaines |
+| `ESS (bulk)` | > 400 | Taille effective de l'échantillon |
+| `ESS (tail)` | > 400 | Qualite des quantiles extrêmes |
+| divergences | 0 | Qualite de l'échantillonnage |
 
-> **Source des seuils** : Les valeurs `R-hat < 1.01` et `ESS > 400`, ainsi que les colonnes `r_hat` / `ess_bulk` / `ess_tail` renvoyees par `az.summary()`, suivent la **version moderne rank-normalisee** de Vehtari, Gelman, Simpson, Carpenter & Burkner (2021), *Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC*, Bayesian Analysis 16(2), doi:10.1214/20-BA1221. Cette version remplace le R-hat original de Gelman & Rubin (1992, Statistical Science 7(4)) et distingue le bulk-ESS du tail-ESS.",,,,,,,,f431dcd8726ca8c7,,,,,,,
+> **Source des seuils** : Les valeurs `R-hat < 1.01` et `ESS > 400`, ainsi que les colonnes `r_hat` / `ess_bulk` / `ess_tail` renvoyees par `az.summary()`, suivent la **version moderne rank-normalisee** de Vehtari, Gelman, Simpson, Carpenter & Burkner (2021), *Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC*, Bayesian Analysis 16(2), doi:10.1214/20-BA1221. Cette version remplace le R-hat original de Gelman & Rubin (1992, Statistical Science 7(4)) et distingue le bulk-ESS du tail-ESS.",,,,,,,,ce8b44c979cf7943,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a162ffb1,code,fr,42e40d1757fde56f,"# Demonstration des outils de diagnostic
 
 print(""=== Outils de Diagnostic ==="")
@@ -6787,7 +6787,7 @@ print(f""  Divergences : {n_div} {'OK' if n_div == 0 else 'PROBLEME'}"")
 print()
 print(f""Resultat : mu ~ Normal(mean={trace_debug.posterior['mu'].mean().values:.2f}, ""
       f""std={trace_debug.posterior['mu'].std().values:.2f})"")",,,,,,,,42e40d1757fde56f,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8513ab02,markdown,fr,44c07f1ff2a5c771,"**Interpretation du resultat** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8513ab02,markdown,fr,4895265e5ac99d77,"**interprétation du résultat** :
 
 Le posterior de `mu` resulte de la mise a jour bayesienne :
 
@@ -6795,19 +6795,19 @@ $$\mu_{\text{post}} = \frac{\tau_{\text{prior}} \cdot \mu_{\text{prior}} + \tau_
 
 $$\sigma^2_{\text{post}} = \frac{1}{\tau_{\text{prior}} + \tau_{\text{likelihood}}} = \frac{1}{2} = 0.5$$
 
-Ou $\tau = 1/\sigma^2$ represente la precision. Le posterior est exactement a mi-chemin entre le prior (0) et l'observation (5), car les deux ont la meme precision.",,,,,,,,44c07f1ff2a5c771,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,bcec3882,markdown,fr,0bcd78efbda1d8a4,"### 4.2 Visualisation des traces et diagnostics
+Ou $\tau = 1/\sigma^2$ représente la precision. Le posterior est exactement a mi-chemin entre le prior (0) et l'observation (5), car les deux ont la même precision.",,,,,,,,4895265e5ac99d77,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,bcec3882,markdown,fr,a1f8a9d6b009eca9,"### 4.2 Visualisation des traces et diagnostics
 
 ArviZ propose plusieurs visualisations essentielles :
 
 | Visualisation | Usage |
 |---------------|-------|
-| `plot_trace()` | Verifier le melange des chaines et la forme des posteriors |
-| `plot_energy()` | Verifier la qualite de l'echantillonnage NUTS |
-| `plot_rank()` | Detecter les biais d'echantillonnage |
-| `plot_pair()` | Identifier les correlations entre parametres |
+| `plot_trace()` | vérifier le melange des chaines et la forme des posteriors |
+| `plot_energy()` | vérifier la qualite de l'échantillonnage NUTS |
+| `plot_rank()` | détecter les biais d'échantillonnage |
+| `plot_pair()` | identifier les corrélations entre paramètres |
 
-> **Cadre methodologique** : Ces visualisations s'inscrivent dans le *workflow bayesien* de Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian workflow*, JRSS C 68(2), doi:10.1111/rssc.12346, et de Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808. `plot_rank()` implemente les *rank plots* de Vehtari et al. (2021).",,,,,,,,0bcd78efbda1d8a4,,,,,,,
+> **Cadre methodologique** : Ces visualisations s'inscrivent dans le *workflow bayesien* de Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian workflow*, JRSS C 68(2), doi:10.1111/rssc.12346, et de Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808. `plot_rank()` implemente les *rank plots* de Vehtari et al. (2021).",,,,,,,,a1f8a9d6b009eca9,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,86a0797a,code,fr,1dc310a3b0ecaecd,"# Demonstration de la visualisation des diagnostics
 
 print(""=== Visualisation des diagnostics ==="")
@@ -6835,23 +6835,23 @@ summary_hier = az.summary(trace_hier, var_names=[""hyper_mean"", ""hyper_sigma""
 print("""")
 print(""Resume du modele hierarchique :"")
 print(summary_hier[['mean', 'sd', 'ess_bulk', 'r_hat']])",,,,,,,,1dc310a3b0ecaecd,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,93bd1e0e,markdown,fr,653098c4e11e1c19,"### Comment interpreter les diagnostics ?
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,93bd1e0e,markdown,fr,362f7fdf71f13b03,"### Comment interpréter les diagnostics ?
 
 | Element | Bon signe | Mauvais signe |
 |---------|-----------|---------------|
-| **Trace** | Bruit uniforme, pas de tendance | Motifs periodiques, chaines separees |
+| **Trace** | Bruit uniforme, pas de tendance | Motifs periodiques, chaines séparées |
 | **R-hat** | < 1.01 | > 1.01 (chaines non convergees) |
-| **ESS** | > 400 | < 400 (echantillon inefficace) |
-| **Divergences** | 0 | > 0 (echantillonnage douteux) |
+| **ESS** | > 400 | < 400 (échantillon inefficace) |
+| **divergences** | 0 | > 0 (échantillonnage douteux) |
 
-> **Utilite pour le debugging** :
+> **utilité pour le debugging** :
 > 
-> Les visualisations ArviZ permettent de verifier que :
+> Les visualisations ArviZ permettent de vérifier que :
 > 1. Les chaines sont bien melangees (trace plots)
 > 2. Les posteriors ont des formes raisonnables
-> 3. Il n'y a pas de divergences qui indiqueraient un probleme de geometrie
-> 4. L'ESS est suffisant pour des estimations fiables",,,,,,,,653098c4e11e1c19,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,607ab2fb,markdown,fr,0bdfd495cd7c6e8b,"## 5. Bonnes Pratiques de Modelisation
+> 3. Il n'y a pas de divergences qui indiqueraient un problème de geometrie
+> 4. L'ESS est suffisant pour des estimations fiables",,,,,,,,362f7fdf71f13b03,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,607ab2fb,markdown,fr,979c356e037578b9,"## 5. Bonnes Pratiques de Modelisation
 
 ### 5.1 Nommage et organisation
 
@@ -6860,7 +6860,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,607ab2fb,markdown,fr,0bdfd4
 with pm.Model() as model:
     capacite_etudiant = pm.Normal(""capacite_etudiant"", mu=0, sigma=1, shape=n_etudiants)
 
-# MAUVAIS : Noms generiques
+# MAUVAIS : Noms génériques
 with pm.Model() as model:
     x = pm.Normal(""x"", mu=0, sigma=1)
 ```
@@ -6871,17 +6871,17 @@ with pm.Model() as model:
 |-----------|------------------|----------------------|
 | Moyenne inconnue | Normal large | `pm.Normal(""x"", mu=0, sigma=100)` |
 | Ecart-type inconnu | HalfNormal ou HalfCauchy | `pm.HalfNormal(""sigma"", sigma=10)` |
-| Probabilite | Beta ou Uniform | `pm.Beta(""p"", alpha=1, beta=1)` |
-| Poids melange | Dirichlet | `pm.Dirichlet(""w"", a=np.ones(k))` |",,,,,,,,0bdfd495cd7c6e8b,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,6edacfe6,markdown,fr,2e4b62521f2e6c5a,"### Demonstration de l'impact des priors
+| probabilité | Beta ou Uniform | `pm.Beta(""p"", alpha=1, beta=1)` |
+| Poids melange | Dirichlet | `pm.Dirichlet(""w"", a=np.ones(k))` |",,,,,,,,979c356e037578b9,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,6edacfe6,markdown,fr,48f95f15e7bd81e4,"### Demonstration de l'impact des priors
 
-Le choix des priors est souvent la source principale de problemes en programmation probabiliste. Un prior mal choisi peut :
+Le choix des priors est souvent la source principale de problèmes en programmation probabiliste. Un prior mal choisi peut :
 
-1. **Rendre l'inference impossible** : si l'observation a probabilite nulle sous le prior
-2. **Biaiser les resultats** : si le prior ""domine"" les donnees
-3. **Ralentir la convergence** : si le prior est tres different des donnees
+1. **Rendre l'inférence impossible** : si l'observation a probabilité nulle sous le prior
+2. **Biaiser les résultats** : si le prior ""domine"" les données
+3. **Ralentir la convergence** : si le prior est très different des données
 
-La cellule suivante illustre l'impact de differents priors Beta sur l'estimation d'une probabilite binomiale avec seulement 5 observations.",,,,,,,,2e4b62521f2e6c5a,,,,,,,
+La cellule suivante illustre l'impact de differents priors Beta sur l'estimation d'une probabilité binomiale avec seulement 5 observations.",,,,,,,,48f95f15e7bd81e4,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,0e2648db,code,fr,cf2aba0728954eb3,"# Demonstration de l'importance des priors
 
 print(""=== Impact du choix des Priors ==="")
@@ -6916,9 +6916,9 @@ for nom, a, b in priors:
 
 print()
 print(""Observation : Le prior influence le posterior, surtout avec peu de donnees."")",,,,,,,,cf2aba0728954eb3,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5993b7ed,markdown,fr,e43f25f9643840d9,"**Analyse detaillee des resultats** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5993b7ed,markdown,fr,63ca54c6adee10cb,"**Analyse detaillee des résultats** :
 
-| Prior | Alpha | Beta | Moyenne prior | Moyenne posterieure attendue | Ecart au MLE |
+| Prior | Alpha | Beta | Moyenne prior | Moyenne postérieure attendue | Ecart au MLE |
 |-------|-------|------|---------------|------------------------------|--------------|
 | Uniforme | 1 | 1 | 0.500 | 0.571 | -0.029 |
 | Centre | 2 | 2 | 0.500 | 0.556 | -0.044 |
@@ -6927,40 +6927,40 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5993b7ed,markdown,fr,e43f25
 
 Le posterior Beta suit la formule analytique :
 
-$$p \mid \text{data} \sim \text{Beta}(\alpha + \text{succes}, \beta + \text{echecs})$$
+$$p \mid \text{data} \sim \text{Beta}(\alpha + \text{succes}, \beta + \text{échecs})$$
 
-$$\mathbb{E}[p \mid \text{data}] = \frac{\alpha + \text{succes}}{\alpha + \beta + \text{succes} + \text{echecs}}$$
+$$\mathbb{E}[p \mid \text{data}] = \frac{\alpha + \text{succes}}{\alpha + \beta + \text{succes} + \text{échecs}}$$
 
-> **Interpretation bayesienne** :
+> **interprétation bayesienne** :
 > 
-> - Le prior **uniforme** (Beta(1,1)) est le plus ""neutre"" et donne un resultat proche du MLE
+> - Le prior **uniforme** (Beta(1,1)) est le plus ""neutre"" et donne un résultat proche du MLE
 > - Les priors **centres** (Beta(2,2) et Beta(5,5)) ""tirent"" le posterior vers 0.5
-> - Le prior **biaise** (Beta(8,2)) domine les observations et maintient une estimation elevee
+> - Le prior **biaise** (Beta(8,2)) domine les observations et maintient une estimation élevée
 >
-> La force de l'effet du prior depend du ratio entre les pseudo-observations du prior ($\alpha + \beta$) et les observations reelles (5 dans cet exemple).",,,,,,,,e43f25f9643840d9,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a40e9009,markdown,fr,015265970efe9e36,"## 6. Checklist de Debugging
+> La force de l'effet du prior dépend du ratio entre les pseudo-observations du prior ($\alpha + \beta$) et les observations réelles (5 dans cet exemple).",,,,,,,,63ca54c6adee10cb,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a40e9009,markdown,fr,575f6b978434aa5a,"## 6. Checklist de Debugging
 
-Quand votre modele ne fonctionne pas, verifiez :
+Quand votre modèle ne fonctionne pas, verifiez :
 
-**Etape 1 : Verification du Modele**
+**étape 1 : vérification du modèle**
 - [ ] Les dimensions des variables sont correctes (shape, coords)
 - [ ] Les observations sont dans le support du prior
-- [ ] Les distributions sont bien specifiees (parametres corrects)
-- [ ] Les `observed` sont bien des donnees et non des variables
+- [ ] Les distributions sont bien spécifiées (paramètres corrects)
+- [ ] Les `observed` sont bien des données et non des variables
 
-**Etape 2 : Verification de l'Inference**
-- [ ] R-hat < 1.01 pour tous les parametres
-- [ ] ESS bulk > 400 pour tous les parametres
+**étape 2 : vérification de l'inférence**
+- [ ] R-hat < 1.01 pour tous les paramètres
+- [ ] ESS bulk > 400 pour tous les paramètres
 - [ ] Pas de divergences
-- [ ] Le nombre d'iterations est suffisant
+- [ ] Le nombre d'itérations est suffisant
 
-**Etape 3 : Verification des Resultats**
+**étape 3 : vérification des résultats**
 - [ ] Les posteriors ne sont pas degenerees (variance > 0)
 - [ ] Les moyennes sont dans des plages raisonnables
-- [ ] Les predictions sur donnees connues sont correctes",,,,,,,,015265970efe9e36,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9dcde343,markdown,fr,5cec4762a0834add,"### 6.1 Fonctions de diagnostic automatisees
+- [ ] Les predictions sur données connues sont correctes",,,,,,,,575f6b978434aa5a,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9dcde343,markdown,fr,ace61f026dbb0404,"### 6.1 Fonctions de diagnostic automatisees
 
-Plutot que d'inspecter manuellement chaque posterior, il est recommande de creer des fonctions de diagnostic reutilisables. La fonction ci-dessous verifie automatiquement les conditions de sante d'un trace pour tous les parametres.",,,,,,,,5cec4762a0834add,,,,,,,
+Plutot que d'inspecter manuellement chaque posterior, il est recommande de creer des fonctions de diagnostic reutilisables. La fonction ci-dessous vérifie automatiquement les conditions de sante d'un trace pour tous les paramètres.",,,,,,,,ace61f026dbb0404,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5256a0c7,code,fr,c6b190e254076f21,"# Fonction utilitaire de diagnostic complet
 
 def diagnose_trace(idata, var_names=None):
@@ -7015,20 +7015,20 @@ with pm.Model() as model_diag:
     )
 
 diagnose_trace(trace_diag)",,,,,,,,c6b190e254076f21,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5f9fed59,markdown,fr,521a6149fcad846a,"## Exercice 3 : Diagnostic de convergence
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,5f9fed59,markdown,fr,6e3623d3b54bb632,"## Exercice 3 : Diagnostic de convergence
 
-Le modele ci-dessous est volontairement mal parametrise avec des priors
+Le modèle ci-dessous est volontairement mal parametrise avec des priors
 trop etroits. Votre mission : utiliser les outils ArviZ pour identifier
-precisement le probleme et proposer une correction.
+precisement le problème et proposer une correction.
 
 **Objectif** : mettre en pratique les diagnostics R-hat, ESS et divergences.
 
 **Indices** :
-- Echantillonner le modele avec `pm.sample(2000, chains=4)`
-- Utiliser `az.summary()` pour examiner R-hat et ESS de chaque parametre
-- Utiliser `az.plot_trace()` pour verifier visuellement le melange des chaines
-- Le probleme : les observations (moyenne ~5) sont bien loin du prior (mu=0, sigma=0.1)
-- La correction : elargir les priors (par ex. sigma=10 au lieu de 0.1)",,,,,,,,521a6149fcad846a,,,,,,,
+- Echantillonner le modèle avec `pm.sample(2000, chains=4)`
+- utiliser `az.summary()` pour examiner R-hat et ESS de chaque paramètre
+- utiliser `az.plot_trace()` pour vérifier visuellement le melange des chaines
+- Le problème : les observations (moyenne ~5) sont bien loin du prior (mu=0, sigma=0.1)
+- La correction : elargir les priors (par ex. sigma=10 au lieu de 0.1)",,,,,,,,6e3623d3b54bb632,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,fdc5e10e,code,fr,24d280625d334703,"# TODO etudiant : analyser un trace et diagnostiquer les problemes de convergence
 # Le modele ci-dessous est volontairement mal parametrise.
 # Utilisez les outils ArviZ pour identifier les problemes.
@@ -7046,44 +7046,44 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,fdc5e10e,code,fr,24d280625d
 
 result = None  # TODO etudiant : remplacer par le diagnostic et la correction
 print(""Exercice a completer"")",,,,,,,,24d280625d334703,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c441d144,markdown,fr,588f6498a2da65e7,"**Interpretation des diagnostics** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c441d144,markdown,fr,efe666a7ddc5ba13,"**interprétation des diagnostics** :
 
-La fonction `diagnose_trace` verifie les conditions de sante du posterior :
+La fonction `diagnose_trace` vérifie les conditions de sante du posterior :
 
 | Condition | Seuil | Signification si viole |
 |-----------|-------|------------------------|
 | R-hat > 1.01 | 1.01 | Chaines non convergees |
-| ESS bulk < 400 | 400 | Echantillon trop petit pour des estimations fiables |
-| Divergences > 0 | 0 | Echantillonnage douteux dans certaines regions |
+| ESS bulk < 400 | 400 | échantillon trop petit pour des estimations fiables |
+| divergences > 0 | 0 | échantillonnage douteux dans certaines regions |
 
-> **Bonne pratique** : Integrez ces diagnostics dans vos pipelines d'inference pour detecter automatiquement les cas problematiques, surtout dans les modeles complexes avec de nombreuses variables latentes.
+> **Bonne pratique** : Integrez ces diagnostics dans vos pipelines d'inférence pour détecter automatiquement les cas problematiques, surtout dans les modèles complexes avec de nombreuses variables latentes.
 
 ---
 
 ## Tableau recapitulatif des concepts
 
-| Concept | Description | Application au debugging |
+| Concept | description | Application au debugging |
 |---------|-------------|--------------------------|
-| **Divergences** | Indicateur de probleme d'echantillonnage NUTS | Verifier la parametrisation, augmenter target_accept |
+| **divergences** | Indicateur de problème d'échantillonnage NUTS | vérifier la parametrisation, augmenter target_accept |
 | **R-hat** | Statistique de convergence des chaines | Doit etre < 1.01 |
-| **ESS** | Taille effective de l'echantillon | Doit etre > 400 pour des estimations fiables |
+| **ESS** | Taille effective de l'échantillon | Doit etre > 400 pour des estimations fiables |
 | **NUTS** | No-U-Turn Sampler | Algorithme par defaut, autonome mais lent |
-| **ADVI** | Variational inference automatique | Rapide mais sous-estime l'incertitude |
-| **Trace plot** | Visualisation des chaines MCMC | Verifier le melange et la convergence |
+| **ADVI** | Variational inférence automatique | rapide mais sous-estime l'incertitude |
+| **Trace plot** | Visualisation des chaines MCMC | vérifier le melange et la convergence |
 
-### Distributions utilisees dans ce notebook
+### Distributions utilisées dans ce notebook
 
-| Distribution | Parametres | Usage typique |
+| Distribution | paramètres | Usage typique |
 |--------------|------------|---------------|
-| **Normal** | (mu, sigma) | Variables continues, moyennes |
+| **Normal** | (mu, sigma) | variables continues, moyennes |
 | **HalfNormal** | (sigma,) | Ecarts-types, variances (positifs) |
-| **Beta** | (alpha, beta) | Probabilites binomiales, proportions |
-| **Binomial** | (n, p) | Comptages de succes |",,,,,,,,588f6498a2da65e7,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,098d43bf,markdown,fr,8c0e3b445bb3e005,"## 7. Exemple guide : Debugger un Modele
+| **Beta** | (alpha, beta) | probabilités binomiales, proportions |
+| **Binomial** | (n, p) | Comptages de succes |",,,,,,,,efe666a7ddc5ba13,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,098d43bf,markdown,fr,f2a5ea02938696dd,"## 7. Exemple guide : Debugger un Modèle
 
 ### Enonce
 
-Le modele ci-dessous est deja corrige. Il montre comment specifier correctement un modele d'estimation.",,,,,,,,8c0e3b445bb3e005,,,,,,,
+Le modèle ci-dessous est deja corrige. Il montre comment spécifier correctement un modèle d'estimation.",,,,,,,,f2a5ea02938696dd,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c1b60f75,code,fr,59570c4db5d1baca,"# Exemple guide : Modele d'estimation bien specifie
 
 print(""=== Exemple : Modele bien specifie ==="")
@@ -7113,7 +7113,7 @@ n_div = int(trace_corrige.sample_stats[""diverging""].sum().values)
 print(f""  Divergences : {n_div}"")
 print(f""  R-hat max : {float(summary_corrige['r_hat'].max()):.4f}"")
 print(f""  ESS bulk min : {float(summary_corrige['ess_bulk'].min()):.0f}"")",,,,,,,,59570c4db5d1baca,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,d8874600,markdown,fr,667afef1697bf54d,A votre tour : identifiez les problemes dans le modele suivant.,,,,,,,,667afef1697bf54d,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,d8874600,markdown,fr,b112c6baa253f39f,A votre tour : identifiez les problèmes dans le modèle suivant.,,,,,,,,b112c6baa253f39f,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a4e92b89,code,fr,739e93b4891415d0,"# Exemple guide : Trouvez les problemes dans ce modele
 
 print(""=== Exercice : Debugger ce modele ==="")
@@ -7149,39 +7149,39 @@ print(""3. Parametrisation claire avec noms explicites"")
 print()
 print(f""Resultats : moyenne ~ {trace_ex.posterior['moyenne'].mean().values:.1f}, ""
       f""sigma ~ {trace_ex.posterior['sigma'].mean().values:.1f}"")",,,,,,,,739e93b4891415d0,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,818b9439,markdown,fr,5c00498e5da6629f,"**Analyse des corrections** :
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,818b9439,markdown,fr,fe0d3d98d13237bd,"**Analyse des corrections** :
 
-| Probleme original | Consequence | Correction appliquee |
+| problème original | Consequence | Correction appliquée |
 |-------------------|-------------|----------------------|
 | sigma=0.01 sur le prior | Prior concentre autour de 0 (ecart-type ~0.01) | sigma=50 (ecart-type large) |
-| Normal pour l'ecart-type | Peut generer des valeurs negatives (invalides) | HalfNormal (strictement positif) |
-| Variables anonymes | Difficulte a interpreter les resultats | Nommage explicite |
+| Normal pour l'ecart-type | Peut générer des valeurs negatives (invalides) | HalfNormal (strictement positif) |
+| variables anonymes | Difficulte a interpréter les résultats | Nommage explicite |
 
-Le resultat corrige montre :
+Le résultat corrige montre :
 - **Moyenne ~50** : proche de l'observation car le prior est large
-- **Sigma** : estime avec incertitude a partir d'une seule observation",,,,,,,,5c00498e5da6629f,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c47c65da,markdown,fr,d662d186a3859490,"### Points cles a retenir
+- **Sigma** : estime avec incertitude a partir d'une seule observation",,,,,,,,fe0d3d98d13237bd,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c47c65da,markdown,fr,864d6eb7b34a5b07,"### Points cles a retenir
 
-> **Strategie de debugging en 3 etapes** :
+> **stratégie de debugging en 3 étapes** :
 >
-> 1. **Verifier le support** : Les observations sont-elles probables sous le prior ?
-> 2. **Verifier les diagnostics** : R-hat < 1.01, ESS > 400, 0 divergences
-> 3. **Verifier les posteriors** : Variance raisonnable ? Moyennes plausibles ?
+> 1. **vérifier le support** : Les observations sont-elles probables sous le prior ?
+> 2. **vérifier les diagnostics** : R-hat < 1.01, ESS > 400, 0 divergences
+> 3. **vérifier les posteriors** : variance raisonnable ? Moyennes plausibles ?
 
-La plupart des problemes d'inference proviennent de :
-- **Priors mal specifies** (trop etroits, mauvais support)
-- **Mauvaise parametrisation** (entonnoir, correlations fortes)
-- **Modele trop complexe** (simplifier d'abord, complexifier ensuite)
+La plupart des problèmes d'inférence proviennent de :
+- **Priors mal spécifiés** (trop etroits, mauvais support)
+- **Mauvaise parametrisation** (entonnoir, corrélations fortes)
+- **modèle trop complexe** (simplifier d'abord, complexifier ensuite)
 
----",,,,,,,,d662d186a3859490,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,b079e7cb729e9cbc,"## 8. Resume
+---",,,,,,,,864d6eb7b34a5b07,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,7214460dc113d26f,"## 8. Resume
 
-| Probleme | Symptome | Solution |
+| problème | Symptome | Solution |
 |----------|----------|----------|
 | **Prior trop etroit** | BadInitialEnergy ou posterior etroit | Elargir le prior |
-| **Divergences** | sample_stats['diverging'] > 0 | Reparametriser ou augmenter target_accept |
-| **R-hat > 1.01** | Chaines non convergees | Plus d'iterations ou reparametriser |
-| **ESS faible** | Estimations peu fiables | Plus d'iterations ou thinning |
+| **divergences** | sample_stats['diverging'] > 0 | Reparametriser ou augmenter target_accept |
+| **R-hat > 1.01** | Chaines non convergees | Plus d'itérations ou reparametriser |
+| **ESS faible** | Estimations peu fiables | Plus d'itérations ou thinning |
 
 ---
 
@@ -7189,7 +7189,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,b079e7
 
 **Logiciels** :
 - PyMC : Salvatier, Wiecki & Fonnesbeck (2016), *Probabilistic programming in Python using PyMC*, PeerJ Computer Science 2:e55. [Documentation](https://www.pymc.io/projects/docs/en/stable/)
-- ArviZ : Kumar, Carroll, Hartikainen & Martin (2019), *ArviZ: a unified library for exploratory analysis of Bayesian models in Python*, JOSS 4(33) 1143. [Diagnostics API](https://python.arviz.org/en/stable/api/diagnostics.html)
+- ArviZ : Kumar, Carroll, Hartikainen & Martin (2019), *ArviZ: a unified library for exploratory analysis of Bayesian models in Python*, JOSS 4(33) 1143. [diagnostics API](https://python.arviz.org/en/stable/api/diagnostics.html)
 
 **Papiers fondateurs (diagnostics MCMC)** :
 - Vehtari, Gelman, Simpson, Carpenter & Burkner (2021), *Rank-normalization, folding, and localization: An improved R-hat*, Bayesian Analysis 16(2), doi:10.1214/20-BA1221
@@ -7200,17 +7200,17 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,de9bcce9,markdown,fr,b079e7
 **Guides pratiques** :
 - [Guide de troubleshooting PyMC](https://www.pymc.io/projects/docs/en/stable/learn/core_notebooks/pymc_overview.html)
 
----",,,,,,,,b079e7cb729e9cbc,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,95970d75,markdown,fr,7c4fc8b3cb38e6c8,"## 9. Exercice : Deboguer un Modele Hierarchique
+---",,,,,,,,7214460dc113d26f,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,95970d75,markdown,fr,3a96501d9ee76550,"## 9. Exercice : Deboguer un Modèle Hierarchique
 
-Le modele ci-dessous tente d'estimer les moyennes de performance de 3 groupes, mais il contient **3 erreurs**. Identifiez et corrigez chaque erreur.
+Le modèle ci-dessous tente d'estimer les moyennes de performance de 3 groupes, mais il contient **3 erreurs**. Identifiez et corrigez chaque erreur.
 
 **Indices** :
 1. Un ecart-type doit etre strictement positif
 2. Les moyennes de groupe doivent dependre de la moyenne de population
 3. Chaque observation doit etre liee au bon groupe
 
-Corrigez le code et verifiez que les posteriors correspondent aux moyennes des groupes.",,,,,,,,7c4fc8b3cb38e6c8,,,,,,,
+Corrigez le code et verifiez que les posteriors correspondent aux moyennes des groupes.",,,,,,,,3a96501d9ee76550,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,3fb79ac6,code,fr,8924801049c02e4c,"# Exercice : Corriger ce modele hierarchique bayesien (3 erreurs)
 
 donnees_groupes = {
@@ -7232,13 +7232,13 @@ donnees_groupes = {
 
 print(""Exercice a completer : corrigez les 3 erreurs dans le modele hierarchique."")
 print(""Indices : ecarts-types positifs, lien population-groupe, bon indexage."")",,,,,,,,8924801049c02e4c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,3fef01be,markdown,fr,a525c5974124c9e1,"---
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,3fef01be,markdown,fr,1757fe1a3d622904,"---
 
-**Conclusion** : Ce notebook a couvert les outils de diagnostic MCMC (R-hat, ESS, divergences), la comparaison NUTS vs ADVI, et les bonnes pratiques de modelisation pour resoudre les problemes d'inference courants.
+**Conclusion** : Ce notebook a couvert les outils de diagnostic MCMC (R-hat, ESS, divergences), la comparaison NUTS vs ADVI, et les bonnes pratiques de modelisation pour résoudre les problèmes d'inférence courants.
 
 **Retour au sommaire** : [Index Probas](../README.md)
 
-**Navigation** : [<< PyMC-5](PyMC-5-Causal-Inference.ipynb) | [PyMC-7 >>](PyMC-7-Skills-IRT.ipynb)",,,,,,,,a525c5974124c9e1,,,,,,,
+**Navigation** : [<< PyMC-5](PyMC-5-Causal-Inference.ipynb) | [PyMC-7 >>](PyMC-7-Skills-IRT.ipynb)",,,,,,,,1757fe1a3d622904,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4a471023,markdown,fr,941aea9e67de5101,"# PyMC-7 : Modeles de Competences (IRT et DINA)
 
 **Navigation** : [Index](../README.md) | [<< PyMC-6](PyMC-6-Debugging.ipynb) | [PyMC-8 >>](PyMC-8-TrueSkill.ipynb)
