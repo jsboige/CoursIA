@@ -245,7 +245,10 @@ def scan(old_nb: dict, new_nb: dict):
 # Regex pour classifier une ligne de code modifiee.
 # Ordre : commentaire (ligne ou debut), litteral stdout (print/Console.WriteLine
 # avec chaine), sinon "autre" (structurel = identifiant potentiel ou logique).
-_LINE_COMMENT_RE = re.compile(r"^\s*(#|//|;;)")
+# Symetrie avec _STRIP_RE : doit reconnaitre les memes marqueurs de commentaire ligne,
+# y compris Lean `--` (c.610 : un Lean comment cure dans une cellule code modifiee est
+# canal `comment`, pas `other` — sinon la partition --scope sur-pondere la violation).
+_LINE_COMMENT_RE = re.compile(r"^\s*(#|//|;;|--)")
 _STDOUT_RE = re.compile(r"\b(print|Console\.Write(Line)?|System\.Console\.Write(Line)?)\s*\(")
 
 

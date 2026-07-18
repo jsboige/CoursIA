@@ -374,3 +374,15 @@ class TestRegressionCov:
         assert "strategie" not in ids  # dans le bloc /- -/
         assert "résultat" in ids or "resultat" in ids  # axiom résultat est structurel
         assert "axiom" in ids
+
+    def test_lean_comment_cure_classified_comment_canal(self):
+        # SYMETRIE _STRIP_RE / _LINE_COMMENT_RE (c.610) : un cure d'accent dans un
+        # commentaire Lean `--` d'une cellule code modifiee doit etre canal `comment`,
+        # pas `other`. Avant c.610, _LINE_COMMENT_RE manquait `--` -> Lean comments
+        # bucketes [other] (ambigu) au lieu de [comment] (canal le moins severe).
+        old = _nb([("code", "-- Profil de strategies mixtes\naxiom foo : Nat")])
+        new = _nb([("code", "-- Profil de stratégies mixtes\naxiom foo : Nat")])
+        viols, n_code, _ = cir.scan_scope(old, new)
+        assert n_code == 1
+        assert len(viols) == 1
+        assert viols[0]["canal"] == "comment"  # pas 'other'
