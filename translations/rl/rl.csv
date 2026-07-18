@@ -2682,7 +2682,7 @@ Avec cela, vous disposez d’une base solide pour traiter des tâches plus compl
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
 ",,,,,,,,2179bfb2317b9f93,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,9b512e67,markdown,fr,5ef90e7f3459e745,"# RL-4 : Bandits Manchots et le Compromis Exploration-Exploitation
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,9b512e67,markdown,fr,83a133c7a2078c13,"# RL-4 : Bandits Manchots et le Compromis Exploration-Exploitation
 
 **Serie** : Reinforcement Learning | **Notebook** : 4/13 | **Duree estimee** : 40-45 min
 
@@ -2693,48 +2693,48 @@ Navigation : [RL-1 Intro](rl_1_intro_cartpole.ipynb) | [RL-2 Wrappers](rl_2_wrap
 ## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous serez capable de :
-1. Formaliser le probleme du bandit manchot (multi-armed bandit) et comprendre le compromis exploration-exploitation
-2. Implementer plusieurs strategies d'exploration : greedy, epsilon-greedy, UCB, Thompson Sampling
-3. Comparer objectivement les performances des strategies via le regret cumule
-4. Analyser quand chaque strategie est adaptee au probleme
+1. Formaliser le problème du bandit manchot (multi-armed bandit) et comprendre le compromis exploration-exploitation
+2. Implementer plusieurs stratégies d'exploration : greedy, epsilon-greedy, UCB, Thompson Sampling
+3. Comparer objectivement les performances des stratégies via le regret cumule
+4. Analyser quand chaque stratégie est adaptée au problème
 
 ### Prerequis
 - Python 3.10+ (numpy, matplotlib)
-- Notions de probabilites (esperance, loi de Bernoulli, loi gaussienne)
+- Notions de probabilités (esperance, loi de Bernoulli, loi gaussienne)
 - Avoir suivi le [RL-1 Introduction](rl_1_intro_cartpole.ipynb) (concepts agent/environnement/reward)
 
-### Duree estimee : 40-45 minutes",,,,,,,,5ef90e7f3459e745,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,877579c0,markdown,fr,a0b2d67d0b622bb4,"## 1. Introduction : le probleme du bandit manchot
+### Duree estimee : 40-45 minutes",,,,,,,,83a133c7a2078c13,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,877579c0,markdown,fr,86b1bd2ee9372cf5,"## 1. Introduction : le problème du bandit manchot
 
-Imaginez un casino avec $K$ machines a sous (""bandits manchots""). Chaque machine $k$ a une probabilite inconnue $\mu_k$ de donner une recompense. Vous avez $T$ jetons. Quelle strategie utilisez-vous pour maximiser vos gains ?
+Imaginez un casino avec $K$ machines a sous (""bandits manchots""). Chaque machine $k$ a une probabilité inconnue $\mu_k$ de donner une récompense. Vous avez $T$ jetons. Quelle stratégie utilisez-vous pour maximiser vos gains ?
 
-C'est le **probleme du bandit manchot** (multi-armed bandit), un des problemes fondamentaux de l'apprentissage par renforcement. Il illustre le **compromis exploration-exploitation** :
+C'est le **problème du bandit manchot** (multi-armed bandit), un des problèmes fondamentaux de l'apprentissage par renforcement. Il illustre le **compromis exploration-exploitation** :
 
-- **Exploitation** : choisir le bras qui semble le meilleur actuellement
-- **Exploration** : essayer d'autres bras pour mieux estimer leur valeur reelle
+- **exploitation** : choisir le bras qui semble le meilleur actuellement
+- **exploration** : essayer d'autres bras pour mieux estimer leur valeur réelle
 
-Ce compromis est omnipresent en RL : un agent doit-il utiliser ce qu'il sait, ou risquer de perdre pour decouvrir de meilleures options ?
+Ce compromis est omnipresent en RL : un agent doit-il utiliser ce qu'il sait, ou risquer de perdre pour découvrir de meilleures options ?
 
-### Applications reelles
+### Applications réelles
 
-| Domaine | Exemple | Bras = ? | Recompense = ? |
+| Domaine | Exemple | Bras = ? | récompense = ? |
 |---------|---------|----------|----------------|
-| Essais cliniques | Tester K traitements | Traitement i | Succes/echec du patient |
+| Essais cliniques | Tester K traitements | Traitement i | Succes/échec du patient |
 | Publicite en ligne | Choisir une banniere | Banniere i | Clic ou non |
-| Systemes de recommendation | Recommander un film | Film i | Note de l'utilisateur |
-| Allocation de ressources | Repartir un budget | Strategie i | Retour sur investissement |
+| systèmes de recommendation | Recommander un film | Film i | Note de l'utilisateur |
+| Allocation de ressources | répartir un budget | stratégie i | Retour sur investissement |
 
 ### Lien avec la serie RL
 
-Un bandit manchot est un **MDP a un seul etat** : il n'y a pas de transitions, pas d'etat $s_{t+1}$ qui depend de l'action $a_t$. L'agent choisit simplement une action et observe une recompense. C'est le cas le plus simple d'apprentissage par renforcement, ideal pour comprendre les strategies d'exploration avant de passer aux MDP complets dans le [notebook RL-5](rl_5_mdp_dp_qlearning.ipynb).
+Un bandit manchot est un **MDP a un seul etat** : il n'y a pas de transitions, pas d'etat $s_{t+1}$ qui dépend de l'action $a_t$. L'agent choisit simplement une action et observe une récompense. C'est le cas le plus simple d'apprentissage par renforcement, ideal pour comprendre les stratégies d'exploration avant de passer aux MDP complets dans le [notebook RL-5](rl_5_mdp_dp_qlearning.ipynb).
 
 
-> *Ancres savantes -- Robbins, H. (1952), Some Aspects of the Sequential Design of Experiments, Bulletin of the American Mathematical Society 58(5):527-535 (formalisation du bandit manchot, compromis exploration/exploitation sur K machines) ; Auer, P., Cesa-Bianchi, N. & Fischer, P. (2002), Finite-time Analysis of the Multiarmed Bandit Problem, Machine Learning 47(2-3):235-256 (UCB1, strategie optimiste face a l'incertitude avec regret logarithmique) ; Thompson, W.R. (1933), On the Likelihood that One Unknown Probability Exceeds Another in the View of the Evidence of the Two Samples, Biometrika 25(3-4):285-294 (Thompson Sampling, echantillonnage bayesien a posteriori) ; Sutton, R.S. & Barto, A.G. (2018), Reinforcement Learning: An Introduction (2nd ed.), MIT Press (regret, epsilon-greedy, cadre du bandit comme MDP a un seul etat).*",,,,,,,,a0b2d67d0b622bb4,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,d709edad,markdown,fr,3b5efb0050a9d3bd,"## 2. Environnement Bandit
+> *Ancres savantes -- Robbins, H. (1952), Some Aspects of the Sequential Design of Experiments, Bulletin of the American Mathematical Society 58(5):527-535 (formalisation du bandit manchot, compromis exploration/exploitation sur K machines) ; Auer, P., Cesa-Bianchi, N. & Fischer, P. (2002), Finite-time Analysis of the Multiarmed Bandit Problem, Machine Learning 47(2-3):235-256 (UCB1, stratégie optimiste face a l'incertitude avec regret logarithmique) ; Thompson, W.R. (1933), On the Likelihood that One Unknown Probability Exceeds Another in the View of the Evidence of the Two Samples, Biometrika 25(3-4):285-294 (Thompson Sampling, échantillonnage bayesien a posteriori) ; Sutton, R.S. & Barto, A.G. (2018), Reinforcement Learning: An Introduction (2nd ed.), MIT Press (regret, epsilon-greedy, cadre du bandit comme MDP a un seul etat).*",,,,,,,,86b1bd2ee9372cf5,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,d709edad,markdown,fr,2107b3c3493a1f58,"## 2. Environnement Bandit
 
-Nous allons implementer un bandit a $K$ bras, ou chaque bras suit une distribution de **Bernoulli** : il retourne 1 (succes) avec probabilite $\mu_k$, et 0 (echec) avec probabilite $1 - \mu_k$.
+Nous allons implementer un bandit a $K$ bras, ou chaque bras suit une distribution de **Bernoulli** : il retourne 1 (succes) avec probabilité $\mu_k$, et 0 (échec) avec probabilité $1 - \mu_k$.
 
-L'agent interagit avec le bandit pendant $T$ pas de temps. A chaque pas, il choisit un bras $a_t$ et observe une recompense $r_t \in \{0, 1\}$.",,,,,,,,3b5efb0050a9d3bd,,,,,,,
+L'agent interagit avec le bandit pendant $T$ pas de temps. A chaque pas, il choisit un bras $a_t$ et observe une récompense $r_t \in \{0, 1\}$.",,,,,,,,2107b3c3493a1f58,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,c6f7d608,code,fr,26efa3932aaa9e26,"import warnings
 warnings.filterwarnings(""ignore"", message="".*This figure includes Axes.*"", category=UserWarning)
 warnings.filterwarnings(""ignore"", message="".*tight_layout.*"", category=UserWarning)
@@ -2782,25 +2782,25 @@ print(f""Meilleur bras : {bandit.best_arm} (probabilite = {bandit.best_prob:.3f}
 rewards = [bandit.pull(3) for _ in range(10)]
 print(f""10 tirages du bras 3 : {rewards}"")
 print(f""Gain moyen observe : {np.mean(rewards):.2f}"")",,,,,,,,335c2ba882b38704,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,626c6a38,markdown,fr,d608bf51c8c35db6,"### Le concept de regret
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,626c6a38,markdown,fr,603632a6c6c13701,"### Le concept de regret
 
-Le **regret** mesure la perte cumulee par rapport a la strategie optimale (toujours tirer le meilleur bras). Apres $T$ pas de temps :
+Le **regret** mesure la perte cumulee par rapport a la stratégie optimale (toujours tirer le meilleur bras). Apres $T$ pas de temps :
 
 $$\text{Regret}(T) = T \cdot \mu^* - \sum_{t=1}^{T} r_t$$
 
-ou $\mu^*$ est la probabilite du meilleur bras. Un bon algorithme a un **regret sous-lineaire** : il apprend a identifier le meilleur bras et son regret croit de plus en plus lentement.",,,,,,,,d608bf51c8c35db6,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,716b9249,markdown,fr,61712ad222f174a5,"### Exercice 1 : Bandit gaussien
+ou $\mu^*$ est la probabilité du meilleur bras. Un bon algorithme a un **regret sous-linéaire** : il apprend a identifier le meilleur bras et son regret croit de plus en plus lentement.",,,,,,,,603632a6c6c13701,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,716b9249,markdown,fr,130113068f3f7fa7,"### Exercice 1 : Bandit gaussien
 
-Dans cet exercice, vous allez implementer un bandit a recompenses **continues**. Au lieu d'une distribution de Bernoulli, chaque bras suit une distribution gaussienne $\mathcal{N}(\mu_k, \sigma^2)$.
+Dans cet exercice, vous allez implementer un bandit a récompenses **continues**. Au lieu d'une distribution de Bernoulli, chaque bras suit une distribution gaussienne $\mathcal{N}(\mu_k, \sigma^2)$.
 
-**Contexte** : Les bandits gaussiens sont courants dans les problemes d'optimisation ou les recompenses sont continues (prix, rendements financiers, temperatures).
+**Contexte** : Les bandits gaussiens sont courants dans les problèmes d'optimisation ou les récompenses sont continues (prix, rendements financiers, temperatures).
 
-**Etapes** :
-1. Definir le constructeur `__init__` avec `means`, `stds` et un generateur aleatoire
-2. Implementer la methode `pull` qui retourne un echantillon de $\mathcal{N}(\mu_k, \sigma^2)$
+**étapes** :
+1. définir le constructeur `__init__` avec `means`, `stds` et un générateur aléatoire
+2. Implementer la méthode `pull` qui retourne un échantillon de $\mathcal{N}(\mu_k, \sigma^2)$
 3. Calculer `best_arm` et `best_prob` (l'esperance du meilleur bras)
 
-**Indice** : Utilisez `self.rng.normal(loc=self.means[arm], scale=self.stds[arm])` pour generer un echantillon gaussien.",,,,,,,,61712ad222f174a5,,,,,,,
+**Indice** : Utilisez `self.rng.normal(loc=self.means[arm], scale=self.stds[arm])` pour générer un échantillon gaussien.",,,,,,,,130113068f3f7fa7,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,128789eb,code,fr,a64860941ca2cc92,"class GaussianBandit:
     """"""
     Bandit manchot a K bras avec distribution gaussienne.
@@ -2829,13 +2829,13 @@ MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,128789eb,code,fr,a64860941ca
         return f""GaussianBandit({self.n_arms} arms: [{arms_str}])""
 
 print(""Exercice a completer"")",,,,,,,,a64860941ca2cc92,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,8848c654,markdown,fr,e4dbeed38e010297,"## 3. Strategies naives
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,8848c654,markdown,fr,073d458315b3ff55,"## 3. Stratégies naives
 
-Avant de voir des strategies sophistiquees, commencons par les approches les plus simples. Elles serviront de **base de reference** (baseline) pour evaluer les methodes plus avancees.
+Avant de voir des stratégies sophistiquees, commencons par les approches les plus simples. Elles serviront de **base de référence** (baseline) pour évaluer les méthodes plus avancees.
 
-### Agent aleatoire (Random)
+### Agent aléatoire (Random)
 
-L'agent aleatoire choisit un bras au hasard a chaque pas de temps. Il n'apprend rien et sert de point de comparaison minimal.",,,,,,,,e4dbeed38e010297,,,,,,,
+L'agent aléatoire choisit un bras au hasard a chaque pas de temps. Il n'apprend rien et sert de point de comparaison minimal.",,,,,,,,073d458315b3ff55,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,bf58e7b5,code,fr,b207494f7cfb472d,"def run_agent(bandit, agent_fn, n_steps: int, seed: int = 42) -> dict:
     """"""
     Execute un agent sur un bandit pendant n_steps pas de temps.
@@ -2875,9 +2875,9 @@ result_random = run_agent(bandit_test, random_agent, n_steps=1000, seed=42)
 
 print(f""Agent aleatoire - recompense cumulee finale : {result_random['cumulative_rewards'][-1]:.1f} / {1000 * bandit_test.best_prob:.1f}"")
 print(f""Regret final : {result_random['regret'][-1]:.1f}"")",,,,,,,,3136221ba4c83622,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,73beb16d,markdown,fr,3413af8c4c617db9,"### Agent glouton (Greedy)
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,73beb16d,markdown,fr,6c6e0087734377aa,"### Agent glouton (Greedy)
 
-L'agent glouton (greedy) estime la valeur de chaque bras par la moyenne des recompenses observees, puis choisit toujours le bras qui a la meilleure estimation actuelle. Le probleme : s'il n'explore pas, il peut se bloquer sur un bras sous-optimal.",,,,,,,,3413af8c4c617db9,,,,,,,
+L'agent glouton (greedy) estime la valeur de chaque bras par la moyenne des récompenses observées, puis choisit toujours le bras qui a la meilleure estimation actuelle. Le problème : s'il n'explore pas, il peut se bloquer sur un bras sous-optimal.",,,,,,,,6c6e0087734377aa,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,4dbc2963,code,fr,7e2ae38b466dbeb8,"def greedy_agent(bandit, n_steps: int, seed: int = 42, n_warmup: int = 10) -> tuple:
     """"""
     Agent glouton : estime la valeur de chaque bras et choisit toujours le meilleur.
@@ -2947,29 +2947,29 @@ axes[1].grid(True, alpha=0.3)
 plt.suptitle('Random vs Greedy sur un bandit a 5 bras', fontsize=14)
 plt.tight_layout()
 plt.show()",,,,,,,,2b6f4618c0986e7c,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,54fe69dc,markdown,fr,9d689a13355399f1,"### Interpretation : Random vs Greedy
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,54fe69dc,markdown,fr,1c9928a51877c373,"### Interprétation : Random vs Greedy
 
 | Agent | Regret final | Comportement |
 |-------|-------------|-------------|
-| Random | eleve (~300) | Explore tous les bras equitablement, n'apprend rien |
+| Random | élevé (~300) | Explore tous les bras equitablement, n'apprend rien |
 | Greedy | moyen (~211) | Exploite rapidement mais peut se bloquer sur un bras sous-optimal |
 
 **Points cles** :
-1. L'agent aleatoire a un regret lineaire : il ne converge jamais vers le meilleur bras
+1. L'agent aléatoire a un regret linéaire : il ne converge jamais vers le meilleur bras
 2. L'agent glouton est meilleur car il exploite, mais son initialisation peut le pieger si le meilleur bras a un rendement initial sous-estime
-3. Il nous faut une strategie qui combine exploration et exploitation de maniere adaptee",,,,,,,,9d689a13355399f1,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,7864b2ec,markdown,fr,da90b542c41de30f,"### Exercice 2 : Agent epsilon-greedy avec decroissance
+3. Il nous faut une stratégie qui combine exploration et exploitation de manière adaptée",,,,,,,,1c9928a51877c373,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,7864b2ec,markdown,fr,e13a77dbf7a161c4,"### Exercice 2 : Agent epsilon-greedy avec décroissance
 
-L'agent $\varepsilon$-greedy standard utilise un $\varepsilon$ fixe. Mais il est souvent preferable de **reduire l'exploration avec le temps** : beaucoup d'exploration au debut (pour apprendre), puis de moins en moins (pour exploiter).
+L'agent $\varepsilon$-greedy standard utilise un $\varepsilon$ fixe. Mais il est souvent préférable de **reduire l'exploration avec le temps** : beaucoup d'exploration au debut (pour apprendre), puis de moins en moins (pour exploiter).
 
-**Objectif** : Implementer un agent ou $\varepsilon$ decroit au fil du temps, par exemple $\varepsilon_t = \min(1, \frac{\varepsilon_0}{t})$.
+**objectif** : Implementer un agent ou $\varepsilon$ décroît au fil du temps, par exemple $\varepsilon_t = \min(1, \frac{\varepsilon_0}{t})$.
 
-**Etapes** :
+**étapes** :
 1. Calculer $\varepsilon_t$ a chaque pas de temps
-2. Avec probabilite $\varepsilon_t$, choisir un bras aleatoire ; sinon, choisir le meilleur bras estime
+2. Avec probabilité $\varepsilon_t$, choisir un bras aléatoire ; sinon, choisir le meilleur bras estime
 3. Mettre a jour l'estimation de la valeur du bras choisi (moyenne incrementale)
 
-**Indice** : La moyenne incrementale se met a jour ainsi : $\hat{Q}_t \leftarrow \hat{Q}_{t-1} + \frac{1}{n}(r_t - \hat{Q}_{t-1})$ ou $n$ est le nombre de fois que le bras a ete tire.",,,,,,,,da90b542c41de30f,,,,,,,
+**Indice** : La moyenne incrementale se met a jour ainsi : $\hat{Q}_t \leftarrow \hat{Q}_{t-1} + \frac{1}{n}(r_t - \hat{Q}_{t-1})$ ou $n$ est le nombre de fois que le bras a ete tire.",,,,,,,,e13a77dbf7a161c4,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,9bd61e8f,code,fr,7d1de216e8449d27,"def decaying_epsilon_greedy_agent(bandit, n_steps: int, seed: int = 42,
                                    epsilon_start: float = 1.0) -> tuple:
     """"""
@@ -3008,17 +3008,17 @@ MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,9bd61e8f,code,fr,7d1de216e84
     return np.array(actions), np.array(rewards)
 
 print(""Exercice a completer"")",,,,,,,,7d1de216e8449d27,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,5b9e78b7,markdown,fr,eb51341312e5dbaa,"## 4. Strategies d'exploration intelligentes
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,5b9e78b7,markdown,fr,f32e2961eba9914d,"## 4. Stratégies d'exploration intelligentes
 
-Les strategies naives ont des limites importantes. Nous allons maintenant voir trois approches plus sophistiquees qui parviennent a un meilleur compromis exploration-exploitation.
+Les stratégies naives ont des limites importantes. Nous allons maintenant voir trois approches plus sophistiquees qui parviennent a un meilleur compromis exploration-exploitation.
 
 ### Epsilon-greedy
 
-La strategie $\varepsilon$-greedy est simple mais efficace :
-- Avec probabilite $\varepsilon$ : choisir un bras **aleatoirement** (exploration)
-- Avec probabilite $1 - \varepsilon$ : choisir le bras **le meilleur selon l'estimation courante** (exploitation)
+La stratégie $\varepsilon$-greedy est simple mais efficace :
+- Avec probabilité $\varepsilon$ : choisir un bras **aléatoirement** (exploration)
+- Avec probabilité $1 - \varepsilon$ : choisir le bras **le meilleur selon l'estimation courante** (exploitation)
 
-C'est la strategie la plus utilisee en pratique pour sa simplicite.",,,,,,,,eb51341312e5dbaa,,,,,,,
+C'est la stratégie la plus utilisée en pratique pour sa simplicite.",,,,,,,,f32e2961eba9914d,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,d389568e,code,fr,91e7b464cef51ea6,"def epsilon_greedy_agent(bandit, n_steps: int, seed: int = 42, epsilon: float = 0.1) -> tuple:
     """"""
     Agent epsilon-greedy avec epsilon fixe.
@@ -3055,15 +3055,15 @@ bandit_test = BernoulliBandit(n_arms=5, probs=[0.3, 0.5, 0.2, 0.8, 0.6], seed=42
 result_eg01 = run_agent(bandit_test, lambda b, n, s: epsilon_greedy_agent(b, n, s, epsilon=0.1), 1000, seed=42)
 
 print(f""Epsilon-greedy (e=0.1) - recompense cumulee : {result_eg01['cumulative_rewards'][-1]:.1f} / {1000 * bandit_test.best_prob:.1f}, regret final : {result_eg01['regret'][-1]:.1f}"")",,,,,,,,30f5ad6cbbf920e0,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,b6013484,markdown,fr,d7e3e881969a40f2,"### UCB (Upper Confidence Bound)
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,b6013484,markdown,fr,034eb1cb98736d65,"### UCB (Upper Confidence Bound)
 
 L'algorithme **UCB1** (Auer et al., 2002) utilise un intervalle de confiance pour guider l'exploration. Il choisit le bras qui maximise :
 
 $$a_t = \arg\max_{a} \left[ \hat{Q}(a) + c \sqrt{\frac{\ln t}{N(a)}} \right]$$
 
-ou $\hat{Q}(a)$ est la recompense moyenne estimee, $N(a)$ le nombre de fois que le bras $a$ a ete tire, $t$ le pas de temps actuel, et $c$ un parametre controlant l'exploration.
+ou $\hat{Q}(a)$ est la récompense moyenne estimee, $N(a)$ le nombre de fois que le bras $a$ a ete tire, $t$ le pas de temps actuel, et $c$ un paramètre controlant l'exploration.
 
-Le terme $\sqrt{\frac{\ln t}{N(a)}}$ est un **bonus d'exploration** qui decroit quand un bras est souvent tire. UCB explore automatiquement les bras sous-explores sans parametre d'exploration explicite.",,,,,,,,d7e3e881969a40f2,,,,,,,
+Le terme $\sqrt{\frac{\ln t}{N(a)}}$ est un **bonus d'exploration** qui décroît quand un bras est souvent tire. UCB explore automatiquement les bras sous-explores sans paramètre d'exploration explicite.",,,,,,,,034eb1cb98736d65,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,a01f5986,code,fr,b0a10b939cef6387,"def ucb_agent(bandit, n_steps: int, seed: int = 42, c: float = 2.0) -> tuple:
     """"""
     Agent UCB1 (Upper Confidence Bound).
@@ -3107,27 +3107,27 @@ bandit_test = BernoulliBandit(n_arms=5, probs=[0.3, 0.5, 0.2, 0.8, 0.6], seed=42
 result_ucb = run_agent(bandit_test, ucb_agent, 1000, seed=42)
 
 print(f""UCB (c=2.0) - recompense cumulee : {result_ucb['cumulative_rewards'][-1]:.1f} / {1000 * bandit_test.best_prob:.1f}, regret final : {result_ucb['regret'][-1]:.1f}"")",,,,,,,,50d5ce04eecaf54c,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,b70cba88,markdown,fr,fbfd28f35009ec52,"### Thompson Sampling
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,b70cba88,markdown,fr,6178fdb5aa72283b,"### Thompson Sampling
 
 Le **Thompson Sampling** est une approche bayesienne qui maintient une distribution a posteriori sur la valeur de chaque bras. Pour un bandit de Bernoulli, on utilise la distribution **Beta** :
 
 - Prior : $\text{Beta}(1, 1)$ (uniforme) pour chaque bras
-- Apres avoir observe un succes : $\alpha \leftarrow \alpha + 1$
-- Apres avoir observe un echec : $\beta \leftarrow \beta + 1$
+- Apres avoir observé un succes : $\alpha \leftarrow \alpha + 1$
+- Apres avoir observé un échec : $\beta \leftarrow \beta + 1$
 - A chaque pas, on echantillonne $\theta_k \sim \text{Beta}(\alpha_k, \beta_k)$ et on choisit le bras avec le plus grand $\theta_k$
 
-Cette approche est elegante car elle equilibre naturellement exploration et exploitation : les bras incertains (peu d'observations) ont des echantillons plus disperses, donc une chance d'etre selectionnes.",,,,,,,,fbfd28f35009ec52,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f90ef86c,markdown,fr,d234caae234c7b46,"### Exercice 3 : Thompson Sampling pour bandits de Bernoulli
+Cette approche est elegante car elle équilibre naturellement exploration et exploitation : les bras incertains (peu d'observations) ont des échantillons plus disperses, donc une chance d'etre selectionnes.",,,,,,,,6178fdb5aa72283b,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f90ef86c,markdown,fr,10d558bd12b36a8b,"### Exercice 3 : Thompson Sampling pour bandits de Bernoulli
 
-**Objectif** : Implementer l'algorithme de Thompson Sampling pour un bandit de Bernoulli.
+**objectif** : Implementer l'algorithme de Thompson Sampling pour un bandit de Bernoulli.
 
-**Etapes** :
-1. Initialiser les parametres Beta : $\alpha_k = 1$, $\beta_k = 1$ pour chaque bras
-2. A chaque pas de temps, echantillonner $\theta_k \sim \text{Beta}(\alpha_k, \beta_k)$ pour chaque bras
+**étapes** :
+1. Initialiser les paramètres Beta : $\alpha_k = 1$, $\beta_k = 1$ pour chaque bras
+2. A chaque pas de temps, échantillonner $\theta_k \sim \text{Beta}(\alpha_k, \beta_k)$ pour chaque bras
 3. Choisir le bras avec le plus grand $\theta_k$
-4. Mettre a jour $\alpha_k$ ou $\beta_k$ selon le resultat observe
+4. Mettre a jour $\alpha_k$ ou $\beta_k$ selon le résultat observé
 
-**Indice** : Utilisez `rng.beta(alpha[k], beta[k])` pour echantillonner depuis la distribution Beta. Apres avoir observe une recompense $r$ pour le bras $k$ : si $r = 1$, incrementer $\alpha_k$ ; si $r = 0$, incrementer $\beta_k$.",,,,,,,,d234caae234c7b46,,,,,,,
+**Indice** : Utilisez `rng.beta(alpha[k], beta[k])` pour échantillonner depuis la distribution Beta. Apres avoir observé une récompense $r$ pour le bras $k$ : si $r = 1$, incrementer $\alpha_k$ ; si $r = 0$, incrementer $\beta_k$.",,,,,,,,10d558bd12b36a8b,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,bc869583,code,fr,ac126c163197362c,"def thompson_sampling_agent(bandit, n_steps: int, seed: int = 42) -> tuple:
     """"""
     Agent Thompson Sampling pour bandit de Bernoulli.
@@ -3170,9 +3170,9 @@ MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,bc869583,code,fr,ac126c16319
     return np.array(actions), np.array(rewards)
 
 print(""Exercice a completer"")",,,,,,,,ac126c163197362c,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,d68948bc,markdown,fr,276ec6fe7af4c711,"## 5. Comparaison et analyse
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,d68948bc,markdown,fr,a07e674330743289,"## 5. Comparaison et analyse
 
-Nous allons maintenant comparer toutes les strategies sur le meme probleme de bandit, avec des statistiques sur plusieurs graines aleatoires pour obtenir des resultats fiables.",,,,,,,,276ec6fe7af4c711,,,,,,,
+Nous allons maintenant comparer toutes les stratégies sur le même problème de bandit, avec des statistiques sur plusieurs graines aléatoires pour obtenir des résultats fiables.",,,,,,,,a07e674330743289,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,b6a940c9,code,fr,93dc69c4330d1b2b,"# Comparaison multi-seeds de toutes les strategies
 N_ARMS = 10
 N_STEPS = 2000
@@ -3337,40 +3337,40 @@ print(""mais Greedy(warmup=1) DIVERGE (se bloque sur un bras sous-optimal), et U
 print(""(exploration principée, independante du warmup). La force de Greedy est fragile :"")
 print(""elle depend du warmup, celle d'UCB non."")
 ",,,,,,,,1937e92622161c50,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f5ae47a4,markdown,fr,3ead2c1ed2e88f87,"### Interpretation : robustesse de Greedy vs UCB (pourquoi UCB ""optimal"" finit 2e a T=2000)
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f5ae47a4,markdown,fr,84d8a74d5c6913dd,"### Interprétation : robustesse de Greedy vs UCB (pourquoi UCB ""optimal"" finit 2e a T=2000)
 
-Le benchmark principal (cellule precedente, T=2000) montre **Greedy gagnant** et UCB en mauvaise position. Le sweep ci-dessus explique pourquoi **sans contredire la theorie** : l'optimalite d'UCB est **asymptotique**, et sa vraie force est la **robustesse**, pas de battre un Greedy bien initialise a court terme.
+Le benchmark principal (cellule précédente, T=2000) montre **Greedy gagnant** et UCB en mauvaise position. Le sweep ci-dessus explique pourquoi **sans contredire la théorie** : l'optimalite d'UCB est **asymptotique**, et sa vraie force est la **robustesse**, pas de battre un Greedy bien initialise a court terme.
 
-**Ce que le sweep revele** :
+**Ce que le sweep révèle** :
 
-1. **Greedy(warmup=10) gagne sur tout horizon teste** — mais c'est un artefact de son `n_warmup=10` par bras (100 tirages d'initialisation gratuits), qui identifie fiablement le meilleur bras avant d'exploiter. Ce warmup genereux **masque la faiblesse fondamentale de Greedy**.
+1. **Greedy(warmup=10) gagne sur tout horizon teste** — mais c'est un artefact de son `n_warmup=10` par bras (100 tirages d'initialisation gratuits), qui identifié fiablement le meilleur bras avant d'exploiter. Ce warmup genereux **masque la faiblesse fondamentale de Greedy**.
 
-2. **Greedy(warmup=1) diverge** : avec un warmup realiste (1 seul tirage par bras), Greedy se bloque souvent sur un bras sous-optimal et son regret **explose** (plus de 1000 a T=30000). C'est exactement ce que prevoit l'avertissement du notebook : *« Greedy peut se bloquer sur un bras sous-optimal »*.
+2. **Greedy(warmup=1) diverge** : avec un warmup réaliste (1 seul tirage par bras), Greedy se bloque souvent sur un bras sous-optimal et son regret **explose** (plus de 1000 a T=30000). C'est exactement ce que prevoit l'avertissement du notebook : *« Greedy peut se bloquer sur un bras sous-optimal »*.
 
 3. **UCB(c=$\sqrt{2}$) reste stable** (~550 a T=30000), avec un regret en $O(\log T)$. Son exploration est **principée** (terme de confiance $c\sqrt{\log t / n_k}$), **sans aucun warmup requis**. La ou Greedy s'effondre sans warmup, UCB tient.
 
-**Lecon** : ""asymptotiquement optimal"" ($O(\log T)$) ne veut **pas** dire ""bat Greedy a tout horizon"". Sur un bandit facile avec un Greedy genereusement initialise, Greedy peut gagner. **L'avantage reel d'UCB est la robustesse** : il performe bien **sans chance ni warmup gratuit**, la ou Greedy est fragile (sa perf depend entierement de la qualite de son initialisation).
+**Lecon** : ""asymptotiquement optimal"" ($O(\log T)$) ne veut **pas** dire ""bat Greedy a tout horizon"". Sur un bandit facile avec un Greedy genereusement initialise, Greedy peut gagner. **L'avantage réel d'UCB est la robustesse** : il performe bien **sans chance ni warmup gratuit**, la ou Greedy est fragile (sa perf dépend entièrement de la qualite de son initialisation).
 
-**Note sur Thompson Sampling** : Thompson possede egalement un regret $O(\log T)$ et la meme robustesse bayesienne ; son implementation est volontairement laissee en **Exercice 3** (les exercices 1, 2 et 3 sont des stubs a completer). Le sweep se concentre sur UCB (deja implemente) pour rendre l'argument concret.
-",,,,,,,,3ead2c1ed2e88f87,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,4f5d86c3,markdown,fr,891bf3e293860b5a,"### Interpretation : comparaison des strategies
+**Note sur Thompson Sampling** : Thompson possede également un regret $O(\log T)$ et la même robustesse bayesienne ; son implementation est volontairement laissee en **Exercice 3** (les exercices 1, 2 et 3 sont des stubs a completer). Le sweep se concentre sur UCB (deja implemente) pour rendre l'argument concret.
+",,,,,,,,84d8a74d5c6913dd,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,4f5d86c3,markdown,fr,bc9f3efccc6d707f,"### Interprétation : comparaison des stratégies
 
-| Strategie | Regret | Exploration | Points forts | Points faibles |
+| stratégie | Regret | exploration | Points forts | Points faibles |
 |-----------|--------|-------------|--------------|----------------|
-| **Random** | Lineaire | Maximal | Simple, bonne base de reference | N'apprend jamais |
-| **Greedy** | Sous-lineaire | Minimal (init seulement) | Rapide si bonne initialisation | Peut se bloquer sur un bras sous-optimal |
-| **e-greedy** | $O(\log T)$ | Parametre fixe | Simple, robuste | Continue a explorer meme apres convergence |
-| **UCB** | $O(\log T)$ | Automatique | **Robuste** (optimal asymptotique $O(\log T)$, sans warmup, cf. sweep ci-dessus) | Suppose des bornes sur les recompenses |
-| **Thompson** | $O(\log T)$ | Automatique (bayesien) | Elegante, adaptee aux priors | Specifique au type de distribution |
+| **Random** | linéaire | Maximal | Simple, bonne base de référence | N'apprend jamais |
+| **Greedy** | Sous-linéaire | Minimal (init seulement) | rapide si bonne initialisation | Peut se bloquer sur un bras sous-optimal |
+| **e-greedy** | $O(\log T)$ | paramètre fixe | Simple, robuste | Continue a explorer même apres convergence |
+| **UCB** | $O(\log T)$ | Automatique | **Robuste** (optimal asymptotique $O(\log T)$, sans warmup, cf. sweep ci-dessus) | Suppose des bornes sur les récompenses |
+| **Thompson** | $O(\log T)$ | Automatique (bayesien) | Elegante, adaptée aux priors | spécifique au type de distribution |
 
 **Points cles** :
-1. Toutes les strategies intelligentes (e-greedy, UCB, Thompson) ont un regret **sous-lineaire** : elles apprennent
+1. Toutes les stratégies intelligentes (e-greedy, UCB, Thompson) ont un regret **sous-linéaire** : elles apprennent
 2. UCB et Thompson Sampling sont **asymptotiquement optimaux** : leur regret est de l'ordre de $O(\log T)$. Attention : cela ne signifie pas qu'ils battent Greedy a tout horizon (cf. sweep robustesse ci-dessus), mais que leur regret **croit lentement et de facon robuste**, sans dependre d'un warmup chanceux
 3. Le choix de $\varepsilon$ dans e-greedy est crucial : trop grand = trop d'exploration, trop petit = sous-optimal
-4. Thompson Sampling est egalement $O(\log T)$ et partage cette robustesse ; son implementation est laissee en **Exercice 3**",,,,,,,,891bf3e293860b5a,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,ddbd1558,markdown,fr,ca2cc0fc636b2eb4,"## 6. Visualisation detaillee : evolution des estimations
+4. Thompson Sampling est également $O(\log T)$ et partage cette robustesse ; son implementation est laissee en **Exercice 3**",,,,,,,,bc9f3efccc6d707f,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,ddbd1558,markdown,fr,7822213ad8c5f657,"## 6. Visualisation detaillee : évolution des estimations
 
-Pour comprendre comment chaque strategie apprend, visualisons l'evolution des estimations de valeur pour chaque bras au cours du temps.",,,,,,,,ca2cc0fc636b2eb4,,,,,,,
+Pour comprendre comment chaque stratégie apprend, visualisons l'évolution des estimations de valeur pour chaque bras au cours du temps.",,,,,,,,7822213ad8c5f657,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,463b3068,code,fr,2bd37f3f1c39bbe4,"# Visualiser les estimations de l'agent epsilon-greedy au cours du temps
 def track_value_estimates(bandit, n_steps: int, seed: int = 42, epsilon: float = 0.1) -> np.ndarray:
     """"""
@@ -3413,7 +3413,7 @@ ax.legend(fontsize=9, loc='center right')
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()",,,,,,,,2bd37f3f1c39bbe4,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,99fcd332,markdown,fr,d7b8d26eb3bb996c,"Les lignes en pointilles representent les **veritables probabilites** de chaque bras. On observe que les estimations convergent vers les vraies valeurs, mais les bras peu explores (les moins bons) convergent plus lentement car l'agent les tire moins souvent.",,,,,,,,d7b8d26eb3bb996c,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,99fcd332,markdown,fr,1bc9e60f3f94e7c0,"Les lignes en pointilles représentent les **véritables probabilités** de chaque bras. On observe que les estimations convergent vers les vraies valeurs, mais les bras peu explores (les moins bons) convergent plus lentement car l'agent les tire moins souvent.",,,,,,,,1bc9e60f3f94e7c0,,,,,,,
 MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,18f1be7a,code,fr,cb3a18857f5d0178,"# Visualisation : heatmap de selection des bras
 bandit_vis = BernoulliBandit(n_arms=5, probs=[0.3, 0.5, 0.2, 0.8, 0.6], seed=42)
 
@@ -3450,37 +3450,37 @@ fig.colorbar(im, ax=axes, shrink=0.8, label='Frequence de selection')
 plt.suptitle('Frequence de selection des bras au cours du temps', fontsize=13)
 plt.tight_layout()
 plt.show()",,,,,,,,cb3a18857f5d0178,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,0226c2d4,markdown,fr,77b63cf140af69a8,"La heatmap montre clairement comment chaque strategie converge (ou pas) vers le meilleur bras (bras 3, probabilite 0.8) :
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,0226c2d4,markdown,fr,40d125ef62fdd281,"La heatmap montre clairement comment chaque stratégie converge (ou pas) vers le meilleur bras (bras 3, probabilité 0.8) :
 - **Greedy** : se fixe rapidement mais peut se tromper si l'initialisation est defavorable
-- **e-greedy** : converge vers le meilleur bras tout en continuant a explorer legerement
-- **UCB** : exploration automatique au debut, puis convergence rapide vers le meilleur bras",,,,,,,,77b63cf140af69a8,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,2fb2d08c,markdown,fr,6259579515f25885,"## Conclusion
+- **e-greedy** : converge vers le meilleur bras tout en continuant a explorer légèrement
+- **UCB** : exploration automatique au debut, puis convergence rapide vers le meilleur bras",,,,,,,,40d125ef62fdd281,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,2fb2d08c,markdown,fr,1565e96c17bd289c,"## Conclusion
 
 | Concept | Ce que nous avons vu |
 |---------|---------------------|
-| **Bandit manchot** | Probleme fondamental : $K$ bras, $T$ pas de temps, maximiser les gains |
-| **Exploration vs exploitation** | Le compromis central en RL : explorer pour apprendre, exploiter pour gagner |
-| **Regret cumule** | Metrique cle : $T \cdot \mu^* - \sum r_t$, sous-lineaire = bon algorithme |
+| **Bandit manchot** | problème fondamental : $K$ bras, $T$ pas de temps, maximiser les gains |
+| **exploration vs exploitation** | Le compromis central en RL : explorer pour apprendre, exploiter pour gagner |
+| **Regret cumule** | Metrique cle : $T \cdot \mu^* - \sum r_t$, sous-linéaire = bon algorithme |
 | **e-greedy** | Simple et efficace, mais $\varepsilon$ fixe gaspille de l'exploration |
-| **UCB** | Exploration automatisee via intervalle de confiance, optimal $O(\log T)$ |
-| **Thompson Sampling** | Approche bayesienne elegante, performances empiriques excellentes |
+| **UCB** | exploration automatisee via intervalle de confiance, optimal $O(\log T)$ |
+| **Thompson Sampling** | approche bayesienne elegante, performances empiriques excellentes |
 
-**Lien avec le notebook suivant** : Le bandit manchot est un MDP a un seul etat. Dans le [notebook RL-5](rl_5_mdp_dp_qlearning.ipynb), nous generaliserons au cas multi-etats avec les Processus de Decision Markoviens (MDP), la programmation dynamique et le Q-Learning tabulaire. Les strategies d'exploration vues ici (e-greedy, UCB) seront directement applicables.
+**Lien avec le notebook suivant** : Le bandit manchot est un MDP a un seul etat. Dans le [notebook RL-5](rl_5_mdp_dp_qlearning.ipynb), nous generaliserons au cas multi-etats avec les Processus de décision Markoviens (MDP), la programmation dynamique et le Q-Learning tabulaire. Les stratégies d'exploration vues ici (e-greedy, UCB) seront directement applicables.
 
 **Pour aller plus loin** :
 - Sutton & Barto, *Reinforcement Learning: An Introduction*, Chapter 2 (Multi-armed Bandits)
 - Auer et al. (2002), ""Finite-time Analysis of the Multiarmed Bandit Problem""
-- Chapelle & Li (2011), ""An Empirical Evaluation of Thompson Sampling""
+- Chapelle & Li (2011), ""An Empirical évaluation of Thompson Sampling""
 
 
-### References academiques
+### Références académiques
 
 - Robbins, H. (1952). Some Aspects of the Sequential Design of Experiments. Bulletin of the American Mathematical Society 58(5):527-535.
 - Auer, P., Cesa-Bianchi, N. & Fischer, P. (2002). Finite-time Analysis of the Multiarmed Bandit Problem. Machine Learning 47(2-3):235-256.
 - Thompson, W.R. (1933). On the Likelihood that One Unknown Probability Exceeds Another in the View of the Evidence of the Two Samples. Biometrika 25(3-4):285-294.
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
-",,,,,,,,6259579515f25885,,,,,,,
+",,,,,,,,1565e96c17bd289c,,,,,,,
 MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb,a0f1e001,markdown,fr,26850d5eb05b85e9,"# RL-5 : MDP, Programmation Dynamique et Q-Learning Tabulaire
 
 **Serie** : Reinforcement Learning | **Notebook** : 5/13 | **Duree estimee** : 45-50 min
@@ -6945,7 +6945,7 @@ MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,o8c9e029,markdown,fr,c5cab320ce99
 - Busoniu et al. (2008) - *A Comprehensive Survey of Multi-Agent Reinforcement Learning*
 - Papoudakis et al. (2021) - *Benchmarking Multi-Agent Deep Reinforcement Learning Algorithms*
 - Algorithms avances : QMIX, MAPPO, MADDPG",,,,,,,,c5cab320ce99bd42,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,08828207,markdown,fr,115d293d0c7cf733,"# RL-8 : Model-Based RL — Dyna-Q et planification
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,08828207,markdown,fr,cb17d3c7531f8bae,"# RL-8 : Model-Based RL — Dyna-Q et planification
 
 **Serie** : Reinforcement Learning | **Notebook** : 8/13 | **Duree estimee** : 45-50 min
 
@@ -6954,56 +6954,56 @@ MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,08828207,markdown,fr,115d293d
 ## Objectifs pedagogiques
 
 - Distinguer les approches **model-free** (Q-Learning, DQN, PPO) des approches **model-based** (Dyna, MCTS, MuZero)
-- **Apprendre un modele du monde** a partir de l'experience reelle de l'agent
-- Implementer **Dyna-Q** : entrelacer apprentissage direct et planification sur experience simulee
+- **Apprendre un modèle du monde** a partir de l'expérience reelle de l'agent
+- Implementer **Dyna-Q** : entrelacer apprentissage direct et planification sur expérience simulee
 - Mesurer le gain en **efficacite d'echantillonnage** (sample efficiency) apporte par la planification
-- Comprendre ce qui se passe quand **le modele se trompe** (environnement changeant) et comment **Dyna-Q+** y remedie
+- Comprendre ce qui se passe quand **le modèle se trompe** (environnement changeant) et comment **Dyna-Q+** y remedie
 - Decouvrir la **planification au moment de la decision** (rollouts), porte d'entree vers MCTS et AlphaZero
 
 ## Plan
 
-1. Model-free vs model-based : pourquoi un modele ?
+1. Model-free vs model-based : pourquoi un modèle ?
 2. Le labyrinthe de Sutton & Barto
 3. Baseline model-free : Q-Learning direct
-4. Apprendre un modele du monde
+4. Apprendre un modèle du monde
 5. Dyna-Q : apprendre ET planifier
-6. Quand le modele se trompe : Blocking Maze et Dyna-Q+
+6. Quand le modèle se trompe : Blocking Maze et Dyna-Q+
 7. Planification au moment de la decision : des rollouts a MCTS
 8. Exercices
-9. Conclusion et passerelles",,,,,,,,115d293d0c7cf733,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,339d6e41,markdown,fr,d34c0aa7e7a8687c,"## 1. Model-free vs model-based : pourquoi un modele ?
+9. Conclusion et passerelles",,,,,,,,cb17d3c7531f8bae,,,,,,,
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,339d6e41,markdown,fr,746f959118ae3e25,"## 1. Model-free vs model-based : pourquoi un modèle ?
 
 Tous les algorithmes vus jusqu'ici dans cette serie (Q-Learning, DQN, REINFORCE, A2C, PPO, SAC)
 sont **model-free** : ils apprennent une fonction de valeur ou une politique *directement* a partir
 des transitions vecues, sans jamais chercher a representer **comment le monde fonctionne**.
 Chaque amelioration de la politique exige donc de nouvelles interactions reelles avec l'environnement.
 
-Un **modele** de l'environnement est tout ce qui permet a l'agent de *predire* la consequence d'une
-action : a partir d'un etat $s$ et d'une action $a$, le modele fournit (une distribution sur)
-l'etat suivant $s'$ et la recompense $r$. Avec un modele, l'agent peut generer de l'**experience
+Un **modèle** de l'environnement est tout ce qui permet a l'agent de *predire* la consequence d'une
+action : a partir d'un etat $s$ et d'une action $a$, le modèle fournit (une distribution sur)
+l'etat suivant $s'$ et la recompense $r$. Avec un modèle, l'agent peut generer de l'**expérience
 simulee** — gratuite — et s'en servir pour ameliorer sa fonction de valeur : c'est la **planification**.
 
 | | Model-free | Model-based |
 |---|---|---|
-| Ce qui est appris | $Q(s,a)$ ou $\pi(a\|s)$ | $Q$ / $\pi$ **et** un modele $\hat{P}, \hat{R}$ |
-| Cout par amelioration | experience **reelle** | experience reelle + calcul (simulation) |
+| Ce qui est appris | $Q(s,a)$ ou $\pi(a\|s)$ | $Q$ / $\pi$ **et** un modèle $\hat{P}, \hat{R}$ |
+| Cout par amelioration | expérience **reelle** | expérience reelle + calcul (simulation) |
 | Efficacite d'echantillonnage | faible a moyenne | **elevee** |
-| Risque principal | lenteur d'apprentissage | **biais du modele** (modele faux => politique fausse) |
+| Risque principal | lenteur d'apprentissage | **biais du modèle** (modèle faux => politique fausse) |
 | Exemples | Q-Learning, DQN, PPO, SAC | Dyna-Q, MCTS, AlphaZero, MuZero, World Models |
 
-L'enjeu est crucial des que l'experience reelle est **chere ou risquee** : un bras robotique qui casse,
+L'enjeu est crucial des que l'expérience reelle est **chere ou risquee** : un bras robotique qui casse,
 un patient, un portefeuille de trading. En robotique comme en finance, on prefere ""rever"" des milliers
-de scenarios dans un simulateur appris plutot que de les payer dans le monde reel.
+de scénarios dans un simulateur appris plutot que de les payer dans le monde reel.
 
 **L'architecture Dyna** (Sutton, 1990) est la maniere la plus simple d'unifier les deux mondes.
 L'agent boucle sur trois activites :
 
 1. **Agir** : interagir avec l'environnement reel (politique $\varepsilon$-greedy sur $Q$) ;
-2. **Apprendre le modele** : memoriser les transitions observees $(s, a) \rightarrow (r, s')$ ;
-3. **Planifier** : rejouer $n$ transitions *simulees* tirees du modele et mettre a jour $Q$
-   avec exactement la meme regle que le Q-Learning.
+2. **Apprendre le modèle** : memoriser les transitions observees $(s, a) \rightarrow (r, s')$ ;
+3. **Planifier** : rejouer $n$ transitions *simulees* tirees du modèle et mettre a jour $Q$
+   avec exactement la même règle que le Q-Learning.
 
-La planification n'est donc rien d'autre que du Q-Learning sur experience imaginaire.",,,,,,,,d34c0aa7e7a8687c,,,,,,,
+La planification n'est donc rien d'autre que du Q-Learning sur expérience imaginaire.",,,,,,,,746f959118ae3e25,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,e939d183,code,fr,8507324760c1a5a6,"import random
 from collections import defaultdict
 
@@ -7017,7 +7017,7 @@ random.seed(SEED)
 
 print(f""numpy {np.__version__}"")
 print(""Pas de framework lourd ici : le model-based tabulaire tient en numpy pur."")",,,,,,,,8507324760c1a5a6,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,ae340329,markdown,fr,da7c9d47d4a55aaa,"## 2. Le labyrinthe de Sutton & Barto
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,ae340329,markdown,fr,c1eb7f1e3c1f850a,"## 2. Le labyrinthe de Sutton & Barto
 
 Nous reprenons le **Dyna Maze** du chapitre 8 de *Reinforcement Learning: An Introduction*
 (Sutton & Barto, 2e ed., figure 8.2) : une grille 6x9, un depart `S`, un but `G`, et quelques murs.
@@ -7031,15 +7031,15 @@ S . # . . . . # .        G = but    (ligne 0, colonne 8)
 . . . . . . . . .
 ```
 
-Caracteristiques :
+Caractéristiques :
 
 - **Actions** : haut, bas, gauche, droite. Se deplacer vers un mur ou hors de la grille laisse l'agent sur place.
 - **Recompense** : $+1$ en atteignant `G` (fin d'episode), $0$ partout ailleurs — recompense **eparse**.
 - **Facteur d'actualisation** : $\gamma = 0.95$, ce qui pousse l'agent a trouver le chemin le plus court
   (14 pas pour le chemin optimal).
 
-L'environnement est **deterministe** : c'est le cadre ideal pour un premier modele appris
-(une seule observation suffit a connaitre parfaitement une transition).",,,,,,,,da7c9d47d4a55aaa,,,,,,,
+L'environnement est **déterministe** : c'est le cadre ideal pour un premier modèle appris
+(une seule observation suffit a connaitre parfaitement une transition).",,,,,,,,c1eb7f1e3c1f850a,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,e351d17c,code,fr,097656988d0e897c,"# Actions : 0=haut, 1=bas, 2=gauche, 3=droite
 ACTIONS = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 ACTION_NAMES = [""haut"", ""bas"", ""gauche"", ""droite""]
@@ -7106,11 +7106,11 @@ plt.show()
 
 print(f""Etats : {maze.n_states} ({maze.height}x{maze.width}), actions : {maze.n_actions}"")
 print(f""Depart {maze.start}, but {maze.goal}, murs : {len(maze.obstacles)}"")",,,,,,,,097656988d0e897c,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,ccaaebfa,markdown,fr,ce04616c8da1855f,"La recompense n'arrive qu'au but : tant que l'agent n'a pas atteint `G` au moins une fois,
-toutes ses estimations $Q(s,a)$ restent nulles et il erre au hasard. C'est precisement dans ce
-regime de **recompense eparse** que la planification va briller : la *premiere* trajectoire
-gagnante, une fois memorisee dans le modele, peut etre rejouee en boucle pour propager la valeur
-tout le long du chemin — sans un seul pas reel supplementaire.",,,,,,,,ce04616c8da1855f,,,,,,,
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,ccaaebfa,markdown,fr,5eb0d7e96ad4f9d2,"La recompense n'arrive qu'au but : tant que l'agent n'a pas atteint `G` au moins une fois,
+toutes ses estimations $Q(s,a)$ restent nulles et il erre au hasard. C'est précisément dans ce
+regime de **recompense eparse** que la planification va briller : la *première* trajectoire
+gagnante, une fois memorisee dans le modèle, peut etre rejouee en boucle pour propager la valeur
+tout le long du chemin — sans un seul pas reel supplementaire.",,,,,,,,5eb0d7e96ad4f9d2,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,b17c5b06,markdown,fr,902da0a9ac7f0126,"## 3. Baseline model-free : Q-Learning direct
 
 Rappel du notebook 5 — la mise a jour Q-Learning sur une transition reelle $(s, a, r, s')$ :
@@ -7171,27 +7171,27 @@ plt.show()
 print(f""Pas au 1er episode  : {mean_steps_qlearning[0]:.0f}"")
 print(f""Pas au 10e episode  : {mean_steps_qlearning[9]:.0f}"")
 print(f""Pas au 50e episode  : {mean_steps_qlearning[-1]:.0f}"")",,,,,,,,40a362c3eb6f928b,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,8103d187,markdown,fr,7c9ae27c2f7d3af5,"Lecture de la courbe : le premier episode est une marche aleatoire (plusieurs centaines de pas),
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,8103d187,markdown,fr,cce291b16d497b97,"Lecture de la courbe : le premier episode est une marche aleatoire (plusieurs centaines de pas),
 puis la valeur se propage *d'un pas en arriere par episode* environ — chaque traversee reelle
 n'ameliore qu'une petite partie du chemin. Il faut des dizaines d'episodes pour approcher les 14 pas
-optimaux. **Toute l'information necessaire etait pourtant deja la** des la premiere arrivee au but :
-le reste n'est que propagation, et la propagation n'a pas besoin d'experience reelle.
-C'est exactement ce que la planification va exploiter.",,,,,,,,7c9ae27c2f7d3af5,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,68c8e5da,markdown,fr,50f30c345968e56a,"## 4. Apprendre un modele du monde
+optimaux. **Toute l'information necessaire etait pourtant déjà la** des la première arrivee au but :
+le reste n'est que propagation, et la propagation n'a pas besoin d'expérience reelle.
+C'est exactement ce que la planification va exploiter.",,,,,,,,cce291b16d497b97,,,,,,,
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,68c8e5da,markdown,fr,9ca92e1a014d17a8,"## 4. Apprendre un modèle du monde
 
-Dans un environnement **deterministe**, le modele le plus simple est une table :
-pour chaque paire $(s, a)$ deja essayee, on memorise le couple observe $(r, s')$.
-Une seule observation suffit — le modele est alors *exact* sur tout ce qui a ete visite.
+Dans un environnement **déterministe**, le modèle le plus simple est une table :
+pour chaque paire $(s, a)$ déjà essayee, on memorise le couple observe $(r, s')$.
+Une seule observation suffit — le modèle est alors *exact* sur tout ce qui a ete visite.
 
 $$\hat{M}(s, a) = (r, s', \text{terminal})$$
 
 Deux limites a garder en tete :
 
-- **Couverture** : le modele ne sait rien des paires $(s,a)$ jamais essayees.
-  La planification ne peut rejouer que du deja-vu.
+- **Couverture** : le modèle ne sait rien des paires $(s,a)$ jamais essayees.
+  La planification ne peut rejouer que du déjà-vu.
 - **Stochasticite** : si l'environnement est aleatoire, une table ne suffit plus — il faut estimer
   des distributions, par exemple par comptage de frequences $\hat{P}(s'|s,a)$, voire des lois
-  a priori bayesiennes (pont direct avec la serie [Probas](../Probas/README.md)).",,,,,,,,50f30c345968e56a,,,,,,,
+  a priori bayesiennes (pont direct avec la serie [Probas](../Probas/README.md)).",,,,,,,,9ca92e1a014d17a8,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,d1ac476a,code,fr,0f6aed36857b02a8,"class DeterministicModel:
     """"""Modele tabulaire pour environnement deterministe.
 
@@ -7235,31 +7235,31 @@ print(f""Apres 200 pas aleatoires : {len(model_demo)} paires (s,a) memorisees ""
 s_idx, a, r, s2_idx, done = model_demo.sample(rng_demo)
 print(f""Exemple de transition simulee : etat {s_idx}, action '{ACTION_NAMES[a]}' ""
       f""-> recompense {r}, etat {s2_idx}, terminal={done}"")",,,,,,,,0f6aed36857b02a8,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,23a6532f,markdown,fr,0b59237f113bb261,"## 5. Dyna-Q : apprendre ET planifier
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,23a6532f,markdown,fr,a09854fa6471b707,"## 5. Dyna-Q : apprendre ET planifier
 
 Dyna-Q ajoute une boucle de planification au Q-Learning. A chaque pas **reel**, l'agent effectue
-en plus $n$ mises a jour sur des transitions **simulees** tirees du modele :
+en plus $n$ mises a jour sur des transitions **simulees** tirees du modèle :
 
 ```
 Boucler a chaque pas de temps :
   (a) s    <- etat courant
   (b) a    <- epsilon-greedy(s, Q)
-  (c) r,s' <- ENVIRONNEMENT.step(s, a)                 # experience reelle
+  (c) r,s' <- ENVIRONNEMENT.step(s, a)                 # expérience reelle
   (d) Q(s,a) <- Q(s,a) + alpha [r + gamma max_a' Q(s',a') - Q(s,a)]
-  (e) Modele(s,a) <- (r, s')                           # apprentissage du modele
+  (e) Modèle(s,a) <- (r, s')                           # apprentissage du modèle
   (f) Repeter n fois :                                 # planification
-        (s~, a~)  <- paire deja observee, au hasard
-        (r~, s~') <- Modele(s~, a~)
+        (s~, a~)  <- paire déjà observee, au hasard
+        (r~, s~') <- Modèle(s~, a~)
         Q(s~,a~) <- Q(s~,a~) + alpha [r~ + gamma max_a' Q(s~',a~') - Q(s~,a~)]
 ```
 
-Les etapes (d) et (f) utilisent **exactement la meme regle de mise a jour** — la planification
+Les étapes (d) et (f) utilisent **exactement la même règle de mise a jour** — la planification
 est du Q-Learning sur souvenirs. Avec $n = 0$, on retrouve le Q-Learning pur.
 
-> **Remarque** : ce mecanisme rappelle l'experience replay du DQN (notebook 3 et 6). La filiation
+> **Remarque** : ce mécanisme rappelle l'expérience replay du DQN (notebook 3 et 6). La filiation
 > est reelle, avec une nuance : le replay buffer rejoue des transitions *stockees telles quelles*,
-> tandis qu'un modele peut en principe *generer* des transitions jamais vecues (etats recombines,
-> predictions). En tabulaire deterministe, les deux coincident presque.",,,,,,,,0b59237f113bb261,,,,,,,
+> tandis qu'un modèle peut en principe *generer* des transitions jamais vecues (etats recombines,
+> predictions). En tabulaire déterministe, les deux coincident presque.",,,,,,,,a09854fa6471b707,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7c702e3e,code,fr,cc71179584791e0a,"def dyna_q(env, n_episodes=50, n_planning=5, alpha=ALPHA, gamma=GAMMA,
            eps=EPSILON, seed=0):
     """"""Dyna-Q tabulaire : Q-Learning + modele + n_planning pas simules par pas reel.""""""
@@ -7316,27 +7316,27 @@ print(""Premier episode ou la moyenne passe sous 25 pas :"")
 for n_plan, curve in results.items():
     below = np.argmax(curve < 25) + 1 if (curve < 25).any() else None
     print(f""  n={n_plan:>2} : episode {below}"")",,,,,,,,cc71179584791e0a,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,10cc6e6d,markdown,fr,09d9c526d5ad2aef,"Le resultat reproduit la figure 8.3 de Sutton & Barto : a **experience reelle egale**, l'agent qui
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,10cc6e6d,markdown,fr,0f257ca10be47803,"Le résultat reproduit la figure 8.3 de Sutton & Barto : a **expérience reelle egale**, l'agent qui
 planifie 50 pas par pas reel atteint un comportement quasi optimal en 3-4 episodes, la ou le
-Q-Learning pur en demande plus de vingt. Le premier episode est identique pour tous (modele vide,
+Q-Learning pur en demande plus de vingt. Le premier episode est identique pour tous (modèle vide,
 marche aleatoire) ; tout le gain se joue ensuite, quand chaque pas reel est demultiplie par la relecture
-du modele.
+du modèle.
 
 Le prix paye n'est pas en echantillons mais en **calcul** : $n = 50$ multiplie par ~50 le nombre de
-mises a jour par pas reel. Ce compromis ""calcul contre experience"" est au coeur du model-based RL
-moderne : la ou l'experience est chere (robotique, medecine, finance), bruler du CPU/GPU pour
-economiser des interactions reelles est presque toujours rentable.",,,,,,,,09d9c526d5ad2aef,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,820cc051,markdown,fr,488c594562f7c25e,"## 6. Quand le modele se trompe : Blocking Maze et Dyna-Q+
+mises a jour par pas reel. Ce compromis ""calcul contre expérience"" est au coeur du model-based RL
+moderne : la ou l'expérience est chere (robotique, medecine, finance), bruler du CPU/GPU pour
+economiser des interactions reelles est presque toujours rentable.",,,,,,,,0f257ca10be47803,,,,,,,
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,820cc051,markdown,fr,844d3803e0149018,"## 6. Quand le modèle se trompe : Blocking Maze et Dyna-Q+
 
 La force de Dyna-Q — rejouer le passe memorise — devient une faiblesse si **l'environnement change** :
-le modele continue de planifier sur un monde qui n'existe plus.
+le modèle continue de planifier sur un monde qui n'existe plus.
 
-Experience du **Blocking Maze** (Sutton & Barto, fig. 8.4) : pendant les 1000 premiers pas, le seul
+Expérience du **Blocking Maze** (Sutton & Barto, fig. 8.4) : pendant les 1000 premiers pas, le seul
 passage est a **droite** ; au pas 1000, le mur se decale et le passage de droite se ferme tandis qu'un
 passage s'ouvre a **gauche**.
 
 ```
-Avant (pas 0-999)            Apres (pas 1000+)
+Avant (pas 0-999)            Après (pas 1000+)
 . . . . . . . . G            . . . . . . . . G
 . . . . . . . . .            . . . . . . . . .
 . . . . . . . . .            . . . . . . . . .
@@ -7359,7 +7359,7 @@ Avant (pas 0-999)            Apres (pas 1000+)
    les rendre attractives.
 
 Nous mesurons la **recompense cumulee** : la pente de la courbe indique a quelle frequence l'agent
-atteint le but.",,,,,,,,488c594562f7c25e,,,,,,,
+atteint le but.",,,,,,,,844d3803e0149018,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,51c80a20,code,fr,b66a6fa7e713b348,"class ChangingMaze(Maze):
     """"""Labyrinthe dont les murs changent a un instant donne (Blocking/Shortcut Maze).""""""
 
@@ -7461,8 +7461,8 @@ plt.show()
 
 print(f""Recompense cumulee finale — Dyna-Q : {cum_dyna[-1]:.1f} | ""
       f""Dyna-Q+ : {cum_dyna_plus[-1]:.1f}"")",,,,,,,,7153efe2dd78265c,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,1ceca8cc,markdown,fr,b735d1ca015c9f3d,"Les deux courbes deviennent plates juste apres le pas 1000 : l'ancien chemin est mure, et les agents
-persistent un moment a le suivre — leur modele (et leur $Q$) decrit un monde perime. La difference
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,1ceca8cc,markdown,fr,f85d6b1daab78a27,"Les deux courbes deviennent plates juste après le pas 1000 : l'ancien chemin est mure, et les agents
+persistent un moment a le suivre — leur modèle (et leur $Q$) decrit un monde perime. La différence
 se joue sur la **vitesse de re-decouverte** : grace a son bonus $\kappa\sqrt{\tau}$, Dyna-Q+
 re-essaie systematiquement les zones non visitees recemment, retrouve le nouveau passage a gauche
 plus tot, et sa pente repart plus vite. Dyna-Q standard finit aussi par s'adapter, mais uniquement
@@ -7470,25 +7470,25 @@ pousse par le hasard de l'$\varepsilon$-greedy.
 
 Le bonus a un cout : en regime stationnaire, Dyna-Q+ ""gaspille"" des pas a re-verifier des couloirs
 qui n'ont pas change. C'est le dilemme exploration/exploitation (notebook 4) transpose au
-**non-stationnaire** — et l'exercice 3 vous fera mesurer ce que coute un $\kappa$ mal regle. Un ordre de grandeur de trop suffit : a $\kappa = 5	imes 10^{-3}$, le bonus amplifie par le bootstrap ($\gamma \max_a Q$) depasse la valeur reelle du but et la recompense cumulee s'effondre.
+**non-stationnaire** — et l'exercice 3 vous fera mesurer ce que coute un $\kappa$ mal règle. Un ordre de grandeur de trop suffit : a $\kappa = 5	imes 10^{-3}$, le bonus amplifie par le bootstrap ($\gamma \max_a Q$) depasse la valeur reelle du but et la recompense cumulee s'effondre.
 L'exercice 1 (Shortcut Maze) montre un cas plus frappant : quand le changement *ouvre un raccourci*
-au lieu de fermer un passage, Dyna-Q standard ne le decouvre **jamais**.",,,,,,,,b735d1ca015c9f3d,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,e9307f6b,markdown,fr,6c8ef2f4dda0902f,"## 7. Planification au moment de la decision : des rollouts a MCTS
+au lieu de fermer un passage, Dyna-Q standard ne le decouvre **jamais**.",,,,,,,,f85d6b1daab78a27,,,,,,,
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,e9307f6b,markdown,fr,9c2f0fa53e4bbf1d,"## 7. Planification au moment de la decision : des rollouts a MCTS
 
-Dyna planifie **en tache de fond** (background planning) : les mises a jour simulees ameliorent la
+Dyna planifie **en tâche de fond** (background planning) : les mises a jour simulees ameliorent la
 table $Q$ globale, sans privilegier l'etat courant. L'alternative est la **planification au moment
-de la decision** (decision-time planning) : face a l'etat $s_t$, derouler le modele *vers l'avant*
+de la decision** (decision-time planning) : face a l'etat $s_t$, derouler le modèle *vers l'avant*
 pour evaluer les actions candidates, choisir, agir — puis tout jeter et recommencer.
 
 La forme la plus simple est le **rollout** : pour chaque action candidate $a$, simuler quelques
 centaines de trajectoires (politique aleatoire) partant de $(s_t, a)$ et moyenner les retours.
 
 **Monte-Carlo Tree Search (MCTS)** rend ce principe efficace en concentrant la simulation sur les
-branches prometteuses, via quatre phases repetees : **selection** (descendre l'arbre en arbitrant
+branches prometteuses, via quatre phases repetees : **sélection** (descendre l'arbre en arbitrant
 exploration/exploitation, typiquement avec UCB — revoir le notebook 4), **expansion** (ajouter une
 feuille), **simulation** (rollout), **retropropagation** (remonter les valeurs). C'est le moteur
-d'**AlphaGo/AlphaZero** (modele = regles du jeu, parfaites) et de **MuZero** (modele *appris*,
-comme Dyna — la boucle est bouclee).",,,,,,,,6c8ef2f4dda0902f,,,,,,,
+d'**AlphaGo/AlphaZero** (modèle = règles du jeu, parfaites) et de **MuZero** (modèle *appris*,
+comme Dyna — la boucle est bouclee).",,,,,,,,9c2f0fa53e4bbf1d,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,981c1d5a,code,fr,809a6d3169c8605c,"def rollout_action_values(env, state, n_rollouts=300, depth=60, gamma=GAMMA, seed=0):
     """"""Estime Q(state, a) pour chaque action par rollouts aleatoires du modele.
 
@@ -7535,12 +7535,12 @@ MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,fdbe41b8,markdown,fr,b2b95ce8
 Les trois exercices reutilisent les briques construites plus haut (`ChangingMaze`, `dyna_q_steps`,
 `DeterministicModel`). Completez les cellules de code : elles s'executent sans erreur en l'etat
 (stubs), a vous de les remplir.",,,,,,,,b2b95ce8fbdcd4d8,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,5eb818ec,markdown,fr,78363f8f22c0e8c5,"### Exercice 1 — Shortcut Maze : decouvrir un raccourci
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,5eb818ec,markdown,fr,f8824c7212b14076,"### Exercice 1 — Shortcut Maze : decouvrir un raccourci
 
 Le Blocking Maze fermait un passage ; le **Shortcut Maze** (Sutton & Barto, fig. 8.5) en *ouvre* un :
 
 ```
-Avant (pas 0-2999)           Apres (pas 3000+)
+Avant (pas 0-2999)           Après (pas 3000+)
 . . . . . . . . G            . . . . . . . . G
 . . . . . . . . .            . . . . . . . . .
 . . . . . . . . .            . . . . . . . . .
@@ -7554,13 +7554,13 @@ purement glouton n'a aucune raison de remarquer le raccourci... sauf s'il est cu
 
 **Travail demande** :
 
-1. Construire le `ChangingMaze` correspondant (murs avant/apres, `switch_time=3000`) ;
+1. Construire le `ChangingMaze` correspondant (murs avant/après, `switch_time=3000`) ;
 2. Lancer `dyna_q_steps` sur 6000 pas avec `kappa=0` (Dyna-Q) et `kappa=1e-3` (Dyna-Q+),
    moyenne sur 5 graines ;
-3. Tracer les recompenses cumulees et comparer les pentes apres le pas 3000.
+3. Tracer les recompenses cumulees et comparer les pentes après le pas 3000.
 
-**Resultat attendu** : Dyna-Q garde la meme pente (il ne decouvre jamais le raccourci) ;
-la pente de Dyna-Q+ augmente apres l'ouverture.",,,,,,,,78363f8f22c0e8c5,,,,,,,
+**Résultat attendu** : Dyna-Q garde la même pente (il ne decouvre jamais le raccourci) ;
+la pente de Dyna-Q+ augmente après l'ouverture.",,,,,,,,f8824c7212b14076,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,a7d65519,code,fr,a5e137a28b7684f6,"# Exercice 1 — Shortcut Maze
 # Etape 1 : definir les murs avant/apres (s'inspirer de wall_before / wall_after)
 #           Avant : mur ligne 3, colonnes 1 a 8 (passage a gauche seulement)
@@ -7578,7 +7578,7 @@ shortcut_env = None          # TODO etudiant
 # Calculer cette pente pour les deux agents rend la comparaison quantitative.
 
 print(""Exercice 1 a completer"")",,,,,,,,a5e137a28b7684f6,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,c51a6bcc,markdown,fr,767ae8a7b20b6a0c,"### Exercice 2 — Prioritized Sweeping : planifier la ou ca compte
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,c51a6bcc,markdown,fr,13872c7c997f527a,"### Exercice 2 — Prioritized Sweeping : planifier la ou ca compte
 
 Dyna-Q echantillonne ses transitions simulees **uniformement** : la plupart des mises a jour ne
 changent rien (la valeur en amont n'a pas bouge). Le **prioritized sweeping** (Moore & Atkeson, 1993)
@@ -7587,7 +7587,7 @@ planifie en priorite la ou la surprise est grande :
 1. A chaque transition (reelle ou simulee), calculer l'erreur $|\delta| = |r + \gamma \max_{a'} Q(s',a') - Q(s,a)|$ ;
 2. Si $|\delta| > \theta$, inserer $(s,a)$ dans une **file de priorite** avec priorite $|\delta|$ ;
 3. A chaque pas de planification, traiter la paire la plus prioritaire, puis examiner tous les
-   **predecesseurs** connus de $s$ (les paires $(\bar{s},\bar{a})$ telles que le modele donne
+   **predecesseurs** connus de $s$ (les paires $(\bar{s},\bar{a})$ telles que le modèle donne
    $\bar{s} \xrightarrow{\bar{a}} s$) et les inserer a leur tour si leur erreur depasse $\theta$.
 
 La valeur se propage ainsi **a rebours** depuis le but, en cascade ciblee.
@@ -7596,7 +7596,7 @@ La valeur se propage ainsi **a rebours** depuis le but, en cascade ciblee.
 le nombre d'episodes necessaires pour atteindre 25 pas/episode face a Dyna-Q ($n=5$) sur le Dyna Maze.
 
 **Indices** : `heapq` avec priorites negatives (file max), un `dict` `predecessors[s2] -> set de (s, a)`
-rempli au fil des transitions reelles, et $\theta \approx 10^{-4}$.",,,,,,,,767ae8a7b20b6a0c,,,,,,,
+rempli au fil des transitions reelles, et $\theta \approx 10^{-4}$.",,,,,,,,13872c7c997f527a,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,15cddb60,code,fr,471657b1d4f47378,"import heapq
 
 
@@ -7666,43 +7666,43 @@ final_rewards = None  # TODO etudiant : liste des recompenses cumulees finales,
 # point separe pour kappa=0) et commenter le kappa optimal.
 
 print(""Exercice 3 a completer"")",,,,,,,,1ddc2efed9d2d881,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,8e45a6a7107406bc,"## Conclusion et passerelles
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,5354310137fb0998,"## Conclusion et passerelles
 
 ### Ce qu'il faut retenir
 
 | Concept | Idee cle |
 |---------|----------|
-| Modele du monde | Predire $(r, s')$ a partir de $(s, a)$ ; appris par memorisation (deterministe) ou estimation (stochastique) |
-| Dyna-Q | Q-Learning + $n$ mises a jour simulees par pas reel ; meme regle de mise a jour, experience gratuite |
-| Sample efficiency | A experience reelle egale, la planification accelere drastiquement la convergence (calcul contre echantillons) |
-| Modele perime | Un environnement qui change rend la planification nuisible ; Dyna-Q+ re-explore via le bonus $\kappa\sqrt{\tau}$ |
-| Decision-time planning | Rollouts et MCTS simulent vers l'avant depuis l'etat courant ; AlphaZero (modele parfait), MuZero (modele appris) |
+| Modèle du monde | Predire $(r, s')$ a partir de $(s, a)$ ; appris par memorisation (déterministe) ou estimation (stochastique) |
+| Dyna-Q | Q-Learning + $n$ mises a jour simulees par pas reel ; même règle de mise a jour, expérience gratuite |
+| Sample efficiency | A expérience reelle egale, la planification accelere drastiquement la convergence (calcul contre echantillons) |
+| Modèle perime | Un environnement qui change rend la planification nuisible ; Dyna-Q+ re-explore via le bonus $\kappa\sqrt{\tau}$ |
+| Decision-time planning | Rollouts et MCTS simulent vers l'avant depuis l'etat courant ; AlphaZero (modèle parfait), MuZero (modèle appris) |
 
 ### Passerelles vers les autres series
 
 - **[GameTheory](../GameTheory/README.md)** : MCTS est au coeur d'AlphaZero ; le notebook
   [GameTheory-17-MultiAgent-RL](../GameTheory/GameTheory-17-MultiAgent-RL.ipynb) applique
   ces idees aux jeux a deux joueurs via OpenSpiel.
-- **[Search](../Search/README.md)** : la planification par modele EST de la recherche dans un espace
-  d'etats — value iteration (notebook 5) et A* sont deux reponses au meme probleme.
-- **[Probas](../Probas/README.md)** : quand l'etat n'est pas observable, le modele s'etend en
-  **POMDP** (notebooks 17-20, theorie de la decision bayesienne) ; l'estimation d'un modele
+- **[Search](../Search/README.md)** : la planification par modèle EST de la recherche dans un espace
+  d'etats — value itération (notebook 5) et A* sont deux reponses au même problème.
+- **[Probas](../Probas/README.md)** : quand l'etat n'est pas observable, le modèle s'etend en
+  **POMDP** (notebooks 17-20, théorie de la decision bayesienne) ; l'estimation d'un modèle
   stochastique par comptage est une inference bayesienne deguisee.
-- **[QuantConnect](../QuantConnect/README.md)** : un backtest est un *modele de marche* sur lequel on
-  planifie des strategies — avec exactement le danger vu ici : le marche reel change (regime shifts),
-  et un modele perime (overfitting au passe) detruit la performance
+- **[QuantConnect](../QuantConnect/README.md)** : un backtest est un *modèle de marche* sur lequel on
+  planifie des stratégies — avec exactement le danger vu ici : le marche reel change (regime shifts),
+  et un modèle perime (overfitting au passe) detruit la performance
   ([QC-Py-32-RL-DQN-Trading](../QuantConnect/Python/QC-Py-32-RL-DQN-Trading.ipynb)).
 - **[GenAI](../GenAI/README.md)** : les *world models* des agents modernes (simulateurs appris par
-  reseaux de neurones) prolongent Dyna avec des modeles profonds ; le post-training RLHF
-  ([FT-04-RLHF-DPO](../GenAI/FineTuning/FT-04-RLHF-DPO.ipynb)) optimise contre un *modele de
-  recompense* appris — avec le meme risque de sur-optimisation d'un modele faux (reward hacking).
+  reseaux de neurones) prolongent Dyna avec des modèles profonds ; le post-training RLHF
+  ([FT-04-RLHF-DPO](../GenAI/FineTuning/FT-04-RLHF-DPO.ipynb)) optimise contre un *modèle de
+  recompense* appris — avec le même risque de sur-optimisation d'un modèle faux (reward hacking).
 
 ### References
 
 - Sutton & Barto, *Reinforcement Learning: An Introduction* (2e ed.), chapitre 8
 - Sutton (1990), *Integrated Architectures for Learning, Planning, and Reacting* (Dyna)
 - Moore & Atkeson (1993), *Prioritized Sweeping*
-- Silver et al. (2018), *AlphaZero* ; Schrittwieser et al. (2020), *MuZero*",,,,,,,,8e45a6a7107406bc,,,,,,,
+- Silver et al. (2018), *AlphaZero* ; Schrittwieser et al. (2020), *MuZero*",,,,,,,,5354310137fb0998,,,,,,,
 MyIA.AI.Notebooks/RL/rl_9_offline_rl.ipynb,b73f69f6,markdown,fr,883ff555e8dbb0d7,"# RL-9 : RL offline — Behavior Cloning et erreur d'extrapolation
 
 **Serie** : Reinforcement Learning | **Notebook** : 9/13 | **Duree estimee** : 50-55 min
@@ -8134,22 +8134,22 @@ Ce notebook a parcouru le RL offline de bout en bout sur un probleme assez petit
 - Ross, Gordon, Bagnell (2011), *A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning* (DAgger), AISTATS
 - Rafailov et al. (2023), *Direct Preference Optimization: Your Language Model is Secretly a Reward Model*, NeurIPS
 - Sutton & Barto (2018), *Reinforcement Learning: An Introduction*, chap. 8 (labyrinthe fig. 8.2)",,,,,,,,58ef835a9d879d61,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f06ef340,markdown,fr,03d5a98c39e9616d,"### Lecture des resultats : que regarder ?
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f06ef340,markdown,fr,111e2ca367cc55e6,"### Lecture des résultats : que regarder ?
 
-L'evaluation ci-dessus a lance chaque strategie sur **50 graines aleatoires** independantes (pour lisser la variance inherente a un tirage Bernoulli). Les variables `mean_rewards` et `mean_regret` contiennent desormais les trajectoires moyennes. Les trois sorties suivantes se lisent ensemble :
+L'évaluation ci-dessus a lance chaque stratégie sur **50 graines aléatoires** indépendantes (pour lisser la variance inherente a un tirage Bernoulli). Les variables `mean_rewards` et `mean_regret` contiennent desormais les trajectoires moyennes. Les trois sorties suivantes se lisent ensemble :
 
-- **Figure 1 (gauche)** trace la recompense cumulee moyenne : une bonne strategie se rapproche de la droite ""Optimal"". **Figure 1 (droite)** trace le regret cumule, grandeur la plus discriminante car elle soustrait l'effet du hasard. Une pente **lineaire** signale une strategie qui n'apprend pas (Random) ; une pente **sous-lineaire** qui s'aplatit signale une strategie qui converge.
-- **Figure 2** mesure un signal plus fin : la frequence a laquelle chaque agent tire le *meilleur* bras. C'est le diagnostic de convergence — une strategie peut afficher un regret correct tout en selectionnant le meilleur bras trop tard.
-- Le **tableau recapitulatif** quantifie le regret final et le rattache a son **type asymptotique** (lineaire, sous-lineaire borne, $O(\log T)$).
+- **Figure 1 (gauche)** trace la récompense cumulee moyenne : une bonne stratégie se rapproche de la droite ""Optimal"". **Figure 1 (droite)** trace le regret cumule, grandeur la plus discriminante car elle soustrait l'effet du hasard. Une pente **linéaire** signale une stratégie qui n'apprend pas (Random) ; une pente **sous-linéaire** qui s'aplatit signale une stratégie qui converge.
+- **Figure 2** mesure un signal plus fin : la fréquence a laquelle chaque agent tire le *meilleur* bras. C'est le diagnostic de convergence — une stratégie peut afficher un regret correct tout en selectionnant le meilleur bras trop tard.
+- Le **tableau recapitulatif** quantifie le regret final et le rattache a son **type asymptotique** (linéaire, sous-linéaire borne, $O(\log T)$).
 
-> **Astuce de lecture** : comparez d'abord les *pentes* du regret (Figure 1 droite) avant les valeurs finales du tableau — le type de croissance en dit plus sur la strategie qu'un seul nombre isole.
-",,,,,,,,03d5a98c39e9616d,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,33756095,markdown,fr,0f7891ec40a4c230,"### Un paradoxe apparent : Greedy bat UCB ?
+> **Astuce de lecture** : comparez d'abord les *pentes* du regret (Figure 1 droite) avant les valeurs finales du tableau — le type de croissance en dit plus sur la stratégie qu'un seul nombre isole.
+",,,,,,,,111e2ca367cc55e6,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,33756095,markdown,fr,a87f4729174481c9,"### Un paradoxe apparent : Greedy bat UCB ?
 
-Le benchmark ci-dessus laisse une impression etrange : **Greedy gagne** (regret final le plus bas), tandis qu'UCB — repute asymptotiquement optimal — finit en mauvaise position. Faut-il en conclure que la theorie d'UCB est vide ? **Non** : ce resultat s'explique par le `n_warmup=10` genereux de notre Greedy, qui beneficie de 100 tirages d'initialisation gratuits pour identifier le meilleur bras avant meme de commencer a exploiter.
+Le benchmark ci-dessus laisse une impression etrange : **Greedy gagne** (regret final le plus bas), tandis qu'UCB — réputé asymptotiquement optimal — finit en mauvaise position. Faut-il en conclure que la théorie d'UCB est vide ? **Non** : ce résultat s'explique par le `n_warmup=10` genereux de notre Greedy, qui bénéficie de 100 tirages d'initialisation gratuits pour identifier le meilleur bras avant même de commencer a exploiter.
 
-La cellule suivante mene le test decisif : on relance la comparaison sur **plusieurs horizons** $T$ (de 1 000 a 30 000 pas) en reduisant cet avantage (warmup=1). C'est la que la *robustesse* d'UCB — exploration principée sans phase d'initialisation — doit apparaitre, et ou le Greedy trop confiant peut s'effondrer en se bloquant sur un bras sous-optimal.
-",,,,,,,,0f7891ec40a4c230,,,,,,,
+La cellule suivante mene le test decisif : on relance la comparaison sur **plusieurs horizons** $T$ (de 1 000 a 30 000 pas) en réduisant cet avantage (warmup=1). C'est la que la *robustesse* d'UCB — exploration principée sans phase d'initialisation — doit apparaître, et ou le Greedy trop confiant peut s'effondrer en se bloquant sur un bras sous-optimal.
+",,,,,,,,a87f4729174481c9,,,,,,,
 MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-c3094261,markdown,fr,13e7407a1c520671,"# SAC (Soft Actor-Critic) depuis zero
 
 **Serie** : Reinforcement Learning | **Notebook** : 6d/13 | **Duree estimee** : 45-50 min
