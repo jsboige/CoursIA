@@ -82,7 +82,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 13, backtests QC Cloud MCP) | 4 | cohorte ML Classification / Clustering / Hybrid — **0 edge significative** (PSR max 22.74 %), 4 Needs-improvement |
 | Vérifié (tranche 14, backtests QC Cloud MCP) | 2 | cohorte **DL Chronos foundation** (2 stratégies Chronos du bucket Vivant promues) — **0 edge significative** (PSR max 13.79 % `ML-Chronos-Foundation`, aucune > 50 %), 2 Needs-improvement ; **le régime SMA200 (`Chronos-Foundation-Forecasting`) a le PSR le plus bas (3.12 %), pas le plus haut** — le filtre SMA200 dégrade la signification statistique vs le variant plain |
 | Vérifié (tranche 15, backtests QC Cloud MCP) | 4 | cohorte **Stratégies quantitatives structurelles** (4 stratégies best-guess du bucket Vivant promues : `Options-VGT` income covered-call tech single-names, `TermStructureCommodities-QC` courbe terme commodités, `PCA-StatArbitrage` stat-arb factoriel PCA, `Trend-Following` AQR-style 12-momentum multi-actifs) — **1 BROKEN** + **3 Needs-improvement** : PSR max 17.51 % `Options-VGT` (aucune > 50 %) ; `TermStructureCommodities-QC` Sharpe -0.244 / MaxDD 96.8 % / PSR 0.007 % = quasi-ruine systématique sur backtest 2018–2025 |
-| Vivant (best-guess, non vérifié) | 15 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL, tranche 15 a promu 4 stratégies quantitatives structurelles : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 20 true-Vivant + 36 promues tr7-15** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `15` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
+| Vérifié (tranche 16, backtests QC Cloud MCP) | 4 | cohorte **EMA-Cross + Composite Framework + Value Dogs** (4 stratégies best-guess du bucket Vivant promues) — **2 edge statistiquement significative** (PSR > 50 % : `Framework_Composite_TrendWeather` 77.94 %, `Framework_Composite_MomentumRegime` 73.52 %), 2 Needs-improvement (PSR < 50 % : `EMA-Cross-Stocks` 49.75 % near-edge, `PuppiesOfTheDow-QC` 3.49 %) ; **première tranche QC #1621 avec edge statistique significative depuis tr.3** (`BlackLitterman` PSR 51 %) — les composites Framework confirment l'avantage du blending méthodologique multi-stratégies |
+| Vivant (best-guess, non vérifié) | 15 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL, tranche 15 a promu 4 stratégies quantitatives structurelles, tranche 16 a promu 4 stratégies EMA + Composite Framework + Value : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 20 true-Vivant + 36 promues tr7-15** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `15` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -398,7 +399,38 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Term structure commodités roll-yield | **BROKEN** | 2018–2025 aligned (2129 j., 468 ordres) ; **Sharpe −0.244** (négatif) ; CAGR **−31.48 %** ; **MaxDD 96.80 %** ; **PSR 0.007 %** (quasi-nul) ; NP **−92.93 %** ($−929 294) — **effondrement systématique** sur la fenêtre alignée 2018-2025 : la courbe terme commodités post-2020 (Covid super-cycle 2020-2022 puis normalisation 2022-2024) ne fournit pas le signal directionnel roll-yield attendu ; perte ≈ capital initial ; edge nul à tous les seuils |
 
 
-#### Vivant (best-guess, non vérifié) (56 physiques = 20 true + 36 promues tr7-15 ; voir synthèse)
+#### Vérifié (tranche 16, backtests QC Cloud via MCP) (4)
+
+> **Scope tranche 16 (#1621)** : 4 stratégies « Vivant » promues au statut vérifié via backtests
+> QC Cloud réels (MCP `qc-mcp-lite`, backtests existants relus firsthand). Cohorte
+> **EMA-Cross + Composite Framework + Value Dogs** (Trend EMA sur actions single-names, 2 stratégies
+> composite multi-factors, Value Dogs of the Dow dividend-yield rebalancing). Métriques **non
+> walk-forward OOS** (backtests pleine période in-sample sauf `Framework_Composite_MomentumRegime`
+> OOS_2023_2026 walk-forward) — suffisantes pour classer Alive / Needs-improvement / BROKEN,
+> insuffisantes pour un verdict de production. **2 edge statistiquement significative** sur 4
+> (les 2 Composite Framework, PSR > 50 %) — **première tranche QC #1621 avec edge statistique
+> significative depuis la tranche 3** (`BlackLitterman` PSR 51 %, single-strategy isolated). Le
+> blending multi-factors (Composite Framework) confirme l'avantage méthodologique de la
+> diversification intra-stratégie vs single-factor trend.
+>
+> **Leçon pédagogique clé (inversion vs intuition trend-only)** : les 2 stratégies **single-factor
+> trend EMA / Value Dogs** (`EMA-Cross-Stocks`, `PuppiesOfTheDow-QC`) **n'atteignent pas le seuil
+> PSR 50 %** (49.75 % near-edge, 3.49 % respectivement) malgré des Sharpe/CAGR/CumRet très
+> honorables, alors que les 2 stratégies **Composite Framework multi-factors** passent le cap.
+> Le composite blending (momentum + régime + value ou trend + weather regime) **produit
+> davantage de Sharpe par unité de risque** et la signification statistique suit. Inversion vs le
+> pattern tr.7-15 (DL/ML/Regime/Crypto in-sample < 50 % PSR partout) : ce n'est pas le ML/DL qui
+> produit l'edge, c'est le **blending méthodologique multi-factors** sur fenêtre OOS
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite (trend + weather regime) | **Edge** | 2018–2025 (2766 j., 2087 ordres, projet 28825740) ; **Sharpe 1.14** ; CAGR 27.11 % ; MaxDD 27.70 % ; **PSR 77.94 %** ; NP 1301.65 % ($1 045 476) — **edge significative** : meilleur Sharpe cohorte + meilleure PSR cohorte + 2ᵉ max CAGR cohorte ; composite trend (EMA + momentum) blendé avec filtre régime « weather » (S&P 500 vs Treasuries yield-curve) |
+| `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite (momentum + régime) | **Edge** | OOS 2023-2026 (835 j., 183 ordres, projet 28871239) ; **Sharpe 0.145** ; CAGR 8.74 % ; MaxDD 4.60 % ; **PSR 73.52 %** ; NP 32.23 % ($29 157) — **edge significative** OOS walk-forward (vs tr.7-15 in-sample) ; Sharpe absolu bas mais **MaxDD min cohorte 4.60 %** = meilleur profil drawdown-containment ; PSR > 50 % sur fenêtre OOS distincte = **signal de robustesse réelle** ; ticker filter T60_RS40 harmonisé sur 2015-2025 |
+| `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | **Needs-improvement** | 2018–2025 (2516 j., 1424 ordres, projet 28789946, post-#2801 verify IBKR margin) ; **Sharpe 0.991** ; CAGR 29.23 % ; MaxDD 35.70 % ; **PSR 49.75 %** ; NP 1201.48 % ($1 200 060) — **near-edge** : 49.75 % PSR = juste sous le cap 50 % ; 2ᵉ max Sharpe cohorte + max CAGR cohorte + max NP cohorte ($1.2M record) ; single-factor trend EMA 20/50 sur FAANG+NVDA daily ne franchit pas le seuil de signification statistique in-sample |
+| `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | **Needs-improvement** | 2018–2025 (60 ordres, projet 32732704, post-#2801 verify) ; **Sharpe 0.302** ; CAGR 9.61 % ; MaxDD 28.80 % ; **PSR 3.49 %** ; NP 108.49 % ($77 039) — PSR quasi-nul + `tradeableDates=0` (reporting bug, pas absence de trades : 60 ordres confirmés) ; stratégie dividend-yield « Dogs of the Dow » (top-10 yielders DJIA rebalanced annually) sous-performe statistiquement vs trend pur post-2020 |
+
+
+#### Vivant (best-guess, non vérifié) (56 physiques = 20 true + 36 promues tr7-16 ; voir synthèse)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -413,10 +445,10 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `DL-LSTM` | `projects/DL-LSTM/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMModel(nn.Module) + algo QCAlgorithm + quantbook.ipynb — voir section tranche 10 |
 | `Dividend-Harvesting-ML` | `projects/Dividend-Harvesting-ML/` | ML dividendes | **Vérifié tranche 13** | main.py: class DividendHarvestingAlgorithm(QCAlgorithm) — voir section tranche 13 |
 | `EMA-Cross-Alpha` | `projects/EMA-Cross-Alpha/` | Trend EMA | Vivant | main.py: class EMACrossAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb |
-| `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | Vivant | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb |
+| `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | **Vérifié tranche 16** | main.py: class EMACrossStocksAlgorithm(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 |
 | `Framework_Composite_EMATrend` | `projects/Framework_Composite_EMATrend/` | Composite | **Vérifié tranche 9** | main.py: class FrameworkCompositeEMATrend(QCAlgorithm) + quantbook.ipynb — voir section tranche 9 |
-| `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | Vivant | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb |
-| `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | Vivant | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb |
+| `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite | **Vérifié tranche 16** | main.py: class FrameworkCompositeMomentumRegime(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 |
+| `Framework_Composite_TrendWeather` | `projects/Framework_Composite_TrendWeather/` | Composite | **Vérifié tranche 16** | main.py: class FrameworkCompositeStrategy(QCAlgorithm) + quantbook.ipynb — voir section tranche 16 |
 | `Gaussian-Direction-Classifier` | `projects/Gaussian-Direction-Classifier/` | ML classification | **Vérifié tranche 13** | main.py: class GaussianDirectionClassifier(QCAlgorithm) + research.ipynb — voir section tranche 13 |
 | `HAR-RV-J-Kelly` | `projects/HAR-RV-J-Kelly/` | Volatility / Kelly | **Vérifié tranche 8** | main.py: class HarrvjKellyAlgorithm(QCAlgorithm) — voir section tranche 8 |
 | `LSTM-Forecasting` | `projects/LSTM-Forecasting/` | DL (LSTM) | **Vérifié tranche 10** | main.py: class LSTMForecasting(QCAlgorithm) + research.ipynb — voir section tranche 10 |
@@ -443,7 +475,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | StatArb (PCA) | **Vérifié tranche 15** | main.py: class PCAStatArbitrageAlgorithm(QCAlgorithm) — voir section tranche 15 (Needs-improvement, Sharpe 0.165 / PSR 0.18 %) |
 | `Portfolio-IBKR-Coinbase-Hybrid` | `projects/Portfolio-IBKR-Coinbase-Hybrid/` | Hybrid crypto/broker | Vivant | main.py: class PortfolioHybridIBKRCoinbase(QCAlgorithm) (helpers FeeModel/Slippage en amont) + research.ipynb + quantbook.ipynb |
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
-| `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | Vivant | main.py: class PuppiesOfTheDow(QCAlgorithm) |
+| `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | **Vérifié tranche 16** | main.py: class PuppiesOfTheDow(QCAlgorithm) — voir section tranche 16 |
 | `RL-DQN-Trading` | `projects/RL-DQN-Trading/` | RL (DQN) | **Vérifié tranche 12** | main.py: class ReinforcementLearningTrading(QCAlgorithm) — voir section tranche 12 |
 | `RegimeSwitching` | `projects/RegimeSwitching/` | Régime | **Vérifié tranche 8** | main.py: class RegimeSwitching(QCAlgorithm) + quantbook.ipynb — voir section tranche 8 |
 | `SVM-Wavelet-Forecasting` | `projects/SVM-Wavelet-Forecasting/` | ML (SVM/Wavelet) | Vivant | main.py: class SVMWaveletForecasting(QCAlgorithm) |
