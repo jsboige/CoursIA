@@ -39,6 +39,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "shared"))
 
 from data_sources import fetch_data
 from walk_forward import WalkForwardSplitter
+from gpu_training import batch_thermal_check
 
 RESULTS_DIR = SCRIPT_DIR.parent / "outputs" / "volatility_regime"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -252,7 +253,9 @@ def train_and_evaluate_fold(
 
     for epoch in range(epochs):
         model.train()
+        n_batches = 0
         for X_batch, y_batch in train_loader:
+            batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
             logits = model(X_batch)
@@ -260,6 +263,7 @@ def train_and_evaluate_fold(
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
+            n_batches += 1
         scheduler.step()
 
         model.eval()

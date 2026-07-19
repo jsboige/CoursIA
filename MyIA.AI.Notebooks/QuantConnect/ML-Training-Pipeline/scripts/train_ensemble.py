@@ -34,6 +34,7 @@ from features import FeatureEngineer
 from baselines import oos_direction_distribution
 from sequence_utils import build_sequences, normalize_sequences
 from walk_forward import WalkForwardSplitter
+from gpu_training import batch_thermal_check
 
 SEEDS = [0, 1, 7, 42]
 N_SPLITS = 5
@@ -192,7 +193,9 @@ def run_ensemble(
 
             for epoch in range(30):
                 model.train()
+                n_batches = 0
                 for X_batch, y_batch in train_loader:
+                    batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
                     X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                     optimizer.zero_grad()
                     pred = model(X_batch)
@@ -202,6 +205,7 @@ def run_ensemble(
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimizer.step()
+                    n_batches += 1
 
             model.eval()
             with torch.no_grad():
