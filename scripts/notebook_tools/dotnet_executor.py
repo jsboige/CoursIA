@@ -18,6 +18,29 @@ from pathlib import Path
 import jupyter_client
 
 
+def _drain_iopub(kc, parent_msg_id, deadline_s=5):
+    """Best-effort drain of iopub messages until the kernel goes idle or a
+    short deadline passes.
+
+    Used after ``interrupt_kernel()`` on a cell timeout to discard the
+    interrupted request's trailing messages so they do not leak into the next
+    cell's iopub loop. Only messages whose ``parent_header.msg_id`` matches
+    ``parent_msg_id`` are inspected; unrelated messages are left in the queue
+    for their owner. Returns silently on any error (drain is best-effort).
+    """
+    deadline = time.time() + deadline_s
+    while time.time() < deadline:
+        try:
+            msg = kc.get_iopub_msg(timeout=1)
+        except Exception:
+            return
+        if msg.get("parent_header", {}).get("msg_id") != parent_msg_id:
+            continue
+        if (msg.get("msg_type") == "status"
+                and msg.get("content", {}).get("execution_state") == "idle"):
+            return
+
+
 def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                      verbose=False, dry_run=False):
     """Execute a .NET notebook cell-by-cell and update outputs.
@@ -76,6 +99,15 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                 except Exception:
                     continue
 
+                # Only consume iopub messages belonging to THIS cell's execute
+                # request. Without this filter, stale output or a stray idle
+                # status emitted for a PRIOR cell can pollute this cell's outputs
+                # or break the loop early. Messages lacking a parent_header
+                # (some kernel broadcasts) are kept for forward-compatibility.
+                parent_id = msg.get("parent_header", {}).get("msg_id")
+                if parent_id is not None and parent_id != msg_id:
+                    continue
+
                 msg_type = msg["msg_type"]
                 content = msg["content"]
 
@@ -119,6 +151,16 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
 
             if time.time() >= deadline:
                 print(f"    TIMEOUT [{exec_counter}] after {cell_timeout}s")
+                # Interrupt the stuck execution so the next cell is not queued
+                # behind it, then drain this request's trailing iopub messages
+                # so they do not consume the next cell's loop budget. Both are
+                # defensive: wrapped against kernel managers that do not support
+                # interrupt or have nothing left to drain.
+                try:
+                    km.interrupt_kernel()
+                except Exception:
+                    pass
+                _drain_iopub(kc, msg_id)
                 outputs.append({
                     "output_type": "stream",
                     "name": "stderr",
