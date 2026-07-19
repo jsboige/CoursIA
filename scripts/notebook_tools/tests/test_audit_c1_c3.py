@@ -140,6 +140,13 @@ class TestC1Patterns:
         assert not p.search("1/-1/0")
         assert not p.search("1/0/0")
         assert not p.search("1/-1/0 pour victoire J1/J2/nul")
+        # Should NOT match decimal fractions (1/0.5, 1/0.25, 0.1/0.5) — these
+        # are rate/scale constants, not ZeroDivisionError. Regression for the
+        # auditor over-matching `1/0` inside `1/0.5` (cf FP on ICT-7
+        # `echelle caracteristique 1/0.5`).
+        assert not p.search("echelle = 1/0.5")
+        assert not p.search("r = 1/0.25")
+        assert not p.search("0.1/0.5")
 
     def test_no_false_positive_on_variants(self):
         p0, p1, p2 = [p for p, _ in C1_PATTERNS]
