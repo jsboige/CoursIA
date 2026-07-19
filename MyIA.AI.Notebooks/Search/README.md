@@ -701,8 +701,8 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
 | Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
-| GameTheory | `social_choice_lean` (#5050) | Arrow + Sen voting | [GameTheory-15-CooperativeGames](../GameTheory/GameTheory-15-CooperativeGames.ipynb) |
-| GameTheory | `cooperative_games_lean` | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR](../GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) |
+| GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames](../GameTheory/GameTheory-15-CooperativeGames.ipynb) |
+| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR](../GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) |
 | SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-3-Dung-Csharp](../SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) (Dung Preferred semantics) |
 
 ```mermaid
@@ -719,8 +719,8 @@ flowchart LR
         LM["learning_theory_lean<br/>Novikoff perceptron<br/>0 sorry #4140"]
         LP["decision_theory_lean<br/>PAC iter-2<br/>uniform concentration"]
         LK["kelly_lean<br/>Kelly + MV bound"]
-        LG["social_choice_lean<br/>Arrow + Sen"]
-        LB["cooperative_games_lean<br/>Bondareva-Shapley<br/>0 sorry #3954"]
+        LG["game_theory_lean/SocialChoice<br/>Arrow + Sen<br/>(lakes #4365 absorbés)"]
+        LB["game_theory_lean/CooperativeGames<br/>Bondareva-Shapley<br/>0 sorry #3954"]
     end
     S3 -.->|"admissibilité ⟹<br/>optimalité"| LA
     S14 -.->|"pondération W<br/>bornée par"| LA

@@ -291,8 +291,8 @@ La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novik
 | ML | `learning_theory_lean` | i18n-B tranche 5 (FR `.lean` + companion `.en.md`) MERGED #5009 | Convention i18n à étendre aux autres lakes |
 | Probas | `decision_theory_lean` | VNM résolu 0 sorry #4049, Coherence MERGED #4150, Peters Gittins ref v4.27.0-rc1, PAC iter-2 chaîne 0-sorry bout-en-bout | Notebooks PAC (02-ML-Cours 2.5 biais-variance / ERM sous incertitude) |
 | QuantConnect | `kelly_lean` | Kelly criterion Growth MERGED #5003, Calmar/IR/MDD #4223 / #4164 | `02-ML-Cours` lien finance/ML : allocation optimale sous i.i.d. |
-| GameTheory | `social_choice_lean` | Arrow impossibilité, Sen, Voting | `02-ML-Cours` 2.7 ensembles (vote d'ensemble ≅ agrégation préférences) |
-| GameTheory | `cooperative_games_lean` | Bondareva-Shapley 0 sorry #3954 (noyau, attributions) | `02-ML-Cours` Shapley values (feature importance ≅ valeur de Shapley) |
+| GameTheory | `game_theory_lean/SocialChoice` (lake `social_choice_lean` absorbé post-#4365) | Arrow impossibilité, Sen, Voting | `02-ML-Cours` 2.7 ensembles (vote d'ensemble ≅ agrégation préférences) |
+| GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 (noyau, attributions) | `02-ML-Cours` Shapley values (feature importance ≅ valeur de Shapley) |
 | Search | `search_lean` | Phase 1-3 SHIPPED #4090 / #4142 OPEN / #4144 OPEN | `02-ML-Cours` 2.4 descente de gradient / arêtes de coût ≅ heuristique admissible |
 | SymbolicAI | `argumentation_lean` | Extension Dung (complète, préférée, stable, fondée) | `02-ML-Cours` 2.5 / 02-ML-Cours 2.7 débat ≅ framework d'argumentation |
 
@@ -311,7 +311,7 @@ flowchart LR
         L2["learning_theory_lean — Tightness #4301 OPEN"]
         L3["decision_theory_lean — VNM 0 sorry #4049 + Coherence #4150"]
         L4["kelly_lean — Growth #5003 / #4223 / #4164"]
-        L5["social_choice_lean + cooperative_games_lean — Arrow + Bondareva-Shapley"]
+        L5["game_theory_lean/SocialChoice + CooperativeGames — Arrow + Bondareva-Shapley<br/>(lakes #4365 absorbés)"]
         L6["search_lean + argumentation_lean — heuristique + Dung"]
     end
     NB1 -. "marge γ ⊥ rayon R ⟹ convergence" .-> L1
