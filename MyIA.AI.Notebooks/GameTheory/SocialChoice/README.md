@@ -89,7 +89,7 @@ Le modèle de **Downs** (1957) en tire une prédiction politique : deux partis e
 
 ### Étape 3 : Preuve formelle en Lean 4 (SC-02, 80 min)
 
-Le notebook SC-02 formalise les préférences, les axiomes d'Arrow et de Sen, et le théorème de l'électeur médian en Lean 4. Il inclut un tour de la librairie SocialChoiceLean de DominikPeters (Gibbard-Satterthwaite, Split Cycle, 12 règles de vote, théorème de Duggan-Schwartz). Les définitions sont compatibles avec le projet Lake `social_choice_lean/` (0 sorry sur Arrow, Sen et Voting).
+Le notebook SC-02 formalise les préférences, les axiomes d'Arrow et de Sen, et le théorème de l'électeur médian en Lean 4. Il inclut un tour de la librairie SocialChoiceLean de DominikPeters (Gibbard-Satterthwaite, Split Cycle, 12 règles de vote, théorème de Duggan-Schwartz). Les définitions sont compatibles avec le projet Lake `game_theory_lean/SocialChoice/` (0 sorry sur Arrow, Sen et Voting).
 
 ### Étape 4 : Vérification mécanique par SAT et Z3 (SC-04, 45 min)
 
@@ -116,7 +116,7 @@ Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../R
 
 ## Formalisations Lean
 
-Les notebooks SC-01 et SC-02 renvoient au projet Lake `social_choice_lean/` qui contient les preuves complètes :
+Les notebooks SC-01 et SC-02 renvoient au projet Lake `game_theory_lean/SocialChoice/` qui contient les preuves complètes :
 
 | Résultat | Fichier | sorry | Statut |
 |----------|---------|-------|--------|
@@ -176,7 +176,7 @@ La thèse est puissante et honnêtement présentée : il n'existe pas de règle 
 
 - **Design de mécanismes** : le notebook [GameTheory-16-MechanismDesign](../GameTheory-16-MechanismDesign.ipynb) est le prolongement naturel — il retourne la question d'Arrow (« quelle règle agréger ? ») en « comment *concevoir* les règles du jeu pour que les agents révèlent honnêtement leurs préférences ? » (enchères VCG, appariement Gale-Shapley, Myerson-Satterthwaite).
 - **Jeux coopératifs et valeur de Shapley** : [GameTheory-15-CooperativeGames](../GameTheory-15-CooperativeGames.ipynb) introduit une autre forme d'agrégation — non plus des préférences mais des *contributions* — où la valeur de Shapley offre l'unique répartition équitable vérifiant des axiomes analogues à ceux d'Arrow.
-- **Approfondir la formalisation Lean 4** : [SymbolicAI/Lean](../../SymbolicAI/Lean/README.md) pour les prérequis et la méthodologie des preuves formelles, et l'inventaire [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) pour la cartographie complète des théorèmes de choix social prouvés dans le projet Lake `social_choice_lean/`.
+- **Approfondir la formalisation Lean 4** : [SymbolicAI/Lean](../../SymbolicAI/Lean/README.md) pour les prérequis et la méthodologie des preuves formelles, et l'inventaire [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) pour la cartographie complète des théorèmes de choix social prouvés dans le projet Lake `game_theory_lean/SocialChoice/`.
 - Pour la pratique : reprenez [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) et relaxez un *autre* couple d'axiomes que ceux étudiés — encodez-le en SAT et observez si le solveur retourne SAT (une règle existe) ou UNSAT (nouvelle impossibilité). C'est l'exercice le plus formateur pour saisir comment la vérification mécanique transforme une conjecture en théorème.
 
 ### Le fil rouge

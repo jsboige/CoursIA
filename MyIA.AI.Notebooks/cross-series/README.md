@@ -22,7 +22,7 @@ Le projet [`matching-cv/`](matching-cv/) prend un problème unique — apparier 
 |------------|----------|-----------------|
 | **Simple (mots-clés)** | Comptage des mots-clés partagés entre CV et offre — une baseline transparente. | **ML** / `Search` (matching par recherche lexicale, baseline de classification) |
 | **Sémantique (meilleur score)** | Embeddings OpenAI `text-embedding-3-small` (via Semantic Kernel), similarité cosinus, cache vectoriel ChromaDB. | **GenAI** (embeddings, vector store) |
-| **Sémantique (stable)** | Appariement *stable* par l'algorithme de Gale-Shapley (variante Hospital-Resident) sur les scores sémantiques. | **GameTheory** (appariement stable ; cf. `GameTheory/` 15x et `social_choice_lean/`) |
+| **Sémantique (stable)** | Appariement *stable* par l'algorithme de Gale-Shapley (variante Hospital-Resident) sur les scores sémantiques. | **GameTheory** (appariement stable ; cf. `GameTheory/` 15x et `game_theory_lean/SocialChoice/`) |
 
 La leçon transversale est que **le « meilleur » appariement dépend du critère** : le meilleur score individuel (algorithme 2) n'est pas le même que l'appariement globalement stable au sens de Gale-Shapley (algorithme 3), où aucune paire candidat/poste n'a intérêt à se ré-apparier. Comparer les deux sur les mêmes données rend visible la différence entre *optimisation locale* et *stabilité globale*.
 
