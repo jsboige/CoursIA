@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- MyIA.Trading.Converter — port E1 #7265 depuis MyIntelligenceAgency/Lean (branche
+       MyIABacktesting_integration, sha 612dddf9). Convertit Trade CSV/JSON/BIN/JS
+       (legacy Apex) vers format dossier Lean (Data/<mkt>/<sym>/<res>/*.zip) avec
+       compression 7z. Code source verbatim du fork public (https://github.com/MyIntelligenceAgency/Lean),
+       adapte a .NET 9.0 (convention repo CoursIA, cf GradeBookApp/MyIA.AI.Notebooks/MyIA.AI.Shared).
+
+       Differences vs upstream :
+       - TargetFramework : net6.0 -> net9.0
+       - OutputType : Exe (conserve, demos via `dotnet run`)
+       - HintPaths ZeroFormatter.dll : remplace par PackageReference ZeroFormatter 1.6.4
+       - ZeroFormatter.Interfaces : HintPath local conserve (rare/legacy, pas de PackageRef canonique)
+       - HintPaths Admin (.nuget\packages\sevenzipextractor\) : retires
+       - Nullable : disable (compat verbatim upstream)
+       - ImplicitUsings : disable (verbatim upstream)
+
+       License upstream : MIT (MyIntelligenceAgency/Lean, Jared Broad et contributeurs). -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>MyIA.Trading.Converter</AssemblyName>
+    <RootNamespace>MyIA.Trading.Converter</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="7z-x64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="7z-x86.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Apex.Serialization" Version="4.0.5" />
+    <PackageReference Include="CsvHelper" Version="30.0.1" />
+    <PackageReference Include="FileHelpers" Version="3.4.1" />
+    <PackageReference Include="FlatFiles" Version="5.0.4" />
+    <PackageReference Include="MessagePack" Version="2.6.100-alpha" />
+    <PackageReference Include="MessagePackAnalyzer" Version="2.6.100-alpha">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SevenZipExtractor" Version="1.0.17" />
+    <PackageReference Include="SharpCompress" Version="0.34.2" />
+    <PackageReference Include="SimdJsonSharp.Managed" Version="1.5.0" />
+    <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.1.23" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.3.5" />
+    <PackageReference Include="TinyCsvParser" Version="2.7.0" />
+    <PackageReference Include="Utf8Json" Version="1.3.7" />
+    <PackageReference Include="ZeroFormatter" Version="1.6.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ZeroFormatter.Interfaces">
+      <HintPath>external\ZeroFormatter\ZeroFormatter.Interfaces.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
