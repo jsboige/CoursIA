@@ -40,8 +40,8 @@
     <PackageReference Include="CsvHelper" Version="30.0.1" />
     <PackageReference Include="FileHelpers" Version="3.4.1" />
     <PackageReference Include="FlatFiles" Version="5.0.4" />
-    <PackageReference Include="MessagePack" Version="2.6.100-alpha" />
-    <PackageReference Include="MessagePackAnalyzer" Version="2.6.100-alpha">
+    <PackageReference Include="MessagePack" Version="3.1.7" />
+    <PackageReference Include="MessagePackAnalyzer" Version="3.1.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
