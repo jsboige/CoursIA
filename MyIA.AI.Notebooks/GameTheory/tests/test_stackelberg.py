@@ -8,7 +8,8 @@ Modele (demande lineaire P = a - Q, cout marginal constant c) :
   - cournot_reaction_curve(rival_q)    : meilleure reponse q_i = (a - c - q_j) / 2
   - cournot_equilibrium(a, c)          : q* = (a - c) / 3 (symetrique)
   - stackelberg_equilibrium(a, c_L, c_F) : q_L = (a - 2 c_L + c_F) / 2,
-                                            q_F = (a + c_L - 2 c_F) / 4
+                                            q_F = reaction curve (a - c_F - q_L) / 2
+                                            (closed form (a + 2 c_L - 3 c_F) / 4)
   - calculate_profits(q1, q2, a, c1, c2) : pi_i = (a - q1 - q2 - c_i) * q_i
 
 Les tests assertent des INVARIANTS (forme close + proprietes economiques),
@@ -134,13 +135,36 @@ class TestStackelbergEquilibrium:
 
     def test_follower_higher_cost_produces_less(self):
         # Suiveur avec cout superieur -> q_F plus basse qu'en symetrique (22.5).
+        # Invariant de direction (valide que la forme close follower soit
+        # correcte ou non) : on n'epingle pas la valeur exacte, seulement la
+        # propriete economique (voir test_asymmetric_follower_equals_reaction_curve
+        # pour l'invariant exact, xfail en attendant #7385).
         _, q_F = stackelberg_equilibrium(100, 5, 15)
-        assert q_F == 18.75
         assert q_F < 22.5
 
-    def test_asymmetric_costs_exact(self):
-        # a=100, c_L=5, c_F=15 -> q_L=(100-10+15)/2=52.5, q_F=(100+5-30)/4=18.75.
-        assert stackelberg_equilibrium(100, 5, 15) == (52.5, 18.75)
+    @pytest.mark.xfail(
+        strict=True,
+        reason=(
+            "Stackelberg asymmetric follower uses the wrong closed form "
+            "(a + c_L - 2 c_F)/4, which only equals the Cournot reaction curve "
+            "(a - c_F - q_L)/2 when c_L == c_F. Fixed to the reaction curve in "
+            "#7385. xfail-strict flips to xpass-fail once #7385 lands, prompting "
+            "removal of this marker (the follower then best-responds correctly)."
+        ),
+    )
+    def test_asymmetric_follower_equals_reaction_curve(self):
+        """Le suiveur doit best-responder a la quantite du leader.
+
+        Par definition de Stackelberg, q_F = (a - c_F - q_L) / 2 (courbe de
+        reaction de Cournot evaluee au q_L d'equilibre). Le module courant
+        utilise (a + c_L - 2 c_F) / 4, egale a la courbe de reaction seulement
+        quand c_L == c_F ; corrige dans #7385. Avec (100, 5, 15) : q_L = 52.5
+        (leader, deja correct), q_F vraie = 16.25, q_F buggy = 18.75.
+        """
+        a, c_L, c_F = 100, 5, 15
+        q_L, q_F = stackelberg_equilibrium(a, c_L, c_F)
+        assert q_L == 52.5  # leader unaffected by the follower-formula bug
+        assert q_F == (a - c_F - q_L) / 2  # = 16.25, the reaction curve
 
     def test_leader_clamp_to_zero(self):
         # c_L si eleve que la forme close sort negative -> clamp a 0.
