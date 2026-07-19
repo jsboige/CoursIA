@@ -46,7 +46,7 @@ Avant de produire un podcast, il faut maîtriser les deux briques de base : la s
 La première brique est le signal lui-même : un tableau d'amplitudes échantillonné dans le temps. Le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) charge un échantillon avec `librosa` et en trace la forme d'onde, révélant la structure alternée de silence et de parole :
 
 <p align="center">
-  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="320" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a><br>
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="320" alt="Courbe matplotlib unique « Forme d'onde - Echantillon de test » — axe Y Amplitude (-0,4 à 0,4), axe X Temps (0 à 12 s) ; signal bleu dense révélant 3 groupes de parole (0–3 s, 4,5–6,5 s, 7,5–10,5 s) séparés par silences quasi-nuls, suivi d'une traîne décroissante jusqu'à ~11,5 s."></a><br>
   <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> : forme d'onde d'un échantillon de parole — l'amplitude (±0,4) fluctue entre silences et phonèmes sur ~12 s.</em>
 </p>
 
@@ -61,7 +61,7 @@ La première brique est le signal lui-même : un tableau d'amplitudes échantill
 Une fois le signal compris, les deux briques opérationnelles sont la transcription (STT) et la synthèse (TTS). Le panneau ci-dessous montre le volet STT validé — Whisper `large-v3-turbo` restituant le texte en 0,47 s — mais les trois sous-figures TTS portent la mention « Pas de resultats TTS » dans l'environnement de test ayant produit l'image ; ce volet reste à re-exécuter :
 
 <p align="center">
-  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="340" alt="Reconnaissance vocale (STT) validée par Whisper large-v3-turbo ; volet TTS non abouti dans l'environnement de test (sous-figures vides)."></a><br>
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="340" alt="Grille 2×2 « Latence STT par modele / Analyse des couts » — panneau haut-gauche barplot validé Whisper large-v3-turbo à 0,47 s (barre d'erreur), panneau haut-droite blanc avec texte « Pas de resultats TTS », panneau bas-gauche barplot ne portant que les libellés « large-v3-turbo » et « Gratuit » sans barres visibles (axe X Coût par heure -0,04 à 0,04 USD), panneau bas-droite radar 0–360° vide « Pas de resultats TTS » — seuls les volets STT et coûts-libellés ont produit des données."></a><br>
   <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> (ré-audit vision c.673 2026-07-19 par <code>myia-po-2023</code> MiniMax-M3, doctrine #5780) : grille 2×2 de 4 panneaux — panneau haut-gauche « Latence STT par modèle » validé (Whisper <code>large-v3-turbo</code> à 0,47 s), panneau haut-droite « Pas de résultats TTS » vide, panneau bas-gauche « Analyse des coûts (USD/heure) » ne portant que les libellés <code>large-v3-turbo</code> et <code>Gratuit</code> sans barres, panneau bas-droite radar « Pas de résultats TTS » vide. Seuls les volets STT (haut-gauche) et coûts (bas-gauche, sans valeurs) ont produit des données ; les deux volets TTS restent à re-exécuter.</em>
 </p>
 
@@ -84,7 +84,7 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
 <p align="center">
-  <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="360" alt="Séparation de sources Demucs : un mix stéréo décomposé en quatre stems (batterie, basse, autre, voix), chacun avec son énergie RMS annotée."></a><br>
+  <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="360" alt="Cinq panneaux verticaux (axe X Temps 0–9 s, axe Y Amplitude ±0,4) — Mix original gris dense sur 9 s, DRUMS (rouge, RMS 0,0307) montrant 14 hits rythmés discrets, BASS (vert, RMS 0,1626) ondulations continues serrées, OTHER (bleu, RMS 0,1524) dense et étalé, VOCALS (orange, RMS 0,0117) faible et quasi-absent sauf une salve concentrée entre 1,5–3 s."></a><br>
   <em>Sortie du notebook <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb">02-4</a> : 5 panneaux — le mix original puis les stems DRUMS, BASS, OTHER et VOCALS isolés, avec le RMS mesuré pour chacun (voix ≈ 0,012, basse ≈ 0,163).</em>
 </p>
 
@@ -121,7 +121,7 @@ Application directe : les notebooks de ce niveau mettent en œuvre des workflows
 Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare la latence et la taille audio des modèles kokoro vs openai/tts-1 selon le type de texte (dialogue, monologue, narration) — l'axe log-latence ms discrimine Kokoro (~3·10³ ms) d'openai/tts-1 (~3,5–4·10³ ms), tandis que l'axe taille audio KB (0–350) reste dominé par openai/tts-1 sur tous les types de texte :
 
 <p align="center">
-  <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Benchmark multi-modèles TTS : latence (ms) et taille audio (KB) de kokoro vs openai/tts-1 par type de texte (dialogue, monologue, narration)."></a><br>
+  <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Deux barplots côte-à-côte « Latence / Taille audio par modele et type de texte » — gauche échelle log-ms (kokoro ~2,5–3,2·10³ ms, openai/tts-1 ~3,5–4,5·10³ ms) ; droite KB 0–350 (kokoro 245–335, openai/tts-1 230–370) ; légende Type couleur (dialogue bleu, monologue orange, narration vert) — kokoro plus rapide mais tailles comparables, monologue toujours plus volumineux que narration ou dialogue."></a><br>
   <em>Sortie du notebook <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb">03-1</a> (cellule 29 ; provenance détaillée dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>) : 2 barplots Latence/Taille audio kokoro vs openai/tts-1 — discrimination nette sur latence, taille cohérente openai &gt; kokoro.</em>
 </p>
 
