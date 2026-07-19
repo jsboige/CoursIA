@@ -66,11 +66,15 @@ jobs:
           # --git-tracked-only keeps CI output deterministic (ignores untracked).
           python scripts/notebook_tools/generate_catalog.py --git-tracked-only
           python scripts/notebook_tools/expand_catalog_markers.py
+          # Health dashboard (#4210 acceptance #4): derive
+          # docs/reference/HEALTH_DASHBOARD.md from the freshly-regenerated
+          # catalog so it never drifts again (See #7422).
+          python scripts/notebook_tools/generate_health_dashboard.py
 
       - name: Commit + push to main if the catalog drifted
         run: |
           set -euo pipefail
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/reference/HEALTH_DASHBOARD.md
           # Stage only README files actually modified by marker expansion.
           mapfile -t changed_readmes < <(git ls-files -m -- '*README.md')
           if [ "${#changed_readmes[@]}" -gt 0 ]; then
