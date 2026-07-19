@@ -1,32 +1,32 @@
-# Conway's Game of Life — RLE Pattern Archive
+# Le Jeu de la Vie de Conway — Archive de Motifs RLE
 
-Source: [copy.sh/life](https://copy.sh/life/) mirror of [LifeWiki](https://conwaylife.com/wiki/Main_Page) patterns.
+Source : miroir [copy.sh/life](https://copy.sh/life/) des motifs de [LifeWiki](https://conwaylife.com/wiki/Main_Page).
 
-## Patterns
+## Motifs
 
-| File | Pattern | Author | Size | Grid | Period |
-|------|---------|--------|------|------|--------|
+| Fichier | Motif | Auteur | Taille | Grille | Période |
+|---------|-------|--------|--------|--------|---------|
 | `otcametapixel.rle` | OTCA Metapixel | Brice Due (2006) | 165 KB | 2058x2058 | 35 328 |
-| `turingmachine.rle` | Turing Machine | Paul Rendell (2000) | 104 KB | variable | N/A |
-| `p5760unitlifecell.rle` | p5760 Unit Life Cell | David Bell | 15 KB | 499x499 | 5 760 |
-| `gemini.rle` | Gemini self-replicator | Andrew Wade (2010) | 5.3 MB | huge | 33 699 586 |
+| `turingmachine.rle` | Machine de Turing | Paul Rendell (2000) | 104 KB | variable | N/A |
+| `p5760unitlifecell.rle` | Cellule de Vie unitaire p5760 | David Bell | 15 KB | 499x499 | 5 760 |
+| `gemini.rle` | Auto-réplicateur Gemini | Andrew Wade (2010) | 5,3 MB | immense | 33 699 586 |
 
-## Pillars.lean mapping
+## Correspondance avec Pillars.lean
 
-These RLE files correspond to the witness theorems scaffolded in
-`Conway.Life.Pillars`:
+Ces fichiers RLE correspondent aux théorèmes témoins échafaudés dans
+`Conway.Life.Pillars` :
 
-| Pillar theorem | RLE file | Generation count |
-|----------------|----------|-----------------|
+| Théorème pilier | Fichier RLE | Nombre de générations |
+|-----------------|-------------|------------------------|
 | `otca_metapixel_witness` | `otcametapixel.rle` | 35 328 |
-| `unitcell_witness` | `p5760unitlifecell.rle` (closest available) | 4 096 |
+| `unitcell_witness` | `p5760unitlifecell.rle` (le plus proche disponible) | 4 096 |
 | `gemini_witness` | `gemini.rle` | 33 699 586 |
-| `cpu_witness` | not yet available | 1 048 576 |
+| `cpu_witness` | pas encore disponible | 1 048 576 |
 
-## Download
+## Téléchargement
 
 ```bash
-# From copy.sh mirror (accessible without bot detection)
+# Depuis le miroir copy.sh (accessible sans détection de bot)
 MIRROR="https://copy.sh/life/examples"
 curl -L -A "Mozilla/5.0" "$MIRROR/otcametapixel.rle" -o otcametapixel.rle
 curl -L -A "Mozilla/5.0" "$MIRROR/gemini.rle" -o gemini.rle
@@ -34,8 +34,8 @@ curl -L -A "Mozilla/5.0" "$MIRROR/turingmachine.rle" -o turingmachine.rle
 curl -L -A "Mozilla/5.0" "$MIRROR/p5760unitlifecell.rle" -o p5760unitlifecell.rle
 ```
 
-## Note on Gemini
+## Note sur Gemini
 
-`gemini.rle` (5.3 MB) is gitignored due to size. It can be re-downloaded
-from the copy.sh mirror using the command above. The notebook's `fetch_rle()`
-function handles this gracefully with disk caching.
+`gemini.rle` (5,3 Mo) est gitignoré en raison de sa taille. Il peut être
+re-téléchargé depuis le miroir copy.sh avec la commande ci-dessus. La fonction
+`fetch_rle()` du notebook gère ce cas gracieusement via un cache disque.
