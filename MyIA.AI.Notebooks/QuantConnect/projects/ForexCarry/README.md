@@ -16,13 +16,19 @@ Long-only top-2 momentum currencies vs USD, monthly rebalance. Signal is inverte
 
 Le notebook [`research.ipynb`](research.ipynb) teste six hypothèses sur le momentum FX : momentum pur (H1), long-only vs long/short (H3), réduction à 4 paires pour limiter la corrélation (H4), filtre DXY vs SPY SMA200 (H5), filtre de volatilité par régime (H6), puis synthèse de la configuration optimale. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
+### Diagnostic préalable — corrélation inter-paires et rendements normalisés (cellule 3)
+
+Avant tout test d'hypothèse, la cellule 3 du notebook pose un **diagnostic structurel** sur l'univers FX : matrice de corrélation 7×7 des rendements quotidiens normalisés (force de la devise vs USD, avec inversion des paires USD/XXX) + courbe de rendement cumulé normalisé par devise. **Verdict visuel** : la matrice est **quasi-uniformément rouge-orange** (corrélations 0.5-1.0 sur la quasi-totalité des paires) — c'est précisément ce que la cellule 3 commente comme « corrélation élevée = signal momentum dilué par redondance ». La courbe de droite confirme : les devises les plus fortes (USDJPY marron, GBPUSD orange) terminent ~1.13-1.18 sur 2015-2025, les plus faibles (GBPUSD orange, AUDUSD vert, USDCHF rose) terminent ~0.70-0.85 — un univers très directionnel-dollar mais avec une **forte redondance** qui limite le gain marginal d'une position top-2 par rapport à une exposition directionnelle unique.
+
+<p align="center"><img src="assets/readme/forex-corr-cumreturns.png" alt="Dual-panel diagnostic cellule 3 — gauche : heatmap corrélation 7×7 des rendements FX normalisés (rouge-orange dominant, corrélations 0.5-1.0) ; droite : rendement cumulé normalisé par devise vs USD 2015-2025 (USDJPY marron ~1.18 leader, GBPUSD orange ~0.70 perdant)" width="900"/><br/><em>Diagnostic préalable — heatmap corrélation inter-paires (gauche, ~0.5-1.0 = redondance élevée) et rendement cumulé normalisé par devise (droite, dispersion 0.70-1.18) sur 2015-2025. Univers très directionnel-dollar mais redondant, ce qui motive les filtres testés dans les hypothèses suivantes (cellule 3 du notebook).</em></p>
+
 ### H1 — le momentum FX pur (baseline) est-il rentable ?
 
 **Constat** : la configuration baseline (composite 3M/12M, L/S 2+2, 7 paires, position 15%) décline de **−12 %** sur 2018-2026 avec un **Sharpe de −0.156** (CAGR −0.6 %, MaxDD −13.95 %). Le diagnostic BROKEN est confirmé visuellement : la courbe equity passe sous 1.0 dès 2019-Q1 et n'y remonte jamais.
 
 **Causes probables** (lecture verbatim `research.ipynb` cell[6]) : le momentum FX sur 2018-2026 est dominé par le cycle de hausses de taux de la Fed (2018, 2022-2023) qui soutient le dollar de manière persistante et contredit les signaux momentum classiques. L'approche Long/Short symétrique (2 long, 2 short) crée une exposition USD ambiguë — on achète et vend des devises contre le dollar dans les deux sens.
 
-<p align="center"><img src="assets/readme/forex-h1-momentum.png" alt="H1 — courbe equity baseline FX momentum L/S" width="900"/><br/><em>H1 — baseline FX momentum L/S (2018-2026) : courbe monotone déclinante, Sharpe −0.156 confirmé par la pente.</em></p>
+<p align="center"><img src="assets/readme/forex-h1-momentum.png" alt="H1 — mono-panel Baseline FX Momentum L/S 2018-2026, 1 seule courbe bleue Sharpe −0.156, pic ~1.022 mi-2019, creux ~0.88 mi-2021, termine ~0.95 fin 2025 (axe Y 0.88 → 1.02)" width="900"/><br/><em>H1 — mono-panel baseline FX Momentum L/S (2018-2026) : courbe bleue unique, Sharpe −0.156, total return −4.87 % sur 8 ans, MaxDD −13.95 % (cellule 5 du notebook, référence de base à laquelle les filtres h5/h6 et configs synthèse sont comparés).</em></p>
 
 ### H3 — long-only vs long/short : L3/S3 lisse le bruit mais ne crée pas d'alpha
 
@@ -34,7 +40,7 @@ Le notebook [`research.ipynb`](research.ipynb) teste six hypothèses sur le mome
 
 Visuellement, les 6 courbes se croisent sans qu'aucune ne domine structurellement — le spread est du bruit, pas du signal.
 
-<p align="center"><img src="assets/readme/forex-h3-longshort.png" alt="H3 — long-only vs long/short 6 configurations" width="900"/><br/><em>H3 — 6 configurations L/S et long-only : la courbe violette L3/S3 termine au-dessus (S=+0.006), les autres restent sous 1.0.</em></p>
+<p align="center"><img src="assets/readme/forex-h3-longshort.png" alt="H3 — mono-panel Long-Only vs Long/Short 2018-2026, 6 courbes : L3/S3 full L/S violet winner S=+0.01, L2/S2 current bleu S=−0.16, L3/S0 long-only 3 orange S=−0.17, L2/S0 long-only 2 vert S=−0.26, L1/S0 top 1 rouge S=−0.23, L1/S1 minimal L/S marron S=−0.18 (axe Y 0.85 → 1.025)" width="900"/><br/><em>H3 — 6 configurations L/S et long-only (cellule 11 du notebook) : **L3/S3 full L/S** violet winner marginal S=+0.01 (seul positif), les 5 autres configs restent sous 1.0 (S=−0.16 à −0.26). Long-only pur sous-performe clairement.</em></p>
 
 ### H4 — la diversification géographique bat la concentration sectorielle
 
@@ -50,7 +56,7 @@ Visuellement, les 6 courbes se croisent sans qu'aucune ne domine structurellemen
 
 La courbe orange « 4 diversified » sort du lot visuellement : seule trajectoire qui termine >1.02, les autres restent entre 0.88 et 0.98.
 
-<p align="center"><img src="assets/readme/forex-h4-4pairs.png" alt="H4 — impact du choix de paires" width="900"/><br/><em>H4 — 5 sous-ensembles testés : la courbe orange « 4 diversified » (S=+0.07) sort du lot, les autres restent négatives.</em></p>
+<p align="center"><img src="assets/readme/forex-h4-4pairs.png" alt="H4 — mono-panel Impact du choix de paires 2018-2026, 5 courbes : All 7 bleu S=−0.156, 4 diversified orange winner S=+0.069, 4 major vert S=−0.017, 3 commodity rouge pire S=−0.40, 5 sans NZDUSD/USDCHF violet S=−0.027 (axe Y 0.88 → 1.02)" width="900"/><br/><em>H4 — 5 sous-ensembles testés (cellule 14 du notebook) : **« 4 diversified »** orange winner **seul Sharpe positif S=+0.069** (MaxDD −6.34 % le moins creux), **« 3 commodity »** rouge pire S=−0.40, les 3 autres configs intermédiaires négatives.</em></p>
 
 ### H5 — les filtres DXY/SPY dégradent TOUS le signal en baseline L/S
 
@@ -63,7 +69,7 @@ La courbe orange « 4 diversified » sort du lot visuellement : seule trajectoir
 
 Visuellement, les 4 courbes filtrées (orange, vert, rouge, violet) restent sous la bleue « No filter » pendant la majeure partie de la période, validant le constat BROKEN sur ces hypothèses.
 
-<p align="center"><img src="assets/readme/forex-h5-dxy.png" alt="H5 — filtres DXY vs SPY SMA200" width="900"/><br/><em>H5 — 4 filtres testés : aucun ne surpasse le no-filter baseline en L/S. Le filtre equities (SPY) est le pire.</em></p>
+<p align="center"><img src="assets/readme/forex-h5-dxy.png" alt="H5 — mono-panel Impact des filtres SPY vs DXY 2018-2026, 5 courbes : No filter bleu baseline S=−0.16, SPY > SMA200 orange S=−0.31, DXY < SMA200 vert S=−0.20, DXY < SMA50 rouge pire S=−0.46, SPY + DXY violet S=−0.25 (axe Y 0.87 → 1.02)" width="900"/><br/><em>H5 — 4 filtres testés (cellule 17 du notebook) : **tous les filtres dégradent** le Sharpe vs baseline (−0.16). **DXY < SMA50** rouge pire S=−0.46 (~−12 % sur 8 ans), SPY > SMA200 orange S=−0.31 perdant aussi. Aucun filtre macro ne protège efficacement.</em></p>
 
 ### H6 — seul « Vol < median » produit un Sharpe positif
 
@@ -75,7 +81,7 @@ Visuellement, les 4 courbes filtrées (orange, vert, rouge, violet) restent sous
 
 Visuellement, la courbe orange « Vol<median » se détache progressivement et termine vers 1.013 en 2026, tandis que « No filter » descend à ~0.945. Effet réel mais modeste (delta Sharpe ~0.2).
 
-<p align="center"><img src="assets/readme/forex-h6-vol.png" alt="H6 — filtre de volatilité par régime" width="900"/><br/><em>H6 — 4 filtres de volatilité : la courbe orange « Vol<median » (S=+0.04) finit au-dessus, P75 et SPY+Vol restent sous le baseline.</em></p>
+<p align="center"><img src="assets/readme/forex-h6-vol.png" alt="H6 — mono-panel Impact du filtre de volatilité 2018-2026, 4 courbes : No filter bleu baseline S=−0.16, Vol < median orange winner S=+0.04, Vol < P75 vert S=+0.02, SPY + Vol<P75 rouge S=−0.18 (axe Y 0.88 → 1.04)" width="900"/><br/><em>H6 — 4 filtres de volatilité (cellule 20 du notebook) : **Vol < median** orange **seul filtre positif S=+0.04** (effet réel mais modeste, delta Sharpe ~0.2), pic mi-2020 ~1.04 (protection bear). **Combinaison SPY + Vol<P75** rouge perd l'avantage vol (S=−0.18 ≈ baseline) → les 2 filtres s'annulent.</em></p>
 
 ### Synthèse — v3e domine massivement (Sharpe +1.69)
 
@@ -94,7 +100,7 @@ Visuellement, la courbe orange « Vol<median » se détache progressivement et t
 
 Le gap **baseline −0.156 → v3e +1.687** = delta Sharpe de 1.84, soit ~5× la magnitude du signal baseline. Le potentiel d'amélioration du live est donc **significatif** — le README historique se concentrait sur le diagnostic BROKEN sans pointer la trajectoire de remédiation.
 
-<p align="center"><img src="assets/readme/forex-synthese.png" alt="Synthèse — comparaison des configurations candidates" width="900"/><br/><em>Synthèse — courbe marron v3e (S=+1.69) domine structurellement : termine à 1.33 vs 0.91 pour le baseline. v3a orange (S=+0.50) deuxième. Le reste sous 1.0.</em></p>
+<p align="center"><img src="assets/readme/forex-synthese.png" alt="Synthèse — mono-panel Comparaison des configurations candidates 2018-2026, 6 courbes : Baseline bleu S=−0.31 perdant, v3a orange S=+0.50, v3b vert S=−0.32, v3c rouge S=−0.03, v3d violet S=−0.19, v3e marron S=+1.69 winner incontestable (axe Y 0.9 → 1.35)" width="900"/><br/><em>Synthèse — 6 configurations candidates (cellule 23 du notebook) : **v3e** marron **EXPLOSE littéralement** toutes les autres configs, termine ~1.33 (+33 % sur 8 ans) vs ~1.10 v3a 2ème (S=+0.50), ~1.03 v3d 3ème (S=−0.19). Sharpe **+1.69 = seule config > 0.5, 3.4× le 2ème**. Combinaison gagnante : 3 paires LO + short momentum + DXY<SMA50.</em></p>
 
 ## How to Run
 
