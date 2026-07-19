@@ -16,6 +16,7 @@ from agent_framework import ToolResultCompactionStrategy
 
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
+from .heartbeat_budget import output_indicates_heartbeat_budget_exceeded
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
@@ -1024,6 +1025,27 @@ class MultiAgentSorryProver:
         _best_reported = (_raw_best if _raw_best is not None and _raw_best < 900
                           else min(original_sorry_count, final_sorry))
 
+        # P5a (#7477 forensic): heartbeat-budget exhaustion verdict. The DEMO 62
+        # Hashlife P5 wall is a whnf blowup that hits Lean's `maxHeartbeats`
+        # ceiling (default 200000): a tactic that is *correct* becomes
+        # unaffordable, surfacing as `(deterministic) timeout, maximum
+        # heartbeats (200000)` in the build output. Without a typed verdict the
+        # harness sinks these runs into `no_progress` / generic timeout, hiding
+        # a proof-engineering wall under a label that reads as 'agent gave up'.
+        # Confirmed model-independent (ai-01 A-B c.681: glm-5.2 / gpt-5.6-sol /
+        # kimi-k3 all hit it). Scan every build output seen during the run --
+        # per-attempt errors (where a submitted tactic blew the budget) and the
+        # final verify raw output -- for the signature. Distinct from
+        # `no_progress` (the agent did try) and from a generic provider /
+        # wall-clock timeout. P5b (factor-lemma / set_option maxHeartbeats hint)
+        # is a SEPARATE grain, intentionally not handled here.
+        heartbeat_budget_exceeded = any(
+            output_indicates_heartbeat_budget_exceeded(getattr(a, "error", None))
+            for a in state.tactic_history
+        ) or output_indicates_heartbeat_budget_exceeded(
+            final_verify.get("raw_output") or final_verify.get("raw_output_preview")
+        )
+
         return {
             "success": success,
             "proof": state.final_proof,
@@ -1058,6 +1080,15 @@ class MultiAgentSorryProver:
             # (forensic; each hop already covered its in-hop retries).
             "provider_outage": provider_outage,
             "provider_failures": provider_failures,
+            # P5a (#7477 forensic): True when a build output seen during the run
+            # hit Lean's `maxHeartbeats` ceiling (`(deterministic) timeout,
+            # maximum heartbeats (N)`). The target is likely *correct but
+            # unaffordable* -- a proof-engineering wall, not 'agent gave up'.
+            # Distinct from `no_progress` / generic timeout so forensic ROI does
+            # not mis-rank a heartbeat wall as agent laziness. Model-independent
+            # (ai-01 A-B c.681). P5b (factor-lemma / set_option maxHeartbeats
+            # hint) is a SEPARATE grain.
+            "heartbeat_budget_exceeded": heartbeat_budget_exceeded,
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
