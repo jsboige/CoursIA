@@ -697,7 +697,7 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | **[Lean](../Lean/)** | Vérification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety complètent la vérification Lean. |
 | **[SmartContracts](../SmartContracts/)** | Méthodes formelles | La vérification formelle SC-14 (Certora/SMTChecker) utilise les mêmes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
 | **[SemanticWeb](../SemanticWeb/)** | Logique de Description / OWL | La logique de Description (Tweety-3) est le fondement du raisonnement OWL : les ontologies OWL DL (SW-6/SW-7) utilisent les mêmes solveurs DL que Tweety. |
-| **[GameTheory](../../GameTheory/)** | Théorie du vote | Le notebook 9 (Préférences/Vote) couvre les concepts de choix social formalisés dans `social_choice_lean/` (Arrow, Sen, Voting). |
+| **[GameTheory](../../GameTheory/)** | Théorie du vote | Le notebook 9 (Préférences/Vote) couvre les concepts de choix social formalisés dans `game_theory_lean/SocialChoice/` (Arrow, Sen, Voting). |
 | **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent être modélisés comme des problèmes de planification PDDL. |
 | Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
 
