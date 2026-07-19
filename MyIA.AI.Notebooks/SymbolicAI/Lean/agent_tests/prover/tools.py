@@ -727,6 +727,19 @@ class TacticTools:
         self._best_content: Optional[str] = None
         self._best_sorry_count: int = 999
         self._original_sorry_count: int = 999
+        # FX-12 (#6790 pathology 3): count build-verified *structural* edits
+        # (file_replace_lines / file_insert_lines whose build_check passed).
+        # These are real proof progress (e.g. a monolithic sorry decomposed into
+        # N compiling sub-sorries) but are INVISIBLE to the iterations/attempts
+        # metrics in the result dict — ``iterations`` counts tactic-submission
+        # turns (``max_iterations - remaining_iterations``) and ``attempts``
+        # counts ``len(tactic_history)``, neither of which a structural edit
+        # touches. Result: a run that aborted after 1 build-verified structural
+        # edit + N compiles + 75 trace entries reports ``iterations=0 /
+        # attempts=0`` (DEMO 62 forensic, #6790), hiding the progress from the
+        # forensic ROI. Surfacing this counter lets forensic distinguish
+        # ``no progress at all`` from ``structural progress without a tactic``.
+        self._structural_edits_verified: int = 0
         # P2 (#1453): Delta0-compile stagnation tracking. Counts consecutive
         # successful compiles that failed to reach a new sorry-count low. The
         # verbatim loop detector (_check_tool_loop) only catches *identical*
@@ -1476,6 +1489,10 @@ class TacticTools:
                 # Build verified — safe to update snapshots.
                 self._last_build_ok_content = new_file_content
                 self._last_build_ok_sorry_count = sorry_count
+                # FX-12 (#6790 pathology 3): this file_replace_lines call passed
+                # build_check — it is a build-verified structural edit (real
+                # proof progress), counted separately from tactic submissions.
+                self._structural_edits_verified += 1
 
                 if sorry_count < self._best_sorry_count:
                     self._best_sorry_count = sorry_count
@@ -1589,6 +1606,10 @@ class TacticTools:
 
                 self._last_build_ok_content = new_file_content
                 self._last_build_ok_sorry_count = sorry_count
+                # FX-12 (#6790 pathology 3): this file_insert_lines call passed
+                # build_check -- a build-verified structural edit (real proof
+                # progress), counted separately from tactic submissions.
+                self._structural_edits_verified += 1
                 if sorry_count < self._best_sorry_count:
                     self._best_sorry_count = sorry_count
                     self._best_content = new_file_content

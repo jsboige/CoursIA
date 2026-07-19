@@ -1058,6 +1058,17 @@ class MultiAgentSorryProver:
             # (forensic; each hop already covered its in-hop retries).
             "provider_outage": provider_outage,
             "provider_failures": provider_failures,
+            # FX-12 (#6790 pathology 3): count of build-verified *structural*
+            # edits (file_replace_lines / file_insert_lines whose build_check
+            # passed). Distinct from ``structural_progress`` (a boolean
+            # success-gate decision) and from ``iterations``/``attempts``
+            # (tactic-submission turns): a run that aborted after 1 build-
+            # verified structural edit reports ``iterations=0 / attempts=0
+            # / structural_progress=False`` yet made real progress (e.g. a
+            # monolithic sorry decomposed into compiling sub-sorries).
+            # Surfacing this count lets forensic ROI distinguish "no progress
+            # at all" from "structural progress without a tactic".
+            "structural_edits": getattr(tactic_tools, "_structural_edits_verified", 0),
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
@@ -1939,6 +1950,16 @@ class AutonomousProver:
             # NOT `no_progress` / `structural_progress` — it must be filtered out
             # of progress metrics.
             "provider_outage": _provider_dead,
+            # FX-12 (#6790 pathology 3): count of build-verified *structural*
+            # edits (file_replace_lines / file_insert_lines whose build_check
+            # passed). Distinct from ``structural_progress`` (boolean success
+            # gate) and ``iterations``/``attempts`` (tactic-submission turns):
+            # a run that aborted after a build-verified structural edit reports
+            # ``iterations=0 / attempts=0 / structural_progress=False`` yet
+            # made real progress. Surfacing this count lets forensic ROI
+            # distinguish "no progress at all" from "structural progress
+            # without a tactic" (cf multi-path comment at provers.py:1062).
+            "structural_edits": getattr(tactic_tools, "_structural_edits_verified", 0),
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
