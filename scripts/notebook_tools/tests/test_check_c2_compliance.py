@@ -419,6 +419,156 @@ class TestGetTargetNotebooks:
 
 
 # ---------------------------------------------------------------------------
+# get_target_notebooks — catalog branch (serie/maturity/exclude_broken filters
+# + existence check). This is the PRODUCTION path (no --no-catalog) and was
+# previously 0% covered: every test above set no_catalog=True.
+# ---------------------------------------------------------------------------
+
+class TestGetTargetNotebooksCatalog:
+    """Tests for the catalog-driven branch of get_target_notebooks.
+
+    Exercises the serie/maturity/exclude_broken filters, the on-disk
+    existence check, and the missing-``path`` guard. All tests mock
+    CATALOG_PATH to a synthetic catalog under tmp_path.
+    """
+
+    def _make_args(self, **kwargs):
+        import argparse
+        defaults = {
+            "path": None, "serie": None, "maturity": None,
+            "exclude_broken": False, "no_catalog": False,
+            "fix": False, "json": False,
+        }
+        defaults.update(kwargs)
+        return argparse.Namespace(**defaults)
+
+    def _write_catalog(self, catalog_path: Path, entries: list[dict]) -> None:
+        catalog_path.parent.mkdir(parents=True, exist_ok=True)
+        catalog_path.write_text(json.dumps(entries), encoding="utf-8")
+
+    def test_catalog_no_filters_returns_existing(self, tmp_path):
+        """All catalog entries that exist on disk are returned (no filters)."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks" / "GenAI").mkdir(parents=True)
+        (tmp_path / "notebooks" / "GenAI" / "a.ipynb").write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [{"path": "GenAI/a.ipynb"}])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args())
+        assert len(result) == 1
+        assert result[0].name == "a.ipynb"
+
+    def test_catalog_missing_on_disk_filtered_out(self, tmp_path):
+        """Catalog entry whose file does not exist on disk is skipped."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        (tmp_path / "notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+        # b.ipynb is in the catalog but absent on disk.
+        self._write_catalog(cat, [
+            {"path": "a.ipynb"},
+            {"path": "b.ipynb"},
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args())
+        names = [p.name for p in result]
+        assert names == ["a.ipynb"]
+
+    def test_serie_filter(self, tmp_path):
+        """--serie keeps only entries matching that serie."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        (tmp_path / "notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "notebooks" / "b.ipynb").write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [
+            {"path": "a.ipynb", "serie": "GenAI"},
+            {"path": "b.ipynb", "serie": "Search"},
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args(serie="GenAI"))
+        assert [p.name for p in result] == ["a.ipynb"]
+
+    def test_maturity_filter(self, tmp_path):
+        """--maturity keeps only entries matching that maturity."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        (tmp_path / "notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "notebooks" / "b.ipynb").write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [
+            {"path": "a.ipynb", "maturity": "PRODUCTION"},
+            {"path": "b.ipynb", "maturity": "DRAFT"},
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args(maturity="PRODUCTION"))
+        assert [p.name for p in result] == ["a.ipynb"]
+
+    def test_exclude_broken_filter(self, tmp_path):
+        """--exclude-broken drops entries with status=BROKEN."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        (tmp_path / "notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "notebooks" / "b.ipynb").write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [
+            {"path": "a.ipynb", "status": "READY"},
+            {"path": "b.ipynb", "status": "BROKEN"},
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args(exclude_broken=True))
+        assert [p.name for p in result] == ["a.ipynb"]
+
+    def test_combined_filters(self, tmp_path):
+        """serie + maturity + exclude_broken compose (AND semantics)."""
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        for n in ("a.ipynb", "b.ipynb", "c.ipynb", "d.ipynb"):
+            (tmp_path / "notebooks" / n).write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [
+            {"path": "a.ipynb", "serie": "GenAI", "maturity": "PRODUCTION", "status": "READY"},
+            {"path": "b.ipynb", "serie": "GenAI", "maturity": "PRODUCTION", "status": "BROKEN"},
+            {"path": "c.ipynb", "serie": "GenAI", "maturity": "DRAFT", "status": "READY"},
+            {"path": "d.ipynb", "serie": "Search", "maturity": "PRODUCTION", "status": "READY"},
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args(
+                serie="GenAI", maturity="PRODUCTION", exclude_broken=True))
+        assert [p.name for p in result] == ["a.ipynb"]
+
+    def test_missing_path_key_does_not_crash(self, tmp_path):
+        """A malformed catalog entry without ``path`` is skipped, not crashed.
+
+        Regression guard mirroring catalog_coverage (#7473): the sibling
+        filters use ``.get()` defensively, but the raw ``e["path"]`` access
+        would raise KeyError and abort the whole scan on a partial/manual
+        catalog. The entry is skipped instead.
+        """
+        cat = tmp_path / "cat.json"
+        (tmp_path / "notebooks").mkdir(parents=True)
+        (tmp_path / "notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+        self._write_catalog(cat, [
+            {"path": "a.ipynb"},
+            {"title": "malformed, no path key"},  # KeyError surface pre-fix
+        ])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            # Pre-fix: KeyError: 'path'. Post-fix: malformed entry skipped.
+            result = get_target_notebooks(self._make_args())
+        assert [p.name for p in result] == ["a.ipynb"]
+
+    def test_empty_catalog(self, tmp_path):
+        """An empty catalog yields no targets."""
+        cat = tmp_path / "cat.json"
+        self._write_catalog(cat, [])
+        with patch("check_c2_compliance.NOTEBOOKS_DIR", tmp_path / "notebooks"), \
+             patch("check_c2_compliance.CATALOG_PATH", cat):
+            result = get_target_notebooks(self._make_args())
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 

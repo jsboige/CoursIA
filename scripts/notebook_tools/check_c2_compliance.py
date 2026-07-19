@@ -141,10 +141,18 @@ def get_target_notebooks(args) -> list[Path]:
     if args.exclude_broken:
         entries = [e for e in entries if e.get("status") != "BROKEN"]
 
+    # ``e.get("path")`` guards a malformed/partial catalog entry that omits
+    # the ``path`` key (schema drift, manual edit): the sibling filters above
+    # already use ``.get()`` defensively, but the raw ``e["path"]`` access
+    # below would raise KeyError and abort the whole scan. Skip such entries
+    # instead of crashing — same missing-key unification as catalog_coverage
+    # (#7473). ``path`` is the primary key of the generated catalog, so this
+    # is unreachable via ``generate_catalog.py`` today, but defensive parity
+    # with the filters is the right contract for a partial/manual catalog.
     return [
         NOTEBOOKS_DIR / e["path"]
         for e in entries
-        if (NOTEBOOKS_DIR / e["path"]).exists()
+        if e.get("path") and (NOTEBOOKS_DIR / e["path"]).exists()
     ]
 
 
