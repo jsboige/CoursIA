@@ -273,12 +273,15 @@ Examples:
             return 0
 
         if args.all_solutions:
-            # Enumerate solutions
-            print(f"s SATISFIABLE")
+            # Enumerate solutions. Print the SAT status line only once we have
+            # actually found a model: an UNSAT formula yields zero models, and
+            # printing "s SATISFIABLE" up front would produce self-contradictory
+            # output (s SATISFIABLE followed by s UNSATISFIABLE).
             count = 0
             for model in enumerate_solutions(clauses, args.solver, args.max, args.verbose):
+                if count == 0:
+                    print("s SATISFIABLE")
                 count += 1
-                positive_lits = [lit for lit in model if lit > 0]
                 print(f"v {' '.join(str(lit) for lit in model)} 0")
             if count == 0:
                 print("s UNSATISFIABLE")
