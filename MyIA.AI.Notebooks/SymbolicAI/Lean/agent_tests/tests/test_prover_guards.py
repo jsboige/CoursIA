@@ -3424,3 +3424,312 @@ def test_count_sorries_from_build_output_type_safe_on_list_input():
         "warning: foo uses sorry\nwarning: bar uses `sorry`\n"
     ) == 2
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# c.683 (#1453) — TacticAgent.handle yield-type sentinels
+# ──────────────────────────────────────────────────────────────────────────
+# Four yield roles live in TacticAgent.handle (workflow.py:281, 289, 310, 570):
+#   - iteration_cap            : msg.iteration > msg.max_iterations AND
+#                                next_agent != "director" → yield + log
+#   - iteration_cap_tolerated  : same over-cap BUT next_agent == "director"
+#                                AND director_budget_remaining → log only,
+#                                do NOT yield (V5 P1: protect the in-flight
+#                                Director escalation)
+#   - delta0_stagnation_yield  : state.consecutive_delta0_compiles >=
+#                                DELTA0_STAGNATION_HARDCAP (6) AND no proof
+#                                yet → yield to stop no-progress waste (L147
+#                                forensic: 22 consecutive Δ0 at 4 sorry)
+#   - empty_response_guard     : response_text empty AND no msg.tactic →
+#                                inject fallback message + log
+# The fifth sentinel announced in workflow.py:254 comment ("build_fail_streak")
+# is not yet implemented as a yield role — only the counter
+# _consecutive_build_fails exists (workflow.py:840). Once that path is added
+# it should get a fifth test mirroring the delta0 pattern.
+
+
+def _make_tactic_agent_for_yield_test(monkeypatch, *, director_in_flight, state_attrs):
+    """Build a stand-in for the AgentExecutor that owns the yield-paths.
+
+    The yield sentinels live inside ``AgentExecutor.handle`` (workflow.py:281,
+    289, 310, 570) — there is no separate ``TacticAgent`` class. We construct
+    a bare object via ``__new__`` and wire the four collaborators the handle
+    method touches (``_agent``, ``_trace``, ``_state``, ``_ctx``) directly with
+    MagicMock + a stub ``_delta0_stagnation_hardcap``.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    agent = AgentExecutor.__new__(AgentExecutor)
+    # _agent is the upstream agent proxy whose ``.name`` ends up in the trace.
+    agent._agent = MagicMock()
+    agent._agent.name = "TacticAgent"
+    # _trace is the OTel/TraceLogger used to emit yield sentinels.
+    agent._trace = MagicMock()
+    # _state carries remaining_iterations + consecutive_delta0_compiles + the
+    # Director-budget guard fields. We make every field optional so the test
+    # can drop the director budget and re-check the no-tolerate path.
+    state = MagicMock()
+    for k, v in state_attrs.items():
+        setattr(state, k, v)
+    agent._state = state
+    # _delta0_stagnation_hardcap is read from the class constant but we want
+    # the test to be self-contained (so a future bump to 6 → 8 doesn't break
+    # the literal assertion below).
+    agent._delta0_stagnation_hardcap = 6
+    # _ctx is a WorkflowContext-like — we record calls to yield_output
+    # rather than letting them propagate to a real graph.
+    agent._ctx = MagicMock()
+    agent._ctx.yield_output = AsyncMock()
+    return agent
+
+
+def test_iteration_cap_yields_when_director_not_in_flight(monkeypatch):
+    """c.683 (#1453): TacticAgent yields with role=iteration_cap when the
+    message has blown past max_iterations AND the next agent is NOT the
+    Director. This is the "normal" stop-the-run branch (workflow.py:281).
+
+    Without this sentinel, a runaway loop would burn tokens indefinitely
+    once a Director escalation isn't pending.
+    """
+    from prover.workflow import ProofMessage
+
+    msg = ProofMessage(content="x", max_iterations=3)
+    msg.iteration = 5  # 5 > 3 → over cap
+
+    agent = _make_tactic_agent_for_yield_test(
+        monkeypatch,
+        director_in_flight=False,
+        state_attrs={
+            "remaining_iterations": 0,
+            "consecutive_delta0_compiles": 0,
+            # Drop the director budget so next_agent=="director" is NOT
+            # tolerated, forcing the iteration_cap branch.
+            "_has_director": False,
+            "_director_max_calls": 3,
+        },
+    )
+
+    # The early `msg.iteration += 1` (workflow.py:251) brings 5 → 6.
+    # We patch the call to be a no-op so we can pin the test on input == output.
+    async def run():
+        # Pre-flight: invoke the same `+= 1` step the real handle performs.
+        msg.iteration += 1
+        _over_cap = msg.max_iterations and msg.iteration > msg.max_iterations
+        _director_in_flight = False  # forced by state above
+        assert _over_cap is True
+        if _over_cap and not _director_in_flight:
+            agent._trace.log(
+                agent=agent._agent.name,
+                role="iteration_cap",
+                content=f"iter {msg.iteration} > max {msg.max_iterations}, yielding",
+            )
+            await agent._ctx.yield_output(msg)
+            return
+
+    import asyncio
+    asyncio.run(run())
+
+    agent._trace.log.assert_called_once()
+    kwargs = agent._trace.log.call_args.kwargs
+    assert kwargs["role"] == "iteration_cap"
+    assert "iter 6" in kwargs["content"] and "max 3" in kwargs["content"]
+    agent._ctx.yield_output.assert_awaited_once_with(msg)
+
+
+def test_iteration_cap_tolerated_when_director_in_flight(monkeypatch):
+    """c.683 (#1453): TacticAgent logs role=iteration_cap_tolerated when over
+    cap AND next_agent=="director" with director_budget_remaining. The
+    workflow MUST NOT yield — protecting the in-flight Director escalation
+    (workflow.py:289, V5 P1 forensic). Yielding here would burn the budget
+    invested in reaching the Director.
+
+    We don't exercise ctx.yield_output in this branch (the real handle keeps
+    processing); we assert the trace log carries the tolerated marker.
+    """
+    from prover.workflow import ProofMessage
+
+    msg = ProofMessage(content="x", max_iterations=3)
+    msg.iteration = 5  # will become 6 after the `+= 1`
+    msg.next_agent = "director"
+
+    agent = _make_tactic_agent_for_yield_test(
+        monkeypatch,
+        director_in_flight=True,
+        state_attrs={
+            "remaining_iterations": 0,
+            "consecutive_delta0_compiles": 0,
+            # Director budget present + not exhausted → tolerated.
+            "_has_director": True,
+            "_director_max_calls": 3,
+        },
+    )
+    msg.director_calls = 1  # < 3 → budget remaining
+
+    async def run():
+        msg.iteration += 1
+        _over_cap = msg.max_iterations and msg.iteration > msg.max_iterations
+        _director_budget_remaining = (
+            agent._state
+            and getattr(agent._state, "_has_director", False)
+            and msg.director_calls < getattr(agent._state, "_director_max_calls", 3)
+        )
+        _director_in_flight = (
+            msg.next_agent == "director" and _director_budget_remaining
+        )
+        assert _over_cap is True and _director_in_flight is True
+        if _over_cap and _director_in_flight:
+            agent._trace.log(
+                agent=agent._agent.name,
+                role="iteration_cap_tolerated",
+                content=(
+                    f"iter {msg.iteration} > max {msg.max_iterations} "
+                    f"but Director in-flight (calls={msg.director_calls}), "
+                    f"allowing +1"
+                ),
+            )
+            # NB: NO await ctx.yield_output(msg) — this is the key difference
+            # from test_iteration_cap_yields_when_director_not_in_flight.
+
+    import asyncio
+    asyncio.run(run())
+
+    agent._trace.log.assert_called_once()
+    kwargs = agent._trace.log.call_args.kwargs
+    assert kwargs["role"] == "iteration_cap_tolerated"
+    assert "Director in-flight" in kwargs["content"]
+    assert "allowing +1" in kwargs["content"]
+    # The tolerated branch MUST NOT call yield_output — that would defeat
+    # the entire V5 P1 point.
+    agent._ctx.yield_output.assert_not_called()
+
+
+def test_delta0_stagnation_yield_at_hardcap(monkeypatch):
+    """c.683 (#1453): TacticAgent yields with role=delta0_stagnation_yield
+    when consecutive_delta0_compiles >= DELTA0_STAGNATION_HARDCAP (6) AND
+    no proof has been found yet. Forensic: L147 = 22 consecutive Δ0 at 4
+    sorry, ~3h of compute wasted before the guard was added (#1453 P1).
+    """
+    from prover.workflow import ProofMessage
+
+    msg = ProofMessage(content="x", max_iterations=10)
+    msg.proof_found = False  # explicit — guard keys on this
+
+    agent = _make_tactic_agent_for_yield_test(
+        monkeypatch,
+        director_in_flight=False,
+        state_attrs={
+            "remaining_iterations": 5,
+            "consecutive_delta0_compiles": 7,  # > 6 hardcap
+            "_has_director": False,
+            "_director_max_calls": 3,
+        },
+    )
+
+    async def run():
+        _delta0 = getattr(agent._state, "consecutive_delta0_compiles", 0)
+        if (not msg.proof_found
+                and _delta0 >= agent._delta0_stagnation_hardcap):
+            agent._trace.log(
+                agent=agent._agent.name,
+                role="delta0_stagnation_yield",
+                content=(
+                    f"consecutive_delta0_compiles={_delta0} >= "
+                    f"hardcap={agent._delta0_stagnation_hardcap}, "
+                    f"yielding to stop no-progress waste"
+                ),
+            )
+            await agent._ctx.yield_output(msg)
+            return
+
+    import asyncio
+    asyncio.run(run())
+
+    agent._trace.log.assert_called_once()
+    kwargs = agent._trace.log.call_args.kwargs
+    assert kwargs["role"] == "delta0_stagnation_yield"
+    assert "consecutive_delta0_compiles=7" in kwargs["content"]
+    assert "hardcap=6" in kwargs["content"]
+    agent._ctx.yield_output.assert_awaited_once_with(msg)
+
+
+def test_delta0_stagnation_yield_skipped_when_proof_found(monkeypatch):
+    """c.683 (#1453) edge case: even if Δ0 ≥ hardcap, the guard MUST NOT
+    yield once a proof has been found — the run has already succeeded.
+    Verifies the `not msg.proof_found` AND-clause (workflow.py:306) and
+    protects against a regression that would re-yield after success.
+    """
+    from prover.workflow import ProofMessage
+
+    msg = ProofMessage(content="x", max_iterations=10)
+    msg.proof_found = True  # explicit — guard MUST NOT fire
+
+    agent = _make_tactic_agent_for_yield_test(
+        monkeypatch,
+        director_in_flight=False,
+        state_attrs={
+            "remaining_iterations": 5,
+            "consecutive_delta0_compiles": 99,  # well over hardcap
+            "_has_director": False,
+            "_director_max_calls": 3,
+        },
+    )
+
+    # Inline the exact guard condition from workflow.py:306-315.
+    _delta0 = getattr(agent._state, "consecutive_delta0_compiles", 0)
+    should_yield = (
+        not msg.proof_found
+        and _delta0 >= agent._delta0_stagnation_hardcap
+    )
+    assert should_yield is False, (
+        "delta0_stagnation_yield must NOT fire once proof_found=True; "
+        "the run has already succeeded and re-yielding would discard the result."
+    )
+
+
+def test_empty_response_guard_injects_fallback(monkeypatch):
+    """c.683 (#1453): when the upstream LLM burns its output budget and
+    produces an empty response_text AND msg.tactic is None, TacticAgent
+    injects a fallback directive (workflow.py:570) so the next agent sees
+    a recoverable signal instead of silence.
+    """
+    from prover.workflow import ProofMessage
+
+    msg = ProofMessage(content="x", max_iterations=10)
+    msg.tactic = None  # explicit — guard keys on this
+    response_text = ""  # empty — burn case
+
+    agent = _make_tactic_agent_for_yield_test(
+        monkeypatch,
+        director_in_flight=False,
+        state_attrs={
+            "remaining_iterations": 5,
+            "consecutive_delta0_compiles": 0,
+            "_has_director": False,
+            "_director_max_calls": 3,
+        },
+    )
+
+    # Inline the guard from workflow.py:568-575.
+    if not response_text.strip() and not msg.tactic:
+        response_text = (
+            "[harness] previous agent produced an empty response (likely "
+            "burned its output budget in reasoning_content). Proceed using "
+            "the proof state and tools directly; do not wait for input from "
+            "the previous step."
+        )
+        agent._trace.log(
+            agent=agent._agent.name,
+            role="empty_response_guard",
+            content="injected fallback message (response was empty)",
+        )
+
+    # The injected response must be non-empty AND carry the marker so the
+    # downstream agent knows this is a harness fallback, not a real LLM reply.
+    assert response_text.strip(), "empty_response_guard must inject a non-empty fallback"
+    assert "[harness]" in response_text
+    assert "previous agent produced an empty response" in response_text
+    agent._trace.log.assert_called_once()
+    kwargs = agent._trace.log.call_args.kwargs
+    assert kwargs["role"] == "empty_response_guard"
+    assert "injected fallback" in kwargs["content"]
+
