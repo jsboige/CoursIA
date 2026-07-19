@@ -37,7 +37,13 @@ class SubsetSolver:
     def c_var(self, i):
         """Get control variable for constraint i"""
         if i not in self.varcache:
-            v = Bool(str(self.constraints[abs(i)]))
+            # Name the control variable after the constraint INDEX, not its
+            # string representation: duplicate clauses (legal in DIMACS) or
+            # unit clauses whose text matches a propositional variable name
+            # would otherwise collapse to a single Z3 constant, corrupting the
+            # Map solver's blocking and sending enumerate_sets into an infinite
+            # loop on valid input.
+            v = Bool(f"__c{abs(i)}")
             self.idcache[get_id(v)] = abs(i)
             if i >= 0:
                 self.varcache[i] = v
