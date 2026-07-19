@@ -227,12 +227,22 @@ def test_autonomous_prover_accepts_workflow_timeout():
 # ──────────────────────────────────────────────────────────────────────────
 
 
-def test_coordinator_agent_has_set_attack_plan_tool():
+def test_coordinator_agent_has_set_attack_plan_tool(monkeypatch):
     """CoordinatorAgent must expose set_attack_plan and advance_plan tools.
 
     We verify by checking the CoordinatorTools instance is wired correctly,
-    since the Agent framework stores tools internally (not as _tools).
+    since the Agent framework stores tools internally (not as _tools). The
+    provider client is built via create_client (provider="zai") only as a
+    vehicle to construct the agent — no API call is made — but AsyncOpenAI
+    refuses to instantiate with an empty api_key. PROVIDERS resolves the key
+    from ZAI_API_KEY at module import, so env-based patching at test time is
+    too late; patch the dict entry directly to let the client build offline
+    (local dev / credential-less CI).
     """
+    import prover.config
+    monkeypatch.setitem(
+        prover.config.PROVIDERS["zai"], "api_key", "test-dummy-not-real"
+    )
     from prover.tools import CoordinatorTools
     from prover.agents import create_coordinator_agent
     from prover.trace import TraceLogger
