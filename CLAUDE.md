@@ -27,7 +27,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 - [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md) - .NET / Python / WSL kernels, conda envs (`coursia-ml-training`, `mcp-jupyter`, `epita_symbolic_ai`), dotnet-interactive PIN
 - [docs/reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) - Workflow PR, dispatch agents, validation notebook, audit anti-regression, productivite operations longues, pre-commit H.3
 - [docs/reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) - Scan de drift/traduction sur worktree frais (anti-phantom 88% FP sur arbre partagé dirty)
-- [docs/reference/subagents-reference.md](docs/reference/subagents-reference.md) - Catalogue 21 sous-agents + 15 skills, mapping side-tracks, usage async
+- [docs/reference/subagents-reference.md](docs/reference/subagents-reference.md) - Catalogue 21 sous-agents + 17 skills, mapping side-tracks, usage async
 - [docs/reference/scripts-reference.md](docs/reference/scripts-reference.md) - Catalogue scripts dépôt (notebook CLI, exécution, catalogue anti-drift, qualité, maintenance/env)
 - [docs/reference/env-python-reparation.md](docs/reference/env-python-reparation.md) - Reparation env Python (regle F)
 - [docs/reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) - Detail G.1-G.9 + incidents
@@ -184,7 +184,7 @@ scripts/notebook_tools/notebook_tools.py # CLI multi-famille (validate/execute/s
 scripts/smartcontracts/                  # SC-specifique
 scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai/genai-services.md)
 
-.claude/{agents, skills, rules}/         # 21 sous-agents, 15 skills, rules auto-loaded
+.claude/{agents, skills, rules}/         # 21 sous-agents, 17 skills, rules auto-loaded
 GradeBookApp/                            # Notation etudiants : moteur generique (pipelines+donnees par cohorte prives sur GDrive)
 docker-configurations/                   # ComfyUI + Qwen Docker
 docs/                                    # Documentation deportee de ce CLAUDE.md

@@ -71,7 +71,13 @@ def check_c2_by_maturity(entries: list[dict]) -> dict:
 
 def check_readme_markers(entries: list[dict]) -> list[dict]:
     """Check which series have CATALOG-STATUS markers in their README."""
-    series = set(e["serie"] for e in entries)
+    # Guard missing/falsy serie (mirrors check_catalog_completeness, which flags
+    # these as "missing serie"): generate_catalog.py emits ``serie=""`` for root
+    # notebooks and a partial/manually-edited catalog may omit the key entirely.
+    # ``e["serie"]`` raised KeyError on such entries, crashing the whole report
+    # before the completeness section could flag them. Skip falsy serie here --
+    # an entry with no serie has no ``NOTEBOOKS_DIR/<serie>/README.md`` to check.
+    series = {e.get("serie") for e in entries if e.get("serie")}
     results = []
     marker_re = re.compile(r"CATALOG-STATUS", re.IGNORECASE)
 
@@ -130,7 +136,10 @@ def generate_report(
         lines.extend(["## Per-Serie Summary", ""])
         by_serie = {}
         for e in entries:
-            by_serie.setdefault(e["serie"], []).append(e)
+            serie = e.get("serie")
+            if not serie:
+                continue  # missing/falsy serie -- flagged in completeness section
+            by_serie.setdefault(serie, []).append(e)
         for serie in SERIES_ORDER:
             if serie not in by_serie:
                 continue
@@ -194,7 +203,10 @@ def generate_report(
     # 5. Per-serie breakdown
     by_serie = {}
     for e in entries:
-        by_serie.setdefault(e["serie"], []).append(e)
+        serie = e.get("serie")
+        if not serie:
+            continue  # missing/falsy serie -- flagged in completeness section
+        by_serie.setdefault(serie, []).append(e)
 
     lines.extend(["## Per-Serie Breakdown", ""])
     for serie in SERIES_ORDER:

@@ -139,19 +139,33 @@ def test_trend_strength_alternating_is_zero():
     assert float(t.Current) == pytest.approx(0.0)
 
 
-def test_trend_strength_all_flat_counts_as_down_minus_one():
-    # Documented quirk (pin, not a bug-claim): moves_down is computed as
-    # (len-1) - moves_up, so flat moves (close[i] == close[i-1], NOT strictly
-    # up) are bucketed into moves_down. An all-flat series therefore reports
-    # strength = -1.0 (maximally bearish), not 0.0. The `moves_up + moves_down
-    # == 0` guard only triggers when there are zero moves at all (len < 2,
-    # already handled by the `len < 2` early return), so it never fires for a
-    # warm series of flat bars.
+def test_trend_strength_all_flat_is_neutral_zero():
+    # Regression guard: previously `moves_down = (len-1) - moves_up` bucketed
+    # flat moves (close[i] == close[i-1]) as "down", so an all-flat series
+    # reported strength = -1.0 (maximally bearish) for a flat market -- and the
+    # `moves_up + moves_down == 0` guard was dead (sum == len-1 for len >= 2).
+    # Now moves_down is counted explicitly with `<`, flat moves are excluded
+    # from both buckets, and the guard fires for all-flat -> 0.0 (neutral
+    # range/consolidation), matching the interpretation documented in the
+    # notebook ("0.0 : Range/consolidation").
     t = TrendStrengthIndicator("trend", period=4)
     for _ in range(5):
         t.Update(None, high=6, low=4, close=5)
     assert t.IsReady is True
-    assert float(t.Current) == pytest.approx(-1.0)
+    assert float(t.Current) == pytest.approx(0.0)
+
+
+def test_trend_strength_mixed_with_flat_excludes_flat():
+    # Series [1, 2, 2, 2, 3]: moves up = 2 (1->2, 2->3), moves down = 0, flat
+    # moves = 2. Previously the 2 flat moves were bucketed as down, dragging
+    # strength to (2 - 2) / 4 = 0.0 (falsely "range"). Now flat moves are
+    # excluded -> (2 - 0) / 2 = 1.0 (correctly strong uptrend: price rose, no
+    # down bars). This is the broader blast radius of the flat-bucketing fix.
+    t = TrendStrengthIndicator("trend", period=4)
+    for c in (1, 2, 2, 2, 3):
+        t.Update(None, high=c + 1, low=c - 1, close=c)
+    assert t.IsReady is True
+    assert float(t.Current) == pytest.approx(1.0)
 
 
 def test_trend_strength_reset_clears_state():

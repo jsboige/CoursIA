@@ -81,7 +81,7 @@ puis l'espace de conversation où tout se passe.
 3. Vous arrivez sur l'écran de chat : une zone de saisie au centre, l'historique
    des conversations à gauche, le sélecteur de modèle en haut.
 
-![Page de connexion d'Open WebUI : champ e-mail, mot de passe et bouton « Connexion ».](assets/01-connexion.png)
+![Capture pré-authentification d'Open WebUI 0.10.2 : fond blanc cassé uniforme avec, seul élément rendu, un minuscule logo magenta centré (carré stylisé) — pas de champ e-mail, pas de champ mot de passe, pas de bouton « Connexion » à l'écran (capture réalisée avant le rendu du formulaire de connexion).](assets/01-connexion.png)
 
 *Page de connexion (aucun contenu réel — capture pré-authentification).*
 
@@ -120,7 +120,7 @@ plus anciens pour rester dans la fenêtre de contexte du modèle, sans qu'on ait
 démarrer une nouvelle conversation. La discussion se prolonge donc sans perdre le
 fil ni provoquer d'erreur de dépassement de contexte.
 
-![Réponse d'un modèle « thinking » (GLM-5) détaillant son raisonnement étape par étape sur une invite fictive ; la marque du bandeau latéral est masquée.](assets/02-raisonnement-direct.png)
+![Capture écran Open WebUI 0.10.2 du chat en français avec le modèle « z-ai/glm-5 » sélectionné (header gauche, marque magenta masquée) : conversation sur la couleur du ciel visible aux étapes 4-6 (« Le bleu domine / Pourquoi pas violet ? / Pourquoi le ciel est rouge au coucher du soleil ? ») avec gras de mise en valeur et liste numérotée pour l'étape 5, suivie d'une section « Résumé » proposant un encart « Soleil → Atmosphère → Diffusion de Rayleigh → Bleu diffusé → Ciel bleu ! » et d'un texte de synthèse ; barre de saisie « Envoyer un message » en bas.](assets/02-raisonnement-direct.png)
 
 *Raisonnement affiché en direct **(v0.10)** : un modèle « thinking » explicite son
 cheminement pas à pas. Invite fictive, marque latérale masquée.*
@@ -222,7 +222,7 @@ prise de **notes**, historique et recherche des conversations, dossiers, et
   de bêta en v0.10, elle permet par exemple à un tuteur de se rappeler le niveau ou
   les préférences d'un·e étudiant·e sans qu'on ait à les répéter.
 
-![Panneau « Réglages > Personnalisation » : section Mémoire (EXPÉRIMENTAL) et fenêtre « Mémoire 0 » vide sur un compte neuf.](assets/05-memoire.png)
+![Capture écran Open WebUI 0.10.2 du panneau « Réglages » (sidebar gauche avec Recherche, Général, Interface utilisateur, Personnalisation sélectionné, Audio, Contrôles des données, Compte, À propos) : section « Mémoire » marquée EXPÉRIMENTAL avec toggle vert activé et bouton « Gérer » ; au centre, modale « Mémoire 0 » ouverte avec champ « Rechercher des éléments mémorisés », message « Les souvenirs accessibles par les LLMs seront affichés ici. » (compte neuf = aucun souvenir), boutons « Effacer la mémoire » (désactivé) et « Ajouter un souvenir » (primaire) ; persona « Samantha » visible en header (Défini comme valeur par défaut).](assets/05-memoire.png)
 
 *Gestion de la mémoire **(v0.10)** : on consulte, ajoute ou supprime chaque
 souvenir depuis *Réglages > Personnalisation*. Compte neuf → mémoire vide.*

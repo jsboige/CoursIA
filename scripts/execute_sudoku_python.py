@@ -2,6 +2,24 @@
 """
 Execute all Python Sudoku notebooks with papermill.
 Fixes common issues before execution.
+
+Resolved issues vs. the original version:
+
+- ``SUDOKU_DIR`` used to be hard-coded to ``d:/Dev/CoursIA/MyIA.AI.Notebooks/Sudoku``
+  (a path that is specific to one Windows workstation and does not exist on
+  other machines — including this repo's CI runners and fellow workers). The
+  directory is now derived from ``__file__`` so the script works wherever it
+  is checked out.
+
+- ``PYTHON_NOTEBOOKS`` listed six stale names (``Sudoku-10-NeuralNetwork.ipynb``,
+  ``Sudoku-Python-Backtracking.ipynb``, …) that no longer exist after the
+  series rename. Sudoku notebooks were reshuffled into numbered ``*-Python.ipynb``
+  pairs (e.g. ``Sudoku-16-NeuralNetwork-Python.ipynb``). The list is now
+  discovered from the actual ``*-Python.ipynb`` files in :data:`SUDOKU_DIR` at
+  call time, so renames in the series stay in sync without editing this file.
+
+- The ``.view() -> .reshape()`` patch used to key off ``Sudoku-10-NeuralNetwork.ipynb``;
+  the corresponding notebook is now ``Sudoku-16-NeuralNetwork-Python.ipynb``.
 """
 
 import json
@@ -9,16 +27,26 @@ import subprocess
 import sys
 from pathlib import Path
 
-SUDOKU_DIR = Path("d:/Dev/CoursIA/MyIA.AI.Notebooks/Sudoku")
+# Repo-local Sudoku directory (portable across machines and CI).
+# Previously hard-coded to "d:/Dev/CoursIA/MyIA.AI.Notebooks/Sudoku" which is
+# specific to one Windows workstation. Resolve relative to this file so the
+# script works on any checkout (CI, fellow workers, fresh clone).
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SUDOKU_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "Sudoku"
 
-PYTHON_NOTEBOOKS = [
-    "Sudoku-10-NeuralNetwork.ipynb",
-    "Sudoku-11-Comparison.ipynb",
-    "Sudoku-Python-Backtracking.ipynb",
-    "Sudoku-Python-DancingLinks.ipynb",
-    "Sudoku-Python-Genetic.ipynb",
-    "Sudoku-Python-ORTools-Z3.ipynb",
-]
+
+def _discover_python_notebooks() -> list[str]:
+    """Return basenames of every ``*-Python.ipynb`` in :data:`SUDOKU_DIR`.
+
+    The Sudoku series currently exposes one notebook per algorithm/backtracking
+    variant under ``*Python.ipynb``; the discovery keeps the script in sync if
+    another algorithm is added (e.g. ``Sudoku-20-SAT-Python.ipynb``) without
+    editing this file. The numeric prefix (``Sudoku-NN-``) sorts naturally
+    because the index uses zero-padded numbers.
+    """
+    if not SUDOKU_DIR.is_dir():
+        return []
+    return sorted(p.name for p in SUDOKU_DIR.glob("*-Python.ipynb"))
 
 def fix_view_to_reshape(notebook_path: Path):
     """Fix .view() -> .reshape() in train_model function for PyTorch 2.x compatibility."""
@@ -90,7 +118,7 @@ def main():
     results = []
     failed = []
 
-    for notebook_name in PYTHON_NOTEBOOKS:
+    for notebook_name in _discover_python_notebooks():
         notebook_path = SUDOKU_DIR / notebook_name
 
         if not notebook_path.exists():
@@ -103,8 +131,9 @@ def main():
             failed.append(notebook_name)
             continue
 
-        # Fix known issues
-        if notebook_name == "Sudoku-10-NeuralNetwork.ipynb":
+        # Fix known issues — the NN notebook was renamed during the series
+        # re-numbering, but the .view() pattern only applies there.
+        if "NeuralNetwork" in notebook_name:
             fix_view_to_reshape(notebook_path)
 
         # Execute

@@ -127,14 +127,21 @@ def classify_game(A: np.ndarray, B: np.ndarray) -> str:
     if len(nash_eq) == 2:
         (i1, j1), (i2, j2) = nash_eq
 
-        # Both on diagonal: Coordination game
+        # Both on diagonal: coordination family
         if (i1 == j1) and (i2 == j2):
-            # Check for Stag Hunt pattern: one Nash is Pareto dominant
+            # Stag Hunt: one Nash is Pareto dominant (unequal welfare sums)
             p1 = A[i1, j1] + B[i1, j1]
             p2 = A[i2, j2] + B[i2, j2]
             if p1 != p2:
                 return "Stag Hunt"
-            return "Coordination Game"
+            # Equal welfare sums: distinguish pure coordination from
+            # Battle of the Sexes. With equal sums, if P1's payoff is the same
+            # at both equilibria then (by equal sums) P2's is too, so both
+            # players are indifferent -> pure Coordination. Otherwise each
+            # player prefers a different equilibrium -> Battle of the Sexes.
+            if A[i1, j1] == A[i2, j2]:
+                return "Coordination Game"
+            return "Battle of the Sexes"
 
         # Anti-coordination: Chicken/Hawk-Dove
         if (i1 != j1) and (i2 != j2):

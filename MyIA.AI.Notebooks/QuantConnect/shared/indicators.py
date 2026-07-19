@@ -23,13 +23,24 @@ import numpy as np
 
 class CustomMomentumIndicator:
     """
-    Indicateur de momentum personnalisé
+    Indicateur de momentum personnalisé.
 
-    Calcule momentum = (price_current - price_n_periods_ago) / price_n_periods_ago
+    Conserve une fenêtre glissante des ``period`` derniers prix et calcule, une
+    fois la fenêtre pleine (``IsReady`` après ``period`` barres), le taux de
+    variation entre le dernier prix et le premier de la fenêtre :
+
+        momentum = (price_last - price_first_in_window) / price_first_in_window
+
+    La fenêtre contenant ``period`` prix, le premier et le dernier sont séparés
+    par ``period - 1`` barres (donc un momentum sur ``period - 1`` barres, et non
+    ``period``). Ceci diffère volontairement du ``Momentum(period)`` canonique de
+    LEAN (qui exige ``period + 1`` échantillons pour un vrai écart de ``period``
+    barres) ; la sémantique exacte est pinnée par
+    ``shared/test_indicators.py::test_momentum_ready_and_value_at_period``.
 
     Args:
         name: Nom de l'indicateur
-        period: Période de calcul (nombre de barres)
+        period: Nombre de prix conservés dans la fenêtre glissante
     """
 
     def __init__(self, name: str, period: int = 20):
@@ -110,12 +121,16 @@ class TrendStrengthIndicator:
         if len(self.close_prices) < 2:
             return 0.0
 
-        # Direction moyenne
+        # Direction moyenne. Les moves flat (close[i] == close[i-1]) sont
+        # exclus de up ET de down -> ils restent neutres (range/consolidation),
+        # conformement a l'interpretation documentee (0.0 = range).
         moves_up = sum(1 for i in range(1, len(self.close_prices))
                       if self.close_prices[i] > self.close_prices[i-1])
-        moves_down = len(self.close_prices) - 1 - moves_up
+        moves_down = sum(1 for i in range(1, len(self.close_prices))
+                         if self.close_prices[i] < self.close_prices[i-1])
 
         if moves_up + moves_down == 0:
+            # Aucun move directionnel (serie completement flat) -> neutre.
             return 0.0
 
         # Score -1 (downtrend fort) à +1 (uptrend fort)

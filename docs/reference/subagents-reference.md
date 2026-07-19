@@ -57,7 +57,7 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 
 ## Skills `.claude/skills/` — slash-commands mandatés
 
-15 skills invoquables en slash-command (`/<nom>`). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
+17 skills (13 slash-commands actives + 4 modules de référence auto-chargés). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
 
 ### Workflows actionnables (slash-commands)
 
@@ -75,6 +75,7 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 | `/qc-iterative-improve` | Workflow amélioration stratégies QC (`[strategy\|issue#]`, `--iterations`, `--backtest`) | #1409 trading |
 | `/train-model` | Entraîner un modèle ML (thermal-safe GPU, walk-forward + multi-seed + DM). `--dry-run`, `--seeds`, `--folds`, `--bg` | #1454 Training |
 | `/genai-iterate` | Itérer un notebook GenAI contre la stack (auth, sous-domaines, quant, GPU/VRAM) via CLI genai-stack. `--service`, `--quant`, `--validate`, `--bg` | #1385 GenAI |
+| `/check-cell-order` | Détecter les problèmes d'ordre des cellules (enchaînement, cellules oubliées ou mal placées, canonical-order slippage). `[target]`, `--severity HIGH\|MED\|LOW`, `--json`, `--fail-on`. Backed by `scan_cell_ordering.py` | #3240 structure notebooks |
 
 ### Skills de référence (chargés à la demande, pas de slash-command actif)
 
@@ -83,6 +84,7 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 | `mcp-jupyter` | Référence outils MCP Jupyter (kernels, exécution cellule, Papermill) |
 | `notebook-helpers` | Référence `notebook_helpers.py` / `notebook_tools.py` (manipulation, structure) |
 | `notebook-patterns` | Patterns pédagogiques d'enrichissement (modèle GameTheory) |
+| `qc-helpers` | Référence patterns/helpers pour les opérations QuantConnect via MCP (config `organizationId`, outils disponibles) |
 
 **`/review-student-prs` = canal canonique du recyclage TP** : il applique déjà la convention exercice→exemple ([.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md)) + la review bienveillante + bypass CI/template ([.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md)). Ne pas réécrire ce workflow à la main.
 

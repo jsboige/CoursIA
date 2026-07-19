@@ -253,6 +253,12 @@ def checkpoint_save(
     if extra is not None:
         state['extra'] = extra
 
+    # Create the parent directory if missing (parents=True, exist_ok=True) so a
+    # nested path works without the caller pre-creating the output dir. Consistent
+    # with data_cache.get_yf_data and video_helpers.frames_to_video.
+    out_dir = os.path.dirname(path)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     torch.save(state, path)
 
 

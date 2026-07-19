@@ -83,6 +83,21 @@ def calculate_metrics(equity: pd.Series,
     # Calculer returns
     returns = equity.pct_change().dropna()
 
+    # Degenerate-input guard: a single-point equity (no returns), an equity
+    # starting at 0 (initial capital wiped out — division by zero on
+    # total_return), or a -100% first move (cumulative collapses to 0,
+    # running_max=0 -> NaN drawdown) all produce crashes, inf, or NaN. Return
+    # a zeroed metrics dict in those cases, mirroring annualized_sharpe()'s
+    # empty-series handling. Callers get finite, well-formed metrics rather
+    # than an exception or poisoned inf/NaN propagating downstream.
+    if len(returns) == 0 or equity.iloc[0] == 0:
+        return {
+            'total_return': 0.0, 'annualized_return': 0.0, 'volatility': 0.0,
+            'sharpe_ratio': 0.0, 'sortino_ratio': 0.0, 'max_drawdown': 0.0,
+            'calmar_ratio': 0.0, 'win_rate': 0.0, 'alpha': 0.0, 'beta': 1.0,
+            'total_trades': len(returns),
+        }
+
     # Métriques de base
     total_return = (equity.iloc[-1] - equity.iloc[0]) / equity.iloc[0]
     annualized_return = (1 + total_return) ** (252 / len(returns)) - 1
@@ -102,8 +117,11 @@ def calculate_metrics(equity: pd.Series,
     # Drawdown
     cumulative = (1 + returns).cumprod()
     running_max = cumulative.cummax()
-    drawdown = (cumulative - running_max) / running_max
-    max_drawdown = drawdown.min()
+    # Guard running_max == 0 (collapse after a -100% bar): division by zero
+    # would poison max_drawdown with NaN. Treat a collapsed series as no
+    # measurable drawdown (0.0) rather than NaN.
+    drawdown = (cumulative - running_max) / running_max.where(running_max != 0, np.nan)
+    max_drawdown = float(drawdown.min()) if not drawdown.isna().all() else 0.0
 
     # Calmar Ratio
     calmar_ratio = annualized_return / abs(max_drawdown) if max_drawdown != 0 else 0.0

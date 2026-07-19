@@ -17,7 +17,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/cluster-agents.md](reference/cluster-agents.md) | Machines cluster, GPU topology |
 | [reference/teaching-context.md](reference/teaching-context.md) | Calendrier, scope EPITA-IS, agents par école |
 | [reference/scripts-reference.md](reference/scripts-reference.md) | Catalogue scripts dépôt |
-| [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 15 skills |
+| [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 17 skills |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
 | [reference/audit-reassessment-findings.md](reference/audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
