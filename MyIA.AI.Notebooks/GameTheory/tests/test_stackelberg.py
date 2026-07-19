@@ -135,23 +135,13 @@ class TestStackelbergEquilibrium:
 
     def test_follower_higher_cost_produces_less(self):
         # Suiveur avec cout superieur -> q_F plus basse qu'en symetrique (22.5).
-        # Invariant de direction (valide que la forme close follower soit
-        # correcte ou non) : on n'epingle pas la valeur exacte, seulement la
-        # propriete economique (voir test_asymmetric_follower_equals_reaction_curve
-        # pour l'invariant exact, xfail en attendant #7385).
+        # Invariant de direction : la forme close follower est correcte post-#7385
+        # (voir test_asymmetric_follower_equals_reaction_curve pour l'invariant
+        # exact, et tests/test_stackelberg_asymmetric.py pour la couverture
+        # parametree sur 5 paires asymetriques).
         _, q_F = stackelberg_equilibrium(100, 5, 15)
         assert q_F < 22.5
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "Stackelberg asymmetric follower uses the wrong closed form "
-            "(a + c_L - 2 c_F)/4, which only equals the Cournot reaction curve "
-            "(a - c_F - q_L)/2 when c_L == c_F. Fixed to the reaction curve in "
-            "#7385. xfail-strict flips to xpass-fail once #7385 lands, prompting "
-            "removal of this marker (the follower then best-responds correctly)."
-        ),
-    )
     def test_asymmetric_follower_equals_reaction_curve(self):
         """Le suiveur doit best-responder a la quantite du leader.
 
