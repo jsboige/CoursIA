@@ -48,7 +48,12 @@ EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "exam
 C1_PATTERNS = [
     (r"raise\s+NotImplementedError", "raise NotImplementedError"),
     (r"assert\s+False", "assert False"),
-    (r"(?<!\d)1\s*/\s*0(?!\d)", "1/0"),
+    # Lookbehind/lookahead exclude digit, slash (reward-list delimiters like
+    # `1/0/0` for win/loss/draw), hyphen (`+1/-1/0`), AND the decimal point
+    # (`1/0.5`, `1/0.25`, `0.1/0.5` are rate/scale constants, not
+    # ZeroDivisionError). Harmonised with audit_c1_c3.py (cf PR fix for ICT-7
+    # `echelle caracteristique 1/0.5` FP).
+    (r"(?<![\d/\-])1\s*/\s*0(?![\d/.])", "1/0"),
     (r"throw\s+new\s+(?:System\.)?NotImplementedException\b", "throw new NotImplementedException (C#)"),
 ]
 

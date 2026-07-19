@@ -161,6 +161,23 @@ class TestScanC1Source:
         hits = scan_c1_source("ratio = 10/0.5")
         assert hits == []
 
+    def test_decimal_fraction_not_flagged(self):
+        """Decimal fractions 1/0.5, 1/0.25, 0.1/0.5 are rate/scale constants,
+        not ZeroDivisionError. Regression for the auditor over-matching `1/0`
+        inside `1/0.5` (cf FP on ICT-7 `echelle caracteristique 1/0.5`).
+        The prior test_fraction_not_flagged (10/0.5) passed by accident — the
+        `1` in `10` is not immediately followed by `/` — so it did not cover
+        the real `1/0.5` FP."""
+        for src in ("echelle = 1/0.5", "r = 1/0.25", "0.1/0.5"):
+            assert scan_c1_source(src) == [], f"decimal FP on: {src}"
+
+    def test_reward_list_not_flagged(self):
+        """Reward-notation slash-lists (win/loss/draw) like 1/0/0 are
+        delimiters, not division. Prior regex over-matched these."""
+        assert scan_c1_source("1/0/0") == []
+        assert scan_c1_source("+1/-1/0") == []
+        assert scan_c1_source("1/-1/0 pour victoire J1/J2/nul") == []
+
     def test_fraction_21_not_flagged(self):
         """21/0 should not be flagged (digit before 1/0)."""
         hits = scan_c1_source("val = 21/0")
