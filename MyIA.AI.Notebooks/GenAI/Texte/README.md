@@ -76,21 +76,21 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 **pass@k : la frontière s'ouvre avec le budget.** L'estimateur pass@k mesure le taux de succès quand on autorise *k* échantillons indépendants. Snell 2024 montre que cette frontière dépend fortement de la difficulté : les problèmes *faciles* saturent presque immédiatement, tandis que les *difficiles* continuent de monter avec *k* — d'où l'intérêt d'investir le compute là où le single-shot échoue.
 
 <p align="center">
-  <img src="assets/readme/texte-scaling-passk.png" alt="Trois courbes de taux de succès pass@k vs budget d'échantillons k, une par bucket de difficulté (facile/moyen/difficile)" width="420"/><br>
+  <img src="assets/readme/texte-scaling-passk.png" alt="Line plot matplotlib « Scaling du test-time compute (BoN) par difficulte » (axe X Budget d'echantillons k = 1/2/4/6, axe Y pass@k 0.0→1.0) ; 3 courbes (Facile vert + Moyen bleu en plateau saturé 1.0 dès k=1 ; Difficile rouge en montée monotone ~0.38→~0.54→~0.67→~0.75) — révèle que seules les questions difficiles bénéficient marginalement du budget k." width="420"/><br>
   <em><b>pass@k vs budget k</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — 3 courbes (taux de succès Y, budget d'échantillons k X), une par bucket de difficulté : le <i>facile</i> sature vite, le <i>difficile</i> monte avec k (résultat central de Snell).</em>
 </p>
 
 **BoN vs Réflexion : chaque régime a sa stratégie gagnante.** Comparer Best-of-N parallèle (plusieurs essais indépendants) à la Réflexion séquentielle (un essai qui se corrige) révèle qu'aucune architecture ne domine universellement : selon le bucket de difficulté, l'une bat l'autre — c'est la *frontière compute-optimale*, choisir la bonne méthode pour le bon régime.
 
 <p align="center">
-  <img src="assets/readme/texte-bon-vs-reflex.png" alt="Diagramme en barres groupées : taux de succès de Best-of-N parallèle vs Réflexion séquentielle, par bucket de difficulté" width="420"/><br>
+  <img src="assets/readme/texte-bon-vs-reflex.png" alt="Grouped barplot matplotlib « Compute-optimal : strategie gagnante selon la difficulte » (axe Y Taux de succes 0.0→1.0, axe X 3 buckets discret facile/moyen/difficile) ; 6 barres par paires (BoN orange + Reflexion violette) : facile et moyen = egalite a 1.00 pour les deux strategies, mais difficile = BoN ~0.67 bat Reflexion ~0.50 — la stratégie dépend du régime de difficulté." width="420"/><br>
   <em><b>BoN vs Réflexion par difficulté</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — diagramme en barres groupées (taux de succès Y) : chaque régime a sa stratégie gagnante = la frontière compute-optimale.</em>
 </p>
 
 **Raisonnement natif vs scaling hand-rolled.** La comparaison cost-normalisée — en *tokens dépensés* plutôt qu'en échantillons — oppose le BoN « fait maison » (courbes) au raisonnement natif de deepseek-r1 (croix) : à coût token égal, la croix r1 se place au-dessus de la courbe BoN, le raisonnement natif exploite donc mieux chaque token que le simple parallélisme.
 
 <p align="center">
-  <img src="assets/readme/texte-reason-vs-scale.png" alt="Courbes (BoN hand-rolled) et croix (r1 raisonnement natif) du taux de succès vs tokens dépensés, par bucket de difficulté" width="500"/><br>
+  <img src="assets/readme/texte-reason-vs-scale.png" alt="Plot matplotlib « Raisonnement natif vs scaling hand-rolled (cost-normalise) » (axe X Tokens depenses 0→700, axe Y Taux de succes 0.0→1.0) ; 6 séries : BoN facile/moyen (vert/bleu cercles) plateau 1.0 sur x≈40→300, r1 facile (X vert) + r1 moyen (X bleu) en single-shot a 1.0, BoN difficile (rouge cercles) en montee ~0.16→~0.49 sur x=40→300 vs r1 difficile (X rouge) qui atteint 1.0 en single-shot a x≈735 — le raisonnement natif bat le BoN cost-normalisé pour le bucket difficile (Snell 2024)." width="500"/><br>
   <em><b>Raisonnement natif vs scaling hand-rolled</b> ([17](17_Native_Reasoning_vs_Scaling.ipynb)) — courbes (BoN) et croix (r1) du taux de succès vs <b>tokens dépensés</b> (comparaison cost-normalisée) : la croix au-dessus de la courbe au même coût = le raisonnement natif gagne.</em>
 </p>
 
