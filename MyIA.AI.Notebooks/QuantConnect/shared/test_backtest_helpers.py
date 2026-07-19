@@ -149,6 +149,49 @@ def test_calculate_metrics_sharpe_positive_on_monotonic_growth():
 
 
 # --------------------------------------------------------------------------
+# calculate_metrics — degenerate inputs (regression pins)
+# --------------------------------------------------------------------------
+
+def test_calculate_metrics_single_point_does_not_crash():
+    # Regression pin: a single-bar equity yields len(returns)==0, which used
+    # to raise ZeroDivisionError on `252 / len(returns)`. Now returns a
+    # zeroed, well-formed metrics dict (mirrors annualized_sharpe's handling).
+    m = bt.calculate_metrics(_equity([100.0]))
+    assert m["annualized_return"] == 0.0
+    assert m["total_return"] == 0.0
+    assert m["sharpe_ratio"] == 0.0
+    assert np.isfinite(m["max_drawdown"])
+
+
+def test_calculate_metrics_equity_starting_at_zero_returns_finite():
+    # Regression pin: equity.iloc[0] == 0 used to poison total_return with inf
+    # (100/0), propagating into every downstream metric. Now guarded -> finite.
+    m = bt.calculate_metrics(_equity([0.0, 100.0, 105.0]))
+    assert np.isfinite(m["total_return"])
+    assert np.isfinite(m["annualized_return"])
+    assert m["total_return"] == 0.0
+
+
+def test_calculate_metrics_total_loss_bar_does_not_yield_nan_drawdown():
+    # Regression pin: a -100% bar collapses cumulative to 0, so running_max=0
+    # and drawdown = 0/0 = NaN (poisoning max_drawdown and calmar). Now
+    # guarded -> 0.0 drawdown on a collapsed series instead of NaN.
+    m = bt.calculate_metrics(_equity([100.0, 0.0, 0.0]))
+    assert not np.isnan(m["max_drawdown"])
+    assert m["max_drawdown"] == 0.0
+    assert np.isfinite(m["calmar_ratio"])
+
+
+def test_calculate_metrics_mid_series_total_loss_still_reports_full_drawdown():
+    # Companion: a -100% bar AFTER a positive peak still reports the real
+    # drawdown (-1.0 = total loss from peak), not the collapsed-series 0.0.
+    # Guards the guard: the running_max==0 protection must not mask genuine
+    # mid-series drawdowns where running_max > 0 at the trough.
+    m = bt.calculate_metrics(_equity([100.0, 50.0, 0.0, 0.0]))
+    assert m["max_drawdown"] == pytest.approx(-1.0)
+
+
+# --------------------------------------------------------------------------
 # calculate_metrics — alpha/beta with benchmark
 # --------------------------------------------------------------------------
 
