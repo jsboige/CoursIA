@@ -21,10 +21,6 @@ L'objectif fil rouge de cette série est de construire un système capable de pr
 
 La structure détaillée (notebooks par niveau, contenu, services utilisés) est listée plus bas. Le décompte canonique réside dans `CATALOG-STATUS.json` du dépôt.
 
-## Aperçu — la génération d'images en images
-
-Plutôt qu'une galerie séparée du propos, chaque niveau ci-dessous est illustré par une sortie réelle de notebook (EPIC #5654), placée au plus près du concept qu'elle démontre : la première image issue d'un appel d'API cloud, le rendu photo-réaliste d'un modèle local, le panneau avant/après d'une édition, ou la chaîne de nœuds d'un workflow de production. La provenance exacte de chaque figure (notebook source, cellule, poids) est documentée dans `assets/readme/MANIFEST.md`.
-
 ## Structure
 
 ```
