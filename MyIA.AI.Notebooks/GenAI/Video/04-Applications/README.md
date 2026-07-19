@@ -15,10 +15,6 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | Durée estimée | ~6-8h |
 | GPU requis | 0-24GB |
 
-## Aperçu — les cas d'usage production vidéo en images
-
-Ce niveau met en oeuvre les workflows complets : génération automatique de contenu éducatif, workflows créatifs, génération cloud via l'API Sora, et pipeline de production bout-en-bout. Plutôt qu'une galerie séparée du propos, chaque sortie réelle est placée ci-dessous au plus près du notebook qui la produit. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |

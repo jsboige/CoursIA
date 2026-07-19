@@ -339,11 +339,18 @@ quatre fronts, chacun ancré dans un résultat déjà livré :
 
 1. **La « fin » de la réversibilisation, mesurée** (#7287, slot ICT-18b). ICT-18 a outillé le
    *moyen* (la production d'entropie $\sigma$ comme instrument) et ICT-19 l'*enjeu* (la batterie
-   $I_\text{stake}$). Il manque la troisième jambe de la triade moyen / fin / enjeu (#5352) : la
+   $I_\text{stake}$). Il manquait la troisième jambe de la triade moyen / fin / enjeu (#5352) : la
    réversibilisation comme **ressource** — un budget $B(t)$ qui s'épuise et se régénère.
-   Prédictions pré-enregistrées : les *early-warning signals* relus comme épuisement de budget
-   (P1), la corrélation régénération ↔ $\sigma$ (P2), le budget ≈ 0 de la monoculture d'Axelrod
-   comme **dette d'irréversibilité culturelle** (P3).
+   **Livré** (module `ict/reversibility_budget.py` + notebook
+   [ICT-18b](ICT-18b-ReversibilityBudget.ipynb)) : deux définitions honnêtement comparées
+   ($B_\text{state}$ Monte-Carlo sur la dynamique = primaire robuste, $B_\text{work}$ distance à
+   $P_\text{rev}$ = témoin secondaire). Prédictions pré-enregistrées puis testées — verdicts bruts :
+   **P1 PASS** (budget ↓ au pli, $\tau_\text{Kendall}=-0.917$, co-varie avec les EWS ; un signal
+   précurseur *est* un épuisement de budget), **P2 DISSOCIATION** (sur S4, dissiper plus ne
+   régénère pas plus — la lecture ressource s'affaiblit sur le substrat continu, résultat honnête),
+   **P3 PASS** (monoculture d'Axelrod = état absorbant, $B_\text{post} \ll B_\text{pre}$ : dette
+   d'irréversibilité culturelle mesurée). La triade moyen / fin / enjeu a désormais sa jambe
+   mesurée.
 
 2. **La canonicité des scalaires du zoo** (#7288, slot ICT-15b). La synthèse cross-substrat a
    falsifié le « scalaire universel » ($\Phi/F$ covarient, $K$ diverge) ; la question méta devient :
@@ -401,6 +408,7 @@ déclenchée par la livraison d'ICT-24b + ICT-24c + les verdicts de #7287/#7288.
 | **ICT-17** | [EpsilonMachine](ICT-17-EpsilonMachine.ipynb) — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 5*. Voir issue #5100 | ✅ |
 | **ICT-17b** | [Grokking & compression-progress](ICT-17b-Grokking-CompressionProgress.ipynb) — la dérivée temporelle $dK/dt$ : le grokking comme transition de compression, entre la structure minimale (ICT-17) et la flèche du temps (ICT-18). Verdict honnête (#7268) : **3/5 proxys co-localisent** avec la généralisation ($\lVert w\rVert^2$, Fisher-MDL, $1-\text{test\_acc}$), **2/5 dissocient** (trace de Fisher, pred-zlib). Renommé `ICT-17b` (#7260). *Strate 5, GPU-free* | ✅ |
 | **ICT-18** | [Flèche du temps & réversibilisation](ICT-18-ArrowOfTimeReversibilization.ipynb) — l'**idée fondatrice** enfin outillée. Instrument rétrospectif GPU-free (`ict/time_arrow.py`) appliqué aux trajectoires déjà construites (tri, May, Axelrod, Gray-Scott) : distribution stationnaire, inversion temporelle, réversibilisation, production d'entropie. Question centrale : *que perd-on quand on force une trajectoire ICT à devenir réversible ?* Ancré ICT-3 (compétence *for free*) + entretien Fridman/Levin. *Strate 5, GPU-free*. Voir issue #5279 | ✅ |
+| **ICT-18b** | [Budget de réversibilité — la jambe « fin »](ICT-18b-ReversibilityBudget.ipynb) — la troisième jambe de la triade moyen / fin / enjeu enfin **mesurée** : la réversibilisation lue comme une *ressource* (un budget $B(t)$). Instrument `ict/reversibility_budget.py` : $B_\text{state}$ Monte-Carlo sur la dynamique (primaire, robuste aux substrats continus) + $B_\text{work}$ distance à $P_\text{rev}$ (témoin secondaire). Trois prédictions pré-enregistrées testées sur S2/S4/S3 : **P1 PASS** (épuisement de budget au pli, co-varie avec les EWS), **P2 DISSOCIATION** (honnête : sur S4, dissiper plus ne régénère pas plus), **P3 PASS** (dette d'irréversibilité culturelle d'une monoculture d'Axelrod). *Strate 5, GPU-free*. See #7287 | ✅ |
 | **ICT-19** | [Batterie de l'ENJEU](ICT-19-EnjeuBattery.ipynb) — la seconde batterie (auto-maintien / retour-au-bassin après `do(·)`) que ICT-18 nomme *hors de sa portée*, fusionnée à la batterie MOYEN d'ICT-18 sur les substrats S1-S5 (Gray-Scott S4 = agent, S5 = pur dissipateur = contrôle négatif obligatoire). Cadrage B verrouillé (user 2026-07-06). Ancré sur la triade **moyen / fin / enjeu** du reframe #5352. Spec cadrage : #5483 — livrable : #5489, raffiné par [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728 : mesure S4 en espace de champ). *Strate 5, GPU-free*. → Epic #4588 | ✅ |
 | **ICT-20** | [FeatureCatastrophes](ICT-20-FeatureCatastrophes.ipynb) — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 5*. Voir issue #5103 | ✅ |
 | **ICT-21** | [SAETrajectoires](ICT-21-SAETrajectoires.ipynb) — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | ✅ |
@@ -409,7 +417,7 @@ déclenchée par la livraison d'ICT-24b + ICT-24c + les verdicts de #7287/#7288.
 | **ICT-SAE-JLens** | [Tête-à-tête SAE ↔ J-Lens](ICT-SAE-JLens-TeteATete.ipynb) — spécial non-numéroté : les deux lentilles interprétatives confrontées sur le substrat S4 ; l'approfondissement (3e lentille raw-logit) est réservé au slot **ICT-24b** (#5681, #7260) | ✅ |
 | **ICT-24** | [WorkspaceIgnition](ICT-24-WorkspaceIgnition.ipynb) — l'axe *Global Workspace* (Dehaene, Baars) comme cinquième jambe et le gate de réconciliation IIT ↔ GWT sur le substrat S4. Module [`ict/workspace.py`](ict/workspace.py) (#5641) et notebook livrés (9/9 cellules exécutées). *Strate 5, GPU-free*. Voir issue #5635 | ✅ |
 | **ICT-25** | [InoculationRL](ICT-25-InoculationRL.ipynb) — réplication poids : GRPO à récompense hackable × inoculation, rewardspy, panel persona (capstone final, pont PostTraining). PR1 CPU livrée, mais **drift protocolaire constaté** : le bras livré réprime le hack (pénalité + interdit) au lieu de le **permettre** (protocole Anthropic arXiv:2511.18397) → réalignement en **3 bras N/I/P** décidé, cf. [#5105](https://github.com/jsboige/CoursIA/issues/5105#issuecomment-5013186646). *Strate 5, GPU-required (phase 2)* | 🚧 PR1 livrée, réalignement 3 bras avant phase GPU |
-| *Réservés* | **ICT-15b** SensitivityCanonicity (#7288) · **ICT-18b** ReversibilityBudget (#7287) · **ICT-24b** approfondissement SAE ↔ J-Lens (#5681) · **ICT-24c** capstone dérivée temporelle (#7259) · substrat argumentation, graine strate 6 (#7289) · annexe Kochen-Specker (#7290) · horizon altérité (#7291, GATED). Décision de numérotation : [#7260](https://github.com/jsboige/CoursIA/issues/7260) | 🚧 slots réservés |
+| *Réservés* | **ICT-15b** SensitivityCanonicity (#7288) · **ICT-24b** approfondissement SAE ↔ J-Lens (#5681) · **ICT-24c** capstone dérivée temporelle (#7259) · substrat argumentation, graine strate 6 (#7289) · annexe Kochen-Specker (#7290) · horizon altérité (#7291, GATED). Décision de numérotation : [#7260](https://github.com/jsboige/CoursIA/issues/7260) | 🚧 slots réservés |
 
 ## Strate 2 — du tri transparent à la morphogenèse dynamique
 

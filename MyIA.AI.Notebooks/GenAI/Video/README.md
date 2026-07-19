@@ -15,10 +15,6 @@ La vidéo combine quatre difficultés simultanées que les autres modalités tra
 
 L'objectif fil rouge de cette série est de construire un pipeline capable de transformer un script texte en vidéo pédagogique animée. Chaque niveau apporte une brique : compréhension vidéo pour analyser les séquences (niveau 1), modèles génératifs pour créer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
-## Aperçu — la vidéo par IA en images
-
-Chacun des quatre niveaux de la série rend visible un geste technique distinct, dans une figure extraite des sorties réelles des notebooks : l'extraction de frames et le surcadrage par réseau (Fondations), l'animation d'une image statique (Avancé), puis les workflows créatifs et l'arbitrage coût cloud/local (Applications). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **niveau par niveau**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Prérequis
 
 ### API Keys
@@ -50,7 +46,7 @@ winget install FFmpeg
 
 On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la compréhension vidéo par IA : décomposer une séquence en scènes, répondre à des questions sur le contenu, analyser le mouvement. Vous découvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour améliorer la qualité visuelle. À la fin de ce niveau, vous savez analyser une vidéo existante et en extraire des informations structurelles.
 
-<p align="center"><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="540" alt="Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0→119 sur fonds colorés alternés vert/orange/rouge/violet/bleu/cyan/vert clair, 640×480 @ 24fps)."></a></p>
+<p align="center"><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="540" alt="Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0/17/34/51/68/85/102/119 sur fonds colorés alternés lime/orange/rouge/magenta/bleu/cyan/vert/lime, palette cyclique 640×480 @ 24fps)."></a></p>
 
 <p align="center"><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure."></a></p>
 

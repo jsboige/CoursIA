@@ -9,8 +9,8 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## video1-frames.png
 
 - **Source** : notebook `01-Foundation/01-1-Video-Operations-Basics.ipynb` (cellule 16, output 2)
-- **Contenu réel vérifié** (lecture via `Read` 2026-07-14) : mosaique pédagogique **2×4 frames** d'une balle blanche bondissante. Frame 0/17/34/51/68/85/102/119, timesteps t=0.00/0.71/1.42/2.12/2.83/3.54/4.25/4.96s. Fonds colorés alternés : vert / orange / rouge / violet / bleu / cyan / vert clair. Résolution 640×480 @ 24fps. Titre superposé : « Extraction uniforme - 8 frames via decord ». Le motif balle bondissante illustre la **régularité de l'extraction uniforme** via decord.
-- **Alt-text (FR)** : Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0→119 sur fonds colorés alternés vert/orange/rouge/violet/bleu/cyan/vert clair, 640×480 @ 24fps).
+- **Contenu réel vérifié** (lecture via `Read` 2026-07-14, **ré-audit visuel c.671 2026-07-19 par `myia-po-2023`** MiniMax-M3) : mosaique pédagogique **2×4 frames** d'une balle blanche bondissante. Frame 0/17/34/51/68/85/102/119, timesteps t=0.00/0.71/1.42/2.12/2.83/3.54/4.25/4.96s. Fonds colorés alternés (palette cyclique 8-couleurs retournant à lime) : lime / orange / rouge / magenta / bleu / cyan / vert / lime. Résolution 640×480 @ 24fps. Titre superposé : « Extraction uniforme - 8 frames via decord ». Le motif balle bondissante illustre la **régularité de l'extraction uniforme** via decord.
+- **Alt-text (FR)** : Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0/17/34/51/68/85/102/119 sur fonds colorés alternés lime/orange/rouge/magenta/bleu/cyan/vert/lime, palette cyclique 640×480 @ 24fps).
 - **Poids** : 66.3 KB (downscale max-dim 1200)
 - **Note** : ancien alt-text « Extraction de frames : découpe d'une vidéo en images clés avec decord pour l'analyse » — **enrichi** avec description factuelle des 8 frames observables (motif balle bondissante + fonds colorés + résolution).
 

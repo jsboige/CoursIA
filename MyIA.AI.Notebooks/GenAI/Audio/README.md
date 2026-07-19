@@ -25,10 +25,6 @@ Là où les séries Texte et Image traitent des signaux discrets (tokens, pixels
 
 L'objectif fil rouge de cette série est de construire un podcast entièrement généré par IA. Chaque niveau apporte une brique supplémentaire : TTS pour donner une voix au contenu (niveau 1), clonage vocal et musique pour l'identité sonore (niveau 2), pipelines STT vers LLM vers TTS pour l'assemblage (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
-## Aperçu — la génération audio en images
-
-Plutôt qu'une galerie séparée du propos, chaque niveau ci-dessous est illustré par une sortie réelle de notebook (EPIC #5654), placée au plus près du concept qu'elle démontre : la forme d'onde d'un signal brut, la reconnaissance vocale par Whisper, la séparation de sources par Demucs, ou l'espace de features d'un benchmark TTS. La provenance exacte de chaque figure (notebook source, cellule, poids) et l'audit G.1 firsthand figurent dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 > **Note d'audit c.529 (2026-07-16, #5780).** Les notes d'audit c.481 et c.490 (retirées ici) avaient interverti le contenu de `audio2` et `audio4` dans leur propre lecture, puis conclu à tort que 5/6 figures étaient « invérifiables / probablement externes ». Une relecture vision firsthand des 6 PNG, croisée avec l'historique git par-blob et un scan `nbformat` des notebooks sources, établit que **les 6 figures sont de vraies sorties de notebook** : l'écart de taille et de MD5 avec les cellules brutes vient de l'optimisation PIL de `extract_readme_figures.py` (downscale ≤ 1200 px + recompression, ratio 0,62–0,97), et non d'une source externe. L'attribution corrigée et le détail par-blob (cellule source, MD5, ratio) sont dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) ; les légendes inline ci-dessous sont désormais fidèles au contenu réel de chaque figure.
 
 ## Structure

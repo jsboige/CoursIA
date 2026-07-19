@@ -227,6 +227,40 @@ class TestSkippingRules:
         result = check_notebook(nb_path)
         assert result["violations"] == []
 
+    def test_csharp_comment_only_skipped(self, tmp_path):
+        """C# (.NET Interactive) `//`-comment-only cell -> skipped, like Python `#`.
+
+        A `.net-csharp` cell whose body is all `//` comments is a non-executable
+        transition/explanation cell — the C# mirror of a Python `#`-comment-only
+        cell. C.2 targets executable code, so it must be skipped on the same
+        grounds (the prior Python-only check flagged it "missing execution_count").
+        """
+        nb_path = _write_nb(tmp_path / "cs_comment.ipynb", [
+            _code("// Cellule de transition pedagogique\n"
+                  "// Explique le prochain concept sans executer de code",
+                  exec_count=None),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_csharp_multiline_comment_only_skipped(self, tmp_path):
+        """C# `//`-comment-only cell with exec_count set and no outputs -> skipped.
+
+        The common real-world case: dotnet-interactive runs the (comment-only)
+        cell, sets exec_count, produces no stdout. Without the C# comment skip
+        this falls through to the has_output_statement check and, if any comment
+        mentions `=`/`return `/`print(`, is falsely flagged "execution_count set
+        but no outputs". Skipping comment-only C# cells upstream avoids the FP.
+        """
+        nb_path = _write_nb(tmp_path / "cs_multi.ipynb", [
+            _code("// Section: analyse du resultat\n"
+                  "// (note: x = valeur attendue, cf. plus bas)\n"
+                  "// Suite de l'explication",
+                  exec_count=3),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
     def test_markdown_cells_ignored(self, tmp_path):
         """Markdown cells are not counted as code cells."""
         nb_path = _write_nb(tmp_path / "md.ipynb", [
