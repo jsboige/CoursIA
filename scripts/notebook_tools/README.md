@@ -138,6 +138,60 @@ remplaces par leurs equivalentes ASCII (`a -> a`, `e -> e`, etc.) par
 un pipeline de strip accidentel. **Rollout accent** : 183/183 cellules
 traitees, ferme via Epic #2876.
 
+### `check_identifier_regression.py` (#7157, axe-1 triade accent)
+
+**Axe-1 de la triade accent #2876.** Flag les renommages ou aliasages
+d'identifiants de **code** (variables, fonctions, methodes, classes,
+constantes) introduits par une cure regex qui ne distingue pas le code
+source des cellules markdown. La cure `#2876` restaure les accents
+francais dans le texte prose, mais une regex `\b(mot)\b` appliquee en
+global touche aussi les noms d'identifiants et casse la compilation
+silencieusement (ex: `Bayésien` -> `Bayesien` comme nom de variable).
+
+```bash
+python scripts/notebook_tools/check_identifier_regression.py NB.ipynb --check
+python scripts/notebook_tools/check_identifier_regression.py --family GenAI --check
+# exit 1 si renommage detecte, CI-ready
+```
+
+**Sortie** : diagnostics par cellule + mode `--json` machine + scan
+multi-famille (`--family GenAI/ML/Probas/Search/...`). Compare les
+identifiants extraits d'une PR a la base git (`origin/main`) et
+recherche les changements de surface identique-up-to-accents-and-case
+mais differents dans la forme canonique.
+
+**Owner** : partition-mienne (axe-1, registre #2876 accent texte/code).
+**Calibration** : valide sur les 3 PRs defectueuses de la partition
+OWN (incident fondateur c.635 G.1 self-correction) qui ont touche le
+code source par accident de strip.
+
+**Complementarite avec les 2 autres axes** :
+
+| Axe | Detecteur | Signal | Issue PR | Owner |
+|-----|-----------|--------|----------|-------|
+| 1 (identifiants code) | `check_identifier_regression.py` | variables/fonctions/classes renommees par strip accidentel | #7157 MERGED 2026-07-18 | po-2024 |
+| 2 (majuscules debut) | `detect_caps_regression.py` | perte de majuscule en debut cellule/ligne/tableau | #7198 MERGED | po-2026 |
+| 3 (cibles markdown) | `detect_link_target_regression.py` | cibles `[texte](cible)` cassees par strip accent | #7210 MERGED 2026-07-18 | po-2024 |
+
+Les 3 axes sont **disjoints par signal** (identifiants code /
+majuscules / cibles markdown) et **cumulatifs par couverture** (un
+notebook peut etre flag par 0, 1, 2 ou 3 detecteurs selon la nature
+de l'incident).
+
+**Pourquoi 3 detecteurs et pas 1** : chaque cure `#2876` peut etre
+defectueuse sur **plusieurs types de surface** independamment. Une
+regex globale `\b(mot)\b` touche simultanement les noms de variables
+ET le texte prose ET les cibles de liens ; mais les consequences
+varient (compilation cassee pour les identifiants, affichage degrade
+pour le texte, lien mort pour les cibles). Un seul detecteur
+multi-signal serait trop couplé ; 3 detecteurs mono-signal =
+diagnostic clair + triage par owner + evolution separee.
+
+**Voir aussi** : [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md)
+(stop & repair sur les sorties reelles, JAMAIS de hand-edit de cellule).
+Section dediee `## Triade accent #2876` ajoutee par c.720 PR #7387
+(axe-3) pour la vue d'ensemble 3 axes.
+
 ### `detect_solution_leaks.py` (#4970, EPIC #1344)
 
 Detecte les fuites de solution dans les cellules d'exercice :
