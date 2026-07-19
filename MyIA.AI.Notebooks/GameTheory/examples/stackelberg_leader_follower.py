@@ -60,13 +60,24 @@ def stackelberg_equilibrium(demand_intercept: float = 100,
 
     Solution:
     q_L = (a - 2*c_L + c_F) / 2
-    q_F = (a - 2*c_F + c_L) / 4
+    q_F = (a - 3*c_F + 2*c_L) / 4   [= (a - c_F - q_L) / 2, the follower reaction]
+
+    The follower closed form is the reaction curve q_F = (a - c_F - q_L)/2 evaluated
+    at the leader quantity q_L = (a - 2*c_L + c_F)/2. Expanding:
+        q_F = (a - c_F)/2 - q_L/2 = (a + 2*c_L - 3*c_F) / 4.
+    Note the coefficients 2*c_L and -3*c_F (NOT c_L and -2*c_F): the previous
+    formula (a + c_L - 2*c_F)/4 was correct only in the symmetric case c_L == c_F
+    (where it collapses to (a - c)/4) and diverged from the reaction curve for
+    any cost asymmetry -- verified against the follower best response directly.
     """
     a = demand_intercept
     c_L, c_F = cost_leader, cost_follower
 
     q_leader = (a - 2 * c_L + c_F) / 2
-    q_follower = (a + c_L - 2 * c_F) / 4
+    # Follower = reaction curve at the leader's equilibrium quantity. Kept in this
+    # (a - c_F - q_L)/2 form rather than the expanded closed form so the link to
+    # the follower's best response stays explicit and self-checking.
+    q_follower = (a - c_F - q_leader) / 2
 
     return max(0, q_leader), max(0, q_follower)
 
