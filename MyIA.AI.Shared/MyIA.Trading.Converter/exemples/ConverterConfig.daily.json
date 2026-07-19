@@ -1,0 +1,45 @@
+{
+  "InputFile": "..\\..\\..\\..\\Data\\crypto\\bitstamp\\bitstampUSD.csv.gz",
+  "OutputFile": "..\\..\\..\\..\\Data\\crypto\\bitstamp\\daily\\btcusd_trade.zip",
+  "StartDate": "2010-01-01T00:00:00",
+  "EndDate": "2024-12-31T00:00:00",
+  "SkipRatio": 0,
+  "TargetTradingDataType": "Tickbars",
+  "TickbarsPeriod": "1.00:00:00",
+  "DynamicFilePrefix": null,
+  "RandomPeriodStart": false,
+  "ConversionsNb": 1,
+  "OutputPrefix": "{0}_",
+  "DeSerializationConfig": {
+    "Culture": "en-US",
+    "Binary": "Apex",
+    "Json": "Utf8",
+    "Csv": "TinyCsv",
+    "Xml": "XmlSerializer",
+    "Compression": {
+      "Library": "SevenZipExtractor",
+      "Level": "Normal",
+      "DefaultOutputFormat": "SevenZip",
+      "DefaultAlgorithm": "Default"
+    },
+    "IncludeHeader": false,
+    "DateTimeFormat": null,
+    "DateAsMillisecondsFromEpoch": false
+  },
+  "SerializationConfig": {
+    "Culture": "en-US",
+    "Binary": "Apex",
+    "Json": "Utf8",
+    "Csv": "FlatFiles",
+    "Xml": "XmlSerializer",
+    "Compression": {
+      "Library": "SevenZipSharp",
+      "Level": "Fast",
+      "DefaultOutputFormat": "SevenZip",
+      "DefaultAlgorithm": "Default"
+    },
+    "IncludeHeader": false,
+    "DateTimeFormat": "yyyyMMdd HH:mm",
+    "DateAsMillisecondsFromEpoch": false
+  }
+}
