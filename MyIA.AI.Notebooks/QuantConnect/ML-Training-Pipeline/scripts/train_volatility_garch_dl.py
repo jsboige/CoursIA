@@ -44,9 +44,12 @@ import pandas as pd
 # Local imports
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
+# shared/ lives two parents up (scripts/ -> ML-Training-Pipeline/ -> QuantConnect/)
+sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "shared"))
 
 from data_sources import fetch_data
 from walk_forward import WalkForwardSplitter
+from gpu_training import batch_thermal_check
 
 RESULTS_DIR = SCRIPT_DIR.parent / "results" / "volatility_garch_dl"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -409,7 +412,9 @@ def train_model(
     for epoch in range(epochs):
         model.train()
         epoch_loss = 0
+        n_batches = 0
         for X_batch, y_batch in train_loader:
+            batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
             pred = model(X_batch)
@@ -418,6 +423,7 @@ def train_model(
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
             epoch_loss += loss.item() * len(X_batch)
+            n_batches += 1
         train_losses.append(epoch_loss / len(train_ds))
 
         model.eval()
