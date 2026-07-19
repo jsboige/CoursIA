@@ -66,11 +66,20 @@ jobs:
           # --git-tracked-only keeps CI output deterministic (ignores untracked).
           python scripts/notebook_tools/generate_catalog.py --git-tracked-only
           python scripts/notebook_tools/expand_catalog_markers.py
+          # Learning paths (parcours, #7422): derive the 5 curriculum pages
+          # under docs/curriculum/ from the freshly-regenerated catalog so
+          # they never drift again (See #7422).
+          python scripts/notebook_tools/generate_parcours.py
 
       - name: Commit + push to main if the catalog drifted
         run: |
           set -euo pipefail
           git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md
+          # Stage the 5 generated curriculum (parcours) pages if they drifted.
+          mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
+          if [ "${#changed_parcours[@]}" -gt 0 ]; then
+            git add -- "${changed_parcours[@]}"
+          fi
           # Stage only README files actually modified by marker expansion.
           mapfile -t changed_readmes < <(git ls-files -m -- '*README.md')
           if [ "${#changed_readmes[@]}" -gt 0 ]; then
