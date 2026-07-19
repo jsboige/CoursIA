@@ -152,9 +152,14 @@ def main():
     # Risk dominance
     if len(eq['pure']) >= 2:
         print("\n--- Risk Dominance ---")
+        # The verdict printed below is computed from the actual payoff matrices
+        # (Harsanyi-Selten: the equilibrium with the larger unilateral-deviation-
+        # loss product is risk-dominant). A prior version hardcoded "(Hare, Hare)
+        # is risk-dominant" here, which for these payoffs CONTRADICTED the
+        # computed verdict just above -- for the default game (Stag, Stag) is
+        # risk-dominant (deviation-loss product 9 > 4). The prose now follows the
+        # computation instead of overriding it.
         print(risk_dominance_analysis(A, B, eq['pure'][0], eq['pure'][1]))
-        print("\n(Hare, Hare) is risk-dominant despite lower payoffs")
-        print("because deviating from it is less risky")
 
     # Forward induction
     forward_induction_analysis()
