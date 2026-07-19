@@ -50,11 +50,11 @@ run, it does not belong here and is cleaned up.
 ## Regenerating the auto-copied snapshots
 
 `gs-definitions.lean` and `existing_proofs.lean` are verbatim snapshots of
-`MyIA.AI.Notebooks/SymbolicAI/Lean/stable_marriage_lean/StableMarriage/` files
+`MyIA.AI.Notebooks/GameTheory/game_theory_lean/StableMarriage/` files
 (`Definitions.lean` + `GSState.lean`, and `Lemmas.lean` respectively). They are **not part
 of any Lake build** — they exist only as agent reference. When the source files change,
 re-copy them (and update the header date). Do not edit the snapshots in place; edit the
-real source under `stable_marriage_lean/`.
+real source under `game_theory_lean/StableMarriage/`.
 
 ## How it is wired into the prover
 
