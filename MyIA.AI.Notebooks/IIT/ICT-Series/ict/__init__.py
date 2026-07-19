@@ -72,6 +72,7 @@ from . import jlens_traces
 from . import sae_traces
 from . import lens_agreement
 from . import triade
+from . import reversibility_budget
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -82,4 +83,5 @@ __all__ = [
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
     "time_arrow", "synthesis", "persona_cusp", "stake", "workspace",
     "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
+    "reversibility_budget",
 ]
