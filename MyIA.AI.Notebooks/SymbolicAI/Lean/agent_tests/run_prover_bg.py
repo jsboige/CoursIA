@@ -15,7 +15,12 @@ Output format (parseable by harvest scripts):
     [BG] TRACE_PATH=<absolute path>
     [BG] TREE_LOCK <path>          (advisory lock taken, See #6790)
     [BG] LOCKED <reason>           (another prover holds the tree -> exit 3)
+    [BG] DO_NOT_TARGET_REDIRECT requested_line=N -> M   (--line hit a DO NOT TARGET region; auto-redirected to CURRENT TARGET)
+    [BG] DO_NOT_TARGET_REFUSED requested_line=N ...      (no safe CURRENT TARGET -> exit 4, workflow never launched)
     [BG] EXIT code=<rc>            (always printed, even on exception path)
+
+Exit codes: 0 success, 2 bad demo_id, 3 tree locked (#6790), 4 target refused
+(DO NOT TARGET, #7477 P2b), 130 died before returning (#6790).
 
 Launch WITHOUT piping through `tail`/`head`: `... | tee log | tail -30`
 makes the task exit code tail's (0) and loses python's real one (run-6
@@ -44,6 +49,9 @@ faulthandler.enable()
 
 PROVER_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROVER_DIR))
+# target_guard.py lives one level up (agent_tests/, alongside this launcher);
+# make it importable regardless of cwd.
+sys.path.insert(0, str(PROVER_DIR.parent))
 
 # Force LEAN_PROJECT before importing prover modules so they see it.
 DEFAULT_LEAN_PROJECT = (
@@ -51,6 +59,10 @@ DEFAULT_LEAN_PROJECT = (
 ).resolve()
 os.environ.setdefault("LEAN_PROJECT", str(DEFAULT_LEAN_PROJECT))
 
+from target_guard import (  # noqa: E402
+    DO_NOT_TARGET_EXIT,
+    resolve_target_line,
+)
 from prover.config import DEMOS  # noqa: E402
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
@@ -78,6 +90,36 @@ async def main(args: argparse.Namespace) -> int:
     if demo is None:
         _bg(f"ERROR demo_id={args.demo_id} not in DEMOS")
         return 2
+
+    # #7477 P2b: enforce the DEMO's DO NOT TARGET markers BEFORE launching the
+    # workflow. A locus the description marks DO NOT TARGET (founder case:
+    # DEMO 62 NW L2970, already factored into p4_nw_shift_lemma #6869) is
+    # auto-redirected to the DEMO's CURRENT TARGET (its default `line`), or
+    # refused if no safe target exists. Forensic: a baseline aimed at such a
+    # locus was correctly refused 4x by the agent but still scored
+    # `no_progress` and burned to iteration_cap.
+    effective_line, target_status = resolve_target_line(
+        demo, getattr(args, "line", None)
+    )
+    if target_status == "refused":
+        _requested = getattr(args, "line", None)
+        _bg(
+            f"DO_NOT_TARGET_REFUSED requested_line="
+            f"{_requested if _requested is not None else demo.get('line')} is "
+            f"marked DO NOT TARGET in the DEMO body and no safe CURRENT TARGET "
+            f"exists; aborting before workflow."
+        )
+        return DO_NOT_TARGET_EXIT
+    if target_status == "redirected":
+        _bg(
+            f"DO_NOT_TARGET_REDIRECT requested_line="
+            f"{getattr(args, 'line', None)} -> {effective_line} "
+            f"(CURRENT TARGET; requested line marked DO NOT TARGET in DEMO body)."
+        )
+        demo = {**demo, "line": effective_line}
+    elif effective_line is not None and demo.get("line") != effective_line:
+        _bg(f"LINE_OVERRIDE {demo.get('line')} -> {effective_line} (--line)")
+        demo = {**demo, "line": effective_line}
 
     file_target = demo.get("file") or "(no file — synthetic theorem demo)"
     _bg(f"START demo_id={args.demo_id} name={demo['name']}")
@@ -172,6 +214,12 @@ async def _run_locked(
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("demo_id", type=int, help="Index in DEMOS dict (e.g. 9 for L325)")
+    p.add_argument("--line", type=int, default=None,
+                   help="Override the DEMO's target line. #7477 P2b: if the "
+                        "requested line falls in a region the DEMO description "
+                        "marks DO NOT TARGET, the launcher auto-redirects to the "
+                        "DEMO's CURRENT TARGET (its default line), or refuses "
+                        "(exit 4) if no safe target exists.")
     p.add_argument("--provider", default="local",
                    help="reasoning provider (local|zai|openai)")
     p.add_argument("--local-provider", default="local",
