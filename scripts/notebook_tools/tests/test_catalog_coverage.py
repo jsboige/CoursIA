@@ -283,3 +283,67 @@ class TestGenerateReport:
     def test_empty_entries(self):
         report = generate_report([])
         assert "| Total notebooks | 0 |" in report
+
+
+# ---------------------------------------------------------------------------
+# Missing/falsy serie guard (regression: KeyError crash on partial catalog)
+# ---------------------------------------------------------------------------
+
+class TestMissingSerieGuard:
+    """An entry that omits the ``serie`` KEY (schema drift / partial generation /
+    manual edit) used to crash ``check_readme_markers`` and ``generate_report``
+    with ``KeyError: 'serie'`` -- even though ``check_catalog_completeness``
+    already treats missing serie as a flaggable condition via ``.get``. The two
+    contracts are now unified: missing/falsy serie is flagged in completeness
+    and gracefully skipped everywhere else, never a crash.
+
+    ``generate_catalog.py`` emits ``serie=""`` for root notebooks and a partial
+    catalog may omit the key entirely, so this is a reachable malformation.
+    """
+
+    def test_check_readme_markers_missing_key_does_not_crash(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("catalog_coverage.NOTEBOOKS_DIR", tmp_path)
+        entries = [{"path": "X.ipynb", "title": "X"}]  # no "serie" key
+        # Previously: KeyError: 'serie'.
+        result = check_readme_markers(entries)
+        assert result == []  # nothing to check -- entry has no serie folder
+
+    def test_check_readme_markers_skips_falsy_serie(self, tmp_path, monkeypatch):
+        # Empty-string serie (real catalog root notebook) must not produce a
+        # spurious entry nor check the root README.
+        monkeypatch.setattr("catalog_coverage.NOTEBOOKS_DIR", tmp_path)
+        (tmp_path / "README.md").write_text("<!-- CATALOG-STATUS -->", encoding="utf-8")
+        entries = [{"path": "r.ipynb", "serie": ""}]
+        result = check_readme_markers(entries)
+        assert result == []  # empty serie skipped, root README not checked
+
+    def test_generate_report_short_missing_key_does_not_crash(self):
+        entries = [{"path": "X.ipynb", "title": "X"}]
+        # Previously: KeyError: 'serie'.
+        report = generate_report(entries, short=True)
+        assert "# Catalog Coverage Report" in report
+
+    def test_generate_report_full_missing_key_does_not_crash(self):
+        entries = [{"path": "X.ipynb", "title": "X"}]
+        # Previously: KeyError: 'serie'.
+        report = generate_report(entries)
+        assert "# Catalog Coverage Report" in report
+
+    def test_missing_serie_entry_still_flagged_in_completeness(self):
+        # The guard does not hide the malformation: completeness still reports it.
+        entries = [{"path": "X.ipynb", "title": "X"}]
+        issues = check_catalog_completeness(entries)
+        assert any(i["issue"] == "missing serie" for i in issues)
+
+    def test_valid_series_unaffected_alongside_missing(self, tmp_path, monkeypatch):
+        # A well-formed serie next to a malformed entry: the good one is still
+        # reported, the malformed one does not abort the run.
+        nb_dir = tmp_path / "GenAI"
+        nb_dir.mkdir()
+        (nb_dir / "README.md").write_text("<!-- CATALOG-STATUS -->", encoding="utf-8")
+        monkeypatch.setattr("catalog_coverage.NOTEBOOKS_DIR", tmp_path)
+        entries = [{"serie": "GenAI"}, {"path": "X.ipynb", "title": "X"}]
+        result = check_readme_markers(entries)
+        assert len(result) == 1
+        assert result[0]["serie"] == "GenAI"
+        assert result[0]["has_marker"] is True

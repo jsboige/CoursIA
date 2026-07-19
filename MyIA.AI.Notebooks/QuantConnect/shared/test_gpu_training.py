@@ -185,19 +185,18 @@ def test_checkpoint_save_includes_optional_fields_when_provided(tmp_path, tiny_m
     assert state["extra"] == {"note": "run-42"}
 
 
-def test_checkpoint_save_requires_parent_dir_to_exist(tmp_path, tiny_model, tiny_optimizer):
-    # PINNED behavior (quirk, NOT force-fixed here — one-subject-per-PR):
-    # unlike data_cache.get_yf_data and video_helpers.frames_to_video which
-    # mkdir(parents=True) before writing, checkpoint_save calls torch.save
-    # directly and does NOT create the parent dir. A nested missing parent
-    # raises RuntimeError. Callers are responsible for creating the output dir.
+def test_checkpoint_save_creates_nested_parent_dir(tmp_path, tiny_model, tiny_optimizer):
+    # checkpoint_save now creates the parent dir (parents=True, exist_ok=True)
+    # before torch.save, consistent with data_cache.get_yf_data and
+    # video_helpers.frames_to_video. Previously a nested missing parent raised
+    # RuntimeError and the caller had to mkdir first.
     nested = tmp_path / "deep" / "nested" / "ckpt.pt"
-    with pytest.raises(RuntimeError, match="Parent directory"):
-        gt.checkpoint_save(str(nested), epoch=1, model=tiny_model,
-                           optimizer=tiny_optimizer)
-    # After the caller creates the parent, save succeeds.
-    nested.parent.mkdir(parents=True)
+    assert not nested.parent.exists()
     gt.checkpoint_save(str(nested), epoch=1, model=tiny_model,
+                       optimizer=tiny_optimizer)
+    assert nested.exists()
+    # Idempotent: re-saving to the now-existing path still succeeds (exist_ok).
+    gt.checkpoint_save(str(nested), epoch=2, model=tiny_model,
                        optimizer=tiny_optimizer)
     assert nested.exists()
 

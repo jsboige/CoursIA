@@ -286,9 +286,31 @@ HONEST_SORRIES = {
 }
 
 
+# Per-provider retry policy (#7477 P1). The OpenAI SDK retries transient
+# failures internally: with `max_retries=4` a single chat call may make up to
+# 5 attempts, each bounded by `request_timeout_s`. For a *hanging* endpoint
+# (server accepts the connection then stalls producing the response) every
+# attempt burns the full timeout, so one hung call costs up to
+# 5 x request_timeout_s = 1200s at the default 240s cap. Forensic span
+# evidence confirms the burn: `[ERROR] chat qwen3.6 1206.9s`,
+# `[ERROR] invoke_agent SearchAgent 2299.7s` (#7477).
+#
+# Remote API providers (zai/openrouter/mistral) keep 4 retries: that
+# resilience was added 2026-05-12 for z.ai intermittent 5xx + connection-reset
+# and applies to remote transports where a retry is cheap (fast-fail 5xx). The
+# `local` provider (vLLM / qwen3.6) is a local server — it does not serve
+# 5xx/reset transients, and its failure mode is exactly the GPU-stall hang
+# above, so retrying just re-burns the timeout. Dropping it to 1 caps a hung
+# local call at 2 x request_timeout_s = 480s and lets the workflow-layer
+# stagnation/outage guards (workflow.py) recover the run instead of burning
+# the whole wall-clock budget on a single hang.
+PROVIDER_MAX_RETRIES = {"local": 1}
+_DEFAULT_MAX_RETRIES = 4
+
+
 def create_client(provider: str = "zai", model_key: str = "reasoning",
                   request_timeout_s: float = 240.0,
-                  max_retries: int = 4) -> OpenAIChatCompletionClient:
+                  max_retries: int | None = None) -> OpenAIChatCompletionClient:
     """Create a ChatCompletionClient for the given provider.
 
     request_timeout_s caps a single chat completion call. Reasoning models
@@ -298,12 +320,19 @@ def create_client(provider: str = "zai", model_key: str = "reasoning",
     reasoning, and we should fail-fast so the workflow can recover instead
     of burning the wall-clock cap.
 
-    max_retries=4 (was 1, bumped 2026-05-12): z.ai service has intermittent
-    5xx + connection-reset failures during long sessions (>20min). With
-    max_retries=1 a single transient blip terminated the BG run; OpenAI
-    SDK uses exponential backoff internally so 4 retries adds at most
-    ~30s wall-clock for legitimately recoverable failures.
+    max_retries defaults to a per-provider policy (PROVIDER_MAX_RETRIES, #7477
+    P1): remote APIs (zai/openrouter/mistral) keep 4 retries — that resilience
+    was added 2026-05-12 for z.ai intermittent 5xx + connection-reset failures
+    during long sessions (>20min), and the OpenAI SDK's internal exponential
+    backoff adds at most ~30s wall-clock for legitimately recoverable fast-fail
+    failures. The `local` provider (vLLM) drops to 1 retry: a local server does
+    not serve 5xx/reset transients, and its failure mode is a GPU-stall hang
+    where each retry re-burns `request_timeout_s` (5 x 240s = 1200s at the old
+    default; forensic span `[ERROR] chat qwen3.6 1206.9s`, #7477). Pass an
+    explicit ``max_retries`` to override the per-provider default.
     """
+    if max_retries is None:
+        max_retries = PROVIDER_MAX_RETRIES.get(provider, _DEFAULT_MAX_RETRIES)
     from openai import AsyncOpenAI
     cfg = PROVIDERS[provider]
     async_client = AsyncOpenAI(

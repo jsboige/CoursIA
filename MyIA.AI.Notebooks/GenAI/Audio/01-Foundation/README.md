@@ -30,7 +30,7 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 **Étape 1 — Forme d'onde.** Le point de départ : l'amplitude du signal échantillonnée dans le temps. On y lit directement la structure alternée de silence et de parole :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde (waveform) du signal audio" width="480"/></a><br>
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde d'un échantillon audio — courbe matplotlib unique 'Forme d'onde - Echantillon de test' (axe Y amplitude ±0,4, axe X temps 0-12 s) ; sept alternances parole/silence révélant la structure du signal échantillonné." width="480"/></a><br>
   <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 12) : forme d'onde — l'amplitude en fonction du temps.</em>
 </p>
 
@@ -44,7 +44,7 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 **Étape 3 — MFCC.** Les coefficients cepstraux dans l'échelle mel (MFCC) condensent le spectrogramme en un petit nombre de coefficients qui captent le timbre perceptuel — la représentation de référence pour STT et classification audio. Deux vues complémentaires : la courbe des coefficients et la carte de chaleur :
 
 <p align="center">
-  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc.png" alt="MFCC — coefficients cepstraux mel" width="460"/></a><br>
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc.png" alt="Heatmap MFCC — matplotlib 'MFCC - Echantillon de test' (axe Y Coefficient MFCC, axe X Time 0-12 s, colorbar -500 à 200) ; coefficients bas = énergie rouge/orange concentrée (formants), coefficients élevés = bleus négatifs — révèle l'enveloppe spectrale du signal." width="460"/></a><br>
   <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 1) : MFCC — coefficients cepstraux mel.</em>
 </p>
 
