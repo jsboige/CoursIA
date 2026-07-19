@@ -24,7 +24,7 @@
 "table.focus__matching-cv__trois_lectures_dun_m.row.2.col.3","**GenAI** (embeddings, vector store)",""
 "table.focus__matching-cv__trois_lectures_dun_m.row.3.col.1","**Sémantique (stable)**",""
 "table.focus__matching-cv__trois_lectures_dun_m.row.3.col.2","Appariement *stable* par l'algorithme de Gale-Shapley (variante Hospital-Resident) sur les scores sémantiques.",""
-"table.focus__matching-cv__trois_lectures_dun_m.row.3.col.3","**GameTheory** (appariement stable ; cf. GameTheory/ 15x et social_choice_lean/)",""
+"table.focus__matching-cv__trois_lectures_dun_m.row.3.col.3","**GameTheory** (appariement stable ; cf. GameTheory/ 15x et game_theory_lean/SocialChoice/)",""
 "focus__matching-cv__trois_lectures_dun_m.para2","La leçon transversale est que **le « meilleur » appariement dépend du critère** : le meilleur score individuel (algorithme 2) n'est pas le même que l'appariement globalement stable au sens de Gale-Shapley (algorithme 3), où aucune paire candidat/poste n'a intérêt à se ré-apparier. Comparer les deux sur les mêmes données rend visible la différence entre *optimisation locale* et *stabilité globale*.",""
 "focus__matching-cv__trois_lectures_dun_m.quote","**Note pédagogique.** matching-cv a été produit sous orchestration automatisée comme extension d'un atelier élémentaire ; sa trace d'orchestration n'a pas été conservée. Sa valeur tient à l'**illustration** de l'intégration cross-séries plus qu'à un déroulé pas-à-pas — voir son [README dédié](matching-cv/README.md) et son [introduction](matching-cv/docs/INTRODUCTION.md) pour le détail.",""
 "focus__matching-cv__trois_lectures_dun_m.para3","*Version anglaise d'origine préservée : [README.en.md](README.en.md) (Epic #1650, Phase 0.5).*",""

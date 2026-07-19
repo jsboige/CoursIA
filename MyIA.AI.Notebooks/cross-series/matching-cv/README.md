@@ -82,7 +82,7 @@ Cette application illustre des concepts abordés dans plusieurs séries du cursu
 
 | Série | Concept | Connexion |
 |-------|---------|------------|
-| **GameTheory** | Gale-Shapley / Hospital-Resident | L'algorithme Stable utilise la variante Hospital-Resident de Gale-Shapley pour un appariement stable. Cf. `social_choice_lean/` et les notebooks GameTheory-15x. |
+| **GameTheory** | Gale-Shapley / Hospital-Resident | L'algorithme Stable utilise la variante Hospital-Resident de Gale-Shapley pour un appariement stable. Cf. `game_theory_lean/SocialChoice/` et les notebooks GameTheory-15x. |
 | **GenAI** | Embeddings sémantiques + RAG | Les algorithmes sémantiques utilisent OpenAI `text-embedding-3-small` via Semantic Kernel, avec persistance ChromaDB (vector store). |
 | **ML** | Classification / Matching | Le matching par mots-clés est une baseline de classification supervisée. |
 
