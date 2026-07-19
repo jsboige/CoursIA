@@ -41,8 +41,8 @@ Avant de produire des visuels pédagogiques, il faut maîtriser les outils de g�
 La première étape est un simple appel d'API : on décrit l'image en langage naturel et le modèle cloud renvoie un visuel. C'est le point d'entrée le plus accessible — pas de GPU, pas de configuration, juste une clé.
 
 <p align="center">
-  <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"><img src="assets/readme/dalle3-cover.webp" width="320" alt="Paysage urbain futuriste cyberpunk au coucher de soleil (voitures volantes, gratte-ciels néon, enseignes holographiques, foule de silhouettes) généré par gpt-image-1."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb">01-1</a> : paysage urbain futuriste produit par gpt-image-1 depuis un prompt textuel. Une seule requête API, zéro infrastructure locale.</em>
+  <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"><img src="assets/readme/dalle3-cover.webp" width="320" alt="Paysage urbain futuriste cyberpunk au coucher de soleil (voitures volantes, gratte-ciels néon, enseignes holographiques, foule de silhouettes) — image historique DALL-E 3 (modèle retiré, remplacé par gpt-image-1)."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb">01-1</a> : paysage urbain futuriste généré historiquement par DALL-E 3 (modèle retiré depuis, remplacé par gpt-image-1 dans le notebook). Image conservée comme cover historique du notebook de migration.</em>
 </p>
 
 | Notebook | Contenu | Service |
