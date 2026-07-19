@@ -253,12 +253,28 @@ def benchmark_table(results: list[dict], title: str = "Comparaison des algorithm
     print(f"{'=' * 70}\n")
 
 
+def _as_metric_value(v):
+    """Coerce a metric value for plotting into a float.
+
+    Numeric values are returned as float. Non-numeric values (None for a
+    timed-out run that never measured the metric, '?' or 'N/A' for an
+    unknown) cannot be a bar height and are returned as NaN: matplotlib
+    renders a gap and the annotation reads 'nan'. This mirrors the
+    defensiveness of ``benchmark_table``, which renders the same values as
+    text -- without it, ``plot_benchmark`` crashes (TypeError on the
+    matplotlib bar / ValueError on the f-string annotation).
+    """
+    if isinstance(v, bool):
+        return float('nan')
+    return float(v) if isinstance(v, (int, float)) else float('nan')
+
+
 def plot_benchmark(results: list[dict], metric: str = 'time_ms',
                    title: str = "Comparaison des performances",
                    figsize: tuple = (10, 6)):
     """Graphique en barres pour comparer les performances."""
     algos = [r.get('algorithm', '?') for r in results]
-    values = [r.get(metric, 0) for r in results]
+    values = [_as_metric_value(r.get(metric, 0)) for r in results]
 
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     bars = ax.bar(range(len(algos)), values, color='steelblue', edgecolor='black')
