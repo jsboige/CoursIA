@@ -476,8 +476,14 @@ class TestHumanReport:
 )
 class TestIncident6891Baseline:
     """Regression test : on the actual 8 quantbook.ipynb files from incident #6891,
-    the detector must flag at least 7 of 8 with Row N placeholders (EMA-Cross-Alpha
-    is intentionally excluded -- it has only the blank-PNG signal, axis 1).
+    post-strip (cf PR #7439 strip_fabricated_quantbook_outputs), the detector
+    must NOT flag any Row N placeholders (Side A = strip honest, cf #6891).
+
+    Originally (pre-strip commit) the detector flagged >=7/8 quantbooks with
+    Row N placeholders. The 26 fabricated cells were stripped + 26 markdown
+    warnings inserted. The detector must now report zero Row N findings on
+    the 7 Row-N quantbooks (EMA-Cross-Alpha was always Row-N clean, only
+    blank-PNG via axe 1).
     """
 
     TARGETS = [
@@ -493,31 +499,50 @@ class TestIncident6891Baseline:
                 out.append(scan_notebook(nb_path))
         return out
 
-    def test_at_least_7_quantbooks_have_row_n(self):
+    def test_zero_row_n_after_strip(self):
+        """Post-strip : zero Row N findings across all 8 quantbooks."""
         results = self._scan(Path("MyIA.AI.Notebooks"))
         flagged_with_row_n = sum(
             1 for r in results
             if any(h["signal"] == "row_n_placeholder" for h in r["hits"])
         )
-        # 7/8 expected (EMA-Cross-Alpha is the no-Row-N outlier)
-        assert flagged_with_row_n >= 7, f"Expected >=7 Row N flags, got {flagged_with_row_n}"
+        assert flagged_with_row_n == 0, (
+            f"Post-strip should have 0 Row N flags, got {flagged_with_row_n}. "
+            f"This means the strip from PR #7439 was incomplete or reverted. "
+            f"Re-run `python scripts/notebook_tools/strip_fabricated_quantbook_outputs.py --apply --include-blank-png`."
+        )
 
-    def test_total_row_n_hits_matches_6891_evidence(self):
-        # Issue #6891 evidence table : AllWeather 9, DualMomentum 3, FuturesTrend 15,
-        # MomentumStrategy 3, RiskParity 11, SectorMomentum 3, TurnOfMonth 16.
-        expected = {
+    def test_zero_axis2_findings_post_strip(self):
+        """Post-strip : zero axis-2 (text fabrication) findings -- Row N + zero_stats_dataframe.
+        EMA-Cross-Alpha may still carry a blank-PNG signature (axe 1 sibling detector,
+        not covered by this detector)."""
+        results = self._scan(Path("MyIA.AI.Notebooks"))
+        for r in results:
+            axis2_hits = [
+                h for h in r["hits"]
+                if h["signal"] in ("row_n_placeholder", "zero_stats_dataframe")
+            ]
+            assert axis2_hits == [], (
+                f"{r['path']}: residual axis-2 fabrication findings: {axis2_hits}"
+            )
+
+    def test_pre_strip_baseline_evidence_doc(self):
+        """Documentation-only test : the original #6891 Row N evidence counts.
+
+        This is NOT a runtime check (we cannot go back in time). It serves as
+        an audit anchor + reference for verifying post-strip == 0.
+        Issue #6891 evidence table :
+          AllWeather 9, DualMomentum 3, FuturesTrend 15,
+          MomentumStrategy 3, RiskParity 11, SectorMomentum 3, TurnOfMonth 16,
+          EMA-Cross-Alpha 0 (blank-PNG only, axe 1 sibling).
+        Total Row N hits pre-strip = 60.
+        """
+        expected_pre_strip = {
             "AllWeather": 9, "DualMomentum": 3, "FuturesTrend": 15,
             "MomentumStrategy": 3, "RiskParity": 11, "SectorMomentum": 3,
-            "TurnOfMonth": 16,
+            "TurnOfMonth": 16, "EMA-Cross-Alpha": 0,
         }
-        root = Path("MyIA.AI.Notebooks")
-        for proj, want in expected.items():
-            nb_path = root / "QuantConnect" / "projects" / proj / "quantbook.ipynb"
-            if not nb_path.exists():
-                continue
-            result = scan_notebook(nb_path)
-            row_n_counts = [
-                h["count"] for h in result["hits"] if h["signal"] == "row_n_placeholder"
-            ]
-            total = sum(row_n_counts)
-            assert total == want, f"{proj}: expected {want} Row N, got {total}"
+        # Inventory check (sum matches issue body evidence table).
+        assert sum(expected_pre_strip.values()) == 60
+        # EMA-Cross-Alpha explicitly excluded (blank-PNG signature only).
+        assert expected_pre_strip["EMA-Cross-Alpha"] == 0
