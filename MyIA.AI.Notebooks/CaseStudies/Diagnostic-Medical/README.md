@@ -239,6 +239,14 @@ Chaque cellule à remplir ou compléter sera évaluée pour constituer la note f
 - Tests exhaustifs
 - Performance exceptionnelle
 
+### Exercices d'extension
+
+Trois exercices d'extension, laissés en squelette dans le notebook étudiant, permettent d'approfondir le pipeline au-delà du barème principal :
+
+- un **score de risque composite** qui agrège plusieurs facteurs cliniques au-delà de la règle de classification de l'agent rationnel ;
+- une **heuristique alternative pour A\*** — comparer une seconde fonction admissible à celle du notebook et en mesurer l'effet sur le nombre de nœuds explorés ;
+- l'ajout de **contraintes d'interaction médicamenteuse au solveur Z3**, pour enrichir la validation formelle du protocole thérapeutique.
+
 ### Compétences développées
 
 À la fin de ce devoir, vous aurez acquis :

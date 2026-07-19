@@ -147,6 +147,18 @@ C'est la conception d'un **Jumeau Numérique** du patient, capable d'éclairer l
 
 ---
 
+## Exercices d'extension
+
+Trois exercices d'extension, laissés en squelette dans le notebook étudiant, prolongent le jumeau numérique au-delà du barème principal :
+
+- **étendre l'ontologie médicamenteuse** (RDFLib) avec de nouveaux traitements et interactions, puis re-vérifier la prescription ;
+- **sensibilité au prior du profil patient** — faire varier le prior de l'inférence Pyro et observer comment évolue la probabilité d'adaptation du traitement ;
+- **journal d'audit du contrat intelligent** — tracer les décisions du smart contract (partie Bonus optionnelle) pour rendre le calendrier de cures auditable.
+
+Les squelettes correspondants figurent dans la version étudiante du notebook.
+
+---
+
 ## Conclusion
 
 Ce cas d'étude réunit deux familles d'IA que l'on oppose souvent, pour montrer qu'elles sont en réalité **complémentaires** dans une chaîne décisionnelle :
