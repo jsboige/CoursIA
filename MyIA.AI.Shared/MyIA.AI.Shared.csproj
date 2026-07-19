@@ -1,7 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- MyIA.AI.Shared — socle partage .NET pour la pompe patrimoine Aricie (#7265).
+       Skeleton initial (506f7ae93, 02/07/2026) net6.0 + HintPaths vers DLLs externes
+       Aricie (external/AIMA/aima-core.dll, external/IKVM/IKVM.OpenJDK.Core.dll) qui ne
+       sont PAS dans ce repo (0 .cs dans le projet, HintPaths casses => ne compilait pas).
+       Fix : alignement net9.0 (convention repo, cf GradeBookApp/MyIA.AI.Notebooks) +
+       HintPaths casses deplaces en commentaire (ils ciblent du patrimoine a recuperer
+       via #7265 B1-AIMA / IKVM Java-bridge, pas des refs vivantes). Les modules A-E
+       ameneront leurs propres refs quand ils atterrissent (cf #7265 ordre A->E).
+       PackageReferences Flee 2.0.0 + Newtonsoft.Json 13.0.3 = NuGet vivants, conserves. -->
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>MyIA.AI</RootNamespace>
@@ -12,13 +21,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="aima-core">
-      <HintPath>..\external\AIMA\aima-core.dll</HintPath>
-    </Reference>
-    <Reference Include="IKVM.OpenJDK.Core">
-      <HintPath>..\external\IKVM\IKVM.OpenJDK.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+  <!-- References externes patrimoine Aricie (a recuperer via #7265) :
+       <Reference Include="aima-core">
+         <HintPath>..\external\AIMA\aima-core.dll</HintPath>
+       </Reference>
+       <Reference Include="IKVM.OpenJDK.Core">
+         <HintPath>..\external\IKVM\IKVM.OpenJDK.Core.dll</HintPath>
+       </Reference> -->
 
 </Project>
