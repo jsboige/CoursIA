@@ -353,7 +353,7 @@ flowchart LR
 
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
-> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` (**Supprimé**, PR #5971 — contenu absorbé sous `game_theory_lean/StableMarriage/`) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `conway_cgt_lean`, `game_theory_lean` (multi-module, absorbant CooperativeGames + StableMarriage), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `repeated_games_lean`, `social_choice_lean`. Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
+> **Consolidation des lakes (EPIC #4365)** : les anciens lakes standalone `cooperative_games_lean/` (**Supprimé**, rm #6587 — contenu Basic/ConeKernel/Shapley préservé byte-identique sous `game_theory_lean/CooperativeGames/`) et `stable_marriage_lean/` (**Supprimé**, PR #5971 — contenu absorbé sous `game_theory_lean/StableMarriage/`) ne sont plus des projets Lake indépendants. Les sept lakes en propre actuels : `conway_cgt_lean`, `game_theory_lean` (multi-module, absorbant CooperativeGames + StableMarriage + SocialChoice), `lean_game_defs`, `lean_game_defs_ext`, `minimax_lean`, `repeated_games_lean`, `social_choice_lean_peters` (référence externe DominikPeters, toolchain v4.27.0-rc1). Note : l'ancien `social_choice_lean/` (contenu absorbé sous `game_theory_lean/SocialChoice/` post-EPIC #4365 PR #6058) subsiste comme archive lakefile neutralisé — `lean_lib` désactivé, `lake build` non fonctionnel. Statut détaillé par lake : cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
@@ -496,11 +496,11 @@ Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de vot
 
 ### Les projets Lake Lean ne buildent pas
 
-Chaque sous-dossier Lake (`conway_cgt_lean/`, `game_theory_lean/`, `minimax_lean/`, `repeated_games_lean/`, `social_choice_lean/`, `social_choice_lean_peters/`, `lean_game_defs/`, `lean_game_defs_ext/`) est un projet Lake indépendant. Pour builder :
+Chaque sous-dossier Lake (`conway_cgt_lean/`, `game_theory_lean/`, `minimax_lean/`, `repeated_games_lean/`, `social_choice_lean_peters/`, `lean_game_defs/`, `lean_game_defs_ext/`) est un projet Lake indépendant. Note : `social_choice_lean/` n'est PAS un projet Lake actif (contenu absorbé sous `game_theory_lean/SocialChoice/` post-EPIC #4365 PR #6058, `lean_lib` neutralisé). Pour builder SocialChoice :
 
 ```bash
-cd MyIA.AI.Notebooks/GameTheory/social_choice_lean
-lake build
+cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
+lake build SocialChoice
 ```
 
 Assurez-vous que `lean --version` correspond à la toolchain spécifiée dans `lean-toolchain` (généralement `stable`). Si les dépendances échouent, essayez `lake exe cache get` puis `lake build`.
