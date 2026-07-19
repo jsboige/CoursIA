@@ -32,7 +32,7 @@ Préserver le code de production (preuves Lean, fonctions métier). Interdit de 
 
 ### [Agents & skills](reference/claude-code-config.md)
 
-Catalogue des 21 sous-agents et 15 skills Claude Code, mapping Epic → specialists.
+Catalogue des 21 sous-agents et 17 skills Claude Code, mapping Epic → specialists.
 
 ### [Architecture MCP roo-state-manager](reference/architecture_mcp_roo.md)
 
