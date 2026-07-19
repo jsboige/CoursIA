@@ -684,6 +684,17 @@ def execute_cell_by_cell(notebook_path: Path, timeout: int = 120, verbose: bool 
         cwd_code = f"import os; os.chdir(r'{notebook_path.parent}')"
         kc.execute(cwd_code)
         kc.get_shell_msg(timeout=10)
+        # Drain the IOPub channel: the cwd setup emits status:busy then
+        # status:idle on IOPub, but get_shell_msg() only consumes the SHELL
+        # reply, leaving those two messages queued. Without draining them, the
+        # first cell's collection loop reads the stale status:idle and breaks
+        # immediately -- silently dropping cell 0's real output (which then
+        # lands in cell 1's loop, shifting every output by one cell).
+        while True:
+            msg = kc.get_iopub_msg(timeout=10)
+            if (msg.get('msg_type') == 'status'
+                    and msg.get('content', {}).get('execution_state') == 'idle'):
+                break
 
         # Execute each code cell
         for i, cell in enumerate(cells):
@@ -1074,6 +1085,17 @@ def execute_missing_cells(notebook_path: Path, timeout: int = 120, verbose: bool
         cwd_code = f"import os; os.chdir(r'{notebook_path.parent}')"
         kc.execute(cwd_code)
         kc.get_shell_msg(timeout=10)
+        # Drain the IOPub channel: the cwd setup emits status:busy then
+        # status:idle on IOPub, but get_shell_msg() only consumes the SHELL
+        # reply, leaving those two messages queued. Without draining them, the
+        # first cell's collection loop reads the stale status:idle and breaks
+        # immediately -- silently dropping cell 0's real output (which then
+        # lands in cell 1's loop, shifting every output by one cell).
+        while True:
+            msg = kc.get_iopub_msg(timeout=10)
+            if (msg.get('msg_type') == 'status'
+                    and msg.get('content', {}).get('execution_state') == 'idle'):
+                break
 
         # Execute ALL code cells in order (to build up state)
         # but only record new outputs for cells_to_execute
