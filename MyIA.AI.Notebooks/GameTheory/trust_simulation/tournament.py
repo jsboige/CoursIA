@@ -94,10 +94,19 @@ class Tournament:
             for j in range(n):  # Include self-play
                 total1, total2 = 0.0, 0.0
 
+                # Self-play (i == j) MUST use a SEPARATE instance for player 2.
+                # Passing the same object as both players corrupts stateful
+                # strategies: choose() is called twice per round with stale
+                # history (the second call sees no record yet), and record()
+                # double-appends to the shared history. This silently halves
+                # the self-play score of any stateful strategy (Detective,
+                # Grudger, Pavlov, Copykitten) and skews the ranking.
+                player2 = strategies[j] if i != j else type(strategies[i])()
+
                 for _ in range(self.repetitions):
                     result = play_match(
                         strategies[i],
-                        strategies[j],
+                        player2,
                         rounds=self.rounds_per_match
                     )
                     total1 += result["score1"]

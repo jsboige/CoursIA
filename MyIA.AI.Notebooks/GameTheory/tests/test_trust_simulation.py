@@ -448,6 +448,27 @@ class TestTournament:
         if allc in t.results.scores:
             assert t.results.scores[allc] - offdiag[allc] == pytest.approx(3 * 50)
 
+    def test_self_play_uses_separate_instances(self):
+        """Self-play doit utiliser des instances SEPUREES, pas le meme objet.
+
+        Regression pin : passer le meme objet comme player1 ET player2 corrompt
+        les strategies stateful (choose() appele deux fois avec historique stale,
+        record() double-appende). Detective self-play score=16 (casse) vs 34
+        (instances separees, correct) sur 12 tours. Ce test aurait attrape le bug.
+        """
+        rounds = 12
+        # Self-play via Tournament (i==j) doit egaler un match 2-instances propre.
+        results = Tournament(strategies=[Detective], rounds_per_match=rounds).run()
+        detective_name = Detective().name
+        self_play_via_tournament = results.scores[detective_name]
+
+        proper = play_match(Detective(), Detective(), rounds=rounds)
+        self_play_proper = proper["score1"]
+
+        assert self_play_via_tournament == pytest.approx(self_play_proper)
+        # Sanity : le score casse (16) ne doit plus revenir.
+        assert self_play_via_tournament > 20
+
 
 # ============================================================================
 # run_axelrod_tournament (convenience wrapper).
