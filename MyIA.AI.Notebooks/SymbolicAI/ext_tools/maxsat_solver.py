@@ -101,6 +101,11 @@ def main():
                     if i >= args.enumerate:
                         break
 
+                # No model enumerated means hard clauses are UNSAT
+                if not solutions:
+                    print("s UNSATISFIABLE")
+                    return 1
+
                 # Output all solutions
                 print(f"s OPTIMUM FOUND")
                 for idx, (model, cost) in enumerate(solutions, start=1):
