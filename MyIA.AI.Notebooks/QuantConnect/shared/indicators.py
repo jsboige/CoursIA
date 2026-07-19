@@ -110,12 +110,16 @@ class TrendStrengthIndicator:
         if len(self.close_prices) < 2:
             return 0.0
 
-        # Direction moyenne
+        # Direction moyenne. Les moves flat (close[i] == close[i-1]) sont
+        # exclus de up ET de down -> ils restent neutres (range/consolidation),
+        # conformement a l'interpretation documentee (0.0 = range).
         moves_up = sum(1 for i in range(1, len(self.close_prices))
                       if self.close_prices[i] > self.close_prices[i-1])
-        moves_down = len(self.close_prices) - 1 - moves_up
+        moves_down = sum(1 for i in range(1, len(self.close_prices))
+                         if self.close_prices[i] < self.close_prices[i-1])
 
         if moves_up + moves_down == 0:
+            # Aucun move directionnel (serie completement flat) -> neutre.
             return 0.0
 
         # Score -1 (downtrend fort) à +1 (uptrend fort)
