@@ -23,12 +23,14 @@ seulement l'absence de crash :
   - **Enumeration exhaustive des 576 jeux ordinaux stricts** (24 x 24 permutations
     de {1,2,3,4}) : aucun crash, le classifieur partitionne l'espace tout entier
     de maniere deterministe, et les comptes par type sont stables.
-  - **Incoherence documentee (xfail)** : les modeles NAMED_GAMES du module ne
-    font PAS de aller-retour via son propre encodeur create_ordinal_game
-    (seul Matching Pennies passe). L'encodage de la matrice B (joueur colonne)
-    est incoherent avec l'ordre des tuples des modeles. Surfacage honest d'un
-    bug reel, sans le consecrer : les assertions expriment le comportement
-    CORRECT attendu, et echouent (xfail) tant que le bug n'est pas corrige.
+  - **Incoherence documentee (xfail)** : HISTORIQUEMENT les modeles NAMED_GAMES
+    du module ne faisaient PAS l'aller-retour via son propre encodeur
+    create_ordinal_game (seul Matching Pennies passait). L'encodage de la
+    matrice B (B = [[p2[0],p2[2]],[p2[1],p2[3]]]) inversait les entrees
+    hors-diagonale. CORRIGE : B est desormais row-major comme A, et PD / Stag
+    Hunt / Chicken / Matching Pennies font l'aller-retour correctement (tests
+    passants). Battle of the Sexes reste xfail pour une raison SEPARABLE (limite
+    du classifieur, pas de l'encodage : voir test_named_battle_of_the_sexes).
 
 Run with: pytest tests/test_topology_2x2.py -v
 """
@@ -103,14 +105,17 @@ class TestCreateOrdinalGame:
         A, _ = topo.create_ordinal_game((3, 1, 4, 2), (1, 2, 3, 4))
         np.testing.assert_array_equal(A, np.array([[3, 1], [4, 2]]))
 
-    def test_B_column_major_encoding(self):
-        """B utilise la formule documentee B = [[p2[0],p2[2]],[p2[1],p2[3]]].
+    def test_B_row_major_encoding(self):
+        """B est construite en row-major comme A : B = [[p2[0],p2[1]],[p2[2],p2[3]]].
 
-        C'est le comportement REEL du module (que l'on fige ici). Cette formule
-        est la source de l'incoherence avec NAMED_GAMES (voir TestNamedGamesRoundTrip).
+        Les deux tuples sont dans le meme ordre d'issues (CC, CD, DC, DD), donc
+        B[i, j] est le gain du joueur colonne dans la meme situation (row i,
+        col j) que A[i, j]. L'ancienne formule ``[[p2[0],p2[2]],[p2[1],p2[3]]]``
+        inversait les entrees hors-diagonale et faisait mal classer tous les
+        modeles NAMED_GAMES sauf Matching Pennies (voir TestNamedGamesRoundTrip).
         """
         _, B = topo.create_ordinal_game((1, 2, 3, 4), (3, 1, 4, 2))
-        np.testing.assert_array_equal(B, np.array([[3, 4], [1, 2]]))
+        np.testing.assert_array_equal(B, np.array([[3, 1], [4, 2]]))
 
     def test_deterministic(self):
         a = topo.create_ordinal_game((1, 2, 3, 4), (4, 3, 2, 1))
@@ -344,53 +349,35 @@ class TestExhaustiveEnumeration:
 
 
 # ----------------------------------------------------------------------------
-# NAMED_GAMES round-trip : INCOHERENCE DOCUMENTEE (xfail honest).
+# NAMED_GAMES round-trip : l'encodeur (desormais corrige) rend chaque modele
+# a son type canonique, SAUF Battle of the Sexes.
 #
-# Les modeles NAMED_GAMES du module ne font PAS l'aller-retour via son propre
-# encodeur create_ordinal_game : seul Matching Pennies est correctement
-# reconnu. Les autres modeles (PD, Stag Hunt, Chicken, BoS) sont mal classes
-# parce que l'encodage de la matrice B (B = [[p2[0],p2[2]],[p2[1],p2[3]]]) est
-# incoherent avec l'ordre des tuples des modeles (qui semblent lister les gains
-# P2 en ordre row-major (CC,CD,DC,DD), comme P1, alors que la formule B les
-    # consomme en ordre column-major).
+# Historiquement l'encodage de B (B = [[p2[0],p2[2]],[p2[1],p2[3]]]) inversait
+# les entrees hors-diagonale et faisait mal classer tous les modeles sauf
+# Matching Pennies. La correction (B = [[p2[0],p2[1]],[p2[2],p2[3]]], meme
+# structure row-major que A) rend PD / Stag Hunt / Chicken / Matching Pennies
+# a leur type canonique : ce sont maintenant des tests PASSANTS normaux.
 #
-# Ces tests xfail expriment le COMPORTEMENT CORRECT attendu (le modele PD doit
-# etre classifie "Prisoner's Dilemma"). Ils echouent aujourd'hui (bug) et
-# passeront (xpass) quand l'encodage sera corrige dans une PR dediee (un sujet
-# par PR ; ce fichier est test-only). strict=False pour ne pas casser CI quand
-# le bug sera corrige.
+# Battle of the Sexes reste XFAIL : c'est une limite SEPARABLE du classifieur
+# (pas l'encodage). Les deux equilibres diagonaux de BoS ont des sommes egales
+# ((4,3)=7 et (3,4)=7), donc classify_game les classe "Coordination Game"
+# (branche somme-egale) plutot que "Battle of the Sexes" (branche jamais
+# atteinte en 2x2 ou les 2 Nash purs sont soit tous diagonaux, soit tous
+# anti-diagonaux). strict=False pour ne pas casser CI.
 # ----------------------------------------------------------------------------
 
-@pytest.mark.xfail(
-    reason="create_ordinal_game B-encoding incoherent avec NAMED_GAMES: "
-           "le modele PD est classe 'Dominant Strategy' au lieu de "
-           "'Prisoner's Dilemma'. Bug a corriger dans une PR dediee.",
-    strict=False,
-)
 def test_named_prisoners_dilemma_round_trips():
-    A, B = topo.create_ordinal_game(**{k: topo.NAMED_GAMES["Prisoner's Dilemma"][k]
-                                       for k in ("p1", "p2")})
+    data = topo.NAMED_GAMES["Prisoner's Dilemma"]
+    A, B = topo.create_ordinal_game(data["p1"], data["p2"])
     assert topo.classify_game(A, B) == "Prisoner's Dilemma"
 
 
-@pytest.mark.xfail(
-    reason="create_ordinal_game B-encoding incoherent : le modele Stag Hunt "
-           "est classe 'Other' au lieu de 'Stag Hunt'. Bug a corriger dans une "
-           "PR dediee.",
-    strict=False,
-)
 def test_named_stag_hunt_round_trips():
     data = topo.NAMED_GAMES["Stag Hunt"]
     A, B = topo.create_ordinal_game(data["p1"], data["p2"])
     assert topo.classify_game(A, B) == "Stag Hunt"
 
 
-@pytest.mark.xfail(
-    reason="create_ordinal_game B-encoding incoherent : le modele Chicken "
-           "est classe 'Other' au lieu de 'Chicken/Hawk-Dove'. Bug a corriger "
-           "dans une PR dediee.",
-    strict=False,
-)
 def test_named_chicken_round_trips():
     data = topo.NAMED_GAMES["Chicken"]
     A, B = topo.create_ordinal_game(data["p1"], data["p2"])
@@ -398,9 +385,11 @@ def test_named_chicken_round_trips():
 
 
 @pytest.mark.xfail(
-    reason="create_ordinal_game B-encoding incoherent : le modele Battle of "
-           "the Sexes est classe 'Coordination Game'. Bug a corriger dans une "
-           "PR dediee.",
+    reason="Limite SEPARABLE du classifieur (pas l'encodage B, desormais corrige) : "
+           "les deux Nash diagonaux de BoS ont somme egale ((4,3) et (3,4) = 7), "
+           "donc classify_game renvoie 'Coordination Game'. La branche "
+           "'Battle of the Sexes' n'est jamais atteinte en 2x2 (les 2 Nash purs "
+           "sont soit tous diagonaux, soit tous anti-diagonaux).",
     strict=False,
 )
 def test_named_battle_of_the_sexes_round_trips():
