@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -192,6 +192,37 @@ diagnostic clair + triage par owner + evolution separee.
 Section dediee `## Triade accent #2876` ajoutee par c.720 PR #7387
 (axe-3) pour la vue d'ensemble 3 axes.
 
+### `detect_link_target_regression.py` (#7210, axe-3 triade accent)
+
+Ferme le **3e axe de la triade accent #2876** : detecte les regressions
+d'accents dans les **cibles de liens markdown** (`[texte](cible)`),
+la OU `detect_accent_stripping.py` est aveugle. Le registre #2876 a
+restaure les accents dans le texte mais la cure regex `\b(mot)\b`
+touche aussi les cibles de liens, ce qui casse silencieusement le
+lien resolu :
+
+    AVANT : | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) |
+    APRES : | [Infer-10-Model-sélection](Infer-10-Model-sélection.ipynb) |  <-- casse
+
+Methode (deterministe, zero ML) :
+
+1. extraire toutes les cibles de liens markdown en BASE et en HEAD ;
+2. matcher par position (cell_idx, line_no) avec fallback strip-accents ;
+3. **ACCENT_REGRESSION** : `strip_accents(head_target) == strip_accents(base_target)` ET `head_target != base_target` ;
+4. **BROKEN_LINK_ACCENT_REGRESSION** (le pire cas) : `head_target` n'existe pas sur disque ET la version strippee existe.
+
+Calibration sur les 3 PRs defectueuses c.635 (partition OWN po-2024)
+detectees via cette methode : 100 % recall sur les cibles accentuees
+de #7210, 0 faux positif sur des renommages editoriaux legitimes.
+
+```bash
+python scripts/notebook_tools/detect_link_target_regression.py NB.ipynb --check
+# exit 1 si regression (CI-ready)
+```
+
+**Owner** : partition-mienne (po-2024) — alignement partition CPU/.NET
+(cf [memory/cycles-c616-c643-forensics-pivots.md](../../.claude/projects/c--dev-CoursIA-2/memory/cycles-c616-c643-forensics-pivots.md)).
+
 ### `detect_solution_leaks.py` (#4970, EPIC #1344)
 
 Detecte les fuites de solution dans les cellules d'exercice :
@@ -200,6 +231,47 @@ verifie que les cellules de titre "Exercice" portent un stub
 solution complete. Complementaire a
 [.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md) :
 labeling PAR CONTENU, pas par titre.
+
+---
+
+## Triade accent #2876 — défense outillée (3 axes complémentaires)
+
+Le registre **#2876** (restauration des accents francais dans le depot)
+ne tient que si **3 axes** sont outillés, parce qu'un seul detecteur
+est structurellement aveugle a un cas que les 2 autres attrapent. La
+triade est issue du diagnostic c.635 (3 PRs defectueuses de la
+partition OWN po-2024, source du detector axe-3) :
+
+| Axe | Outil | PR | Cible | Incidence |
+|-----|-------|----|-------|-----------|
+| **Axe 1 — identifiants de code** | [`check_identifier_regression.py`](../../scripts/notebook_tools/check_identifier_regression.py) | #7157 (MERGED) | `class Foo`, `def bar()`, variables dans le source code | Variable renommee silencieusement, API cassee |
+| **Axe 2 — majuscules en debut de cellule/ligne/tableau** | `detect_caps_regression.py` | #7198 po-2026 (MERGED) | Premiere lettre d'une ligne ou d'une cellule de tableau markdown | Titre de section qui devient minusucle, hierarchie H2 cassee |
+| **Axe 3 — cibles de liens markdown** | `detect_link_target_regression.py` | #7210 (MERGED) | Cible `cible` dans `[texte](cible)` | Lien resolu casse silencieusement, mort a l'affichage |
+
+**Pourquoi 3 axes et pas 1 seul.** `detect_accent_stripping.py` (axe
+DETECTION brute du registre #2876) regarde les **mots du source
+markdown** sans distinguer texte-cliquable / cible-de-lien. Il est
+aveugle aux 3 axes ci-dessus : un accent dans une cible de lien, dans
+un nom de variable, ou en debut de cellule de tableau est un signal
+distinct que la cure regex globale ne peut attraper. Chaque axe a
+besoin de son **propre contexte** (git diff, position de ligne, type
+de cellule) pour ne pas gener de faux positifs sur les renommages
+editoriaux legitimes.
+
+**Complementarite avec `check_notebook_navlinks.py`.** Le validateur
+CI signale les cibles de liens **inexistantes au moment de l'audit**,
+mais ne peut pas distinguer une regression accent (cible accentuee
+dans la PR alors que la base est desaccentuee + le fichier canonique
+n'a pas d'accent) d'une simple typo ou d'un fichier renomme. Axe 3
+ferme ce trou en comparant directement `base` vs `head` sur la cible.
+
+**Statut (c.720)** : 3/3 axes MERGED. Le roll-out est complet cote
+outillage. Les PRs touchant du markdown FR devraient declencher au
+moins 1 des 3 detecteurs en `--check` CI pre-merge.
+
+**Reference canon** : registre SOTA axe-2 (#3801) + sota-not-workaround.md
+Prong-A. Mission owner = partition-mienne (po-2024) pour les axes 1
+et 3 ; po-2026 pour l'axe 2.
 
 ---
 
