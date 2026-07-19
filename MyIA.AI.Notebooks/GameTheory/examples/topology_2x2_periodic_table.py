@@ -35,12 +35,19 @@ def create_ordinal_game(p1_ranks: Tuple[int, int, int, int],
         Tuple of (A, B) payoff matrices
     """
     A = np.array([
-        [p1_ranks[0], p1_ranks[1]],  # Row player Cooperate
-        [p1_ranks[2], p1_ranks[3]]   # Row player Defect
+        [p1_ranks[0], p1_ranks[1]],  # Row player Cooperate: CC, CD
+        [p1_ranks[2], p1_ranks[3]]   # Row player Defect:  DC, DD
     ])
+    # B is indexed [row_action, col_action] exactly like A, so B[i, j] is the
+    # column player's payoff in the SAME situation (row i, col j) as A[i, j].
+    # Both ``p1_ranks`` and ``p2_ranks`` are listed in the same outcome order
+    # (CC, CD, DC, DD) -- see NAMED_GAMES where p1 is (R, S, T, P) and p2 is
+    # (R, T, S, P) -- so B mirrors A's structure. The earlier
+    # ``[[p2[0], p2[2]], [p2[1], p2[3]]]`` swapped the off-diagonal entries and
+    # made every NAMED_GAMES model except Matching Pennies misclassify.
     B = np.array([
-        [p2_ranks[0], p2_ranks[2]],  # Column player Cooperate
-        [p2_ranks[1], p2_ranks[3]]   # Column player Defect
+        [p2_ranks[0], p2_ranks[1]],  # Row player Cooperate: CC, CD
+        [p2_ranks[2], p2_ranks[3]]   # Row player Defect:  DC, DD
     ])
     return A, B
 
