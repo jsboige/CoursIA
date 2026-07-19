@@ -806,7 +806,7 @@ def analyze_barrage_effect() -> str:
         f"  Ensemble: {SECOND_ROUND_RESULTS['Ensemble']['seats']} sieges "
         f"(~{ensemble_without_barrage} sans barrage, gain: +{SECOND_ROUND_RESULTS['Ensemble']['seats'] - ensemble_without_barrage})",
         f"  RN:       {SECOND_ROUND_RESULTS['RN']['seats']} sieges "
-        f"(~{rn_without_barrage} sans barrage, perte: {SECOND_ROUND_RESULTS['RN']['seats'] - rn_without_barrage})",
+        f"(~{rn_without_barrage} sans barrage, perte: {rn_without_barrage - SECOND_ROUND_RESULTS['RN']['seats']})",
         "",
         "INTERPRETATION POUR LE SHAPLEY:",
         "-" * 50,
