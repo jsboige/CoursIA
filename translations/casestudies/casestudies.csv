@@ -349,18 +349,18 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 # Exécution des tests
 tester_agent_diagnostic()
 print(""\n✅ Tests de l'agent de diagnostic terminés"")",,,,,,,,efbda60c3dc1682a,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,19479276,markdown,fr,b64d07666b000a5f,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,19479276,markdown,fr,14669310b46acc31,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
 
-**Objectif** : Ajouter une methode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numerique composite.
+**Objectif** : Ajouter une méthode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numérique composite.
 
-**Contexte** : La classification actuelle (Normal/Pre-diabete/Diabete) est trop grossiere. Un score numerique permet de prioriser les patients et de suivre l'evolution dans le temps.
+**Contexte** : La classification actuelle (Normal/Pre-diabete/Diabete) est trop grossiere. Un score numérique permet de prioriser les patients et de suivre l'evolution dans le temps.
 
 **Indices** :
 - # Indice 1 : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
 - # Indice 2 : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
-- # Etape 1 : Definir les seuils de normalisation pour chaque indicateur
-- # Etape 2 : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
-- # Etape 3 : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,b64d07666b000a5f,,,,,,,
+- # Étape 1 : Définir les seuils de normalisation pour chaque indicateur
+- # Étape 2 : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
+- # Étape 3 : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,14669310b46acc31,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2ed6fb70,code,fr,3b7f1f9dcc3f915c,"# Exercice 1 : Score de risque composite
 # TODO etudiant : Implementer une methode calculer_score_risque(patient) -> float
 # TODO etudiant : Normaliser chaque indicateur entre 0 et 1
@@ -617,18 +617,18 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 # Exécution des tests
 tester_performance_astar()
 print(""\n✅ Tests de performance A* terminés"")",,,,,,,,b1ef161ad6b7d94e,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a595e9f8,markdown,fr,84c35824070a5f67,"### Exercice 2 : Comparer differentes heuristiques pour A*
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a595e9f8,markdown,fr,3ad60275071db173,"### Exercice 2 : Comparer différentes heuristiques pour A*
 
-**Objectif** : Implementer une heuristique alternative pour l'algorithme A* et comparer le nombre d'iterations et la qualite du diagnostic.
+**Objectif** : Implementer une heuristique alternative pour l'algorithme A* et comparer le nombre d'itérations et la qualite du diagnostic.
 
 **Contexte** : L'heuristique actuelle utilise une combinaison lineaire d'evidences cliniques. Une heuristique basee uniquement sur l'HbA1c pourrait etre plus rapide mais moins precise.
 
 **Indices** :
 - # Indice 1 : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
-- # Indice 2 : Comparez le nombre d'iterations et le niveau de confiance final
-- # Etape 1 : Definir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
-- # Etape 2 : Executer la recherche sur les 3 patients de test
-- # Etape 3 : Comparer les resultats (iterations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,84c35824070a5f67,,,,,,,
+- # Indice 2 : Comparez le nombre d'itérations et le niveau de confiance final
+- # Étape 1 : Définir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
+- # Étape 2 : Executer la recherche sur les 3 patients de test
+- # Étape 3 : Comparer les résultats (itérations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,3ad60275071db173,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,265df02e,code,fr,d4823c4286534539,"# Exercice 2 : Heuristique alternative pour A*
 # TODO etudiant : Creer une sous-classe de AStarDiagnostic avec une heuristique simplifiee
 # TODO etudiant : Executer la recherche sur les 3 patients de test
@@ -1216,7 +1216,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 # Exécution des tests
 tester_validation_z3()
 print(""\n✅ Tests de validation Z3 terminés"")",,,,,,,,44d22e906b7a7523,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ac893b9b,markdown,fr,cdfe402f9c03de5e,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ac893b9b,markdown,fr,2d16ff3a4ce4b7ef,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
 
 **Objectif** : Etendre le solveur Z3 pour inclure de nouvelles contraintes d'interaction entre medicaments et verifier que le protocole est sur.
 
@@ -1225,9 +1225,9 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 **Indices** :
 - # Indice 1 : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
 - # Indice 2 : Utilisez `Implies()` et `And()` pour exprimer les conditions
-- # Etape 1 : Ajouter la variable booleenne `hypoglycemie_risque` au modele
-- # Etape 2 : Definir les contraintes d'interaction
-- # Etape 3 : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,cdfe402f9c03de5e,,,,,,,
+- # Étape 1 : Ajouter la variable booleenne `hypoglycemie_risque` au modèle
+- # Étape 2 : Définir les contraintes d'interaction
+- # Étape 3 : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,2d16ff3a4ce4b7ef,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,9acbed9a,code,fr,c033bd599c8db3dc,"# Exercice 3 : Contraintes d'interaction medicamenteuse avec Z3
 # TODO etudiant : Etendre la classe Z3ConstraintSolver avec des contraintes d'interaction
 # TODO etudiant : Ajouter une contrainte sur la dose d'insuline si metformine aussi prescrite
@@ -1367,7 +1367,7 @@ def main():
 
 # Note: La fonction main() sera exécutée manuellement par l'utilisateur
 print(""\n💡 Pour exécuter le pipeline complet, appelez: main()"")",,,,,,,,ac411c643850df39,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1d26cfcb,markdown,fr,4f95c7ca6d47262b,Execution des tests automatises sur le modele.,,,,,,,,4f95c7ca6d47262b,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1d26cfcb,markdown,fr,2e081bc206efc47f,Exécution des tests automatises sur le modèle.,,,,,,,,2e081bc206efc47f,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,6f254673,code,fr,b1bf4bdcd3107ad3,"def tests_automatises():
     """"""Suite de tests automatisés pour validation complète""""""
     print(""\n"" + ""=""*60)
@@ -2172,7 +2172,7 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 # TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
 result = None  # TODO etudiant : remplacer par votre ontologie etendue
 print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,265913ec6705ad89,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,284e6df651792436,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
 
 **Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
 
@@ -2181,9 +2181,9 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 **Indices** :
 - # Indice 1 : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
 - # Indice 2 : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
-- # Etape 1 : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
-- # Etape 2 : Peupler le graphe RDF avec les nouveaux triplets
-- # Etape 3 : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,265913ec6705ad89,,,,,,,
+- # Étape 1 : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
+- # Étape 2 : Peupler le graphe RDF avec les nouveaux triplets
+- # Étape 3 : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,284e6df651792436,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,eeaeb406,markdown,fr,9fea56cf924ce947,### 1.2. Planification des Cures (OR-Tools),,,,,,,,9fea56cf924ce947,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,31abc0f7,code,fr,0bb410bd27e7a762,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
     model = cp_model.CpModel()
@@ -2261,18 +2261,18 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 # TODO etudiant : Comparer les posterieurs dans un tableau
 result = None  # TODO etudiant : remplacer par votre analyse
 print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,a88d4d0e41310e6b,"### Exercice 2 : Sensibilite du modele bayesien au prior sur le profil patient
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,b6eb9d7673809a80,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
 
 **Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
 
-**Contexte** : Le prior actuel est `[0.1, 0.6, 0.3]` (10% Resistants, 60% Normaux, 30% Sensibles). Si la population est differente, le diagnostic change.
+**Contexte** : Le prior actuel est `[0.1, 0.6, 0.3]` (10% Resistants, 60% Normaux, 30% Sensibles). Si la population est différente, le diagnostic change.
 
 **Indices** :
-- # Indice 1 : Modifiez `profil_probs` dans la methode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
+- # Indice 1 : Modifiez `profil_probs` dans la méthode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
 - # Indice 2 : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
-- # Etape 1 : Creer une fonction qui accepte le prior en parametre
-- # Etape 2 : Tester 3 configurations de prior differentes
-- # Etape 3 : Afficher les posterieurs dans un tableau comparatif",,,,,,,,a88d4d0e41310e6b,,,,,,,
+- # Étape 1 : Créer une fonction qui accepte le prior en paramètre
+- # Étape 2 : Tester 3 configurations de prior différentes
+- # Étape 3 : Afficher les posterieurs dans un tableau comparatif",,,,,,,,b6eb9d7673809a80,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b8e1e297,code,fr,b29f552a3579c73d,"class OncoModel:
     def __init__(self):
@@ -2357,18 +2357,18 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 # TODO etudiant : Tester avec plusieurs modifications successives
 result = None  # TODO etudiant : remplacer par votre contrat avec audit
 print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,5aaf1a51c10f4499,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,bdf29e0b5a3bc5fb,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
 
 **Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
 
-**Contexte** : Le contrat actuel enregistre un seul plan. En pratique, les plans peuvent etre modifies plusieurs fois, et il faut tracer qui a fait quoi et quand.
+**Contexte** : Le contrat actuel enregistre un seul plan. En pratique, les plans peuvent etre modifiés plusieurs fois, et il faut tracer qui a fait quoi et quand.
 
 **Indices** :
 - # Indice 1 : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
 - # Indice 2 : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
-- # Etape 1 : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
-- # Etape 2 : Implementer une methode `afficher_historique()` qui affiche le journal
-- # Etape 3 : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,5aaf1a51c10f4499,,,,,,,
+- # Étape 1 : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
+- # Étape 2 : Implementer une méthode `afficher_historique()` qui affiche le journal
+- # Étape 3 : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,bdf29e0b5a3bc5fb,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d6d5c2a5,code,fr,a2e6b3487d30dbc8,"# Simulation de l'avenir avec le profil inféré
 predictive = Predictive(onco_model.model, guide=onco_model.guide, num_samples=100, return_sites=[""obs_gb_3""])
 
@@ -2627,17 +2627,17 @@ contract.signer(""patient"", ""key456"")
 
 print(contract.verifier_execution(plan_final))
 print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,caea860fbffe0f15,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c0,markdown,fr,9c89e4f4be7cb8bc,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c0,markdown,fr,d142cc9abf03e00e,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
 
-**Etude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
-inference probabiliste (modele bayesien), optimisation multi-objectif et un jumeau numerique
+**Étude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
+inference probabiliste (modèle bayesien), optimisation multi-objectif et un jumeau numérique
 de reseau electrique.
-",,,,,,,,9c89e4f4be7cb8bc,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c1,markdown,fr,384bec02c399a77d,"## Contexte metier
+",,,,,,,,d142cc9abf03e00e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c1,markdown,fr,39775315f98a2f7a,"## Contexte metier
 
-Un operateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
+Un opérateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
 et a quel niveau de production (le *unit commitment* / dispatch) afin de satisfaire la demande
-tout en minimisant le cout economique et les emissions de CO2. Ce probleme est rendu difficile
+tout en minimisant le cout economique et les emissions de CO2. Ce problème est rendu difficile
 par :
 
 - **l'incertitude** sur la production renouvelable (eolien, solaire) et sur la demande ;
@@ -2645,29 +2645,29 @@ par :
   reserve tournante (securite n-1) ;
 - **les objectifs multiples conflictuels** : cout, emissions, fiabilite.
 
-Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modele
-probabiliste seul ne respecte pas les contraintes physiques. Cette etude de cas materialise
+Une seule technique ne suffit pas : un solveur déterministe ignore l'incertitude, un modèle
+probabiliste seul ne respecte pas les contraintes physiques. Cette étude de cas materialise
 leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
 l'aleatoire (incertitude), puis optimiser (multi-objectif).
-",,,,,,,,384bec02c399a77d,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c2,markdown,fr,7d2c03681973c5d5,"## Architecture en 4 couches
+",,,,,,,,39775315f98a2f7a,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c2,markdown,fr,9c049b175c23d83e,"## Architecture en 4 couches
 
-| Couche | Role | Technique | Partie |
+| Couche | Rôle | Technique | Partie |
 |--------|------|-----------|--------|
 | **Contraintes dures** | Filtrer les dispatches impossibles | OR-Tools CP-SAT | Partie 1 |
-| **Incertitude** | Modeliser l'aleatoire renouvelable | Modele bayesien | Partie 2 |
+| **Incertitude** | Modeliser l'aleatoire renouvelable | Modèle bayesien | Partie 2 |
 | **Optimisation** | Choisir le meilleur compromis | Multi-objectif pondere | Partie 3 |
 | **Decision** | Synthese + comparaison | Workflow + scoring | Partie 4 |
 
-Ce notebook est une **fondation** : le jumeau numerique (couche 0) est operationnel ; les
+Ce notebook est une **fondation** : le jumeau numérique (couche 0) est operationnel ; les
 implementations des 4 couches seront completees et executees dans les cycles suivants.
-",,,,,,,,7d2c03681973c5d5,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c3,markdown,fr,9a1211fd1df5a169,"## 0. Installation et jumeau numerique
+",,,,,,,,9c049b175c23d83e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c3,markdown,fr,6b090dc678608f7b,"## 0. Installation et jumeau numérique
 
-Le jumeau numerique represente un reseau electrique : un ensemble de centrales (avec cout,
+Le jumeau numérique represente un reseau electrique : un ensemble de centrales (avec cout,
 capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
 renouvelable stochastique.
-",,,,,,,,9a1211fd1df5a169,,,,,,,
+",,,,,,,,6b090dc678608f7b,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
 # %pip install ortools numpy scipy  # decommenter pour execution complete
 
@@ -2724,9 +2724,9 @@ for h in range(len(net.demand_mw)):
     print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
           f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
 ",,,,,,,,f4476cc2c0892661,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c5,markdown,fr,a967acd5bad56914,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c5,markdown,fr,8d9b687eef6ddd05,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
 
-**Theorie** : le *unit commitment* est un probleme NP-difficile. On modelise, pour chaque
+**Théorie** : le *unit commitment* est un problème NP-difficile. On modelise, pour chaque
 heure et chaque centrale pilotable, une variable binaire (activee) et une variable continue
 (niveau de production), soumises aux contraintes :
 
@@ -2735,7 +2735,7 @@ heure et chaque centrale pilotable, une variable binaire (activee) et une variab
 - reserve tournante : capacite excédentaire disponible >= marge de securite.
 
 L'objectif primaire : minimiser le cout total.
-",,,,,,,,a967acd5bad56914,,,,,,,
+",,,,,,,,8d9b687eef6ddd05,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c6,code,fr,db659b2ca0f8f104,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
 from ortools.sat.python import cp_model
 
@@ -2807,28 +2807,28 @@ if dispatch:
 else:
     print('Aucune solution faisable (capacite < demande)')
 ",,,,,,,,db659b2ca0f8f104,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c7,markdown,fr,b2a27db7bd5b0251,"### Exercice 1 : Reserve tournante (securite n-1)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c7,markdown,fr,576ab6a4e6e307d2,"### Exercice 1 : Reserve tournante (securite n-1)
 
-Ajoutez au modele CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
+Ajoutez au modèle CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
 des capacites disponibles (non utilisees) des centrales activees doit couvrir la perte de la
 plus grande centrale en service (critere n-1).
 
 **Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
 `>= max(pmax_i pour i active)`.
-",,,,,,,,b2a27db7bd5b0251,,,,,,,
+",,,,,,,,576ab6a4e6e307d2,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
 def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
     """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
     result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
     return result
 ",,,,,,,,c4f05382aa86dd66,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c9,markdown,fr,d59984e597e4274f,"## Partie 2 : Le Previsionniste Probabiliste (modele bayesien)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c9,markdown,fr,ed30e480a1f1903a,"## Partie 2 : Le Previsionniste Probabiliste (modèle bayesien)
 
-**Theorie** : la production renouvelable est aleatoire. On modelise l'ecart
+**Théorie** : la production renouvelable est aleatoire. On modelise l'ecart
 `demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
 quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
 pilotable disponible).
-",,,,,,,,d59984e597e4274f,,,,,,,
+",,,,,,,,ed30e480a1f1903a,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c10,code,fr,4a63888690dc2381,"# Partie 2 : modele bayesien de l'incertitude renouvelable
 from math import sqrt, erfc
 
@@ -2868,13 +2868,13 @@ def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0))
     result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
     return result
 ",,,,,,,,44fc2e192030efaa,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c13,markdown,fr,f71e48358abc4234,"## Partie 3 : L'Optimiseur Multi-Objectif
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c13,markdown,fr,e3e38641a12b1a19,"## Partie 3 : L'Optimiseur Multi-Objectif
 
-**Theorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
+**Théorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
 et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
-mais tres emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
+mais très emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
 cherche le dispatch minimisant S, en explorant le front de Pareto.
-",,,,,,,,f71e48358abc4234,,,,,,,
+",,,,,,,,e3e38641a12b1a19,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c14,code,fr,f34e47d7784d66a8,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
 def dispatch_metrics(dispatch, network):
     """"""Calcule cout total, CO2 total et risque max d'un dispatch CP-SAT.""""""
@@ -2905,24 +2905,24 @@ score_min_cost = multi_objective_score(dispatch, net, weights=(1.0, 1.0, 1.0),
                                        norms={'cost': 200000, 'co2': 2000000, 'max_risk': 1.0})
 print(f'Score multi-objectif du dispatch min-cout (ref non normalise): {score_min_cost:.3f}')
 ",,,,,,,,f34e47d7784d66a8,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c15,markdown,fr,ca0243fd76c2c961,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c15,markdown,fr,1595f10bff5b4f90,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
 
-Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une meme region subisse
+Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une même region subisse
 toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
 `region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
-",,,,,,,,ca0243fd76c2c961,,,,,,,
+",,,,,,,,1595f10bff5b4f90,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
 def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
     """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
     score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
     return score
 ",,,,,,,,ba42fd7f8f0eebf0,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c17,markdown,fr,8eb1a356dab6fb74,"## Partie 4 : Decision finale et analyse comparative
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c17,markdown,fr,5ddf5a4915a3c5f4,"## Partie 4 : Decision finale et analyse comparative
 
-**Synthese** : on compare les strategies (CP-SAT pur, multi-objectif weighted-sum, front de
+**Synthese** : on compare les stratégies (CP-SAT pur, multi-objectif weighted-sum, front de
 Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif et
 le graphique radar seront produits une fois les Parties 1-3 executees.
-",,,,,,,,8eb1a356dab6fb74,,,,,,,
+",,,,,,,,5ddf5a4915a3c5f4,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c18,code,fr,792901bce26b0d76,"# Partie 4 : analyse comparative des strategies de dispatch
 def comparative_analysis(network):
     """"""Compare 3 strategies CP-SAT (economique, ecologique, compromis).""""""
@@ -2962,28 +2962,28 @@ print()
 best = min(analysis.items(), key=lambda kv: kv[1]['score'])
 print(f'Strategie optimale (score multi-objectif minimal) : {best[0]}')
 ",,,,,,,,792901bce26b0d76,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c19,markdown,fr,1ecb96926f323cfb,"## Conclusion
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c19,markdown,fr,51d789f1def33ccf,"## Conclusion
 
-Cette etude de cas illustre la **composition ordonnee** des paradigmes IA sur un probleme
+Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
 metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
 de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
-produit un systeme soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
+produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
 (decision sans contraintes physiques).
 
-**Etat de la fondation** : jumeau numerique operationnel (couche 0), 4 couches de solveurs
-modelisees en stub. Implementations + execution + analyse comparative : cycles suivants.
-",,,,,,,,1ecb96926f323cfb,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c0,markdown,fr,9c89e4f4be7cb8bc,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+**Etat de la fondation** : jumeau numérique operationnel (couche 0), 4 couches de solveurs
+modelisees en stub. Implementations + exécution + analyse comparative : cycles suivants.
+",,,,,,,,51d789f1def33ccf,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c0,markdown,fr,d142cc9abf03e00e,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
 
-**Etude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
-inference probabiliste (modele bayesien), optimisation multi-objectif et un jumeau numerique
+**Étude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
+inference probabiliste (modèle bayesien), optimisation multi-objectif et un jumeau numérique
 de reseau electrique.
-",,,,,,,,9c89e4f4be7cb8bc,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c1,markdown,fr,384bec02c399a77d,"## Contexte metier
+",,,,,,,,d142cc9abf03e00e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c1,markdown,fr,39775315f98a2f7a,"## Contexte metier
 
-Un operateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
+Un opérateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
 et a quel niveau de production (le *unit commitment* / dispatch) afin de satisfaire la demande
-tout en minimisant le cout economique et les emissions de CO2. Ce probleme est rendu difficile
+tout en minimisant le cout economique et les emissions de CO2. Ce problème est rendu difficile
 par :
 
 - **l'incertitude** sur la production renouvelable (eolien, solaire) et sur la demande ;
@@ -2991,29 +2991,29 @@ par :
   reserve tournante (securite n-1) ;
 - **les objectifs multiples conflictuels** : cout, emissions, fiabilite.
 
-Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modele
-probabiliste seul ne respecte pas les contraintes physiques. Cette etude de cas materialise
+Une seule technique ne suffit pas : un solveur déterministe ignore l'incertitude, un modèle
+probabiliste seul ne respecte pas les contraintes physiques. Cette étude de cas materialise
 leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
 l'aleatoire (incertitude), puis optimiser (multi-objectif).
-",,,,,,,,384bec02c399a77d,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2,markdown,fr,7d2c03681973c5d5,"## Architecture en 4 couches
+",,,,,,,,39775315f98a2f7a,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2,markdown,fr,9c049b175c23d83e,"## Architecture en 4 couches
 
-| Couche | Role | Technique | Partie |
+| Couche | Rôle | Technique | Partie |
 |--------|------|-----------|--------|
 | **Contraintes dures** | Filtrer les dispatches impossibles | OR-Tools CP-SAT | Partie 1 |
-| **Incertitude** | Modeliser l'aleatoire renouvelable | Modele bayesien | Partie 2 |
+| **Incertitude** | Modeliser l'aleatoire renouvelable | Modèle bayesien | Partie 2 |
 | **Optimisation** | Choisir le meilleur compromis | Multi-objectif pondere | Partie 3 |
 | **Decision** | Synthese + comparaison | Workflow + scoring | Partie 4 |
 
-Ce notebook est une **fondation** : le jumeau numerique (couche 0) est operationnel ; les
+Ce notebook est une **fondation** : le jumeau numérique (couche 0) est operationnel ; les
 implementations des 4 couches seront completees et executees dans les cycles suivants.
-",,,,,,,,7d2c03681973c5d5,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c3,markdown,fr,9a1211fd1df5a169,"## 0. Installation et jumeau numerique
+",,,,,,,,9c049b175c23d83e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c3,markdown,fr,6b090dc678608f7b,"## 0. Installation et jumeau numérique
 
-Le jumeau numerique represente un reseau electrique : un ensemble de centrales (avec cout,
+Le jumeau numérique represente un reseau electrique : un ensemble de centrales (avec cout,
 capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
 renouvelable stochastique.
-",,,,,,,,9a1211fd1df5a169,,,,,,,
+",,,,,,,,6b090dc678608f7b,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
 # %pip install ortools numpy scipy  # decommenter pour execution complete
 
@@ -3070,9 +3070,9 @@ for h in range(len(net.demand_mw)):
     print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
           f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
 ",,,,,,,,f4476cc2c0892661,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c5,markdown,fr,a967acd5bad56914,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c5,markdown,fr,8d9b687eef6ddd05,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
 
-**Theorie** : le *unit commitment* est un probleme NP-difficile. On modelise, pour chaque
+**Théorie** : le *unit commitment* est un problème NP-difficile. On modelise, pour chaque
 heure et chaque centrale pilotable, une variable binaire (activee) et une variable continue
 (niveau de production), soumises aux contraintes :
 
@@ -3081,7 +3081,7 @@ heure et chaque centrale pilotable, une variable binaire (activee) et une variab
 - reserve tournante : capacite excédentaire disponible >= marge de securite.
 
 L'objectif primaire : minimiser le cout total.
-",,,,,,,,a967acd5bad56914,,,,,,,
+",,,,,,,,8d9b687eef6ddd05,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c6,code,fr,fafacfc49f56aa32,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
 # TODO etudiant : implementer solve_dispatch_cp avec ortools.sat.python.cp_model.
 # Pour chaque heure et centrale pilotable : binaire `on` + entier `p`.
@@ -3096,28 +3096,28 @@ def solve_dispatch_cp(network, cost_weights=None):
 dispatch = solve_dispatch_cp(net)
 print('Dispatch CP-SAT :', dispatch)
 ",,,,,,,,fafacfc49f56aa32,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c7,markdown,fr,b2a27db7bd5b0251,"### Exercice 1 : Reserve tournante (securite n-1)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c7,markdown,fr,576ab6a4e6e307d2,"### Exercice 1 : Reserve tournante (securite n-1)
 
-Ajoutez au modele CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
+Ajoutez au modèle CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
 des capacites disponibles (non utilisees) des centrales activees doit couvrir la perte de la
 plus grande centrale en service (critere n-1).
 
 **Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
 `>= max(pmax_i pour i active)`.
-",,,,,,,,b2a27db7bd5b0251,,,,,,,
+",,,,,,,,576ab6a4e6e307d2,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
 def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
     """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
     result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
     return result
 ",,,,,,,,c4f05382aa86dd66,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c9,markdown,fr,d59984e597e4274f,"## Partie 2 : Le Previsionniste Probabiliste (modele bayesien)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c9,markdown,fr,ed30e480a1f1903a,"## Partie 2 : Le Previsionniste Probabiliste (modèle bayesien)
 
-**Theorie** : la production renouvelable est aleatoire. On modelise l'ecart
+**Théorie** : la production renouvelable est aleatoire. On modelise l'ecart
 `demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
 quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
 pilotable disponible).
-",,,,,,,,d59984e597e4274f,,,,,,,
+",,,,,,,,ed30e480a1f1903a,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c10,code,fr,929a6af1ccaa8240,"# Partie 2 : modele bayesien de l'incertitude renouvelable
 # TODO etudiant : P(demande nette reelle > capacite pilotable).
 # Modele l'ecart offre/demande comme une gaussienne et utilise sa survivor function.
@@ -3146,13 +3146,13 @@ def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0))
     result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
     return result
 ",,,,,,,,44fc2e192030efaa,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c13,markdown,fr,f71e48358abc4234,"## Partie 3 : L'Optimiseur Multi-Objectif
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c13,markdown,fr,e3e38641a12b1a19,"## Partie 3 : L'Optimiseur Multi-Objectif
 
-**Theorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
+**Théorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
 et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
-mais tres emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
+mais très emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
 cherche le dispatch minimisant S, en explorant le front de Pareto.
-",,,,,,,,f71e48358abc4234,,,,,,,
+",,,,,,,,e3e38641a12b1a19,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c14,code,fr,364239a63c036fdc,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
 # TODO etudiant : normaliser chaque objectif puis combiner par somme ponderee.
 def dispatch_metrics(dispatch, network):
@@ -3171,24 +3171,24 @@ def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None
 
 print('Score multi-objectif :', multi_objective_score(dispatch, net))
 ",,,,,,,,364239a63c036fdc,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c15,markdown,fr,ca0243fd76c2c961,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c15,markdown,fr,1595f10bff5b4f90,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
 
-Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une meme region subisse
+Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une même region subisse
 toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
 `region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
-",,,,,,,,ca0243fd76c2c961,,,,,,,
+",,,,,,,,1595f10bff5b4f90,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
 def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
     """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
     score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
     return score
 ",,,,,,,,ba42fd7f8f0eebf0,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c17,markdown,fr,8eb1a356dab6fb74,"## Partie 4 : Decision finale et analyse comparative
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c17,markdown,fr,5ddf5a4915a3c5f4,"## Partie 4 : Decision finale et analyse comparative
 
-**Synthese** : on compare les strategies (CP-SAT pur, multi-objectif weighted-sum, front de
+**Synthese** : on compare les stratégies (CP-SAT pur, multi-objectif weighted-sum, front de
 Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif et
 le graphique radar seront produits une fois les Parties 1-3 executees.
-",,,,,,,,8eb1a356dab6fb74,,,,,,,
+",,,,,,,,5ddf5a4915a3c5f4,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c18,code,fr,9d4189683fa4b7ce,"# Partie 4 : analyse comparative des strategies de dispatch
 # TODO etudiant : comparer 3 strategies (min cout / min CO2 / compromis).
 def comparative_analysis(network):
@@ -3199,17 +3199,17 @@ def comparative_analysis(network):
 
 print('Analyse comparative :', comparative_analysis(net))
 ",,,,,,,,9d4189683fa4b7ce,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c19,markdown,fr,1ecb96926f323cfb,"## Conclusion
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c19,markdown,fr,51d789f1def33ccf,"## Conclusion
 
-Cette etude de cas illustre la **composition ordonnee** des paradigmes IA sur un probleme
+Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
 metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
 de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
-produit un systeme soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
+produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
 (decision sans contraintes physiques).
 
-**Etat de la fondation** : jumeau numerique operationnel (couche 0), 4 couches de solveurs
-modelisees en stub. Implementations + execution + analyse comparative : cycles suivants.
-",,,,,,,,1ecb96926f323cfb,,,,,,,
+**Etat de la fondation** : jumeau numérique operationnel (couche 0), 4 couches de solveurs
+modelisees en stub. Implementations + exécution + analyse comparative : cycles suivants.
+",,,,,,,,51d789f1def33ccf,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,b7f25e43bc4afee9,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
