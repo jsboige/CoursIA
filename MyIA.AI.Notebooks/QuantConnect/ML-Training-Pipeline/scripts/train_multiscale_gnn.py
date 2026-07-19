@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 import time
 from pathlib import Path
 from typing import Sequence
@@ -27,6 +28,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.data import Batch, Data
+
+# Resolve local scripts/ modules and the sibling shared/ dir (gpu_training).
+_SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPT_DIR))
+sys.path.insert(0, str(_SCRIPT_DIR.parent.parent / "shared"))
+from gpu_training import thermal_check
 
 from har_model import walk_forward_har
 from multiscale_gnn_features import (
@@ -136,6 +143,10 @@ def _train_one_fold(
     # Train: single forward+backward per epoch on the entire fold batch
     model.train()
     for _ in range(epochs):
+        # Inter-epoch thermal watchdog: this loop runs 400 epochs x
+        # (5 folds x 4 seeds x 3 horizons x N coins) = hours of sustained GPU
+        # load with no intra-batch pause point, so check temperature here.
+        thermal_check(max_temp=80, cool_sleep=30, verbose=False)
         pred = model(
             batch_train.x, batch_train.x, batch_train.x,
             batch_train.edge_index, batch_train.edge_weight,

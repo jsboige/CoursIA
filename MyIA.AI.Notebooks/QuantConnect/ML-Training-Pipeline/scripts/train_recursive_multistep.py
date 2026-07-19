@@ -35,6 +35,7 @@ from sequence_utils import build_sequences, normalize_sequences
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from walk_forward import WalkForwardSplitter
+from gpu_training import batch_thermal_check
 
 SEEDS = [0, 1, 7, 42]
 N_SPLITS = 5
@@ -234,7 +235,9 @@ def run_recursive_evaluation(
 
                 for epoch in range(epochs):
                     model.train()
+                    n_batches = 0
                     for X_batch, y_batch in train_loader:
+                        batch_thermal_check(n_batches, check_every=5, max_temp=80, cool_sleep=30)
                         X_batch = X_batch.to(device)
                         y_batch = y_batch.to(device)
                         optimizer.zero_grad()
@@ -247,6 +250,7 @@ def run_recursive_evaluation(
                             model.parameters(), 1.0,
                         )
                         optimizer.step()
+                        n_batches += 1
 
                 # Recursive prediction on last test positions
                 test_positions = train_idx[-1] + np.arange(1, len(test_idx) + 1)
