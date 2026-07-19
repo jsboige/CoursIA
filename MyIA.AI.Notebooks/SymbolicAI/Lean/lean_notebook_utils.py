@@ -279,10 +279,50 @@ def run_lean_snippet(
 # Sorry counting
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Comment-stripped Lean source scanning
+# ---------------------------------------------------------------------------
+
+# Match a Lean block comment /- ... -/. Lean 4 does NOT support nested block
+# comments, so a non-greedy DOTALL match is sufficient.
+_LEAN_BLOCK_COMMENT = re.compile(r"/-.*?-/", re.DOTALL)
+# Match a Lean line comment: "--" extends to end of line. In Lean 4 the
+# implication arrow is "-->", but stripping the line on the "--" anchor is
+# safe for code that does not contain `-->` mid-token (the validator's input
+# is tactic-source text where `-->` is vanishingly rare and never inside a
+# sorry tactic).
+_LEAN_LINE_COMMENT = re.compile(r"--.*$", re.MULTILINE)
+# Match the sorry tactic as a whole word (avoids "sorriness", "unsorry", etc.).
+_SORRY_WORD = re.compile(r"\bsorry\b")
+
+
+def _strip_lean_comments(src: str) -> str:
+    """Return ``src`` with Lean block + line comments removed.
+
+    Exposed at module scope so callers / tests can exercise the comment-strip
+    contract independently of file I/O. Pure-Python, deterministic, and
+    cross-platform (no subprocess, no WSL).
+    """
+    no_block = _LEAN_BLOCK_COMMENT.sub("", src)
+    no_line = _LEAN_LINE_COMMENT.sub("", no_block)
+    return no_line
+
+
+def _count_sorry_in_text(src: str) -> int:
+    """Count sorry occurrences in ``src`` excluding comments.
+
+    Raises ``re.error`` if a future regex breaks (caller-side guards).
+    """
+    return len(_SORRY_WORD.findall(_strip_lean_comments(src)))
+
+
 def count_sorry(project_path: str, subdir: str = "") -> int:
     """Count sorry occurrences in .lean files (cross-platform).
 
     Excludes sorry in block comments (/- ... -/) and line comments (-- ...).
+    Implementation uses pure-Python source scanning via :func:`_strip_lean_comments`
+    + a ``\\bsorry\\b`` word match (the regex form of `grep -rc` over-counts in
+    comments, which is the bug fixed by this revision).
 
     Args:
         project_path: Path to the Lake project.
@@ -290,45 +330,27 @@ def count_sorry(project_path: str, subdir: str = "") -> int:
 
     Returns:
         Number of sorry occurrences in production code.
-    """
-    search_dir = os.path.join(project_path, subdir) if subdir else project_path
 
-    if is_native_platform():
-        try:
-            rc, out, _err = _run_capture(["grep", "-rc", "sorry", "--include=*.lean", search_dir], 30)
-            if rc != 0:
-                return 0
-            total = 0
-            for line in out.strip().splitlines():
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    try:
-                        total += int(parts[-1])
-                    except ValueError:
-                        pass
-            return total
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return -1
-    else:
-        cmd = (
-            f"cd {project_path} && "
-            f"grep -rc sorry --include='*.lean' {subdir} 2>/dev/null"
-        )
-        try:
-            rc, out, _err = _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], 30)
-            if rc != 0:
-                return 0
-            total = 0
-            for line in out.strip().splitlines():
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    try:
-                        total += int(parts[-1])
-                    except ValueError:
-                        pass
-            return total
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return -1
+    Note:
+        Returns -1 on I/O failure (mirrors the previous timeout / FileNotFoundError
+        contract). Returns 0 when the directory contains no .lean files.
+    """
+    base = Path(project_path)
+    search_dir = (base / subdir) if subdir else base
+    if not search_dir.is_dir():
+        return 0
+
+    total = 0
+    try:
+        for lean_file in search_dir.rglob("*.lean"):
+            try:
+                src = lean_file.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            total += _count_sorry_in_text(src)
+    except OSError:
+        return -1
+    return total
 
 
 # ---------------------------------------------------------------------------
