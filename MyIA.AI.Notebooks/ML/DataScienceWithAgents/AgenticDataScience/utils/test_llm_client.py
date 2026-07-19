@@ -169,6 +169,23 @@ def test_generate_max_tokens_conditional(mock_completion):
     assert "max_tokens" not in mock_completion.call_args_list[-1].kwargs
 
 
+@pytest.mark.xfail(strict=True, reason="max_tokens=0 swallowed by `if max_tokens:` guard (buggy on main); fixed in po-2025 #7394")
+@patch("utils.llm_client.completion")
+def test_generate_max_tokens_zero_is_forwarded(mock_completion):
+    """REGRESSION PIN: max_tokens=0 is a valid int and must be forwarded.
+
+    The legacy `if max_tokens:` guard treated 0 as falsy and silently dropped
+    it (max_tokens never reached litellm). `if max_tokens is not None:` is the
+    correct guard. xfail(strict=True): currently FAILS on main (xfail = green),
+    will XPASS once the sibling fix lands (po-2025 PR #7394) and flip to
+    strict-failure as a reminder to drop the marker. See #7394.
+    """
+    mock_completion.return_value = _fake_response("ok")
+    client = LLMClient(config=_cfg(ProviderType.OPENAI))
+    client.generate("hi", max_tokens=0)
+    assert mock_completion.call_args.kwargs["max_tokens"] == 0
+
+
 @patch("utils.llm_client.completion")
 def test_generate_extra_kwargs_merged(mock_completion):
     """**kwargs are merged into call_kwargs and override defaults."""
