@@ -1,7 +1,8 @@
 # Stage 5: Mamba / State Space Models for Financial Time Series
 
-**Date**: 2026-05-07 | **Context**: Issue #754 ML SOTA Curriculum, Pivot toward volatility forecasting
-**Status**: Exploration note — not a commitment to implement
+**Date**: 2026-05-07 (initial) | **Last reviewed**: 2026-07-19
+**Context**: Issue #754 ML SOTA Curriculum, Pivot toward volatility forecasting
+**Status**: Exploration note — implementation seed via `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/train_mamba.py`. Catalog slot: `QC-Py-23 - State Space Models (Mamba) pour Trading` (DEMO / PRODUCTION, owner po-2026, cf `CATALOG-STATUS`).
 
 ---
 
@@ -106,9 +107,9 @@ O(L) enables minute-bar or tick-level modeling that Transformers cannot handle a
 
 ## Existing Implementation
 
-**File**: `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/train_mamba.py`
+**File**: `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/train_mamba.py` (848 LOC, vérifié `wc -l` 2026-07-19)
 
-~500+ LOC, includes:
+Includes:
 - `SelectiveSSM`: Pure Python selective scan (CPU-compatible), falls back to CUDA kernel if `mamba-ssm` installed
 - `MambaBlock`: LayerNorm + SSM + residual
 - `MambaTSModel`: Full model with embedding, N blocks, prediction head
@@ -116,7 +117,7 @@ O(L) enables minute-bar or tick-level modeling that Transformers cannot handle a
 - Walk-forward validation via `WalkForwardSplitter`
 - Transaction cost integration
 
-**Tests**: `scripts/tests/test_mamba.py`
+**Tests**: `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests/test_mamba.py` (6249 bytes, vérifié `ls -la` 2026-07-19 — l'ancien chemin `scripts/tests/test_mamba.py` documenté ici ne résolvait pas et a été corrigé sur la base d'une lecture `git ls-files scripts/tests/` exhaustive, cf leçon G.1 firsthand sur la désynchronisation chemin/prose)
 
 **References implemented**:
 - MambaStock (Zshi et al., 2024)
@@ -160,7 +161,7 @@ This fits in **Stage 5** of the ML SOTA curriculum:
 | 2 | LSTM / RNN for time series | DONE (train_lstm.py) |
 | 3 | Transformer / Attention | DONE (train_transformer.py) |
 | 4 | MoE / Regime-aware models | DONE (train_moe.py) |
-| **5** | **Mamba / SSM architectures** | **THIS NOTE** |
+| **5** | **Mamba / SSM architectures** | **THIS NOTE** (seed: `train_mamba.py`, cf `CATALOG-STATUS`) |
 | 6 | Multi-asset GNN | Planned |
 | 7 | Foundation models (TSFM fine-tuning) | Planned |
 
