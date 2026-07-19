@@ -138,28 +138,19 @@ class TestStackelbergEquilibrium:
         # Invariant de direction (valide que la forme close follower soit
         # correcte ou non) : on n'epingle pas la valeur exacte, seulement la
         # propriete economique (voir test_asymmetric_follower_equals_reaction_curve
-        # pour l'invariant exact, xfail en attendant #7385).
+        # pour l'invariant exact, verifie depuis #7385).
         _, q_F = stackelberg_equilibrium(100, 5, 15)
         assert q_F < 22.5
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "Stackelberg asymmetric follower uses the wrong closed form "
-            "(a + c_L - 2 c_F)/4, which only equals the Cournot reaction curve "
-            "(a - c_F - q_L)/2 when c_L == c_F. Fixed to the reaction curve in "
-            "#7385. xfail-strict flips to xpass-fail once #7385 lands, prompting "
-            "removal of this marker (the follower then best-responds correctly)."
-        ),
-    )
     def test_asymmetric_follower_equals_reaction_curve(self):
         """Le suiveur doit best-responder a la quantite du leader.
 
         Par definition de Stackelberg, q_F = (a - c_F - q_L) / 2 (courbe de
-        reaction de Cournot evaluee au q_L d'equilibre). Le module courant
-        utilise (a + c_L - 2 c_F) / 4, egale a la courbe de reaction seulement
-        quand c_L == c_F ; corrige dans #7385. Avec (100, 5, 15) : q_L = 52.5
-        (leader, deja correct), q_F vraie = 16.25, q_F buggy = 18.75.
+        reaction de Cournot evaluee au q_L d'equilibre). Avant #7385, le module
+        utilisait la forme close (a + c_L - 2 c_F) / 4, egale a la courbe de
+        reaction seulement quand c_L == c_F ; #7385 a aligne le suiveur sur sa
+        courbe de reaction. Avec (100, 5, 15) : q_L = 52.5 (leader, deja
+        correct), q_F = 16.25.
         """
         a, c_L, c_F = 100, 5, 15
         q_L, q_F = stackelberg_equilibrium(a, c_L, c_F)
