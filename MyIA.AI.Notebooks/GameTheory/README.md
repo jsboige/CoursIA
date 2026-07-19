@@ -309,7 +309,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
-| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
+| **GameTheory** (choix social) | `game_theory_lean` (SocialChoice) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
 | **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
 | **GameTheory** (coopératif) | `game_theory_lean` (CooperativeGames) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
@@ -330,7 +330,7 @@ flowchart LR
         N6["Repeated games grim"]
     end
     subgraph LEAN["Lakes Lean 4 (preuve)"]
-        L1["social_choice_lean<br/>impossibilité"]
+        L1["game_theory_lean/SocialChoice<br/>impossibilité"]
         L2["minimax_lean<br/>Sion"]
         L3["lean_game_defs_ext<br/>Vickrey"]
         L4["game_theory_lean/CooperativeGames<br/>0 sorry #3954"]
@@ -725,7 +725,7 @@ GameTheory/
 ├── conway_cgt_lean/               # Projet Lake jeux combinatoires (Conway CGT, toolchain v4.31.0-rc1)
 ├── minimax_lean/                  # Projet Lake minimax (Sion, cf #4054)
 ├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
-├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
+├── social_choice_lean/            # Archive — choix social absorbé dans game_theory_lean/SocialChoice/ (EPIC #4365, lean_lib neutralisée)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── game_theory_lean/              # Projet Lake multi-module (4 modules : CooperativeGames, RepeatedGames, SocialChoice, StableMarriage — dont CooperativeGames + StableMarriage absorbés via EPIC #4365)
 ├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
@@ -802,7 +802,7 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 
 | Cette série | Symétrie dans | Pont pédagogique |
 |-------------|---------------|------------------|
-| Lean 4 (Arrow, Sen, Shapley, Vickrey) | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Même toolchain WSL, partage de Mathlib ; notebooks `social_choice_lean` prouvent ce que `social_choice_lean_peters` référence (D. Peters, MIT) |
+| Lean 4 (Arrow, Sen, Shapley, Vickrey) | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Même toolchain WSL, partage de Mathlib ; notebooks `game_theory_lean/SocialChoice` prouvent ce que `social_choice_lean_peters` référence (D. Peters, MIT) |
 | Multi-Agent RL (NFSP, PSRO, AlphaZero) | [RL](../RL/README.md) | Stratégies d'équilibre *apprises* par interaction plutôt que calculées (cf notebook 17) |
 | Arbres de jeu, induction arrière, MCTS | [Search](../README.md) | Minimax (notebook 5) ↔ CSP-8-Temporal (Allen), P/N positions ↔ `Search-9-SatPlan-Symbolic` |
 | Mécanismes VCG, matching Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | Gouvernance on-chain (DAO, vote vérifiable) ; le design de mécanismes se prolonge en smart contracts |
