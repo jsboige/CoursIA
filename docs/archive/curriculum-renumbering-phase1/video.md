@@ -1,5 +1,7 @@
 # GenAI/Video — analyse renumérotation (EPIC #5081, phase-1)
 
+> **ARCHIVED 2026-07-19** — Verdict **NO-RENUMBER** + 1 défaut de spine « skip » corrigé (`02-5-LTX2-Audiovisual` ré-inséré). EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.674 [PR #7426](https://github.com/jsboige/CoursIA/pull/7426) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). Superseded by EPIC #5081 closure. *Archivé par : po-2023 (lane CoursIA-2, c.676) — `Closes` partiel dispatch triage c.674 UPDATE/ARCHIVE catégorie.*
+
 **Série** : `MyIA.AI.Notebooks/GenAI/Video/` — arborescence hiérarchique à 4 étages (`01-Foundation` → `04-Applications`), 17 notebooks.
 **Phase** : 1 (docs-only pour l'analyse ; 1 correctif navlink markdown appliqué — pas de ré-exécution, cf C.2).
 **Verdict** : **NO-RENUMBER** sur la structure (numérotation à 2 niveaux `étage-index` déjà cohérente) **+ 1 défaut de spine « skip » corrigé** (02-5-LTX2-Audiovisual court-circuité par le pont d'inter-étage 02-4↔03-1).

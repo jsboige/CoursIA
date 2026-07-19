@@ -1,5 +1,7 @@
 # GenAI/Texte — analyse renumérotation (EPIC #5081, phase-1)
 
+> **ARCHIVED 2026-07-19** — Verdict **NO-RENUMBER** figé. EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.674 [PR #7426](https://github.com/jsboige/CoursIA/pull/7426) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). Superseded by EPIC #5081 closure ; navlink defect (cf §4) tracké séparément. *Archivé par : po-2023 (lane CoursIA-2, c.676) — `Closes` partiel dispatch triage c.674 UPDATE/ARCHIVE catégorie.*
+
 **Série** : `MyIA.AI.Notebooks/GenAI/Texte/` (20 notebooks Python, série **plate** — pas d'arborescence par étage, numérotation linéaire `1..20`).
 **Phase** : 1 (docs-only, analyse DAG — pas de modification de notebook).
 **Verdict renumérotation** : **NO-RENUMBER**. Numérotation contiguë `1..20`, ordre pédagogique valide confirmé par le README, 0 navlink `<<` obsolète (stale-RESOLVES) parmi les liens existants.
