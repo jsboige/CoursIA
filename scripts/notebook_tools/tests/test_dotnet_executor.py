@@ -34,8 +34,14 @@ def _code_cell(source):
     return {"cell_type": "code", "source": src, "execution_count": None, "outputs": []}
 
 
-def _msg(msg_type, **content):
-    return {"msg_type": msg_type, "content": content}
+def _msg(msg_type, parent=None, **content):
+    """Build an iopub message. ``parent`` (optional) sets parent_header.msg_id,
+    used to exercise the parent_msg_id filter (Fix A). Messages without it mimic
+    parentless kernel broadcasts, which the conservative filter keeps."""
+    msg = {"msg_type": msg_type, "content": content}
+    if parent is not None:
+        msg["parent_header"] = {"msg_id": parent}
+    return msg
 
 
 def _fake_kernel(message_seq_by_cell):
@@ -290,3 +296,99 @@ def test_batch_execute_skipped_notebooks_marked(tmp_path, _patch_kernelmanager):
     results = dotnet_executor.batch_execute(str(tmp_path), pattern="*.ipynb")
     assert results["empty.ipynb"]["skipped"] is True
     assert results["empty.ipynb"]["total"] == 0
+
+
+# --- Fix A: parent_msg_id filter (cross-cell pollution guard) ----------------
+
+def test_mismatched_parent_msg_id_is_skipped(tmp_path, _patch_kernelmanager):
+    """Fix A: an iopub message whose parent_header.msg_id names a DIFFERENT
+    request must not be collected into this cell's outputs. The fake kernel's
+    execute() returns ``msg-1`` for the first cell, so a stream tagged
+    ``parent="stale-..."`` is dropped while ``parent="msg-1"`` is kept."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
+    _patch_kernelmanager([[
+        _msg("status", execution_state="busy"),
+        _msg("stream", parent="stale-from-prior-cell", name="stdout", text="leftover\n"),
+        _msg("stream", parent="msg-1", name="stdout", text="ours\n"),
+        _msg("status", execution_state="idle"),
+    ]])
+    dotnet_executor.execute_notebook(nb)
+    out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"]
+    texts = [o["text"] for o in out if o["output_type"] == "stream"]
+    assert "ours\n" in texts
+    assert "leftover\n" not in texts  # cross-cell pollution dropped
+
+
+def test_stray_idle_from_other_request_does_not_break_loop(tmp_path, _patch_kernelmanager):
+    """Fix A: a stray idle status bearing a DIFFERENT parent must NOT terminate
+    this cell's iopub loop before its own output arrives. Without the filter a
+    late idle from the prior cell would break early and lose ``real-output``."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
+    _patch_kernelmanager([[
+        _msg("status", execution_state="busy"),
+        _msg("status", parent="someone-else", execution_state="idle"),  # stray, must NOT break
+        _msg("stream", name="stdout", text="real-output\n"),
+        _msg("status", execution_state="idle"),  # ours (parentless) -> breaks
+    ]])
+    dotnet_executor.execute_notebook(nb)
+    out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"]
+    texts = [o["text"] for o in out if o["output_type"] == "stream"]
+    assert texts == ["real-output\n"]  # loop survived the stray idle
+
+
+def test_parentless_message_is_still_kept(tmp_path, _patch_kernelmanager):
+    """Fix A conservative design: messages with NO parent_header (kernel
+    broadcasts) are kept, not dropped — pins forward-compatibility."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
+    _patch_kernelmanager([[
+        _msg("stream", name="stdout", text="broadcast\n"),  # no parent_header
+        _msg("status", execution_state="idle"),
+    ]])
+    dotnet_executor.execute_notebook(nb)
+    out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"]
+    assert out[0]["text"] == "broadcast\n"  # parentless message kept
+
+
+# --- Fix B: interrupt + drain on timeout ------------------------------------
+
+def test_interrupt_kernel_called_on_timeout(tmp_path, _patch_kernelmanager):
+    """Fix B: on timeout the kernel manager is interrupted so the next cell is
+    not queued behind the stuck execution."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("while(true);")])
+    km, _ = _patch_kernelmanager([[]])
+    dotnet_executor.execute_notebook(nb, cell_timeout=0)
+    km.interrupt_kernel.assert_called_once()
+
+
+def test_interrupt_failure_does_not_crash(tmp_path, _patch_kernelmanager):
+    """Fix B: if interrupt_kernel() raises (unsupported kernel), the executor
+    must swallow it and still emit the TIMEOUT stderr + count the cell."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
+    km, _ = _patch_kernelmanager([[]])
+    km.interrupt_kernel.side_effect = RuntimeError("interrupt not supported")
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0)
+    assert stats["executed"] == 1
+    out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"][0]
+    assert out["output_type"] == "stream"
+    assert "TIMEOUT" in out["text"]
+
+
+def test_drain_after_timeout_consumes_interrupted_idle(tmp_path, _patch_kernelmanager):
+    """Fix B: after interrupt, _drain_iopub consumes the interrupted request's
+    trailing idle (matching parent) and then returns, so the next cell starts
+    clean. The drain recognizes ``msg-1`` (cell 1's id) as the parent to sweep."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("a"), _code_cell("b")])
+    _patch_kernelmanager([
+        # cell 1: timeout branch drains this idle (parent=msg-1 -> matched -> return)
+        [_msg("status", parent="msg-1", execution_state="idle")],
+        # cell 2: also times out (cell_timeout=0); its drain finds only a parentless
+        # idle (unmatched -> continue) then queue.Empty -> best-effort return.
+        [_msg("status", execution_state="idle")],
+    ])
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0)
+    assert stats["executed"] == 2  # both cells ran despite cell-1 timeout
+    cells = json.loads(nb.read_text(encoding="utf-8"))["cells"]
+    assert cells[0]["execution_count"] == 1
+    assert cells[1]["execution_count"] == 2
+    assert any("TIMEOUT" in o.get("text", "") for o in cells[0]["outputs"])
+    assert any("TIMEOUT" in o.get("text", "") for o in cells[1]["outputs"])
