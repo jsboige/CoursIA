@@ -17,6 +17,7 @@ from agent_framework import ToolResultCompactionStrategy
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
 from .p4_final_verify import _evaluate_final_verify
+from .decomposition_regression import is_decomposition_regression
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
@@ -770,6 +771,10 @@ class MultiAgentSorryProver:
         # "provider was down" apart from "no tactical progress".
         provider_outage = False
         provider_failures = 0
+        # P3 (#7477 forensic): default so the result dict is always defined
+        # even if the verify block raises before the decomposition-regression
+        # check runs.
+        decomposition_regression = False
         try:
             # Build-credited wall-clock supervisor (user mandate 2026-06-21:
             # "mettre en pause le timer de mesure pendant les builds"). A single
@@ -971,6 +976,27 @@ class MultiAgentSorryProver:
         verified_tactic_count = sum(
             1 for a in state.tactic_history if a.success
         )
+        # P3 (#7477 forensic): decomposition-regression guard. A net-sorry-
+        # INCREASE decomposition with ZERO build-verified tactics is a
+        # regression (runaway sub-sorry spraying), not structural progress.
+        # Founder: L2551 grew 4->8, verified_tactic_count==0, yet scored
+        # structural_progress:true -- mis-leading forensic ROI. Demote it
+        # honestly: a decomposition is structural progress ONLY when at least
+        # one tactic was build-verified. Same-count (final==original) stays
+        # the FX-8 / statement-mutation guard's territory; a drop is never a
+        # regression by this signal. Does NOT revert the committed snapshot
+        # (reversion is a separate, riskier decision) -- it classifies,
+        # surfacing decomposition_regression for forensic ROI. Verified>0
+        # decompositions (legitimate restructuring) are untouched.
+        decomposition_regression = is_decomposition_regression(
+            final_sorry, original_sorry_count, verified_tactic_count)
+        if decomposition_regression:
+            print(
+                f"  DECOMPOSITION_REGRESSION: sorry {original_sorry_count}"
+                f" -> {final_sorry} with 0 verified tactic. Net sorry growth"
+                f" unproven -- not structural progress (#7477 P3)."
+            )
+            structural_progress = False
         stmt_mutation = _stmt_mutation_guard(
             final_sorry, original_sorry_count, final_build_ok,
             proof_found, verified_tactic_count,
@@ -1072,6 +1098,13 @@ class MultiAgentSorryProver:
             # no_progress) — the target needs a cheaper tactic / higher
             # maxHeartbeats / decomposition, NOT more iterations.
             "heartbeat_budget_exceeded": getattr(state, "heartbeat_budget_exceeded", False),
+            # P3 (#7477 forensic): True when the run was a net-sorry-INCREASE
+            # decomposition with zero build-verified tactics (runaway sub-sorry
+            # spraying), demoted from structural_progress. Distinct from a
+            # legitimate decomposition (verified_tactic_count > 0, real
+            # restructuring) so forensic ROI ranks these runs honestly instead
+            # of counting an unproven sorry-spray as progress.
+            "decomposition_regression": decomposition_regression,
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
