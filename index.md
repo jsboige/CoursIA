@@ -2,13 +2,13 @@
 
 Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogique du dépôt CoursIA. Il ne maintient **plus** de liste de liens vers les notebooks individuels (cause racine historique de rot : chemins à la main non resynchronisés après les restructurations de séries).
 
-> **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé des 637 notebooks (comptes exacts par série, statut READY/DEMO, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Ce catalogue est régénéré automatiquement chaque jour par le workflow `catalog-cron.yml` ; il fait foi sur les chiffres et les statuts.
+> **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé (comptes exacts par série, statuts, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)** et le marqueur `CATALOG-STATUS` du `README.md` racine (total = **824** au 2026-07-19). Le catalogue est régénéré automatiquement chaque jour par le workflow `catalog-cron.yml` ; il fait foi sur les chiffres et les statuts.
 
 ## 🎯 Trois niveaux de lecture
 
 - **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.
 - **Vue d'ensemble** ([`README.md`](README.md)) — cartographie rapide du dépôt + parcours d'apprentissage par niveau. Maintenance manuelle, vue pédagogique consolidée.
-- **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : 637 notebooks, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
+- **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : voir marqueur `CATALOG-STATUS` du `README.md` racine pour le total à jour (824 au 2026-07-19), décompte par série, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
 
 Les trois niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
 
@@ -19,7 +19,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 ### Algorithmes de recherche et résolution de contraintes
 
 - **[Search](MyIA.AI.Notebooks/Search/README.md)** — BFS, A*, métaheuristiques (recuit simulé, algorithmes génétiques), propagation de contraintes. Point d'entrée idéal pour découvrir les paradigmes de recherche sans prérequis IA. *Débutant.*
-- **[Sudoku](MyIA.AI.Notebooks/Sudoku/README.md)** — Résolution multi-paradigme d'un même problème NP-complet (33 notebooks C#/Python) : backtracking, métaheuristiques, CP (OR-Tools, Choco), SMT (Z3), inférence probabiliste. Excellent fil rouge pour comparer les approches sur un terrain commun. *Intermédiaire.*
+- **[Sudoku](MyIA.AI.Notebooks/Sudoku/README.md)** — Résolution multi-paradigme d'un même problème NP-complet (36 notebooks C#/Python, voir `CATALOG-STATUS`) : backtracking, métaheuristiques, CP (OR-Tools, Choco), SMT (Z3), inférence probabiliste. Excellent fil rouge pour comparer les approches sur un terrain commun. *Intermédiaire.*
 
 ### Apprentissage automatique
 
