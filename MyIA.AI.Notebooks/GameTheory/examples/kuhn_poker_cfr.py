@@ -70,19 +70,27 @@ class KuhnPoker:
         player = len(history) % 2
         opponent = 1 - player
 
-        # Terminal state checks
+        # Terminal state checks.
+        # Convention: each terminal returns the utility of the CURRENT player
+        # (player = len(history) % 2) -- not always player 0. The recursion
+        # negates child values (``-self.cfr(...)``) to flip the frame between
+        # players, and regrets are accumulated in the current player's frame, so
+        # a terminal at odd length (player 1 = P2) MUST return P2's utility.
+        # Length-2 terminals (cc/bf/bc) are P0's frame; length-3 terminals
+        # (cbf/cbc) are P1's frame.
         if len(history) >= 2:
-            # Check-Check: showdown
+            # Check-Check: showdown (len 2, P0 frame)
             if history == "cc":
                 return 1 if cards[0] > cards[1] else -1
 
-            # Check-Bet-Fold
+            # Check-Bet-Fold: P0 folded -> P1 wins (len 3, P1 frame)
             if history == "cbf":
-                return 1  # Player 0 wins pot
+                return 1
 
-            # Check-Bet-Call: showdown for pot of 4
+            # Check-Bet-Call: showdown for pot of 4 (len 3, P1 frame).
+            # P1 wins the pot when P1's card is higher.
             if history == "cbc":
-                return 2 if cards[0] > cards[1] else -2
+                return 2 if cards[1] > cards[0] else -2
 
             # Bet-Fold
             if history == "bf":

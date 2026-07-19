@@ -99,9 +99,17 @@ class TestTerminalUtilities:
         assert fresh_game.cfr([JACK, KING], "cbf", 1.0, 1.0) == 1
 
     def test_check_bet_call_showdown(self, fresh_game):
-        """cbc : les deux misent, pot de 2 -> showdown +/-2."""
-        assert fresh_game.cfr([KING, QUEEN], "cbc", 1.0, 1.0) == 2
-        assert fresh_game.cfr([QUEEN, KING], "cbc", 1.0, 1.0) == -2
+        """cbc : les deux misent, pot de 2 -> showdown +/-2 (len 3, frame P1).
+
+        cfr() renvoie l'utilite du joueur courant a la feuille
+        (player = len(history) % 2), que la recursion negue pour basculer
+        de frame entre joueurs. A "cbc" (len 3) le joueur courant est P1
+        (le relanceur) : P1 gagne donc le pot lorsque cards[1] > cards[0].
+        Avec [K,Q] P1 tient la Dame et perd -> -2 ; avec [Q,K] P1 tient le
+        Roi et gagne -> +2.
+        """
+        assert fresh_game.cfr([KING, QUEEN], "cbc", 1.0, 1.0) == -2
+        assert fresh_game.cfr([QUEEN, KING], "cbc", 1.0, 1.0) == 2
 
     def test_bet_fold(self, fresh_game):
         """bf : P0 mise, P2 se couche -> P0 gagne +1."""
