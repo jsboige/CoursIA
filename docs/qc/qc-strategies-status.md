@@ -83,7 +83,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 14, backtests QC Cloud MCP) | 2 | cohorte **DL Chronos foundation** (2 stratégies Chronos du bucket Vivant promues) — **0 edge significative** (PSR max 13.79 % `ML-Chronos-Foundation`, aucune > 50 %), 2 Needs-improvement ; **le régime SMA200 (`Chronos-Foundation-Forecasting`) a le PSR le plus bas (3.12 %), pas le plus haut** — le filtre SMA200 dégrade la signification statistique vs le variant plain |
 | Vérifié (tranche 15, backtests QC Cloud MCP) | 4 | cohorte **Stratégies quantitatives structurelles** (4 stratégies best-guess du bucket Vivant promues : `Options-VGT` income covered-call tech single-names, `TermStructureCommodities-QC` courbe terme commodités, `PCA-StatArbitrage` stat-arb factoriel PCA, `Trend-Following` AQR-style 12-momentum multi-actifs) — **1 BROKEN** + **3 Needs-improvement** : PSR max 17.51 % `Options-VGT` (aucune > 50 %) ; `TermStructureCommodities-QC` Sharpe -0.244 / MaxDD 96.8 % / PSR 0.007 % = quasi-ruine systématique sur backtest 2018–2025 |
 | Vérifié (tranche 16, backtests QC Cloud MCP) | 4 | cohorte **EMA-Cross + Composite Framework + Value Dogs** (4 stratégies best-guess du bucket Vivant promues) — **2 edge statistiquement significative** (PSR > 50 % : `Framework_Composite_TrendWeather` 77.94 %, `Framework_Composite_MomentumRegime` 73.52 %), 2 Needs-improvement (PSR < 50 % : `EMA-Cross-Stocks` 49.75 % near-edge, `PuppiesOfTheDow-QC` 3.49 %) ; **première tranche QC #1621 avec edge statistique significative depuis tr.3** (`BlackLitterman` PSR 51 %) — les composites Framework confirment l'avantage du blending méthodologique multi-stratégies |
-| Vivant (best-guess, non vérifié) | 15 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL, tranche 15 a promu 4 stratégies quantitatives structurelles, tranche 16 a promu 4 stratégies EMA + Composite Framework + Value : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 20 true-Vivant + 36 promues tr7-15** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `15` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
+| Vérifié (tranche 18, backtests QC Cloud MCP) | 4 | cohorte **Risk-controlled + Régime HMM/Ridge + Robustness** (4 stratégies freshly-discovered non-listées bucket Vivant du compte : `AdaptiveConformalRisk` risk control conformal, `S3-HMM-Regime-Daily-V2` HMM V2, `S4-RegimeRidge-V2-Fixed` régime ridge après fix Runtime Error, `1630-robustness-c2-regime` robustness multi-période R1-R4 walk-forward) — **0 edge significative** (max PSR 12.5 % `AdaptiveConformalRisk`), 4 Needs-improvement ; les 4 stratégies sont fraîchement découvertes (R3 confirmed 0 match dans `docs/qc/qc-strategies-status.md` AVANT tr.18), pas issues du bucket Vivant local — extension du périmètre de vérification au-delà du bucket Vivant pour densifier le rollout #1621 ; `S4-RegimeRidge-V2-Keeper` (Runtime Error) remplacé par `S4-RegimeRidge-V2-Fixed` (le fix post-Runtime-Error sur le même projet) |
+| Vivant (best-guess, non vérifié) | 15 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL, tranche 15 a promu 4 stratégies quantitatives structurelles, tranche 16 a promu 4 stratégies EMA + Composite Framework + Value, tranche 18 a promu 4 stratégies freshly-discovered (risk + régime + robustness) hors-bucket Vivant : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 20 true-Vivant + 36 promues tr7-16** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `15` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -428,6 +429,60 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Framework_Composite_MomentumRegime` | `projects/Framework_Composite_MomentumRegime/` | Composite (momentum + régime) | **Edge** | OOS 2023-2026 (835 j., 183 ordres, projet 28871239) ; **Sharpe 0.145** ; CAGR 8.74 % ; MaxDD 4.60 % ; **PSR 73.52 %** ; NP 32.23 % ($29 157) — **edge significative** OOS walk-forward (vs tr.7-15 in-sample) ; Sharpe absolu bas mais **MaxDD min cohorte 4.60 %** = meilleur profil drawdown-containment ; PSR > 50 % sur fenêtre OOS distincte = **signal de robustesse réelle** ; ticker filter T60_RS40 harmonisé sur 2015-2025 |
 | `EMA-Cross-Stocks` | `projects/EMA-Cross-Stocks/` | Trend EMA | **Needs-improvement** | 2018–2025 (2516 j., 1424 ordres, projet 28789946, post-#2801 verify IBKR margin) ; **Sharpe 0.991** ; CAGR 29.23 % ; MaxDD 35.70 % ; **PSR 49.75 %** ; NP 1201.48 % ($1 200 060) — **near-edge** : 49.75 % PSR = juste sous le cap 50 % ; 2ᵉ max Sharpe cohorte + max CAGR cohorte + max NP cohorte ($1.2M record) ; single-factor trend EMA 20/50 sur FAANG+NVDA daily ne franchit pas le seuil de signification statistique in-sample |
 | `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | **Needs-improvement** | 2018–2025 (60 ordres, projet 32732704, post-#2801 verify) ; **Sharpe 0.302** ; CAGR 9.61 % ; MaxDD 28.80 % ; **PSR 3.49 %** ; NP 108.49 % ($77 039) — PSR quasi-nul + `tradeableDates=0` (reporting bug, pas absence de trades : 60 ordres confirmés) ; stratégie dividend-yield « Dogs of the Dow » (top-10 yielders DJIA rebalanced annually) sous-performe statistiquement vs trend pur post-2020 |
+
+
+#### Vérifié (tranche 18, backtests QC Cloud via MCP) (4)
+
+> **Scope tranche 18 (#1621)** : 4 stratégies **freshly-discovered** promues via lecture directe
+> des backtests QC Cloud existants via MCP `qc-mcp-lite` (`read_backtest`). **Distinct des
+> tranches 2-17** : les 4 stratégies ne proviennent PAS du bucket « Vivant best-guess » local
+> (56 stratégies), mais ont été identifiées par scan direct du compte QC Cloud
+> (`list_projects name_contains: ...` filtré AdaptiveConformal / Regime / HMM / Keeper). Cette
+> extension du périmètre vise à densifier le rollout #1621 au-delà des best-guess déjà connus et
+> à capter les stratégies récemment créées / fixées côté QC Cloud (dates de création 2026-04-28
+> à 2026-06-23). **0 QCC dépensé** (lecture seule de backtests existants).
+>
+> **R3 collision-check** : grep `AdaptiveConformalRisk|S3-HMM|S4-RegimeRidge|1630-robustness-c2-regime`
+> dans `docs/qc/qc-strategies-status.md` AVANT tr.18 = **0 match** = toutes freshly-discovered. Une
+> collision détectée sur `HighBookToMarketFScore-QC` (déjà vérifié tranche 6) a conduit à un pivot
+> vers le 4ᵉ candidat `1630-robustness-c2-regime` pour préserver l'atomicité R3 (cf leçon
+> C596-L1 ★★ « R3 scan APRÈS claim PAS seulement avant worktree »).
+>
+> **Cohorte Risk + Régime + Robustness** : 4 paradigmes distincts non couverts par les tranches
+> précédentes :
+> 1. **Risk control** : `AdaptiveConformalRisk` (conformal prediction risk control, fix project
+>    Sharpe/CAGR dans une bande de confiance adaptative).
+> 2. **Régime HMM V2** : `S3-HMM-Regime-Daily-V2` (Hidden Markov Model régime detection V2,
+>    V1 Runtime Error resolu sur `v2-Keeper`).
+> 3. **Régime Ridge V2** : `S4-RegimeRidge-V2-Fixed` (régime Ridge regression V2 fix post-Runtime-
+>    Error du `V2-Keeper` original).
+> 4. **Robustness multi-période** : `1630-robustness-c2-regime` (walk-forward robustness test
+>    c2-régime avec backtests R1 (2018-2019), R2 (2020-2021), R3 (2022), R4 (2023-2024),
+>    et un backtest consolidé po2026-c340 post-pipeline).
+>
+> **Verdict honnête : 0 edge statistiquement significative** (PSR < 50 % sur toute la cohorte).
+> Max PSR = **12.53 %** `AdaptiveConformalRisk` (best PSR cohorte mais très loin du seuil 50 %
+> d'edge). 4 stratégies / 4 Needs-improvement. Cohorte en deçà du seuil de promotion, mais le
+> signal confirme un pattern récurrent : les stratégies **régime-switching seules** (sans blending
+> composite multi-factors type Framework_Composite) ne franchissent pas le seuil PSR 50 % en
+> in-sample pleine période. Leçon convergente avec tr.8 (RegimeSwitching PSR 4.80 % Needs-improvement),
+> tr.7 (HMM-KMeans-Voting PSR 6.9 %), et tr.6 (Markov-Regime-Detection PSR 5.8 %) : la **détection
+> de régime seule**, sans lissage ou composite weighting, **ne suffit pas à produire un edge
+> statistiquement significative** sur le référentiel pleine période in-sample.
+>
+> **Leçon technique (Runtime Error → Fixed naming pattern)** : les 2 stratégies V2-Keeper
+> (`S3-HMM-Daily-V2-Keeper`, `S4-RegimeRidge-V2-Keeper`) ont des backtests en **Runtime Error**,
+> mais leur variant `-v2` ou `-V2-Fixed` sur le même projet QC donne des résultats Completed —
+> confirmation que la nomenclature `V2-Keeper` est l'itération initiale buggée et `V2-Fixed`
+> est la version corrigée sur le même code-base. **Pour les batches QC #1621 futurs**, prioriser
+> le variant `-V2-Fixed` / `-v2` quand les deux coexistent sur le même projectId.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `AdaptiveConformalRisk` | `projects/AdaptiveConformalRisk/` (alias projet 33278416) | Risk control (conformal prediction) | **Needs-improvement** | 2018–2025 aligned IBKR (2011 j., 1079 ordres, backtest `cce5af02...` 1630-aligned-AdaptiveConformalRisk-2018-2025-IBKR 2026-06-23) ; Sharpe 0.449 ; CAGR 11.52 % ; **MaxDD 22.5 %** (min cohorte) ; **PSR 12.53 %** (max cohorte) ; NP 139.44 % ($126 477) — best PSR cohorte + best MaxDD cohorte ; conformal prediction risk control adaptatif sur fenêtre IBKR margin ; profil drawdown-containment correct, edge in-sample non significative (PSR 12.5 %) |
+| `S3-HMM-Regime-Daily-V2` | `projects/S3-HMM-Regime-Daily-V2/` (projet 31855212) | Régime (HMM V2) | **Needs-improvement** | période V2-Keeper (2345 j., 1714 ordres, backtest `e6e01ffe...` S3-HMM-Daily-V2-Keeper-v2 2026-05-18) ; **Sharpe 0.496** (max cohorte) ; **CAGR 14.52 %** (max cohorte) ; MaxDD 48.6 % (max cohorte) ; PSR 9.03 % ; NP 254.44 % ($191 354) — best Sharpe/CAGR cohorte mais drawdown catastrophique 48.6 % + PSR < 10 % ; V1 (`S3-HMM-Daily-V2-Keeper`) Runtime Error resolu par `v2` ; pattern "V2-Keeper" = itération initiale buggée, "V2-Keeper-v2" = fix post-error sur même projet |
+| `S4-RegimeRidge-V2-Fixed` | `projects/S4-RegimeRidge-V2-Keeper/` (projet 31855260, backtest Fixed) | Régime (Ridge V2) | **Needs-improvement** | V2-Keeper période (2345 j., 1923 ordres, backtest `ce920137...` S4-RegimeRidge-V2-Fixed 2026-05-18) ; Sharpe 0.367 ; CAGR 8.50 % ; **MaxDD 23.10 %** (2ᵉ min cohorte) ; PSR 12.13 % ; NP 114.13 % ($70 426) — 2ᵉ best PSR cohorte + bon drawdown ; `V2-Keeper` (backtest `0e27261b...` 2026-05-18) Runtime Error resolu par `V2-Fixed` ; Régime Ridge regression avec shrinkage L2 sur fenêtre 2018-2025 |
+| `1630-robustness-c2-regime` | `projects/1630-robustness-c2-regime/` (projet 33280244) | Robustness (walk-forward c2-régime R1-R4 + consolidé) | **Needs-improvement** | consolidé po2026-c340 (1761 j., 5715 ordres, backtest `4ed69373...` po2026-c340-RobustnessC2Regime 2026-07-12) ; **Sharpe 0.574** (2ᵉ max cohorte) ; CAGR 11.95 % ; **MaxDD 18.60 %** (2ᵉ min cohorte) ; PSR 7.37 % ; NP 120.48 % ($105 403) — best Sharpe/MaxDD trade-off cohorte (Sharpe 0.574 / MaxDD 18.6 % = ratio Sharpe/DD = 0.031) ; walk-forward robustness c2-régime avec 4 sous-périodes (R1 2018-2019, R2 2020-2021, R3 2022, R4 2023-2024) + backtest consolidé post-pipeline |
 
 
 #### Vivant (best-guess, non vérifié) (56 physiques = 20 true + 36 promues tr7-16 ; voir synthèse)
