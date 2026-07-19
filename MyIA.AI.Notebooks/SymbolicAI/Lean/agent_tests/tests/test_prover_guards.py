@@ -2678,17 +2678,15 @@ def test_path_constants_resolve_to_active_workspace():
         "NASH_CALIBRATION_FILE": NASH_CALIBRATION_FILE,
         "CONWAY_NIM_FILE": CONWAY_NIM_FILE,
     }
-    # VOTING_FILE and GALESHAPLEY_FILE were moved into game_theory_lean by the
-    # #4365 anti-proliferation absorption (#5913 StableMarriage, #6058
-    # SocialChoice), but prover/config.py still derives them from the now-gutted
-    # social_choice_lean / stable_marriage_lean dirs — so the resolved paths no
-    # longer exist on disk. That is a REAL config.py regression (the prover
-    # cannot target those demos post-absorption), tracked separately. It is
-    # unrelated to the #5891 workspace-resolution contract pinned here, so we
-    # do not conflate them: we assert workspace-membership for every constant,
-    # pin the two stale paths as "known broken until config.py follows #6058",
-    # and assert existence for the rest.
-    STALE_POST_ABSORPTION = {"VOTING_FILE", "GALESHAPLEY_FILE"}
+    # config.py was reconciled with the #4365 anti-proliferation absorption:
+    # SOCIAL_CHOICE_DIR / STABLE_MARRIAGE_DIR candidate lists now resolve to
+    # game_theory_lean FIRST (config.py:140, 167), so VOTING_FILE and
+    # GALESHAPLEY_FILE resolve to the canonical game_theory_lean/{SocialChoice,
+    # StableMarriage}/ paths that exist on disk. The previous STALE_POST_ABSORPTION
+    # exemption (tracking "config.py still derives from the gutted legacy dirs")
+    # is therefore obsolete and removed — existence is asserted for these two
+    # constants like every other, which is the correct post-reconciliation state.
+    STALE_POST_ABSORPTION: set[str] = set()
     for name, p in paths.items():
         assert p is not None, f"{name} is None — candidate list resolved to nothing"
         # Contract: the resolved path lives inside the workspace that hosts
