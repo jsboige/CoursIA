@@ -20,10 +20,10 @@ destination** côté Lean Engine, pas dans le format interne du CSV) :
 yyyyMMdd HH:mm,Open,High,Low,Close,Volume
 ```
 
-Le format de référence (10 colonnes avec bid/ask) est documenté dans :
-
-- daily → [`partner-course-quant-trading/lean-workspace/data/cfd/oanda/daily/xauusd.zip`](../../MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/data/cfd/oanda/daily/xauusd.zip)
-- hourly → [`partner-course-quant-trading/lean-workspace/data/cfd/oanda/hour/xauusd.zip`](../../MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/lean-workspace/data/cfd/oanda/hour/xauusd.zip)
+Le format de référence (10 colonnes avec bid/ask) est documenté dans le
+repo upstream public :
+[`MyIntelligenceAgency/Lean`](https://github.com/MyIntelligenceAgency/Lean/tree/master/Data/cfd/oanda),
+branche `master`, dossier `Data/cfd/oanda/` (fichiers `xauusd.zip` daily/hour).
 
 La démo produit les 6 premières colonnes (OHLCV), suffisant pour les
 stratégies OHLCV-only de l'EPIC #6891.
@@ -32,10 +32,10 @@ stratégies OHLCV-only de l'EPIC #6891.
 
 ```bash
 # Build
-dotnet build MyIA.AI.Shared/MyIA.Trading.Converter
+dotnet build MyIA.Trading.Converter
 
 # Démo : CSV OHLCV local -> Lean daily zip
-dotnet run --project MyIA.AI.Shared/MyIA.Trading.Converter -- ohlcv2lean \
+dotnet run --project MyIA.Trading.Converter -- ohlcv2lean \
     <input.csv> <output.zip> [daily|hourly]
 ```
 
@@ -54,7 +54,7 @@ Colonnes 6+ (spread, bid/ask, etc.) sont **ignorées** par `Demo.LoadOhlcvCsv`.
 ## Mode legacy upstream
 
 Le mode CLI historique (`Process()`) reste accessible via
-`dotnet run --project MyIA.AI.Shared/MyIA.Trading.Converter` sans argument —
+`dotnet run --project MyIA.Trading.Converter` sans argument —
 il charge `ConverterConfig.json` et exécute la pipeline verbatim. Voir
 [`exemples/ConverterConfig.daily.json`](exemples/ConverterConfig.daily.json)
 pour une config typique.

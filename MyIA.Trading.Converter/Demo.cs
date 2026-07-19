@@ -2,7 +2,7 @@
 // via TradeConverter.SaveTradingData<Tickbar> (API publique verbatim upstream).
 //
 // Usage :
-//   dotnet run --project MyIA.AI.Shared/MyIA.Trading.Converter -- ohlcv2lean <input.csv> <output.zip> [daily|hourly]
+//   dotnet run --project MyIA.Trading.Converter -- ohlcv2lean <input.csv> <output.zip> [daily|hourly]
 // Resolution arg optionnel : deduit du nom de fichier si absent (`_hourly` -> hourly, sinon daily).
 //
 // Format CSV OHLCV attendu (header ligne 1, colonnes 0..5) :
