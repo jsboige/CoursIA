@@ -2,7 +2,7 @@
 
 ## 2026-05-15 — forensic run C34-01
 
-**Target:** `stable_marriage_lean/StableMarriage/GaleShapley.lean:76` —
+**Target:** `game_theory_lean/StableMarriage/GaleShapley.lean:76` —
 `gale_shapley_stable`, goal `∃ μ, IsStable prof μ` (GS stable matching existence).
 Mode: multi-agent, provider zai (GLM-5.1), Director on OpenRouter Opus 4.7,
 reference docs injection ACTIVE (first run after #1129).
