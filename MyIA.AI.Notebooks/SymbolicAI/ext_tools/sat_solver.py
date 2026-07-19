@@ -273,10 +273,14 @@ Examples:
             return 0
 
         if args.all_solutions:
-            # Enumerate solutions
-            print(f"s SATISFIABLE")
+            # Enumerate solutions. Do NOT print "s SATISFIABLE" upfront: an
+            # UNSAT instance yields zero models, and printing SATISFIABLE first
+            # would emit a contradictory "s SATISFIABLE" + "s UNSATISFIABLE"
+            # dual status (same defect class fixed in maxsat_solver.py #7380).
             count = 0
             for model in enumerate_solutions(clauses, args.solver, args.max, args.verbose):
+                if count == 0:
+                    print("s SATISFIABLE")
                 count += 1
                 positive_lits = [lit for lit in model if lit > 0]
                 print(f"v {' '.join(str(lit) for lit in model)} 0")
