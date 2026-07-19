@@ -319,5 +319,43 @@ class TestConstants:
         assert FOLD != CALL
 
 
+# ----------------------------------------------------------------------------
+# Garde iterations <= 0 (regression : ZeroDivisionError + NaN silencieux).
+# ----------------------------------------------------------------------------
+
+class TestTrainIterationsGuard:
+    """iterations <= 0 doit echouer explicitement (ValueError), pas crasher
+    (``util / 0`` -> ZeroDivisionError "division by zero") ni retourner un
+    resultat silencieusement faux (``0 / -5`` -> ``-0.0``).
+
+    La garde unifie le contrat : ``get_strategy`` (L51) et
+    ``get_average_strategy`` (L162) defensent deja le cas degenerescent
+    (somme des regrets nulle -> uniforme), mais ``train`` divisait sans
+    verifier qu'au moins une iteration avait tourne. Meme classe de bug que
+    ``shapley_value_monte_carlo(n_samples<=0)`` (#7481) et
+    ``catalog_coverage`` missing-serie (#7473) : un input degenerescent admis
+    ailleurs fait crasher/NaN-er la fonction qui ne le defens pas.
+    """
+
+    def test_train_zero_iterations_raises(self, fresh_game):
+        """iterations=0 -> division par zero avant fix ; ValueError propre apres."""
+        with pytest.raises(ValueError, match="iterations must be positive"):
+            fresh_game.train(0)
+
+    def test_train_negative_iterations_raises(self, fresh_game):
+        """iterations<0 -> ``range(neg)`` vide + ``0 / -5`` = -0.0 silencieux avant fix."""
+        with pytest.raises(ValueError, match="iterations must be positive"):
+            fresh_game.train(-5)
+
+    def test_positive_iterations_unaffected(self, fresh_game):
+        """La garde n'impacte pas le chemin normal (reproductibilite preservee)."""
+        random.seed(123)
+        u1 = KuhnPoker().train(300)
+        random.seed(123)
+        u2 = KuhnPoker().train(300)
+        assert u1 == u2  # determinisme intact
+        assert isinstance(u1, float)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

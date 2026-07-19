@@ -144,6 +144,10 @@ class KuhnPoker:
 
     def train(self, iterations: int = 10000) -> float:
         """Train the CFR algorithm."""
+        if iterations <= 0:
+            raise ValueError(
+                f"iterations must be positive, got {iterations}"
+            )
         util = 0
         cards_list = [(i, j) for i in range(3) for j in range(3) if i != j]
 
