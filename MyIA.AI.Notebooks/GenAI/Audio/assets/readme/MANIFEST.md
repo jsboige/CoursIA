@@ -44,10 +44,11 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## audio5-multimodel.png
 
 - **Source** : `01-Foundation/01-3-Basic-Audio-Operations.ipynb` cell[28] out[2] (`# Extraction de caracteristiques`).
-- **Contenu (vision firsthand c.529)** : **4 courbes de features librosa** empilées — Spectral Centroid, Spectral Bandwidth, RMS Energy, Zero-Crossing Rate, axe temps 0–12 s.
+- **Contenu réel vérifié** (ré-audit vision c.673 2026-07-19 par `myia-po-2023` MiniMax-M3, doctrine #5780 — vision eersthand pixel-par-pixel) : figure matplotlib super-titre **« Caracteristiques audio extraites »**, **4 sous-panneaux empilés** (Spectral Centroid en bleu / Spectral Bandwidth en vert / RMS Energy en rouge / Zero-Crossing Rate en violet), axe temps partagé **0–12 s** identique à `audio1-waveform.png` (même échantillon librosa, features extraites). Palette saturée spectral/energy, ambiance d'analyse technique.
 - **Traçage** : cellule brute 172 278 B (md5 `890f2d8a`) → disque 167 756 B (md5 `03e86f25`), ratio **0,97**.
-- **Alt-text (FR)** : Comparaison de modèles audio : plusieurs voies STT/TTS évaluées côte à côte dans un pipeline. — *le nom de slot et l'alt-text historique évoquent une comparaison multi-modèles ; le contenu réel est un panneau de features librosa. Asset orphelin (non inliné), conservé pour traçabilité ; à renommer si un jour réutilisé.*
-- **Verdict** : **SOTA-OK** (contenu réel = features librosa du 01-3). Le c.490 avait correctement identifié la cellule source (cell[28]) tout en la classant à tort « déclassée ».
+- **Alt-text (FR, corrigé c.673)** : Panneau de caractéristiques audio extraites par librosa — quatre signaux empilés (centroïde spectral, largeur spectrale, énergie RMS, taux de passage par zéro), axe temps 0–12 s identique à la forme d'onde audio1.
+- **Filename/content mismatch (doctrine #5780 c.657 doublon-disclosure, famille C672-L2 ★ / C672-L1 ★★)** : **le nom de fichier `audio5-multimodel.png` et l'ancien alt-text « comparaison de modèles audio » décrivaient à tort une comparaison STT/TTS — le contenu réel est un panneau de features librosa mono-fichier.** Pas de régénération (le contenu est correct) ; disclosure obligatoire par doctrine : **« Nom de slot hérité d'une attribution erronée ; figure renommée virtuellement `audio5-features-librosa.png` par cohérence, mais le nom de fichier physique reste `audio5-multimodel.png` pour traçabilité git. Ne pas inliner tant que le slot n'a pas été vidé de la nomenclature. »** Asset orphelin (non inliné dans le README), conservé pour traçabilité.
+- **Verdict** : **SOTA-OK** (contenu réel = features librosa du 01-3). Le c.490 avait correctement identifié la cellule source (cell[28]) tout en la classant à tort « déclassée » ; le c.529 l'avait re-traçé fidèlement ; le c.673 alinhé l'alt-text sur le contenu réel.
 
 ## audio6-tts-benchmark.png
 

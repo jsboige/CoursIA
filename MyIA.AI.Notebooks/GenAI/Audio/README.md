@@ -62,7 +62,7 @@ Une fois le signal compris, les deux briques opérationnelles sont la transcript
 
 <p align="center">
   <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="340" alt="Reconnaissance vocale (STT) validée par Whisper large-v3-turbo ; volet TTS non abouti dans l'environnement de test (sous-figures vides)."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> : grille 2×2 — STT validé (en haut à gauche), volet TTS en attente de re-exécution.</em>
+  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> (ré-audit vision c.673 2026-07-19 par <code>myia-po-2023</code> MiniMax-M3, doctrine #5780) : grille 2×2 de 4 panneaux — panneau haut-gauche « Latence STT par modèle » validé (Whisper <code>large-v3-turbo</code> à 0,47 s), panneau haut-droite « Pas de résultats TTS » vide, panneau bas-gauche « Analyse des coûts (USD/heure) » ne portant que les libellés <code>large-v3-turbo</code> et <code>Gratuit</code> sans barres, panneau bas-droite radar « Pas de résultats TTS » vide. Seuls les volets STT (haut-gauche) et coûts (bas-gauche, sans valeurs) ont produit des données ; les deux volets TTS restent à re-exécuter.</em>
 </p>
 
 ### 02-Advanced - Voix, Musique & Séparation
