@@ -97,4 +97,5 @@ __all__ = [
     "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
     "spectral", "sensitivity",
     "reversibility_budget",
-    "argumentation",
+    "argumentation",
+]
