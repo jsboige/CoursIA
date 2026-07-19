@@ -29,8 +29,10 @@ seulement l'absence de crash :
     matrice B (B = [[p2[0],p2[2]],[p2[1],p2[3]]]) inversait les entrees
     hors-diagonale. CORRIGE : B est desormais row-major comme A, et PD / Stag
     Hunt / Chicken / Matching Pennies font l'aller-retour correctement (tests
-    passants). Battle of the Sexes reste xfail pour une raison SEPARABLE (limite
-    du classifieur, pas de l'encodage : voir test_named_battle_of_the_sexes).
+    passants). Battle of the Sexes restait xfail pour une raison SEPARABLE
+    (limite du classifieur, pas de l'encodage) : CORRIGE -- classify_game
+    distingue desormais, a somme de welfare egale sur deux Nash diagonaux, la
+    coordination pure (joueurs indifferents) de BoS (preferences conflictuelles).
 
 Run with: pytest tests/test_topology_2x2.py -v
 """
@@ -283,8 +285,15 @@ CLASSIFICATION_COUNTS = {
     "Matching Pennies": 72,
     "Chicken/Hawk-Dove": 36,
     "Stag Hunt": 26,
-    "Coordination Game": 10,
+    "Battle of the Sexes": 10,
     "Prisoner's Dilemma": 4,
+    # "Coordination Game" : 0 sur les ordinaux stricts. Les jeux ordinaux
+    # stricts (rangs distincts 1-4) ne peuvent pas etre de coordination pure
+    # (les deux joueurs indifferents entre deux Nash diagonaux exige des gains
+    # egaux, impossibles avec des rangs distincts) -- les 10 anciens
+    # "Coordination Game" etaient en fait des BoS (prefs conflictuelles). La
+    # coordination pure reste classifiable sur des entrees non-strictes
+    # (ex. COORD_A = [[1,0],[0,1]], voir test_pure_coordination).
 }
 
 VALID_TYPES = {
@@ -384,15 +393,13 @@ def test_named_chicken_round_trips():
     assert topo.classify_game(A, B) in ("Chicken/Hawk-Dove", "Chicken")
 
 
-@pytest.mark.xfail(
-    reason="Limite SEPARABLE du classifieur (pas l'encodage B, desormais corrige) : "
-           "les deux Nash diagonaux de BoS ont somme egale ((4,3) et (3,4) = 7), "
-           "donc classify_game renvoie 'Coordination Game'. La branche "
-           "'Battle of the Sexes' n'est jamais atteinte en 2x2 (les 2 Nash purs "
-           "sont soit tous diagonaux, soit tous anti-diagonaux).",
-    strict=False,
-)
 def test_named_battle_of_the_sexes_round_trips():
+    # Previously xfail (limite SEPARABLE du classifieur, pas l'encodage B) :
+    # les deux Nash diagonaux de BoS ont somme egale ((4,3) et (3,4) = 7), donc
+    # classify_game renvoyait 'Coordination Game' et la branche BoS n'etait
+    # jamais atteinte. Le classifieur distingue desormais, a sommes egales, la
+    # coordination pure (joueurs indifferents) de BoS (preferences conflictuelles)
+    # via l'egalite des gains de P1 entre les deux equilibres.
     data = topo.NAMED_GAMES["Battle of the Sexes"]
     A, B = topo.create_ordinal_game(data["p1"], data["p2"])
     assert topo.classify_game(A, B) == "Battle of the Sexes"
