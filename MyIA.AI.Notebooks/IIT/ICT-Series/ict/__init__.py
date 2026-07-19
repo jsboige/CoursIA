@@ -67,6 +67,11 @@ from . import synthesis
 from . import persona_cusp
 from . import stake
 from . import workspace
+from . import beauty
+from . import jlens_traces
+from . import sae_traces
+from . import lens_agreement
+from . import triade
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -76,4 +81,5 @@ __all__ = [
     "multiscale_agency", "catastrophe", "valence", "strategic_morphodynamics",
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
     "time_arrow", "synthesis", "persona_cusp", "stake", "workspace",
+    "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
 ]
