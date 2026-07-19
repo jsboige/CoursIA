@@ -45,6 +45,11 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
       provider_outage  -> the LLM provider died mid-run (circuit-breaker,
                           #5869): the prover never got to work — retry when
                           the provider is back, do NOT read as tactical failure
+      correctly_refused-> the Coordinator explicitly abandoned the goal via
+                          mark_sorry_intractable (after F9 Director + B2
+                          SearchAgent gates) and the workflow yielded before
+                          iteration_cap (#7477 P2a). The agent did the right
+                          thing by refusing — do NOT read as tactical failure.
       no_progress      -> diagnostic data only
 
     Real progress outranks the outage flag: a run that lowered the sorry count
@@ -59,6 +64,17 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
         return "structural_only"
     if isinstance(result, dict) and result.get("provider_outage"):
         return "provider_outage"
+    # P2a (#7477 forensic): the Coordinator explicitly abandoned the goal via
+    # mark_sorry_intractable (after F9 Director + B2 SearchAgent gates) and the
+    # workflow yielded before iteration_cap. Ranked AFTER sorry_decreased /
+    # structural_only: a run that lowered the sorry count or landed a verified
+    # decomposition before abandoning is still progress — the abandonment flag
+    # only reclassifies what would otherwise be no_progress. Forensic DEMO 62
+    # (NW L2970, a DO-NOT-TARGET line): correctly refused 4× but previously
+    # scored no_progress + burned iteration_cap. correctly_refused lets a
+    # coordinator distinguish "agent did the right thing" from "agent spun".
+    if isinstance(result, dict) and result.get("intractable"):
+        return "correctly_refused"
     return "no_progress"
 
 

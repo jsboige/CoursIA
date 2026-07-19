@@ -1058,6 +1058,13 @@ class MultiAgentSorryProver:
             # (forensic; each hop already covered its in-hop retries).
             "provider_outage": provider_outage,
             "provider_failures": provider_failures,
+            # P2a (#7477 forensic): the Coordinator explicitly abandoned the goal
+            # via mark_sorry_intractable (after F9 Director + B2 SearchAgent
+            # gates). Surfaced so _derive_result_kind classifies the run as
+            # correctly_refused (distinct from no_progress) — the agent did the
+            # right thing by refusing, it did not just spin to iteration_cap.
+            "intractable": getattr(state, "intractable", False),
+            "intractable_reason": getattr(state, "intractable_reason", None),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
