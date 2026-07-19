@@ -62,7 +62,17 @@ PROVIDERS = {
         "models": {
             "reasoning": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
             "fast": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
-        }
+        },
+        # #7477 P1: a local server (vLLM/Ollama qwen3.6) either answers fast
+        # or HANGS — it has no "intermittent 5xx blip" profile like the
+        # remote providers. The OpenAI SDK retries a transient failure
+        # `max_retries` times, each waiting the FULL `request_timeout_s`
+        # (240s). For a hang that burns 240x5 = 1200s per call (forensic
+        # span `chat qwen3.6 1206.9s`). max_retries=1 caps a hang at
+        # 2xtimeout (480s) and lets the harness PROVIDER_OUTAGE_BREAKER
+        # (workflow.py) terminate the run cleanly. Remote 5xx-prone
+        # providers keep the create_client default max_retries=4.
+        "max_retries": 1,
     },
     "openrouter": {
         # OpenRouter is the "powerful provider" lane: the DirectorAgent runs
@@ -303,14 +313,23 @@ def create_client(provider: str = "zai", model_key: str = "reasoning",
     max_retries=1 a single transient blip terminated the BG run; OpenAI
     SDK uses exponential backoff internally so 4 retries adds at most
     ~30s wall-clock for legitimately recoverable failures.
+
+    Per-provider override (#7477 P1): a provider entry may set its own
+    ``max_retries`` to override the function default. The ``local`` provider
+    sets max_retries=1 because a local server hangs (no fast 5xx blips to
+    recover from), so 4 SDK retries would burn 240x5 = 1200s per call on a
+    dead endpoint. The override keeps remote 5xx-prone providers on the
+    resilient default while capping the hanging provider.
     """
     from openai import AsyncOpenAI
     cfg = PROVIDERS[provider]
+    # #7477 P1: per-provider max_retries wins; absent key = function default.
+    effective_retries = cfg.get("max_retries", max_retries)
     async_client = AsyncOpenAI(
         api_key=cfg["api_key"],
         base_url=cfg["base_url"],
         timeout=request_timeout_s,
-        max_retries=max_retries,
+        max_retries=effective_retries,
     )
     return OpenAIChatCompletionClient(
         model=cfg["models"][model_key],

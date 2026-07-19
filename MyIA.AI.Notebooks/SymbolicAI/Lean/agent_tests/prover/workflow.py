@@ -104,18 +104,53 @@ def _transient_backoff_s(attempt: int) -> float:
     return min(2.0 ** (attempt - 1), TRANSIENT_RETRY_BACKOFF_CAP_S)
 
 
+def _is_timeout_error(exc: BaseException) -> bool:
+    """Return True if `exc` is a read/connect timeout (sustained hang).
+
+    #7477 P1. Distinct from `_is_transient_error`: the OpenAI SDK already
+    retries a timeout `max_retries` times internally (config.py
+    `create_client`), so by the time the exception surfaces here it is a
+    SUSTAINED endpoint hang, not a transient network blip. The SDK burns
+    `request_timeout_s` (240s) on every attempt — for the `local` provider
+    that is 240x2 = 480s, for a max_retries=4 remote 240x5 = 1200s (forensic
+    span `chat qwen3.6 1206.9s`).
+
+    Retrying a sustained hang AGAIN at the harness layer (the
+    `_is_transient_error` loop below) would multiply that wall-clock up to
+    6x more (TRANSIENT_RETRY_MAX). `_is_timeout_error` routes the exception
+    to the provider-failure path instead, counted toward
+    `PROVIDER_OUTAGE_BREAKER` so a dead endpoint terminates the run cleanly
+    with the `provider_outage` verdict rather than spinning.
+
+    httpx/openai name their timeout exceptions `ReadTimeout` / `ConnectTimeout`
+    / `PoolTimeout`; `agent_framework` wraps them but the message retains the
+    marker, so we probe the stringified message defensively.
+    """
+    msg = str(exc).lower()
+    return any(marker in msg for marker in (
+        "read timeout", "connect timeout", "pool timeout",
+        "timed out", "timeout",
+    ))
+
+
 def _is_transient_error(exc: BaseException) -> bool:
     """Return True if `exc` looks like a transient provider/network error.
 
     Matches ONLY conditions worth retrying:
       - HTTP 5xx server errors (500, 502, 503, 504),
-      - connection reset / aborted / refused,
-      - read / connect timeouts.
+      - connection reset / aborted / refused.
 
-    Explicitly EXCLUDES 404 (bad/missing model_id — a config bug, retrying just
-    wastes time) and other 4xx client errors (401/403/422). `agent_framework`
-    may wrap the underlying httpx / openai error, so we probe both the
-    `status_code` attribute and the stringified message defensively.
+    Explicitly EXCLUDES:
+      - 404 (bad/missing model_id — a config bug, retrying just wastes time)
+        and other 4xx client errors (401/403/422);
+      - read / connect timeouts — those are routed to `_is_timeout_error`
+        (#7477 P1). A timeout surfacing here has ALREADY been retried
+        `max_retries` times by the OpenAI SDK, so it is a sustained hang,
+        not a blip; harness-retrying it would multiply the 240s wall-clock.
+
+    `agent_framework` may wrap the underlying httpx / openai error, so we
+    probe both the `status_code` attribute and the stringified message
+    defensively.
     """
     # 1. Structured HTTP status code, if the provider exposed one. Checked on
     #    the exception and a common nested `.response` (httpx-style) attribute.
@@ -150,7 +185,9 @@ def _is_transient_error(exc: BaseException) -> bool:
         "service failed",
         "connection reset", "connection aborted", "connection refused",
         "connectionreset", "connectionerror",
-        "read timeout", "connect timeout", "timed out", "timeout",
+        # #7477 P1: timeout markers moved to `_is_timeout_error`. A timeout
+        # reaching this layer has already exhausted the SDK's own retries
+        # (config.py max_retries) — re-retrying it here multiplies the hang.
         "temporarily unavailable", "remote end closed",
     )
     return any(marker in msg for marker in transient_markers)
@@ -459,14 +496,38 @@ class AgentExecutor(Executor):
                             agent=self._agent.name, role="error_retry_failed",
                             content=str(e2)[:200],
                         )
+            elif _is_timeout_error(e):
+                # #7477 P1: a timeout surfacing here has ALREADY been
+                # retried `max_retries` times by the OpenAI SDK (config.py
+                # create_client) — it is a sustained endpoint hang, not a
+                # transient blip. Do NOT route to the `_is_transient_error`
+                # retry loop below: that would re-invoke `agent.run` up to
+                # TRANSIENT_RETRY_MAX more times, each burning another
+                # 240sx(max_retries+1) of wall-clock (forensic span
+                # `invoke_agent SearchAgent 2299.7s` = SDK + harness both
+                # retrying the same hang). Count it as a provider failure
+                # so PROVIDER_OUTAGE_BREAKER terminates the run cleanly
+                # with the `provider_outage` verdict instead of spinning.
+                _provider_failed = True
+                response_text = (
+                    f"[harness] Agent timeout (sustained hang after SDK "
+                    f"retries): {str(e)[:200]}"
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="provider_timeout",
+                        content=str(e)[:200],
+                    )
             elif _is_transient_error(e):
                 # Transient provider/network error (HTTP 5xx, connection
-                # reset/aborted, read/connect timeout). Forensic: several
-                # iterations were lost when an agent crashed mid-run on a
-                # transient error with no retry. Retry the SAME invocation,
-                # bounded (TRANSIENT_RETRY_MAX) with short exponential backoff.
-                # A 404 / other 4xx never reaches here (_is_transient_error
-                # excludes them — those are config bugs, not worth retrying).
+                # reset/aborted). Forensic: several iterations were lost
+                # when an agent crashed mid-run on a transient error with
+                # no retry. Retry the SAME invocation, bounded
+                # (TRANSIENT_RETRY_MAX) with short exponential backoff. A
+                # 404 / other 4xx never reaches here (`_is_transient_error`
+                # excludes them — config bugs, not worth retrying), and a
+                # timeout never reaches here either (`_is_timeout_error`
+                # above catches it — the SDK already retried it).
                 response_text = None
                 _last_exc = e
                 for _attempt in range(1, TRANSIENT_RETRY_MAX + 1):
