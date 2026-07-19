@@ -345,7 +345,7 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 - **#1647** Conway Phase 2 (combinatorial games, GoL)
 - **#1646** Grothendieck Phase 1
 - **`conway_cgt_lean/`** — Tour of `vihdzp/combinatorial-games` results
-- **`social_choice_lean/`** — Scaffolding pattern with resolved sorries (Arrow, Sen)
+- **`game_theory_lean/SocialChoice/`** — Scaffolding pattern with resolved sorries (Arrow, Sen, Voting)
 - **`conway_lean/`** — Conway's Game of Life in Lean (cf. `MacroCell.wf`, pattern
   of the Phase 5 `KnotDiagram.wf` re-modeling)
 

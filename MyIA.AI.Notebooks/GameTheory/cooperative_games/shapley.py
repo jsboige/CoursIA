@@ -136,6 +136,8 @@ def shapley_value_monte_carlo(
         >>> game = WeightedVotingGame([10, 5, 3, 2], quota=11)
         >>> shapley = shapley_value_monte_carlo(game, n_samples=50000)
     """
+    if n_samples <= 0:
+        raise ValueError(f"n_samples must be positive, got {n_samples}")
     if seed is not None:
         np.random.seed(seed)
 
@@ -169,6 +171,8 @@ def shapley_value_with_variance(
     Returns:
         Tuple of (shapley_values, standard_errors)
     """
+    if n_samples <= 0:
+        raise ValueError(f"n_samples must be positive, got {n_samples}")
     if seed is not None:
         np.random.seed(seed)
 
