@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #3801 / #4970 / **#6927** (SVG inline rollout) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -34,7 +34,7 @@ Tests unitaires dans `scripts/notebook_tools/tests/`.
 
 ## Detecteurs anti-regression (l'axe **DETECT**, jamais scrub)
 
-Les 6 detecteurs implementent le **Prong A** de
+Les 7 detecteurs implementent le **Prong A** de
 [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) :
 detecter les sorties degradees qu'un notebook commit sans avoir execute le
 vrai outil SOTA. Chaque detecteur a un **verdict deterministe** (zero faux
@@ -53,6 +53,39 @@ python scripts/notebook_tools/detect_blank_figures.py NB.ipynb --check
 
 **Owner** : QC-session pour les quantbooks (issue #6891) ; partition-mienne
 pour les GenAI/Image.
+
+### `detect_fabricated_outputs.py` (#6891, axe-2 sibling)
+
+Sibling textuel de `detect_blank_figures.py` : meme incident fondateur
+(#6891, 8 quantbook.ipynb QC avec sorties fabriquees), mais sur
+l'**axe 2** — les sorties `text/plain` / `text/html` fabriquees en lieu
+et place d'un vrai backtest. Deux signaux deterministes isoles :
+
+- **`row_n_placeholder`** : pattern `^\s*Row\s+\d+(?=\s|$)` (placeholders
+  Pandas dataframe par defaut — un backtest qui n'a pas tourne exhibe
+  litteralement `Row 0`, `Row 1`, … quand aucun index n'a ete nomme).
+- **`zero_stats_dataframe`** : minidataframe "resultat backtest" presentant
+  au moins 3 des 4 colonnes canoniques (Sharpe/CAGR/MaxDD/NetProfit) ET
+  >= 90 % des tokens numeriques a zero (signature d'un moteur appele
+  avec des donnees absentes).
+
+Calibration sur les 8 quantbooks de #6891 : 7/8 notebooks avec `Row N`,
+3/8 avec dataframe stats 0.0. Aucun ML ni heuristique floue.
+
+```bash
+python scripts/notebook_tools/detect_fabricated_outputs.py NB.ipynb --check
+python scripts/notebook_tools/detect_fabricated_outputs.py --family QuantConnect --check
+# exit 1 si defaut, CI-ready
+```
+
+**Owner** : QC-session pour les quantbooks (#6891 axe-2) ; partition-mienne
+pour les notebooks pedagogiques (GenAI/Texte, Search-Py, Probas, ML).
+
+**Blind spots documentes** (le verdict = SIGNAL, pas VERITE) :
+sortie partiellement fabriquee (1 ligne `Row N` parmi 50 legitimes ->
+flag au niveau cellule), valeurs legitimes nulles (algo buy-and-hold
+cash), texte autre langue (colonnes FR non matchees par les noms
+anglais canoniques). Cf docstring du detecteur pour le triage complet.
 
 ### `detect_svg_decimal_commas.py` (#3801, EPIC #6927)
 
