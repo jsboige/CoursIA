@@ -60,9 +60,15 @@ def check_notebook(nb_path: Path) -> dict:
         if not source.strip():
             continue
 
-        # Skip cells that are only markdown-like comments
+        # Skip cells that are only markdown-like comments. Both Python `#` and
+        # C-family `//` (C#/.NET Interactive, JS, Java) are recognised — a `.net
+        # -csharp` cell whose body is all `//` comments is a non-executable
+        # transition/explanation cell, the C# mirror of a Python `#`-comment-only
+        # cell, and must be skipped on the same grounds (C.2 targets executable
+        # code cells, not prose). Harmonised with notebook_lint.scan_c1_source
+        # and audit_c1_c3.py (cf #5261 C-family comment-awareness).
         lines = [l.strip() for l in source.split("\n") if l.strip()]
-        if all(l.startswith("#") for l in lines):
+        if all(l.startswith(("#", "//")) for l in lines):
             continue
 
         # Check execution_count
