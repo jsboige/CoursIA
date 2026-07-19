@@ -15,10 +15,6 @@ La vidéo combine quatre difficultés simultanées que les autres modalités tra
 
 L'objectif fil rouge de cette série est de construire un pipeline capable de transformer un script texte en vidéo pédagogique animée. Chaque niveau apporte une brique : compréhension vidéo pour analyser les séquences (niveau 1), modèles génératifs pour créer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
-## Aperçu — la vidéo par IA en images
-
-Chacun des quatre niveaux de la série rend visible un geste technique distinct, dans une figure extraite des sorties réelles des notebooks : l'extraction de frames et le surcadrage par réseau (Fondations), l'animation d'une image statique (Avancé), puis les workflows créatifs et l'arbitrage coût cloud/local (Applications). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **niveau par niveau**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Prérequis
 
 ### API Keys

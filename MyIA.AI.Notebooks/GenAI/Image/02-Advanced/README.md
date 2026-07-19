@@ -15,10 +15,6 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 | Durée estimée | ~5-7h |
 | GPU requis | 5-29GB |
 
-## Aperçu — les modèles avancés en images
-
-Ce module explore quatre familles de modèles de pointe : édition ciblée (Qwen Image Edit), génération photoréaliste (FLUX-1), prototypage rapide (Z-Image/Lumina2) et quantification extrême pour matériel modeste (Bonsai ternaire 1,58-bit). Plutôt qu'une galerie séparée du propos, chaque sortie réelle est placée ci-dessous au plus près de la sous-section du modèle qui la produit. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |

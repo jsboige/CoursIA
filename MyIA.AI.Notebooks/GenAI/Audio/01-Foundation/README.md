@@ -15,10 +15,6 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 | Durée estimée | ~3-4h |
 | GPU requis | 0-10GB |
 
-## Aperçu — les bases audio en images
-
-Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), reconnaissance vocale (STT), et opérations de base sur le signal. Plutôt qu'une galerie séparée du propos, les sorties du **pipeline d'analyse audio** (forme d'onde → spectrogramme → MFCC → caractéristiques) extraites du notebook fondationnel [01-3](01-3-Basic-Audio-Operations.ipynb) sont présentées ci-dessous en séquence narrative — les briques techniques pour comprendre ce que manipulent les modèles TTS et STT. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
