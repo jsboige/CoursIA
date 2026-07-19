@@ -279,56 +279,89 @@ def run_lean_snippet(
 # Sorry counting
 # ---------------------------------------------------------------------------
 
-def count_sorry(project_path: str, subdir: str = "") -> int:
-    """Count sorry occurrences in .lean files (cross-platform).
+_SORRY_TOKEN_RE = re.compile(r"\bsorry\b")
 
-    Excludes sorry in block comments (/- ... -/) and line comments (-- ...).
+
+def _strip_lean_comments(content: str) -> str:
+    """Strip Lean line comments (``--``) and nested block comments (``/- -/``).
+
+    Character-level scan handling nested block comments (Lean allows them).
+    Byte-identical twin of the canonical ``strip_lean_comments`` in
+    ``agent_tests/prover/lean_utils.py`` (FX-6 #1453): kept local here to avoid
+    coupling the notebook utility to the prover harness package. If you edit
+    one, edit the other to keep the two counters from drifting.
+
+    No string-literal awareness: Lean proofs virtually never contain the token
+    ``sorry`` inside a string literal, and over-stripping there cannot create a
+    false token.
+    """
+    out = []
+    i, n, depth = 0, len(content), 0
+    while i < n:
+        two = content[i:i + 2]
+        if depth == 0 and two == "--":
+            j = content.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if two == "/-":
+            depth += 1
+            i += 2
+            continue
+        if depth > 0 and two == "-/":
+            depth -= 1
+            i += 2
+            continue
+        if depth == 0:
+            out.append(content[i])
+        i += 1
+    return "".join(out)
+
+
+def count_sorry(project_path: str, subdir: str = "") -> int:
+    """Count REAL ``sorry`` tactics in ``.lean`` source (cross-platform).
+
+    Excludes ``sorry`` mentions in block comments (``/- ... -/``) and line
+    comments (``-- ...``), and skips the ``.lake`` build/package cache so only
+    authored source is tallied. Pure-Python (no ``grep``/WSL fork) so the count
+    is identical on every platform.
+
+    Mirrors the canonical ``count_real_sorries`` semantics
+    (``agent_tests/prover/lean_utils.py``, FX-6 #1453): after stripping comments,
+    the word-bounded token catches every real form (``exact sorry``,
+    ``:= by sorry``, bare ``sorry``, ``sorry -- inline``) and ignores prose
+    mentions in docstrings/comments. See issue #7414 for the docstring/impl
+    mismatch this corrects: the previous bare ``grep -rc sorry`` counted every
+    ``sorry`` token (including prose in docstrings/comments and vendored
+    ``.lake`` source), inflating the tally on lakes with sorry-rich prose.
 
     Args:
         project_path: Path to the Lake project.
         subdir: Optional subdirectory to scan (e.g. "Grothendieck/").
 
     Returns:
-        Number of sorry occurrences in production code.
+        Number of real ``sorry`` tactics in production source, or ``-1`` if the
+        project directory cannot be read. ``0`` if the directory exists but has
+        no ``.lean`` source.
     """
     search_dir = os.path.join(project_path, subdir) if subdir else project_path
+    if not os.path.isdir(search_dir):
+        return -1
 
-    if is_native_platform():
-        try:
-            rc, out, _err = _run_capture(["grep", "-rc", "sorry", "--include=*.lean", search_dir], 30)
-            if rc != 0:
-                return 0
-            total = 0
-            for line in out.strip().splitlines():
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    try:
-                        total += int(parts[-1])
-                    except ValueError:
-                        pass
-            return total
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return -1
-    else:
-        cmd = (
-            f"cd {project_path} && "
-            f"grep -rc sorry --include='*.lean' {subdir} 2>/dev/null"
-        )
-        try:
-            rc, out, _err = _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], 30)
-            if rc != 0:
-                return 0
-            total = 0
-            for line in out.strip().splitlines():
-                parts = line.split(":")
-                if len(parts) >= 2:
-                    try:
-                        total += int(parts[-1])
-                    except ValueError:
-                        pass
-            return total
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return -1
+    total = 0
+    for root, dirs, files in os.walk(search_dir):
+        # Skip the Lake build cache + vendored deps (compiled artifacts and
+        # Mathlib source, not authored content).
+        dirs[:] = [d for d in dirs if d != ".lake"]
+        for name in files:
+            if not name.endswith(".lean"):
+                continue
+            try:
+                with open(os.path.join(root, name), encoding="utf-8") as f:
+                    content = f.read()
+            except OSError:
+                continue
+            total += len(_SORRY_TOKEN_RE.findall(_strip_lean_comments(content)))
+    return total
 
 
 # ---------------------------------------------------------------------------
