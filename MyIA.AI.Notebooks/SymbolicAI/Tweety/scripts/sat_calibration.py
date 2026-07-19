@@ -179,10 +179,17 @@ def benchmark_config(name: str, cnf: CNF, timeout: float = TEST_TIMEOUT) -> dict
         elapsed, sat, timed_out = solve_with_timeout(solver, cnf, timeout)
         short = SOLVER_SHORT[solver]
 
-        if timed_out:
-            times[short] = f"TIMEOUT ({timeout}s)"
-        elif isinstance(timed_out, str):
+        # `solve_with_timeout` returns the third tuple element as one of:
+        #   False            -> solver succeeded (elapsed, sat are valid)
+        #   True             -> solver timed out
+        #   "Error: <msg>"   -> solver raised an exception
+        # Check the error string FIRST: a non-empty error message is truthy,
+        # so the previous `if timed_out:` branch swallowed real exceptions
+        # and reported them as TIMEOUT, silently corrupting the calibration.
+        if isinstance(timed_out, str):
             times[short] = timed_out
+        elif timed_out:
+            times[short] = f"TIMEOUT ({timeout}s)"
         else:
             times[short] = f"{elapsed*1000:.1f}ms"
             results['sat'] = sat
