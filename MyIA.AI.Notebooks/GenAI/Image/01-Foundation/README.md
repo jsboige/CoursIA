@@ -15,10 +15,6 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 | Durée estimée | ~3-4h |
 | GPU requis | 0-29GB |
 
-## Aperçu — les modèles de base en images
-
-Ce module pose les fondamentaux : génération via API cloud (DALL-E 3), génération locale auto-hébergée (Stable Diffusion via Forge), et édition ciblée d'une image existante (Qwen Image Edit). Plutôt qu'une galerie séparée du propos, chaque sortie réelle est placée ci-dessous au plus près du notebook qui la produit. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
