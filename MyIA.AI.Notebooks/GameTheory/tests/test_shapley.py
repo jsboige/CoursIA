@@ -254,6 +254,54 @@ class TestMonteCarlo:
 
 
 # ----------------------------------------------------------------------------
+# Monte Carlo : garde n_samples <= 0 (regression : NaN + crash negatif).
+# ----------------------------------------------------------------------------
+
+class TestMonteCarloNsamplesGuard:
+    """n_samples <= 0 doit echouer explicitement (ValueError), pas crasher
+    (np.zeros((neg, n)) -> ValueError "negative dimensions"), ni propager du
+    NaN (shapley / 0 -> RuntimeWarning invalid value) ni retourner un resultat
+    silencieusement faux ([-0. -0.]). La garde deleguee protege aussi
+    ShapleyCalculator, qui passe n_samples tel quel aux fonctions MC.
+    """
+
+    def test_monte_carlo_zero_samples_raises(self):
+        game = majority_game(3)
+        with pytest.raises(ValueError, match="n_samples must be positive"):
+            shapley_value_monte_carlo(game, n_samples=0, seed=1)
+
+    def test_monte_carlo_negative_samples_raises(self):
+        game = majority_game(3)
+        with pytest.raises(ValueError, match="n_samples must be positive"):
+            shapley_value_monte_carlo(game, n_samples=-5, seed=1)
+
+    def test_with_variance_zero_samples_raises(self):
+        game = majority_game(3)
+        with pytest.raises(ValueError, match="n_samples must be positive"):
+            shapley_value_with_variance(game, n_samples=0, seed=1)
+
+    def test_with_variance_negative_samples_raises(self):
+        game = majority_game(3)
+        # Pre-fix: np.zeros((-5, n)) -> ValueError "negative dimensions" (crash
+        # different de celui voulu). Post-fix: ValueError "n_samples" propre.
+        with pytest.raises(ValueError, match="n_samples must be positive"):
+            shapley_value_with_variance(game, n_samples=-5, seed=1)
+
+    def test_calculator_delegates_guard(self):
+        """ShapleyCalculator (methode MC) delegue n_samples -> garde activee."""
+        game = majority_game(3)
+        calc = ShapleyCalculator(game, method='monte_carlo', n_samples=0, seed=1)
+        with pytest.raises(ValueError, match="n_samples must be positive"):
+            calc.compute()
+
+    def test_positive_n_samples_unaffected(self):
+        """La garde n'impacte pas le chemin normal (efficiency preservee)."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+        mc = shapley_value_monte_carlo(game, n_samples=1000, seed=0)
+        assert np.isclose(mc.sum(), game.grand_coalition_value())
+
+
+# ----------------------------------------------------------------------------
 # ShapleyCalculator : interface unifiee + selection auto de methode.
 # ----------------------------------------------------------------------------
 
