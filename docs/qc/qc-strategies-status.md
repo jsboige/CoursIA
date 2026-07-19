@@ -81,7 +81,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Vérifié (tranche 12, backtests QC Cloud MCP) | 3 | cohorte ML NLP + Reinforcement Learning — 3 promotions Vivant (ML-FinBERT-Sentiment, ML-LLM-Summarization, RL-DQN-Trading) + 2 vérifications hors-Vivant (`RL-Options-Hedging` Stub BROKEN Sharpe -1.264 ; `Reinforcement-Learning-Trading` Squelette Needs-improvement PSR 2.19 %) — **1 BROKEN + 2 Needs-improvement**, PSR max 37.14 % (ML-LLM-Summarization, aucune > 50 %) |
 | Vérifié (tranche 13, backtests QC Cloud MCP) | 4 | cohorte ML Classification / Clustering / Hybrid — **0 edge significative** (PSR max 22.74 %), 4 Needs-improvement |
 | Vérifié (tranche 14, backtests QC Cloud MCP) | 2 | cohorte **DL Chronos foundation** (2 stratégies Chronos du bucket Vivant promues) — **0 edge significative** (PSR max 13.79 % `ML-Chronos-Foundation`, aucune > 50 %), 2 Needs-improvement ; **le régime SMA200 (`Chronos-Foundation-Forecasting`) a le PSR le plus bas (3.12 %), pas le plus haut** — le filtre SMA200 dégrade la signification statistique vs le variant plain |
-| Vivant (best-guess, non vérifié) | 19 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 24 true-Vivant + 32 promues tr7-14** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `19` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
+| Vérifié (tranche 15, backtests QC Cloud MCP) | 4 | cohorte **Stratégies quantitatives structurelles** (4 stratégies best-guess du bucket Vivant promues : `Options-VGT` income covered-call tech single-names, `TermStructureCommodities-QC` courbe terme commodités, `PCA-StatArbitrage` stat-arb factoriel PCA, `Trend-Following` AQR-style 12-momentum multi-actifs) — **1 BROKEN** + **3 Needs-improvement** : PSR max 17.51 % `Options-VGT` (aucune > 50 %) ; `TermStructureCommodities-QC` Sharpe -0.244 / MaxDD 96.8 % / PSR 0.007 % = quasi-ruine systématique sur backtest 2018–2025 |
+| Vivant (best-guess, non vérifié) | 15 | algo `QCAlgorithm` complet, aucun signal négatif — TODO backtest pour confirmer (2 reclassés Archivé firsthand c.570) ; tranche 7 a promu 5 stratégies ML, tranche 8 a promu 5 stratégies Trend/Régime/Vol, tranche 14 a promu 2 stratégies Chronos DL, tranche 15 a promu 4 stratégies quantitatives structurelles : voir sections ci-dessous. **Note comptable (sémantique du double-listing)** : la section détaillée contient **56 lignes physiques = 20 true-Vivant + 36 promues tr7-15** (cross-référencées dans leur bucket d'origine ET ici pour la discoverability, voir status `Vérifié tranche N`) — le compte `15` ci-contre = Vivant non-encore-vérifiées après déduction des promues des tranches précédentes, distinct du compte physique (intentionnel, pas une erreur). |
 | Vivant (README revendique vérifié) | 0 | README revendique un backtest QC Cloud — à recroiser firsthand (Multi-Layer-EMA vérifié tranche 4) |
 | Recherche uniquement (pas d'algo déployable) | 5 | notebook de recherche sans `main.py` déployable |
 | Stub (code non créé) | 2 | README : exercice planifié, fichiers de code non créés |
@@ -367,7 +368,37 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-Chronos-Foundation` | `projects/ML-Chronos-Foundation/` | DL (Chronos foundation, plain) | **Needs-improvement** | 2026 (Batch4, 121 ordres) ; **Sharpe 0.277** ; CAGR 7.23 % ; MaxDD 13.5 % ; **PSR 13.79 %** ; NP 63.0 % ($62 627) — variant plain (sans filtre de régime) : meilleure PSR de la cohorte, mais fenêtre courte (Batch4) → signification fragile, edge non confirmée |
 
 
-#### Vivant (best-guess, non vérifié) (56 physiques = 24 true + 32 promues tr7-14 ; voir synthèse)
+#### Vérifié (tranche 15, backtests QC Cloud via MCP) (4)
+
+> **Scope tranche 15 (#1621)** : 4 stratégies « Vivant » promues au statut vérifié via backtests
+> QC Cloud réels (MCP `qc-mcp-lite`, backtests existants relus firsthand). Cohorte **Stratégies
+> quantitatives structurelles** — 4 best-guiss du bucket Vivant sans overlap avec les 14 tranches
+> précédentes (ML, DL, Régime, Vol, Trend, Crypto, Options, ML-NLP, RL, Classification, Chronos) :
+> `Options-VGT` (income covered-call tech single-names vs benchmark VGT), `TermStructureCommodities-QC`
+> (courbe terme commodités roll-yield), `PCA-StatArbitrage` (stat-arb factoriel PCA multi-paires),
+> `Trend-Following` (AQR-style 12-month momentum multi-actifs). Métriques **non walk-forward OOS**
+> (backtest pleine période in-sample) — suffisantes pour classer Alive / Needs-improvement /
+> BROKEN, insuffisantes pour un verdict de production. **1 BROKEN + 3 Needs-improvement** — confirme
+> pour la cohorte « quantitatif structurel pur » ce que les tranches 7-14 confirmaient sur ML/DL :
+> les backtests in-sample pleine période **ne valident aucun edge** sur la cohorte.
+>
+> **Leçon pédagogique clé (cohorte 4 stratégies)** : la **structure méthodologique** (factoriel
+> PCA, roll-yield commodités, momentum AQR, income options) **ne suffit pas à produire un edge
+> statistiquement significatif** in-sample. PSR max cohorte = 17.51 % (`Options-VGT`), aucune > 50 %.
+> Le `TermStructureCommodities-QC` sort en **BROKEN** (Sharpe -0.244, MaxDD 96.8 %, PSR 0.007 %) —
+> effondrement systématique sur la fenêtre 2018-2025, malgré 468 ordres. Le roll-yield commodités
+> post-2020 (post-Covid commodity super-cycle puis normalisation 2022-2024) ne fournit pas le
+> signal directionnel espéré.
+
+| Stratégie | Chemin | Type | Statut | Métriques backtest (période ; Sharpe ; CAGR ; MaxDD ; PSR ; Net Profit) |
+|-----------|--------|------|--------|------------------------------------------------------------------------|
+| `Options-VGT` | `projects/Options-VGT/` | Options income (covered-call OTM tech single-names vs benchmark VGT) | **Needs-improvement** | 2020–2026 (1552 j., 655 ordres) ; **Sharpe 0.507** ; CAGR 14.19 % ; MaxDD 16.20 % ; **PSR 17.51 %** (max cohorte) ; NP 127.16 % ($76 641) — **best Sharpe cohorte** + meilleur PSR + drawdown contenu (16.20 %) ; `GainStrategy` couvre NVDA/ORCL/CSCO/AMD/QCOM avec options OTM ~30 j ; edge non significative |
+| `Trend-Following` | `projects/Trend-Following/` | Trend AQR 12-momentum multi-actifs | **Needs-improvement** | post-#2801 verify, 1630 baseline (2516 j., 451 ordres) ; **Sharpe 0.407** ; CAGR 7.89 % ; **MaxDD 14.60 %** ; **PSR 8.68 %** ; NP 113.82 % ($93 177) — profil « momentum prudent » : drawdown contenu 14.6 % (2e min cohorte) ; Sharpe décevant post-#2801 (vs 1.07 historique, downgrade documenté PR #2988) — edge non significative |
+| `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | Stat-arb factoriel PCA multi-paires | **Needs-improvement** | 2015–2026 (tradeableDates=0 affiché, 3694 ordres) ; **Sharpe 0.165** ; CAGR 5.34 % ; MaxDD 35.90 % ; **PSR 0.18 %** ; NP 78.72 % ($772 239) — `tradeableDates=0` red flag (le count est-il sur le backtester ?), NP absolu record $772K MAIS PSR quasi-nul = **edge statistique nulle** ; MaxDD 35.9 % élevé ; profil « leverage sur facteur PCA » ne suffit pas à valider un edge |
+| `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Term structure commodités roll-yield | **BROKEN** | 2018–2025 aligned (2129 j., 468 ordres) ; **Sharpe −0.244** (négatif) ; CAGR **−31.48 %** ; **MaxDD 96.80 %** ; **PSR 0.007 %** (quasi-nul) ; NP **−92.93 %** ($−929 294) — **effondrement systématique** sur la fenêtre alignée 2018-2025 : la courbe terme commodités post-2020 (Covid super-cycle 2020-2022 puis normalisation 2022-2024) ne fournit pas le signal directionnel roll-yield attendu ; perte ≈ capital initial ; edge nul à tous les seuils |
+
+
+#### Vivant (best-guess, non vérifié) (56 physiques = 20 true + 36 promues tr7-15 ; voir synthèse)
 
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
@@ -407,9 +438,9 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `ML-TextClassification` | `projects/ML-TextClassification/` | ML NLP | Vivant | main.py: class MLTextClassificationAlgorithm(QCAlgorithm) + quantbook.ipynb |
 | `ML-Trend-Scanning` | `projects/ML-Trend-Scanning/` | ML trend | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 7.84 %) |
 | `Option-Wheel` | `projects/Option-Wheel/` | Options (wheel) | **Vérifié tranche 9** | main.py: class WheelStrategyAlgorithm(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 9 |
-| `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | Vivant | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — nom classe vague (cf. incertitudes) |
+| `Options-VGT` | `projects/Options-VGT/` | Options (covered call) | **Vérifié tranche 15** | main.py: class GainStrategy(QCAlgorithm) + quantbook.ipynb — voir section tranche 15 (Needs-improvement, Sharpe 0.507 / PSR 17.51 %) |
 | `OptionsIncome` | `projects/OptionsIncome/` | Options (covered call) | **Vérifié tranche 9** | main.py: class CoveredCallStrategy(QCAlgorithm) + research.ipynb + quantbook.ipynb — voir section tranche 9 |
-| `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | StatArb (PCA) | Vivant | main.py: class PCAStatArbitrageAlgorithm(QCAlgorithm) |
+| `PCA-StatArbitrage` | `projects/PCA-StatArbitrage/` | StatArb (PCA) | **Vérifié tranche 15** | main.py: class PCAStatArbitrageAlgorithm(QCAlgorithm) — voir section tranche 15 (Needs-improvement, Sharpe 0.165 / PSR 0.18 %) |
 | `Portfolio-IBKR-Coinbase-Hybrid` | `projects/Portfolio-IBKR-Coinbase-Hybrid/` | Hybrid crypto/broker | Vivant | main.py: class PortfolioHybridIBKRCoinbase(QCAlgorithm) (helpers FeeModel/Slippage en amont) + research.ipynb + quantbook.ipynb |
 | `Positive-Negative-Splits-ML` | `projects/Positive-Negative-Splits-ML/` | ML (stock splits) | Vivant | main.py: class SplitEventsAlgorithm(QCAlgorithm) |
 | `PuppiesOfTheDow-QC` | `projects/PuppiesOfTheDow-QC/` | Value (Dogs of the Dow) | Vivant | main.py: class PuppiesOfTheDow(QCAlgorithm) |
@@ -419,8 +450,8 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `Sector-ML-Classification` | `projects/Sector-ML-Classification/` | ML sectoriel | **Vérifié tranche 7** | voir tableau Vérifié (tranche 7) ci-dessus — Promu Needs-improvement (PSR 29.34 %, période ESGF 2024–2026 585 j.) |
 | `Stoploss-Volatility-ML` | `projects/Stoploss-Volatility-ML/` | ML risk | Vivant | main.py: class StoplossVolatilityMLAlgorithm(QCAlgorithm) + research.ipynb |
 | `Temporal-CNN-Prediction` | `projects/Temporal-CNN-Prediction/` | DL (Temporal CNN) | **Vérifié tranche 10** | main.py: class TemporalCNNPrediction(QCAlgorithm) + research.ipynb — voir section tranche 10 |
-| `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Commodities (term structure) | Vivant | main.py: class CommodityTermStructureAlgorithm(QCAlgorithm) |
-| `Trend-Following` | `projects/Trend-Following/` | Trend (AQR) | Vivant | main.py: class TrendFollowingAQR(QCAlgorithm) + quantbook.ipynb |
+| `TermStructureCommodities-QC` | `projects/TermStructureCommodities-QC/` | Commodities (term structure) | **Vérifié tranche 15** | main.py: class CommodityTermStructureAlgorithm(QCAlgorithm) — voir section tranche 15 (BROKEN, Sharpe -0.244 / PSR 0.007 %) |
+| `Trend-Following` | `projects/Trend-Following/` | Trend (AQR) | **Vérifié tranche 15** | main.py: class TrendFollowingAQR(QCAlgorithm) + quantbook.ipynb — voir section tranche 15 (Needs-improvement, Sharpe 0.407 / PSR 8.68 %) |
 | `TrendFilteredMeanReversion` | `projects/TrendFilteredMeanReversion/` | Mean reversion filtré | Vivant | main.py: class TrendFilteredMeanReversion(QCAlgorithm) + research.ipynb |
 | `TrendStocks-Alpha` | `projects/TrendStocks-Alpha/` | Trend actions | **Vérifié tranche 8** | main.py: class TrendStocksAlphaAlgorithm(QCAlgorithm) + quantbook.ipynb — voir section tranche 8 |
 | `TrendStocksLite` | `projects/TrendStocksLite/` | Trend actions (lite) | **Vérifié tranche 8** | main.py: class TrendStocksLite(QCAlgorithm) + research.ipynb — voir section tranche 8 |
