@@ -101,4 +101,13 @@ Investigation `nbformat` Python pour identifier les cellules sources et valider 
 - L143 secrets-hygiene : 0 secret inline dans le diff.
 - C.3 strict : aucune ré-exécution Papermill, aucune cellule notebook touchée.
 
+**🔁 Doublons intentionnels inter-arborescences (audit c.657, doctrine #5780, miroir de la note du MANIFEST 01-Foundation)** :
+Deux des figures de cette racine sont des **doublons exacts** (SHA1 identique) avec le dossier `01-Foundation/assets/readme/` :
+| Figure racine | Figure locale | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
+|---------------|---------------|---------------------------|------------------------|
+| `video4-esrgan.png` (racine Video) | `vid1-esrgan.png` (01-Foundation) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : racine Video README illustre la figure dans le contexte narratif multi-modèles ; 01-Foundation README l'illustre dans le contexte pédagogique « Enhancement ESRGAN ». Alt-texts différents mais même binaire, doctrine #5780. |
+| `video5-animatediff.png` (racine Video) | `vid1-animatediff.png` (01-Foundation) | `579190cc435421941a730c423a4442730074b46f` (byte-identique) | **Doublon intentionnel** même logique : racine illustre AnimateDiff dans le contexte orchestration, 01-Foundation l'illustre dans le contexte introduction. |
+
+**Note de fond** : voir la note miroir dans [01-Foundation/assets/readme/MANIFEST.md](../../01-Foundation/assets/readme/MANIFEST.md). Doctrine #5780 produit mécaniquement des doublons quand un notebook est référencé à la fois dans la racine de la famille et dans une sous-série — c'est by design.
+
 **Voir aussi** : [c.481 GenAI/Image racine](../../../Image/assets/readme/MANIFEST.md) — pattern frère (audit fondateur racine GenAI) ; [c.485 GenAI/Video/04-Applications](../../04-Applications/assets/readme/MANIFEST.md) — pattern frère (audit fondateur tardif post-transition #6157) ; issue [#5780](../../../../../issues/5780) ; EPIC [#5654](../../../../../issues/5654).
