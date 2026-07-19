@@ -110,7 +110,7 @@ La série SymbolicLearning (12 notebooks Python, doublés de jumeaux C# from-scr
 
 ## Tweety - TweetyProject
 
-Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal. **Double stack Python (JPype) et C#/.NET (IKVM)** — voir EPIC #4667 (Tweety .NET) pour le marathon de portage : 12 modules C# mergés en complément des 13 notebooks Python originaux.
+Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal. **Double stack Python (JPype) et C#/.NET (IKVM)** — voir EPIC #4667 (Tweety .NET) pour le marathon de portage : 18 modules C# mergés en complément des 13 notebooks Python originaux.
 
 ### Structure détaillée (Python / JPype)
 
@@ -139,9 +139,9 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 
 ### Parité C# / .NET (EPIC #4667 — Tweety .NET via IKVM 8.14/8.15)
 
-En complément du parcours Python, **12 modules .NET C#** sont mergés dans le tronc, executés in-kernel `.net-csharp` via IKVM (DLL natives générées par shading Maven + `dotnet build`). Chaque notebook C# porte le suffixe `-Csharp` et expose les mêmes APIs TweetyProject via `Activator.CreateInstance` (IKVM efface les génériques, voir leçon C188). Tableau indicatif (catalogue fait foi pour les chiffres exacts) :
+En complément du parcours Python, **18 modules .NET C#** sont mergés dans le tronc, exécutés in-kernel `.net-csharp`. Deux approches cohabitent : les jumeaux **IKVM** (DLL natives générées par shading Maven + `dotnet build`, exposant les mêmes APIs TweetyProject via `Activator.CreateInstance` — IKVM efface les génériques, voir leçon C188) et les jumeaux **from-scratch** (réimplémentation BCL-only des mêmes algorithmes, sans dépendance Java, pour comparer les écosystèmes sur du code pur). Tableau indicatif (catalogue fait foi pour les chiffres exacts) :
 
-| Module C# | Equivalent Python | Stack IKVM | Statut |
+| Module C# | Equivalent Python | Stack | Statut |
 |-----------|-------------------|------------|--------|
 | Tweety-2-Basic-Logics-Csharp | Tw-2 | IKVM 8.14 + Choco | MERGED |
 | Tweety-2b-Semantics-Csharp | Tw-2 (semantics) | IKVM 8.14 | MERGED |
@@ -155,8 +155,14 @@ En complément du parcours Python, **12 modules .NET C#** sont mergés dans le t
 | Tweety-4-Aspic-Csharp | Tw-6 (ASPIC+) | IKVM 8.14 | MERGED |
 | Tweety-7b-Ranking-Probabilistic-Csharp | Tw-7b | IKVM 8.14 | MERGED |
 | Tweety-10-MLN-Csharp | Tw-10 | IKVM 8.14 | MERGED |
+| Tweety-5-Abstract-Argumentation-Csharp | Tw-5 (Dung) | from-scratch (BCL) | MERGED |
+| Tweety-6-Structured-Argumentation-Csharp | Tw-6 (ASPIC+) | from-scratch (BCL) | MERGED |
+| Tweety-7a-Extended-Frameworks-Csharp | Tw-7a (ADF/SetAF/EAF/VAF) | from-scratch (BCL) | MERGED |
+| Tweety-8-Agent-Dialogues-Csharp | Tw-8 (Dialogues) | from-scratch (BCL) | MERGED |
+| Tweety-9-Preferences-Csharp | Tw-9 (Preferences) | IKVM 8.15 + pref DLL | MERGED |
+| Tweety-11-Causal-Csharp | Tw-11 (Causal) | from-scratch (BCL) | MERGED |
 
-Tw-9 Preferences (PR #5268 OPEN) et Tw-1-Setup-Csharp / Tw-11-Causal-Csharp sont en cours ou planifiés ; leur statut vit dans le tracker EPIC #4667. La documentation complète de la chaîne de build (Maven shade → `dotnet build` → nbconvert `.net-csharp`) est dans le README de chaque notebook C#.
+Seul `Tweety-1-Setup-Csharp` reste planifié ; tous les autres jumeaux C# (Tw-2 à Tw-11) sont mergés (statut détaillé dans le tracker EPIC #4667). La documentation complète de la chaîne de build (Maven shade pour les jumeaux IKVM, BCL-only pour les jumeaux from-scratch → `dotnet build` → nbconvert `.net-csharp`) est dans le README de chaque notebook C#.
 
 ### Technologies
 
