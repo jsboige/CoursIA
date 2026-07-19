@@ -78,7 +78,7 @@ class LLMClient:
         if self.config.api_key:
             call_kwargs["api_key"] = self.config.api_key
 
-        if max_tokens:
+        if max_tokens is not None:
             call_kwargs["max_tokens"] = max_tokens
 
         call_kwargs.update(kwargs)
