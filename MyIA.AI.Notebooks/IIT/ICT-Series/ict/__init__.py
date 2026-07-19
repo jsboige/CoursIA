@@ -84,6 +84,7 @@ from . import triade
 from . import spectral
 from . import sensitivity
 from . import reversibility_budget
+from . import argumentation
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -96,4 +97,5 @@ __all__ = [
     "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
     "spectral", "sensitivity",
     "reversibility_budget",
+    "argumentation",
 ]
