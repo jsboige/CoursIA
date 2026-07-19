@@ -37,7 +37,11 @@ EXCLUDE_DIRS = {
 C1_PATTERNS = [
     (re.compile(r"raise\s+NotImplementedError"), "raise NotImplementedError"),
     (re.compile(r"assert\s+False"), "assert False"),
-    (re.compile(r"(?<![\d/\-])1\s*/\s*0(?![\d/])"), "1/0"),
+    # Negative lookahead excludes digit (21/0, 1/07), slash (1/0/0 reward-list
+    # delimiters) AND dot (decimal fractions 1/0.5, 1/0.25, 0.1/0.5 are NOT
+    # ZeroDivision — the auditor over-matched these, cf FP on ICT-7
+    # `echelle caracteristique 1/0.5`). Lookbehind keeps excluding digit/slash/hyphen.
+    (re.compile(r"(?<![\d/\-])1\s*/\s*0(?![\d/.])"), "1/0"),
 ]
 
 
