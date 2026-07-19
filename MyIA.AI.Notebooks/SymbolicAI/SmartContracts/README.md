@@ -414,8 +414,8 @@ Les techniques de vérification formelle présentées dans cette série (SC-14, 
 
 Les mécanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instances concrètes des résultats formels de la série GameTheory :
 
-- **SC-9 DAO Governance** : les systèmes de vote on-chain sont soumis aux mêmes limitations que le **théorème d'Arrow** (formalisé dans `social_choice_lean/Arrow.lean`, 0 sorry).
-- **SC-17 E2E Verifiable Voting** : les propriétés des systèmes de vote (Banks sets, monotonie STV) sont étudiées formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
+- **SC-9 DAO Governance** : les systèmes de vote on-chain sont soumis aux mêmes limitations que le **théorème d'Arrow** (formalisé dans `game_theory_lean/SocialChoice/Arrow.lean`, 0 sorry).
+- **SC-17 E2E Verifiable Voting** : les propriétés des systèmes de vote (Banks sets, monotonie STV) sont étudiées formellement dans `game_theory_lean/SocialChoice/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
 
 ### SmartContracts et Décision sous Incertitude (Probas)
 
@@ -629,7 +629,7 @@ maturity: PRODUCTION=27
 | Notebook SmartContracts | Série parente | Pont conceptuel |
 |------------------------|---------------|-----------------|
 | `SC-12 Foundry Testing` | [Lean](../Lean/) (types dépendants, Curry-Howard) | Vérification formelle = même ambition (prouver la correction), deux faces : SMT automatique (SMTChecker) vs interactif expressif (Lean 4) |
-| `SC-14 Formal Verification` | [Lean](../Lean/) + [GameTheory](../../GameTheory/) (`social_choice_lean/`) | Pont vérification : Certora/SMTChecker prouvent les invariants Solidity ; Lean 4 prouve les théorèmes économiques (Arrow, Voting). Même méthodologie, deux domaines |
+| `SC-14 Formal Verification` | [Lean](../Lean/) + [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/`) | Pont vérification : Certora/SMTChecker prouvent les invariants Solidity ; Lean 4 prouve les théorèmes économiques (Arrow, Voting). Même méthodologie, deux domaines |
 | `SC-15 ZKP / SC-16 HE / SC-17 E2E Voting` | [Lean](../Lean/) + [Tweety](../Tweety/) (cryptographic protocols argumentation) | Cryptographie avancée : ZKP = preuve sans divulgation ; HE = calcul sur chiffré ; vote E2E = anonymat + vérifiabilité. Tweety argumente formellement ces protocoles |
 | `SC-11 LLM-Assisted Contracts` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
 | `SC-9 DAO Governance / SC-17 E2E Voting` | [GameTheory](../../GameTheory/) (Arrow.lean, Voting.lean) | Vote on-chain = instance concrète du théorème d'Arrow (impossibilité) ; vote E2E = instance des Banks sets + monotonie STV |
