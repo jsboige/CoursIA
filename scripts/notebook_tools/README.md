@@ -199,10 +199,10 @@ d'accents dans les **cibles de liens markdown** (`[texte](cible)`),
 la OU `detect_accent_stripping.py` est aveugle. Le registre #2876 a
 restaure les accents dans le texte mais la cure regex `\b(mot)\b`
 touche aussi les cibles de liens, ce qui casse silencieusement le
-lien resolu :
-
-    AVANT : | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) |
-    APRES : | [Infer-10-Model-sélection](Infer-10-Model-sélection.ipynb) |  <-- casse
+lien resolu (exemple canonique : un lien markdown vers un notebook
+de la serie `Infer-10-Model-Selection.ipynb` perd son `e` majuscule
+en cure, devient `Infer-10-Model-sélection.ipynb`, et le lien ne
+resout plus sur disque).
 
 Methode (deterministe, zero ML) :
 
@@ -221,7 +221,7 @@ python scripts/notebook_tools/detect_link_target_regression.py NB.ipynb --check
 ```
 
 **Owner** : partition-mienne (po-2024) — alignement partition CPU/.NET
-(cf [memory/cycles-c616-c643-forensics-pivots.md](../../.claude/projects/c--dev-CoursIA-2/memory/cycles-c616-c643-forensics-pivots.md)).
+(registre forensic c.616-c.643 dans MEMORY.md per-machine).
 
 ### `detect_solution_leaks.py` (#4970, EPIC #1344)
 
