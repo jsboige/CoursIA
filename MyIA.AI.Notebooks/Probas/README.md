@@ -598,7 +598,9 @@ flowchart LR
     NB_PAC -. "uniform_concentration ⟹ erm_error_bound" .-> LK_PAC
     NB_GIT -. "identités d'escompte ⟹ indice Gittins" .-> LK_GIT
     NB_MCMC -. "log-bienveillance ⟹ f* = μ−σ²/2" .-> LK_KELLY
-    NB_EP -. "extension Dung ⟹ cadre formel" .-> LK_SC
+    %% NB_EP (Infer.NET EP / VMP) = inférence bayésienne approximative ;
+    %% la passerelle Dung ↔ argumentation_lean est couverte par le tableau §E ci-dessus (ligne SymbolicAI ↔ Probas),
+    %% pas par un lien direct depuis ce nœud de simulation.
     style LK_DT fill:#e8f5e9,stroke:#2e7d32
     style LK_CO fill:#e8f5e9,stroke:#2e7d32
     style LK_PAC fill:#e8f5e9,stroke:#2e7d32
