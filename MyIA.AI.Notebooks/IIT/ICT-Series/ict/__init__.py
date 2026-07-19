@@ -38,6 +38,15 @@ ICT-23 ; Epic #4588 / #5104). Le substrat est un agent dont l'identite
 semantique (a = -transgression * charge). L'inoculation `charge -> 0`
 aplatit la fronce et supprime la bistabilite : c'est la prediction P0
 d'#5104 (Anthropic arXiv:2511.18397, OpenAI arXiv:2506.19823).
+
+Strate 5 (canonicite scalaire ICT-15b) : transposition du theoreme de
+Huang 2019 au zoo ICT (``spectral`` + ``sensitivity`` ; ICT-15b #7288 /
+Epic #4588). ``spectral`` pose le substrat canonique (graphe de
+transition symmetrise ``W = (P + P^T)/2``, matrice de courants nets
+antisymetrique, Laplacien, gap spectral). ``sensitivity`` definit la
+sensibilite locale ``s_x(f)`` sur ce graphe et un test de la
+conjecture type-Huang ``s_max >= sqrt(deg_proxy)`` avec verdict
+honnete `consistent` / `inconsistent` / `inconclusive`.
 """
 
 from .self_sorting import Cell, Probe, SelfSortingArray, ALGOTYPES
@@ -72,6 +81,8 @@ from . import jlens_traces
 from . import sae_traces
 from . import lens_agreement
 from . import triade
+from . import spectral
+from . import sensitivity
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -82,4 +93,5 @@ __all__ = [
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
     "time_arrow", "synthesis", "persona_cusp", "stake", "workspace",
     "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
+    "spectral", "sensitivity",
 ]
