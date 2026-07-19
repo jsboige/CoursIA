@@ -270,7 +270,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 > **Note** : l'arc **théorie de la décision** PyMC (7 notebooks) vit dans [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md) (renommés `DecPyMC-1..7`), voir tableau dédié ci-dessous.
 
-## Notebooks racine (Python)
+## Notebooks racine (introduction standalone)
 
 | Notebook | Kernel | Contenu | Durée |
 |----------|--------|---------|-------|
@@ -310,7 +310,7 @@ Les **27 notebooks Infer.NET C#** (19 du corpus bayésien + 8 de l'arc décision
 
 ## Série PyMC (19 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3 = notebooks 1-3, modèles classiques 4-13 = notebooks 4, 7-11, 13 + debugging 6, inférence causale 14 = notebook 5, processus gaussien épars 15 = notebook 16, modèles hiérarchiques 16 = notebook 12, filtre de Kalman 17 = notebook 17, change-point 18 = notebook 18, analyse de survie 19 = notebook 19) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3 = notebooks 1-3, modèles classiques 4-13 = notebooks 4 (Bayesian Networks), 5 (IRT), 6 (TrueSkill), 7 (Classification), 8 (Model Sélection), 9 (Topic Models), 10 (Crowdsourcing), 11 (Séquences), 12 (Recommenders), 13 (Debugging), inférence causale 14 = notebook 5, processus gaussien épars 15 = notebook 16, modèles hiérarchiques 16 = notebook 12, filtre de Kalman 17 = notebook 17, change-point 18 = notebook 18, analyse de survie 19 = notebook 19) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -357,7 +357,7 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 ### Phase 5 — Frontières bayésiennes (notebooks 15-19, ~3.5h)
 
-> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques 15, GP sparse 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-16 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
+> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques 16, GP sparse 15, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-15 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
 
 | # | Notebook | Sujet |
 |---|----------|-------|
@@ -486,7 +486,7 @@ python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
 | Jeux vidéo | Infer-8, PyMC-8 (TrueSkill) |
 | Éducation | Infer-7, PyMC-7 (IRT) |
 | NLP | Infer-11, PyMC-11 (LDA) |
-| Médecine | Infer-4, Infer-9, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
+| Médecine | Infer-4, Infer-5, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, inférence causale, Kalman, change-point, survie) |
 | Finance | Infer-14 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
 | E-commerce | Infer-13, Infer-15, PyMC-13, PyMC-15 (crowdsourcing, recommenders) |
 
@@ -566,14 +566,14 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 
 | Famille                  | Lake phare                       | Théorème                                                                          | Branchement notebook                                                |
 | ---                      | ---                              | ---                                                                               | ---                                                                  |
-| Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Infer-14b  |
+| Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecInfer-2-Lean-ExpectedUtility`](DecisionTheory/DecInfer/DecInfer-2-Lean-ExpectedUtility.ipynb)  |
 | Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) (`0 sorry`)                | [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) Coherence   |
 | Probas (PAC Learning)    | chaîne PAC iter-2 complète       | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`)  | notebook PAC Learning compagnon Lean                                 |
-| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | DecInfer-9 (companion Lean)                                          |
-| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | notebook `kelly-criterion`                                           |
-| GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | hub GameTheory notebook 16a                                          |
-| Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search notebook `A*` phases 1-3                                  |
-| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | hub SymbolicAI/Tweety notebook AF-Dung                               |
+| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-9-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb)                                          |
+| QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion.ipynb`](../QuantConnect/kelly_lean/Kelly_companion.ipynb)                                           |
+| GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
+| Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../../Search/search_lean/))                                  |
+| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argument_Analysis_Dung_AF_Semantics.ipynb`](../SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb)                               |
 
 ```mermaid
 flowchart LR
