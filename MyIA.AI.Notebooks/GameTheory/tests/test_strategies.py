@@ -239,6 +239,42 @@ class TestReplicatorDynamics:
         for t in range(100):
             assert abs(np.sum(trajectory[t]) - 1.0) < 1e-6
 
+    def test_replicator_degenerate_zero_x0_no_nan(self):
+        """A degenerate x0 = zeros(n) must not propagate NaN through the
+        trajectory. Before the normalization guard, x / np.sum(x) divided by
+        0.0 and NaN-ed every row from t=1 onward (RuntimeWarning: invalid
+        value encountered in divide). The guard falls back to a uniform
+        distribution, so the dynamics resume from a valid simplex point."""
+        M = np.array([[3.0, 0.0], [5.0, 1.0]])
+        trajectory = replicator_dynamics(M, np.zeros(2), T=50, dt=0.1)
+
+        assert not np.isnan(trajectory).any()
+        # Row 0 records the given (degenerate) initial state; every subsequent
+        # row must be a valid population distribution (non-negative, sums to 1).
+        for t in range(1, 50):
+            assert abs(np.sum(trajectory[t]) - 1.0) < 1e-9
+            assert (trajectory[t] >= 0).all()
+
+    def test_replicator_degenerate_zero_x0_falls_back_to_uniform(self):
+        """After a degenerate x0 = zeros, the next iterate is the uniform
+        distribution (the documented sibling-fallback, mirroring
+        CFRSolver.get_strategy in the same module)."""
+        M = np.array([[3.0, 0.0], [5.0, 1.0]])
+        trajectory = replicator_dynamics(M, np.zeros(2), T=5, dt=0.1)
+
+        np.testing.assert_allclose(trajectory[1], np.array([0.5, 0.5]))
+
+    def test_replicator_negative_x0_clamped_without_nan(self):
+        """A negative x0 (out-of-simplex) gets clamped by np.maximum(x, 0);
+        the resulting all-zero row would also NaN without the guard. The fix
+        keeps the trajectory finite for every iterate after the first."""
+        M = np.array([[3.0, 0.0], [5.0, 1.0]])
+        trajectory = replicator_dynamics(M, np.array([-0.2, -0.1]), T=20, dt=0.1)
+
+        assert not np.isnan(trajectory).any()
+        for t in range(1, 20):
+            assert abs(np.sum(trajectory[t]) - 1.0) < 1e-9
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

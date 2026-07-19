@@ -548,7 +548,17 @@ def replicator_dynamics(M: np.ndarray, x0: np.ndarray,
         x = x + dx
 
         x = np.maximum(x, 0)
-        x = x / np.sum(x)
+        # Guard against sum == 0 (degenerate x0 = np.zeros(n), or all
+        # components zeroed by the clamp mid-trajectory): a bare
+        # `x / np.sum(x)` divides by 0.0 and propagates NaN through the
+        # rest of the trajectory. Mirror the CFRSolver.get_strategy /
+        # get_average_strategy siblings in this module (uniform fallback when
+        # the normalizing sum is non-positive) and the cross-module
+        # corroborator ict.strategic_morphodynamics.replicator_trajectory
+        # (1e-12 threshold): renormalize when the sum is positive, else reset
+        # to a uniform distribution.
+        s = np.sum(x)
+        x = x / s if s > 1e-12 else np.ones(n) / n
 
     return trajectory
 
