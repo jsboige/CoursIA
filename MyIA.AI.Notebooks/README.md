@@ -126,11 +126,11 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 |---------|:---:|:---:|:---:|------|
 | GenAI | ● | ◐ | — | Python dominant ; C# pour Semantic Kernel |
 | QuantConnect | ● | ◐ | ◐ | Python + LEAN Engine C# + `kelly_lean` |
-| SymbolicAI | ● | ◐ | ● | Trilogie complète : Python (SymbolicLearning), C# (Tweety/Z3/SW/SC), Lean (Arrow/Conway/FWT) |
+| SymbolicAI | ● | ◐ | ● | Trilogie complète : Python (SymbolicLearning), C# (Tweety/Z3/SW/SC), Lean (Conway/FWT/Grothendieck) |
 | Search | ● | ● | ◐ | Parité CSP livrée — marathon jumeaux accompli (EPIC #4956) |
 | Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (VNM + Gittins) |
 | Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
-| GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `social_choice_lean` (Arrow) |
+| GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `game_theory_lean` (Arrow + Bondareva-Shapley) |
 | ML | ● | ● | ◐ | ML.NET (tutoriels) + jumeaux Python (sklearn, ONNX) + `learning_theory_lean` |
 | RL | ● | — | — | Stable-Baselines3 / Gym |
 | CaseStudies | ● | — | — | Projets interdisciplinaires |
@@ -276,12 +276,12 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
 | **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
-| **SymbolicAI** (Lean) | `bondareva_lean` (résolu 0 sorry), `knot_lean` (GF(3) Path B), `fwt_lean` | Bondareva-Shapley, nœud trinôme, Fermat | SymbolicAI/Lean/Grothendieck + Conway |
+| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-13 (A*), Part3-Advanced |
 | **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-1..2 (VNM) + DecInfer-9 (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
-| **GameTheory** | `social_choice_lean` (Arrow) | Théorème d'impossibilité d'Arrow (cf. `arrow_lean`) | GameTheory/16b-* Choix social |
+| **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 
 ```mermaid
 flowchart LR
