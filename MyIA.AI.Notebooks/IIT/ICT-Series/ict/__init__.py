@@ -85,6 +85,7 @@ from . import spectral
 from . import sensitivity
 from . import reversibility_budget
 from . import argumentation
+from . import agent_otherness
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -98,4 +99,5 @@ __all__ = [
     "spectral", "sensitivity",
     "reversibility_budget",
     "argumentation",
+    "agent_otherness",
 ]
