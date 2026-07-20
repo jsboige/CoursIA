@@ -91,7 +91,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 2 | Uninformed | BFS vs DFS : comment l'ordre d'exploration change la complexité |
 | 3 | Informed | Heuristiques admissibles et A* : guider la recherche vers la solution |
 | 4 | LocalSearch | Abandonner la garantie pour l'efficacité : paysages de fitness et optima locaux |
-| 5 | GeneticAlgorithms | Populations, crossover, mutation : l'évolution comme métaheuristique |
+| 5 | GeneticAlgorithms | Populations, crossover, mutation : l'évolution comme métaheuristique — **piège déceptif Goldberg k-trap (k=4, L=20) [#6849]** : hill-climber bloqué 17/20, AG 20/20 via croisement |
 | 6 | AdversarialSearch | Minimax, Alpha-Beta : chercher dans les jeux à deux joueurs |
 | 7 | MCTS-And-Beyond | Monte Carlo Tree Search et la révolution AlphaGo (MCTS + DQN) |
 | 8 | DancingLinks | Couverture exacte de Knuth : une structure de données transforme un algorithme |
