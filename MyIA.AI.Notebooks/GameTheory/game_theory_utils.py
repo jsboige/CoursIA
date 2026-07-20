@@ -505,6 +505,19 @@ def compute_payoff_matrix(strategies: List[Strategy], rounds: int = 200) -> np.n
 
     M[i,j] = average payoff per round for strategy i against strategy j
     """
+    # Guard against rounds <= 0: the per-cell average ``score1 / rounds``
+    # divides by zero for ``rounds == 0`` (ZeroDivisionError, reproduced
+    # firsthand) and silently yields a matrix of ``-0.0`` for ``rounds < 0``
+    # (``range(neg)`` runs no rounds -> score1 == 0 -> ``0 / -5``). Same
+    # degenerate-input guard bug-class as ``replicator_dynamics`` (#7495, this
+    # module), ``kuhn_poker_cfr.train`` (#7489, ``iterations <= 0``) and
+    # ``shapley_value_monte_carlo`` (#7481, ``n_samples <= 0``): an integer
+    # loop-count the caller controls, admitted without validation, that crashes
+    # or NaNs on the non-positive value instead of raising a clear ValueError.
+    if rounds <= 0:
+        raise ValueError(
+            f"rounds must be positive, got {rounds}"
+        )
     n = len(strategies)
     M = np.zeros((n, n))
 

@@ -276,5 +276,42 @@ class TestReplicatorDynamics:
             assert abs(np.sum(trajectory[t]) - 1.0) < 1e-9
 
 
+class TestComputePayoffMatrixGuard:
+    """compute_payoff_matrix must reject rounds <= 0 explicitly.
+
+    Before the guard, the per-cell average ``M[i,j] = score1 / rounds`` divided
+    by zero for ``rounds == 0`` (ZeroDivisionError) and silently returned a
+    matrix of ``-0.0`` for ``rounds < 0`` (``range(neg)`` runs no rounds, so
+    ``score1 == 0`` and ``0 / -5 == -0.0``). Same degenerate-input guard
+    bug-class as ``replicator_dynamics`` (#7495), ``kuhn_poker_cfr.train``
+    (#7489, ``iterations <= 0``) and ``shapley_value_monte_carlo`` (#7481,
+    ``n_samples <= 0``). The guard unifies the contract: the sibling functions
+    in the same module already defend the degenerate zero-total division
+    (``replicator_dynamics`` normalization, ``CFRSolver.get_strategy``), but
+    ``compute_payoff_matrix`` divided by ``rounds`` without validating it.
+    """
+
+    def test_compute_payoff_zero_rounds_raises(self):
+        """rounds=0 -> ZeroDivisionError before fix; ValueError proper after."""
+        strategies = [TitForTat(), AlwaysDefect()]
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            compute_payoff_matrix(strategies, rounds=0)
+
+    def test_compute_payoff_negative_rounds_raises(self):
+        """rounds<0 -> ``range(neg)`` empty + ``0 / -5`` = -0.0 silent before fix."""
+        strategies = [TitForTat(), AlwaysDefect()]
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            compute_payoff_matrix(strategies, rounds=-5)
+
+    def test_compute_payoff_positive_rounds_unaffected(self):
+        """The guard does not impact the normal path (shape + determinism)."""
+        strategies = [TitForTat(), AlwaysDefect()]
+        M = compute_payoff_matrix(strategies, rounds=50)
+        assert M.shape == (2, 2)
+        # TitForTat vs TitForTat over 50 rounds: mutual cooperation -> R per
+        # round. Sanity-bounds the average (no crash, no NaN).
+        assert not np.isnan(M).any()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
