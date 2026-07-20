@@ -1,6 +1,31 @@
 # QuantBook Execution Status
 
-## Real Outputs (from QC Cloud research_output.ipynb matching)
+> **STATUS : DEPRECATED 2026-07-20.**
+>
+> Ce fichier est **obsolete** : il pretendait classifier 45 quantbooks (8 done + 37
+> "pending") mais 37 etaient des **placeholders fabriques** (N/A) -- l'audit
+> initial etait fallacieux (cf note d'origine). Le suivi de l'etat d'execution
+> des quantbook.ipynb est maintenant **produit a la demande** par l'outil
+> programme :
+>
+>     python scripts/quantconnect/audit_quantbooks_unexec.py
+>
+> Sortie : classification HEALTHY / STOP_REPAIR_STRIPPED / PREEXISTING_UNEXEC
+> par projet, cross-reference avec `config.json` (cloud-id ALIVE/MISSING/DEAD).
+> Reference complete + tests hermetiques : `scripts/quantconnect/tests/test_audit_quantbooks_unexec.py`.
+>
+> Issue de l'outil : #6891 (8 quantbooks au scope body, sweep strip en #7447 +
+> #7462) + 9 quantbooks additionnels en bug-class `PREEXISTING_UNEXEC`
+> (BTC-ML, Crypto-MultiCanal, DL-LSTM, ML-DeepLearning, ML-TextClassification,
+> ML-XGBoost, PairsTrading, RL-Portfolio, VIX-TermStructure) qui ne sont **PAS**
+> couverts par le scope body #6891 -- a tracker dans une issue dediee.
+>
+> L'historique preserve ci-dessous est conserve **tel quel** pour memoire,
+> pas comme source de verite.
+
+---
+
+## DEPRECATED -- snapshot 2026-05-04 (preserve pour memoire)
 
 | # | Project | Cloud ID | Cells | Outputs | Status |
 |---|---------|----------|-------|---------|--------|
