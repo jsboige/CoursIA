@@ -135,6 +135,8 @@ def draw_csp_graph(variables: list, domains: dict, constraints: list,
     Args:
         variables: liste des noms de variables (noeuds).
         domains: dict variable -> liste de valeurs (affiche sous chaque noeud).
+            Peut etre ``None`` ou un dict vide (les noeuds n'affichent alors
+            pas de domaine).
         constraints: liste de paires (var1, var2) representant les aretes.
         assignment: dict optionnel variable -> valeur (met les noeuds assignes en vert).
         title: titre du graphe.
@@ -144,7 +146,29 @@ def draw_csp_graph(variables: list, domains: dict, constraints: list,
              geographique). Passer un dict explicite pour une carte geographique
              (cf. CSP-1-Fundamentals Australie : positions AIMA-compatible
              pour que NT/WA/SA/Q/NSW/V/T apparaissent a l'endroit).
+
+    Raises:
+        TypeError: si ``variables`` n'est pas iterable (None / str / bytes),
+            si ``constraints`` n'est pas iterable (None), ou si ``pos`` n'est
+            ni ``None`` ni un ``dict``.
     """
+    # ``variables`` doit etre iterable (list/tuple/set), pas None ni str/bytes.
+    if variables is None or isinstance(variables, (str, bytes)):
+        raise TypeError(
+            f"variables must be an iterable of variable names, got "
+            f"{type(variables).__name__}"
+        )
+    if constraints is None:
+        raise TypeError(
+            f"constraints must be an iterable of pairs (var1, var2), got "
+            f"{type(constraints).__name__}"
+        )
+    if pos is not None and not isinstance(pos, dict):
+        raise TypeError(
+            f"pos must be None or a dict {{variable: (x, y)}}, got "
+            f"{type(pos).__name__}"
+        )
+
     try:
         import networkx as nx
     except ImportError:
