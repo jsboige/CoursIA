@@ -37,6 +37,27 @@ from typing import Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
+# Input validation (degenerate-input guards, c.703 pattern)
+# ---------------------------------------------------------------------------
+
+def _require_str(name, value):
+    """Reject None / non-str at the boundary with a clear, actionable error.
+
+    Without this guard, ``str.split`` / ``Path / value`` / ``os.path.join``
+    crash deeper with an opaque ``TypeError`` or ``AttributeError`` that points
+    at an implementation line rather than the caller's bad argument.
+    """
+    if not isinstance(value, str):
+        raise TypeError(
+            f"{name} must be a non-empty string, got "
+            f"{type(value).__name__}: {value!r}"
+        )
+    if not value.strip():
+        raise ValueError(f"{name} must be a non-empty string, got {value!r}")
+    return value
+
+
+# ---------------------------------------------------------------------------
 # Platform detection
 # ---------------------------------------------------------------------------
 
@@ -85,6 +106,7 @@ def find_lean_project(project_name: str) -> Path:
     Raises:
         FileNotFoundError: If the project cannot be found.
     """
+    _require_str("project_name", project_name)
     starts = [Path.cwd().resolve()]
 
     # Papermill passes the notebook path as a parameter
@@ -119,7 +141,12 @@ def win_to_wsl(win_path: Path) -> str:
     Returns:
         WSL-compatible path string.
     """
-    p = win_path.resolve()
+    if not isinstance(win_path, (Path, str)):
+        raise TypeError(
+            f"win_path must be a Path or str, got {type(win_path).__name__}: "
+            f"{win_path!r}"
+        )
+    p = Path(win_path).resolve()
     drive_letter = p.drive
 
     if not drive_letter or len(drive_letter) < 2:
@@ -205,6 +232,7 @@ def run_lake(
     Returns:
         Tuple of (returncode, stdout, stderr).
     """
+    _require_str("args", args)
     if is_native_platform():
         lake = _find_lake()
         try:
@@ -248,6 +276,7 @@ def run_lean_snippet(
     Returns:
         Combined stdout + stderr as a string.
     """
+    _require_str("snippet", snippet)
     snippet = textwrap.dedent(snippet).strip() + "\n"
     tmp_file = f"/tmp/lean_{snippet_id}.lean"
 
@@ -343,6 +372,7 @@ def count_sorry(project_path: str, subdir: str = "") -> int:
         project directory cannot be read. ``0`` if the directory exists but has
         no ``.lean`` source.
     """
+    _require_str("project_path", project_path)
     search_dir = os.path.join(project_path, subdir) if subdir else project_path
     if not os.path.isdir(search_dir):
         return -1
@@ -384,6 +414,7 @@ def read_lean_module(
     Returns:
         File content as a string.
     """
+    _require_str("module_path", module_path)
     project_dir = find_lean_project(project_name)
     path = project_dir / module_path
     if not path.exists():
@@ -405,6 +436,16 @@ def display_lean_module(
         max_lines: If set, only show the first N lines.
         highlight: List of line numbers to mark with '>>>' (1-indexed).
     """
+    if highlight is not None:
+        # Accept any iterable of ints (list/tuple/set); reject non-iterables
+        # (e.g. a bare int) which would crash opaquely inside ``set(highlight)``.
+        try:
+            iter(highlight)
+        except TypeError:
+            raise TypeError(
+                f"highlight must be an iterable of ints (or None), got "
+                f"{type(highlight).__name__}: {highlight!r}"
+            )
     content = read_lean_module(project_name, module_path)
     if content.startswith("[FICHIER INTROUVABLE]"):
         print(content)
