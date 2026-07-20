@@ -83,6 +83,41 @@ Guides pédagogiques et parcours d'apprentissage.
 |---------|-------------|
 | [grothendieckian-lens.md](grothendieckian-lens.md) | Clé de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C) |
 
+## Internationalisation & Traduction (docs/i18n/, docs/translation/)
+
+Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957, #6949, parent #1650).
+
+| Fichier | Description |
+|---------|-------------|
+| [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
+| [i18n/argumentum-fork-mapping.md](i18n/argumentum-fork-mapping.md) | Cartographie fork Argumentum → CoursIA (EPIC #6949 T3) |
+| [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
+| [translation/epic-4957-status.md](translation/epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
+
+## ICT (docs/ict/)
+
+Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documentaire).
+
+| Fichier | Description |
+|---------|-------------|
+| [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
+
+## Ledgers cumulatifs (docs/ledgers/)
+
+Tables d'audit cumulatives par Epic (mandat user, format longue durée).
+
+| Fichier | Description |
+|---------|-------------|
+| [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
+
+## Suivis de cycle (docs/suivis/)
+
+Notes de suivi de cycle par série (transitions architecturales et narratives).
+
+| Fichier | Description |
+|---------|-------------|
+| [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
+
 ## Archive (docs/archive/)
 
 Documents conservés pour référence mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md).
@@ -109,6 +144,11 @@ docs/
   qc/                QuantConnect reference
   lean/              Prover itération + endpoints
   curriculum/        Parcours pédagogiques + stages
+  i18n/              Infrastructure i18n CSV-by-series (#4957, #6949)
+  translation/       Moteur de traduction T3 + état Epic (#6949, #4957)
+  ict/               Synthèses transversales IIT → ICT (#4588)
+  ledgers/           Ledgers d'audit cumulatifs par Epic (#3801)
+  suivis/            Suivis de cycle (transitions de série)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
   archive/           Documents inactifs (ex-_archives)
 ```
