@@ -292,6 +292,27 @@ class AgentExecutor(Executor):
                              f"allowing +1"),
                 )
 
+        # P2a (#7477 forensic): explicit-abandon early-exit. After the Coordinator
+        # cleared the F9 (Director consulted) + B2 (SearchAgent consulted) gates
+        # and called mark_sorry_intractable, state.intractable is True. Forensic
+        # DEMO 62 (NW L2970, a DO-NOT-TARGET line): the agent correctly refused
+        # 4× (role=intractable_blocked) but, because nothing read the flag here,
+        # the run kept looping until iteration_cap and scored no_progress — burning
+        # the whole remaining budget on a target the Coordinator had already
+        # declared unprovable. Yield now (before the Δ0 / FAIL_STREAK caps) so the
+        # run ends cleanly and _derive_result_kind classifies it correctly_refused.
+        if (self._state and getattr(self._state, "intractable", False)
+                and not msg.proof_found):
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="intractable_yield",
+                    content=(f"state.intractable set (reason="
+                             f"{getattr(self._state, 'intractable_reason', '')[:120]!r}), "
+                             f"yielding before iteration_cap"),
+                )
+            await ctx.yield_output(msg)
+            return
+
         # P1 (Epic #1453): Δ0 stagnation hard-cap. The compile tool mirrors the
         # consecutive-Δ0 count to state.consecutive_delta0_compiles and emits a
         # soft directive, but nothing enforced it — a run could compile cleanly
