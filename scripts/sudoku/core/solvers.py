@@ -92,6 +92,10 @@ def solve_sudoku(puzzle_81):
     Returns:
         (81,) int array with solution, or None if unsolvable.
     """
+    if len(puzzle_81) != 81:
+        raise ValueError(
+            f"puzzle_81 must have exactly 81 cells (9x9 grid), got {len(puzzle_81)}"
+        )
     grid = {i: _DIGITS for i in range(81)}
     for i in range(81):
         if puzzle_81[i] != 0:
@@ -107,6 +111,10 @@ def solve_sudoku(puzzle_81):
 
 def is_valid_puzzle(puzzle_81):
     """Quick check: no duplicate non-zero values in any row/col/box."""
+    if len(puzzle_81) != 81:
+        raise ValueError(
+            f"puzzle_81 must have exactly 81 cells (9x9 grid), got {len(puzzle_81)}"
+        )
     for i in range(81):
         if puzzle_81[i] == 0:
             continue
