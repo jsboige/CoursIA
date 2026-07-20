@@ -29,7 +29,9 @@ Image/
 ├── 02-Advanced/       # Modèles avancés
 ├── 03-Orchestration/  # Multi-modèles
 ├── 04-Applications/   # Production
-└── examples/          # Cas d'usage
+├── assets/            # Médias partagés (couvertures, panneaux)
+├── examples/          # Cas d'usage par domaine
+└── tutorials/         # Guides de référence (markdown)
 ```
 
 ## Progression par niveau
@@ -136,6 +138,17 @@ Applications directes par domaine : histoire-géographie (cartes, reconstitution
 | [history-geography](examples/history-geography.ipynb) | Histoire-Géographie |
 | [literature-visual](examples/literature-visual.ipynb) | Littérature |
 | [science-diagrams](examples/science-diagrams.ipynb) | Diagrammes scientifiques |
+
+### tutorials/ - Guides de référence
+
+Section transversale de guides markdown (pas de notebooks) — quatre références longues pour approfondir un aspect précis du pipeline image, à consulter après avoir pratiqué les notebooks ci-dessus :
+
+| Guide | Sujet |
+|-------|-------|
+| [dalle3-complete-guide](tutorials/dalle3-complete-guide.md) | DALL-E 3 de bout en bout — prompt engineering, exemples, retrait OpenAI et remplacement par gpt-image-1 |
+| [educational-workflows](tutorials/educational-workflows.md) | Concevoir des workflows ComfyUI orientés production pédagogique (vignettes, schémas, planches de cours) |
+| [gpt5-image-analysis-guide](tutorials/gpt5-image-analysis-guide.md) | GPT-5 Image : forces, faiblesses, structure de prompt recommandée, comparaison à gpt-image-1 |
+| [openrouter-ecosystem-guide](tutorials/openrouter-ecosystem-guide.md) | Routage multi-modèles via OpenRouter — DALL-E / GPT-5 / Stability / Recraft / BlackForest Labs selon coût et quota |
 
 ## Technologies
 
