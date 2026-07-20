@@ -16,6 +16,7 @@ from agent_framework import ToolResultCompactionStrategy
 
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
+from .p4_final_verify import _evaluate_final_verify
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
@@ -1828,10 +1829,14 @@ class AutonomousProver:
         final_verify_ok = False
         print("  Final verification build...", flush=True)
         verify_result = json.loads(tactic_tools.compile())
-        # P4: Gate on build success only (level_1_build), NOT overall "success"
-        # which includes sorry_delta check (level_2). A sorry increase from
+        # P4 fuller fix (#7477 forensic, #6790 '(b)/(c) await'): gate the
+        # build-OK verdict on the authoritative ": error:" substring contract
+        # (#6831) -- not on level_1_build alone, which is manifest/cache-
+        # sensitive (DEMO 62 L2892 2026-07-16). A sorry increase from
         # strategic decomposition must NOT trigger revert if the build passes.
-        final_verify_ok = verify_result.get("level_1_build", False)
+        # _evaluate_final_verify promotes _parse_lean_errors to primary,
+        # demotes level_1_build to secondary cross-check.
+        final_verify_ok = _evaluate_final_verify(verify_result)
         final_build_ok = final_verify_ok
         # Update final_sorry from compile result (includes implicit sorry detection)
         final_sorry = verify_result.get("sorry_count", final_sorry)
@@ -1850,7 +1855,9 @@ class AutonomousProver:
                 final_sorry = original_sorry_count
             print("  Final verification build (post-revert)...", flush=True)
             verify_result = json.loads(tactic_tools.compile())
-            final_verify_ok = verify_result.get("level_1_build", False)
+            # P4 fuller fix: same primary/subordinate split on the post-revert
+            # re-verify -- a false-negative must not force a second revert.
+            final_verify_ok = _evaluate_final_verify(verify_result)
             final_sorry = verify_result.get("sorry_count", final_sorry)
             if not final_verify_ok:
                 errors = verify_result.get("errors", [])
