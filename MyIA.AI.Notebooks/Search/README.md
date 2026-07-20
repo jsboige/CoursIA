@@ -125,7 +125,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Side track C# .NET 9 (cf. [Search-5](Part1-Foundations/Search-5-GeneticAlgorithms.ipynb), [Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb)) : reconstruire et **composer** les métaheuristiques au-dessus de GeneticSharp plutôt que d'en importer une boîte noire.
 
-La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet ; **MGS-19** prolonge la thèse « composants > métaphores » jusqu'au **démontage** — extraire l'opérateur de Metropolis du recuit simulé et l'éprouver seul sur un GA, pour vérifier que le bénéfice du recuit tient au couplage perturbation+acceptation, pas à l'acceptation seule.
+La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP), et **MGS-7b** franchit le passage à la dimension supérieure en projetant un paysage $n$-D sur la heatmap 2-D (pont vers la visualisation) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet ; **MGS-19** prolonge la thèse « composants > métaphores » jusqu'au **démontage** — extraire l'opérateur de Metropolis du recuit simulé et l'éprouver seul sur un GA, pour vérifier que le bénéfice du recuit tient au couplage perturbation+acceptation, pas à l'acceptation seule.
 
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
@@ -136,6 +136,7 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 | 5 | MGS-5 CompoundMetaheuristics | Reconstruire les composés publiés (WOA/EO/FBI) depuis leurs primitives |
 | 6 | MGS-6 Benchmarks | Comparaison honnête des composés vs GA vs Uniform vs Islands |
 | 7 | MGS-7 TSP | Grammaire agnostique à la représentation (permutation, `OrderedCrossover`) |
+| 7b | [MGS-7b LandscapeMultidim](Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb) | Projection N-D des paysages : la surcharge `RenderHeatmap(..., int dimension, ...)` projette en MAX un paysage $n$-D sur la heatmap 2-D (Sphère 2-D vs 5-D, Rastrigin $n \in \{2,5,10,30\}$, Schwefel $n \in \{5,30\}$) — pont entre MGS-6 (heatmap 2-D) et MGS-8 (LandscapeExplorer) |
 | 8 | MGS-8 LandscapeExplorer | Visualiser la surface de fitness (heatmaps, trajectoire de convergence) |
 | 9 | MGS-9 EverestRelief | Relief terrestre réel comme paysage de fitness (DEM, flipbook) |
 | 10 | MGS-10 CenterBias | Biais central vs robustesse au déplacement (banc Kudela 2022) |
