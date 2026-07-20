@@ -1,5 +1,9 @@
 # Submodule LFS bypass — worktree-based checkout sans réseau
 
+> **ARCHIVED** 2026-07-20 (c.699, owner-dispatch po-2026, See #7422 triage [#4208]).  
+> **Raison** : procedure **transiente** datee d'un seul incident (c.510 bump Argumentum `053257c7 -> 7e72f3e5`, PR #6641 MERGED 2026-07-15), **0 inbound references** sur `origin/main` (verification `git grep "submodule-lfs-bypass"` = 0 hits hors fichier lui-meme). Lecon durable dans `MEMORY.md` (L510-L6 ***). Pattern **transferable** mais **non-reference** = candidat archive par critere #7422.  
+> **Preservation** : deplacee **telle quelle** vers `docs/archive/submodule-lfs-bypass.md` (cf L686 * NEW). Contenu intact 158 lignes, byte-identity hors preamble.
+
 Procédure de matérialisation d'un submodule LFS-lourd dans un worktree **sans appel réseau** (sans `git submodule update --init`, sans `git fetch`). Applicable à toute partition (Probas, Lean `peters/`, Argument_Analysis `Argumentum`, SmartContract `foundry-lib/`) dès lors que le submodule parent a déjà été fetché sur la machine locale et que le créneau cron est court (≤ 5 min).
 
 **Source** : leçon **L510-L6 ★★★** (po-2025, c.510 — bump Argumentum `053257c7 → 7e72f3e5`, PR [#6641](https://github.com/jsboige/CoursIA/pull/6641), MERGED 2026-07-15T04:53Z). Pattern transférable cross-lane.
