@@ -513,3 +513,35 @@ class TestCrossInvariants:
         _, y, _ = sudoku_collate_fn(batch)
         assert y.min().item() >= 0
         assert y.max().item() <= 8
+
+
+# ─── Degenerate-input guard (bug-class #7551/#7544) ──────────────────
+
+
+class TestMakeBatchEdgeIndexGuard:
+    """make_batch_edge_index must reject batch_size<=0 explicitly.
+
+    Without the guard, batch_size<=0 produces an empty edges_list, and
+    torch.cat([]) crashes with an opaque ``ValueError: torch.cat(): expected
+    a non-empty list of Tensors`` far from the call site. A batch with zero
+    graphs is meaningless and masks a caller-side bug. Same degenerate-input
+    bug-class as WFC rows<=0 (#7551), Tournament repetitions<=0 (#7544),
+    stackelberg b<=0 (#7522)."""
+
+    def test_batch_size_zero_raises(self):
+        base = build_sudoku_edge_index()
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            make_batch_edge_index(base, 0)
+
+    def test_batch_size_negative_raises(self):
+        base = build_sudoku_edge_index()
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            make_batch_edge_index(base, -3)
+
+    def test_positive_batch_size_unaffected(self):
+        """The guard does not impact the normal path (batch-size-1 invariant)."""
+        base = build_sudoku_edge_index()
+        batched = make_batch_edge_index(base, 1)
+        assert torch.equal(batched, base)
+        batched_2 = make_batch_edge_index(base, 2)
+        assert batched_2.shape[1] == base.shape[1] * 2
