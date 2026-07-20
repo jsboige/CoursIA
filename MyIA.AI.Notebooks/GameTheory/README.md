@@ -36,7 +36,7 @@ Au-delà de la théorie classique, cette série couvre les **applications contem
 
 1. **Modéliser** une interaction stratégique sous forme normale ou extensive, et y lire dominance, meilleure réponse, ensembles d'information et menaces crédibles
 2. **Calculer** des équilibres : Nash pur et mixte (Lemke-Howson), minimax et dualité LP, équilibre parfait en sous-jeux
-3. **Simuler** des dynamiques d'apprentissage : tournois Axelrod, replicator dynamics, CFR/Deep CFR, NFSP/PSRO
+3. **Simuler** des dynamiques d'apprentissage et d'évolution : tournois Axelrod, **processus de Moran (stochastic finite-population fixation)**, replicator dynamics, CFR/Deep CFR, NFSP/PSRO
 4. **Analyser** la coopération : Shapley, Core, Bondareva-Shapley ; concevoir un mécanisme incitatif (révélation, VCG)
 5. **Raisonner** sur l'agrégation collective : Arrow, Sen, Condorcet/Borda/Copeland, encodage SAT/Z3
 6. **Formaliser** ces résultats en Lean 4 — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow
@@ -47,7 +47,7 @@ Les figures qui ponctuent ce parcours sont extraites des sorties réelles des no
 
 ### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~8h30)
 
-Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
+Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics) **et l'exécution effective du processus de Moran stochastique** (cf. [#7594](https://github.com/jsboige/CoursIA/pull/7594) Prong-B) : la dynamique de population FINIE en Axelrod diverge souvent de l'intuition mean-field, et le drift génétique peut fixer des stratégies sous-optimales (Defector 28 % / Grudger 24 % / TitForTat 12 % sur 25 graines). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
 ![Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.](assets/readme/gt1-setup.png)
 
@@ -80,6 +80,28 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 ![Apprentissage multi-agent sur Pierre-Feuille-Ciseaux : à gauche l'exploitabilité (le self-play naïf oscille, le fictitious play décroît), à droite les fréquences convergent vers le Nash uniforme.](assets/readme/gt17-marl.png)
 
 *`GameTheory-17-MultiAgent-RL` — deux dynamiques d'apprentissage sur Pierre-Feuille-Ciseaux. À gauche (échelle log), le self-play naïf reste exploitable en oscillant, tandis que le fictitious play voit son exploitabilité décroître régulièrement. À droite, les fréquences Rock/Paper/Scissors du fictitious play convergent vers le Nash uniforme (1/3, 1/3, 1/3, pointillé) — la convergence de Robinson (1951) en action.*
+
+### Au-delà du round-robin : processus de Moran en population FINIE (GameTheory-6)
+
+La cellule 39 du notebook `GameTheory-6-EvolutionTrust` nomme explicitement la **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al. *JORS* 2016) comme capacité écologique distinctive, et affirme que « *TitForTat domine surtout dans les formats Moran / écologiques* ». Avant la PR [#7594](https://github.com/jsboige/CoursIA/pull/7594) (2026-07-20, commit `95fef165e5`), cette affirmation n'avait **jamais été exécutée** sur le notebook : seule la cellule 38 (round-robin déterministe) tournait. C'est exactement le **Prong-B** identifié par EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) — une capacité nommée sans être head-to-head validée.
+
+**Ce que la PR #7594 a first-hand exécuté** (cellules 40-41 du notebook) :
+
+| Stratégie | Fixations sur 25 graines (axe 2 % = barre de fréquence) |
+|---|---|
+| **Defector** | **7/25 (28 %)** — single-trajectory seed=42 |
+| **Grudger** | 6/25 (24 %) |
+| Win-Stay Lose-Shift | 4/25 (16 %) |
+| Random (p=0,5) | 3/25 (12 %) |
+| **Tit For Tat** | **3/25 (12 %)** — loin du « toujours domine » |
+| Cooperator | 2/25 (8 %) |
+
+**Pourquoi cette section manquait avant** : la dynamique de Moran est une dynamique **stochastique** sur une population FINIE — chaque étape copie un joueur proportionnellement à son fitness, puis élimine un joueur uniformément au hasard. L'argument du round-robin (où Grudger et TitForTat dominent) ne s'applique pas tel quel : la **dérive génétique** (genetic drift) peut fixer une stratégie sous-optimale simplement par fluctuation d'échantillonnage, indépendamment de son fitness. C'est la distinction canonique entre replicator dynamics **mean-field déterministe** (§5 du notebook) et Moran **fini stochastique** (§7bis).
+
+**À retenir** :
+1. **Population FINIE ≠ champ moyen.** Le passage à la limite $N \to \infty$ du Moran process converge vers le replicator dynamics, mais à $N$ fini (typiquement 3-100 en écologie/comportement/biological evolution), le bruit d'échantillonnage domine quand $|f_A - f_B| \lesssim 1/N$ — d'où la victoire du Defector pur (fitness intermédiaire mais gagnée par drift) sur TitForTat (fitness plus élevée, fixée moins souvent).
+2. **Head-to-head obligatoire.** Nommer un mécanisme sans l'exécuter produit des assertions invérifiables (Prong-B fondateur #3801). Le notebook 6 après #7594 cite le Moran process *avec sa sortie réelle* — Defector 28 %, TitForTat 12 % — et explicite pourquoi l'intuition « moraliste » du IPD round-robin ne survit pas au passage en population FINIE.
+3. **Cross-fertilisation écologique.** Le Moran process est l'outil de référence en evolutionary game theory (Nowak 2006 *Evolutionary Dynamics*) — bien plus qu'un gadget. Sans cette capacité, le notebook 6 reste aveugle à 60 % de la littérature post-Axelrod.
 
 ## Progression recommandée
 
@@ -169,7 +191,7 @@ flowchart TD
 | 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5 (C#) | [GameTheory-5-ZeroSum-Minimax-Csharp](GameTheory-5-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
 | 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
-| 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, replicator dynamics | 65 min |
+| 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, **processus de Moran stochastique (fixation finie, 25 graines)** [#7594], replicator dynamics | 65 min |
 | 6 (C#) | [GameTheory-6-EvolutionTrust-Csharp](GameTheory-6-EvolutionTrust-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : **moteur IPD + tournoi Axelrod + replicator dynamics from-scratch** (BCL .NET 9, 0 NuGet), 7 stratégies (TitForTat/Grudger/Pavlov/...), Euler ODE (See #4956) | 55 min |
 | 6c | [GameTheory-6c-RepeatedGames-FolkTheorem](GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 | 6c (C#) | [GameTheory-6c-RepeatedGames-FolkTheorem-Csharp](GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
@@ -235,6 +257,8 @@ flowchart TD
 | **Valeur de Shapley** | Répartition équitable des gains en jeu coopératif |
 | **Core** | Ensemble des allocations stables en jeu coopératif |
 | **Théorème d'Arrow** | Impossibilité d'agrégation parfaite des préférences |
+| **Processus de Moran** | Dynamique stochastique d'évolution en population FINIE (Axelrod) — fixation d'une stratégie par dérive génétique, distincte du replicator déterministe mean-field |
+| **Stochastic finite-population fixation** | À population finie, le bruit d'échantillonnage peut fixer des stratégies sous-optimales (Defector 28 % sur 25 graines Moran, alors qu'il est dominé en round-robin) |
 
 ## Ce que chaque notebook apporte
 
@@ -249,7 +273,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 3 | Topology2x2 | Classification géométrique des 144 jeux 2x2 (Robinson-Goforth) |
 | 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
 | 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
-| 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, replicator dynamics, émergence coopération |
+| 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, **processus de Moran (stochastic fixation finie vs replicator mean-field)** [#7594], émergence coopération |
 | 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : Folk Theorem (horizon fini vs infini), condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, comparaison grim trigger vs tit-for-tat (seuil de patience), ensemble faisable et IR |
 | 7 | ExtensiveForm | Arbres de jeu, ensembles d'information, stratégies comportementales |
 | 8 | CombinatorialGames | Positions P/N, Nim, Grundy values, théorème Sprague-Grundy |
@@ -300,7 +324,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 - **Marchés d'appariement** (notebooks 15 et 16) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au cœur de l'affectation des étudiants aux écoles (New York, Boston), des internes aux hôpitaux (NRMP), et des dons d'organes par échanges croisés ; prix Nobel d'économie 2012 (Roth & Shapley).
 - **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis à Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
 - **Systèmes de vote et gouvernance** (sous-série SocialChoice) — le théorème d'Arrow et les méthodes de Condorcet/Borda éclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
-- **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair.
+- **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod, les dynamiques de replication (replicator mean-field déterministe) **et le processus de Moran stochastique (population FINIE)** modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair. La fixation observée dans une population Moran réelle diverge souvent de l'optimum mean-field (Defector bat TitForTat 28 % vs 12 % sur 25 graines, [#7594](https://github.com/jsboige/CoursIA/pull/7594)).
 - **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
