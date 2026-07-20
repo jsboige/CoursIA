@@ -154,3 +154,69 @@ def test_find_solution_path_returns_chain_to_solution():
 def test_draw_search_tree_single_node():
     fig = sh.draw_search_tree(sh.SearchTreeNode("only"))
     assert fig is not None
+
+
+# --- draw_csp_graph: degenerate-input guards (c.704) -------------------------
+
+class TestDrawCspGraphDegenerateInputGuard:
+    """``draw_csp_graph`` must reject degenerate inputs up-front instead of
+    crashing deeper in the pipeline with opaque TypeErrors.
+
+    Bug class is the same as ``draw_search_tree`` (c.703) and the WFC entry
+    points (#7551, #7553): public entry points that crash silently with an
+    opaque exception when the caller passes ``None`` for a required parameter,
+    rather than raising a clear, actionable ``TypeError`` from the boundary.
+    """
+
+    def test_variables_none_raises_typeerror(self):
+        """``variables=None`` used to crash on ``nx.Graph.add_nodes_from(None)``."""
+        with pytest.raises(TypeError, match="variables must be an iterable"):
+            sh.draw_csp_graph(None, {}, [])
+
+    def test_variables_string_raises_typeerror(self):
+        """A bare string is iterable per character -- reject to avoid ambiguity
+        (the caller probably meant a single variable, not a list of chars).
+        """
+        with pytest.raises(TypeError, match="variables must be an iterable"):
+            sh.draw_csp_graph("WA", {}, [])
+
+    def test_variables_bytes_raises_typeerror(self):
+        """Same rationale as ``str``."""
+        with pytest.raises(TypeError, match="variables must be an iterable"):
+            sh.draw_csp_graph(b"WA", {}, [])
+
+    def test_constraints_none_raises_typeerror(self):
+        """``constraints=None`` used to crash on ``for c in None``."""
+        with pytest.raises(TypeError, match="constraints must be an iterable"):
+            sh.draw_csp_graph(["A", "B"], {}, None)
+
+    def test_pos_non_dict_raises_typeerror(self):
+        """``pos='invalid'`` used to crash on ``pos[v] = fallback[v]`` (str)."""
+        with pytest.raises(TypeError, match="pos must be None or a dict"):
+            sh.draw_csp_graph(["A"], {}, [], pos="invalid")
+
+    def test_valid_inputs_unaffected(self):
+        """The guards must not perturb the happy path: a small CSP with a
+        geographic ``pos`` (the Australia use-case from CSP-1-Fundamentals)
+        still renders a figure.
+        """
+        pos = {"WA": (0, 1), "NT": (1, 2), "SA": (1, 1)}
+        fig = sh.draw_csp_graph(
+            ["WA", "NT", "SA"],
+            {"WA": ["red"]},
+            [("WA", "NT"), ("NT", "SA")],
+            pos=pos,
+        )
+        assert fig is not None
+
+    def test_variables_empty_list_still_renders(self):
+        """An empty ``variables`` list is a valid degenerate-but-bounded input
+        -- the caller may want an empty graph. Do NOT reject.
+        """
+        fig = sh.draw_csp_graph([], {}, [])
+        assert fig is not None
+
+    def test_constraints_empty_list_still_renders(self):
+        """An empty ``constraints`` list is valid (no edges)."""
+        fig = sh.draw_csp_graph(["A", "B"], {}, [])
+        assert fig is not None
