@@ -1065,6 +1065,12 @@ class MultiAgentSorryProver:
             # right thing by refusing, it did not just spin to iteration_cap.
             "intractable": getattr(state, "intractable", False),
             "intractable_reason": getattr(state, "intractable_reason", None),
+            # P5a (#7477 forensic): latched in TacticTools.compile() via
+            # tools._is_heartbeat_timeout. Surfaced so _derive_result_kind
+            # classifies the run heartbeat_budget_exceeded (distinct from
+            # no_progress) — the target needs a cheaper tactic / higher
+            # maxHeartbeats / decomposition, NOT more iterations.
+            "heartbeat_budget_exceeded": getattr(state, "heartbeat_budget_exceeded", False),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
@@ -1957,6 +1963,12 @@ class AutonomousProver:
             # NOT `no_progress` / `structural_progress` — it must be filtered out
             # of progress metrics.
             "provider_outage": _provider_dead,
+            # P5a (#7477 forensic): latched in TacticTools.compile() via
+            # tools._is_heartbeat_timeout. Surfaced so _derive_result_kind
+            # classifies the run heartbeat_budget_exceeded (distinct from
+            # no_progress) — the target needs a cheaper tactic / higher
+            # maxHeartbeats / decomposition, NOT more iterations.
+            "heartbeat_budget_exceeded": getattr(state, "heartbeat_budget_exceeded", False),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (boolean success
