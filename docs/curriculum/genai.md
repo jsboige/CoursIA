@@ -4,6 +4,8 @@
 
 Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocale, génération musicale, vidéo, et orchestration de modèles. Inclut les workflows Vibe-Coding et les pipelines de production.
 
+**Last reviewed**: 2026-07-20
+
 ## Statistiques
 
 | Métrique | Valeur |

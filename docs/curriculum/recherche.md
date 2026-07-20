@@ -4,6 +4,8 @@
 
 Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information intégrée (IIT), reinforcement learning avancé, théorie des jeux (OpenSpiel). Pour étudiants en master/recherche.
 
+**Last reviewed**: 2026-07-20
+
 ## Statistiques
 
 | Métrique | Valeur |
