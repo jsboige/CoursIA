@@ -39,10 +39,10 @@ La sortie du whack-a-mole #2876 repose sur 4 rôles complémentaires (un outil c
 
 | Rôle | Outil | Classe couverte | Statut |
 |------|-------|-----------------|--------|
-| **CURE** (defense-by-construction) | `restore_accents_canonical.py` | Applique les accents en préservant casse + structure + cibles de liens | PR #7186 (revue, merge-ready après fix blank-line commit `a88090ad1`) |
+| **CURE** (defense-by-construction) | `restore_accents_canonical.py` | Applique les accents en préservant casse + structure + cibles de liens | PR #7186 **MERGÉ** |
 | **GATE identifiants** | `check_identifier_regression.py` | Identifier-over-reach (code) | PR #7157 **MERGÉ** |
-| **GATE caps** | `check_caps_regression.py` / `detect_caps_regression.py` | Caps-regression (markdown prose) | PR #7197 / #7198 (revue, arbitrage ai-01 ; #7198 subsume #7197, 41 tests) |
-| **GATE link-targets** | `detect_link_target_regression.py` | Link-target regression (cibles de liens `](…)`) | PR #7210 (revue, firsthand-validé 17/17 tests) |
+| **GATE caps** | `check_caps_regression.py` / `detect_caps_regression.py` | Caps-regression (markdown prose) | PR #7198 **MERGÉ** (#7197 CLOSED) |
+| **GATE link-targets** | `detect_link_target_regression.py` | Link-target regression (cibles de liens `](…)`) | PR #7210 **MERGÉ** |
 
 **Workflow recommandé** pour une PR d'accents : générer la cure via `restore_accents_canonical.py` (passe les gates par construction), puis les gates #7157 (identifiants) + caps + #7210 (link-targets) confirment. Ne **jamais** générer une cure via un script ad-hoc — c'était la cause racine de chaque régression #2876 répétée.
 

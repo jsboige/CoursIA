@@ -1,11 +1,13 @@
 # Table de parité cross-série — notebooks Python ⇄ .NET
 
-> **Statut** : document de **cartographie** créé le 2026-07-03 (PR po-2023 C202) en
-> contribution à l'EPIC **#4956** « Parité .NET ⇄ Python des séries de notebooks ».
-> Source : audit narratif #5081 (PR #5171) + cross-check avec `docs/reference/`
+> **Statut (2026-07-20)** : document de **cartographie** créé le 2026-07-03 (PR po-2023 C202) en
+> contribution à l'EPIC **#4956** « Parité .NET ⇄ Python des séries de notebooks »
+> (saturation substantielle atteinte au cycle ~c.610 — cf MEMORY L870-L1 cycle context).
+> Source : audit narratif #5081 (PR #5171 **CLOSED** 2026-07-03) + cross-check avec `docs/reference/`
 > inventaires (kernels-runtime, common-commands, regles-vigilance-detail).
 > **Pas une cible exhaustive** — inventaire **rapide** à affiner par les owners
-> de chaque série (cf sections « owners pressentis »).
+> de chaque série (cf sections « owners pressentis »). Rafraîchi c.755 (cycle #7422)
+> pour aligner les statuts PR (#5171 CLOSED, EPIC #4956 saturé) sans changer le fond.
 
 ---
 
@@ -117,7 +119,7 @@ couvrant ≈25 séries/sous-séries.
 
 - **#4956** — EPIC Parité .NET ⇄ Python (consommateur principal)
 - **#5081** — EPIC Renumérotation narrative des séries (audit C201, PR #5171)
-- **#5171** — PR audit #5081 (livrée C201, en attente merge ai-01)
+- **#5171** — PR audit #5081 (CLOSED 2026-07-03 — clôture de l'EPIC)
 - **#3801** — EPIC SOTA ledger (vrai outil, pas workaround dégradé)
 - **#4667** — Tweety IKVM (jurisprudence du levier)
 - **#1621** — Consolidation QC
