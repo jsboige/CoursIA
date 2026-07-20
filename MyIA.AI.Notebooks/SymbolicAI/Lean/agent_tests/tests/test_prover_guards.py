@@ -2453,6 +2453,125 @@ def test_transient_backoff_is_exponential_capped():
     assert _transient_backoff_s(20) == TRANSIENT_RETRY_BACKOFF_CAP_S
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# _is_transient_error structured-status + bare-network branches (#7477 audit)
+#
+# The existing tests above cover the wrapped-message markers (the #5869
+# `service failed` gap) and the 4xx-on-wrapped-error guard. The classifier's
+# FIRST branch -- a structured integer `status_code` attribute on the
+# exception or a nested `.response` (the httpx/openai shape) -- had no direct
+# coverage, nor did the bare network-exception fall-through (ConnectionError /
+# ConnectionResetError with no status code). These pin that branch so a future
+# reorder of the checks cannot silently regress retry-vs-skip behavior.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_structured_5xx_status_is_transient():
+    """An exception exposing an integer status_code in the 5xx range is
+    transient via the first branch (no string inspection needed)."""
+    from prover.workflow import _is_transient_error
+
+    class _HTTP5xx(Exception):
+        status_code = 503
+
+    assert _is_transient_error(_HTTP5xx("anything")) is True
+
+
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+def test_structured_5xx_status_each_code(status):
+    """Every 5xx code in the transient set classifies as transient."""
+    from prover.workflow import _is_transient_error
+
+    class _Err(Exception):
+        pass
+
+    _Err.status_code = status
+    assert _is_transient_error(_Err("x")) is True
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 404, 422])
+def test_structured_4xx_status_is_not_transient(status):
+    """Any 4xx status code is NOT transient (config/client bug, retrying is
+    waste) -- this is the structured mirror of the 4xx string guard."""
+    from prover.workflow import _is_transient_error
+
+    class _Err(Exception):
+        pass
+
+    _Err.status_code = status
+    assert _is_transient_error(_Err("x")) is False
+
+
+def test_nested_response_status_code_is_inspected():
+    """httpx-style errors carry the status on a nested `.response` attribute;
+    the classifier probes both the exception and `.response`."""
+    from prover.workflow import _is_transient_error
+
+    class _Resp:
+        status_code = 502
+
+    class _HTTPErr(Exception):
+        response = _Resp()
+
+    assert _is_transient_error(_HTTPErr("bad gateway")) is True
+
+
+def test_bare_connection_error_is_transient():
+    """A ConnectionError with no status code falls through to message
+    inspection; 'connection refused' is a transient marker."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(ConnectionError("connection refused")) is True
+
+
+def test_bare_connection_reset_error_is_transient():
+    """ConnectionResetError surfaces as 'connection reset' -- transient."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(ConnectionResetError("connection reset by peer")) is True
+
+
+def test_read_timeout_message_is_transient():
+    """A generic read-timeout message (no status) is transient via the
+    'read timeout' / 'timed out' marker."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(TimeoutError("read timeout")) is True
+
+
+def test_4xx_substring_guard_beats_timeout_marker():
+    """Priority: if a message contains BOTH a 4xx pattern and a transient
+    marker, the 4xx guard wins (NOT retried). Regression guard for the check
+    order in _is_transient_error (4xx guard runs before transient_markers)."""
+    from prover.workflow import _is_transient_error
+
+    # 'timed out' is a transient marker, but ' 404 ' / 'not found' wins.
+    assert _is_transient_error(
+        RuntimeError("request timed out: 404 not found")) is False
+    assert _is_transient_error(
+        RuntimeError("request timed out 404 ")) is False
+
+
+def test_4xx_parenthesised_is_a_known_gap_not_caught():
+    """Known gap (documented, not a bug): the 4xx guard matches the patterns
+    ' 404', '404 ', 'not found'... but NOT a bare parenthesised '(404)' with no
+    surrounding space. A timeout message that wraps '(404)' therefore classifies
+    as transient (retried). This pins the current behaviour so a future widening
+    of the guard to catch '(404)' is a deliberate, visible change."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(
+        RuntimeError("request to /v1/x timed out (404)")) is True
+
+
+def test_plain_value_error_is_not_transient():
+    """A ValueError with no network/status signal is NOT transient (avoids
+    retrying a programming bug)."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(ValueError("invalid argument")) is False
+
+
 def test_provider_failure_refunds_iteration_and_counts(no_sleep):
     """A single failed provider hop refunds the iteration it incremented and
     bumps the failure counters — the budget is NOT burned by a transport error."""
