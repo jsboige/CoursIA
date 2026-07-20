@@ -28,7 +28,17 @@ def centipede_payoffs(n_rounds: int,
 
     Returns:
         List of (defector_payoff, other_payoff) at each node
+
+    Raises:
+        ValueError: if ``n_rounds <= 0`` (a centipede game needs at least one
+            decision node; ``n_rounds * 2`` drives ``range()`` and a non-positive
+            count silently collapses the game to the single terminal node,
+            masking the caller error).
     """
+    if n_rounds <= 0:
+        raise ValueError(
+            f"n_rounds must be positive (at least one decision node), got {n_rounds}"
+        )
     payoffs = []
     pot = 1.0
 

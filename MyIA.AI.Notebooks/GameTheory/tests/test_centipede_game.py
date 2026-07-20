@@ -95,6 +95,31 @@ class TestCentipedePayoffs:
         assert p[5] == pytest.approx((48.0, 16.0))
         assert p[-1] == pytest.approx((32.0, 32.0))
 
+    def test_zero_rounds_raises(self):
+        """n_rounds=0 -> before the guard, ``range(0)`` ran no iterations and
+        the function silently returned a single ``[(0.5, 0.5)]`` terminal node
+        — a game with NO decision nodes, masking the caller error. Now raises.
+
+        Same degenerate-input bug-class as the sibling ``train(iterations<=0)``
+        guards (#7489 kuhn_poker_cfr, #7524 FictitiousPlay) and the
+        ``rounds<=0`` guards (#7513 compute_payoff_matrix): a non-positive
+        count drives ``range()`` and collapses the loop to a silent no-op.
+        """
+        with pytest.raises(ValueError, match="n_rounds must be positive"):
+            centipede_payoffs(0)
+
+    def test_negative_rounds_raises(self):
+        """n_rounds<0 -> ``range(n_rounds*2)`` empty (absurd negative count),
+        silently returned ``[(0.5, 0.5)]`` before the guard."""
+        with pytest.raises(ValueError, match="n_rounds must be positive"):
+            centipede_payoffs(-3)
+
+    def test_positive_rounds_unaffected(self):
+        """The guard does not impact the normal path (node-count invariant)."""
+        for n in (1, 2, 5):
+            p = centipede_payoffs(n)
+            assert len(p) == 2 * n + 1
+
 
 # ----------------------------------------------------------------------------
 # backward_induction -- the centipede paradox: SPE is Take at node 0.
