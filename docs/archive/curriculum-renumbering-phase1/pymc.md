@@ -1,3 +1,7 @@
+> **ARCHIVED 2026-07-20** — Verdict **no-defect-found** (no-renumber) figé (cf PR #6885). EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.674 [PR #7426](https://github.com/jsboige/CoursIA/pull/7426) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). Superseded by EPIC #5081 closure. *Archivé par : po-2025 (lane CoursIA-2, c.748) — `See` partiel dispatch triage c.674 UPDATE/ARCHIVE catégorie, suite logique c.676 PR #7436.*
+
+> **Note archive** : les liens internes vers `[Probas/Infer](infer-renumbering-phase1.md)` et `[Search](search-renumbering-phase1.md)` (L3 ci-dessous) référencent les paths d'origine `docs/curriculum/`. Ces fichiers ont été co-archivés en même temps (cf subdir `docs/archive/curriculum-renumbering-phase1/`). Le doc est preserved verbatim (transient historique) ; les liens sont volontairement non corrigés pour ne pas altérer le contenu original daté.
+
 # Probas/PyMC — phase 1 : analyse de cohérence narrative (#5081)
 
 Troisième série analysée pour l'EPIC #5081 (après [Probas/Infer](infer-renumbering-phase1.md)

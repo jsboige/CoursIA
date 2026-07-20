@@ -38,7 +38,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | investigation-mcp-nuget/ | 26 fichiers d'investigation MCP Jupyter / NuGet / .NET Interactive | [INDEX.md](investigation-mcp-nuget/INDEX.md) |
 | genai/ | 13+ fichiers infrastructure GenAI detaillee | [README.md](genai/README.md) |
 | suivis/genai-image/ | 8 fichiers + 4 repertoires de phases (ComfyUI/Qwen) | [INDEX.md](suivis/genai-image/INDEX.md) |
-| curriculum-renumbering-phase1/ | 2 fichiers GenAI (Texte, Video) — analyses phase-1 #5081 verdict NO-RENUMBER archivées 2026-07-19 (c.676) | — |
+| curriculum-renumbering-phase1/ | 5 fichiers (Texte, Video, Infer, PyMC, Search) — analyses phase-1 #5081 verdict NO-RENUMBER archivées 2026-07-19 (c.676 GenAI Texte+Video) + 2026-07-20 (c.748 Probas/Infer, Probas/PyMC, Search) ; reste Planners à dispatcher (po-2026 owner, anti-contamination L420) | — |
 | ledgers-reviews/ | 54 fichiers sweeps §H.4/B/D datés PM transiente (juillet 2026) — verdicts EXEC_PROVED datés préservés verbatim, archivés 2026-07-19 (c.736) | — |
 
 ## Issue de reference

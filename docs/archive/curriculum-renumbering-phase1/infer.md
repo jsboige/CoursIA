@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-20** — Verdict **NO-RENUMBER** figé (cf PR #6879). EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.674 [PR #7426](https://github.com/jsboige/CoursIA/pull/7426) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). Superseded by EPIC #5081 closure. *Archivé par : po-2025 (lane CoursIA-2, c.748) — `See` partiel dispatch triage c.674 UPDATE/ARCHIVE catégorie, suite logique c.676 PR #7436.*
+
 # #5081 — Probas/Infer : analyse de renumérotation (phase 1, docs-only)
 
 > **EPIC #5081** — Renumérotation narrative des séries. **Fille issue Probas/Infer.**
