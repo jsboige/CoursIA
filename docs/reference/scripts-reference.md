@@ -147,20 +147,20 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 
 ## Tests — `scripts/tests/` + `scripts/notebook_tools/tests/`
 
-46 fichiers de test dans `scripts/tests/`, 1729 tests au total (pytest). Couverture par domaine :
+`scripts/tests/` regroupe **51 fichiers** de test (1303 tests) ; `scripts/notebook_tools/tests/` en regroupe **81** (2049 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **3354 tests au total** (snapshot `pytest --collect-only` 2026-07-20). Couverture de `scripts/tests/` par domaine :
 
 | Domaine | Fichiers | Modules couverts |
 | ------- | -------- | --------------- |
-| **notebook_tools/** | 14 | CLI principal (notebook_tools.py pure fn), helpers, skeleton, lint, catalogue (generate/expand/verify/coverage), qualite C.1/C.2/C.3, leak detection, forensic, execution (exec_single_cell, wsl_papermill, batch_reexecute, execute_qcpy_docker), enrich, reporting |
-| **genai-stack/** | 8 | config.py, commands/validate.py, commands/audio_apis.py, commands/models.py, commands/notebooks.py, commands/auth.py, core/comfyui_client.py, core/auth_manager.py |
-| **sudoku/core/** | 5 | solvers.py (Norvig CSP), graph.py (edge index), dataset.py (parse_81 + collate_fn), generation.py (grid + puzzles), models.py (SudokuRRN + count_params). evaluate.py = GPU-only, non CPU-testable |
-| **top-level scripts/** | 7 | fix_robust_dotenv.py, extract_pptx_titles.py, extract_slidev_titles.py, validate_pr_notebooks.py, weekly_digest.py, validate_sc_notebooks.py, epita_prcon_autograde.py |
-| **datasets/** | 2 | stitch_crypto.py, build_panier_anti_bias.py |
-| **autres** | 10 | validate_qc_projects.py, series_progress_manager.py, update_navigation.py, scan_student_forks.py, catalog_coverage.py, qc_classify.py, forensic_scan.py, generate_parcours.py, check_c2_compliance.py, verify_catalog_readme.py |
+| **genai-stack/** | 9 | config.py, commands/{validate,audio_apis,models,notebooks,auth,gpu}.py, core/{comfyui_client,auth_manager}.py, models.py |
+| **sudoku/** | 9 | core/{solvers,graph,dataset,generation,models,training,evaluate}.py, sudoku_rrn, sudoku_solvers (evaluate.py = GPU-only, partiellement couvert) |
+| **smartcontracts/** | 2 | validate_sc_notebooks.py |
+| **extract-titles (top-level)** | 4 | extract_pptx_titles.py, extract_slidev_titles.py, extract_titles.py, extract_readme_figures.py |
+| **ml/** | 1 | garch_baseline |
+| **autres (top-level + misc)** | 26 | check_docs_links, convert_print_to_deploy, regen_quarto_render, render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
 
 Lancer la suite : `python -m pytest scripts/tests/ -v` (depuis la racine du repo).
 
-Modules genai-stack non testes (intentionnellement) : commands/docker.py (subprocess Docker), commands/gpu.py (nvidia-smi subprocess), commands/quant.py (API externe).
+Modules genai-stack non testes (intentionnellement) : commands/docker.py (subprocess Docker), commands/quant.py (API externe).
 
 ## Voir aussi
 
