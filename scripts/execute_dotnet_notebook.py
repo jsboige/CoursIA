@@ -8,6 +8,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from queue import Empty as QueueEmpty
 from jupyter_client import KernelManager
 
 def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
@@ -93,6 +94,11 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                 outputs = []
                 has_error = False
                 error_msg = None
+                # Set True when the iopub loop broke on a timeout (no idle
+                # message arrived within `timeout`). Distinguished from
+                # `has_error` (a real execute error) so the post-loop success
+                # accounting does not count a timed-out cell as successful.
+                timed_out = False
 
                 while True:
                     try:
@@ -142,22 +148,42 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                             print(f"  ERROR: {error_msg}")
 
                     except Exception as e:
-                        if 'timeout' in str(e).lower():
+                        # jupyter_client's get_iopub_msg raises queue.Empty when
+                        # no message arrives within `timeout`. The previous
+                        # `str(e).lower()` check never matched: str(QueueEmpty())
+                        # is the empty string '', so the branch was dead by
+                        # construction and the timeout surfaced as an empty
+                        # error message via the outer handler. Detect the actual
+                        # type (QueueEmpty) and ALSO keep a string fallback for
+                        # any other exception whose message mentions a timeout.
+                        is_timeout = isinstance(e, QueueEmpty) or (
+                            'timeout' in str(e).lower())
+                        if is_timeout:
                             print(f"  TIMEOUT after {timeout}s")
                             cell_result['error'] = f'Timeout after {timeout}s'
                             results['errors'] += 1
+                            timed_out = True
                             break
                         raise
 
                 # Save outputs to cell
                 cell['outputs'] = outputs
 
-                cell_result['success'] = not has_error
+                # A cell is successful only if the kernel went idle (the iopub
+                # loop ended via the idle break, not a timeout) with no execute
+                # error. Previously `not has_error` alone reported a timed-out
+                # cell as successful while it was ALSO counted in `errors` --
+                # a timed-out cell must be neither successful nor double-counted.
+                cell_result['success'] = not has_error and not timed_out
                 cell_result['output'] = outputs
 
-                if has_error:
-                    results['errors'] += 1
-                    cell_result['error'] = error_msg or 'Unknown error'
+                if has_error or timed_out:
+                    # `errors` was already incremented for a timeout (inside
+                    # the except branch); only increment here for a real
+                    # execute error to avoid double-counting.
+                    if has_error:
+                        results['errors'] += 1
+                        cell_result['error'] = error_msg or 'Unknown error'
                 else:
                     results['successful'] += 1
                     print(f"  SUCCESS ({len(outputs)} output(s))")
