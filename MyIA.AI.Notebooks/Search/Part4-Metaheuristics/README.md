@@ -2,7 +2,7 @@
 
 [↑ Série Search](../README.md) | [← Partie 3 : Recherche avancée](../Part3-Advanced/README.md) | [Notebooks MGS →](MGS-1-Introduction.ipynb)
 
-Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Dix-neuf notebooks .NET Interactive (C#) en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
+Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Vingt notebooks .NET Interactive (C#) en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 
 L'arc part de la grammaire fluente (composition, MGS-1..5), caractérise les biais de l'optimiseur (centrage MGS-10, rotation MGS-12, synergie d'îles MGS-11/14), puis culmine sur le **No-Free-Lunch** : quatre capstones réunissent ses réponses classiques — mesurer le paysage (MGS-15), sélectionner l'algorithme (MGS-16), contrôler le paramètre pendant la course (MGS-17), éprouver le tout sur le banc CEC standard shift+rotate combiné (MGS-18) — avant un **démontage** : MGS-19 débranche l'opérateur de recuit du compound SA et l'éprouve isolé, montrant qu'un composant *fonctionne* détaché mais ne porte pas seul le bénéfice du tout.
 
@@ -43,7 +43,7 @@ MetaGeneticSharp vise le point que les autres n'occupent pas : **l'expressivité
 
 ## Notebooks
 
-Cette partie se compose de dix-neuf notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
+Cette partie se compose de vingt notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
 
 | # | Notebook | Concept clé | Primitives introduites | Durée |
 |---|----------|-------------|------------------------|-------|
@@ -54,6 +54,7 @@ Cette partie se compose de dix-neuf notebooks .NET Interactive (C#), hébergés 
 | 5 | [MGS-5-CompoundMetaheuristics](MGS-5-CompoundMetaheuristics.ipynb) | Reconstruire les composés publiés (WOA/EO/FBI) | `MetaHeuristicsService`, `WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, factory `CreateMetaHeuristicByName` | ~50 min |
 | 6 | [MGS-6-Benchmarks](MGS-6-Benchmarks.ipynb) | Comparaison honnête | `KnownFunctions`, composé WOA vs Uniform vs Islands | ~50 min |
 | 7 | [MGS-7-TSP](MGS-7-TSP.ipynb) | Grammaire agnostique à la représentation | `TspFitness`, `OrderedCrossover`, permutation + `Islands` | ~45 min |
+| 7b | [MGS-7b-LandscapeMultidim](MGS-7b-LandscapeMultidim.ipynb) | Projection N-D des paysages (voir en dimension ≥ 5) | surcharge `RenderHeatmap` N-D de `KnownFunctionLandscape`, projection MAX sur les coordonnées cachées (opérateur Gtk# verbatim) ; Sphere 2-D vs 5-D, Rastrigin n=2/5/10/30, Schwefel n=5/30 | ~30 min |
 | 8 | [MGS-8-LandscapeExplorer](MGS-8-LandscapeExplorer.ipynb) | Visualiser la surface de fitness | heatmaps PNG graphiques, 3 modes (fonction / carte d'altitude / image), trajectoire de convergence | ~50 min |
 | 9 | [MGS-9-EverestRelief](MGS-9-EverestRelief.ipynb) | Relief terrestre réel comme paysage | `DemGrid` (wrapper `ImageHeightMapFunction`), cartes `KnownHeightMap` de jsboige, GA/WOA/EO vs PSO, flipbook de convergence | ~55 min |
 | 10 | [MGS-10-CenterBias](MGS-10-CenterBias.ipynb) | Biais central vs robustesse au déplacement | banc `CenterBiasBenchmark` (Kudela 2022), composés WOA/EO/FBI/DE/BBPSO/SA vs GA/Random, signature $\Delta$ | ~45 min |
@@ -69,7 +70,7 @@ Cette partie se compose de dix-neuf notebooks .NET Interactive (C#), hébergés 
 
 ### Applications spécialisées
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-19) constitue l'unique contenu propre à la Partie 4.
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](../Applications/README.md) : **App-9 / App-9b** (EdgeDetection) et **App-10 / App-10b** (Portfolio). La série MGS numérotée (MGS-1 à MGS-19, plus le pont MGS-7b de projection N-D) constitue l'unique contenu propre à la Partie 4.
 
 La série suit un fil continu plutôt qu'un catalogue : on **reconstruit** les composés publiés depuis leurs primitives (MGS-5), on les **confronte** honnêtement (MGS-6, MGS-7), puis on apprend à *voir* le paysage (MGS-8, MGS-9), à *mesurer* ses biais (MGS-10 à MGS-14), à le *quantifier* (MGS-15), et enfin à *raisonner* sur le choix de l'algorithme (MGS-16), de ses paramètres (MGS-17), du protocole d'évaluation (MGS-18) et de la démontabilité d'un composé (MGS-19). Le déroulé notebook par notebook figure dans le « Parcours détaillé » plus bas, et la Conclusion reprend les enseignements transversaux. Feuille de route du fork : [ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
 
@@ -80,7 +81,7 @@ flowchart LR
     W1["<b>Socle &amp; composition</b><br/>MGS-1 — Moteur autonome<br/>MGS-2 — Grammaire fluente<br/>(Match, Container, Scoped)"]
     W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(sous-populations)<br/>MGS-4 — Islands (migration)"]
     W3["<b>Composés publiés &amp; confrontation</b><br/>MGS-5 — Reconstruire WOA/EO/FBI<br/>MGS-6 — Benchmarks<br/>(No-Free-Lunch)<br/>MGS-7 — TSP combinatoire"]
-    W4["<b>Paysages de fitness</b><br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
+    W4["<b>Paysages de fitness</b><br/>MGS-7b — Projection N-D<br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
     W5["<b>Biais &amp; mesure falsifiable</b><br/>MGS-10 — Biais central<br/>(Kudela 2022)<br/>MGS-11 — Synergie d'îles<br/>(verdict négatif)"]
     W6["<b>Rotation &amp; retour critique</b><br/>MGS-12 — Alignement d'axes<br/>MGS-13 — Paysages dé-biaisés<br/>MGS-14 — Synergie conditionnelle"]
     W7["<b>Nombre &amp; sélection (capstone)</b><br/>MGS-15 — Métriques de paysage<br/>(FDC, autocorrélation)<br/>MGS-16 — Sélection d'algorithme<br/>(Rice 1976, No-Free-Lunch)"]
@@ -159,6 +160,10 @@ La confrontation honnête. Dix fonctions standard (`KnownFunctions.cs` : Sphere,
 ### 7 — TSP combinatoire
 
 La grammaire de composition est-elle agnostique à la représentation ? MGS-1 à 6 opèrent sur des surfaces *continues* (gènes en `double`), mais les primitives structurantes (`Match`, `Container`, `Scoped`, `Islands`) vivent *sous* la couche géométrique. Ce notebook applique la **même** `IslandMetaHeuristic` à un problème de **permutation** — le Voyageur de Commerce sur 20 villes, gènes = index entiers — **sans aucune adaptation** : le modèle insulaire opère sur `IChromosome` et ne lit jamais `Gene.Value`. La comparaison reste honnête (G.9) : la baseline panmictique bat les Islands sur cette instance TSP-20, illustration de No-Free-Lunch — le point n'est pas la victoire mais le **transfert sans réécriture** de la grammaire d'une géométrie continue à un espace combinatoire. Setup : `TspFitness`, `OrderedCrossover` (OX1), `ReverseSequenceMutation`. Au-delà des îles, ce notebook éprouve aussi la **théorie des croisements géométriques de Moraglio** (2007) — un crossover est *géométrique* si sa progéniture reste sur le segment géodésique entre les parents, pour une métrique donnée. Or une permutation admet **plusieurs métriques naturelles**, et le fork en câble deux : la distance de **swap** (Cayley : combien de transpositions séparent deux ordres), réalisée par `OrderedEmbedding` (Config 3), et la distance d'**insertion** (Ulam : combien d'éléments déplacer en décalant les autres), réalisée par `InsertionEmbedding` (Config 4). La Config 4 démontre le point central du *deep learning géométrique* : depuis le parent `[0,1,2,3,4]` vers une même cible-permutation `[2,0,1,3,4]`, un pas de swap atteint `[2,1,0,3,4]` là où un pas d'insertion atteint `[2,0,1,3,4]` — deux **géodésiques distinctes**, donc deux descendants distincts atteignables en un seul croisement. **C'est l'embedding (le choix de la métrique) qui porte la géométrie, pas le moteur** (`GeometricCrossover`) ni l'opérateur (le centroïde) : changer uniquement d'embedding change le paysage exploré. Cadrage honnête (G.9) : ni swap ni insertion n'a de privilège géographique sur ce TSP (ce sont des distances sur les étiquettes d'indice, pas sur les coordonnées des villes) — les deux sont des baselines, et le centroïde naïf à deux parents borne symétriquement les deux métriques (limite déjà documentée en Config 3) ; un embedding appris équivariant par permutation ferait mieux que les deux.
+
+### 7b — Projection N-D des paysages
+
+MGS-6 a présenté les dix fonctions canoniques en 2-D. Mais une **vraie métaheuristique** optimise dans des dimensions bien supérieures (Rastrigin est intéressant à $n=30$, Schwefel a un optimum trompeur en $n \geq 10$). Ce notebook pont active la **surcharge N-D** de `KnownFunctionLandscape.RenderHeatmap` — la même rampe de couleurs, la même `SkiaLandscapeRenderer`, mais sur une dimension arbitraire : pour chaque pixel du canvas 2-D, `nbSamples` tirages uniformes des coordonnées cachées $x_2 \dots x_{N-1}$ et on garde le **MAX** (l'opérateur verbatim du contrôleur Gtk# original de jsboige). La projection rend lisibles des phénomènes invisibles en 2-D : la **Sphere** 5-D garde $(0,0)$ comme candidat d'optimum mais le MAX sur les coordonnées cachées fait émerger d'autres pixels ; **Rastrigin** en $n=2/5/10/30$ montre la densité de minima locaux croître avec la dimension (la heatmap rougit) ; **Schwefel** en $n=5/30$ fait émerger le *vrai* optimum global, loin du centre, dès qu'on autorise les coordonnées cachées à varier. C'est le pont entre la visualisation 2-D de MGS-6/MGS-8 et la réalité haute-dimension où vit l'optimisation — et le terrain où la projection N-D (capacité distinctive du renderer fork) est *nécessaire*, pas optionnelle.
 
 ### 8 — Fitness Landscape Explorer
 
@@ -276,7 +281,7 @@ Les métaheuristiques reconstruites dans cette partie suivent les articles fonda
 
 ### Ce que vous avez appris
 
-Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par dix-neuf notebooks C# .NET 9 au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
+Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par vingt notebooks C# .NET 9 au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
 
 - **Le moteur autonome** (MGS-1, MGS-2) — un `MetaGeneticAlgorithm` qui pilote l'évolution sans dépendre de la classe `GeneticAlgorithm` amont, et la grammaire fluente (`Match`, `Container`, `Scoped`) qui permet d'assembler une métaheuristique en quelques lignes déclaratives lisibles. C'est le socle : tout le reste compose au-dessus.
 - **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (sous-populations spécialisées portées par des chromosomes composites) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
