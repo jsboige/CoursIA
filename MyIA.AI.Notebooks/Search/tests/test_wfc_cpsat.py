@@ -301,3 +301,51 @@ class TestRunAll:
         # Random et WFC doivent produire une grille (5x5 realisable).
         assert results["random"]["grid"] is not None
         assert results["random"]["grid"].shape == (5, 5)
+
+
+# ----------------------------------------------------------------------------
+# Degenerate-input guards (bug-class #7463/#7522 : rows<=0 / cols<=0).
+# ----------------------------------------------------------------------------
+
+class TestDegenerateInputGuard:
+    """Les trois entrees publiques (generate_random, PureWFC, solve_cpsat) doivent
+    rejeter explicitement rows<=0 ou cols<=0. Sans guard, generate_random(0, 5)
+    retourne une grille vide silencieuse (shape (0,5)) et PureWFC(0,0).solve()
+    retourne [] -- un niveau WFC a zero cellule n'a aucun sens pedagogique et
+    masque un bug caller-side. Bug-class identique a stackelberg/cournot b<=0 (#7522)
+    et compute_payoff rounds<=0 (#7513)."""
+
+    def test_generate_random_zero_rows_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            generate_random(0, 5, tileset)
+
+    def test_generate_random_zero_cols_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            generate_random(5, 0, tileset)
+
+    def test_generate_random_negative_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            generate_random(-2, 3, tileset)
+
+    def test_purewfc_zero_dims_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            PureWFC(0, 0, tileset)
+
+    def test_purewfc_negative_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            PureWFC(-1, 4, tileset)
+
+    def test_solve_cpsat_zero_dims_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            solve_cpsat(rows=0, cols=4, tileset=tileset)
+
+    def test_solve_cpsat_negative_raises(self, tileset):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            solve_cpsat(rows=3, cols=-1, tileset=tileset)
+
+    def test_positive_dims_unaffected(self, tileset):
+        """Le guard n'impacte pas la voie nominale (invariant shape preserve)."""
+        grid = generate_random(4, 4, tileset, seed=0)
+        assert grid.shape == (4, 4)
+        wfc_grid = PureWFC(4, 4, tileset, seed=0).solve()
+        assert wfc_grid.shape == (4, 4)

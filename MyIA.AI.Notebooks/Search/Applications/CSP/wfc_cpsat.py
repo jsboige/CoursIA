@@ -37,6 +37,10 @@ def load_tileset(path: str = "tileset.json") -> dict:
 # ---------------------------------------------------------------------------
 
 def generate_random(rows: int, cols: int, tileset: dict, seed: int = 0) -> np.ndarray:
+    if rows <= 0 or cols <= 0:
+        raise ValueError(
+            f"rows and cols must be positive (at least one cell), got rows={rows}, cols={cols}"
+        )
     rng = random.Random(seed)
     n_tiles = len(tileset["tiles"])
     weights = tileset.get("weights", [1] * n_tiles)
@@ -51,6 +55,10 @@ def generate_random(rows: int, cols: int, tileset: dict, seed: int = 0) -> np.nd
 
 class PureWFC:
     def __init__(self, rows: int, cols: int, tileset: dict, seed: int = 0):
+        if rows <= 0 or cols <= 0:
+            raise ValueError(
+                f"rows and cols must be positive (at least one cell), got rows={rows}, cols={cols}"
+            )
         self.rows = rows
         self.cols = cols
         n = len(tileset["tiles"])
@@ -184,6 +192,10 @@ def solve_cpsat(
     Objective:
         Maximize tile variety score to avoid degenerate uniform solutions.
     """
+    if rows <= 0 or cols <= 0:
+        raise ValueError(
+            f"rows and cols must be positive (at least one cell), got rows={rows}, cols={cols}"
+        )
     tiles = tileset["tiles"]
     n_tiles = len(tiles)
     rules_raw = tileset["adjacency"]["rules"]
