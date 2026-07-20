@@ -314,6 +314,9 @@ def play_match(
     Returns:
         Dictionary with match results including total scores
     """
+    if rounds <= 0:
+        raise ValueError(f"rounds must be positive, got {rounds}")
+
     strategy1.reset()
     strategy2.reset()
 

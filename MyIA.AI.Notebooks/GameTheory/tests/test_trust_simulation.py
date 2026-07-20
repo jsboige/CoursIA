@@ -364,6 +364,22 @@ class TestPlayMatch:
         # Apres le match, l'historique ne contient que les 5 tours du match.
         assert len(s1.my_history) == 5
 
+    def test_play_match_zero_rounds_raises(self):
+        """rounds <= 0 doit echouer explicitement (ValueError), pas crasher
+        en ZeroDivisionError. Avant le guard, `total1 / rounds` (et total2)
+        divisait par 0 apres une boucle `for _ in range(0)` vide. Meme
+        bug-class degenerate-input que #7481 (shapley n_samples<=0),
+        #7489 (kuhn_poker iterations<=0), #7495 (replicator normalization),
+        #7517 (compute_payoff_matrix rounds<=0)."""
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            play_match(AlwaysCooperate(), AlwaysDefect(), rounds=0)
+
+    def test_play_match_negative_rounds_raises(self):
+        """rounds < 0 doit aussi echouer explicitement (consistance du guard
+        ; sinon avg = 0/-1 = 0.0 silencieux pour un match sans tours)."""
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            play_match(AlwaysCooperate(), AlwaysDefect(), rounds=-1)
+
 
 # ============================================================================
 # Tournament : round-robin, self-play, payoff matrix, determinisme.
