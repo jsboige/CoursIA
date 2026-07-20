@@ -62,7 +62,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/llm-endpoints.md](lean/llm-endpoints.md) | Providers LLM du prover multi-agent (configuration, sans clés) |
 | [lean/prover_iteration_history.md](lean/prover_iteration_history.md) | Historique itération prover |
 | [lean/sota-2026-analysis.md](lean/sota-2026-analysis.md) | État de l'art preuve automatique Lean 4 (mai 2026) |
-| [lean/stable_marriage_intractable_diagnosis.md](lean/stable_marriage_intractable_diagnosis.md) | Diagnostic des preuves stable-marriage intractables |
+| [lean/stable_marriage_intractable_diagnosis.md](../archive/lean-intractable-diagnosis/stable-marriage.md) | Diagnostic des preuves stable-marriage intractables (archivé c.696) |
 
 ## Curriculum (docs/curriculum/)
 

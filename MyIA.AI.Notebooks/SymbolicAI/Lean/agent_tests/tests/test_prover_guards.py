@@ -1317,7 +1317,7 @@ def test_tools_compile_fail_counter_increments_and_resets_on_success():
 # targets BEFORE spawning agents.
 #
 # Forensic: all NON-Conway sorry targets are documented intractable in
-# docs/lean/stable_marriage_intractable_diagnosis.md, yet director-less
+# docs/archive/lean-intractable-diagnosis/stable-marriage.md, yet director-less
 # (zai-provider) runs blanket-bypassed the intractable gate (provers.py sets
 # state.director_consulted=True when director_agent is None) and looped to the
 # iteration cap — 9/13 runs burned full budgets, ~8.2h wasted. The pre-screen
@@ -1338,7 +1338,7 @@ def mock_intractable_kb(monkeypatch):
             "line": 116,
             "identifier": "gale_shapley_man_optimal :: IsStable",
             "reason": "rural hospitals theorem missing",
-            "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-1",
+            "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-1",
         },
         {
             "file": "WholeFileIntractable.lean",

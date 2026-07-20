@@ -206,5 +206,5 @@ Leçon de méthode : un rapport forensic sur traces datées se relit **contre le
 - **Prover source:** `MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/prover/` (agents.py, workflow.py, tools.py, provers.py, config.py)
 - **Knowledge base:** `prover/proof_knowledge.json`
 - **History files:** `agent_tests/prover/*.json`
-- **Intractable diagnosis:** `docs/lean/stable_marriage_intractable_diagnosis.md`
+- **Intractable diagnosis:** `docs/archive/lean-intractable-diagnosis/stable-marriage.md`
 - **CI workflow:** `.github/workflows/lean-game-theory.yml`

@@ -39,5 +39,5 @@ Pour les sorrys very_hard, le Director (Opus 4.7 via OpenRouter ou Anthropic dir
 ## Voir aussi
 
 - [docs/lean/prover_iteration_history.md](prover_iteration_history.md) — Architecture iterations F6-F11, B3
-- [docs/lean/stable_marriage_intractable_diagnosis.md](stable_marriage_intractable_diagnosis.md) — 6 sorrys remaining, root causes
+- [stable-marriage.md](../archive/lean-intractable-diagnosis/stable-marriage.md) — 6 sorrys remaining, root causes (archivé c.696)
 - [.claude/rules/lean-merge-discipline.md](../../.claude/rules/lean-merge-discipline.md) — Lake build SUCCESS obligatoire avant merge + BG iter systematique post-PR/msg po-2026

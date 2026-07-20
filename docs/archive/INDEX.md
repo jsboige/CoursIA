@@ -39,6 +39,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | genai/ | 13+ fichiers infrastructure GenAI detaillee | [README.md](genai/README.md) |
 | suivis/genai-image/ | 8 fichiers + 4 repertoires de phases (ComfyUI/Qwen) | [INDEX.md](suivis/genai-image/INDEX.md) |
 | curriculum-renumbering-phase1/ | 6 fichiers (Texte, Video, Infer, PyMC, Search, Planners) — analyses phase-1 #5081 verdict NO-RENUMBER archivées 2026-07-19 (c.676 GenAI Texte+Video) + 2026-07-20 (c.748 Probas/Infer, Probas/PyMC, Search) + 2026-07-20 (c.695 Planners, dernier dispatch phase-1, owner-dispatch po-2026 anti-contamination L420) | — |
+| lean-intractable-diagnosis/ | 1 fichier (stable-marriage.md) — diagnostic daté 2026-05-18 des 6 sorrys intractables post-rural-hospitals-formalization, archivé 2026-07-20 (c.696, owner-dispatch po-2026 Lean core, superseded-by absorption StableMarriage dans game_theory_lean/ #4365, KB prover `intractable_targets.json` mise à jour) | — |
 | ledgers-reviews/ | 54 fichiers sweeps §H.4/B/D datés PM transiente (juillet 2026) — verdicts EXEC_PROVED datés préservés verbatim, archivés 2026-07-19 (c.736) | — |
 
 ## Issue de reference
