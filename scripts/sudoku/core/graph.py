@@ -34,6 +34,10 @@ def build_sudoku_edge_index():
 
 def make_batch_edge_index(base_edges, batch_size):
     """Replicate edge index for a batch, offsetting node indices."""
+    if batch_size <= 0:
+        raise ValueError(
+            f"batch_size must be positive (at least one graph in the batch), got {batch_size}"
+        )
     n_nodes = 81
     edges_list = []
     for b in range(batch_size):
