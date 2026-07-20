@@ -2,11 +2,11 @@
 
 **Preuves formelles, logique et planification**
 
-Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, planification classique et avancee, contrats intelligents. Du raisonnement deductif a la verification formelle.
+Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, planification classique et avancée, contrats intelligents. Du raisonnement déductif à la vérification formelle.
 
 ## Statistiques
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |----------|--------|
 | Notebooks | 220 |
 | PRODUCTION | 177 |
@@ -15,13 +15,13 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI (1 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Configuration de l'environnement C# | BETA | Oui |
 
 ## SymbolicAI/Argument_Analysis (22 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Argument_Analysis_Agentic-0-init : configuration de l'e | PRODUCTION | Oui |
 | 2 | Introduction : Analyse Rhetorique Collaborative par Age | PRODUCTION | Non |
@@ -48,7 +48,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/Lean (28 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Lean 4 - Installation et Configuration | PRODUCTION | Non |
 | 2 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | PRODUCTION | Non |
@@ -81,7 +81,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/Planners (23 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Planners-0-Setup | PRODUCTION | Oui |
 | 2 | Planners-1-Introduction-Csharp : la planification autom | PRODUCTION | Oui |
@@ -109,7 +109,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/SMT (42 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Z3 (C# / .NET) — Introduction au solveur SMT | PRODUCTION | Oui |
 | 2 | Z3-Python 01 — Introduction a la resolution de contrain | PRODUCTION | Oui |
@@ -156,7 +156,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/SemanticWeb (25 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Introduction au web sémantique avec RDF.Net | PRODUCTION | Non |
 | 2 | SW-1-Setup | PRODUCTION | Oui |
@@ -186,7 +186,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/SmartContracts (27 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk de la | PRODUCTION | Oui |
 | 2 | SC-1-Setup-Foundry - Environnement Smart Contracts | PRODUCTION | Oui |
@@ -218,7 +218,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/SymbolicLearning (20 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | SL-1 - Apprentissage Logique : CBH Search et Version Sp | PRODUCTION | Oui |
 | 2 | SL-1 - Apprentissage Logique : CBH Search et Version Sp | PRODUCTION | Oui |
@@ -243,7 +243,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web semantique, p
 
 ## SymbolicAI/Tweety (32 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Configuration et Installation TweetyProject | PRODUCTION | Oui |
 | 2 | Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / I | PRODUCTION | Oui |

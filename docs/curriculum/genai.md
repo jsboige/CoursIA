@@ -1,12 +1,12 @@
 # GenAI Multimodale
 
-**Generation d'images, audio, video et texte**
+**Génération d'images, audio, vidéo et texte**
 
-Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, generation musicale, video, et orchestration de modeles. Inclut les workflows Vibe-Coding et les pipelines de production.
+Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocale, génération musicale, vidéo, et orchestration de modèles. Inclut les workflows Vibe-Coding et les pipelines de production.
 
 ## Statistiques
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |----------|--------|
 | Notebooks | 136 |
 | PRODUCTION | 97 |
@@ -15,13 +15,13 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI (1 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | GenAI E2E Quant Validation | BETA | Non |
 
 ## GenAI/00-GenAI-Environment (6 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 🚀 GenAI Environment Setup - CoursIA | BETA | Non |
 | 2 | 🐳 Docker Services Management - GenAI | BETA | Non |
@@ -32,7 +32,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Audio (30 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | OpenAI TTS - Synthese Vocale par API | PRODUCTION | Non |
 | 2 | OpenAI Whisper STT - Reconnaissance Vocale par API | PRODUCTION | Non |
@@ -67,7 +67,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/CaseStudies (4 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Duel Verbal : Barbie vs l'Âne de Shrek | BETA | Non |
 | 2 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
@@ -76,7 +76,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/FineTuning (5 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | FT-01 : Introduction au Fine-Tuning | PRODUCTION | Non |
 | 2 | FT-02 : QLoRA — Fine-Tuning avec Quantization | PRODUCTION | Non |
@@ -86,7 +86,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Image (17 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | OpenAI DALL-E 3 - Generation d'Images | BETA | Non |
 | 2 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Images | PRODUCTION | Non |
@@ -108,7 +108,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Open-WebUI (7 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Parcours QA-OWUI — Notebook chapeau de la mission | BETA | Oui |
 | 2 | Module 01 — Découverte de Playwright & Open WebUI | PRODUCTION | Oui |
@@ -120,7 +120,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/PostTraining (7 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | PT-01 — Introduction et vue d'ensemble | PRODUCTION | Non |
 | 2 | PT-02 — Supervised Fine-Tuning baseline (SFT) | PRODUCTION | Non |
@@ -132,13 +132,13 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/RAG-et-Memoire-Semantique (1 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Hands-On Grounding — Qdrant en mémoire | PRODUCTION | Oui |
 
 ## GenAI/SemanticKernel (17 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | SK-1-Fundamentals : Introduction a Semantic Kernel | PRODUCTION | Non |
 | 2 | SK-2-Functions : Function Calling, Memory et Fonctionna | PRODUCTION | Non |
@@ -160,7 +160,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Texte (20 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 10. Hébergement Local de Modèles Génératifs | PRODUCTION | Non |
 | 2 | 11. Quantization des LLMs | PRODUCTION | Non |
@@ -185,7 +185,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Vibe-Coding (6 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Claude CLI - Les Bases | PRODUCTION | Oui |
 | 2 | Claude CLI - Gestion des Sessions | PRODUCTION | Oui |
@@ -196,7 +196,7 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 
 ## GenAI/Video (15 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Opérations de Base sur les Videos | PRODUCTION | Non |
 | 2 | GPT-5 Video Understanding - Comprehension Video par IA | PRODUCTION | Non |

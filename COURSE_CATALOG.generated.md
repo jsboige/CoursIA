@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-19 06:14
-Total notebooks: 824
+Generated: 2026-07-20 06:35
+Total notebooks: 826
 
 ## Status Summary
 
-- **READY**: 668
-- **DEMO**: 154
+- **READY**: 660
+- **DEMO**: 164
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
-- **PRODUCTION**: 608
-- **BETA**: 164
+- **PRODUCTION**: 598
+- **BETA**: 169
 - **TEMPLATE**: 4
-- **ALPHA**: 44
+- **ALPHA**: 51
 - **DRAFT**: 4
 
 ## By Series
@@ -560,7 +560,7 @@ Total notebooks: 824
 | 219 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 220 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (105 notebooks) — DEMO:57, READY:48 | ALPHA:35, BETA:8, DRAFT:2, PRODUCTION:59, TEMPLATE:1
+### QuantConnect (105 notebooks) — DEMO:67, READY:38 | ALPHA:42, BETA:11, DRAFT:2, PRODUCTION:49, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -621,26 +621,26 @@ Total notebooks: 824
 | 55 | Workflow : Téléchargement et gestion des datasets | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 56 | Le critere de Kelly — compagnon Python du lake `ke | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 57 | Research QuantBook: Adaptive Asset Allocation | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 58 | Research QuantBook: All-Weather Portfolio | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 58 | Research QuantBook: All-Weather Portfolio | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 59 | Alpha Correlation Analysis | Python 3 | READY | BETA | 45min | po-2026 |
 | 60 | Research QuantBook: BTC ML Enhanced | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 61 | Initializing environment | .NET (C#) | DEMO | BETA | 1h30 | po-2026 |
 | 62 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 63 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 64 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 64 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 65 | Research QuantBook: Dual Momentum No TLT | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 66 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 66 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | DEMO | BETA | 30min | po-2026 |
 | 67 | Research QuantBook: EMA Cross Equity | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 68 | Research QuantBook: EMA Crossover SPY Index | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 69 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 70 | Research QuantBook: ETF Pairs Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 71 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 72 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | READY | PRODUCTION | 45min | po-2026 |
+| 71 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 72 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 73 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 74 | Research QuantBook: Framework Composite FamaFrench | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 75 | Research QuantBook: Framework Composite Momentum + | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 76 | Framework Composite TrendWeather - Research | Python 3 | READY | PRODUCTION | 45min | po-2026 |
-| 77 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 77 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 78 | Research QuantBook: ML Classification (RandomFores | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 79 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 80 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | READY | PRODUCTION | 45min | po-2026 |
@@ -652,7 +652,7 @@ Total notebooks: 824
 | 86 | ML Text Classification for Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 87 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 88 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 89 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 89 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 90 | Research QuantBook: Equity Multi-Layer EMA + ML Fi | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 91 | Research QuantBook: Option Wheel Strategy | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 92 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | READY | PRODUCTION | 30min | po-2026 |
@@ -662,11 +662,11 @@ Total notebooks: 824
 | 96 | Research QuantBook: RL Portfolio Allocation | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 97 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | READY | PRODUCTION | 45min | po-2026 |
 | 98 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 99 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 100 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 99 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 100 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 101 | Research QuantBook: Trend Following Competition | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 102 | Research QuantBook: TrendStocks Alpha Model | Python 3 | READY | PRODUCTION | 30min | po-2026 |
-| 103 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
+| 103 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 104 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 105 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issu | Python 3 | READY | PRODUCTION | 15min | po-2026 |
 
@@ -829,7 +829,7 @@ Total notebooks: 824
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
-### IIT (32 notebooks) — READY:32 | ALPHA:1, BETA:20, PRODUCTION:11
+### IIT (34 notebooks) — READY:34 | ALPHA:1, BETA:22, PRODUCTION:11
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -840,31 +840,33 @@ Total notebooks: 824
 | 5 | ICT-13 — Morphodynamique stratégique : une stratég | Python 3 | READY | BETA | 30min | po-2025 |
 | 6 | ICT-14 — Énergie libre et surprise du représentant | Python 3 | READY | BETA | 30min | po-2025 |
 | 7 | ICT-15 — Integrated Complexity : convergence Φ / F | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 8 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
-| 9 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | BETA | 30min | po-2025 |
-| 10 | Grokking et compression-progress : la jambe K à l' | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 11 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
-| 12 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 13 | ICT-19 — Raffinement et résolution des stubs (tran | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 14 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 15 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 16 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
-| 17 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
-| 18 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
-| 19 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
-| 20 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
-| 21 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 22 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
-| 23 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
-| 24 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
-| 25 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 26 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 27 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 28 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 29 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 30 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
-| 31 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
-| 32 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 8 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | BETA | 30min | po-2025 |
+| 9 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
+| 10 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | BETA | 30min | po-2025 |
+| 11 | Grokking et compression-progress : la jambe K à l' | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 12 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
+| 13 | ICT-18b — Budget de réversibilité : la jambe « fin | Python 3 | READY | BETA | 30min | po-2025 |
+| 14 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 15 | ICT-19 — Raffinement et résolution des stubs (tran | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 16 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 17 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 18 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
+| 19 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
+| 20 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
+| 21 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
+| 22 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
+| 23 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 24 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
+| 25 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 26 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
+| 27 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 28 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 29 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 30 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 31 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 32 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
+| 33 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
+| 34 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
 ### RL (17 notebooks) — DEMO:1, READY:16 | BETA:2, PRODUCTION:15
 
@@ -895,4 +897,4 @@ Total notebooks: 824
 - **GPU**: 93 notebooks
 - **Cloud**: 105 notebooks
 - **WSL**: 42 notebooks
-- **Local**: 512 notebooks
+- **Local**: 514 notebooks

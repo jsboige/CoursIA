@@ -1,21 +1,21 @@
-# Recherche Avancee
+# Recherche Avancée
 
-**Inference probabiliste, IIT et RL avance**
+**Inférence probabiliste, IIT et RL avancée**
 
-Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integree (IIT), reinforcement learning avance, theorie des jeux (OpenSpiel). Pour etudiants en master/recherche.
+Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information intégrée (IIT), reinforcement learning avancé, théorie des jeux (OpenSpiel). Pour étudiants en master/recherche.
 
 ## Statistiques
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |----------|--------|
-| Notebooks | 157 |
+| Notebooks | 159 |
 | PRODUCTION | 116 |
-| BETA | 40 |
+| BETA | 42 |
 | ALPHA | 1 |
 
 ## GameTheory (43 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | GameTheory-1-Setup | PRODUCTION | Non |
 | 2 | GameTheory-10 — Équilibres Parfaits de Sous-Jeux et Ind | PRODUCTION | Oui |
@@ -63,7 +63,7 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 
 ## GameTheory/SocialChoice (7 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | SocialChoice 01 : Théorème d'impossibilité d'Arrow (twi | BETA | Oui |
 | 2 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formelle et | PRODUCTION | Oui |
@@ -75,15 +75,15 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 
 ## IIT (3 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | IIT - Introduction à PyPhi et Integrated Information Th | PRODUCTION | Oui |
 | 2 | IIT - Sujets Avances : Partitionnement, Repertoires Cau | PRODUCTION | Oui |
 | 3 | IIT-3. Coarse-graining, blackboxing et l'échelle du $\P | BETA | Oui |
 
-## IIT/ICT-Series (29 notebooks)
+## IIT/ICT-Series (31 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | ICT-1 — Trajectoires de $\Phi$ | BETA | Oui |
 | 2 | ICT-10 — Grammaire des catastrophes : *l'obstacle qui e | PRODUCTION | Oui |
@@ -92,39 +92,41 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 | 5 | ICT-13 — Morphodynamique stratégique : une stratégie es | BETA | Oui |
 | 6 | ICT-14 — Énergie libre et surprise du représentant inte | BETA | Oui |
 | 7 | ICT-15 — Integrated Complexity : convergence Φ / F / K  | BETA | Oui |
-| 8 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
-| 9 | ICT-17 -- Mecanique computationnelle (epsilon-machine d | BETA | Oui |
-| 10 | Grokking et compression-progress : la jambe K à l'épreu | PRODUCTION | Oui |
-| 11 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
-| 12 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | PRODUCTION | Oui |
-| 13 | ICT-19 — Raffinement et résolution des stubs (tranche 3 | PRODUCTION | Non |
-| 14 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | ALPHA | Oui |
-| 15 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | PRODUCTION | Non |
-| 16 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
-| 17 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
-| 18 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
-| 19 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
-| 20 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
-| 21 | ICT-3 — Robustesse & délai de gratification : étude qua | PRODUCTION | Oui |
-| 22 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
-| 23 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
-| 24 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
-| 25 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
-| 26 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | PRODUCTION | Oui |
-| 27 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | PRODUCTION | Oui |
-| 28 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | PRODUCTION | Non |
-| 29 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
+| 8 | ICT-15b -- Sensitivity Canonicity (Huang 2019 transpose | BETA | Oui |
+| 9 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
+| 10 | ICT-17 -- Mecanique computationnelle (epsilon-machine d | BETA | Oui |
+| 11 | Grokking et compression-progress : la jambe K à l'épreu | PRODUCTION | Oui |
+| 12 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
+| 13 | ICT-18b — Budget de réversibilité : la jambe « fin » de | BETA | Oui |
+| 14 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | PRODUCTION | Oui |
+| 15 | ICT-19 — Raffinement et résolution des stubs (tranche 3 | PRODUCTION | Non |
+| 16 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | ALPHA | Oui |
+| 17 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | PRODUCTION | Non |
+| 18 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
+| 19 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
+| 20 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
+| 21 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
+| 22 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
+| 23 | ICT-3 — Robustesse & délai de gratification : étude qua | PRODUCTION | Oui |
+| 24 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
+| 25 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
+| 26 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
+| 27 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
+| 28 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | PRODUCTION | Oui |
+| 29 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | PRODUCTION | Oui |
+| 30 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | PRODUCTION | Non |
+| 31 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
 
 ## Probas (2 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Infer-101 : Introduction a Infer.NET | PRODUCTION | Oui |
 | 2 | Le Framework Rational Speech Act (RSA) | PRODUCTION | Oui |
 
 ## Probas/DecisionTheory (18 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les qua | PRODUCTION | Oui |
 | 2 | DecInfer-1-Utility-Foundations : Axiomes et Fondements | PRODUCTION | Oui |
@@ -147,7 +149,7 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 
 ## Probas/Infer (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Infer-1-Setup : Introduction et Installation | PRODUCTION | Oui |
 | 2 | Infer-10-Model-Sélection : Sélection et Comparaison de  | PRODUCTION | Oui |
@@ -171,7 +173,7 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 
 ## Probas/PyMC (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | PyMC-1 : Configuration et Premier Modèle | PRODUCTION | Oui |
 | 2 | PyMC-10 : Sélection de Modèles et Comparaison Bayesienn | PRODUCTION | Oui |
@@ -195,7 +197,7 @@ Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information integre
 
 ## RL (17 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | RL-10 : Reward Shaping et Curriculum Learning | PRODUCTION | Oui |
 | 2 | RL-11 : POMDP - Partial Observability et Belief Trackin | PRODUCTION | Oui |

@@ -399,7 +399,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 32
-breakdown: ICT-Series=29, root=3
-maturity: BETA=20, PRODUCTION=11, ALPHA=1
+pedagogical_count: 34
+breakdown: ICT-Series=31, root=3
+maturity: BETA=22, PRODUCTION=11, ALPHA=1
 -->

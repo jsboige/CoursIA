@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 824
-breakdown: SymbolicAI=220, GenAI=141, Search=112, QuantConnect=105, Probas=58, GameTheory=50, ML=47, Sudoku=36, IIT=32, RL=17, CaseStudies=6
-maturity: PRODUCTION=608, BETA=164, ALPHA=44, DRAFT=4, TEMPLATE=4
+total: 826
+breakdown: SymbolicAI=220, GenAI=141, Search=112, QuantConnect=105, Probas=58, GameTheory=50, ML=47, Sudoku=36, IIT=34, RL=17, CaseStudies=6
+maturity: PRODUCTION=598, BETA=169, ALPHA=51, DRAFT=4, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>

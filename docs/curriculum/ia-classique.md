@@ -1,12 +1,12 @@
 # IA Classique
 
-**Recherche, CSP et resolution de problemes**
+**Recherche, CSP et résolution de problèmes**
 
-Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolution de Sudoku, planification classique. De A* aux heuristiques avancees, en passant par les solveurs SAT/SMT.
+Algorithmes de recherche classique, satisfaction de contraintes (CSP), résolution de Sudoku, planification classique. De A* aux heuristiques avancées, en passant par les solveurs SAT/SMT.
 
 ## Statistiques
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |----------|--------|
 | Notebooks | 147 |
 | PRODUCTION | 114 |
@@ -15,7 +15,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Search/Applications (40 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | App-1 : Le Problème des N-Reines | PRODUCTION | Oui |
 | 2 | App-11 - Picross (Nonogrammes) | PRODUCTION | Oui |
@@ -60,7 +60,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Search/Part1-Foundations (29 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Search-1 : Espaces d'etats et formalisation de probleme | BETA | Oui |
 | 2 | Search-1 : Espaces d'etats et formulation de problemes | PRODUCTION | Oui |
@@ -94,7 +94,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Search/Part2-CSP (18 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | CSP-1 : Fondamentaux des CSP - Version .NET (Choco-solv | PRODUCTION | Oui |
 | 2 | CSP-1 : Fondamentaux des CSP | PRODUCTION | Oui |
@@ -117,7 +117,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Search/Part3-Advanced (6 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Search-12 (C#) — Bases de données de motifs (Pattern Da | BETA | Oui |
 | 2 | Search-12 — Bases de données de motifs (Pattern Databas | BETA | Oui |
@@ -128,7 +128,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Search/Part4-Metaheuristics (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | MGS-1 : Introduction a MetaGeneticSharp et au moteur au | PRODUCTION | Oui |
 | 2 | MGS-10 : Le test du biais central — un optimiseur « san | BETA | Oui |
@@ -152,7 +152,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 ## Sudoku (35 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Sudoku-0 : Environnement et Classes de Base (C#) | PRODUCTION | Oui |
 | 2 | Sudoku-1 : Résolution par Backtracking | PRODUCTION | Oui |

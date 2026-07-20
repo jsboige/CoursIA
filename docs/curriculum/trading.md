@@ -1,21 +1,21 @@
-# Trading Algoritmique
+# Trading Algorithmique
 
-**QuantConnect, ML applique et probabilites**
+**QuantConnect, ML appliqué et probabilités**
 
-Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer, DQN, LSTM), indicateurs techniques avances, et modeles probabilistes. Du backtesting basique au reinforcement learning.
+Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer, DQN, LSTM), indicateurs techniques avancés, et modèles probabilistes. Du backtesting basique au reinforcement learning.
 
 ## Statistiques
 
-| Metrique | Valeur |
+| Métrique | Valeur |
 |----------|--------|
 | Notebooks | 207 |
-| PRODUCTION | 154 |
-| BETA | 17 |
-| ALPHA | 36 |
+| PRODUCTION | 144 |
+| BETA | 20 |
+| ALPHA | 43 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 1.2 - Manipulation de Données avec NumPy | PRODUCTION | Oui |
 | 2 | 1.3 - Analyse de Données avec Pandas | PRODUCTION | Oui |
@@ -48,7 +48,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## ML/ML.Net (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | ML-1 (Python) : Introduction au Machine Learning avec s | PRODUCTION | Oui |
 | 2 | ML-1 : Introduction au Machine Learning avec ML.NET | PRODUCTION | Oui |
@@ -72,14 +72,14 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## Probas (2 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Infer-101 : Introduction a Infer.NET | PRODUCTION | Oui |
 | 2 | Le Framework Rational Speech Act (RSA) | PRODUCTION | Oui |
 
 ## Probas/DecisionTheory (18 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Du graphe causal au do-calculus — le pont entre les qua | PRODUCTION | Oui |
 | 2 | DecInfer-1-Utility-Foundations : Axiomes et Fondements | PRODUCTION | Oui |
@@ -102,7 +102,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## Probas/Infer (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Infer-1-Setup : Introduction et Installation | PRODUCTION | Oui |
 | 2 | Infer-10-Model-Sélection : Sélection et Comparaison de  | PRODUCTION | Oui |
@@ -126,7 +126,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## Probas/PyMC (19 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | PyMC-1 : Configuration et Premier Modèle | PRODUCTION | Oui |
 | 2 | PyMC-10 : Sélection de Modèles et Comparaison Bayesienn | PRODUCTION | Oui |
@@ -150,13 +150,13 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## QuantConnect/ML-Training-Pipeline (1 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | M3b - HAR Asymetrique : Decomposition Semivariance et E | PRODUCTION | Non |
 
 ## QuantConnect/Python (52 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | QC-Py-01 : Configuration et Premier Backtest QuantConne | ALPHA | Non |
 | 2 | QC-Py-02 : QuantConnect Platform Fundamentals - QCAlgor | ALPHA | Non |
@@ -213,35 +213,35 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 
 ## QuantConnect/kelly_lean (1 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Le critere de Kelly — compagnon Python du lake `kelly_l | ALPHA | Non |
 
 ## QuantConnect/projects (48 notebooks)
 
-| # | Notebook | Maturite | Executable |
+| # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Research QuantBook: Adaptive Asset Allocation | PRODUCTION | Non |
-| 2 | Research QuantBook: All-Weather Portfolio | PRODUCTION | Non |
+| 2 | Research QuantBook: All-Weather Portfolio | ALPHA | Non |
 | 3 | Alpha Correlation Analysis | BETA | Non |
 | 4 | Research QuantBook: BTC ML Enhanced | ALPHA | Non |
 | 5 | Initializing environment | BETA | Non |
 | 6 | Research QuantBook: Multi-Channel ZigZag Crypto | ALPHA | Non |
 | 7 | Research QuantBook: Deep Learning LSTM pour SPY | ALPHA | Non |
-| 8 | Research QuantBook: DualMomentum (Antonacci) | PRODUCTION | Non |
+| 8 | Research QuantBook: DualMomentum (Antonacci) | ALPHA | Non |
 | 9 | Research QuantBook: Dual Momentum No TLT | PRODUCTION | Non |
-| 10 | Research QuantBook: EMA-Cross Alpha Model | PRODUCTION | Non |
+| 10 | Research QuantBook: EMA-Cross Alpha Model | BETA | Non |
 | 11 | Research QuantBook: EMA Cross Equity | PRODUCTION | Non |
 | 12 | Research QuantBook: EMA Crossover SPY Index | PRODUCTION | Non |
 | 13 | Research QuantBook: Multi-Stock EMA Crossover | PRODUCTION | Non |
 | 14 | Research QuantBook: ETF Pairs Trading | PRODUCTION | Non |
-| 15 | Research QuantBook: Fama-French Factor ETF Rotation | PRODUCTION | Non |
-| 16 | Research QuantBook: ForexCarry (G10 FX Momentum) | PRODUCTION | Non |
+| 15 | Research QuantBook: Fama-French Factor ETF Rotation | BETA | Non |
+| 16 | Research QuantBook: ForexCarry (G10 FX Momentum) | BETA | Non |
 | 17 | Research QuantBook: Framework Composite EMA-Trend | PRODUCTION | Non |
 | 18 | Research QuantBook: Framework Composite FamaFrench + Al | PRODUCTION | Non |
 | 19 | Research QuantBook: Framework Composite Momentum + Regi | PRODUCTION | Non |
 | 20 | Framework Composite TrendWeather - Research | PRODUCTION | Non |
-| 21 | Research QuantBook: FuturesTrend (Donchian Breakout) | PRODUCTION | Non |
+| 21 | Research QuantBook: FuturesTrend (Donchian Breakout) | ALPHA | Non |
 | 22 | Research QuantBook: ML Classification (RandomForest) | PRODUCTION | Non |
 | 23 | ML Deep Learning - LSTM/GRU pour Trading | ALPHA | Non |
 | 24 | Research QuantBook: ML-Enhanced Pairs Trading | PRODUCTION | Non |
@@ -253,7 +253,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 | 30 | ML Text Classification for Trading | ALPHA | Non |
 | 31 | ML XGBoost - Gradient Boosting pour Trading | ALPHA | Non |
 | 32 | Research QuantBook: Mean Reversion (Sector ETFs) | PRODUCTION | Non |
-| 33 | Research QuantBook: MomentumStrategy (Sector ETF Rotati | PRODUCTION | Non |
+| 33 | Research QuantBook: MomentumStrategy (Sector ETF Rotati | ALPHA | Non |
 | 34 | Research QuantBook: Equity Multi-Layer EMA + ML Filters | PRODUCTION | Non |
 | 35 | Research QuantBook: Option Wheel Strategy | PRODUCTION | Non |
 | 36 | Research QuantBook: Options Wheel Tech Stocks | PRODUCTION | Non |
@@ -262,10 +262,10 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 | 39 | Portfolio Hybride IBKR (50%) + Binance (50%) — Phase 1  | BETA | Non |
 | 40 | Research QuantBook: RL Portfolio Allocation | ALPHA | Non |
 | 41 | Research QuantBook: RegimeSwitching Alpha Model | PRODUCTION | Non |
-| 42 | Research QuantBook: RiskParity (Inverse-Volatility Weig | PRODUCTION | Non |
-| 43 | Research QuantBook: Sector-Momentum (Dual Momentum) | PRODUCTION | Non |
+| 42 | Research QuantBook: RiskParity (Inverse-Volatility Weig | ALPHA | Non |
+| 43 | Research QuantBook: Sector-Momentum (Dual Momentum) | ALPHA | Non |
 | 44 | Research QuantBook: Trend Following Competition | PRODUCTION | Non |
 | 45 | Research QuantBook: TrendStocks Alpha Model | PRODUCTION | Non |
-| 46 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | PRODUCTION | Non |
+| 46 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | ALPHA | Non |
 | 47 | Research QuantBook: VIX-TermStructure (Short Volatility | ALPHA | Non |
 | 48 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issue #75 | PRODUCTION | Non |
