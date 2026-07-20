@@ -43,6 +43,7 @@ from wfc_cpsat import (  # noqa: E402
     adjacency_violations,
     tile_variety,
     load_tileset,
+    run_all,
 )
 
 # Identites du tileset (tileset.json, id == index) :
@@ -67,6 +68,18 @@ def rules(tileset):
     """Regles d'adjacence sous forme {int: [bool x5]} (clefs entieres)."""
     raw = tileset["adjacency"]["rules"]
     return {int(k): v for k, v in raw.items()}
+
+
+@pytest.fixture
+def simple_grid():
+    """Petite grille 1x2 a deux tuiles -- utile pour les tests d'adjacence."""
+    return np.array([[1, 2]], dtype=int)
+
+
+@pytest.fixture
+def full_adjacency():
+    """Matrice d'adjacence qui autorise toutes les paires entre 5 tuiles."""
+    return {t: {u: True for u in range(5)} for t in range(5)}
 
 
 # ----------------------------------------------------------------------------
@@ -304,6 +317,7 @@ class TestRunAll:
 
 
 # ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Degenerate-input guards (bug-class #7463/#7522 : rows<=0 / cols<=0).
 # ----------------------------------------------------------------------------
 
@@ -349,3 +363,104 @@ class TestDegenerateInputGuard:
         assert grid.shape == (4, 4)
         wfc_grid = PureWFC(4, 4, tileset, seed=0).solve()
         assert wfc_grid.shape == (4, 4)
+
+
+# ----------------------------------------------------------------------------
+# Degenerate-input guards complementaires (bug-class #7463 extension).
+#
+# Portee : entry points RESTANTS du module wfc_cpsat APRES le fix #7551.
+#
+#   - run_all(rows<=0 / cols<=0)                : agrégateur des 3 solveurs ;
+#                                                 sans guard, leve un
+#                                                 IndexError opaque (numpy
+#                                                 random ou pure-WFC init)
+#                                                 au lieu du ValueError
+#                                                 explicite.
+#   - adjacency_violations(grid, rules={})      : KeyError sur rules[grid[r,c]]
+#                                                 au moment de l'indexation
+#                                                 (silent crash, pas un guard).
+#   - adjacency_violations(grid, rules) ou rules manque une tuile de grid :
+#                                                 KeyError sur rules[tile]
+#                                                 au moment de l'indexation.
+#
+# Complement du fix #7551 (generate_random / PureWFC / solve_cpsat) sans
+# collision : run_all / adjacency_violations ne sont pas dans le scope de
+# la PR soeur.
+# ----------------------------------------------------------------------------
+
+
+class TestRunAllDegenerateInputGuard:
+    """run_all() est l'agregateur qui appelle generate_random / PureWFC /
+    solve_cpsat. Sans guard explicite en entree, une (rows<=0 / cols<=0)
+    leve un IndexError ou un numpy ValueError cryptique au lieu d'un
+    ValueError explicite et discoverable."""
+
+    def test_run_all_zero_rows_raises(self):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            run_all(rows=0, cols=5)
+
+    def test_run_all_zero_cols_raises(self):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            run_all(rows=5, cols=0)
+
+    def test_run_all_negative_dims_raises(self):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            run_all(rows=-2, cols=3)
+
+    def test_run_all_zero_zero_raises(self):
+        with pytest.raises(ValueError, match="rows and cols must be positive"):
+            run_all(rows=0, cols=0)
+
+    def test_run_all_positive_dims_unaffected(self, tileset, tmp_path):
+        """Le guard n'impacte pas la voie nominale. On detourne tileset_path
+        vers un fichier JSON temporaire contenant le meme tileset que la
+        fixture, parce que run_all load_tileset() depuis un path (le test
+        ne touche pas le cwd)."""
+        import json
+        tileset_file = tmp_path / "tileset.json"
+        # Convertir les clefs string->int pour JSON (load_tileset attend
+        # des clefs str mais cast en interne -- on garde le format canonique).
+        tileset_for_json = json.loads(json.dumps(tileset))
+        tileset_file.write_text(json.dumps(tileset_for_json))
+        results, ts = run_all(rows=4, cols=4, seed=0, tileset_path=str(tileset_file))
+        assert set(results.keys()) >= {"random", "wfc", "cpsat"}
+        assert results["random"]["grid"].shape == (4, 4)
+
+
+class TestAdjacencyViolationsDegenerateInput:
+    """adjacency_violations(grid, rules) suppose que ``rules`` couvre toutes
+    les tuiles de ``grid``. Sans guard, un ``rules={}`` ou un ``rules`` qui
+    manque une tuile leve un KeyError sur l'indexation ``rules[grid[r, c]]``
+    -- silent crash sur caller-side."""
+
+    def test_empty_rules_raises(self, simple_grid):
+        with pytest.raises(ValueError, match="rules must be a non-empty"):
+            adjacency_violations(simple_grid, {})
+
+    def test_rules_missing_tile_raises(self, simple_grid):
+        """Tile 5 present dans grid mais aucune entree dans rules[5]."""
+        rules = {1: {1: True, 2: True}, 2: {1: True, 2: True}}
+        grid_with_5 = np.array([[1, 5]], dtype=int)
+        with pytest.raises(ValueError, match=r"missing entries for tile\(s\) \[5\]"):
+            adjacency_violations(grid_with_5, rules)
+
+    def test_full_rules_unaffected(self, simple_grid, full_adjacency):
+        """Voie nominale preservee : 0 violation sur grille 1x1 a tuile unique."""
+        grid = np.array([[1]], dtype=int)
+        v = adjacency_violations(grid, {1: {1: True}})
+        assert v == 0
+
+    def test_full_rules_2x2_all_allowed(self, full_adjacency):
+        """Voie nominale preservee : 0 violation sur 2x2 full-adjacency."""
+        grid = np.array([[1, 2], [3, 4]], dtype=int)
+        v = adjacency_violations(grid, full_adjacency)
+        assert v == 0
+
+    def test_full_rules_2x2_one_violation(self, full_adjacency):
+        """Voie nominale preservee : 1 violation sur 2x2 avec un edge interdit."""
+        # Interdire l'adjacence 1->2 (droite) : 1 violation attendue
+        rules = {t: {u: True for u in range(5)} for t in range(5)}
+        rules[1][2] = False
+        grid = np.array([[1, 2], [3, 4]], dtype=int)
+        v = adjacency_violations(grid, rules)
+        assert v == 1

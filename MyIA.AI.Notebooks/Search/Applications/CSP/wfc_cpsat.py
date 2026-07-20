@@ -375,13 +375,43 @@ def bfs_reachable_floor(grid: np.ndarray, floor_id: int) -> float:
 
 
 def adjacency_violations(grid: np.ndarray, rules: dict) -> int:
+    """Compte les violations de la matrice d'adjacence pour une grille.
+
+    Args:
+        grid: ndarray 2D des identifiants de tuiles (forme (rows, cols)).
+        rules: dict imbrique {tile_a: {tile_b: bool}} -- l'adjacence
+               autorisee (a droite de a / en dessous de a). Doit couvrir
+               toutes les tuiles presentes dans ``grid``.
+
+    Returns:
+        Nombre de paires de cellules voisines (droite / dessous) dont
+        l'adjacence n'est pas autorisee.
+
+    Raises:
+        ValueError: si ``rules`` est vide, ou si une tuile de ``grid``
+                    est absente de ``rules`` (sinon ``KeyError`` opaque
+                    au moment de l'indexation ``rules[grid[r, c]]``).
+    """
+    if not rules:
+        raise ValueError("rules must be a non-empty adjacency dict")
     rows, cols = grid.shape
+    # Pre-check : toutes les tuiles de grid ont une entree dans rules.
+    # Sinon KeyError opaque a l'indexation rules[grid[r, c]].
+    if rows > 0 and cols > 0:
+        present_tiles = {int(grid[r, c]) for r in range(rows) for c in range(cols)}
+        missing = present_tiles - set(rules.keys())
+        if missing:
+            raise ValueError(
+                f"rules dict is missing entries for tile(s) {sorted(missing)} "
+                f"present in the grid"
+            )
     v = 0
     for r in range(rows):
         for c in range(cols):
+            tile = int(grid[r, c])
             for nr, nc in [(r, c + 1), (r + 1, c)]:
                 if nr < rows and nc < cols:
-                    if not rules[grid[r, c]][grid[nr, nc]]:
+                    if not rules[tile][int(grid[nr, nc])]:
                         v += 1
     return v
 
@@ -397,6 +427,20 @@ def tile_variety(grid: np.ndarray, n_tiles: int) -> int:
 
 def run_all(rows=12, cols=12, seed=42, tileset_path="tileset.json",
             cpsat_connectivity=True) -> tuple[dict, dict]:
+    """Run the random + PureWFC + CP-SAT trio on a (rows, cols) grid.
+
+    Aggregator over :func:`generate_random`, :class:`PureWFC` and
+    :func:`solve_cpsat`. The argument contract matches these three:
+    ``rows`` and ``cols`` must be positive (>= 1).
+
+    Raises:
+        ValueError: si ``rows <= 0`` ou ``cols <= 0``.
+    """
+    if rows <= 0 or cols <= 0:
+        raise ValueError(
+            f"rows and cols must be positive (at least one cell), "
+            f"got rows={rows}, cols={cols}"
+        )
     tileset = load_tileset(tileset_path)
 
     results = {}
