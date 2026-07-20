@@ -99,11 +99,34 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `fix_string_cells.py` | Normaliser cellules `source` en string vs array |
 | `scan_md_hierarchy.py` | Audit **mise en forme** (EPIC #3966) : flague `HINT-AS-HEADING` (indice/objectif/etape en heading -> grande police), `H1-DEEP`, `MULTI-H1`. Render-agnostic (parse JSON). Verif visuelle finale via nbconvert+Playwright : cf [notebook-formatting.md](notebook-formatting.md) |
 | `audit_pip_install_cells.py` | Audit cellules `!pip install` (leak vector + env anti-pattern, secrets-hygiene §6 triage C = source-leak). Classifier `UNCONDITIONAL_BASH` / `UNCONDITIONAL_SYS` / `CONDITIONAL_TRY` / `NON_BASH`. Modes `--scan` / `--scan-all` / `--scan-all --check` (exit 1 si HIGH) / `--json`. Compteur initial repo = 70 HIGH-severity sur 203 notebooks (c.460). 13/13 tests unitaires PASS |
+| `pip_leak_delta.py` | **Guard delta pip-leak** : compare deux scans JSON d'`audit_pip_install_cells.py` et fail si la PR introduit des leaks HIGH *nouveaux* (pas un fail absolu `--check` — le repo porte encore des HIGH hérités drainés un-PR-par-notebook). CI-ready (exit 1 sur delta > 0) |
+| `detect_fabricated_outputs.py` | Détecteur **sorties textuelles FABRIQUÉES** committes comme résultats d'exécution (Prong-A, registre #3801) : placeholder textuel (`Row N`) ou dataframe backtest-entièrement-à-0.0 en lieu et place du vrai résultat. Companion image-axis de `detect_blank_figures.py` |
+| `strip_fabricated_quantbook_outputs.py` | Strip des sorties text/PNG fabriquées des `quantbook.ipynb` (cf #6891, Side A). Les 8 quantbooks QC non-ré-exécutables via MCP portaient des outputs fabriqués ; cet outil les retire proprement (exception quantbook QC, cf secrets-hygiene §6) |
+| `detect_bare_cross_dir_load.py` | Détecte un `#load "X.cs"` **bare** (nom nu, sans séparateur) dont le `.cs` n'existe PAS dans le dossier du notebook — anti-pattern du rollout SVG inline (#6927) où le kernel résout un `#load` relatif et échoue silencieusement / charge le mauvais fichier |
+| `check_notebook_navlinks.py` | Vérifie les liens de navigation relatifs **cassés dans les cellules markdown des `.ipynb`** (« précédent / suivant »). `check_docs_links.py` couvre uniquement les fichiers markdown (CLAUDE.md, docs/, README) ; cet outil couvre le markdown *intérieur* des notebooks |
+| `check_plotly_static_risk.py` | Détecte les cellules Plotly-CDN dans les `.ipynb` = **blanc en static rendering** (cf #6927). Le pattern canonique `record PlotlyHtml + Formatter.Register` émet un `<script src="https://cdn.plot.ly/...">` externe qui rend en kernel live mais pas sur GitHub/nbviewer |
+
+### Render-suite SVG inline (rollout #6927)
+La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.md`) est gardée par 5 détecteurs couvrant tous les cas de figure cassé. `detect_svg_decimal_commas.py` (dans la section Tests ci-dessous) traite le cas virgule-décimale fr-FR.
+| Script | Usage |
+|--------|-------|
+| `detect_svg_broken_geometry.py` | Détecte les sorties SVG dont un élément a une **dimension négative** (`rect`/`use`/`image` à `width='-...'` ou `height='-...'`) = élément invisible, rendu cassé |
+| `detect_svg_empty_display.py` | Détecte les cellules .NET qui `display()` un chart SVG mais produisent un output **vide** (figure blanche sur GitHub/nbviewer) |
+| `detect_svg_offscreen_flat.py` | Détecte les SVG **plats** dont une géométrie de données est projetée au-delà du viewBox (>15% de sa hauteur) : barre/ligne/point rendu hors cadre = figure amputée (cas résiduel que les autres détecteurs ne voient pas) |
+
+### Papermill forensic & path-leak (anti-leak metadata)
+| Script | Usage |
+|--------|-------|
+| `detect_papermill_failed_state.py` | Détecte les notebooks dont l'exécution papermill ne s'est pas terminée proprement (#7079) : inspecte le bloc **top-level** `metadata.papermill` → deux classes `papermill_hard_failure` (exception non-None) et `papermill_pending` (status="pending") |
+| `detect_papermill_cell_level_state.py` | Companion **cell-level** du précédent : papermill écrit un status par-cellule que le détecteur top-level ne voit pas. Inspecte `metadata.papermill` de chaque cellule pour les échecs granulaires |
+| `detect_papermill_path_leak.py` | Détecteur **read-only** des fuites de chemins machine-locales dans les notebooks (companion de `scrub_papermill_paths.py`). Deux classes content-based : leak `metadata.papermill` chemin absolu + fuites dans les outputs. Cf secrets-hygiene §6 Stop & Repair (on ré-exécute, on ne scrubbe pas les outputs) |
+| `scrub_papermill_paths.py` | Scrub des chemins absolus machine-locaux du metadata papermill (`metadata.papermill.output_path`/`input_path` au basename). **Seule normalisation manuelle tolérée** hors outputs (metadata, pas une sortie de cellule) — cf secrets-hygiene §6 exceptions |
 
 ### Cure des accents FR & gates de régression — #2876
 | Script | Usage |
 |--------|-------|
 | `detect_accent_stripping.py` | Détecteur historique : dictionnaire conservateur `ACCENT_PAIRS` (source de vérité partagée). Le stripped form n'est pas un mot FR valide → non-ambigu |
+| `detect_link_target_regression.py` | Détecteur de **régression des accents dans les TARGETS de liens markdown** `[texte](cible)` (registre #2876). Un cure ad-hoc par regex globale `\b(mot)\b` peut accentuer la cible d'un lien → 404 ; cet outil garde les targets intacts |
 | `restore_accents_canonical.py` | **CURE canonique** (PR #7186). Markdown-only STRICT by construction : skip code/outputs/link-targets, préserve casse + structure (paragraph breaks). 4 bright-lines + 1 structurelle. Référence complète : [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md) |
 | `check_identifier_regression.py` | **GATE identifiants code** (PR #7157, MERGÉ). Détecte l'over-reach (cure qui accentue un identifiant). `_STRIP_RE` retire commentaires+chaînes avant comparaison base(main) vs head(branche). CI-ready (exit 1) |
 | `check_caps_regression.py` / `detect_caps_regression.py` | **GATE caps** (PR #7197 / #7198, arbitrage ai-01). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
@@ -131,6 +154,8 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `scripts/lean/setup_lean4_all.py` | **Point d'entrée unique** setup kernel Lean 4 : `--wsl-only` / `--register` / `--validate` / `--check-wrapper` (orchestre WSL install + registration Windows + validation) — cf [docs/wsl-kernels-detail.md](wsl-kernels-detail.md) |
 | `scripts/lean/lean_kernel_check.py` | Détection canonique régression wrapper kernel.json (#1618) : `inspect_kernel_wrapper` (partagé par les 2 validateurs + l'orchestrateur) |
 | `scripts/lean/smoke_test_epita_is.py` | Smoke-test kernels Lean EPITA-IS |
+| `scripts/lean/check_i18n_siblings.py` | **Checker i18n sibling-pair** (EPIC #4980) : vérifie la byte-identity du **body** (signatures, preuves, tactiques) entre un `Foo.lean` FR-canonical et son miroir `Foo_en.lean`. Seules les docstrings/commentaires diffèrent. Sorties `OK` / `OK-CONSUMER` / `DRIFT` / `ORPHAN` = point de départ d'investigation, jamais un grain verbatim (3 formes légitimes, cf [i18n-sibling-patterns.md](../lean/i18n-sibling-patterns.md)) |
+| `scripts/lean/po2026_recover_build.py` | **Recette récupération `lake build`** po-2026 (codification #6771, self-repair règle F) : cold-rebuild unreliable → script documenté dans [po2026-local-build-troubleshooting.md](../lean/po2026-local-build-troubleshooting.md). Valide firsthand sur knot_lean |
 | `scripts/lean/setup_shared_mathlib.ps1` | Mutualisation checkouts Mathlib via junctions NTFS (#2611) : `-Mode Scan` (inventaire groupes), `Apply` (cache `.mathlib-cache/` + junctions, `-Build` vérifie, `-RemoveBackups` libère l'espace), `Rollback` (restaure les checkouts physiques). Précondition : lake-manifest.json identique sur TOUTES les deps transitives + même lean-toolchain. Ne jamais `lake update` un projet junctionné |
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
