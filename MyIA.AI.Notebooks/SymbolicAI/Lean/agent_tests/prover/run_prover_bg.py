@@ -63,6 +63,19 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
                           restructuring has verified_tactic_count > 0. Tells a
                           coordinator the decomposition was an unproven spray,
                           NOT progress — do NOT harvest / branch it.
+      reasoning_budget_exceeded -> the run burned its SESSION reasoning wall-
+                          clock (max_session_seconds / workflow_timeout_s)
+                          without converging on an edit (latched in the
+                          multi-agent `except _asyncio.TimeoutError` or the
+                          autonomous WALL-CLOCK CAP branch, #7477 P5a-search).
+                          Distinct from heartbeat_budget_exceeded (compile-
+                          level Lean maxHeartbeats wall): this is session-level
+                          — the agent loop spent the whole budget reasoning and
+                          emitted 0 attempts. Forensic: kimi-k3 run `bt56gsv78`
+                          (DEMO 62 ne, 8->8, 0 attempts, 1800s Search-phase).
+                          Tells a coordinator the arm needs a shorter reasoning
+                          budget / different search / smaller decomposition, NOT
+                          more wall-clock or iterations.
       no_progress      -> diagnostic data only
 
     Real progress outranks the outage flag: a run that lowered the sorry count
@@ -117,6 +130,21 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     # identical to the classifier's None->False contract.
     if isinstance(result, dict) and result.get("decomposition_regression"):
         return "decomposition_regression"
+    # P5a-search (#7477 forensic, jsboige A-B 2026-07-20): the run burned its
+    # session reasoning wall-clock without converging on an edit (0 attempts).
+    # Ranked AFTER sorry_decreased / structural_only / provider_outage /
+    # correctly_refused / heartbeat_budget_exceeded / decomposition_regression:
+    # those are all more specific pathologies (real progress, provider death,
+    # explicit refusal, compile-level heartbeat wall, unverified spray). This
+    # flag only reclassifies what would otherwise be no_progress — the most
+    # generic budget-wall diagnosis. Distinct from heartbeat_budget_exceeded
+    # (compile-level): here the agents never got a tactic to the compiler, they
+    # spent the whole budget in Search-phase reasoning. Forensic kimi-k3 run
+    # `bt56gsv78` (DEMO 62 ne, 8->8, 0 attempts, 1800s) previously scored
+    # no_progress; reasoning_budget_exceeded lets a coordinator distinguish
+    # "agent spun reasoning without editing" from "agent tried and failed".
+    if isinstance(result, dict) and result.get("reasoning_budget_exceeded"):
+        return "reasoning_budget_exceeded"
     return "no_progress"
 
 

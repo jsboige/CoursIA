@@ -124,6 +124,21 @@ class ProofState:
     # structural_only: a run that lowered the sorry count before blowing the
     # budget is still progress.
     heartbeat_budget_exceeded: bool = False
+    # P5a-search (#7477 forensic, jsboige A-B 2026-07-20): the run burned its
+    # *session* reasoning wall-clock (max_session_seconds / workflow_timeout_s)
+    # without the agents converging on an edit — distinct from heartbeat_budget
+    # _exceeded which is a *compile-level* wall (a Lean tactic blew maxHeartbeats
+    # during a single build). This is the *session-level* wall: the agent loop
+    # (typically Search-phase reasoning) spent the whole budget thinking and
+    # emitted 0 attempts. Forensic evidence: kimi-k3 run `bt56gsv78` on DEMO 62
+    # ne — 8->8, 0 attempts, "reasoning-budget timeout 1800s en phase Search".
+    # Surfaced so run_prover_bg._derive_result_kind classifies the run as
+    # reasoning_budget_exceeded (distinct from no_progress) — telling a
+    # coordinator the arm needs a shorter reasoning budget / different search
+    # strategy / smaller goal decomposition, NOT more wall-clock. Ranked AFTER
+    # sorry_decreased / structural_only / heartbeat_budget_exceeded: a run that
+    # lowered sorry or blew a Lean heartbeat first ranks as that outcome.
+    reasoning_budget_exceeded: bool = False
 
     # F9 (2026-05-17, C37 forensic): Director consultation gate. The
     # Coordinator MUST call request_director_guidance() at least once

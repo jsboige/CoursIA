@@ -848,6 +848,14 @@ class MultiAgentSorryProver:
                 _credit = ""
             print(f"  Workflow reasoning-budget timeout ({workflow_timeout_s}s "
                   f"reasoning{_credit}) — aborting")
+            # P5a-search (#7477 forensic): latch the session-level reasoning
+            # wall-clock so _derive_result_kind classifies the run
+            # reasoning_budget_exceeded (distinct from no_progress). This is
+            # the multi-agent capture site (the autonomous path latches at its
+            # WALL-CLOCK CAP branch). Distinct from heartbeat_budget_exceeded
+            # (compile-level): here the agent loop burned the whole reasoning
+            # budget without converging on an edit.
+            state.reasoning_budget_exceeded = True
             proof_found = False
         except Exception as e:
             print(f"  Workflow error: {e}")
@@ -1124,6 +1132,14 @@ class MultiAgentSorryProver:
             # restructuring) so forensic ROI ranks these runs honestly instead
             # of counting an unproven sorry-spray as progress.
             "decomposition_regression": decomposition_regression,
+            # P5a-search (#7477 forensic): session-level reasoning wall-clock
+            # latched either in the multi-agent `except _asyncio.TimeoutError`
+            # or the autonomous WALL-CLOCK CAP branch. Surfaced so
+            # _derive_result_kind classifies the run reasoning_budget_exceeded
+            # (distinct from no_progress). getattr-default keeps legacy traces
+            # (field absent) falsy -> no_progress, identical to the heartbeat
+            # field's legacy-safe contract.
+            "reasoning_budget_exceeded": getattr(state, "reasoning_budget_exceeded", False),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (a boolean
@@ -1488,6 +1504,13 @@ class AutonomousProver:
                             )
                         except Exception:
                             pass  # Tracing is best-effort, don't fail on log errors
+                        # P5a-search (#7477 forensic): mirror of the multi-agent
+                        # `except _asyncio.TimeoutError` latch — this is the
+                        # autonomous reasoning-wall-clock capture site. The run
+                        # spent its reasoning budget without converging on an
+                        # edit; surface reasoning_budget_exceeded so the run is
+                        # not mislabelled no_progress.
+                        state.reasoning_budget_exceeded = True
                         _wallclock_capped = True
                         break
                 state.iteration = iteration
@@ -2028,6 +2051,12 @@ class AutonomousProver:
             # no_progress) — the target needs a cheaper tactic / higher
             # maxHeartbeats / decomposition, NOT more iterations.
             "heartbeat_budget_exceeded": getattr(state, "heartbeat_budget_exceeded", False),
+            # P5a-search (#7477 forensic): session-level reasoning wall-clock
+            # (latched at the autonomous WALL-CLOCK CAP branch). Surfaced so
+            # _derive_result_kind classifies reasoning_budget_exceeded. Mirror
+            # of the multi-agent result-dict field; getattr-default keeps
+            # legacy traces falsy -> no_progress.
+            "reasoning_budget_exceeded": getattr(state, "reasoning_budget_exceeded", False),
             # FX-12 (#6790 pathology 3): count of build-verified *structural*
             # edits (file_replace_lines / file_insert_lines whose build_check
             # passed). Distinct from ``structural_progress`` (boolean success
