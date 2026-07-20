@@ -69,6 +69,15 @@ class Tournament:
             noise: Probability of action being flipped (for noisy environments)
         """
         self.strategy_classes = strategies or ALL_STRATEGIES
+        # Guard: repetitions drives ``range(self.repetitions)`` and the
+        # per-match average ``total / self.repetitions`` in run(). A
+        # non-positive count either crashes (ZeroDivisionError) or silently
+        # zeroes every score (empty range -> 0.0 / negative). A tournament
+        # with no repetitions is ill-posed, not a zero-average tournament.
+        if repetitions <= 0:
+            raise ValueError(
+                f"repetitions must be positive, got {repetitions}"
+            )
         self.rounds_per_match = rounds_per_match
         self.repetitions = repetitions
         self.noise = noise
