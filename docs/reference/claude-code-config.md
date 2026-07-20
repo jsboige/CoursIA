@@ -2,7 +2,7 @@
 
 ## Agents (`.claude/agents/`)
 
-Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model, tools, memory, and skills configuration. Key agents:
+Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model, tools, memory, and skills configuration. **The roster below lists 9 representative agents** — the **full roster (21 agents)** with descriptions, mapping Epic → specialist, et mapping side-track est dans [subagents-reference.md](subagents-reference.md) (la source de vérité).
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
