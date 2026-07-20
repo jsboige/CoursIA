@@ -220,6 +220,22 @@ class TestReplicatorDynamics:
 
         assert M.shape == (2, 2)
 
+    def test_compute_payoff_matrix_zero_rounds_raises(self):
+        """rounds <= 0 doit echouer explicitement (ValueError), pas crasher
+        en ZeroDivisionError. Avant le guard, `M[i, j] = score1 / rounds`
+        divisait par 0. Meme bug-class degenerate-input que #7481 (shapley
+        n_samples<=0), #7489 (kuhn_poker iterations<=0), #7495 (replicator
+        normalization)."""
+        strategies = [AlwaysCooperate(), AlwaysDefect()]
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            compute_payoff_matrix(strategies, rounds=0)
+
+    def test_compute_payoff_matrix_negative_rounds_raises(self):
+        """rounds < 0 doit aussi echouer explicitement (consistance du guard)."""
+        strategies = [AlwaysCooperate(), AlwaysDefect()]
+        with pytest.raises(ValueError, match="rounds must be positive"):
+            compute_payoff_matrix(strategies, rounds=-1)
+
     def test_replicator_trajectory_shape(self):
         """Replicator dynamics should return correct shape."""
         M = np.array([[3, 0], [5, 1]])

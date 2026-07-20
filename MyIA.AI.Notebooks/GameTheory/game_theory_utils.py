@@ -508,6 +508,9 @@ def compute_payoff_matrix(strategies: List[Strategy], rounds: int = 200) -> np.n
     n = len(strategies)
     M = np.zeros((n, n))
 
+    if rounds <= 0:
+        raise ValueError(f"rounds must be positive, got {rounds}")
+
     for i in range(n):
         for j in range(n):
             s1 = type(strategies[i])()
