@@ -485,6 +485,28 @@ class TestTournament:
         # Sanity : le score casse (16) ne doit plus revenir.
         assert self_play_via_tournament > 20
 
+    def test_zero_repetitions_raises(self):
+        """repetitions=0 -> before the guard, ``total1 / self.repetitions``
+        raised ZeroDivisionError at run(); now rejected at construction.
+
+        Same degenerate-input bug-class as #7513 compute_payoff_matrix
+        (rounds<=0) and #7524 FictitiousPlay.train (iterations<=0): the count
+        drives ``range()`` AND a division, so 0 crashes and <0 silently zeroes.
+        """
+        with pytest.raises(ValueError, match="repetitions must be positive"):
+            Tournament(strategies=DETERMINISTIC, repetitions=0)
+
+    def test_negative_repetitions_raises(self):
+        """repetitions<0 -> ``range(neg)`` empty + ``0.0 / negative`` = 0.0:
+        silently returned an all-zero scoreboard before the guard."""
+        with pytest.raises(ValueError, match="repetitions must be positive"):
+            Tournament(strategies=DETERMINISTIC, repetitions=-2)
+
+    def test_positive_repetitions_unaffected(self):
+        """The guard does not impact the normal path (deterministic run)."""
+        t = Tournament(strategies=DETERMINISTIC, rounds_per_match=20, repetitions=1).run()
+        assert len(t.rankings) == len(DETERMINISTIC)
+
 
 # ============================================================================
 # run_axelrod_tournament (convenience wrapper).
