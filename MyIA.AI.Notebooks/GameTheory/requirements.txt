@@ -9,6 +9,7 @@ matplotlib>=3.7.0
 # Game Theory libraries
 nashpy>=0.0.40
 open_spiel>=1.4
+axelrod>=4.0.0               # Axelrod library — IPD tournaments + Moran process (GameTheory-6)
 
 # Visualization
 networkx>=3.0
