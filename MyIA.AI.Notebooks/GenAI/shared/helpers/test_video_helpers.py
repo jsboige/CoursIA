@@ -418,3 +418,32 @@ def test_add_audio_to_video_trims_audio_when_longer(monkeypatch, tmp_path):
     # Audio was trimmed because audio.duration > video.duration.
     assert audio.subclipped == (0, 10.0)
     assert video.audio_set is audio
+
+
+# ---------------------------------------------------------------------------
+# Degenerate-input guards (live functions only)
+# ---------------------------------------------------------------------------
+
+def test_extract_frames_rejects_non_positive_n_frames():
+    """extract_frames must reject n_frames<=0 upfront (before decord/PIL import).
+
+    Previously n_frames=0 returned [] silently and n_frames<0 crashed inside
+    numpy.linspace with an opaque 'Number of samples must be non-negative'.
+    """
+    for bad in (0, -1, -8):
+        with pytest.raises(ValueError, match="n_frames must be positive"):
+            vh.extract_frames("v.mp4", n_frames=bad)
+
+
+def test_frames_to_video_rejects_non_positive_fps():
+    """frames_to_video must reject fps<=0 upfront (before imageio import).
+
+    Previously fps<=0 was forwarded to imageio.get_writer, which raised an
+    opaque error deep in the writer.
+    """
+    import numpy as np
+    from PIL import Image  # noqa: F401  (ensure PIL present; not the point)
+    frame = Image.fromarray(np.zeros((4, 4, 3), dtype=np.uint8))
+    for bad in (0, 0.0, -1.5):
+        with pytest.raises(ValueError, match="fps must be positive"):
+            vh.frames_to_video([frame], fps=bad, output_path="out.mp4")
