@@ -4,6 +4,8 @@
 
 Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, planification classique et avancée, contrats intelligents. Du raisonnement déductif à la vérification formelle.
 
+**Last reviewed**: 2026-07-20
+
 ## Statistiques
 
 | Métrique | Valeur |
