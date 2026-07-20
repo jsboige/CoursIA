@@ -299,7 +299,7 @@ flowchart LR
         L3["decision_theory_lean<br/>VNM"]
         L4["kelly_lean<br/>unicité"]
         L5["erc20_lean<br/>no-reentrancy"]
-        L6["social_choice_lean<br/>Arrow"]
+        L6["game_theory_lean/SocialChoice<br/>Arrow"]
     end
     N1 -. "consistance heuristic" .-> L1
     N2 -. "extension prouvée" .-> L2
