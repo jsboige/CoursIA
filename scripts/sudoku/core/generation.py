@@ -39,7 +39,35 @@ def _can_place(grid, r, c, num):
 
 
 def generate_puzzles(n, n_empty_range=(30, 55), seed=42):
-    """Generate n puzzles with controlled difficulty (number of empty cells)."""
+    """Generate n puzzles with controlled difficulty (number of empty cells).
+
+    Args:
+        n: number of puzzles to generate. Must be positive (>= 1).
+        n_empty_range: 2-tuple (lo, hi) bounding the number of empty cells per
+            puzzle. Must satisfy ``0 <= lo <= hi <= 81`` (lo == hi is allowed
+            and pins the difficulty). ``randint(lo, hi + 1)`` is then called
+            per puzzle.
+        seed: numpy RandomState seed for reproducibility.
+
+    Raises:
+        ValueError: if ``n <= 0``, if ``n_empty_range`` is inverted (``lo > hi``),
+            or if its bounds fall outside ``[0, 81]`` (e.g. ``(-5, 30)`` would
+            produce puzzle == solution silently, ``(30, 90)`` would raise an
+            opaque numpy error downstream).
+    """
+    if n <= 0:
+        raise ValueError(
+            f"n must be positive (at least one puzzle to generate), got {n}"
+        )
+    if n_empty_range[0] > n_empty_range[1]:
+        raise ValueError(
+            f"n_empty_range must be non-decreasing (lo <= hi), got {n_empty_range}"
+        )
+    if n_empty_range[0] < 0 or n_empty_range[1] > 81:
+        raise ValueError(
+            f"n_empty_range bounds must satisfy 0 <= lo <= hi <= 81, "
+            f"got {n_empty_range}"
+        )
     rng = np.random.RandomState(seed)
     puzzles = np.zeros((n, 81), dtype=np.int64)
     solutions = np.zeros((n, 81), dtype=np.int64)
