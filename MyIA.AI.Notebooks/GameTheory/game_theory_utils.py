@@ -484,6 +484,14 @@ def run_tournament(strategies: List[Strategy],
     Returns:
         Dictionary {strategy_name: average_score_per_match}
     """
+    if not strategies:
+        raise ValueError(
+            "strategies must be a non-empty list (a tournament needs at least one strategy)"
+        )
+    if repetitions <= 0:
+        raise ValueError(
+            f"repetitions must be positive, got {repetitions}"
+        )
     n = len(strategies)
     scores = defaultdict(float)
     match_count = defaultdict(int)

@@ -210,6 +210,36 @@ class TestTournament:
         assert results["TitForTat"] >= results["AlwaysCooperate"] - 1
 
 
+class TestTournamentGuard:
+    """run_tournament must reject degenerate inputs explicitly.
+
+    Without the guards, degenerate inputs return a silently-empty result
+    dict (no error), masking a caller-side bug:
+      - run_tournament([])          -> n=0, range(0) skipped, returns {} silently
+      - run_tournament([...], repetitions=0)  -> range(0) skipped, returns {} silently
+      - run_tournament([...], repetitions=-2) -> range(-2) skipped, returns {} silently
+
+    Same degenerate-input bug-class as compute_payoff_matrix rounds<=0
+    (#7517), make_batch_edge_index batch_size<=0 (#7554)."""
+
+    def test_empty_strategies_raises(self):
+        with pytest.raises(ValueError, match="strategies must be a non-empty list"):
+            run_tournament([])
+
+    def test_zero_repetitions_raises(self):
+        with pytest.raises(ValueError, match="repetitions must be positive"):
+            run_tournament([TitForTat(), AlwaysDefect()], repetitions=0)
+
+    def test_negative_repetitions_raises(self):
+        with pytest.raises(ValueError, match="repetitions must be positive"):
+            run_tournament([TitForTat(), AlwaysDefect()], repetitions=-3)
+
+    def test_default_repetitions_unaffected(self):
+        """The guard does not impact the normal path (default repetitions=1)."""
+        results = run_tournament([TitForTat(), AlwaysCooperate()], rounds=50)
+        assert len(results) == 2
+
+
 class TestReplicatorDynamics:
     """Tests for replicator dynamics."""
 
