@@ -83,6 +83,7 @@ from . import lens_agreement
 from . import triade
 from . import spectral
 from . import sensitivity
+from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
 
@@ -95,7 +96,7 @@ __all__ = [
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
     "time_arrow", "synthesis", "persona_cusp", "stake", "workspace",
     "beauty", "jlens_traces", "sae_traces", "lens_agreement", "triade",
-    "spectral", "sensitivity",
+    "spectral", "sensitivity", "meta_proxy",
     "reversibility_budget",
     "argumentation",
 ]
