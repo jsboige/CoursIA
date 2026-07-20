@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-20** — Verdict **NO-RENUMBER / no-defect-found** figé (cf PR #6898). EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.674 [PR #7426](https://github.com/jsboige/CoursIA/pull/7426) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). Superseded by EPIC #5081 closure. *Archivé par : po-2026 (lane CoursIA-2, c.695) — `See` partiel dispatch triage c.674 UPDATE/ARCHIVE catégorie, suite logique c.676 PR #7436 (GenAI Texte+Video) + c.748 PR #7525 (Probas/Infer, Probas/PyMC, Search) ; Planners = dernier dispatch restants dans la catégorie phase-1.*
+
 # SymbolicAI/Planners — analyse renumérotation (EPIC #5081, phase-1)
 
 **Série** : `MyIA.AI.Notebooks/SymbolicAI/Planners/` (EPIC #1344, renumérotée lors du passage à l'arborescence par étage `00-Environment` → `04-NeuroSymbolic`).
