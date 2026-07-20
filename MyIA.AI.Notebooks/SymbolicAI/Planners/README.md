@@ -71,7 +71,31 @@ La planification classique épuise ses limites dès que les problèmes deviennen
 
 ### Phase 4 : Neuro-Symbolique (Notebooks 10-12, ~3h)
 
-La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, et portabilité du modèle PDDL entre moteurs. Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
+La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
+
+### Au-delà de la satisfaction : optimisation PDDL (coût minimal, Planners-11)
+
+Jusqu'ici, les planificateurs de la série résolvent des problèmes de **satisfaction** : trouver *un* plan réalisable, comme `Solver().check() == sat` en SMT. L'ajout de `problem.add_quality_metric(MinimizeActionCosts(...))` (cell 41 du notebook 11) bascule le solveur en mode **optimisation** : parmi tous les plans qui atteignent le but, trouver celui qui **minimise le coût total** — la capacité distinctive de la planification logistique (tournées de livraison), du routing (réseaux pondérés), et de l'ordonnancement (makespan). Le notebook 11 exécute maintenant les **deux modes sur le même domaine** (livraison A → D, arêtes à coûts hétérogènes) :
+
+| Solveur | Plan retourné | Coût total | Justification |
+|---------|--------------|-----------|--------------|
+| `fast-downward` (satisficing) | `A → D` (1 action) | **10** | Premier plan trouvé, sans garantie de coût |
+| `fast-downward-opt` (optimal) | `A → B → C → D` (3 actions) | **3** | Certifié minimal par exploration A\* + heuristique admissible |
+
+**Résultat discriminant** (extrait de la cellule 42 du notebook) :
+```
+Probleme : livraison A -> D, couts heterogenes par trajet.
+Direct A->D       : 1 action, cout 10
+Detour A->B->C->D : 3 actions, cout 1+1+1 = 3
+=> plan le plus court != plan le moins cher.
+```
+
+**Pourquoi cette section manquait avant** : la série présentait jusqu'ici l'unification multi-solveurs *au niveau satisfaction*. La capacité **optimisation** restait implicite dans les notebooks CP-SAT (notebook 7, `model.Maximize`) et Z3 (notebook 12 de Sudoku, `Optimize().maximize`) — mais sans exécution head-to-head d'un planificateur optimal PDDL vs un satisficing sur le **même modèle**. EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) **Prong-B** (« problème non-trivial qui met le moteur en valeur ») avait diagnostiqué que la signature « plan optimal » de la planification restait théorique dans la série. [#7592](https://github.com/jsboige/CoursIA/pull/7592) la démontre first-hand sur un cas où le plan optimal est **plus long** (3 actions) que le satisficing (1 action), ce qui rend la qualité métrique non-triviale (un coût uniforme effondrerait le test).
+
+**À retenir** :
+- Sans *quality metric*, un planificateur se réduit à un **chercheur de plan** (BFS/GBFS sur le graphe d'états). L'optimalité n'est pas du tout recherchée.
+- Avec `MinimizeActionCosts`, le moteur devient un **optimiseur combinatoire** (A\* sur graphe pondéré, heuristique admissible, garantie d'optimalité). C'est la signature IPC optimal track.
+- L'arc cross-famille **CP-SAT ([#7588](https://github.com/jsboige/CoursIA/pull/7588)) → Z3 SMT ([#7589](https://github.com/jsboige/CoursIA/pull/7589)) → PDDL ([#7592](https://github.com/jsboige/CoursIA/pull/7592))** montre la même bascule satisfaction → optimisation dans trois familles distinctes de solveurs. Le présent notebook ferme la trilogie côté planification.
 
 ### Parcours alternatifs
 
@@ -119,7 +143,8 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Planification hiérarchique | **Planners-9-HTN** (SHOP2, decomposition) |
 | Frontière LLM + IA | **Planners-10-LLM-Planning** |
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
-| Comparer tous les solveurs | **Planners-11-Unified-Planning** |
+| Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning** |
+| Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
 
 ## Objectifs d'apprentissage
 
@@ -203,7 +228,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 8 | Temporal | PDDL 2.1, durées d'actions, parallélisme, contraintes temporelles, ordonnancement |
 | 9 | HTN | Planification hiérarchique : tâches primitives/abstraites, méthodes, HDDL, SHOP2 |
 | 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
-| 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle |
+| 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle — + optimisation `MinimizeActionCosts` (optimal bat satisficing de 7 unités) [#7592] |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
 
 ---
@@ -343,6 +368,8 @@ curl -s http://localhost:8200/health
 | **HTN** | Hierarchical Task Network - décomposition de tâches |
 | **LM-cut** | Heuristique admissible basée sur les landmarks |
 | **CP-SAT** | Constraint Programming-Satisfiability (OR-Tools) |
+| **MinimizeActionCosts** | Quality metric PDDL : minimise le coût total d'un plan (bascule satisfaction → optimisation, voir [section dédiée](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)) |
+| **fast-downward-opt** | Variante optimale de Fast Downward (certifie le plan de coût minimal) — [#7592](https://github.com/jsboige/CoursIA/pull/7592) |
 | **Learning to Plan** | Apprentissage d'heuristiques par réseaux de neurones |
 | **LOOP** | Framework neuro-symbolique, 85.8% coverage IPC |
 
