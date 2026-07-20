@@ -58,10 +58,19 @@ class ParsedDoc:
 
 
 def _slug(s: str) -> str:
-    """Stable, ASCII-safe key slug (preserves CJK via hex if needed)."""
+    """Stable, Unicode-aware key slug (accents + CJK preserved verbatim).
+
+    Lowercase, collapse whitespace to underscores, keep word characters only.
+    Python 3 ``\\w`` is Unicode-aware by default (UTS18 level-1), so accented
+    Latin (``é``), CJK ideographs (``测``), Hiragana/Katakana (``カ``), Hangul
+    (``한``), Cyrillic (``Б``) and Arabic (``م``) all survive verbatim — no
+    hex escaping, no explicit per-script allow-list needed. Empty/blank input
+    falls back to ``cell`` (never an empty key), and the result is capped at
+    40 chars to bound CSV key length.
+    """
     s = s.strip().lower()
     s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"[^\w一-鿿぀-ヿ-]", "", s, flags=re.UNICODE)
+    s = re.sub(r"[^\w]", "", s)
     return s[:40] or "cell"
 
 
