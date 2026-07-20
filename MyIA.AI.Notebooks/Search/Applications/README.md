@@ -75,7 +75,7 @@ Les classiques fondateurs d'abord : les N-Queens (App-1) — le banc d'essai can
 
 La coloration de graphes (App-2) part, elle, du graphe d'adjacence des départements français métropolitains — encore sans couleur assignée ici, le tracé sert de support à l'illustration de la contrainte de différence par frontière :
 
-[![Graphe d'adjacence des départements français métropolitains (101 sommets), colorié après résolution CP-SAT](assets/readme/app2-graphcoloring-map.png)](CSP/App-2-GraphColoring.ipynb)
+[![Graphe d'adjacence des départements français métropolitains — vue non colorée servant de support à l'illustration de la contrainte de différence par frontière](assets/readme/app2-graphcoloring-map.png)](CSP/App-2-GraphColoring.ipynb)
 
 Viennent ensuite les problèmes d'ordonnancement réalistes. Le planning infirmier (App-3) montre 15 infirmières réparties sur 28 jours, avec les créneaux Matin/Après-midi/Nuit, les jours de repos et les week-ends marqués en rouge :
 
