@@ -1119,6 +1119,15 @@ class FictitiousPlay:
 
     def train(self, iterations: int):
         """Run fictitious play for n iterations."""
+        # Guard degenerate iteration counts (sister to kuhn_poker_cfr.train /
+        # shapley_value_monte_carlo n_samples): iterations<=0 makes range() an
+        # empty loop, i.e. a SILENT no-op — the caller believes training ran
+        # while the average strategy is unchanged from its Laplace uniform prior.
+        # Reject explicitly instead of returning a silently-untrained learner.
+        if iterations <= 0:
+            raise ValueError(
+                f"iterations must be positive, got {iterations}"
+            )
         for _ in range(iterations):
             self.step()
 
