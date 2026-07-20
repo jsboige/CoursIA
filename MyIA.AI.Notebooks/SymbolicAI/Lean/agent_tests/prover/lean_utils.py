@@ -26,6 +26,25 @@ _HONEST_SORRY_RE = re.compile(
 _SORRY_TOKEN_RE = re.compile(r"\bsorry\b")
 
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Boundary guard: reject None / non-str degenerate inputs (#7596-pattern, G.9).
+
+    Converts OPAQUE TypeErrors (``Path(None)`` -> "expected str", ``len(None)`` ->
+    "NoneType has no len") and AttributeErrors (``None.split()``) into clear
+    ValueErrors naming the offending argument, so a prover workflow that
+    forwards an agent-generated None filepath/content fails fast with a
+    diagnosable message instead of an opaque stack trace. By default empty
+    strings are rejected too (invalid for file paths / identifiers); pass
+    ``allow_empty=True`` for content parameters where ``''`` is a legitimate
+    input (an empty Lean file has 0 sorries).
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 def _has_lakefile(p: Path) -> bool:
     """True if directory ``p`` holds a Lake manifest (lakefile.lean/.toml)."""
     return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
@@ -47,6 +66,7 @@ def resolve_lake_module(filepath) -> Tuple[str, str]:
     it falls back to the legacy depth-2 derivation so callers keep working on
     non-Lake or oddly-laid-out trees.
     """
+    filepath = _require_str("filepath", filepath)
     p = Path(filepath).resolve()
     stem = p.stem
     cur = p.parent
@@ -71,6 +91,9 @@ def probe_relative_path(filepath, project_dir, tmp_name: str) -> str:
     given root lacks a lakefile, which ``resolve_lake_module`` now prevents, so
     the path must be correct at derivation. Falls back to the legacy form when the
     probe sits outside the resolved root (non-Lake / oddly-laid-out trees)."""
+    filepath = _require_str("filepath", filepath)
+    project_dir = _require_str("project_dir", project_dir)
+    tmp_name = _require_str("tmp_name", tmp_name)
     tmp_path = Path(filepath).parent / tmp_name
     try:
         return tmp_path.resolve().relative_to(Path(project_dir).resolve()).as_posix()
@@ -86,6 +109,7 @@ def strip_lean_comments(content: str) -> str:
     token ``sorry`` inside a string literal, and over-stripping there cannot
     create a false token.
     """
+    content = _require_str("content", content, allow_empty=True)
     out = []
     i, n, depth = 0, len(content), 0
     while i < n:
@@ -124,6 +148,7 @@ def count_real_sorries(content: str) -> int:
     so their deltas stay consistent — the legacy substring counter was retired
     repo-wide in one pass to avoid mixed-counter drift.
     """
+    content = _require_str("content", content, allow_empty=True)
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
 
 
@@ -157,6 +182,7 @@ def sorry_is_in_statement(content: str, sorry_line: int) -> bool:
 
     ``--`` line comments ARE stripped per-line before the structural scan.
     """
+    content = _require_str("content", content, allow_empty=True)
     lines = content.split("\n")
     if not (1 <= sorry_line <= len(lines)):
         return False
@@ -242,6 +268,7 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     where probe errors cascade, or any compile/parse ambiguity — never blocks
     a legitimate run).
     """
+    filepath = _require_str("filepath", filepath)
     try:
         content = Path(filepath).read_text(encoding="utf-8")
     except OSError:
@@ -311,6 +338,7 @@ def is_honest_sorry(filepath: str, sorry_line: int,
 
     Returns (is_honest, reason). The reason is the matched comment block.
     """
+    filepath = _require_str("filepath", filepath)
     try:
         content = Path(filepath).read_text(encoding="utf-8")
     except OSError as e:
@@ -355,6 +383,7 @@ def extract_sorry_block(filepath: str, sorry_line: int, context_lines: int = 15)
       - indentation: indentation level of the sorry
       - goal_hint: extracted from comments before sorry
     """
+    filepath = _require_str("filepath", filepath)
     content = Path(filepath).read_text(encoding="utf-8")
     lines = content.split("\n")
 
@@ -428,6 +457,7 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
     Only considers errors at the EXACT sorry line to avoid cascade errors.
     For deeply nested sorries (indent >= 8), skips probing and uses heuristics.
     """
+    filepath = _require_str("filepath", filepath)
     from .verifier import get_verifier
 
     content = Path(filepath).read_text(encoding="utf-8")
@@ -611,6 +641,7 @@ def extract_hypotheses(filepath: str, sorry_line: int) -> list:
     Parses have-statements, intro'd variables, case-pattern variables,
     split_ifs hypotheses, let-bindings, and theorem parameters.
     """
+    filepath = _require_str("filepath", filepath)
     content = Path(filepath).read_text(encoding="utf-8")
     lines = content.split("\n")
 
@@ -701,6 +732,7 @@ def extract_local_lemmas(filepath: str, sorry_lines: set = None) -> list:
 
     Returns list of names that the agent can reference as already-proven helpers.
     """
+    filepath = _require_str("filepath", filepath)
     content = Path(filepath).read_text(encoding="utf-8")
     lines = content.split("\n")
     sorry_lines = sorry_lines or set()
@@ -794,6 +826,7 @@ def classify_definitions(filepath: str, goal_identifiers: list = None) -> list:
       - signature: first line of the definition (truncated)
       - reason: why unfold may fail (if applicable)
     """
+    filepath = _require_str("filepath", filepath)
     content = Path(filepath).read_text(encoding="utf-8")
     lines = content.split("\n")
     results = []
@@ -936,6 +969,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         ``real_build_ok`` (bool|None: real-module rebuild verdict, None if not
         attempted).
     """
+    filepath = _require_str("filepath", filepath)
+    replacement = _require_str("replacement", replacement, allow_empty=True)
     from .verifier import get_verifier
 
     content = Path(filepath).read_text(encoding="utf-8")
