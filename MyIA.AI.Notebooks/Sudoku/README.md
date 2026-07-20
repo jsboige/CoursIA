@@ -320,6 +320,21 @@ Avec Choco, on modélise le Sudoku comme 81 variables d'un problème CSP (une pa
 - Ignorer les heuristiques de branchement du solveur
 - Ne pas profiter des capacités de parallélisation
 
+### Au-delà de la satisfaction : optimisation CP-SAT et SMT-MaxSMT
+
+Les solveurs CP et SMT modernes ne se limitent pas à **trouver une solution faisable** : ils savent aussi **optimiser** un critère sous contraintes. La série Sudoku l'illustre désormais sur les deux moteurs phares du Niveau 4 et du Niveau 5.
+
+- **[#7588](https://github.com/jsboige/CoursIA/issues/7588) `feat(sudoku,#3801): demonstrate CP-SAT optimization (Maximize/Minimize)` — `Sudoku-10-ORTools-Python.ipynb`** : ajoute une section « Optimisation CP-SAT » qui exerce `model.Maximize(...)` et `model.Minimize(...)` sur des carrés latins pondérés à 5×5 (récompense totale optimale 178, coût diagonal minimal 5). Le solveur passe du statut `FEASIBLE` au statut `OPTIMAL`, ce que la simple satisfaction ne montre jamais. Voir aussi le port C# twin via la même cellule si le notebook miroir est mis à jour (voir PR de tracking).
+- **[#7589](https://github.com/jsboige/CoursIA/issues/7589) `feat(sudoku,#3801): demonstrate Z3 SMT optimization (Optimize/maximize)` — `Sudoku-12-Z3-Python.ipynb`** : ajoute la contrepartie SMT avec `Optimize()` + `maximize(...)` (MaxSMT). Cohérence cross-moteur vérifiée : la même instance de carré latin 5×5 pondéré donne une récompense optimale identique (178) entre CP-SAT et Z3, ce qui valide la transcription entre paradigmes.
+- **[#7622](https://github.com/jsboige/CoursIA/pull/7622) `feat(sudoku,#7589): Z3 SMT optimization (Optimize/MkMaximize) port to C# twin — `Sudoku-12-Z3-Csharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source C# identique au twin Python modulo API binding). Reviewer structural (`NanoClaw`) : LGTM, 19/19 cellules exécutées, latin-square vérifié à la main colonne par colonne.
+
+**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que les 19 notebooks Sudoku présentaient les solveurs CP/SMT uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
+
+**À retenir** :
+- Un solveur CP/SMT qui répond `FEASIBLE` / `SAT` ne donne qu'un point dans l'espace des solutions ; `OPTIMAL` / `SATISFIABLE (optimum)` prouve qu'aucune meilleure solution n'existe pour le critère.
+- L'API est différente entre moteurs : `model.Maximize(expr)` (CP-SAT) vs `Optimize() + maximize(handle)` (Z3 SMT). Le concept de MaxSMT est commun mais l'idiome de chaque écosystème doit être respecté.
+- Sur le même problème, deux moteurs (CP-SAT et Z3) convergent vers la même valeur optimale — c'est un bon test de cohérence inter-paradigmes (cross-twin validation).
+
 ### Niveau 5 : IA Symbolique
 
 **À retenir** :
@@ -370,9 +385,9 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 7 | Norvig | Propagation de Norvig : élimination des candidats + recherche efficace |
 | 8 | Human Stratégies | 13 techniques humaines : naked/hidden singles, pairs, pointing, box/line |
 | 9 | Graph Coloring | Formulation graphe : nx.sudoku_graph(), coloration DSATUR |
-| 10 | OR-Tools | CP-SAT industriel : modèle déclaratif, contraintes globales, parallélisme |
+| 10 | OR-Tools | CP-SAT industriel : modèle déclaratif, contraintes globales, parallélisme — **+ optimisation `Maximize/Minimize` [#7588](https://github.com/jsboige/CoursIA/issues/7588)** |
 | 11 | Choco | Solveur Java via JPype : API CP alternative, propagateurs custom |
-| 12 | Z3 | SMT solving : assertions logiques, théories combinées, garantie formelle |
+| 12 | Z3 | SMT solving : assertions logiques, théories combinées, garantie formelle — **+ optimisation `Optimize/maximize` (MaxSMT) Python [#7589](https://github.com/jsboige/CoursIA/issues/7589) + C# twin [#7622](https://github.com/jsboige/CoursIA/pull/7622)** |
 | 13 | Symbolic Automata | Automates finis + Z3 : alphabets symboliques, transitions prédiqués |
 | 14 | BDD/MDD | Diagrammes de décision binaires : représentation compacte d'espaces de solutions |
 | 15 | Infer/NumPyro | Inférence probabiliste : distribution a posteriori sur les cases |
@@ -445,9 +460,9 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | **Norvig Propagation** | Propagation | Très rapide | Garantie | 7 | 7 |
 | **Stratégies Humaines** | Déduction logique | Variable | Partielle | 8 | 8 |
 | **Graph Coloring** | Théorie des graphes | Moyen | Garantie | 9 | 9 |
-| **OR-Tools CP-SAT** | CP industrielle | Très rapide | Garantie | 10 | 10 |
+| **OR-Tools CP-SAT** | CP industrielle + **optimisation `Maximize`/`Minimize`** ([#7588](https://github.com/jsboige/CoursIA/issues/7588)) | Très rapide | Garantie | 10 | 10 |
 | **Choco Solver** | CP industrielle | Rapide | Garantie | 11 | 11 |
-| **Z3 SMT** | Satisfiabilité | Rapide | Garantie | 12 | 12 |
+| **Z3 SMT** | Satisfiabilité + **optimisation `Optimize`/`maximize` MaxSMT** (Python [#7589](https://github.com/jsboige/CoursIA/issues/7589) + C# [#7622](https://github.com/jsboige/CoursIA/pull/7622)) | Rapide | Garantie | 12 | 12 |
 | **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 | 13 |
 | **BDD/MDD** | Diagrammes décision | Moyen | Garantie | 14 | 14 |
 | **Infer.NET/NumPyro** | Inférence probabiliste | Expérimental | Variable | 15 | 15 |
