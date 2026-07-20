@@ -69,6 +69,15 @@ class NormalFormGame:
     def __post_init__(self):
         self.A = np.array(self.A, dtype=float)
         self.B = np.array(self.B, dtype=float)
+        if self.A.ndim != 2:
+            raise ValueError(
+                f"A must be a 2-D payoff matrix, got array with shape {self.A.shape}"
+            )
+        if self.A.shape != self.B.shape:
+            raise ValueError(
+                f"A and B must have the same shape, got A.shape={self.A.shape} "
+                f"and B.shape={self.B.shape}"
+            )
         self.m, self.n = self.A.shape
 
         if self.row_labels is None:
