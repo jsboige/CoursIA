@@ -189,5 +189,52 @@ class TestClassicGames:
             assert len(game.col_labels) == game.n
 
 
+class TestNormalFormGameConstruction:
+    """NormalFormGame constructor must reject ill-formed inputs.
+
+    Before the guard, __post_init__ took the shape from A only and never
+    checked B. A mismatched A/B pair was silently accepted, and downstream
+    solvers (find_pure_nash, etc.) returned WRONG results computed on the
+    mismatched B (out-of-range rows/cols silently ignored). Constructing a
+    game with mismatched payoff matrices is always a caller bug — the
+    constructor is the right place to catch it."""
+
+    def test_shape_mismatch_rejected(self):
+        with pytest.raises(ValueError, match="A and B must have the same shape"):
+            NormalFormGame(A=[[1, 2], [3, 4]], B=[[1, 2, 3], [4, 5, 6]])
+
+    def test_row_count_mismatch_rejected(self):
+        with pytest.raises(ValueError, match="A and B must have the same shape"):
+            NormalFormGame(A=[[1, 2], [3, 4]], B=[[1, 2], [3, 4], [5, 6]])
+
+    def test_square_mismatch_rejected(self):
+        """A=2x2, B=3x3 (both square but different sizes) must be rejected."""
+        with pytest.raises(ValueError, match="A and B must have the same shape"):
+            NormalFormGame(
+                A=[[1, 2], [3, 4]],
+                B=[[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+            )
+
+    def test_non_2d_A_rejected(self):
+        with pytest.raises(ValueError, match="A must be a 2-D payoff matrix"):
+            NormalFormGame(A=[1, 2, 3], B=[1, 2, 3])
+
+    def test_matching_shapes_accepted(self):
+        """The guard does not impact valid construction (2x2 invariant)."""
+        game = NormalFormGame(A=[[3, 0], [5, 1]], B=[[3, 5], [0, 1]])
+        assert game.m == 2
+        assert game.n == 2
+        assert game.A.shape == game.B.shape == (2, 2)
+
+    def test_non_square_matching_accepted(self):
+        """Non-square games with matching A/B are valid (m != n)."""
+        game = NormalFormGame(
+            A=[[1, 2, 3], [4, 5, 6]],
+            B=[[6, 5, 4], [3, 2, 1]],
+        )
+        assert game.m == 2
+        assert game.n == 3
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
