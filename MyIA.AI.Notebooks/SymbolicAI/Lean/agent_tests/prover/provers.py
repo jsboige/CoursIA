@@ -33,6 +33,7 @@ from .agents import (
     create_director_agent,
     create_diagnosis_agent,
 )
+from .p6_routing import _validate_provider_override
 from .workflow import ProofWorkflowBuilder, ProofMessage
 from .instructions import AUTONOMOUS_PROVER_INSTRUCTIONS, augment_instructions
 from .config import create_client, HONEST_SORRIES
@@ -444,7 +445,10 @@ class MultiAgentSorryProver:
                  local_provider: str = "local",
                  director_provider: Optional[str] = None,
                  coordinator_provider: Optional[str] = None,
-                 tactic_provider: Optional[str] = None):
+                 tactic_provider: Optional[str] = None,
+                 search_provider: Optional[str] = None,
+                 critic_provider: Optional[str] = None,
+                 diagnosis_provider: Optional[str] = None):
         self.trace = trace
         self.provider = provider
         self.local_provider = local_provider
@@ -460,6 +464,21 @@ class MultiAgentSorryProver:
         # but TacticAgent z.ai hung for 1680s. Default to "openrouter" so
         # GPT-5.5 handles tactic generation in ~60-120s instead.
         self.tactic_provider = tactic_provider or "openrouter"
+        # #7477 P6: the GLM-5.2 workhorse upgrade (per #1289 follow-up) was
+        # intended for the fast-class workhorse agents (Search/Critic/
+        # Diagnosis) but the historical ``provider=`` default of the
+        # underlying ``create_*_agent`` factories routed them to ``local``
+        # or ``openrouter``. P6 fuller fix reads the ``p6_routing`` map to
+        # resolve them. Callers can still override via ``search_provider`` /
+        # ``critic_provider`` / ``diagnosis_provider``. Non-P6 scope
+        # (reasoning-class Tactic/Coordinator/Director) is owner-locked
+        # by #1289 and explicitly NOT touched here.
+        self.search_provider = _validate_provider_override(
+            "SearchAgent", search_provider)
+        self.critic_provider = _validate_provider_override(
+            "CriticAgent", critic_provider)
+        self.diagnosis_provider = _validate_provider_override(
+            "DiagnosisAgent", diagnosis_provider)
 
     async def prove_sorry(self, demo: dict, max_iterations: int = 10,
                           workflow_timeout_s: Optional[int] = None,
@@ -620,10 +639,10 @@ class MultiAgentSorryProver:
 
         # Create 4 specialized agents (with KB context from goal)
         search_agent = create_search_agent(
-            search_tools, provider=self.local_provider, goal=goal_state or "")
+            search_tools, provider=self.search_provider, goal=goal_state or "")
         tactic_agent = create_tactic_agent(
             tactic_tools, provider=self.tactic_provider, goal=goal_state or "")
-        critic_agent = create_critic_agent(critic_tools, provider=self.provider)
+        critic_agent = create_critic_agent(critic_tools, provider=self.critic_provider)
         coordinator_agent = create_coordinator_agent(coordinator_tools, provider=self.coordinator_provider)
 
         # B.7: Create additional SearchAgents for concurrent lemma discovery.
@@ -634,7 +653,7 @@ class MultiAgentSorryProver:
             for i in range(concurrent_search_count):
                 extra_tools = SearchTools(state, filepath, self.trace, kb=kb)
                 extra_agent = create_search_agent(
-                    extra_tools, provider=self.local_provider,
+                    extra_tools, provider=self.search_provider,
                     goal=goal_state or "",
                     name=f"SearchAgent_{i+2}")
                 extra_search_agents.append(extra_agent)
@@ -681,8 +700,8 @@ class MultiAgentSorryProver:
             try:
                 diagnosis_tools = DiagnosisTools(state, filepath, self.trace)
                 diagnosis_agent = create_diagnosis_agent(
-                    diagnosis_tools, provider=self.local_provider)
-                print(f"  [DIAGNOSIS] enabled provider={self.local_provider}")
+                    diagnosis_tools, provider=self.diagnosis_provider)
+                print(f"  [DIAGNOSIS] enabled provider={self.diagnosis_provider}")
             except Exception as e:
                 print(f"  [DIAGNOSIS] FAILED to create: {e}")
                 diagnosis_agent = None
