@@ -20,6 +20,11 @@ openai>=2.0.0
 # Configuration via .env (PROVIDER=zai|openrouter|local|deepseek|...)
 python-dotenv>=1.0.0
 
+# Tracing OTEL du prover (prover/otel_setup.py importe opentelemetry.sdk.trace.export)
+# opentelemetry-api arrive transitivement via agent-framework, mais PAS le sdk :
+# sans ce paquet, `from prover import ...` echoue (ModuleNotFoundError: opentelemetry.sdk).
+opentelemetry-sdk>=1.20.0
+
 # Test runner
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
