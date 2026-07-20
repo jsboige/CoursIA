@@ -43,6 +43,9 @@ def save_audio(data: np.ndarray, sr: int, path: str, format: Optional[str] = Non
         path: Chemin de sortie
         format: Format (wav, mp3, flac, ogg). Auto-detecte depuis l'extension si None.
     """
+    if sr <= 0:
+        raise ValueError(f"sr must be positive, got {sr}")
+
     import soundfile as sf
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -468,5 +471,8 @@ def estimate_audio_duration(text: str, words_per_minute: int = 150) -> float:
     Returns:
         Duree estimee en secondes
     """
+    if words_per_minute <= 0:
+        raise ValueError(f"words_per_minute must be positive, got {words_per_minute}")
+
     word_count = len(text.split())
     return (word_count / words_per_minute) * 60

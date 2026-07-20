@@ -666,3 +666,34 @@ def test_estimate_audio_duration_pure_no_deps():
 def test_estimate_audio_duration_handles_whitespace_only():
     """estimate_audio_duration("   ") -> split vide -> 0 mots -> 0 secondes (pas d'erreur)."""
     assert audio_helpers.estimate_audio_duration("   \n\t  ") == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Degenerate-input guards (LIVE functions only)
+# ---------------------------------------------------------------------------
+
+def test_save_audio_rejects_non_positive_sr(fake_soundfile, tmp_path):
+    """save_audio must reject sr<=0 upfront.
+
+    Previously sr=0 was forwarded to soundfile.write (file written!) and then
+    crashed in the log line `len(data)/sr` with ZeroDivisionError -- a
+    partial-state bug (file on disk + exception raised). save_audio is used in
+    20 notebooks.
+    """
+    import numpy as np
+    data = np.zeros(16000, dtype=np.float32)
+    for bad in (0, -8000):
+        with pytest.raises(ValueError, match="sr must be positive"):
+            audio_helpers.save_audio(data, bad, str(tmp_path / "out.wav"))
+    # The guard fires BEFORE soundfile.write -> no file written.
+    fake_soundfile.write.assert_not_called()
+
+
+def test_estimate_audio_duration_rejects_non_positive_wpm():
+    """estimate_audio_duration must reject words_per_minute<=0 upfront.
+
+    Previously wpm=0 raised an opaque ZeroDivisionError from the division.
+    """
+    for bad in (0, -60):
+        with pytest.raises(ValueError, match="words_per_minute must be positive"):
+            audio_helpers.estimate_audio_duration("un deux trois", words_per_minute=bad)
