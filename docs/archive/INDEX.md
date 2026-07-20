@@ -26,6 +26,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | handson-book-mapping.md | Cartographie du livre Hands-On AI Trading (Jared Broad) |
 | integration-roadmap.md | Roadmap integration |
 | qc-broken-strategies-audit.md | Audit strategies QuantConnect broken |
+| qc-comparative-backtests.md | Backtests comparatifs cohorte 1630-*-aligned (archivé 2026-07-20, superseded by docs/qc/qc-comparative-backtests.md, #7422) |
 | qc-league-ece.md | League ECE QuantConnect |
 | qc-stabilization-phase2.md | Stabilisation QC phase 2 |
 | slides-refonte-procedure.md | Procedure refonte slides |
