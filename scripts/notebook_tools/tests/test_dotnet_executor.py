@@ -392,3 +392,42 @@ def test_drain_after_timeout_consumes_interrupted_idle(tmp_path, _patch_kernelma
     assert cells[1]["execution_count"] == 2
     assert any("TIMEOUT" in o.get("text", "") for o in cells[0]["outputs"])
     assert any("TIMEOUT" in o.get("text", "") for o in cells[1]["outputs"])
+
+
+# --- Fix C: setup-failure kernel leak (lifecycle finally scope) -------------
+
+def test_setup_failure_after_start_shuts_down_kernel(tmp_path, _patch_kernelmanager):
+    """Fix C: if setup fails AFTER ``start_kernel()`` succeeds (e.g.
+    ``start_channels()`` raises on a broken kernel transport), the started
+    kernel must STILL be shut down. Before Fix C the ``finally`` only wrapped
+    cell execution — setup lived outside the try — so a setup failure skipped
+    cleanup entirely and the .NET kernel process was leaked (orphan, notably on
+    Windows). ``shutdown_kernel`` must now be called even when ``start_channels``
+    raises.
+
+    Non-vacuous: on the unpatched module ``shutdown_kernel`` is never reached
+    (call_count 0 — the leak); on the patched module it is called once.
+    """
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("var x = 1;")])
+    km, kc = _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    kc.start_channels.side_effect = RuntimeError("start_channels: broken transport")
+
+    with pytest.raises(RuntimeError, match="broken transport"):
+        dotnet_executor.execute_notebook(nb)
+
+    km.start_kernel.assert_called_once()      # kernel WAS started
+    km.shutdown_kernel.assert_called_once()   # AND shut down (no leak)
+
+
+def test_setup_failure_surfaces_original_error_not_cleanup_error(tmp_path, _patch_kernelmanager):
+    """Fix C finally guard: the cleanup is wrapped so a cleanup-side error
+    (``shutdown_kernel`` raising on a half-built manager) does NOT mask the
+    ORIGINAL setup error. The surfaced exception is the start_channels cause."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("var x = 1;")])
+    km, kc = _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    kc.start_channels.side_effect = RuntimeError("start_channels: broken transport")
+    km.shutdown_kernel.side_effect = RuntimeError("shutdown: never started")
+
+    with pytest.raises(RuntimeError, match="broken transport"):
+        dotnet_executor.execute_notebook(nb)
+    km.shutdown_kernel.assert_called_once()  # guard attempted cleanup, then swallowed
