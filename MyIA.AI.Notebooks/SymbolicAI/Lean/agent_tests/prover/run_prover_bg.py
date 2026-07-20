@@ -57,6 +57,12 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
                           tactic too expensive for the budget. Needs a cheaper
                           tactic / higher maxHeartbeats / decomposition, NOT more
                           iterations.
+      decomposition_regression -> a net-sorry-INCREASE decomposition with ZERO
+                          build-verified tactics (runaway sub-sorry spraying,
+                          #7477 P3). Distinct from structural_only: a real
+                          restructuring has verified_tactic_count > 0. Tells a
+                          coordinator the decomposition was an unproven spray,
+                          NOT progress — do NOT harvest / branch it.
       no_progress      -> diagnostic data only
 
     Real progress outranks the outage flag: a run that lowered the sorry count
@@ -93,6 +99,24 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     # NOT more iterations.
     if isinstance(result, dict) and result.get("heartbeat_budget_exceeded"):
         return "heartbeat_budget_exceeded"
+    # P3 (#7477 forensic): a net-sorry-INCREASE decomposition with ZERO build-
+    # verified tactics — a spray of unproven sub-sorries the multi-agent path
+    # previously mis-labelled as structural_progress (founder L2551 grew 4->8
+    # with verified_tactic_count==0 across 11 dedup'd runs). provers.py classifies
+    # this via is_decomposition_regression(final, original, verified) and, on a
+    # regression, forces structural_progress=False + sets the
+    # decomposition_regression flag; this branch surfaces the precise pathology
+    # for the forensic harvest instead of letting it fall through to no_progress.
+    # Ranked AFTER sorry_decreased / structural_only / provider_outage /
+    # correctly_refused / heartbeat_budget_exceeded: those outrank it (a run that
+    # lowered sorry, landed a verified decomposition, or hit an
+    # outage/refusal/budget wall first ranks as that outcome). Mutually exclusive
+    # with structural_only in practice — the P3 guard only fires when
+    # structural_progress was demoted. Legacy-safe: a result dict without the
+    # field (autonomous path / old traces) returns None -> falsy -> no_progress,
+    # identical to the classifier's None->False contract.
+    if isinstance(result, dict) and result.get("decomposition_regression"):
+        return "decomposition_regression"
     return "no_progress"
 
 
@@ -272,7 +296,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
         # Canonical verdict (see _derive_result_kind): sorry_decreased |
         # structural_only | provider_outage | no_progress | crashed |
-        # already_solved | heartbeat_budget_exceeded.
+        # already_solved | heartbeat_budget_exceeded | decomposition_regression.
         "result_kind": result_kind,
         "elapsed_s": round(elapsed, 1),
         "result": result,
