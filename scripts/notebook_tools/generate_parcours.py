@@ -30,11 +30,11 @@ PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
 PARCOURS = {
     "ia-classique": {
         "title": "IA Classique",
-        "subtitle": "Recherche, CSP et resolution de problemes",
+        "subtitle": "Recherche, CSP et résolution de problèmes",
         "description": (
             "Algorithmes de recherche classique, satisfaction de contraintes (CSP), "
-            "resolution de Sudoku, planification classique. De A* aux heuristiques "
-            "avancees, en passant par les solveurs SAT/SMT."
+            "résolution de Sudoku, planification classique. De A* aux heuristiques "
+            "avancées, en passant par les solveurs SAT/SMT."
         ),
         "series": ["Search", "Sudoku"],
         "sous_series_keywords": ["CSP", "Classical", "SAT"],
@@ -46,8 +46,8 @@ PARCOURS = {
         "subtitle": "Preuves formelles, logique et planification",
         "description": (
             "Preuves formelles en Lean 4, logique probabiliste avec Tweety, "
-            "web semantique, planification classique et avancee, contrats intelligents. "
-            "Du raisonnement deductif a la verification formelle."
+            "web sémantique, planification classique et avancée, contrats intelligents. "
+            "Du raisonnement déductif à la vérification formelle."
         ),
         "series": ["SymbolicAI"],
         "maturity_filter": ["PRODUCTION", "BETA", "ALPHA"],
@@ -55,10 +55,10 @@ PARCOURS = {
     },
     "genai": {
         "title": "GenAI Multimodale",
-        "subtitle": "Generation d'images, audio, video et texte",
+        "subtitle": "Génération d'images, audio, vidéo et texte",
         "description": (
-            "Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), "
-            "synthese vocale, generation musicale, video, et orchestration de modeles. "
+            "Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), "
+            "synthèse vocale, génération musicale, vidéo, et orchestration de modèles. "
             "Inclut les workflows Vibe-Coding et les pipelines de production."
         ),
         "series": ["GenAI"],
@@ -66,11 +66,11 @@ PARCOURS = {
         "icon": "genai",
     },
     "trading": {
-        "title": "Trading Algoritmique",
-        "subtitle": "QuantConnect, ML applique et probabilites",
+        "title": "Trading Algorithmique",
+        "subtitle": "QuantConnect, ML appliqué et probabilités",
         "description": (
-            "Strategies de trading algorithmique avec QuantConnect, pipeline ML "
-            "(Transformer, DQN, LSTM), indicateurs techniques avances, et modeles "
+            "Stratégies de trading algorithmique avec QuantConnect, pipeline ML "
+            "(Transformer, DQN, LSTM), indicateurs techniques avancés, et modèles "
             "probabilistes. Du backtesting basique au reinforcement learning."
         ),
         "series": ["QuantConnect", "ML", "Probas"],
@@ -78,12 +78,12 @@ PARCOURS = {
         "icon": "trading",
     },
     "recherche": {
-        "title": "Recherche Avancee",
-        "subtitle": "Inference probabiliste, IIT et RL avance",
+        "title": "Recherche Avancée",
+        "subtitle": "Inférence probabiliste, IIT et RL avancée",
         "description": (
-            "Inference probabiliste (Infer.NET, Pyro, PyMC), theorie de l'information "
-            "integree (IIT), reinforcement learning avance, theorie des jeux "
-            "(OpenSpiel). Pour etudiants en master/recherche."
+            "Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information "
+            "intégrée (IIT), reinforcement learning avancé, théorie des jeux "
+            "(OpenSpiel). Pour étudiants en master/recherche."
         ),
         "series": ["Probas", "IIT", "RL", "GameTheory"],
         "maturity_filter": ["PRODUCTION", "BETA", "ALPHA"],
@@ -149,7 +149,7 @@ def generate_parcours_page(
     lines.extend([
         f"## Statistiques",
         "",
-        f"| Metrique | Valeur |",
+        f"| Métrique | Valeur |",
         f"|----------|--------|",
         f"| Notebooks | {total} |",
         f"| PRODUCTION | {prod} |",
@@ -162,7 +162,7 @@ def generate_parcours_page(
         lines.extend([
             f"## {key} ({len(items)} notebooks)",
             "",
-            f"| # | Notebook | Maturite | Executable |",
+            f"| # | Notebook | Maturité | Exécutable |",
             f"|---|----------|----------|------------|",
         ])
         for i, e in enumerate(items, 1):
