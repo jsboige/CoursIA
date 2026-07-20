@@ -21,7 +21,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 **Lecture** : la baseline EMA 20/50 choisie a priori N'EST PAS dans le top 5 de la grille. Le couple **fast=20, slow=60** (cohérent avec la capture trimestrielle) bat systématiquement fast=20, slow=50 sur les deux fenêtres et divise par 2 la valeur du MaxDD (25.6 % vs 28.7 %).
 
-<p align="center"><img src="assets/readme/ema-grid-heatmap.png" alt="Grille Sharpe par périodes EMA" width="900"/><br/><em>H1 — heatmap du Sharpe ratio (gauche) et MaxDD inversé (droite) par périodes EMA (fast 8-20, slow 30-100) sur 2015-2026. Le sweet spot (fast=8-12, slow=60-100) domine structurellement.</em></p>
+<p align="center"><img src="assets/readme/ema-grid-heatmap.png" alt="Dual-panel « Grille Sharpe et MaxDD par périodes EMA » — heatmaps divergentes RdYlGn (axe X Fast EMA period [8,10,12,15,20] × axe Y Slow EMA period [30,40,50,60,100]) : Sharpe ratio panel gauche (range 0,62-0,92) avec sweet-spot fast=8 slow=100 = Sharpe 0,923 (zone rouge-vert foncé), EMA 20/60 (ratio robustesse IS/OOS = 1,55) lit ~0,85 (jaune-vert) ; MaxDD inversé panel droite (range 15,2-28,7 %, vert = plus petit) avec fast=20 slow=40 = -28,7 % pire DD (rouge), EMA 20/60 lit ~-25 % (jaune). Confirmé H1 : baseline 20/50 N'EST PAS dans le top 5." width="900"/><br/><em>H1 — heatmap du Sharpe ratio (gauche) et MaxDD inversé (droite) par périodes EMA (fast 8-20, slow 30-100) sur 2015-2026. Le sweet spot (fast=8-12, slow=60-100) domine structurellement.</em></p>
 
 ### H2 — la triple EMA (fast/medium/slow) améliore-t-elle le signal ?
 
@@ -29,7 +29,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 **Lecture** : la condition additionnelle « triple alignement » capture des retournements fantômes et rate les tendances fortes. Le marché trend-follow SPY 2015-2026 récompense la réactivité (dual EMA) plutôt que la confirmation (triple EMA). Le code garde DUAL.
 
-<p align="center"><img src="assets/readme/ema-backtest.png" alt="Backtest rendement cumulatif" width="900"/><br/><em>H2 — performance cumulée (haut) et drawdown (bas). Dual EMA (bleu) finit à 2.5×, Triple EMA (orange) à 2.0×, SPY B&amp;H (pointillé vert) à 4.0×. La triple EMA UNDERPERFORME la baseline dual.</em></p>
+<p align="center"><img src="assets/readme/ema-backtest.png" alt="Dual-panel « Performance cumulée: Dual vs Triple EMA vs SPY B&H » sur 2015-2026 : panel haut equity cumulée base 1 (Dual EMA 20/50 S=0,765 bleu fin ~2,5× ; Triple EMA 8/21/55 S=0,688 orange fin ~2,0× — UNDERPERFORME ; SPY B&H vert pointillé fin ~4,0×) ; panel bas drawdown comparé (Dual EMA bleu ~-25 %, Triple EMA orange ~-30 % plus profond). H2 verdict INFIRMÉ : la condition triple alignement fast>medium>slow capture des retournements fantômes et rate les tendances fortes." width="900"/><br/><em>H2 — performance cumulée (haut) et drawdown (bas). Dual EMA (bleu) finit à 2.5×, Triple EMA (orange) à 2.0×, SPY B&amp;H (pointillé vert) à 4.0×. La triple EMA UNDERPERFORME la baseline dual.</em></p>
 
 ### H3 — le filtre volume lors des cross-up valide-t-il le signal ?
 
@@ -43,7 +43,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 **Lecture** : un **cooldown 3 jours post-sortie** améliore le Sharpe baseline de **0.765 → 0.800 (+4.6 %)** et filtre les re-entrées sur faux cross-up. Le coût = 1 trade manqué (19 → 18), acceptable. Confirmé et intégré à la baseline v2.0.
 
-<p align="center"><img src="assets/readme/ema-h4-cooldown.png" alt="H4 cooldown faux signal" width="900"/><br/><em>H4 — distribution des rendements par trade (EMA 20/50 SPY). Asymétrie positive : médiane ≈ +2 %, queue droite +50 % (COVID bounce), queue gauche −3 %.</em></p>
+<p align="center"><img src="assets/readme/ema-h4-cooldown.png" alt="Histogramme vertical « Distribution des rendements par trade - EMA 20/50 SPY » (axe X rendement par trade -0,05 à +0,5, axe Y nombre de trades 0 à 3, 19 trades au total) : médiane ~+2 % (ligne rouge verticale), queue droite épaisse jusqu'à +0,5 (COVID bounce outlier), ligne orange pointillée verticale « Seuil -5% » à gauche. Distribution asymétrique positive : 5 trades perdants >-2 % sur 19 (26 %), queue droite des gains plus épaisse que queue gauche des pertes." width="900"/><br/><em>H4 — distribution des rendements par trade (EMA 20/50 SPY). Asymétrie positive : médiane ≈ +2 %, queue droite +50 % (COVID bounce), queue gauche −3 %.</em></p>
 
 ### H5 — un trailing stop protège-t-il mieux que la sortie EMA ?
 
@@ -51,7 +51,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 **Lecture** : SPY 2015-2026 est dominé par les **mouvements tendanciels longs** (> 3 mois) où la sortie EMA reste en position jusqu'au retournement réel. Un trailing stop 5 % **casse trop tôt** sur les corrections intra-tendance (été 2023, mars 2024). La sortie EMA capture mieux la tendance globale.
 
-<p align="center"><img src="assets/readme/ema-h5-trailing.png" alt="H5 trailing stop vs EMA" width="900"/><br/><em>H5 — Trailing stop 5 % + EMA exit (orange) vs EMA exit seul (bleu). Sharpe 0.718 < 0.765 baseline. La courbe orange suit la bleue avec un léger retard sur les rebonds 2020/2023.</em></p>
+<p align="center"><img src="assets/readme/ema-h5-trailing.png" alt="Dual-panel « Trailing Stop 5% vs EMA Exit seul » sur 2015-2026 : panel haut equity cumulée base 1 (EMA exit seul S=0,765 bleu fin ~2,5× ; Trail 5% + EMA exit S=0,718 orange fin ~2,3× UNDERPERFORME ; SPY B&H vert pointillé fin ~4,0×) ; panel bas drawdown avec/sans trailing stop (Sans trail bleu plus profond ~-25,5 %, Trail 5% orange ~-24,2 % marginalement contenu mais perd la capture post-COVID bounce). H5 verdict INFIRMÉ sur trail court : SPY 2015-2026 dominé par tendances longues où la sortie EMA capture mieux." width="900"/><br/><em>H5 — Trailing stop 5 % + EMA exit (orange) vs EMA exit seul (bleu). Sharpe 0.718 < 0.765 baseline. La courbe orange suit la bleue avec un léger retard sur les rebonds 2020/2023.</em></p>
 
 ### H6 — l'ajout de QQQ comme 2ème instrument diversifie-t-il ?
 
@@ -65,7 +65,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 **Lecture** : la baseline capture naturellement la dynamique bull/bear sans filtre additionnel. Activer un filtre SPY > SMA200 sortirait du marché pendant les rallies post-transition (typiquement les 6 mois les plus rentables post-bear) — sous-performerait la baseline sur CAGR.
 
-<p align="center"><img src="assets/readme/ema-regime.png" alt="Classification des régimes" width="900"/><br/><em>Régimes — SPY avec bandes rouges Bear (SPY < SMA200) en haut, signal EMA 20/50 (1 = en position) au milieu, performance cumulée strategy vs B&amp;H en bas. La stratégie coupe 23 % du temps et UNDERPERFORME le B&amp;H sur la fenêtre complète.</em></p>
+<p align="center"><img src="assets/readme/ema-regime.png" alt="Triple-panel vertical « Régimes de marché SPY + signal EMA + performance » sur 2015-2026 : panel haut « SPY avec régimes (rouge = Bear: SPY < SMA200) » (SPY bleu ~170→690, SMA200 orange pointillé ~170→620, 13 bandes rouges verticales Bear = 2015-Q4 / 2018-Q4 / 2019-Q2 / 2020-Q1 COVID / 2022-H1 inflation / 2022-Q3 / 2023 mini-bear) ; panel milieu « Signal EMA 20/50 (1 = en position) » step 0/1 bleu (TIM baseline ~77 %, en position sur 2015-2018 et post-2024 continu, oscillations plus fréquentes 2019-2023) ; panel bas « Performance cumulée: Strategy vs B&H » (EMA Strategy bleu fin ~2,5×, SPY B&H orange pointillé ~4,0× — UNDERPERFORME sur fenêtre bull continue)." width="900"/><br/><em>Régimes — SPY avec bandes rouges Bear (SPY < SMA200) en haut, signal EMA 20/50 (1 = en position) au milieu, performance cumulée strategy vs B&amp;H en bas. La stratégie coupe 23 % du temps et UNDERPERFORME le B&amp;H sur la fenêtre complète.</em></p>
 
 ### Synthèse — la configuration optimale bat-elle le SPY buy-and-hold ?
 
@@ -89,7 +89,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente la sélection des péri
 
 (*) Sharpe SPY B&H recalculé sur la fenêtre identique pour comparaison.
 
-<p align="center"><img src="assets/readme/ema-sma200-filter.png" alt="Filtre SPY SMA200" width="900"/><br/><em>Synthèse — performance finale Baseline (bleu) vs Optimal EMA 20/60 + trail 5 % (orange) sur 2015-2026. Sharpe marginal +4 %, visuellement les deux courbes se superposent presque. L'edge défensif (β=0.41) est réel mais le CAGR reste inférieur à SPY B&amp;H sur la fenêtre.</em></p>
+<p align="center"><img src="assets/readme/ema-sma200-filter.png" alt="Single-panel line chart « Performance finale: Baseline vs Configuration Optimale » sur 2015-2026 base 1 : Baseline EMA 20/50 (S=0,765) bleu fin ~2,5× ; Optimal EMA 20/60 + Trail5% (S=0,797) orange fin ~2,55× quasi-superposé à baseline (écart +4 % Sharpe à peine visible sur la courbe) ; SPY B&H vert pointillé ~4,0× (gap croissant post-2023). β strategy = 0,41 (≈ divise par 2 le β SPY) — edge défensif réel mais CAGR UNDERPERFORM SPY B&H sur la fenêtre bull 2015-2026." width="900"/><br/><em>Synthèse — performance finale Baseline (bleu) vs Optimal EMA 20/60 + trail 5 % (orange) sur 2015-2026. Sharpe marginal +4 %, visuellement les deux courbes se superposent presque. L'edge défensif (β=0.41) est réel mais le CAGR reste inférieur à SPY B&amp;H sur la fenêtre.</em></p>
 
 ## How to Run
 
