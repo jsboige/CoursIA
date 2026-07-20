@@ -66,16 +66,26 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
     notebook_dir = notebook_path.parent.resolve()
     orig_dir = os.getcwd()
 
-    km = jupyter_client.KernelManager(kernel_name=kernel_name)
-    km.start_kernel(cwd=str(notebook_dir))
-    kc = km.client()
-    kc.start_channels()
-
+    # Kernel lifecycle objects are initialized to None BEFORE the try so the
+    # finally can robustly clean up partial setups. start_kernel / client /
+    # start_channels live INSIDE the try: if setup fails AFTER start_kernel()
+    # succeeds (e.g. start_channels() raises on a broken kernel transport), the
+    # started kernel must still be shut down -- otherwise the .NET kernel
+    # process is leaked as an orphan (notably on Windows). Previously the
+    # finally only wrapped cell execution, so a setup failure skipped cleanup
+    # entirely and leaked the kernel.
+    km = None
+    kc = None
     stats = {"total": len(code_cells), "executed": 0, "errors": 0, "time": 0}
     exec_counter = 0
     start_time = time.time()
 
     try:
+        km = jupyter_client.KernelManager(kernel_name=kernel_name)
+        km.start_kernel(cwd=str(notebook_dir))
+        kc = km.client()
+        kc.start_channels()
+
         # Wait for kernel ready
         time.sleep(3)
 
@@ -178,8 +188,20 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
     finally:
         elapsed = round(time.time() - start_time, 1)
         stats["time"] = elapsed
-        kc.stop_channels()
-        km.shutdown_kernel()
+        # Guarded cleanup: kc/km may be None if setup failed before they were
+        # fully created, and stop_channels / shutdown_kernel may themselves
+        # raise on a half-started kernel. Swallow cleanup-side errors so the
+        # ORIGINAL setup/execution error propagates instead of being masked.
+        if kc is not None:
+            try:
+                kc.stop_channels()
+            except Exception:
+                pass
+        if km is not None:
+            try:
+                km.shutdown_kernel()
+            except Exception:
+                pass
         os.chdir(orig_dir)
 
     # Write back
