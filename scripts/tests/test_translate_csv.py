@@ -277,6 +277,13 @@ def test_provider_keys_empty_without_env(monkeypatch):
 def test_provider_keys_read_openai_env(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-only-in-env")
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    # DEFAULT_BASE_URL / DEFAULT_MODEL are module-level globals bound from env at
+    # import time (translate_csv.py L67-68). On a host with OPENAI_BASE_URL set
+    # (e.g. a local OpenAI-compatible proxy) the canonical assertion below would
+    # read the proxy URL instead. Sandbox the globals so the test is env-hermetic
+    # regardless of the host environment.
+    monkeypatch.setattr(tc, "DEFAULT_BASE_URL", "https://api.openai.com/v1")
+    monkeypatch.setattr(tc, "DEFAULT_MODEL", "gpt-5.5")
     provs = tc._provider_keys()
     assert len(provs) == 1
     _model, key, base = provs[0]
