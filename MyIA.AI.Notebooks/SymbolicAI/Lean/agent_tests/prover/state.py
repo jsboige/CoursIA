@@ -115,6 +115,15 @@ class ProofState:
     # unprovable sorry. Set via CoordinatorTools.mark_sorry_intractable.
     intractable: bool = False
     intractable_reason: Optional[str] = None
+    # P5a (#7477 forensic): a Lean tactic blew the maxHeartbeats budget during
+    # a build (detected via tools._is_heartbeat_timeout on the compile errors).
+    # Surfaced so run_prover_bg._derive_result_kind classifies the run as
+    # heartbeat_budget_exceeded (distinct from no_progress) — telling a
+    # coordinator the target needs a cheaper tactic / higher maxHeartbeats /
+    # decomposition, NOT more iterations. Ranked AFTER sorry_decreased /
+    # structural_only: a run that lowered the sorry count before blowing the
+    # budget is still progress.
+    heartbeat_budget_exceeded: bool = False
 
     # F9 (2026-05-17, C37 forensic): Director consultation gate. The
     # Coordinator MUST call request_director_guidance() at least once

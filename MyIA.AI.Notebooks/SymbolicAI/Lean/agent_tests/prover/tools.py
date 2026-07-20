@@ -149,6 +149,29 @@ def _parse_lean_errors(raw_output) -> list:
             continue
     return errors
 
+
+def _is_heartbeat_timeout(message: str) -> bool:
+    """Detect a Lean maxHeartbeats budget exhaustion in a build error message.
+
+    P5a (#7477 forensic): a tactic that blows the heartbeat budget is NOT a
+    sorry and NOT a normal type error — Lean reports it as a deterministic
+    timeout:
+      ``(deterministic) timeout at `<phase>`, maximum number of heartbeats
+      (<N>) has been reached``
+    where ``<phase>`` is e.g. ``elaborator`` / ``isDefEq`` / a tactic name,
+    and ``<N>`` is the configured budget (default 200000). Without dedicated
+    detection such a run scores ``result_kind == no_progress`` — a coordinator
+    cannot tell "the tactic simply failed" from "the tactic is too expensive
+    for the heartbeat budget (bump maxHeartbeats or decompose)". Verified
+    firsthand against ``lean.exe`` v4.32.0 (2026-07): both the elaborator and
+    isDefEq phase variants emit ``maximum number of heartbeats ... has been
+    reached``, which is unique to this error class.
+    """
+    if not message:
+        return False
+    return "maximum number of heartbeats" in message and "has been reached" in message
+
+
 def _read_lines_from_source(source: str, start: int, end: int) -> str:
     """Read lines [start, end] (1-based inclusive) from a string source."""
     lines = source.split("\n")
@@ -1916,6 +1939,20 @@ class TacticTools:
         cached = result.get("cached", False)
 
         errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
+
+        # P5a (#7477 forensic): latch a maxHeartbeats exhaustion so the run is
+        # classified heartbeat_budget_exceeded (run_prover_bg._derive_result_kind),
+        # not no_progress. This is the single capture site: every proof path
+        # (autonomous iteration loop, final verify, multi-agent workflow) compiles
+        # through TacticTools.compile(), so the flag is set once here regardless
+        # of caller. Check both the parsed error entries and the raw build output
+        # (belt-and-suspenders: a future parser gap on the heartbeat line format
+        # must not hide the signal).
+        if self._state is not None and not self._state.heartbeat_budget_exceeded:
+            if _is_heartbeat_timeout(raw_output) or any(
+                _is_heartbeat_timeout(_e.get("message", "")) for _e in errors
+            ):
+                self._state.heartbeat_budget_exceeded = True
 
         content = Path(self._filepath).read_text(encoding="utf-8")
         text_sorry_count = count_real_sorries(content)

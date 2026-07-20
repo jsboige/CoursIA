@@ -50,6 +50,13 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
                           SearchAgent gates) and the workflow yielded before
                           iteration_cap (#7477 P2a). The agent did the right
                           thing by refusing — do NOT read as tactical failure.
+      heartbeat_budget_exceeded -> a Lean tactic blew the maxHeartbeats budget
+                          (latched in TacticTools.compile via
+                          tools._is_heartbeat_timeout, #7477 P5a). Distinct from
+                          correctly_refused: the agent did NOT refuse, it tried a
+                          tactic too expensive for the budget. Needs a cheaper
+                          tactic / higher maxHeartbeats / decomposition, NOT more
+                          iterations.
       no_progress      -> diagnostic data only
 
     Real progress outranks the outage flag: a run that lowered the sorry count
@@ -75,6 +82,17 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     # coordinator distinguish "agent did the right thing" from "agent spun".
     if isinstance(result, dict) and result.get("intractable"):
         return "correctly_refused"
+    # P5a (#7477 forensic): a Lean tactic blew the maxHeartbeats budget
+    # (latched in TacticTools.compile via tools._is_heartbeat_timeout). Ranked
+    # AFTER sorry_decreased / structural_only: a run that lowered the sorry
+    # count or landed a verified decomposition before blowing the budget is
+    # still progress — this flag only reclassifies what would otherwise be
+    # no_progress. Distinct from correctly_refused (the agent did NOT refuse;
+    # it tried a tactic too expensive for the budget). Tells a coordinator the
+    # target needs a cheaper tactic / higher maxHeartbeats / decomposition,
+    # NOT more iterations.
+    if isinstance(result, dict) and result.get("heartbeat_budget_exceeded"):
+        return "heartbeat_budget_exceeded"
     return "no_progress"
 
 
@@ -254,7 +272,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
         # Canonical verdict (see _derive_result_kind): sorry_decreased |
         # structural_only | provider_outage | no_progress | crashed |
-        # already_solved.
+        # already_solved | heartbeat_budget_exceeded.
         "result_kind": result_kind,
         "elapsed_s": round(elapsed, 1),
         "result": result,
