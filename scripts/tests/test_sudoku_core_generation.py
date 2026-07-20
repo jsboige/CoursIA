@@ -252,3 +252,84 @@ class TestGeneratePuzzlesGuard:
         puzzles, solutions = generate_puzzles(4, seed=42)
         assert puzzles.shape == (4, 81)
         assert solutions.shape == (4, 81)
+
+
+# ─── Full range-validity guard (c.705, complement #7563) ───────────────
+
+
+class TestGeneratePuzzlesRangeBoundGuard:
+    """``n_empty_range`` bounds must satisfy ``0 <= lo <= hi <= 81``.
+
+    Complements ``#7563`` (which guards ``n<=0`` and ``lo>hi``) with the
+    final piece of full range-validity. Without it, three distinct failure
+    modes survive the #7563 guards:
+
+      - ``n_empty_range=(-5, 30)`` -- ``lo < 0`` is silently accepted by
+        numpy's randint, and ``rng.randint(-5, 31)`` returns -5..-1
+        negatives, so ``np.zeros(81, dtype=int)`` indexed at a negative
+        index masks nothing, and ``puzzle == solution`` (not a puzzle).
+        SILENT WRONG -- worst class (cf C703-L3 rendering-silent).
+      - ``n_empty_range=(30, 90)`` -- ``hi > 81`` makes
+        ``rng.randint(30, 91)`` return 30..90; 90 > 81 cells, so
+        ``rng.choice(81, 90, replace=False)`` raises an opaque numpy
+        "Cannot take a larger sample than population" inside the loop,
+        after partial work has already been done (the caller sees a
+        mid-batch crash).
+      - ``n_empty_range=(82, 85)`` -- same opaque numpy error.
+
+    Pinning ``0 <= lo <= hi <= 81`` at the boundary turns these silent or
+    opaque failures into a single, actionable ``ValueError`` from the
+    function boundary.
+    """
+
+    def test_lo_negative_raises(self):
+        """``lo < 0`` would silently produce ``puzzle == solution``.
+
+        The silent-wrong failure is the worst class -- a caller that
+        sees a successful return thinks they have a valid puzzle, but
+        the puzzle has zero empty cells and is indistinguishable from
+        the solution.
+        """
+        with pytest.raises(ValueError, match="0 <= lo <= hi <= 81"):
+            generate_puzzles(3, n_empty_range=(-5, 30))
+
+    def test_hi_too_large_raises(self):
+        """``hi > 81`` would crash mid-batch with an opaque numpy error.
+
+        Without the guard, the loop produces some puzzles successfully
+        and then explodes on the first puzzle whose ``n_empty`` exceeds
+        81. The caller's batch is half-done with no idea why.
+        """
+        with pytest.raises(ValueError, match="0 <= lo <= hi <= 81"):
+            generate_puzzles(3, n_empty_range=(30, 90))
+
+    def test_hi_at_82_raises(self):
+        """Just over the boundary -- pin the upper bound at 81, not 82."""
+        with pytest.raises(ValueError, match="0 <= lo <= hi <= 81"):
+            generate_puzzles(3, n_empty_range=(30, 82))
+
+    def test_lo_at_81_hi_81_allowed(self):
+        """The full range ``(0, 81)`` and the single-bound ``(81, 81)`` are valid.
+
+        (81, 81) means "every cell is empty" -- a degenerate-but-bounded
+        puzzle, not an error. The guard must NOT reject.
+        """
+        puzzles, solutions = generate_puzzles(2, n_empty_range=(81, 81), seed=11)
+        for i in range(2):
+            assert np.sum(puzzles[i] == 0) == 81
+            # All-given cells match between puzzle and solution.
+            mask = puzzles[i] > 0
+            assert not mask.any(), f"Puzzle {i} expected all-empty, got givens"
+
+    def test_normal_range_unaffected(self):
+        """The default range (30, 55) and any in-bounds range still works.
+
+        Invariant normal-path preservation -- the guard must not perturb
+        the happy path.
+        """
+        puzzles, solutions = generate_puzzles(4, n_empty_range=(30, 55), seed=42)
+        assert puzzles.shape == (4, 81)
+        assert solutions.shape == (4, 81)
+        for i in range(4):
+            empties = np.sum(puzzles[i] == 0)
+            assert 30 <= empties <= 55, f"Puzzle {i} has {empties} empties, out of range"
