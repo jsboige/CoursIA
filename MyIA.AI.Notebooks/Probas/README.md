@@ -81,6 +81,26 @@ Le parcours commence par le notebook 1 (Setup) qui installe Infer.NET et constru
 
 Les notebooks 4 à 13 construisent des modèles de complexité croissante, chacun illustré par une application concrète : réseaux bayésiens (diagnostic médical), Item Response Theory (évaluation de compétences), TrueSkill (classement Xbox Live), classification bayésienne, sélection de modèles (Bayes Factors), LDA (topic modeling), crowdsourcing (agrégation de labels), HMM (séquences temporelles), systèmes de recommandation, et debugging. Chaque notebook est autonome mais présuppose la maîtrise des concepts des notebooks 1-3. Le notebook 13 (Debugging) est une référence pratique à consulter tout au long du parcours.
 
+### Au-delà du consensus par défaut : EP vs VMP, un cas bimodal discriminant (Infer-2)
+
+Le notebook 2 (Gaussian Mixtures) utilise `VariationalMessagePassing` pour identifier un mélange bimodal de durées de trajets vélo. La cellule d'analyse (cell. 62) justifie ce choix en une phrase : *« VMP est recommandé pour les modèles de mélange car il gère mieux les variables latentes discrètes »* — affirmation jusqu'ici **non démontrée par l'exécution**. Le notebook 6 (Debugging) mentionne EP et VMP côte à côte, mais comme outils de diagnostic, pas comme alternatives testées sur un même modèle.
+
+[**#7590**](https://github.com/jsboige/CoursIA/pull/7590) `fix(probas,#3801): demonstrate EP-vs-VMP algorithm comparison (Prong-B)` (MERGED 2026-07-20) comble ce gap en ré-exécutant le **même modèle de mélange** (`donneesMixtes`, `priorsMMixtes`, `CyclisteBaseMixte`) avec deux moteurs Infer.NET interchangeables via `MoteurInference.Algorithm`. **Résultat discriminant first-hand** (cell. 64) :
+
+| Algorithme | Comp. 1 (Ordinaire) | Comp. 2 (Extra) | Poids | P(ordinaire) |
+|------------|---------------------|-----------------|-------|--------------|
+| **VMP** (VariationalMessagePassing) | Gaussian(15.07, 0.87) | Gaussian(26.69, 1.15) | Dirichlet(7.995, 4.005) | **0.67** ✓ |
+| **EP** (ExpectationPropagation) | Gaussian(26.23, 2.48) ← *labels inversés* | Gaussian(14.96, 1.18) | Dirichlet(3.887, 7.224) | **0.35** ← *poids inversés* |
+
+EP converge sans diverger mais **inverse à la fois l'assignation des composantes ET l'estimation des poids** — faiblesse connue d'Expectation Propagation sur les variables latentes discrètes (le `Variable.Switch` qui route chaque observation vers sa composante casse l'approximation EP, qui approxime chaque facteur marginalement au lieu de factoriser la conjointe comme VMP).
+
+**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) **Prong-B** (« problème non-trivial qui met le moteur en valeur ») — la même famille de moteurs message-passing déterministes était présentée par défaut (VMP), mais sans jamais démontrer **explicitement** sur un même cas la différence entre EP et VMP. La table « Quel stack choisir ? » (ci-dessus) rangeait Infer.NET sous l'étiquette « EP/VMP » comme un bloc monolithique, sans granularité algorithmique. #7590 rétablit cette granularité par l'exécution.
+
+**À retenir** :
+- **Choix d'algorithme ≠ détail d'implémentation**. `InferenceEngine.Algorithm` est un **choix de modèle** : sur un mélange avec `Variable.Switch`, VMP factorise l'approximation (stable), EP approxime marginalement (peut inverser labels/poids). Quatre assertions « VMP > EP pour variables discrètes » qui flottaient dans la prose sont maintenant **démontrées par le notebook exécuté**.
+- **EP n'est pas mort** : il reste précieux quand le modèle n'a pas de variables latentes discrètes (cf. Infer-16 Sparse GP, où EP sur géométrie latente continue est discriminant contre NUTS > 15 min). Mais sur Switch → préférer VMP par défaut, documenter le choix.
+- **Validation cross-engine** : la cellule 64 montre aussi le pattern d'ingénierie — comment **substituer l'algorithme** sur un même modèle Infer.NET (créer le modèle, remplacer `MoteurInference`, ré-entraîner). C'est un geste reproductible pour tout notebook ultérieur qui voudra qualifier la sensibilité d'un posterior au choix de l'algorithme.
+
 ### Phase 3 : Décision bayésienne (arc autonome, ~7h)
 
 La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (10 notebooks, renumérotés 1-10) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon DecInfer-9 (kernel Lean 4 via WSL) formalise les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](decision_theory_lean/) — placé à la **racine de la série** pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Le notebook DecInfer-10 (Thompson Sampling) clôt l'arc sur les bandits bayésiens en pratique. Côté PyMC, le cœur de cet arc est reproduit dans [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/) (7 notebooks renumérotés 1-7).
@@ -93,7 +113,7 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 
 | Concept | Infer.NET | PyMC | Différence principale |
 |---------|-----------|------|----------------------|
-| Fondations | Infer-1 → 2 → 3 | PyMC-1 → 2 → 3 | Message passing déterministe (EP/VMP) vs échantillonnage NUTS |
+| Fondations | Infer-1 → 2 → 3 | PyMC-1 → 2 → 3 | Message passing déterministe (EP/VMP) vs échantillonnage NUTS — Infer-2 démontre la **différence EP vs VMP** sur le même modèle [#7590] |
 | Réseaux bayésiens | Infer-4 | PyMC-4 | Compilation statique vs échantillonnage dynamique |
 | IRT (compétences) | Infer-7 | PyMC-7 | Variable.If vs pm.Bernoulli |
 | TrueSkill | Infer-8 | PyMC-8 | Message passing déterministe (EP) vs échantillonnage MCMC |
@@ -223,7 +243,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
 | 1 | Setup | Boucle fondamentale : définition du modèle → création du moteur → inférence |
-| 2 | Gaussian Mixtures | Distributions continues, mélanges gaussiens, estimation de params |
+| 2 | Gaussian Mixtures | Distributions continues, mélanges gaussiens, estimation de params — **+ comparaison EP vs VMP sur bimodal [#7590]** |
 | 3 | Factor Graphs | Monty Hall + Murder Mystery : inférence discrète, Variable.If/Case |
 | 4 | Bayesian Networks | Wet Grass, CPT, D-separation, explaining away, inférence causale |
 | 5 | Causal Inference | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson |
@@ -472,7 +492,7 @@ python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
 | **Inférence bayésienne** | Mise à jour de croyances avec des observations |
 | **Prior / Posterior** | Distribution avant/après observations |
 | **Factor Graph** | Représentation graphique de distributions jointes |
-| **Message Passing** | Algorithmes EP (Expectation Propagation), VMP |
+| **Message Passing** | Algorithmes EP (Expectation Propagation), VMP — voir [comparaison EP vs VMP sur Infer-2](#au-delà-du-consensus-par-défaut--ep-vs-vmp-un-cas-bimodal-discriminant-infer-2) [#7590] |
 | **MCMC / NUTS** | Échantillonnage pour modèles complexes (PyMC) |
 | **D-separation** | Critère graphique d'indépendance conditionnelle |
 | **Explaining Away** | Causes alternatives deviennent moins probables |
