@@ -57,9 +57,17 @@ def _stamp_provider(agent: Agent, provider: str) -> Agent:
     return agent
 
 
-def create_search_agent(tools: SearchTools, provider: str = "local",
+def create_search_agent(tools: SearchTools, provider: str = "zai",
                         goal: str = "", name: str = "SearchAgent") -> Agent:
-    """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
+    """SearchAgent: finds Mathlib lemmas. Uses fast z.ai (GLM-5.2 workhorse).
+
+    #7477 P6: historical default was ``provider="local"`` (Qwen3.6) which
+    has documented ``finish_reason: length`` empties on Search workloads
+    (2026-05-11 BG iter 2 trace L849). The #1289 follow-up intended the
+    GLM-5.2 workhorse (``zai``) for fast-class agents (Search/Critic/
+    Diagnosis) but the default here was never updated. P6 fuller fix
+    routes Search to ``zai`` so the workhorse upgrade is exercised where
+    search *is* needed."""
     client = create_client(provider, model_key="fast")
     # Forensic #1453 (2026-07-02, traces L849/L180): when the lean-explore
     # client is not installed, search_leanexplore is a 0.0s no-op — yet the
@@ -111,8 +119,15 @@ def create_tactic_agent(tools: TacticTools, provider: str = "openrouter",
     ), provider)
 
 
-def create_critic_agent(tools: CriticTools, provider: str = "openrouter") -> Agent:
-    """CriticAgent: analyzes failures, decides routing. Uses fast model."""
+def create_critic_agent(tools: CriticTools, provider: str = "zai") -> Agent:
+    """CriticAgent: analyzes failures, decides routing. Uses fast z.ai workhorse.
+
+    #7477 P6: historical default was ``provider="openrouter"`` (Anthropic
+    Haiku 4.5 fast) which is overkill for a routing-decision agent and
+    burns Anthropic budget at scale. The #1289 follow-up intended the
+    GLM-5.2 workhorse (``zai``) for fast-class agents. P6 fuller fix
+    routes Critic to ``zai`` — keeps cost bounded while the model is
+    fast enough for routing decisions."""
     client = create_client(provider, model_key="fast")
     return _stamp_provider(Agent(
         client=client,
@@ -194,8 +209,12 @@ def create_director_agent(provider: str = "openrouter",
     ), provider)
 
 
-def create_diagnosis_agent(tools: DiagnosisTools, provider: str = "local") -> Agent:
-    """DiagnosisAgent: qualitative verification. Uses fast local model."""
+def create_diagnosis_agent(tools: DiagnosisTools, provider: str = "zai") -> Agent:
+    """DiagnosisAgent: qualitative verification. Uses fast z.ai workhorse.
+
+    #7477 P6: historical default was ``provider="local"`` (Qwen3.6).
+    Same root cause as SearchAgent — diagnosis is fast-class
+    verification work that benefits from the #1289 workhorse upgrade."""
     client = create_client(provider, model_key="fast")
     return _stamp_provider(Agent(
         client=client,
