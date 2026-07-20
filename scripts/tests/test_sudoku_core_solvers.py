@@ -247,3 +247,50 @@ class TestCrossInvariants:
         grid[80] = 5
         grid[8] = 5  # Same row (row 8)
         assert is_valid_puzzle(grid) is False
+
+
+class TestLengthGuard:
+    """Degenerate-input guard: a wrong-length puzzle must raise ValueError,
+    not an opaque IndexError (too short) and not be silently accepted (too long).
+
+    Before the guard, solve_sudoku([]) raised `IndexError: list index out of range`
+    with no hint about the 81-cell contract, and solve_sudoku([0]*82) returned a
+    valid-looking solution while silently ignoring the extra cell — hiding caller
+    bugs. Both fns now validate the documented (81,) contract up front.
+    """
+
+    @pytest.mark.parametrize("bad_len", [0, 1, 80, 82, 100])
+    def test_solve_sudoku_rejects_wrong_length_list(self, bad_len):
+        with pytest.raises(ValueError, match="81"):
+            solve_sudoku([0] * bad_len)
+
+    @pytest.mark.parametrize("bad_len", [0, 80, 82])
+    def test_is_valid_puzzle_rejects_wrong_length_list(self, bad_len):
+        with pytest.raises(ValueError, match="81"):
+            is_valid_puzzle([0] * bad_len)
+
+    def test_solve_sudoku_rejects_short_numpy_array(self):
+        with pytest.raises(ValueError, match="81"):
+            solve_sudoku(np.zeros(80, dtype=np.int64))
+
+    def test_is_valid_puzzle_rejects_short_numpy_array(self):
+        with pytest.raises(ValueError, match="81"):
+            is_valid_puzzle(np.zeros(80, dtype=np.int64))
+
+    def test_solve_sudoku_error_message_reports_actual_length(self):
+        """The ValueError must surface the offending length so the caller can
+        locate the upstream bug (regression test for the silent-82 case)."""
+        try:
+            solve_sudoku([0] * 82)
+        except ValueError as exc:
+            assert "82" in str(exc)
+        else:
+            pytest.fail("solve_sudoku accepted a malformed 82-cell puzzle without raising")
+
+    def test_valid_length_still_accepted(self):
+        """Regression: the guard must not reject a well-formed 81-cell puzzle."""
+        grid = _easy_puzzle()
+        # No exception expected; solver returns a solution or None (both OK here).
+        solve_sudoku(grid)
+        assert is_valid_puzzle(grid) in (True, False)
+
