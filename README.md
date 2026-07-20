@@ -32,8 +32,8 @@ MyIA.AI.Notebooks/
   GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design, social choice
   IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
   CaseStudies/     -> Études de cas interdisciplinaires
-  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Symbolic Learning) -- la plus vaste série du dépôt
-  GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- l'une des plus vastes séries
+  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Argument Analysis, Symbolic Learning) -- la plus vaste série du dépôt (220 notebooks)
+  GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- l'une des plus vastes séries (141 notebooks)
   QuantConnect/    -> Trading algorithmique (notebooks pédagogiques + stratégies backtestées + pipeline ML)
   cross-series/    -> Applications transverses (matching-cv : data science multi-domaines)
 ```
@@ -206,7 +206,7 @@ Python | [README détaillé](MyIA.AI.Notebooks/GenAI/README.md)
 
 ### QuantConnect -- Trading algorithmique
 
-Peut-on appliquer l'IA aux marchés financiers -- et comment savoir si une stratégie *marche* vraiment, plutôt que d'avoir simplement eu de la chance sur un historique ? Le trading algorithmique génère aujourd'hui plus de la moitié des volumes échangés, et cette série -- l'une des plus vastes du dépôt -- apprend à construire, backtester et déployer ses propres stratégies sur le framework open-source **LEAN** de QuantConnect, utilisé par des milliers de quants professionnels. Son fil conducteur n'est pas la course au rendement : c'est la **discipline d'évaluation** qui sépare un edge réel d'un mirage de backtest -- validation hors échantillon, walk-forward, répétition multi-graine, coûts de transaction réels, tests de significativité. Tout se passe en backtest et paper trading, sur le cloud QuantConnect (free tier), sans capital ni installation locale. Le livre de référence est *Hands-On AI Trading*, de Jared Broad, fondateur de QuantConnect.
+Peut-on appliquer l'IA aux marchés financiers -- et comment savoir si une stratégie *marche* vraiment, plutôt que d'avoir simplement eu de la chance sur un historique ? Le trading algorithmique génère aujourd'hui plus de la moitié des volumes échangés, et cette série (105 notebooks au catalogue) apprend à construire, backtester et déployer ses propres stratégies sur le framework open-source **LEAN** de QuantConnect, utilisé par des milliers de quants professionnels. Son fil conducteur n'est pas la course au rendement : c'est la **discipline d'évaluation** qui sépare un edge réel d'un mirage de backtest -- validation hors échantillon, walk-forward, répétition multi-graine, coûts de transaction réels, tests de significativité. Tout se passe en backtest et paper trading, sur le cloud QuantConnect (free tier), sans capital ni installation locale. Le livre de référence est *Hands-On AI Trading*, de Jared Broad, fondateur de QuantConnect.
 
 **[Le cours](MyIA.AI.Notebooks/QuantConnect/Python/README.md) -- des fondations LEAN à l'IA de pointe** -- Le parcours pédagogique monte en huit phases et impose de maîtriser l'écosystème avant tout modèle : architecture LEAN et cycle de vie d'un algorithme, gestion des données, sélection d'univers, classes d'actifs (actions, options, futures, forex), types d'ordres et risk management, puis l'Algorithm Framework modulaire (Alpha, Portfolio Construction, Execution, Risk) qui rend les stratégies scalables. Vient seulement ensuite l'IA : données alternatives et analyse de sentiment, machine learning classique (Random Forest, XGBoost), deep learning pour séries temporelles (LSTM, Transformers, autoencodeurs), et enfin reinforcement learning, LLMs employés comme générateurs de signaux, détection de régime de marché et déploiement live. Chaque notebook s'exécute sur le cloud, avec des contournements documentés pour rester dans le free tier.
 
@@ -388,7 +388,7 @@ Les séries Search, Sudoku, ML.Net, Probas (Infer.NET), Tweety, SemanticWeb et P
 | GenAI | `GenAI/.env` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
 | Lean | `SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN` |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY` |
-| QuantConnect | `QuantConnect/.env` | `QC_USER_ID`, `QC_API_TOKEN` |
+| QuantConnect | `QuantConnect/.env` | `QC_API_USER_ID`, `QC_API_ACCESS_TOKEN` |
 | C# Notebooks | `Config/settings.json` | `apikey`, `model` |
 | Docker ComfyUI | `comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN` |
 
@@ -508,3 +508,5 @@ Ce projet est sous licence MIT - voir [LICENSE](LICENSE).
 ---
 
 Repository : [github.com/jsboige/CoursIA](https://github.com/jsboige/CoursIA)
+
+<!-- README-DATE: 2026-07-20 -->
