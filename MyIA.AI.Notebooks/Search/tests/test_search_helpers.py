@@ -154,3 +154,63 @@ def test_find_solution_path_returns_chain_to_solution():
 def test_draw_search_tree_single_node():
     fig = sh.draw_search_tree(sh.SearchTreeNode("only"))
     assert fig is not None
+
+
+# --- draw_search_tree degenerate-input guard (c.703) -----------------------
+
+class TestDrawSearchTreeDegenerateInputGuard:
+    """Garde-fou d'entree pour ``draw_search_tree``.
+
+    Reproduit le pattern robusteur c.702 sur ``wfc_cpsat.run_all`` /
+    ``wfc_cpsat.adjacency_violations`` : refuser explicitement les
+    arguments degeneres plutot que de laisser une ``AttributeError``
+    opaque (``root=None`` -> ``'NoneType' object has no attribute
+    'children'``) ou un rendu matplotlib pathologique (``max_depth<=0``
+    -> y=1.0 partout, aretes confondues avec la legende).
+    """
+
+    def test_root_none_raises_typeerror(self):
+        # L'AttributeError d'origine etait silencieuse et confondait
+        # l'appelant avec un bug dans son arbre -- on la remplace par
+        # un TypeError explicite qui pointe la cause reelle.
+        with pytest.raises(TypeError, match="root must be a SearchTreeNode"):
+            sh.draw_search_tree(None)
+
+    def test_root_non_node_raises_typeerror(self):
+        # Tout objet qui n'est pas un SearchTreeNode est rejete avec
+        # le meme message -- la verification se fait sur le type, pas
+        # sur la verite/falsete (un SearchTreeNode est toujours truthy
+        # en pratique, mais on ne veut pas dependre de __bool__).
+        with pytest.raises(TypeError, match="got str"):
+            sh.draw_search_tree("not_a_node")
+
+    def test_root_dict_raises_typeerror(self):
+        with pytest.raises(TypeError, match="got dict"):
+            sh.draw_search_tree({"state": "A"})
+
+    def test_max_depth_zero_raises_valueerror(self):
+        # max_depth=0 -> toutes les positions y=1.0, aretes illisibles.
+        with pytest.raises(ValueError, match="max_depth must be a strictly positive"):
+            sh.draw_search_tree(sh.SearchTreeNode("root"), max_depth=0)
+
+    def test_max_depth_negative_raises_valueerror(self):
+        with pytest.raises(ValueError, match="max_depth must be a strictly positive"):
+            sh.draw_search_tree(sh.SearchTreeNode("root"), max_depth=-5)
+
+    def test_max_depth_non_int_raises_valueerror(self):
+        # 1.5 est un float valide ; on exige un int strict.
+        with pytest.raises(ValueError, match="max_depth must be a strictly positive"):
+            sh.draw_search_tree(sh.SearchTreeNode("root"), max_depth=1.5)
+
+    def test_max_depth_one_still_renders(self):
+        # Sanity check : l'invariant "max_depth>=1 OK" doit etre preserve.
+        fig = sh.draw_search_tree(sh.SearchTreeNode("root"), max_depth=1)
+        assert fig is not None
+
+    def test_valid_root_unaffected(self):
+        # Pas de regression sur l'appel normal (defaut max_depth=5).
+        root = sh.SearchTreeNode("root")
+        root.add_child("a")
+        root.add_child("b")
+        fig = sh.draw_search_tree(root)
+        assert fig is not None
