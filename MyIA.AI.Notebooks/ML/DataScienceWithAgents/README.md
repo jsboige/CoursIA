@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 27 (7 LangChain + 10 ADK + 2 fondations Python + 8 fondations ML) |
+| Notebooks | 28 (7 LangChain + 10 ADK + 2 fondations Python + 9 fondations ML) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -80,7 +80,7 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (8 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques (9 notebooks)
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
@@ -111,7 +111,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Huit notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Neuf notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC, et un épilogue 2.9 grokking), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -123,6 +123,7 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
 | [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
 | [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
+| [2.9-Grokking-Generalisation](02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | *Épilogue* — grokking : la généralisation qui arrive en retard (premier réseau de neurones) | **L'horloge cachée** : embeddings rangés en cercle après le grok (ACP + Fourier) |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
