@@ -85,6 +85,42 @@ class TestStackelberg:
         np.testing.assert_almost_equal(q1, q2)
         np.testing.assert_almost_equal(pi1, pi2)
 
+    def test_stackelberg_zero_b_raises(self):
+        """stackelberg_duopoly(b=0) -> ZeroDivisionError before fix; ValueError after.
+
+        The demand slope ``b`` divides the leader quantity (``/ (2*b)``); a flat
+        demand curve (b=0) is an ill-posed duopoly, not a degenerate quantity.
+        Same degenerate-input guard bug-class as compute_payoff_matrix (#7513).
+        """
+        with pytest.raises(ValueError, match="b .* must be positive"):
+            stackelberg_duopoly(100, 0, 10, 10)
+
+    def test_stackelberg_negative_b_raises(self):
+        """b<0 is an inverted demand curve (price rises with quantity): ill-posed."""
+        with pytest.raises(ValueError, match="b .* must be positive"):
+            stackelberg_duopoly(100, -1, 10, 10)
+
+    def test_cournot_zero_b_raises(self):
+        """cournot_duopoly(b=0) -> ZeroDivisionError before fix; ValueError after.
+
+        ``q1 = ... / (3*b)`` divides by b; b=0 crashes, b<0 inverts the curve.
+        """
+        with pytest.raises(ValueError, match="b .* must be positive"):
+            cournot_duopoly(100, 0, 10, 10)
+
+    def test_cournot_negative_b_raises(self):
+        """b<0 inverted demand: ill-posed duopoly, reject explicitly."""
+        with pytest.raises(ValueError, match="b .* must be positive"):
+            cournot_duopoly(100, -2, 10, 10)
+
+    def test_duopoly_positive_b_unaffected(self):
+        """The guard does not impact the normal path (symmetric-duopoly invariant)."""
+        # Must still satisfy the leader-advantage invariant from test_symmetric_duopoly.
+        q_L, q_F, pi_L, pi_F = stackelberg_duopoly(100, 1, 10, 10)
+        q1_c, q2_c, pi1_c, pi2_c = cournot_duopoly(100, 1, 10, 10)
+        assert q_L > q1_c
+        assert pi_L > pi1_c
+
 
 class TestVCGAuction:
     """Tests for VCG mechanism."""
