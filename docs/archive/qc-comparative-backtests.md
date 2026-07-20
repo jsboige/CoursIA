@@ -1,3 +1,19 @@
+<!--
+  ARCHIVÉ LE 2026-07-20 (issue #7422 — hygiène docs/ + racine).
+  RAISON : ce fichier était un orphelin à la racine de docs/ (0 lien entrant
+  vérifié : toutes les références au catalogue comparatif pointent vers le
+  canonique docs/qc/qc-comparative-backtests.md). Il entrait en collision de nom
+  avec ce canonique (792 lignes, 36 baselines vérifiées) tout en n'en étant qu'un
+  sous-ensemble (3 stratégies de la cohorte 1630-*-aligned, cycles c.332/c.336).
+  DONNÉES SUPERSEDÉES : les 3 stratégies (DualMomentum 0.350, RiskParity 0.361,
+  TrendFollowing) et les 3 backtests « en file » (AdaptiveConformalRisk,
+  PCAStatArbitrage, c2-regime) sont toutes couvertes dans le canonique
+  (Key-findings #38, #40, #39 + lignes table 237/239).
+  SUPERSEDED-BY : docs/qc/qc-comparative-backtests.md
+  PRÉSERVATION : fichier conservé tel quel (git mv, historique préservé),
+  conformément à « Consolider != Archiver » (CLAUDE.md global) et #7422
+  (« Jamais de delete aveugle »). Aucune donnée supprimée.
+-->
 # Backtests comparatifs QuantConnect — cohorte `1630-*-aligned`
 
 > Epic [#1621](../MyIA.AI.Notebooks/QuantConnect/) (Consolidation QC/Trading) · cohorte de stratégies `1630-*` alignées pour l'évaluation comparative.
