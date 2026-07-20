@@ -34,6 +34,7 @@ from cooperative_games.french_politics import (  # noqa: E402
     TOTAL_SEATS,
     FrenchLeftCoalition2024,
     analyze_barrage_effect,
+    analyze_coalition_dynamics,
     create_voting_game_assembly,
     get_2024_legislative_data,
     negotiation_value,
@@ -322,6 +323,70 @@ class TestAnalyzeBarrageEffect:
         # Les desistements officiels par bloc doivent apparaitre.
         assert str(SECOND_ROUND_RESULTS['NFP']['withdrawals']) in out
         assert str(SECOND_ROUND_RESULTS['RN']['withdrawals']) in out
+
+
+class TestAnalyzeCoalitionDynamics:
+    """Couverture de ``analyze_coalition_dynamics`` (orchestrateur haut-niveau
+    qui assemble Shapley + Core + convexite + tables pour les 3 fonctions de
+    valeur). Non couvert avant ce test (0 ref dans le fichier). Les assertions
+    portent sur le contrat structurel + l'invariant d'efficiency de Shapley
+    (sum des valeurs == valeur de la grande coalition) — un invariant de game
+    theory fondamental, pas un pin de valeur : si l'orchestration passait le
+    mauvais game a ``shapley_value_exact`` ou melait les value_type,
+    l'efficiency casserait. Valeurs confirmees par execution firsthand (G.9).
+    """
+
+    EXPECTED_KEYS = {
+        "game", "shapley_values", "shapley_dict", "grand_coalition_value",
+        "core_exists", "core_point", "is_convex", "analysis_text",
+        "marginal_table",
+    }
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_returns_all_documented_keys(self, value_type):
+        results = analyze_coalition_dynamics(value_type=value_type)
+        assert set(results.keys()) == self.EXPECTED_KEYS
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_shapley_efficiency_holds(self, value_type):
+        """Invariant d'efficiency : sum(shapley_values) == grand_coalition_value.
+        Propriete definissoire de la valeur de Shapley (efficiency = 1)."""
+        results = analyze_coalition_dynamics(value_type=value_type)
+        total = float(np.sum(results["shapley_values"]))
+        gv = float(results["grand_coalition_value"])
+        assert abs(total - gv) < 1e-6, (
+            f"Shapley efficiency broken for value_type={value_type}: "
+            f"sum={total}, grand_coalition_value={gv}"
+        )
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_shapley_dict_keys_are_the_four_parties(self, value_type):
+        results = analyze_coalition_dynamics(value_type=value_type)
+        assert set(results["shapley_dict"].keys()) == set(FrenchLeftCoalition2024.PARTIES)
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_shapley_dict_values_match_shapley_values(self, value_type):
+        """shapley_dict[PARTIES[i]] doit egaler shapley_values[i] (coherence
+        entre les deux representations du meme calcul)."""
+        results = analyze_coalition_dynamics(value_type=value_type)
+        parties = FrenchLeftCoalition2024.PARTIES
+        shapley = results["shapley_values"]
+        for i, party in enumerate(parties):
+            assert abs(results["shapley_dict"][party] - shapley[i]) < 1e-9
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_core_and_convexity_are_bool(self, value_type):
+        results = analyze_coalition_dynamics(value_type=value_type)
+        assert isinstance(results["core_exists"], bool)
+        assert isinstance(results["is_convex"], bool)
+
+    @pytest.mark.parametrize("value_type", ["seats", "voting_power", "negotiation"])
+    def test_narrative_tables_are_nonempty_strings(self, value_type):
+        """analysis_text et marginal_table sont des rapports formates (str) ;
+        vides = l'orchestration a saute la generation."""
+        results = analyze_coalition_dynamics(value_type=value_type)
+        assert isinstance(results["analysis_text"], str) and len(results["analysis_text"]) > 0
+        assert isinstance(results["marginal_table"], str) and len(results["marginal_table"]) > 0
 
 
 if __name__ == "__main__":
