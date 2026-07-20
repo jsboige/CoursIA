@@ -40,6 +40,14 @@ def _can_place(grid, r, c, num):
 
 def generate_puzzles(n, n_empty_range=(30, 55), seed=42):
     """Generate n puzzles with controlled difficulty (number of empty cells)."""
+    if n <= 0:
+        raise ValueError(
+            f"n must be positive (at least one puzzle to generate), got {n}"
+        )
+    if n_empty_range[0] > n_empty_range[1]:
+        raise ValueError(
+            f"n_empty_range must be non-decreasing (lo <= hi), got {n_empty_range}"
+        )
     rng = np.random.RandomState(seed)
     puzzles = np.zeros((n, 81), dtype=np.int64)
     solutions = np.zeros((n, 81), dtype=np.int64)

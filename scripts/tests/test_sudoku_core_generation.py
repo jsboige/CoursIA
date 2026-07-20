@@ -209,3 +209,46 @@ class TestCrossInvariants:
             mask = puzzles[i] > 0
             assert np.all(result[mask] == puzzles[i][mask]), \
                 f"Hard puzzle {i} solution changes given cells"
+
+
+# ─── Degenerate-input guard (bug-class #7554/#7551) ──────────────────
+
+
+class TestGeneratePuzzlesGuard:
+    """generate_puzzles must reject degenerate inputs explicitly.
+
+    Without the guards, degenerate inputs produce silent wrong results or
+    crash far from the call site:
+      - n=0           -> np.zeros((0,81)) allocated, range(0) body skipped,
+                         returns empty arrays shape (0,81) silently (no error).
+      - n=-2          -> np.zeros((-2,81)) raises opaque numpy
+                         ``negative dimensions are not allowed``.
+      - n_empty_range=(50,30) (inverted) -> rng.randint(50,31) raises opaque
+                         numpy ``low >= high`` once the loop reaches it.
+
+    Same degenerate-input bug-class as make_batch_edge_index batch_size<=0
+    (#7554), WFC rows<=0 (#7551), Tournament repetitions<=0 (#7544)."""
+
+    def test_n_zero_raises(self):
+        with pytest.raises(ValueError, match="n must be positive"):
+            generate_puzzles(0)
+
+    def test_n_negative_raises(self):
+        with pytest.raises(ValueError, match="n must be positive"):
+            generate_puzzles(-5)
+
+    def test_inverted_empty_range_raises(self):
+        with pytest.raises(ValueError, match="n_empty_range must be non-decreasing"):
+            generate_puzzles(5, n_empty_range=(50, 30))
+
+    def test_equal_bounds_allowed(self):
+        """Equal lo==hi is valid (randint(a, a+1) == a always) and must NOT raise."""
+        puzzles, _ = generate_puzzles(3, n_empty_range=(40, 40), seed=7)
+        for i in range(3):
+            assert np.sum(puzzles[i] == 0) == 40
+
+    def test_positive_n_unaffected(self):
+        """The guard does not impact the normal path (shape + reproducibility)."""
+        puzzles, solutions = generate_puzzles(4, seed=42)
+        assert puzzles.shape == (4, 81)
+        assert solutions.shape == (4, 81)
