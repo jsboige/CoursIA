@@ -116,7 +116,7 @@ class TestGenerateParcoursPage:
     def test_has_subtitle(self):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
         page = generate_parcours_page("ia-classique", entries)
-        assert "Recherche, CSP et resolution" in page
+        assert "Recherche, CSP et résolution" in page
 
     def test_has_statistics(self):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
@@ -134,7 +134,7 @@ class TestGenerateParcoursPage:
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
         page = generate_parcours_page("genai", entries)
         assert "| Notebook |" in page
-        assert "Maturite" in page
+        assert "Maturité" in page
 
     def test_executable_column(self):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
