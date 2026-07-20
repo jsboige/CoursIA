@@ -26,7 +26,7 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. **NOT*
 These files are reference definitions, not a buildable library. Use them by:
 
 1. **Copy-paste into a notebook cell** (typical pedagogical workflow in `GameTheory-2b`, `GameTheory-8b`, etc.).
-2. **Import from an adjacent Lake project** by adding the file path to the project's `lakefile.lean`. Example from `social_choice_lean/`:
+2. **Import from an adjacent Lake project** by adding the file path to the project's `lakefile.lean`. Example from `game_theory_lean/SocialChoice/`:
 
    ```lean
    import GameTheory.lean_game_defs.Basic
@@ -45,7 +45,7 @@ import Mathlib.SetTheory.Game.Nim
 ## Relation to other GameTheory Lean projects
 
 - [game_theory_lean/](../game_theory_lean/) — Multi-module Lake project (StableMarriage = Gale-Shapley formalization, EPIC #4365; CooperativeGames absorbed from `cooperative_games_lean/` rm #6587).
-- [social_choice_lean/](../social_choice_lean/) — Independent Lake project (Arrow / Sen / median voter, port of asouther4/lean-social-choice).
+- [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbed into `game_theory_lean` (Arrow / Sen / median voter / Voting, EPIC #4365).
 - [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project pinned on Peters' commit `d679d950` (Gibbard-Satterthwaite, Duggan-Schwartz).
 
 These projects do **not** depend on `lean_game_defs/` at build time — they vendor their own definitions tailored to their proof obligations. `lean_game_defs/` is the **introductory** layer used by the teaching notebooks.
@@ -87,7 +87,7 @@ rather than redefining it here.
 ### Where to go next
 
 - **Buildable projects** (each vendors its own proof-tailored definitions):
-  [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / median voter),
+  [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (Arrow / Sen / median voter / Voting, absorbed into `game_theory_lean`, EPIC #4365),
   [`game_theory_lean/`](../game_theory_lean/) (StableMarriage + CooperativeGames absorbed: Shapley value, Core, EPIC #4365).
 - **CGT tour**: [`conway_cgt_lean/`](../conway_cgt_lean/) — surreals, nimbers via
   `vihdzp/combinatorial-games`.
