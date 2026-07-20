@@ -116,7 +116,7 @@ Si vous préférez les cas d'usage aux fondements théoriques :
 1. **5** (ZeroSum) : programmation linéaire, dualité, trading
 2. **6** (EvolutionTrust) : émergence de la coopération, biologie
 3. **13** (CFR) : poker AI, regret minimization
-4. **16** (MechanismDesign) : enchères VCG, allocation de ressources
+4. **16** (MechanismDesign) : enchères VCG, allocation de ressources, et le piège de la non-monotonie du revenu (Conitzer-Sandholm)
 5. **SC-03** (Voting) : Condorcet, Borda, modèles électoraux
 
 #### Parcours informatique théorique (~5h)
@@ -208,7 +208,7 @@ flowchart TD
 | 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
 | 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avancés (Glove Game, politique) | 40 min |
 | 15c (C#) | [GameTheory-15c-CooperativeGames-Csharp](GameTheory-15c-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15c : Shapley (permutations), Banzhaf (swing), Core vide (majorité 3-joueurs), Mini-ONU, convexité from-scratch (See #4956) | 40 min |
-| 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG, matching | 65 min |
+| 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG (non-monotonie du revenu, Conitzer-Sandholm), matching | 65 min |
 | 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
 | SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
 | SC-01 (C#) | [SocialChoice/01-Arrow-Impossibility-Theorem-Csharp](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | .NET (C#) | Twin C# du SC-01 : **théorème d'Arrow from-scratch** (BCL .NET 9, 0 NuGet), preuve déterministe par énumération des profils de préférences (See #4956) | 45 min |
@@ -260,7 +260,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 13 | ImperfectInfo-CFR | CFR vanilla, MCCFR, Deep CFR, poker AI |
 | 14 | DifferentialGames | Jeux continus, Stackelberg, boucle ouverte/fermée |
 | 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
-| 16 | MechanismDesign | Principe de révélation, VCG, matching, enchères |
+| 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
 | 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
 
 ### Side tracks Lean 4 (formalisation)
