@@ -2,6 +2,8 @@
 
 Synthesis of the current landscape in automated theorem proving for Lean 4, with focus on actionable insights for our multi-agent prover harness.
 
+> **Update — July 2026.** The external SOTA landscape below was synthesised in May 2026 (papers up to Seed-Prover 1.5, Dec 2025) and is preserved verbatim; the frontier has since moved but a full re-survey is out of scope here. What **has** changed is the **internal harness status** referenced in §4, §5 (matrix) and §6.2: (a) the agent roster grew from the 5-agent design to a **6-role** configuration (Search / Tactic / Critic / Coordinator / Director / **Diagnosis**) with **per-role provider routing** (OpenRouter GPT-5.5 workhorse + local Qwen + Leanstral/Mistral), see #7477; (b) the harness robustness pathologies P1-P6 catalogued in the #7477 forensic are **all delivered** (typed-timeout transient handling, structural-edits tracking, heartbeat-budget classification, canonical result-kind classifier); (c) the GameTheory Lean lakes have been **consolidated** post-#4365 into `game_theory_lean/` (CooperativeGames + StableMarriage + SocialChoice + RepeatedGames aggregated under one lake), now **bilingual FR/EN** under the #4980 sibling-pair convention (21 `_en.lean` files). The internal-relevance paragraphs below are annotated inline where they now lag.
+
 ---
 
 ## 1. DeepSeek-Prover-V2 (April 2025)
@@ -112,7 +114,7 @@ Uses "LoT-Transfer Learning" pipeline: SFT data from successful proofs -> NL Lon
 
 **Results**: 61.07% on miniF2F-test (Lean 4), outperforming single-agent baselines (GPT-4: 22.95%, InternLM-Step-Prover: 50.70%, Goedel-Prover: 55.33%).
 
-**Comparison to our harness**: Our 5-agent design (Search, Tactic, Critic, Coordinator, Director) is more decomposed than MA-LoT's 2-agent setup. Their Corrector is analogous to our Critic+Director. Their Prover combines our Tactic+Search. We lack the specialized SFT/alignment training that makes their agents effective.
+**Comparison to our harness** *(updated July 2026)*: The harness now runs a **6-role** configuration (Search / Tactic / Critic / Coordinator / Director / **Diagnosis**) — more decomposed than MA-LoT's 2-agent setup. Their Corrector is analogous to our Critic+Director; the Diagnosis role (added via the #7477 forensic) classifies failure modes and routes provider/model per-role (OpenRouter GPT-5.5 workhorse, local Qwen, Leanstral/Mistral). Their Prover combines our Tactic+Search. We still lack the specialized SFT/alignment training that makes their agents effective, but the #7477 robustness fixes (typed-timeout transient handling P1b, structural-edits tracking P2, heartbeat-budget classification P5a, canonical result-kind classifier) close most of the harness-level reliability gap with published systems.
 
 ### APOLLO (NeurIPS 2025)
 
@@ -142,7 +144,7 @@ The multi-agent variant in BFS-Prover-V2 uses separate agents for: (1) tactic ge
 | **MA-LoT** | Mar 2025 | 7B | 61.1% | - | - | 2-agent (Prover+Corrector) | Partial | Yes |
 | **Leanabell-V2** | Jul 2025 | 7B | - | - | - | Verifier-integrated CoT | Partial | Yes |
 | **APOLLO** | May 2025 | Model-agnostic | 75% | - | - | LLM + Lean + repair loop | Yes | Yes |
-| **Our harness** | 2025-26 | API (GPT-5.5) | - | - | - | 5-agent (Search/Tactic/Critic/Coord/Director) | Via context | N/A |
+| **Our harness** | 2025-26 | API (GPT-5.5 + local Qwen + Mistral) | - | - | - | 6-role (Search/Tactic/Critic/Coord/Director/Diagnosis) | Via context | N/A |
 
 **Key observations**:
 - miniF2F is nearly saturated (95%+). Real frontier is ProofNet, PutnamBench, and IMO-level.
@@ -164,7 +166,7 @@ The multi-agent variant in BFS-Prover-V2 uses separate agents for: (1) tactic ge
 
 ### 6.2 Training data opportunities
 
-4. **Self-play data** (inspired by Goedel-Prover): Our successful proofs (gale_shapley_stable, man_optimal, meetSpouse_injective, etc.) are unique training data. Fine-tuning a small model on our proven theorems could create a domain-specific prover.
+4. **Self-play data** (inspired by Goedel-Prover): Our successful proofs (`gale_shapley_stable`, `man_optimal`, `meetSpouse_injective`, etc.) are unique training data. Fine-tuning a small model on our proven theorems could create a domain-specific prover. *(July 2026: these GameTheory theorems now live in the consolidated `game_theory_lean/` lake — `StableMarriage/`, `CooperativeGames/`, `SocialChoice/`, `RepeatedGames/` aggregated under one lake post-#4365, bilingual FR/EN under the #4980 sibling-pair convention. The corpus is larger and cleaner than when this was written.)*
 
 5. **Subgoal decomposition training** (inspired by DeepSeek-Prover-V2): Train the CoordinatorAgent to decompose hard goals into lemmas. Our current Coordinator plans at the file level; subgoal-level decomposition could unlock harder proofs.
 
