@@ -43,6 +43,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | lean-intractable-diagnosis/ | 1 fichier (stable-marriage.md) — diagnostic daté 2026-05-18 des 6 sorrys intractables post-rural-hospitals-formalization, archivé 2026-07-20 (c.696, owner-dispatch po-2026 Lean core, superseded-by absorption StableMarriage dans game_theory_lean/ #4365, KB prover `intractable_targets.json` mise à jour) | — |
 | ledgers-reviews/ | 54 fichiers sweeps §H.4/B/D datés PM transiente (juillet 2026) — verdicts EXEC_PROVED datés préservés verbatim, archivés 2026-07-19 (c.736) | — |
 | po2026-local-build-troubleshooting.md | 1 fichier (102 lignes) — diagnostic daté 2026-07-16 des 4 modes d'échec `lake build` po-2026 + recette de récupération (c.466-c.469, c.473 validée knot_lean), **1 inbound reference** sur `origin/main` (`docs/reference/scripts-reference.md` L158 mise à jour c.700). **Procédure codifiée** dans `scripts/lean/po2026_recover_build.py` (309 lignes, idempotent, recette canonique B). Leçon durable dans `MEMORY.md` L502. Archivé 2026-07-20 (c.700, owner-dispatch po-2026 anti-contamination L420, See #7422 triage) | — |
+| submodule-lfs-bypass | 1 fichier (submodule-lfs-bypass.md, 158 lignes) — procédure **transiente** de matérialisation de submodule LFS-lourd sans réseau, datée c.510 (po-2025, 2026-07-15, PR #6641 MERGED), **0 inbound references** sur `origin/main`. Leçon durable dans `MEMORY.md` L510-L6 ★★★. Archivé 2026-07-20 (c.699, owner-dispatch po-2026 anti-contamination L420, See #7422 triage) | — |
 
 ## Issue de reference
 
