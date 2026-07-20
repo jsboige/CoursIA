@@ -4,6 +4,8 @@
 
 Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer, DQN, LSTM), indicateurs techniques avances, et modeles probabilistes. Du backtesting basique au reinforcement learning.
 
+**Last reviewed**: 2026-07-20
+
 ## Statistiques
 
 | Metrique | Valeur |

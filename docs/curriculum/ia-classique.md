@@ -4,6 +4,8 @@
 
 Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolution de Sudoku, planification classique. De A* aux heuristiques avancees, en passant par les solveurs SAT/SMT.
 
+**Last reviewed**: 2026-07-20
+
 ## Statistiques
 
 | Metrique | Valeur |
