@@ -104,18 +104,48 @@ def _transient_backoff_s(attempt: int) -> float:
     return min(2.0 ** (attempt - 1), TRANSIENT_RETRY_BACKOFF_CAP_S)
 
 
-def _is_transient_error(exc: BaseException) -> bool:
+# P1b (#7477): providers whose timeout = a GPU-stall hang, not a transient
+# network blip. The local vLLM server does not serve 5xx/reset transients, so
+# a timeout means the endpoint accepted the connection then stalled — retrying
+# re-burns request_timeout_s with zero recovery chance (config.py P1 already
+# dropped the OpenAI-SDK max_retries to 1 for local; this stops the workflow
+# layer from multiplying that burn via TRANSIENT_RETRY_MAX). Forensic span
+# evidence: `[ERROR] chat qwen3.6 1206.9s`, `[ERROR] invoke_agent SearchAgent
+# 2299.7s` (#7477). Remote providers (zai/openrouter/mistral) stay retryable.
+HANG_PRONE_PROVIDERS = frozenset({"local"})
+
+# String-form timeout markers (the OpenAI SDK / httpx raise these as
+# APITimeoutError / ReadTimeout; agent_framework may wrap them). Used by
+# `_is_transient_error` to recognize a timeout when no structured status_code
+# is available. Kept separate from the general `transient_markers` tuple so
+# the hang-prone-provider carve-out (above) targets ONLY timeouts.
+_TIMEOUT_MARKERS = (
+    "read timeout", "connect timeout", "timed out", "timeout",
+)
+
+
+def _is_transient_error(exc: BaseException, provider: Optional[str] = None) -> bool:
     """Return True if `exc` looks like a transient provider/network error.
 
     Matches ONLY conditions worth retrying:
       - HTTP 5xx server errors (500, 502, 503, 504),
       - connection reset / aborted / refused,
-      - read / connect timeouts.
+      - read / connect timeouts (for *remote* providers — see ``provider``).
 
     Explicitly EXCLUDES 404 (bad/missing model_id — a config bug, retrying just
     wastes time) and other 4xx client errors (401/403/422). `agent_framework`
     may wrap the underlying httpx / openai error, so we probe both the
     `status_code` attribute and the stringified message defensively.
+
+    ``provider`` (P1b, #7477): the agent's provider (stamped on the Agent by
+    ``agents._stamp_provider``, read at the retry call site). For a
+    hang-prone provider (``HANG_PRONE_PROVIDERS``) a timeout is a GPU-stall
+    hang, NOT a transient blip — the OpenAI SDK already exhausted its internal
+    retries (max_retries=1 for local, config.py P1) each re-burning the full
+    request_timeout_s, and the workflow layer must NOT multiply that burn
+    (TRANSIENT_RETRY_MAX=5). The timeout is returned as non-transient so the
+    outage-breaker terminates the run cleanly. Remote providers keep the
+    retry behavior (a 504/read-timeout on openrouter can resolve on retry).
     """
     # 1. Structured HTTP status code, if the provider exposed one. Checked on
     #    the exception and a common nested `.response` (httpx-style) attribute.
@@ -135,6 +165,17 @@ def _is_transient_error(exc: BaseException) -> bool:
     if any(code in msg for code in (" 404", "404 ", "not found",
                                     " 401", " 403", " 422",
                                     "unauthorized", "forbidden")):
+        return False
+
+    # P1b (#7477): a hang-prone provider (local vLLM) that times out is in a
+    # GPU-stall hang — retrying re-burns request_timeout_s with no chance of
+    # recovery. Treat it as a definitive provider failure (return False) so
+    # the outage-breaker terminates the run instead of multiplying the burn.
+    # A local server never serves a structured 504 (handled in step 1), so
+    # this only catches the string-form timeout markers.
+    if provider in HANG_PRONE_PROVIDERS and any(
+        marker in msg for marker in _TIMEOUT_MARKERS
+    ):
         return False
 
     transient_markers = (
@@ -480,7 +521,9 @@ class AgentExecutor(Executor):
                             agent=self._agent.name, role="error_retry_failed",
                             content=str(e2)[:200],
                         )
-            elif _is_transient_error(e):
+            elif _is_transient_error(
+                e, getattr(self._agent, "_prover_provider", None)
+            ):
                 # Transient provider/network error (HTTP 5xx, connection
                 # reset/aborted, read/connect timeout). Forensic: several
                 # iterations were lost when an agent crashed mid-run on a
@@ -511,7 +554,10 @@ class AgentExecutor(Executor):
                         _last_exc = e_retry
                         # Only keep retrying while still transient; a fresh
                         # non-transient error must fall through immediately.
-                        if not _is_transient_error(e_retry):
+                        if not _is_transient_error(
+                            e_retry,
+                            getattr(self._agent, "_prover_provider", None),
+                        ):
                             break
                 if response_text is None:
                     # Retries exhausted (or a non-transient error surfaced) —

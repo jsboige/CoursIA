@@ -39,6 +39,24 @@ def _fast_options() -> ChatOptions:
     return ChatOptions(max_tokens=FAST_MAX_TOKENS)
 
 
+def _stamp_provider(agent: Agent, provider: str) -> Agent:
+    """Tag an Agent with its provider for the workflow-layer timeout policy (#7477 P1b).
+
+    ``_is_transient_error`` (workflow.py) reads ``getattr(agent,
+    "_prover_provider", None)`` so that a timeout from a hang-prone provider
+    (local vLLM / qwen3.6 — whose failure mode is a GPU-stall hang, not a
+    transient 5xx/reset) is treated as a *definitive* provider failure
+    instead of being retried at the workflow layer. Each retry would
+    re-burn ``request_timeout_s`` (config.py P1: ~480s per hung local call
+    after max_retries=1), so the pre-P1b workflow multiplied that burn
+    ``TRANSIENT_RETRY_MAX`` (5) times. Stamping the provider here lets the
+    outage-breaker terminate the run cleanly instead. Forensic #7477:
+    ``[ERROR] chat qwen3.6 1206.9s`` (5x240s pre-P1a on one logical call).
+    """
+    agent._prover_provider = provider  # type: ignore[attr-defined]
+    return agent
+
+
 def create_search_agent(tools: SearchTools, provider: str = "local",
                         goal: str = "", name: str = "SearchAgent") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
@@ -59,20 +77,20 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
         tools.file_read_lines,
         tools.file_load,
     ]
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         instructions=augment_instructions(SEARCH_AGENT_INSTRUCTIONS, goal=goal),
         tools=agent_tools,
         name=name,
         default_options=_fast_options(),
-    )
+    ), provider)
 
 
 def create_tactic_agent(tools: TacticTools, provider: str = "openrouter",
                         goal: str = "") -> Agent:
     """TacticAgent: generates tactics + decomposition. Uses reasoning model."""
     client = create_client(provider, model_key="reasoning")
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         instructions=augment_instructions(TACTIC_AGENT_INSTRUCTIONS, goal=goal),
         tools=[
@@ -90,13 +108,13 @@ def create_tactic_agent(tools: TacticTools, provider: str = "openrouter",
         ],
         name="TacticAgent",
         default_options=_reasoning_options(),
-    )
+    ), provider)
 
 
 def create_critic_agent(tools: CriticTools, provider: str = "openrouter") -> Agent:
     """CriticAgent: analyzes failures, decides routing. Uses fast model."""
     client = create_client(provider, model_key="fast")
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         instructions=CRITIC_AGENT_INSTRUCTIONS,
         tools=[
@@ -106,13 +124,13 @@ def create_critic_agent(tools: CriticTools, provider: str = "openrouter") -> Age
         ],
         name="CriticAgent",
         default_options=_fast_options(),
-    )
+    ), provider)
 
 
 def create_coordinator_agent(tools: CoordinatorTools, provider: str = "openrouter") -> Agent:
     """CoordinatorAgent: strategic escalation. Uses reasoning model."""
     client = create_client(provider, model_key="reasoning")
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         # #1081: the Coordinator sets the attack plan — ground it in the
         # committed reference docs (mmaaz-git strategies, ported defs).
@@ -137,7 +155,7 @@ def create_coordinator_agent(tools: CoordinatorTools, provider: str = "openroute
         ],
         name="CoordinatorAgent",
         default_options=_reasoning_options(),
-    )
+    ), provider)
 
 
 # 512 was too tight: a frontier reasoning model (Opus 4.7 / GPT-5.5) needs
@@ -162,7 +180,7 @@ def create_director_agent(provider: str = "openrouter",
     Budget: max 2048 tokens, max 3 calls per session.
     """
     client = create_client(provider, model_key="reasoning")
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         # #1081: the whole point of the frontier Director is grounded guidance
         # — inject the committed reference docs (mmaaz-git proofs, ported defs,
@@ -173,13 +191,13 @@ def create_director_agent(provider: str = "openrouter",
         tools=[],
         name="DirectorAgent",
         default_options=ChatOptions(max_tokens=DIRECTOR_MAX_TOKENS),
-    )
+    ), provider)
 
 
 def create_diagnosis_agent(tools: DiagnosisTools, provider: str = "local") -> Agent:
     """DiagnosisAgent: qualitative verification. Uses fast local model."""
     client = create_client(provider, model_key="fast")
-    return Agent(
+    return _stamp_provider(Agent(
         client=client,
         instructions=DIAGNOSIS_AGENT_INSTRUCTIONS,
         tools=[
@@ -193,4 +211,4 @@ def create_diagnosis_agent(tools: DiagnosisTools, provider: str = "local") -> Ag
         ],
         name="DiagnosisAgent",
         default_options=_fast_options(),
-    )
+    ), provider)
