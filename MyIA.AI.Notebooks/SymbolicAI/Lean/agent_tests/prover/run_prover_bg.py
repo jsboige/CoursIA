@@ -41,6 +41,12 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     re-derived its own verdict — the ai-01 harvest step included.
       sorry_decreased  -> harvest: branch + PR (textual sorry count dropped)
       structural_only  -> keep iterating: decomposition landed, count did not drop
+                          (final <= original)
+      decomposition_regression -> a decomposition net-INCREASED the sorry count
+                          (final > original) without discharging a sub-sorry:
+                          structural_progress is True (the build passes) but the
+                          split did not help — change strategy, do not iterate
+                          another split (#7477 P3).
       crashed          -> postmortem the harness, not the proof
       provider_outage  -> the LLM provider died mid-run (circuit-breaker,
                           #5869): the prover never got to work — retry when
@@ -61,6 +67,21 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     if final_sorry < original_sorry:
         return "sorry_decreased"
     if isinstance(result, dict) and result.get("structural_progress"):
+        # P3 (#7477 forensic): a decomposition that net-INCREASED the sorry
+        # count (final > original) did not actually help — it split a goal
+        # into more sub-sorries without discharging any. The autonomous
+        # success gate (_autonomous_success_gate, provers.py:289) sets
+        # structural_progress=True whenever `final >= original` and the build
+        # passes, so a 4->8 split scores structural_only == "keep iterating"
+        # — but iterating more decompositions spirals (4->8->16). Reclassify
+        # as decomposition_regression so a coordinator changes strategy
+        # (target a leaf, not another split) instead of mistaking the net
+        # increase for progress. FX-8 already closed the `final == original`
+        # statement-mutation case; this closes the `final > original` true-
+        # decomposition case. Forensic: L2551 grew 4->8 (within per-edit
+        # budget), committed net +4, scored structural_progress:true.
+        if final_sorry > original_sorry:
+            return "decomposition_regression"
         return "structural_only"
     if isinstance(result, dict) and result.get("provider_outage"):
         return "provider_outage"
