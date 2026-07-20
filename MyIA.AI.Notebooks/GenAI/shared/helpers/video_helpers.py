@@ -90,6 +90,9 @@ def extract_frames(path: str, n_frames: int = 8,
     Returns:
         Liste d'images PIL.Image
     """
+    if n_frames <= 0:
+        raise ValueError(f"n_frames must be positive, got {n_frames}")
+
     from PIL import Image
     import decord
     decord.bridge.set_bridge('native')
@@ -229,6 +232,9 @@ def frames_to_video(frames: List, fps: float, output_path: str,
         output_path: Chemin du fichier de sortie
         codec: Codec video (libx264, libx265, mpeg4)
     """
+    if fps <= 0:
+        raise ValueError(f"fps must be positive, got {fps}")
+
     import imageio
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
