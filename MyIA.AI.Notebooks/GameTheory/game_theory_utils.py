@@ -910,6 +910,21 @@ def stackelberg_duopoly(a: float, b: float, c_L: float, c_F: float
     Returns:
         (q_leader, q_follower, profit_leader, profit_follower)
     """
+    # Guard against b <= 0: the demand slope ``b`` appears as a divisor in
+    # ``q_L = (a - 2*c_L + c_F) / (2*b)`` and ``q_F = ... / (2*b)``. ``b == 0``
+    # raises ``ZeroDivisionError`` (reproduced firsthand) and ``b < 0`` yields a
+    # silently inverted demand curve (price increasing in quantity) — an
+    # ill-posed duopoly the caller did not intend. Same degenerate-input guard
+    # bug-class as ``compute_payoff_matrix`` (#7513, ``rounds <= 0``),
+    # ``replicator_dynamics`` (#7495), ``kuhn_poker_cfr.train`` (#7489,
+    # ``iterations <= 0``) and ``shapley_value_monte_carlo`` (#7481,
+    # ``n_samples <= 0``): a caller-controlled divisor/loop-count admitted
+    # without validation that crashes or silently misbehaves on the non-positive
+    # value instead of raising a clear ValueError.
+    if b <= 0:
+        raise ValueError(
+            f"b (demand slope) must be positive, got {b}"
+        )
     # Leader's optimal quantity
     q_L = (a - 2*c_L + c_F) / (2*b)
     q_L = max(0, q_L)
@@ -940,6 +955,14 @@ def cournot_duopoly(a: float, b: float, c1: float, c2: float
     Returns:
         (q1, q2, profit1, profit2)
     """
+    # Guard against b <= 0: same demand-slope divisor as ``stackelberg_duopoly``
+    # above (``q1 = ... / (3*b)``). ``b == 0`` raises ``ZeroDivisionError`` and
+    # ``b < 0`` is an ill-posed inverted demand curve. Same degenerate-input
+    # guard bug-class (#7513 / #7495 / #7489 / #7481).
+    if b <= 0:
+        raise ValueError(
+            f"b (demand slope) must be positive, got {b}"
+        )
     q1 = (a - 2*c1 + c2) / (3*b)
     q2 = (a - 2*c2 + c1) / (3*b)
     q1, q2 = max(0, q1), max(0, q2)
