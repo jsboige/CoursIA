@@ -137,6 +137,50 @@ def test_replace_only_touches_target_number():
     assert out == "Exercice 1 then Exercice 7"
 
 
+# Multi-digit boundary regression (was a silent corruption: the naive
+# str.replace matched the "1" prefix of "12", turning "Exercice 12" into
+# "Exercice 92" when relabeling exercise 1 -> 9).
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_replace_multi_digit_not_corrupted_by_single_digit_old():
+    """Renaming 1->9 must leave 'Exercice 12' intact (was corrupted to
+    'Exercice 92' by the prefix-matching str.replace)."""
+    src = "### Exercice 1\nSee Exercice 12 for context."
+    out = _replace_in_source(src, old_n=1, new_n=9)
+    assert out == "### Exercice 9\nSee Exercice 12 for context."
+
+
+def test_replace_multi_digit_not_corrupted_when_relabeling_higher_digit():
+    """Renaming 3->1 must also leave 'Exercice 30' intact (the naive
+    str.replace('Exercice 3', ...) matched the '3' in '30')."""
+    src = "Exercice 3 then Exercice 30"
+    out = _replace_in_source(src, old_n=3, new_n=1)
+    assert out == "Exercice 1 then Exercice 30"
+
+
+def test_replace_multi_digit_old_n_matched_correctly():
+    """A multi-digit old_n is matched as a whole (relabeling 12 -> 5 touches
+    'Exercice 12' but not 'Exercice 1' nor 'Exercice 120')."""
+    src = "Exercice 1, Exercice 12, Exercice 120"
+    out = _replace_in_source(src, old_n=12, new_n=5)
+    assert out == "Exercice 1, Exercice 5, Exercice 120"
+
+
+def test_replace_multi_digit_list_source_not_corrupted():
+    """The boundary guard applies on the per-line list path too."""
+    src = ["### Exercice 1\n", "Refs Exercice 12.\n"]
+    out = _replace_in_source(src, old_n=1, new_n=9)
+    assert "".join(out) == "### Exercice 9\nRefs Exercice 12.\n"
+
+
+def test_replace_exemple_guide_multi_digit_not_corrupted():
+    """The 'Exemple guide' label gets the same boundary protection."""
+    src = "Exemple guide 1 and Exemple guide 12"
+    out = _replace_in_source(src, old_n=1, new_n=2)
+    assert out == "Exemple guide 2 and Exemple guide 12"
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # RELABEL_MAP sanity (the hand-curated target table)
 # ──────────────────────────────────────────────────────────────────────────

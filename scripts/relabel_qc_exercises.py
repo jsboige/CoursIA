@@ -60,23 +60,23 @@ def get_exercice_num(cell_source) -> int | None:
 def _replace_in_source(source, old_n: int, new_n: int):
     ph = f"__RL_{new_n}__"
     prefixes = ["Exercice", "Exemple guide"]
+    # Word-boundary-safe match: the trailing `(?!\d)` requires the number to be
+    # followed by a non-digit, so renaming "Exercice 1" -> "Exercice 9" leaves
+    # "Exercice 12" intact. The naive `str.replace("Exercice 1", ...)` matched
+    # the "1" prefix of "12" and silently corrupted "Exercice 12" -> "Exercice 92".
+    label_re = re.compile(
+        r"(" + "|".join(re.escape(pf) for pf in prefixes) + rf") {old_n}(?!\d)"
+    )
 
-    if isinstance(source, str):
-        text = source
-        for pf in prefixes:
-            text = text.replace(f"{pf} {old_n}", f"{pf} {ph}")
+    def _swap(text: str) -> str:
+        text = label_re.sub(lambda m: f"{m.group(1)} {ph}", text)
         for pf in prefixes:
             text = text.replace(f"{pf} {ph}", f"{pf} {new_n}")
         return text
-    else:
-        result = []
-        for line in source:
-            for pf in prefixes:
-                line = line.replace(f"{pf} {old_n}", f"{pf} {ph}")
-            for pf in prefixes:
-                line = line.replace(f"{pf} {ph}", f"{pf} {new_n}")
-            result.append(line)
-        return result
+
+    if isinstance(source, str):
+        return _swap(source)
+    return [_swap(line) for line in source]
 
 
 def audit_qc():
