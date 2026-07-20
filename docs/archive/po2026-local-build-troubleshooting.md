@@ -1,3 +1,7 @@
+> **ARCHIVED** 2026-07-20 (c.700, owner-dispatch po-2026, See #7422 triage [#4208]).  
+> **Raison** : procedure **transiente** d'un incident cluster unique (#6771 lake build failure modes c.466-c.469, recovery recipe validee c.473 knot_lean), **1 inbound reference** sur `origin/main` (`docs/reference/scripts-reference.md` L158, mise a jour c.700). **Procedures codifiees** dans `scripts/lean/po2026_recover_build.py` (309 lignes, idempotent, recete canonique B cache-get + build). Lecon durable dans `MEMORY.md` (L502). Pattern **transferable** mais **non-reference hors zone Lean po-2026** = candidat archive par critere #7422.  
+> **Preservation** : deplace **tel quel** vers `docs/archive/po2026-local-build-troubleshooting.md` (cf L686 * NEW). Contenu intact 102 lignes, byte-identity hors preamble.
+
 # po-2026 — Build Lean local : diagnostic des échecs + recette de récupération
 
 **Source** : issue [#6771](https://github.com/jsboige/CoursIA/issues/6771) (priority-high, owner po-2026, self-repair règle F).
