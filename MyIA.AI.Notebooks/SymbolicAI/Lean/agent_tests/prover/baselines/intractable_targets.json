@@ -26,7 +26,7 @@
     "remove its entry here. Adding an entry is a deliberate, reviewed act —",
     "every entry MUST cite a source doc and an effort estimate."
   ],
-  "source_doc": "docs/lean/stable_marriage_intractable_diagnosis.md",
+  "source_doc": "docs/archive/lean-intractable-diagnosis/stable-marriage.md",
   "targets": [
     {
       "file": "GaleShapley.lean",
@@ -35,7 +35,7 @@
       "reason": "Man-optimality blocker 1 (IsStable branch). Requires threading the gale_shapley_stable witness through gsFinalMatching.",
       "underlying_theory": "rural hospitals theorem + GS optimality induction",
       "effort_estimate_lines": "80-120 (rural hospitals lemma + optimality induction)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-1-man-optimality-galeshapleylean-l116"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-1-man-optimality-galeshapleylean-l116"
     },
     {
       "file": "GaleShapley.lean",
@@ -44,7 +44,7 @@
       "reason": "Man-optimality blocker 1 (optimality branch). GS gives each man the best partner among all stable matchings — rural hospitals theorem.",
       "underlying_theory": "rural hospitals theorem + GS optimality induction",
       "effort_estimate_lines": "80-120 (shared with L116 infrastructure)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-1-man-optimality-galeshapleylean-l116"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-1-man-optimality-galeshapleylean-l116"
     },
     {
       "file": "GaleShapley.lean",
@@ -53,7 +53,7 @@
       "reason": "Woman-pessimality blocker 2. Derived from man-optimality via Knuth lattice duality (woman-pessimal = man-optimal of reversed profile). Depends on blocker 1.",
       "underlying_theory": "Knuth 1976 lattice duality + man-optimality",
       "effort_estimate_lines": "40-60 (after blocker 1) or 120-180 standalone",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-2-woman-pessimality-galeshapleylean-l146"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-2-woman-pessimality-galeshapleylean-l146"
     },
     {
       "file": "Lattice.lean",
@@ -62,7 +62,7 @@
       "reason": "meetSpouse different-women blocker 3a. Stability preservation when two stable matchings give m1 different women, neither the meet spouse. Needs lattice argument for n >= 3.",
       "underlying_theory": "rural hospitals theorem / Knuth lattice structure",
       "effort_estimate_lines": "60-80 per case (shared rural-hospitals infrastructure)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-3-meetspouse-different-women-cases-latticelean-l324-l387"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-3-meetspouse-different-women-cases-latticelean-l324-l387"
     },
     {
       "file": "Lattice.lean",
@@ -71,7 +71,7 @@
       "reason": "meetSpouse different-women blocker 3b (symmetric). Same lattice requirement as L324.",
       "underlying_theory": "rural hospitals theorem / Knuth lattice structure",
       "effort_estimate_lines": "60-80 per case (shared rural-hospitals infrastructure)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-3-meetspouse-different-women-cases-latticelean-l324-l387"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-3-meetspouse-different-women-cases-latticelean-l324-l387"
     },
     {
       "file": "Lattice.lean",
@@ -80,7 +80,7 @@
       "reason": "Doctor-optimal blocker 4 = man-optimality rephrased as ManLE ordering. Same rural hospitals requirement as blocker 1.",
       "underlying_theory": "rural hospitals theorem (rephrased as ManLE)",
       "effort_estimate_lines": "20-30 (after blocker 1 infrastructure exists)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-4-doctor-optimal-latticelean-l727"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-4-doctor-optimal-latticelean-l727"
     },
     {
       "file": "Basic.lean",
@@ -89,7 +89,7 @@
       "reason": "Bondareva-Shapley core nonemptiness blocker 5. Requires Farkas' lemma / separating hyperplane for balanced games — convex geometry machinery, independent of stable marriage.",
       "underlying_theory": "convex geometry, separating hyperplane (Bondareva-Shapley core)",
       "effort_estimate_lines": "100-150 (hyperplane separation + core characterization)",
-      "source": "docs/lean/stable_marriage_intractable_diagnosis.md#blocker-5-hcore-nonemptiness-basiclean-l308"
+      "source": "docs/archive/lean-intractable-diagnosis/stable-marriage.md#blocker-5-hcore-nonemptiness-basiclean-l308"
     }
   ]
 }

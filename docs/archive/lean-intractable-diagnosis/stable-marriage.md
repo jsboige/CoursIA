@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-20** — Diagnostic daté 2026-05-18, valeur = historique uniquement. Superseded by EPIC #4365 absorption (StableMarriage absorbed into `game_theory_lean/StableMarriage/` post-c.304-305). Les 6 sorrys documentés (GaleShapley.lean L116/L117/L146, Lattice.lean L324/L387/L727, Basic.lean L308) restent dans le KB prover actif via `intractable_targets.json` (référence déplacée). Le contenu verbatim est préservé ci-dessous pour audit rétrospectif. Source triage : PR #7426 (c.674). Archiveur : po-2026 worker (c.696). Anti-contamination L420 owner-dispatch : Lean core = po-2026.
+
 # Stable Marriage Lean 4 — Intractable Sorry Diagnosis
 
 **Date:** 2026-05-18
