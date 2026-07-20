@@ -41,7 +41,25 @@ def draw_search_tree(root: SearchTreeNode, max_depth: int = 5,
                      title: str = "Arbre de recherche",
                      highlight_path: bool = True,
                      figsize: tuple = (14, 8)):
-    """Dessine un arbre de recherche avec matplotlib."""
+    """Dessine un arbre de recherche avec matplotlib.
+
+    Raises:
+        TypeError: si ``root`` n'est pas un ``SearchTreeNode``.
+        ValueError: si ``max_depth`` n'est pas strictement positif.
+            (Avec ``max_depth <= 0``, la position verticale devient
+            nulle et la legende / les aretes degenerent -- on refuse
+            plutot que de rendre un graphe deroutant.)
+    """
+    if not isinstance(root, SearchTreeNode):
+        raise TypeError(
+            f"root must be a SearchTreeNode instance, got "
+            f"{type(root).__name__} (None or other type)"
+        )
+    if not isinstance(max_depth, int) or max_depth <= 0:
+        raise ValueError(
+            f"max_depth must be a strictly positive integer, got {max_depth!r}"
+        )
+
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.set_title(title, fontsize=14, fontweight='bold')
     ax.axis('off')
