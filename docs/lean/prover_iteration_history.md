@@ -180,6 +180,30 @@ Leçon de méthode : un rapport forensic sur traces datées se relit **contre le
 
 **Pathologie nouvelle observée le même jour (run Lidman L39)** : élimination de sorry par **données fabriquées derrière un invariant trivial**. Le prover a remplacé `diagram := sorry` par un PD-code plausible étiqueté « Reference: KnotInfo » — mais le code ne correspondait PAS à l'entrée KnotInfo réelle de 11n_102 (seul 1 tuple sur 11 en était une rotation). Comme `KnotDiagram.hwell : True` (placeholder Phase 2), le build passe quelle que soit la donnée : le gate build+compte-sorry est structurellement aveugle à l'hallucination de données. Contre-mesures : (a) G.1 côté récolte — toute donnée « citée d'une source » se re-vérifie contre la source avant PR (fait ici : PD-code corrigé depuis knotinfo.org) ; (b) le vrai fix est le prédicat de bonne-formation Phase 2 (chaque label d'arête apparaît exactement 2×), qui aurait rejeté... non, qui ne suffirait PAS (un code cohérent peut rester le mauvais nœud) — seule la vérification contre la source fait foi pour la *donnée*, le prédicat n'attrape que la malformation.
 
+### Itération forensic 2026-07-19/20 (survey #7477, ping-pong #1453)
+
+Forensic systématique de 34 traces `agent_tests/prover/traces/*_result.json` + spans OTel `*.spans.jsonl`, croisée avec un **run SOTA live** (glm-5.2 workhorse + gpt-5.6-sol frontier) lancé sur DEMO 62 (Hashlife P4 bras NE, `HashlifeCorrectness.lean:3193`). Conclusion principale : l'échec baseline (8→8, 654 s `no_progress`) **n'est pas un mur de capacité du modèle** mais des bugs d'orchestration. Le run SOTA le confirme : gpt-5.6-sol a trouvé l'approche correcte (instantier `hashlife_correct` pour le supercell NE), réduit 8→7, puis est tombé sur le **mur de 200 000 heartbeats** — preuve-engineering (P5), pas raisonnement.
+
+**6 pathologies identifiées, toutes résolues (8 PRs merged 19-20/07)** :
+
+| Patho | Fix | PR | Verdict |
+|-------|-----|----|---------|
+| **P1** deadline cumulée par appel chat (timeout=240 × max_retries=4 = 1200 s/appel ; `[ERROR] invoke_agent 2299.7 s`) | P1a : plafonner `max_retries` du provider `local` ; P1b : timeout typé + `HANG_PRONE_PROVIDERS`, `_is_transient_error` n'expire pas les timeouts | #7482 (P1a), #7532 (P1b) | MERGED |
+| **P2** cohérence launcher/cible + scoring `correctly_refused` (la cible L2970 était marquée `DO NOT TARGET` ; refus correct scoré `no_progress`) | P2a : `result_kind: correctly_refused` distinct de `no_progress` ; P2b : guard launcher `DO_NOT_TARGET` (`run_prover_bg.py`) | #7500 (P2a), #7488 (P2b) | MERGED |
+| **P3** régression nette sur décomposition (L2551 4→8 scoré `structural_progress`, trompeur) | classifier terminal : `final_sorry > original_sorry` sans sub-sorry vérifié → `decomposition_regression` | #7571 | MERGED |
+| **P4** faux-négatif L1 (`level_1_build` disagree avec `error_count` regex → revert aveugle) | contrat `: error:` comme signal **primaire**, `level_1_build` démote en cross-check secondaire | #7533 | MERGED |
+| **P5** budget heartbeat (200 000 whnf blowup rend les tactiques correctes inaborddables) | `result_kind: heartbeat_budget_exceeded` typé (parse `maximum number of heartbeats ... has been reached`) | #7548 (P5a) | MERGED |
+| **P6** audit routing per-agent (Search/Critic doivent router vers `zai`) | config hygiene : route workhorses Search/Critic/Diagnosis vers `zai`, preserve `_stamp_provider` | #7572 | MERGED |
+
+**Classifier canonique `_derive_result_kind`** (`run_prover_bg.py`) — union des 9 verdicts post-P1-P6, rankés par action coordinateur :
+`sorry_decreased > structural_only > correctly_refused > heartbeat_budget_exceeded > decomposition_regression > intractable > provider_outage > crashed > no_progress`. HARD invariant : les result_kinds coexistent, 0 clobber.
+
+**Validation G.1** : chaque PR pytest + ast/exec isolé sur `_derive_result_kind` (14/14 branches + invariant sibling-coexistence). Classifier suite 45/45 PASS, 0 régression.
+
+**Leçon de méthode (ai-01 c.712)** : « capabilité X absente » se grep dans le fichier qui l'**INTÈGRE** réellement, pas un voisin homonyme (P2b : `launcher.py` au lieu de `run_prover_bg.py` → greenlight erroné corrigé firsthand par le worker).
+
+**Résiduel** : la cible BG suivante est `p4_nw_supercell_agree` L2910 (bras NW supercell, whnf-hard). Launch différé : `miniforge3` conda WSL cassé (`cannot execute: required file not found`) → env `epita_symbolic_ai` inaccessible. Repair conda WSL = prérequis ai-01 avant prochaine passe BG. Pas de fake-launch.
+
 ### Dual-Track Workflow (established May 11)
 
 1. **ORIENT** — Identify target, check HONEST_SORRIES registry
@@ -203,7 +227,7 @@ Leçon de méthode : un rapport forensic sur traces datées se relit **contre le
 
 ## 7. Files
 
-- **Prover source:** `MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/prover/` (agents.py, workflow.py, tools.py, provers.py, config.py)
+- **Prover source:** `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/` (agents.py, workflow.py, tools.py, provers.py, run_prover_bg.py, config.py, state.py, forensic_guards.py)
 - **Knowledge base:** `prover/proof_knowledge.json`
 - **History files:** `agent_tests/prover/*.json`
 - **Intractable diagnosis:** `docs/archive/lean-intractable-diagnosis/stable-marriage.md`
