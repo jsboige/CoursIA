@@ -26,7 +26,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 Ces fichiers sont des définitions de référence, pas une bibliothèque compilable. Utilisation :
 
 1. **Copier-coller dans une cellule de notebook** (workflow pédagogique typique dans `GameTheory-2b`, `GameTheory-8b`, etc.).
-2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `social_choice_lean/` :
+2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `game_theory_lean/SocialChoice/` :
 
    ```lean
    import GameTheory.lean_game_defs.Basic
@@ -45,7 +45,7 @@ import Mathlib.SetTheory.Game.Nim
 ## Relation aux autres projets Lean de GameTheory
 
 - [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365 ; CooperativeGames absorbé depuis `cooperative_games_lean/` rm #6587).
-- [social_choice_lean/](../social_choice_lean/) — Projet Lake indépendant (Arrow / Sen / électeur médian, port de asouther4/lean-social-choice).
+- [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbé dans `game_theory_lean` (Arrow / Sen / électeur médian / Voting, EPIC #4365).
 - [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant pinné sur le commit `d679d950` de Peters (Gibbard-Satterthwaite, Duggan-Schwartz).
 
 Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
@@ -59,7 +59,7 @@ flowchart TD
     NOTEBOOKS["Notebooks d'enseignement<br/><i>copier-coller les définitions</i>"]
     INTRO["lean_game_defs/<br/><b>couche introductive</b><br/>définitions uniquement · 0 sorry · cœur Lean<br/>(ce module)"]
     PROJ["Projets Lake — preuves formelles<br/>chacun vendore ses définitions adaptées"]
-    SC["social_choice_lean/<br/>Arrow · Sen · électeur médian"]
+    SC["game_theory_lean/SocialChoice/<br/>Arrow · Sen · électeur médian<br/>Voting (absorbé, EPIC #4365)"]
     COOP["cooperative_games_lean/<br/>Shapley · Cœur · Banzhaf"]
     SM["game_theory_lean/<br/>StableMarriage (Gale-Shapley)"]
     CGT["conway_cgt_lean/<br/>surréels · nimbers (via Mathlib)"]
@@ -130,7 +130,7 @@ plutôt que de la redéfinir ici.
 ### Où aller ensuite
 
 - **Projets compilables** (chacun vendore ses propres définitions adaptées aux preuves) :
-  [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / électeur médian),
+  [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (Arrow / Sen / électeur médian / Voting, absorbé dans `game_theory_lean`, EPIC #4365),
   [`game_theory_lean/`](../game_theory_lean/) (StableMarriage + CooperativeGames absorbé : valeur de Shapley, Cœur, EPIC #4365).
 - **Visite CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) — surréels, nimbers via
   `vihdzp/combinatorial-games`.
