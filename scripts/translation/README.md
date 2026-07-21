@@ -49,6 +49,7 @@ Détecte le drift entre les notebooks courants et le CSV. **Non-bloquant** (mode
 | `TRAD_DRIFT` | une traduction a été éditée à la main sans repercussion sur le CSV |
 | `MISSING_LANG` | le notebook `xxx_<lang>.ipynb` n'existe plus alors qu'un hash était déposé |
 | `ORPHAN_ROW` | la ligne CSV référence un `cell_id` absent du notebook source (cellule supprimée) |
+| `FR_CONTAM` | la traduction `xxx_<lang>.ipynb` est **identique au source fr** (non traduite, français leaké) — Argumentum 5-classes (4e), garde `len>=4` (#6949) |
 
 ```bash
 # Vérifier un CSV (exit 1 si drift)
@@ -59,6 +60,8 @@ python scripts/translation/check_translation_sync.py translations/ --check
 ```
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte que du `SRC_DRIFT` éventuel ; l'absence de traductions déposées n'est pas un drift (c'est l'état attendu pré-T3). Le pivot (`fr`) étant le notebook source lui-même, sa cohérence est couverte par `SRC_DRIFT` — pas de faux `MISSING_LANG` sur le pivot.
+
+**Harmonisation taxonomie Argumentum (#6949)** : ce script couvre désormais 4 des 5 classes de drift du fork `multilingual-drift-audit.py` — `MISSING`/`ORPHAN` (MISSING_LANG/ORPHAN_ROW), `WRONG_SCRIPT` (script Unicode attendu absent, c.734 #7714), `FR_CONTAM` (c.738). La 5e classe `COGNATE` (noms propres / faux-amis légitimement répétés, `kind == "name"`, **informationnelle** — hors `total_drift` dans le fork) est **N/A** par construction : notre modèle est cell-based (pas de distinction name/prose).
 
 ## CI
 
