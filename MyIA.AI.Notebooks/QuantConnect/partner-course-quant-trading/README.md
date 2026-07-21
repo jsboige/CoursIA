@@ -1,3 +1,9 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-partner-course-quant-trading
+pedagogical_count: 7
+note: count filesystem autoritatif (git ls-files) ; sous-série NON référencée dans le breakdown hub QuantConnect/README.md (Python/projects/ML-Training-Pipeline/kelly_lean = 4 entrées seulement, partner-course=7 et research=17 absents de l'agrégat)
+-->
+
 # Trading Quantitatif avec QuantConnect — Template de Cours Partenaire
 
 Espace de travail pour les cours de trading quantitatif des écoles partenaires.

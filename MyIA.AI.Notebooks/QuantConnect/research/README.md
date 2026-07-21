@@ -1,3 +1,9 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-research
+pedagogical_count: 17
+note: count filesystem autoritatif (git ls-files) ; sous-série NON référencée dans le breakdown hub QuantConnect/README.md (Python/projects/ML-Training-Pipeline/kelly_lean = 4 entrées seulement, partner-course=7 et research=17 absents de l'agrégat)
+-->
+
 # Notebooks de recherche standalone
 
 Recherche indépendante utilisant des données locales (yfinance, pandas, sklearn). Aucun QuantConnect Cloud requis.
