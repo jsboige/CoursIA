@@ -28,11 +28,11 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 
 ### Intelligence artificielle générative
 
-- **[GenAI](MyIA.AI.Notebooks/GenAI/README.md)** — IA générative multimodale : Image, Audio, Vidéo, Texte, Semantic Kernel, Vibe Coding. La plus grande série du dépôt. *Intermédiaire à avancé selon les sous-séries ; nécessite des clés API (OpenAI, Anthropic) pour les volets LLM.*
+- **[GenAI](MyIA.AI.Notebooks/GenAI/README.md)** — IA générative multimodale : Image, Audio, Vidéo, Texte, Semantic Kernel, Vibe Coding. L'une des plus vastes séries du dépôt (SymbolicAI est la plus vaste ; voir `COURSE_CATALOG.generated.md` pour les comptes exacts). *Intermédiaire à avancé selon les sous-séries ; nécessite des clés API (OpenAI, Anthropic) pour les volets LLM.*
 
 ### Raisonnement formel et symbolique
 
-- **[SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)** — Lean 4 (preuves formelles), Tweety (argumentation), Semantic Web (RDF, OWL), Smart Contracts, Planners, Symbolic Learning. *Avancé.*
+- **[SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)** — Lean 4 (preuves formelles), Tweety (argumentation), Semantic Web (RDF, OWL), Smart Contracts, Planners, SMT (Z3), Argument Analysis, Symbolic Learning. La plus vaste série du dépôt. *Avancé.*
 - **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, NumPyro). *Intermédiaire à avancé.*
 - **[GameTheory](MyIA.AI.Notebooks/GameTheory/README.md)** — Théorie des jeux, équilibres de Nash, mechanism design, social choice (Arrow, Sen, Voting) avec ports Lean. *Intermédiaire à avancé.*
 
