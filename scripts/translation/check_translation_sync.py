@@ -18,6 +18,15 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  etait depose dans le CSV
     ORPHAN_ROW   la ligne CSV reference un cell_id absent du notebook source
                  (cellule supprimee)
+    FR_CONTAM    la traduction xxx_<lang>.ipynb est IDENTIQUE au source fr
+                 (non traduite, francais leaké dans la colonne en/es/pt/...).
+                 Miroir Argumentum multilingual-drift-audit.py : val == fr_val,
+                 garde len >= 4 (#6949 harmonisation 5-classes, 4e classe).
+
+    Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
+    faux-amis legitiment repetes, kind == "name", informationnelle — hors
+    total_drift dans le fork) n'a pas d'equivalent ici : notre modele est
+    cell-based (pas de distinction name/prose), donc N/A par construction.
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte
 que du SRC_DRIFT eventuel ; l'absence de traductions deposees n'est pas un drift
@@ -100,6 +109,22 @@ def _has_expected_script(lang: str, text: str) -> bool:
     return False
 
 
+def _is_fr_contam(src_text: str, lang_text: str) -> bool:
+    """FR_CONTAM (taxonomie Argumentum 5-classes, 4e) : une traduction dont le
+    texte normalisé EST IDENTIQUE au source français (non traduite — le français
+    a fuité tel quel dans la colonne ``en``/``es``/``pt``/...).
+
+    Miroir fidèle de ``multilingual-drift-audit.py`` (fork Argumentum @7e72f3e) :
+    ``val == fr_val`` post-normalisation, garde ``len(val) >= 4`` pour supprimer
+    les correspondances triviales (token unique, chiffre, ponctuation, markup).
+    Déterministe, zéro liste de mots — l'égalité exacte post-normalisation
+    suffit. Les faux-amis cognates (noms propres legitiment repetes) relevent
+    de la 5e classe COGNATE (informationnelle, hors de notre modele cell-based).
+    """
+    norm_lang = normalize(lang_text)
+    return norm_lang == normalize(src_text) and len(norm_lang) >= 4
+
+
 def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
     """Retourne {cell_id: hash} pour un notebook, ou None si illisible."""
     try:
@@ -115,6 +140,28 @@ def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
     return cells
 
 
+def load_notebook_cell_texts(nb_path: Path) -> dict[str, str] | None:
+    """Retourne {cell_id: texte_source} pour un notebook, ou None si illisible.
+
+    Miroir de ``load_notebook_cells`` mais conserve le texte brut (non haché) —
+    sert au verdict ``FR_CONTAM`` qui compare le texte traduit au texte source
+    (garde ``len >= 4``). Chargeur lazy : appelé uniquement quand un candidat
+    FR_CONTAM est détecté via égalité de hash (sha256 collision-free), pour
+    éviter de charger les textes de tout notebook sauf candidat.
+    """
+    try:
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    texts: dict[str, str] = {}
+    for cell in nb.get("cells", []):
+        cid = cell.get("id")
+        if not cid or cell.get("cell_type") not in ("markdown", "code"):
+            continue
+        texts[cid] = "".join(cell.get("source", []))
+    return texts
+
+
 def translated_notebook_path(source_path: str, lang: str, repo_root: Path) -> Path:
     """`dir/foo.ipynb` + lang `en` -> `dir/foo_en.ipynb` (#1650 convention notebooks)."""
     p = repo_root / source_path
@@ -127,6 +174,8 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     with csv_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
         source_cache: dict[str, dict[str, str] | None] = {}
+        source_text_cache: dict[str, dict[str, str] | None] = {}
+        trad_text_cache: dict[str, dict[str, str] | None] = {}
         for row in reader:
             nb_rel = row.get("notebook", "")
             cell_id = row.get("cell_id", "")
@@ -198,6 +247,25 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                          "verdict": "TRAD_DRIFT",
                          "detail": f"traduction {lang} éditée (csv={csv_hash} <> actuel={trad_cells[cell_id]})"}
                     )
+
+                # FR_CONTAM (Argumentum 5-classes, 4e, #6949) : la traduction
+                # est-elle IDENTIQUE au source fr (non traduite) ? Pre-check par
+                # égalité de hash (sha256 collision-free -> hash égal = texte
+                # identique) pour ne charger les textes que sur candidat, puis
+                # _is_fr_contam confirme via la garde len >= 4 (miroir fork).
+                if trad_cells[cell_id] == current_src:
+                    if nb_rel not in source_text_cache:
+                        source_text_cache[nb_rel] = load_notebook_cell_texts(repo_root / nb_rel)
+                    if trad_path not in trad_text_cache:
+                        trad_text_cache[trad_path] = load_notebook_cell_texts(trad_path)
+                    src_txts = source_text_cache[nb_rel] or {}
+                    trad_txts = trad_text_cache[trad_path] or {}
+                    if _is_fr_contam(src_txts.get(cell_id, ""), trad_txts.get(cell_id, "")):
+                        anomalies.append(
+                            {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                             "verdict": "FR_CONTAM",
+                             "detail": f"traduction {lang} identique au source fr (non traduite)"}
+                        )
     return anomalies
 
 

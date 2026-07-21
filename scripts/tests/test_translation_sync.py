@@ -422,3 +422,156 @@ def test_roundtrip_extract_then_check_in_sync(tmp_path):
     csv = _write_csv(tmp_path / "drift.csv", rows)
     # T2 doit trouver 0 anomalie sur ce CSV fraichement extrait de T1.
     assert t2.check_csv(csv, repo) == []
+
+
+# --------------------------------------------------------------------------- #
+#  FR_CONTAM (Argumentum 5-classes, 4e - #6949)                                #
+#                                                                             #
+# Une traduction dont le texte normalise est IDENTIQUE au source fr (non       #
+# traduite - le francais a fuite tel quel dans la colonne en/es/pt/...).       #
+# Miroir multilingual-drift-audit.py : val == fr_val, garde len >= 4.          #
+# --------------------------------------------------------------------------- #
+
+
+# --- _is_fr_contam : predicat pur (miroir fork Argumentum @7e72f3e) --------- #
+
+
+def test_fr_contam_identical_long_text():
+    """Texte traduit == source (>= 4 cars) -> FR_CONTAM (non traduit)."""
+    assert t2._is_fr_contam("Bonjour le monde", "Bonjour le monde") is True
+
+
+def test_fr_contam_different_text_no_contam():
+    """Texte traduit != source -> pas de contamination (vraie traduction)."""
+    assert t2._is_fr_contam("Bonjour le monde", "Hello world") is False
+
+
+def test_fr_contam_identical_short_text_suppressed():
+    """Texte identique mais < 4 cars normalises -> supprime (garde len du fork)."""
+    assert t2._is_fr_contam("Hi", "Hi") is False
+    assert t2._is_fr_contam("OK", "OK") is False
+
+
+def test_fr_contam_boundary_len_exactly_four():
+    """Frontiere : exactement 4 cars normalises -> FR_CONTAM (inclusive)."""
+    assert t2._is_fr_contam("abcd", "abcd") is True
+
+
+def test_fr_contam_boundary_len_three_excluded():
+    """Frontiere : 3 cars normalises -> supprime (strictement < 4)."""
+    assert t2._is_fr_contam("abc", "abc") is False
+
+
+def test_fr_contam_normalized_equal_trailing_whitespace():
+    """Le fork normalise avant legalite : trailing whitespace/blank lines ignores."""
+    assert t2._is_fr_contam("Bonjour le monde  \n\n", "Bonjour le monde") is True
+
+
+def test_fr_contam_empty_strings():
+    """Deux textes vides -> pas de contam (len 0 < 4)."""
+    assert t2._is_fr_contam("", "") is False
+
+
+def test_fr_contam_french_accents_unicode():
+    """Texte accentue identique -> FR_CONTAM (l Unicode francais passe)."""
+    assert t2._is_fr_contam("Cafe reunion a Paris", "Cafe reunion a Paris") is True
+
+
+def test_fr_contam_whitespace_only_not_contam():
+    """Whitespace seul normalise vers vide (len 0) -> pas de contam."""
+    assert t2._is_fr_contam("   \n  ", "   \n  ") is False
+
+
+# --- check_csv : detection FR_CONTAM en integration ------------------------- #
+
+
+def test_check_csv_fr_contam_untranslated_en(tmp_path):
+    """Cellule EN identique au source FR (hash_en == src_hash, en-sync) -> FR_CONTAM."""
+    repo = tmp_path
+    src_text = "Introduction a la theorie des jeux"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),
+             **{"hash_en": t2.cell_hash(src_text)})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    verdicts = [a["verdict"] for a in anomalies]
+    assert "FR_CONTAM" in verdicts
+    fc = next(a for a in anomalies if a["verdict"] == "FR_CONTAM")
+    assert fc["lang"] == "en"
+    assert fc["cell_id"] == "c1"
+
+
+def test_check_csv_fr_contam_translated_no_anomaly(tmp_path):
+    """Cellule EN correctement traduite (!= source) -> aucun FR_CONTAM."""
+    repo = tmp_path
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "Bonjour le monde")])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "Hello world")])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("Bonjour le monde"),
+             **{"hash_en": t2.cell_hash("Hello world")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "FR_CONTAM" for a in anomalies)
+
+
+def test_check_csv_fr_contam_short_cell_suppressed(tmp_path):
+    """Cellule EN identique au FR mais < 4 cars -> pas de FR_CONTAM (garde len)."""
+    repo = tmp_path
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "Py")])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "Py")])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("Py"),
+             **{"hash_en": t2.cell_hash("Py")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "FR_CONTAM" for a in anomalies)
+
+
+def test_check_csv_fr_contam_coexists_with_trad_drift(tmp_path):
+    """EN actuellement == source (FR_CONTAM) MAIS csv_hash_en etait different
+    (TRAD_DRIFT) -> les deux verdicts sont complementaires, pas exclusifs."""
+    repo = tmp_path
+    src_text = "Analyse de la decision rationnelle"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),
+             **{"hash_en": t2.cell_hash("a previous real translation")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    verdicts = [a["verdict"] for a in anomalies]
+    assert "TRAD_DRIFT" in verdicts
+    assert "FR_CONTAM" in verdicts
+
+
+def test_check_csv_fr_contam_multiple_langs(tmp_path):
+    """EN et ES tous deux non traduits (== source) -> 2 anomalies FR_CONTAM."""
+    repo = tmp_path
+    src_text = "Conclusion du chapitre sur les votions"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", src_text)])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", src_text)])
+    _write_notebook(repo / "S" / "Foo_es.ipynb", [_make_cell("c1", "markdown", src_text)])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash(src_text),
+             **{"hash_en": t2.cell_hash(src_text), "hash_es": t2.cell_hash(src_text)})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    fc_langs = sorted(a["lang"] for a in anomalies if a["verdict"] == "FR_CONTAM")
+    assert fc_langs == ["en", "es"]
+
+
+def test_check_csv_fr_contam_lazy_text_load_no_false_positive(tmp_path):
+    """Une traduction dont le hash != source (vraie traduction) ne declenche PAS
+    le chargement des textes - et ne produit aucun FR_CONTAM. Verifie le pre-check
+    par hash filtre correctement avant tout chargement de texte."""
+    repo = tmp_path
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "Texte source francais")])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "French source text")])
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("Texte source francais"),
+             **{"hash_en": t2.cell_hash("French source text")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "FR_CONTAM" for a in anomalies)
