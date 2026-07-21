@@ -21,6 +21,37 @@ from typing import Dict, List, Optional, Tuple
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
+
+def _require_path(name: str, value) -> Path:
+    """Reject None/non-Path values at the public boundary.
+
+    Mirrors the #7596/-#7637/-#7638 boundary-guard pattern across the prover.
+    Returns the value cast to Path if it is already a Path, raises ValueError
+    otherwise. Use for entry points that immediately call Path methods
+    (.exists / .read_text / .write_text / .glob), which fail opaquely on None.
+    """
+    if value is None:
+        raise ValueError(f"{name} is None (expected a pathlib.Path)")
+    if not isinstance(value, Path):
+        raise ValueError(f"{name} must be a pathlib.Path, got {type(value).__name__}")
+    return value
+
+
+def _require_list(name: str, value):
+    """Reject None/non-list values that the caller will iterate over.
+
+    The mining pipeline (run_mining / dedup_cookbook / dedup_failures /
+    _extract_successful_patterns) treats list-typed arguments as iterable
+    inputs. Passing None yields an opaque TypeError at the first ``for ... in``
+    site — pin the failure to the call boundary with a named ValueError.
+    """
+    if value is None:
+        raise ValueError(f"{name} is None (expected an iterable)")
+    if not isinstance(value, list):
+        raise ValueError(f"{name} must be a list, got {type(value).__name__}")
+    return value
+
+
 PROVER_DIR = Path(__file__).parent
 HISTORY_DIR = PROVER_DIR / ".prover_history"
 TRACES_DIR = PROVER_DIR / "baselines" / "traces"
@@ -45,6 +76,7 @@ BUILD_SUCCESS_KW = ("BUILD SUCCESS", "Build completed successfully", "[100%] Bui
 
 
 def load_json(path: Path, default=None):
+    path = _require_path("path", path)
     if not path.exists():
         return default
     try:
@@ -54,12 +86,14 @@ def load_json(path: Path, default=None):
 
 
 def save_json(path: Path, data):
+    path = _require_path("path", path)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 # ── Source 1: .prover_history/*.json ─────────────────────────────
 
 def mine_attempt_history(history_dir: Path) -> Tuple[List[Dict], List[Dict]]:
+    history_dir = _require_path("history_dir", history_dir)
     successes, failures = [], []
     for f in sorted(history_dir.glob("*.json")):
         records = load_json(f, [])
@@ -87,6 +121,7 @@ def mine_attempt_history(history_dir: Path) -> Tuple[List[Dict], List[Dict]]:
 # ── Source 2: baselines/traces/*.json ────────────────────────────
 
 def mine_trace_conversations(traces_dir: Path) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    traces_dir = _require_path("traces_dir", traces_dir)
     cookbook, failed, api = [], [], []
     for f in sorted(traces_dir.glob("*.json")):
         trace = load_json(f, [])
@@ -345,6 +380,8 @@ def _tactic_signature(tactic: str) -> str:
 
 
 def dedup_cookbook(existing: List[Dict], new_entries: List[Dict]) -> List[Dict]:
+    existing = _require_list("existing", existing)
+    new_entries = _require_list("new_entries", new_entries)
     sigs = {e.get("name", "").lower() + "|" + _tactic_signature(e.get("tactic", "")) for e in existing}
     merged = list(existing)
     for ne in new_entries:
@@ -356,6 +393,8 @@ def dedup_cookbook(existing: List[Dict], new_entries: List[Dict]) -> List[Dict]:
 
 
 def dedup_failures(existing: List[Dict], new_entries: List[Dict]) -> List[Dict]:
+    existing = _require_list("existing", existing)
+    new_entries = _require_list("new_entries", new_entries)
     whats = {e.get("what_failed", "").lower()[:100] for e in existing}
     merged = list(existing)
     for ne in new_entries:
@@ -367,6 +406,8 @@ def dedup_failures(existing: List[Dict], new_entries: List[Dict]) -> List[Dict]:
 
 
 def _extract_successful_patterns(successes: List[Dict], failures: List[Dict]) -> List[Dict]:
+    successes = _require_list("successes", successes)
+    failures = _require_list("failures", failures)
     by_src = defaultdict(list)
     for s in successes: by_src[s["source_file"]].append(s)
     fail_by = defaultdict(list)
@@ -426,6 +467,15 @@ def run_mining(
     jsonl_dir: Optional[Path] = None,
     dry_run: bool = False,
 ) -> Dict:
+    history_dir = _require_path("history_dir", history_dir)
+    traces_dir = _require_path("traces_dir", traces_dir)
+    kb_path = _require_path("kb_path", kb_path)
+    # jsonl_dir is Optional[Path]; the inner check (``if jsonl_dir``) already
+    # handles None, but a non-Path/non-None sentinel would still surprise the
+    # ``.glob`` below — guard explicitly for clarity.
+    if jsonl_dir is not None and not isinstance(jsonl_dir, Path):
+        raise ValueError(f"jsonl_dir must be a pathlib.Path or None, got {type(jsonl_dir).__name__}")
+
     kb = load_json(kb_path, {"version": 3, "entries": {},
                               "tactic_cookbook": {"patterns": []},
                               "failed_approaches": [], "mathlib_api": {}})
