@@ -14,6 +14,7 @@ import Grothendieck.Limits
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.MonoidalCategories
 import Grothendieck.SchemesTour
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
