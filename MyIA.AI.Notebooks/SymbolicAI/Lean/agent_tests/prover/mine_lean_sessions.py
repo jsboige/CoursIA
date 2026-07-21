@@ -22,6 +22,25 @@ logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
 
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Reject None / non-str degenerate inputs at the public entry point.
+
+    Mirrors the canonical ``_require_str`` from #7616/#7637/#7638. The text
+    processing helpers (``_extract_error_patterns`` / ``_classify_errors``
+    / ``_extract_tactic_blocks``) take ``str`` args and pass them to
+    ``re.finditer`` / ``str.split`` / ``str.startswith`` — without a guard,
+    ``None`` produces ``AttributeError: 'NoneType' object has no attribute
+    'split'/'finditer'/'startswith'`` deep inside the loop, hiding the
+    real cause (upstream agent returned None instead of a string excerpt).
+    Empty rejection is opt-in.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 def _require_path(name: str, value) -> Path:
     """Reject None/non-Path values at the public boundary.
 
@@ -153,6 +172,7 @@ def mine_trace_conversations(traces_dir: Path) -> Tuple[List[Dict], List[Dict], 
 
 
 def _extract_error_patterns(content: str) -> List[Dict]:
+    content = _require_str("content", content)
     patterns = []
     sigs = [
         (r"type mismatch.*expected:\s*(.{10,80})", "type_mismatch",
@@ -185,6 +205,7 @@ def _text_from_content(content) -> str:
 
 
 def _classify_errors(text: str) -> List[Dict]:
+    text = _require_str("text", text)
     errors = []
     for regex, category in LEAN_ERROR_RE:
         for m in re.finditer(regex, text, re.IGNORECASE):
@@ -198,6 +219,7 @@ def _is_success(text: str) -> bool:
 
 
 def _extract_tactic_blocks(text: str) -> List[str]:
+    text = _require_str("text", text)
     blocks, cur = [], []
     for line in text.split("\n"):
         s = line.strip()
@@ -439,6 +461,7 @@ def _categorize_tactic(tactic: str) -> str:
 
 
 def _extract_failure_lessons(failures: List[Dict]) -> List[Dict]:
+    failures = _require_list("failures", failures)
     nc, ne = Counter(), {}
     for f in failures:
         n = _tactic_signature(f["tactic"])

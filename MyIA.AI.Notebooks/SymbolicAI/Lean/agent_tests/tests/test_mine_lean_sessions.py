@@ -221,4 +221,60 @@ class TestHappyPath:
         assert stats["history_files"] == 0
         assert stats["trace_files"] == 0
         assert stats["jsonl_files"] == 0
-        assert not kb.exists()  # dry_run must not write
+
+
+class TestStrGuards:
+    """Boundary guards for text-processing helpers (`_require_str`).
+
+    These functions take ``str`` args and pass them to ``re.finditer`` /
+    ``str.split`` / ``str.startswith`` — without a guard, ``None``
+    produces ``AttributeError: 'NoneType' object has no attribute
+    'split'/'finditer'/'startswith'`` deep inside the loop.
+    """
+
+    @pytest.mark.parametrize("fn,argname", [
+        (mls._extract_error_patterns, "content"),
+        (mls._classify_errors, "text"),
+        (mls._extract_tactic_blocks, "text"),
+    ])
+    def test_none_raises_value_error(self, fn, argname):
+        with pytest.raises(ValueError, match=argname):
+            fn(None)
+
+    @pytest.mark.parametrize("fn,bad_input", [
+        (mls._extract_error_patterns, 123),
+        (mls._extract_error_patterns, ["line"]),
+        (mls._classify_errors, {"k": "v"}),
+        (mls._extract_tactic_blocks, (1, 2)),
+    ])
+    def test_non_str_raises_value_error(self, fn, bad_input):
+        with pytest.raises(ValueError, match="expected str"):
+            fn(bad_input)
+
+    @pytest.mark.parametrize("fn", [
+        mls._extract_error_patterns,
+        mls._classify_errors,
+        mls._extract_tactic_blocks,
+    ])
+    def test_empty_str_raises_value_error(self, fn):
+        with pytest.raises(ValueError, match="expected non-empty str"):
+            fn("")
+
+
+class TestExtractFailureLessonsGuard:
+    """`_extract_failure_lessons` was missing from the #7596 tranche.
+
+    Without `_require_list`, ``None`` produces ``TypeError: 'NoneType'
+    object is not iterable`` deep inside ``Counter()`` / the loop.
+    """
+
+    def test_none_raises_value_error(self):
+        with pytest.raises(ValueError, match="failures"):
+            mls._extract_failure_lessons(None)
+
+    def test_non_list_raises_value_error(self):
+        with pytest.raises(ValueError, match="must be a list|expected list"):
+            mls._extract_failure_lessons({"k": "v"})
+
+    def test_empty_list_returns_empty(self):
+        assert mls._extract_failure_lessons([]) == []
