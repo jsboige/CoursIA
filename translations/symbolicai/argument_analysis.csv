@@ -7182,33 +7182,17 @@ EXTRACT_SOURCES = [
         ]
     },
      {
-        ""source_name"": ""Kremlin Discours 21/02/2022"", ""source_type"": ""jina"",
-        ""schema"": ""http:"", ""host_parts"": [""en"", ""kremlin"", ""ru""], ""path"": ""/events/president/transcripts/67828"",
+        ""source_name"": ""Corpus de recherche (chiffré, hors dépôt public) - A"", ""source_type"": ""jina"",
+        ""schema"": """", ""host_parts"": [], ""path"": """",
         ""extracts"": [
-            {""extract_name"": ""1. Discours Complet"", ""start_marker"": ""Citizens of Russia, friends,"", ""end_marker"": ""Thank you.""},
-            {""extract_name"": ""2. Argument Historique Ukraine"", ""start_marker"": ""So, I will start with the fact that modern Ukraine"", ""end_marker"": ""He was its creator and architect.""},
-            {""extract_name"": ""3. Menace OTAN"", ""start_marker"": ""Ukraine is home to NATO training missions"", ""end_marker"": ""These principled proposals of ours have been ignored.""},
-            {""extract_name"": ""4. Décommunisation selon Poutine"", ""start_marker"": ""And today the “grateful progeny”"", ""end_marker"": ""what real decommunizations would mean for Ukraine.""},
-            {""extract_name"": ""5. Décision Reconnaissance Donbass"", ""start_marker"": ""Everything was in vain."", ""end_marker"": ""These two documents will be prepared and signed shortly.""},
-         ]
+            {""extract_name"": ""Extraits chargés depuis extract_sources.json.gz.enc"", ""start_marker"": """", ""end_marker"": """"},
+        ]
     },
     {
-        ""source_name"": ""Hitler Discours Collection (PDF)"", ""source_type"": ""direct_download"",
-        # ""schema"": ""https:"", ""host_parts"": [""www"", ""nommeraadio"", ""ee""], ""path"": ""/meedia/pdf/RRS/Adolf%20Hitler%20-%20Collection%20of%20Speeches%20-%201922-1945.pdf"",
-        ""schema"": ""https:"",
-        ""host_parts"": [""drive"", ""google"", ""com""],
-        ""path"": ""/uc?export=download&id=1D6ZESrdeuWvlPlsNq0rbVaUyxqUOB-KQ"", # Chemin GDrive direct
+        ""source_name"": ""Corpus de recherche (chiffré, hors dépôt public) - B"", ""source_type"": ""jina"",
+        ""schema"": """", ""host_parts"": [], ""path"": """",
         ""extracts"": [
-            {""extract_name"": ""1. 1923.04.13 - Munich"", ""start_marker"": ""n our view, the times when"", ""end_marker"": ""build a new Germany!36""},
-            {""extract_name"": ""2. 1923.04.24 - Munich"", ""start_marker"": ""reject the word 'Proletariat.'"", ""end_marker"": ""the greatest social achievement.38""},
-            {""extract_name"": ""3. 1923.04.27 - Munich"", ""start_marker"": ""hat we need if we are to have"", ""end_marker"": ""the Germany of fighters which yet shall be.""},
-            {""extract_name"": ""4. 1933.03.23 - Duel Otto Wels"", ""start_marker"": ""You are talking today about your achievements"", ""end_marker"": ""Germany will be liberated, but not by you!125""},
-            {""extract_name"": ""5. 1933.05.01 - Lustgarten"", ""start_marker"": ""hree cheers for our Reich President,"", ""end_marker"": ""thus our German Volk und Vaterland!”""},
-            {""extract_name"": ""6. 1936.03.09 - Interview Ward Price"", ""start_marker"": ""irst question: Does the Fuhrer’s offer"", ""end_marker"": ""service to Europe and to the cause of peace.313""},
-            {""extract_name"": ""7. 1936.03.12 - Karlsruhe"", ""start_marker"": ""know no regime of the bourgeoisie,"", ""end_marker"": ""now and for all time to come!316""},
-            {""extract_name"": ""8. 1936.03.20 - Hambourg"", ""start_marker"": ""t is a pity that the statesmen-"", ""end_marker"": ""now give me your faith!""},
-            {""extract_name"": ""9. 1939.01.30 - Reichstag (Prophétie)"", ""start_marker"": ""Once again I will be a prophet:"", ""end_marker"": ""complementary nature of these economies to the German one.549""},
-            {""extract_name"": ""10. 1942.11.09 - Löwenbräukeller"", ""start_marker"": ""care of this. This danger has been recognized"", ""end_marker"": ""will always be a prayer for our Germany!""},
+            {""extract_name"": ""Extraits chargés depuis extract_sources.json.gz.enc"", ""start_marker"": """", ""end_marker"": """"},
         ]
     },
 ]
@@ -7230,8 +7214,8 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuratio
 **Sources prédéfinies** :
 
 1. **Lincoln-Douglas Débat 1 & 2** - Débats historiques de 1858, exemples d'argumentation politique américaine classique
-2. **Discours du Kremlin (21/02/2022)** - Exemple contemporain d'argumentation géopolitique
-3. **Collection de discours historiques (PDF)** - Corpus de textes rhétoriques pour analyse comparative
+2. **Corpus de recherche chiffré (A)** - Extraits chargés depuis `extract_sources.json.gz.enc`, hors dépôt public
+3. **Corpus de recherche chiffré (B)** - Extraits chargés depuis `extract_sources.json.gz.enc`, hors dépôt public
 
 > **Pourquoi ces sources** : Ces textes ont été choisis pour leur richesse argumentative et la présence de sophismes identifiables, ce qui permet de tester les capacités d'analyse des agents LLM.
 
