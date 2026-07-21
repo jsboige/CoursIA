@@ -377,15 +377,30 @@ class ProofState:
         return self.get_state_snapshot(summarize=True)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Serialize the proof state to a plain dict (c.735, #7477 pattern class).
+
+        The mutable fields ``current_proof`` and ``discovered_lemmas`` are
+        **copied** here (``list(...)``), mirroring the defensive copies
+        ``save_checkpoint`` makes on the way in and ``restore_checkpoint`` makes
+        on the way out (c.732). Without these copies the returned dict would
+        alias the live ``self.current_proof`` / ``self.discovered_lemmas`` list
+        objects: a caller appending to ``d["current_proof"]`` would mutate the
+        live ``ProofState`` in place. Verified firsthand: pre-fix,
+        ``d = state.to_dict(); d["current_proof"].append(x)`` injected ``x``
+        into ``state.current_proof``. ``get_state_snapshot(summarize=False)``
+        delegates here, so fixing ``to_dict`` closes both exposures; the
+        ``summarize=True`` branch already builds a fresh dict (scalars + a
+        list-comprehension ``previous_tactics``) and is unaffected.
+        """
         return {
             "session_id": self.session_id,
             "theorem_name": self.theorem_name,
             "theorem_statement": self.theorem_statement,
             "current_goal": self.current_goal,
-            "current_proof": self.current_proof,
+            "current_proof": list(self.current_proof),  # c.735: copy, don't alias
             "phase": self.phase.value,
             "strategy": self.strategy.value,
-            "discovered_lemmas": self.discovered_lemmas,
+            "discovered_lemmas": list(self.discovered_lemmas),  # c.735: copy, don't alias
             "iteration": self.iteration,
             "max_iterations": self.max_iterations,
             "error_count": self.error_count,
