@@ -37,6 +37,18 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
 | [reference/wsl-kernels-detail.md](reference/wsl-kernels-detail.md) | Détails WSL kernels |
 
+### Outils & méthodologie (docs/reference/)
+
+| Fichier | Description |
+|---------|-------------|
+| [reference/HEALTH_DASHBOARD.md](reference/HEALTH_DASHBOARD.md) | Tableau de santé du dépôt — snapshot dérivé du catalogue |
+| [reference/accent-cure-defense-in-depth.md](reference/accent-cure-defense-in-depth.md) | Cure des accents FR & défense contre les régressions (#2876) |
+| [reference/chatgpt-export-playwright.md](reference/chatgpt-export-playwright.md) | Explorer une longue conversation / un export ChatGPT via Playwright |
+| [reference/dotnet-plotly-zero-restore.md](reference/dotnet-plotly-zero-restore.md) | Pattern .NET Interactive — figures Plotly « zero-restore » (technique C548-L2) |
+| [reference/notebook-formatting.md](reference/notebook-formatting.md) | Mise en forme visuelle des notebooks — directives + vérification de rendu |
+| [reference/notebook-parity-table.md](reference/notebook-parity-table.md) | Table de parité cross-série — notebooks Python ⇄ .NET |
+| [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
+
 ## GenAI (docs/genai/)
 
 Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles locaux).
@@ -44,6 +56,11 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
+| [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
+| [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
+| [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
+| [genai/secrets-management.md](genai/secrets-management.md) | Secrets management — central source of truth (master.env + render_envs.py) |
+| [genai/service-security-audit.md](genai/service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 
 ## QuantConnect (docs/qc/)
 
@@ -51,6 +68,8 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 |---------|-------------|
 | [qc/quantconnect.md](qc/quantconnect.md) | Backtests, structure, livre référence |
 | [qc/qc-comparative-backtests.md](qc/qc-comparative-backtests.md) | Baselines alignées + analyse comparative backtests (#1630) |
+| [qc/qc-batch-methodology-playbook.md](qc/qc-batch-methodology-playbook.md) | Playbook méthodologie batch QC (#1621) |
+| [qc/qc-strategies-status.md](qc/qc-strategies-status.md) | Statut des stratégies QuantConnect — source de vérité |
 
 ## Lean (docs/lean/)
 
@@ -62,6 +81,9 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/llm-endpoints.md](lean/llm-endpoints.md) | Providers LLM du prover multi-agent (configuration, sans clés) |
 | [lean/prover_iteration_history.md](lean/prover_iteration_history.md) | Historique itération prover |
 | [lean/sota-2026-analysis.md](lean/sota-2026-analysis.md) | État de l'art preuve automatique Lean 4 (mai 2026) |
+| [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
+| [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
+| [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
 | [lean/stable_marriage_intractable_diagnosis.md](archive/lean-intractable-diagnosis/stable-marriage.md) | Diagnostic des preuves stable-marriage intractables (archivé c.696) |
 
 ## Curriculum (docs/curriculum/)
