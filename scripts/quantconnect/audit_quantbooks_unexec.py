@@ -28,10 +28,16 @@ Pour chaque ``quantbook.ipynb`` du dossier ``MyIA.AI.Notebooks/QuantConnect/proj
   - **HEALTHY**              -- 0 cellule code sans ``execution_count`` ni sortie.
   - **STOP_REPAIR_STRIPPED** -- >=1 cellule code unexec ET >=1 cellule markdown
                                 contenant ``Sortie strippee`` / ``FABRICATED``.
-                                Deja signalee (scope #6891), en attente de re-exec.
-  - **PREEXISTING_UNEXEC**   -- >=1 cellule code unexec SANS avertissement de strip.
-                                Bug-class non couvert par #6891, a tracker
-                                dans une issue dediee.
+                                Deja signalee (scope #6891 fabrication), en attente de re-exec.
+  - **STOP_REPAIR_UNEXEC**   -- >=1 cellule code unexec ET >=1 cellule markdown
+                                contenant le marqueur dedie ``QC-UNEXEC-TRIAGED``
+                                (issue #7575). Bug-class DISTINCT de #6891 : les
+                                cellules n'ont JAMAIS ete executees (ce ne sont PAS
+                                des sorties fabriquees/stripees). Triees et suivies,
+                                en attente d'une re-exec gated (QC Cloud).
+  - **PREEXISTING_UNEXEC**   -- >=1 cellule code unexec SANS marqueur (ni strip ni
+                                unexec). Nouvelle occurrence non encore triee --
+                                celle que ``--check`` flagge en CI.
 
 Le verdict est **conservatif** : si une cellule est unexec, on l'attrape.
 Pas de faux positif sur les cellules volontairement non executees (defs,
@@ -86,6 +92,13 @@ from pathlib import Path
 # Mots-cles qui marquent un notebook comme deja signale Stop&Repair (body #6891).
 _STRIP_MARKER = re.compile(r"(sortie\s+stripp[e\xe9]e|FABRICATED|blank[\s\-]?PNG)", re.IGNORECASE)
 
+# Marqueur dedie au bug-class #7575 (cellules JAMAIS executees -- distinct de #6891
+# qui est des sorties FABRIQUEES puis stripees). Le tag HTML ``QC-UNEXEC-TRIAGED``
+# est deliberement unique et non-ambigu : il ne peut pas etre confondu avec le
+# marqueur #6891, et ajouter le marqueur sur un quantbook #7575 n'est donc PAS du
+# gaming du detecteur (les deux bug-classes ont deux marqueurs distincts).
+_UNEXEC_MARKER = re.compile(r"QC-UNEXEC-TRIAGED", re.IGNORECASE)
+
 
 def _is_code(cell: dict) -> bool:
     return cell.get("cell_type") == "code"
@@ -109,6 +122,19 @@ def _has_strip_marker(nb: dict) -> bool:
         if isinstance(src, list):
             src = "".join(src)
         if _STRIP_MARKER.search(src or ""):
+            return True
+    return False
+
+
+def _has_unexec_marker(nb: dict) -> bool:
+    """Au moins une cellule markdown contient le marqueur #7575 (unexec triaged)."""
+    for c in nb.get("cells", []):
+        if c.get("cell_type") != "markdown":
+            continue
+        src = c.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        if _UNEXEC_MARKER.search(src or ""):
             return True
     return False
 
@@ -153,6 +179,7 @@ def scan_notebook(path: Path) -> dict:
             "code_executed": 0,
             "code_unexecuted": 0,
             "strip_marker": False,
+            "unexec_marker": False,
             "classification": "ERROR",
             "config": {"has_config": False, "cloud_id": None, "status": "MISSING"},
         }
@@ -170,11 +197,14 @@ def scan_notebook(path: Path) -> dict:
             code_executed += 1
 
     strip_marker = _has_strip_marker(nb)
+    unexec_marker = _has_unexec_marker(nb)
 
     if code_unexecuted == 0:
         classification = "HEALTHY"
     elif strip_marker:
         classification = "STOP_REPAIR_STRIPPED"
+    elif unexec_marker:
+        classification = "STOP_REPAIR_UNEXEC"
     else:
         classification = "PREEXISTING_UNEXEC"
 
@@ -186,6 +216,7 @@ def scan_notebook(path: Path) -> dict:
         "code_unexecuted": code_unexecuted,
         "unexecuted_indexes": unexecuted_indexes,
         "strip_marker": strip_marker,
+        "unexec_marker": unexec_marker,
         "classification": classification,
         "config": _config_status(path.parent),
         "error": None,
@@ -215,7 +246,8 @@ def _short(path: str, root: Path) -> str:
 def human_report(results: list[dict], root: Path) -> str:
     n_total = len(results)
     by_class: dict[str, list[dict]] = {"HEALTHY": [], "STOP_REPAIR_STRIPPED": [],
-                                       "PREEXISTING_UNEXEC": [], "ERROR": []}
+                                       "STOP_REPAIR_UNEXEC": [], "PREEXISTING_UNEXEC": [],
+                                       "ERROR": []}
     for r in results:
         by_class.setdefault(r["classification"], []).append(r)
 
@@ -223,6 +255,7 @@ def human_report(results: list[dict], root: Path) -> str:
         f"QuantBooks scanned   : {n_total}",
         f"  HEALTHY              : {len(by_class['HEALTHY'])}",
         f"  STOP_REPAIR_STRIPPED : {len(by_class['STOP_REPAIR_STRIPPED'])}",
+        f"  STOP_REPAIR_UNEXEC   : {len(by_class['STOP_REPAIR_UNEXEC'])}",
         f"  PREEXISTING_UNEXEC   : {len(by_class['PREEXISTING_UNEXEC'])}",
         f"  ERROR                : {len(by_class['ERROR'])}",
         "",
@@ -241,9 +274,21 @@ def human_report(results: list[dict], root: Path) -> str:
         lines.append("")
 
     if by_class["STOP_REPAIR_STRIPPED"]:
-        lines.append("## STOP_REPAIR_STRIPPED -- body #6891 scope, awaits re-execution")
+        lines.append("## STOP_REPAIR_STRIPPED -- body #6891 scope (fabricated outputs stripped), awaits re-execution")
         lines.append("")
         for r in sorted(by_class["STOP_REPAIR_STRIPPED"], key=lambda x: x["path"]):
+            short = _short(r["path"], root)
+            cfg = r["config"]
+            cfg_str = f"cloud-id={cfg['cloud_id']} [{cfg['status']}]" if cfg["has_config"] else "no config.json"
+            lines.append(
+                f"  - {short}  kernel={r['kernel']}  unexec={r['code_unexecuted']}/{r['code_total']}  {cfg_str}"
+            )
+        lines.append("")
+
+    if by_class["STOP_REPAIR_UNEXEC"]:
+        lines.append("## STOP_REPAIR_UNEXEC -- issue #7575 scope (cells NEVER executed, distinct from #6891), triaged + marked, awaits re-exec")
+        lines.append("")
+        for r in sorted(by_class["STOP_REPAIR_UNEXEC"], key=lambda x: x["path"]):
             short = _short(r["path"], root)
             cfg = r["config"]
             cfg_str = f"cloud-id={cfg['cloud_id']} [{cfg['status']}]" if cfg["has_config"] else "no config.json"
@@ -266,8 +311,11 @@ def human_report(results: list[dict], root: Path) -> str:
     lines.append(
         "FIX (PREEXISTING_UNEXEC): re-execute unexec cells in the real environment\n"
         "(QC Cloud research kernel for QuantBook, local kernel for matplotlib) and\n"
-        "commit the real outputs. Stop&Repair, never fabricate -- secrets-hygiene 6\n"
-        "+ sota-not-workaround Prong-A. See #6891 for incident context."
+        "commit the real outputs, then add the QC-UNEXEC-TRIAGED marker (issue #7575)\n"
+        "so the notebook moves to STOP_REPAIR_UNEXEC (triaged) instead of staying\n"
+        "PREEXISTING_UNEXEC (new, untracked). Stop&Repair, never fabricate --\n"
+        "secrets-hygiene 6 + sota-not-workaround Prong-A. See #6891 (fabrication)\n"
+        "and #7575 (never-executed, distinct bug-class) for incident context."
     )
     return "\n".join(lines)
 
@@ -278,7 +326,8 @@ def json_report(results: list[dict]) -> str:
             "scanned": len(results),
             "by_class": {
                 c: sum(1 for r in results if r["classification"] == c)
-                for c in ("HEALTHY", "STOP_REPAIR_STRIPPED", "PREEXISTING_UNEXEC", "ERROR")
+                for c in ("HEALTHY", "STOP_REPAIR_STRIPPED", "STOP_REPAIR_UNEXEC",
+                          "PREEXISTING_UNEXEC", "ERROR")
             },
             "results": results,
         },

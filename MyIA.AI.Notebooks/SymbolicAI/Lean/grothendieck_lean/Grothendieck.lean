@@ -198,6 +198,7 @@ import Grothendieck.SheafCohomology.MayerVietoris
 import Grothendieck.SheafCohomology.Cech
 import Grothendieck.YonedaLemma
 import Grothendieck.Adjunction
+import Grothendieck.Equivalences
 import Grothendieck.Monads
 import Grothendieck.Construction
 import Grothendieck.MonoidalCategories
