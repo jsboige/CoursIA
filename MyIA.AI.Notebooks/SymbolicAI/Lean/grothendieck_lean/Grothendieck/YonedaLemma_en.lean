@@ -209,7 +209,7 @@ representable presheaves).
 /-- The represented presheaf `yoneda.obj Y` is representable by `Y` (canonical). -/
 def representableByYoneda (C : Type*) [Category C] (Y : C) :
     (yoneda.obj Y).RepresentableBy Y :=
-  Functor.RepresentableBy.yoneda Y
+  CategoryTheory.Functor.RepresentableBy.yoneda Y
 
 /-- The covariant represented functor `coyoneda.obj (op X)` is corepresentable by
     `X` (canonical, covariant dual of `representableByYoneda`). The representing
@@ -217,7 +217,7 @@ def representableByYoneda (C : Type*) [Category C] (Y : C) :
     opposite object). -/
 def corepresentableByCoyoneda (C : Type*) [Category C] (X : Cᵒᵖ) :
     (coyoneda.obj X).CorepresentableBy X.unop :=
-  Functor.CorepresentableBy.coyoneda X
+  CategoryTheory.Functor.CorepresentableBy.coyoneda X
 
 /-- **Representing object is unique up to isomorphism (Yoneda corollary).**
     If a presheaf `F` is representable by both `Y` and `Y'`, then `Y ≅ Y'`. This
@@ -227,7 +227,7 @@ def representingObjectUniqueUpToIso {C : Type*} [Category C]
     {F : Cᵒᵖ ⥤ Type*} {Y Y' : C}
     (h : F.RepresentableBy Y) (h' : F.RepresentableBy Y') :
     Y ≅ Y' :=
-  Functor.RepresentableBy.uniqueUpToIso h h'
+  CategoryTheory.Functor.RepresentableBy.uniqueUpToIso h h'
 
 /-- **Corepresenting object is unique up to isomorphism (covariant dual).**
     Covariant mirror of `representingObjectUniqueUpToIso`. -/
@@ -235,7 +235,7 @@ def corepresentingObjectUniqueUpToIso {C : Type*} [Category C]
     {F : C ⥤ Type*} {X X' : C}
     (h : F.CorepresentableBy X) (h' : F.CorepresentableBy X') :
     X ≅ X' :=
-  Functor.CorepresentableBy.uniqueUpToIso h h'
+  CategoryTheory.Functor.CorepresentableBy.uniqueUpToIso h h'
 
 /-!
 ## Functoriality recovers the hom-set

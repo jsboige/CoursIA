@@ -227,7 +227,7 @@ représentables).
 /-- Le préfaisceau représenté `yoneda.obj Y` est représentable par `Y` (canonique). -/
 def representableByYoneda (C : Type*) [Category C] (Y : C) :
     (yoneda.obj Y).RepresentableBy Y :=
-  Functor.RepresentableBy.yoneda Y
+  CategoryTheory.Functor.RepresentableBy.yoneda Y
 
 /-- Le foncteur covariant représenté `coyoneda.obj (op X)` est corépresentable par
     `X` (canonique, dual covariant de `representableByYoneda`). L'objet
@@ -235,7 +235,7 @@ def representableByYoneda (C : Type*) [Category C] (Y : C) :
     par l'objet opposé). -/
 def corepresentableByCoyoneda (C : Type*) [Category C] (X : Cᵒᵖ) :
     (coyoneda.obj X).CorepresentableBy X.unop :=
-  Functor.CorepresentableBy.coyoneda X
+  CategoryTheory.Functor.CorepresentableBy.coyoneda X
 
 /-- **Unicité à isomorphisme près de l'objet représentant (corollaire de Yoneda).**
     Si un préfaisceau `F` est représentable à la fois par `Y` et `Y'`, alors
@@ -245,7 +245,7 @@ def representingObjectUniqueUpToIso {C : Type*} [Category C]
     {F : Cᵒᵖ ⥤ Type*} {Y Y' : C}
     (h : F.RepresentableBy Y) (h' : F.RepresentableBy Y') :
     Y ≅ Y' :=
-  Functor.RepresentableBy.uniqueUpToIso h h'
+  CategoryTheory.Functor.RepresentableBy.uniqueUpToIso h h'
 
 /-- **Unicité à isomorphisme près de l'objet coréprésentant (dual covariant).**
     Miroir covariant de `representingObjectUniqueUpToIso`. -/
@@ -253,7 +253,7 @@ def corepresentingObjectUniqueUpToIso {C : Type*} [Category C]
     {F : C ⥤ Type*} {X X' : C}
     (h : F.CorepresentableBy X) (h' : F.CorepresentableBy X') :
     X ≅ X' :=
-  Functor.CorepresentableBy.uniqueUpToIso h h'
+  CategoryTheory.Functor.CorepresentableBy.uniqueUpToIso h h'
 
 /-!
 ## La fonctorialité retrouve l'ensemble de morphismes
