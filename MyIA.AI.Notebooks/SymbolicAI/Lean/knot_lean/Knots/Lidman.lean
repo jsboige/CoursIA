@@ -1,54 +1,54 @@
 /-
-  Knots.Lidman - Le nombre de denouement de 11n102 vaut 2
+  Knots.Lidman - Le nombre de dénouement de 11n102 vaut 2
   =======================================================
 
-  Tye Lidman (2026) a demontre que le nombre de denouement u(11n102) = 2.
-  Il etait prealablement connu que u(11n102) appartient a {1, 2}.
+  Tye Lidman (2026) a démontré que le nombre de dénouement u(11n102) = 2.
+  Il était préalablement connu que u(11n102) appartient à {1, 2}.
 
   La preuve tient en une page mais extraordinairement profonde, utilisant :
-  1. Astuce de Montesinos : revetement ramifie double <-> chirurgie demi-entiere
-  2. Espaces fibres de Seifert et leurs descriptions par plomberie
+  1. Astuce de Montesinos : revêtement ramifié double <-> chirurgie demi-entière
+  2. Espaces fibrés de Seifert et leurs descriptions par plomberie
   3. Homologie de Heegaard Floer (d-invariants, HFred)
-  4. Formule de Ni-Wu pour les chirurgies cosmetiques
-  5. Formule du cone de Gainullin
+  4. Formule de Ni-Wu pour les chirurgies cosmétiques
+  5. Formule du cône de Gainullin
 
-  Reference : Lidman (2026), arXiv:2606.12431
+  Référence : Lidman (2026), arXiv:2606.12431
 
   Epic #2874, Phase 1 (scaffolding only - sorry permanent).
 
-  Prerequis Mathlib necessaires (TRES LOINTAIN) :
-  - Topologie des 3-varietes (revetements ramifies, espaces fibres de Seifert)
+  Prérequis Mathlib nécessaires (TRÈS LOINTAIN) :
+  - Topologie des 3-variétés (revêtements ramifiés, espaces fibrés de Seifert)
   - Homologie de Heegaard Floer (d-invariants, HFred)
-  - Chirurgie sur les noeuds (chirurgie de Dehn, entiere/demi-entiere)
-  - Diagrammes de plomberie pour les 4-varietes
-  - Algorithme de Nemethi pour le calcul de HF des varietes plomberie
+  - Chirurgie sur les nœuds (chirurgie de Dehn, entière/demi-entière)
+  - Diagrammes de plomberie pour les 4-variétés
+  - Algorithme de Némethi pour le calcul de HF des variétés de plomberie
 -/
 
 import Knots.Basic
 import Knots.Invariant
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Lidman_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compatibilite Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete
-  different entre les deux fichiers.
+  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `Lidman_en.lean` (modèle sibling pair
+  ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de théorèmes,
+  les tactiques Lean, les noms de lemmes et les références Mathlib restent en anglais
+  (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
+  diffèrent entre les deux fichiers.
 -/
 
 namespace Knots
 
-/-! ## 1. The knot 11n102
+/-! ## 1. Le nœud 11n102
 
-11n102 is a knot with 11 crossings in the KnotInfo table.
-It is a Montesinos knot M(-2/3, 1/3, 2/7) with determinant 3.
+11n102 est un nœud à 11 croisements dans la table KnotInfo.
+C'est un nœud de Montesinos M(-2/3, 1/3, 2/7) de déterminant 3.
 -/
 
-/-- The knot 11n102, defined by its PD-code from KnotInfo.
-    Reference: KnotInfo, https://knotinfo.org (entry 11n_102, PD notation),
-    fetched and hand-checked 2026-07-02: 11 crossings, 22 edge labels,
-    each label 1..22 appears exactly twice.
-    Classification (KnotInfo): Montesinos K(2/3;-1/3;-2/7), determinant 3. -/
+/-- Le nœud 11n102, défini par son PD-code issu de KnotInfo.
+    Référence : KnotInfo, https://knotinfo.org (entrée 11n_102, notation PD),
+    récupéré et vérifié à la main 2026-07-02 : 11 croisements, 22 labels d'arêtes,
+    chaque label 1..22 apparaît exactement deux fois.
+    Classification (KnotInfo) : Montesinos K(2/3;-1/3;-2/7), déterminant 3. -/
 def knot_11n102_diagram : KnotDiagram where
   crossings := [
     ⟨4,  2,  5,  1⟩,   -- crossing 1
@@ -70,30 +70,30 @@ def knot_11n102 : Knot where
   diagram := knot_11n102_diagram
 
 
-/-! ## 2. Unknotting number bounds
+/-! ## 2. Bornes sur le nombre de dénouement
 
-KnotInfo gives u(11n102) ∈ {1, 2}. Lidman shows it is exactly 2.
+KnotInfo donne u(11n102) ∈ {1, 2}. Lidman montre que la valeur exacte est 2.
 -/
 
-/-- The unknotting number of 11n102 is at most 2
-(obvious from a diagram with appropriate crossing changes). -/
+/-- Le nombre de dénouement de 11n102 est au plus 2
+(évident à partir d'un diagramme avec les changements de croisement appropriés). -/
 theorem unknotting_11n102_upper : Knot.unknottingNumber knot_11n102 ≤ 2 := by
   exact sorry
   -- Proof: exhibit 2 crossing changes that unknot the diagram
   -- Phase 3 target (once unknottingNumber is properly defined)
 
-/-! ## 3. Lidman's theorem (statement only)
+/-! ## 3. Théorème de Lidman (énoncé seul)
 
-The main theorem: u(11n102) = 2, proved by contradiction.
-Assume u(11n102) = 1. Then by the Montesinos trick, the branched
-double cover Y of 11n102 is ±3/2-surgery on some knot J in S³.
+Le théorème principal : u(11n102) = 2, prouvé par contradiction.
+Supposons u(11n102) = 1. Alors, par l'astuce de Montesinos, le revêtement
+ramifié double Y de 11n102 est une chirurgie en ±3/2 sur un nœud J dans S³.
 
-Computing Heegaard Floer of Y (a Seifert fibered space) and comparing
-d-invariants via Ni-Wu leads to a contradiction on the structure
-of HFred(Y).
+Le calcul de l'homologie de Heegaard Floer de Y (un espace fibré de Seifert)
+et la comparaison des d-invariants via Ni-Wu mènent à une contradiction
+sur la structure de HFred(Y).
 -/
 
-/-- Lidman's theorem: the unknotting number of 11n102 is exactly 2. -/
+/-- Théorème de Lidman : le nombre de dénouement de 11n102 est exactement 2. -/
 theorem unknotting_11n102 : Knot.unknottingNumber knot_11n102 = 2 := by
   exact sorry
   -- Reference: Lidman (2026), arXiv:2606.12431
