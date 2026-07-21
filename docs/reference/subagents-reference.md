@@ -57,7 +57,7 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 
 ## Skills `.claude/skills/` — slash-commands mandatés
 
-17 skills (13 slash-commands actives + 4 modules de référence auto-chargés). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
+17 skills (16 slash-commands actives + 1 module de référence : `qc-helpers.md`). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
 
 ### Workflows actionnables (slash-commands)
 

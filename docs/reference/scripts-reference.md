@@ -172,7 +172,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 
 ## Tests — `scripts/tests/` + `scripts/notebook_tools/tests/`
 
-`scripts/tests/` regroupe **51 fichiers** de test (1303 tests) ; `scripts/notebook_tools/tests/` en regroupe **81** (2049 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **3354 tests au total** (snapshot `pytest --collect-only` 2026-07-20). Couverture de `scripts/tests/` par domaine :
+`scripts/tests/` regroupe **56 fichiers** de test (1701 tests) ; `scripts/notebook_tools/tests/` en regroupe **82** (3199 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **4900 tests au total** (snapshot `pytest --collect-only` 2026-07-21). Couverture de `scripts/tests/` par domaine :
 
 | Domaine | Fichiers | Modules couverts |
 | ------- | -------- | --------------- |
