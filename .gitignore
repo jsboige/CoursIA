@@ -610,6 +610,16 @@ $null
 # FineTuning series training outputs (checkpoints too large for git)
 MyIA.AI.Notebooks/GenAI/FineTuning/results_*/
 
+# ICT grokking capstone (#7258) — GPU-2 run traces (transient, regenerable via
+# scripts/train_grok_transformer.py). Per-seed traces ~296KB each; the verdict
+# is documented in the consuming notebook, so the raw traces are not committed.
+MyIA.AI.Notebooks/IIT/ICT-Series/results/grok_transformer/
+
+# Stray venv / pip --target artifacts at repo root (never tracked). A local
+# `pip install --target lib` or a venv creating lib/python3.x/site-packages
+# leaks ~1000 files here and inflates the SCM change count.
+/lib/
+
 # Docker bind-mount data: model weights and TTS references (runtime only)
 docker-configurations/services/tts-fishaudio/checkpoints/
 docker-configurations/services/tts-fishaudio/references/
