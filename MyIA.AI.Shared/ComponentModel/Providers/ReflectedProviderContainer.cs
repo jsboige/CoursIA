@@ -1,6 +1,5 @@
 using System.Reflection;
 using MyIA.AI.ComponentModel.Attributes;
-using MyIA.AI.ComponentModel.Entities;
 
 namespace MyIA.AI.ComponentModel.Providers;
 
@@ -9,35 +8,21 @@ namespace MyIA.AI.ComponentModel.Providers;
 /// assemblies and exposes them for introspection. This is the metadata-driven
 /// decoration -> introspection bridge: decorate a class with
 /// <see cref="MainCategoryAttribute"/> / <see cref="AttributeContainerAttribute"/> or have
-/// it implement <see cref="IChildEntity"/> / <see cref="ISimpleEntity"/> / <see cref="IMergeable"/>,
-/// and the container surfaces it with no explicit registration.
+/// it implement <c>IChildEntity</c> / <c>ISimpleEntity</c> / <c>IMergeable</c>, and the
+/// container surfaces it with no explicit registration.
 /// </summary>
 /// <remarks>
-/// Minimal first anchor of <c>Aricie.Shared</c>'s provider family (EPIC #7265, ancre A1).
-/// <c>AutoProviderContainer</c> (assembly-scan conventions) and <c>SimpleProviderContainer</c>
-/// (flat lookup) are deferred to follow-up tranches.
+/// Decoration-driven discovery (this class) is one of three strategies in the
+/// <c>Aricie.Shared</c> provider hierarchy (EPIC #7265): <see cref="SimpleProviderContainer"/>
+/// (explicit flat registration) and <see cref="AutoProviderContainer"/> (naming/namespace
+/// convention scan) are the other two; all share the <see cref="IProviderContainer"/> read
+/// contract and the <see cref="ProviderModel"/> classifier.
 /// </remarks>
-public sealed class ReflectedProviderContainer
+public sealed class ReflectedProviderContainer : IProviderContainer
 {
-    private readonly IReadOnlyDictionary<string, List<Type>> _byCategory;
-    private readonly List<Type> _containers;
-    private readonly List<Type> _childEntities;
-    private readonly List<Type> _simpleEntities;
-    private readonly List<Type> _mergeables;
+    private readonly ProviderModel _model;
 
-    private ReflectedProviderContainer(
-        IReadOnlyDictionary<string, List<Type>> byCategory,
-        List<Type> containers,
-        List<Type> childEntities,
-        List<Type> simpleEntities,
-        List<Type> mergeables)
-    {
-        _byCategory = byCategory;
-        _containers = containers;
-        _childEntities = childEntities;
-        _simpleEntities = simpleEntities;
-        _mergeables = mergeables;
-    }
+    private ReflectedProviderContainer(ProviderModel model) => _model = model;
 
     /// <summary>Builds a container by scanning the assembly that declares <typeparamref name="TMarker"/>.</summary>
     public static ReflectedProviderContainer FromAssembly<TMarker>() =>
@@ -48,97 +33,40 @@ public sealed class ReflectedProviderContainer
         FromAssemblies(assembly);
 
     /// <summary>Builds a container by scanning several assemblies (union of their types).</summary>
-    public static ReflectedProviderContainer FromAssemblies(params Assembly[] assemblies)
-    {
-        ArgumentNullException.ThrowIfNull(assemblies);
-
-        var types = new List<Type>();
-        foreach (var assembly in assemblies)
-        {
-            ArgumentNullException.ThrowIfNull(assembly);
-            Type[] declared;
-            try
-            {
-                declared = assembly.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                // Keep the types that did load; a single unloadable type must not poison the container.
-                declared = ex.Types.Where(t => t is not null).ToArray()!;
-            }
-
-            types.AddRange(declared.Where(t => t is { IsClass: true } || (t.IsInterface && !t.IsSpecialName)));
-        }
-
-        return FromTypes(types);
-    }
+    public static ReflectedProviderContainer FromAssemblies(params Assembly[] assemblies) =>
+        FromTypes(ProviderModel.GatherTypes(assemblies));
 
     /// <summary>Builds a container from an explicit type set (test seam + controlled scope).</summary>
     public static ReflectedProviderContainer FromTypes(IEnumerable<Type> types)
     {
         ArgumentNullException.ThrowIfNull(types);
 
-        var byCategory = new Dictionary<string, List<Type>>(StringComparer.Ordinal);
-        var containers = new List<Type>();
-        var childEntities = new List<Type>();
-        var simpleEntities = new List<Type>();
-        var mergeables = new List<Type>();
+        // Category comes from the [MainCategory] decoration (0 or 1 per type); the marker
+        // buckets are filled by the shared classifier from the implemented interfaces.
+        var model = ProviderModel.Build(
+            types,
+            type => type.GetCustomAttribute<MainCategoryAttribute>() is { } category
+                ? new[] { category.Name }
+                : Array.Empty<string>());
 
-        foreach (var type in types)
-        {
-            ArgumentNullException.ThrowIfNull(type);
-
-            if (type.GetCustomAttribute<MainCategoryAttribute>() is { } category)
-            {
-                if (!byCategory.TryGetValue(category.Name, out var bucket))
-                {
-                    bucket = new List<Type>();
-                    byCategory[category.Name] = bucket;
-                }
-
-                bucket.Add(type);
-            }
-
-            if (type.GetCustomAttribute<AttributeContainerAttribute>() is not null)
-            {
-                containers.Add(type);
-            }
-
-            if (typeof(IChildEntity).IsAssignableFrom(type) && type != typeof(IChildEntity))
-            {
-                childEntities.Add(type);
-            }
-
-            if (typeof(ISimpleEntity).IsAssignableFrom(type) && type != typeof(ISimpleEntity))
-            {
-                simpleEntities.Add(type);
-            }
-
-            if (typeof(IMergeable).IsAssignableFrom(type) && type != typeof(IMergeable))
-            {
-                mergeables.Add(type);
-            }
-        }
-
-        return new ReflectedProviderContainer(byCategory, containers, childEntities, simpleEntities, mergeables);
+        return new ReflectedProviderContainer(model);
     }
 
     /// <summary>Categories discovered, in first-seen order.</summary>
-    public IEnumerable<string> Categories => _byCategory.Keys;
+    public IEnumerable<string> Categories => _model.Categories;
 
     /// <summary>Types registered under <paramref name="category"/>, or empty if unknown.</summary>
-    public IReadOnlyList<Type> this[string category] =>
-        _byCategory.TryGetValue(category, out var bucket) ? bucket : Array.Empty<Type>();
+    public IReadOnlyList<Type> this[string category] => _model[category];
 
     /// <summary>Types decorated with <see cref="AttributeContainerAttribute"/>.</summary>
-    public IReadOnlyList<Type> Containers => _containers;
+    public IReadOnlyList<Type> Containers => _model.Containers;
 
-    /// <summary>Types implementing <see cref="IChildEntity"/> (hierarchical nodes).</summary>
-    public IReadOnlyList<Type> ChildEntities => _childEntities;
+    /// <summary>Types implementing <c>IChildEntity</c> (hierarchical nodes).</summary>
+    public IReadOnlyList<Type> ChildEntities => _model.ChildEntities;
 
-    /// <summary>Types implementing <see cref="ISimpleEntity"/> (flat leaves).</summary>
-    public IReadOnlyList<Type> SimpleEntities => _simpleEntities;
+    /// <summary>Types implementing <c>ISimpleEntity</c> (flat leaves).</summary>
+    public IReadOnlyList<Type> SimpleEntities => _model.SimpleEntities;
 
-    /// <summary>Types implementing <see cref="IMergeable"/>.</summary>
-    public IReadOnlyList<Type> Mergeables => _mergeables;
+    /// <summary>Types implementing <c>IMergeable</c>.</summary>
+    public IReadOnlyList<Type> Mergeables => _model.Mergeables;
 }
