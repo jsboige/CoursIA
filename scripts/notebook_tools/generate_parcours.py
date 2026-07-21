@@ -239,7 +239,11 @@ def main():
         else:
             PARCOURS_DIR.mkdir(parents=True, exist_ok=True)
             out_path = PARCOURS_DIR / f"{pid}.md"
-            out_path.write_text(page, encoding="utf-8")
+            # newline="\n" forces LF: on Windows, Path.write_text's default
+            # text mode translates "\n" -> "\r\n", polluting the committed LF
+            # files (docs/curriculum/*.md are LF per .gitattributes) with a
+            # 100%+ line churn on every regen. Force LF so regen is byte-clean.
+            out_path.write_text(page, encoding="utf-8", newline="\n")
             print(f"  {pid}: {out_path} ({len(filtered)} notebooks)")
 
     if not args.dry_run and not args.parcours:
