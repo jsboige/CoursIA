@@ -1,3 +1,32 @@
+import Grothendieck.Adjunction
+import Grothendieck.Calibration
+import Grothendieck.CanonicalProps
+import Grothendieck.CategoryAndSites
+import Grothendieck.Conservative
+import Grothendieck.ConstantSheaf
+import Grothendieck.Construction
+import Grothendieck.CoverageGen
+import Grothendieck.DenseTopology
+import Grothendieck.Equivalences
+import Grothendieck.LeftExact
+import Grothendieck.Limits
+import Grothendieck.MathlibMap
+import Grothendieck.MayerVietorisSquare
+import Grothendieck.Monads
+import Grothendieck.SchemesTour
+import Grothendieck.SheafBasics
+import Grothendieck.SheafCohomology.Basic
+import Grothendieck.SheafCohomology.Cech
+import Grothendieck.SheafCohomology.MayerVietoris
+import Grothendieck.SheafHom
+import Grothendieck.Sheafification
+import Grothendieck.SieveGenerate
+import Grothendieck.SieveLattice
+import Grothendieck.SieveOps
+import Grothendieck.SitePoints
+import Grothendieck.Subcanonical
+import Grothendieck.YonedaLemma
+import Grothendieck.ZariskiSite
 /-
 Hommage Grothendieck — visite de Mathlib du langage mathématique de Grothendieck
 Alexandre Grothendieck (1928-2014), l'un des plus grands mathématiciens du XXᵉ siècle.
@@ -173,31 +202,3 @@ pilote EPIC), `Utility.lean` (PR #6045), `RepeatedGames.lean` (PR #6048),
 structure lake ci-dessous), auto-découverts par le
 `lean_lib «Grothendieck»` du lakefile (cf. `globs` glob par défaut).
 -/
-import Grothendieck.CategoryAndSites
-import Grothendieck.SchemesTour
-import Grothendieck.ZariskiSite
-import Grothendieck.MathlibMap
-import Grothendieck.Calibration
-import Grothendieck.SieveLattice
-import Grothendieck.SheafBasics
-import Grothendieck.SieveOps
-import Grothendieck.CoverageGen
-import Grothendieck.CanonicalProps
-import Grothendieck.SieveGenerate
-import Grothendieck.DenseTopology
-import Grothendieck.Sheafification
-import Grothendieck.LeftExact
-import Grothendieck.Subcanonical
-import Grothendieck.SitePoints
-import Grothendieck.SheafHom
-import Grothendieck.ConstantSheaf
-import Grothendieck.Conservative
-import Grothendieck.SheafCohomology.Basic
-import Grothendieck.MayerVietorisSquare
-import Grothendieck.SheafCohomology.MayerVietoris
-import Grothendieck.SheafCohomology.Cech
-import Grothendieck.YonedaLemma
-import Grothendieck.Adjunction
-import Grothendieck.Equivalences
-import Grothendieck.Monads
-import Grothendieck.Construction
