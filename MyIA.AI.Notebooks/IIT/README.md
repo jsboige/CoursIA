@@ -322,6 +322,17 @@ Elle progresse en cinq strates — le **tri auto-organisé** transparent (strate
 **représentationnelle** énergie libre / surprise (strate 4, ICT-14), puis la **théorie fondatrice**
 cross-substrat et la réversibilisation outillée (strate 5, ICT-15 et suivants).
 
+La strate 5 est complétée par **quatre notebooks de raffinement / extension** que la table de
+navigabilité n'isolait pas jusqu'ici : [ICT-15b-SensitivityCanonicity](ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+(sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
+[ICT-15c-MetaProxyObstruction](ICT-Series/ICT-15c-MetaProxyObstruction.ipynb) (obstructions adversariales au verdict
+de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
+[ICT-17b-Grokking-CompressionProgress](ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb) (grokking comme
+cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
+et al. 2022), et [ICT-Argumentation-BeliefTrajectories](ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
+(Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
+Argumentum 5 classes, banc T2 multilingue).
+
 La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait des trajectoires SAE
 (*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
 un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
