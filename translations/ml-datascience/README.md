@@ -12,8 +12,8 @@ La série couvre quatre parcours imbriqués :
 
 - **01-PythonForDataScience** (2 notebooks) — fondamentaux NumPy et Pandas.
 - **02-ML-Cours** (8 notebooks) — workflow ML, descente de gradient, régression linéaire/logistique, arbres/forêts/ensembles, biais/variance/CV/ROC, clustering KMeans/PCA, modèles non-paramétriques, théorie PAC.
-- **PythonAgentsForDataScience** (7 labs) — Labs 1-7 : Python pour data science, analyse RFP, CV screening, data wrangling, viz/ML, premier agent, agent d'analyse de données.
-- **AgenticDataScience** (10 labs) — Labs 8-17 : introduction ADK, premier agent ADK, file analyzer, planner-coder loop, atelier DS-Star, web search SOTA, ablation refinement, challenge Kaggle, data science agent de production, projet final.
+- **Track1-LangChain** (7 labs) — Labs 1-7 : Python pour data science, analyse RFP, CV screening, data wrangling, viz/ML, premier agent, agent d'analyse de données.
+- **Track2-GoogleADK** (10 labs) — Labs 8-17 : introduction ADK, premier agent ADK, file analyzer, planner-coder loop, atelier DS-Star, web search SOTA, ablation refinement, challenge Kaggle, data science agent de production, projet final.
 
 **Schéma** : 20 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/fa/zh/ru/pt`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
 

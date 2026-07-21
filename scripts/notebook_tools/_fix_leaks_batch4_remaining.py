@@ -18,9 +18,9 @@ NB_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 
 AFFECTED = {
     "ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb": [9],
-    "ML/DataScienceWithAgents/AgenticDataScience/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb": [21],
-    "ML/DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb": [22, 24],
-    "ML/DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling_executed.ipynb": [22, 24],
+    "ML/DataScienceWithAgents/Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb": [21],
+    "ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb": [22, 24],
+    "ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling_executed.ipynb": [22, 24],
     "QuantConnect/Python/QC-Py-06-Options-Trading.ipynb": [27],
     "QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb": [19],
 }
