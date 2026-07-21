@@ -46,6 +46,24 @@ PIVOT_LANG = "fr"
 TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
 ALL_LANGS = [PIVOT_LANG] + TARGET_LANGS
 
+# Plages Unicode du script attendu pour les langues cibles non-Latines.
+# Une cellule text_<lang> deposee dont le contenu ne porte AUCUN caractere de
+# son script attendu (en ignorant ASCII = ponctuation/chiffres/espaces/markup
+# markdown) est un WRONG_SCRIPT : typiquement un copier-coller de FR ou d'EN
+# dans la colonne text_ar / text_zh / text_ru / text_fa. Detection deterministe,
+# zero faux-positif (une vraie traduction arabe/chinoise/russe CONTIENT au moins
+# un caractere de son script). Les langues Latines (en/es/pt) ne sont PAS couvertes
+# ici : la contamination FR de ces langues est la classe heuristique FR_CONTAM
+# (taxonomie Argumentum 5-classes), hors scope de ce check deterministe (#6949).
+# Source des plages : Unicode UCD (Arabic 0600-06FF, Cyrillic 0400-04FF,
+# CJK Unified Ideographs 4E00-9FFF, etc.).
+LANG_SCRIPT_RANGES: dict[str, list[tuple[int, int]]] = {
+    "ar": [(0x0600, 0x06FF), (0x0750, 0x077F), (0x08A0, 0x08FF)],  # Arabic block
+    "fa": [(0x0600, 0x06FF), (0x0750, 0x077F), (0xFB50, 0xFDFF), (0xFE70, 0xFEFF)],  # Arabic + Presentation forms (Persian)
+    "zh": [(0x4E00, 0x9FFF), (0x3400, 0x4DBF), (0xF900, 0xFAFF), (0x3000, 0x303F)],  # CJK Unified + Ext A + CJK symbols/punct
+    "ru": [(0x0400, 0x04FF), (0x0500, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F)],  # Cyrillic + ext + supplement
+}
+
 
 def normalize(text: str) -> str:
     """Meme normalisation que extract_cells_to_csv.py (anti faux-drift cosmétique)."""
@@ -55,6 +73,31 @@ def normalize(text: str) -> str:
 
 def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
+
+
+def _has_expected_script(lang: str, text: str) -> bool:
+    """True si text contient au moins un caractere du script attendu pour lang.
+
+    Langues Latines (en/es/pt, absentes de LANG_SCRIPT_RANGES) : retourne True
+    (pas de verdict WRONG_SCRIPT -- la contamination FR de ces langues est la
+    classe heuristique FR_CONTAM, hors scope). Texte vide : True (rien a checker,
+    etat attendu pre-T3). Sinon on scanne les caracteres non-ASCII : s'il en
+    existe au moins un dans une plage attendue de lang, c'est OK ; si AUCUN
+    caractere non-ASCII n'appartient au script attendu, retourne False -> WRONG_SCRIPT.
+
+    Une traduction legitime arabe/chinoise/russe contient du code ou des nombres
+    (ASCII) MAIS doit aussi contenir au moins un caractere du script cible.
+    """
+    ranges = LANG_SCRIPT_RANGES.get(lang)
+    if not ranges or not text:
+        return True
+    for ch in text:
+        cp = ord(ch)
+        if cp < 0x0080:  # ASCII : ponctuation, chiffres, espaces, markup markdown (*_#-`).
+            continue
+        if any(lo <= cp <= hi for lo, hi in ranges):
+            return True
+    return False
 
 
 def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
@@ -117,10 +160,19 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                      "detail": f"source modifié (csv={csv_src_hash} <> actuel={current_src}) -> retraduction requise"}
                 )
 
-            # TRAD_DRIFT / MISSING_LANG par langue cible.
+            # TRAD_DRIFT / MISSING_LANG / WRONG_SCRIPT par langue cible.
             # Le pivot (fr) EST le notebook source (xxx.ipynb, pas xxx_fr.ipynb) :
             # sa cohérence est déjà vérifiée par SRC_DRIFT ci-dessus -> on le skippe.
             for lang in TARGET_LANGS:
+                # WRONG_SCRIPT : le contenu depose text_<lang> est-il dans le bon
+                # script ? (detection Unicode deterministe ; Latin langs exclus.)
+                trad_text = row.get(f"text_{lang}", "")
+                if trad_text and not _has_expected_script(lang, trad_text):
+                    anomalies.append(
+                        {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                         "verdict": "WRONG_SCRIPT",
+                         "detail": f"text_{lang} depose sans aucun caractere du script attendu (copier-coller FR/EN dans la mauvaise colonne ?)"}
+                    )
                 csv_hash = row.get(f"hash_{lang}", "")
                 if not csv_hash:
                     continue  # rien déposé = attendu pre-T3, pas un drift.
