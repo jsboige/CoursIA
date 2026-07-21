@@ -32,7 +32,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## lab1-foundations.png
 
-- **Source** : notebook `DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb` (cellule 8, output 0)
+- **Source** : notebook `DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb` (cellule 8, output 0)
 - **Contenu réel vérifié** (lecture via `Read` 2026-07-14) : 2 panneaux côte-à-côte « Ventes Widget A (20 premiers jours) » (courbe bleue oscillant 123-188 sur axe Date 2024-01-01 → 2024-01-20) et « Ventes moyennes par catégorie » (barres verticales 3-items : Accessoires ≈ 45 bleu, Électronique ≈ 130 orange, Premium ≈ 225 vert). Pas de mention Seaborn dans le rendu (style matplotlib 'default' / 'classic').
 - **Alt-text (FR)** : Fondations Python pour la data science : visualisation exploratoire des ventes (graphiques Matplotlib) sur un échantillon tabulaire.
 - **Poids** : 103.1 KB (PIL optimise)
@@ -40,7 +40,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## lab5-viz.png
 
-- **Source** : notebook `DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb` (cellule 11, output 0)
+- **Source** : notebook `DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb` (cellule 11, output 0)
 - **Contenu réel vérifié** (lecture via `Read` 2026-07-14) : courbe unique « Évolution du Chiffre d'Affaires Journalier » 4 points sur axe Date 10-01 00 → 10-04 00. Valeurs : 760 (10-01) → 230 (10-02) → 245 (10-03) → 480 (10-04). **Pas de marqueurs** ni de légende, **grille seaborn-v0_8-whitegrid** (style matplotlib par défaut récent, pas un import seaborn). Couleur unique (bleu acier par défaut `tab:blue`).
 - **Alt-text (FR)** : Visualisation de données : évolution journalière du chiffre d'affaires agrégé, tracée avec **matplotlib pur** (style `seaborn-v0_8-whitegrid`) sur un DataFrame Pandas.
 - **Poids** : 31.0 KB (PIL optimise)

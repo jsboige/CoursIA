@@ -14,25 +14,25 @@ Le fil conducteur du workshop est un **changement de paradigme** : passer de *l'
 
 | Lab | Sujet | Concept-phare |
 |-----|-------|---------------|
-| [Lab 1 — Bases Data Science](Day1/Labs/Lab1-PythonForDataScience.ipynb) | Pandas + Matplotlib + régression linéaire sur ventes synthétiques | le socle manipulé par tous les labs suivants |
+| [Lab 1 — Bases Data Science](Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas + Matplotlib + régression linéaire sur ventes synthétiques | le socle manipulé par tous les labs suivants |
 
 ### Journée 2 — Agents pour l'analyse documentaire
 
 | Lab | Sujet | Concept-phare |
 |-----|-------|---------------|
-| [Lab 2 — RFP Analysis](Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | d'un appel d'offres à un PoC en 1 heure | extraction structurée d'un texte libre par LLM |
-| [Lab 3 — CV Screening](Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | pré-qualifier des candidats avec l'IA | analyse, notation et résumé de CVs vs offre |
+| [Lab 2 — RFP Analysis](Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | d'un appel d'offres à un PoC en 1 heure | extraction structurée d'un texte libre par LLM |
+| [Lab 3 — CV Screening](Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | pré-qualifier des candidats avec l'IA | analyse, notation et résumé de CVs vs offre |
 
 ### Journée 3 — Data wrangling & agents
 
 | Lab | Sujet | Concept-phare |
 |-----|-------|---------------|
-| [Lab 4 — Data Wrangling](Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | nettoyer un jeu de données « sale » réaliste | Pandas au service de la robustesse |
-| [Lab 5 — Viz & ML](Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | exploration visuelle puis classification scikit-learn | visualisation guidant le modèle |
-| [Lab 6 — First Agent](Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | construire son premier agent LangChain | les 4 composants : LLM, Outils, Prompt, Exécuteur |
-| [Lab 7 — Data Analysis Agent](Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | agent répondant en langage naturel sur un DataFrame | l'agent comme interface d'analyse |
+| [Lab 4 — Data Wrangling](Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | nettoyer un jeu de données « sale » réaliste | Pandas au service de la robustesse |
+| [Lab 5 — Viz & ML](Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | exploration visuelle puis classification scikit-learn | visualisation guidant le modèle |
+| [Lab 6 — First Agent](Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | construire son premier agent LangChain | les 4 composants : LLM, Outils, Prompt, Exécuteur |
+| [Lab 7 — Data Analysis Agent](Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | agent répondant en langage naturel sur un DataFrame | l'agent comme interface d'analyse |
 
-Chaque lab est accompagné de son propre [`README.md`](Day1/Labs/README.md) (objectifs, données fournies, exercices).
+Chaque lab est accompagné de son propre [`README.md`](Day1-Foundations/Labs/README.md) (objectifs, données fournies, exercices).
 
 ## Objectifs d'apprentissage
 

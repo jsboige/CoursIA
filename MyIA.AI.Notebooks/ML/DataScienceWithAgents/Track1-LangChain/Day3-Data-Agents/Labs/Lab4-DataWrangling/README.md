@@ -20,7 +20,7 @@ Ce laboratoire ouvre la **Journée 3** côté data. Il part du constat classique
 
 ## Prérequis
 
-- [Lab 1 (Day 1)](../../../Day1/Labs/README.md) : bases Pandas (chargement, filtrage)
+- [Lab 1 (Day 1)](../../../Day1-Foundations/Labs/README.md) : bases Pandas (chargement, filtrage)
 - Python 3.10+ avec `pandas`
 
 ## Notebook
@@ -33,4 +33,4 @@ Ce laboratoire ouvre la **Journée 3** côté data. Il part du constat classique
 
 ## Navigation
 
-[<- Index Python Agents](../../../../README.md) | [Lab 3 <<](../../../Day2/Labs/Lab3-CV-Screening/README.md) | [>> Lab 5](../Lab5-Viz-ML/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 3 <<](../../../Day2-Document-Agents/Labs/Lab3-CV-Screening/README.md) | [>> Lab 5](../Lab5-Viz-ML/README.md)

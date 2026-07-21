@@ -215,10 +215,10 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 #### Trois figures du track Data Science (Pandas, Seaborn, ADK)
 
-[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb)
+[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 *Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
 
-[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
 *Lab5 — matplotlib pur : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style `seaborn-v0_8-whitegrid` (un **style matplotlib**, pas un import `seaborn`) appliqué à un DataFrame Pandas.*
 
 [![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)

@@ -1,6 +1,6 @@
 # Journée 3 — Data wrangling & premiers agents autonomes
 
-[← Track1-LangChain (track)](../README.md) | [Journée 2 →](../Day2/README.md) | [Track Google ADK (Jours 4-7) →](../../Track2-GoogleADK/README.md)
+[← Track1-LangChain (track)](../README.md) | [Journée 2 →](../Day2-Document-Agents/README.md) | [Track Google ADK (Jours 4-7) →](../../Track2-GoogleADK/README.md)
 
 La **Journée 3** clôt le track LangChain : les agents deviennent capables de **manipuler des données** par eux-mêmes — nettoyage de données sales, interrogation en langage naturel, puis assemblage des composants d'un agent en un analyseur de données autonome. C'est la transition vers le track Google ADK (Jours 4-7).
 
@@ -15,7 +15,7 @@ La **Journée 3** clôt le track LangChain : les agents deviennent capables de *
 
 ## Prérequis
 
-- Avoir suivi la [Journée 2](../Day2/README.md) (analyse documentaire agentique).
+- Avoir suivi la [Journée 2](../Day2-Document-Agents/README.md) (analyse documentaire agentique).
 - **LangChain** + clé API OpenAI (les labs 6 et 7 appellent un LLM).
 
 ## Suite

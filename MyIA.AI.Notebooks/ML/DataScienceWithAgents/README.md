@@ -91,9 +91,9 @@ DataScienceWithAgents/
 │   └── 2.8-Theorie-PAC.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain (7 labs)
-│   ├── Day1/Labs/              # Revision
-│   ├── Day2/Labs/              # Agents RFP et CV
-│   └── Day3/Labs/              # Data + Agents
+│   ├── Day1-Foundations/Labs/              # Revision
+│   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
+│   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
 └── Track2-GoogleADK/         # Track Google ADK (10 labs)
     ├── Day4-Foundations/       # Introduction ADK
@@ -133,23 +133,23 @@ Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
 ## Track Track2-GoogleADK (Days 4-7)
 

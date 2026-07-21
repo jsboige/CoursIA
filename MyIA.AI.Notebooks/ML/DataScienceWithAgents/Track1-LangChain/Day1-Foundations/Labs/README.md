@@ -30,8 +30,8 @@ Ce laboratoire ouvre la **Journée 1** du workshop. Il pose les fondations techn
 
 ## Suite
 
-[Lab 2 (RFP Analysis)](../../Day2/Labs/Lab2-RFP-Analysis/README.md) entre dans l'**IA agentique** : un premier agent LangChain analyse un appel d'offre. Les Labs 4 et 5 (Journée 3) reprennent et approfondissent le socle Pandas / ML posé ici.
+[Lab 2 (RFP Analysis)](../../Day2-Document-Agents/Labs/Lab2-RFP-Analysis/README.md) entre dans l'**IA agentique** : un premier agent LangChain analyse un appel d'offre. Les Labs 4 et 5 (Journée 3) reprennent et approfondissent le socle Pandas / ML posé ici.
 
 ## Navigation
 
-[<- Index Python Agents](../../../README.md) | [>> Lab 2](../../Day2/Labs/Lab2-RFP-Analysis/README.md)
+[<- Index Python Agents](../../../README.md) | [>> Lab 2](../../Day2-Document-Agents/Labs/Lab2-RFP-Analysis/README.md)

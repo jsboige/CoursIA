@@ -19,7 +19,7 @@ Ce laboratoire ouvre la **Journée 2** sur l'IA agentique appliquée à la pré-
 
 ## Prérequis
 
-- [Lab 1 (Day 1)](../../../Day1/Labs/README.md) : bases Pandas + première classification ML
+- [Lab 1 (Day 1)](../../../Day1-Foundations/Labs/README.md) : bases Pandas + première classification ML
 - Clé API LLM configurée (`.env` racine)
 
 ## Notebook
@@ -29,4 +29,4 @@ Ce laboratoire ouvre la **Journée 2** sur l'IA agentique appliquée à la pré-
 
 ## Navigation
 
-[<- Index Python Agents](../../../../README.md) | [Lab 1 (Day 1) <<](../../../Day1/Labs/README.md) | [>> Lab 3](../Lab3-CV-Screening/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 1 (Day 1) <<](../../../Day1-Foundations/Labs/README.md) | [>> Lab 3](../Lab3-CV-Screening/README.md)

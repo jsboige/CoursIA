@@ -16,7 +16,7 @@ Après avoir utilisé des chaînes LangChain "fil tendu" dans les Labs 2 et 3, c
 ## Prérequis
 
 - [Lab 5 (Viz + ML)](../Lab5-Viz-ML/README.md) : bases scikit-learn (utilisé comme outil par l'agent)
-- [Lab 2 / 3](../../../Day2/Labs/) : LangChain de base
+- [Lab 2 / 3](../../../Day2-Document-Agents/Labs/) : LangChain de base
 - Clé API LLM configurée (`.env` racine)
 
 ## Notebook
