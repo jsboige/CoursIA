@@ -516,13 +516,13 @@ Ce notebook rend cette critique **concrète et mesurable**, en câblant le banc 
 - Câbler le protocole centré-vs-déplacé (Kudela 2022) via `CenterBiasBenchmark.RunSuite` et le délégué `Optimizer`.
 - Mesurer la signature de biais $\Delta$ pour le GA, WOA, EO, FBI, et apprendre à la **lire conjointement** à la performance absolue (car un $\Delta$ élevé peut signifier un biais… ou simplement un optimiseur trop faible).
 ",,,,,,,,d8bac878bf53f9a9,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c01,code,fr,d12ffdabeee70e4f,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + CenterBiasBenchmark + ShiftedFitness).
-// Prérequis de build (depuis la racine du fork) : dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c01,code,fr,7df55d640705681e,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + CenterBiasBenchmark + ShiftedFitness).
+// Prérequis de build (depuis la racine du fork) : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -537,7 +537,7 @@ Console.WriteLine(""  KnownFunctionsBounds       : "" + typeof(KnownFunctionsBou
 Console.WriteLine(""  ForensicBasedInvestigation : "" + typeof(ForensicBasedInvestigation).Name);
 Console.WriteLine(""  BareBonesParticleSwarm    : "" + typeof(BareBonesParticleSwarm).Name);
 Console.WriteLine(""  SimulatedAnnealing        : "" + typeof(SimulatedAnnealing).Name);
-",,,,,,,,d12ffdabeee70e4f,,,,,,,
+",,,,,,,,7df55d640705681e,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c02,markdown,fr,e48f70b8de7480b1,"## Le protocole centré-vs-déplacé (Kudela 2022)
 
 Le banc `CenterBiasBenchmark` met chaque optimiseur à l'épreuve sur **deux versions** d'une même fonction :
@@ -847,21 +847,21 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,dc6c556
 
 > **Components over metaphors (Sorensen 2015).** DE et BBPSO ne sont pas invoques comme des boites noires metaphoriques : ce sont des *composes geometriques* du fork (`DifferentialEvolution`, `BareBonesParticleSwarm`), decomposes en primitives (mutation differentielle, echantillonnage Gaussien autour des leaders). On les assemble dans un `IslandCompoundMetaheuristic` -- la **composition** est le sujet, pas l'etiquette. Suite de #1203, volet synergie de #3965.
 ",,,,,,,,4a35bfb51f21a817,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,cb043b35,markdown,fr,8e9bd581f70e2734,"## Cablage : MetaGeneticSharp (fork) + paysage + encodeur GIF
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,cb043b35,markdown,fr,eb299adf9987e946,"## Cablage : MetaGeneticSharp (fork) + paysage + encodeur GIF
 
 On charge les DLLs du fork (self-contained via `CopyLocalLockFileAssemblies` : il embarque `System.Drawing.Common.dll`, `SkiaSharp.dll` + son binaire natif `runtimes/<rid>/native/libSkiaSharp.dll`). On precharge ce binaire natif (le `#r` manage ne cable pas le probing natif de SkiaSharp). Le sous-module est epingle sur le fork (pointeur `c8bbd99`), qui porte les composes geometriques (WOA/EO/FBI/**DE**/**BBPSO**), l'archipel heterogene (`IslandCompoundMetaheuristic`), le de-biais (`ShiftedFitness` / `ShiftVectors.Seeded`), l'overlay iles colorees (`RenderHeatmapPng(..., individualColors)`) et l'encodeur GIF anime (`EncodeAnimatedGif`).
 
-> **Prerequis build.** `dotnet build c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/MetaGeneticSharp.Extensions.csproj -c Debug` (sous-module epingle sur le fork `c8bbd99`).
-",,,,,,,,8e9bd581f70e2734,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,5e7ef7c9,code,fr,9bf221855a0c8327,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
+> **Prerequis build.** `dotnet build ..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\MetaGeneticSharp.Extensions.csproj -c Debug` (sous-module epingle sur le fork `c8bbd99`).
+",,,,,,,,eb299adf9987e946,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,5e7ef7c9,code,fr,7229e6f780a7c991,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
 // System.Drawing.Common.dll AND SkiaSharp.dll, needed at runtime by the graphic landscape types).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\System.Drawing.Common.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\SkiaSharp.dll""
 
 using MetaGeneticSharp;                                 // IslandCompoundMetaheuristic, ShiftedFitness, ShiftVectors, SkiaLandscapeRenderer
 using GeneticSharp;                                     // GA engine, selection/crossover/mutation, RandomizationProvider
@@ -875,10 +875,10 @@ using System.Runtime.InteropServices;                   // NativeLibrary, Runtim
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($@""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\runtimes\{rid}\native\libSkiaSharp.dll"");
 
 Console.WriteLine(""Wiring OK : MetaGeneticSharp + GeneticSharp + Extensions (composes DE/BBPSO + IslandCompound + ShiftedFitness + SkiaLandscapeRenderer + GIF)."");
-",,,,,,,,9bf221855a0c8327,,,,,,,
+",,,,,,,,7229e6f780a7c991,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,9b42c7aa,code,fr,df3cdaeed258a320,"// DoubleArrayChromosome : chromosome minimal stockant des genes double nus (replique de l'assistant
 // de test du fork ; bornes par gene pour que CreateNew() randomise la population initiale).
 public class DoubleArrayChromosome : ChromosomeBase
@@ -1150,13 +1150,13 @@ La technique standard pour mesurer ce biais (compétitions CEC) : **rotationner*
 1. **Sanity** — une rotation change-t-elle un paysage *radial* comme Sphere ? Non, par construction : c'est le contrôle que le décorateur est correct. Et les fonctions à terme périodique par axe (Rastrigin, Ackley) ? Si — la rotation brise leur séparabilité, et c'est déjà, en soi, le premier signal du biais.
 2. **Discrimination** — sur un paysage *asymétrique* (Rosenbrock), la rotation déplace l'optimum : quels optimiseurs le retrouvent ?
 ",,,,,,,,facf4e9005615fee,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,42ae60a7,code,fr,77f4eed1edfb648a,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + RotatedFitness + RotationMatrices).
-// Prérequis de build (depuis la racine du fork) : dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,42ae60a7,code,fr,0aacc7a811afbfae,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + RotatedFitness + RotationMatrices).
+// Prérequis de build (depuis la racine du fork) : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -1170,7 +1170,7 @@ Console.WriteLine(""  RotationMatrices           : "" + typeof(RotationMatrices)
 Console.WriteLine(""  ShiftedFitness (MGS-10)    : "" + typeof(ShiftedFitness).Name);
 Console.WriteLine(""Optimiseurs                  : "" + typeof(RandomSearchOptimizer).Name);
 Console.WriteLine(""Fonctions asymetriques       : "" + typeof(RosenbrockFitness).Name + "" / "" + typeof(SchwefelFitness).Name);
-",,,,,,,,77f4eed1edfb648a,,,,,,,
+",,,,,,,,0aacc7a811afbfae,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,67c00ff3,markdown,fr,21ac063d0d801baf,"## Le décorateur de rotation : $f_{\text{rot}}(x) = f(M x)$
 
 `RotatedFitness` enveloppe n'importe quelle fonction de fitness et l'évalue sur les coordonnées *rotationnées* $y = M x$. La matrice $M$ est **orthogonale** ($M M^{\top} = I$) : la transformation préserve les distances (norme), donc la *valeur* de l'optimum est inchangée, mais sa *position* est déplacée. La factory `RotationMatrices.Seeded(n, graine)` construit une telle matrice reproductible comme **produit de rotations de Givens** (une par paire d'indices) — produit de matrices orthogonales = orthogonal, garanti par construction.
@@ -1512,15 +1512,15 @@ On réutilise les **décorateurs compositionnels** du fork — `ShiftedFitness` 
 
 > Voir aussi : MGS-8 (rendu de paysage de fitness), MGS-12 (mesure numérique axis-alignment).
 ",,,,,,,,f1ab909dd3a277a9,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,03e55ade,code,fr,c8f418b63ba55a6f,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,03e55ade,code,fr,162892a2f92b93e9,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
 // System.Drawing.Common.dll AND SkiaSharp.dll, needed at runtime by the graphic landscape types).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\System.Drawing.Common.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\SkiaSharp.dll""
 
 using MetaGeneticSharp;                  // KnownFunctions, ShiftedFitness, RotatedFitness, RotationMatrices, SkiaLandscapeRenderer
 using GeneticSharp;                      // IFitness, ChromosomeBase, Gene, RandomizationProvider
@@ -1532,7 +1532,7 @@ using System.Runtime.InteropServices;    // NativeLibrary, RuntimeInformation
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($@""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\runtimes\{rid}\native\libSkiaSharp.dll"");
 
 // DoubleArrayChromosome: minimal continuous chromosome (bare double genes) with per-gene bounds,
 // so the fitness decorators can evaluate any 2-D point. Same chromosome as MGS-8/MGS-12.
@@ -1568,7 +1568,7 @@ Func<double[], double> Field(IFitness f) => c => f.Evaluate(new DoubleArrayChrom
 Console.WriteLine(""Wiring OK : MetaGeneticSharp + Extensions (KnownFunctions + ShiftedFitness/RotatedFitness + SkiaLandscapeRenderer)."");
 Console.WriteLine($""  De-bias tooling : {typeof(ShiftedFitness).Name}, {typeof(RotatedFitness).Name}, {typeof(RotationMatrices).Name}"");
 Console.WriteLine($""  Renderer        : {typeof(SkiaLandscapeRenderer).Name} (SkiaSharp, native rid={rid})"");
-",,,,,,,,c8f418b63ba55a6f,,,,,,,
+",,,,,,,,162892a2f92b93e9,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,b3d9368e,markdown,fr,16413c281cc82a17,"---
 ## Partie A — Séparabilité, rotation : le principe sur le papier
 
@@ -1744,17 +1744,17 @@ Une archipel hybride **peut-elle** battre ses constituants homogènes ? Le verdi
 **Hypothèse** : en réduisant le brassage (taux de migration faible + période longue) et en déséquilibrant le ratio exploration/exploitation (majorité d'explorateurs + un seul raffineur), une combo **complémentaire** battra ses constituants — sur certaines fonctions, pas toutes.
 
 Ce notebook **démontre un cas réel de synergie** (Ackley dé-biaisé) et **rapporte honnêtement un cas où elle n'apparaît pas** (Rastrigin dé-biaisé), conformément au mandat de verdict honnête : rapporter aussi les cas *sans* synergie.",,,,,,,,5e1d5df524e5d3e7,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,4803f23f,code,fr,49a67be1adcaebce,"// --- Cablage : fork MetaGeneticSharp (jsboige/MetaGeneticSharp, pointer 2717fe7) + paysage + GIF ---
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,4803f23f,code,fr,fa98d6c4d2b90aca,"// --- Cablage : fork MetaGeneticSharp (jsboige/MetaGeneticSharp, pointer 2717fe7) + paysage + GIF ---
 // DLLs chargees depuis l'output self-contained des Extensions (embarque aussi System.Drawing.Common.dll
 // et SkiaSharp.dll + son binaire natif runtimes/<rid>/native/libSkiaSharp.dll qu'on precharge a la main).
 // NB : #r et using DOIVENT preceder tout autre code dans .NET Interactive ; chemins en litteraux (pas d'interpolation).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\System.Drawing.Common.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\SkiaSharp.dll""
 
 using System;
 using System.Linq;
@@ -1769,7 +1769,7 @@ using Microsoft.DotNet.Interactive;
 // Precharge le binaire natif libSkiaSharp pour le bon rid (le #r manage ne cable pas le probing natif de SkiaSharp).
 string rid = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ""win-x64""
            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? ""linux-x64"" : ""osx"";
-string extDir = @""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0"";
+string extDir = @""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0"";
 NativeLibrary.Load($@""{extDir}/runtimes/{rid}/native/libSkiaSharp.dll"");
 
 // --- Chromosome de benchmark : bornes par gene, CreateNew() randomise dans les bornes ---
@@ -1794,7 +1794,7 @@ IGeometricConverter IdConv()
 }
 
 const int PopSize = 40, Gens = 40;   // 4 iles de 10 ; budget = 1600 evals/archipel
-Console.WriteLine($""Setup OK — fork {rid}, PopSize={PopSize}, Gens={Gens} (budget {PopSize*Gens} evals/archipel)."");",,,,,,,,49a67be1adcaebce,,,,,,,
+Console.WriteLine($""Setup OK — fork {rid}, PopSize={PopSize}, Gens={Gens} (budget {PopSize*Gens} evals/archipel)."");",,,,,,,,fa98d6c4d2b90aca,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,cd7e74ef,markdown,fr,c5579babf1f79e48,"**Rappel — le verdict négatif de MGS-11 :**
 
 MGS-11 comparait trois archipels *à migration par défaut* (`SmallMigrationRate` ≈ 0.045, période 10 générations) :
@@ -2088,15 +2088,15 @@ Ce notebook introduit la **Fitness Distance Correlation (FDC)** — Jones & Forr
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,290080a6,markdown,fr,034a5e4c02877194,"## Câblage : MetaGeneticSharp (fork) + paysages analytiques
 
 On charge les mêmes DLLs du fork que MGS-8 (répertoire *self-contained* de `MetaGeneticSharp.Extensions`). On n'a **pas besoin** des backends graphiques (Skia/DirectBitmap) ici — la FDC est numérique, pas visuelle — mais on les charge quand même pour rester sur le câblage éprouvé de l'explorer (et parce que `KnownFunctions` vit dans `Extensions`).",,,,,,,,034a5e4c02877194,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,d445d554,code,fr,9b8e6168fc6c7e26,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,d445d554,code,fr,4b88f82576c8539c,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
 // System.Drawing.Common.dll AND SkiaSharp.dll, needed at runtime by the graphic landscape types).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
 
 using System.Runtime.InteropServices;                   // RuntimeInformation, Architecture, NativeLibrary
 using MetaGeneticSharp;                                 // KnownFunctions, KnownFunctionsBounds
@@ -2107,10 +2107,10 @@ using GeneticSharp.Infrastructure.Framework.Images;     // DirectBitmap (verbati
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
 
 Console.WriteLine(""Câblage OK : KnownFunctions + KnownFunctionsBounds + IFitness."");
-Console.WriteLine($""  Benchmarks dispos : {string.Join("", "", new[]{typeof(SphereFitness),typeof(RastriginFitness),typeof(AckleyFitness),typeof(GriewankFitness),typeof(SchwefelFitness),typeof(RosenbrockFitness)}.Select(t=>t.Name))}"");",,,,,,,,9b8e6168fc6c7e26,,,,,,,
+Console.WriteLine($""  Benchmarks dispos : {string.Join("", "", new[]{typeof(SphereFitness),typeof(RastriginFitness),typeof(AckleyFitness),typeof(GriewankFitness),typeof(SchwefelFitness),typeof(RosenbrockFitness)}.Select(t=>t.Name))}"");",,,,,,,,4b88f82576c8539c,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,9252574c,markdown,fr,db960651cc290876,"## Terrain commun : chromosome continu + échantillonnage borné
 
 On réutilise **verbatim** le `DoubleArrayChromosome` de MGS-8 (gènes `double` nus, bornes par gène). Pour la FDC, on a besoin d'**échantillonner** la fitness en N points tirés uniformément dans la boîte de recherche, puis de calculer pour chaque point (a) sa valeur de fitness brute et (b) sa distance à l'optimum global.
@@ -2473,13 +2473,13 @@ $$\text{sélection} : \quad \underbrace{f(\text{problème})}_{\text{caractérist
 - **Sélecteur** : une règle (ici heuristique) qui, étant donné les features, recommande l'algorithme.
 
 L'idée maîtresse : si les features sont *informatives*, on peut prédire le bon optimiseur **sans avoir à tous les exécuter**. Nous allons (1) mesurer les features de nos trois paysages connus, (2) construire une règle de sélection, puis (3) la **tester sur un quatrième paysage jamais vu** (Rosenbrock).",,,,,,,,1e3f455087434433,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-3,code,fr,acd279e5b57fd225,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (portfolio + oracle + paysage).
-// Prérequis de build (depuis la racine du fork) : dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-3,code,fr,cb0d7e0501df630f,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (portfolio + oracle + paysage).
+// Prérequis de build (depuis la racine du fork) : dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -2488,7 +2488,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 Console.WriteLine(""DLLs chargees. CenterBiasBenchmark : "" + typeof(CenterBiasBenchmark).Name);
-Console.WriteLine(""  KnownFunctionsBounds : "" + typeof(KnownFunctionsBounds).Name);",,,,,,,,acd279e5b57fd225,,,,,,,
+Console.WriteLine(""  KnownFunctionsBounds : "" + typeof(KnownFunctionsBounds).Name);",,,,,,,,cb0d7e0501df630f,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-4a,markdown,fr,12a44b623f1fb90b,"### 4.1 Chromosome continu + métriques de paysage
 
 On reprend verbatim l'assistant `DoubleArrayChromosome` et les métriques de paysage de [MGS-15](MGS-15-LandscapeAnalysis.ipynb) : coefficient de Pearson, FDC (Fitness Distance Correlation), marche aléatoire de Weinberger (1990) pour l'autocorrélation, et neutralité.",,,,,,,,12a44b623f1fb90b,,,,,,,
@@ -2897,13 +2897,13 @@ On pourrait croire que « contrôler c'est toujours mieux ». **Les données mon
 3. **Contrôle adaptatif** : la diversite de la population pilote le taux (esprit règle 1/5 de Rechenberg).
 4. **Contrôle self-adaptatif** : un taux par individu via le contexte d'evolution.
 5. Comparaison Rastrigin **vs** Sphere + taxonomie + exercices.",,,,,,,,4d1eddb46c3fc07f,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c01,code,fr,d2c47093571f9c9c,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp (build Debug net9.0).
-// Pre-requis : dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c01,code,fr,d05982ad47f84b56,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp (build Debug net9.0).
+// Pre-requis : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -2915,7 +2915,7 @@ Console.WriteLine(""  ProbabilityConfig      : "" + typeof(ProbabilityConfig).Na
 Console.WriteLine(""  ProbabilityStrategy    : "" + typeof(ProbabilityStrategy).Name);
 Console.WriteLine(""  OperatorsProbabilityConfig : "" + typeof(OperatorsProbabilityConfig).Name);
 Console.WriteLine(""  RastriginFitness       : "" + typeof(RastriginFitness).Name);
-Console.WriteLine(""  SphereFitness          : "" + typeof(SphereFitness).Name);",,,,,,,,d2c47093571f9c9c,,,,,,,
+Console.WriteLine(""  SphereFitness          : "" + typeof(SphereFitness).Name);",,,,,,,,d05982ad47f84b56,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c02,code,fr,e15480c5089e1e82,"// DoubleArrayChromosome (replique fork, MGS-10/15/16) — genes reels.
 public class DoubleArrayChromosome : ChromosomeBase
 {
@@ -3227,12 +3227,12 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m1,markdown,f
 
 Les deux decorateurs sont **compositionnels** : ils reutilisent les mathematiques de la fonction interne sans les reimplementer, et se composent pour la variante CEC complete. C'est le même principe qu'en MGS-12 — sauf qu'ici on l'**execute** sur le portefeuille entier, dans les quatre variantes, au même budget.
 ",,,,,,,,02ffe5904f944887,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,c01,code,fr,9638c4a7caf2ff48,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + decorateurs + banc).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,c01,code,fr,14c05b0f5d3ed62b,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + decorateurs + banc).
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -3249,7 +3249,7 @@ Console.WriteLine(""  CenterBiasBenchmark    : "" + typeof(CenterBiasBenchmark).
 Console.WriteLine(""  MetaHeuristicsService  : "" + typeof(MetaHeuristicsService).Name);
 Console.WriteLine(""  AckleyFitness          : "" + typeof(AckleyFitness).Name);
 Console.WriteLine(""  RosenbrockFitness      : "" + typeof(RosenbrockFitness).Name);
-",,,,,,,,9638c4a7caf2ff48,,,,,,,
+",,,,,,,,14c05b0f5d3ed62b,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,c02,code,fr,4d326bb320088a60,"// DoubleArrayChromosome (replique fork, MGS-10/15/16/17)
 public class DoubleArrayChromosome : ChromosomeBase
 {
@@ -3654,11 +3654,11 @@ Console.WriteLine($""  SubPopulationContext       : {typeof(SubPopulationContext
 Console.WriteLine($""  EukaryoteMetaHeuristic     : {typeof(EukaryoteMetaHeuristic).Name}"");
 Console.WriteLine($""  EvolutionStage.Crossover   : {EvolutionStage.Crossover}"");
 Console.WriteLine($""  EvolutionStage.Mutation    : {EvolutionStage.Mutation}"");",,,,,,,,697221227d699b5d,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,a530ae80,markdown,fr,1ad6a19a3d8fbd1a,"### Chargement des DLL et configuration du notebook
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,a530ae80,markdown,fr,32d053dbe42a741c,"### Chargement des DLL et configuration du notebook
 
 La cellule suivante charge les DLL MetaGeneticSharp et GeneticSharp depuis le build du sous-module. Assurez-vous que le build est a jour avant d'executer ce notebook.
 
-> **Note** : si le wiring echoue, verifiez que le sous-module GeneticSharp est initialise (`git submodule update --init GeneticSharp`) et que le build est a jour (`dotnet build` depuis `c:/dev/MetaGeneticSharp`).",,,,,,,,1ad6a19a3d8fbd1a,,,,,,,
+> **Note** : si le wiring echoue, verifiez que le sous-module GeneticSharp est initialise (`git submodule update --init GeneticSharp`) et que le build est a jour (`dotnet build` depuis `../MetaGeneticSharp`).",,,,,,,,32d053dbe42a741c,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,setup-cell,code,fr,c43aabf9b1bb7aeb,"// Setup: fitness function, helpers, and EukaryoteMetaHeuristic factory
 
 // Fitness: minimize distance to targets (position=50, velocity=25)
@@ -4300,11 +4300,11 @@ Console.WriteLine($""  MigrationMode.RandomRing : {MigrationMode.RandomRing}"");
 Console.WriteLine($""  SubPopulation            : {typeof(SubPopulation).Name}"");
 Console.WriteLine($""  MetaPopulation           : {typeof(MetaPopulation).Name}"");
 Console.WriteLine($""  SkiaLandscapeRenderer    : {typeof(SkiaLandscapeRenderer).Name} (native rid={rid})"");",,,,,,,,9602eed02f6389ac,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,wiring-note,markdown,fr,1ad6a19a3d8fbd1a,"### Chargement des DLL et configuration du notebook
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,wiring-note,markdown,fr,32d053dbe42a741c,"### Chargement des DLL et configuration du notebook
 
 La cellule suivante charge les DLL MetaGeneticSharp et GeneticSharp depuis le build du sous-module. Assurez-vous que le build est a jour avant d'executer ce notebook.
 
-> **Note** : si le wiring echoue, verifiez que le sous-module GeneticSharp est initialise (`git submodule update --init GeneticSharp`) et que le build est a jour (`dotnet build` depuis `c:/dev/MetaGeneticSharp`).",,,,,,,,1ad6a19a3d8fbd1a,,,,,,,
+> **Note** : si le wiring echoue, verifiez que le sous-module GeneticSharp est initialise (`git submodule update --init GeneticSharp`) et que le build est a jour (`dotnet build` depuis `../MetaGeneticSharp`).",,,,,,,,32d053dbe42a741c,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,architecture,markdown,fr,8678f8b2d4ccc377,"## Architecture du modèle insulaire
 
 ### Diagramme d'architecture
@@ -5689,7 +5689,7 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-5-CompoundMetaheuristics.ipynb
 - [Point d'entrée Part 4](README.md) — positionnement MGS vs GeneticSharp/mealpy
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, `MetaHeuristicsService.cs`, classes composées (`WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, `ForensicBasedInvestigation`)
 ",,,,,,,,d3805785160226e7,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-000,markdown,fr,955822acd83a0cca,"# MGS-6 : Benchmarks comparatifs -- l'argument primitives-based
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-000,markdown,fr,876a1bef81a082d7,"# MGS-6 : Benchmarks comparatifs -- l'argument primitives-based
 
 [← MGS-5 Composés](MGS-5-CompoundMetaheuristics.ipynb) | [↑ Série MGS](README.md)
 
@@ -5705,8 +5705,8 @@ Ce notebook apporte la preuve empirique : sur **10 fonctions de test canoniques*
 
 Si le design primitives-based est valable, WOA-from-primitives doit être **compétitif** avec Islands (un schéma éprouvé) sur la plupart des surfaces -- sans être une boîte noire. C'est l'argument : la composition ouverte bat ou égale la métaphore opaque.
 
-> **Rappel C.2** : ce notebook s'exécute sur le kernel `.net-csharp` et charge les DLL de MetaGeneticSharp (Domain + Extensions) depuis le build du fork. Prérequis : `dotnet build` dans `c:/dev/MetaGeneticSharp`.
-",,,,,,,,955822acd83a0cca,,,,,,,
+> **Rappel C.2** : ce notebook s'exécute sur le kernel `.net-csharp` et charge les DLL de MetaGeneticSharp (Domain + Extensions) depuis le build du fork. Prérequis : `dotnet build` dans `../MetaGeneticSharp`.
+",,,,,,,,876a1bef81a082d7,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-001,code,fr,52056bcf149fb132,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build.
 // Build prerequisite: dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
 // NOTE: KnownFunctions lives in the Extensions project, so we load its DLL too.
@@ -5954,14 +5954,14 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb,bafc5427,markdown,
 **Question centrale.** MGS-5 a montré que les métaheuristiques composées géométriques (WOA) se reconstruisent depuis des primitives sur des surfaces **continues** (gènes en `double`). Mais la grammaire de composition (`Match`, `Container`, `Scoped`, `Islands`) vit *sous* la couche géométrique. Cette couche fait-elle une hypothèse sur le type des gènes ?
 
 Ce notebook le vérifie : la même grammaire structure la recherche sur un problème de **permutation** — le Voyageur de Commerce (TSP), où les gènes sont des index de villes entiers — **sans aucune adaptation**. Si les primitives de composition n'avaient pas été conçues de façon agnostique à la représentation (comme le sont les opérateurs de GeneticSharp : bit, permutation, arbre, flottant), on ne pourrait pas réutiliser `IslandMetaHeuristic` tel quel sur TSP. C'est « components over metaphors » en pratique : les briques ne présument pas du domaine.",,,,,,,,1d0ab47f02986ffc,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb,81cca472,code,fr,1aa6e4b8bc7aa199,"// Wiring : charge MetaGeneticSharp + GeneticSharp + GeneticSharp.Extensions (TSP).
-// Prérequis : dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb,81cca472,code,fr,6fab01dd1fe6766e,"// Wiring : charge MetaGeneticSharp + GeneticSharp + GeneticSharp.Extensions (TSP).
+// Prérequis : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Domain\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -5971,7 +5971,7 @@ Console.WriteLine(""DLLs chargées (incluant GeneticSharp.Extensions = TSP)."");
 Console.WriteLine($""  TspFitness          : {typeof(TspFitness).Name}"");
 Console.WriteLine($""  TspChromosome       : {typeof(TspChromosome).Name}"");
 Console.WriteLine($""  IslandMetaHeuristic : {typeof(IslandMetaHeuristic).Name}"");
-Console.WriteLine($""  MigrationMode       : {typeof(MigrationMode).Name}"");",,,,,,,,1aa6e4b8bc7aa199,,,,,,,
+Console.WriteLine($""  MigrationMode       : {typeof(MigrationMode).Name}"");",,,,,,,,6fab01dd1fe6766e,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7-TSP.ipynb,8f73b773,markdown,fr,989fdc1bd4d2cb58,"## Le problème : 20 villes, gènes = index entiers
 
 `TspFitness` génère N villes dans un carré et mesure la longueur totale du tour — les gènes sont l'ordre de visite, c'est-à-dire une permutation des index `0..N-1`. GeneticSharp *maximise* le fitness, donc `TspFitness.Evaluate` renvoie `1 - longueur/(N*1000)` (tour court ⇒ fitness élevé). La métrique qu'on surveille est la **longueur du tour** (`TspChromosome.Distance`), qu'on minimise.
@@ -6272,21 +6272,20 @@ Les **trois modes** du `LandscapeExplorer` original sont tous exercés ici :
 
 > **Pas de package de traçé.** Le rendu passe par `System.Drawing` (la `DirectBitmap` récupérée) exporté en PNG puis affiché en `<img src=\""data:image/png;base64,…\"">` — ce qui évite la résolution `#r \""nuget:\""` (qui reste bloquée sous papermill sur cet environnement).
 ",,,,,,,,8294dc6658f08d5e,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb,e6e74f3c,markdown,fr,2bac2aaeb1a4998b,"## Câblage : MetaGeneticSharp (fork) + bibliothèque Landscape
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb,e6e74f3c,markdown,fr,17edc152d674ec96,"## Câblage : MetaGeneticSharp (fork) + bibliothèque Landscape
 
 On charge les DLLs du fork construites localement, **toutes depuis le répertoire de sortie de `MetaGeneticSharp.Extensions`** : grâce à `CopyLocalLockFileAssemblies`, ce dossier est *self-contained* (il embarque `System.Drawing.Common.dll` ET `SkiaSharp.dll` + son binaire natif `runtimes/<rid>/native/libSkiaSharp.dll`). `Extensions` porte à la fois `KnownFunctions` (les fonctions de benchmark), les types Landscape (`LandscapeRenderer`, `LandscapeMaps`, `KnownHeightMap`, `ImageHeightMapFunction`), le pont `KnownFunctionLandscape` qui relie les deux, et le backend **`SkiaLandscapeRenderer`** (rendu PNG sans GDI+, cf section *Rendu cross-platform*).
 
-> **Prérequis build.** `dotnet build c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/MetaGeneticSharp.Extensions.csproj -c Debug` (submodule épinglé sur le fork `7d1575c`).
-",,,,,,,,2bac2aaeb1a4998b,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb,d90a0cec,code,fr,5a45e2327a7d1525,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
+> **Prérequis build.** `dotnet build ..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\MetaGeneticSharp.Extensions.csproj -c Debug` (submodule épinglé sur le fork `7d1575c`).",,,,,,,,17edc152d674ec96,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb,d90a0cec,code,fr,4a097f3d0a8af6ed,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
 // System.Drawing.Common.dll AND SkiaSharp.dll, needed at runtime by the graphic landscape types).
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\System.Drawing.Common.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\SkiaSharp.dll""
 
 using MetaGeneticSharp;                                 // LandscapeRenderer, LandscapeMaps, KnownHeightMap, KnownFunctions, SkiaLandscapeRenderer
 using GeneticSharp;                                     // GA engine, selection/crossover/mutation
@@ -6303,14 +6302,14 @@ using System.Runtime.InteropServices;                   // NativeLibrary, Runtim
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($""..\\MetaGeneticSharp\\src\\MetaGeneticSharp.Extensions\\bin\\Debug\\net9.0\\runtimes\\{rid}\\native\\libSkiaSharp.dll"");
 
 Console.WriteLine(""Wiring OK : MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + Landscape + SkiaLandscapeRenderer)."");
 Console.WriteLine($""  KnownFunction   : {typeof(SphereFitness).Name}"");
 Console.WriteLine($""  Landscape types : {typeof(LandscapeRenderer).Name}, {typeof(LandscapeHeatmap).Name}, {typeof(LandscapeMaps).Name}"");
 Console.WriteLine($""  Cross-platform  : {typeof(SkiaLandscapeRenderer).Name} (SkiaSharp, native rid={rid})"");
 Console.WriteLine($""  HeightMaps      : {string.Join("", "", Enum.GetNames(typeof(KnownHeightMap)))}"");
-",,,,,,,,5a45e2327a7d1525,,,,,,,
+",,,,,,,,4a097f3d0a8af6ed,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb,d6cf7229,markdown,fr,e4f22c8f72ec4d13,"## Terrain commun : chromosome continu + affichage des heatmaps
 
 `DoubleArrayChromosome` stocke des gènes `double` nus (cf. MGS-6) ; son `CreateNew()` randomise dans les bornes — diversité initiale indispensable pour que le GA explore. Les paysages `KnownFunction` sont évalués en construisant un tel chromosome par pixel, puis en appelant la vraie `IFitness.Evaluate`.
@@ -6740,7 +6739,7 @@ La discipline « components over metaphors » tient jusqu'au rendu : la math de 
 - [Point d'entrée Part 4](README.md) -- positionnement MGS vs GeneticSharp/mealpy/HeuristicLab
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) -- code source, bibliothèque Landscape récupérée (@ `d05826fd`), contrôleur Gtk# original
 ",,,,,,,,28d22829c539fd21,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,efa10460,markdown,fr,7a1db31d2b268d4c,"# MGS-9 - Trouver l'Everest : relief reel et bassins d'attraction
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,efa10460,markdown,fr,79ad9fd748066a52,"# MGS-9 - Trouver l'Everest : relief reel et bassins d'attraction
 
 **Serie MetaGeneticSharp** | Précédent : [MGS-8 - Landscape Explorer](MGS-8-LandscapeExplorer.ipynb)
 
@@ -6761,7 +6760,7 @@ quatre cartes d'altitude a zoom croissant, du globe entier a la region du sommet
 ## Prerequis
 
 - MGS-1 a MGS-5 (moteur, compounds geometriques WOA/EO), MGS-8 (heatmaps PNG via le fork).
-- Build du fork : `dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln`.
+- Build du fork : `dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln`.
 
 ## Données
 
@@ -6781,18 +6780,18 @@ cherche le pixel le plus clair de chaque carte, c'est-a-dire le sommet.
 > que le RandomSearchOptimizer de la lib.
 
 *Duree estimee : 25-35 min.*
-",,,,,,,,7a1db31d2b268d4c,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,b3166bf3,code,fr,4d8a13feb9b3f1f1,"// MetaGeneticSharp + GeneticSharp DLLs from the fork's self-contained Extensions output
+",,,,,,,,79ad9fd748066a52,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,b3166bf3,code,fr,daac88ef0a96eee3,"// MetaGeneticSharp + GeneticSharp DLLs from the fork's self-contained Extensions output
 // (one-stop dir: it also ships System.Drawing.Common.dll and SkiaSharp.dll, needed because
 //  the graphic heatmap types now encode PNG via SkiaSharp cross-platform on the fork @ 7d1575c).
-// Build prerequisite: dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+// Build prerequisite: dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Infrastructure.Framework.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\GeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Infrastructure.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Domain.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\System.Drawing.Common.dll""
+#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\SkiaSharp.dll""
 
 using System.Linq;
 using System.Runtime.InteropServices;                   // NativeLibrary, RuntimeInformation
@@ -6806,11 +6805,11 @@ using GeneticSharp;                                     // GA engine, IFitness, 
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($@""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\runtimes\{rid}\native\libSkiaSharp.dll"");
 
 Console.WriteLine(""Wiring OK : MetaGeneticSharp + GeneticSharp + Extensions (LandscapeRenderer + SkiaLandscapeRenderer)."");
 Console.WriteLine($""  Renderers : {typeof(LandscapeRenderer).Name}, {typeof(SkiaLandscapeRenderer).Name} (SkiaSharp, native rid={rid})"");
-Console.WriteLine($""  Engine    : {typeof(WhaleOptimisationAlgorithm).Name}, {typeof(EquilibriumOptimizer).Name}"");",,,,,,,,4d8a13feb9b3f1f1,,,,,,,
+Console.WriteLine($""  Engine    : {typeof(WhaleOptimisationAlgorithm).Name}, {typeof(EquilibriumOptimizer).Name}"");",,,,,,,,daac88ef0a96eee3,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,a69d5db7,markdown,fr,8aea2141cadaf71b,"## 1. Le relief reel comme paysage de fitness
 
 Une carte d'altitude (Digital Elevation Model) code le terrain en **niveaux de gris** : un pixel
@@ -7333,12 +7332,12 @@ Le critère de Metropolis (Metropolis et al., 1953 ; Kirkpatrick, Gelatt & Vecch
 Dans SA, ce critère est **couplé** à une perturbation : l'enfant est un voisin gaussien du parent. On l'isole ici en gardant un **croisement de recombinaison standard** (`UniformCrossover`) : l'enfant est un recombinant de deux parents, pas un clone perturbé. Le critère de Metropolis s'applique alors à la **survie** : à chaque paire parent/enfant, on accepte l'enfant (même moins bon) avec la probabilité d'annealing. C'est un hybride « GA + survie annealée », distinct du recuit complet.
 
 > **Pourquoi le contrôle `FitnessBasedPairwiseReinsertion`.** `MetropolisReinsertion` apparie parent[i] ↔ enfant[i] (pairwise). Pour isoler *l'effet du critère d'acceptation*, le bon contrôle est donc un **pairwise greedy** — `FitnessBasedPairwiseReinsertion` (réutilisé par le compound FBI) — qui garde simplement le meilleur de chaque paire. Même appariement, même croisement/mutation/sélection : **seule la règle d'acceptation change**. La réinsertion `FitnessBasedElitistReinsertion` (défaut du GA) opère elle un **μ+λ global** (top-N sur parents ∪ enfants) : schéma de sélection différent, on la tient pour référence de contexte, pas pour contrôle de l'opérateur.",,,,,,,,e6d53d1a566c81ea,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-b0567f0b,code,fr,c9a8ef08197f67ab,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp + Extensions.
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-b0567f0b,code,fr,0d13f6b021cb3f18,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp + Extensions.
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -7351,7 +7350,7 @@ Console.WriteLine(""  FitnessBasedElitistReinsertion  (defaut GA, global mu+lamb
 Console.WriteLine(""  FitnessBasedPairwiseReinsertion (pairwise greedy, compound FBI): "" + typeof(FitnessBasedPairwiseReinsertion).Name);
 Console.WriteLine(""  MetropolisReinsertion           (pairwise + annealing, compound SA) : "" + typeof(MetropolisReinsertion).Name);
 Console.WriteLine(""  SimulatedAnnealing               (compound complet)            : "" + typeof(SimulatedAnnealing).Name);
-Console.WriteLine(""  MetaGeneticAlgorithm .Reinsertion settable       : "" + typeof(MetaGeneticAlgorithm).Name);",,,,,,,,c9a8ef08197f67ab,,,,,,,
+Console.WriteLine(""  MetaGeneticAlgorithm .Reinsertion settable       : "" + typeof(MetaGeneticAlgorithm).Name);",,,,,,,,0d13f6b021cb3f18,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-efd8ffc4,code,fr,89ef3a756eba7ac0,"// DoubleArrayChromosome (replique fork, MGS-10/15/16/17/18) : genes double transparents.
 public class DoubleArrayChromosome : ChromosomeBase
 {
