@@ -2086,6 +2086,7 @@ def cmd_figures_extract(args):
     try:
         entry = extract_figure(
             nb_path, args.cell, args.output_index, out_path, args.alt,
+            description_visuelle=args.description_visuelle,
             max_dim=args.max_dim, max_bytes=args.max_bytes,
             serie_root=serie_root)
     except (ValueError, FileNotFoundError) as exc:
@@ -2229,6 +2230,10 @@ def main():
                       help='Output PNG path (convention: <Serie>/assets/readme/<name>.png)')
     p_fe.add_argument('--alt', required=True,
                       help='French alt-text (accessibility, mandatory, EPIC #5654 HARD)')
+    p_fe.add_argument('--description-visuelle', required=True,
+                      help='Description visuelle de la figure (doctrine #5780 '
+                           'amendee : ce que la figure MONTRE reellement, '
+                           'distinct du sujet du notebook. Mandatory.)')
     p_fe.add_argument('--max-dim', type=int, default=1200,
                       help='Max dimension in px for PIL downscale (default: 1200)')
     p_fe.add_argument('--max-bytes', type=int, default=204800,
