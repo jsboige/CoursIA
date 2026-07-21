@@ -313,6 +313,8 @@ venv/
 **/.venv/
 pyvenv.cfg
 lib64
+# Venv cree par erreur a la racine du repo (python -m venv /mnt/d/CoursIA depuis WSL) — anti-noise site-packages
+/lib/
 
 # Cake - Uncomment if you are using it
 # tools/**
