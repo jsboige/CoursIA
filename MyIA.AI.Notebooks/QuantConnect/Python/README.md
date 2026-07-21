@@ -1,3 +1,9 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-Python
+pedagogical_count: 55
+note: count filesystem autoritatif (git ls-files) ; hub agrégé QuantConnect/README.md indique Python=53 (drift +2)
+-->
+
 # QuantConnect Python Notebooks
 
 Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnect LEAN.

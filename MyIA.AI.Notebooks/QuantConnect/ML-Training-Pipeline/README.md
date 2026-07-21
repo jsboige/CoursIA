@@ -1,3 +1,9 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-ML-Training-Pipeline
+pedagogical_count: 14
+note: count filesystem autoritatif (git ls-files) ; hub agrégé QuantConnect/README.md indique ML-Training-Pipeline=2 (drift +12, sous-série grossie par ajouts RL/DL post-création hub)
+-->
+
 # Pipeline d'entraînement ML pour la prévision financière
 
 Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
