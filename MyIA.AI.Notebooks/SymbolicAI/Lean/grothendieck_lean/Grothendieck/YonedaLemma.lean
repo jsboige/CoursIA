@@ -204,6 +204,58 @@ example {C : Type*} [Category C] : (coyoneda (C := C)).FullyFaithful :=
   Coyoneda.fullyFaithful
 
 /-!
+## Foncteurs représentables et corépresentables
+
+Le lemme de Yoneda donne son nom aux **foncteurs représentables** : un préfaisceau
+`F : Cᵒᵖ ⥤ Type v₁` est *représentable* par un objet `Y : C` lorsqu'il est
+isomorphe (dans la catégorie des préfaisceaux) au préfaisceau représenté
+`yoneda.obj Y`. Dualement, un foncteur covariant `F : C ⥤ Type v₁` est
+*corépresentable* par `X : C` lorsqu'il est isomorphe à `coyoneda.obj (op X)`.
+
+Mathlib 4 formalise cette donnée via les structures `RepresentableBy` (face
+contravariante) et `CorepresentableBy` (face covariante), chacune équipée d'une
+équivalence `homEquiv` témoignant de l'isomorphisme.
+
+Le corollaire central — **l'unicité à isomorphisme près de l'objet représentant**
+— est la forme précise de l'affirmation fondamentale du lemme de Yoneda :
+« les objets d'une catégorie sont déterminés (à isomorphisme près) par les
+préfaisceaux qu'ils représentent. » C'est l'épine dorsale de la reformulation
+grothendieckienne de la géométrie algébrique (schémas = préfaisceaux localement
+représentables).
+-/
+
+/-- Le préfaisceau représenté `yoneda.obj Y` est représentable par `Y` (canonique). -/
+def representableByYoneda (C : Type*) [Category C] (Y : C) :
+    (yoneda.obj Y).RepresentableBy Y :=
+  Functor.RepresentableBy.yoneda Y
+
+/-- Le foncteur covariant représenté `coyoneda.obj (op X)` est corépresentable par
+    `X` (canonique, dual covariant de `representableByYoneda`). L'objet
+    représentant est `X.unop : C` (Mathlib indexe `CorepresentableBy.coyoneda`
+    par l'objet opposé). -/
+def corepresentableByCoyoneda (C : Type*) [Category C] (X : Cᵒᵖ) :
+    (coyoneda.obj X).CorepresentableBy X.unop :=
+  Functor.CorepresentableBy.coyoneda X
+
+/-- **Unicité à isomorphisme près de l'objet représentant (corollaire de Yoneda).**
+    Si un préfaisceau `F` est représentable à la fois par `Y` et `Y'`, alors
+    `Y ≅ Y'`. C'est la forme précise du principe « les objets sont déterminés
+    par les préfaisceaux qu'ils représentent ». -/
+def representingObjectUniqueUpToIso {C : Type*} [Category C]
+    {F : Cᵒᵖ ⥤ Type*} {Y Y' : C}
+    (h : F.RepresentableBy Y) (h' : F.RepresentableBy Y') :
+    Y ≅ Y' :=
+  Functor.RepresentableBy.uniqueUpToIso h h'
+
+/-- **Unicité à isomorphisme près de l'objet coréprésentant (dual covariant).**
+    Miroir covariant de `representingObjectUniqueUpToIso`. -/
+def corepresentingObjectUniqueUpToIso {C : Type*} [Category C]
+    {F : C ⥤ Type*} {X X' : C}
+    (h : F.CorepresentableBy X) (h' : F.CorepresentableBy X') :
+    X ≅ X' :=
+  Functor.CorepresentableBy.uniqueUpToIso h h'
+
+/-!
 ## La fonctorialité retrouve l'ensemble de morphismes
 
 Le plongement de Yoneda relève l'ensemble de morphismes dans la catégorie des
