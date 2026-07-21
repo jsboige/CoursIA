@@ -34,7 +34,7 @@ import Mathlib.Data.List.Basic
 
 namespace Conway
 
-/-- Split a number into its decimal digits (most significant first).
+/-- Décompose un entier en ses chiffres décimaux (chiffre le plus significatif en premier).
   1211 → [1, 2, 1, 1]  -/
 def natToDigits (n : Nat) : List Nat :=
   if n = 0 then []
@@ -42,15 +42,15 @@ def natToDigits (n : Nat) : List Nat :=
   termination_by n
   decreasing_by omega
 
-/-- Convert a list of digits (most significant first) to a Nat.
+/-- Convertit une liste de chiffres (le plus significatif en premier) en un Nat.
   [1, 2, 1, 1] → 1211 -/
 def digitsToNat : List Nat → Nat
   | [] => 0
   | d :: ds => d * 10 ^ ds.length + digitsToNat ds
 
-/-- Run-length encode a list: group consecutive equal elements.
+/-- Encodage run-length d'une liste : regroupe les éléments consécutifs égaux.
   [1, 1, 2, 2, 2, 1] → [(2, 1), (3, 2), (1, 1)]
-  Uses fuel to satisfy the termination checker. -/
+  Utilise un carburant (fuel) pour satisfaire le vérificateur de terminaison. -/
 def runLengthAux : Nat → List Nat → List (Nat × Nat)
   | 0, _ => []
   | _ + 1, [] => []
@@ -58,28 +58,28 @@ def runLengthAux : Nat → List Nat → List (Nat × Nat)
     match as.span (· = a) with
     | (eqs, rest) => (eqs.length + 1, a) :: runLengthAux fuel rest
 
-/-- Run-length encode a list (wrapper with sufficient fuel). -/
+/-- Encodage run-length d'une liste (enveloppe avec carburant suffisant). -/
 def runLength (l : List Nat) : List (Nat × Nat) :=
   runLengthAux (l.length + 1) l
 
-/-- Flatten (count, digit) pairs into a digit list: [(2,1), (3,2)] → [2,1,3,2] -/
+/-- Aplatit les paires (compte, chiffre) en une liste de chiffres : [(2,1), (3,2)] → [2,1,3,2] -/
 def flattenPairs : List (Nat × Nat) → List Nat
   | [] => []
   | (count, digit) :: rest =>
     natToDigits count ++ [digit] ++ flattenPairs rest
 
-/-- One step of the look-and-say transformation.
-  Read digits left-to-right, output run-length encoding as a number. -/
+/-- Une étape de la transformation look-and-say.
+  Lit les chiffres de gauche à droite, produit l'encodage run-length sous forme d'entier. -/
 def lookAndSayStep (n : Nat) : Nat :=
   if n = 0 then 0
   else digitsToNat (flattenPairs (runLength (natToDigits n)))
 
-/-- Generate the n-th look-and-say number (0-indexed, seed = 1) -/
+/-- Génère le n-ième nombre de la suite look-and-say (indexé depuis 0, germe = 1) -/
 def lookAndSay : Nat → Nat
   | 0 => 1
   | n + 1 => lookAndSayStep (lookAndSay n)
 
--- Verify the first 6 terms of the look-and-say sequence
+-- Vérifie les 6 premiers termes de la suite look-and-say
 #eval! lookAndSay 0  -- 1
 #eval! lookAndSay 1  -- 11
 #eval! lookAndSay 2  -- 21
