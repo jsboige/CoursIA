@@ -337,20 +337,14 @@ IIT/
 Le cadrage stratégique de 2026-07 (Epic #4588, section « Jambes 2026-07 ») étend la série sur
 quatre fronts, chacun ancré dans un résultat déjà livré :
 
-1. **La « fin » de la réversibilisation, mesurée** (#7287, slot ICT-18b). ICT-18 a outillé le
-   *moyen* (la production d'entropie $\sigma$ comme instrument) et ICT-19 l'*enjeu* (la batterie
-   $I_\text{stake}$). Il manquait la troisième jambe de la triade moyen / fin / enjeu (#5352) : la
-   réversibilisation comme **ressource** — un budget $B(t)$ qui s'épuise et se régénère.
-   **Livré** (module `ict/reversibility_budget.py` + notebook
-   [ICT-18b](ICT-18b-ReversibilityBudget.ipynb)) : deux définitions honnêtement comparées
-   ($B_\text{state}$ Monte-Carlo sur la dynamique = primaire robuste, $B_\text{work}$ distance à
-   $P_\text{rev}$ = témoin secondaire). Prédictions pré-enregistrées puis testées — verdicts bruts :
-   **P1 PASS** (budget ↓ au pli, $\tau_\text{Kendall}=-0.917$, co-varie avec les EWS ; un signal
-   précurseur *est* un épuisement de budget), **P2 DISSOCIATION** (sur S4, dissiper plus ne
-   régénère pas plus — la lecture ressource s'affaiblit sur le substrat continu, résultat honnête),
-   **P3 PASS** (monoculture d'Axelrod = état absorbant, $B_\text{post} \ll B_\text{pre}$ : dette
-   d'irréversibilité culturelle mesurée). La triade moyen / fin / enjeu a désormais sa jambe
-   mesurée.
+1. **La « fin » de la réversibilisation, mesurée** (#7287, slot ICT-18b) — **livré**. La troisième
+   jambe de la triade moyen / fin / enjeu (#5352) : la réversibilisation comme **ressource** (un
+   budget $B(t)$ qui s'épuise et se régénère), au-delà du *moyen* (production d'entropie $\sigma$,
+   ICT-18) et de l'*enjeu* (batterie $I_\text{stake}$, ICT-19). Module
+   `ict/reversibility_budget.py` + notebook [ICT-18b](ICT-18b-ReversibilityBudget.ipynb) — deux
+   définitions comparées ($B_\text{state}$ Monte-Carlo primaire, $B_\text{work}$ témoin) et verdicts
+   pré-enregistrés **P1 PASS / P2 DISSOCIATION / P3 PASS** (détail : feuille de route + notebook).
+   La triade a désormais sa jambe mesurée.
 
 2. **La canonicité des scalaires du zoo** (#7288, slot ICT-15b). La synthèse cross-substrat a
    falsifié le « scalaire universel » ($\Phi/F$ covarient, $K$ diverge) ; la question méta devient :
@@ -484,67 +478,20 @@ laquelle *les revendications cognitives sont des revendications de protocole* (c
 **« Pourquoi parler de compétences ? »** ci-dessus) : une compétence n'est créditée à un modèle
 qu'au vu de ce qu'une expérience explicite en mesure.
 
-## ICT-19 — squelette de spec (cadrage B, voir #5483)
+## ICT-19 / ICT-19b — batterie de l'ENJEU (livré)
 
-> **Statut 2026-07** : livré (#5489), puis raffiné par
-> [`ICT-19b-EnjeuBattery-Raffinement.ipynb`](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure
-> S4 en espace de champ ; renommé **ICT-19b**, #7260). La spec ci-dessous est conservée telle quelle
-> pour trace.
-
-ICT-19 construit la **seconde batterie** (celle de l'**ENJEU**) qu'ICT-18 nomme *hors de sa portée*
-dans son reframe #5352 (triade **moyen / fin / enjeu**), puis la **fusionne** à la batterie MOYEN
-d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse.
-
-### Périmètre (cadrage B, auto-maintien seul)
-
-- **Batterie MOYEN** (empruntée ICT-18) — production d'entropie / réversibilisation thermodynamique
-  (`ict/time_arrow.py`) : la *seule* grandeur `I_thermo` mesure.
-- **Batterie ENJEU** (à construire) — mesure opérationnelle d'**auto-maintien** : retour au bassin
-  attracteur `B` après une perturbation contrefactuelle `do(x ← x + δ)` (Pearl, fil rouge
-  causalité ICT-5). `I_stake` = distance normalisée parcourue vers `B` (gain de réparation).
-- **Livrable = PAIRE** `{I_thermo, I_stake}`, **pas indice agrégé**.
-
-### Substrats (réutilisés de l'ICT-Synthèse, zéro nouveau substrat)
-
-- **S1** (ICT-2 tri) — auto-organisé, point de consigne faible.
-- **S2** (ICT-8 bistable) — deux bassins, pas de défense d'un point de consigne.
-- **S3** (ICT-13 Axelrod) — réplicateur stratégique, équilibre de population.
-- **S4** (ICT-9 Gray-Scott) — *l'agent* : dissipe *et* défend un point de consigne via la
-  compétition Tu/Snell-Scott.
-- **S5** — *pur dissipateur*, contrôle négatif **obligatoire** : système qui dissipe sans enjeu
-  (réaction-diffusion hors-régime, ou chaîne markovienne stationnaire sans maintenance).
-
-### Gates falsifiables
-
-- **Gate ENJEU-1** : `I_stake(S4) > I_stake(S5) + marge`, avec `I_thermo(S4) ≈ I_thermo(S5)`
-  (l'ICT-18 Gate 7 montre déjà que le MOYEN seul allume S4 et S5 à égalité). La PAIRE doit donc
-  *séparer* l'agent du pur dissipateur là où le MOYEN seul ne le peut pas.
-- **Gate ENJEU-2** (graduation) : `I_stake(S4) > {S3, S1} > S2 > S5`.
-
-### Distinction sémantique (critique)
-
-- **Réversibilité thermodynamique** (detailed balance, `σ=0`) = le **MOYEN** que `I_thermo` mesure.
-- **Réversibilité comportementale** (récupérabilité cinématique de l'espace d'états,
-  ICT-2/3/9, Levin *competency for free*) = la **FIN** que la lutte thermodynamique poursuit —
-  *pas* un second axe à mesurer. Le retour au bassin `B` après `do(·)` est précisément **la
-  manifestation opérationnelle de cette récupérabilité**, là où la production d'entropie en est
-  le coût.
-
-### Contraintes
-
-- **GPU-free** (chaînes de Markov + ODE + reaction-diffusion 2D petit champ, kernel CPU).
-- **Contrôle négatif obligatoire** (S5) : sans lui, la batterie ne prouve rien ; c'est
-  l'ingrédient nommément manqué d'ICT-18, désormais comblé.
-- **Résultat nul honnête** : si ENJEU-1 échoue, le verdict est *négatif* — pas maquillé en succès.
-- Notebook exécuté CPU, outputs C.2 réels, 0 `raise NotImplementedError` (C.1), ≥3 exercices
-  (return-to-basin / repair-gain / extension substrat), prose FR.
-
-### Liens cadrage ICT-19
-
-- Issue de cadrage : **#5483** — décision user 2026-07-06 (cadrage B verrouillé).
-- Issue d'implémentation : **#5489** — acceptance criteria + livrables.
-- Reframe parent : **#5352** — triade moyen / fin / enjeu (ICT-18 v2).
-- Epic : **#4588** — registre des livrables ICT.
+La batterie de l'**ENJEU** — auto-maintien / retour au bassin attracteur `B` après une
+perturbation contrefactuelle `do(·)` (Pearl, fil rouge causalité ICT-5), fusionnée à la batterie
+MOYEN d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse (S5 = *pur dissipateur* = contrôle
+négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery.ipynb) (#5489, cadrage B
+verrouillé user 2026-07-06) puis raffinée par
+[ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure S4 en espace de champ ; renommée
+**ICT-19b**, #7260). Le livrable est la **paire** `{I_thermo, I_stake}` (jamais un indice agrégé),
+séparée par les gates falsifiables ENJEU-1 / ENJEU-2, sur la **distinction sémantique** :
+réversibilité *thermodynamique* (detailed balance, `σ=0` — le MOYEN que `I_thermo` mesure) ↔
+récupérabilité *comportementale* (Levin *competency for free* — la FIN que la lutte thermodynamique
+poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen / fin / enjeu :
+**#5352** ; registre des livrables : **#4588**.
 
 ## Voir aussi
 

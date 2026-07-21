@@ -23,7 +23,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Contenu (vision firsthand c.529)** : **3 heatmaps MFCC** empilées (MFCC, delta, delta-delta), échelle de couleur, axe temps horizontal, coefficients en ordonnée. **Ce ne sont pas des panneaux Demucs** (erreur de lecture c.490).
 - **Traçage** : cellule brute 84 031 B (md5 `238e0bd6`) → disque 77 625 B (md5 `b9792e33`), ratio **0,92**.
 - **Alt-text (FR)** : Spectrogramme et MFCC : décomposition temps-fréquence du signal pour la reconnaissance vocale.
-- **Verdict** : **SOTA-OK** — vraie sortie MFCC du 01-3. Asset orphelin (non inliné dans le README ; disponible pour réutilisation).
+- **Verdict** : **SOTA-OK** — vraie sortie MFCC du 01-3. Inliné (README §01-Foundation après audio1-waveform, c.728y+4 2026-07-21).
 
 ## audio3-stt-tts.png
 
@@ -47,8 +47,8 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Contenu réel vérifié** (ré-audit vision c.673 2026-07-19 par `myia-po-2023` MiniMax-M3, doctrine #5780 — vision eersthand pixel-par-pixel) : figure matplotlib super-titre **« Caracteristiques audio extraites »**, **4 sous-panneaux empilés** (Spectral Centroid en bleu / Spectral Bandwidth en vert / RMS Energy en rouge / Zero-Crossing Rate en violet), axe temps partagé **0–12 s** identique à `audio1-waveform.png` (même échantillon librosa, features extraites). Palette saturée spectral/energy, ambiance d'analyse technique.
 - **Traçage** : cellule brute 172 278 B (md5 `890f2d8a`) → disque 167 756 B (md5 `03e86f25`), ratio **0,97**.
 - **Alt-text (FR, corrigé c.673)** : Panneau de caractéristiques audio extraites par librosa — quatre signaux empilés (centroïde spectral, largeur spectrale, énergie RMS, taux de passage par zéro), axe temps 0–12 s identique à la forme d'onde audio1.
-- **Filename/content mismatch (doctrine #5780 c.657 doublon-disclosure, famille C672-L2 ★ / C672-L1 ★★)** : **le nom de fichier `audio5-multimodel.png` et l'ancien alt-text « comparaison de modèles audio » décrivaient à tort une comparaison STT/TTS — le contenu réel est un panneau de features librosa mono-fichier.** Pas de régénération (le contenu est correct) ; disclosure obligatoire par doctrine : **« Nom de slot hérité d'une attribution erronée ; figure renommée virtuellement `audio5-features-librosa.png` par cohérence, mais le nom de fichier physique reste `audio5-multimodel.png` pour traçabilité git. Ne pas inliner tant que le slot n'a pas été vidé de la nomenclature. »** Asset orphelin (non inliné dans le README), conservé pour traçabilité.
-- **Verdict** : **SOTA-OK** (contenu réel = features librosa du 01-3). Le c.490 avait correctement identifié la cellule source (cell[28]) tout en la classant à tort « déclassée » ; le c.529 l'avait re-traçé fidèlement ; le c.673 alinhé l'alt-text sur le contenu réel.
+- **Filename/content mismatch (doctrine #5780 c.657 doublon-disclosure, famille C672-L2 ★ / C672-L1 ★★)** : **le nom de fichier `audio5-multimodel.png` et l'ancien alt-text « comparaison de modèles audio » décrivaient à tort une comparaison STT/TTS — le contenu réel est un panneau de features librosa mono-fichier.** Pas de régénération (le contenu est correct) ; disclosure obligatoire par doctrine : **« Nom de slot hérité d'une attribution erronée ; figure renommée virtuellement `audio5-features-librosa.png` par cohérence, mais le nom de fichier physique reste `audio5-multimodel.png` pour traçabilité git. »** Disclosure honnête inlinée (README §01-Foundation après audio3-stt-tts, c.728y+4 2026-07-21) avec mention explicite du filename/content mismatch.
+- **Verdict** : **SOTA-OK** (contenu réel = features librosa du 01-3). Le c.490 avait correctement identifié la cellule source (cell[28]) tout en la classant à tort « déclassée » ; le c.529 l'avait re-traçé fidèlement ; le c.673 alinhé l'alt-text sur le contenu réel. Inliné (README §01-Foundation après audio3-stt-tts, c.728y+4 2026-07-21) — disclosure filename/content mismatch rendue visible in-situ.
 
 ## audio6-tts-benchmark.png
 
@@ -67,10 +67,10 @@ Scan `nbformat` des outputs image committés des 3 notebooks sources, croisé av
 | Fichier | Cellule source | Brut (nbformat) | Disque | Ratio | Inliné | Verdict |
 |---|---|---|---|---|---|---|
 | `audio1-waveform.png` | 01-3 cell[12] out[1] | 39 273 B / `3ace572f` | 37 273 B / `09e55bfb` | 0,95 | oui | SOTA-OK |
-| `audio2-spectrogram.png` | 01-3 cell[20] out[3] | 84 031 B / `238e0bd6` | 77 625 B / `b9792e33` | 0,92 | non (orphelin) | SOTA-OK (MFCC) |
+| `audio2-spectrogram.png` | 01-3 cell[20] out[3] | 84 031 B / `238e0bd6` | 77 625 B / `b9792e33` | 0,92 | oui (c.728y+4) | SOTA-OK (MFCC) |
 | `audio3-stt-tts.png` | non committée (3 nb réf.) | — | 94 346 B / `b047ef65` | — | oui | INTRINSIC (TTS vide signalé) |
 | `audio4-demucs.png` | 02-4 cell[23] out[2] | 284 044 B / `b5cc7ba0` | 175 056 B / `ab63e644` | 0,62 | oui | SOTA-OK (Demucs) |
-| `audio5-multimodel.png` | 01-3 cell[28] out[2] | 172 278 B / `890f2d8a` | 167 756 B / `03e86f25` | 0,97 | non (orphelin) | SOTA-OK (features) |
+| `audio5-multimodel.png` | 01-3 cell[28] out[2] | 172 278 B / `890f2d8a` | 167 756 B / `03e86f25` | 0,97 | oui (c.728y+4, disclosure) | SOTA-OK (features) |
 | `audio6-tts-benchmark.png` | 03-1 cell[29] out[1] | 71 205 B / `18fd4304` | 49 946 B / `25b1a862` | 0,70 | oui | SOTA-OK (barplots TTS) |
 
 **Lecture des ratios** : tous ≤ 1,0 — cohérent avec l'optimisation PIL de `extract_readme_figures.py` (recompression + downscale ≤ 1200 px, qui ne peut que réduire la taille). Le ratio 0,62 d'`audio4` correspond au downscale d'une figure large (1398 px) sous le plafond 1200 px. Aucun ratio n'exige une « source externe ».

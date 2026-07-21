@@ -187,6 +187,57 @@ example {C : Type*} [Category C] : (coyoneda (C := C)).FullyFaithful :=
   Coyoneda.fullyFaithful
 
 /-!
+## Representable and corepresentable functors
+
+Yoneda's lemma names **representable functors**: a presheaf `F : Cᵒᵖ ⥤ Type v₁`
+is *representable* by an object `Y : C` when it is isomorphic (in the presheaf
+category) to the represented presheaf `yoneda.obj Y`. Dually, a covariant functor
+`F : C ⥤ Type v₁` is *corepresentable* by `X : C` when it is isomorphic to
+`coyoneda.obj (op X)`.
+
+Mathlib 4 formalises this via the structures `RepresentableBy` (contravariant
+face) and `CorepresentableBy` (covariant face), each carrying a `homEquiv`
+witnessing the isomorphism.
+
+The central corollary — **the representing object is unique up to isomorphism** —
+is the precise form of Yoneda's foundational claim: "objects of a category are
+determined (up to isomorphism) by the presheaves they represent." This is the
+spine of Grothendieck's reformulation of algebraic geometry (schemes = locally
+representable presheaves).
+-/
+
+/-- The represented presheaf `yoneda.obj Y` is representable by `Y` (canonical). -/
+def representableByYoneda (C : Type*) [Category C] (Y : C) :
+    (yoneda.obj Y).RepresentableBy Y :=
+  CategoryTheory.Functor.RepresentableBy.yoneda Y
+
+/-- The covariant represented functor `coyoneda.obj (op X)` is corepresentable by
+    `X` (canonical, covariant dual of `representableByYoneda`). The representing
+    object is `X.unop : C` (Mathlib indexes `CorepresentableBy.coyoneda` by the
+    opposite object). -/
+def corepresentableByCoyoneda (C : Type*) [Category C] (X : Cᵒᵖ) :
+    (coyoneda.obj X).CorepresentableBy X.unop :=
+  CategoryTheory.Functor.CorepresentableBy.coyoneda X
+
+/-- **Representing object is unique up to isomorphism (Yoneda corollary).**
+    If a presheaf `F` is representable by both `Y` and `Y'`, then `Y ≅ Y'`. This
+    is the precise form of "objects are determined by the presheaves they
+    represent". -/
+def representingObjectUniqueUpToIso {C : Type*} [Category C]
+    {F : Cᵒᵖ ⥤ Type*} {Y Y' : C}
+    (h : F.RepresentableBy Y) (h' : F.RepresentableBy Y') :
+    Y ≅ Y' :=
+  CategoryTheory.Functor.RepresentableBy.uniqueUpToIso h h'
+
+/-- **Corepresenting object is unique up to isomorphism (covariant dual).**
+    Covariant mirror of `representingObjectUniqueUpToIso`. -/
+def corepresentingObjectUniqueUpToIso {C : Type*} [Category C]
+    {F : C ⥤ Type*} {X X' : C}
+    (h : F.CorepresentableBy X) (h' : F.CorepresentableBy X') :
+    X ≅ X' :=
+  CategoryTheory.Functor.CorepresentableBy.uniqueUpToIso h h'
+
+/-!
 ## Functoriality recovers the hom-set
 
 The Yoneda embedding lifts the hom-set into the category of presheaves.
