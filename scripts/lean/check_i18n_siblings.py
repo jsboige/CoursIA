@@ -52,6 +52,16 @@ missing), or on an *unbuilt* ``_en`` file (a ``*_en.lean`` whose module is
 neither an explicit lake root nor covered by a parent glob, so ``lake build``
 never compiles it and a green ``Lean CI`` is a false pass for it — the #6749
 orphan-trap, which the body comparison alone cannot catch).
+
+A second, *advisory* signal is printed alongside the body check: ``HALF_DONE``
+flags a canonical whose INLINE docstrings (theorem/def docs, excluding the
+module header) classify as EN-dominant while an ``_en`` sibling exists — the
+"migration started but canonical never flipped FR" state the body check cannot
+see (both files EN = bodies trivially byte-identical, cf HashlifeMemo.lean PR
+#7760 and the conway_lean backlog). ``HALF_DONE`` is **non-gating**: it is
+counted in the summary line and surfaced in the output, but it does NOT change
+the exit code, since the byte-identity contract itself still holds. Reviewers
+treat it as a prompt to flip the canonical, not as a build failure.
 """
 from __future__ import annotations
 
@@ -156,6 +166,118 @@ def strip_comments(src: str) -> str:
             out.append(c)
             i += 1
     return "".join(out)
+
+
+# --- Half-done-migration advisory (EPIC #4980) -------------------------------
+# The body check above validates that FR and EN bodies are byte-identical, but
+# that contract is *trivially satisfied* by a half-done migration: if the
+# canonical was never flipped EN->FR, both files are EN and the bodies match.
+# This is the exact over-claim pattern documented for HashlifeMemo.lean (PR
+# #7760) and the wider conway_lean backlog (11 EN-dominant canonicals that this
+# checker reported ``24/24 pairs byte-identical``): the ``_en`` sibling was
+# created (migration started) but the canonical docstrings were never flipped.
+#
+# The advisory below classifies the canonical's INLINE docstring language
+# (excluding the module header, which is often a FR boilerplate that declares
+# "FR canonique" even when every theorem/def docstring below is still EN — the
+# precise HashlifeMemo tell). Advisory-only: it prints ``HALF_DONE`` and counts
+# in the summary but does NOT change the exit code, so CI stays green for a
+# byte-identical body while surfacing the i18n backlog ai-01 would otherwise
+# merge blind (cf the c.764 over-claim incident).
+_FR_ACCENTS = frozenset(
+    "àâäçéèêëîïôöùûüœæÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŒÆ")
+_FR_WORD = re.compile(
+    r"\b(?:le|la|les|des|une|un|dans|avec|pour|que|qui|est|sont|sur|entre|"
+    r"par|nous|vous|cette|ces|selon|soit|soient|chaque|toute|toutes|leur|"
+    r"leurs|ainsi|donc|car|puis|afin|lorsque|quand|puisqu|quoiqu|chez|"
+    r"sous|après|avant|depuis|pendant|plus|moins|très|bien|aussi|être|"
+    r"avoir|fait|font|donne|donnent|renvoie|renvoient|calcule|définit|"
+    r"montre|prouve|asserte|vérifie|indique|renvoie)\b", re.IGNORECASE)
+_EN_WORD = re.compile(
+    r"\b(?:the|of|and|to|in|is|are|for|that|with|as|be|this|by|on|or|an|"
+    r"at|it|from|which|when|then|such|each|all|both|its|their|there|"
+    r"where|returns|return|given|note|example|if|else|not|into|via|using|"
+    r"yields|gives|defines|shows|proves|asserts|checks|indicates|"
+    r"immediate|trivial|preserves|under|every|same|two|one|first|second)\b")
+
+
+def extract_block_comments(src: str) -> list[str]:
+    """Bodies of ``/- ... -/`` block comments (module docs ``/-!`` + per-decl
+    docstrings ``/--``), in source order. Nesting-aware (mirrors
+    :func:`strip_comments`); ``--`` line comments and string literals OUTSIDE
+    blocks are skipped, while content INSIDE a block is captured verbatim —
+    that prose is what :func:`classify_docstring_lang` scores."""
+    blocks: list[str] = []
+    buf: list[str] = []
+    i, n = 0, len(src)
+    depth = 0
+    in_str = False
+    while i < n:
+        c = src[i]
+        pair = src[i:i + 2]
+        if depth > 0:
+            if pair == "/-":
+                depth += 1
+                buf.append(pair)
+                i += 2
+            elif pair == "-/":
+                depth -= 1
+                if depth == 0:
+                    blocks.append("".join(buf))
+                    buf = []
+                else:
+                    buf.append(pair)
+                i += 2
+            else:
+                buf.append(c)
+                i += 1
+            continue
+        if in_str:
+            if c == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            i += 1
+            continue
+        if c == '"':
+            in_str = True
+            i += 1
+        elif pair == "/-":
+            depth = 1
+            buf = []
+            i += 2
+        elif pair == "--":
+            j = src.find("\n", i)
+            if j == -1:
+                break
+            i = j
+        else:
+            i += 1
+    return blocks
+
+
+def classify_docstring_lang(text: str) -> tuple[str, int, int]:
+    """Classify a docstring corpus as ``FR`` / ``EN`` / ``MIXED`` / ``EMPTY``
+    via accent count + stopword frequencies. Returns ``(verdict, fr_score,
+    en_score)`` where ``fr_score`` adds accented characters to FR stopwords
+    (accents are a near-certain FR signal and the conway_lean FR convention
+    uses them — cf MathlibMap/RLE). Only a clear EN dominance
+    (``en >= 4`` AND ``en > 2 * fr``) yields ``EN``: the half-done flag must
+    be unambiguous so lightly-translated or bilingual docstrings are not
+    noise. Symmetric thresholds return ``FR`` / ``MIXED`` / ``EMPTY``."""
+    if not text or not text.strip():
+        return "EMPTY", 0, 0
+    accents = sum(1 for ch in text if ch in _FR_ACCENTS)
+    fr = len(_FR_WORD.findall(text)) + accents
+    en = len(_EN_WORD.findall(text))
+    if en == 0 and fr == 0:
+        return "EMPTY", 0, 0
+    if en >= 4 and en > 2 * fr:
+        return "EN", fr, en
+    if fr > en:
+        return "FR", fr, en
+    return "MIXED", fr, en
 
 
 def normalize_body(src: str) -> str:
@@ -436,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = unbuilt = 0
+    passed = consumer = failed = orphan = unbuilt = half_done = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -462,10 +584,24 @@ def main(argv: list[str] | None = None) -> int:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
+        # Half-done-migration advisory (#4980): classify the canonical's INLINE
+        # docstrings (module header excluded — it is often a FR boilerplate that
+        # declares "FR canonique" even when every decl docstring is still EN, the
+        # precise HashlifeMemo tell). EN-dominant + `_en` sibling exists =
+        # migration started but canonical never flipped. Non-gating: the body
+        # contract still holds, so the exit code is unchanged.
+        blocks = extract_block_comments(fr.read_text(encoding="utf-8"))
+        inline = "\n".join(blocks[1:]) if len(blocks) > 1 else "".join(blocks)
+        lang, fr_s, en_s = classify_docstring_lang(inline)
+        if lang == "EN":
+            half_done += 1
+            print(f"HALF_DONE {en}  (canonical inline docstrings EN-dominant "
+                  f"fr={fr_s} en={en_s}; `_en` sibling exists but canonical "
+                  "never flipped FR — cf EPIC #4980)")
     total = passed + consumer + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
           f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
-          f" | {unbuilt} unbuilt")
+          f" | {unbuilt} unbuilt | {half_done} half-done")
     return 0 if (failed == 0 and orphan == 0 and unbuilt == 0) else 1
 
 
