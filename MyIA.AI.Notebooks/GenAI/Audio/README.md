@@ -322,6 +322,18 @@ Les notebooks 04-6 à 04-13 forment un pipeline séquentiel qui transforme un te
 
 Les notebooks 04-6 (pipeline orchestrateur) et 04-1 (narration éducative) sont des entrées plus simples pour découvrir le workflow.
 
+## Renumérotation narrative (audit #5081 → [#7597](https://github.com/jsboige/CoursIA/issues/7597) — verdict **NO-RENUMBER**)
+
+L'EPIC #5081 demande un *arc pédagogique cohérent, pas une numérotation d'opportunité*. L'audit phase-1 de la série GenAI/Audio (juillet 2026, par `po-2026`) conclut à l'**absence de renumérotation** : la structure actuelle est déjà canonique, et toute renumérotation casserait le récit au lieu de l'améliorer.
+
+**Arc 4-niveaux vérifié** : `01-Foundation` (STT/TTS bases) → `02-Advanced` (voix, musique, séparation) → `03-Orchestration` (multi-modèles, temps réel) → `04-Applications` (production, audiobook, sync A/V). Ce squelette est cohérent avec les autres séries GenAI (`Image`, `Texte`, `Video`).
+
+**Sub-arc audiobook** dans `04-Applications` : les notebooks **04-6 → 04-13** forment un pipeline orchestrateur agentique (analyse littéraire → casting vocal → annotation prosodique → TTS → compilation → variante FishAudio S2-Pro). La numérotation reflète l'ordre du pipeline ; la renommer en `04-13 → 04-21` ou en zero-paddant tous les niveaux (`01-01..04-13`) créerait une **incohérence cross-niveaux** plus perturbante que l'écart de tri lexicographique `04-10 < 04-2` (cosmétique, compensé par les liens numériques du README).
+
+**Tri lexicographique** : seul écart visible, `04-10`..`04-13` trient avant `04-2`..`04-9` dans un listing filesystem, mais les étudiants naviguent via les **liens README** (ordre numérique correct).
+
+**Conclusion** : la famille GenAI/Audio est désormais couverte par l'EPIC #5081 (sœur « no renumber » au même titre que Probas/Infer, PyMC, Planners, Search, Texte, Video). Aucune action de renommage.
+
 ## Licence
 
 Voir la licence du repository principal.
