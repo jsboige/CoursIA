@@ -15,6 +15,26 @@ from datetime import datetime
 DEFAULT_KB_PATH = Path(__file__).parent / "proof_knowledge.json"
 
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Boundary guard: reject None / non-str degenerate inputs (#7596-pattern, G.9).
+
+    Converts OPAQUE TypeErrors (``Path(None)`` -> "expected str", ``len(None)`` ->
+    "NoneType has no len") and AttributeErrors (``None.strip()`` / ``None.lower()``)
+    into clear ValueErrors naming the offending argument, so a prover workflow that
+    forwards an agent-generated None goal/tactic/name (LLM call failed, missing
+    field in JSON response, extraction regex returned None) fails fast with a
+    diagnosable message instead of an opaque stack trace. By default empty
+    strings are rejected too (an empty signature/lookup key never matches ->
+    programmer error); pass ``allow_empty=True`` for parameters where ``''`` is a
+    legitimate input (an empty Lean file has 0 sorries).
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 class ProofKnowledgeBase:
     """Persistent knowledge base for successful proof patterns.
 
@@ -69,6 +89,7 @@ class ProofKnowledgeBase:
 
     def cookbook_for_goal(self, goal: str) -> List[Dict]:
         """Find cookbook patterns relevant to a goal using keyword matching."""
+        goal = _require_str("goal", goal)
         goal_words = set(goal.lower().replace("(", " ").replace(")", " ").split())
         scored = []
         for p in self.cookbook_patterns:
@@ -90,6 +111,7 @@ class ProofKnowledgeBase:
 
     def check_avoided(self, tactic: str) -> Optional[Dict]:
         """Check if a tactic resembles a known failed approach."""
+        tactic = _require_str("tactic", tactic)
         tactic_lower = tactic.lower().strip()
         for fa in self.failed_approaches:
             what = fa.get("what_failed", "").lower()
@@ -106,6 +128,7 @@ class ProofKnowledgeBase:
 
     def api_lookup(self, name: str) -> Optional[str]:
         """Look up a Mathlib API entry by approximate name."""
+        name = _require_str("name", name)
         name_lower = name.lower()
         for key, desc in self.mathlib_api.items():
             if name_lower in key.lower() or key.lower() in name_lower:
@@ -190,6 +213,7 @@ class ProofKnowledgeBase:
     @staticmethod
     def goal_signature(goal: str) -> str:
         """Create a normalized signature from a goal for matching."""
+        goal = _require_str("goal", goal)
         sig = goal.strip()
         for noise in ["⊢ ", "| "]:
             if sig.startswith(noise):
