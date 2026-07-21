@@ -211,7 +211,20 @@ class ProofState:
         return label
 
     def restore_checkpoint(self, label: str) -> bool:
-        """Restore state from a named checkpoint (B.8). Returns True if found."""
+        """Restore state from a named checkpoint (B.8). Returns True if found.
+
+        The mutable fields (``current_proof``, ``discovered_lemmas``, ``plan``,
+        ``sorry_goals``) are **re-copied** here, mirroring the defensive copies
+        ``save_checkpoint`` already makes on the way in. Without these copies
+        ``self.<field>`` would alias the list/dict object stored under
+        ``self._checkpoints[label]``: a subsequent ``add_tactic_attempt`` /
+        ``add_lemma`` / ``sorry_goals[k] = v`` would then mutate the STORED
+        checkpoint in place, so a second ``restore_checkpoint(label)`` would
+        return the corrupted (post-mutation) state instead of the snapshot --
+        silently breaking the preserve/revert gate (``_build_check_or_revert``,
+        cf #7477). Verified firsthand: pre-fix, restore -> add_tactic_attempt
+        -> re-restore returned the appended tactic (c.732).
+        """
         cp = self._checkpoints.get(label)
         if not cp:
             return False
@@ -219,16 +232,16 @@ class ProofState:
         self.phase = ProofPhase(cp["phase"])
         self.iteration = cp["iteration"]
         self.current_goal = cp["current_goal"]
-        self.current_proof = cp["current_proof"]
+        self.current_proof = list(cp["current_proof"])  # c.732: copy, don't alias
         self.consecutive_failures = cp["consecutive_failures"]
         self.error_count = cp["error_count"]
         self.best_sorry_count = cp["best_sorry_count"]
         self.consecutive_delta0_compiles = cp.get("consecutive_delta0_compiles", 0)
         self.consecutive_compile_fail = cp.get("consecutive_compile_fail", 0)  # P4 (c.317b)
-        self.discovered_lemmas = cp["discovered_lemmas"]
-        self.plan = cp["plan"]
+        self.discovered_lemmas = list(cp["discovered_lemmas"])  # c.732: copy, don't alias
+        self.plan = list(cp["plan"])  # c.732: copy, don't alias
         self.plan_phase = cp["plan_phase"]
-        self.sorry_goals = cp["sorry_goals"]
+        self.sorry_goals = dict(cp["sorry_goals"])  # c.732: copy, don't alias
         return True
 
     def list_checkpoints(self) -> List[str]:
