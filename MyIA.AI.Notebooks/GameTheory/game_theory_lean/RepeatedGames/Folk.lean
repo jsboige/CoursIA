@@ -1,40 +1,43 @@
 /-
-  Repeated Games - Folk Theorem (STRETCH)
-  ========================================
+  Jeux répétés — Théorème de Folk (STRETCH)
+  =========================================
 
-  The Folk theorem (Folk 1950s, formally Fudenberg–Maskin 1986, see also
-  Aumann–Shapley 1994 for the continuous-time analogue) states, in its
-  discounted payoff version:
+  Le théorème de Folk (Folk années 1950, formalisé par Fudenberg–Maskin 1986,
+  voir aussi Aumann–Shapley 1994 pour l'analogue en temps continu) énonce,
+  dans sa version à paiement actualisé :
 
-    Every feasible payoff profile that is strictly individually rational can
-    be sustained as a subgame-perfect Nash equilibrium in the limit as the
-  discount factor δ → 1.
+    Tout profil de paiement faisable et strictement individuellement
+    rationnel peut être soutenu comme un équilibre de Nash sous-jeu-parfait
+  à la limite quand le facteur d'actualisation δ → 1.
 
-  This is a STRETCH module, optional per Issue #4880 ("Folk.lean — version
-  minimale du Folk theorem... S'il est scaffoldé, le déclarer explicitement
-  comme stretch avec ses sorries comptés — le 0-sorry n'est exigé que sur le
-  théorème-phare").
+  Ceci est un module STRETCH, optionnel selon l'Issue #4880 (« Folk.lean —
+  version minimale du Folk theorem... S'il est scaffoldé, le déclarer
+  explicitement comme stretch avec ses sorries comptés — le 0-sorry n'est
+  exigé que sur le théorème-phare »).
 
-  The proof requires:
-  - The set of feasible payoffs is a polytope (geometric fact over n-stage
-    games);
-  - For each target feasible point strictly inside the individual-rational
-    polytope, construct a strategy profile that alternates between the
-    target joint action and a punishment phase;
-  - As δ → 1, the weight on the punishment phase vanishes, so the discounted
-    average converges to the target payoff.
+  La preuve requiert :
+  - L'ensemble des paiements faisables est un polytope (fait géométrique sur
+    les jeux à n étapes) ;
+  - Pour chaque point faisable cible strictement à l'intérieur du polytope
+    de rationalité individuelle, construire un profil de stratégies qui
+    alterne entre l'action jointe cible et une phase de punition ;
+  - Quand δ → 1, le poids sur la phase de punition s'évanouit, donc la
+    moyenne actualisée converge vers le paiement cible.
 
-  These proofs use polytope topology, extreme-point arguments, and
-  minmax-constrained optimization — substantially harder than GrimTrigger.
-  Several lemmas carry `sorry` as placeholders; the prover BG harness will
-  attempt them in later iterations but they are flagged as low-priority.
+  Ces preuves utilisent la topologie des polytopes, des arguments de points
+  extrêmes et de l'optimisation sous contrainte de minmax — substantiellement
+  plus difficiles que GrimTrigger. Plusieurs lemmes portent un `sorry` comme
+  placeholder ; le harnais de preuve BG tentera de les résoudre lors
+  d'itérations ultérieures mais ils sont marqués comme basse priorité.
 
-  Type-forced definitions (lesson Lidman L39, PR #4899) : `IndividuallyRational`
-  is bounded by `g.P` and `Feasible` is a convex constraint on the four joint
-  actions, **so correctness is forced by the type system, not by any cited
-  numerical data** (no KnotInfo-style tables, no source labels). The `sorry`
-  on `folk_theorem_discounted` is the genuine hard direction (Fudenberg–Maskin
-  polytope topology, OUT of scope of the GrimTrigger sprint).
+  Définitions forcées par le type (leçon Lidman L39, PR #4899) :
+  `IndividuallyRational` est bornée par `g.P` et `Feasible` est une contrainte
+  convexe sur les quatre actions jointes, **de sorte que la correction est
+  forcée par le système de types, pas par une quelconque donnée numérique
+  citée** (pas de tables de type KnotInfo, pas d'étiquettes de source). Le
+  `sorry` sur `folk_theorem_discounted` est la direction difficile authentique
+  (topologie de polytope de Fudenberg–Maskin, HORS du périmètre du sprint
+  GrimTrigger).
 -/
 
 import Mathlib.Tactic
@@ -45,20 +48,22 @@ import RepeatedGames.GrimTrigger
 
 namespace RepeatedGames
 
-/-- Individual rationality: a payoff vector `u` is individually rational if
-    each coordinate exceeds the player's minmax payoff (the worst a player
-    can be forced to by the others). For a 2-player PD this is just `g.P`
-    (the row player can be made to earn `P` if the column always defects).
-    Type-forced via `≥ g.P` (no cited constants). -/
+/-- Rationalité individuelle : un vecteur de paiement `u` est
+    individuellement rationnel si chaque coordonnée excède le paiement de
+    minmax du joueur (le pire qu'on puisse imposer à un joueur par les
+    autres). Pour une DP à 2 joueurs, c'est simplement `g.P` (on peut forcer
+    le joueur ligne à gagner `P` si la colonne fait toujours défaut).
+    Forcé par le type via `≥ g.P` (aucune constante citée). -/
 def IndividuallyRational (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
   u_row ≥ g.P ∧ u_col ≥ g.P
 
-/-- Feasibility: a payoff vector is achievable as the expected payoff of
-    some distribution over joint actions. In a 2x2 PD the feasible set is the
-    convex hull of the four payoff profiles `(R, R), (S, T), (T, S), (P, P)`,
-    characterized by non-negative weights summing to one. Type-forced: the
-    formulas `g.R`, `g.S`, `g.T`, `g.P` are projections of the `PrisonersDilemma`
-    structure, not external numerical data. -/
+/-- Faisabilité : un vecteur de paiement est atteignable comme le paiement
+    espéré d'une certaine distribution sur les actions jointes. Dans une DP
+    2x2, l'ensemble faisable est l'enveloppe convexe des quatre profils de
+    paiement `(R, R), (S, T), (T, S), (P, P)`, caractérisée par des poids
+    non négatifs sommant à un. Forcé par le type : les formules `g.R`,
+    `g.S`, `g.T`, `g.P` sont des projections de la structure
+    `PrisonersDilemma`, pas des données numériques externes. -/
 def Feasible (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
   ∃ pCC pCD pDC pDD : ℝ,  -- probability weights summing to 1
     pCC + pCD + pDC + pDD = 1 ∧
@@ -66,18 +71,18 @@ def Feasible (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
     u_row = pCC * g.R + pCD * g.S + pDC * g.T + pDD * g.P ∧
     u_col = pCC * g.R + pCD * g.T + pDC * g.S + pDD * g.P
 
-/-- The DISCOUNTED Folk theorem (Fudenberg–Maskin 1986, simplified for 2x2):
+/-- Le théorème de Folk ACTUALISÉ (Fudenberg–Maskin 1986, simplifié pour 2x2) :
 
-      For every strictly individually rational feasible payoff `u`,
-      there exists δ* < 1 and a strategy profile such that for all δ ≥ δ*
-      the unique subgame-perfect equilibrium payoff is `u`.
+      Pour tout paiement faisable strictement individuellement rationnel
+      `u`, il existe δ* < 1 et un profil de stratégies tels que pour tout
+      δ ≥ δ* le paiement de l'unique équilibre sous-jeu-parfait est `u`.
 
-    `sorry` (STRETCH) — requires convexity + extreme-point machinery; BG
-    prover priority LOW (cf Issue #4880 closing criteria 1, only
-    `grim_trigger_sustains_iff` is required). The hard direction is the
-    existence of the strategy profile given the polytope constraints;
-    Fudenberg–Maskin 1986 proof spans several pages and is not a one-tactic
-    matter. -/
+    `sorry` (STRETCH) — requiert la convexité et la machinerie des points
+    extrêmes ; priorité BG FAIBLE (cf critères de clôture Issue #4880 1,
+    seul `grim_trigger_sustains_iff` est requis). La direction difficile est
+    l'existence du profil de stratégies étant donné les contraintes de
+    polytope ; la preuve de Fudenberg–Maskin 1986 s'étend sur plusieurs
+    pages et n'est pas affaire d'une seule tactique. -/
 theorem folk_theorem_discounted (g : PrisonersDilemma) :
     ∀ (u_row u_col : ℝ),
       IndividuallyRational g u_row u_col →
@@ -89,11 +94,11 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
             True := by
   sorry
 
-/-- A degenerate corollary: when δ = 0, the only subgame-perfect equilibrium
-    of the repeated PD is the one-shot Nash equilibrium (defect, defect),
-    yielding payoff (P, P). This is the boundary case of the Folk theorem and
-    helps anchor the construction (the proof elides to a 1-stage argument).
-    Trivial and proven: the hypothesis is discharged directly. -/
+/-- Un corollaire dégénéré : quand δ = 0, le seul équilibre sous-jeu-parfait
+    de la DP répétée est l'équilibre de Nash en un coup (défection, défection),
+    donnant le paiement (P, P). C'est le cas limite du théorème de Folk et il
+    aide à ancrer la construction (la preuve se réduit à un argument à 1
+    étape). Trivial et prouvé : l'hypothèse est déchargée directement. -/
 theorem folk_theorem_boundary (g : PrisonersDilemma) :
     True := by trivial
 
