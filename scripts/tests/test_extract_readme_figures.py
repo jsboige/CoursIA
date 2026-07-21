@@ -165,6 +165,8 @@ def test_extract_figure_writes_png_and_manifest(tmp_path):
     entry = extract_figure(
         nb, cell_index=1, output_index=0, output_path=out,
         alt_text_fr="Carte de chaleur des poids du reseau",
+        description_visuelle="Heatmap 5x5 avec barre de couleur, "
+                             "axe x et y labels chiffres 0-4.",
         serie_root=serie,
     )
     assert out.exists() and out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
@@ -176,6 +178,8 @@ def test_extract_figure_writes_png_and_manifest(tmp_path):
     assert "fig.png" in body
     assert "MANIFEST des figures README" in body       # header
     assert "Carte de chaleur des poids du reseau" in body
+    assert "Heatmap 5x5" in body
+    assert "**Description visuelle**" in body
     assert "cellule 1" in body and "output 0" in body
     # chemin relatif depuis serie_root dans le manifest
     assert "nb.ipynb" in body and str(serie.resolve()) not in body
@@ -187,12 +191,16 @@ def test_extract_figure_idempotent_no_duplicate(tmp_path):
     nb = _write_nb_with_figure(serie / "nb.ipynb", _make_png(3, 3), preamble_cells=0)
     assets = serie / "assets" / "readme"
     out = assets / "fig.png"
-    extract_figure(nb, 0, 0, out, " premiere extraction ", serie_root=serie)
-    extract_figure(nb, 0, 0, out, "deuxieme extraction (remplace)", serie_root=serie)
+    extract_figure(nb, 0, 0, out, " premiere extraction ",
+                   "description premiere", serie_root=serie)
+    extract_figure(nb, 0, 0, out, "deuxieme extraction (remplace)",
+                   "description remplace", serie_root=serie)
     body = (assets / "MANIFEST.md").read_text(encoding="utf-8")
     # un seul bloc ## fig.png (remplacement, pas de doublon)
     assert body.count("## fig.png") == 1
     assert "deuxieme extraction (remplace)" in body
+    assert "description remplace" in body
+    assert "description premiere" not in body
 
 
 def test_extract_figure_alt_text_required(tmp_path):
@@ -200,10 +208,23 @@ def test_extract_figure_alt_text_required(tmp_path):
     nb = _write_nb_with_figure(serie / "nb.ipynb", _make_png(2, 2))
     with pytest.raises(ValueError, match="alt_text_fr"):
         extract_figure(nb, 0, 0, serie / "assets/readme/f.png", "",
-                       serie_root=serie)
+                       "description valide", serie_root=serie)
     with pytest.raises(ValueError, match="alt_text_fr"):
         extract_figure(nb, 0, 0, serie / "assets/readme/f.png", "   ",
-                       serie_root=serie)
+                       "description valide", serie_root=serie)
+
+
+def test_extract_figure_description_visuelle_required(tmp_path):
+    """Doctrine #5780 amendee : description_visuelle obligatoire (champ distinct
+    de alt_text_fr). Vide ou whitespace-only leve ValueError. HARD."""
+    serie = tmp_path / "S"
+    nb = _write_nb_with_figure(serie / "nb.ipynb", _make_png(2, 2))
+    with pytest.raises(ValueError, match="description_visuelle"):
+        extract_figure(nb, 0, 0, serie / "assets/readme/f.png", "alt valide",
+                       "", serie_root=serie)
+    with pytest.raises(ValueError, match="description_visuelle"):
+        extract_figure(nb, 0, 0, serie / "assets/readme/f.png", "alt valide",
+                       "   \t\n  ", serie_root=serie)
 
 
 def test_extract_figure_cell_out_of_range(tmp_path):
@@ -211,7 +232,7 @@ def test_extract_figure_cell_out_of_range(tmp_path):
     nb = _write_nb_with_figure(serie / "nb.ipynb", _make_png(2, 2))  # 1 cell (index 0)
     with pytest.raises(ValueError, match="cell_index"):
         extract_figure(nb, 5, 0, serie / "assets/readme/f.png", "alt",
-                       serie_root=serie)
+                       "desc", serie_root=serie)
 
 
 def test_extract_figure_output_no_png(tmp_path):
@@ -227,7 +248,7 @@ def test_extract_figure_output_no_png(tmp_path):
     nbp.write_text(json.dumps(nb), encoding="utf-8")
     with pytest.raises(ValueError, match="ne porte pas de PNG"):
         extract_figure(nbp, 0, 0, serie / "assets/readme/f.png", "alt",
-                       serie_root=serie)
+                       "desc", serie_root=serie)
 
 
 # ----------------------------------------------------------- _optimize_with_pil
