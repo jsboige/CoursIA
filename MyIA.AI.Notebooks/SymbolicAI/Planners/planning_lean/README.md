@@ -76,6 +76,8 @@ flowchart TD
 | [`Planning/Relaxation.lean`](Planning/Relaxation.lean) | Exécution réelle `run` et relaxée `runR`, `reaches`/`reachesR`, **monotonie de l'atteignabilité relaxée** `runR_mono`, **lemme central** `run_subset_runR`. |
 | [`Planning/Admissibility.lean`](Planning/Admissibility.lean) | **Théorème phare `relaxed_plan_admissible`** (h⁺ ≤ h\*) : tout plan réel est un plan relaxé. |
 
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 3 modules `.lean` livrés en FR canonique + 3 siblings `*_en.lean` miroirs sur `main` (`Planning/Strips_en.lean`, `Planning/Relaxation_en.lean`, `Planning/Admissibility_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques. Vérifié par `scripts/lean/check_i18n_siblings.py` : 3/3 paires byte-identical, 0 drift, 0 orphan.
+
 ## Théorèmes prouvés (0 sorry)
 
 - `relaxed_plan_admissible : reaches π s g → reachesR π s g` — tout plan réel atteignant
