@@ -1,20 +1,20 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
-MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,21abd042,markdown,fr,bf9631122e8358e7,"# RL-10 : Reward Shaping et Curriculum Learning
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,21abd042,markdown,fr,cd29b0ac70330695,"# RL-10 : Reward Shaping et Curriculum Learning
 
 **Notebook : 10/13** | **Duree** : 45-50 min | **Kernel** : Python 3
 
-Dans les notebooks precedents, l'agent apprenait a partir du signal de recompense brut de l'environnement.
+Dans les notebooks précédents, l'agent apprenait a partir du signal de recompense brut de l'environnement.
 Mais que se passe-t-il quand la recompense est **sparse** (nulle partout sauf au but) ? L'agent peut mettre
 des centaines d'episodes a trouver le but par hasard, puis des centaines d'autres pour apprendre le chemin.
 
 Ce notebook presente trois techniques pour accelerer l'apprentissage :
 
 1. **Reward shaping** : modifier le signal de recompense pour guider l'agent (sans changer la politique optimale !)
-2. **Curriculum learning** : commencer par des taches faciles et augmenter progressivement la difficulte
-3. **Analyse theorique** : pourquoi le potential-based shaping (Ng et al., 1999) garantit l'invariance de la politique
+2. **Curriculum learning** : commencer par des tâches faciles et augmenter progressivement la difficulte
+3. **Analyse théorique** : pourquoi le potential-based shaping (Ng et al., 1999) garantit l'invariance de la politique
 
 **Prerequis** : Notebooks 5 (MDP, Q-Learning) et 8 (model-based RL, planification).
-",,,,,,,,bf9631122e8358e7,,,,,,,
+",,,,,,,,cd29b0ac70330695,,,,,,,
 MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,31470d34,markdown,fr,c90272d9e5e59832,"## 1. Environnement : Labyrinthe Sparse
 
 Un labyrinthe 8x8 avec des murs internes. La recompense est **sparse** : -1 par pas, 0 au but.
@@ -195,11 +195,11 @@ for seed in SEEDS:
 results[""Curriculum""] = np.mean(all_curr, axis=0)
 print(f""Curriculum: reward final (MA-50) = {np.mean(results['Curriculum'][-50:]):.1f}"")
 ",,,,,,,,ee2ca0e3aeafa5ad,,,,,,,
-MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,f8aa2937,markdown,fr,fd4fece64daf8ec8,"## 4. Comparaison des vitesses d'apprentissage
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,f8aa2937,markdown,fr,499f8785b87c71d0,"## 4. Comparaison des vitesses d'apprentissage
 
 Le graphique ci-dessous compare les courbes d'apprentissage (moyenne mobile sur 50 episodes)
-des 4 methodes. La ligne horizontale en pointilles marque le seuil de convergence.
-",,,,,,,,fd4fece64daf8ec8,,,,,,,
+des 4 méthodes. La ligne horizontale en pointilles marque le seuil de convergence.
+",,,,,,,,499f8785b87c71d0,,,,,,,
 MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,f9466604,code,fr,947ad4132853fef7,"def moving_avg(data, window=50):
     return np.convolve(data, np.ones(window) / window, mode='valid')
 
@@ -228,7 +228,7 @@ for name, rews in results.items():
     ep = idx[0] + 50 if len(idx) > 0 else N_EP
     print(f""  {name:<20} -> episode {ep}"")
 ",,,,,,,,947ad4132853fef7,,,,,,,
-MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,a4717ba9,markdown,fr,84c74b226d0a3499,"## 5. Pourquoi le Potential-Based Shaping fonctionne
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,a4717ba9,markdown,fr,1c1d2bab8ad0bb82,"## 5. Pourquoi le Potential-Based Shaping fonctionne
 
 ### Theoreme (Ng, Harada & Russell, 1999)
 
@@ -237,14 +237,14 @@ ou $F(s, s') = \gamma \cdot \Phi(s') - \Phi(s)$. Alors les politiques optimales 
 
 ### Demonstration intuitive
 
-La valeur modifiee $Q'(s, a) = Q^*(s, a) + \Phi(s)$ : le potentiel s'ajoute comme un biais constant
+La valeur modifiée $Q'(s, a) = Q^*(s, a) + \Phi(s)$ : le potentiel s'ajoute comme un biais constant
 par etat, qui ne change pas l'ordre relatif des actions. L'argmax est preserve.
 
 **Attention au shaping naif :** Le shaping heuristique $F(s, s') = 2 \cdot (d(s) - d(s'))$ n'est PAS potential-based
 (il n'existe pas de $\Phi$ tel que $F = \gamma \Phi(s') - \Phi(s)$). Dans certains environnements,
 ce type de shaping peut induire une politique sous-optimale en recompensant un chemin
 qui semble bon selon l'heuristique mais qui ne l'est pas.
-",,,,,,,,84c74b226d0a3499,,,,,,,
+",,,,,,,,1c1d2bab8ad0bb82,,,,,,,
 MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,903f701a,code,fr,1475c5d760e43d9e,"# Verification : potential-based shaping preserve Q* + phi(s)
 Q_base, _ = q_learning(env, N_EP, seed=SEED)
 Q_pot, _ = q_learning(env, N_EP,
@@ -259,7 +259,7 @@ print(f""Action optimale baseline :  {Q_base[si].argmax()} ({['haut','bas','gauc
 print(f""Action optimale potential : {Q_pot[si].argmax()} ({['haut','bas','gauche','droite'][Q_pot[si].argmax()]})"")
 print(f""\nLes actions optimales sont identiques : {Q_base[si].argmax() == Q_pot[si].argmax()}"")
 ",,,,,,,,1475c5d760e43d9e,,,,,,,
-MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,8b134ff8,markdown,fr,adcbc5978c221436,"## 6. Du Reward Shaping au RLHF
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,8b134ff8,markdown,fr,514fc4011a08db91,"## 6. Du Reward Shaping au RLHF
 
 Les idees de ce notebook connectent directement avec les techniques modernes d'alignement des LLMs :
 
@@ -268,16 +268,16 @@ Les idees de ce notebook connectent directement avec les techniques modernes d'a
 | Reward shaping manuel | Reward model appris (RLHF) |
 | Potential-based shaping | Contrainte KL (PPO-RLHF) |
 | Curriculum learning | Progressive training (SFT -> RLHF) |
-| Inverse RL | Learning from human preferences |
+| Inverse RL | Learning from human préférences |
 
 **RLHF** (Reinforcement Learning from Human Feedback) est un reward shaping appris :
-au lieu de definir manuellement $\Phi(s)$, on entraine un **reward model** a partir de preferences humaines,
-puis on utilise ce modele comme signal de recompense. La contrainte KL dans PPO-RLHF joue un role similaire
+au lieu de définir manuellement $\Phi(s)$, on entraine un **reward model** a partir de préférences humaines,
+puis on utilise ce modèle comme signal de recompense. La contrainte KL dans PPO-RLHF joue un rôle similaire
 au potentiel : elle empeche la politique de trop s'ecarter de la reference.
 
-**DPO** (Direct Preference Optimization) elimine completement le reward model en optimisant
-directement sur les paires de preferences — cf. notebook 9 (RL offline, DPO = preference learning offline).
-",,,,,,,,adcbc5978c221436,,,,,,,
+**DPO** (Direct Préférence Optimization) elimine completement le reward model en optimisant
+directement sur les paires de préférences — cf. notebook 9 (RL offline, DPO = préférence learning offline).
+",,,,,,,,514fc4011a08db91,,,,,,,
 MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,af41c2fd,markdown,fr,149fc79ec92900f6,"## 7. Exercices
 
 ### Exercice 1 : Ablation de la fonction de potentiel
@@ -333,18 +333,18 @@ MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,d5fb3617,code,fr,3e707028609cec2
 result = None  # TODO etudiant
 print(""Exercice a completer : montrez un biais du heuristic shaping"")
 ",,,,,,,,3e707028609cec2f,,,,,,,
-MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,81af226a,markdown,fr,4a7f5d69d39918c0,"## Conclusion
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,81af226a,markdown,fr,92154540fc9865a3,"## Conclusion
 
 Dans ce notebook nous avons vu que :
 
 1. **Le reward shaping potentiel** (Ng et al., 1999) accelere la convergence sans modifier la politique
    optimale. La cle est $F(s,s') = \gamma\Phi(s') - \Phi(s)$.
 2. **Le curriculum learning** organise l'apprentissage du facile au difficile,
-   une strategie universelle en pedagogie comme en ML.
+   une stratégie universelle en pedagogie comme en ML.
 3. **Le shaping naif** (non potential-based) peut biaiser la politique — il faut
    etre prudent avec les heuristiques ad-hoc.
 4. Ces concepts connectent directement au **RLHF** (reward model appris), **inverse RL**
-   (apprendre le reward), et **DPO** (preference learning offline, cf. notebook 9).
+   (apprendre le reward), et **DPO** (préférence learning offline, cf. notebook 9).
 
 ### Pour aller plus loin
 
@@ -352,7 +352,7 @@ Dans ce notebook nous avons vu que :
 - **Notebook 8** : model-based RL et planification (Dyna-Q), une autre approche pour accelerer
 - **Notebook 9** : RL offline, DPO et le pont complet vers l'alignement des LLMs
 - **[GenAI / FineTuning — FT-04 RLHF-DPO](../GenAI/FineTuning/FT-04-RLHF-DPO.ipynb)** : le reward model et DPO en pratique (TRL/PEFT) sur de vrais LLM
-- **[GenAI / PostTraining](../GenAI/PostTraining/README.md)** : la chaine SFT -> RLHF -> [DPO (PT-03)](../GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb) -> GRPO -> RLVR ; le reward shaping appris de ce notebook y devient un reward model, et le [reward hacking / Goodhart (PT-07)](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) prolonge directement la mise en garde du shaping naif vue ici
+- **[GenAI / PostTraining](../GenAI/PostTraining/README.md)** : la chaîne SFT -> RLHF -> [DPO (PT-03)](../GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb) -> GRPO -> RLVR ; le reward shaping appris de ce notebook y devient un reward model, et le [reward hacking / Goodhart (PT-07)](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) prolonge directement la mise en garde du shaping naif vue ici
 
 ### References
 
@@ -360,8 +360,8 @@ Dans ce notebook nous avons vu que :
 2. Bengio, Y., Louradour, J., Collobert, R., & Weston, J. (2009). *Curriculum learning*. ICML.
 3. Asmuth, J., Baumgardner, T., & Littman, M. (2008). *Potential-based shaping in model-based RL*. AAAI.
 4. Ouyang, L. et al. (2022). *Training language models to follow instructions with human feedback* (InstructGPT/RLHF). NeurIPS.
-5. Rafailov, R. et al. (2023). *Direct Preference Optimization* (DPO). NeurIPS.
-",,,,,,,,4a7f5d69d39918c0,,,,,,,
+5. Rafailov, R. et al. (2023). *Direct Préférence Optimization* (DPO). NeurIPS.
+",,,,,,,,92154540fc9865a3,,,,,,,
 MyIA.AI.Notebooks/RL/rl_11_pomdp.ipynb,280b5259,markdown,fr,d5f836e342a98831,"# RL-11 : POMDP - Partial Observability et Belief Tracking
 
 **Notebook : 11/13** | **Duree** : 45-50 min | **Kernel** : Python 3
@@ -8400,3 +8400,16 @@ Dans ce notebook, nous avons :
 - Haarnoja et al. (2018) - *Soft Actor-Critic Algorithms and Applications*
 - Sutton & Barto, *Reinforcement Learning: An Introduction*, Chapter 13
 - [Spinning Up - SAC](https://spinningup.openai.com/en/latest/algorithms/sac.html)",,,,,,,,bc003fe7a7bc2f22,,,,,,,
+MyIA.AI.Notebooks/RL/rl_10_reward_shaping.ipynb,rl10-verif-interp,markdown,fr,b6efb6d08409e0b0,"### Interpretation : pourquoi le test affiche `False` (et pourquoi le theoreme tient quand meme)
+
+La cellule precedente verifie le theoreme de Ng-Harada-Russell et affiche `False` : l'action optimale semble **differente** avec et sans shaping. Ce resultat **contre-intuitif** ne contredit pas le theoreme — il reflete une limite de la verification numerique.
+
+**1. Un near-tie rend `argmax` instable.** En baseline, les actions `haut` (Q = -12.24583) et `droite` (Q = -12.24582) sont egales a **5 decimales pres** (ecart ~4e-6). Sur un tel quasi-egalite, le moindre bruit numerique fait basculer `argmax` d'une action a l'autre — c'est exactement ce qui se passe ici (`droite` en baseline, `haut` en shaped).
+
+**2. Q-learning en temps fini n'est pas converge.** Le theoreme suppose Q* **exactement** converge : alors `Q'(s,a) = Q*(s,a) + Phi(s)`, et comme `Phi(s)` est le meme pour toutes les actions d'un meme etat, l'ordre relatif des actions est preserve. Mais avec un nombre fini d'episodes, Q reste bruite : la difference `Q_pot - Q_base` n'est pas parfaitement constante d'une action a l'autre (ecart-type ~0.03), donc le decalage exact `+ Phi(s)` ne tient pas au niveau des valeurs.
+
+**3. La politique, elle, est bien preservee.** Ce qui compte dans le theoreme n'est pas la valeur exacte de `argmax` sur un near-tie, mais la **politique globale** : ici, dans les deux cas les actions `haut` et `droite` dominent largement `bas` et `gauche` (ecart ~0.8), et le decalage moyen `Q_pot - Q_base ~= 14` est coherent avec un unique potentiel `Phi(start)`. Le retour cumule d'une politique greedy suit donc la meme trajectoire.
+
+> **Le bon diagnostic** n'est donc pas `argmax == argmax` (trop strict sur un near-tie bruite), mais soit une comparaison au niveau des valeurs `np.allclose(Q_base + Phi, Q_pot, atol=1e-1)`, soit - plus robuste - **l'egalite du retour cumule** des politiques greedy derivées des deux Q. Le theoreme est une propriete asymptotique (Q* converge) ; la verification a `N_EP` fini en est une estimation bruitee.
+
+**Lecon** : potential-based shaping est **sans risque pour la politique optimale** (c'est tout l'interet du theoreme), mais la verification empirique exige de tester la bonne grandeur (politique / retour), pas un argmax ponctuel sur des valeurs non convergees.",,,,,,,,b6efb6d08409e0b0,,,,,,,
