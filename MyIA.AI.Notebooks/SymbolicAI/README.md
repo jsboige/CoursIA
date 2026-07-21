@@ -422,11 +422,12 @@ SymbolicAI/
 │   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (21 notebooks : 10 Agentic + 11 analytiques ; sources Argumentum verbatim EPIC #4960)
+├── Argument_Analysis/         # Analyse argumentative (22 notebooks : 10 Agentic + 11 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
 │   ├── argumentation_analysis/Argumentum/   # submodule source verbatim
+│   ├── groupe-I2-contre-arguments-aspic/    # I2_Contre_arguments_ASPIC.ipynb (sous-dossier)
 │   └── README.md
 │
 ├── SymbolicLearning/          # Apprentissage symbolique (20 notebooks : 12 Python + 8 jumeaux C#)
@@ -591,7 +592,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ## Audit Qualité (juillet 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 10 juillet 2026)
+### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 21 juillet 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
@@ -600,14 +601,14 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SemanticWeb (C# + Python) | 25 | 24 pédagogiques (12 Python + 12 C# jumeaux) | 1 (RDF.Net-Legacy) | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 23 | 22 pédagogiques (14 Python + 9 C# jumeaux) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
-| Argument Analysis (Argumentum + Agentic demo) | 21 | 17 (81%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo) | N/A (projet) |
-| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 22 | 20 pédagogiques (12 Python + 8 C# jumeaux) | 2 (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
+| Argument Analysis (Argumentum + Agentic demo) | 22 | 18 (82%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo, dont le `_0-init` est le setup projet) | N/A (projet) |
+| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 20 | 18 (90%) | 2 (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 24 | 24 (100%, 18 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 219/221 notebooks pédagogiques (99%) — soit 221 fichiers `.ipynb` (hors `_output` gitignored), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), et 1 archive Planners (`archive/Fast-Downward-Legacy`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **21 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls).
+**Total** : 219/220 notebooks pédagogiques (99%) — soit 220 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **21 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence).
 
-> **Note (21/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux + 2 archives EML, Argument_Analysis 22 = 10 Agentic + 11 analytiques + 1 groupe I2 contre-arguments ASPIC). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
+> **Note (21/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 
 ### Problèmes connus (juillet 2026)
 
