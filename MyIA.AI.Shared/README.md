@@ -43,6 +43,51 @@ provider.SimpleEntities;    // { PaymentGateway }
 provider.Categories;        // { "Payment" }
 ```
 
+## A2 — Sérialisation légo JSON décoration-driven (#7265)
+
+Deuxième tranche. Pose le sérialiseur JSON qui round-trip le modèle metadata A1 : on
+sérialise un graphe décoré/marqué et on le recharge en un graphe équivalent, avec la
+hiérarchie `IChildEntity` (types concrets des enfants, back-references `Parent`,
+catégories redécouvrables) intacte.
+
+| Type | Rôle |
+|------|------|
+| `ComponentModel.Serialization.MetadataContractResolver` | Contract resolver Newtonsoft qui pilote la sérialisation depuis la décoration A1. Casse le cycle parent/enfant en dropant le back-ref `Parent` (reconstruit au load). |
+| `ComponentModel.Serialization.MetadataJsonSerializer` | Façade `Serialize` / `Deserialize<T>` : `TypeNameHandling.Auto` sur `Children` polymorphes pour reconstruire les types concrets, puis re-link des `Parent` post-load. |
+
+### Contrat round-trip
+
+```csharp
+using MyIA.AI.ComponentModel.Serialization;
+
+var folder = new ContentFolder();
+folder.AddChild(new ContentItem { Title = "release-notes" });
+
+var json = MetadataJsonSerializer.Serialize(folder);
+var back = MetadataJsonSerializer.Deserialize<ContentFolder>(json);
+
+back.Children[0];                  // ContentItem reconstruit via $type
+back.Children[0].Parent;           // re-linké sur back (cycle cassé puis reconstruit)
+```
+
+**Caveat sécurité** : `TypeNameHandling.Auto` embarque des noms de types runtime et les
+lie au load — approprié pour un socle interne sérialisant des graphes **de confiance**
+(configs, arbres d'entités propres). **Ne pas** nourrir ce sérialiseur avec de l'input
+non fiable (construire plutôt des `JsonSerializerSettings` en `TypeNameHandling.None`).
+
+## A2+ — Sérialisation légo XML décoration-driven (#7265)
+
+Complément XML de la tranche A2. Même objectif de round-trip du modèle metadata A1,
+cette fois sur `System.Xml.Serialization`. `XmlSerializer` ne sait pas round-tripper un
+`IReadOnlyList<IChildEntity>` (read-only + polymorphe), le graphe vivant est donc projeté
+vers une forme sérialisable puis reconstruit au load.
+
+| Type | Rôle |
+|------|------|
+| `ComponentModel.Serialization.XmlAwareContractResolver` | Plan décoration-driven : un discriminateur de type par type concret (les enfants polymorphes se reconstruisent dans leur type concret, pas `IChildEntity`) + les propriétés de valeur round-trippables par type (get+set publics, hors `IChildEntity.Parent` — le cycle est rebâti au load). |
+| `ComponentModel.Serialization.NodeSurrogate` (+ `PropertySurrogate`) | La forme arborescente sérialisable XML. Projection du graphe vivant vers discriminateur de type + sac de propriétés + enfants récursifs. |
+| `ComponentModel.Serialization.MetadataXmlSerializer` | Façade `Serialize` / `Deserialize<T>` : sérialise le graphe en XML indenté ; au load reconstruit l'arbre concret (instanciation par discriminateur, restauration des propriétés de valeur, re-link des `Parent` via `AddChild`). |
+
 ## Build & tests
 
 ```bash
@@ -93,8 +138,6 @@ reflected["Payment"]; simple["Payment"]; auto["Payment"];
 
 ## Tranches suivantes (hors cette ancre)
 
-- **A2** — Sérialisation légo (XML/JSON décoration-driven) :
-  `XmlAwareContractResolver`, `DynamicSurrogate`, collections sérialisables.
 - **A3** — Object explorer UI : `AdvancedGridView`, `PropertyEditor`, filtres.
 
 ## Références
