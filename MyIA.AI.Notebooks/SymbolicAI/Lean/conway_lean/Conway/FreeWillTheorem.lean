@@ -47,90 +47,90 @@ namespace FreeWillTheorem
 open KochenSpecker
 
 /-!
-## Stage 1: Single-particle Free Will Theorem
+## Étape 1 : Théorème du libre arbitre à une particule
 
-A deterministic (hidden-variable) universe produces fixed {0,1} outcomes
-for every measurement direction, determined by the hidden state. The SPIN
-axiom forces these outcomes to satisfy the Kochen-Specker constraint.
-Since KS proves no such coloring exists, deterministic models are
-impossible.
+Un univers déterministe (à variables cachées) produit des résultats {0,1} fixés
+pour chaque direction de mesure, déterminés par l'état caché. L'axiome
+SPIN force ces résultats à satisfaire la contrainte de Kochen-Specker.
+Puisque KS prouve qu'aucune telle coloration n'existe, les modèles
+déterministes sont impossibles.
 -/
 
-/-- Abstract type for hidden variables (the "past" of the universe).
-    In a deterministic model, all measurement outcomes are fixed
-    once the hidden state is known. -/
+/-- Type abstrait pour les variables cachées (le « passé » de l'univers).
+    Dans un modèle déterministe, tous les résultats de mesure sont fixés
+    une fois l'état caché connu. -/
 abbrev HiddenState := ℕ
 
-/-- A deterministic response function maps each hidden state and
-    measurement direction to a definite {0,1} outcome.
+/-- Une fonction de réponse déterministe associe à chaque état caché et
+    chaque direction de mesure un résultat {0,1} défini.
 
-    In Conway-Kochen's language, this represents the hypothesis that
-    "particle responses are functions of the past" — specifically,
-    functions of the hidden variable λ and the measurement direction. -/
+    Dans le langage de Conway-Kochen, cela représente l'hypothèse selon
+    laquelle « les réponses des particules sont des fonctions du passé » —
+    plus précisément, des fonctions de la variable cachée λ et de la direction de mesure. -/
 abbrev DeterministicResponse := HiddenState → VecIdx → Bool
 
-/-- **SPIN axiom** (simplified for the Cabello 18-vector setting):
-    for each hidden state, the response function defines a valid coloring
-    of the Cabello vectors. Physically: measuring the squared spin
-    component along each of 4 mutually orthogonal projectors yields
-    exactly one "1" (and three "0"s) per orthogonal basis.
+/-- **Axiome SPIN** (simplifié pour le cadre à 18 vecteurs de Cabello) :
+    pour chaque état caché, la fonction de réponse définit une coloration
+    valide des vecteurs de Cabello. Physiquement : mesurer la composante
+    du carré du spin selon chacun de 4 projecteurs mutuellement orthogonaux
+    donne exactement un « 1 » (et trois « 0 ») par base orthogonale.
 
-    This is precisely the `IsValidColoring` constraint from the
-    Kochen-Specker formalization. -/
+    C'est précisément la contrainte `IsValidColoring` de la
+    formalisation de Kochen-Specker. -/
 def SatisfiesSPIN (f : DeterministicResponse) : Prop :=
   ∀ state : HiddenState, IsValidColoring (f state)
 
-/-- **Free Will Theorem (single-particle version)**.
-    No deterministic response function is compatible with SPIN.
+/-- **Théorème du libre arbitre (version à une particule)**.
+    Aucune fonction de réponse déterministe n'est compatible avec SPIN.
 
-    *Proof*: For any hidden state `λ`, the function `f(λ, ·)` is a
-    `{0,1}`-coloring of the 18 vectors. By SPIN, this coloring satisfies
-    `IsValidColoring` (exactly one `true` per context). But the
-    Kochen-Specker theorem proves no such coloring exists.
+    *Preuve* : Pour tout état caché `λ`, la fonction `f(λ, ·)` est une
+    coloration `{0,1}` des 18 vecteurs. Par SPIN, cette coloration satisfait
+    `IsValidColoring` (exactement un `true` par contexte). Mais le
+    théorème de Kochen-Specker prouve qu'aucune telle coloration n'existe.
     Contradiction.
 
-    In Conway-Kochen's language: "the particle's response is free" —
-    meaning it cannot be a deterministic function of the hidden state. -/
+    Dans le langage de Conway-Kochen : « la réponse de la particule est libre » —
+    c'est-à-dire qu'elle ne peut pas être une fonction déterministe de l'état caché. -/
 theorem fwt_single_particle :
     ¬ ∃ f : DeterministicResponse, SatisfiesSPIN f := by
   rintro ⟨f, hspin⟩
   exact kochen_specker ⟨f 0, hspin 0⟩
 
 /-!
-## Stage 2: Two-particle Free Will Theorem
+## Étape 2 : Théorème du libre arbitre à deux particules
 
-Two spin-1 particles are prepared in an entangled state and sent to
-spatially separated experimenters Alice and Bob. Alice measures along
-direction x, Bob along direction y. Three axioms constrain the outcomes:
+Deux particules de spin 1 sont préparées dans un état intriqué et envoyées à
+deux expérimentateurs spatialement séparés, Alice et Bob. Alice mesure selon
+la direction x, Bob selon la direction y. Trois axiomes contraignent les résultats :
 
-  - **SPIN**: squared spin along orthogonal directions gives exactly one "1"
-  - **TWIN**: parallel measurements on entangled particles give same result
-  - **MIN**: experimenter choices are independent (spacelike separation)
+  - **SPIN** : le carré du spin selon des directions orthogonales donne exactement un « 1 »
+  - **TWIN** : les mesures parallèles sur des particules intriquées donnent le même résultat
+  - **MIN** : les choix des expérimentateurs sont indépendants (séparation de type espace)
 
-The conclusion: neither particle's response can be a function of the past.
+La conclusion : la réponse d'aucune des deux particules ne peut être une fonction du passé.
 -/
 
-/-- Two spatially separated experimenters. -/
+/-- Deux expérimentateurs spatialement séparés. -/
 inductive Experimenter
   | alice
   | bob
   deriving DecidableEq, Fintype
 
-/-- A two-particle deterministic model assigns a definite {0,1} outcome
-    to each experimenter, hidden state, and measurement direction.
+/-- Un modèle déterministe à deux particules associe un résultat {0,1} défini
+    à chaque expérimentateur, état caché et direction de mesure.
 
-    This represents the hypothesis that both particles' responses are
-    determined by hidden variables: `f(λ, e, d)` gives the predetermined
-    outcome when experimenter `e` measures along direction `d` in the
-    hidden state `λ`. -/
+    Cela représente l'hypothèse selon laquelle les réponses des deux particules sont
+    déterminées par des variables cachées : `f(λ, e, d)` donne le résultat
+    prédéterminé lorsque l'expérimentateur `e` mesure selon la direction `d` dans
+    l'état caché `λ`. -/
 abbrev TwoParticleResponse := HiddenState → Experimenter → VecIdx → Bool
 
-/-- **TWIN axiom**: when both experimenters measure along the *same*
-    direction, they get the same response. This is the signature of
-    quantum entanglement — the EPR correlation.
+/-- **Axiome TWIN** : lorsque les deux expérimentateurs mesurent selon la *même*
+    direction, ils obtiennent la même réponse. C'est la signature de
+    l'intrication quantique — la corrélation EPR.
 
-    Physically: if Alice measures spin-squared along direction d and
-    Bob also measures along d (parallel directions), their outcomes agree. -/
+    Physiquement : si Alice mesure le carré du spin selon la direction d et
+    Bob mesure aussi selon d (directions parallèles), leurs résultats coïncident. -/
 def SatisfiesTWIN (f : TwoParticleResponse) : Prop :=
   ∀ state : HiddenState, ∀ dir : VecIdx,
     f state .alice dir = f state .bob dir
@@ -144,28 +144,28 @@ def SatisfiesTWIN (f : TwoParticleResponse) : Prop :=
    (the speed-of-light constraint) and is cleaner to formalize:
    it simply says Alice's response doesn't depend on Bob's axis choice. -/
 
-/-- A two-particle deterministic model satisfies all Free Will Theorem
-    axioms: SPIN for both particles, TWIN correlation, and MIN
-    (structural independence).
+/-- Un modèle déterministe à deux particules satisfait tous les axiomes du théorème
+    du libre arbitre : SPIN pour les deux particules, corrélation TWIN, et MIN
+    (indépendance structurelle).
 
-    MIN is satisfied by construction: each `f state e dir` does not
-    take the other experimenter's direction as input. -/
+    MIN est satisfait par construction : chaque `f state e dir` ne prend pas
+    la direction de l'autre expérimentateur en entrée. -/
 structure SatisfiesFWT (f : TwoParticleResponse) : Prop where
   spin : ∀ e : Experimenter, SatisfiesSPIN (f · e)
   twin : SatisfiesTWIN f
 
-/-- **Free Will Theorem (two-particle version, Conway-Kochen 2009)**.
-    No two-particle deterministic model satisfies all FWT axioms.
+/-- **Théorème du libre arbitre (version à deux particules, Conway-Kochen 2009)**.
+    Aucun modèle déterministe à deux particules ne satisfait tous les axiomes du FWT.
 
-    *Proof*: By TWIN, Alice and Bob share the same response function.
-    By SPIN for Alice, this shared function defines a valid coloring of
-    the Cabello vectors for each hidden state. But the single-particle
-    FWT (hence Kochen-Specker) says no such function exists.
+    *Preuve* : Par TWIN, Alice et Bob partagent la même fonction de réponse.
+    Par SPIN pour Alice, cette fonction partagée définit une coloration valide des
+    vecteurs de Cabello pour chaque état caché. Mais le FWT à une particule
+    (donc Kochen-Specker) dit qu'aucune telle fonction n'existe.
     Contradiction.
 
-    *Conclusion* (Conway-Kochen): the responses of the particles are
-    *not* determined by the past. In their mathematical definition,
-    the particles have "free will". -/
+    *Conclusion* (Conway-Kochen) : les réponses des particules ne sont
+    *pas* déterminées par le passé. Dans leur définition mathématique,
+    les particules ont le « libre arbitre ». -/
 theorem free_will_theorem :
     ¬ ∃ f : TwoParticleResponse, SatisfiesFWT f := by
   rintro ⟨f, hfwt⟩
@@ -175,38 +175,38 @@ theorem free_will_theorem :
   exact fwt_single_particle ⟨(f · .alice), hspin_alice⟩
 
 /-!
-## Corollary: the "strong" form
+## Corollaire : la forme « forte »
 
-The strong Free Will Theorem (2009 version with MIN) further asserts
-that *if* the experimenters' choices are free (not determined by the
-past), *then* the particles' responses must also be free.
+Le théorème du libre arbitre fort (version 2009 avec MIN) affirme de plus
+que *si* les choix des expérimentateurs sont libres (non déterminés par le
+passé), *alors* les réponses des particules doivent aussi être libres.
 
-In our formalization, we've proved the contrapositive: if responses
-WERE determined by hidden variables, the axioms would be violated.
-Equivalently: under SPIN + TWIN + MIN, responses are not deterministic.
+Dans notre formalisation, nous avons prouvé la contraposée : si les réponses
+ÉTAIENT déterminées par des variables cachées, les axiomes seraient violés.
+De façon équivalente : sous SPIN + TWIN + MIN, les réponses ne sont pas déterministes.
 -/
 
 end FreeWillTheorem
 
 /-!
-## Connection to Conway's Legacy
+## Connexion à l'héritage de Conway
 
-The Free Will Theorem is the second pillar of Conway's mathematical
-legacy formalized in this workspace, completing the hommage alongside
-the Game of Life (Epic #1647):
+Le théorème du libre arbitre est le deuxième pilier de l'héritage mathématique
+de Conway formalisé dans cet espace de travail, complétant l'hommage aux
+côtés du Jeu de la Vie (Epic #1647) :
 
-  1. **Life** (Phase 2): emergence of complex computation from simple rules
-  2. **Free Will Theorem** (Phase 3): mathematical limits of determinism
+  1. **Life** (Phase 2) : émergence du calcul complexe à partir de règles simples
+  2. **Free Will Theorem** (Phase 3) : limites mathématiques du déterminisme
 
-Both are quintessentially Conway: elegant, surprising, and accessible
-once properly framed. The KS theorem (18-vector Cabello proof) serves
-as the combinatorial engine, and the FWT itself is a one-line reduction.
+Les deux sont Conway dans sa quintessence : élégants, surprenants, et accessibles
+une fois correctement cadrés. Le théorème KS (preuve de Cabello à 18 vecteurs) sert
+de moteur combinatoire, et le FWT lui-même est une réduction en une ligne.
 
-Hall of Fame:
-  - Conway & Kochen (2006) — Free Will Theorem (original)
-  - Conway & Kochen (2009) — Strong Free Will Theorem (MIN version)
-  - Kochen & Specker (1967) — original 117-vector KS theorem
-  - Cabello, Estebaranz, Garcia-Alcaine (1996) — 18-vector tight KS proof
+Palmarès :
+  - Conway & Kochen (2006) — Théorème du libre arbitre (original)
+  - Conway & Kochen (2009) — Théorème du libre arbitre fort (version MIN)
+  - Kochen & Specker (1967) — théorème KS original à 117 vecteurs
+  - Cabello, Estebaranz, Garcia-Alcaine (1996) — preuve KS serrée à 18 vecteurs
 -/
 
 end Conway
