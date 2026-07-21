@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-20 06:35
-Total notebooks: 826
+Generated: 2026-07-21 06:14
+Total notebooks: 830
 
 ## Status Summary
 
-- **READY**: 660
+- **READY**: 664
 - **DEMO**: 164
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,9 +13,9 @@ Total notebooks: 826
 ## Maturity Summary
 
 - **PRODUCTION**: 598
-- **BETA**: 169
+- **BETA**: 171
 - **TEMPLATE**: 4
-- **ALPHA**: 51
+- **ALPHA**: 53
 - **DRAFT**: 4
 
 ## By Series
@@ -166,7 +166,7 @@ Total notebooks: 826
 | 140 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 141 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (112 notebooks) — READY:112 | BETA:28, PRODUCTION:84
+### Search (113 notebooks) — READY:113 | BETA:29, PRODUCTION:84
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -280,8 +280,9 @@ Total notebooks: 826
 | 108 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 109 | MGS-6 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 110 | MGS-7 : TSP combinatoire -- la grammaire de compos | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 111 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 112 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 111 | MGS-7b : projection multi-dimensionnelle des paysa | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 112 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 113 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 
 ### ML (47 notebooks) — DEMO:3, READY:44 | ALPHA:1, BETA:5, PRODUCTION:41
 
@@ -692,7 +693,7 @@ Total notebooks: 826
 | 16 | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 17 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 18 | GameTheory-16-MechanismDesign (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 19 | GameTheory-16 : Théorie des Mécanismes et Principe | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
+| 19 | GameTheory-16 : Théorie des Mécanismes et Principe | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
 | 20 | GameTheory-17 (C#) : Multi-Agent Reinforcement Lea | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 21 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 22 | GameTheory-2 (Part 2) : Support Enumeration — Équi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
@@ -829,7 +830,7 @@ Total notebooks: 826
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
-### IIT (34 notebooks) — READY:34 | ALPHA:1, BETA:22, PRODUCTION:11
+### IIT (37 notebooks) — READY:37 | ALPHA:3, BETA:23, PRODUCTION:11
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -841,32 +842,35 @@ Total notebooks: 826
 | 6 | ICT-14 — Énergie libre et surprise du représentant | Python 3 | READY | BETA | 30min | po-2025 |
 | 7 | ICT-15 — Integrated Complexity : convergence Φ / F | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 8 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | BETA | 30min | po-2025 |
-| 9 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
-| 10 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | BETA | 30min | po-2025 |
-| 11 | Grokking et compression-progress : la jambe K à l' | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 12 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
-| 13 | ICT-18b — Budget de réversibilité : la jambe « fin | Python 3 | READY | BETA | 30min | po-2025 |
-| 14 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 15 | ICT-19 — Raffinement et résolution des stubs (tran | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 16 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 17 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 18 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
-| 19 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
-| 20 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
-| 21 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
-| 22 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
-| 23 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 24 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
-| 25 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
-| 26 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
-| 27 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 28 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 29 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 30 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 31 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 32 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
-| 33 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
-| 34 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 9 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 10 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 11 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
+| 12 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | BETA | 30min | po-2025 |
+| 13 | Grokking et compression-progress : la jambe K à l' | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 14 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
+| 15 | ICT-18b — Budget de réversibilité : la jambe « fin | Python 3 | READY | BETA | 30min | po-2025 |
+| 16 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 17 | ICT-19 — Raffinement et résolution des stubs (tran | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 18 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 19 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 20 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
+| 21 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
+| 22 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
+| 23 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
+| 24 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
+| 25 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 26 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
+| 27 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 28 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
+| 29 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 30 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 31 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 32 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
+| 33 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 34 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 35 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 30min | po-2025 |
+| 36 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
+| 37 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
 ### RL (17 notebooks) — DEMO:1, READY:16 | BETA:2, PRODUCTION:15
 
@@ -897,4 +901,4 @@ Total notebooks: 826
 - **GPU**: 93 notebooks
 - **Cloud**: 105 notebooks
 - **WSL**: 42 notebooks
-- **Local**: 514 notebooks
+- **Local**: 518 notebooks

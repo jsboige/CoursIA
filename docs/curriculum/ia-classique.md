@@ -4,15 +4,13 @@
 
 Algorithmes de recherche classique, satisfaction de contraintes (CSP), résolution de Sudoku, planification classique. De A* aux heuristiques avancées, en passant par les solveurs SAT/SMT.
 
-**Last reviewed**: 2026-07-20
-
 ## Statistiques
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 147 |
+| Notebooks | 148 |
 | PRODUCTION | 114 |
-| BETA | 33 |
+| BETA | 34 |
 | ALPHA | 0 |
 
 ## Search/Applications (40 notebooks)
@@ -128,7 +126,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 5 | Search-14 (C#) — Weighted A\* : recherche à sous-optima | PRODUCTION | Oui |
 | 6 | Search-14 — Weighted A\* : recherche à sous-optimalité  | BETA | Oui |
 
-## Search/Part4-Metaheuristics (19 notebooks)
+## Search/Part4-Metaheuristics (20 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -149,8 +147,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 15 | MGS-5 : Construire les métaheuristiques composées — des | BETA | Oui |
 | 16 | MGS-6 : Benchmarks comparatifs -- l'argument primitives | BETA | Oui |
 | 17 | MGS-7 : TSP combinatoire -- la grammaire de composition | BETA | Oui |
-| 18 | MGS-8 : Fitness Landscape Explorer -- voir la surface p | PRODUCTION | Oui |
-| 19 | MGS-9 - Trouver l'Everest : relief reel et bassins d'at | PRODUCTION | Oui |
+| 18 | MGS-7b : projection multi-dimensionnelle des paysages ( | BETA | Oui |
+| 19 | MGS-8 : Fitness Landscape Explorer -- voir la surface p | PRODUCTION | Oui |
+| 20 | MGS-9 - Trouver l'Everest : relief reel et bassins d'at | PRODUCTION | Oui |
 
 ## Sudoku (35 notebooks)
 
