@@ -35,6 +35,25 @@ from typing import List, Dict, Optional
 _HISTORY_DIR_NAME = ".prover_history"
 
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Boundary guard: reject None / non-str degenerate inputs (#7596-pattern, G.9).
+
+    Converts OPAQUE TypeErrors/AttributeErrors into clear ValueErrors naming the
+    offending argument, so a prover workflow that forwards an agent-generated None
+    filepath/tactic (LLM call failed, missing field, extraction regex returned
+    None, upstream sorry-localizer produced no file) fails fast with a
+    diagnosable message — instead of crashing deep inside ``_history_path``
+    (``filepath.encode`` on None → ``AttributeError``) or ``_normalize_tactic``
+    (``tactic.strip`` on None → ``AttributeError``), where the original cause is
+    obscured. Mirrors the guard introduced in knowledge.py (#7637) and
+    lean_utils.py (#7616)."""
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 def _normalize_tactic(tactic: str) -> str:
     """Whitespace-normalized tactic key for dedup."""
     return re.sub(r"\s+", " ", tactic.strip())
@@ -48,6 +67,7 @@ def _history_path(prover_dir: Path, filepath: str, sorry_line: int) -> Path:
 
 def load_history(prover_dir: Path, filepath: str, sorry_line: int) -> List[Dict]:
     """Load past attempts for a (filepath, sorry_line). Returns [] if none."""
+    filepath = _require_str("filepath", filepath)
     path = _history_path(prover_dir, filepath, sorry_line)
     if not path.exists():
         return []
@@ -67,6 +87,8 @@ def record_attempt(prover_dir: Path, filepath: str, sorry_line: int,
     `outcome` ∈ {"success", "build_fail", "no_progress", "regression"}.
     Same normalized tactic appearing twice with the same outcome is collapsed.
     """
+    filepath = _require_str("filepath", filepath)
+    tactic = _require_str("tactic", tactic)
     path = _history_path(prover_dir, filepath, sorry_line)
     path.parent.mkdir(parents=True, exist_ok=True)
 
