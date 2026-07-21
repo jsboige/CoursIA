@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: SymbolicAI-SMT-Z3Linq2Z3
+pedagogical_count: 18
+breakdown: Z3-Linq2Z3=18
+maturity: PRODUCTION=2, BETA=16
+-->
+
 # Série Z3 - Programmation Déclarative avec Z3.Linq
 
 [← SMT](../README.md) | [Z3-API (série sœur) →](../Z3-API/README.md)
