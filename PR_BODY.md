@@ -12,12 +12,12 @@
 
 - `docs/ledgers/3801-sota-axe2.md` append entry #017 (commit `42ba106d7`, **+86/-0 sur 1 fichier ledger**, aucun source notebook touché) — **EXEC_PROVED** avec G.1 11/11 PASS :
   - Notebook count vérifié : `find MyIA.AI.Notebooks/ML/DataScienceWithAgents -name "*.ipynb" | wc -l` = **27/27** ✅
-  - Sub-series distribution vérifiée : 01-PythonForDataScience=2 + 02-ML-Cours=8 + PythonAgentsForDataScience=7 + AgenticDataScience=10 ✅
+  - Sub-series distribution vérifiée : 01-PythonForDataScience=2 + 02-ML-Cours=8 + Track1-LangChain=7 + Track2-GoogleADK=10 ✅
   - Kernelspec homogeneity vérifiée : 27/27 = `python3` mono-kernel strict ✅
   - EXEC + error analysis vérifié : 708 cells total / 294 code / **294 EXEC (100%)** / **0 errors** ✅
   - C.1 violations vérifiées : regex `raise NotImplementedError|assert False|1/0` = **0 hits** (7 cellules "stripped" = exercices C.1 stubs intentionnels `# TODO etudiant`, légitime) ✅
   - SOTA imports multi-patterns C397-L1 : sklearn 13/13 ✅ + pandas 18/18 ✅ + numpy 17/17 ✅ + matplotlib 11/11 ✅ + langchain 3 (Lab6 utilise `langchain_openai` direct = pattern LangChain v0.3+ moderne de packages splittés) + langchain_openai 4/4 ✅ + langchain_experimental 1/1 ✅ + seaborn 1/1 ✅ + requests 1/1 ✅
-  - Stack structurante vérifiée : `requirements.txt` (AgenticDataScience) déclare litellm>=1.40.0 + google-generativeai>=0.8.0 + google-adk>=0.3.0 + mlflow>=2.10.0 + optuna>=3.5.0 + kaggle>=1.6.0 + tavily-python>=0.3.0 + duckduckgo-search>=4.0.0 + google-cloud-bigquery>=3.0.0 + google-cloud-aiplatform>=1.40.0 ✅
+  - Stack structurante vérifiée : `requirements.txt` (Track2-GoogleADK) déclare litellm>=1.40.0 + google-generativeai>=0.8.0 + google-adk>=0.3.0 + mlflow>=2.10.0 + optuna>=3.5.0 + kaggle>=1.6.0 + tavily-python>=0.3.0 + duckduckgo-search>=4.0.0 + google-cloud-bigquery>=3.0.0 + google-cloud-aiplatform>=1.40.0 ✅
   - `utils/llm_client.py` litellm integration vérifiée : `from litellm import completion` line 8 + `response = completion(**call_kwargs)` lines 86+120 ✅
   - Secrets-hygiene vérifiée : `config/providers.py` lines 32+72+76+81+88 tous `Optional[str] = None` (no literal fallback) ✅ + `utils/llm_client.py` `if self.config.api_key:` propagation directe (no hardcode) ✅ + `.env.example` placeholders `your-*-api-key` ✅ + `grep -nE "API_KEY\\s*=\\s*['\"][a-zA-Z0-9_-]{20,}"` = **0 hits** sur les 27 notebooks ✅
   - PR diff vérifié firsthand : `git diff --stat origin/main...pr-6034` = **1 file +86/-0** match body claim à 0 ligne près ✅

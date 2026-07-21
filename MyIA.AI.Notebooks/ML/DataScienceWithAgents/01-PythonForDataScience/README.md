@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (parent)](../README.md) | [02-ML-Cours (suite) →](../02-ML-Cours/README.md)
 
-Le socle Python data science qui précède tout le reste de la formation `DataScienceWithAgents` : **NumPy** pour les tableaux et la vectorisation, **Pandas** pour les données tabulaires. Deux notebooks volontairement resserrés, pensés comme le prérequis des fondations ML canoniques (`02-ML-Cours`) et des labs agentiques (`PythonAgentsForDataScience`), là où l'on interroge un DataFrame ou l'on entraîne un modèle.
+Le socle Python data science qui précède tout le reste de la formation `DataScienceWithAgents` : **NumPy** pour les tableaux et la vectorisation, **Pandas** pour les données tabulaires. Deux notebooks volontairement resserrés, pensés comme le prérequis des fondations ML canoniques (`02-ML-Cours`) et des labs agentiques (`Track1-LangChain`), là où l'on interroge un DataFrame ou l'on entraîne un modèle.
 
 ## Pourquoi cette série
 
@@ -15,7 +15,7 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 | [1.2-NumPy](notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | `ndarray`, opérations vectorisées, agrégations (`sum`, `mean`), gain de performance vs boucles | ~45 min |
 | [1.3-Pandas](notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | `DataFrame`, sélection de colonnes, filtrage booléen, manipulation tabulaire | ~60 min |
 
-> **Numérotation.** La série commence à `1.2` car le `1.1` d'introduction est couvert par le [README parent](../README.md). La continuité logique est `1.2` (NumPy) → `1.3` (Pandas) → [Lab 1](../PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb) (mise en pratique sur ventes synthétiques) → [02-ML-Cours 2.1](../02-ML-Cours/2.1-Workflow-ML.ipynb).
+> **Numérotation.** La série commence à `1.2` car le `1.1` d'introduction est couvert par le [README parent](../README.md). La continuité logique est `1.2` (NumPy) → `1.3` (Pandas) → [Lab 1](../Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) (mise en pratique sur ventes synthétiques) → [02-ML-Cours 2.1](../02-ML-Cours/2.1-Workflow-ML.ipynb).
 
 ## Objectifs d'apprentissage
 
@@ -36,4 +36,4 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 
 Ces fondations posées, la formation se poursuit sur deux axes complémentaires :
 - **[02-ML-Cours](../02-ML-Cours/README.md)** — le socle scikit-learn canonique (workflow ML, descente de gradient, régression, arbres, biais-variance, clustering) qui ouvre la boîte noire de `fit()`.
-- **[PythonAgentsForDataScience](../PythonAgentsForDataScience/README.md)** — le track LangChain (7 labs) qui passe « de la data aux agents IA ».
+- **[Track1-LangChain](../Track1-LangChain/README.md)** — le track LangChain (7 labs) qui passe « de la data aux agents IA ».

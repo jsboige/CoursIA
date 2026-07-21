@@ -114,7 +114,7 @@ Chaque notebook suit les mêmes conventions :
 
 ## Suite logique
 
-Cette série est le **référent manuel** des labs agentic qui suivent. Une fois le socle ML posé, le track [PythonAgentsForDataScience](../PythonAgentsForDataScience/README.md) (LangChain) et [AgenticDataScience](../AgenticDataScience/README.md) (Google ADK) demandent à des agents LLM de produire ce même type de pipeline — la valeur de ce qu'ils génèrent ne se juge qu'au regard de ce socle.
+Cette série est le **référent manuel** des labs agentic qui suivent. Une fois le socle ML posé, le track [Track1-LangChain](../Track1-LangChain/README.md) (LangChain) et [Track2-GoogleADK](../Track2-GoogleADK/README.md) (Google ADK) demandent à des agents LLM de produire ce même type de pipeline — la valeur de ce qu'ils génèrent ne se juge qu'au regard de ce socle.
 
 ## Références transverses
 
@@ -131,7 +131,7 @@ La série s'ouvrait sur une thèse : *on ne peut juger ce qu'un agent LLM produi
 ### Pour prolonger
 
 - **Approfondir la théorie** : Hastie, Tibshirani & Friedman, *The Elements of Statistical Learning* (2009) reprend et formalise l'ensemble de ces chapitres ; le [guide utilisateur scikit-learn](https://scikit-learn.org/stable/user_guide.html) (Pedregosa et al. 2011) en est le prolongement pratique direct.
-- **Exercer le jugement** : reprenez un notebook des tracks [PythonAgentsForDataScience](../PythonAgentsForDataScience/README.md) ou [AgenticDataScience](../AgenticDataScience/README.md) et confrontez le pipeline produit par l'agent aux quatre questions ci-dessus — c'est le meilleur exercice de consolidation, car il met le socle au travail.
+- **Exercer le jugement** : reprenez un notebook des tracks [Track1-LangChain](../Track1-LangChain/README.md) ou [Track2-GoogleADK](../Track2-GoogleADK/README.md) et confrontez le pipeline produit par l'agent aux quatre questions ci-dessus — c'est le meilleur exercice de consolidation, car il met le socle au travail.
 - **Vers le deep learning et le RL** : la descente de gradient (2.2) et la notion de capacité d'un modèle (2.8) sont les deux fondations directement réinvesties par les réseaux de neurones ; l'épilogue [2.9](2.9-Grokking-Generalisation.ipynb) fait ce premier pas (un réseau de neurones qui *grokke*, entraîné en quelques minutes sur CPU), et la série [RL](../../../RL/README.md) montre cette même descente de gradient à l'œuvre dans l'apprentissage par renforcement profond (DQN, PPO).
 
 ---

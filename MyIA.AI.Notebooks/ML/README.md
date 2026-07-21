@@ -124,8 +124,8 @@ ML/
 ├── DataScienceWithAgents/            # Data Science Python + AI Agents
 │   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
-│   ├── PythonAgentsForDataScience/   # Track LangChain (Labs 1-7)
-│   └── AgenticDataScience/           # Track Google ADK (Labs 8-17)
+│   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
+│   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-17)
 │
 └── learning_theory_lean/                  # Lake Lean 4 — convergence du perceptron (Novikoff)
 ```
@@ -154,10 +154,10 @@ pip install langchain langchain-openai langchain-experimental
 # + variable d'environnement OPENAI_API_KEY dans un fichier .env
 ```
 
-### Installation AgenticDataScience Labs (Days 4-7)
+### Installation Track2-GoogleADK Labs (Days 4-7)
 
 ```bash
-pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
+pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/requirements.txt
 cp .env.example .env  # puis configurer les clés API
 ```
 
@@ -215,13 +215,13 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 #### Trois figures du track Data Science (Pandas, Seaborn, ADK)
 
-[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb)
+[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 *Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
 
-[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
 *Lab5 — matplotlib pur : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style `seaborn-v0_8-whitegrid` (un **style matplotlib**, pas un import `seaborn`) appliqué à un DataFrame Pandas.*
 
-[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
 *Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, à partir de la requête « Crée un graphique à barres montrant le revenu par produit. Utilise matplotlib. » (cellule 17). Le **tri décroissant** (`sort_values(ascending=False)`) n'était pas demandé : l'agent l'a ajouté spontanément, ce qui rend l'insight (Gadget Y bat Widget A de ~70%) immédiatement lisible — petit pas vers le « diagramme qui parle de lui-même ».*
 
 ### Socle ML canonique (02-ML-Cours)
@@ -242,7 +242,7 @@ Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning
 
 Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous. Le notebook 2.9 (grokking) est un **épilogue avancé** qui rend visible un phénomène empirique (la généralisation *après* surapprentissage complet) souvent cité dans la littérature récente (Power et al., 2022), positionné hors du parcours fundamentals par PR #7280.
 
-### Workshop 3 Jours (PythonAgentsForDataScience)
+### Workshop 3 Jours (Track1-LangChain)
 
 | Jour | Lab | Nom | Objectif |
 |------|-----|-----|----------|
@@ -254,7 +254,7 @@ Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 
 | **Day 3** | 6 | First Agent | Construire un agent simple (LLM + Tools) |
 | **Day 3** | 7 | Data Analysis Agent | Agent pour interroger des DataFrames |
 
-### Track AgenticDataScience (Days 4-7)
+### Track Track2-GoogleADK (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider (Gemini 3.1, vLLM, OpenAI).
 
@@ -271,7 +271,7 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Day 7** | 16 | Data Science Agent | Agent BigQuery/BQML |
 | **Day 7** | 17 | Final Project | Projet intégré |
 
-Documentation complète : [DataScienceWithAgents/AgenticDataScience/README.md](DataScienceWithAgents/AgenticDataScience/README.md)
+Documentation complète : [DataScienceWithAgents/Track2-GoogleADK/README.md](DataScienceWithAgents/Track2-GoogleADK/README.md)
 
 ## Théorie formelle (Lean)
 
@@ -345,7 +345,7 @@ Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont 
 
 1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervisé/non supervisé
 2. **DataScienceWithAgents** (Day 1-7) : découvrir les agents IA et le RAG
-3. **AgenticDataScience** (Day 4-7) : agents avancés avec Google ADK
+3. **Track2-GoogleADK** (Day 4-7) : agents avancés avec Google ADK
 
 Les deux sous-séries sont indépendantes et peuvent être suivies dans n'importe quel ordre.
 
@@ -357,7 +357,7 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 | `OPENAI_API_KEY` manquant (Labs 2-3) | Créer un fichier `.env` à la racine avec `OPENAI_API_KEY=sk-...` |
 | PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommandé mais pas obligatoire |
 | `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
-| erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon répertoire |
+| erreur `No module named 'google.adk'` | Installer le track Track2-GoogleADK : `pip install -r requirements.txt` dans le bon répertoire |
 | Plots ne s'affichent pas | Vérifier `ipywidgets` installé + extension Jupyter activée |
 
 ## Concepts clés
