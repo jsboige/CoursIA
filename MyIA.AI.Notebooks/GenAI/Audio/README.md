@@ -50,6 +50,13 @@ La première brique est le signal lui-même : un tableau d'amplitudes échantill
   <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> : forme d'onde d'un échantillon de parole — l'amplitude (±0,4) fluctue entre silences et phonèmes sur ~12 s.</em>
 </p>
 
+Une fois la forme d'onde acquise, on passe à la décomposition temps-fréquence : les coefficients cepstraux Mel (MFCC) résument l'enveloppe spectrale du signal en quelques nombres par fenêtre d'analyse, base de la reconnaissance vocale. Le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) calcule trois variantes — MFCC bruts, deltas (dérivées premières, vitesse de variation) et delta-deltas (dérivées secondes, accélération) — qui captent la dynamique de l'enveloppe spectrale :
+
+<p align="center">
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio2-spectrogram.png" width="360" alt="Trois heatmaps empilées « MFCC / Delta MFCC / Delta-Delta MFCC » — axe Y coefficients cepstraux 0-12 (ordonnée), axe X Temps 0-12 s, échelle de couleur bleu (négatif) → blanc (zéro) → rouge (positif) ; motifs cohérents avec les 3 segments de parole révélés par la forme d'onde audio1 (silences entre 3-4,5 s, 6,5-7,5 s) ; le delta capture les transitions et le delta-delta les accélérations de l'enveloppe spectrale."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> (provenance détaillée dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>) : 3 heatmaps MFCC empilées — coefficients cepstraux Mel, deltas (dérivées premières) et delta-deltas (dérivées secondes), axe temps 0-12 s identique à la forme d'onde audio1, échelle de couleur révélant la décomposition temps-fréquence du signal pour la reconnaissance vocale.</em>
+</p>
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-OpenAI-TTS-Intro](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
@@ -64,6 +71,15 @@ Une fois le signal compris, les deux briques opérationnelles sont la transcript
   <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="340" alt="Grille 2×2 « Latence STT par modele / Analyse des couts » — panneau haut-gauche barplot validé Whisper large-v3-turbo à 0,47 s (barre d'erreur), panneau haut-droite blanc avec texte « Pas de resultats TTS », panneau bas-gauche barplot ne portant que les libellés « large-v3-turbo » et « Gratuit » sans barres visibles (axe X Coût par heure -0,04 à 0,04 USD), panneau bas-droite radar 0–360° vide « Pas de resultats TTS » — seuls les volets STT et coûts-libellés ont produit des données."></a><br>
   <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> (ré-audit vision c.673 2026-07-19 par <code>myia-po-2023</code> MiniMax-M3, doctrine #5780) : grille 2×2 de 4 panneaux — panneau haut-gauche « Latence STT par modèle » validé (Whisper <code>large-v3-turbo</code> à 0,47 s), panneau haut-droite « Pas de résultats TTS » vide, panneau bas-gauche « Analyse des coûts (USD/heure) » ne portant que les libellés <code>large-v3-turbo</code> et <code>Gratuit</code> sans barres, panneau bas-droite radar « Pas de résultats TTS » vide. Seuls les volets STT (haut-gauche) et coûts (bas-gauche, sans valeurs) ont produit des données ; les deux volets TTS restent à re-exécuter.</em>
 </p>
+
+Au-delà du spectrogramme et des MFCC, le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) extrait quatre caractéristiques audio agrégées par fenêtre — centroïde spectral (position du « centre de masse » du spectre), largeur spectrale (étalement autour de ce centre), énergie RMS (puissance du signal) et taux de passage par zéro (proxy de la brillance / du contenu haute fréquence) — qui résument le signal sur l'axe temps sans reconstruire la phase :
+
+<p align="center">
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio5-multimodel.png" width="360" alt="Quatre sous-panneaux empilés « Caractéristiques audio extraites » — panneau haut Spectral Centroid en bleu (axe Y ~0–8000 Hz, axe X 0–12 s) avec crêtes pendant les segments de parole ; panneau 2 Spectral Bandwidth en vert (axe Y ~0–4000 Hz) suivant la même envelope ; panneau 3 RMS Energy en rouge (axe Y ~0–0,2) avec maxima sur les phonèmes ; panneau 4 Zero-Crossing Rate en violet (axe Y ~0–0,4) plus dense sur les fricatives. L'axe temps partagé 0–12 s s'aligne sur la forme d'onde audio1 et les MFCC audio2."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> (provenance détaillée dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>) : panneau de caractéristiques audio extraites par librosa — 4 signaux empilés (centroïde spectral, largeur spectrale, énergie RMS, taux de passage par zéro), axe temps 0–12 s identique à la forme d'onde audio1 et aux MFCC audio2, palette saturée spectral/energy révélant l'enveloppe technique du signal.</em>
+</p>
+
+> **Note d'audit — filename/content mismatch (doctrine #5780, familles C672-L1/L2 ★/★★).** Le nom de fichier `audio5-multimodel.png` et l'ancien alt-text « comparaison de modèles audio » décrivaient à tort une comparaison STT/TTS : le contenu réel est un panneau de features librosa mono-fichier (centroïde spectral, largeur spectrale, énergie RMS, taux de passage par zéro) extrait du même échantillon 01-3 que les MFCC et la forme d'onde. Slot renommé virtuellement `audio5-features-librosa.png` pour cohérence, mais le nom de fichier physique reste `audio5-multimodel.png` pour traçabilité git.
 
 ### 02-Advanced - Voix, Musique & Séparation
 
