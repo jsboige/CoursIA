@@ -176,6 +176,34 @@ def coyonedaPairingIsoEvaluation (C : Type*) [Category C] :
   coyonedaLemma C
 
 /-!
+### Plénitude et fidélité du plongement covariant
+
+Tout comme son dual contravariant, le plongement covariant `coyoneda` est
+pleinement fidèle : c'est le miroir exact du plongement de Yoneda. Cette
+pleine fidélité est centrale pour la théorie des foncteurs coreprésentables
+(la face covariante des représentables), utilisée notamment en théorie des
+faisceaux et en cohomologie.
+-/
+
+/-- Le plongement de Yoneda covariant est plein. Miroir covariant de
+    `yoneda_full` : la pré-composition se relève le long de `coyoneda`. -/
+theorem coyoneda_full (C : Type*) [Category C] :
+    (coyoneda (C := C)).Full :=
+  Coyoneda.coyoneda_full
+
+/-- Le plongement de Yoneda covariant est fidèle. Miroir covariant de
+    `yoneda_faithful`. -/
+theorem coyoneda_faithful (C : Type*) [Category C] :
+    (coyoneda (C := C)).Faithful :=
+  Coyoneda.coyoneda_faithful
+
+/-- La pleine fidélité de `coyoneda` (le plongement covariant
+    `Cᵒᵖ ⥤ C ⥤ Type v₁` est pleinement fidèle) découle de `Full` et `Faithful`
+    ci-dessus et du constructeur canonique `Functor.FullyFaithful.ofFullyFaithful`. -/
+example {C : Type*} [Category C] : (coyoneda (C := C)).FullyFaithful :=
+  Coyoneda.fullyFaithful
+
+/-!
 ## La fonctorialité retrouve l'ensemble de morphismes
 
 Le plongement de Yoneda relève l'ensemble de morphismes dans la catégorie des

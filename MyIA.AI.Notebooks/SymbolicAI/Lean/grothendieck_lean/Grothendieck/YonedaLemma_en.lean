@@ -159,6 +159,34 @@ def coyonedaPairingIsoEvaluation (C : Type*) [Category C] :
   coyonedaLemma C
 
 /-!
+### Full faithfulness of the covariant embedding
+
+Just like its contravariant dual, the covariant embedding `coyoneda` is fully
+faithful: it is the exact mirror of the Yoneda embedding. This full
+faithfulness is central to the theory of corepresentable functors (the
+covariant face of representables), used notably in sheaf theory and
+cohomology.
+-/
+
+/-- The covariant Yoneda embedding is full. Covariant mirror of
+    `yoneda_full`: pre-composition lifts along `coyoneda`. -/
+theorem coyoneda_full (C : Type*) [Category C] :
+    (coyoneda (C := C)).Full :=
+  Coyoneda.coyoneda_full
+
+/-- The covariant Yoneda embedding is faithful. Covariant mirror of
+    `yoneda_faithful`. -/
+theorem coyoneda_faithful (C : Type*) [Category C] :
+    (coyoneda (C := C)).Faithful :=
+  Coyoneda.coyoneda_faithful
+
+/-- Full faithfulness of `coyoneda` (the covariant embedding
+    `Cᵒᵖ ⥤ C ⥤ Type v₁` is fully faithful) follows from `Full` and `Faithful`
+    above and the canonical `Functor.FullyFaithful.ofFullyFaithful` constructor. -/
+example {C : Type*} [Category C] : (coyoneda (C := C)).FullyFaithful :=
+  Coyoneda.fullyFaithful
+
+/-!
 ## Functoriality recovers the hom-set
 
 The Yoneda embedding lifts the hom-set into the category of presheaves.
