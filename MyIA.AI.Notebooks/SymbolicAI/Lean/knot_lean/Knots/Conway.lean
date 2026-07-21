@@ -1,27 +1,27 @@
 /-
-  Knots.Conway — Conway knot, Kinoshita-Terasaka, and Piccirillo's proof
-  =======================================================================
+  Knots.Conway — Nœud de Conway, Kinoshita-Terasaka, et la preuve de Piccirillo
+  ==============================================================================
 
-  The Conway knot (11n34) is named after John Conway who discovered it
-  through his notation for knots. It has 11 crossings and trivial
-  Alexander polynomial.
+  Le nœud de Conway (11n34) est nommé d'après John Conway qui l'a découvert
+  via sa notation des nœuds. Il possède 11 croisements et un polynôme
+  d'Alexander trivial.
 
-  Key results:
-  1. Conway (11n34) and Kinoshita-Terasaka (11n42) share the same
-     Alexander polynomial (trivial) — mutation invariants agree.
-  2. The Kinoshita-Terasaka knot IS slice.
-  3. The Conway knot is NOT smoothly slice (Piccirillo 2018/2020).
-  4. Together with Freedman's theorem (Conway is topologically slice),
-     this gives the first explicit smooth/topological dichotomy.
+  Résultats clés :
+  1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
+     polynôme d'Alexander (trivial) — les invariants de mutation coïncident.
+  2. Le nœud de Kinoshita-Terasaka EST slice.
+  3. Le nœud de Conway n'est PAS slice lisse (Piccirillo 2018/2020).
+  4. Combiné au théorème de Freedman (Conway est topologiquement slice),
+     ceci donne la première dichotomie lisse/topologique explicite.
 
-  Epic #2874, Phase 1 (scaffolding only — sorry permanent for now).
+  Epic #2874, Phase 1 (squelette uniquement — sorry permanent pour l'instant).
 
-  Mathlib prerequisites needed (VERY FAR):
-  - Alexander polynomial (requires Burau representation, not in Mathlib)
-  - Slice knot definition (requires smooth 4-manifold theory)
-  - Rasmussen s-invariant (requires Khovanov homology)
-  - Trace companion construction (requires Kirby calculus)
-  - Freedman's topological surgery (requires enormous topological machinery)
+  Prérequis Mathlib nécessaires (TRÈS LOIN) :
+  - Polynôme d'Alexander (requiert la représentation de Burau, absent de Mathlib)
+  - Définition de nœud slice (requiert la théorie des 4-variétés lisses)
+  - s-invariant de Rasmussen (requiert l'homologie de Khovanov)
+  - Construction du compagnon de trace (requiert le calcul de Kirby)
+  - Chirurgie topologique de Freedman (requiert une machinerie topologique énorme)
 -/
 
 import Knots.Basic
@@ -29,36 +29,37 @@ import Knots.Invariant
 
 namespace Knots
 
-/-! ## 1. Conway mutation
+/-! ## 1. Mutation de Conway
 
-A Conway mutation takes a knot K with a Conway sphere (meets K in 4 points),
-cuts along the sphere, rotates 180°, and reglues. Mutation preserves:
-- Alexander polynomial
-- Jones polynomial
-- Knot genus
+Une mutation de Conway prend un nœud K muni d'une sphère de Conway (rencontre K
+en 4 points), le découpe le long de la sphère, effectue une rotation de 180°,
+puis recolle. La mutation préserve :
+- le polynôme d'Alexander
+- le polynôme de Jones
+- le genre du nœud
 
-The Conway knot and Kinoshita-Terasaka knot are related by mutation.
+Le nœud de Conway et le nœud de Kinoshita-Terasaka sont reliés par mutation.
 -/
 
-/-- A Conway sphere: an S² meeting the knot transversely in 4 points. -/
+/-- Une sphère de Conway : une S² rencontrant le nœud transversalement en 4 points. -/
 structure ConwaySphere where
   -- The 4 intersection points on the knot
   points : Fin 4 → Nat
   -- TODO: proper geometric definition
 
-/-- Two knots are mutants if related by a Conway mutation. -/
+/-- Deux nœuds sont mutants s'ils sont reliés par une mutation de Conway. -/
 def AreMutants (k₁ k₂ : Knot) : Prop := sorry
   -- Definition: ∃ Conway sphere in k₁, rotate 180°, obtain k₂
   -- Reference: Conway (1970), An enumeration of knots and links
   -- Mathlib prerequisites: PL topology, cutting and gluing manifolds
 
-/-! ## 2. The Conway knot (11n34)
+/-! ## 2. Le nœud de Conway (11n34)
 
-11 crossings in the Rolfsen table. Discovered by Conway (1970).
-Trivial Alexander polynomial. Topologically slice (Freedman).
-Not smoothly slice (Piccirillo 2018).
+11 croisements dans la table de Rolfsen. Découvert par Conway (1970).
+Polynôme d'Alexander trivial. Topologiquement slice (Freedman).
+Non slice lisse (Piccirillo 2018).
 
-PD-code from KnotInfo.
+Code PD issu de KnotInfo.
 -/
 
 def conwayKnotDiagram : KnotDiagram where
@@ -81,11 +82,11 @@ def conwayKnotDiagram : KnotDiagram where
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
 
-/-! ## 3. The Kinoshita-Terasaka knot (11n42)
+/-! ## 3. Le nœud de Kinoshita-Terasaka (11n42)
 
-Also 11 crossings. Shares the trivial Alexander polynomial with 11n34.
-IS smoothly slice (bounds a disk in B⁴).
-Mutant of the Conway knot.
+Également 11 croisements. Partage le polynôme d'Alexander trivial avec 11n34.
+EST slice lisse (borde un disque dans B⁴).
+Mutant du nœud de Conway.
 -/
 
 def kinoshitaTerasakaDiagram : KnotDiagram where
@@ -108,19 +109,19 @@ def kinoshitaTerasakaDiagram : KnotDiagram where
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram
 
-/-! ## 4. Same Alexander polynomial
+/-! ## 4. Même polynôme d'Alexander
 
-Both 11n34 and 11n42 have trivial Alexander polynomial Δ(t) = 1.
-This is why sliceness was so hard to determine — the Alexander
-polynomial cannot distinguish them from the unknot.
+11n34 et 11n42 ont tous deux un polynôme d'Alexander trivial Δ(t) = 1.
+C'est pourquoi la sliceness était si difficile à déterminer — le polynôme
+d'Alexander ne peut pas les distinguer du nœud trivial.
 -/
 
-/-- Alexander polynomial (definition placeholder).
+/-- Polynôme d'Alexander (définition provisoire).
 
-The Alexander polynomial Δ_K(t) is a knot invariant taking values in ℤ[t, t⁻¹].
-Phase 4 target: proper definition via Seifert matrix or Burau representation.
-For now, represented as an opaque function returning a placeholder type.
-Reference: Alexander (1928), Topological invariants of knots and links.
+Le polynôme d'Alexander Δ_K(t) est un invariant de nœud à valeurs dans ℤ[t, t⁻¹].
+Cible Phase 4 : définition propre via matrice de Seifert ou représentation de Burau.
+Pour l'instant, représenté comme une fonction opaque renvoyant un type provisoire.
+Référence : Alexander (1928), Topological invariants of knots and links.
 -/
 -- TODO Phase 4: import Mathlib.Algebra.Polynomial and use Polynomial ℤ
 -- Opaque placeholder for Phase 1 scaffolding.
@@ -146,13 +147,13 @@ theorem KT_trivial_alexander :
   -- Reference: standard computation. Δ_{11n42}(t) = 1.
   -- Phase 4+ target
 
-/-! ## 5. Slice knots
+/-! ## 5. Nœuds slice
 
-A knot K is (smoothly) slice if it bounds a smooth properly embedded
-disk D² in the 4-ball B⁴.
+Un nœud K est (lissement) slice s'il borde un disque D² lisse proprement
+plongé dans la boule à 4 dimensions B⁴.
 
-A knot is topologically slice if it bounds a locally flat topologically
-embedded disk in B⁴.
+Un nœud est topologiquement slice s'il borde un disque topologiquement plongé
+localement plat dans B⁴.
 -/
 
 def IsSmoothlySlice (k : Knot) : Prop := sorry
@@ -167,26 +168,26 @@ def IsTopologicallySlice (k : Knot) : Prop := sorry
   -- Definition: ∃ (D : D² ↪ B⁴ locally flat), ∂D = K
   -- Mathlib prerequisites: same as smoothly slice + topological manifold theory
 
-/-! ## 6. Piccirillo's theorem (statement only)
+/-! ## 6. Théorème de Piccirillo (énoncé uniquement)
 
-The Conway knot is NOT smoothly slice. This was proved by Lisa Piccirillo
-in 2018 (published Annals of Mathematics 2020). She was a graduate student
-at the time and solved it in under a week.
+Le nœud de Conway n'est PAS slice lisse. Ceci fut prouvé par Lisa Piccirillo
+en 2018 (publié dans Annals of Mathematics 2020). Elle était alors doctorante
+et résolut le problème en moins d'une semaine.
 
-Strategy (cf. "Getting a handle on the Conway knot", AMS Bulletin 2022):
-1. Construct a knot K* that has the same trace as the Conway knot
-   (the trace X_K is the 4-manifold obtained by attaching a 2-handle
-   to B⁴ along K with 0-framing)
-2. Show K* is NOT smoothly slice (via Rasmussen's s-invariant,
-   computed from Khovanov homology)
-3. By the trace embedding lemma: if Conway is smoothly slice,
-   then K* is smoothly slice → contradiction
+Stratégie (cf. « Getting a handle on the Conway knot », AMS Bulletin 2022) :
+1. Construire un nœud K* ayant la même trace que le nœud de Conway
+   (la trace X_K est la 4-variété obtenue en attachant une 2-anse
+   à B⁴ le long de K avec un framing nul)
+2. Montrer que K* n'est PAS slice lisse (via le s-invariant de Rasmussen,
+   calculé à partir de l'homologie de Khovanov)
+3. Par le lemme de plongement de trace : si Conway est slice lisse,
+   alors K* est slice lisse → contradiction
 
-This is a **magnificent** proof strategy — attacking the problem indirectly
-by finding a "companion" knot that shares the same trace.
+C'est une stratégie de preuve **magnifique** — attaquer le problème indirectement
+en trouvant un nœud « compagnon » partageant la même trace.
 -/
 
-/-- Piccirillo's theorem: the Conway knot is not smoothly slice. -/
+/-- Théorème de Piccirillo : le nœud de Conway n'est pas slice lisse. -/
 theorem conway_not_smoothly_slice : ¬ IsSmoothlySlice conwayKnot := by
   exact sorry
   -- Reference: Piccirillo (2018), arXiv:1808.02923
@@ -210,11 +211,11 @@ theorem conway_not_smoothly_slice : ¬ IsSmoothlySlice conwayKnot := by
   -- Estimated difficulty: **decades** away from formalization in Lean.
   -- This sorry is effectively permanent.
 
-/-! ## 7. Freedman's theorem (statement only)
+/-! ## 7. Théorème de Freedman (énoncé uniquement)
 
-The Conway knot IS topologically slice, because it has trivial
-Alexander polynomial. This is a consequence of Freedman's 1982 theorem:
-every knot with trivial Alexander polynomial is topologically slice.
+Le nœud de Conway EST topologiquement slice, car il possède un polynôme
+d'Alexander trivial. Ceci est une conséquence du théorème de Freedman (1982) :
+tout nœud de polynôme d'Alexander trivial est topologiquement slice.
 -/
 
 theorem conway_topologically_slice : IsTopologicallySlice conwayKnot := by
@@ -231,18 +232,18 @@ theorem conway_topologically_slice : IsTopologicallySlice conwayKnot := by
   -- Mathlib prerequisites: essentially ALL of topological 4-manifold theory
   -- This sorry is effectively permanent.
 
-/-! ## 8. The dichotomy
+/-! ## 8. La dichotomie
 
-Together, Piccirillo + Freedman give:
-  Conway knot: topologically slice BUT NOT smoothly slice.
+Ensemble, Piccirillo + Freedman donnent :
+  Nœud de Conway : topologiquement slice MAIS NON slice lisse.
 
-This is the first explicit example of the smooth/topological dichotomy
-for a named knot. It illustrates that smooth structures in dimension 4
-are genuinely more restrictive than topological ones.
+C'est le premier exemple explicite de dichotomie lisse/topologique
+pour un nœud nommé. Cela illustre que les structures lisses en dimension 4
+sont véritablement plus restrictives que les structures topologiques.
 -/
 
-/-- The Conway knot exhibits the smooth/topological dichotomy:
-it is topologically slice but not smoothly slice. -/
+/-- Le nœud de Conway illustre la dichotomie lisse/topologique :
+il est topologiquement slice mais non slice lisse. -/
 theorem conway_dichotomy :
     IsTopologicallySlice conwayKnot ∧ ¬ IsSmoothlySlice conwayKnot := by
   exact ⟨conway_topologically_slice, conway_not_smoothly_slice⟩
