@@ -54,6 +54,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 - [.claude/rules/three-exercises-per-notebook.md](.claude/rules/three-exercises-per-notebook.md) - Convention >=3 exercices par notebook, rollout progressif (#2161)
 - [.claude/rules/sota-not-workaround.md](.claude/rules/sota-not-workaround.md) - Vrai outil SOTA jamais workaround dégradé (5 verdicts) + problème non-trivial qui met le moteur en valeur ; EPIC #3801
 - [.claude/rules/readme-french-first.md](.claude/rules/readme-french-first.md) - Doc nouvelle = FR (jamais "match surrounding EN") ; bascule FR préserve l'original en `README.en.md` ; EPIC #1650 Phase 0.5
+- [.claude/rules/variation-protocol.md](.claude/rules/variation-protocol.md) - Anti-monoculture : tag `Grain: TIER/GENRE` déclaré + 3 gates durs (plancher DEEP/MED, 1 LIGHT/lane/jour, pas 2× même genre) + merge-gate coordinateur + obligation provisionnement ai-01 (mandat user 2026-07-21)
 
 ---
 

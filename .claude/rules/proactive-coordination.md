@@ -40,4 +40,5 @@ Le pool par defaut est **`gh issue list --state open` (global, cross-lane)** ; l
 - [docs/subagents-reference.md](../../docs/reference/subagents-reference.md) — roster specialistes + mapping
 - [docs/scripts-reference.md](../../docs/reference/scripts-reference.md) — scripts depot
 - [coordinator-discipline.md](coordinator-discipline.md) — ai-01 merge actif, no languishing
+- [variation-protocol.md](variation-protocol.md) — **opérationnalise R6/R7** : tag `Grain: TIER/GENRE` + 3 gates durs + merge-gate + provisionnement (le G-VAR-3 « pas 2× le même genre consécutif » durcit le « après 3 grains similaires » de R6)
 - CLAUDE.md "PROCEDURES RECURRENTES" — productivite pendant operations longues (2 tracks min)
