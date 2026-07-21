@@ -54,10 +54,45 @@ Solution `MyIA.AI.Shared.sln` (socle-only : lib + tests) pour un build/test isol
 sans tirer `MyIA.AI.Notebooks`. La solution racine `MyIA.CoursIA.sln` référence déjà
 le projet lib.
 
+## A1+ — Hiérarchie de providers : 3 stratégies de découverte (#7265)
+
+Complément de l'ancre A1. Pose les deux autres stratégies de découverte de la famille de
+providers `Aricie.Shared`, afin que `ReflectedProviderContainer` (décoration) ne soit plus
+seul : `SimpleProviderContainer` (enregistrement explicite plat) et `AutoProviderContainer`
+(convention de nommage/namespace). Les trois partagent le contrat de lecture
+`IProviderContainer` et le classifieur `ProviderModel` — un consommateur demande des types
+sans se coupler au mode de découverte.
+
+| Type | Rôle |
+|------|------|
+| `ComponentModel.Providers.IProviderContainer` | Contrat de lecture commun (catégories, `Containers`, `ChildEntities`, `SimpleEntities`, `Mergeables`). |
+| `ComponentModel.Providers.ProviderModel` | Classifieur partagé (internal) : répartit un set de types en catégories + buckets marqueurs, tolérant aux types non chargeables. |
+| `ComponentModel.Providers.SimpleProviderContainer` | Découverte par **enregistrement explicite** : `Register<T>("cat")` (aucune réflexion, aucune décoration). Un type peut être filé sous plusieurs catégories. |
+| `ComponentModel.Providers.AutoProviderContainer` | Découverte par **convention** : `Func<Type, string?>` (suffixe de nom, segment de namespace…). `null` exclut le type. |
+
+### Contrat 3 stratégies, 1 surface de lecture
+
+```csharp
+using MyIA.AI.ComponentModel.Providers;
+
+// Décoration (A1) — un attribut suffit.
+IProviderContainer reflected = ReflectedProviderContainer.FromAssembly<PaymentGateway>();
+
+// Enregistrement explicite (A1+) — aucun attribut requis.
+IProviderContainer simple = new SimpleProviderContainer()
+    .Register<PaymentGateway>("Payment")
+    .Register<ContentFolder>("Content");
+
+// Convention (A1+) — règle de nommage, zéro attribut.
+IProviderContainer auto = AutoProviderContainer.FromAssembly<PaymentGateway>(
+    t => t.Name.EndsWith("Gateway") ? "Payment" : null);
+
+// Même surface de lecture quel que soit le mode.
+reflected["Payment"]; simple["Payment"]; auto["Payment"];
+```
+
 ## Tranches suivantes (hors cette ancre)
 
-- **A1+** : providers `AutoProviderContainer` (conventions de scan) et
-  `SimpleProviderContainer` (lookup plat).
 - **A2** — Sérialisation légo (XML/JSON décoration-driven) :
   `XmlAwareContractResolver`, `DynamicSurrogate`, collections sérialisables.
 - **A3** — Object explorer UI : `AdvancedGridView`, `PropertyEditor`, filtres.
