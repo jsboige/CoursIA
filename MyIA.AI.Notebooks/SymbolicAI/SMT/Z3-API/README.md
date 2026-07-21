@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: SymbolicAI-SMT-Z3API
+pedagogical_count: 24
+breakdown: Z3-API=24 (Python=18, CSharp-twins=6)
+maturity: PRODUCTION=24
+-->
+
 # Série Z3-Python - Résolution de contraintes SMT en Python
 
 [← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3-Linq2Z3/README.md)
