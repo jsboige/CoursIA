@@ -2,13 +2,13 @@
 
 Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogique du dépôt CoursIA. Il ne maintient **plus** de liste de liens vers les notebooks individuels (cause racine historique de rot : chemins à la main non resynchronisés après les restructurations de séries).
 
-> **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé (comptes exacts par série, statuts, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)** et le marqueur `CATALOG-STATUS` du `README.md` racine (total = **824** au 2026-07-19). Le catalogue est régénéré automatiquement chaque jour par le workflow `catalog-cron.yml` ; il fait foi sur les chiffres et les statuts.
+> **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé (total à jour, comptes exacts par série, statuts, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)** (en-tête « Total notebooks », régénéré automatiquement chaque jour par le workflow `catalog-cron.yml`). Le catalogue fait foi sur les chiffres et les statuts.
 
 ## 🎯 Trois niveaux de lecture
 
 - **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.
 - **Vue d'ensemble** ([`README.md`](README.md)) — cartographie rapide du dépôt + parcours d'apprentissage par niveau. Maintenance manuelle, vue pédagogique consolidée.
-- **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : voir marqueur `CATALOG-STATUS` du `README.md` racine pour le total à jour (824 au 2026-07-19), décompte par série, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
+- **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : total à jour (en-tête « Total notebooks »), décompte par série, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
 
 Les trois niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
 
@@ -52,4 +52,3 @@ Pour un inventaire technique exhaustif (notebook par notebook, statuts d'exécut
 ## 📖 Documentation projet
 
 Le répertoire **[docs/](docs/README.md)** centralise les règles de travail, l'infrastructure du dépôt, les procédés récurrents (workflow PR, dispatch d'agents, validation notebook) et les guides d'apprentissage. Cette documentation est destinée aux contributeurs internes du cluster et aux coordinateurs IA.
-
