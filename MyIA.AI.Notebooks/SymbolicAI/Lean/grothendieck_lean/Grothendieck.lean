@@ -8,6 +8,7 @@ import Grothendieck.Construction
 import Grothendieck.CoverageGen
 import Grothendieck.DenseTopology
 import Grothendieck.Equivalences
+import Grothendieck.KanExtensions
 import Grothendieck.LeftExact
 import Grothendieck.Limits
 import Grothendieck.MathlibMap
