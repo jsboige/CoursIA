@@ -2,6 +2,7 @@ import Grothendieck.Adjunction
 import Grothendieck.Calibration
 import Grothendieck.CanonicalProps
 import Grothendieck.CategoryAndSites
+import Grothendieck.Comma
 import Grothendieck.Conservative
 import Grothendieck.ConstantSheaf
 import Grothendieck.Construction
