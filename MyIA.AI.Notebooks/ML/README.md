@@ -57,7 +57,7 @@ Six figures illustrent les trois fils de la série : les fondations Python (Pand
 
 ### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
 
-Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
+Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML) — son **leaderboard AutoML** (cell 12-13) rend visible la discrimination entre entraîneurs : sur données quadratiques, `LightGbmRegression` gagne avec un RMSE de 90 262 contre 30,5 millions pour `FastTreeRegression`, soit un écart de **plus de 300×** qu'aucun tableau `Console.WriteLine` ne fait ressortir. Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
 ### Track B : Data Science with Agents (Python, 28 notebooks, ~21h)
 
@@ -175,7 +175,7 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 1-Py | [ML-1-Introduction-Python](ML.Net/ML-1-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
 | 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
 | 2-Py | [ML-2-Data&Features-Python](ML.Net/ML-2-Data&Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
-| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entraînement |
+| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
 | 3-Py | [ML-3-Entrainement-Python](ML.Net/ML-3-Entrainement-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
 | 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
 | 4-Py | [ML-4-Evaluation-Python](ML.Net/ML-4-Evaluation-Python.ipynb) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
@@ -190,6 +190,20 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 9 | [ML-9-Anomaly-Detection](ML.Net/ML-9-Anomaly-Detection.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
 | 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
 | TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
+
+#### AutoML : quand le leaderboard bat le `Console.WriteLine` ([#7642](https://github.com/jsboige/CoursIA/pull/7642), [#7707](https://github.com/jsboige/CoursIA/pull/7707), [#7839](https://github.com/jsboige/CoursIA/pull/7839))
+
+Le notebook **ML-3** AutoML produit, sur données non linéaires (`y = 100·x² + bruit`), **10 essais terminés** en 30 secondes, couvrant **5 entraîneurs distincts**. Sans visualisation, l'étudiant doit comparer 10 nombres à la main pour repérer le gagnant — exercice rébarbatif qui masque l'apport pédagogique de l'AutoML. La cellule 13 ([`NotebookMonitor.CompletedTrials`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.ml.automl.runtime.notebookmonitor) + `Plotly.NET.Interactive`) trace un **leaderboard** qui rend la discrimination visible :
+
+| Entraîneur | Essais | Meilleur RMSE |
+|---|---|---|
+| `LightGbmRegression` | 3 | **90 262** ← gagnant |
+| `FastForestRegression` | 4 | 5 932 134 |
+| `LbfgsPoissonRegressionRegression` | 1 | 6 303 500 |
+| `SdcaRegression` | 1 | 11 323 122 |
+| `FastTreeRegression` | 1 | 30 523 762 ← perdant |
+
+L'écart entre le pire et le meilleur essai est de **338×** — un fait pédagogique majeur, **invisible sans graphique**. La lecture honnête du classement nuance aussi le stéréotype « non-linéaire bat linéaire » : `FastTreeRegression` (lui aussi non-linéaire, à base d'arbres) finit **dernier** (30 M), pire que `SdcaRegression` linéaire (11 M). L'AutoML a donné **3 essais** à `LightGbmRegression` mais **un seul** à `FastTreeRegression` — moins d'occasions de bien le régler. La leçon : la *famille* d'algorithme ne garantit pas le succès, c'est l'association **bon algorithme + bons hyper-paramètres** que l'AutoML cherche conjointement. Cette nuance illustre l'**anti-fabrication** [#3801 Prong-B](https://github.com/jsboige/CoursIA/issues/3801) : la cellule trace un graphique à partir des vrais résultats `experiment.RunAsync()`, pas une simulation ASCII ni un workaround dégradé.
 
 ### Trois figures du track ML.NET (scikit-learn, statsmodels)
 
