@@ -1,0 +1,104 @@
+# Registre de parite des jumeaux Python/C# (#8057, parent #4208).
+#
+# Chaque entree decrit une paire de notebooks jumeaux : le chemin des deux
+# cotes, le niveau de parite, le dernier audit (date + auteur + git blob SHA de
+# chaque notebook au moment de l'audit) et les differences connues documentees.
+#
+# Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
+# SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
+# Apres une audit firsthand, rebaseline avec :
+#   python scripts/notebook_tools/check_twin_parity.py --update [--family ...]
+#
+# parity_level :
+#   surface     = meme plan/sections, implimentations independantes
+#   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
+#   native-both = traduction fidele cellule-par-cellule (rare)
+#
+# PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
+# Les autres familles (Search/CSP, ML.NET/Python, etc.) sont a peupler dans des
+# PRs suivantes — ce registre est concu pour grandir. Voir #8057.
+
+- name: "Z3-Python-01 Introduction"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bc1a9639efda2a7855b8346c08ab2a14c7e2cf2e
+    csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+  known_differences:
+    - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
+    - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
+    - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."
+
+- name: "Z3-Python-02 Sudoku"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4dcb5921d2183f6c205e535f44d4f395115f58b3
+    csharp_sha: fedc5982513ac15be379f4b0ed0845032d2dc9a6
+  known_differences:
+    - "Python : pyz3. C# : Microsoft.Z3 .NET (idiomes API comme NB-01)."
+    - "Cote Python : modelisation Sudoku (81 cellules Int 1-9, alldifferent lignes/colonnes/blocs). Doc-honesty cures c.19 (PR #8045 : compte indices ~35 -> 30 pour puzzle_facile)."
+
+- name: "Z3-Python-03 Tactics"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4b18990a0ad8338f341a30e9d6999a4f59ec4757
+    csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
+  known_differences:
+    - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
+    - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."
+
+- name: "Z3-Python-04 Strings & Regex"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5d3bf0ee8baf55766e5db4d30bf84705e2f9644d
+    csharp_sha: c8f8372242c5da1bdecbc1e03be05e2d28ce2154
+  known_differences:
+    - "Python : pyz3 (Range, Concat, Plus, Re, InRe, Length sur Seq). C# : Microsoft.Z3 .NET (ctx.MkRange, MkConcat, MkRe...)."
+    - "Cote Python : fix code-correctness c.17 (PR #8040) — date AAAA-MM-JJ sous-contrainte (Plus(Range)=[0-9]+ variable) resverree en groupes longueur-fixe [0-9]{n} via helper chiffres(n). Le concept (string regex Z3) est commun aux deux cotes ; le detail du fix date est specifique au notebook Python."
+
+- name: "Z3-Python-05 Quantifiers & Proofs"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 519b4a3d04f5b673650394a729f03d7fa07711b1
+    csharp_sha: dcc4aa5c50ff122180e2b2dd97bf25cdbb4d1b2a
+  known_differences:
+    - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
+    - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."
+
+- name: "Z3-Python-06 Advanced Optimization"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bebd658f4b477751460733c1bc8ce635acd348a0
+    csharp_sha: b090ec4eeb0a2cc1d75facafed5113eb24e6393e
+  known_differences:
+    - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
+    - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
