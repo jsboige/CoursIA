@@ -154,7 +154,7 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 **Sous-répertoires archives** :
 
 - [archive/investigation-mcp-nuget/](archive/investigation-mcp-nuget/INDEX.md) — Investigation MCP Jupyter / NuGet (26 fichiers)
-- [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (13+ fichiers)
+- [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (16 fichiers)
 - [archive/suivis/genai-image/](archive/suivis/genai-image/INDEX.md) — Suivi ComfyUI/Qwen (8 fichiers + 4 phases)
 
 ## Carte rapide
