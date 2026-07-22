@@ -129,7 +129,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `detect_link_target_regression.py` | Détecteur de **régression des accents dans les TARGETS de liens markdown** `[texte](cible)` (registre #2876). Un cure ad-hoc par regex globale `\b(mot)\b` peut accentuer la cible d'un lien → 404 ; cet outil garde les targets intacts |
 | `restore_accents_canonical.py` | **CURE canonique** (PR #7186). Markdown-only STRICT by construction : skip code/outputs/link-targets, préserve casse + structure (paragraph breaks). 4 bright-lines + 1 structurelle. Référence complète : [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md) |
 | `check_identifier_regression.py` | **GATE identifiants code** (PR #7157, MERGÉ). Détecte l'over-reach (cure qui accentue un identifiant). `_STRIP_RE` retire commentaires+chaînes avant comparaison base(main) vs head(branche). CI-ready (exit 1) |
-| `check_caps_regression.py` / `detect_caps_regression.py` | **GATE caps** (PR #7197 / #7198, arbitrage ai-01). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
+| `detect_caps_regression.py` | **GATE caps** (PR #7198 MERGÉ ; #7197 CLOSED, son contenu absorbé en git-ref mode par PR #8917bd71b). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
 
 **Workflow PR accents** : générer via `restore_accents_canonical.py` (passe les gates by construction), jamais via un script ad-hoc. Périmètre, défense-in-depth (3 rôles), 4 classes de défauts, bright-lines, méthodologie : cf [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md).
 
