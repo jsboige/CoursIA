@@ -88,7 +88,7 @@ flowchart TD
 | `Sensitivity/Hypercube.lean` | `Hypercube_en.lean` | 124 | 0 | Hypercube booléen `Q n`, sommets, adjacence |
 | `Sensitivity/VectorSpace.lean` | `VectorSpace_en.lean` | 132 | 0 | Espace vectoriel réel des fonctions booléennes, base `ℝ^{2^n}` |
 | `Sensitivity/Operator.lean` | `Operator_en.lean` | 100 | 0 | Opérateurs de sensibilité et de sensibilité par blocs |
-| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
+| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 135 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
 
 ## Résultats clés
 
