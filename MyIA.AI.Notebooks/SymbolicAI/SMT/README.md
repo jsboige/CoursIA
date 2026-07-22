@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-SMT
 pedagogical_count: 42
-breakdown: SMT=42 (Z3-API=24, Z3-Linq2Z3=18)
-maturity: PRODUCTION=26, BETA=16
+breakdown: SMT=42
+maturity: PRODUCTION=25, BETA=17
 -->
 
 # SMT - Satisfiability Modulo Theories

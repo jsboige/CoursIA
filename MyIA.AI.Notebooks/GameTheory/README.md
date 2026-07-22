@@ -4,10 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 55
-breakdown: root=48, SocialChoice=7
+pedagogical_count: 50
+breakdown: root=43, SocialChoice=7
 maturity: PRODUCTION=36, BETA=14
-maturity_note: maturity counts not reconciled post-tranche-8 (5 notebooks missing from catalog: GT-8, GT-8b, GT-8c-Python, GT-8c-Csharp, GT-8-Csharp); cron catalog-cron.yml will regenerate on next daily run.
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.

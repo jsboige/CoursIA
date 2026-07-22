@@ -1,3 +1,15 @@
+<!--
+  FICHIER GENERE — ne pas editer a la main.
+  Cette page de parcours est derivee du catalogue de notebooks par
+  scripts/notebook_tools/generate_parcours.py, puis regeneree chaque jour
+  sur `main` par .github/workflows/catalog-cron.yml. Toute edition manuelle
+  sera silencieusement ecrasee au prochain passage du cron. Pour corriger
+  une derive (comptes, enumerations), corriger la SOURCE (le catalogue /
+  les metadonnees de notebook) ou le generateur — jamais cette page.
+  Cf .claude/rules/catalog-pr-hygiene.md (les artefacts generes
+  appartiennent a l'automatisation).
+-->
+
 # Trading Algorithmique
 
 **QuantConnect, ML appliqué et probabilités**
@@ -28,23 +40,23 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 9 | 2.7 — Modèles non paramétriques : SVM et k plus proches | PRODUCTION | Oui |
 | 10 | 2.8 — Théorie de l'apprentissage : PAC et dimension de  | PRODUCTION | Oui |
 | 11 | 2.9 — Grokking : la généralisation qui arrive en retard | PRODUCTION | Oui |
-| 12 | Lab 8: Introduction au Framework ADK et Multi-Provider | PRODUCTION | Non |
-| 13 | Lab 9: Premier Agent ADK pour Data Science | PRODUCTION | Oui |
-| 14 | Lab 10: Data File Analyzer (DS-STAR Component) | PRODUCTION | Oui |
-| 15 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | BETA | Oui |
-| 16 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | PRODUCTION | Oui |
-| 17 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | PRODUCTION | Oui |
-| 18 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | BETA | Oui |
-| 19 | Lab 15: Kaggle Challenge avec MLE-STAR | PRODUCTION | Oui |
-| 20 | Lab 16: Data Science Agent avec GCP BigQuery | BETA | Oui |
-| 21 | Lab 17: Projet Final - Pipeline DS-STAR Complet | BETA | Oui |
-| 22 | Lab 1 - Les Bases de la Data Science en Python | PRODUCTION | Oui |
-| 23 | Lab 2 - Analyser un Appel d'Offre avec l'IA | PRODUCTION | Non |
-| 24 | Lab 3 - Pré-qualifier des Candidats avec l'IA | PRODUCTION | Non |
-| 25 | Lab 4 - Le Nettoyage de Données avec Pandas | PRODUCTION | Oui |
-| 26 | Lab 5 - De la Visualisation au Machine Learning | PRODUCTION | Oui |
-| 27 | Lab 6 - Anatomie de votre premier Agent d'IA | BETA | Non |
-| 28 | Lab 7 - Votre premier Agent Analyste de Données | PRODUCTION | Non |
+| 12 | Lab 1 - Les Bases de la Data Science en Python | PRODUCTION | Oui |
+| 13 | Lab 2 - Analyser un Appel d'Offre avec l'IA | PRODUCTION | Non |
+| 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | PRODUCTION | Non |
+| 15 | Lab 4 - Le Nettoyage de Données avec Pandas | PRODUCTION | Oui |
+| 16 | Lab 5 - De la Visualisation au Machine Learning | PRODUCTION | Oui |
+| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | BETA | Non |
+| 18 | Lab 7 - Votre premier Agent Analyste de Données | PRODUCTION | Non |
+| 19 | Lab 8: Introduction au Framework ADK et Multi-Provider | PRODUCTION | Non |
+| 20 | Lab 9: Premier Agent ADK pour Data Science | PRODUCTION | Oui |
+| 21 | Lab 10: Data File Analyzer (DS-STAR Component) | PRODUCTION | Oui |
+| 22 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | BETA | Oui |
+| 23 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | PRODUCTION | Oui |
+| 24 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | PRODUCTION | Oui |
+| 25 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | BETA | Oui |
+| 26 | Lab 15: Kaggle Challenge avec MLE-STAR | PRODUCTION | Oui |
+| 27 | Lab 16: Data Science Agent avec GCP BigQuery | BETA | Oui |
+| 28 | Lab 17: Projet Final - Pipeline DS-STAR Complet | BETA | Oui |
 
 ## ML/ML.Net (19 notebooks)
 

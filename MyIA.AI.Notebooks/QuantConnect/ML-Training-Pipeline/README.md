@@ -1,7 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-ML-Training-Pipeline
-pedagogical_count: 14
-note: count filesystem autoritatif (git ls-files) ; hub agrégé QuantConnect/README.md indique ML-Training-Pipeline=2 (drift +12, sous-série grossie par ajouts RL/DL post-création hub)
+pedagogical_count: 2
+breakdown: ML-Training-Pipeline=2
+maturity: PRODUCTION=1, TEMPLATE=1
 -->
 
 # Pipeline d'entraînement ML pour la prévision financière

@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-SMT-Z3Linq2Z3
-pedagogical_count: 18
-breakdown: Z3-Linq2Z3=18
-maturity: PRODUCTION=2, BETA=16
+pedagogical_count: 0
+breakdown: 
+maturity: 
 -->
 
 # Série Z3 - Programmation Déclarative avec Z3.Linq

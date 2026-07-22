@@ -1,7 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 55
-note: count filesystem autoritatif (git ls-files) ; hub agrégé QuantConnect/README.md indique Python=53 (drift +2)
+pedagogical_count: 53
+breakdown: Python=53
+maturity: ALPHA=25, PRODUCTION=24, BETA=3, DRAFT=1
 -->
 
 # QuantConnect Python Notebooks

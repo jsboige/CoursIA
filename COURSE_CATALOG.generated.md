@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-21 06:14
+Generated: 2026-07-22 06:12
 Total notebooks: 830
 
 ## Status Summary
@@ -13,9 +13,9 @@ Total notebooks: 830
 ## Maturity Summary
 
 - **PRODUCTION**: 598
-- **BETA**: 171
+- **BETA**: 170
 - **TEMPLATE**: 4
-- **ALPHA**: 53
+- **ALPHA**: 54
 - **DRAFT**: 4
 
 ## By Series
@@ -299,23 +299,23 @@ Total notebooks: 830
 | 9 | 2.7 — Modèles non paramétriques : SVM et k plus pr | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 10 | 2.8 — Théorie de l'apprentissage : PAC et dimensio | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 11 | 2.9 — Grokking : la généralisation qui arrive en r | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 12 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 13 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 14 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 15 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
-| 16 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 17 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 18 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
-| 19 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 20 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
-| 21 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
-| 22 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 23 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
-| 24 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
-| 25 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 26 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 27 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 28 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 12 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 13 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
+| 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
+| 15 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 16 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 18 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 19 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 20 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 21 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 22 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
+| 23 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 24 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 25 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
+| 26 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 27 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
+| 28 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
 | 29 | ML-1 (Python) : Introduction au Machine Learning a | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 30 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 31 | ML-2 : Préparation des données et ingénierie des f | Python 3 | READY | PRODUCTION | 30min | po-2023 |
@@ -726,7 +726,7 @@ Total notebooks: 830
 | 49 | SocialChoice 04 : Agregation Computationnelle - SA | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 
-### Sudoku (36 notebooks) — DEMO:2, READY:34 | ALPHA:1, BETA:5, PRODUCTION:30
+### Sudoku (36 notebooks) — DEMO:2, READY:34 | ALPHA:2, BETA:4, PRODUCTION:30
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -746,7 +746,7 @@ Total notebooks: 830
 | 14 | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 15 | Sudoku-15-Infer-Python : Resolution Probabiliste a | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 16 | Sudoku-16 : Résolution par Réseaux de Neurones | Python 3 | DEMO | PRODUCTION | 1h | po-2023 |
-| 17 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 | DEMO | BETA | 45min | po-2023 |
+| 17 | Notebook 17: Resolution de Sudoku avec Large Langu | Python 3 | DEMO | ALPHA | 45min | po-2023 |
 | 18 | Comparaison des Solveurs de Sudoku | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 19 | Comparaison des Solveurs de Sudoku | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 20 | Sudoku-7b — Soundness de la propagation de contrai | Lean 4 (WSL) | READY | BETA | 15min | po-2023 |
@@ -841,7 +841,7 @@ Total notebooks: 830
 | 5 | ICT-13 — Morphodynamique stratégique : une stratég | Python 3 | READY | BETA | 30min | po-2025 |
 | 6 | ICT-14 — Énergie libre et surprise du représentant | Python 3 | READY | BETA | 30min | po-2025 |
 | 7 | ICT-15 — Integrated Complexity : convergence Φ / F | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 8 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | BETA | 30min | po-2025 |
+| 8 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | BETA | 45min | po-2025 |
 | 9 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 15min | po-2025 |
 | 10 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 15min | po-2025 |
 | 11 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |

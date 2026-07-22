@@ -1,7 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-kelly_lean
 pedagogical_count: 1
-note: count filesystem autoritatif (git ls-files .ipynb) — sub-série Lean 4 pure, 1 notebook Kelly référence ; hub agrégé QuantConnect/README.md indique kelly_lean=1 ✓ aligné (la note hub parle de « 7/7 » fichiers .lean, périmètre différent : preuve formelle lake build, pas notebook Jupyter)
+breakdown: kelly_lean=1
+maturity: ALPHA=1
 -->
 
 # kelly_lean — optimalité du critère de Kelly (log-croissance)

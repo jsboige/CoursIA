@@ -1,3 +1,15 @@
+<!--
+  FICHIER GENERE — ne pas editer a la main.
+  Cette page de parcours est derivee du catalogue de notebooks par
+  scripts/notebook_tools/generate_parcours.py, puis regeneree chaque jour
+  sur `main` par .github/workflows/catalog-cron.yml. Toute edition manuelle
+  sera silencieusement ecrasee au prochain passage du cron. Pour corriger
+  une derive (comptes, enumerations), corriger la SOURCE (le catalogue /
+  les metadonnees de notebook) ou le generateur — jamais cette page.
+  Cf .claude/rules/catalog-pr-hygiene.md (les artefacts generes
+  appartiennent a l'automatisation).
+-->
+
 # IA Classique
 
 **Recherche, CSP et résolution de problèmes**
@@ -8,9 +20,9 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 148 |
+| Notebooks | 147 |
 | PRODUCTION | 114 |
-| BETA | 34 |
+| BETA | 33 |
 | ALPHA | 0 |
 
 ## Search/Applications (40 notebooks)
@@ -151,7 +163,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 19 | MGS-8 : Fitness Landscape Explorer -- voir la surface p | PRODUCTION | Oui |
 | 20 | MGS-9 - Trouver l'Everest : relief reel et bassins d'at | PRODUCTION | Oui |
 
-## Sudoku (35 notebooks)
+## Sudoku (34 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -170,23 +182,22 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 13 | Résolution de Sudoku avec Infer.NET | PRODUCTION | Oui |
 | 14 | Sudoku-15-Infer-Python : Resolution Probabiliste avec N | PRODUCTION | Oui |
 | 15 | Sudoku-16 : Résolution par Réseaux de Neurones | PRODUCTION | Non |
-| 16 | Notebook 17: Resolution de Sudoku avec Large Language M | BETA | Non |
-| 17 | Comparaison des Solveurs de Sudoku | BETA | Oui |
-| 18 | Comparaison des Solveurs de Sudoku | PRODUCTION | Oui |
-| 19 | Sudoku-7b — Soundness de la propagation de contraintes  | BETA | Oui |
-| 20 | Résolution de Sudoku avec Algorithm X et Dancing Links | PRODUCTION | Oui |
-| 21 | Sudoku-Python-DancingLinks : Dancing Links / Algorithm  | PRODUCTION | Oui |
-| 22 | Sudoku-3 : Résolution par Algorithme Génétique (C#) | PRODUCTION | Oui |
-| 23 | Sudoku-Python-Genetic : Algorithme Génétique (Python) | PRODUCTION | Oui |
-| 24 | Résolution de Sudoku par Recuit Simulé | PRODUCTION | Oui |
-| 25 | Sudoku-4 : Recuit Simule (Python) | PRODUCTION | Oui |
-| 26 | Sudoku-5 : Particle Swarm Optimization (PSO) | PRODUCTION | Oui |
-| 27 | Sudoku-5 : Particle Swarm Optimization (Python) | PRODUCTION | Oui |
-| 28 | Sudoku-6 : Résolution par CSP Académique (AIMA) | PRODUCTION | Oui |
-| 29 | Sudoku-6 : Résolution par CSP Académique (Python) | PRODUCTION | Oui |
+| 16 | Comparaison des Solveurs de Sudoku | BETA | Oui |
+| 17 | Comparaison des Solveurs de Sudoku | PRODUCTION | Oui |
+| 18 | Sudoku-7b — Soundness de la propagation de contraintes  | BETA | Oui |
+| 19 | Résolution de Sudoku avec Algorithm X et Dancing Links | PRODUCTION | Oui |
+| 20 | Sudoku-Python-DancingLinks : Dancing Links / Algorithm  | PRODUCTION | Oui |
+| 21 | Sudoku-3 : Résolution par Algorithme Génétique (C#) | PRODUCTION | Oui |
+| 22 | Sudoku-Python-Genetic : Algorithme Génétique (Python) | PRODUCTION | Oui |
+| 23 | Résolution de Sudoku par Recuit Simulé | PRODUCTION | Oui |
+| 24 | Sudoku-4 : Recuit Simule (Python) | PRODUCTION | Oui |
+| 25 | Sudoku-5 : Particle Swarm Optimization (PSO) | PRODUCTION | Oui |
+| 26 | Sudoku-5 : Particle Swarm Optimization (Python) | PRODUCTION | Oui |
+| 27 | Sudoku-6 : Résolution par CSP Académique (AIMA) | PRODUCTION | Oui |
+| 28 | Sudoku-6 : Résolution par CSP Académique (Python) | PRODUCTION | Oui |
+| 29 | Sudoku-7 : Résolution par Propagation de Contraintes (N | PRODUCTION | Oui |
 | 30 | Sudoku-7 : Résolution par Propagation de Contraintes (N | PRODUCTION | Oui |
-| 31 | Sudoku-7 : Résolution par Propagation de Contraintes (N | PRODUCTION | Oui |
-| 32 | Résolution de Sudoku par Stratégies Humaines | PRODUCTION | Oui |
-| 33 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | PRODUCTION | Oui |
-| 34 | Notebook 9: Résolution de Sudoku par Coloration de Grap | PRODUCTION | Oui |
-| 35 | Sudoku-9 : Coloration de Graphe (Python) | PRODUCTION | Oui |
+| 31 | Résolution de Sudoku par Stratégies Humaines | PRODUCTION | Oui |
+| 32 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | PRODUCTION | Oui |
+| 33 | Notebook 9: Résolution de Sudoku par Coloration de Grap | PRODUCTION | Oui |
+| 34 | Sudoku-9 : Coloration de Graphe (Python) | PRODUCTION | Oui |
