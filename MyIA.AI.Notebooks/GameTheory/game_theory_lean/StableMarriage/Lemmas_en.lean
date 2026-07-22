@@ -36,9 +36,9 @@ variable {n : Nat} [NeZero n]
 
 /-! ## Consistent partial matching -/
 
-/-- Un couplage partiel est cohérent : chaque appariement est mutuel.
-    Si l'homme `m` est apparié à la femme `w`, alors la femme `w` est appariée
-    à l'homme `m`, et réciproquement. -/
+/-- A partial matching is consistent: every pairing is mutual.
+    If man `m` is matched to woman `w`, then woman `w` is matched
+    to man `m`, and vice versa. -/
 def GSConsistent (μ : GSMatching n) : Prop :=
   ∀ m w, μ.menMatch m = some w ↔ μ.womenMatch w = some m
 
@@ -131,10 +131,10 @@ end proposedCount
 
 /-! ## Invariant - men propose in decreasing order of preference -/
 
-/-- Dans l'algorithme de Gale-Shapley, les hommes proposent par ordre décroissant
-    de préférence. Après `k` étapes, toutes les propositions de l'homme `m` vont à
-    ses `k` candidates les plus préférées. Comme les préférences sont des bijections
-    totales, chaque femme est une candidate valide. -/
+/-- In the Gale-Shapley algorithm, men propose in decreasing order of
+    preference. After `k` steps, all proposals of man `m` go to his `k`
+    most-preferred candidates. Since preferences are total bijections,
+    every woman is a valid candidate. -/
 def menProposedDownward (prof : PrefProfile n) (σ : GSState prof) : Prop :=
   ∀ m w w', σ.proposed m w → prof.menPref m w' < prof.menPref m w →
     σ.proposed m w'
@@ -185,9 +185,9 @@ namespace GSConsistent
 
 variable (prof : PrefProfile n) {σ : GSState prof}
 
-/-- `swapMatch` préserve la cohérence lorsque la femme `w` préfère `m` à `mOld`.
-    Le schéma suit la preuve de `matchFree` : `split_ifs` + `have` pour les enchaînements
-    de cohérence. -/
+/-- `swapMatch` preserves consistency when woman `w` prefers `m` to `mOld`.
+    The proof mirrors `matchFree`: `split_ifs` + `have` chains for the
+    consistency steps. -/
 lemma swapMatch (h : GSConsistent σ.matching) (m mOld w : Fin n)
     (hm : σ.matching.menMatch m = none)
     (hw : σ.matching.womenMatch w = some mOld)
@@ -564,8 +564,8 @@ end womenProposedImpliesMatched
 
 /-! ## Invariant - best match for each woman (step preservation) -/
 
-/-- Si une femme est libre et que `womenProposedImpliesMatched` est vrai,
-    alors aucun homme ne lui a encore proposé (contraposée). -/
+/-- If a woman is free and `womenProposedImpliesMatched` holds, then no
+    man has proposed to her yet (contrapositive). -/
 lemma womenUnproposed (prof : PrefProfile n) (σ : GSState prof)
     (h : womenBestState prof σ)
     (hwp : womenProposedImpliesMatched prof σ)
@@ -683,12 +683,12 @@ lemma gsTerminated_runSteps_bound (prof : PrefProfile n) :
     Finset.eq_of_subset_of_card_le hss (by rw [huniv]; exact hcount_card.ge)
   exact hw ((proposedSet.mem_iff prof (m, w)).1 (heq ▸ Finset.mem_univ _))
 
-/-- Lorsque GS a terminé, chaque homme est apparié (`menMatch m ≠ none`).
-    Si un homme était libre, `gsCandidates` devrait être vide (sans quoi il serait
-    libre lui aussi), donc il aurait proposé à toutes les femmes. Par
-    `womenProposedImpliesMatched`, toutes les femmes seraient alors appariées via
-    d'autres hommes. Mais cohérence + `n` femmes appariées par `n-1` autres hommes
-    est impossible sur `Fin n`. -/
+/-- When GS has terminated, every man is matched (`menMatch m ≠ none`).
+    If a man were free, `gsCandidates` would have to be empty (otherwise he
+    would also be free), so he would have proposed to every woman. By
+    `womenProposedImpliesMatched`, every woman would then be matched via
+    other men. But consistency + `n` women matched by `n-1` other men is
+    impossible on `Fin n`. -/
 lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
     (hterm : gsTerminated prof σ)
     (hwp : womenProposedImpliesMatched prof σ)
@@ -745,7 +745,8 @@ lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
 
 /-! ## Conversion of the final GS matching -/
 
-/-- Extraire l'épouse d'un `GSMatching` via `Classical.choose` (évite les problèmes de typage de `Option.get`). -/
+/-- Extract the wife of a `GSMatching` via `Classical.choose` (sidesteps the
+    typing issues of `Option.get`). -/
 noncomputable def gsSpouse (μ : GSMatching n)
     (hall : ∀ m, μ.menMatch m ≠ none) (m : Fin n) : Fin n :=
   Classical.choose (Option.ne_none_iff_exists.mp (hall m))
@@ -755,7 +756,8 @@ lemma gsSpouse_spec (μ : GSMatching n)
     μ.menMatch m = some (gsSpouse μ hall m) :=
   (Classical.choose_spec (Option.ne_none_iff_exists.mp (hall m))).symm
 
-/-- Toutes les femmes sont appariées dès que tous les hommes sont appariés et que le couplage est cohérent. -/
+/-- All women are matched as soon as all men are matched and the matching
+    is consistent. -/
 lemma gsAllWomenMatched {μ : GSMatching n}
     (hall : ∀ m, μ.menMatch m ≠ none)
     (hcon : GSConsistent μ) (w : Fin n) :
@@ -830,17 +832,20 @@ lemma gsFinalMatching_spouse_get (prof : PrefProfile n) (σ : GSState prof)
 
 /-! ## Absence of blocking pairs (adapted from `Properties.lean` upstream L48-120) -/
 
-/-- L'état final de GS ne comporte aucune paire bloquante.
+/-- The final state of GS has no blocking pair.
 
-    Structure de la preuve (adaptée de `Properties.lean galeShapley_noBlockingPairs` du dépôt mmaaz-git) :
-    1. Supposer une paire bloquante `(m, w)` : `m` préfère `w` à son épouse, `w` préfère `m` à son époux
-    2. Montrer que `m` a proposé à `w` (`menProposedDownward` + `menMatchedProposed`)
-    3. `w` est appariée à `mW` (`womenProposedImpliesMatched`)
-    4. `womenBestState` donne : `womenPref w mW ≤ womenPref w m`
-    5. La condition de blocage donne : `womenPref w m < womenPref w mW`
-    6. Contradiction (`≤` et `<` sont incompatibles)
+    Proof structure (adapted from `Properties.lean galeShapley_noBlockingPairs`
+    of the mmaaz-git repository):
+    1. Assume a blocking pair `(m, w)`: `m` prefers `w` to his wife, `w` prefers
+       `m` to her husband.
+    2. Show that `m` proposed to `w` (`menProposedDownward` + `menMatchedProposed`).
+    3. `w` is matched to `mW` (`womenProposedImpliesMatched`).
+    4. `womenBestState` gives: `womenPref w mW ≤ womenPref w m`.
+    5. The blocking condition gives: `womenPref w m < womenPref w mW`.
+    6. Contradiction (`≤` and `<` are incompatible).
 
-    Simplification par rapport à l'upstream : pas de branche « `w` est libre » (préférences totales).
+    Simplification compared to the upstream: no "`w` is free" branch (total
+    preferences).
 -/
 lemma gsNoBlockingPairs (prof : PrefProfile n)
     (hterm : gsTerminated prof (gsRunSteps prof (gsProposalBound n)))
