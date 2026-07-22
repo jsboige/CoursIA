@@ -8,7 +8,30 @@ Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. 
 |--------|--------|------|--------|
 | **T1** | `extract_cells_to_csv.py` | Extrait les cellules des notebooks vers le CSV (langue pivot `fr`) | Livré |
 | **T2** | `check_translation_sync.py` | Détecte le drift (source modifiée / trad éditée / cellule supprimée) | Livré (non-bloquant, CI) |
-| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+
+## Issue #6949 — Status de clôture (2026-07-22, c.757)
+
+**Issue #6949 — fork Argumentum vers CoursIA (T1/T2 + T3 gated) — CLOSED (livrable court-terme expédié).**
+
+Les deux PRs annoncées dans le scope de l'issue (#6949 § « 2 PRs ») sont MERGED sur `main` :
+
+| PR | Commit merge | Livrable |
+|----|--------------|----------|
+| [#6976](https://github.com/jsboige/CoursIA/pull/6976) | `84ba7ac70` | `scripts/translation/translate_csv.py` — moteur T3 fork Argumentum, **14 tests**, `ENABLED=False` + `--dry-run` (double garde, activation après GO user) |
+| [#6980](https://github.com/jsboige/CoursIA/pull/6980) | `fb9bff827` | `docs/translation/argumentum-fork-mapping.md` + README T3 status — justification fork vs laisser, mapping schéma Argumentum → CoursIA, lessons gpt-5.5 |
+
+Travaux d'harmonisation shipped post-issue (PRs additionnelles non-comptées dans le scope original mais traçables à #6949) :
+
+- [#7615](https://github.com/jsboige/CoursIA/pull/7615) — provider-keys test env-hermetic (secrets hygiene, leçon pool args).
+- [#7714](https://github.com/jsboige/CoursIA/pull/7714) — verdict `WRONG_SCRIPT` (5e classe Argumentum alignée, c.734).
+- [#7731](https://github.com/jsboige/CoursIA/pull/7731) — verdict `FR_CONTAM` (4e classe Argumentum alignée, c.738).
+
+**Hors-scope explicite** (gated) :
+- **Activation T3** (`ENABLED=True` + premier run `--apply`) — mandat user requis, déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650). Le moteur reste **gated** intentionnellement : la pre-flight account/mandat (coût API, choix LLM en prod, stratégie de quota) sort du périmètre d'une PR de code.
+- **T4 — re-import CSV → notebooks traduits** (papermill `--language <lang>`) — travail post-activation, dépendant du retour d'expérience du premier run T3 réel.
+
+Cible de revue cross-doc (à matérialiser au merge de la PR de clôture c.757) : `docs/translation/argumentum-fork-mapping.md` porte la même déclaration de clôture.
 
 ## Schéma CSV (ratified #4957 §1)
 

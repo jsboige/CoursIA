@@ -1,9 +1,11 @@
 # Mapping de fork Argumentum → CoursIA (moteur T3)
 
 > **Statut** : référence pérenne pour la couche T3 (moteur de traduction).
-> Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) (PR #1/2 — doc).
+> Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) — **CLOSED 2026-07-22 (c.757)** : livrable court-terme expédié. PRs du scope original : #6980 (ce doc, `fb9bff827`) + #6976 (fork code T3, `84ba7ac70`).
 > Fork code : PR #6976 (`scripts/translation/translate_csv.py`).
+> Travaux d'harmonisation post-issue : #7615 (env-hermetic provider-keys), #7714 (WRONG_SCRIPT, c.734), #7731 (FR_CONTAM, c.738).
 > Épics parents : [#4957](https://github.com/jsboige/CoursIA/issues/4957) (infra synchro), [#1650](https://github.com/jsboige/CoursIA/issues/1650) (traduction multilingue).
+> **Hors scope gated** : activation T3 (`ENABLED=True`) — mandat user + Phase 1 [#1650](https://github.com/jsboige/CoursIA/issues/1650) ; T4 re-import CSV → notebooks — post-activation.
 
 ## 1. Pourquoi forker Argumentum
 
@@ -76,9 +78,11 @@ T4  re-import     patcher xxx_<lang>.ipynb depuis le CSV + Papermill re-exec    
 
 ## 6. Voir aussi
 
-- [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — motivation, scope (PR #1 doc + PR #2 code), arrêt des resync vides.
+- [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — motivation, scope (PR #1 doc + PR #2 code), arrêt des resync vides. **CLOSED 2026-07-22** (cf. bloc Statut ci-dessus).
 - [Issue #4957](https://github.com/jsboige/CoursIA/issues/4957) — design de l'infra (schéma CSV, sémantique drift).
 - [Epic #1650](https://github.com/jsboige/CoursIA/issues/1650) — traduction multilingue du dépôt.
 - PR #6976 — fork code (`scripts/translation/translate_csv.py` + 14 tests).
-- [`scripts/translation/README.md`](../../scripts/translation/README.md) — workflow T1→T2→T3.
+- PR #6980 — ce document + README T3 status.
+- PRs d'harmonisation (post-issue, hors scope original) : #7615, #7714, #7731.
+- [`scripts/translation/README.md`](../../scripts/translation/README.md) — workflow T1→T2→T3 + bloc `## Issue #6949 — Status de clôture` (c.757).
 - Argumentum source (submodule pin `7e72f3e5d`) : `tools/dnn_i18n/translate_game_rules.py`.
