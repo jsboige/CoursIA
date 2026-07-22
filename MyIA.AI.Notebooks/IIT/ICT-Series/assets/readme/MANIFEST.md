@@ -59,6 +59,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Poids** : 132.0 KB (natif)
 - **Ce qui n'est PAS dans la figure** : (a) la **free energy** formelle $F = E_q[\ln q(\theta) - \ln p(\theta, x)]$ et l'**expected free energy** $G$ (interviennent dans le texte mais ne sont pas tracées) ; (b) une généralisation à un signal non sinusoidal.
 - **Dette de nommage (disclose)** : le nom de fichier `ict14-freeenergy.png` est **trompeur** — la figure illustre en réalité le **lacet de prédation** (batterie anticipation/persistance développée dans ICT-10 sur la catastrophe fronce) appliquée à un signal sinusoidal bruité. Le lien avec la free energy est dans le texte du notebook, mais la figure rendue ici est un cas d'application du **représentant interne `p̂`**. Le nom de fichier est conservé par compatibilité avec la table d'extraction.
+- **Dette de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733))** : le `p̂` tracé ici est un **anticipateur représentationnel** (extrapolation du signal) — il **n'est pas** la *prégnance* thomienne (« fluide invasif entre formes saillantes », qui serait plutôt une *section locale* au sens de Grothendieck, cf. `docs/grothendieckian-lens.md:41`). La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est *nommée*, pas démontrée — cf. note de rigueur dédiée dans [ICT-0-Framing.md § « Note de rigueur »](../ICT-0-Framing.md#note-de-rigueur--prégnance-thomienne-vs-représentant-interne-p-audit-4-7733).
 
 ## ict16-mdl-bosse.png
 
