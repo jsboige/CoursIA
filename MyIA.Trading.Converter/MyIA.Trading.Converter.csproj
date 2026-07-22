@@ -47,7 +47,7 @@
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SevenZipExtractor" Version="1.0.17" />
-    <PackageReference Include="SharpCompress" Version="0.34.2" />
+    <PackageReference Include="SharpCompress" Version="0.48.0" />
     <PackageReference Include="SimdJsonSharp.Managed" Version="1.5.0" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.6.1.23" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
