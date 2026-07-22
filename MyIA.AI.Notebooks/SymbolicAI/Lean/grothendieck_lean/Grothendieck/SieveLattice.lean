@@ -101,4 +101,27 @@ theorem pullback_monotone {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
   simp [Sieve.pullback] at hg ⊢
   exact hST _ hg
 
+/-!
+## Pullback distribue sur la join (union) de cribles
+
+Dual de `pullback_inf` (Partie 9, `SieveOps.lean`) : le pullback preserve
+egalement `⊔`. Tire en arriere de la join de deux cribles egale la join
+de leurs pullbacks. Le resultat suit de la definition de `Sieve.union`
+(une fleche `g : Z ⟶ Y` est dans `(S ⊔ R).pullback f` ssi
+`g ≫ f` est dans `S` ou dans `R`, ce qui equivaut a etre dans
+`S.pullback f` ou dans `R.pullback f`).
+
+Identite non couverte par `Mathlib.CategoryTheory.Sites.Sieves`
+(qui fournit `pullback_inter` mais pas son dual `pullback_union`) ;
+extension Phase 2 (Issue #2159, Epic #1646).
+-/
+
+/-- CALIBRATION (ext + simp) : pullback distribue sur la join
+    de cribles. Dual de `pullback_inf` (`SieveOps.lean`). -/
+theorem pullback_union {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    (S R : Sieve X) :
+    Sieve.pullback f (S ⊔ R) = Sieve.pullback f S ⊔ Sieve.pullback f R := by
+  ext Z g
+  simp [Sieve.pullback]
+
 end Grothendieck
