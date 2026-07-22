@@ -76,7 +76,7 @@ CaseStudies/
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
 │   └── data/              # Données de test (patients.csv, 10 patients diabète type 2)
-├── Oncology-Planning/     # Planification oncologique (CSP, Pyro probabiliste, ontologie)
+├── Oncology-Planning/     # Planification oncologique (CSP, Pyro probabiliste, ontologie, bonus smart contract)
 │   ├── README.md          # Fiche projet
 │   ├── subject.md         # Sujet du devoir (CC2)
 │   ├── student/           # Template étudiant
@@ -250,7 +250,7 @@ Le template étudiant (`student/`) contient le squelette du projet : classes ave
 | Sous-projet | Notebooks | Statut | Paradigmes mobilisés |
 |-------------|-----------|--------|----------------------|
 | [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | PRODUCTION | A* + génétique + Z3 (CSP) |
-| [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | PRODUCTION | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) |
+| [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | PRODUCTION | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) + bonus smart contract (`OncoContract`) |
 | [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
 | **Total** | **6 notebooks** | **PRODUCTION=4, BETA=2** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
 
