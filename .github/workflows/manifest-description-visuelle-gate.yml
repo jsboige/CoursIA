@@ -1,0 +1,111 @@
+name: Manifest description_visuelle gate
+
+# Purpose
+# -------
+# Per-PR gate enforcing that any MODIFIED `assets/readme/MANIFEST.md` in
+# `MyIA.AI.Notebooks/` declares a `**Description visuelle** :` field per
+# figure entry. The field is the doctrine #5780 distinction (PR #7771,
+# `extract_readme_figures.py` enforce): what the figure SHOWS visually,
+# distinct from `alt_text_fr` (accessibility) and from the notebook's
+# pedagogical subject. This ratchets regressions fleet-wide for the 44
+# MANIFEST.md currently shipped without the field.
+#
+# Diff-scoped (not clean-baseline-absolute): the 44 MANIFEST.md without
+# `description_visuelle` today are GRANDFATHERED -- the gate only inspects
+# MANIFESTs CHANGED by the PR. This mirrors the precedent of
+# `degenerate-figure-gate.yml` (issue #6891, 8 QC quantbook degenerate
+# figures). Every NEW MANIFEST modification without the field is blocked
+# immediately; the existing baseline can migrate to the canonical schema
+# opportunistically (one MANIFEST per PR, per family).
+#
+# Root cause: pre-#5780 audit, MANIFESTs were written with `Contenu réel
+# vérifié` prose at single-line granularity, with no enforcement that the
+# cell-level observation matches what's actually visible in the PNG. After
+# issue #5780 mandate, the canonical schema adopted a dedicated
+# `Description visuelle` field, but no CI check prevented drift back to
+# the legacy format. PR #7771 fixed the SOURCE ENFORCEMENT
+# (`extract_readme_figures.py --description_visuelle` required); this gate
+# closes the loop on the ASSET side.
+#
+# Detector: scripts/notebook_tools/detect_manifest_field.py (#PR-c754),
+# run in --check mode (exit 0 clean, exit 1 on defect) on every MANIFEST.md
+# CHANGED by the PR. Deterministic header+field regex -- minimal false
+# positive risk; legacy `### filename.png` headers are recognized as
+# equivalent to canonical `## filename.png`.
+#
+# See EPIC #5654 (doctrine figures README), issue #5780 (corrective sweep),
+# PR #7771 (source-side enforcement), and PR #7814 (this gate = asset-side).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/assets/readme/MANIFEST.md'
+      - 'scripts/notebook_tools/detect_manifest_field.py'
+      - '.github/workflows/manifest-description-visuelle-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifest-description-visuelle:
+    name: "MANIFEST.md description_visuelle field enforced on changed files"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed MANIFESTs
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Manifest description_visuelle gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/assets/readme/MANIFEST.md' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Manifest description_visuelle gate::No MANIFEST.md changed — clean."
+            exit 0
+          fi
+
+          echo "## Manifest description_visuelle gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r mf; do
+            [ -z "$mf" ] && continue
+            [ -f "$mf" ] || continue
+            checked=$((checked + 1))
+            out=$(python scripts/notebook_tools/detect_manifest_field.py --check "$mf" 2>&1)
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Manifest description_visuelle::$mf omits the **Description visuelle** field for at least one figure. See PR #7771 doctrine + PR #7814 (this gate)."
+              echo "<details><summary><code>$mf</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Manifest description_visuelle gate::$mf could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: add a \`**Description visuelle** :\` line per figure entry in the MANIFEST, observing the PNG (`Read` on the .png) and describing its visual content (chart type / axes / colors / disposition), distinct from the notebook's pedagogical subject. See scripts/notebook_tools/extract_readme_figures.py for the canonical schema." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Manifest description_visuelle gate::Checked $checked changed MANIFEST.md file(s); all declare description_visuelle per figure."
