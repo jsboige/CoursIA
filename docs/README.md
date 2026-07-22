@@ -84,7 +84,8 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
-| [lean/stable_marriage_intractable_diagnosis.md](archive/lean-intractable-diagnosis/stable-marriage.md) | Diagnostic des preuves stable-marriage intractables (archivé c.696) |
+
+> Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
 ## Curriculum (docs/curriculum/)
 
@@ -123,6 +124,7 @@ Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documenta
 | Fichier | Description |
 |---------|-------------|
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
+| [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice canonique `notebook × claim × proxy × contrôle × seeds × verdict × portée` (grade C-documentaire, #7734, #4588) |
 
 ## Ledgers cumulatifs (docs/ledgers/)
 
