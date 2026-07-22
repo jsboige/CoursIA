@@ -80,15 +80,23 @@ lean backtest --project .
 
 **QC Cloud:** Open project 29434753 in the QuantConnect IDE and click "Backtest".
 
-## Backtest Metrics (2015-2026)
+## Backtest Metrics (2015-2024)
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | 0.566 |
-| CAGR | 14.8% |
-| Max Drawdown | 38.6% |
-| Rebalance | Biweekly |
-| Max Positions | 9 |
+| Metric | v1 (2020-2026) | v2 prior (2015-2026) | **v2 c.799 (2015-2024 strict)** |
+|--------|----------------|----------------------|-----------------------------------|
+| Sharpe Ratio | 0.195 | 0.566 | **0.787** |
+| CAGR | n/a | 14.8% | **19.493%** |
+| Max Drawdown | n/a | 38.6% | **35.9%** |
+| Total Net Profit | n/a | 371.678% | **494.293%** |
+| Net Profit ($) | n/a | $380,301 | **$497,083** |
+| Rebalance | Biweekly | Biweekly | Biweekly |
+| Max Positions | 9 | 9 | 9 |
+| Total Orders | n/a | 2260 | **1994** |
+| Tradeable Dates | n/a | 2825 | **2516** |
+
+**Note c.799** : la fenêtre stricte 2015-2024 (10 ans, sans la queue 2025-2026 partielle du précédent run) produit Sharpe **+39%**, CAGR **+4.7pp**, MaxDD **-2.7pp**, TotalNetProfit **+122.6pp** vs le run v2 du 2026-03-28 (qui incluait la queue 2025-2026). La queue 2025-2026 partielle tirait les chiffres vers le bas (deeper drawdown). Preuves d'exécution : `c799-cloud-id-29434753.json` (compile_id + backtest_id + claimed_values_from_prior_backtest).
+
+QC Cloud backtest id c.799 : `9cc2bcb4809c514efb84e3cdaf89d610` (Completed 2026-07-22T22:42:00Z, ~25 min runtime).
 
 ## Files
 
