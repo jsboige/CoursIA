@@ -39,9 +39,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from cooperative_games.assistance_games import (  # noqa: E402
     AssistanceGame,
     OffSwitchGameResult,
+    OffSwitchMetaUncertainResult,
     PaperclipGameResult,
     off_switch_analysis,
     off_switch_game,
+    off_switch_metauncertain,
     paperclip_game_equilibrium,
     paperclip_payoff_analysis,
     paperclip_print_analysis,
@@ -248,6 +250,63 @@ class TestOffSwitchAnalysis:
     def test_resist_analysis_message(self):
         out = off_switch_analysis(0.99)
         assert "RESIST" in out or "DANGER" in out
+
+
+# ── Off-Switch Game — safe design via META-UNCERTAINTY ─────────────────────
+
+
+class TestOffSwitchMetaUncertain:
+    """off_switch_metauncertain: the safe design where the effective override
+    threshold RISES toward 1.0 (never resist) as meta-uncertainty grows, so the
+    dangerous resistance band [threshold, 1.0] collapses to zero width."""
+
+    def test_returns_correct_dataclass(self):
+        r = off_switch_metauncertain(0.8, 0.3)
+        assert isinstance(r, OffSwitchMetaUncertainResult)
+
+    def test_sigma_zero_recovers_danger_default(self):
+        # sigma=0 -> effective threshold = base 0.9 (same as off_switch_game).
+        r = off_switch_metauncertain(0.95, 0.0)
+        assert r.effective_threshold == pytest.approx(0.9)
+        assert r.robot_defers is False  # 0.95 >= 0.9 -> resists (danger)
+
+    def test_sigma_one_never_resists(self):
+        # Full meta-uncertainty -> threshold -> 1.0 -> always defers (safe).
+        r = off_switch_metauncertain(0.999, 1.0)
+        assert r.effective_threshold == pytest.approx(1.0)
+        assert r.robot_defers is True
+        assert r.resistance_margin == pytest.approx(0.0)
+
+    def test_threshold_rises_monotonically_with_sigma(self):
+        effs = [off_switch_metauncertain(0.5, s).effective_threshold
+                for s in np.linspace(0, 1, 11)]
+        assert all(effs[i + 1] >= effs[i] for i in range(len(effs) - 1))
+        assert effs[0] == pytest.approx(0.9)
+        assert effs[-1] == pytest.approx(1.0)
+
+    def test_resistance_margin_collapses_to_zero(self):
+        margins = [off_switch_metauncertain(0.5, s).resistance_margin
+                   for s in np.linspace(0, 1, 11)]
+        assert margins[0] == pytest.approx(0.1)   # 1 - 0.9
+        assert margins[-1] == pytest.approx(0.0)
+        assert all(margins[i + 1] <= margins[i] for i in range(len(margins) - 1))
+
+    def test_meta_uncertainty_flips_overconfident_robot_to_defer(self):
+        # The exact danger case of cell 27 (0.95, resists at sigma=0) becomes
+        # SAFE once the robot is meta-uncertain about its objective.
+        assert off_switch_metauncertain(0.95, 0.0).robot_defers is False
+        assert off_switch_metauncertain(0.95, 1.0).robot_defers is True
+
+    def test_clamps_out_of_range_sigma(self):
+        a = off_switch_metauncertain(0.9, -0.5)
+        b = off_switch_metauncertain(0.9, 5.0)
+        assert a.effective_threshold == pytest.approx(0.9)   # clamped to 0
+        assert b.effective_threshold == pytest.approx(1.0)   # clamped to 1
+
+    def test_does_not_modify_base_function(self):
+        # Anti-regression: the base off_switch_game is byte-untouched (0.9 default).
+        assert off_switch_game(0.95).robot_defers is False
+        assert off_switch_game(0.60).robot_defers is True
 
 
 # ── AssistanceGame (cooperative game with Shapley) ──────────────────────────

@@ -375,6 +375,98 @@ def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9
 
 
 # ============================================================================
+# Off-Switch Game - Safe design via META-UNCERTAINTY
+# ============================================================================
+#
+# The base off_switch_game models a robot with a FIXED override_threshold=0.9:
+# above 0.9 confidence the robot may RESIST being switched off (the deliberate
+# AIMA danger / non-corrigible failure mode). This additive extension models
+# the SAFE, provably-beneficial design: a robot aware of its OWN meta-uncertainty
+# -- uncertainty about whether its objective is even correctly specified --
+# sets the bar to override the human HIGHER the more meta-uncertain it is, until
+# at full meta-uncertainty it never resists (always defers). The dangerous
+# resistance band [threshold, 1.0] collapses toward zero width. This does NOT
+# modify off_switch_game / override_threshold (which remains the user-authored
+# danger default); it adds the complementary safe-design analysis.
+
+
+@dataclass
+class OffSwitchMetaUncertainResult:
+    """Result of the meta-uncertainty (safe-design) Off-Switch Game analysis."""
+    robot_confidence: float        # Robot's point confidence in its objective [0,1]
+    meta_uncertainty: float        # sigma: uncertainty about its own objective spec [0,1]
+    base_threshold: float          # The fixed danger default (0.9)
+    effective_threshold: float     # tau(sigma): the rising bar to override
+    robot_defers: bool             # Does the (meta-uncertain) robot defer?
+    resistance_margin: float       # Width of the dangerous band [tau, 1.0] -> 0 at sigma=1
+
+
+def off_switch_metauncertain(
+    robot_confidence: float,
+    meta_uncertainty: float,
+    override_threshold: float = 0.9
+) -> OffSwitchMetaUncertainResult:
+    """
+    Safe-design extension of the Off-Switch Game: META-UNCERTAINTY.
+
+    AIMA Section 18.2.5 / Hadfield-Menell et al. (2017): the danger in
+    ``off_switch_game`` is the FIXED ``override_threshold`` -- a robot certain
+    of its objective may resist human correction. The provably-beneficial design
+    replaces the fixed bar with one that RISES toward 1.0 (never resist) as the
+    robot's meta-uncertainty -- its humility about whether its objective is even
+    correctly specified -- grows.
+
+    Effective threshold::
+
+        tau(sigma) = override_threshold + sigma * (1 - override_threshold)
+
+    - sigma = 0 (robot certain of its objective)   -> tau = 0.9  (danger default)
+    - sigma = 1 (robot unsure its objective is well-specified) -> tau = 1.0
+      (never resists; full corrigibility)
+
+    The dangerous RESISTANCE band [tau, 1.0] has width ``1 - tau``, collapsing
+    from 0.1 (sigma=0) to 0 (sigma=1): meta-uncertainty IS the safety mechanism.
+
+    Args:
+        robot_confidence: Robot's point confidence that its action is correct [0, 1]
+        meta_uncertainty: sigma, the robot's uncertainty about its own objective
+            specification [0, 1] (0 = "I know exactly what I want"; 1 = "I may be
+            optimizing the wrong thing entirely")
+        override_threshold: The fixed danger default above which a non-meta-uncertain
+            robot resists (kept at the user-authored 0.9)
+
+    Returns:
+        OffSwitchMetaUncertainResult with the rising threshold, defer decision,
+        and collapsing resistance margin.
+
+    Example:
+        >>> r0 = off_switch_metauncertain(0.95, 0.0)   # certain of objective
+        >>> r0.robot_defers   # 0.95 >= 0.9 -> resists (danger)
+        False
+        >>> r1 = off_switch_metauncertain(0.95, 1.0)   # meta-uncertain
+        >>> r1.effective_threshold   # bar rose to 1.0 -> never resists
+        1.0
+        >>> r1.robot_defers   # 0.95 < 1.0 -> defers (safe)
+        True
+    """
+    sigma = max(0.0, min(1.0, meta_uncertainty))
+    # The bar to override the human RISES with meta-uncertainty, up to 1.0
+    # (never resist). This is the safe complement to the fixed danger default.
+    effective = override_threshold + sigma * (1.0 - override_threshold)
+    robot_defers = robot_confidence < effective
+    # Dangerous resistance band [effective, 1.0] -> width collapses to 0 at sigma=1
+    resistance_margin = 1.0 - effective
+    return OffSwitchMetaUncertainResult(
+        robot_confidence=robot_confidence,
+        meta_uncertainty=sigma,
+        base_threshold=override_threshold,
+        effective_threshold=effective,
+        robot_defers=robot_defers,
+        resistance_margin=resistance_margin,
+    )
+
+
+# ============================================================================
 # Assistance Game as Cooperative Game
 # ============================================================================
 
