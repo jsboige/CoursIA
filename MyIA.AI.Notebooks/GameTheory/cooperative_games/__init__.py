@@ -64,10 +64,12 @@ from .assistance_games import (
     paperclip_print_analysis,
     off_switch_game,
     off_switch_analysis,
+    off_switch_metauncertain,
     AssistanceGame,
     paperclip_vs_coordination_comparison,
     PaperclipGameResult,
-    OffSwitchGameResult
+    OffSwitchGameResult,
+    OffSwitchMetaUncertainResult
 )
 
 __version__ = "1.0.0"
@@ -111,8 +113,10 @@ __all__ = [
     "paperclip_print_analysis",
     "off_switch_game",
     "off_switch_analysis",
+    "off_switch_metauncertain",
     "AssistanceGame",
     "paperclip_vs_coordination_comparison",
     "PaperclipGameResult",
     "OffSwitchGameResult",
+    "OffSwitchMetaUncertainResult",
 ]
