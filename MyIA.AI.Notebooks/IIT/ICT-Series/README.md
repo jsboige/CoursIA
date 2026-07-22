@@ -146,6 +146,10 @@ Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedC
 
 ICT-5 est l'un des quatre points d'ancrage du **fil rouge causalité** du dépôt (do-calculus de Pearl à travers les paradigmes : symbolique Tweety, bayésien Infer.NET / PyMC, information-théorique ICT). L'essai complet — l'échelle de la causalité L1/L2/L3 et les quatre instanciations de l'opérateur `do(·)` — vit dans le README parent : voir [Ponts causaux : le do-calculus de Pearl](../README.md#ponts-causaux--le-do-calculus-de-pearl-à-travers-les-paradigmes).
 
+## Matrice de dissociations (ossature 4-objets)
+
+Chaque claim de la série est situé dans l'espace `s_t` (saillance) / `q_t(z)` (représentation prédictive) / `π_t(z)` (prégnance-valence) / `W_t` (workspace), avec proxy, contrôle, seeds, **verdict** sobre (`Établi` / `Fortement soutenu` / `Spéculatif`) et **portée** explicite (régime de validité). La matrice complète — [`docs/ict/dissociations-matrix.md`](../../../docs/ict/dissociations-matrix.md) ([#7734](https://github.com/jsboige/CoursIA/issues/7734)) — rend l'état scientifique de la série lisible d'un coup d'œil et discipline la montée en généralité. Elle complète la **grille 3-régimes** (invariants / dissociations / obstructions, [`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md), #7399) qui est, elle, transversale et conceptuelle.
+
 ## Validation
 
 ```bash

@@ -497,6 +497,8 @@ poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen /
 
 - [README de la série IIT](README.md) — fondations PyPhi (TPM, $\Phi$, CES, coarse-graining).
 - Epic **#4588** — registre des livrables ICT.
+- **Matrice de dissociations** (notebook × claim × proxy × contrôle × seeds × verdict × portée, ossaturée par la factorisation 4-objets `s, q, π, W`) : [`docs/ict/dissociations-matrix.md`](../../../docs/ict/dissociations-matrix.md) ([#7734](https://github.com/jsboige/CoursIA/issues/7734)). Lit chaque claim de la série dans l'espace `s_t` (saillance) / `q_t(z)` (représentation prédictive) / `π_t(z)` (prégnance-valence) / `W_t` (workspace), avec verdict sobre et portée explicite. **Complémentaire** de la grille 3-régimes ([`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md), #7399) — la grille est conceptuelle et transversale ; la matrice est opérationnelle et par-claim.
+- **Dette de rigueur audit #4** ([#7733](https://github.com/jsboige/CoursIA/issues/7733)) — 5 corrections A1-A5 propagées (PR #7889) : `p̂` ≠ prégnance thomienne, `H¹ ≠ 0` *candidat* (pas érigé en impossibilité sauf Kochen-Specker / Arrow), MGS = banc collectif Fil-A en aval strate 6, SAE = gamme Qwen complète (jalon 9B), pont pédagogique Axelrod → LLM → argumentation explicité.
 
 ### Pour aller plus loin — l'intelligence diverse (Levin)
 
