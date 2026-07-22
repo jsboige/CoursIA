@@ -1,0 +1,258 @@
+name: Exercise-leak CI
+
+# Purpose
+# -------
+# Per-PR gate for content-based solution leaks in pedagogical notebooks.
+# Detects cells labeled "Exercice N" whose code is a full solution (not a stub),
+# plus duplicate exercise numbering, plus Exemple-guide cells with stubs
+# (content-based labeling per .claude/rules/exercise-example-labeling.md).
+#
+# Doctrinal context
+# -----------------
+# Origin incidents: #1214 (find-replace aveugle Exercice<->Exemple), #1336
+# (root cause), #1343 (redundant revert), #1344 (Planners de-leak epic).
+# The "content-based labeling" rule (exercise-example-labeling.md) says:
+#   - Exemple + complete code = OK (do not touch)
+#   - Exercice + complete code = LEAK (fix: stub OR relabel to Exemple guide)
+#   - Exemple + stub = INCONSISTENCY (fix: relabel to Exercice)
+#
+# Baseline (SHA be5998073, 2026-07-23, c.762 inventory):
+#   111 HIGH (Exercice + solution) + 27 MEDIUM (duplicate numbering)
+#   Distribution: SymbolicAI 60 + Search 24 + ML 18 + QC 16 + GT 14 + Probas 4
+#                + CaseStudies 1 + GenAI 1 = 138 total
+#
+# Two-tier behavior (matches #8053 acceptance, item 4)
+# -----------------------------------------------------
+# Tier 1 (default = "warn") -- ADVISORY: posts the count of HIGH/MEDIUM findings
+# in the changed notebooks as a ::warning step, never blocks the merge. The PR
+# reviewer decides. This is the WARN mode "inventaire d'abord" requested by
+# #8053.
+#
+# Tier 2 ("strict") -- Hard gate that FAILS the PR only when a NEW HIGH
+# finding is INTRODUCED by the PR (a notebook changed on the PR branch gains
+# a HIGH that the base revision did not have). Pre-existing findings in legacy
+# notebooks do NOT block unrelated PRs. Activated by applying the
+# `exercise-leak-strict` PR label (or workflow_dispatch with strict=true).
+#
+# Why two tiers
+# -------------
+# The 138 baseline findings cannot be allowed to block 138 unrelated PRs. The
+# backlog is cleaned up incrementally via issue #8053 follow-ups; the strict
+# tier prevents NEW regressions while the cleanup is in progress. Promote
+# the WARN tier to FAIL when the baseline reaches a documented threshold
+# (tracked under #8053 follow-up issues).
+#
+# Scope
+# -----
+# Only files matching `MyIA.AI.Notebooks/**/*.ipynb` changed on the PR branch
+# are scanned (3-dot diff vs. base). Pre-existing findings in unrelated
+# notebooks are not in scope.
+#
+# Anti-FP
+# -------
+# - Detects stubs via scripts/notebook_tools/detect_solution_leaks.py which
+#   uses content-based patterns (pass, return None, # TODO, etc.) and
+#   minimum-line heuristics to distinguish a real stub from a one-liner
+#   exercise solution. See source for STUB_PATTERNS / is_stub_code.
+# - Notebook with header "Exemple guide" + complete code is NOT flagged as
+#   HIGH (rule: Exemple + solution = OK, content-based labeling).
+# - Author bypass: github-actions[bot] (catalog automation) is exempt.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_solution_leaks.py'
+      - 'scripts/notebook_tools/audit_solution_leaks.py'
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'FAIL the PR on any NEW HIGH finding (vs base). WARN otherwise.'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  exercise-leak:
+    name: "Exercise-leak content gate (WARN tier default, STRICT on label)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compute STRICT flag (label OR dispatch input)
+        id: strict-flag
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          DISPATCH_STRICT: ${{ inputs.strict }}
+        run: |
+          strict="false"
+          # 1) Dispatch input wins (manual override)
+          if [ "$DISPATCH_STRICT" = "true" ]; then
+            strict="true"
+          fi
+          # 2) PR label
+          case ",$LABELS," in
+            *,exercise-leak-strict,*) strict="true" ;;
+          esac
+          echo "value=$strict" >> "$GITHUB_OUTPUT"
+          echo "STRICT mode: $strict"
+
+      - name: Tier 1 (WARN) -- census on changed notebooks
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          STRICT: ${{ steps.strict-flag.outputs.value }}
+        run: |
+          set -uo pipefail
+
+          # Bypass: catalog automation author.
+          if [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
+            echo "::notice title=Exercise-leak CI::Author is github-actions[bot] - bypassed."
+            exit 0
+          fi
+
+          # Manual dispatch with no PR context: run a full-repo scan instead.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Exercise-leak CI::Manual dispatch - running full-repo census."
+            python scripts/notebook_tools/detect_solution_leaks.py --scan-all --verbose | tee census.txt
+            {
+              echo "## Exercise-leak CI (full-repo census)"
+              echo ""
+              echo '```'
+              cat census.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Exercise-leak CI::Full-repo census posted to step summary. Mode: $STRICT."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+
+          if [ "${#CHANGED[@]}" -eq 0 ]; then
+            echo "::notice title=Exercise-leak CI::No notebook changes - clean."
+            exit 0
+          fi
+
+          echo "Changed notebooks (${#CHANGED[@]}):"
+          printf '  %s\n' "${CHANGED[@]}"
+          echo ""
+
+          # Per-notebook scan on HEAD only (WARN census).
+          tmp=$(mktemp -d)
+          high=0
+          medium=0
+          echo "## Exercise-leak CI" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mode: **$([ "$STRICT" = "true" ] && echo "STRICT (FAIL on NEW HIGH)" || echo "WARN (advisory)")**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            [ -f "$nb" ] || continue   # skip deleted files
+
+            # Skip generated outputs and checkpoint folders.
+            case "$nb" in
+              *.ipynb_checkpoints*|*_output.ipynb) continue ;;
+            esac
+
+            head_out=$(python scripts/notebook_tools/detect_solution_leaks.py --scan "$nb" 2>&1 || true)
+            head_high=$(echo "$head_out" | grep -cE '^\s+\[HIGH\]' || true)
+            head_medium=$(echo "$head_out" | grep -cE '^\s+\[MEDIUM\]' || true)
+
+            if [ "${head_high:-0}" -eq 0 ] && [ "${head_medium:-0}" -eq 0 ]; then
+              echo "  OK  $nb"
+              continue
+            fi
+
+            echo "  $nb  HIGH=$head_high MEDIUM=$head_medium"
+            echo "<details><summary><code>$nb</code> -- HIGH=$head_high MEDIUM=$head_medium</summary>" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$head_out" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+            high=$((high + head_high))
+            medium=$((medium + head_medium))
+          done <<< "$(printf '%s\n' "${CHANGED[@]}")"
+
+          echo ""
+          echo "Census on changed notebooks: HIGH=$high MEDIUM=$medium (mode=$STRICT)"
+          {
+            echo "---"
+            echo ""
+            echo "**Census totals on changed notebooks**: HIGH=$high / MEDIUM=$medium"
+            echo ""
+            echo "Baseline (SHA be5998073, 2026-07-23, full repo): 111 HIGH + 27 MEDIUM = 138 findings. Distribution: SymbolicAI 60 / Search 24 / ML 18 / QC 16 / GT 14 / Probas 4 / CaseStudies 1 / GenAI 1."
+            echo ""
+            echo "Rule reference: \`.claude/rules/exercise-example-labeling.md\` (content-based: Exemple+code=OK ; Exercice+code=LEAK ; Exemple+stub=INCONSISTENCY). Detector: \`scripts/notebook_tools/detect_solution_leaks.py\` (--scan-all --check exit 1, content-based STUB_PATTERNS)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Tier 2: STRICT mode -- FAIL if any NEW HIGH was introduced.
+          if [ "$STRICT" = "true" ]; then
+            new_high=0
+            new_high_list=""
+            while IFS= read -r nb; do
+              [ -z "$nb" ] && continue
+              [ -f "$nb" ] || continue
+              case "$nb" in
+                *.ipynb_checkpoints*|*_output.ipynb) continue ;;
+              esac
+
+              basef="NONE"
+              if git cat-file -e "$BASE:$nb" 2>/dev/null; then
+                basef="$tmp/$(echo "$nb" | tr '/' '_').base.ipynb"
+                git show "$BASE:$nb" > "$basef" 2>/dev/null || basef="NONE"
+              fi
+
+              if [ "$basef" = "NONE" ]; then
+                # New notebook: any HIGH is a NEW HIGH.
+                head_high=$(python scripts/notebook_tools/detect_solution_leaks.py --scan "$nb" 2>&1 | grep -cE '^\s+\[HIGH\]' || true)
+                if [ "${head_high:-0}" -gt 0 ]; then
+                  new_high=$((new_high + head_high))
+                  new_high_list="$new_high_list\n  + $nb (new notebook, $head_high HIGH)"
+                fi
+              else
+                base_high=$(python scripts/notebook_tools/detect_solution_leaks.py --scan "$basef" 2>&1 | grep -cE '^\s+\[HIGH\]' || true)
+                head_high=$(python scripts/notebook_tools/detect_solution_leaks.py --scan "$nb" 2>&1 | grep -cE '^\s+\[HIGH\]' || true)
+                delta=$((head_high - base_high))
+                if [ "$delta" -gt 0 ]; then
+                  new_high=$((new_high + delta))
+                  new_high_list="$new_high_list\n  + $nb (delta +$delta HIGH)"
+                fi
+              fi
+            done <<< "$(printf '%s\n' "${CHANGED[@]}")"
+
+            if [ "$new_high" -gt 0 ]; then
+              {
+                echo ""
+                echo "### STRICT FAIL: $new_high NEW HIGH finding(s) introduced by this PR"
+                echo ""
+                printf "$new_high_list\n"
+                echo ""
+                echo "Ground-truth each finding (rule G.1: signal is not a verdict), then fix the cause: stub the solution (preferred), or relabel the header to 'Exemple guide' if the cell is intentionally a worked example."
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "::error title=Exercise-leak CI (STRICT)::This PR introduces $new_high NEW HIGH finding(s). See step summary."
+              exit 1
+            fi
+            echo "::notice title=Exercise-leak CI (STRICT)::No NEW HIGH finding introduced. Census HIGH=$high MEDIUM=$medium (unchanged from baseline)."
+            exit 0
+          fi
+
+          # Tier 1 default: WARN only. Never fail.
+          if [ "${high:-0}" -gt 0 ] || [ "${medium:-0}" -gt 0 ]; then
+            echo "::warning title=Exercise-leak CI (WARN)::$high HIGH + $medium MEDIUM finding(s) on changed notebooks. Pre-existing backlog tracked under #8053. STRICT mode would FAIL on NEW HIGH; default is advisory."
+          else
+            echo "::notice title=Exercise-leak CI (WARN)::No HIGH/MEDIUM finding on changed notebooks."
+          fi
+          exit 0
