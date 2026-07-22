@@ -2,6 +2,24 @@
 
 > **Etudiants (PR de TP)** : remplissez seulement **Summary**. Les checklists de review sont pour l'encadrant — laissez-les telles quelles. Une CI rouge ne bloque pas le merge de votre TP.
 
+<!-- AGENTS INTERNES (workers po-*, ai-01) : la PREMIERE LIGNE du body doit porter le tag variation-protocol. ETUDIANTS : ignorez ce bloc. -->
+
+**Grain (agents internes — [variation-protocol](../.claude/rules/variation-protocol.md))** — premiere ligne du body, format :
+
+`Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>`
+
+<!--
+TIER (test objectif, detail dans .claude/rules/variation-protocol.md) :
+  DEEP  = main gagne un resultat/capacite inexistant, produit par du raisonnement de domaine
+          (sorry Lean retire + lake build OK, backtest/training multi-seed, notebook execute >=3 exos, moteur SOTA branche verdict SOTA-OK).
+  MED   = etend de la substance existante avec re-exec/verif ET change quelque chose
+          (enrichissement + re-exec, audit borne qui change une decision, refactor + tests verts, README fichier-entier corrigeant un drift structurel reel).
+  LIGHT = generable en serie par scan (guard-tranche, path-fix, doc-resync +1/-1, ledger append, fix accent/leak/FP).
+          Litmus : « pourrais-je en generer une douzaine a la chaine en scannant l'instance d'a-cote ? » -> oui = LIGHT, quel que soit le label.
+GENRE : lean . qc . training . genai . notebook-python . notebook-dotnet . docs . guard . refactor . ledger . readme . test
+Gates durs : plancher du cycle = DEEP ou MED (G-VAR-1) ; <=1 LIGHT/lane/jour, agrege (G-VAR-2) ; pas 2x le meme genre LIGHT consecutif (G-VAR-3).
+-->
+
 ## Summary
 
 <!-- 1-3 bullet points describing what this PR does -->
