@@ -167,11 +167,11 @@ l'honnête théorème `exists_isManOptimal`.
 -/
 
 /--
-Stability from a fully computable check: it suffices to verify, for every
-man `m`, woman `w` and candidate husband `m'` with `μ.spouse m' = w`, that
-`(m, w)` is not a blocking pair.  This formulation avoids the noncomputable
-`Matching.inverse`, so on concrete instances the hypothesis can be
-discharged by `decide`.
+Stabilité par vérification entièrement calculable : il suffit de vérifier,
+pour chaque homme `m`, femme `w` et mari candidat `m'` avec `μ.spouse m' = w`,
+que `(m, w)` n'est pas une paire bloquante. Cette formulation évite le
+`Matching.inverse` non calculable, de sorte que sur des instances concrètes
+l'hypothèse peut être déchargée par `decide`.
 -/
 lemma isStable_of_check (μ : Matching n)
     (h : ∀ m w m' : Fin n, μ.spouse m' = w →
