@@ -154,6 +154,10 @@ ICT-5 est l'un des quatre points d'ancrage du **fil rouge causalité** du dépô
 
 Chaque claim de la série est situé dans l'espace `s_t` (saillance) / `q_t(z)` (représentation prédictive) / `π_t(z)` (prégnance-valence) / `W_t` (workspace), avec proxy, contrôle, seeds, **verdict** sobre (`Établi` / `Fortement soutenu` / `Spéculatif`) et **portée** explicite (régime de validité). La matrice complète — [`docs/ict/dissociations-matrix.md`](../../../docs/ict/dissociations-matrix.md) ([#7734](https://github.com/jsboige/CoursIA/issues/7734)) — rend l'état scientifique de la série lisible d'un coup d'œil et discipline la montée en généralité. Elle complète la **grille 3-régimes** (invariants / dissociations / obstructions, [`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md), #7399) qui est, elle, transversale et conceptuelle.
 
+## Quatrième fil de lecture — généalogie de la représentation interne
+
+[`docs/ict/genealogy-representation-interne.md`](../../../docs/ict/genealogy-representation-interne.md) ([#7735](https://github.com/jsboige/CoursIA/issues/7735)) complète la grille 3-régimes par un axe **diachronique** : la généalogie successive de `p̂` à travers les notebooks ICT-10 → ICT-17 (six maillons : `p̂` scalaire → `p̂` action → *free energy* → surprise transitionnelle → MDL ↔ K → ε-machine Crutchfield). Le **descendant formel le plus naturel de `p̂` n'est ni le SAE (ICT-21), ni la J-lens (ICT-SAE-JLens-TeteATete), c'est l'état causal prédictif** (ICT-17). **Distinct** de la prégnance thomienne (rectification A1, [#7733](https://github.com/jsboige/CoursIA/issues/7733), PR #7889) et du global workspace ICT-24 (`W_t` ≠ `p̂` structuré, garde-fou 2). **Raccroche** le parapluie [#7396](https://github.com/jsboige/CoursIA/issues/7396) (pivot états → représentations).
+
 ## Validation
 
 ```bash
