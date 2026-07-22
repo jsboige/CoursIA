@@ -496,6 +496,7 @@ poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen /
 ## Voir aussi
 
 - [README de la série IIT](README.md) — fondations PyPhi (TPM, $\Phi$, CES, coarse-graining).
+- [Distillation Thom 1991 Sémiophysique](thom-synthese-distillation.md) — socle théorique pour strates 6/7 (universalisme linguistique, valence Tesnière, opérations catastrophistes, prototype / hypergenre).
 - Epic **#4588** — registre des livrables ICT.
 
 ### Pour aller plus loin — l'intelligence diverse (Levin)
