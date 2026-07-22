@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Procédure de refonte des slides Slidev (images + fidélité PPTX)
 
 **Source** : demande de fond du user depuis la transition PPTX→Slidev (janvier 2026), procédure validée le 2026-05-20 sur `slides/03-logique` slide 79 ("Calcul situationnel"). EPIC #1240, issues #1349/#1238/#1241/#1242.

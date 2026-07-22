@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Reverse Proxy Circuit — Docker Services → Public URLs
 
 **Host**: po-2023 (Windows Server, IIS Reverse Proxy)

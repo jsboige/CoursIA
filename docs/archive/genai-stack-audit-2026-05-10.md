@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # GenAI Stack Audit Report - T22.12 (issue #456)
 
 **Machine**: po-2023 (RTX 3080 Ti 16GB GPU0 + RTX 3090 24GB GPU1)
