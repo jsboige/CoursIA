@@ -22,6 +22,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### planners3-statespace.png
 
+- **Description visuelle** : Graphe orienté NetworkX rendu matplotlib `Graphe d'etats - Navigation 3x3`, 9 nœuds circulaires bleus disposés en grille 3×3 (positions `(0,0)` à `(2,2)`) étiquettes `(x,y)` en gras, état initial `(0,0)` en vert, état but `(2,2)` en rouge, 7 nœuds intermédiaires bleus. 18 arêtes bidirectionnelles grises, labels d'action textuels sur chaque arête : `left` (horizontal) et `down` (vertical). Légende « Vert = Initial | Rouge = But » sous la figure. Stats RGB PIL tell : `L780-L3 ★ graphe_academique_blanc` (`mean R/G/B ≥ 249`, `std ~ 20-30`, graphe NetworkX minimaliste sur fond blanc).
 - **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 9, output 0, `display_data` `image/png`)
 - **SHA256** : `ffc7e22653222dca6c8c7b8ca36d624e18644af6eb0b6dd21612bbe94708dc0b` (53 292 octets)
 - **Cellule source vérifiée `nbformat`** : `cell[9]` est une cellule code dont le source commence par `# Visualisation du graphe d'etats`, contient `fig, ax = plt.subplots(figsize=(10, 8))` + `nx.draw(state_graph, pos, ...)` puis `ax.set_title("Graphe d'etats - Navigation 3x3")`. Output 0 porte un `image/png` de 53 292 octets (md5 = `9f2ea7be2f549dfee189544cea7b7711`) = **source authentique du PNG disque** (contenu visuel identique, encodage matplotlib natif).
@@ -32,6 +33,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### planners3-searchtree.png
 
+- **Description visuelle** : Figure matplotlib à 2 panneaux côte-à-côte sur GridWorld 11×11, axe X « colonne » 0→10, axe Y « ligne » 0→10. Marais central gris foncé (cases `(3..7, 3..7)`) étiqueté « marais cout 10 », départ (0,5) carré vert, but (10,5) étoile rouge. **Panneau gauche** `BFS : 10 pas, cout 55 (plonge tout droit dans le marais)` — chemin bleu direct à travers le marais (10 segments horizontaux de coût 1 sauf traversée centrale coût 10). **Panneau droit** `A* : 16 pas, cout 16 (contourne le marais)` — chemin orange contournant le marais par le haut (descente à y=8, traversée, remontée à y=5). Stats RGB PIL tell : `L780-L2 ★ niveau_2d_procedural_dense` (palette mixte orange/gris-vert-rouge/bleu, `std 50+`).
 - **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 43, output 1, `display_data` `image/png`)
 - **SHA256** : `8b6ec7c68a324d06621d6b2fc93ba076e08741f3ca6cce1ad41ec312ee93781e` (45 008 octets)
 - **Cellule source vérifiée `nbformat`** : `cell[43]` est une cellule code dont le source commence par `# Exemple guide : terrain pondere -- BFS/Greedy minimisent les PAS, A* le COUT`. C'est le notebook Planners-3 (State-Space), cellule 43 = deuxième figure après le graphe d'états. Output 1 porte un `image/png` de 45 008 octets (md5 = `d48cb50feec698a42b4bd47c2399b8ed`).
@@ -42,6 +44,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### planners5-heuristics.png
 
+- **Description visuelle** : Bar chart vertical matplotlib `Comparaison des heuristiques sur Blocks World`, axe Y « Valeur » 0→4, axe X « Heuristique » avec 4 labels (`h^max`, `h^add`, `h^FF`, `h_landmark`). 4 barres vertes côte-à-côte avec valeurs annotées au-dessus : `2` pour `h^max` (sous-optimal), `4` pour `h^add`, `4` pour `h^FF`, `4` pour `h_landmark` (les trois qui atteignent h*). Ligne horizontale bleue pointillée `h* = 4` à y=4 avec label en haut-gauche (référence d'optimalité). Stats RGB PIL tell : `L781-L1 ★ bar chart vert dominant` + `L781-L2 ★ matplotlib blanc tell` (fond blanc, `mean R/G/B ≈ 248`, `std ~ 31`).
 - **Source** : notebook `02-Classical/Planners-5-Heuristics.ipynb` (cellule 35, output 0, `display_data` `image/png`)
 - **SHA256** : `f95cae594763419723804ecd1a4d93ba928056c13b3e89462f79aecb2b938d7a` (30 316 octets)
 - **Cellule source vérifiée `nbformat`** : `cell[35]` est une cellule code dont le source commence par `# Visualisation des resultats` — bar chart comparatif des heuristiques sur Blocks World. Output 0 porte un `image/png` de 30 316 octets (md5 = `53c5ae5cedeb8e6320bc34ea31248660`).
@@ -52,6 +55,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### planners7-ortools.png
 
+- **Description visuelle** : Diagramme de Gantt horizontal matplotlib `Diagramme de Gantt - Makespan = 11`, 3 machines en ordonnée (`Machine 0`, `Machine 1`, `Machine 2`), axe X « Temps » 0→12. Légende coin haut-droite : `Job 0` (bleu), `Job 1` (rouge), `Job 2` (vert). Tâches étiquetées par leur numéro `XY` (X = job, Y = machine). Sur **Machine 0** : `10` rouge puis `00` bleu (~5 unités). **Machine 1** : `20` vert puis `01` bleu puis `12` rouge (~10 unités). **Machine 2** : `11` rouge, `21` vert, `02` bleu (~10 unités). Makespan final = 11 (statut CP-SAT `OPTIMAL` pour instance toy `ft03` 3 jobs × 3 machines). Stats RGB PIL tell : `L780-L2 ★ niveau_2d_procedural_dense` (blocs colorés denses multi-catégories bleu/rouge/vert, `std 50+`).
 - **Source** : notebook `03-Advanced/Planners-7-OR-Tools.ipynb` (cellule 19, output 1, `display_data` `image/png`)
 - **SHA256** : `fc31f70ff51bd1e3ce587f3d2ce798a4482836a34286b6d540db906e903c0a43` (26 936 octets)
 - **Cellule source vérifiée `nbformat`** : `cell[19]` est une cellule code contenant `if ORTOOLS_OK and (status == cp_model.OPTIMAL or status == cp_model.FEASIBLE):` — c'est la cellule de visualisation Gantt post-résolution CP-SAT. Output 1 porte un `image/png` de 26 936 octets (md5 = `d0af20f29ce8f57c15b6395a75198712`).
@@ -62,6 +66,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ### planners8-temporal.png
 
+- **Description visuelle** : Figure matplotlib à 3 panneaux côte-à-côte sur axe X « Temps » 0→8, titres colorés au-dessus de chaque panneau. **Panneau gauche** `Sequentiel (OK)` vert — 2 rectangles verts `[0..3]` et `[4..7]` séparés par une ligne pointillée verticale à t=4 (transition entre les deux). **Panneau milieu** `Parallele sans conflit (OK)` bleu — 2 rectangles bleus `[0..3]` simultanés (parallélisme sans overlap). **Panneau droit** `Conflit de ressource (KO)` rouge — 3 rectangles rouges/oranges `[1..3]` superposés verticalement avec **bande jaune pointillée « CONFLIT »** signalant la zone de chevauchement temporel de la ressource partagée. Stats RGB PIL tell : `L780-L2 ★ niveau_2d_procedural_dense` (palette riche vert/bleu/rouge/jaune multi-catégories, `mean ~ 100-180`, `std > 50`).
 - **Source** : notebook `03-Advanced/Planners-8-Temporal.ipynb` (cellule 8, output 0, `display_data` `image/png`)
 - **SHA256** : `ebff4bd6300d79596485e0dac0170764a005d08b1675935d5381acf4b020343b` (26 348 octets)
 - **Cellule source vérifiée `nbformat`** : `cell[8]` est une cellule code dont le source commence par `# Visualisation des conflits temporels` — comparaison de 3 régimes de planification. Output 0 porte un `image/png` de 26 348 octets (md5 = `e8f5e8d8c8d8f988f7618d08743a68d4`).
