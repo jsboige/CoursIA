@@ -5,10 +5,10 @@ Alexandre Grothendieck (1928-2014).
 ## État
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
-- **Sorry** : **0 sorry, 0 axiome** — les 24 modules sont complets à la création (Parties 1-24 mergées)
-- **Build** : `lake build Grothendieck` — compile les 24 modules (~3350 lignes)
+- **Sorry** : **0 sorry, 0 axiome** — les 29 modules sont complets à la création (Parties 1-29 mergées)
+- **Build** : `lake build Grothendieck` — compile les 29 modules (~11000 lignes)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **Couverture i18n (EPIC #4980)** : couverture quasi-complète — **24 modules `.lean`** + **23 siblings `_en.lean`** sur `main`. Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN), 23 modules sur 24 sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). Le seul module encore FR-only est `SheafCohomology/MayerVietoris` (son sibling `_en` est en attente de merge via PR [#7089](https://github.com/jsboige/CoursIA/pull/7089)). **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
+- **Couverture i18n (EPIC #4980)** : couverture quasi-complète — **29 modules `.lean`** + **29 siblings `_en.lean`** sur `main`. Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN), **tous les 29 modules** sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Objectif
 
@@ -27,11 +27,11 @@ Le but est d'offrir aux apprenants un point d'entrée curaté vers :
 
 ## Structure
 
-La formalisation couvre **24 modules (Parties 1-24, ~3350 lignes, 0 sorry)**,
+La formalisation couvre **29 modules (Parties 1-29, ~11000 lignes, 0 sorry)**,
 importés dans l'ordre par le parapluie `Grothendieck.lean`. Chaque module se
 numérote lui-même via son en-tête (`Grothendieck tribute — Part N`).
 
-*La trajectoire pédagogique des 24 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
+*La trajectoire pédagogique des 29 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
 
 ```mermaid
 flowchart LR
@@ -71,21 +71,26 @@ flowchart LR
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Suite exacte longue de Mayer-Vietoris | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Cohomologie de Čech | 123 |
 | 24 | `Grothendieck/YonedaLemma.lean` | `YonedaLemma_en.lean` | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
+| 25 | `Grothendieck/Comma.lean` | `Comma_en.lean` | Catégorie comma, projections, fonctorialité | 96 |
+| 26 | `Grothendieck/Construction.lean` | `Construction_en.lean` | Constructions catégorielles de base | 153 |
+| 27 | `Grothendieck/KanExtensions.lean` | `KanExtensions_en.lean` | Extensions de Kan (limites/colimites généralisées) | 271 |
+| 28 | `Grothendieck/Limits.lean` | `Limits_en.lean` | Limites et colimites | 348 |
+| 29 | `Grothendieck/MonoidalCategories.lean` | `MonoidalCategories_en.lean` | Catégories monoïdales, tenseur, unité, associateur | 437 |
 
 L'extension (Parties 6-24) a été développée sous l'Issue #2159 / Epic #1646 et
-est **complète** : tous les 24 modules mergés, 0 `sorry`, 0 axiome ajouté.
+est **complète** : tous les 29 modules mergés, 0 `sorry`, 0 axiome ajouté.
 
 ## Build
 
 ```bash
 # Depuis ce répertoire (WSL requis)
 lake build Grothendieck
-# Compile les 24 modules (~3350 lignes)
+# Compile les 29 modules (~11000 lignes)
 ```
 
 ## Compte de sorry
 
-**0 sorry, 0 axiome** — tous les 24 modules sont complets à la création
+**0 sorry, 0 axiome** — tous les 29 modules sont complets à la création
 (Parties 1-24 mergées).
 
 ## Toolchain
@@ -111,13 +116,13 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
 - Epic #1453 (calibration du harnais prouveur)
 - Workspace hommage Conway (`../conway_lean/`)
-- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 23 siblings `_en.lean` sur `main` dans cette lake)
+- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 29 siblings `_en.lean` sur `main` dans cette lake)
 - **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 - Série de notebooks Lean (`../README.md`)
 
 ## Conclusion
 
-Cet hommage est une **visite pédagogique complète** (24 modules, ~3350 lignes,
+Cet hommage est une **visite pédagogique complète** (29 modules, ~11000 lignes,
 0 `sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
 faisceaux, faisceautisation, points, cohomologie, Yoneda — vit déjà dans Mathlib 4. Ce
 n'est délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
