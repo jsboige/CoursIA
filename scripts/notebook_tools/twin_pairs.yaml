@@ -102,3 +102,26 @@
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+
+# --- Pilote Search/CSP (#8057 acceptance : paire Search/CSP) ---
+# Audite firsthand c.22 (po-2024) : les deux cotes implementent le meme socle
+# pedagogique (classe CSP + backtracking + MRV + LCV depuis zero), MAIS le cote
+# C# ajoute une extension Choco-solver absente du cote Python.
+
+- name: "CSP-1 Fundamentals"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bca6fbf50753112b361a10d576750c60c311fd25
+    csharp_sha: 2eda392d47bfd1e0809398a4b16ccc42c69b8238
+  known_differences:
+    - "Socle pedagogique commun (parity semantic) : les deux cotes implémentent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python (75 cellules). Cote C# : classe CSP generique C# (Dictionary/List, 44 cellules) qui reflete la Python."
+    - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
+    - "Visualisation : Python = matplotlib (graphes de contraintes, trace de backtracking, distributions). C# = rendu ASCII du graphe de contraintes (pas de plotting .NET headless)."
+    - "Infrastructure : C# requiert l'assemblage du home IKVM (AppContext['IKVM.Home'] via copie recursive, recette #4711) avant tout premier appel Choco ; Python ne requiert que matplotlib."
+    - "Exercices : les deux cotes ont des stubs C.1-conformes (4-Reines backtracking manuel, MRV sur 4-Reines, SEND+MORE=MONEY). Cote C# l'exercice SEND+MORE utilise Choco ; cote Python (notebook CSP-1) reste conceptuel."
+
