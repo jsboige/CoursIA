@@ -8,7 +8,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 136 |
+| Notebooks | 138 |
 | PRODUCTION | 97 |
 | BETA | 34 |
 | ALPHA | 5 |
@@ -194,7 +194,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | Claude CLI - Automatisation Avancee | PRODUCTION | Non |
 | 6 | Claude Code via Claudish | PRODUCTION | Non |
 
-## GenAI/Video (15 notebooks)
+## GenAI/Video (17 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -213,3 +213,5 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 13 | Workflows Video Creatifs | PRODUCTION | Non |
 | 14 | Sora API - Generation Video Cloud | ALPHA | Non |
 | 15 | Pipeline Video de Production | PRODUCTION | Non |
+| 16 | SVD - Stable Video Diffusion (Image-to-Video) | DRAFT | Non |
+| 17 | Generation de Videos Educatives | DRAFT | Non |

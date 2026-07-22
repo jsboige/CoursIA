@@ -8,10 +8,10 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 148 |
+| Notebooks | 149 |
 | PRODUCTION | 114 |
 | BETA | 34 |
-| ALPHA | 0 |
+| ALPHA | 1 |
 
 ## Search/Applications (40 notebooks)
 
@@ -151,7 +151,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 19 | MGS-8 : Fitness Landscape Explorer -- voir la surface p | PRODUCTION | Oui |
 | 20 | MGS-9 - Trouver l'Everest : relief reel et bassins d'at | PRODUCTION | Oui |
 
-## Sudoku (35 notebooks)
+## Sudoku (36 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -190,3 +190,4 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 33 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | PRODUCTION | Oui |
 | 34 | Notebook 9: Résolution de Sudoku par Coloration de Grap | PRODUCTION | Oui |
 | 35 | Sudoku-9 : Coloration de Graphe (Python) | PRODUCTION | Oui |
+| 36 | Sudoku-11-Choco-Csharp : Solveur Choco via IKVM | ALPHA | Oui |
