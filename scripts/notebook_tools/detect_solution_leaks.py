@@ -4,7 +4,7 @@ Detect solution leaks in Jupyter notebooks.
 
 A "solution leak" is an exercise cell (labeled "Exercice N") that contains
 complete working code instead of a stub (pass, print("Exercice a completer"),
-return None, # TODO).
+return None, # TODO, // TODO).
 
 Usage:
     python detect_solution_leaks.py --scan <path>
@@ -30,6 +30,7 @@ STUB_PATTERNS = [
     r'^\s*pass\s*$',
     r'return None',
     r'#\s*TODO',
+    r'//\s*TODO',
     r'Console\.WriteLine\(["\']Exercice a completer',
     r'Console\.WriteLine\(["\']Exercices a completer',
 ]
