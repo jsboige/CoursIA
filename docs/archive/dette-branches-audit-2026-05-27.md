@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Dette Technique Branches — Audit 2026-05-27
 
 > Audit complet des branches remote non-mergees sur `origin` (exclut les 31 branches deja identifiees en attente sign-off user).

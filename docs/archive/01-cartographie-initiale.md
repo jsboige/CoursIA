@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Cartographie Initiale du Dépôt CoursIA
 
 Ce document dresse un état des lieux du contenu pédagogique du dépôt à la date du 2025-08-04.

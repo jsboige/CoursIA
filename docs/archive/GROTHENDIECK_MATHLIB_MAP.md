@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Grothendieck's Mathematical Language in Mathlib 4
 
 A living index of what Mathlib 4 provides from Grothendieck's mathematical language,
