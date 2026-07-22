@@ -32,13 +32,17 @@ HINT_RE = re.compile(
     r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
     r'etape|étape|step|rappel|warning|important|aide|piste|nb)\b',
     re.IGNORECASE)
-# A numbered step WITH a descriptive title (`Step 1: Load Data`, `Étape 3 :
-# Installation`) is a real titled SECTION header, not a bare aside. Without
-# this exclusion the level-agnostic HINT_RE flags the tutorial's backbone H2s
-# as hint-asides (false positives). Bare asides (`## Note`, `## Étape 3`,
-# `### Note pédagogique`) carry no colon+title, so they stay flagged. See #3968.
+# A numbered step WITH a descriptive title (`Step 1: Load Data`, `Step 1
+# Import configuration`, `Étape 3 : Installation`) is a real titled SECTION
+# header, not a bare aside. Without this exclusion the level-agnostic HINT_RE
+# flags the tutorial's backbone H2s/H3s as hint-asides (false positives). Bare
+# asides (`## Note`, `## Étape 3`, `### Note pédagogique`) carry no title
+# after the number, so they stay flagged. See #3968 + #3966 c.754 follow-up
+# (G.1 firsthand on GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb
+# cells 1/3/5/7 — `### Step 1 Import configuration...` is a real section
+# header with prose body, same pattern as `### Step 4: Save Configuration`).
 TITLED_STEP_RE = re.compile(
-    r'^(step|etape|étape)\s+\d+\s*:\s*\S',
+    r'^(step|etape|étape)\s+\d+(?:\s*:\s*|\s+)\S',
     re.IGNORECASE)
 # A hint word that is the FIRST PART of a hyphenated compound noun
 # (`Aide-mémoire des commandes`) is a real titled section, not a bare aside:
