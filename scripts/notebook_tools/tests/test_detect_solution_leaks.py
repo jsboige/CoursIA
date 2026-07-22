@@ -93,6 +93,25 @@ class TestIsStubCode:
         # C# comments start with //
         assert is_stub_code("// TODO\nreturn null;") is True
 
+    def test_csharp_multiline_todo_stub(self):
+        # Regression: a richly-scaffolded C# exercise stub (TODO + Etapes +
+        # default return + display call) has many code lines, so the
+        # `len(code_lines) <= 1` shortcut does NOT apply. Before recognizing
+        # `// TODO` as a stub marker, these were systematically false-positive
+        # as HIGH leaks across the .NET Interactive notebooks (GameTheory etc.).
+        code = (
+            "// Exercice 1 (a completer) : voisinage de swap\n"
+            "// TODO etudiant : implémenter ExploreSwapNeighbors\n"
+            "// Etape 1 : iterer sur swaps. Etape 2 : calculer les voisins.\n"
+            "public List<(OrdinalGame, string, int)> ExploreSwapNeighbors(OrdinalGame g)\n"
+            "{\n"
+            "    // TODO etudiant\n"
+            "    return new List<(OrdinalGame, string, int)>();\n"
+            "}\n"
+            'display("Exercice 1 : stub a completer.");'
+        )
+        assert is_stub_code(code) is True
+
 
 # ---------------------------------------------------------------------------
 # EXERCISE_HEADER_RE
