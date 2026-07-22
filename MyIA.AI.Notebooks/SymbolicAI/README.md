@@ -63,11 +63,11 @@ La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les 
 
 ### Phase 4 : Applications (Planners + SmartContracts, ~30h)
 
-Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (13 notebooks Python, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (23 notebooks : 14 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (21 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (22 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
@@ -404,7 +404,7 @@ SymbolicAI/
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (23 notebooks : 13 Python + 9 jumeaux C# + 0-Setup + 1 archive Fast-Downward-Legacy)
+├── Planners/                  # Planification automatique (23 notebooks : 14 Python incluant Planners-0-Setup + 9 jumeaux C# + 1 archive Fast-Downward-Legacy)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
@@ -440,7 +440,7 @@ SymbolicAI/
 │   ├── Z3-Linq2Z3/             # Serie Z3.Linq C# (SMT declaratif via LINQ) (18 notebooks)
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
-│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (12 notebooks : 6 Python + 6 jumeaux C#)
+│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (24 notebooks : 18 Python [01..06 + 07..18] + 6 jumeaux C# sur 01..06)
 │   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-06-Advanced-Optimization.ipynb (+ *-Csharp)
 │   │   └── README.md
 │   └── README.md              # Chapeau SMT
