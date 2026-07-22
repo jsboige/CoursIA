@@ -135,14 +135,14 @@ def SatisfiesTWIN (f : TwoParticleResponse) : Prop :=
   ∀ state : HiddenState, ∀ dir : VecIdx,
     f state .alice dir = f state .bob dir
 
-/- **MIN axiom** (structural): each experimenter's response depends
-   only on their *own* measurement direction, not the other experimenter's.
+/- **Axiome MIN** (structurel) : la réponse de chaque expérimentateur ne dépend
+   que de sa *propre* direction de mesure, et non de celle de l'autre expérimentateur.
 
-   This is built into the type signature: `f(state, e, d)` takes the
-   experimenter's own direction but NOT the other experimenter's
-   direction. In Conway-Kochen's 2009 formulation, MIN replaces FIN
-   (the speed-of-light constraint) and is cleaner to formalize:
-   it simply says Alice's response doesn't depend on Bob's axis choice. -/
+   Ceci est encodé dans la signature de type : `f(state, e, d)` prend la direction
+   de l'expérimentateur `e` mais PAS celle de l'autre expérimentateur.
+   Dans la formulation 2009 de Conway-Kochen, MIN remplace FIN (la contrainte
+   de vitesse de la lumière) et est plus simple à formaliser : il dit simplement
+   que la réponse d'Alice ne dépend pas du choix d'axe de Bob. -/
 
 /-- Un modèle déterministe à deux particules satisfait tous les axiomes du théorème
     du libre arbitre : SPIN pour les deux particules, corrélation TWIN, et MIN
