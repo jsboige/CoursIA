@@ -45,6 +45,9 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 - [.claude/rules/student-pr-reviews.md](.claude/rules/student-pr-reviews.md) - Anti-fuite questions de soutenance sur PR etudiantes (incident 2026-05-17)
 - [.claude/rules/lean-merge-discipline.md](.claude/rules/lean-merge-discipline.md) - Lake build SUCCESS local avant merge + BG iter systematique post-PR/msg po-2026 (incidents 2026-05-10/16)
 - [.claude/rules/secrets-hygiene.md](.claude/rules/secrets-hygiene.md) - Pas de secrets inline (incident recurrent 2026-05-14)
+- [.claude/rules/secrets-roosync-policy.md](.claude/rules/secrets-roosync-policy.md) - Politique secrets RooSync + quorum de provisioning (mandat user 2026-07-02 reaffirme 2026-07-03, quorum 2026-07-14)
+- [.claude/rules/audit-reassessment.md](.claude/rules/audit-reassessment.md) - Audit reassessment 4 etapes avant fix sur FP findings (issue #499, L901)
+- [.claude/rules/verify-before-claiming.md](.claude/rules/verify-before-claiming.md) - Verify before claiming (incidents 2026-05-07 / 2026-04-24)
 - [.claude/rules/coordinator-discipline.md](.claude/rules/coordinator-discipline.md) - ai-01 merge actif + no-languishing demandes user
 - [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
 - [.claude/rules/user-blocker-signaling.md](.claude/rules/user-blocker-signaling.md) - Re-poke chaque fin de session quand le user bloque (mandat user 2026-05-28, anti-dilution wakeup)
