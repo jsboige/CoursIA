@@ -21,6 +21,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ### sc-arrow.png
 
+- **Description visuelle** : Diagramme matplotlib à 3 panneaux côte à côte (Borda / Pluralité / Dictature), chacun avec 3 barres verticales étiquetées SATISFAIT (vert #2ECC71) ou VIOLÉ (rouge #E74C3C) au centre blanc. Axes X = axiomes (Pareto / IIA / Non-dictature). Titre principal « Théorème d'Arrow : aucun système ne satisfait les 3 axiomes ». 9 cellules au total : chaque système de vote viole au moins 1 axiome (Borda → IIA, Pluralité → IIA, Dictature → Non-dictature).
 - **Description** : Théorème d'Arrow — synthèse des 3 axiomes (Pareto, IIA, Non-dictature) × 3 systèmes de vote (Borda, Pluralité, Dictature) avec verdict visuel SATISFAIT (vert) / VIOLÉ (rouge).
 - **Contenu réel vérifié** : Figure 1200×415, titre principal centré en haut « Théorème d'Arrow : aucun système ne satisfait les 3 axiomes ». **3 panneaux côte à côte** (Borda / Pluralité / Dictature), chacun contenant **3 barres verticales** (Pareto / IIA / Non-dictature). **9 cellules totales** :
   - Borda : Pareto SATISFAIT (vert) + IIA VIOLÉ (rouge) + Non-dictature SATISFAIT (vert)
@@ -32,12 +33,14 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ### sc-condorcet.png
 
+- **Description visuelle** : Graphe orienté matplotlib `networkx` à 3 nœuds circulaires bleu clair étiquetés A (droite), B (haut-gauche), C (bas-gauche) en triangle isocèle, reliés par 3 arêtes courbes bleues formant un cycle fermé (A→B, B→C, C→A). Titre intégré « Cycle de Condorcet (graphe orienté) ». Chaque sommet a 1 arc entrant et 1 arc sortant → aucun vainqueur de Condorcet (paradoxe). Pas d'axe, pas de légende (rendu minimaliste épuré).
 - **Description** : Cycle de Condorcet — graphe orienté du tournoi majoritaire à 3 candidats A/B/C, montrant l'impossibilité d'un vainqueur de Condorcet quand le graphe contient un cycle.
 - **Contenu réel vérifié** : Figure 690×490, titre en haut « Cycle de Condorcet (graphe orienté) ». **3 sommets circulaires bleu clair** étiquetés A (droite), B (haut-gauche), C (bas-gauche), disposés en triangle isocèle. **3 arêtes courbes bleues** reliant les sommets dans un cycle fermé : A→B (arc supérieur convexe), B→C (arc gauche concave), C→A (arc inférieur convexe). **Pas de vainqueur** : aucun sommet n'a un degré entrant qui le rendrait dominant (chacun a 1 arc entrant et 1 arc sortant). **Alt-text et figure cohérents** : la triangulation cyclique illustre précisément le paradoxe de Condorcet où le tournoi majoritaire ne peut pas être résolu en un ordre transitif.
 - **Note** : les arêtes courbes (vs droites) renforcent visuellement le caractère cyclique vs hiérarchique — choix pédagogique pertinent.
 
 ### sc-sen.png
 
+- **Description visuelle** : Diagramme matplotlib à 3 nœuds circulaires bleu clair étiquetés a (gauche), b (droite), c (bas) en triangle, reliés par 3 flèches sémantiques : orange pointillée horizontale (a→b, étiquette rouge « Pareto: a > b »), verte pleine diagonale (c→a, étiquette « Liberte Prude: c > a »), verte pleine diagonale (b→c, étiquette « Liberte Lewd: b > c »). Annotation orange centrale « Transitivite: b > a ». Titre « Paradoxe de Sen : Liberte vs Pareto ». Code couleur sémantique : rouge/orange = Pareto, vert = Liberté individuelle.
 - **Description** : Paradoxe de Sen — illustration de l'incompatibilité entre la Liberté (deux décideurs individuels) et le Principe de Pareto quand les préférences forment un cycle.
 - **Contenu réel vérifié** : Figure 765×590, titre en haut « Paradoxe de Sen : Liberte vs Pareto ». **3 nœuds circulaires bleu clair** étiquetés a (gauche), b (droite), c (bas) disposés en triangle. **3 flèches colorées** :
   - **Flèche orange pointillée horizontale** de a vers b, étiquette rouge au-dessus « Pareto: a > b » (indique que tous préfèrent a à b)
@@ -49,6 +52,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ### sc-median.png
 
+- **Description visuelle** : Figure matplotlib à 2 panneaux côte à côte. **Panneau gauche** : histogramme « Distribution des pics (préférences unimodales) » — barres bleues semi-transparentes (Nombre d'électeurs ∈ [0, 1.0]) sur Position ∈ [0, 10] ; ligne pointillée rouge verticale à x=5 (étiquette « Median = 5 »). **Panneau droit** : « Exemples de préférences unimodales » — 3 courbes triangulaires (Utilité ∈ [-8, 0]) pour Alternative ∈ [0, 10] : bleu (pic=1), orange (pic=3), vert (pic=4) ; légende « Electeur (pic=N) ». Stats RGB PIL tell : `graphe_academique_blanc` confirmé (fond blanc, std ~20-30).
 - **Description** : Théorème de l'électeur médian — 2 panneaux : histogramme des pics de préférence (avec médiane en rouge) + courbes d'utilité unimodales de 3 électeurs (utilité = −distance au pic).
 - **Contenu réel vérifié** : Figure 1200×423, **2 panneaux côte à côte** :
   - **Panneau gauche** : histogramme des pics de préférence, axe X = « Position (gauche-droite) » de 0 à 10, axe Y = « Nombre d'electeurs » de 0 à 1.0. Barres bleues semi-transparentes : hauteur = 1.0 aux positions occupées (1, 3, 4, 5, 7, 8, 9), hauteur = 0 ailleurs. **Ligne pointillée rouge verticale** à x=5, étiquette en légende « Median = 5 ».
@@ -61,6 +65,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ### sc-downs.png
 
+- **Description visuelle** : Figure matplotlib à 2 panneaux côte à côte. **Panneau gauche** : « Distribution des électeurs et positions des partis » — histogramme gris (Nombre d'électeurs ∈ [0, 12]) sur Position politique ∈ [0, 9], unimodal centré autour de 5 ; annotations verticales : médiane verte pointillée à x=4.8, Gauche init bleu plein à x=2, Droite init rouge plein à x=8, Gauche final / Droite final en pointillé superposés à 4.8 (convergence manifeste). **Panneau droit** : « Convergence vers l'électeur median (Downs 1957) » — axes Iteration ∈ [0, 20] × Position politique ∈ [0, 10] ; courbes bleue « Parti Gauche » (montée de 2 → 4.8) et rouge « Parti Droite » (descente de 8 → 4.8), ligne verte pointillée horizontale « Electeur median » à y=4.8 ; convergence en ~10 itérations.
 - **Description** : Modèle de Downs — 2 panneaux : histogramme des électeurs avec positions initiales/finales des partis + trajectoires des 2 partis convergeant vers l'électeur médian sur 20 itérations.
 - **Contenu réel vérifié** : Figure 1200×423, **2 panneaux côte à côte** :
   - **Panneau gauche** : « Distribution des electeurs et positions des partis », histogramme gris (Nombre d'electeurs de 0 à 12) sur l'axe « Position politique » de 0 à 9. Distribution unimodale centrée autour de 5. **Annotations verticales** :
@@ -80,6 +85,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ### sc-z3-sat.png
 
+- **Description visuelle** : Figure matplotlib à 2 panneaux côte à côte. **Panneau gauche** : « Théorème d'Arrow : Intersection Vide » — diagramme de Venn à 3 cercles pastel (bleu Pareto haut-gauche, vert IIA haut-droite, rouge pastel Non-dictature bas-centre plus grand) avec étiquette encadrée rouge « Intersection VIDE » au centre. **Panneau droit** : « Explosion combinatoire des profils » — graphe semi-log axes Nombre d'alternatives ∈ [2, 5] × Nombre de profils ∈ [10^0, 10^6] ; 2 courbes : bleue « 2 voters » (montée jusqu'à ~14000), rouge « 3 voters » (montée jusqu'à ~1500000) ; annotation verte fléchée « Arrow ne s'applique pas » pointant vers m=2. Illustratif conceptuel (pas une sortie Z3 directe).
 - **Description** : Illustration de l'agrégation computationnelle SAT/Z3 — 2 panneaux : diagramme Venn des contraintes axiomatiques (Pareto / IIA / Non-dictature) à intersection vide + courbe semi-log de l'explosion combinatoire du nombre de profils.
 - **Contenu réel vérifié** : Figure 1200×540, **2 panneaux côte à côte** :
   - **Panneau gauche** : « Theoreme d'Arrow : Intersection Vide » — diagramme de Venn à 3 cercles :
