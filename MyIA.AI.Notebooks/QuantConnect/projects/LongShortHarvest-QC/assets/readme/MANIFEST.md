@@ -1,5 +1,7 @@
 # Manifeste des figures — LongShortHarvest-QC
 
+> **Migration c.783 (2026-07-22, doctrine #5780 + c.778 sub-genre)** : ajout du champ `## <filename>.png` (canonical post-#7771) + `- **Description visuelle** : …` par figure (7 entrées : lsh-reference / lsh-h1-sweep / lsh-h1-equity / lsh-h2-equity / lsh-walkforward / lsh-walkforward-dd / lsh-regime). **Tells visuels c.778-L1/L2/L3 vérifiés firsthand** (vision MiniMax M3 + RGB PIL) : seaborn-darkgrid `(234, 234, 242)` dominant (6/7 figures), lsh-h1-sweep blanc `(255, 255, 255)` matplotlib-blanc discriminator (panneaux Sharpe/DD séparés, barres bleues sauf 1 verte), lsh-regime `(70, 130, 180)` bar-chart-bleu (palette sémantique vert/bleu/rouge Calme/Normal/Stress). **Contenu audit-block c.451 inchangé** (vague-1 reformulé CONTENT-driven) — seule la structure d'en-tête migre en `## <filename>.png` + champ `Description visuelle` pour conformité `detect_manifest_field.py`. **Detector PASS attendu** : 7/7 figures déclarent `Description visuelle`. **Out-of-scope** : 6 autres MANIFESTs QC project (AllWeather/DualMomentum/EMA-Cross-Crypto/EMA-Cross-Index/ForexCarry/ML-RandomForest/RiskParity) — candidats c.784+ post-merge.
+
 Provenance de chaque figure (convention d'indexation **all-cells** du module `extract_readme_figures.py` : `cellule` = indice de cellule dans le notebook, `output` = indice de sortie de cette cellule). Sources vérifiées sur `origin/main`, extraites de [`research.ipynb`](../../research.ipynb) (notebook de recherche local).
 
 > **Audit vision po-2026 c.451 (2026-07-15, doctrine #5780)** : les 6 PNG ci-dessous ont été ouverts un par un via l'outil `Read` (vision MiniMax M3) et comparés à leur alt-text d'origine (champ `Sujet`). Verdict par figure dans la section *Contenu réel vérifié*. Cohérence caption ↔ image = **0/6 exacte, 6 corrections réelles** — la quasi-totalité des alt-texts d'origine étaient **TITLES-driven** (auto-extraction à partir des commentaires de cellule, sans lecture visuelle) et **omettaient** (a) la structure dual-panel de `lsh-reference.png` (Equity+DD, pas « cours SPY/GLD/VIX » comme l'annonçait l'alt-text original — inversion factuelle complète) ; (b) le verdict de **sweep nul** pour `lsh-h1-sweep.png` et `lsh-h1-equity.png` (6 courbes superposées à 1 pixel près sur 2007-2025, Sharpe ≈0.94 et MaxDD ≈-18% **identiques** pour ST=0.7/0.75/0.8/0.85/0.9/0.95 → le seuil de score est **inopérant**) ; (c) le verdict sweep nul identique pour `lsh-h2-equity.png` (5 multiplicateurs ATR 1.0/1.5/2.0/2.5/3.0 superposés) ; (d) le verdict walk-forward 3 fenêtres de `lsh-walkforward.png` (2007-12 term ~2.0, 2012-18 term ~1.5, 2018-25 term ~2.85 avec rallye post-2020) ; (e) le triple-panel de `lsh-regime.png` (Sharpe + Rendement annuel + Volatilité, pas « performance » au sens vague) avec verdict Calme S=3.7×Normal S=1.05×Stress S=-0.2. Défaut fondateur type systemic 1:1 doctrinal documenté par L490 (c.433 → c.450) et confirmé pour le projet LongShortHarvest-QC : **6/6 cas TITLES-driven** sur 6 figures = pattern massif. **Différence c.451 vs c.450** : pas d'attributions cell×output swapées cette fois-ci (les 6 attributions cell[9/11/12/15/25/27] sont confirmées correctes par lecture du code source), les defects sont purement **content-driven** (alt-text généré pour 1 subplot ou 1 sous-ensemble de courbes alors que la figure contient plus d'information, ou pire invente un contenu absent comme « cours SPY/GLD/VIX » pour `lsh-reference.png`).
@@ -18,6 +20,10 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ## Contenu réel vérifié par figure (audit visuel MiniMax M3, c.451)
 
+## lsh-reference.png
+
+- **Description visuelle** : Dual-panel empilé, fond seaborn-darkgrid `(234, 234, 242)` dominant, grille claire visible. Panneau haut : line plot mono-courbe bleue `LSH Reference` (label haut-gauche, ligne continue, palette matplotlib-default), axe Y `Valeur ($)` 1.0→8.0 USD, axe X temporel 2007→2026, courbe quasi-monotone ~1→5 (2007-2020) puis rallye post-COVID ~5→8 (2020-2024) avec pullback fin 2025. Panneau bas : aire rouge drawdown (`fill_between` sous 0), axe Y `Drawdown (%)` 0→-0.18, pics visibles −18% mi-2008 (Lehman, plus profond), −12% mi-2011, −16% mi-2020 (COVID). Deux subplots alignés verticalement, partage axe X temporel.
+
 ### `lsh-reference.png` — Dual-panel Equity + Drawdown LongShortHarvest (INVERSION FACTUELLE ALT-TEXT)
 
 **Alt-text (FR)** *(c.451 reformulé CONTENT-driven)* : **Dual-panel empilé** (1189×790, format `plt.subplots(2, 1, figsize=(14, 8))`) « LongShortHarvest - Courbe de reference » + « Drawdown » 2007-2026. **Haut — Equity** (axe Y = 1.0 → 8.0 USD, axe X = 2007-2026) : **1 seule courbe bleue** `LSH Reference`, croissance quasi-monotone ~1.0 → ~5.0 sur 2007-2020, accélération post-COVID ~5.0 → ~7.5 sur 2020-2024, pic ~8.0 mi-2025, léger pullback fin 2025. **Bas — Drawdown** (axe Y = 0 → -0.18, axe X idem) : aire rouge drawdown. Pics majeurs : **-18% mi-2008 (Lehman)**, -12% mi-2011 (debt ceiling), -7% 2018 (vol spike Q4), **-16% mi-2020 (COVID)**, -11% 2022 (bear bonds). Recovery rapide entre chaque DD. **Verdict** : gain cumulé ~700% sur 19 ans avec MaxDD ≈-18% → CAGR ≈11-12% annualisé, profil risk/return très favorable sur la période.
@@ -25,6 +31,10 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 **Contenu réel vérifié** (audit visuel MiniMax M3, c.451) : dual-panel equity + DD classique, légende haut-gauche `LSH Reference` (1 courbe bleue), axes X temporels synchronisés 2007-2026. **Alt-text précédent** « Cours SPY/GLD/VIX et backtest de référence » était **TITLES-driven ET FAUX** : aucun cours de SPY/GLD/VIX n'est visible dans la figure (juste la stratégie seule), le label original a probablement été généré à partir d'un commentaire de cellule mentionnant les sous-jacents utilisés sans vérification visuelle. Inversion factuelle corrigée c.451.
 
 - **Poids** : 102 Ko (PNG lossless natif, source 1189×790, dual-panel vertical)
+
+## lsh-h1-sweep.png
+
+- **Description visuelle** : Dual-panel barres côte à côte, fond blanc `(255, 255, 255)` matplotlib-blanc discriminator (palette héritée de `lsh-reference` swappée — pas de darkgrid). Panneau gauche `Sharpe par score_threshold` : 6 barres verticales bleues `tab:blue` quasi-identiques ≈0.94 (axe Y `Sharpe Ratio` 0→~0.95), seule `ST=0.9` colorée verte `tab:green` (winner marginal), labels abscisses `ST=0.7/0.75/0.8/0.85/0.9/0.95` rotation 45°. Panneau droit `Max Drawdown par score_threshold` : 6 barres rouges `tab:red` (couleur uniforme, axe Y `MaxDD (%)` 0→-17.5%), aucune barre verte, hauteurs quasi-identiques ≈-18%. Palette bleu/rouge sémantique (gauche=Sharpe bleu/rouge winner, droite=DD rouge uniforme). **Tell visuel discriminant** : 1 seule barre verte parmi 12 = sweep NUL visuel (différences <1% entre tous les seuils).
 
 ### `lsh-h1-sweep.png` — Dual-panel sweep score_threshold NUL
 
@@ -34,6 +44,10 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 27 Ko (PNG lossless natif, source 1390×490, dual-panel horizontal compact)
 
+## lsh-h1-equity.png
+
+- **Description visuelle** : Mono-panel line plot, fond seaborn-darkgrid `(234, 234, 242)` dominant, grille claire. Titre centré `H1 - Impact du seuil de score`. **6 courbes superposées à 1 pixel près** (légende haut-gauche, palette matplotlib-default cycle : `ST=0.7` bleu, `ST=0.75` orange, `ST=0.8` vert, `ST=0.85` rouge, `ST=0.9` violet, `ST=0.95` marron), axe Y `Valeur ($)` 1.0→8.0 USD, axe X temporel 2007→2026. Profil de croissance quasi-monotone : ~1.0→2.5 (2007-2018), accélération ~2.5→5 (2018-2020), rallye ~5→8 (2020-2025). **Tell visuel discriminant** : aucune des 6 courbes n'est visible séparément (superposition totale) — confirme le verdict sweep nul (cf `lsh-h1-sweep.png`).
+
 ### `lsh-h1-equity.png` — Mono-panel 6 equity curves score_threshold SUPERPOSÉES (sweep nul visuel)
 
 **Alt-text (FR)** *(c.451 reformulé CONTENT-driven)* : **Mono-panel** (1189×490, `figsize=(14, 5)`) « H1 - Impact du seuil de score » 2007-2026 (axe Y = 1.0 → 8.0 USD, axe X temporel). **6 courbes superposées à 1 pixel près** (légende haut-gauche : ST=0.7 bleu, ST=0.75 orange, ST=0.8 vert, ST=0.85 rouge, ST=0.9 violet, ST=0.95 marron). Profil : ~1.0 → ~2.5 sur 2007-2018, accélération ~2.5 → ~5 sur 2018-2020, rallye ~5 → ~8 sur 2020-2025. Pas de différenciation visible entre les 6 courbes. **Verdict** : confirme visuellement le sweep nul — `ST=0.9` ne produit **aucune** courbe distinctive des 5 autres seuils, le paramètre est inopérant.
@@ -41,6 +55,10 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 **Contenu réel vérifié** (audit visuel MiniMax M3, c.451) : line plot avec 6 courbes colorées superposées, légende haut-gauche 6 entrées, axes X 2007-2026. **Alt-text précédent** « Courbes de capital par seuil » était **TITLES-driven** (énumérait la structure sans rendre compte du verdict sweep nul — la formulation suggère que chaque seuil produit une courbe différente, ce qui est faux : elles sont indistinguables visuellement).
 
 - **Poids** : 39 Ko (PNG lossless natif, source 1189×490)
+
+## lsh-h2-equity.png
+
+- **Description visuelle** : Mono-panel line plot, fond seaborn-darkgrid `(234, 234, 242)` dominant, grille claire. Titre centré `H2 - Impact du multiplicateur ATR`. **5 courbes superposées à 1 pixel près** (légende haut-gauche : `ext_k=1.0` bleu, `ext_k=1.5` orange, `ext_k=2.0` vert, `ext_k=2.5` rouge, `ext_k=3.0` violet), axe Y `Valeur ($)` 1.0→8.0 USD, axe X temporel 2007→2026. **Profil identique à `lsh-h1-equity.png`** (~1→8 sur 19 ans). **Tell visuel discriminant** : superposition totale des 5 courbes (aucune n'est visible séparément), sweep nul pour `ext_k` (multiplicateur ATR inopérant sur la perf long-terme).
 
 ### `lsh-h2-equity.png` — Mono-panel 5 equity curves multiplicateur ATR SUPERPOSÉES (sweep nul)
 
@@ -50,6 +68,10 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 41 Ko (PNG lossless natif, source 1189×490)
 
+## lsh-walkforward.png
+
+- **Description visuelle** : Mono-panel line plot (c.742 a corrigé : 2 figures séparées `plt.subplots` indépendants, pas `subplots(2,1,sharex=True)`), fond seaborn-darkgrid `(234, 234, 242)` dominant. Titre centré `LongShortHarvest - Walk-Forward Equity Curves`. **3 courbes disjointes sur le même axe X temporel** (légende haut-gauche : `2007-2012` bleu, `2012-2018` orange, `2018-2025` vert). Fenêtre 1 (2007-2012, bleu) : 1.0→pic ~2.05 mi-2011, crash -12% fin 2011 (terme ~1.95). Fenêtre 2 (2012-2018, orange) : 1.0→~1.5, croissance linéaire modérée sans pic majeur. Fenêtre 3 (2018-2025, vert) : 1.0→~2.85, crash COVID -20% mi-2020 puis rallye exponentiel post-2020 → fin 2025. **Tell visuel discriminant** : la 3ᵉ fenêtre (vert) explose les 2 précédentes (2.85× vs 2.0× vs 1.5×).
+
 ### `lsh-walkforward.png` — Dual-panel Walk-Forward Equity 3 fenêtres
 
 **Alt-text (FR)** *(c.451 reformulé CONTENT-driven)* : **Dual-panel empilé** (1389×590, `figsize=(14, 6)`) « LongShortHarvest - Walk-Forward Equity Curves » + « Drawdown par periode ». **Haut — Equity Curves 3 fenêtres disjointes** (axe Y = 1.0 → ~2.85 USD) : **Fenêtre 1 (2007-2012, bleu)** : 1.0 → pic ~2.05 mi-2011, crash -12% fin 2011 (terme ~1.95). **Fenêtre 2 (2012-2018, orange)** : 1.0 → ~1.5, croissance linéaire modérée sans pic majeur. **Fenêtre 3 (2018-2025, vert)** : 1.0 → ~2.85, crash COVID -20% mi-2020 puis rallye exponentiel post-2020 → fin 2025. **Bas — Drawdown** (axe Y idem) : DD par période synchro avec equity haut. **Verdict** : **la 3ᵉ fenêtre explose** (~185% gain) les 2 précédentes (~100% et ~50%), validant la robustesse en régime récent mais performance molle sur 2007-2018.
@@ -57,6 +79,22 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 **Contenu réel vérifié** (audit visuel MiniMax M3, c.451) : dual-panel walk-forward classique, 3 courbes colorées haut-gauche légende `2007-2012` / `2012-2018` / `2018-2025`, DD en aire rouge bas. **Alt-text précédent** « Rendements walk-forward par fenêtre » était **TITLES-driven** (énumérait la méthode sans rendre compte des valeurs de gain par fenêtre ni du verdict « 3ᵉ fenêtre 2.85× > 2.0× > 1.5× »).
 
 - **Poids** : 60 Ko (PNG lossless natif, source 1389×590)
+
+## lsh-walkforward-dd.png
+
+- **Description visuelle** : Mono-panel aire drawdown, fond seaborn-darkgrid `(234, 234, 242)` dominant. Titre centré `Drawdown par periode`. **3 fenêtres disjointes en aire colorée sur le même axe X temporel 2007→2025** (légende bas-gauche : `2007-2012` bleu, `2012-2018` orange, `2018-2025` vert), axe Y `Drawdown (%)` 0→-0.18. Fenêtre 1 (2007-2012, bleu) : pic −18% mi-2008 (Lehman, le plus profond), DD modérés −5% à −8% entre 2009-2011. Fenêtre 2 (2012-2018, orange) : DD creux, max ≈−8%, profil très contenu. Fenêtre 3 (2018-2025, vert) : pic −16% mi-2020 (COVID), DD −11% 2022 (bear bonds), recovery rapide. **Tell visuel discriminant** : DD extrêmes concentrés sur Lehman (fenêtre 1, bleu) et COVID (fenêtre 3, vert), fenêtre 2 préservée (orange pale) — confirme la dépendance aux pics de volatilité exogènes.
+
+### `lsh-walkforward-dd.png` — Mono-panel Drawdown par période *(extrait c.742)*
+
+**Alt-text (FR)** *(c.451 reformulé CONTENT-driven)* : **Mono-panel aire drawdown** (1389×390, `figsize=(14, 4)`) « Drawdown par periode » 2007-2025. **3 fenêtres disjointes en aire colorée** : Fenêtre 1 (2007-2012, bleu) : pic −18% mi-2008 (Lehman), DD modérés −5% à −8% 2009-2011. Fenêtre 2 (2012-2018, orange) : DD creux, max ≈−8%. Fenêtre 3 (2018-2025, vert) : pic −16% mi-2020 (COVID), DD −11% 2022, recovery rapide. Légende bas-gauche 3 entrées. **Verdict** : DD extrêmes concentrés sur Lehman (fenêtre 1) et COVID (fenêtre 3) — confirme dépendance aux pics de volatilité exogènes.
+
+**Contenu réel vérifié** (audit visuel MiniMax M3, c.451) : mono-panel aire drawdown par période, palette bleu/orange/vert, axe Y Drawdown (%) 0→-0.18, axe X temporel 2007-2025. Légende bas-gauche `2007-2012` / `2012-2018` / `2018-2025`. **Alt-text précédent** *(absent du MANIFEST avant c.742 — entrée ajoutée par c.742 lors de l'extraction du PNG manquant depuis cell[25]·out[1])*.
+
+- **Poids** : 80 Ko (PNG lossless natif, source 1389×390, c.742 extraction `cell[25]·out[1]` — équité equity+DD, 2 figures séparées par `plt.subplots` indépendants cf c.742)
+
+## lsh-regime.png
+
+- **Description visuelle** : Triple-panel barres côte à côte, fond seaborn-darkgrid `(234, 234, 242)` dominant. **3 panels alignés horizontalement avec abscisses identiques** (Calme VIX<15 / Normal 15-25 / Stress VIX>25, rotation 30°). Panneau gauche `Sharpe par regime` : 3 barres sémantiques (Calme **vert** S=3.7, Normal **bleu** S=1.05, Stress **rouge pale** S=-0.2 sous 0), axe Y 0→3.5+. Panneau milieu `Rendement annuel` : 3 barres (Calme **vert** ≈+23%, Normal **bleu** ≈+10%, Stress **rouge** ≈-3%), axe Y -3→23%. Panneau droite `Volatilite` : 3 barres (Calme **vert** ≈+6%, Normal **bleu** ≈+9%, Stress **rouge** ≈+23%), axe Y 0→23%. **Tell visuel discriminant** : palette sémantique vert/bleu/rouge (vert=bon, rouge=mauvais), inversion du rouge entre Sharpe (sous 0) et Volatilité (haut) — dépendance forte au régime, à coupler avec un filtre VIX pour live.
 
 ### `lsh-regime.png` — Triple-panel Sharpe + Rendement + Volatilité par régime VIX
 
