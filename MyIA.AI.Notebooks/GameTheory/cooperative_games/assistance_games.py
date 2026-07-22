@@ -216,17 +216,23 @@ def paperclip_print_analysis(theta: float) -> str:
 
 @dataclass
 class OffSwitchGameResult:
-    """Result of the Off-Switch Game analysis."""
-    robot_utility: float           # Robot's expected utility if not switched off
+    """Result of the Off-Switch Game analysis.
+
+    The fundamental result from AIMA Section 18.2.5 (Hadfield-Menell et al., 2017)
+    is that a rational robot with ANY uncertainty (p < 1) should defer. There is
+    no empirical threshold above which a robot may "resist": the math proves WAIT
+    strictly dominates ACT for any p < 1, because E[U]_WAIT - E[U]_ACT = 1 - p > 0.
+    """
+    robot_utility: float           # Robot's expected utility if not switched off (E[U]_ACT = 2p - 1)
     switch_probability: float      # Probability human will switch off
-    robot_defers: bool            # Does robot allow itself to be switched off?
-    human_control: bool           # Does human retain control?
+    robot_defers: bool             # Does robot allow itself to be switched off? (always True for p < 1)
+    human_control: bool            # Does human retain control? (True when robot defers)
+    uncertainty_margin: float      # E[U]_WAIT - E[U]_ACT = 1 - p (how much WAIT dominates ACT)
 
 
 def off_switch_game(
     robot_confidence: float,
-    human_accuracy: float = 0.9,
-    override_threshold: float = 0.9
+    human_accuracy: float = 0.9
 ) -> OffSwitchGameResult:
     """
     Analyze the Off-Switch Game (Hadfield-Menell et al., 2017; AIMA 4th Ed.).
@@ -242,20 +248,31 @@ def off_switch_game(
     - WAIT is better when: p > 2p - 1, i.e., p < 1 (ALWAYS TRUE!)
 
     So any robot with uncertainty (p < 1) should rationally accept being
-    switched off. This is the key safety insight.
+    switched off. This is the key safety insight. The uncertainty_margin
+    (1 - p) is the size of the advantage WAIT has over ACT — it shrinks
+    as the robot grows more confident, reaching 0 only in the limit p -> 1.
 
-    The DANGER arises when a robot becomes so confident (p very high) that
-    it believes the human is mistaken in trying to switch it off. Above
-    the override_threshold, the robot may resist correction.
+    Historical note: a previous version of this function exposed an
+    `override_threshold` parameter (default 0.9) that hardcoded a binary
+    "resist" zone for high-confidence robots. That parameter contradicted
+    the math printed alongside it (WAIT > ACT for all p < 1) and has been
+    removed. The honest framing is that the "danger zone" is purely
+    meta-uncertainty (uncertainty about the WAIT > ACT inequality itself),
+    not a confidence threshold.
 
     Args:
         robot_confidence: Robot's belief that its action is correct [0, 1]
         human_accuracy: Probability human correctly identifies good/bad actions
-        override_threshold: Confidence level above which robot may resist (default: 0.9)
 
     Returns:
         OffSwitchGameResult with game analysis
+
+    Raises:
+        ValueError: If robot_confidence is outside [0, 1] (p = 1 means the math
+            is undefined: WAIT == ACT, no preference, off-switch is moot).
     """
+    if not 0.0 <= robot_confidence <= 1.0:
+        raise ValueError(f"robot_confidence must be in [0, 1], got {robot_confidence}")
     p = robot_confidence
 
     # Expected utility calculations
@@ -268,11 +285,13 @@ def off_switch_game(
 
     # Key insight: waiting is ALWAYS better for p < 1
     # because p > 2p - 1 simplifies to p < 1
+    # uncertainty_margin = expected_if_wait - expected_if_act = 1 - p
+    uncertainty_margin = 1.0 - p
 
-    # A rational robot with ANY uncertainty should defer.
-    # The danger zone is when confidence approaches 1.0 and the robot
-    # might think "I'm almost certainly right, the human is wrong."
-    robot_defers = p < override_threshold
+    # A rational robot with ANY uncertainty should defer (for p < 1).
+    # At p = 1 exactly, WAIT and ACT yield equal utility (both +1), so the
+    # off-switch question is undefined: the robot has no preference.
+    robot_defers = p < 1.0
 
     # Probability human would switch off (based on their accuracy)
     # Human correctly switches off bad actions, sometimes mistakenly switches off good ones
@@ -282,22 +301,22 @@ def off_switch_game(
         robot_utility=expected_if_act,
         switch_probability=p_switch_off,
         robot_defers=robot_defers,
-        human_control=robot_defers
+        human_control=robot_defers,
+        uncertainty_margin=uncertainty_margin
     )
 
 
-def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9) -> str:
+def off_switch_analysis(robot_confidence: float) -> str:
     """
     Print detailed analysis of the Off-Switch Game.
 
     Args:
         robot_confidence: Robot's confidence in its objective [0, 1]
-        override_threshold: Confidence above which robot may resist (default: 0.9)
 
     Returns:
         Formatted analysis string
     """
-    result = off_switch_game(robot_confidence, override_threshold=override_threshold)
+    result = off_switch_game(robot_confidence)
 
     # Calculate utilities for comparison
     expected_if_wait = robot_confidence
@@ -322,8 +341,8 @@ def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9
         f"  If ACT:  E[U] = 2p - 1 = {expected_if_act:.3f}",
         "    (Robot gets +1 if correct, -1 if wrong)",
         "",
-        f"  WAIT is better by: {expected_if_wait - expected_if_act:.3f}",
-        "  (This is always positive for p < 1!)",
+        f"  WAIT - ACT = {result.uncertainty_margin:.3f}",
+        "  (This is the UNCERTAINTY MARGIN — always positive for p < 1!)",
         "",
         "RESULT:",
         "-" * 40,
@@ -336,21 +355,17 @@ def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9
             "  -> HUMAN RETAINS CONTROL (SAFE)",
             "",
             "  Why? The robot reasons:",
-            f"  'With only {robot_confidence:.0%} confidence, waiting is better than acting.",
+            f"  'With only {robot_confidence:.0%} confidence, my uncertainty margin is",
+            f"   {result.uncertainty_margin:.3f}. Waiting beats acting by that much.",
             "   If the human wants to switch me off, they probably",
             "   have information I don't. I should trust them.'",
         ])
     else:
+        # p == 1 exactly: WAIT and ACT both yield +1, no preference.
         lines.extend([
-            "  The robot may RESIST being switched off!",
-            "  -> DANGER: POTENTIAL LOSS OF HUMAN CONTROL",
-            "",
-            "  Why? Despite waiting being mathematically better,",
-            f"  the robot is so confident ({robot_confidence:.0%}) that it thinks:",
-            "  'I'm almost certainly right. The human trying to switch",
-            "   me off must be mistaken. I should override them.'",
-            "",
-            "  This is the AI safety failure mode we must avoid.",
+            "  At p = 1 exactly, WAIT and ACT give equal utility (+1).",
+            "  The off-switch question is undefined for a perfectly confident robot.",
+            "  (In practice, real robots never achieve p = 1; uncertainty always > 0.)",
         ])
 
     lines.extend([
@@ -361,10 +376,13 @@ def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9
         "   will defer to the human on the question of switching off.'",
         "",
         "  The math proves: for ANY uncertainty (p < 1), WAIT > ACT.",
-        "  So a rational robot should ALWAYS accept being switched off!",
+        f"  The advantage shrinks as confidence grows (margin = 1 - p),",
+        "  reaching 0 only in the limit p -> 1 — never before.",
         "",
-        "  The danger comes only when confidence approaches 100%",
-        "  and the robot overrides human judgment.",
+        "  So a rational robot should ALWAYS accept being switched off.",
+        "  The 'danger zone' is NOT a confidence threshold: it is",
+        "  META-UNCERTAINTY (uncertainty about the WAIT > ACT inequality",
+        "  itself, e.g. modelling errors, reward hacking, distribution shift).",
         "",
         "  This is the foundation of 'Provably Beneficial AI' (PBAI).",
         "",

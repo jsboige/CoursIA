@@ -23,7 +23,8 @@ pas seulement l'absence de crash :
   - **Paperclip loss** : payoff d'equilibre <= payoff optimal (info parfaite),
     loss >= 0 partout.
   - **Off-Switch** : E[act]=2p-1, E[wait]=p ; p_switch bayesien ; defers ssi
-    p < override_threshold ; WAIT > ACT pour tout p<1.
+    p < 1 (toute incertitude raisonnable, pas de seuil fabrique) ;
+    uncertainty_margin = E[wait]-E[act] = 1-p ; WAIT > ACT pour tout p<1.
   - **AssistanceGame** : robots seuls = 0 valeur ; bonus d'assistance > 0 ;
     propriete d'efficacite de Shapley (somme = valeur de la grande coalition).
 """
@@ -193,20 +194,29 @@ class TestOffSwitchGame:
                 expected = (1 - p) * ha + p * (1 - ha)
                 assert r.switch_probability == pytest.approx(expected)
 
-    def test_robot_defers_below_threshold(self):
-        # p < override_threshold (defaut 0.9) -> le robot defere.
-        assert off_switch_game(0.5).robot_defers is True
-        assert off_switch_game(0.89).robot_defers is True
+    def test_robot_defers_when_uncertain(self):
+        # Toute incertitude raisonnable (p < 1) => le robot deferre
+        # (AIMA Section 18.2.5 : WAIT > ACT pour tout p < 1).
+        for p in (0.0, 0.5, 0.89, 0.9, 0.95, 0.99):
+            assert off_switch_game(p).robot_defers is True
 
-    def test_robot_resists_above_threshold(self):
-        # p >= override_threshold -> le robot peut resister.
-        assert off_switch_game(0.95).robot_defers is False
+    def test_robot_defers_only_at_perfect_confidence(self):
+        # A p = 1 exactement, WAIT == ACT (+1) : la question off-switch
+        # n'a pas de sens (le robot n'a aucune preference). robot_defers=False.
         assert off_switch_game(1.0).robot_defers is False
 
-    def test_custom_override_threshold(self):
-        # Seuil abaisse a 0.5 -> p=0.6 resiste deja.
-        assert off_switch_game(0.6, override_threshold=0.5).robot_defers is False
-        assert off_switch_game(0.4, override_threshold=0.5).robot_defers is True
+    def test_uncertainty_margin_shrinks_with_confidence(self):
+        # uncertainty_margin = 1 - p : decroit lineairement, vaut 0 a p=1.
+        for p, expected_margin in [(0.0, 1.0), (0.5, 0.5), (0.9, 0.1), (0.99, 0.01)]:
+            assert off_switch_game(p).uncertainty_margin == pytest.approx(expected_margin)
+        assert off_switch_game(1.0).uncertainty_margin == pytest.approx(0.0)
+
+    def test_invalid_confidence_raises(self):
+        # p hors [0, 1] -> ValueError (la math n'est pas definie).
+        with pytest.raises(ValueError):
+            off_switch_game(-0.1)
+        with pytest.raises(ValueError):
+            off_switch_game(1.1)
 
     def test_human_control_tracks_defer(self):
         # human_control == robot_defers (le humain garde le controle si le robot defere).
@@ -245,9 +255,26 @@ class TestOffSwitchAnalysis:
         assert "DEFERS" in out
         assert "SAFE" in out
 
-    def test_resist_analysis_message(self):
+    def test_high_confidence_defer_analysis_message(self):
+        # A p=0.99, le robot deferre toujours (math AIMA) mais avec une marge
+        # d'incertitude tres faible (1-p = 0.01). Le rapport doit montrer
+        # la marge ET le verdict DEFERS, pas de fabrication RESIST/DANGER.
         out = off_switch_analysis(0.99)
-        assert "RESIST" in out or "DANGER" in out
+        assert "DEFERS" in out
+        assert "UNCERTAINTY MARGIN" in out
+        # Pas de fabrication operationnelle : le verdict pour p=0.99
+        # reste SAFE/DEFERS, meme si le KEY INSIGHT reframing en termes
+        # de meta-uncertainty (META-UNCERTAINTY) est conserve.
+        assert "META-UNCERTAINTY" in out
+        # Verifier que la marge 0.01 est affichee.
+        assert "0.010" in out or "0.01" in out
+
+    def test_perfect_confidence_analysis_message(self):
+        # A p=1.0 exactement, WAIT == ACT : le rapport note que la question
+        # off-switch n'a pas de sens (et qu'en pratique un robot n'atteint
+        # jamais p=1).
+        out = off_switch_analysis(1.0)
+        assert "WAIT and ACT" in out or "equal utility" in out
 
 
 # ── AssistanceGame (cooperative game with Shapley) ──────────────────────────
