@@ -126,6 +126,18 @@ def generate_parcours_page(
     """Generate markdown page for a single parcours."""
     config = PARCOURS[parcours_id]
     lines = [
+        "<!--",
+        "  FICHIER GENERE — ne pas editer a la main.",
+        "  Cette page de parcours est derivee du catalogue de notebooks par",
+        "  scripts/notebook_tools/generate_parcours.py, puis regeneree chaque jour",
+        "  sur `main` par .github/workflows/catalog-cron.yml. Toute edition manuelle",
+        "  sera silencieusement ecrasee au prochain passage du cron. Pour corriger",
+        "  une derive (comptes, enumerations), corriger la SOURCE (le catalogue /",
+        "  les metadonnees de notebook) ou le generateur — jamais cette page.",
+        "  Cf .claude/rules/catalog-pr-hygiene.md (les artefacts generes",
+        "  appartiennent a l'automatisation).",
+        "-->",
+        "",
         f"# {config['title']}",
         "",
         f"**{config['subtitle']}**",
