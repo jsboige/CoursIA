@@ -57,7 +57,10 @@ def is_stub_code(source: str) -> bool:
         return True
 
     for pattern in STUB_PATTERNS:
-        if re.search(pattern, source, re.IGNORECASE):
+        # re.MULTILINE so anchored patterns like `^\s*pass\s*$` match an
+        # INDENTED `pass` inside a function body (the real-world stub case),
+        # not just a top-level `pass` at the start of the cell source.
+        if re.search(pattern, source, re.IGNORECASE | re.MULTILINE):
             return True
 
     code_lines = [l for l in non_empty if not l.startswith('import ') and not l.startswith('from ')]

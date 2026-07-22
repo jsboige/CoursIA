@@ -54,6 +54,23 @@ class TestIsStubCode:
     def test_pass_is_stub(self):
         assert is_stub_code("pass") is True
 
+    def test_indented_pass_is_stub(self):
+        # Regression: the `^\s*pass\s*$` stub pattern requires re.MULTILINE to
+        # match an INDENTED `pass` inside a function body (the real-world stub
+        # case). Without MULTILINE it only matched a top-level `pass` at the
+        # start of the cell, so function-stub exercises (def f(): ... pass)
+        # were systematically false-positive as HIGH leaks across the Python
+        # notebooks (e.g. CSP-2 path_consistency).
+        code = (
+            'def path_consistency(csp, domains):\n'
+            '    """Apply path consistency."""\n'
+            '    # A COMPLETER\n'
+            '    # Pour chaque paire (Xi, Xj) ...\n'
+            '    pass\n'
+            'print("Exercice 2 : implementer path_consistency")\n'
+        )
+        assert is_stub_code(code) is True
+
     def test_print_exercice_a_completer(self):
         assert is_stub_code('print("Exercice a completer")') is True
 
