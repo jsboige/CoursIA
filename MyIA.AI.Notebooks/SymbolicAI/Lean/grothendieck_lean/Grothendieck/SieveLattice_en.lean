@@ -85,4 +85,27 @@ theorem pullback_monotone {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
   simp [Sieve.pullback] at hg ⊢
   exact hST _ hg
 
+/-!
+## Pullback distributes over the join (union) of sieves
+
+Dual to `pullback_inf` (Part 9, `SieveOps.lean`): pullback also preserves
+`⊔`. Pulling back the join of two sieves equals the join of their
+pullbacks. The result follows from the definition of `Sieve.union`
+(an arrow `g : Z ⟶ Y` is in `(S ⊔ R).pullback f` iff
+`g ≫ f` is in `S` or in `R`, which is equivalent to being in
+`S.pullback f` or in `R.pullback f`).
+
+Identity not covered by `Mathlib.CategoryTheory.Sites.Sieves`
+(which provides `pullback_inter` but not its dual `pullback_union`);
+Phase 2 extension (Issue #2159, Epic #1646).
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the join
+    of sieves. Dual of `pullback_inf` (`SieveOps.lean`). -/
+theorem pullback_union {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    (S R : Sieve X) :
+    Sieve.pullback f (S ⊔ R) = Sieve.pullback f S ⊔ Sieve.pullback f R := by
+  ext Z g
+  simp [Sieve.pullback]
+
 end Grothendieck_en
