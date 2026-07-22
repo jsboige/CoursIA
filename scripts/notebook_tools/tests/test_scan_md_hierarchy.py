@@ -259,3 +259,36 @@ def test_titled_step_not_hint():
     """`## Étape 3 : Titre` is a real section header, not a bare aside."""
     cells = [_md("# Titre\n"), _md("## Étape 3 : Installation\n")]
     assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_titled_step_no_colon_not_hint():
+    """`### Step 1 Import configuration...` (no colon) is a real section header.
+
+    Regression guard for c.754 / #3966 follow-up: the original TITLED_STEP_RE
+    required a colon (`Step 1: Title`), which false-positived on `Step N
+    <descriptive verb phrase>` (no colon) section headers — the same
+    pedagogical pattern, just without punctuation. G.1 firsthand on
+    GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb cells 1/3/5/7
+    confirmed `### Step 1 Import configuration packages and classes` is a
+    tutorial section header (prose body underneath), same as `### Step 4:
+    Save Configuration to settings.json`.
+    """
+    cells = [_md("# Titre\n"), _md("### Step 1 Import configuration packages and classes\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_bare_step_aside_still_hint():
+    """`## Étape 3` (bare number, no title) remains a bare aside, still flagged.
+
+    Regression guard: extending TITLED_STEP_RE to also match the no-colon
+    variant must not relax the bare-aside rule. A bare `## Étape 3` has no
+    title after the number and stays HINT-AS-HEADING.
+    """
+    cells = [_md("# Titre\n"), _md("## Étape 3\n")]
+    assert "HINT-AS-HEADING" in _kinds(_write_nb(cells))
+
+
+def test_titled_step_no_colon_with_glued_colon_not_hint():
+    """`### Step 1:Import...` (glued colon, no space) also matches — GFM-style."""
+    cells = [_md("# Titre\n"), _md("### Step 1:Import configuration\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
