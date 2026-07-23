@@ -190,6 +190,6 @@ Modules genai-stack non testes (intentionnellement) : commands/docker.py (subpro
 ## Voir aussi
 
 - [docs/common-commands.md](common-commands.md) — setup env, validation notebooks, slash commands
-- [docs/kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
+- [kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
 - [docs/genai/genai-services.md](../genai/genai-services.md) — scripts genai-stack, mappings notebooks
 - [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) — Papermill WSL
