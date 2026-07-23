@@ -31,7 +31,7 @@
 | Notebook | Cells | Verdict | Preuve (snippet + cell) |
 |----------|------:|---------|-------------------------|
 | Infer/Infer-1-Setup.ipynb | 41 (29+12) | **FIDÈLE biblio-footer** | « [Model-Based Machine Learning Book](https://mbmlbook.com/) » @ cell 37 (footer Pour aller plus loin) |
-| Infer/Infer-2-Gaussian-Mixtures.ipynb | 84 (57+27) | **PERTE DOCUMENTÉE** | Pattern MBML Chap.1 « Two Coins + Cyclist » exécuté sans citation ; source canonique = Bishop PRML §10 (référencé implicitement) |
+| Infer/Infer-2-Gaussian-Mixtures.ipynb | 84 (57+27) | **PERTE DOCUMENTÉE** | Mélanges gaussiens exécutés sans citation inline ; sources canoniques = Bishop PRML §9.2 (Mixture of Gaussians) + §9.2.2 (EM pour mixtures) + §10.7 (Variational Bayes pour mélanges) ; MBML ne couvre pas ce modèle canoniquement |
 | Infer/Infer-3-Factor-Graphs.ipynb | 53 (38+15) | **FIDÈLE inline** | « **MBML Book, Chapter 1** » @ cell 7 (Murder Mystery scenario) — **attribution canonique explicite** |
 | Infer/Infer-4-Bayesian-Networks.ipynb | 66 (46+20) | **PERTE DOCUMENTÉE** | WetGrass/Sprinkler (144 hits) ; source canonique citée = « Lauritzen & Spiegelhalter (1988) et Jensen, Lauritzen & Olesen (1990) » (Springer) — couvre le MBML WetGrass Chap.5 avec pedigree académique différent |
 | Infer/Infer-5-Causal-Inference.ipynb | 38 (23+15) | **NE SAIT PAS** | do-calculus = MBML Chap.7 ; notebook cite « Pearl, J. (2000) » sans mention MBML — sous-portée, à clarifier |
@@ -50,7 +50,7 @@
 | Infer/Infer-18-Change-Point.ipynb | 23 (14+9) | **NE SAIT PAS** | Change-point pur, hors-scope MBML |
 | Infer/Infer-19-Survival-Analysis.ipynb | 27 (17+10) | **NE SAIT PAS** | Survie / Weibull / Gamma — MBML Chap.17 (Survival Analysis) hors-cité |
 | PyMC/PyMC-1-Setup.ipynb | 26 (15+11) | **PERTE DOCUMENTÉE** | « Equivalent Infer.NET : Infer-1-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
-| PyMC/PyMC-2-Gaussian-Mixtures.ipynb | 23 (13+10) | **PERTE DOCUMENTÉE** | Cycliste / Gaussian mixt — pattern MBML Chap.6 ; attribution au jumeau uniquement |
+| PyMC/PyMC-2-Gaussian-Mixtures.ipynb | 23 (13+10) | **PERTE DOCUMENTÉE** | Cycliste / Gaussian mixt — sources canoniques = Bishop PRML §9.2 + §9.2.2 + §10.7 (jumeau PyMC d'Infer-2) ; MBML ne couvre pas ce modèle (Ch.6 = Asthma, Ch.8 = How to Read a Model) |
 | PyMC/PyMC-3-Factor-Graphs.ipynb | 18 (10+8) | **FIDÈLE inline (variante assumée)** | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explication de l'explaining away |
 | PyMC/PyMC-4-Bayesian-Networks.ipynb | 26 (15+11) | **PERTE DOCUMENTÉE** | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
 | PyMC/PyMC-5-Causal-Inference.ipynb | 30 (16+14) | **NE SAIT PAS** | Pearl + `pm.do` — do-calculus (MBML Chap.7) non attribué |
