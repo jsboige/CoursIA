@@ -1,0 +1,225 @@
+# Registre de parite des jumeaux Python/C# (#8057, parent #4208).
+#
+# Chaque entree decrit une paire de notebooks jumeaux : le chemin des deux
+# cotes, le niveau de parite, le dernier audit (date + auteur + git blob SHA de
+# chaque notebook au moment de l'audit) et les differences connues documentees.
+#
+# Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
+# SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
+# Apres une audit firsthand, rebaseline avec :
+#   python scripts/notebook_tools/check_twin_parity.py --update [--family ...]
+#
+# parity_level :
+#   surface     = meme plan/sections, implimentations independantes
+#   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
+#   native-both = traduction fidele cellule-par-cellule (rare)
+#
+# PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
+# Les autres familles (Search/CSP, ML.NET/Python, etc.) sont a peupler dans des
+# PRs suivantes — ce registre est concu pour grandir. Voir #8057.
+
+- name: "Z3-Python-01 Introduction"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bc1a9639efda2a7855b8346c08ab2a14c7e2cf2e
+    csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+  known_differences:
+    - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
+    - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
+    - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."
+
+- name: "Z3-Python-02 Sudoku"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 1d3b193234ee666375f84e5c7a389ccee9d389f4
+    csharp_sha: fedc5982513ac15be379f4b0ed0845032d2dc9a6
+  known_differences:
+    - "Python : pyz3. C# : Microsoft.Z3 .NET (idiomes API comme NB-01)."
+    - "Cote Python : modelisation Sudoku (81 cellules Int 1-9, alldifferent lignes/colonnes/blocs). Doc-honesty cures c.19 (PR #8045 : compte indices ~35 -> 30 pour puzzle_facile). SHA rebaseline c.802 apres DRIFT detecte par check_twin_parity.py : 4dcb5921 -> 1d3b1932 (commit e8a3be3ae merge le 2026-07-23)."
+
+- name: "Z3-Python-03 Tactics"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4b18990a0ad8338f341a30e9d6999a4f59ec4757
+    csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
+  known_differences:
+    - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
+    - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."
+
+- name: "Z3-Python-04 Strings & Regex"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5d3bf0ee8baf55766e5db4d30bf84705e2f9644d
+    csharp_sha: c8f8372242c5da1bdecbc1e03be05e2d28ce2154
+  known_differences:
+    - "Python : pyz3 (Range, Concat, Plus, Re, InRe, Length sur Seq). C# : Microsoft.Z3 .NET (ctx.MkRange, MkConcat, MkRe...)."
+    - "Cote Python : fix code-correctness c.17 (PR #8040) — date AAAA-MM-JJ sous-contrainte (Plus(Range)=[0-9]+ variable) resverree en groupes longueur-fixe [0-9]{n} via helper chiffres(n). Le concept (string regex Z3) est commun aux deux cotes ; le detail du fix date est specifique au notebook Python."
+
+- name: "Z3-Python-05 Quantifiers & Proofs"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 519b4a3d04f5b673650394a729f03d7fa07711b1
+    csharp_sha: dcc4aa5c50ff122180e2b2dd97bf25cdbb4d1b2a
+  known_differences:
+    - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
+    - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."
+
+- name: "Z3-Python-06 Advanced Optimization"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bebd658f4b477751460733c1bc8ce635acd348a0
+    csharp_sha: b090ec4eeb0a2cc1d75facafed5113eb24e6393e
+  known_differences:
+    - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
+    - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+
+# --- Tranche 2 (c.802, po-2024, 2026-07-23) : extensions Search/Part2-CSP (CSP-1..4) + Search/Part1-Foundations (Search-1..3) ---
+# Meme mecanisme (registre curated YAML + check_twin_parity.py), substance
+# distincte : idiomes framework Python (collections.deque, heapq, typing) vs
+# C# (.NET collections generiques Queue<T>/PriorityQueue/Dictionary), Choco-
+# solver 4.10.17 via IKVM 8.15.0 cote C# sur CSP-1..4 uniquement (pas sur
+# Search-1..3 qui restent from-scratch des deux cotes). Verifie firsthand via
+# `git ls-tree HEAD` 2026-07-23, DRIFT detecte sur Z3-Python-02 (post-fix
+# #8045 doc-honesty) = le mecanisme de detection marche (voir c.802 body PR).
+
+- name: "CSP-1 Fundamentals"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bca6fbf50753112b361a10d576750c60c311fd25
+    csharp_sha: 2eda392d47bfd1e0809398a4b16ccc42c69b8238
+  known_differences:
+    - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
+    - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
+    - "Visualisation : Python = matplotlib (graphes de contraintes, trace de backtracking, distributions). C# = rendu ASCII du graphe de contraintes (pas de plotting .NET headless)."
+    - "Infrastructure : C# requiert l'assemblage du home IKVM (AppContext['IKVM.Home'] via copie recursive, recette #4711) avant tout premier appel Choco ; Python ne requiert que matplotlib."
+    - "Exercices : les deux cotes ont des stubs C.1-conformes (4-Reines backtracking manuel, MRV sur 4-Reines, SEND+MORE=MONEY). Cote C# l'exercice SEND+MORE utilise Choco ; cote Python (notebook CSP-1) reste conceptuel."
+
+- name: "CSP-2 Consistency"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 41a4f05083ecb19ed4c2aa5e0f3c69a8ec59597e
+    csharp_sha: 7c5456239e3145b8194519765fb19791644ca505
+  known_differences:
+    - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
+    - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."
+    - "Visualisation : Python = matplotlib (graphes de contraintes colorees par domaine, propagation tracee). C# = sortie textuelle via Console.WriteLine (pas de plotting .NET headless sur ce notebook)."
+    - "Idiomes framework : Python = pur (list/dict/set + recursion). C# = generiques System.Collections.Generic + delegation Func<Variable, IEnumerable<int>> pour les domaines."
+
+- name: "CSP-3 Advanced"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 37ac298a2c16acea643497e08b4d930768bdb207
+    csharp_sha: bbb5e24c4d4eb763b454b6d8f48aba9a5747b584
+  known_differences:
+    - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
+    - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."
+    - "Concepts avances : latin squares (N-Reines etendu), magic series, Golomb rulers. Cote Python = from-scratch, cote C# = Choco + benchmarks comparatifs."
+
+- name: "CSP-4 Scheduling"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 7cc9d727066893f89ec2dacb06295134db19039f
+    csharp_sha: 4d533e0a938a7145a79c9a8417d1892e97461a90
+  known_differences:
+    - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
+    - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."
+    - "Cas etudies : job-shop scheduling (3 machines x 3 jobs, makespan minimal), equipement maintenance planning."
+    - "Note infrastructure : ce notebook (.NET) est explicite sur la pre-configuration IKVM (AppContext['IKVM.Home'] + tzdb OK) - voir cellule d'initialisation 'IKVM 8.15.0 pret (home=ikvm-home-8.15.0-win-x64, tzdb=True) - Choco-solver charge'."
+
+- name: "Search-1 StateSpace"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ee8bec932d2af35b24448652b37c260cdb35ded8
+    csharp_sha: 49eb598b3917e357482c85e8175e8ba6f223122d
+  known_differences:
+    - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
+    - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."
+    - "Pas d'extension solveur tiers cote C# sur ce notebook (uniquement depuis CSP-1+) - implementation from-scratch sur les deux cotes."
+    - "Visualisation : Python = matplotlib (grille 8-puzzle animee, graphe d'etats). C# = sortie textuelle des traces (Console.WriteLine des etats successeurs explorés)."
+
+- name: "Search-2 Uninformed"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d69404a7e4f8c2c7dba4e4aabea624d092aff1d7
+    csharp_sha: d29a5facae7635ba1ef366b61c4ff2acc3bf25aa
+  known_differences:
+    - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
+    - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
+    - "Pas d'extension solveur tiers sur ce notebook - implementation from-scratch sur les deux cotes (memes algorithmes, idiomes distincts)."
+    - "Benchmarks : les deux cotes mesurent le nombre de noeuds explorés, la longueur du chemin optimal, et le cout uniforme quand applicable."
+
+- name: "Search-3 Informed"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ef0d2597c51669af6da574e368e6aacef1fa044c
+    csharp_sha: 0b24fbcc661131d1c783694fa17c0402e9866abf
+  known_differences:
+    - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
+    - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."
+    - "Asymetrie pedagogique interessante : le notebook Python inclut une discussion sur l'admissibilite vs consistance des heuristiques (h <= h* + coherence), le C# se concentre sur les benchmarks (noeuds explores pour h=Manhattan vs h=Euclidean sur le meme probleme)."
+    - "Pas d'extension solveur tiers - implementation from-scratch sur les deux cotes."
