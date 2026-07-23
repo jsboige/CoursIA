@@ -7,7 +7,7 @@
 
 ## Pourquoi ce registre
 
-L'open-courseware CoursIA héberge **~25 datasets pédagogiques** (CSV, ZIP, binaires) répartis sur 6 familles thématiques : ML/ML.Net, ML/DataScienceWithAgents, Probas/Infer, Probas/PyMC, QuantConnect/datasets, SymbolicAI/Argument_Analysis, SemanticWeb, RL, CaseStudies. Sans registre structuré :
+L'open-courseware CoursIA héberge **~25 datasets pédagogiques** (CSV, ZIP, binaires) répartis sur 9 familles thématiques : ML/ML.Net, ML/DataScienceWithAgents, Probas/Infer, Probas/PyMC, QuantConnect/datasets, SymbolicAI/Argument_Analysis, SemanticWeb, RL, CaseStudies. Sans registre structuré :
 
 1. **L'étudiant fork le repo et reproduit en aveugle** → les données ont peut-être été modifiées depuis la dernière publication, le notebook calcule sur des chiffres divergents, le claim devient faux.
 2. **Le coordinateur ne peut pas vérifier** la cohérence disque ↔ checksum avant publication open-courseware — impossible de garantir la reproductibilité d'un exercice.
@@ -60,15 +60,22 @@ Chaque ligne du registre respecte le schéma :
 
 ## Registre (pilote c.795)
 
-**20 entrées**, couvrant 8 familles thématiques. Toutes vérifiées firsthand via `sha256sum` au SHA `8092a4aec` (origin/main) le 2026-07-23.
+**22 entrées**, couvrant 9 familles thématiques. Toutes vérifiées firsthand via `sha256sum` au SHA `8092a4aec` (origin/main) le 2026-07-23, complétées au cycle c.797 (Track1-LangChain × 2 datasets ajoutés).
 
-### ML / ML.NET (5)
+### ML / ML.NET (4)
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
 | `MyIA.AI.Notebooks/ML/ML.Net/daily-sales.csv` | 19 662 | `072b30f55ac726f7…` | SYNTHETIQUE-COURS | pedagogique-synthetique | ML-1/ML-2 ventes quotidiennes | — |
 | `MyIA.AI.Notebooks/ML/ML.Net/product-ratings.csv` | 4 881 | `306855179f4cd3e…` | SYNTHETIQUE-COURS | pedagogique-synthetique | ML.NET régression | — |
 | `MyIA.AI.Notebooks/ML/ML.Net/sample-classification.csv` | 11 431 | `9cb425ee99b4197…` | SYNTHETIQUE-COURS | pedagogique-synthetique | ML.NET classification | — |
+
+### ML / DataScienceWithAgents (3)
+
+| Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
+|--------|----------:|-----------------|---------|-----------|-------|------|
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/sales_data.csv` | 163 | `fdfddb0640d83ef1…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Day 1 foundations | — |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/transactions.csv` | 280 | `ac49b1635d071a89…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Lab4 DataWrangling | — |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/sales_data.csv` | 4 466 | `727a7ff0eface02…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Google ADK Day 4 foundations | — |
 
 ### Probas / Infer.NET (5)
