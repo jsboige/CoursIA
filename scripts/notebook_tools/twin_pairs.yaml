@@ -16,7 +16,8 @@
 #
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
-# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED). Voir #8057.
+# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
+# + GameTheory/.NET-Parity (c.804/#8124, 3 paires) + SemanticWeb/dotNetRDF-rdflib (c.809, 11 paires). Voir #8057.
 
 - name: "Z3-Python-01 Introduction"
   family: SMT/Z3-API
@@ -347,3 +348,160 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+# === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+- name: "SW-2 RDF-Basics"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5939ccd9146913c9d650d1a7a2326b63beb859ad
+    csharp_sha: a28d8587a98c7584e0de7b8193187b1d2b920544
+  known_differences:
+    - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
+    - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
+    - "API idiomatique differente : C# via `Graph` + `IGraph` + `IUriNode`/`ILiteralNode` fortement types ; Python via `Graph()` + `URIRef`/`Literal` plus dynamiques. Meme fondement W3C RDF 1.1."
+
+- name: "SW-3 Graph-Operations"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3b-Python-GraphOperations.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 67d24fdcfb3ccfb484eabf75578a71e9639131d6
+    csharp_sha: ac6e12a25ad4b93a10bfe76c08df9ac65636da69
+  known_differences:
+    - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."
+
+- name: "SW-4 SPARQL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4b-Python-SPARQL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ca77e6a8869febafe182e51fbb41372489fd89ae
+    csharp_sha: 2665b2384dace718433e7b6cf6ae611b4386464f
+  known_differences:
+    - "Socle commun : execution de requetes SPARQL 1.1 (SELECT/CONSTRUCT/ASK) sur un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` moteur Leviathan + `VDS.RDF.Query.Builder` fluent). Python = `rdflib` (`graph.query()` natif). Moteurs SPARQL equivalents, syntaxe de binding idiomatique differente."
+
+- name: "SW-5 Linked-Data"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5b-Python-LinkedData.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 67511cf48e09ce533a7312c3aa19530b15c3e93e
+    csharp_sha: 9cfb80bc05aa73594102d90d93276e52356a4977
+  known_differences:
+    - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."
+
+- name: "SW-6 RDFS"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: fd60c05c49ed10bc4532cc8ba89a9830673da6ff
+    csharp_sha: f7a8a4f6cd60d8ce6484a1eac41072fe304e60f5
+  known_differences:
+    - "Socle commun : raisonnement RDFS (subClassOf, subPropertyOf, inference de hierarchies)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` OntologyGraph + `VDS.RDF.Query`). Python = `rdflib` + `owlrl` (moteur de closure RDFS/OWL-RL, derive les triplets inferes). Approche legerement differente : C# expose le modele ontologique oriente-objet ; Python deroule la closure de raisonnement explicitement."
+
+- name: "SW-7 OWL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7b-Python-OWL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 6c6b4450577e70359c9414dccd3baaec51d8615c
+    csharp_sha: 272171f25440e4d3aa967bcd6d03de29b9720f08
+  known_differences:
+    - "Socle commun : modelisation OWL (classes, proprietes, restrictions, axiomes)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` : OntologyGraph, OwlReasoner). Python = `owlready2` (API OWL orientee-objet dediee, world/Thing/Property). Deux librairies OWL matures mais aux philosophies differentes : dotNetRDF traite OWL comme une couche sur RDF ; owlready2 est nativement orientee OWL."
+
+- name: "SW-8 SHACL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-CSharp-SHACL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4d4511936245c8c4b5d8665149a9461ae519df2e
+    csharp_sha: fce2451b700090a2515d64a49e550eae1e0c0e6b
+  known_differences:
+    - "Socle commun : validation de graphe RDF par contraintes SHACL (Shapes Constraint Language, W3C 2017)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Shacl` moteur de validation integre). Python = `pyshacl` (validateur SHACL dedie, reference) + `rdflib` pour le graphe. pyshacl est l'implementation de reference Python ; dotNetRDF embarque SHACL depuis la v3."
+
+- name: "SW-9 JSON-LD"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-Python-JSONLD.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 88c26aeba63abc5b25e788c7e27c1154023d0f84
+    csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
+  known_differences:
+    - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Writing` JsonLdWriter). Python = `rdflib` (plugin JSON-LD via `rdflib-jsonld` integre, `graph.serialize(format='json-ld')`)."
+
+- name: "SW-10 RDF-Star"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-CSharp-RDFStar.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 23bb1656347488b97e360b34c9c67bcd52e29784
+    csharp_sha: e184307cf2a6180399e776bf200058e283fb9bf2
+  known_differences:
+    - "Socle commun : meta-modelisation RDF-star (triplets sur des triplets, quotes nestees)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` support RDF-star). Python = `rdflib` (`rdflib.term` triplets-nommes). RDF-star est une extension communautaire (pas encore W3C standardise) ; support experimental des deux cotes."
+
+- name: "SW-11 Knowledge-Graphs"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d3d6083bd49c7fa2892e3f74edf2e17421a29c11
+    csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
+  known_differences:
+    - "Socle commun : construction d'un graphe de connaissances (RDF + ontologie + requetage)."
+    - "Asymetrie de profondeur (surface) : le Python combine TROIS librairies -- `rdflib` (RDF), `owlready2` (ontologie OWL), et `networkx` (algorithmes de graphe : centralite, composantes connexes, plus courts chemins). Le C# reste sur `dotNetRDF` seul (`VDS.RDF.Query`), sans dimension d'analyse de graphe (centralite/communautes)."
+    - "Le Python ajoute donc une dimension d'analyse topologique (networkx) absente du C# -> parite `surface` (le C# est un pendant tronque sur cet aspect)."
+
+- name: "SW-13 Reasoners"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 2a5a6418b9e8ea23198dc6cc8d14894ad805ad95
+    csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
+  known_differences:
+    - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
