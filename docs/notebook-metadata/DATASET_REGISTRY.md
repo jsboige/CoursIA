@@ -95,8 +95,15 @@ Chaque ligne du registre respecte le schéma :
 | `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/BTC-USD_2018-01-01_2026-05-01.csv` | 247 895 | `6032978dff64f8f…` | CC-BY-4.0 | marche-public | yfinance BTC-USD | — |
 | `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/ETH-USD_2018-01-01_2026-05-01.csv` | 283 160 | `eaa188472586472…` | CC-BY-4.0 | marche-public | yfinance ETH-USD | — |
 | `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/SOL-USD_2018-01-01_2026-05-01.csv` | 210 749 | `bee9d8904b7f410…` | CC-BY-4.0 | marche-public | yfinance SOL-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/ADA-USD_2018-01-01_2026-05-01.csv` | 300 147 | `8599d2b81b82cbab…` | CC-BY-4.0 | marche-public | yfinance ADA-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/AVAX-USD_2018-01-01_2026-05-01.csv` | 194 133 | `4528583ae186a8d9…` | CC-BY-4.0 | marche-public | yfinance AVAX-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/DOT-USD_2018-01-01_2026-05-01.csv` | 195 629 | `1803fe5f3072bd92…` | CC-BY-4.0 | marche-public | yfinance DOT-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/LINK-USD_2018-01-01_2026-05-01.csv` | 289 517 | `73ea54d76a809078…` | CC-BY-4.0 | marche-public | yfinance LINK-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/LTC-USD_2018-01-01_2026-05-01.csv` | 285 999 | `2354125783e82210…` | CC-BY-4.0 | marche-public | yfinance LTC-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/MATIC-USD_2018-01-01_2026-05-01.csv` | 212 473 | `ca495bcc9d870d0d…` | CC-BY-4.0 | marche-public | yfinance MATIC-USD | — |
+| `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/crypto_panier/XRP-USD_2018-01-01_2026-05-01.csv` | 298 419 | `fb2efd891f510bb0…` | CC-BY-4.0 | marche-public | yfinance XRP-USD | — |
 
-> **Note QC.** Le répertoire `QuantConnect/datasets/yfinance/crypto_panier/` contient **10 fichiers** (BTC, ETH, ADA, AVAX, DOT, LINK, LTC, MATIC, SOL, XRP). Seuls 3 sont référencés ci-dessus pour lisibilité ; les 7 autres (ADA, AVAX, DOT, LINK, LTC, MATIC, XRP) sont **isomorphes** (même format yfinance OHLCV), licence identique (CC-BY-4.0), SHA256 calculé à la demande par `check_dataset_registry.py --audit`.
+> **Note QC.** Le répertoire `QuantConnect/datasets/yfinance/crypto_panier/` contient **10 fichiers** (BTC, ETH, ADA, AVAX, DOT, LINK, LTC, MATIC, SOL, XRP). Tous sont **référencés** ci-dessus avec leur SHA256 vérifié firsthand (c.798, 2026-07-23) ; ils sont **isomorphes** (même format yfinance OHLCV), licence identique (CC-BY-4.0).
 
 ### SymbolicAI / Argument_Analysis (2)
 
