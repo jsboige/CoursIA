@@ -1,0 +1,93 @@
+name: Twin Parity Check
+
+# Purpose: FAIL any PR that introduces DRIFT or MISSING in the twin parity
+# register (#8057, parent #4208). The register lists every Python/C# twin
+# pair and the git blob SHA of each notebook at the time of the last audit;
+# this workflow re-runs the check against the PR's merge ref and fails if a
+# notebook has moved without a re-audit (parite silently broke) or if a path
+# is now missing (typo, deletion, twin never created).
+#
+# Why BLOCKING (unlike catalog-drift.yml): the twin parity check is the
+# safety net for the structural parity of bilingual notebooks (Search/CSP,
+# ML.NET, Z3/SMT, SemanticWeb, Probas/InferNET, GameTheory/.NET). A silent
+# drift means the two implementations diverge without anyone re-auditing;
+# this directly contradicts #4956 ("parity Python/C# marathon") and #8057
+# ("metadonnee de parite auditable, pas declarative"). Blocking is the only
+# way to make the auditable promise real.
+#
+# Pattern: the worker who edits a twin must either re-audit (and rebaseline
+# the SHAs in the registry, `python scripts/notebook_tools/check_twin_parity.py --update`)
+# OR split the edit so the twin moves in lockstep on the same PR. The
+# workflow tells them which side has drifted.
+#
+# Paths watched:
+#   - scripts/notebook_tools/twin_pairs.yaml (registry)
+#   - scripts/notebook_tools/check_twin_parity.py (the tool itself)
+#   - All jumeau notebooks: MyIA.AI.Notebooks/**/*.ipynb (broad pattern;
+#     the tool itself filters down to the pairs in the registry).
+#
+# Reuses the proven structure of catalog-drift.yml (read-only checkout of
+# the PR merge ref, run tool, surface result) but FAILS on DRIFT/MISSING.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/notebook_tools/twin_pairs.yaml'
+      - 'scripts/notebook_tools/check_twin_parity.py'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  twin-parity:
+    name: "Twin parity audit (#8057)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run twin parity check
+        id: check
+        run: |
+          set +e
+          OUTPUT=$(python scripts/notebook_tools/check_twin_parity.py --json --check 2>&1)
+          EXIT=$?
+          echo "$OUTPUT" > twin_parity_report.json
+          set -e
+          if [ $EXIT -eq 0 ]; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+            echo "Twin parity OK : aucune paire en DRIFT ou MISSING."
+          elif [ $EXIT -eq 1 ]; then
+            DRIFT=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift',0))")
+            MISSING=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('missing',0))")
+            echo "drift=$DRIFT" >> "$GITHUB_OUTPUT"
+            echo "missing=$MISSING" >> "$GITHUB_OUTPUT"
+            echo "::error title=Twin parity DRIFT/MISSING detected::Le registre signale des paires dont un jumeau a evolue sans re-audit, ou des chemins manquants. Voir twin_parity_report.json dans les artifacts. Action : re-auditer la paire firsthand puis \`python scripts/notebook_tools/check_twin_parity.py --update\` pour rebaseline, OU splitter le PR en deux PRs distincts pour que chaque cote evolue separement."
+            exit 1
+          else
+            echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
+            exit $EXIT
+          fi
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twin-parity-report
+          path: twin_parity_report.json
+          if-no-files-found: ignore

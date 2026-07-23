@@ -210,18 +210,28 @@ def main(argv=None) -> int:
             print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
     if args.update:
-        # rebaseline toutes les paires (ou filtrees par --family)
+        # IMPORTANT : --update DOIT TOUJOURS reecrire TOUTES les paires du
+        # registre (meme avec --family), sinon on DETRUIT les paires des
+        # autres familles en re-ecrivant le YAML filtre. On ne met a jour
+        # que les paires qui matchent le filtre (ou toutes si pas de filtre).
+        all_pairs = load_registry(reg_path)
+        target = (
+            [pp for pp in all_pairs if pp.get("family") == args.family]
+            if args.family else all_pairs
+        )
+        if args.family and not target:
+            print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
         updated = 0
-        for pp in pairs:
+        for pp in target:
             audit, cur_py = update_pair(repo_root, pp)
             if cur_py is not None:
                 pp["last_audit"] = audit
                 updated += 1
-        # re-ecrit le registre entier (conserve l'ordre + les autres paires)
+        # re-ecrit le registre ENTIER (conserve l'ordre + les autres paires)
         if yaml is None:
             raise SystemExit("Erreur : PyYAML requis pour --update.")
         reg_path.write_text(
-            yaml.safe_dump(pairs, sort_keys=False, allow_unicode=True, width=100),
+            yaml.safe_dump(all_pairs, sort_keys=False, allow_unicode=True, width=100),
             encoding="utf-8",
         )
         msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
