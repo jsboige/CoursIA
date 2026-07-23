@@ -347,3 +347,321 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+# Tranche 5 (po-2025, 2026-07-23) : famille Probas/InferNET-PyMC (19 paires)
+# Corpus jumeaux Python/C# du domaine Probas (campagne #4956 'Serie Parite
+# .NET <=> Python'). Cote .NET : Infer.NET (Microsoft, EP analytique). Cote
+# Python : PyMC v5 (NUTS MCMC). Notebooks verifies firsthand (headers et cellules
+# 0/1 lus, execution_count non-null des deux cotes -- C.2 OK).
+# Asymetries structurelles documentees :
+# - Decalage de numerotation dans 5 notebooks Infer (5 dit '22/23', 7 dit '5/20',
+#   9 dit '7/20', 11 dit '9/20', 14 dit '11/20') -- a reconcilier hors scope de ce registre.
+# - PyMC + ArviZ automatisent WAIC/LOO ; Infer.NET implementation manuelle.
+# - Change-Point : PyMC necessite CompoundStep (Metropolis pour cp discrete) ;
+#   Infer.NET EP transparent.
+
+- name: "Probas-1-Setup"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 099345ba185e60b74e1c32e035c405f616fba96a
+    csharp_sha: 4a1a77ce7ba220b27ba011438c0d5fdaec063d94
+  known_differences:
+    - "Socle pedagogique commun : introduction a la programmation probabiliste, premier modele jouet (loi de Bernoulli / Beta-Bernoulli)."
+    - "Idiomes framework : C# = Infer.NET (Variable<T>, Variable.Bernoulli, InferenceEngine, ExpectationPropagation). Python = PyMC v5 (pm.Model, pm.Bernoulli, pm.sample)."
+    - "Inference : Infer.NET EP deterministe (seed reproductible). PyMC NUTS MCMC stochastique multi-chaines."
+    - "Verification execution : Infer-1 (12 cellules code exec_count non-null), PyMC-1 (11 cellules code exec_count non-null). C.2 OK des deux cotes."
+
+- name: "Probas-2-Gaussian-Mixtures"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 1293d479bb2784ab786dc537a7dd923664eaeae8
+    csharp_sha: 0a4bd59dc18d36f504499aa038913403488bc79f
+  known_differences:
+    - "Socle pedagogique commun : melange gaussien 1D/2D, identification des composantes (moyennes, variances, poids), prediction de la classe latente."
+    - "Idiomes framework : C# = Variable.GaussianFromMeanAndVariance, Variable.Mixture. Python = pm.Normal, pm.Mixture (pm.NormalMixture)."
+    - "Inference : Infer.NET EP analytique sur melange. PyMC NUTS echantillonne melange non-conjugue."
+    - "Verification execution : Infer (15 cellules code), PyMC (8 cellules code), execution_count non-null."
+
+- name: "Probas-3-Factor-Graphs"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
+    csharp_sha: e012c8765a612c311e673c0662198064003fea4f
+  known_differences:
+    - "Socle pedagogique commun : factor graphs (variables + facteurs discrets), inference par Variable.Discrete sur reseau (sprinkler/grass classique), lecture des marginales."
+    - "Idiomes framework : C# = Variable<bool> + Variable.Discrete + facteurs declares. Python = pm.Categorical, pm.Bernoulli + pm.Potential."
+    - "Verification execution : Infer (15 code), PyMC (8 code), execution_count non-null."
+    - "Mecanique : Infer.NET compile en factor graph puis EP ; PyMC construit DAG via Theano/PyTensor et tire NUTS/Metropolis."
+
+- name: "Probas-4-Bayesian-Networks"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: aa853aa35f024e6af153991847a0bebf91caaadf
+    csharp_sha: 735330e82b7c6a50a6a664ea6a0102e3eadbbbaf
+  known_differences:
+    - "Socle pedagogique commun : reseau bayesien classique (3-5 variables discretes, CPDs explicites), inference jointe/marginale."
+    - "Idiomes framework : C# = Infer.NET Variables + Range + Variable.Array, factor graphs implicites. Python = pm.Dirichlet (priors sur CPDs) + pm.Multinomial (likelihood)."
+    - "Verification execution : Infer 66 cellules (15 code), PyMC 26 cellules (8 code), execution_count non-null."
+
+- name: "Probas-5-Causal-Inference"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: c577dc03216f318a392f373ba61aa85287037f98
+    csharp_sha: 5a56e6d6f4341aab8e5ceeff0dbae6dc603c3abe
+  known_differences:
+    - "Socle pedagogique commun : do-calculus de Pearl, distinction P(Y|X) observation vs P(Y|do(X)) intervention, identification par backdoor adjustment."
+    - "Idiomes framework : C# = Infer.NET (BN classique), intervention simulee par mutilation de graph. Python = pm.do (PyMC natif, transformation de modele)."
+    - "Verification execution : Infer 38 cellules, PyMC 30 cellules, execution_count non-null."
+    - "Asymetrie structurelle : Infer-5-Causal-Inference header dit 'Serie Infer.NET (22/23)' malgre le nom Infer-5-. Decalage de numerotation de la serie. PyMC-5-Causal-Inference header dit '5 / parite Infer.NET'."
+
+- name: "Probas-6-Debugging"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 9c6d4bdd4181e08e63eaf417954b44bce448a02e
+    csharp_sha: 6190e69ebdc6d1289dff9ea8b3cf5f54dea56265
+  known_differences:
+    - "Socle pedagogique commun : troubleshooting et bonnes pratiques pour deboguer les modeles probabilistes (NaN, underflow, convergence, prior impropre)."
+    - "Idiomes framework : C# = InferenceEngine.NumberOfIterations, Engine.ShowFactorGraph, custom factors. Python = pm.traceplot, pm.summary, arviz (rhat, ESS, divergences)."
+    - "Verification execution : Infer 50 cellules, PyMC 43 cellules, execution_count non-null."
+    - "Parite semantique : meme concept debugging, outils distincts (graph natif Infer.NET vs ArviZ)."
+
+- name: "Probas-7-Skills-IRT"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 243abda6c6d8da742e47ae61a60d780b770e77ad
+    csharp_sha: 0a6a22b40add98c9f2ef2611cf06e53c4ae20f9e
+  known_differences:
+    - "Socle pedagogique commun : modeles de competences (Item Response Theory) - 1PL (Rasch), 2PL (avec discrimination), DINA (modele cognitif deterministic-input noisy-and)."
+    - "Idiomes framework : C# = Variable.GaussianFromMeanAndPrecision (habilete), Variable.Bernoulli (reponse), EP. Python = pm.Normal (skills), pm.Bernoulli, NUTS."
+    - "Verification execution : Infer 74 cellules, PyMC 33 cellules, execution_count non-null."
+    - "Asymetrie : Infer-7 header dit 'Serie Infer.NET (5/20)' malgre nom Infer-7-. PyMC-7-Skills-IRT header dit 'Equivalent Infer.NET : Infer-7-Skills-IRT'."
+
+- name: "Probas-8-TrueSkill"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 02beb4247f8c3087e6743bb2b7915ad7215b60e3
+    csharp_sha: 6291ab988840ca8eeb033349efde736f1c40d6a3
+  known_differences:
+    - "Socle pedagogique commun : TrueSkill (Herbrich 2006) - modele de classement bayesien pour matchmaking, mise a jour de la competence apres match, probabilite de victoire."
+    - "Idiomes framework : C# = Variable.Gaussian (skills) + Variable.GaussianFromMeanAndVariance (perf) + Variable.Bernoulli (outcome). Python = meme schema via pm.Normal + pm.Bernoulli."
+    - "Verification execution : Infer 60 cellules, PyMC 33 cellules, execution_count non-null."
+    - "Asymetrie pedagogique : Infer.NET tres proche du papier original TrueSkill ; PyMC reimplementation pedagogique avec visualisation des distributions de skills."
+
+- name: "Probas-9-Classification"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: be07a64cf703c3bef33d6898601ce6b021d3abf3
+    csharp_sha: 53fc7e6d5417f47ee6c15bb781ddce9bf15896b3
+  known_differences:
+    - "Socle pedagogique commun : classification bayesienne, regression logistique avec priors gaussiens, comparaison de modeles (test A/B)."
+    - "Idiomes framework : C# = Variable.Gaussian (poids), Variable.Bernoulli (label), InferenceEngine. Python = pm.Normal (poids), pm.Bernoulli, pm.sample (NUTS)."
+    - "Verification execution : Infer 55 cellules, PyMC 22 cellules, execution_count non-null."
+    - "Asymetrie : Infer-9-Classification header dit 'Serie Infer.NET (7/20)' malgre nom Infer-9-. PyMC-9-Classification header dit 'Equivalent Infer.NET : Infer-9-Classification'."
+
+- name: "Probas-10-Model-Selection"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: a9659a12d6e0672d694b500ecb53161bd31daeef
+    csharp_sha: 5a93b73a4cbea0eb613a5bada88f975e12edd0ce
+  known_differences:
+    - "Socle pedagogique commun : selection bayesienne de modeles, WAIC (Widely Applicable Information Criterion), LOO (leave-one-out cross-validation), comparison predictif."
+    - "Idiomes framework : C# = InferenceEngine + calcul manuel WAIC/LOO. Python = arviz.waic, arviz.loo (calculees directement sur les traces)."
+    - "Verification execution : Infer 58 cellules, PyMC 35 cellules, execution_count non-null."
+    - "Asymetrie structurelle : PyMC + ArviZ automatisent WAIC/LOO ; Infer.NET implementation manuelle."
+
+- name: "Probas-11-Topic-Models"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 9e349a18869a888741befc47108464157236f925
+    csharp_sha: 04632a7f849c543b567e336919edea2442484fc9
+  known_differences:
+    - "Socle pedagogique commun : Latent Dirichlet Allocation (LDA) - modeles de sujets, allocation de mots aux sujets et de sujets aux documents, inference sur corpus jouet."
+    - "Idiomes framework : C# = Variable.Dirichlet (priors sur theta/phi), Variable.Multinomial, Variable.Discrete. Python = pm.Dirichlet, pm.Multinomial, pm.Categorical."
+    - "Verification execution : Infer 55 cellules, PyMC 34 cellules, execution_count non-null."
+    - "Asymetrie : Infer-11-Topic-Models header dit 'Serie Infer.NET (9/20)' malgre nom Infer-11-."
+
+- name: "Probas-12-Modeles-Hierarchiques"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: a0d13371fa668e8b1eb6249ef47f5205bf32b07a
+    csharp_sha: 88921c3ff2541ae457f8acdd45ca5bd9b1a0c23c
+  known_differences:
+    - "Socle pedagogique commun : modeles hierarchiques bayesiens (pooling partiel vs complet vs aucun), retraction (shrinkage) des estimations de groupes, exemple des 8 classes de TP."
+    - "Idiomes framework : C# = Variable.GaussianFromMeanAndPrecision (hyperpriors), Range (loop sur groupes), EP analytique sur conjugue. Python = pm.Normal, pm.Normal('mu_g', mu, sigma, shape=n_groups), NUTS."
+    - "Verification execution : Infer 18 cellules (8 code), PyMC 23 cellules (9 code), execution_count non-null."
+    - "Parite pedagogique elevee : les deux notebooks partent du meme exemple 8 classes de TP avec memes germes/memes parametres - comparable directement."
+    - "Cellule 0 PyMC : 'Serie Parite .NET <=> Python (#4956). Ce notebook est le jumeau Python de Infer-12-Modeles-Hierarchiques.ipynb (Infer.NET / C#)'."
+
+- name: "Probas-13-Crowdsourcing"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-13-Crowdsourcing.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 2f27544c72a18786337e197369da750edff7d0a8
+    csharp_sha: 110c1d8e02231bef5ef1d58f5279d560a257f6d8
+  known_differences:
+    - "Socle pedagogique commun : agregation de labels par modele de Dawid-Skene (1979), estimation de la fiabilite des annotateurs et de la vraie classe."
+    - "Idiomes framework : C# = Variable.Discrete (vraie classe), Variable.Array (annotateurs), confusion matrix parametree. Python = pm.Categorical + pm.Dirichlet (matrice de confusion)."
+    - "Verification execution : Infer 50 cellules, PyMC 43 cellules, execution_count non-null."
+
+- name: "Probas-14-Sequences"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 765544fe8ac71c15305c2cb91f9b16909e86e1df
+    csharp_sha: 6c911f78b7705518eda21705f1961cc8aa7f117a
+  known_differences:
+    - "Socle pedagogique commun : Hidden Markov Models (HMM) - chaines de Markov cachees, etats discrets, emissions, algorithme Forward-Backward."
+    - "Idiomes framework : C# = Variable.Discrete (etat cache), Variable.Array (observations), ForwardBackward integre. Python = pm.Categorical + scan/Theano, pm.sample (NUTS/Metropolis forward-filtering)."
+    - "Verification execution : Infer 62 cellules, PyMC 39 cellules, execution_count non-null."
+    - "Asymetrie : Infer-14-Sequences header dit 'Serie Infer.NET (11/20)' malgre nom Infer-14-."
+
+- name: "Probas-15-Recommenders"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 3a4321e6b0e610dfd533982b543997bd9a436c83
+    csharp_sha: c46cdae20cada18251a1a6ba0ddac7337dcd5ce9
+  known_differences:
+    - "Socle pedagogique commun : systemes de recommandation probabilistes (filtrage collaboratif bayesien), facteurs latents utilisateur/item, prediction de notes."
+    - "Idiomes framework : C# = Variable.Gaussian (facteurs latents), Variable.GaussianFromMeanAndPrecision (likelihood). Python = pm.Normal (facteurs), pm.HalfNormal (priors d'ecart-type)."
+    - "Verification execution : Infer 81 cellules, PyMC 58 cellules, execution_count non-null."
+    - "Note : PyMC-15-Recommenders header dit 'Adapte de : Infer-15-Recommenders (Infer.NET / C#)' (pas le mot jumeau, mais parite documentee)."
+
+- name: "Probas-16-Sparse-Gaussian-Process"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 3bd78943aceb19a022104e3e5aaded508945adde
+    csharp_sha: 70554d0502ec3be47f752958f2cf601df2ffd371
+  known_differences:
+    - "Socle pedagogique commun : Processus Gaussiens, classification non-lineaire par sparse GP (inducing points), frontier de decision."
+    - "Idiomes framework : C# = Infer.NET (pas de support natif GP, implementation manuelle via Variable.Gaussian). Python = pm.gp (gp.Marginal, gp.MarginalSparse)."
+    - "Verification execution : Infer 32 cellules, PyMC 27 cellules, execution_count non-null."
+    - "Asymetrie structurelle : PyMC fournit module GP natif (GP, BoTorch-compatible) ; Infer.NET ne supporte pas GP en natif, ce notebook est une implementation manuelle."
+
+- name: "Probas-17-Kalman-Filter"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 292b08c0a854679cabb78ca3f60a36e4d691d5d8
+    csharp_sha: 903f162463207547ed2a695e090d2abf54e6951e
+  known_differences:
+    - "Socle pedagogique commun : filtre de Kalman lineaire gaussien, etat continu cache, transition/observation lineaires, forward-filtering + smoother."
+    - "Idiomes framework : C# = Variable.Gaussian + Variable.GaussianFromMeanAndVariance + recurrence via ForEach block. Python = pm.GaussianRandomWalk ou modele state-space manuel."
+    - "Verification execution : Infer 20 cellules (8 code), PyMC 20 cellules (8 code), exactement symetrique."
+    - "Cellule 0 PyMC : 'Serie Parite .NET <=> Python (#4956). Ce notebook est le jumeau Python de Infer-17 -- Filtre de Kalman (Infer.NET, EP)'."
+    - "Value-add PyMC : estimation MCMC des variances Q et R (bruit de transition/observation), la ou Infer.NET les fixe ou les marginalise."
+
+- name: "Probas-18-Change-Point"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 8c5f8a67fd7f461d3b5bf1146a8f2d763b2b1448
+    csharp_sha: bc73b40e881fabdfb719b21855b23d093ea1c54a
+  known_differences:
+    - "Socle pedagogique commun : detection de rupture bayesienne, infere le moment d'un changement de regime sur une serie temporelle."
+    - "Idiomes framework : C# = Variable.Discrete (localisation cp) + EP marginalisation. Python = meme schema mais la localisation discrete necessite pm.Metropolis ou CompoundStep (NUTS ne marche pas sur variables discretes)."
+    - "Verification execution : Infer 23 cellules, PyMC 21 cellules, execution_count non-null."
+    - "Cellule 0 PyMC : 'Serie Parite .NET <=> Python (#4956). Ce notebook est le jumeau Python de Infer-18-Change-Point.ipynb'."
+    - "Asymetrie technique : PyMC necessite CompoundStep (NUTS pour les params continus, Metropolis pour la localisation discrete) ; Infer.NET traite ca de maniere transparente via EP."
+
+- name: "Probas-19-Survival-Analysis"
+  family: Probas/InferNET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2025
+    python_sha: 071a2a1f1848fbd25de2c8e313b004b0d4706f8c
+    csharp_sha: 26e27a8ac4950ebbc373789762d46177a3946afc
+  known_differences:
+    - "Socle pedagogique commun : analyse de survie / fiabilite bayesienne, inference du temps jusqu'a un evenement, modele Weibull ou exponentiel."
+    - "Idiomes framework : C# = Variable.GaussianFromMeanAndVariance ou Weibull parametree + EP. Python = pm.Weibull (PyMC natif) + NUTS."
+    - "Verification execution : Infer 27 cellules, PyMC 21 cellules, execution_count non-null."
+    - "Cellule 0 PyMC : 'Serie Parite .NET <=> Python (#4956). Ce notebook est le jumeau Python de Infer-19 -- Analyse de survie (Infer.NET, EP)'."
+    - "Value-add PyMC : inferer directement la forme Weibull k par MCMC (qu'Infer.NET evite par transformee logarithmique sur k)."
+
