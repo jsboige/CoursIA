@@ -347,3 +347,142 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+
+# + SymbolicAI/Planners (po-2023 c.836, 9 paires Python↔C# : Intro/PDDL/State-Space/Fast-Downward/
+#   Heuristics/Domains/OR-Tools/Temporal/HTN). Voir #8057. Planners-5b-Lean-Relaxation = Python-only
+#   (relaxation Lean, pas de jumeau C#) → exclu. Planners-10/11/12 = Python-only (neuro-symbolique)
+#   → exclus. Asymétrie engine : Python invoque des solveurs SOTA externes (unified-planning,
+#   fast-downward Docker, OR-Tools CP-SAT) ; C# = réimplémentation from-scratch BCL .NET (0 NuGet),
+#   démonstration pédagogique du MÊME concept (parité conceptuelle, pas invocation du même solver).
+
+- name: "Planners-1 Introduction"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: d6f0f8fff2a6331cb4c979b90eda1ce526aa97fd
+    csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
+  known_differences:
+    - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
+    - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet)."
+
+- name: "Planners-2 PDDL-Basics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: b7a6f2c16c6d299b8492f507a3beb80d500b36a3
+    csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
+  known_differences:
+    - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
+    - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."
+
+- name: "Planners-3 State-Space"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 8d03359d12709b134f644e187d04249b6e1fcadf
+    csharp_sha: 435f49ca3c491cf320ddd9b9471fecc94f759f41
+  known_differences:
+    - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
+    - "Python : unified-planning engines. C# : from-scratch BFS/DFS/A* BCL .NET (meme algorithme, implementation idiomatic)."
+
+- name: "Planners-4 Fast-Downward"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
+    csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
+  known_differences:
+    - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
+    - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward) + unified-planning. C# : from-scratch BCL .NET (reimplementation pedagogique, ne peut pas invoquer fast-downward)."
+    - "Asymetrie engine importante : Python = solveur SOTA reel ; C# = demo from-scratch. Parite CONCEPTUELLE (memes algorithmes A*/GBFS/EHC expliques), pas invocation du meme binaire."
+
+- name: "Planners-5 Heuristics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 1fa119b93b6cc6220af0863a3ecb54113cf319cc
+    csharp_sha: 0324d375efaffb5ded837a339223e0c32f7180cc
+  known_differences:
+    - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
+    - "Python : unified-planning + fast-downward heuristics. C# : from-scratch delete-relaxation BCL."
+    - "po-2025 a verifie firsthand (c.678) la parite conceptuelle : les deux cotes gerent la degenerescence via une instance discriminante (h^add > h*)."
+
+- name: "Planners-6 Domains"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: b34b53f0aeee982e98144fc52db3a22d1f3b3d1a
+    csharp_sha: a5f26d90eceb3ba088c1be0207390531c2bc7005
+  known_differences:
+    - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
+    - "Python : modelisation unified-planning des domaines canoniques. C# : from-scratch BCL .NET (meme domaines de reference)."
+
+- name: "Planners-7 OR-Tools"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 7a857203d3ecf3d7f4b8f3d6e8ce48078578b3fa
+    csharp_sha: 6acd159baa6ba26452ad2397b1c6a8a92395da92
+  known_differences:
+    - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
+    - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : from-scratch BCL .NET (0 NuGet, Job-Shop modelise main, instance canonique Fisher & Thompson ft3 reprise cote Python)."
+    - "Asymetrie engine : Python = solveur CP-SAT reel ; C# = demo from-scratch. Meme instance de reference (ft3)."
+
+- name: "Planners-8 Temporal"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 45500904dbf2675c50a3c267f28207e3d7309758
+    csharp_sha: 76d9b0bc9b45c4b8b85ff5d9cf9d0ba53b62e495
+  known_differences:
+    - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
+    - "Python : unified-planning temporal + CP-SAT + Gantt. C# : from-scratch BCL .NET (ordonnancement usine)."
+    - "po-2025 a verifie firsthand (c.678) : probleme temporel genuine avec parallelisme inherant (pas un cas degenere)."
+
+- name: "Planners-9 HTN"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: e587a7355e7a9c3c7276990ff70910ba6fb4838d
+    csharp_sha: 8d70f1020b83b60706f94aabb2e425b083b35a7d
+  known_differences:
+    - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
+    - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
+    - "po-2025 a enrichi firsthand (c.678, PR #8173) le cote Python (instance discriminante m_deliver_direct vs m_deliver_via_intermediate)."
