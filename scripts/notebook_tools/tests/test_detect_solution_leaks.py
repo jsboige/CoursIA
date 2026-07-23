@@ -564,3 +564,53 @@ class TestWorkedExampleFalsePositiveSuppression:
         findings = scan_notebook(str(nb))
         assert not any(f.get("severity") == "HIGH" for f in findings)
 
+    def test_cross_cell_higher_header_breaks_attribution(self, tmp_path):
+        # The Kokoro / Infer-6 residual false positive: an "### Exercice 3"
+        # header, then an intervening SAME-OR-HIGHER-level section header
+        # ("## Conclusion"), then a demo code cell. The code belongs to the
+        # Conclusion section, not the exercise — the intervening header breaks
+        # the attribution. Without the guard this is wrongly flagged HIGH.
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("---\n\n### Exercice 3 : Synthese\n\nObjectif..."),
+                _md("## Conclusion\n\nRecap."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_cross_cell_sibling_header_breaks_attribution(self, tmp_path):
+        # Same-level sibling header also breaks: "### Exercice 2" (level 3)
+        # followed by "### 6.1 Fonctions" (level 3 sibling) then a code cell.
+        # The code belongs to section 6.1, not the exercise.
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("### Exercice 2 : Impact du prior\n\nObjectif..."),
+                _md("### 6.1 Fonctions de diagnostic\n\nDetails..."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_deeper_subheader_does_not_break_attribution(self, tmp_path):
+        # Recall guard: a DEEPER sub-header ("### Indice" under a "## Exercice 1"
+        # level-2 header) is a CHILD of the exercise, not a new section. The code
+        # after it is still the exercise's and MUST stay flagged (no recall
+        # regression from the cross-cell guard).
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("## Exercice 1 : Objectif\n\nEnonce..."),
+                _md("### Indice\n\nPensez a la reciprocite."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert highs[0]["cell_index"] == 2
+
