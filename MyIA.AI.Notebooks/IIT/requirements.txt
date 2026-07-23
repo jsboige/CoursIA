@@ -11,10 +11,32 @@
 #   conda create -n pyphi python=3.9 -y
 #   conda activate pyphi
 #   pip install -r requirements.txt
+#
+# Note: setup_pyphi_env.ps1 installe sa propre liste (pyphi/numpy/scipy/ipykernel)
+# et ignore ce fichier ; ce requirements.txt est la source de verite complete
+# pour un install manuel ou `pip install -e .` (cf. ICT-Series/pyproject.toml).
+# Dependance declaree MAIS non importee : networkx (mention prose README only,
+# aucun `import networkx` dans ict/ ni les notebooks) -> retiree d'ici.
 
-# Core
-pyphi==1.2.0                 # IIT computation library
+# Core (strates PyPhi)
+pyphi==1.2.0                 # IIT computation -- epingle l'env sur Py3.9 + NumPy<2
 
 # Scientific
-numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd compat)
+numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd/pyphi compat)
 scipy>=0.13.3                # Scientific computing
+
+# Visualisation (massivement utilisee par les notebooks ICT : trajectoires, heatmaps, EWS)
+matplotlib
+
+# --- Optionnel (strates LLM/SAE, GPU requis) -------------------------------
+# De-commenter pour les strates ICT-21/22/24 + ICT-SAE-JLens, ou installer via
+# `pip install -e .[llm]` depuis ICT-Series/ (cf. pyproject extras).
+# torch
+# transformers
+
+# --- Optionnel (utilitaires ponctuels, 1-2 usages) -------------------------
+# pandas        # pip install -e .[extras]
+# sympy
+
+# --- Dev / tests -----------------------------------------------------------
+# pytest        # pip install -e .[dev] ; suite : python -m pytest ICT-Series/tests/
