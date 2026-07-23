@@ -347,3 +347,52 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+# === Tranche 4 GameTheory/.NET-Parity (c.804, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+# Python = nashpy + scipy.optimize.linprog (libs matures) ; C# = from-scratch (SimplexMax Dantzig+Bland, BestResponseRow).
+# Les twins C# reimplementent les solveurs a la main (valeur pedagogique vs invoquer une lib). SHAs `git ls-tree origin/main`.
+
+- name: "GameTheory-2 NormalForm"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: a4e8702fb81723b13912f48feda5d7f582e93902
+    csharp_sha: 344836d7a5f385a161d68ab1d8924a3d67c7a2ce
+  known_differences:
+    - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
+    - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."
+    - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib). Meme concepts, abstraction differente (lib vs from-scratch)."
+
+- name: "GameTheory-4 NashEquilibrium"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: e2d19dec8863909c0d4f785db97bfaadc8b575da
+    csharp_sha: a2de7867ae9c7777ef4b4a5cfb2134b619eb0851
+  known_differences:
+    - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
+    - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
+    - "Asymetrie de couverture : Python utilise scipy.linprog pour les equilibres mixtes (LP battle-tested) ; le C# implemente la meilleure reponse manuellement et couvre les purs en detail. Meme theorie, leviers algorithmiques differents (LP vs enumeration)."
+
+- name: "GameTheory-5 ZeroSum-Minimax"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 233b8385a1751e8e13a78211fb4671c87595ae52
+    csharp_sha: e9909bf449d1b53f67965096b80a648abcc9eccd
+  known_differences:
+    - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."
+    - "Idiomes framework : Python = `scipy.optimize.linprog` (solveur LP mature pour le minimax). C# = **Simplexe from-scratch** `SimplexMax` (methode de Dantzig + regle de Bland anti-cyclage) + `SolveMatrixGame` qui reduit le jeu matriciel a un LP et lit sigma dans les variables duales."
+    - "Asymetrie notable : le C# REIMPLEMENTE l'algorithme du simplexe a la main (valeur pedagogique : comprendre Dantzig + Bland) plutot que d'invoquer scipy.linprog. parity_level = semantic (meme theoreme minimax, meme reduction LP ; le solveur LP est from-scratch cote C# vs lib cote Python)."
+
