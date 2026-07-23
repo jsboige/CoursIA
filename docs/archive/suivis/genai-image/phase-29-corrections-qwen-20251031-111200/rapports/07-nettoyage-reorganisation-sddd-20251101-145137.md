@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport Final - Nettoyage et Réorganisation SDDD Phase 29
 
 **Date**: 2025-11-01 14:51 (UTC+1)  
