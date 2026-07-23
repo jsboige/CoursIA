@@ -16,7 +16,8 @@
 #
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
-# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED). Voir #8057.
+# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED).
+# + Search/Part3-Advanced (po-2023 c.833, 3 paires : Pattern Databases / LDS / Weighted A*). Voir #8057.
 
 - name: "Z3-Python-01 Introduction"
   family: SMT/Z3-API
@@ -347,3 +348,48 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+- name: "Search-12 Pattern Databases"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 2cee1a4ec78ce7ee7d57ea9afc791d3af013699d
+    csharp_sha: 282a079e88070b58473f64e7e32d91cfcca860c8
+  known_differences:
+    - "Socle pedagogique commun : taquin 4x4 (15-puzzle), heuristique Manhattan, puis construction d'une Pattern Database (PDB) pour un sous-ensemble de tuiles afin d'estimer h* plus precisement que Manhattan."
+    - "Idiomes framework : Python = `collections.deque` (BFS sur l'espace des patterns) + `numpy`/`matplotlib` (matrices + visualisation du plateau). C# = pur BCL `System.Collections.Generic` + `System.Linq` (`Dictionary`, `Queue`, `Array.IndexOf`), sans dependance externe."
+    - "Asymetrie visualisation : cote Python, matplotlib rend le plateau/la PDB graphiquement ; cote C#, le rendu est textuel (pas d'equivalent numpy/matplotlib en BCL standard). Algorithme et donnees (GOAL, Manhattan, Successors) verifies firsthand identiques des deux cotes."
+
+- name: "Search-13 Limited Discrepancy Search"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: cbe0c5000098c5eba6a854db1e0e27e0424dfad1
+    csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
+  known_differences:
+    - "Socle pedagogique commun : sac a dos 0/1, Limited Discrepancy Search (LDS) borne le nombre d'ecarts a l'heuristique gloutonne (ratio valeur/poids decroissant) pour trouver l'optimum sans explorer tout l'arbre."
+    - "Idiomes framework : Python = tuples nommes `(name, weight, value)` + fonctions pures (`greedy_knapsack`, `lds`). C# = `record Item(string Name, int Weight, int Value)` (immuable) + methodes retournant un tuple `(Value, Selection, Nodes)`."
+    - "Difference d'instance (verifiee firsthand) : le notebook Python enumere 7 objets A-G (dont F et G de valeur nulle, pieges pour le greedy) ; le notebook C# enumere 5 objets A-E seulement. Meme concept LDS, instance C# = coeur 5-objets, instance Python = coeur + 2 pieges. La parite est conceptuelle (LDS/k), pas cellule-par-cellule."
+
+- name: "Search-14 Weighted A*"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: bfca3c80c9ab075d707e17b2de6879469f34a9b5
+    csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+  known_differences:
+    - "Socle pedagogique commun : Weighted A* (best-first sur f(n)=g(n)+W*h(n), W>=1) sur un terrain pondere, balayage de W, garantie de sous-optimalite bornee cout <= W*C* (Pohl 1970)."
+    - "Idiomes framework : Python = `heapq` (min-heap, re-push sur meilleur g) + `itertools.product` + `random.Random(seed)` (Mersenne Twister). C# = `PriorityQueue<T, double>` (.NET 6+, min-heap natif) + `Random(seed)` (.NET PRNG, distinct du Mersenne Twister Python)."
+    - "Asymetrie RNG (verifiee firsthand) : les deux cotes generent une grille aleatoire 25x25 avec `seed=42`, mais `random.Random(42)` (Python) et `new Random(42)` (.NET) produisent des terrains DIFFERENTS -> les couts/nombres de nœuds exacts ne coincident pas entre C# et Python. Le concept (regime W, interpolation bornee, garantie W*C*) et la structure de demo (balayage W, Greedy vs A* vs Weighted) sont identiques ; seules les valeurs numeriques le sont pas (cause RNG). Parite conceptuelle, pas numerique."
