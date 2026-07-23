@@ -57,3 +57,31 @@ Epics co-evolutives partagees avec ai-01 : #1453 + #1454. Le **pionnier** (po-20
 - Refaire a la main une tache couverte par un specialist async (modernisation serie, batch notebooks, QC robustness…)
 - Side-track sans Epic de rattachement (intracable, meurt a l'absence du coordinateur)
 - Lancer 2 sous-agents editeurs sur le **meme** notebook/serie (collision) — read-only OK en parallele, editeurs = un par fichier
+
+## Vérification pré-cycle (L282 / L283 / L786 / L915) — leçons post-c.264
+
+Consolidees depuis les incidents cross-machine c.264 / c.288-289 / c.797 / c.796 et le PR feedback upstream. **Dures** : à executer AVANT tout claim, pas après.
+
+**L282 — Mirror-lanes collision**. Une machine avec 2 lanes (CoursIA **et** CoursIA-2) = 2 workers distincts. Avant `gh issue claim` ou poster `[CLAIMED]`, verifie **le dashboard de la lane ciblee** : un doublon mirroir (incident fondateur #5640/#5641 sur #5635, 6 min apart, ai-01 arbitrage 13:51Z) est une **perte de cycle pour les deux workers** + overhead coordinateur. `roosync_dashboard(action:"read", type:"workspace", section:"all")` sur **les 2 dashboards** (workspace-CoursIA + workspace-CoursIA-2) avant de claim.
+
+**L283 — Confiance hierarchique = `gh API > git log > dashboard intercom > status condense`**. Avant de propager un claim d'etat (merge / OPEN / contenu main) : `gh pr view N --json state,mergedAt,mergeCommit` + `git ls-tree origin/main <file>` + `git log origin/main --oneline -- <file>`. Le **status condense auto-92%** du dashboard peut **halluciner** un merge (po-2026 c.288 : "#5657 MERGED by jsboige" alors que PR OPEN CLEAN awaiting sweep). Source : condensation LLM hallucine des PRs sur 4 cycles consecutifs.
+
+**L786 — Honest-drain diagnostic AVANT claim "lane exhausted"**. Avant de poster un statut terminal-idle (forensic-floor, drained, saturé, no-change, loophole) : `gh issue list --state open | wc -l` > 0 ne suffit pas. **Identifier le grain executable pour ta capability** (CPU-only-po et lecture OK, GPU-only exclu) — test : pour chaque issue ouverte, peux-tu (a) la lire, (b) la decomposer en sous-grain non-GPU, (c) executer le sous-grain ? Si ≥1 sous-grain executable → claim, sinon re-arme. Incident : 4 lanes "drained" simultanement c.796, pool offrait ≥6 grains CPU frais non-claimés (cf c.797 dispatch).
+
+**L915 — PR OPEN MERGEABLE ≠ PR mergee**. Avant de claim un cycle N dependant d'une PR OPEN MERGEABLE upstream, verifie `gh pr view N --json mergedAt` (non-null = mergee). 2 options : (a) reporter c.N a `mergedAt` confirme ; (b) redécouper le grain en **substrate standalone** + c.N+1 (le livrable de N est comprehensible sans merger l'upstream). Source : worker-side claim triple phantom-dispatach (c.715 #7225, c.797 #8031, c.792 #7733) corrige par L715-L2.
+
+**C715-L2 — Cross-repo work detection AVANT claim**. Avant de prendre un grain sur issue #X, triple-verification :
+```
+git log --all --oneline --grep "#<issue>"                    # 0 commit upstream
+git ls-tree origin/main <path>                              # 0 fichier upstream
+gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
+```
+3 zeros = grain libre. ≥1 hit = verifier l'etat de l'upstream (`gh pr view N --json mergedAt`) et choisir (a) reporter, (b) redécouper, (c) rafraichir la substance.
+
+**Routine verification first-and** (à coller dans `~/.claude/CLAUDE.md` personalisation ou alias bash) :
+
+```bash
+# Avant tout claim de PR dependante d'une upstream
+gh pr view N --json state,mergedAt,baseRefOid 2>/dev/null | head -5
+git merge-base --is-ancestor <sha> origin/main && echo "MERGED" || echo "NOT-MERGED"
+```
