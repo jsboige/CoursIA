@@ -26,10 +26,17 @@ ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). L
 ```bash
 # Depuis MyIA.AI.Notebooks/IIT/
 powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
-pip install -r requirements.txt                  # dépendances ICT additionnelles (numpy, scipy, networkx…)
+pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy, scipy, matplotlib…)
+
+# Recommandé : installer le package `ict/` en mode editable (issue #8076).
+# Rend `from ict import …` résolvable depuis n'importe quel cwd, sans dépendre
+# du répertoire ICT-Series/. Extras : [llm] (torch/transformers, GPU),
+# [extras] (pandas, sympy), [dev] (pytest).
+# Depuis MyIA.AI.Notebooks/IIT/ICT-Series/  (dans l'env pyphi activé) :
+pip install -e .                                 # cœur ; ou pip install -e .[dev,llm]
 ```
 
-Le package `ict/` est importé en relatif depuis le répertoire `ICT-Series/` : chaque notebook insère le dossier courant dans `sys.path` puis `from ict import …`. Lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
+Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. `pyproject.toml`) : une fois installé, `from ict import …` résout depuis n'importe quel `cwd`. En l'absence d'install editable, l'ancien contrat reste valable : chaque notebook insère le dossier courant dans `sys.path`, il faut alors lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
 
 | Élément | Emplacement | Rôle |
 |---------|-------------|------|

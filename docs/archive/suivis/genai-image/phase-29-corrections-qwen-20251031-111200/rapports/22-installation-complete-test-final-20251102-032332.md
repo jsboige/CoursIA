@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 > **Superseded by [22-installation-complete-test-final-20251102-031809.md](22-installation-complete-test-final-20251102-031809.md)**, archived 2026-06-06. Content preserved for audit trail.
 
 # Rapport Installation Complète ComfyUI Qwen - Phase 29

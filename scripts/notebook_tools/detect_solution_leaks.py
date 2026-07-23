@@ -33,6 +33,18 @@ STUB_PATTERNS = [
     r'//\s*TODO',
     r'Console\.WriteLine\(["\']Exercice a completer',
     r'Console\.WriteLine\(["\']Exercices a completer',
+    # Lean stub idioms (Lean line comments start with `--`).
+    r'--\s*TODO',
+    # Lean `sorry` tactic admits the goal — an exercise cell using it is a stub
+    # (the proof is unverified, intentionally left for the student).
+    r'\bsorry\b',
+    # .NET Interactive / F# `.Display("...a completer")` idiom (the existing
+    # patterns only cover Console.WriteLine / print).
+    r'\.Display\s*\([^)]*(?:a compl[ée]ter|compl[ée]ter)',
+    # Python assignment-stub: `result = None  # TODO etudiant` /
+    # `matrice = None  # Remplacez None`. `return None` only matches a return
+    # statement, not an assignment that defers the work to the student.
+    r'=\s*None\s*#.*(?:TODO|Remplacez|a compl[ée]ter|compl[ée]ter)',
 ]
 
 EXERCISE_HEADER_RE = re.compile(
@@ -46,6 +58,114 @@ SOLUTION_MARKER_RE = re.compile(
     r'[Ss]olution|[Rr][eé]ponse|[Rr]esultat|ref\s*:',
     re.IGNORECASE,
 )
+
+# A worked-example header line (Exemple guide / Exemple resolu / Example / Worked).
+# Used for closest-preceding-header attribution: a code cell whose nearest header
+# is a worked example is NOT an exercise solution leak, even if a broader
+# "Exercices" section header sits further back (cf exercise-example-labeling.md,
+# content-based rule). Distinguished from EXERCISE_HEADER_RE (Exercice/Exercise).
+EXAMPLE_HEADER_RE = re.compile(
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
+# Any markdown ATX/SETEXT-like header line, for closest-header attribution.
+HEADER_LINE_RE = re.compile(r'^#{1,6}\s+.+$', re.MULTILINE)
+
+# A worked-example label appearing as the FIRST code comment line of a code cell
+# (e.g. "# Exemple guide : ...", "// Example 1 : ...", "-- Exemple resolu").
+# Mirrors EXAMPLE_HEADER_RE for the case where the worked-example label lives in
+# a leading code comment rather than a markdown header. Cf exercise-example-labeling.md
+# (content-based rule): a code cell that self-labels as a worked example is never an
+# exercise solution leak, even under a broader "## Exercices" section header.
+EXAMPLE_CODE_COMMENT_RE = re.compile(
+    r'^\s*(?:#|//|--)\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
+
+def closest_preceding_header_is_example(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a worked
+    example.
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell owned by
+    a worked example is never an exercise solution leak — this suppresses false
+    positives where a code cell sits under a ``## Exercices`` section header but
+    its actual nearest sub-header is ``### Exemple guide`` (in the same cell or
+    an intervening one). Cf exercise-example-labeling.md (content-based rule).
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(EXAMPLE_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
+def code_cell_first_comment_labels_example(source: str) -> bool:
+    """Return True if the first non-empty line of the code is a worked-example
+    comment label.
+
+    Some notebooks label a worked example via a leading code comment
+    (``# Exemple guide : ...``, ``// Example 1 : ...``) sitting under a
+    ``## Exercices`` section header, with NO intervening markdown sub-header.
+    Such a cell is a worked example, not an exercise solution leak — it would be
+    a false positive under header-only attribution. Suppresses that FP.
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    for line in source.split('\n'):
+        if not line.strip():
+            continue
+        return bool(EXAMPLE_CODE_COMMENT_RE.search(line))
+    return False
+
+
+def _header_level(line: str) -> int:
+    """Return the ATX heading level (count of leading ``#``), or 0 if not a
+    header line."""
+    m = re.match(r'^(#{1,6})\s', line)
+    return len(m.group(1)) if m else 0
+
+
+def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
+    """Return True if a markdown header at the same or higher level than the
+    exercise header appears between ``exercise_idx`` and ``code_idx``.
+
+    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``,
+    or a ``### 6.1 ...`` sibling of ``### Exercice 2``) starts a new section and
+    breaks the attribution of the code cell to the exercise: the code then
+    belongs to that later section, not the exercise. A DEEPER sub-header (e.g.
+    ``### Indice`` under a ``## Exercice 1``) does NOT break the section (it is
+    a child of the exercise, common in worked exercise scaffolding).
+
+    This suppresses cross-cell false positives where a demo/visualisation code
+    cell sits a few cells after an exercise header but is actually owned by a
+    later ``## Conclusion`` / ``## Section N`` section. Cf exercise-example-labeling.md
+    (content-based rule). Safe default: if the exercise header level cannot be
+    determined, do not suppress.
+    """
+    ex_src = ''.join(cells[exercise_idx].get('source', []))
+    ex_level = 0
+    for line in ex_src.split('\n'):
+        if EXERCISE_HEADER_RE.search(line):
+            ex_level = _header_level(line)
+            break
+    if not ex_level:
+        return False
+    for k in range(exercise_idx + 1, code_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        for header_line in HEADER_LINE_RE.findall(src):
+            if _header_level(header_line) <= ex_level:
+                return True
+    return False
 
 
 def is_stub_code(source: str) -> bool:
@@ -136,6 +256,24 @@ def scan_notebook(path: str) -> list[dict]:
             continue
 
         if not is_stub_code(next_code_source):
+            # Closest-preceding-header attribution: a code cell whose nearest
+            # header is a worked example (Exemple guide / Exemple resolu / ...)
+            # is not an exercise leak, even if a broader "## Exercices" section
+            # header sits further back. Suppress the false positive.
+            # Also suppress when the code cell SELF-LABELS as a worked example
+            # via its first comment line ('# Exemple guide : ...') under such a
+            # section — no markdown sub-header to attribute to. Cf exercise-example-labeling.md.
+            if (closest_preceding_header_is_example(cells, next_code_idx)
+                    or code_cell_first_comment_labels_example(next_code_source)):
+                continue
+            # Cross-cell attribution guard: if a same-or-higher-level markdown
+            # section header (e.g. "## Conclusion", "## Section 6", a "### 6.1"
+            # sibling) appears between the exercise header and this code cell,
+            # the code belongs to that later section, not the exercise. Suppress
+            # the false positive. A deeper sub-header ("### Indice" under
+            # "## Exercice 1") does not break the section.
+            if intervening_section_breaks_attribution(cells, i, next_code_idx):
+                continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
                 findings.append({

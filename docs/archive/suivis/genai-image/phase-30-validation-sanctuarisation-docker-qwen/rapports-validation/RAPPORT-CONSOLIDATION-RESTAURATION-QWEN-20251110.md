@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport de Consolidation - Restauration Qwen ComfyUI
 **Date:** 11 novembre 2025  
 **Objectif:** Restaurer le système Qwen ComfyUI à son état de référence stable (Phase 12A)

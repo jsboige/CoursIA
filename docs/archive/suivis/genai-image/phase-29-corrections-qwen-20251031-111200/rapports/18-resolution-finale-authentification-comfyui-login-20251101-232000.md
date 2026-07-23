@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 18 - Résolution Finale Authentification ComfyUI-Login
 **Phase 29 - Corrections Qwen ComfyUI**
 

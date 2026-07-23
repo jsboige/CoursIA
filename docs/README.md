@@ -2,6 +2,16 @@
 
 Ce répertoire centralise la documentation projet déportée du CLAUDE.md. Chaque fichier documente un aspect précis du projet CoursIA (infrastructure, procédures, règles, état des séries).
 
+## Racine (docs/)
+
+Fichiers présents directement à la racine du répertoire `docs/`. Triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens).
+
+| Fichier | Verdict | Raison |
+|---------|---------|--------|
+| [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — 58 liens internes vérifiés c.805 (aucun mort), 11 sections cohérentes avec disque, organisation par catégorie stable |
+| [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
+| [grothendieckian-lens.md](grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
+
 ## Référence (docs/reference/)
 
 Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.

@@ -17,6 +17,8 @@ from detect_solution_leaks import (
     SOUMIS_PAR_RE,
     SOLUTION_MARKER_RE,
     STUB_PATTERNS,
+    closest_preceding_header_is_example,
+    code_cell_first_comment_labels_example,
     discover_notebooks,
     is_stub_code,
     scan_notebook,
@@ -128,6 +130,48 @@ class TestIsStubCode:
             'display("Exercice 1 : stub a completer.");'
         )
         assert is_stub_code(code) is True
+
+    def test_lean_dashdash_todo_is_stub(self):
+        # Lean line comments start with `--`, not `#` or `//`. Exercise stubs
+        # like `-- TODO etudiant` were systematically false-positive as HIGH
+        # leaks across the Lean notebooks (e.g. SocialChoice-02 cell 32).
+        code = (
+            "-- EXERCICE 4 : Verifier que le Pareto est respecte\n"
+            "-- TODO etudiant : calculer si la SWF respecte Pareto\n"
+            "#eval dictatorship_alice profils"
+        )
+        assert is_stub_code(code) is True
+
+    def test_lean_sorry_is_stub(self):
+        # `sorry` admits the goal — an exercise proof using it is a stub.
+        assert is_stub_code("theorem ex : 1 + 1 = 2 := by sorry") is True
+
+    def test_dotnet_display_a_completer_is_stub(self):
+        # .NET Interactive `.Display("...a completer")` idiom; the existing
+        # patterns only covered Console.WriteLine / print.
+        assert is_stub_code('display("Exercice 2 : stub a completer.")') is True
+        assert is_stub_code('foo.Display("stub a compléter")') is True
+
+    def test_python_assign_none_todo_is_stub(self):
+        # `matrice = None  # Remplacez None` defers the work to the student.
+        # `return None` only matches a return statement, not this assignment.
+        code = (
+            "matrice = None  # Remplacez None\n"
+            "transposee = None  # Remplacez None\n"
+            "produit = None  # TODO etudiant\n"
+            'print("resultats")'
+        )
+        assert is_stub_code(code) is True
+
+    def test_python_assign_none_without_stub_intent_not_stub(self):
+        # A bare `x = None` without a stub-intent comment is NOT a stub
+        # (avoids false-negative on real code that resets a variable).
+        assert is_stub_code("x = None\ny = compute(x)\nz = process(y)") is False
+
+    def test_real_lean_without_stub_not_stub(self):
+        # Regression guard: a real Lean proof with no sorry/TODO is not a stub.
+        code = "theorem add_comm (n m : Nat) : n + m = m + n := by\n  omega"
+        assert is_stub_code(code) is False
 
 
 # ---------------------------------------------------------------------------
@@ -362,3 +406,211 @@ class TestStubPatterns:
     def test_patterns_are_valid_regex(self):
         for pattern in STUB_PATTERNS:
             assert re.compile(pattern) is not None
+
+
+# ---------------------------------------------------------------------------
+# Worked-example attribution (closest-preceding-header-wins, precision fix)
+# ---------------------------------------------------------------------------
+
+# A non-stub code body (>8 lines, no stub markers) so the detector would flag it
+# as a HIGH leak if it were under an Exercice header.
+_SOLUTION_BODY = "\n".join(
+    [
+        "def solve(x):",
+        "    # Solution complete",
+        "    a = x + 1",
+        "    b = a * 2",
+        "    c = b - 3",
+        "    d = c ** 2",
+        "    e = d % 7",
+        "    f = e // 2",
+        "    g = f + x",
+        "    return g",
+    ]
+)
+
+
+class TestClosestPrecedingHeaderIsExample:
+    def _cells(self, *specs):
+        cells = []
+        for ct, src in specs:
+            cells.append({"cell_type": ct, "source": [src]})
+        return cells
+
+    def test_example_header_is_true(self):
+        cells = self._cells(("markdown", "### Exemple guide : demo"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_example(cells, 1) is True
+
+    def test_exercise_header_is_false(self):
+        cells = self._cells(("markdown", "### Exercice 4 : a faire"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_example(cells, 1) is False
+
+    def test_no_header_is_false(self):
+        cells = self._cells(("markdown", "Just some prose, no header."), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_example(cells, 1) is False
+
+    def test_intervening_example_header_wins_over_section(self):
+        # "## 10. Exercices" section header, then "### Exemple guide" sub-header,
+        # then code: the code belongs to the worked example, NOT the section.
+        cells = self._cells(
+            ("markdown", "## 10. Exercices\n\nQuelques exercices."),
+            ("markdown", "### Exemple guide : cas resolu"),
+            ("code", _SOLUTION_BODY),
+        )
+        assert closest_preceding_header_is_example(cells, 2) is True
+
+    def test_multi_header_single_cell_last_line_wins(self):
+        # One markdown cell holding BOTH a section header and a closer example
+        # sub-header (the Lean-11 case). The LAST header line wins.
+        cells = self._cells(
+            ("markdown", "## 8. Exercices\n\nIntro.\n\n### Exemple guide 1 : demo"),
+            ("code", _SOLUTION_BODY),
+        )
+        assert closest_preceding_header_is_example(cells, 1) is True
+
+    def test_prose_between_code_and_header_still_finds_it(self):
+        # A prose-only markdown cell between the example header and the code does
+        # not break attribution: scan keeps going back to the example header.
+        cells = self._cells(
+            ("markdown", "### Exemple guide : demo"),
+            ("markdown", "Un paragraphe explicatif sans header."),
+            ("code", _SOLUTION_BODY),
+        )
+        assert closest_preceding_header_is_example(cells, 2) is True
+
+
+class TestCodeCellFirstCommentLabelsExample:
+    # Worked examples sometimes label themselves via a leading CODE comment
+    # ('# Exemple guide : ...') under a '## Exercices' section, with no markdown
+    # sub-header. The first-comment check suppresses that false positive.
+    def test_python_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exemple guide : Apprendre grandmother/2\nPOS_GM = [...]\n"
+        ) is True
+
+    def test_numbered_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exemple guide 1 : Operateur OR parametrique\n..."
+        ) is True
+
+    def test_csharp_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "// Example 1 : extend the schema\npublic void Foo() { }"
+        ) is True
+
+    def test_exercise_comment_is_false(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exercice : Apprendre mother/2\n# TODO etudiant\nprint('a completer')"
+        ) is False
+
+    def test_real_code_no_comment_is_false(self):
+        assert code_cell_first_comment_labels_example(
+            "def solve(x):\n    return x + 1\n"
+        ) is False
+
+    def test_leading_blank_then_example_comment_is_true(self):
+        # Blank/whitespace lines before the label are skipped.
+        assert code_cell_first_comment_labels_example(
+            "\n   \n# Exemple resolu : cas simple\nresult = compute()"
+        ) is True
+
+    def test_empty_is_false(self):
+        assert code_cell_first_comment_labels_example("") is False
+
+
+class TestWorkedExampleFalsePositiveSuppression:
+    def test_worked_example_under_exercises_section_not_flagged(self, tmp_path):
+        # The measured false positive: a complete code cell under a "## Exercices"
+        # section header whose immediate sub-header is "### Exemple guide".
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("## 10. Exercices\n\nSection intro."),
+                _md("### Exemple guide : cas resolu\n\nOn montre..."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_real_exercise_still_flagged(self, tmp_path):
+        # True positive preserved: code cell directly under "### Exercice N".
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("### Exercice 3 : a completer\n\nImplementez..."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert highs[0]["cell_index"] == 1
+
+    def test_worked_example_self_labeled_by_code_comment_not_flagged(self, tmp_path):
+        # The SL-5 residual false positive: a "## Exercices" section header
+        # followed directly by a code cell whose FIRST comment line self-labels
+        # as a worked example ('# Exemple guide : ...'). There is NO intervening
+        # markdown sub-header to attribute to, so header-only attribution would
+        # wrongly flag it. The code-comment check suppresses the FP.
+        body = "# Exemple guide : Apprendre grandmother/2\n" + _SOLUTION_BODY
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("## 8. Exercices\n\nSection intro."),
+                _code(body),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_cross_cell_higher_header_breaks_attribution(self, tmp_path):
+        # The Kokoro / Infer-6 residual false positive: an "### Exercice 3"
+        # header, then an intervening SAME-OR-HIGHER-level section header
+        # ("## Conclusion"), then a demo code cell. The code belongs to the
+        # Conclusion section, not the exercise — the intervening header breaks
+        # the attribution. Without the guard this is wrongly flagged HIGH.
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("---\n\n### Exercice 3 : Synthese\n\nObjectif..."),
+                _md("## Conclusion\n\nRecap."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_cross_cell_sibling_header_breaks_attribution(self, tmp_path):
+        # Same-level sibling header also breaks: "### Exercice 2" (level 3)
+        # followed by "### 6.1 Fonctions" (level 3 sibling) then a code cell.
+        # The code belongs to section 6.1, not the exercise.
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("### Exercice 2 : Impact du prior\n\nObjectif..."),
+                _md("### 6.1 Fonctions de diagnostic\n\nDetails..."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
+
+    def test_deeper_subheader_does_not_break_attribution(self, tmp_path):
+        # Recall guard: a DEEPER sub-header ("### Indice" under a "## Exercice 1"
+        # level-2 header) is a CHILD of the exercise, not a new section. The code
+        # after it is still the exercise's and MUST stay flagged (no recall
+        # regression from the cross-cell guard).
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("## Exercice 1 : Objectif\n\nEnonce..."),
+                _md("### Indice\n\nPensez a la reciprocite."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert highs[0]["cell_index"] == 2
+

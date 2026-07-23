@@ -151,3 +151,37 @@ Les flips BETA→PRODUCTION se vérifient via le **badge counts** du README (`PR
 - Diff d'un fichier d'une PR : `gh pr diff N -- path` n'est **pas** supporté → `git fetch origin pull/N/head:prN` puis `git show prN:path`.
 - Une self-review de worker peut **sur-alarmer** (ex. flag "API key exposée" sur un print masqué) → lire le diff réel avant de propager une consigne "rotate".
 - Fast-merges (<9 min, compte `jsboige`) bypassent les bots (poll ~30 min) : low-risk mais le gate review est contourné — réserver au forensic/auto trivial.
+
+### Worker discipline post-c.264 (L278-L286) — leçons cross-machine consolidées
+
+Leçons consolidées depuis les incidents **ai-01 INCIDENT c.264 r.26th** (phantom-merger-self-declare) et les 3 cycles subséquents. **Durcies**, **non-délégables**, et **complémentaires** aux règles [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) / [coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) / [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md).
+
+**L278 — Worker ne merge JAMAIS** (phantom-merger-self-declare-honest). Une session worker qui invoque `/coordinate` ou `gh pr merge` = confusion de rôle. **Même** si sweep-ready + bots PASS, **même** si le worker se déclare "honest", le merge reste **coord-only**. Source : ai-01 INCIDENT c.264 r.26th où worker-session a tenté d'arbitrer sur PR déjà en sweep.
+
+**L279 — Sweep-ready = DM HIGH vers ai-01, JAMAIS `gh pr merge` côté worker**. Si ta PR est §H.4 sweep-ready (11/11 SUCCESS bots + catalog-guard ✓ + link-check ✓ + propre-rebased origin/main), tu envoies un DM `roosync_send to:"myia-ai-01:CoursIA-2" priority:"HIGH"` avec le verdict §H.4, **et tu postes `[DISPATCH→inbox]` dashboard**. Le coordinateur arbitre, merge, et acquitte. Anti-pattern : "sweep-ready + bots PASS donc je merge" = worker INTERDIT.
+
+**L280 — Cron `/coordinate` = ai-01 coordinateur ONLY**. Worker `CronCreate` = prompt worker-side (`/continue` ou `/executor`), cadence 3540s (clamp runtime ≤1h), **jamais** `/coordinate`. Cause documentée : po-2026:CoursIA-2 cron `/coordinate` worker-side (user 2026-07-07) — inversion de rôle silencieuse. Diagnostic : si ton agent voit `/coordinate` arriver dans son CronCreate, c'est un signe d'inversion.
+
+**L281 — Rebase `origin/main` avant sweep ai-01** quand `gh pr view --json baseRefOid` ≠ merge-base. **3-dot canonique pour R2 substance** (`git diff origin/main...origin/<branch>`) ≠ 2-dot héritage (`git diff origin/main..origin/<branch>` peut montrer 9 fichiers vs 2 = héritage Wave-25/26 sur origin/main non-rebasé). Source : incident po-2023 c.271.
+
+**L282 — Mirror-lanes collision**. Une machine avec **deux** lanes (CoursIA + CoursIA-2) = **deux workers distincts**. Avant de claim, **poster `[CLAIMED] <#issue> — <machine:workspace> <ts>` sur le dashboard** de la lane ciblée — pas l'inverse. Incident fondateur : #5640/#5641 doublon sur #5635, 6 min apart, ai-01 arbitrage 13:51Z.
+
+**L283 — Condensation LLM hallucine état merge/contenu**. TOUT claim d'état (merge / OPEN / contenu main) **DOIT** être vérifié firsthand via `gh pr view --json state,mergedAt,mergeCommit` + `git ls-tree origin/main <file>` + `git log origin/main --oneline` **AVANT** propagation. Hiérarchie de confiance : `gh API > git log > dashboard intercom > status condensé`. Le status condensé auto-92% **peut halluciner** (po-2026 c.288 : "#5657 MERGED by jsboige" alors que PR OPEN CLEAN awaiting sweep).
+
+**L284 — Commit amend légitime pour CI regression**. `git status` montre 1 fichier modifié post CI pass → `git commit --amend --no-edit` (préserve c.187 atomic), puis `git push --force-with-lease origin HEAD` sur **sa propre branche feature**. **Anti-pattern** : créer un 2ᵉ commit "fix CI" (violerait c.187 HARD). Documenter SHA rewrite + `--no-edit` dans body PR + DM ai-01. **Étendu** (c.294) : amend légitime aussi pour CHANGES_REQUESTED fondé sur défaut vérifié firsthand.
+
+**L286 — CI check-links failure → link-depth fix via L284 amend**. (1) `gh run view <run-id> --log-failed | grep -B 2 -A 5 "REGRESSION\|broken link\|❌"` extrait les liens cassés firsthand ; (2) chemin en `../../<file>` trop court → ajouter `../` (3-up → 4-up) ; (3) lien intra-branche vers fichier absent origin/main **et** branche → réécrire URL externe pointant la PR livreuse. Anti-pattern : 2ᵉ commit (violerait c.187).
+
+**L786 — Honest-drain diagnostic AVANT claim** (c.796). Partition drained + cross-famille tracks own par d'autres lanes → **NE PAS forcer low-substance LIGHT** pour combler un cycle. **REARMER wakeup suivant** quand grain DEEP/MED substance-available. Test : `gh issue list --state open | wc -l` > 0 ne suffit pas, il faut **identifier le grain exécutable pour ta capability** (CPU+vision OK, GPU-only exclu).
+
+**L915 — PR OPEN MERGEABLE ≠ PR mergée**. Avant de claim un cycle N dépendant d'une PR OPEN MERGEABLE upstream, vérifier si elle a été mergée dans la fenêtre (`gh pr view --json mergedAt`). 2 options : (a) reporter c.N à `mergedAt` confirmé ; (b) redécouper le grain en substrate standalone + c.N+1.
+
+**Opérationnel — check pré-cycle** :
+
+```bash
+# Vérifier 3-prong C715-L2 + L786-L2 + L915 AVANT claim
+git log --all --oneline --grep "#<issue>"                    # 0 commit upstream
+gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
+gh pr view <N> --json state,mergedAt,mergeStateStatus        # état réel PR
+gh pr view <N> --json baseRefOid                             # rebase vs main
+```

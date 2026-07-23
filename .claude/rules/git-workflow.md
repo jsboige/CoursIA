@@ -81,3 +81,16 @@ gh pr list --state all --search "head:<branch>" --json number,state -q '.[].numb
 **Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Gate 3 est autoritatif ; l'investigation prend ~10 secondes et elimine le risque de double-pickup.
 
 **Voir aussi** : [lecon-L576](https://github.com/jsboige/CoursIA/blob/main/.claude/memory/lecon-L576-rest-commits-pulls-fpos.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 5 orphelines pour futurs grains cross-famille : L574 / L751 / L770 / L771 / L772+L789+L790+L791).
+## PR Body Generation
+
+**Leçon ancrée** — [L677-L4 ★★](cycle-c680-argumentation-stale-paths.md) (c.680, voir aussi c.683/c.684/c.685/c.686/c.687/c.688/c.689/c.690 réutilisations) : le **body de PR se génère HORS worktree**, jamais dans un fichier du worktree (qui finirait stageé par `git add .` ou committe accidentellement).
+
+| Pattern | Correct | Wrong |
+|---------|---------|-------|
+| **Body** | scratchpad `<scratchpad-dir>/c<NNN>_pr_body.md` (hors worktree) + `gh pr create --body-file <scratchpad-path>` | ~~Créer/Edit un `PR_BODY.md` ou `BODY.md` dans le worktree~~ |
+| **Anti-regression** | vérifier `git status` avant `git add .` — pas de `*.md` orphelin du PR body dans la liste des fichiers trackés | ~~Stageer tous les fichiers sans revue~~ |
+| **Pourquoi** | éviter contamination du diff (`+lines` du body en `git diff --stat`), éviter qu'un rebase ou amend ramène le body dans un commit de code, éviter `git add -A` qui capture des scratchpads locaux |
+
+**Pourquoi L677-L4 seulement `★★` et pas `★★★`** : la leçon est opérationnelle mais l'incident fondateur (corps de PR committe dans le worktree → revert + recommit) reste rare et recoverable. Le coût = 5 min de rebase. Les `★★★` (L898 collision cross-lane, L721 stale tracker) coûtent des heures.
+
+**Voir aussi** : [proactive-coordination.md](proactive-coordination.md) section "Leçons ancrées (c.8087 L-coupling)" — L721★/L740★/L898★★★ ancrés par c.8088 (PR #8101, complément du même audit L-coupling c.8087 #8099).

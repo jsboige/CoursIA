@@ -122,9 +122,9 @@ Emplacement : `MyIA.AI.Notebooks/GenAI/Playwright-OWUI/` (5 modules, 30+ tests)
 
 ## Ressources complementaires
 
-- Documentation services GenAI : `docs/genai-services.md`
-- Configuration Claude Code : `docs/claude-code-config.md`
-- Infrastructure QuantConnect : `docs/quantconnect.md`
+- Documentation services GenAI : `docs/genai/genai-services.md`
+- Configuration Claude Code : `docs/reference/claude-code-config.md`
+- Infrastructure QuantConnect : `docs/qc/quantconnect.md`
 - Validation notebooks : `python scripts/notebook_tools/notebook_tools.py validate <path>`
 - Validation GenAI stack : `/validate-genai`
 
