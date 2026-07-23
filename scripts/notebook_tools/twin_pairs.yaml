@@ -347,3 +347,214 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+# -- Tranche 8 (c.814, po-2024) : GameTheory/.NET-Parity paires principales 3..17.
+# Complete la famille GT (#8124 tranche 4 a couvert 2/4/5 seulement). Python
+# (notebook plain) <-> C# (-Csharp), meme topic. Nature verifiee firsthand via
+# les imports Python reels (axelrod / open_spiel / networkx / scipy / numpy /
+# cooperative_games) ; C# = from-scratch .NET BCL. parity_level = semantic.
+
+- name: GameTheory-3 Topology2x2
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 3f608255b72f69479d0dc48a373ed56b9322ead1
+    csharp_sha: 2f63d179ba1cb5d04f9d025592ce215a4e05fbd5
+  known_differences:
+  - 'Socle pedagogique commun : classification topologique des jeux 2x2 (matrice de gains 2x2) via determinant et trace, sur les jeux canoniques
+    (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies).'
+  - 'Idiomes framework : Python = `networkx` (graphe/visualisation de la classification) + `numpy` (determinant/trace matriciels). C# = from-scratch
+    `System.*` (Linq/Collections), pas de lib de graphe.'
+  - 'Asymetrie : Python s''appuie sur networkx pour le trace du diagramme de phase ; le C# reimplemente la classification et l''affichage a la
+    main. Asymetrie d''outil de visualisation (lib vs from-scratch), meme theorie topologique.'
+
+- name: GameTheory-6 EvolutionTrust
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 373e27b2981cec9c298ebc7b69bb7789b826ad23
+    csharp_sha: 97245aa3c47623829847ccb2e14c7d7017a9e1ea
+  known_differences:
+  - 'Socle pedagogique commun : Dilemme du Prisonneur Itere (IPD) et dynamique de confiance : ecologie de strategies (TitForTat, AlwaysDefect,
+    Pavlov...), tournois evolutionnistes.'
+  - 'Idiomes framework : Python = la lib `axelrod` (ecosystem canonique IPD, Axelrod() tournament) + `numpy`. C# = from-scratch .NET (strategies
+    codees a la main, tournoi maison, #5572).'
+  - 'Asymetrie : Asymetrie marquee : Python invoque la lib de reference Axelrod (dizaines de strategies pretes) ; le C# reimplemente les strategies
+    et le tournoi from-scratch. Meme ecologie conceptuelle, abstraction tres differente (lib externe vs reimplementation pedagogique).'
+
+- name: GameTheory-7 ExtensiveForm
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: d9429d930290e6539f4081a60ec6f04ce408afc1
+    csharp_sha: 818b2295149aad115c286816c9ad242f964b400c
+  known_differences:
+  - 'Socle pedagogique commun : formes extensives (arbres de jeu) : backward induction, equilibres de sous-jeu parfait sur des jeux a information
+    parfaite.'
+  - 'Idiomes framework : Python = `networkx` (structure/visualisation de l''arbre de jeu) + `numpy`. C# = from-scratch `System.*` (classes GameTree/Node,
+    arbre code a la main).'
+  - 'Asymetrie : Python utilise networkx pour modeliser/afficher l''arbre ; le C# construit l''arbre from-scratch. Asymetrie d''outil (lib graphe
+    vs classes pedagogiques), meme backward induction.'
+
+- name: GameTheory-8 CombinatorialGames
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-8-CombinatorialGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8-CombinatorialGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: a05c2bac3f2e12aa36afddb33e8e4b15653628de
+    csharp_sha: 5ae7bab857a02e49e8f6f483e11787c5222fa010
+  known_differences:
+  - 'Socle pedagogique commun : jeux combinatoires : theoreme de Sprague-Grundy, Nim, somme de jeux, classification des positions P/N.'
+  - 'Idiomes framework : Python = `numpy` (calculs de Grundy). C# = from-scratch .NET (meme theorie de Grundy).'
+  - 'Asymetrie : Parite proche : les DEUX cotes implementent Grundy from-scratch avec numpy/BCL pour les calculs. Asymetrie minimale (meme algorithme,
+    runtime different).'
+
+- name: GameTheory-10 ForwardInduction-SPE
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 8c210a1a988d2bec97fc9d02e519204c7e8d031c
+    csharp_sha: 76c53cf7c98bf8e089035bf7304e8e45b5e6488d
+  known_differences:
+  - 'Socle pedagogique commun : induction vers l''avant et equilibre de sous-jeu parfait (SPE) : backward induction sur arbre, signal strategique.'
+  - 'Idiomes framework : Python = from-scratch (game tree + backward induction, `numpy` pour les arrays). C# = from-scratch `System.*` (meme arbre
+    + backward induction).'
+  - 'Asymetrie : Les DEUX cotes from-scratch (pas de lib de theorie des jeux externe). Asymetrie minimale : reimplementations pedagogiques independantes
+    du meme algorithme.'
+
+- name: GameTheory-11 BayesianGames
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: bb2bfd9b2b51b7119a9b8c86ea4d63d6845a3d73
+    csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
+  known_differences:
+  - 'Socle pedagogique commun : jeux bayesiens (Cournot a information incomplete) : equilibre bayesien, esperance sur les types.'
+  - 'Idiomes framework : Python = `scipy.integrate` (integration analytique de l''esperance) + `scipy.optimize.fsolve` (resolution de l''equilibre).
+    C# = from-scratch .NET (#5540, premier twin GT C#).'
+  - 'Asymetrie : Python s''appuie sur scipy (integrate + optimize.fsolve) pour l''analytique et la resolution ; le C# reimplemente le solveur
+    from-scratch. Asymetrie lib scientifique vs from-scratch.'
+
+- name: GameTheory-12 ReputationGames
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 6ef5e387bca07af24e6b0a4c27d739227c069e9e
+    csharp_sha: a714dcda8618f5b343290548ea21a0ab9d6969ef
+  known_differences:
+  - 'Socle pedagogique commun : jeux de reputation : investissement de reputation, equilibre de point fixe sur plusieurs periodes.'
+  - 'Idiomes framework : Python = `scipy.optimize.fsolve` (resolution du point fixe de l''equilibre). C# = from-scratch .NET (solveur maison).'
+  - 'Asymetrie : Asymetrie : Python invoque scipy.optimize.fsolve (solveur non-lineaire battle-tested) ; le C# reimplemente la resolution from-scratch.
+    Meme theorie du point fixe.'
+
+- name: GameTheory-13 ImperfectInfo-CFR
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: e78c93376230500146884d52e030341db637c8d2
+    csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
+  known_differences:
+  - 'Socle pedagogique commun : information imparfaite et minimisation du regret contrefactuel (CFR) : Kuhn poker, exploitability.'
+  - 'Idiomes framework : Python = `open_spiel` (lib Google : algorithms.cfr, exploitability, policy). C# = from-scratch .NET (CFR reimplemente
+    a la main).'
+  - 'Asymetrie : Asymetrie marquee : Python invoque open_spiel (framework Google pour l''info imparfaite, CFR+exploitability prets) ; le C# reimplemente
+    CFR from-scratch. Meme algorithme (CFR), abstraction radicalement differente (framework vs reimplementation).'
+
+- name: GameTheory-14 DifferentialGames
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 1fadd569c0e0fd7da3d20263db1734e008f8c325
+    csharp_sha: 17c7e9394da43390c00791aa53912181dc497a2e
+  known_differences:
+  - 'Socle pedagogique commun : jeux differentiels : equations differentielles, trajectoires optimales, equilibre de Hamilton-Jacobi.'
+  - 'Idiomes framework : Python = `scipy.integrate` (solveurs odeint/solve_ivp pour les trajectoires) + `scipy.optimize.minimize` (equilibre).
+    C# = from-scratch .NET (solveur ODE maison).'
+  - 'Asymetrie : Asymetrie : Python delegue l''integration numerique a scipy.integrate (solveurs ODE battle-tested) ; le C# reimplemente un solveur
+    ODE from-scratch. Meme theorie des jeux differentiels.'
+
+- name: GameTheory-15 CooperativeGames
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: d9f12903dea2485bd5db631883cac049f3ff2581
+    csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
+  known_differences:
+  - 'Socle pedagogique commun : jeux cooperatifs : valeur de Shapley, noyau, core, jeux politiques (french_politics).'
+  - 'Idiomes framework : Python = la lib locale `cooperative_games` (module porte vers Lean : core_vertices_3d, french_politics, off_switch_game).
+    C# = from-scratch .NET.'
+  - 'Asymetrie : Asymetrie : Python importe le module cooperative_games (lib locale du depot, egalement portee en Lean) ; le C# reimplemente Shapley/le
+    noyau from-scratch. Meme theorie cooperative.'
+
+- name: GameTheory-16 MechanismDesign
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: c8d4e74df5cdae88a8f027e5fd69db199a440d60
+    csharp_sha: ef807e86ae29816fc3766de3ef5be009293b2899
+  known_differences:
+  - 'Socle pedagogique commun : conception de mecanismes : encheres (Vickrey), VCG, truthfulness, theoreme de revelation.'
+  - 'Idiomes framework : Python = from-scratch (`numpy` pour les calculs, classes ABC/collections). C# = from-scratch `System.*` (meme theorie
+    VCG).'
+  - 'Asymetrie : Les DEUX cotes from-scratch (pas de lib de theorie des jeux externe). Asymetrie minimale : reimplementations pedagogiques independantes
+    des memes mecanismes (encheres, VCG).'
+
+- name: GameTheory-17 MultiAgent-RL
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 3be092acbcd19093e20425200c97a973c99ff75f
+    csharp_sha: 06dff5d8a085846f7feb1dc3e08765da35c5f2ce
+  known_differences:
+  - 'Socle pedagogique commun : apprentissage par renforcement multi-agents (MARL) : Q-learning multi-agent, fictitious play, gridworld.'
+  - 'Idiomes framework : Python = `open_spiel` (rl_environment, algorithms.fictitious_play, exploitability) + `numpy`. C# = from-scratch .NET
+    (Q-learning multi-agent + gridworld codees a la main, #5650).'
+  - 'Asymetrie : Asymetrie marquee : Python invoque open_spiel (framework Google MARL : environnement + algorithmes prets) ; le C# reimplemente
+    le gridworld et le Q-learning multi-agent from-scratch. Meme theorie du MARL, abstraction tres differente.'
