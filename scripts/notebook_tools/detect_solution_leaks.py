@@ -60,6 +60,17 @@ EXAMPLE_HEADER_RE = re.compile(
 # Any markdown ATX/SETEXT-like header line, for closest-header attribution.
 HEADER_LINE_RE = re.compile(r'^#{1,6}\s+.+$', re.MULTILINE)
 
+# A worked-example label appearing as the FIRST code comment line of a code cell
+# (e.g. "# Exemple guide : ...", "// Example 1 : ...", "-- Exemple resolu").
+# Mirrors EXAMPLE_HEADER_RE for the case where the worked-example label lives in
+# a leading code comment rather than a markdown header. Cf exercise-example-labeling.md
+# (content-based rule): a code cell that self-labels as a worked example is never an
+# exercise solution leak, even under a broader "## Exercices" section header.
+EXAMPLE_CODE_COMMENT_RE = re.compile(
+    r'^\s*(?:#|//|--)\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
 
 def closest_preceding_header_is_example(cells, code_idx):
     """Return True if the closest preceding markdown header line is a worked
@@ -81,6 +92,24 @@ def closest_preceding_header_is_example(cells, code_idx):
         if not header_lines:
             continue  # prose-only markdown cell; keep scanning further back
         return bool(EXAMPLE_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
+def code_cell_first_comment_labels_example(source: str) -> bool:
+    """Return True if the first non-empty line of the code is a worked-example
+    comment label.
+
+    Some notebooks label a worked example via a leading code comment
+    (``# Exemple guide : ...``, ``// Example 1 : ...``) sitting under a
+    ``## Exercices`` section header, with NO intervening markdown sub-header.
+    Such a cell is a worked example, not an exercise solution leak — it would be
+    a false positive under header-only attribution. Suppresses that FP.
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    for line in source.split('\n'):
+        if not line.strip():
+            continue
+        return bool(EXAMPLE_CODE_COMMENT_RE.search(line))
     return False
 
 
@@ -176,7 +205,11 @@ def scan_notebook(path: str) -> list[dict]:
             # header is a worked example (Exemple guide / Exemple resolu / ...)
             # is not an exercise leak, even if a broader "## Exercices" section
             # header sits further back. Suppress the false positive.
-            if closest_preceding_header_is_example(cells, next_code_idx):
+            # Also suppress when the code cell SELF-LABELS as a worked example
+            # via its first comment line ('# Exemple guide : ...') under such a
+            # section — no markdown sub-header to attribute to. Cf exercise-example-labeling.md.
+            if (closest_preceding_header_is_example(cells, next_code_idx)
+                    or code_cell_first_comment_labels_example(next_code_source)):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:

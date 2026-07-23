@@ -18,6 +18,7 @@ from detect_solution_leaks import (
     SOLUTION_MARKER_RE,
     STUB_PATTERNS,
     closest_preceding_header_is_example,
+    code_cell_first_comment_labels_example,
     discover_notebooks,
     is_stub_code,
     scan_notebook,
@@ -436,6 +437,45 @@ class TestClosestPrecedingHeaderIsExample:
         assert closest_preceding_header_is_example(cells, 2) is True
 
 
+class TestCodeCellFirstCommentLabelsExample:
+    # Worked examples sometimes label themselves via a leading CODE comment
+    # ('# Exemple guide : ...') under a '## Exercices' section, with no markdown
+    # sub-header. The first-comment check suppresses that false positive.
+    def test_python_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exemple guide : Apprendre grandmother/2\nPOS_GM = [...]\n"
+        ) is True
+
+    def test_numbered_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exemple guide 1 : Operateur OR parametrique\n..."
+        ) is True
+
+    def test_csharp_example_comment_is_true(self):
+        assert code_cell_first_comment_labels_example(
+            "// Example 1 : extend the schema\npublic void Foo() { }"
+        ) is True
+
+    def test_exercise_comment_is_false(self):
+        assert code_cell_first_comment_labels_example(
+            "# Exercice : Apprendre mother/2\n# TODO etudiant\nprint('a completer')"
+        ) is False
+
+    def test_real_code_no_comment_is_false(self):
+        assert code_cell_first_comment_labels_example(
+            "def solve(x):\n    return x + 1\n"
+        ) is False
+
+    def test_leading_blank_then_example_comment_is_true(self):
+        # Blank/whitespace lines before the label are skipped.
+        assert code_cell_first_comment_labels_example(
+            "\n   \n# Exemple resolu : cas simple\nresult = compute()"
+        ) is True
+
+    def test_empty_is_false(self):
+        assert code_cell_first_comment_labels_example("") is False
+
+
 class TestWorkedExampleFalsePositiveSuppression:
     def test_worked_example_under_exercises_section_not_flagged(self, tmp_path):
         # The measured false positive: a complete code cell under a "## Exercices"
@@ -464,4 +504,21 @@ class TestWorkedExampleFalsePositiveSuppression:
         highs = [f for f in findings if f.get("severity") == "HIGH"]
         assert len(highs) == 1
         assert highs[0]["cell_index"] == 1
+
+    def test_worked_example_self_labeled_by_code_comment_not_flagged(self, tmp_path):
+        # The SL-5 residual false positive: a "## Exercices" section header
+        # followed directly by a code cell whose FIRST comment line self-labels
+        # as a worked example ('# Exemple guide : ...'). There is NO intervening
+        # markdown sub-header to attribute to, so header-only attribution would
+        # wrongly flag it. The code-comment check suppresses the FP.
+        body = "# Exemple guide : Apprendre grandmother/2\n" + _SOLUTION_BODY
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("## 8. Exercices\n\nSection intro."),
+                _code(body),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
 
