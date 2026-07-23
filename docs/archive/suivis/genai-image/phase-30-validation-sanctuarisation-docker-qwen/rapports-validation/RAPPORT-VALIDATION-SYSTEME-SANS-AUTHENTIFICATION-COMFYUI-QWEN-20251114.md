@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport de Validation - Système ComfyUI Qwen Sans Authentification
 **Date :** 2025-11-14  
 **Heure :** 01:45 (UTC+1)  
