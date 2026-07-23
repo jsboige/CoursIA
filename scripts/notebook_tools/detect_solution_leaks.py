@@ -125,6 +125,49 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
     return False
 
 
+def _header_level(line: str) -> int:
+    """Return the ATX heading level (count of leading ``#``), or 0 if not a
+    header line."""
+    m = re.match(r'^(#{1,6})\s', line)
+    return len(m.group(1)) if m else 0
+
+
+def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
+    """Return True if a markdown header at the same or higher level than the
+    exercise header appears between ``exercise_idx`` and ``code_idx``.
+
+    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``,
+    or a ``### 6.1 ...`` sibling of ``### Exercice 2``) starts a new section and
+    breaks the attribution of the code cell to the exercise: the code then
+    belongs to that later section, not the exercise. A DEEPER sub-header (e.g.
+    ``### Indice`` under a ``## Exercice 1``) does NOT break the section (it is
+    a child of the exercise, common in worked exercise scaffolding).
+
+    This suppresses cross-cell false positives where a demo/visualisation code
+    cell sits a few cells after an exercise header but is actually owned by a
+    later ``## Conclusion`` / ``## Section N`` section. Cf exercise-example-labeling.md
+    (content-based rule). Safe default: if the exercise header level cannot be
+    determined, do not suppress.
+    """
+    ex_src = ''.join(cells[exercise_idx].get('source', []))
+    ex_level = 0
+    for line in ex_src.split('\n'):
+        if EXERCISE_HEADER_RE.search(line):
+            ex_level = _header_level(line)
+            break
+    if not ex_level:
+        return False
+    for k in range(exercise_idx + 1, code_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        for header_line in HEADER_LINE_RE.findall(src):
+            if _header_level(header_line) <= ex_level:
+                return True
+    return False
+
+
 def is_stub_code(source: str) -> bool:
     """Check if code cell source is a stub (not a real solution)."""
     lines = source.strip().split('\n')
@@ -222,6 +265,14 @@ def scan_notebook(path: str) -> list[dict]:
             # section — no markdown sub-header to attribute to. Cf exercise-example-labeling.md.
             if (closest_preceding_header_is_example(cells, next_code_idx)
                     or code_cell_first_comment_labels_example(next_code_source)):
+                continue
+            # Cross-cell attribution guard: if a same-or-higher-level markdown
+            # section header (e.g. "## Conclusion", "## Section 6", a "### 6.1"
+            # sibling) appears between the exercise header and this code cell,
+            # the code belongs to that later section, not the exercise. Suppress
+            # the false positive. A deeper sub-header ("### Indice" under
+            # "## Exercice 1") does not break the section.
+            if intervening_section_breaks_attribution(cells, i, next_code_idx):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
