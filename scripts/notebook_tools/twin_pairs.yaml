@@ -528,3 +528,118 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+# -- Tranche 7 (suite, c.812, po-2024) : Probas/Infer.NET-PyMC paires 13-19.
+# Complete la famille (2-19). Memes moteurs : Infer.NET EP/VMP vs PyMC NUTS/ADVI.
+
+- name: Probas-13 Crowdsourcing
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-13-Crowdsourcing.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 2f27544c72a18786337e197369da750edff7d0a8
+    csharp_sha: 110c1d8e02231bef5ef1d58f5279d560a257f6d8
+  known_differences:
+  - 'Socle pedagogique commun : crowdsourcing (agregation d''annotations bruitees) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-14 Sequences
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 765544fe8ac71c15305c2cb91f9b16909e86e1df
+    csharp_sha: 6c911f78b7705518eda21705f1961cc8aa7f117a
+  known_differences:
+  - 'Socle pedagogique commun : modeles de sequences (chaines de Markov cachees / HMM) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-15 Recommenders
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 3a4321e6b0e610dfd533982b543997bd9a436c83
+    csharp_sha: c46cdae20cada18251a1a6ba0ddac7337dcd5ce9
+  known_differences:
+  - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-16 Sparse-Gaussian-Process
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 3bd78943aceb19a022104e3e5aaded508945adde
+    csharp_sha: 70554d0502ec3be47f752958f2cf601df2ffd371
+  known_differences:
+  - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-17 Kalman-Filter
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 292b08c0a854679cabb78ca3f60a36e4d691d5d8
+    csharp_sha: 903f162463207547ed2a695e090d2abf54e6951e
+  known_differences:
+  - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-18 Change-Point
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 8c5f8a67fd7f461d3b5bf1146a8f2d763b2b1448
+    csharp_sha: bc73b40e881fabdfb719b21855b23d093ea1c54a
+  known_differences:
+  - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-19 Survival-Analysis
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 071a2a1f1848fbd25de2c8e313b004b0d4706f8c
+    csharp_sha: 26e27a8ac4950ebbc373789762d46177a3946afc
+  known_differences:
+  - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
