@@ -1344,11 +1344,27 @@ class TestMergeCuratedFields:
         assert result[0]["issue_pr_associee"] == "#2161"
 
     def test_curated_fields_constant_contains_expected_fields(self):
-        """CURATED_GIT_FIELDS must contain the 3 git-derived fields."""
-        assert "last_validation" in CURATED_GIT_FIELDS
-        assert "last_validator" in CURATED_GIT_FIELDS
-        assert "issue_pr_associee" in CURATED_GIT_FIELDS
-        assert len(CURATED_GIT_FIELDS) == 3
+        """CURATED_GIT_FIELDS must contain the 8 git-derived fields curated by c.763.
+
+        c.763 (PR #8086) extended CURATED_GIT_FIELDS from 3 to 8 fields to support
+        the 3-axes maturity schema (editorial x reproducibility x scientific_review)
+        plus forensic provenance. The 8 fields are:
+        - 3 baseline (pre-c.763): last_validation, last_validator, issue_pr_associee
+        - 3 forensic (c.763): last_success_sha, executed_at, forensic_category
+        - 2 review/lifecycle (c.763): scientific_reviewed_by, head_sha
+        """
+        expected_fields = (
+            "last_validation", "last_validator", "issue_pr_associee",
+            "last_success_sha", "executed_at", "forensic_category",
+            "scientific_reviewed_by", "head_sha",
+        )
+        for field in expected_fields:
+            assert field in CURATED_GIT_FIELDS, f"missing curated field: {field}"
+        assert len(CURATED_GIT_FIELDS) == len(expected_fields), (
+            f"CURATED_GIT_FIELDS length drift: expected {len(expected_fields)}, "
+            f"got {len(CURATED_GIT_FIELDS)} (extra fields: "
+            f"{set(CURATED_GIT_FIELDS) - set(expected_fields)})"
+        )
 
 
 if __name__ == "__main__":
