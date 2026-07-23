@@ -129,6 +129,48 @@ class TestIsStubCode:
         )
         assert is_stub_code(code) is True
 
+    def test_lean_dashdash_todo_is_stub(self):
+        # Lean line comments start with `--`, not `#` or `//`. Exercise stubs
+        # like `-- TODO etudiant` were systematically false-positive as HIGH
+        # leaks across the Lean notebooks (e.g. SocialChoice-02 cell 32).
+        code = (
+            "-- EXERCICE 4 : Verifier que le Pareto est respecte\n"
+            "-- TODO etudiant : calculer si la SWF respecte Pareto\n"
+            "#eval dictatorship_alice profils"
+        )
+        assert is_stub_code(code) is True
+
+    def test_lean_sorry_is_stub(self):
+        # `sorry` admits the goal — an exercise proof using it is a stub.
+        assert is_stub_code("theorem ex : 1 + 1 = 2 := by sorry") is True
+
+    def test_dotnet_display_a_completer_is_stub(self):
+        # .NET Interactive `.Display("...a completer")` idiom; the existing
+        # patterns only covered Console.WriteLine / print.
+        assert is_stub_code('display("Exercice 2 : stub a completer.")') is True
+        assert is_stub_code('foo.Display("stub a compléter")') is True
+
+    def test_python_assign_none_todo_is_stub(self):
+        # `matrice = None  # Remplacez None` defers the work to the student.
+        # `return None` only matches a return statement, not this assignment.
+        code = (
+            "matrice = None  # Remplacez None\n"
+            "transposee = None  # Remplacez None\n"
+            "produit = None  # TODO etudiant\n"
+            'print("resultats")'
+        )
+        assert is_stub_code(code) is True
+
+    def test_python_assign_none_without_stub_intent_not_stub(self):
+        # A bare `x = None` without a stub-intent comment is NOT a stub
+        # (avoids false-negative on real code that resets a variable).
+        assert is_stub_code("x = None\ny = compute(x)\nz = process(y)") is False
+
+    def test_real_lean_without_stub_not_stub(self):
+        # Regression guard: a real Lean proof with no sorry/TODO is not a stub.
+        code = "theorem add_comm (n m : Nat) : n + m = m + n := by\n  omega"
+        assert is_stub_code(code) is False
+
 
 # ---------------------------------------------------------------------------
 # EXERCISE_HEADER_RE

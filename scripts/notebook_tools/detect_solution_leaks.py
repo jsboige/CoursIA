@@ -33,6 +33,18 @@ STUB_PATTERNS = [
     r'//\s*TODO',
     r'Console\.WriteLine\(["\']Exercice a completer',
     r'Console\.WriteLine\(["\']Exercices a completer',
+    # Lean stub idioms (Lean line comments start with `--`).
+    r'--\s*TODO',
+    # Lean `sorry` tactic admits the goal — an exercise cell using it is a stub
+    # (the proof is unverified, intentionally left for the student).
+    r'\bsorry\b',
+    # .NET Interactive / F# `.Display("...a completer")` idiom (the existing
+    # patterns only cover Console.WriteLine / print).
+    r'\.Display\s*\([^)]*(?:a compl[ée]ter|compl[ée]ter)',
+    # Python assignment-stub: `result = None  # TODO etudiant` /
+    # `matrice = None  # Remplacez None`. `return None` only matches a return
+    # statement, not an assignment that defers the work to the student.
+    r'=\s*None\s*#.*(?:TODO|Remplacez|a compl[ée]ter|compl[ée]ter)',
 ]
 
 EXERCISE_HEADER_RE = re.compile(
