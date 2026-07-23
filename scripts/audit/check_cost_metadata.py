@@ -5,7 +5,8 @@ check_cost_metadata.py — Vérificateur cohérence frontmatter `cost:`.
 Issue #8056 (P1) — matrice coût/ressource par notebook.
 
 But : extraire pour un notebook :
-  - Le bloc YAML `cost:` de la cellule 0 (markdown frontmatter)
+  - Le bloc YAML `cost:` de la première cellule markdown le portant
+    (convention c.800 = cell[1], après le titre markdown cell[0])
   - Les usages réels : appels API, .cuda(), HF_TOKEN, QuantBook, etc.
   - Signaler les :
       (1) gpu_required: false mais cellule code lance torch.cuda / tensorflow GPU
@@ -63,7 +64,7 @@ TOKEN_PATTERNS = {
 
 
 def parse_cost_frontmatter(cell_source: str) -> dict:
-    """Parse le bloc YAML `--- ... ---` en cellule 0 markdown."""
+    """Parse le bloc YAML `--- ... ---` d'une cellule markdown (c.800 = cell[1])."""
     # Pattern : début de cellule = `---`, lignes YAML, `---` final
     pattern = r'^---\s*\n(.*?)\n---\s*\n'
     match = re.match(pattern, cell_source, re.DOTALL)
@@ -115,12 +116,22 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
     cost_meta = {}
     code_cells_source = []
 
-    # Extraction frontmatter cellule 0 markdown
-    if nb.cells and nb.cells[0].get('cell_type') == 'markdown':
-        source = nb.cells[0].get('source', '')
+    # Extraction frontmatter : scan de TOUTES les cellules markdown.
+    # Convention c.800 = frontmatter à cell[1] (après le titre markdown cell[0],
+    # avant le code Papermill params). L'ancienne lecture cell[0]-seule ratait
+    # tous les notebooks c.800/c.801/c.821/c.822/c.823/c.824 (L829 NEW).
+    # Le premier bloc YAML `---...---` contenant `cost:` gagne ; backward-compatible
+    # (cell[0] markdown avec frontmatter reste détecté en premier).
+    for cell in nb.cells:
+        if cell.get('cell_type') != 'markdown':
+            continue
+        source = cell.get('source', '')
         if isinstance(source, list):
             source = ''.join(source)
-        cost_meta = parse_cost_frontmatter(source).get('cost', {})
+        parsed = parse_cost_frontmatter(source)
+        if 'cost' in parsed:
+            cost_meta = parsed.get('cost', {})
+            break
 
     # Agrégation cellules code
     for idx, cell in enumerate(nb.cells):
