@@ -190,6 +190,79 @@ def is_stub_code(source: str) -> bool:
     return False
 
 
+# A code line that DEFINES a new construct (function/class/proof). When such a
+# line is EXECUTABLE (not commented out), the cell contains a real definition and
+# cannot be a pure commented-template stub. Used by commented_template_stub as a
+# fast early-exit (the real recall guard is the "non-trivial executable line"
+# fallback below it).
+EXECUTABLE_DEFINITION_RE = re.compile(
+    r'^\s*(?:def |class |struct |namespace |interface |enum |theorem |lemma |defn |'
+    r'inductive |instance |record |void |int |bool |string |float |double |var )',
+)
+
+# A prompt / TODO marker indicating the cell is a skeleton left for the student.
+# A real complete solution never carries one of these.
+PROMPT_MARKER_RE = re.compile(
+    r'(?:TODO|a compl[ée]ter|compl[ée]ter|impl[ée]mentez|impl[ée]menter|'
+    r'[àa] compl|votre code|student fills|etudiant|r[ée]pondez|r[ée]aliser)',
+    re.IGNORECASE,
+)
+
+
+def commented_template_stub(source: str) -> bool:
+    """Return True if the cell is a "commented-template" exercise stub.
+
+    Some exercise cells embed the FULL solution as COMMENTED-OUT code (``# ...``,
+    ``// ...``, ``-- ...``) plus a small amount of executable scaffolding (data
+    assignments, a prompt print), so the student uncomments and fills the TODOs.
+    Such a cell is a legitimate exercise skeleton, NOT a solution leak — but it
+    trips ``len(source) > 8`` and has no matching STUB_PATTERN, so it is a HIGH
+    false positive. Suppresses that FP.
+
+    Recall-safe: a real (complete) solution always has EITHER an executable
+    definition (``def``/``class``/``theorem``/...) OR at least one non-trivial
+    executable line (a loop, a solver call, ...). Both make this return False.
+    Only cells whose executable code is ENTIRELY trivial (assignments, prints,
+    imports, collection literals) AND that carry a prompt/TODO marker are
+    suppressed. A complete solution never carries a prompt marker.
+
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    exec_lines = []
+    for raw in source.split('\n'):
+        s = raw.strip()
+        if not s:
+            continue
+        # comment lines for the languages in this repo
+        if (s.startswith('#') or s.startswith('//') or s.startswith('--')
+                or s.startswith('(*') or s.startswith('/*') or s.endswith('*)') or s.endswith('*/')):
+            continue
+        exec_lines.append(s)
+
+    # Fast early-exit: an executable definition => real code, not a template.
+    if any(EXECUTABLE_DEFINITION_RE.search(l) for l in exec_lines):
+        return False
+
+    # Every executable line must be trivial (assignment / print / import /
+    # collection literal / closing bracket). ANY non-trivial line (loop, call,
+    # statement) => real code => not a template.
+    for s in exec_lines:
+        if s.startswith(('print(', 'Print(', 'Console.', 'Display(', 'printf', 'puts(', 'puts ')):
+            continue
+        if s.startswith(('import ', 'from ', 'using ', 'open ', 'require ', '#!')):
+            continue
+        if re.match(r'^[A-Za-z_][\w\[\]."\']*\s*(?:=|:=)', s):  # assignment target = / :=
+            continue
+        if s.startswith(('[', '(', '{', '{|')) or s.endswith((']', ')', '}', ',', '|}')):
+            continue  # collection literal / continuation
+        if s in (']', ')', '}', '|}'):
+            continue
+        return False  # non-trivial executable line -> not a pure template
+
+    # Must carry a prompt/TODO marker (a complete solution never does).
+    return bool(PROMPT_MARKER_RE.search(source))
+
+
 def scan_notebook(path: str) -> list[dict]:
     """Scan a single notebook for solution leaks."""
     findings = []
@@ -273,6 +346,14 @@ def scan_notebook(path: str) -> list[dict]:
             # the false positive. A deeper sub-header ("### Indice" under
             # "## Exercice 1") does not break the section.
             if intervening_section_breaks_attribution(cells, i, next_code_idx):
+                continue
+            # Commented-template stub: the whole solution is commented out and
+            # only data assignments + a prompt print execute (the student
+            # uncomments and fills the TODOs). A legitimate exercise skeleton,
+            # not a leak. Suppresses the commented-solution-prompt FP class.
+            # Recall-safe: a real solution has an executable def/class or a
+            # non-trivial executable line, which makes the helper return False.
+            if commented_template_stub(next_code_source):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
