@@ -721,7 +721,7 @@ def scan_all_notebooks(
             if pedagogical and nb_path.stem.endswith("_executed"):
                 continue
             parts = nb_path.relative_to(series_dir).parts
-            if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
+            if any(part in EXCLUDE_ALWAYS for part in parts):
                 continue
             if pedagogical and any(
                 exc in str(nb_path.relative_to(series_dir))
