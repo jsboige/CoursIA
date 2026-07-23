@@ -11,12 +11,20 @@ Issue : #8050. SHA verifie : be5998073 (2026-07-23).
 Usage :
     py scripts/audit/check_denominators.py --root MyIA.AI.Notebooks
     py scripts/audit/check_denominators.py --root MyIA.AI.Notebooks --json-out out.json
-    py scripts/audit/check_denominators.py --root MyIA.AI.Notebooks --strict  # exit 1 si drift
+    py scripts/audit/check_denominators.py --root MyIA.AI.Notebooks --strict  # exit 1 si drift/phantom
 
 Exit codes :
-    0 — OK (drift dans les limites declarees)
-    1 — Drift catalogue > 0 (notebooks curés manquants)
+    0 — OK (drift et phantoms dans les limites declarees)
+    1 — Drift catalogue > 0 (notebooks curés manquants) OU phantom catalogue (entry -> fichier inexistant)
     2 — Erreur d'execution (fichier manquant, etc.)
+
+Detecte deux classes de divergence distinctes :
+  - DRIFT   : notebooks presents sur disque/forensic mais manquants du catalogue (curation incomplete).
+  - PHANTOM : entrees du catalogue qui pointent vers un notebook ABSENT du disque (catalogue drift,
+    ex: renommage/suppression non propage). Le catalog-cron ne self-heal pas toujours les phantoms
+    (ex: suffixe '-executed' resurgit a chaque regen si le generateur le deduit d'un artefact).
+    Un phantom est le signal le plus actionnable : il indique un bug catalogue reel, pas une
+    exclusion saine.
 """
 
 import argparse
@@ -106,6 +114,12 @@ def main():
     catalog_expected = forensic - catalog_excluded
     drift = sorted(catalog_expected - catalog)
 
+    # PHANTOM : entrees catalogue dont le fichier n'existe pas sur disque.
+    # Distinct du drift (notebook manquant du catalogue) : ici c'est le catalogue
+    # qui reference un notebook absent -> bug catalogue (ex: suffixe '-executed'
+    # resurgissant). Le signal le plus actionnable.
+    phantoms = sorted(p for p in catalog if p not in disk)
+
     report = {
         "denominators": {
             "disk": len(disk),
@@ -115,11 +129,13 @@ def main():
         "expected_with_exclusions": len(catalog_expected),
         "drift_count": len(drift),
         "drift_by_series": {},
+        "phantom_count": len(phantoms),
         "exclusion_breakdown": {
             "forensic_excluded_dirs": len(disk - forensic),
             "catalog_excluded_pedagogical": len(catalog_excluded),
         },
         "drift_paths": drift,
+        "phantom_paths": phantoms,
     }
 
     # Drift par série (premier segment du path)
@@ -161,9 +177,17 @@ def main():
             print(f"  ... et {len(drift) - 20} autres")
     else:
         print("OK : drift catalogue = 0")
+    print()
+    print(f"PHANTOM catalogue  : {len(phantoms)} entrees -> fichier inexistant")
+    if phantoms:
+        print(f"--- PHANTOM paths ({len(phantoms)}) ---")
+        for p in phantoms:
+            print(f"  ! {p}  (absent du disque)")
+    else:
+        print("OK : phantom catalogue = 0")
     print("=" * 64)
 
-    if args.strict and drift:
+    if args.strict and (drift or phantoms):
         return 1
     return 0
 
