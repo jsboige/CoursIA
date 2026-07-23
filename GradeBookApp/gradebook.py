@@ -326,10 +326,14 @@ def _leading_group_code(normalized):
     return match.group(1) if match else None
 
 
-def fuzzy_match_group(eval_group_name, student_project_string):
+def fuzzy_match_group(eval_group_name, student_project_string, threshold=90):
     """
     Correspondance entre nom de groupe évalué et nom de projet inscrit.
-    Privilégie la correspondance exacte ou quasi-exacte (>= 90% similarité).
+    Privilégie la correspondance exacte ou quasi-exacte (>= threshold % similarité).
+
+    Le seuil ``threshold`` (défaut 90, comportement historique) rend effectif le
+    paramètre ``group_match_threshold`` configurable par épreuve (commit 3a612f85c).
+    Les appelants 2-args conservent le défaut 90 (comportement inchangé).
     """
     if not isinstance(eval_group_name, str) or not isinstance(student_project_string, str):
         return False
@@ -357,10 +361,10 @@ def fuzzy_match_group(eval_group_name, student_project_string):
     if eval_norm == student_norm:
         return True
 
-    # Cas 2: Correspondance par similarité très élevée (>= 90%)
+    # Cas 2: Correspondance par similarité très élevée (>= threshold %)
     # Gère les petites variations de ponctuation, accents, etc.
     similarity = fuzz.ratio(eval_norm, student_norm)
-    if similarity >= 90:
+    if similarity >= threshold:
         return True
 
     # Cas 3: Pour les anciens formats (groupe X, project X)
