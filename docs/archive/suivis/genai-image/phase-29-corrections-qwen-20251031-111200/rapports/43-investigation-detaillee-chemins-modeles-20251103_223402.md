@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 43 : Investigation Détaillée Chemins Modèles + Corruption Potentielle
 
 **Date** : 2025-11-03 22:34:17 UTC+1

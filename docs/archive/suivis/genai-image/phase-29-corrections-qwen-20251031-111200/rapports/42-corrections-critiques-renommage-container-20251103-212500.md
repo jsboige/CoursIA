@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 42 : Corrections Critiques - Renommage Scripts + Investigation Container
 
 **Date** : 2025-11-03 21:25:00 UTC+1

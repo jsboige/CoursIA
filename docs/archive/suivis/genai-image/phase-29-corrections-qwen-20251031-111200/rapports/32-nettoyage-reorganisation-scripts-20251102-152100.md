@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport Sous-Tâche 32 : Nettoyage et Réorganisation scripts genai-auth
 
 **Date** : 2025-11-02 15:21:00 UTC+1  
