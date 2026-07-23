@@ -3,7 +3,7 @@
 **Statut** : pilote fondateur (c.764, phase 2 issue #8051 critère #4)
 **Issue parente** : [#8051](https://github.com/jsboige/CoursIA/issues/8051) — décomposer `maturity` en 3 axes
 **Suite logique de** : [PR #8086 (c.763)](https://github.com/jsboige/CoursIA/pull/8086) — schéma 3-axes `editorial` × `reproducibility` × `scientific_review`
-**Schéma de référence** : [docs/PARCOURS.md](../PARCOURS.md) — définitions contractuelles des 3 axes
+**Schéma de référence** : [PR #8086 (c.763)](https://github.com/jsboige/CoursIA/pull/8086) — définitions contractuelles des 3 axes dans `docs/PARCOURS.md` (branche `feature/c763-maturity-3axes`, non encore sur main)
 **Auteur du registre** : ai-01 / lane `myia-po-2023:CoursIA-2`
 **Date de fondation** : 2026-07-23
 **Base SHA** : `6d33f5a9f` (origin/main)
@@ -12,7 +12,7 @@
 
 ## 1. Purpose
 
-Le schéma 3-axes (c.763, PR #8086) définit `editorial_reviewed_by` comme le **signal canonique** permettant de promouvoir `editorial` de `BETA` à `FINAL` (cf [docs/PARCOURS.md](../PARCOURS.md) §Axe 1). Sans signal explicite, `classify_editorial()` n'émet jamais `FINAL` — c'est un design délibéré pour éviter l'auto-promotion par l'auteur du dernier commit.
+Le schéma 3-axes (c.763, [PR #8086](https://github.com/jsboige/CoursIA/pull/8086)) définit `editorial_reviewed_by` comme le **signal canonique** permettant de promouvoir `editorial` de `BETA` à `FINAL` (cf `docs/PARCOURS.md` §Axe 1 sur la branche c.763). Sans signal explicite, `classify_editorial()` n'émet jamais `FINAL` — c'est un design délibéré pour éviter l'auto-promotion par l'auteur du dernier commit.
 
 **Problème** : par défaut, 598 entrées historiques du catalogue sont rétrogradées de `PRODUCTION` à `BETA` dans l'agrégat `maturity` (effet c.763), parce que `editorial_reviewed_by == null` côté catalogue. **Sans mécanisme de backfill**, ces notebooks restent `BETA` ad vitam.
 
@@ -164,7 +164,7 @@ def classify_editorial(notebook, code_cells, *, is_template=False,
 
 - Issue [#8051](https://github.com/jsboige/CoursIA/issues/8051) — décomposer `maturity` en 3 axes (c.763 critères 1-3 + c.764 critère #4 phase 2)
 - [PR #8086](https://github.com/jsboige/CoursIA/pull/8086) — c.763 schéma 3-axes (OPEN MERGEABLE)
-- [docs/PARCOURS.md](../PARCOURS.md) — définitions contractuelles des 3 axes (c.763)
+- [`docs/PARCOURS.md` sur branche c.763](https://github.com/jsboige/CoursIA/blob/feature/c763-maturity-3axes/docs/PARCOURS.md) — définitions contractuelles des 3 axes (c.763, livré via [PR #8086](https://github.com/jsboige/CoursIA/pull/8086) encore OPEN MERGEABLE au moment de la livraison c.764)
 - `scripts/notebook_tools/generate_catalog.py` — classifier `classify_editorial()` (c.763) + extension c.764
 - `scripts/audit/check_editorial_review.py` — validateur (c.764 NEW)
 - `scripts/audit/check_dataset_registry.py` — analogue pattern (c.795, OPEN sweep-ready #8083)
