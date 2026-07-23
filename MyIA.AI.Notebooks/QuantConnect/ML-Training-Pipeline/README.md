@@ -2,7 +2,7 @@
 series: QuantConnect-ML-Training-Pipeline
 pedagogical_count: 2
 breakdown: ML-Training-Pipeline=2
-maturity: PRODUCTION=1, TEMPLATE=1
+maturity: BETA=1, TEMPLATE=1
 -->
 
 # Pipeline d'entraînement ML pour la prévision financière

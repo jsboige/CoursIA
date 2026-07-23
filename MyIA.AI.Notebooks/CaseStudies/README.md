@@ -4,7 +4,7 @@
 series: CaseStudies
 pedagogical_count: 6
 breakdown: Diagnostic-Medical=2, Oncology-Planning=2, SmartGrid-Energy=2
-maturity: PRODUCTION=4, BETA=2
+maturity: BETA=5, DRAFT=1
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (6 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :

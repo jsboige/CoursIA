@@ -2,7 +2,7 @@
 series: QuantConnect-kelly_lean
 pedagogical_count: 1
 breakdown: kelly_lean=1
-maturity: ALPHA=1
+maturity: BETA=1
 -->
 
 # kelly_lean — optimalité du critère de Kelly (log-croissance)

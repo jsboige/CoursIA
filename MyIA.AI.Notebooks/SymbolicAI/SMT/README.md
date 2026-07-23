@@ -2,7 +2,7 @@
 series: SymbolicAI-SMT
 pedagogical_count: 42
 breakdown: SMT=42
-maturity: PRODUCTION=25, BETA=17
+maturity: BETA=41, DRAFT=1
 -->
 
 # SMT - Satisfiability Modulo Theories

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 113
-breakdown: Applications=40, Part1-Foundations=29, Part4-Metaheuristics=20, Part2-CSP=18, Part3-Advanced=6
-maturity: PRODUCTION=84, BETA=29
+pedagogical_count: 115
+breakdown: Applications=40, Part1-Foundations=29, Part4-Metaheuristics=22, Part2-CSP=18, Part3-Advanced=6
+maturity: BETA=106, ALPHA=6, DRAFT=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
