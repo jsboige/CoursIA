@@ -16,7 +16,8 @@
 #
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
-# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED). Voir #8057.
+# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
+# + GameTheory/.NET-Parity (c.804/#8124) + SemanticWeb/dotNetRDF-rdflib (c.809/#8165) + Tweety/IKVM-JPype (c.810, 11 paires ; 9 semantic lib-vs-lib + 2 surface). Voir #8057.
 
 - name: "Z3-Python-01 Introduction"
   family: SMT/Z3-API
@@ -347,3 +348,158 @@
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
     - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+# === Tranche 6 Tweety/IKVM-JPype (c.810, po-2024, 2026-07-23) -- famille supplementaire #8057 ===
+- name: "Tweety-2 Basic-Logics"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 8e6911b972f4a4b66d2ac1798bd6e60ad536e358
+    csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+  known_differences:
+    - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
+    - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."
+
+- name: "Tweety-3 Advanced-Logics"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 7042113bc062921ba05a30e9a349de6680b26da7
+    csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
+  known_differences:
+    - "Socle commun : logiques avancees (conditionnelle, modale, QBF) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-advanced-logics.dll\"` + `using org.tweetyproject.logics.cl.reasoner` etc.). Python via JPype (`from org.tweetyproject.logics.cl.reasoner import SimpleCReasoner`). Meme moteur Java TweetyProject, deux ponts (IKVM traduit vs JPype JVM)."
+
+- name: "Tweety-4 Belief-Revision"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5990811be66b3b19c4b100f03391873891ba0f43
+    csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+  known_differences:
+    - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."
+
+- name: "Tweety-5 Abstract-Argumentation"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 40b1b3d7912c7b65134c5cc5cb80494c4998c5eb
+    csharp_sha: 925e0f9e03af6c7984228d4edda70dc9d1d4036b
+  known_differences:
+    - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
+
+- name: "Tweety-6 Structured-Argumentation"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 850ec6797689e4f9747fa8a5009d4cd6e3489dde
+    csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
+  known_differences:
+    - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
+    - "Asymetrie de profondeur (surface) : le Python invoque la vraie bibliotheque Java TweetyProject (ASPIC+) via JPype ; le C# REIMPLEMENTE le moteur ASPIC+ **from-scratch** (cellule de setup : 'aucune dependance externe -- moteur ASPIC+ from-scratch'), sans la bibliotheque. Le C# est un pendant pedagogique reimplante, pas une parite de librairie -> `surface`."
+
+- name: "Tweety-7a Extended-Frameworks"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 03e881c5bb203bbd951f10f20e2a78e66f03ee95
+    csharp_sha: 62f6921da965958ab0277d2cee822d284a47e568
+  known_differences:
+    - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
+
+- name: "Tweety-7b Ranking-Probabilistic"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ec8803905c51b631bcf107af784f22ce559840bc
+    csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+  known_differences:
+    - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."
+
+- name: "Tweety-8 Agent-Dialogues"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 250f9ca0a3bdab41d5190b4841af74287d027f73
+    csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
+  known_differences:
+    - "Socle commun : dialogues multi-agents argumentatifs (protocols, ExecutableExtension) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers chargeant les DLL TweetyProject). Python via JPype (`from org.tweetyproject.agents.dialogues import ExecutableExtension`). Meme moteur Java."
+
+- name: "Tweety-9 Preferences"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: e55ac3ede677141a3f82d74094e3dee4b7c40c82
+    csharp_sha: 715a7887df6004fcf73f4c14624d39bfca671117
+  known_differences:
+    - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"`). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
+
+- name: "Tweety-10 MLN"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 59821257489bf34aab34dead6b1bf633c9eb2a0e
+    csharp_sha: fc482a5d73fe50c7a4cce563edaf1987a0536a7b
+  known_differences:
+    - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."
+
+- name: "Tweety-11 Causal"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 1544722434842ecbf010d6009510e6cf6a330779
+    csharp_sha: d60c424c0e1334c0dbf3f9fa6b9376bad215c330
+  known_differences:
+    - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."
+    - "Asymetrie de profondeur (surface) : le Python s'appuie sur la vraie bibliotheque Java Tweety `causal-1.30.jar` via JPype (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausal`) ; le C# est un jumeau **from-scratch** (titre explicite 'twin C# from-scratch', aucune reference a org.tweetyproject) qui reimplemente le do-calcul pedagogiquement. Parite `surface` (C# = pendant reimplante, pas de librairie)."
