@@ -1,0 +1,87 @@
+name: solution-leak-guard
+
+# Durable anti-regression guard for the "Exercice containing its solution" leak
+# vector (angle-mut #8053, content-based rule in exercise-example-labeling.md).
+# Fails a PR only when it INTRODUCES a new HIGH-severity solution leak vs its
+# base ref — inherited leaks (111 as of 2026-07, angle-mut #8053, drained
+# one-PR-per-notebook) are tolerated so the gate never freezes the cluster.
+# Mirror of the pip-leak-guard pattern (#6314).
+#
+# A HIGH finding = a cell titled "Exercice N" whose code is a complete working
+# solution instead of a stub (pass / print("Exercice a completer") / return None
+# / # TODO). MEDIUM (duplicate exercise numbering) and LOW are inventoried in
+# the step summary but never gate, per #8053 "WARN first, FAIL after cleanup".
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_solution_leaks.py'
+      - 'scripts/notebook_tools/solution_leak_delta.py'
+      - '.github/workflows/solution-leak-guard.yml'
+  schedule:
+    # Weekly inventory of the inherited backlog (decay tracking). Friday ~09:17 UTC.
+    - cron: '17 9 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solution-leak-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  solution-leak-delta:
+    name: "Solution-leak HIGH delta guard (#8053)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the BASE scan
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: HEAD scan (PR head)
+        run: |
+          python scripts/notebook_tools/detect_solution_leaks.py --scan-all --json > /tmp/head.json
+          python scripts/notebook_tools/detect_solution_leaks.py --scan-all > /tmp/head.txt
+
+      # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. head.json
+      # is already captured above, so the swap cannot contaminate the delta.
+      - name: BASE scan (PR base ref)
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
+          python scripts/notebook_tools/detect_solution_leaks.py --scan-all --json > /tmp/base.json
+          git checkout HEAD -- MyIA.AI.Notebooks
+
+      # Inventory posted to the run/PR check summary (WARN: never gates).
+      # Visible decay tracking of the inherited #8053 backlog (HIGH/MEDIUM counts).
+      - name: "Inventory (step summary, WARN — never gates)"
+        run: |
+          {
+            echo '## Solution-leak inventory (#8053)'
+            echo ''
+            echo 'HIGH (Exercice with its solution) = **priority cleanup** — drained one-PR-per-notebook.'
+            echo 'MEDIUM (duplicate exercise numbering) = cosmetic.'
+            echo ''
+            echo '```'
+            grep -E '^Results:|^Scanned:' /tmp/head.txt || true
+            echo ''
+            echo 'HIGH leaks (first 40):'
+            grep '\[HIGH\]' /tmp/head.txt | head -40 || true
+            echo ''
+            echo 'MEDIUM leaks (first 20):'
+            grep '\[MEDIUM\]' /tmp/head.txt | head -20 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Fail if HIGH delta > 0 (new solution leaks introduced)"
+        if: github.event_name == 'pull_request'
+        run: python scripts/notebook_tools/solution_leak_delta.py /tmp/base.json /tmp/head.json

@@ -307,6 +307,11 @@ def main():
     parser.add_argument("--scan-all", action="store_true", help="Scan all notebooks in repo")
     parser.add_argument("--check", action="store_true", help="Exit 1 if any HIGH findings")
     parser.add_argument("--verbose", action="store_true", help="Show all findings including LOW")
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit findings as a JSON array (for CI delta guard, cf solution_leak_delta.py)",
+    )
     args = parser.parse_args()
 
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -330,12 +335,22 @@ def main():
         parser.print_help()
         return 1
 
-    print(f"Scanning {len(notebooks)} notebooks...")
+    if not args.json:
+        print(f"Scanning {len(notebooks)} notebooks...")
 
     all_findings = []
     for nb_path in notebooks:
         findings = scan_notebook(nb_path)
         all_findings.extend(findings)
+
+    # Machine-readable output for CI delta guards (cf solution_leak_delta.py,
+    # mirror of pip_leak_delta.py). Emitted before any human-readable prose so
+    # downstream parsers can consume stdout verbatim.
+    if args.json:
+        import json as _json
+
+        print(_json.dumps(all_findings, ensure_ascii=False))
+        return 0
 
     high = [f for f in all_findings if f.get('severity') == 'HIGH']
     medium = [f for f in all_findings if f.get('severity') == 'MEDIUM']
