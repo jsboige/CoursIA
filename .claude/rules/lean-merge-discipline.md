@@ -26,7 +26,7 @@ Apres **chaque PR** ou **message dashboard/inbox** de `myia-po-2026:*` mentionna
 
 ## L750 ★★ Leçons ancrées — Pivot Lean specialist + scope discipline
 
-**Leçons ancrées** — [L750 ★★](cycle-c750-grothendieck-pullback-union.md) (c.750, PR #7895 MERGED feat(lean,#2159)) : 5 règles opérationnelles pour pivot/scope Lean specialist. Source : pivot verbatim ai-01 (msg-20260722T050055-i12hh3) qui a greenlit Folk.lean Tactic-1 (refuted firsthand, STRETCH polytope dure Fudenberg-Maskin) → Grothendieck `pullback_union` DEEP, même lake, rebase propre entre grains.
+**Leçons ancrées** — L750 ★★ (c.750, PR #7895 MERGED feat(lean,#2159) ; détail en mémoire locale per-machine) : 5 règles opérationnelles pour pivot/scope Lean specialist. Source : pivot verbatim ai-01 (msg-20260722T050055-i12hh3) qui a greenlit Folk.lean Tactic-1 (refuted firsthand, STRETCH polytope dure Fudenberg-Maskin) → Grothendieck `pullback_union` DEEP, même lake, rebase propre entre grains.
 
 ### Règle 1 — Vérifier scope STRETCH avant tout sorry (anti-claim discharge)
 

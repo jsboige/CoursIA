@@ -83,7 +83,7 @@ gh pr list --state all --search "head:<branch>" --json number,state -q '.[].numb
 **Voir aussi** : [lecon-L576](https://github.com/jsboige/CoursIA/blob/main/.claude/memory/lecon-L576-rest-commits-pulls-fpos.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 5 orphelines pour futurs grains cross-famille : L574 / L751 / L770 / L771 / L772+L789+L790+L791).
 ## PR Body Generation
 
-**Leçon ancrée** — [L677-L4 ★★](cycle-c680-argumentation-stale-paths.md) (c.680, voir aussi c.683/c.684/c.685/c.686/c.687/c.688/c.689/c.690 réutilisations) : le **body de PR se génère HORS worktree**, jamais dans un fichier du worktree (qui finirait stageé par `git add .` ou committe accidentellement).
+**Leçon ancrée** — L677-L4 ★★ (c.680, voir aussi c.683/c.684/c.685/c.686/c.687/c.688/c.689/c.690 réutilisations ; détail en mémoire locale per-machine) : le **body de PR se génère HORS worktree**, jamais dans un fichier du worktree (qui finirait stageé par `git add .` ou committe accidentellement).
 
 | Pattern | Correct | Wrong |
 |---------|---------|-------|
