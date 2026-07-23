@@ -47,6 +47,42 @@ SOLUTION_MARKER_RE = re.compile(
     re.IGNORECASE,
 )
 
+# A worked-example header line (Exemple guide / Exemple resolu / Example / Worked).
+# Used for closest-preceding-header attribution: a code cell whose nearest header
+# is a worked example is NOT an exercise solution leak, even if a broader
+# "Exercices" section header sits further back (cf exercise-example-labeling.md,
+# content-based rule). Distinguished from EXERCISE_HEADER_RE (Exercice/Exercise).
+EXAMPLE_HEADER_RE = re.compile(
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
+# Any markdown ATX/SETEXT-like header line, for closest-header attribution.
+HEADER_LINE_RE = re.compile(r'^#{1,6}\s+.+$', re.MULTILINE)
+
+
+def closest_preceding_header_is_example(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a worked
+    example.
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell owned by
+    a worked example is never an exercise solution leak — this suppresses false
+    positives where a code cell sits under a ``## Exercices`` section header but
+    its actual nearest sub-header is ``### Exemple guide`` (in the same cell or
+    an intervening one). Cf exercise-example-labeling.md (content-based rule).
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(EXAMPLE_HEADER_RE.search(header_lines[-1]))
+    return False
+
 
 def is_stub_code(source: str) -> bool:
     """Check if code cell source is a stub (not a real solution)."""
@@ -136,6 +172,12 @@ def scan_notebook(path: str) -> list[dict]:
             continue
 
         if not is_stub_code(next_code_source):
+            # Closest-preceding-header attribution: a code cell whose nearest
+            # header is a worked example (Exemple guide / Exemple resolu / ...)
+            # is not an exercise leak, even if a broader "## Exercices" section
+            # header sits further back. Suppress the false positive.
+            if closest_preceding_header_is_example(cells, next_code_idx):
+                continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
                 findings.append({
