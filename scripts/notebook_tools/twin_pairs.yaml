@@ -539,10 +539,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-13-Crowdsourcing.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-23'
-    by: po-2024
+    date: '2026-07-24'
+    by: po-2023
     python_sha: 2f27544c72a18786337e197369da750edff7d0a8
-    csharp_sha: 110c1d8e02231bef5ef1d58f5279d560a257f6d8
+    csharp_sha: dab2a015013ff6604ed8a366581345d555e883df
   known_differences:
   - 'Socle pedagogique commun : crowdsourcing (agregation d''annotations bruitees) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
