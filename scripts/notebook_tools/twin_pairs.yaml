@@ -622,10 +622,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-23'
-    by: po-2024
-    python_sha: 8c5f8a67fd7f461d3b5bf1146a8f2d763b2b1448
-    csharp_sha: bc73b40e881fabdfb719b21855b23d093ea1c54a
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: c26c5c335122f6dd628e5b85a19f4aa57196bd30
+    csharp_sha: 16f9c00c30cc4d6002dafe82631aa965ecd97769
   known_differences:
   - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -640,7 +640,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 071a2a1f1848fbd25de2c8e313b004b0d4706f8c
+    python_sha: 0004ff47a53c570d0e9359a5c16495004ec485ee
     csharp_sha: 62974bb4be0cf95716c3a109fa70bcfacb9d647f
   known_differences:
   - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
