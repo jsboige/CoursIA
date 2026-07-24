@@ -96,13 +96,14 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: bebd658f4b477751460733c1bc8ce635acd348a0
-    csharp_sha: b090ec4eeb0a2cc1d75facafed5113eb24e6393e
+    date: "2026-07-24"
+    by: po-2026
+    python_sha: dc0421dd7de4bc4dd61181a44c5704a30206f879
+    csharp_sha: 39a44f588e5a0da9fd8983b7fca62b0f1196c16a
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+    - "2026-07-24 (po-2026) : Prong-B (#3801) porte au twin C# -- capstone budget 100->80 (cas non-degenere). Avant : C# restait a budget=100 (cas degenere, valeur=420, cout=0) tandis que Python etait passe a 80 (#8158). Apres port : les deux jumeaux alignes a budget=80 (valeur=368, cout=6), l'arbitrage multi-objectif (hierarchie + valeur) visible des deux cotes. DRIFT resorbe."
 
 # --- Tranche 2 (c.802, po-2024, 2026-07-23) : extensions Search/Part2-CSP (CSP-1..4) + Search/Part1-Foundations (Search-1..3) ---
 # Meme mecanisme (registre curated YAML + check_twin_parity.py), substance
