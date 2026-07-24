@@ -443,9 +443,19 @@ def scan_notebook(path: str) -> list[dict]:
 
 
 def discover_notebooks(root: str) -> list[str]:
-    """Find all .ipynb files under root, excluding _output and .ipynb_checkpoints."""
+    """Find all .ipynb files under root, excluding _output, .ipynb_checkpoints, and nested git worktrees.
+
+    Nested git worktrees have a `.git` *file* (not directory) pointing to <parent>/.git/worktrees/<name>.
+    Descending into them would double-count all notebooks (e.g. orphan worktree `feat/c741-grothendieck-readme`
+    inside MyIA.AI.Notebooks/, which shares the same .git dir as the main repo).
+    """
     notebooks = []
     for dirpath, dirnames, filenames in os.walk(root):
+        # Skip dirs whose `.git` entry is a FILE (git worktree pointer) — descend-bait.
+        # Plain `.git` directory is already excluded by the dirnames filter below.
+        if '.git' in filenames and not os.path.isdir(os.path.join(dirpath, '.git')):
+            dirnames[:] = []
+            continue
         dirnames[:] = [d for d in dirnames if d not in ('.ipynb_checkpoints', '_output', '.git', '__pycache__', 'node_modules')]
         for f in filenames:
             if f.endswith('.ipynb') and not f.endswith('_output.ipynb'):
