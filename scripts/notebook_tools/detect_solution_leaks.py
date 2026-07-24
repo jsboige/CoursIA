@@ -168,6 +168,63 @@ def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> boo
     return False
 
 
+def _last_exercise_header_match(source: str):
+    """Return the last exercise-header match in ``source`` (markdown cell).
+
+    A single markdown cell may hold a parent section header (``## N. Exercices``,
+    num-less because the ``N.`` is a section number) AND a numbered sub-header
+    (``### Exercice 1 — ...``) describing the actual exercise. With
+    ``re.MULTILINE``, ``EXERCISE_HEADER_RE.search(source)`` returns the FIRST
+    match — the num-less parent — hiding the real numbered sub-header one line
+    below. The LAST header line is closest to the code cell that follows (cf
+    ``closest_preceding_header_is_example``, which already uses
+    ``header_lines[-1]`` for the same reason).
+
+    Prefer the LAST numbered match (closes the ``Exercice ?`` message class
+    for the single-sub-header MULTI-HEADER pattern: num-less parent + ONE
+    numbered child). Falls back to ``EXERCISE_HEADER_RE.search`` (first match)
+    when there are MULTIPLE numbered matches in the cell — that is the
+    "suggestions block" pattern (``## Exercices suggeres`` + ``#### Exercice 1,
+    2, 3`` siblings), where the original first-match behaviour is correct: the
+    suggestions are a SEPARATE numbering, not duplicates of earlier exercises.
+
+    Recall-safe: never converts a numbered attribution to num-less; never
+    re-orders numbered matches relative to their declaration order.
+    """
+    matches = list(EXERCISE_HEADER_RE.finditer(source))
+    if not matches:
+        return None
+    numbered = [m for m in matches if m.group(1)]
+    # Multi-sub-header suggestions block: keep the original first-match
+    # behaviour (the suggestions are a SEPARATE numbering, not duplicates).
+    if len(numbered) > 1:
+        return matches[0]
+    if numbered:
+        return numbered[-1]
+    return matches[-1]
+
+
+def _numbered_exercise_header_between(cells, start_idx, end_idx) -> bool:
+    """Return True if a markdown cell strictly between ``start_idx`` and
+    ``end_idx`` (exclusive) holds a NUMBERED exercise header.
+
+    A separate-cell num-less ``## Exercices`` section header followed by a
+    numbered ``### Exercice N`` sub-header independently scans forward to the
+    same code cell, producing a duplicate HIGH (``Exercice ?`` from the parent
+    and ``Exercice N`` from the child). The numbered header is the closer
+    attribution; the duplicate ``Exercice ?`` is the FP class. Caller skips
+    the num-less iteration when this returns True.
+    """
+    for k in range(start_idx + 1, end_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        if any(m.group(1) for m in EXERCISE_HEADER_RE.finditer(src)):
+            return True
+    return False
+
+
 def is_stub_code(source: str) -> bool:
     """Check if code cell source is a stub (not a real solution)."""
     lines = source.strip().split('\n')
@@ -281,7 +338,11 @@ def scan_notebook(path: str) -> list[dict]:
 
         source = ''.join(cell.get('source', []))
 
-        m = EXERCISE_HEADER_RE.search(source)
+        # Last-numbered-match wins within a markdown cell (closes the
+        # 'Exercice ?' message class for multi-header cells where a num-less
+        # parent '## N. Exercices' sits above a numbered sub-header
+        # '### Exercice M — ...'). See _last_exercise_header_match.
+        m = _last_exercise_header_match(source)
         if not m:
             continue
 
@@ -312,6 +373,16 @@ def scan_notebook(path: str) -> list[dict]:
                 break
 
         if next_code_source is None:
+            continue
+
+        # Num-less section header in its own cell ("## Exercices"): if a
+        # NUMBERED exercise sub-header sits between this cell and the next code
+        # cell, the numbered header owns the code (processed in its own
+        # iteration). Without this skip the code cell is flagged twice —
+        # "Exercice ?" here and "Exercice N" at the numbered header. Suppresses
+        # the duplicate FP. The numbered header still flags the code if it is a
+        # real leak, so this is recall-safe.
+        if not num and _numbered_exercise_header_between(cells, i, next_code_idx):
             continue
 
         if has_soumis:
