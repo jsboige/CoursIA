@@ -98,8 +98,8 @@
   last_audit:
     date: "2026-07-24"
     by: po-2026
-    python_sha: dbbec1f0d8f93c4cfadd534b67138c04314a6b88
-    csharp_sha: 39a44f588e5a0da9fd8983b7fca62b0f1196c16a
+    python_sha: 9d2ed1182be08e0cb2eecfb3a689d3f3e0d8ec25
+    csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
@@ -157,7 +157,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 3cc2cf6ccd1c627e9e0f2eb59bc747361db69670
+    python_sha: d07de883553ed1a90d6590ff0bcbfb146b068bd2
     csharp_sha: bbb5e24c4d4eb763b454b6d8f48aba9a5747b584
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
@@ -220,7 +220,7 @@
   last_audit:
     date: "2026-07-23"
     by: po-2024
-    python_sha: ef0d2597c51669af6da574e368e6aacef1fa044c
+    python_sha: 60cf3ee8917259360b11b4aea5af240f237ef2ca
     csharp_sha: 0b24fbcc661131d1c783694fa17c0402e9866abf
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
@@ -315,8 +315,8 @@
   last_audit:
     date: "2026-07-23"
     by: po-2024
-    python_sha: b823380d75f0d87b9666fe6c5458cfe7566e2a28
-    csharp_sha: a36aa7a2e12bd343ca79c738a954aad255ecd070
+    python_sha: 9b3d68f32e78e16b9c757545e3da6baa06a187ac
+    csharp_sha: 9c5c186b5cc5f731299e5d3526b61a6920bd79fb
   known_differences:
     - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
     - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."
@@ -364,8 +364,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 95ffd1e7291d7ace4f06a0bf6dcc6a1b04106d38
-    csharp_sha: f55b9531a3181995760e9ebeb553972cfc1e12cf
+    python_sha: da13439ee00e75ef65a0729087c450a34847b415
+    csharp_sha: dc33fc60f854fd06855701e387985cc5a73ed693
   known_differences:
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -381,7 +381,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
-    csharp_sha: 71e8a8ab7a8c6d38515626b94d062aa9c4c1d875
+    csharp_sha: 0d407e2eeed7769b879c2a67a9ab3cb27f067f84
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -397,7 +397,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: aa853aa35f024e6af153991847a0bebf91caaadf
-    csharp_sha: 92f9db61a2fa34db87bbd2b9922ea9347dfabfe7
+    csharp_sha: 9c17a3f5b36b0aa517a8f5809c2aa385b90dbf10
   known_differences:
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -428,8 +428,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 9c6d4bdd4181e08e63eaf417954b44bce448a02e
-    csharp_sha: 21c3019d71d07aa21d151643f279fa69764bc88f
+    python_sha: 466d8b8b098d63782651c8357dbfc798a448d029
+    csharp_sha: 05db832236c4344172f9db52526e8441d5748cd1
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -460,8 +460,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 02beb4247f8c3087e6743bb2b7915ad7215b60e3
-    csharp_sha: b3122444408af43475485135a714c982226d711b
+    python_sha: ece691bf53797d4b37c404f62932f5a656daa6aa
+    csharp_sha: f0c94045444eff8102b6ca6a4da47f363e15f133
   known_differences:
   - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -508,8 +508,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: b2eabcd0b9ddc11477c59b0474068367e8f84962
-    csharp_sha: a599efb43e5aa2194148bbdc14fd05ab0dc119b4
+    python_sha: bb264641367a75a1bb904e0ccd0473dfec5d62bf
+    csharp_sha: b8952c28ef68974ddfc0e76a924da664e3974871
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -525,7 +525,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: a11ea49af8f7aaa1b140dfa68bddbff690a6ef0b
-    csharp_sha: 156ac25e0570949b2f2db13a4593b9ca829ea5c4
+    csharp_sha: 98789ab8f521ea377659fd593b020af2efbe16fa
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -543,8 +543,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2026
-    python_sha: dd2ad73ebc3394d32bd70069ddf53a2b3e920c47
-    csharp_sha: 21a8d2a1f11937b450ac0ff615a4335971fa24e2
+    python_sha: 980ac6c1f8706ae190efd1aac7246fa933dbbacf
+    csharp_sha: 09cc87d9da96cf2ed4f1b9a54c42155847025477
   known_differences:
   - 'Socle pedagogique commun : crowdsourcing (agregation d''annotations bruitees) modelise dans les deux stacks.'
   - '2026-07-24 (po-2026) : backfill #8081 finding A4a -- les deux jumeaux omettaient le contexte fondateur (seisme Haiti 2010 + plateforme Ushahidi) du chap. 7 "Harnessing the Crowd" de Model-Based Machine Learning (Winn & Bishop). Meme cellule markdown ajoutee aux deux (parite semantique preservee). Les deux shas rebaselined dans cette PR.'
@@ -576,8 +576,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 3a4321e6b0e610dfd533982b543997bd9a436c83
-    csharp_sha: 30cbe41bd3c333fb5d360a866b69b98380362112
+    python_sha: 7570745f7f7bb0d2ea5da23d1dcce799f760114d
+    csharp_sha: 13fffedbd5ebe85c0c7532839243f0cbb9d08010
   known_differences:
   - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -592,8 +592,8 @@
   last_audit:
     date: '2026-07-23'
     by: po-2024
-    python_sha: 3bd78943aceb19a022104e3e5aaded508945adde
-    csharp_sha: 70554d0502ec3be47f752958f2cf601df2ffd371
+    python_sha: f432393e9e2beb33826314902665eed32ee2809f
+    csharp_sha: a4d1f404ec232c20737626f1aec1297ba0f57dd3
   known_differences:
   - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -608,8 +608,8 @@
   last_audit:
     date: '2026-07-23'
     by: po-2024
-    python_sha: 292b08c0a854679cabb78ca3f60a36e4d691d5d8
-    csharp_sha: 903f162463207547ed2a695e090d2abf54e6951e
+    python_sha: 393296ddf5d064ad6e402233808c4eb933c0cd68
+    csharp_sha: 5daa6e775cf62bb8c1852b3aeaaf95d814d3abfd
   known_differences:
   - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
