@@ -136,25 +136,44 @@ def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> boo
     """Return True if a markdown header at the same or higher level than the
     exercise header appears between ``exercise_idx`` and ``code_idx``.
 
-    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``,
-    or a ``### 6.1 ...`` sibling of ``### Exercice 2``) starts a new section and
-    breaks the attribution of the code cell to the exercise: the code then
-    belongs to that later section, not the exercise. A DEEPER sub-header (e.g.
-    ``### Indice`` under a ``## Exercice 1``) does NOT break the section (it is
-    a child of the exercise, common in worked exercise scaffolding).
+    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``)
+    starts a new section and breaks the attribution of the code cell to the
+    exercise: the code then belongs to that later section, not the exercise.
+    A DEEPER sub-header (e.g. ``### Indice`` under a ``## Exercice 1``) does
+    NOT break the section (it is a child of the exercise, common in worked
+    exercise scaffolding).
+
+    Recall-safety: ``### Indice`` and ``### Interpretation`` (level 3) under
+    ``### Exercice 1`` (level 3) are structurally indistinguishable from a
+    visualisation sub-header at the same level — we MUST NOT over-suppress
+    real exercise code cells. Therefore the level threshold is computed from
+    the FIRST exercise header line (the num-less parent, e.g. ``## Exercices``
+    at level 2), NOT the LAST numbered sub-header. With the parent level,
+    ``### Indice`` (deeper, level 3) and ``### Interprétation`` (deeper,
+    level 3) are correctly preserved.
 
     This suppresses cross-cell false positives where a demo/visualisation code
     cell sits a few cells after an exercise header but is actually owned by a
     later ``## Conclusion`` / ``## Section N`` section. Cf exercise-example-labeling.md
     (content-based rule). Safe default: if the exercise header level cannot be
     determined, do not suppress.
+
+    Additional check: a numbered subsection header (``### 3.4 Title``,
+    ``### 6.1 Diagrammes``) ALWAYS breaks attribution regardless of level.
+    These announce a NEW topic (cf Tweety-4 cell#24 FP class: ``## Exercice``
+    at level 2, then ``### 3.4 MaxSAT`` (level 3, deeper, but a real topic
+    transition, not an exercise-internal sub-header). The number distinguishes
+    a section/subsection boundary from exercise-internal scaffolding like
+    ``### Indice`` or ``### Interprétation`` which are NEVER numbered.
     """
     ex_src = ''.join(cells[exercise_idx].get('source', []))
-    ex_level = 0
-    for line in ex_src.split('\n'):
-        if EXERCISE_HEADER_RE.search(line):
-            ex_level = _header_level(line)
-            break
+    # First exercise header line is the num-less parent (e.g. ``## 7. Exercices``
+    # or ``## Exercices``). Its level is the threshold for the level-based check.
+    first_match = EXERCISE_HEADER_RE.search(ex_src)
+    if not first_match:
+        return False
+    matched_line = ex_src[first_match.start():first_match.end()]
+    ex_level = _header_level(matched_line)
     if not ex_level:
         return False
     for k in range(exercise_idx + 1, code_idx):
@@ -165,6 +184,11 @@ def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> boo
         for header_line in HEADER_LINE_RE.findall(src):
             if _header_level(header_line) <= ex_level:
                 return True
+        # Numbered subsection header (`### 3.4 Title`, `### 6.1 Diagrammes`):
+        # always breaks attribution regardless of level — these announce a
+        # new topic, not an exercise-internal sub-detail. Cf Tweety-4 cell#24.
+        if NUMBERED_SUBSECTION_HEADER_RE.search(src):
+            return True
     return False
 
 
@@ -221,6 +245,45 @@ def _numbered_exercise_header_between(cells, start_idx, end_idx) -> bool:
             continue
         src = ''.join(cell.get('source', []))
         if any(m.group(1) for m in EXERCISE_HEADER_RE.finditer(src)):
+            return True
+    return False
+
+
+# A markdown header line that is a numbered subsection ("### N.M Title" or
+# "## N. Title"). Distinguished from exercise-internal sub-headers like
+# "### Indice", "### Etape N", "### Solution" (which are children of an
+# exercise and SHOULD NOT break attribution). The numbered subsection
+# pattern uses a digit-then-dot prefix at the start of the title — these
+# are topic-level transitions ("### 3.4 MaxSAT", "### 6.1 Diagrammes 2D")
+# that genuinely start a new section, even when nested under a level-2
+# "## Exercice" header (which itself was promoted to level 2 because the
+# notebook author dropped the section number prefix, e.g. "## Exercice : Enumeration de MUS").
+NUMBERED_SUBSECTION_HEADER_RE = re.compile(
+    r'^#{1,6}\s+\d+(?:\.\d+)*\.?\s+\S', re.MULTILINE,
+)
+
+
+def _numbered_subsection_header_between(cells, start_idx, end_idx) -> bool:
+    """Return True if a markdown cell strictly between ``start_idx`` and
+    ``end_idx`` (exclusive) holds a numbered subsection header (``### N.M Title``).
+
+    Used by ``intervening_section_breaks_attribution`` to disambiguate: a deeper
+    sub-header that introduces a NEW topic (numbered ``### N.M``) breaks
+    attribution, while exercise-internal sub-headers (``### Indice``, ``### Etape N``,
+    ``### Solution``, ``### Reponses``, ``### Interpretation``) do NOT.
+
+    Recall-safety: a real solution cell never self-labels with a numbered
+    subsection header (``# --- 3.4.1 Title ---``) when it sits between an
+    exercise header and the next code cell — the exercise cell would own its
+    own header. The only legitimate uses of numbered subsection headers are
+    new topic transitions.
+    """
+    for k in range(start_idx + 1, end_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        if NUMBERED_SUBSECTION_HEADER_RE.search(src):
             return True
     return False
 
