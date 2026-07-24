@@ -60,7 +60,7 @@ Chaque ligne du registre respecte le schéma :
 
 ## Registre (pilote c.795)
 
-**22 entrées**, couvrant 9 familles thématiques. Toutes vérifiées firsthand via `sha256sum` au SHA `8092a4aec` (origin/main) le 2026-07-23, complétées au cycle c.797 (Track1-LangChain × 2 datasets ajoutés).
+**31 entrées** (post c.826), couvrant 10 familles thématiques. Toutes vérifiées firsthand via `sha256sum` au SHA `8092a4aec` (origin/main) le 2026-07-23 (29 entrées c.795-c.797), complétées au cycle c.826 (cross-series/matching-cv × 2 datasets ajoutés, `taxi-fare.csv` confirmé NON-TRACKED dans `origin/main` — voir `## Hors périmètre c.795`).
 
 ### ML / ML.NET (4)
 
@@ -125,6 +125,15 @@ Chaque ligne du registre respecte le schéma :
 |--------|----------:|-----------------|---------|-----------|-------|------|
 | `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/movies.csv` | 981 | `a5d9789189507a7…` | CC-BY-4.0 | vocabulaire-ontologie | Movies RDF SemanticWeb | — |
 
+### Cross-series / matching-cv (2)  *(ajouté c.826)*
+
+| Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
+|--------|----------:|-----------------|---------|-----------|-------|------|
+| `MyIA.AI.Notebooks/cross-series/matching-cv/data/consultants.csv` | 8 874 | `230f0cfe482d40c8…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Profils consultants (matching CV/fiches de poste) | — |
+| `MyIA.AI.Notebooks/cross-series/matching-cv/data/fiches_de_poste.csv` | 7 136 | `c00abba23aa5c90…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Fiches de postes vacants (matching CV/fiches de poste) | — |
+
+> **Note matching-cv.** Les deux datasets sont utilisés par `MyIA.AI.Notebooks/cross-series/matching-cv/main.py` + 4 tests unitaires (`tests/unit/test_*_performance.py`, `test_matching_utility.py`, `test_simple_matching.py`). Licence `SYNTHETIQUE-COURS` = fabriqué pour le cours, format structuré CSV ; le matching est implémenté dans `matching_cv.matching` (similarité cosinus + Jaccard sur compétences/langues/localisation). Aucun notebook `.ipynb` ne consomme ces données directement — l'usage est **code-first** (script + tests), pas notebook-pédagogique.
+
 ### RL (1)
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
@@ -144,7 +153,7 @@ Chaque ligne du registre respecte le schéma :
 
 | Famille | Datasets futurs | Cycle prévu |
 |---------|-----------------|-------------|
-| `ML/ML.Net` | `taxi-fare.csv` (à matérialiser si réintroduit) | c.796+ |
+| `ML/ML.Net/taxi-fare.csv` | **NON-TRACKED** dans `origin/main` (`git ls-tree origin/main MyIA.AI.Notebooks/ML/ML.Net/` ne le contient pas). Présent localement comme artefact 25 MB non commit, référencé par ML-2/ML-4 notebooks Python+dotnet mais **non-reproductible par fork**. → **HORS REGISTRE** (validateur rejetterait avec `MISSING CRITICAL` cf c.826). Issue à ouvrir : soit commit, soit supprimer la référence. | hors registre |
 | `QuantConnect/datasets/yfinance/` | 7 fichiers restants (ADA/AVAX/DOT/LINK/LTC/MATIC/XRP) | c.796+ |
 | `QuantConnect/ML-Training-Pipeline/results/` | résultats training (run-specific, pas dataset canonique) | hors registre |
 | `translations/*/*.csv` | traductions i18n (non-dataset) | hors registre |
