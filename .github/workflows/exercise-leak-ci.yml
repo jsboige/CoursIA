@@ -1,0 +1,72 @@
+name: exercise-leak-ci
+
+# Durable anti-regression guard for the "Exercice containing its solution"
+# vector (exercise-example-labeling.md, leak-scanner lineage #1214/#1336/#1344).
+# Fails a PR only when it INTRODUCES a new HIGH-severity exercise-leak
+# occurrence vs its base ref — inherited leaks (48 HIGH + 27 MEDIUM notebooks
+# on origin/main at PR time, drained one-PR-per-notebook per regle C.3 and the
+# #8053 acceptance) are tolerated so the gate never freezes the cluster.
+#
+# Mirrors the pip-leak-guard.yml pattern that already covers the !pip install
+# machine-path leak vector (#6314, secrets-hygiene.md §6 Stop & Repair):
+# - PR-aware scope (only fires on `pull_request` and on the relevant paths);
+# - Two scan runs (BASE on base ref, HEAD on PR head) — swap `MyIA.AI.Notebooks/`
+#   to capture the BASE scan without contaminating the already-captured HEAD;
+# - Delta guard compares the two and fails only on new HIGH.
+#
+# See #8053 (this issue), PR #8074 (the originating detector PR), and
+# scripts/notebook_tools/detect_solution_leaks.py (HIGH = Exercice labeled
+# cell containing complete code rather than a stub).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_solution_leaks.py'
+      - 'scripts/notebook_tools/exercise_leak_delta.py'
+      - '.github/workflows/exercise-leak-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exercise-leak-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exercise-leak-delta:
+    name: "Exercice-solution HIGH delta guard (#8053)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the BASE scan
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: HEAD scan (PR head)
+        run: |
+          python scripts/notebook_tools/detect_solution_leaks.py --scan-all > /tmp/head_leak.txt
+          # Surface the summary line in the GH Actions log for fast triage.
+          grep "^Results:" /tmp/head_leak.txt || true
+
+      # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. The
+      # HEAD scan above is already captured, so the swap cannot contaminate
+      # the delta — same defense as pip-leak-guard.yml.
+      - name: BASE scan (PR base ref)
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
+          python scripts/notebook_tools/detect_solution_leaks.py --scan-all > /tmp/base_leak.txt
+          grep "^Results:" /tmp/base_leak.txt || true
+          git checkout HEAD -- MyIA.AI.Notebooks
+
+      - name: "Fail if HIGH delta > 0 (new solution leaks introduced)"
+        if: github.event_name == 'pull_request'
+        run: python scripts/notebook_tools/exercise_leak_delta.py /tmp/base_leak.txt /tmp/head_leak.txt
