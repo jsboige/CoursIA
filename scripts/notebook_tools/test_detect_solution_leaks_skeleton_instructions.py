@@ -27,6 +27,7 @@ from detect_solution_leaks import (  # noqa: E02
     exercise_with_a_completer_minizinc,
     exercise_with_attente_implementation,
     exercise_with_exercice_indice_skeleton,
+    exercise_with_run_lean_snippet,
     intervening_section_breaks_attribution,
     _numbered_subsection_header_between,
     NUMBERED_SUBSECTION_HEADER_RE,
@@ -431,6 +432,149 @@ class TestNumberedSubsectionHeaderBreaks(unittest.TestCase):
         ]
         # No intervening cell between markdown header and code — no break.
         self.assertFalse(intervening_section_breaks_attribution(cells, 0, 1))
+
+
+class TestExerciseWithRunLeanSnippet(unittest.TestCase):
+    """Lean exercise wrapping a ``snippet_exN = \"\"\"...\"\"\"`` literal in a
+    ``run_lean(...)`` invocation with a ``print(resultat_exN)`` trailer —
+    Lean-15-Grothendieck-Tribute cells 25/29 pattern (c.8104g sub-grain of
+    EPIC #8053).
+
+    Recall-safety contract (L812/L815 doctrine): a REAL Lean proof
+    (``theorem ... := by sorry`` / ``example : ... := by ...`` with
+    substantive tactics, NOT ``#check`` / ``#eval`` verification statements)
+    MUST NOT match this helper — the anti-solution guard checks the snippet
+    body for proof statements and returns False when present.
+    """
+
+    def test_lean15_cell25_limites_adjonction(self):
+        """Lean-15 cell 25: Exercice 1 (limites et adjonction) with
+        #check imports + run_lean wrapper + Lecture commentary."""
+        src = '''\
+# Exercice 1 : limites et adjonction
+snippet_ex1 = """
+import Mathlib.CategoryTheory.Limits.Shapes.Products
+import Mathlib.CategoryTheory.Adjunction.Basic
+
+#check @CategoryTheory.Limits.HasLimits
+#check @CategoryTheory.Adjunction
+#check @CategoryTheory.Adjunction.adjunctionOfEquivLeft
+"""
+
+resultat_ex1 = run_lean(snippet_ex1, timeout_s=900)
+print(resultat_ex1)
+print("Lecture : HasLimits et Adjunction sont-ils accessibles depuis Mathlib ?")
+'''
+        self.assertTrue(exercise_with_run_lean_snippet(src))
+
+    def test_lean15_cell29_yoneda(self):
+        """Lean-15 cell 29: Exercice 4 (lemme de Yoneda) with #check
+        CategoryTheory.yoneda + run_lean wrapper + Lecture commentary."""
+        src = '''\
+# Exercice 4 : le lemme de Yoneda
+snippet_ex4 = """
+import Mathlib.CategoryTheory.Yoneda
+
+#check CategoryTheory.yoneda
+"""
+
+resultat_ex4 = run_lean(snippet_ex4, timeout_s=900)
+print(resultat_ex4)
+print("Lecture : Yoneda est-il importe depuis Mathlib ?")
+'''
+        self.assertTrue(exercise_with_run_lean_snippet(src))
+
+    def test_no_run_lean_call_does_not_match(self):
+        """A cell without ``run_lean(...)`` invocation is NOT a Lean
+        run_lean-snippet exercise, regardless of header markers."""
+        src = '''\
+# Exercice 1 : limites et adjonction
+import Mathlib.CategoryTheory.Limits.Shapes.Products
+print("HasLimits OK")
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
+
+    def test_run_lean_without_snippet_string_does_not_match(self):
+        """A cell with ``run_lean(...)`` but no ``snippet_exN = \"\"\"...\"\"\"``
+        wrapper is NOT a Lean run_lean-snippet exercise."""
+        src = '''\
+# Exercice 1 : limite directe
+resultat = run_lean("import Mathlib\\n#check 1 + 1", timeout_s=60)
+print(resultat)
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
+
+    def test_run_lean_without_exercise_header_does_not_match(self):
+        """A cell with run_lean + snippet but NO ``# Exercice N`` header is
+        NOT a Lean run_lean-snippet exercise. This guards against
+        ``Lean-15b`` cells which use ``# Verification interactive``
+        headers — those are worked-example verifications, not exercises,
+        and are correctly attributed by other helpers
+        (``closest_preceding_header_is_example``)."""
+        src = '''\
+# Verification interactive : Yoneda est-il importable ?
+snippet_v = """
+import Mathlib.CategoryTheory.Yoneda
+#check CategoryTheory.yoneda
+"""
+
+resultat_v = run_lean(snippet_v, timeout_s=60)
+print(resultat_v)
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
+
+    def test_run_lean_without_resultat_capture_does_not_match(self):
+        """A cell with run_lean + snippet + # Exercice header but no
+        ``resultat_*`` capture variable is NOT a Lean run_lean-snippet
+        exercise — the ``resultat_* = run_lean(...)`` pattern is the
+        pedagogical wrapper signature."""
+        src = '''\
+# Exercice 1 : Yoneda
+snippet_ex1 = """import Mathlib"""
+
+run_lean(snippet_ex1, timeout_s=60)
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
+
+    def test_real_lean_proof_in_snippet_does_not_match(self):
+        """Recall-safety: a cell whose snippet body contains a REAL Lean
+        proof (``theorem ... := by ...`` with substantive tactics, not
+        ``#check`` / ``#eval``) is NOT a verification harness — it's a
+        worked solution that the detector must continue to flag.
+
+        This test enforces L815 doctrine: structural indistinguishability
+        trade-off resolved by content inspection of the snippet body."""
+        src = '''\
+# Exercice 1 : preuve de has_limits_of_products
+snippet_ex1 = """
+import Mathlib.CategoryTheory.Limits.HasLimits
+
+theorem has_limits_of_products : HasLimits (CategoryTheory.Limits.Shapes.Products.{v} u) :=
+  inferInstance
+"""
+
+resultat_ex1 = run_lean(snippet_ex1, timeout_s=900)
+print(resultat_ex1)
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
+
+    def test_lean15b_verification_interactive_does_not_match(self):
+        """Lean-15b cells use ``# Verification interactive`` headers, not
+        ``# Exercice N`` — the verification harness pattern must NOT
+        classify them as exercises. The cell looks structurally similar
+        (snippet + run_lean + print) but the header marks it as a
+        worked-example verification, not an exercise."""
+        src = '''\
+# Verification interactive : Categories est-il accessible ?
+snippet_v1 = """
+import Mathlib.CategoryTheory.Category.Basic
+#check Category
+"""
+
+resultat_v1 = run_lean(snippet_v1, timeout_s=60)
+print(resultat_v1)
+'''
+        self.assertFalse(exercise_with_run_lean_snippet(src))
 
 
 if __name__ == "__main__":
