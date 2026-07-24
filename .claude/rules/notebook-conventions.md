@@ -75,3 +75,19 @@ Tout notebook committe : `execution_count: <int>` + `outputs: [...]` coherents p
 ## Scope strict re-execution (rule C.3)
 
 Commit UNIQUEMENT les notebooks dont la source a change (`git diff <nb> | grep -cE '^\+\s*"source"' > 0`). Pour audit/inventaire : Papermill dans `/tmp/audit_<famille>_$(date +%s)/`, rapport sur dashboard, pas dans le repo.
+
+## Interprétation grounded (rule C.4)
+
+**Convention issue #8364 (EPIC #8052).** Une cellule markdown d'interprétation ne cite **que** des valeurs présentes dans les outputs observés des cellules de code adjacentes (ou explicitement référencées). Complète le positionnement canonique « Interpretation APRES le code » (section *Enchainement* ci-dessus) en gouvernant le **contenu** cité, non plus seulement l'ordre.
+
+- Une valeur citée absente de l'output → **re-executer pour la mesurer** (règle F HARD : install/invoke/re-plug le vrai outil, cf [sota-not-workaround.md](sota-not-workaround.md) Stop & Repair), ou **reformuler sans la citer**. Jamais de prose écrite d'abord puis « validée » contre l'output après.
+- **Pour une PR « alignement doc-honesty »** : ne JAMAIS ré-aligner la prose sur un output qui la contredit sans **diagnostiquer la cause de la dérive**. Une contradiction prose↔output signale que le notebook a dérivé (env défectueux, claim antérieure fabriquée, moteur qui change, stochasticité non-seedée). Verdict obligatoire dans le body PR :
+
+| Verdict | Critère | Action |
+|---------|---------|--------|
+| `CAUSE_FIXED` | Cause racine corrigée (env réparé règle F, claim antérieure revertée, seed ajouté) | Merge OK |
+| `CAUSE_DOCUMENTED_ONLY` | Cause identifiée, non traitée (ré-alignement cosmétique = « jambe de bois repeinte ») | Issue fille ouverte + `See #N` |
+| `CAUSE_INTRINSIC` | Cause structurelle non corrigeable (moteur upstream cassé sans alternative) | Bandeau honnête + issue engine-fix |
+
+Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant (cf vague SW-13 #7751→#7872→#7944→#8343, 4 PRs pour colmater des claims fabriquées en série). Voir aussi [sota-not-workaround.md](sota-not-workaround.md) (axe-2 SOTA), [secrets-hygiene.md](secrets-hygiene.md) règle 6 (jamais hand-editer un output — corriger la cause + re-executer).
+
