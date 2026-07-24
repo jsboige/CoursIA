@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-24** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # 🎨 Templates Phase 2 - Implémentation GenAI CoursIA
 
 **Date :** 7 octobre 2025  
