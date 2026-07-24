@@ -14,36 +14,65 @@ L'open-courseware CoursIA héberge **300+ notebooks** (Python + .NET Interactive
 3. **Le catalogue** (`COURSE_CATALOG.generated.json`) n'expose **aucun champ** runtime/ressource.
 4. **Les audits sémantiques** (#8052) prennent l'output comme vérité — si l'exécution a silencieusement *skip* une cellule GPU, le claim reste faux même avec une note pédagogique d'avertissement.
 
-## Schéma `cost:` — YAML frontmatter portable
+## Schéma `cost:` — `nb.metadata['cost']` (JSON, forme canonique)
 
-Chaque notebook pédagogique DOIT exposer en cellule 0 (markdown) un bloc YAML :
+**Forme canonique (design-gate c.866, #8056).** Chaque notebook pédagogique DOIT
+exposer sa matrice de coût dans **`nb.metadata['cost']`** (objet JSON, invisible
+au rendu markdown). C'est la seule forme propre : une cellule markdown portant un
+bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
+(défaut de rendu que le guard `#8352` bloque en ERROR). L'exemplar de référence =
+[`Infer-3-Factor-Graphs`](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb)
++ `Infer-4-Bayesian-Networks` (PR #8323).
 
-```yaml
----
-title: <titre du notebook>
-cost:
-  api_usd_est: <float|range>     # Coût API estimé par exécution end-to-end (USD). 0 si gratuit.
-  api_provider: <string>         # openai | anthropic | mistral | hf | replicate | google | local
-  cpu_min: <int>                 # Estimation CPU-only minutes (range ou best-case)
-  gpu_min: <int>                 # Estimation GPU minutes (range ou best-case)
-  gpu_required: <bool>           # true si impossible sans GPU
-  vram_gb: <int|range>           # VRAM minimum (GB), ex: 12, 24, ou range "16-24"
-  vram_tier: <LITE|MID|HIGH>     # Catégorie VRAM (cf table §"Tiers VRAM")
-  network: <bool>                # Accès réseau requis (téléchargement modèle, appel API)
-  external_account: <string|none>  # Compte externe obligatoire (openai, anthropic, hf, qc, ...)
-  free_alternative: <string|none>  # Notebook du dépôt qui couvre le même sujet sans coût
-  reduced_pedagogical: <string|none>  # Version pédagogique réduite (sous-ensemble ou mock)
-  reproducibility: <HIGH|MED|LOW>  # Reproductibilité : HIGH=déterministe, MED=seed-dépendant, LOW=stochastique
-  last_validated: <ISO8601>       # Date dernière exécution validée (papermill/QC Cloud/MCP)
-  validator: <papermill|qc_cloud|manual|lean_build|sk_agent|sk_visual>
----
+```json
+// nb.metadata["cost"] — l'objet JSON sérialisé par le notebook (.ipynb = JSON).
+{
+  "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit.
+  "api_provider": "openai",       // openai | anthropic | mistral | hf | replicate | google | local | none
+  "cpu_min": 1,                   // Estimation CPU-only minutes (range ou best-case)
+  "gpu_min": 0,                   // Estimation GPU minutes (range ou best-case)
+  "gpu_required": false,          // true si impossible sans GPU
+  "vram_gb": 0,                   // VRAM minimum (GB), ex: 12, 24, ou range "16-24"
+  "vram_tier": "LITE",            // Catégorie VRAM (cf table §"Tiers VRAM")
+  "network": true,                // Accès réseau requis (téléchargement modèle, appel API)
+  "external_account": "openai",   // Compte externe obligatoire (openai, anthropic, hf, qc, ...) | "none"
+  "free_alternative": null,       // Notebook du dépôt qui couvre le même sujet sans coût | null
+  "reduced_pedagogical": null,    // Version pédagogique réduite (sous-ensemble ou mock) | null
+  "reproducibility": "HIGH",      // HIGH=déterministe, MED=seed-dépendant, LOW=stochastique
+  "last_validated": "2026-07-24", // Date dernière exécution validée (ISO8601, papermill/QC Cloud/MCP)
+  "validator": "papermill",       // papermill | qc_cloud | manual | lean_build | sk_agent | sk_visual
+}
 ```
+
+> Le champ `title` (présent dans l'ancienne forme YAML) est **retiré** : redondant
+> avec le titre H1 du notebook. Les valeurs sont identiques à l'ancien schéma YAML
+> (seul le **lieu de stockage** change : JSON metadata au lieu de cellule markdown).
+
+### Migration & backward-compat
+
+La migration de masse des ~100 notebooks existants se fait **par tranches famille**
+(rollout c.795/796/797 pattern), chaque lane migrant sa famille opportuniste. Le
+vérificateur [`check_cost_metadata.py`](../../scripts/audit/check_cost_metadata.py)
+lit **`metadata['cost']` d'abord**, retombe sur le scan de cellule `---...---` en
+**fallback** (backward-compat) — les deux formes coexistent pendant la transition,
+l'ordre de migration est non-bloquant. À terme, toutes les cellules `---`-YAML
+sont retirées (elles déclenchent le guard `#8352`).
+
+**Divulguation coût côté étudiant (OPTIONNELLE).** La matrice `metadata.cost` est
+machine-only (invisible). Si on souhaite la surface à l'étudiant, une **petite
+table markdown rendue** ou un **badge** suffit — jamais reproduire le YAML brut :
+
+```markdown
+> 💰 **Coût** : gratuit (CPU local, ~3 min). Pas de compte externe requis.
+```
+
+Ne pas sur-scoper 100 notebooks avec une table rendue — `metadata.cost` reste la
+source de vérité, le badge est un confort de lecture.
 
 ### Champs obligatoires vs optionnels
 
 | Champ | Obligatoire | Défaut si omis |
 |-------|-------------|----------------|
-| `title` | ✓ | (chaîne libre) |
 | `cost.api_usd_est` | ✓ | `0` |
 | `cost.api_provider` | ✓ | `"none"` |
 | `cost.cpu_min` | ✓ | `0` |
@@ -56,7 +85,7 @@ cost:
 | `cost.free_alternative` | optionnel | `null` (peut être ajouté après-coup) |
 | `cost.reduced_pedagogical` | optionnel | `null` |
 | `cost.reproducibility` | ✓ | `"HIGH"` |
-| `cost.last_validated` | ✓ | (date de création du frontmatter) |
+| `cost.last_validated` | ✓ | (date de création de la metadata) |
 | `cost.validator` | ✓ | `"manual"` |
 
 ### Tiers VRAM (déterminé par `vram_gb`)
@@ -90,6 +119,13 @@ Le champ `cost.free_alternative` permet le routage machine : si `po-2025` n'a pa
 ## Peuplement pilote (cycle c.794)
 
 5 familles × 2 notebooks = 10 entrées de référence (échantillon ≥5%/famille, conforme protocole #8052).
+
+> **Note — syntaxe des exemples.** Les blocs ci-dessous sont en **YAML commenté**
+> pour la lisibilité (le JSON canonique de `metadata['cost']` ne supporte pas les
+> commentaires inline). Les **valeurs des champs** sont strictement identiques entre
+> l'ancienne forme YAML cellule et la nouvelle forme `metadata.cost` JSON — seul le
+> **lieu de stockage** change. En pratique, ces valeurs vont dans
+> `nb.metadata['cost']` (objet JSON sérialisé par le `.ipynb`).
 
 ### GenAI/Image (GPU + API $)
 
@@ -310,14 +346,14 @@ cost:
 
 ## Intégration à la grille audit sémantique #8052
 
-Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](https://github.com/jsboige/CoursIA/pull/8068) — branche `feature/c793-audit-semantic-sampling-8052`) confronte claims-du-markdown ↔ outputs réels. **Litmus 5 (cohérence pédagogique)** peut être étendu pour vérifier que la cellule frontmatter `cost:` est cohérente avec le reste du notebook :
+Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](https://github.com/jsboige/CoursIA/pull/8068) — branche `feature/c793-audit-semantic-sampling-8052`) confronte claims-du-markdown ↔ outputs réels. **Litmus 5 (cohérence pédagogique)** vérifie que la matrice `metadata['cost']` est cohérente avec le reste du notebook :
 
 | Incohérence | Sévérité |
 |-------------|----------|
-| Frontmatter `cost.gpu_required: false` mais cellule code lance `torch.cuda.device()` | MAJOR |
-| Frontmatter `cost.api_usd_est: 0.0` mais cellule appelle `openai.ChatCompletion.create()` | CRITICAL |
-| Frontmatter `cost.external_account: none` mais cellule demande `HF_TOKEN` | MAJOR |
-| Frontmatter `cost.free_alternative` pointe vers un notebook inexistant | MAJOR |
+| `metadata.cost.gpu_required: false` mais cellule code lance `torch.cuda.device()` | MAJOR |
+| `metadata.cost.api_usd_est: 0.0` mais cellule appelle `openai.ChatCompletion.create()` | CRITICAL |
+| `metadata.cost.external_account: none` mais cellule demande `HF_TOKEN` | MAJOR |
+| `metadata.cost.free_alternative` pointe vers un notebook inexistant | MAJOR |
 | Notebook QC sans `qc_cloud` validator | MAJOR |
 | Notebook GPU sans `sk_visual` validator (cf #5780 sweep) | MINOR |
 
@@ -328,7 +364,7 @@ Ces extensions restent **hors scope c.794** (à dispatcher cycles c.795+) — la
 Pour chaque cycle mensuel :
 
 - 1 fichier `docs/notebook-metadata/cost-matrix.md` mis à jour (peuplement continu par famille)
-- N notebooks avec frontmatter `cost:` ajouté (pilote : 10 en c.794, ~50 en c.795+)
+- N notebooks avec `metadata['cost']` ajouté (pilote : 10 en c.794, ~50 en c.795+)
 - 1 entrée catalogue `cost` exposée dans `COURSE_CATALOG.generated.json` (cf catalog-pr-hygiene R1 : régénération automatique par cron quotidien, pas manuel)
 - 1 validateur `scripts/audit/check_cost_metadata.py` (cf livrable 2) — flag les incohérences litmus 5
 
@@ -344,7 +380,7 @@ Pour chaque cycle mensuel :
 
 | # | Critère | Status c.794 |
 |---|---------|--------------|
-| 1 | Schéma `cost:` portable (YAML frontmatter cellule 0) | ✅ Défini ci-dessus (15 champs) |
+| 1 | Schéma `cost:` canonique (`nb.metadata['cost']` JSON, cellule `---`-YAML retirée du mandat guard #8352) | ✅ Défini ci-dessus (14 champs, `title` retiré) |
 | 2 | Colonne catalogue correspondante (`COURSE_CATALOG.generated.json.cost`) | ✅ Schéma JSON défini (cf §"Colonne catalogue") |
 | 3 | ≥5%/famille pilote (10/300 = 3.3% global, mais 2/famille sur 5 familles pilotes = pilote suffisant) | ✅ 10 notebooks, 5 familles |
 | 4 | Alternative gratuite / version pédagogique réduite / compte externe requis | ✅ Champs `free_alternative` + `reduced_pedagogical` + `external_account` |
