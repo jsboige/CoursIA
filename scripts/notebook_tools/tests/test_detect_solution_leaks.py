@@ -17,6 +17,8 @@ from detect_solution_leaks import (
     SOUMIS_PAR_RE,
     SOLUTION_MARKER_RE,
     STUB_PATTERNS,
+    _last_exercise_header_match,
+    _numbered_exercise_header_between,
     closest_preceding_header_is_example,
     code_cell_first_comment_labels_example,
     commented_template_stub,
@@ -731,4 +733,208 @@ class TestCommentedTemplateSuppression:
         )
         findings = scan_notebook(str(nb))
         assert not any(f.get("severity") == "HIGH" for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# Exercise-header attribution precision (multi-header + num-less-section FP
+# class fixes for #8084).
+# ---------------------------------------------------------------------------
+
+
+class TestLastExerciseHeaderMatch:
+    """The `_last_exercise_header_match` helper picks the LAST numbered match
+    in a single markdown cell. Used by the detector to close the `Exercice ?`
+    message class for multi-header cells (parent num-less `## N. Exercices`
+    + numbered sub-header `### Exercice M`).
+    """
+
+    def test_single_numbered_header(self):
+        m = _last_exercise_header_match("## Exercice 5 : a faire")
+        assert m is not None
+        assert m.group(1) == "5"
+
+    def test_single_numless_header(self):
+        m = _last_exercise_header_match("## Exercices")
+        assert m is not None
+        assert m.group(1) == ""
+
+    def test_multi_header_picks_last_numbered(self):
+        # The exact real-world pattern: num-less parent + numbered sub-header.
+        src = "## 6. Exercices\n\nIntro.\n\n### Exercice 1 — Volume d'un noeud torique"
+        m = _last_exercise_header_match(src)
+        assert m is not None
+        assert m.group(1) == "1", "last numbered match must win (closes Exercice ? FP)"
+
+    def test_multi_header_all_numless(self):
+        # Two num-less headers (no numbered anywhere) — last one wins.
+        src = "## 6. Exercices\n\n### Exercices avances"
+        m = _last_exercise_header_match(src)
+        assert m is not None
+        assert m.group(1) == "", "with no numbered matches, last match wins"
+
+    def test_multi_header_recall_keeps_numbered(self):
+        # Recall guard: when MULTIPLE numbered matches exist in the same cell
+        # (the "suggestions block" pattern, e.g. a num-less parent + multiple
+        # numbered `#### Exercice 1, 2, 3` siblings), the helper falls back to
+        # the FIRST match to preserve the original numbering semantics. The
+        # suggestions are a SEPARATE numbering, not duplicates of earlier
+        # exercises — switching to "last numbered" would surface phantom
+        # duplicate-number MEDIUM findings.
+        src = "## Exercice 1 : Foo\n\n## Exercice 2 : Bar"
+        m = _last_exercise_header_match(src)
+        assert m is not None
+        assert m.group(1) == "1", "with multiple numbered matches, first match wins (suggestions-block recall)"
+
+    def test_suggestions_block_pattern_first_match(self):
+        # The real-world SUGG-BLOCK pattern that introduced the duplicate-MEDIUM
+        # regression when always picking the last numbered match.
+        src = "## Conclusion et exercices\n\n### Exercices suggeres\n\n#### Exercice 1 : Foo\n\n#### Exercice 2 : Bar\n\n#### Exercice 3 : Baz"
+        m = _last_exercise_header_match(src)
+        assert m is not None
+        assert m.group(1) == "", "first match (num-less 'Exercices suggeres') wins when multiple numbered siblings follow"
+
+    def test_no_match(self):
+        assert _last_exercise_header_match("## Introduction") is None
+
+
+class TestNumberedExerciseHeaderBetween:
+    """The `_numbered_exercise_header_between` helper detects a numbered
+    sub-header sitting between a num-less parent and the next code cell. When
+    True, the detector skips the num-less parent so the code cell is not
+    double-flagged.
+    """
+
+    def _cells(self, *specs):
+        return [{"cell_type": ct, "source": [src]} for ct, src in specs]
+
+    def test_numbered_subheader_present(self):
+        cells = self._cells(
+            ("markdown", "## Exercices\n\nSection intro."),
+            ("markdown", "### Exercice 1 : foo"),
+            ("code", "x = 1"),
+        )
+        assert _numbered_exercise_header_between(cells, 0, 2) is True
+
+    def test_no_subheader(self):
+        cells = self._cells(
+            ("markdown", "## Exercices\n\nSection intro."),
+            ("code", "x = 1"),
+        )
+        assert _numbered_exercise_header_between(cells, 0, 1) is False
+
+    def test_only_numless_subheader(self):
+        # A sibling num-less sub-header does NOT count — we need a numbered one.
+        cells = self._cells(
+            ("markdown", "## 6. Exercices\nIntro."),
+            ("markdown", "### Exercices avances"),
+            ("code", "x = 1"),
+        )
+        assert _numbered_exercise_header_between(cells, 0, 2) is False
+
+    def test_intervening_code_does_not_break(self):
+        # A code cell between the two markdown cells (the helper iterates
+        # strictly between) — still finds the numbered sub-header.
+        cells = self._cells(
+            ("markdown", "## Exercices"),
+            ("code", "intro_print()"),
+            ("markdown", "### Exercice 1 : foo"),
+            ("code", "real_solution()"),
+        )
+        assert _numbered_exercise_header_between(cells, 0, 3) is True
+
+
+class TestMultiHeaderAttributionFix:
+    """End-to-end integration tests for the two FP-class fixes. Mirrors the
+    recall-guard pattern used in TestWorkedExampleFalsePositiveSuppression and
+    TestCommentedTemplateSuppression (real-world FP cases that the fix must
+    close without leaking new FNs).
+    """
+
+    def test_multi_header_single_cell_reports_numbered(self, tmp_path):
+        # Close Fix 1: a multi-header cell with a num-less parent and a
+        # numbered sub-header reports the code cell with the NUMBERED message,
+        # not 'Exercice ?'.
+        nb = _write_nb(
+            tmp_path / "multi.ipynb",
+            [
+                _md("## 6. Exercices\n\nIntro.\n\n### Exercice 1 — Volume"),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert "Exercice 1" in highs[0]["message"]
+        assert "Exercice ?" not in highs[0]["message"]
+
+    def test_numless_parent_then_numbered_child_no_duplicate(self, tmp_path):
+        # Close Fix 2: a num-less parent cell + a numbered sub-header cell +
+        # code cell → exactly ONE HIGH (the numbered attribution), not two.
+        nb = _write_nb(
+            tmp_path / "numlessdup.ipynb",
+            [
+                _md("## Exercices\n\nSection intro."),
+                _md("### Exercice 1 : a faire"),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1, "num-less parent must not produce a duplicate"
+        assert "Exercice 1" in highs[0]["message"]
+        assert highs[0]["cell_index"] == 2
+
+    def test_genuinely_numless_closest_still_question(self, tmp_path):
+        # Recall guard: a markdown cell whose LAST exercise header is genuinely
+        # num-less (no numbered sub-header in the same cell) still flags with
+        # 'Exercice ?' — the helper has not over-rotated. The code cell is
+        # still HIGH; the message is num-less for the right reason.
+        nb = _write_nb(
+            tmp_path / "numless.ipynb",
+            [
+                _md("## Exercices avances\n\nBlock without a numbered sub-header."),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert "Exercice ?" in highs[0]["message"]
+
+    def test_single_header_unchanged_under_fix1(self, tmp_path):
+        # Recall guard: a single `### Exercice N` header is a no-op for Fix 1
+        # (only one match exists, so "last" = "first"). HIGH still flags with
+        # the correct number.
+        nb = _write_nb(
+            tmp_path / "single.ipynb",
+            [
+                _md("### Exercice 5 : a completer"),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert "Exercice 5" in highs[0]["message"]
+
+    def test_real_leak_still_flagged_under_multi_header(self, tmp_path):
+        # Recall guard: Fix 1 makes the message more accurate but never
+        # suppresses a real leak. The code cell under a multi-header cell is
+        # still HIGH (the whole point of the detector).
+        nb = _write_nb(
+            tmp_path / "releak.ipynb",
+            [
+                _md("## 6. Exercices\n\nIntro.\n\n### Exercice 3 : resolv"),
+                _code(_SOLUTION_BODY),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        highs = [f for f in findings if f.get("severity") == "HIGH"]
+        assert len(highs) == 1
+        assert "Exercice 3" in highs[0]["message"]
+
+
+# ---------------------------------------------------------------------------
+# End of new tests
+# ---------------------------------------------------------------------------
 
