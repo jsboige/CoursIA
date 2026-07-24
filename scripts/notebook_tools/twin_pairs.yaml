@@ -240,8 +240,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: def93e424a6efe47d05a5eb40e6baf454fa01f53
-    csharp_sha: cb4aa57859c9d9e6dedde3de66c4b0973b4bf1bf
+    python_sha: 51ef5d8190ad8cb014064e4369465188c915f45a
+    csharp_sha: 82dc028b28199cb8ed4edaa3a04578625f32db1e
   known_differences:
     - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
     - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."
@@ -255,8 +255,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 5839320e691dba96c850a2962a7591515ab4e586
-    csharp_sha: b41ce675ccf59044a9a7c14d60238c05b81f4b83
+    python_sha: 5163a0a6d5d5cf86806b42d639e85f3e25e09e54
+    csharp_sha: 74613155c83f9337ca2288afd1bc14f366f77f91
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."
@@ -270,8 +270,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: fb9b7682f7637a5e79497ba3c617a3b5ee6b63d7
-    csharp_sha: 8dda111e9203b5c3f0a9bc794293d2e3b503fcc1
+    python_sha: 9212548070b1d114580643198353bc718d61db8e
+    csharp_sha: f644ea88d58e430780b712ac2c5d8e1d0f32bc3d
   known_differences:
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
@@ -285,8 +285,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: ba50827336ed3ff842187c635ad01f9061d5986a
-    csharp_sha: 74aead9b8219984c181d13c461ecc717c619385c
+    python_sha: 322cee469a6aceb3ef3be781176b5123c7fca1f2
+    csharp_sha: 7a5a439488e6e28a877d8dc7e38bed21166e1b2b
   known_differences:
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
@@ -300,8 +300,8 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: c8695475d659b33759039a5ab6f621f1e1b13826
-    csharp_sha: 1ee06f522a4b7a122627a4113c7a3c92dc7854d7
+    python_sha: 6585308b30c5e0d151e2a96af46ac331dae35cc2
+    csharp_sha: 6250dc22c3ec7ce9d154211ae5189ddee5919e2c
   known_differences:
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."
