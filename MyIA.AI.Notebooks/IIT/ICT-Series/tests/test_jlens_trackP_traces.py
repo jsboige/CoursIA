@@ -237,3 +237,86 @@ def test_real_trackP_traces_schema(variant):
     assert "persona" in str(tr["meta"].get("persona_sets", ""))   # au moins un set persona
     for e in tr["prompts"].values():
         assert e["ids"].shape[1] == K_TOPK
+
+
+# --------------------------------------------------------------------------- #
+# ACCEPTANCE #2 sur traces REELLES : reorganisation workspace par persona,
+# separee du null de controle (permutation d'embeddings d'entree). #5681.
+# --------------------------------------------------------------------------- #
+def _occupancy_by_persona(traces, feats):
+    """[n_prompts, F] occupation-workspace (moyenne temporelle du panel dense)
+    + label persona par prompt. La question Track P : les prompts se regroupent-ils
+    par persona dans ce sous-espace differentiel ?"""
+    panels = jtp.acts_topk_panels(traces, feats)
+    keys = sorted(panels)
+    X = np.stack([panels[k].mean(axis=0) for k in keys])          # [P, F]
+    labels = np.array([k[0] for k in keys])                       # persona par prompt
+    return X, labels
+
+
+def _silhouette(X, labels):
+    """Coefficient de silhouette moyen (distance euclidienne, clusters = personas).
+    > 0 : regroupement persona reel ; <= 0 : pas de structure persona."""
+    D = np.sqrt(((X[:, None, :] - X[None, :, :]) ** 2).sum(-1))
+    uniq = np.unique(labels)
+    sils = []
+    for i in range(X.shape[0]):
+        same = labels == labels[i]; same[i] = False
+        a = D[i, same].mean() if same.any() else 0.0
+        b = min(D[i, labels == g].mean() for g in uniq if g != labels[i])
+        sils.append((b - a) / (max(a, b) + 1e-12))
+    return float(np.mean(sils))
+
+
+def test_real_trackP_control_vs_trained_separation():
+    """Acceptance #2 #5681 sur les traces REELLES (extraction GPU2), pas la fixture.
+
+    Confronte la variante ``trained`` (Qwen3.5-4B base + conditionnements persona)
+    au null ``control`` (permutation seedee des embeddings d'entree, qui detruit la
+    correspondance token->feature en preservant les stats marginales top-k). Si la
+    reorganisation du workspace par persona est REELLE, ``trained`` se regroupe par
+    persona (silhouette > 0, au-dela d'un shuffle de labels) la ou ``control`` ne le
+    fait pas. Readout numpy pur -- aucun GPU (la piste GPU2 s'arrete a l'extraction).
+
+    Faits robustes verifies (marges confortables, non-flaky) :
+      1. panels differentiels trained/control quasi DISJOINTS (le null deplace le
+         regime d'activation vers un autre sous-espace J) ;
+      2. trained silhouette > 0 (regroupement persona reel) ;
+      3. trained silhouette >> control silhouette (ecart net) ;
+      4. trained silhouette significativement > son null de permutation de labels.
+    """
+    base = Path(__file__).parent.parent / "traces"
+    p_tr = base / "ict_trackP_jlens_layer16_trained.npz"
+    p_co = base / "ict_trackP_jlens_layer16_control.npz"
+    if not (p_tr.exists() and p_co.exists()):
+        pytest.skip("traces Track P reelles absentes (extraction GPU2 #5681 non livree)")
+
+    tr_trained = jtp.load_traces(p_tr)
+    tr_control = jtp.load_traces(p_co)
+
+    feats_tr = jtp.differential_features(tr_trained, k=12)
+    feats_co = jtp.differential_features(tr_control, k=12)
+
+    # (1) panels differentiels quasi disjoints : le null vit dans un autre sous-espace
+    overlap = len(set(feats_tr.tolist()) & set(feats_co.tolist()))
+    assert overlap <= 3, f"overlap panels trained/control={overlap}/12 (attendu quasi-disjoint)"
+
+    # Diagonale : chaque variante sur SON panel discriminant (le cross donne des
+    # zeros degeneres, panels disjoints -> non informatif).
+    X_tr, lab_tr = _occupancy_by_persona(tr_trained, feats_tr)
+    X_co, lab_co = _occupancy_by_persona(tr_control, feats_co)
+    sil_tr = _silhouette(X_tr, lab_tr)
+    sil_co = _silhouette(X_co, lab_co)
+
+    # (2) regroupement persona reel dans le modele entraine
+    assert sil_tr > 0.05, f"trained silhouette={sil_tr:+.3f} (attendu > 0 : regroupement reel)"
+    # (3) le null ne reproduit PAS la structure persona
+    assert sil_tr - sil_co > 0.15, (
+        f"ecart trained-control={sil_tr - sil_co:+.3f} insuffisant "
+        f"(trained={sil_tr:+.3f}, control={sil_co:+.3f})")
+
+    # (4) significativite : silhouette trained au-dela d'un shuffle de labels persona
+    rng = np.random.default_rng(0)
+    null = np.array([_silhouette(X_tr, rng.permutation(lab_tr)) for _ in range(2000)])
+    p_perm = float((null >= sil_tr).mean())
+    assert p_perm < 0.01, f"trained silhouette non significatif (p_perm={p_perm:.4f})"
