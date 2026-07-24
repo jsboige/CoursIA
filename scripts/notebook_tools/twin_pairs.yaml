@@ -541,11 +541,12 @@
   parity_level: semantic
   last_audit:
     date: '2026-07-24'
-    by: po-2023
-    python_sha: 2f27544c72a18786337e197369da750edff7d0a8
-    csharp_sha: dab2a015013ff6604ed8a366581345d555e883df
+    by: po-2026
+    python_sha: dd2ad73ebc3394d32bd70069ddf53a2b3e920c47
+    csharp_sha: 21a8d2a1f11937b450ac0ff615a4335971fa24e2
   known_differences:
   - 'Socle pedagogique commun : crowdsourcing (agregation d''annotations bruitees) modelise dans les deux stacks.'
+  - '2026-07-24 (po-2026) : backfill #8081 finding A4a -- les deux jumeaux omettaient le contexte fondateur (seisme Haiti 2010 + plateforme Ushahidi) du chap. 7 "Harnessing the Crowd" de Model-Based Machine Learning (Winn & Bishop). Meme cellule markdown ajoutee aux deux (parite semantique preservee). Les deux shas rebaselined dans cette PR.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
