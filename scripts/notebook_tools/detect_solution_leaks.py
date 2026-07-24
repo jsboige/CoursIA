@@ -613,6 +613,89 @@ def exercise_with_exercice_indice_skeleton(source: str) -> bool:
     return not has_substantive_call
 
 
+def exercise_with_run_lean_snippet(source: str) -> bool:
+    """Return True if the cell is a Lean exercise that wraps a ``snippet_exN``
+    string literal passed to ``run_lean(...)`` for isolated execution, with
+    pedagogical commentary (``# Lecture : ...``) — the student inspects the
+    snippet output and answers the conceptual question.
+
+    Structural pattern observed in ``Lean-15-Grothendieck-Tribute`` cells 25
+    and 29 (c.8104g sub-grain of EPIC #8053):
+
+    1. A ``# Exercice N : <topic>`` (or similar) header comment at the top
+       of the cell body — the same language the detector uses to attribute
+       the code cell to its exercise markdown header.
+    2. A multi-line ``snippet_exN = \"\"\" ... Lean code ... \"\"\"`` literal
+       containing ``import`` / ``#check`` / ``#eval`` style verification
+       statements — the snippet itself is mostly *check statements* that
+       demonstrate type-class instances are reachable, not a worked theorem
+       proof.
+    3. A ``resultat_exN = run_lean(snippet_exN, timeout_s=...)`` invocation
+       that compiles and runs the snippet in an isolated Lean process.
+    4. A ``print(resultat_exN)`` trailer that displays the snippet's output.
+    5. Optional pedagogical commentary (``# Lecture : ...``) guiding the
+       student on what to observe.
+
+    These cells are LEGITIMATE EXERCISES under the user's doctrine (cf
+    ``.claude/rules/exercise-example-labeling.md`` §"Classification PAR
+    CONTENU"): the snippet is a verification harness, not a worked theorem
+    proof. The student runs the snippet, observes the Lean output, and
+    formulates an answer to the conceptual question stated in the markdown
+    header above. The detector previously reported this as HIGH because the
+    snippet looks like "real Lean code under an exercise header" — the fix
+    is to recognize the ``run_lean`` wrapper pattern as a Lean-specific
+    exercise skeleton.
+
+    Recall-safe contract: a cell that contains a *real* Lean solution
+    (a complete ``theorem ... := by sorry`` / `:= by <tactics>` proof or a
+    substantive ``example : ... := by ...`` proof — NOT just `#check`
+    imports / type-class reachability checks) must NOT match this helper.
+    Such a cell would lack the ``snippet_exN = \"\"\"...\"\"\"`` wrapper or
+    contain substantive proof tactics, making the regex below return False.
+    """
+    # Marker 1: a `run_lean(` call exists in the cell.
+    if not re.search(r'\brun_lean\s*\(', source):
+        return False
+    # Marker 2: a multi-line string literal assigned to `snippet_exN` (or
+    # similar snippet_ prefix). The triple-quoted body holds the snippet.
+    if not re.search(r'\bsnippet_\w+\s*=\s*"""', source):
+        return False
+    # Marker 3: the cell body itself announces an exercise header in its
+    # own comment block (the detector's `EXERCISE_HEADER_RE` matches both
+    # markdown AND code cell comments). This distinguishes from
+    # `Lean-15b` cells which use `# Verification interactive` headers
+    # (those are NOT exercises — they're worked-example verifications and
+    # already correctly attributed by `closest_preceding_header_is_example`).
+    if not re.search(
+        r'(?:^|\n)\s*#\s*Exercice\b', source, re.IGNORECASE | re.MULTILINE
+    ):
+        return False
+    # Marker 4: a `resultat_exN` (or `resultat_*`) capture variable that the
+    # student inspects via `print(...)`. Required to distinguish from a bare
+    # `run_lean(...)` invocation without a pedagogical wrapper.
+    if not re.search(r'\bresultat_\w+\s*=\s*run_lean\s*\(', source):
+        return False
+    # Anti-solution guard: if the snippet body contains substantive Lean
+    # proof tactics (`theorem ... := by <tactics>` with non-`#check` /
+    # non-`#eval` statements), this is NOT a verification harness — it's a
+    # worked solution. The harness should remain false-positive-resistant
+    # even if a future notebook author writes a real proof in the snippet.
+    snippet_match = re.search(
+        r'snippet_\w+\s*=\s*"""(.*?)"""', source, re.DOTALL
+    )
+    if snippet_match:
+        snippet_body = snippet_match.group(1)
+        # Real proof tactics lines start with `theorem` / `lemma` / `example`
+        # WITHOUT being followed by `#check` / `#eval` / `--` comments.
+        has_proof_statement = bool(re.search(
+            r'^\s*(?:theorem|lemma|example)\b(?![^:]*#check|#[^:]*#eval)',
+            snippet_body, re.MULTILINE,
+        ))
+        if has_proof_statement:
+            return False
+    return True
+
+
 def scan_notebook(path: str) -> list[dict]:
     """Scan a single notebook for solution leaks."""
     findings = []
@@ -757,6 +840,19 @@ def scan_notebook(path: str) -> list[dict]:
             # guidance headers, no substantive call/return body. Arrow-33
             # pattern. The student follows the indicesteps.
             if exercise_with_exercice_indice_skeleton(next_code_source):
+                continue
+            # Lean exercise wrapping a `snippet_exN = """..."""` literal
+            # passed to `run_lean(snippet_exN, timeout_s=...)` with a
+            # `print(resultat_exN)` trailer and `# Lecture : ...` commentary.
+            # Lean-15-Grothendieck-Tribute cells 25/29 pattern (c.8104g
+            # sub-grain of EPIC #8053). The snippet is a verification
+            # harness of `#check` / `#eval` statements, NOT a worked proof.
+            # The student runs the snippet, observes Lean output, and
+            # answers the conceptual question in the markdown header above.
+            # Recall-safe: a real Lean proof (theorem/lemma/example with
+            # substantive tactics) does NOT match — the anti-solution
+            # guard checks for proof statements inside the snippet body.
+            if exercise_with_run_lean_snippet(next_code_source):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
