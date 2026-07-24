@@ -74,12 +74,37 @@ SOTA_TOOLS = [
 ]
 
 
+# Fix A — anti-bruit (cf #8052 pilote C# c.848) : un nombre sur une ligne de header
+# markdown ("# Search-11", "## Étape 3", "### Section 10") est un numéro de
+# section/titre, pas un claim pédagogique. Sur les notebooks .NET (titres riches en
+# numéros de série/section), ce bruit explosait à 100+ "numeric_claim_not_in_outputs"
+# MAJOR qui masquaient les vrais findings. On ne coupe QUE les entiers nus (1-3 digits,
+# sans unité) sur headers — un claim à unité ("95%", "40×") sur un titre est préservé.
+HEADER_BARE_INT_RE = re.compile(r'^\d{1,3}$')
+
+
+def _on_header_line(cell_source: str, start: int) -> bool:
+    """True si le match débutant à `start` est sur une ligne markdown commençant par '#'."""
+    line_start = cell_source.rfind('\n', 0, start) + 1
+    return cell_source[line_start:].lstrip().startswith('#')
+
+
 def extract_markdown_claims(cell_source: str) -> dict:
     """Extrait les claims numériques/qualitatifs d'une cellule markdown."""
     claims = []
     for match in CLAIM_NUMERIC_RE.finditer(cell_source):
+        value = match.group(0).strip()
+        # Fix A : ignore les entiers nus (1-3 digits) sur les lignes de header markdown
+        # — numéros de section/titre ("# Search-11", "## Étape 3"), pas des claims.
+        # SAUF si l'entier est immédiatement suivi d'une unité dans le source ("%","×",
+        # "x","°") : "### Précision : 95%" est un vrai claim (le % échappe au \b du regex
+        # et n'est pas dans la valeur extraite, on le détecte donc via le char qui suit).
+        if HEADER_BARE_INT_RE.match(value) and _on_header_line(cell_source, match.start()):
+            trailing = cell_source[match.end():match.end() + 2]
+            if not re.match(r'^\s*[%×x°]', trailing):
+                continue
         claims.append({
-            'value': match.group(0).strip(),
+            'value': value,
             'span': match.span(),
         })
     has_verdict_header = bool(VERDICT_HEADER_RE.search(cell_source))
@@ -190,6 +215,29 @@ def audit_notebook(notebook_path: Path) -> dict:
     sota_tools_imports = set()
     sota_tools_mentioned = set()
 
+    # Fix B — anti-bruit (cf #8052 pilote C# c.848) : sur un notebook .NET Interactive,
+    # les outils de visualisation Python (matplotlib, seaborn, pyviz) ne sont PAS
+    # pertinents — un .ipynb C#/.NET utilise Plotly/XPlot. Le markdown cite souvent
+    # l'équivalent Python à titre pédagogique comparatif ("en Python on aurait utilisé
+    # matplotlib"), ce que le litmus 4 signalait à tort comme "SOTA mentionné non
+    # importé". On les exclut donc du litmus 4 sur kernel .NET.
+    DOTNET_PYTHON_VIZ = {'matplotlib', 'seaborn', 'pyviz'}
+    ks_name = (nb.get('metadata', {}) or {}).get('kernelspec', {}) or {}
+    ks_name = (ks_name.get('name', '') or '').lower()
+    is_dotnet = any(k in ks_name for k in ('.net', 'csharp', 'fsharp', 'polyglot'))
+    if not is_dotnet:
+        # Heuristique de secours : cellules code .NET Interactive (#r nuget / using
+        # Microsoft. / magic #!csharp). Évite un .ipynb mal étiqueté kernelspec.
+        for c in nb.cells:
+            if c.get('cell_type') != 'code':
+                continue
+            src = c.get('source', '')
+            if isinstance(src, list):
+                src = ''.join(src)
+            if re.search(r'#r\s+"[^"]*nuget|using\s+Microsoft\.|#!\s*(?:csharp|fsharp|pwsh)', src, re.IGNORECASE):
+                is_dotnet = True
+                break
+
     for idx, cell in enumerate(nb.cells):
         cell_type = cell.get('cell_type', '')
         source = cell.get('source', '')
@@ -260,6 +308,9 @@ def audit_notebook(notebook_path: Path) -> dict:
     # On déduplique au niveau canonique AVANT la soustraction (sinon 4 tokens internes
     # mappent au même nom affiché 'Infer.NET' et faussent le comptage).
     mentioned_canon = {canonical_name(t) for t in sota_tools_mentioned}
+    if is_dotnet:
+        # Fix B : viz Python non pertinente en .NET (cf commentaire en tête de fonction)
+        mentioned_canon -= DOTNET_PYTHON_VIZ
     imported_canon = {canonical_name(t) for t in sota_tools_imports}
     mentioned_not_imported_canon = mentioned_canon - imported_canon
     for tool_canon in mentioned_not_imported_canon:
