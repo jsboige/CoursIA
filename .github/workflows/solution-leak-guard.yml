@@ -71,10 +71,10 @@ jobs:
           {
             echo "## Solution-leak HIGH delta (WARN phase, #8053)"
             echo ""
-            echo "_Advisory only — this check does NOT fail the PR. Lists HIGH "
-            "solution-leak candidates newly introduced by this PR vs its base ref. "
-            "Detector candidates, not auto-verdicts: verify by CONTENT "
-            "(cf exercise-example-labeling.md) — a guided example is legitimate._"
+            echo "_Advisory only — this check does NOT fail the PR. Lists HIGH"
+            echo "solution-leak candidates newly introduced by this PR vs its base ref."
+            echo "Detector candidates, not auto-verdicts: verify by CONTENT"
+            echo "(cf exercise-example-labeling.md) — a guided example is legitimate._"
             echo ""
             python scripts/notebook_tools/solution_leak_delta.py /tmp/base.json /tmp/head.json
           } >> "$GITHUB_STEP_SUMMARY"
