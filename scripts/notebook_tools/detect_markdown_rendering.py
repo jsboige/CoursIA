@@ -108,13 +108,31 @@ def _cell_hash(rule: str, text: str) -> str:
 
 
 def _is_frontmatter_block(lines) -> bool:
-    """True if the cell is a `---\\n ... \\n---` block (leading + a later closing fence)."""
+    """True if the cell is a `---\\n ... \\n---` YAML frontmatter block.
+
+    Requires (a) the leading non-blank line is ``---``, (b) a later non-blank line
+    is also ``---``, and (c) the line *immediately* after the opening fence is
+    non-blank. Condition (c) distinguishes real YAML frontmatter (content starts
+    right after ``---``) from a thematic-break section divider (``---\\n\\n### H``),
+    which is legitimate markdown and must NOT be flagged. Without (c), any prose
+    section sandwiched between two ``---`` hr lines with two colon-bearing phrases
+    (e.g. FR prose ``affiche :``) was misclassified as ``frontmatter_rawyaml``.
+    """
     nz = _nonblank(lines)
     if not nz:
         return False
     if nz[0].strip() != "---":
         return False
-    return any(ln.strip() == "---" for ln in nz[1:])
+    if not any(ln.strip() == "---" for ln in nz[1:]):
+        return False
+    # Locate the opening fence in the raw lines; the very next raw line must carry
+    # content (YAML frontmatter never has a blank line right after the opening ---).
+    for i, ln in enumerate(lines):
+        if ln.strip() == "---":
+            if i + 1 >= len(lines) or lines[i + 1].strip() == "":
+                return False
+            break
+    return True
 
 
 def _frontmatter_supersizes(lines) -> bool:
