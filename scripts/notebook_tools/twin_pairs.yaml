@@ -154,9 +154,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 37ac298a2c16acea643497e08b4d930768bdb207
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 3cc2cf6ccd1c627e9e0f2eb59bc747361db69670
     csharp_sha: bbb5e24c4d4eb763b454b6d8f48aba9a5747b584
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
@@ -237,10 +237,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: ca51aaf39444df06a6a134e84979fe0d4a8a06ce
-    csharp_sha: 4b5d5820394845d9f3f79edbc6716b4bce16abb6
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: def93e424a6efe47d05a5eb40e6baf454fa01f53
+    csharp_sha: cb4aa57859c9d9e6dedde3de66c4b0973b4bf1bf
   known_differences:
     - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
     - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."
@@ -252,10 +252,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 3c8120e47cb36b6fc4d6f28b05c778c7568bbe28
-    csharp_sha: 8927072ee91e058dd55eae7178913edc54acd06c
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 5839320e691dba96c850a2962a7591515ab4e586
+    csharp_sha: b41ce675ccf59044a9a7c14d60238c05b81f4b83
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."
@@ -267,10 +267,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 37ab572c0337e78bccb3ffcb84b19004a5e59f3a
-    csharp_sha: a2bf6b309eccd8cf5429481c7fc13251f28e6726
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: fb9b7682f7637a5e79497ba3c617a3b5ee6b63d7
+    csharp_sha: 8dda111e9203b5c3f0a9bc794293d2e3b503fcc1
   known_differences:
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
@@ -282,10 +282,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 9e37f461f597d0b3d486672402540afd2718bffd
-    csharp_sha: cfee38be39500a5e92cfb680b8bdfde25eb24161
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: ba50827336ed3ff842187c635ad01f9061d5986a
+    csharp_sha: 74aead9b8219984c181d13c461ecc717c619385c
   known_differences:
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
@@ -297,10 +297,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 9d5f13fc2f7b50016a09ab696eeeb604068c3215
-    csharp_sha: 118f3b0a0b682cc8d6e7c368d9f1d49f6a56d460
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: c8695475d659b33759039a5ab6f621f1e1b13826
+    csharp_sha: 1ee06f522a4b7a122627a4113c7a3c92dc7854d7
   known_differences:
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."
