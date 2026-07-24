@@ -424,10 +424,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-23'
-    by: po-2024
+    date: '2026-07-24'
+    by: po-2023
     python_sha: 9c6d4bdd4181e08e63eaf417954b44bce448a02e
-    csharp_sha: 6190e69ebdc6d1289dff9ea8b3cf5f54dea56265
+    csharp_sha: 21c3019d71d07aa21d151643f279fa69764bc88f
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
