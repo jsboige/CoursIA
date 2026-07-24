@@ -38,7 +38,7 @@ Usage
 -----
     # verifier toutes les paires vs le registre
     python check_twin_parity.py
-    # exit 1 si drift/missing (CI-ready)
+    # exit 1 si drift/missing (CI-ready, mode historique fleet-wide)
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
@@ -46,17 +46,26 @@ Usage
     python check_twin_parity.py --update
     # sortie machine
     python check_twin_parity.py --json
+    # mode per-pair : ne FAIL que sur le drift INTRODUIT par la PR en cours
+    # (paire OK au base-ref mais DRIFT au HEAD). Necessite --base <ref>.
+    # Compare le registre+blobs au base-ref (avant la PR) vs au HEAD (apres la PR).
+    # Le drift pre-existant (deja present au base-ref) n'est PAS comptabilise ici
+    # -- il releve d'une PR de rebaseline dediee (cf #8264 batch precedent).
+    python check_twin_parity.py --check --per-pair --base origin/main
+    python check_twin_parity.py --check --per-pair --base HEAD~1
 
 Exit codes
 ----------
-    0 -- toutes les paires OK (ou mode non --check)
-    1 -- un ou plusieurs DRIFT / MISSING (--check seulement)
+    0 -- toutes les paires OK (ou mode non --check), ou zero nouveau drift en --per-pair
+    1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
+         OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
     2 -- erreur (registre illisible, pas un depot git)
 
 Voir aussi
 ----------
 - twin_pairs.yaml (registre curated, a cote de ce script)
 - Issue #8057 (metadonnee de parite des jumeaux Python/C#)
+- Issue #8264 (batch rebaseline precedent -- pattern DRIFT pre-existant)
 - Issue #4208 (parent : open-courseware fiabilise/publie)
 """
 from __future__ import annotations
@@ -75,10 +84,14 @@ except ImportError:  # pragma: no cover
 DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.yaml"
 
 
-def _git_blob_sha(repo_root: Path, rel_path: str) -> str | None:
-    """Git blob SHA d'un fichier versionne a HEAD (None si absent)."""
+def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
+    """Git blob SHA d'un fichier versionne a `git_ref` (defaut: HEAD, None si absent).
+
+    Accepte un ref arbitraire (HEAD, origin/main, HEAD~1, <sha>, ...) -- permet de
+    lire l'etat du depot a un instant donne sans modifier le working tree.
+    """
     r = subprocess.run(
-        ["git", "ls-tree", "HEAD", "--", rel_path],
+        ["git", "ls-tree", git_ref, "--", rel_path],
         capture_output=True, text=True, cwd=str(repo_root),
     )
     if r.returncode != 0 or not r.stdout.strip():
@@ -88,6 +101,21 @@ def _git_blob_sha(repo_root: Path, rel_path: str) -> str | None:
     if len(parts) >= 3:
         return parts[2]
     return None
+
+
+def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
+    """Contenu d'un fichier versionne a `git_ref` (None si absent).
+
+    Utilise `git show <ref>:<path>` (mode stream), evite de checkout le working tree.
+    Necessaire pour lire le registre YAML au base-ref sans polluer le workspace CI.
+    """
+    r = subprocess.run(
+        ["git", "show", f"{git_ref}:{rel_path}"],
+        capture_output=True, cwd=str(repo_root),
+    )
+    if r.returncode != 0:
+        return None
+    return r.stdout.decode("utf-8", errors="replace")
 
 
 def _repo_root() -> Path:
@@ -111,10 +139,11 @@ def load_registry(path: Path) -> list:
     return data
 
 
-def check_pair(repo_root: Path, pair: dict) -> dict:
+def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     """Verifie une paire. Retourne {name, python, csharp, status, details}.
 
     status in {OK, DRIFT, MISSING}. details = liste de chaines explicatives.
+    `git_ref` permet de checker a un instant arbitraire (HEAD, origin/main, <sha>...).
     """
     name = pair.get("name", "?")
     py = pair["python"]
@@ -123,8 +152,8 @@ def check_pair(repo_root: Path, pair: dict) -> dict:
     rec_py = audit.get("python_sha")
     rec_cs = audit.get("csharp_sha")
 
-    cur_py = _git_blob_sha(repo_root, py)
-    cur_cs = _git_blob_sha(repo_root, cs)
+    cur_py = _git_blob_sha(repo_root, py, git_ref)
+    cur_cs = _git_blob_sha(repo_root, cs, git_ref)
 
     details = []
     status = "OK"
@@ -198,10 +227,131 @@ def main(argv=None) -> int:
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
                         "(a lancer APRES une audit firsthand d'une paire)")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
+    p.add_argument("--per-pair", action="store_true",
+                   help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
+                        "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
+    p.add_argument("--base", default=None,
+                   help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
     args = p.parse_args(argv)
+
+    # Cross-validation : --per-pair <-> --base
+    if args.per_pair and not args.base:
+        p.error("--per-pair necessite --base <ref>")
+    if args.base and not args.per_pair:
+        p.error("--base necessite --per-pair")
+    if args.update and (args.per_pair or args.base):
+        p.error("--update est incompatible avec --per-pair/--base")
 
     repo_root = _repo_root()
     reg_path = Path(args.registry)
+
+    # --- Mode --per-pair : comparaison HEAD vs base-ref ---
+    if args.per_pair:
+        # Charge le registre a HEAD (working tree) et au base-ref (git show)
+        pairs_head = load_registry(reg_path)
+        # reg_path peut etre absolu ou relatif -- on prend toujours le path
+        # relatif au repo_root pour `git show <ref>:<relpath>`.
+        # IMPORTANT : on normalise en forward-slashes (git sur Windows
+        # refuse les backslashes dans `<ref>:<path>`).
+        try:
+            reg_rel = reg_path.resolve().relative_to(repo_root).as_posix()
+        except ValueError:
+            # reg_path n'est pas sous repo_root : on tente quand meme avec son nom
+            reg_rel = Path(reg_path.name).as_posix()
+        reg_text_base = _git_show_file(repo_root, args.base, reg_rel)
+        if reg_text_base is None:
+            raise SystemExit(f"Impossible de lire le registre au base-ref '{args.base}' : {reg_rel}")
+        if yaml is None:
+            raise SystemExit("PyYAML requis pour --per-pair.")
+        data_base = yaml.safe_load(reg_text_base)
+        if not isinstance(data_base, list):
+            raise SystemExit("Le registre au base-ref n'est pas une liste.")
+        pairs_base = data_base
+        # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
+        base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
+
+        if args.family:
+            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
+            if not pairs_head:
+                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+
+        results = []
+        for pp in pairs_head:
+            name = pp.get("name", "?")
+            head_state = check_pair(repo_root, pp, git_ref="HEAD")
+            base_pp = base_by_name.get(name)
+            if base_pp is None:
+                # Paire ajoutee par la PR -> si elle n'est PAS OK au HEAD, c'est du drift introduit
+                base_status = "MISSING"
+                base_details = [f"Paire '{name}' absente du registre au base-ref '{args.base}' (ajoutee par la PR)"]
+            else:
+                base_check = check_pair(repo_root, base_pp, git_ref=args.base)
+                base_status = base_check["status"]
+                base_details = base_check["details"]
+
+            head_status = head_state["status"]
+            # Classification per-pair
+            if base_status == "OK" and head_status == "OK":
+                verdict = "OK"
+            elif base_status == "OK" and head_status in ("DRIFT", "MISSING"):
+                verdict = "DRIFT_INTRODUCED"
+            elif base_status in ("DRIFT", "MISSING") and head_status == "OK":
+                verdict = "DRIFT_RESOLVED"
+            else:
+                verdict = "DRIFT_PRE_EXISTING"
+
+            results.append({
+                "name": name,
+                "family": pp.get("family", "?"),
+                "parity_level": pp.get("parity_level", "?"),
+                "base_ref": args.base,
+                "base_status": base_status,
+                "head_status": head_status,
+                "verdict": verdict,
+                "base_details": base_details,
+                "head_details": head_state["details"],
+            })
+
+        n_ok = sum(1 for r in results if r["verdict"] == "OK")
+        n_introduced = sum(1 for r in results if r["verdict"] == "DRIFT_INTRODUCED")
+        n_resolved = sum(1 for r in results if r["verdict"] == "DRIFT_RESOLVED")
+        n_pre_existing = sum(1 for r in results if r["verdict"] == "DRIFT_PRE_EXISTING")
+
+        if args.json:
+            out = {
+                "mode": "per_pair",
+                "registry": str(reg_path),
+                "base_ref": args.base,
+                "total": len(results),
+                "ok": n_ok,
+                "drift_introduced": n_introduced,
+                "drift_resolved": n_resolved,
+                "drift_pre_existing": n_pre_existing,
+                "pairs": results,
+            }
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+        else:
+            tag_map = {
+                "OK": "OK",
+                "DRIFT_INTRODUCED": "DRIFT-INTRO",
+                "DRIFT_RESOLVED": "DRIFT-FIXED",
+                "DRIFT_PRE_EXISTING": "DRIFT-PRE",
+            }
+            for r in results:
+                tag = tag_map[r["verdict"]]
+                print(f"[{tag}] {r['name']} ({r['family']}, {r['parity_level']}) "
+                      f"base={r['base_status']} head={r['head_status']}")
+                if r["verdict"] != "OK":
+                    for d in r["head_details"]:
+                        print(f"       HEAD: {d}")
+            print(f"\nTotal : {len(results)} paire(s) | "
+                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} PRE={n_pre_existing}")
+
+        if args.check and n_introduced > 0:
+            return 1
+        return 0
+
+    # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
 
     if args.family:
