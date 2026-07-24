@@ -215,6 +215,30 @@ def update_pair(repo_root: Path, pair: dict) -> tuple[dict, str | None]:
     return audit, cur_py
 
 
+def _classify_per_pair(base_status: str, head_status: str) -> str:
+    """Verdict per-pair pour le mode --per-pair (compare HEAD vs base-ref).
+
+    Retourne un de : OK / DRIFT_INTRODUCED / DRIFT_RESOLVED / DRIFT_PRE_EXISTING.
+    Le gate (--check --per-pair) ne FAIL que sur DRIFT_INTRODUCED.
+
+    Cas special : une paire AJOUTEE par la PR (base_status="MISSING", absente au
+    base-ref). Pour une paire nouvelle, il n'y a PAS d'etat pre-existant -- son etat
+    au HEAD est exactement ce que la PR introduit. Donc ajoutee+OK -> OK, ajoutee+
+    DRIFT -> DRIFT_INTRODUCED. (Avant le fix, le 'else' classait MISSING+DRIFT en
+    DRIFT_PRE_EXISTING, qui ne fail pas le gate -- contredisait le comment inline et
+    laissait passer une paire ajoutee driftante. Forensic po-2026 c.709.)
+    """
+    if base_status == "MISSING":
+        return "OK" if head_status == "OK" else "DRIFT_INTRODUCED"
+    if base_status == "OK" and head_status == "OK":
+        return "OK"
+    if base_status == "OK" and head_status in ("DRIFT", "MISSING"):
+        return "DRIFT_INTRODUCED"
+    if base_status == "DRIFT" and head_status == "OK":
+        return "DRIFT_RESOLVED"
+    return "DRIFT_PRE_EXISTING"
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
@@ -290,15 +314,9 @@ def main(argv=None) -> int:
                 base_details = base_check["details"]
 
             head_status = head_state["status"]
-            # Classification per-pair
-            if base_status == "OK" and head_status == "OK":
-                verdict = "OK"
-            elif base_status == "OK" and head_status in ("DRIFT", "MISSING"):
-                verdict = "DRIFT_INTRODUCED"
-            elif base_status in ("DRIFT", "MISSING") and head_status == "OK":
-                verdict = "DRIFT_RESOLVED"
-            else:
-                verdict = "DRIFT_PRE_EXISTING"
+            # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
+            # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
+            verdict = _classify_per_pair(base_status, head_status)
 
             results.append({
                 "name": name,
