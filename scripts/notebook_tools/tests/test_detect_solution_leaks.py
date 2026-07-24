@@ -19,6 +19,7 @@ from detect_solution_leaks import (
     STUB_PATTERNS,
     closest_preceding_header_is_example,
     code_cell_first_comment_labels_example,
+    commented_template_stub,
     discover_notebooks,
     is_stub_code,
     scan_notebook,
@@ -613,4 +614,121 @@ class TestWorkedExampleFalsePositiveSuppression:
         highs = [f for f in findings if f.get("severity") == "HIGH"]
         assert len(highs) == 1
         assert highs[0]["cell_index"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Commented-template stub (commented-solution-prompt precision fix)
+# ---------------------------------------------------------------------------
+
+class TestCommentedTemplateStub:
+    # A code cell whose whole solution is COMMENTED OUT and whose only
+    # executable code is data assignments + a prompt print is a legitimate
+    # exercise skeleton (the student uncomments and fills the TODOs), not a
+    # leak. The helper returns True (suppress) for these.
+
+    def test_commented_python_class_plus_data_is_stub(self):
+        # The measured Search-3 cell 64 false positive: WeightedGridProblem
+        # class + weighted_manhattan + A* call all commented out, only the
+        # weighted_grid test data and a prompt print execute.
+        code = (
+            "# --- Exercice 5 : Pathfinding sur grille ponderee ---\n"
+            "# class WeightedGridProblem(GridProblem):\n"
+            "#     def actions(self, state):\n"
+            "#         return [...]\n"
+            "#     def step_cost(self, state, action, next_state):\n"
+            "#         pass  # student fills here\n"
+            "# def weighted_manhattan(state, goal, min_cost):\n"
+            "#     pass  # student fills here\n"
+            "weighted_grid = [\n"
+            "    [2, 2, 2, 2, 2, 2, 2, 2],\n"
+            "    [2, 3, 3, 3, 0, 2, 2, 2],\n"
+            "]\n"
+            'print("Exercice 5 : implementez les TODO ci-dessus.")\n'
+        )
+        assert commented_template_stub(code) is True
+
+    def test_commented_loop_plus_empty_list_is_stub(self):
+        # The measured ML-FinBERT cell 13 false positive: mes_titres empty list
+        # with commented TODO items, the for-loop commented out, a prompt print.
+        code = (
+            "# Exercice 1 - Votre propre jeu de titres\n"
+            "# Etape 1: completez la liste mes_titres ci-dessous.\n"
+            "mes_titres = [\n"
+            "    # 'TODO etudiant: titre 1',\n"
+            "    # 'TODO etudiant: titre 2',\n"
+            "]\n"
+            "# for h in mes_titres:\n"
+            "#     print(h, finbert_sentiment(h))\n"
+            "print('Exercice 1 a completer')\n"
+        )
+        assert commented_template_stub(code) is True
+
+    def test_assignment_none_stubs_with_prompt_is_stub(self):
+        # The measured Lab4 cell 22 false positive: three `= None` assignment
+        # stubs (no trailing inline comment, so the assignment-stub STUB_PATTERN
+        # does not match) plus prints. 'votre code' carries the prompt marker.
+        code = (
+            "# Votre code pour l'Exercice 1\n"
+            "df['mois'] = None\n"
+            "ca_par_mois = None\n"
+            "mois_max_ca = None\n"
+            "print(ca_par_mois)\n"
+        )
+        assert commented_template_stub(code) is True
+
+    def test_real_executable_def_is_not_stub(self):
+        # Recall guard: a real solution with an EXECUTABLE def is never a
+        # commented-template stub.
+        code = (
+            "# Exercice : implementez f\n"
+            "def f(x):\n"
+            "    return x * 2\n"
+            "print(f(5))\n"
+        )
+        assert commented_template_stub(code) is False
+
+    def test_real_executable_loop_is_not_stub(self):
+        # Recall guard: a real solution with a non-trivial executable line (a
+        # loop) is never a commented-template stub, even with no def.
+        code = (
+            "# Exercice : sommez la liste\n"
+            "total = 0\n"
+            "for x in data:\n"  # non-trivial executable line
+            "    total += x\n"
+            "print(total)\n"
+        )
+        assert commented_template_stub(code) is False
+
+    def test_no_prompt_marker_is_not_stub(self):
+        # Recall guard: trivial executable code WITHOUT a prompt/TODO marker is
+        # not suppressed (a complete trivial solution never carries a prompt).
+        code = (
+            "weighted_grid = [[2, 2], [3, 3]]\n"
+            "start_w = (0, 0)\n"
+            'print("resultat")\n'
+        )
+        assert commented_template_stub(code) is False
+
+
+class TestCommentedTemplateSuppression:
+    def test_commented_template_under_exercice_not_flagged(self, tmp_path):
+        # Integration: the commented-template cell under an Exercice header is
+        # not flagged HIGH (the FP class is suppressed end-to-end).
+        body = (
+            "# Exercice 5 : implementez\n"
+            "# class Foo:\n"
+            "#     def bar(self):\n"
+            "#         pass  # student fills\n"
+            "data = [1, 2, 3]\n"
+            'print("Exercice 5 : implementez les TODO ci-dessus.")\n'
+        )
+        nb = _write_nb(
+            tmp_path / "nb.ipynb",
+            [
+                _md("### Exercice 5 : a completer\n\nImplementez la classe."),
+                _code(body),
+            ],
+        )
+        findings = scan_notebook(str(nb))
+        assert not any(f.get("severity") == "HIGH" for f in findings)
 
