@@ -942,6 +942,133 @@ def _merge_curated_fields(
     return entries
 
 
+# --- Editorial-review registry promotion (issue #8051, c.763/c.764) -----------
+#
+# classify_editorial() never emits FINAL by design: a structural heuristic cannot
+# assert editorial maturity. A merged third-party review recorded in the curated
+# whitelist `docs/notebook-metadata/editorial-review-registry.md` is the human
+# signal that promotes FINAL. The validator `scripts/audit/check_editorial_review.py`
+# checks the registry's coherence; THIS function is the downstream "catalogue
+# patch" the classify_editorial() docstring refers to — it consumes the registry
+# and applies the promotion so whitelisted notebooks reach editorial=FINAL in the
+# generated catalogue (and propagate to the retro-compat `maturity` aggregate).
+
+EDITORIAL_REGISTRY_PATH = REPO_ROOT / "docs" / "notebook-metadata" / "editorial-review-registry.md"
+
+# review_scope values that warrant an editorial promotion to FINAL. Per registry
+# §3.2, typo/pedagogie alone do not guarantee technical truthfulness.
+PROMOTING_REVIEW_SCOPES = ("factual", "substance", "full")
+
+
+def _load_editorial_registry(registry_path=None):
+    """Parse the editorial-review whitelist YAML embedded in the registry markdown.
+
+    Returns a dict keyed by notebook_path -> {reviewer, review_date, evidence_pr,
+    review_scope, notes}. Returns {} if the file is missing or unparseable: the
+    registry is optional, and its absence leaves every entry at the structural
+    editorial classification emitted by classify_editorial().
+
+    The registry markdown embeds one or more fenced YAML blocks (schema example
+    in §2 + the curated pilot entries in §4). Only entries whose notebook_path
+    looks like a real relative path (ends with ``.ipynb`` and contains no ``<``)
+    are kept, so the §2 placeholder schema block is filtered out.
+    """
+    path = registry_path or EDITORIAL_REGISTRY_PATH
+    if not Path(path).exists():
+        return {}
+    import re
+    import yaml  # PyYAML — part of repo tooling (cf check_twin_parity.py, #8057)
+    text = Path(path).read_text(encoding="utf-8")
+    fence = "`" * 3
+    blocks = re.findall(fence + r"yaml\n(.*?)" + fence, text, re.DOTALL)
+    registry = {}
+    for block in blocks:
+        # Drop full-line comments (the pilot block carries a curation header).
+        lines = [ln for ln in block.split("\n") if not ln.lstrip().startswith("#")]
+        cleaned = "\n".join(lines).strip()
+        if not cleaned:
+            continue
+        try:
+            parsed = yaml.safe_load(cleaned)
+        except yaml.YAMLError:
+            continue
+        if not isinstance(parsed, list):
+            continue
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+            nb_path = entry.get("notebook_path")
+            if (not isinstance(nb_path, str)
+                    or not nb_path.endswith(".ipynb")
+                    or "<" in nb_path):
+                continue
+            review_date = entry.get("review_date")
+            # PyYAML parses bare ISO dates (2026-07-22) as datetime.date, which
+            # json.dumps cannot serialize — coerce to its ISO string form.
+            if hasattr(review_date, "isoformat"):
+                review_date = review_date.isoformat()
+            registry[nb_path] = {
+                "reviewer": entry.get("reviewer"),
+                "review_date": review_date,
+                "evidence_pr": entry.get("evidence_pr"),
+                "review_scope": entry.get("review_scope"),
+                "notes": entry.get("notes"),
+            }
+    return registry
+
+
+def _apply_editorial_review_promotion(entries, registry=None):
+    """Promote whitelisted notebooks' editorial axis BETA -> FINAL (issue #8051).
+
+    Eligibility mirrors `editorial-review-registry.md` §3.1/§3.2:
+      - notebook_path is present in the registry;
+      - reviewer != owner_logique (no self-review promotion, §3.1 #4);
+      - review_scope in (factual, substance, full) (§3.2);
+      - the entry is not a TEMPLATE (templates keep their own axis).
+
+    On promotion: set ``editorial = FINAL``, populate ``editorial_reviewed_by``
+    (+ review_date / evidence_pr for traceability), and recompute the retro-compat
+    ``maturity`` aggregate so FINAL propagates (BETA -> PRODUCTION when repro and
+    review axes are sufficient).
+    """
+    if registry is None:
+        registry = _load_editorial_registry()
+    if not registry:
+        return entries
+
+    promoted = 0
+    for entry in entries:
+        if entry.get("maturity") == "TEMPLATE":
+            continue
+        review = registry.get(entry.get("path", ""))
+        if not review:
+            continue
+        reviewer = review.get("reviewer")
+        scope = review.get("review_scope")
+        if not reviewer or reviewer == entry.get("owner_logique"):
+            continue  # §3.1 #4 auto-review guard
+        if scope not in PROMOTING_REVIEW_SCOPES:
+            continue  # §3.2 scope guard
+        entry["editorial"] = "FINAL"
+        entry["editorial_reviewed_by"] = reviewer
+        if review.get("review_date"):
+            entry["editorial_review_date"] = review["review_date"]
+        if review.get("evidence_pr"):
+            entry["editorial_review_evidence_pr"] = review["evidence_pr"]
+        # Recompute retro-compat maturity so FINAL propagates downstream.
+        entry["maturity"] = aggregate_maturity(
+            entry["editorial"],
+            entry.get("reproducibility", "UNTESTED"),
+            entry.get("scientific_review", "UNREVIEWED"),
+            is_template=False,
+        )
+        promoted += 1
+
+    if promoted:
+        print(f"Applied editorial-review promotion (BETA->FINAL) for {promoted} entries")
+    return entries
+
+
 def _git_tracked_files() -> set[str] | None:
     """Return set of git-tracked relative paths, or None if not in a git repo."""
     try:
@@ -1143,6 +1270,11 @@ def main():
     # touched on the current branch (prevents stale-branch blanching)
     main_catalog = _load_main_catalog()
     entries = _merge_curated_fields(entries, main_catalog)
+
+    # Apply the editorial-review whitelist promotion (issue #8051): whitelisted
+    # notebooks reviewed by a third party get editorial BETA -> FINAL — the
+    # downstream "catalogue patch" classify_editorial() deliberately never emits.
+    entries = _apply_editorial_review_promotion(entries)
 
     # Deterministic ordering by path. Filesystem iteration order (iterdir/rglob)
     # differs between the Linux CI runner that owns main's catalog and the Windows

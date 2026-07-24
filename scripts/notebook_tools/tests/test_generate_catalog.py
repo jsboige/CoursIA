@@ -18,9 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from generate_catalog import (
     CURATED_GIT_FIELDS,
     NOTEBOOKS_DIR,
+    PROMOTING_REVIEW_SCOPES,
+    _apply_editorial_review_promotion,
     _effective_code_cells,
     _is_exercise_stub,
+    _load_editorial_registry,
     _merge_curated_fields,
+    aggregate_maturity,
     analyze_notebook,
     check_errors,
     classify_maturity,
@@ -1365,6 +1369,178 @@ class TestMergeCuratedFields:
             f"got {len(CURATED_GIT_FIELDS)} (extra fields: "
             f"{set(CURATED_GIT_FIELDS) - set(expected_fields)})"
         )
+
+
+class TestEditorialReviewPromotion:
+    """Tests for the editorial-review whitelist promotion (issue #8051).
+
+    classify_editorial() never emits FINAL by design; the registry is the human
+    signal that promotes BETA -> FINAL. _apply_editorial_review_promotion applies
+    that signal and recomputes the retro-compat `maturity` aggregate.
+    """
+
+    def _entry(self, path, owner="po-2023", editorial="BETA",
+               reproducibility="EXECUTED", scientific_review="UNREVIEWED",
+               maturity="BETA", **kw):
+        return {
+            "path": path,
+            "title": kw.get("title", "Test"),
+            "serie": kw.get("serie", "Test"),
+            "kernel": kw.get("kernel", "Python 3"),
+            "status": kw.get("status", "READY"),
+            "owner_logique": owner,
+            "editorial": editorial,
+            "reproducibility": reproducibility,
+            "scientific_review": scientific_review,
+            "maturity": maturity,
+        }
+
+    def test_promotes_whitelisted_beta_to_final(self):
+        """A third-party factual review promotes editorial BETA -> FINAL."""
+        entries = [self._entry("Sudoku/Sudoku-18-Comparison-Python.ipynb")]
+        registry = {
+            "Sudoku/Sudoku-18-Comparison-Python.ipynb": {
+                "reviewer": "jsboigeEpita",  # != owner po-2023
+                "review_date": "2026-07-22",
+                "evidence_pr": "#7904",
+                "review_scope": "factual",
+                "notes": "honesty fix",
+            },
+        }
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "FINAL"
+        assert result[0]["editorial_reviewed_by"] == "jsboigeEpita"
+        assert result[0]["editorial_review_evidence_pr"] == "#7904"
+        assert result[0]["editorial_review_date"] == "2026-07-22"
+        # maturity recomputed from FINAL (BETA -> PRODUCTION needs peer review,
+        # so with scientific_review=UNREVIEWED it stays BETA — aggregate logic)
+        assert result[0]["maturity"] == aggregate_maturity(
+            "FINAL", "EXECUTED", "UNREVIEWED")
+
+    def test_maturity_propagates_to_production_when_peer_reviewed(self):
+        """FINAL + EXECUTED + PEER_REVIEWED -> maturity PRODUCTION."""
+        entries = [self._entry(
+            "S/nb.ipynb", scientific_review="PEER_REVIEWED")]
+        registry = {"S/nb.ipynb": {
+            "reviewer": "reviewer-x", "review_scope": "full"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "FINAL"
+        assert result[0]["maturity"] == "PRODUCTION"
+
+    def test_skips_self_review(self):
+        """reviewer == owner_logique must NOT promote (auto-review, §3.1 #4)."""
+        entries = [self._entry("S/nb.ipynb", owner="po-2023")]
+        registry = {"S/nb.ipynb": {
+            "reviewer": "po-2023", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "BETA"  # unchanged
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_skips_non_promoting_scope(self):
+        """typo/pedagogie scopes do not warrant FINAL (§3.2)."""
+        for scope in ("typo", "pedagogie"):
+            entries = [self._entry("S/nb.ipynb")]
+            registry = {"S/nb.ipynb": {
+                "reviewer": "other", "review_scope": scope}}
+            result = _apply_editorial_review_promotion(entries, registry=registry)
+            assert result[0]["editorial"] == "BETA", f"scope {scope} promoted"
+
+    def test_all_promoting_scopes_promote(self):
+        """factual/substance/full all promote (PARAMETRIZED contract)."""
+        for scope in PROMOTING_REVIEW_SCOPES:
+            entries = [self._entry("S/nb.ipynb")]
+            registry = {"S/nb.ipynb": {
+                "reviewer": "other", "review_scope": scope}}
+            result = _apply_editorial_review_promotion(entries, registry=registry)
+            assert result[0]["editorial"] == "FINAL", f"scope {scope} did not promote"
+
+    def test_skips_non_whitelisted(self):
+        """Entries not in the registry are left untouched."""
+        entries = [self._entry("S/other.ipynb")]
+        registry = {"S/different.ipynb": {
+            "reviewer": "other", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "BETA"
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_skips_template(self):
+        """TEMPLATE entries keep their axis (no FINAL promotion)."""
+        entries = [self._entry("S/tpl.ipynb", maturity="TEMPLATE", status="TEMPLATE")]
+        registry = {"S/tpl.ipynb": {
+            "reviewer": "other", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["maturity"] == "TEMPLATE"
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_empty_registry_noop(self):
+        """Empty registry = no entry touched, no crash."""
+        entries = [self._entry("S/nb.ipynb")]
+        result = _apply_editorial_review_promotion(entries, registry={})
+        assert result[0]["editorial"] == "BETA"
+
+    def test_load_registry_filters_schema_placeholder(self):
+        """_load_editorial_registry parses YAML blocks but drops §2 placeholders."""
+        fence = "`" * 3
+        content = (
+            "# Registre\n\n## §2 schema example\n"
+            + fence + "yaml\n"
+            "- notebook_path: <chemin relatif depuis MyIA.AI.Notebooks/>\n"
+            "  reviewer: <login>\n"
+            "  review_scope: factual\n"
+            + fence + "\n\n## §4 pilot\n"
+            + fence + "yaml\n"
+            "# curation header comment\n"
+            "- notebook_path: Sudoku/Sudoku-18-Comparison-Python.ipynb\n"
+            "  reviewer: jsboigeEpita\n"
+            "  review_date: 2026-07-22\n"
+            "  evidence_pr: \"#7904\"\n"
+            "  review_scope: factual\n"
+            "  notes: \"honesty fix\"\n"
+            + fence + "\n"
+        )
+        with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(content)
+            tmp = Path(f.name)
+        try:
+            reg = _load_editorial_registry(tmp)
+            assert len(reg) == 1, f"expected 1 real entry, got {reg}"
+            assert "Sudoku/Sudoku-18-Comparison-Python.ipynb" in reg
+            assert reg["Sudoku/Sudoku-18-Comparison-Python.ipynb"]["reviewer"] == "jsboigeEpita"
+        finally:
+            tmp.unlink()
+
+    def test_load_registry_missing_file_returns_empty(self):
+        """Missing registry file = empty dict (registry is optional)."""
+        reg = _load_editorial_registry(Path("/nonexistent/registry.md"))
+        assert reg == {}
+
+    def test_load_registry_coerces_bare_iso_date_to_str(self):
+        """Bare YAML dates (2026-07-22) parse to datetime.date; must coerce
+        to str so the promoted field is JSON-serializable in the catalog."""
+        import datetime
+        fence = "`" * 3
+        content = (
+            fence + "yaml\n"
+            "- notebook_path: S/nb.ipynb\n"
+            "  reviewer: other\n"
+            "  review_date: 2026-07-22\n"  # bare date -> datetime.date via PyYAML
+            "  review_scope: factual\n"
+            + fence + "\n"
+        )
+        with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(content)
+            tmp = Path(f.name)
+        try:
+            reg = _load_editorial_registry(tmp)
+            rd = reg["S/nb.ipynb"]["review_date"]
+            assert not isinstance(rd, datetime.date), "date not coerced"
+            assert rd == "2026-07-22"
+            # and it must be JSON-serializable (the catalog output requirement)
+            json.dumps({"d": rd})
+        finally:
+            tmp.unlink()
 
 
 if __name__ == "__main__":
