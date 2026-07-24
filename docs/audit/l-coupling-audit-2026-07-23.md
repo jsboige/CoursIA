@@ -7,7 +7,7 @@
 
 ## Méthode (read-only, déterministe)
 
-Script Python [`scratchpad-c8087/audit_l_coupling.py`](https://github.com/jsboige/CoursIA/blob/c821-l-coupling-repair/scratchpad-c8087/audit_l_coupling.py) (3 étapes — script désormais archivé hors-repo, snapshot via PR #8099 commit `5ac25223b`) :
+Script Python `scratchpad-c8087/audit_l_coupling.py` (3 étapes — script désormais archivé hors-repo, snapshot via PR #8099 commit `5ac25223b`) :
 
 | Étape | Action | Sortie |
 |-------|--------|--------|
