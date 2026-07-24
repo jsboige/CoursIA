@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Plan de Formation : Data Science Agentique (Edition 2026)
 
 Ce parcours forme des developpeurs a la data science moderne ou l'IA generative et les agents autonomes sont au coeur du workflow. Il couvre les fondamentaux Python, la maitrise multi-modale (image, audio, video, texte), l'orchestration d'agents (Semantic Kernel, Claude Code, Roo Code), et l'application au trading algorithmique via QuantConnect.

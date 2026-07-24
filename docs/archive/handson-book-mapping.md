@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Hands-On AI Trading — Book-to-Curriculum Mapping
 
 **Book**: Hands-On AI Trading with Python, QuantConnect, and AWS (Pik, Chan, Broad, Sun, Singh — Wiley 2025)
