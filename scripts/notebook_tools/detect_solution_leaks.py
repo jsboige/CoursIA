@@ -125,6 +125,117 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
     return False
 
 
+# A "methodological commentary" header line (``### Interprétation``,
+# ``### Interpretation``, ``### Analyse``, ``### Analyse mathematique``,
+# ``### Methodologie`` ...). Used for closest-preceding-header attribution:
+# a code cell whose nearest header is a methodological commentary section
+# (NOT an Exercice and NOT an Exemple guide) is a data table / worked
+# derivation attached to the surrounding narrative, NOT an exercise
+# solution leak. Closes the Lean-17-Knots-b-Invariants-Companion cell 14
+# FP class (c.875 sub-grain of EPIC #8053): a slice-genus data table
+# sitting under ``### Interprétation`` between the exercise header and
+# the next exercise sub-section. Cf exercise-example-labeling.md
+# (content-based rule): a code cell whose closest header is interpretive
+# narrative, not an exercise, is not an exercise solution leak.
+METHODOLOGICAL_HEADER_RE = re.compile(
+    r'^#+\s*(?:Interpr[ée]tation|Interpretation|Analyse'
+    r'|Analyse\s+math[ée]matique|Methodologie|M[ée]thodologie'
+    r'|Discussion|Notes\s+math[ée]matiques'
+    r'|R[ée]sultats\s+et\s+discussion)\b',
+    re.IGNORECASE,
+)
+
+
+def closest_preceding_header_is_methodological(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a
+    methodological commentary header (``### Interprétation``,
+    ``### Analyse``, ...).
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell whose
+    nearest header is a methodological narrative (interpretation of results,
+    mathematical analysis, discussion, methodology) is a data table / worked
+    derivation attached to the surrounding narrative, NOT an exercise solution
+    leak. Suppresses the FP class where a code cell sits under a
+    ``## Exercices`` (or ``### Exercice N``) section header but its actual
+    nearest sub-header is ``### Interprétation`` (in the same cell or an
+    intervening one). Cf exercise-example-labeling.md (content-based rule).
+
+    Recall-safe contract: a code cell that *is* a real exercise solution has
+    its closest preceding header being either (a) the ``### Exercice N``
+    sub-header itself, or (b) a worked-example header (``### Exemple guide``
+    — already handled by ``closest_preceding_header_is_example``), or (c)
+    a section header that does NOT match ``METHODOLOGICAL_HEADER_RE``. None
+    of those match the methodological regex, so the helper returns False and
+    the leak is still emitted.
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(METHODOLOGICAL_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
+# A TP étudiants submission marker: a code cell body explicitly attributing
+# the code to a student (``Solution proposee par <name>``, ``Reponses
+# proposees par <name>``, ``Submitted by <name>``, etc.) is a student-submitted
+# answer rendered as a worked example under the TP section's analysis
+# sub-header. Different mechanism from a faculty solution leak: this is a
+# student submission block (TP contamination) inside a code cell, not a
+# faculty solution leaked under an Exercice header. Cf c.875 sub-grain of
+# EPIC #8053: SC-23-Cross-Chain cell 25 carries
+# ``# Solution proposee par Lucas Demuliere & Joanne Jabbour (TP 2026)``.
+STUDENT_SUBMISSION_RE = re.compile(
+    r'(?:^\s*(?:#|//|--)\s*)?(?:Solution|Reponses?|R[eé]ponses?'
+    r'|Implementation)\s+(?:propos[eé]e|proposee|soumise|proposed|submitted)'
+    r'\s+par\s+',
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def code_cell_is_student_submission_block(source: str) -> bool:
+    """Return True if the code cell body opens with a TP étudiants
+    submission marker (``# Solution proposee par <name>`` or similar).
+
+    Closes the SC-23-Cross-Chain cell 25 FP class (c.875 sub-grain of
+    EPIC #8053): a 3746-char ``TokenBridgeSimulator`` class rendered as a
+    worked example under ``### Analyse : Securite et Limites d'un Bridge
+    Cross-Chain`` (preceded by a TP marker line in the markdown header),
+    attributed to ``Lucas Demuliere & Joanne Jabbour (TP 2026)``. This is
+    a **TP étudiants submission block** (TP contamination), not a faculty
+    solution leak under the original exercise header — different
+    mechanism.
+
+    Detection contract: the FIRST non-empty line of the source is a code
+    comment (``#`` / ``//`` / ``--``) whose body matches the
+    ``STUDENT_SUBMISSION_RE`` regex (case-insensitive, multi-line).
+
+    Recall-safe contract: a real faculty solution under an
+    ``### Exercice N`` header would NOT carry a TP étudiants attribution
+    marker (a faculty solution is not authored by ``<student name> (TP
+    2026)``). The marker is explicit and rare in the corpus, so the false-
+    negative risk on genuine leaks is minimal. The ``SOUMIS_PAR_RE`` /
+    ``has_soumis`` check in the main ``scan_notebook`` chain (which fires
+    on the markdown header above the code cell) is orthogonal: it catches
+    ``soumis par <name>`` in headers; this helper catches
+    ``Solution proposee par <name>`` (or equivalent) in the code body.
+    """
+    first_non_empty = ''
+    for line in source.split('\n'):
+        if not line.strip():
+            continue
+        first_non_empty = line
+        break
+    if not first_non_empty:
+        return False
+    return bool(STUDENT_SUBMISSION_RE.search(first_non_empty))
+
+
 def _header_level(line: str) -> int:
     """Return the ATX heading level (count of leading ``#``), or 0 if not a
     header line."""
@@ -793,6 +904,33 @@ def scan_notebook(path: str) -> list[dict]:
             # the false positive. A deeper sub-header ("### Indice" under
             # "## Exercice 1") does not break the section.
             if intervening_section_breaks_attribution(cells, i, next_code_idx):
+                continue
+            # Methodological commentary attribution: if the closest preceding
+            # header is a methodological narrative header (``### Interprétation``
+            # / ``### Analyse`` / ``### Discussion`` / ...), the code cell is a
+            # data table or worked derivation attached to the surrounding
+            # narrative, NOT an exercise solution leak. Closes the
+            # Lean-17-Knots-b-Invariants-Companion cell 14 FP class (c.875
+            # sub-grain of EPIC #8053): a slice-genus data table sitting
+            # under ``### Interprétation`` between the exercise header and
+            # the next exercise sub-section. Recall-safe: a real exercise
+            # solution has its closest preceding header being either an
+            # ``### Exercice N`` sub-header or a worked-example header
+            # (already handled by ``closest_preceding_header_is_example``),
+            # neither of which matches the methodological regex.
+            if closest_preceding_header_is_methodological(cells, next_code_idx):
+                continue
+            # TP étudiants submission block: if the code cell body opens with
+            # a student submission marker (``# Solution proposee par <name>``
+            # / ``# Reponses proposees par <name>``), the cell is a
+            # student-submitted answer rendered as a worked example under a
+            # TP section's analysis sub-header, NOT a faculty solution leak.
+            # Closes the SC-23-Cross-Chain cell 25 FP class (c.875 sub-grain
+            # of EPIC #8053): a 3746-char ``TokenBridgeSimulator`` class
+            # attributed to ``Lucas Demuliere & Joanne Jabbour (TP 2026)``.
+            # Recall-safe: a real faculty solution would NOT carry a TP
+            # étudiants attribution marker (the marker is explicit and rare).
+            if code_cell_is_student_submission_block(next_code_source):
                 continue
             # Commented-template stub: the whole solution is commented out and
             # only data assignments + a prompt print execute (the student
