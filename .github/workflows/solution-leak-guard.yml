@@ -1,0 +1,90 @@
+name: solution-leak-guard
+
+# Advisory (WARN-phase) guard for the "Exercice cell containing its solution"
+# academic-integrity vector (issue #8053, parent epic #4208). Mirrors the
+# pip-leak-guard HIGH-delta pattern (#6314) but runs in WARN mode: it reports
+# only HIGH-severity solution-leak findings *newly introduced* by the PR (vs
+# its base ref), and NEVER fails.
+#
+# Why WARN, not FAIL (acceptance #8053: "Mode WARN d'abord, puis bascule FAIL
+# une fois le backlog nettoyé"):
+#   - the detector (scripts/notebook_tools/audit_solution_leaks.py) currently
+#     emits ~498 function_body_leak findings across the repo, the large
+#     majority of which are legitimate worked examples (functions with >3 logic
+#     lines that are guided examples, not exercise stubs with their solution
+#     pasted in). Precision on C#/.NET+Lean is known low (~95% FP, fleet memory
+#     solution-leak-detector-csharp-lean-fp; retracted for `// TODO` c.827).
+#   - an absolute FAIL would therefore block the whole cluster. The delta +
+#     WARN form posts an advisory summary a reviewer reads, without freezing.
+#   - the FAIL switch (a future --fail-on-delta flag on solution_leak_delta.py)
+#     is gated on a detector-precision fix and backlog drain, tracked out of
+#     scope here.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/audit_solution_leaks.py'
+      - 'scripts/notebook_tools/solution_leak_delta.py'
+      - '.github/workflows/solution-leak-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solution-leak-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  solution-leak-delta:
+    name: "Solution-leak HIGH delta (WARN phase, #8053)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the BASE scan
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: HEAD scan (PR head)
+        run: |
+          python scripts/notebook_tools/audit_solution_leaks.py --json > /tmp/head.json
+
+      # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. head.json
+      # is already captured above, so the swap cannot contaminate the delta.
+      - name: BASE scan (PR base ref)
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
+          python scripts/notebook_tools/audit_solution_leaks.py --json > /tmp/base.json
+          git checkout HEAD -- MyIA.AI.Notebooks
+
+      - name: "Report HIGH delta (WARN — never fails)"
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo "## Solution-leak HIGH delta (WARN phase, #8053)"
+            echo ""
+            echo "_Advisory only — this check does NOT fail the PR. Lists HIGH "
+            "solution-leak candidates newly introduced by this PR vs its base ref. "
+            "Detector candidates, not auto-verdicts: verify by CONTENT "
+            "(cf exercise-example-labeling.md) — a guided example is legitimate._"
+            echo ""
+            python scripts/notebook_tools/solution_leak_delta.py /tmp/base.json /tmp/head.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # workflow_dispatch (no base ref): single scan, full markdown report to summary.
+      - name: "Full inventory (manual dispatch)"
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "## Solution-leak audit (manual dispatch)"
+            echo ""
+            python scripts/notebook_tools/audit_solution_leaks.py
+          } >> "$GITHUB_STEP_SUMMARY"

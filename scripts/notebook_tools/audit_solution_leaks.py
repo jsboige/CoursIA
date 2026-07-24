@@ -7,6 +7,7 @@ Detects 3 patterns per issue #362:
 3. Pre-resolved cells: # Solution / # Exemple resolu with complete answers
 """
 
+import argparse
 import json
 import sys
 import re
@@ -345,13 +346,15 @@ def audit_notebook(path):
     return all_leaks
 
 
-def main():
+def _run_audit():
+    """Scan all notebooks and return (output_dict, notebook_count).
+
+    Shared by the human-readable report (default) and the ``--json`` machine
+    output consumed by ``solution_leak_delta.py`` (CI WARN-mode gate, #8053).
+    """
     notebooks = list(NOTEBOOKS_DIR.rglob('*.ipynb'))
     notebooks = [n for n in notebooks if '_output' not in n.name and '_executed' not in n.name
                  and '.ipynb_checkpoints' not in str(n)]
-
-    print(f"Auditing {len(notebooks)} notebooks for solution leaks...")
-    print()
 
     results = {}
     total_leaks = {
@@ -367,7 +370,41 @@ def main():
             for leak in leaks:
                 total_leaks[leak['type']] = total_leaks.get(leak['type'], 0) + 1
 
-    # Report
+    output = {
+        'total_notebooks': len(notebooks),
+        'notebooks_with_leaks': len(results),
+        'leak_counts': total_leaks,
+        'findings': {k: v for k, v in results.items()},
+    }
+    return output, len(notebooks)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Audit solution leaks in pedagogical notebooks (issue #362, #8053 CI gate)."
+    )
+    parser.add_argument(
+        '--json', action='store_true',
+        help="Emit the findings dict as a single JSON document on stdout (for "
+             "solution_leak_delta.py CI consumption). Suppresses the markdown "
+             "report and the results-file write.",
+    )
+    args = parser.parse_args(argv)
+
+    output, nb_count = _run_audit()
+
+    if args.json:
+        # Machine output for CI delta comparison. No file write, no human report.
+        json.dump(output, sys.stdout, indent=2, ensure_ascii=False, default=str)
+        sys.stdout.write('\n')
+        return
+
+    # --- human-readable report (default, unchanged behaviour) ---
+    total_leaks = output['leak_counts']
+    results = output['findings']
+
+    print(f"Auditing {nb_count} notebooks for solution leaks...")
+    print()
     print(f"## Audit Results: {len(results)} notebooks with findings")
     print(f"Total: function_body_leak={total_leaks.get('function_body_leak', 0)}, "
           f"commented_solution_leak={total_leaks.get('commented_solution_leak', 0)}, "
@@ -402,14 +439,6 @@ def main():
                     leak_desc += f" L{leak['start_line']}"
                 print(leak_desc)
             print()
-
-    # JSON output for further processing
-    output = {
-        'total_notebooks': len(notebooks),
-        'notebooks_with_leaks': len(results),
-        'leak_counts': total_leaks,
-        'findings': {k: v for k, v in results.items()},
-    }
 
     output_path = REPO_ROOT / 'audit_solution_leaks_results.json'
     with open(output_path, 'w', encoding='utf-8') as f:
