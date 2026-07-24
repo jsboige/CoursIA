@@ -714,16 +714,27 @@ def classify_scientific_review(
     *,
     scientific_reviewed_by: str | None = None,
     last_validator: str | None = None,
-    has_lean_companion: bool = False,
-    has_multi_seed_benchmark: bool = False,
+    sorry_free: bool = False,
 ) -> str:
     """Axe 3 — revue scientifique (UNREVIEWED/AUTHOR_REVIEWED/PEER_REVIEWED/FORMALLY_VERIFIED).
 
-    Cf docs/PARCOURS.md. Sans signal explicite, on retombe sur UNREVIEWED — une
-    promotion necessite soit un signal catalogue (PR label 'scientific-reviewed-by'),
-    soit la presence d'un fichier .lean companion, soit un benchmark multi-seed.
+    Cf docs/PARCOURS.md. Sans signal explicite, on retombe sur UNREVIEWED.
+
+    **Contrat honnete pour FORMALLY_VERIFIED** (issue #8051). La promotion vers
+    FORMALLY_VERIFIED exige une PREUVE, pas une simple presence :
+      - un compagnon `.lean` EXISTANT n'est PAS une preuve — un lake compagnon
+        peut porter sa propre sorry-debt (9/18 notebooks lean4-wsl ont du sorry
+        cell-level, cf scripts/audit/check_lean_notebook_sorry.py #8351).
+        Detecter le compagnon et emettre FORMALLY_VERIFIED = faux claim.
+      - un benchmark multi-seed est une rigueur EMPIRIQUE, pas une preuve
+        formelle (formelle = mathematique, sans axiome admis).
+    Le seul signal honnete est ``sorry_free`` : un lake Lean dont le build
+    reussit SANS aucun ``sorry`` (artifact Lean-CI a brancher ; absent pour
+    l'instant, donc ``sorry_free`` default False -> FORMALLY_VERIFIED reste
+    inatteignable tant que l'artifact n'est pas cable). Le catalog-gen ne peut
+    PAS deviner la sorry-freedom ; il consomme un artifact produit en amont.
     """
-    if has_lean_companion or has_multi_seed_benchmark:
+    if sorry_free:
         return "FORMALLY_VERIFIED"
     if scientific_reviewed_by and last_validator and scientific_reviewed_by != last_validator:
         return "PEER_REVIEWED"
@@ -816,8 +827,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         notebook,
         scientific_reviewed_by=gm.get("scientific_reviewed_by"),
         last_validator=gm.get("last_validator"),
-        has_lean_companion=any(p.endswith(".lean") for p in parts),
-        has_multi_seed_benchmark=False,  # pas de signal canonique pour l'instant
+        # FORMALLY_VERIFIED exige un lake Lean sorry-free PROUVE (artifact Lean-CI),
+        # pas une simple presence de compagnon (cf #8051, #8351). Le champ
+        # git_meta 'sorry_free' n'est pas encore cable -> default False honnete :
+        # aucun notebook ne peut etre faussement claim FORMALLY_VERIFIED.
+        sorry_free=gm.get("sorry_free", False),
     )
     maturity = aggregate_maturity(
         editorial, reproducibility, scientific_review,

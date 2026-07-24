@@ -28,6 +28,7 @@ from generate_catalog import (
     analyze_notebook,
     check_errors,
     classify_maturity,
+    classify_scientific_review,
     count_todos,
     detect_kernel,
     detect_requirements,
@@ -605,6 +606,58 @@ class TestClassifyMaturity:
         code_cells = [executed] + todo_cells
         nb = self._full_nb([_md("# Title")] + code_cells)
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
+
+
+# --- classify_scientific_review (axe 3, #8051) ---
+
+class TestClassifyScientificReview:
+    """Axe 3 — revue scientifique. FORMALLY_VERIFIED exige une PREUVE sorry-free,
+    pas une simple presence de compagnon (cf #8051, #8351)."""
+
+    def test_default_is_unreviewed(self):
+        # Sans aucun signal -> UNREVIEWED (jamais de claim auto).
+        assert classify_scientific_review({}) == "UNREVIEWED"
+
+    def test_author_reviewed_self_validates(self):
+        # reviewed_by == last_validator = auteur se valide lui-meme.
+        assert classify_scientific_review(
+            {}, scientific_reviewed_by="a@b.c", last_validator="a@b.c"
+        ) == "AUTHOR_REVIEWED"
+
+    def test_peer_reviewed_distinct_validator(self):
+        # reviewed_by != last_validator = peer review effective.
+        assert classify_scientific_review(
+            {}, scientific_reviewed_by="a@b.c", last_validator="c@d.e"
+        ) == "PEER_REVIEWED"
+
+    def test_sorry_free_yields_formally_verified(self):
+        # Le SEUL chemin honnete vers FORMALLY_VERIFIED = preuve sorry-free.
+        assert classify_scientific_review({}, sorry_free=True) == "FORMALLY_VERIFIED"
+
+    def test_sorry_free_dominates_peer(self):
+        # sorry_free (preuve formelle) > peer review.
+        assert classify_scientific_review(
+            {}, sorry_free=True,
+            scientific_reviewed_by="a@b.c", last_validator="c@d.e",
+        ) == "FORMALLY_VERIFIED"
+
+    def test_companion_presence_alone_does_not_verify(self):
+        # REGRESSION GUARD (#8051): l'ancien code emettait FORMALLY_VERIFIED des
+        # qu un compagnon .lean existait (signal mort, mais piege si active).
+        # Un lake compagnon peut porter sa sorry-debt -> presence != preuve.
+        # On verifie que rien dans l'API ne permet de claim FORMALLY_VERIFIED
+        # sans sorry_free=True (pas de param has_lean_companion).
+        import inspect
+        sig = inspect.signature(classify_scientific_review)
+        assert "sorry_free" in sig.parameters
+        assert "has_lean_companion" not in sig.parameters, (
+            "has_lean_companion retiré : presence de compagnon != preuve sorry-free (#8051)"
+        )
+        assert "has_multi_seed_benchmark" not in sig.parameters, (
+            "has_multi_seed_benchmark retiré : rigueur empirique != preuve formelle"
+        )
+        # Et sans sorry_free, on retombe sur UNREVIEWED meme si on essaye.
+        assert classify_scientific_review({}) == "UNREVIEWED"
 
 
 # --- _is_exercise_stub ---
