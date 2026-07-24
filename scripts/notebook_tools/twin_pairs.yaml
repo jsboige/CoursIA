@@ -136,10 +136,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
+    date: "2026-07-24"
+    by: po-2023
     python_sha: fe90bbf647b1e06931df4dad0b2c192d7b932d73
-    csharp_sha: 7c5456239e3145b8194519765fb19791644ca505
+    csharp_sha: 1d8c847d17346eb815ace3bbcbaefd19025ce9a9
   known_differences:
     - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
     - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."
