@@ -168,7 +168,7 @@ def classify_editorial(notebook, code_cells, *, is_template=False,
 - `scripts/notebook_tools/generate_catalog.py` — classifier `classify_editorial()` (c.763) + extension c.764
 - `scripts/audit/check_editorial_review.py` — validateur (c.764 NEW)
 - `scripts/audit/check_dataset_registry.py` — analogue pattern (c.795, OPEN sweep-ready #8083)
-- `docs/notebook-metadata/dataset-registry.md` — analogue structure (c.795)
+- `docs/notebook-metadata/DATASET_REGISTRY.md` — analogue structure (c.795, #8083 tr.2 2026-07-23 renamed)
 - EPIC [#4208](https://github.com/jsboige/CoursIA/issues/4208) — open-courseware fiabilisé (parent)
 - Incident fondateur [#2376](https://github.com/jsboige/CoursIA/issues/2376) / [#2383](https://github.com/jsboige/CoursIA/issues/2383) / [#2385](https://github.com/jsboige/CoursIA/issues/2385) — `stale-catalog-silent-revert` (CURATED_GIT_FIELDS préservés)
 
