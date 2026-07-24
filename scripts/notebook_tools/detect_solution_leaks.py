@@ -320,6 +320,236 @@ def commented_template_stub(source: str) -> bool:
     return bool(PROMPT_MARKER_RE.search(source))
 
 
+# Markers that show the cell contains an explicit instructions block for the
+# student (not just a comment about a code section). Found in cells where a
+# real skeleton function/class is followed by `pass` at the end and a header
+# block like "Instructions : 1. ... 2. ... 3. ..." / "Objectif : ..." /
+# "Indices : ..." / "A implementer : ..." / "A vous de jouer". Anchored on
+# `^` or `\n` followed by optional whitespace, so we don't match inside
+# identifiers or inside a docstring that is preceded by a blank line.
+SKELETON_INSTRUCTION_MARKER_RE = re.compile(
+    r'(?:^|\n)(?:[ \t]*\n)*[ \t]*(?:(?:#|//|--)\s*)?(?:'
+    r'Instructions?\s*[:：]'
+    r'|Objectif\s*[:：]'
+    r'|Indices?\s*[:：]'
+    r'|A\s+(?:impl[ée]menter|compl[ée]ter)\s*[:：]'
+    r'|Am[ée]liorations?\s+a\s+(?:impl[ée]menter|compl[ée]ter)'
+    r'|Competences?\s+vis[ée]es?\s*[:：]'
+    r'|Difficult[ée]\s*[:：]'
+    r'|Algorithme\s*[:：]'
+    r'|A\s+vous\s+de\s+jouer'
+    r'|Vous\s+(?:pouvez|allez|devez)'
+    r'|Etapes?\s*[:：]'
+    r'(?:Fonctionnalit[ée]s?|Func)\s+a\s+(?:impl[ée]menter|compl[ée]ter)'
+    r')',
+    re.IGNORECASE,
+)
+
+# Short stub markers that show the cell has no real solution body — the
+# student is meant to fill the gap. A complete solution never carries these.
+SHORT_STUB_MARKER_RE = re.compile(
+    r'(?:'
+    r'A\s+COMPLETER'
+    r'|A\s+impl[ée]menter'
+    r'|Remplissez d\'abord'
+    r'|en\s+attente\s+de\s+votre\s+impl[ée]mentation'
+    r'|Remplissez les TODO'
+    r'|D[ée]commentez et compl[ée]tez'
+    r'|Remplacez le texte'
+    r'|et compl[ée]ter la'
+    r'|\bautre\s+strat[ée]gie\b'
+    r'|vous\s+adapter\s+au\s+nouveau\s+contexte'
+    r')',
+    re.IGNORECASE,
+)
+
+
+def skeleton_with_instructions_stub(source: str) -> bool:
+    """Return True if the cell is a real skeleton with a leading instructions block.
+
+    Pattern: ``def foo(...): ...`` (or ``class Foo: ...`` etc.) with a real
+    executable body (e.g. param checks, guards) AND at least 2 instruction
+    markers (Indent: / Objectif: / Indices: / A implementer: / Algorithme: /
+    A vous de jouer / ...) AND a trailing ``pass`` (the TODO marker).
+
+    Such a cell is a legitimate exercise skeleton: the student replaces the
+    guard branches or fills the body. The detector trips it because the body
+    has real executable lines + the cell is longer than 8 lines.
+
+    Recall-safe: a real solution has at least one *substantive* executable
+    line in the body (a return, an assignment, a call) but does NOT match
+    ``^\\s*pass\\s*(?:#.*)?$`` at the end of the cell. A complete solution
+    never carries 2+ numbered instruction markers in leading comments.
+
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    # Need at least 2 instruction markers in leading comments.
+    markers = SKELETON_INSTRUCTION_MARKER_RE.findall(source)
+    if len(markers) < 2:
+        return False
+
+    # Need a trailing `pass` (the TODO marker) somewhere near the end — a
+    # real solution never ends in `pass`.
+    lines = [l for l in source.split('\n') if l.strip()]
+    if not lines:
+        return False
+
+    # Tolerate either:
+    # (a) last non-empty line is `pass` (optionally with a trailing comment)
+    # (b) last non-empty line is a `print(...)` announce + the line above it
+    #     is `pass` (App-13-TSP pattern: `pass  # Exercice: ...` then
+    #     `print('Fonction ... definie')`)
+    # (c) last non-empty line is a `print(...)` and the cell contains a
+    #     `pass` followed by `# Exercice` somewhere (CSP-3-Advanced C#,
+    #     App-1b-NQueens where the trailing `; Console.WriteLine` follows
+    #     the definition block).
+    last = lines[-1].strip()
+    last_is_pass = bool(re.match(r'^\s*pass\s*(?:#.*)?$', last))
+    last_is_print_after_pass = (
+        bool(re.match(r'^\s*(?:print|Console\.WriteLine|Display|Print)\s*\(', last))
+        and len(lines) >= 2
+        and bool(re.match(r'^\s*pass\s*(?:#.*)?$', lines[-2].strip()))
+    )
+    has_trailing_pass_comment = bool(re.search(
+        r'^\s*pass\s*#\s*Exercice', source, re.MULTILINE | re.IGNORECASE
+    ))
+    if not (last_is_pass or last_is_print_after_pass or has_trailing_pass_comment):
+        return False
+
+    return True
+
+
+def exercise_with_none_stub_or_marker(source: str) -> bool:
+    """Return True if the cell is an exercise with ``= None`` stub assignments
+    (or short "A COMPLETER" markers) + a trailing print/console announce.
+
+    Pattern: a real ``def``/``class`` skeleton whose body assigns local
+    variables to ``None`` (or contains short stub markers like ``A COMPLETER``)
+    AND ends with a ``print(...)`` / ``Console.WriteLine(...)`` announce. The
+    student replaces the None values with real computations.
+
+    Recall-safe: a complete solution has substantive body lines (assignments
+    to computed values, returns, function calls) — not just ``= None`` stubs.
+    The cell must have at least 2 ``= None`` assignments OR 2 ``A COMPLETER``
+    markers to be flagged — single None is too lenient.
+    """
+    # Must have at least 2 None-stub assignments OR 2 short stub markers.
+    none_count = len(re.findall(r'=\s*None\s*(?:#.*)?$', source, re.MULTILINE))
+    short_marker_count = len(SHORT_STUB_MARKER_RE.findall(source))
+    if none_count < 2 and short_marker_count < 2:
+        return False
+
+    # Must end with a print/console announce (the TODO marker).
+    lines = [l for l in source.split('\n') if l.strip()]
+    if not lines:
+        return False
+    last = lines[-1].strip()
+    if not re.match(r'^\s*(?:print|Console\.WriteLine|Display|Print|puts)\s*\(', last):
+        return False
+
+    return True
+
+
+def exercise_with_a_completer_minizinc(source: str) -> bool:
+    """Return True if the cell is a MiniZinc/C# exercise with ``A COMPLETER`` /
+    ``A implémenter`` markers in the body. These are model-text stubs where the
+    student fills in missing constraints; the source contains the SKELETON of
+    a model in a triple-quoted string with TODO markers.
+
+    Recall-safe: a complete solution has no ``A COMPLETER`` markers and no
+    ``???`` placeholder expressions in MiniZinc constraints.
+    """
+    # MiniZinc patterns: % A COMPLETER, % A implémenter, % A vous de jouer
+    # C# patterns: // A COMPLETER, // A implémenter
+    # Python patterns: # A COMPLETER (case-insensitive)
+    pattern = re.compile(
+        r'(?:^|\n)\s*[#/%]\s*A\s+(?:COMPLETER|impl[ée]menter|compl[ée]ter|vous)',
+        re.IGNORECASE | re.MULTILINE,
+    )
+    matches = pattern.findall(source)
+    # Also count MiniZinc placeholder constraints — `???` inside a constraint
+    # is the canonical MiniZinc "to be filled" marker. A complete solution
+    # never has `???` placeholders.
+    has_placeholder = bool(re.search(r'\?\?\?', source))
+    if len(matches) < 1 and not has_placeholder:
+        return False
+
+    # Must contain a model definition (display_model or solve satisfy) or
+    # be a multi-line string with IntentBlock markers.
+    has_model = bool(re.search(r'display_model|solve\s+(?:satisfy|minimize|maximize)', source))
+    return has_model or len(source) < 3000  # small enough to be a model snippet
+
+
+def exercise_with_attente_implementation(source: str) -> bool:
+    """Return True if the cell is a C# exercise announcing ``en attente de
+    votre implementation`` (or ``à compléter``) via ``Console.WriteLine`` /
+    ``Show`` / ``print``, with the body being scaffolding (variable setup,
+    placeholders, model constructors) and NO real constraint declarations or
+    real solver calls.
+
+    Pattern: ``Console.WriteLine($"... en attente de votre implementation")``
+    followed or preceded by informational prints about expected results. The
+    student writes the actual constraint / solver code in place.
+
+    Recall-safe: a complete solution has substantive solver calls
+    (``model.Add(...)``, ``model.Solve()``, ``solver.Solve()``, ``Solver.Solve()``)
+    and lacks the ``en attente`` / ``à compléter`` announcement.
+    """
+    # Must announce the placeholder state.
+    has_attente = bool(re.search(
+        r'(?:en\s+attente\s+de\s+votre\s+impl[ée]mentation|à\s+compl[ée]ter)',
+        source, re.IGNORECASE
+    ))
+    if not has_attente:
+        return False
+
+    # Must use a console announce as the marker (Console.WriteLine / Show / print).
+    has_print_marker = bool(re.search(
+        r'(?:Console\.WriteLine|Show|print)\s*\([^)]*(?:attente|compl[ée]ter)',
+        source, re.IGNORECASE
+    ))
+    if not has_print_marker:
+        return False
+
+    # Must NOT contain real solver calls — that would be a real solution.
+    has_real_solver_call = bool(re.search(
+        r'(?:model\.Solve|solver\.Solve|Solver\.Solve|\.Add\([^)]*\bconstraint|\.Add\([^)]*==|\.Add\([^)]*<=|\.Add\([^)]*>=)',
+        source
+    ))
+    return not has_real_solver_call
+
+
+def exercise_with_exercice_indice_skeleton(source: str) -> bool:
+    """Return True if the cell is a Python exercise with ``# Exercice`` headers
+    and ``# Indice`` (or ``# Etape``) guidance, no real solution body — the
+    student follows the indicesteps to build the result.
+
+    Pattern: a cell with 2+ ``# Exercice:`` / ``# Exercice 1:`` / ``# Indice:``
+    style markers, OR contains multiple bare ``# Exercice`` / ``# Indice``
+    lines, AND the body is mostly variable setup + guidance, NOT substantive
+    solution code.
+
+    Recall-safe: a complete solution has at least one substantive executable
+    line (a return, a function call) that produces a real result and lacks
+    the bare ``# Exercice`` / ``# Indice`` markers in the body.
+    """
+    pattern = re.compile(
+        r'(?:^|\n)[ \t]*#[ \t]*(?:Exercice|Indice|Etape)\b',
+        re.IGNORECASE | re.MULTILINE,
+    )
+    matches = pattern.findall(source)
+    if len(matches) < 2:
+        return False
+
+    # Must not contain real solution patterns.
+    # Solution signals: returns, function calls producing values, asserts.
+    has_substantive_call = bool(re.search(
+        r'(?:^\s*[a-z_][a-z0-9_]*\s*=\s*[a-zA-Z_]\w*\(|^\s*return\b)',
+        source, re.MULTILINE
+    ))
+    return not has_substantive_call
+
+
 def scan_notebook(path: str) -> list[dict]:
     """Scan a single notebook for solution leaks."""
     findings = []
@@ -425,6 +655,45 @@ def scan_notebook(path: str) -> list[dict]:
             # Recall-safe: a real solution has an executable def/class or a
             # non-trivial executable line, which makes the helper return False.
             if commented_template_stub(next_code_source):
+                continue
+            # Skeleton-with-instructions stub: a real ``def`` / ``class`` with
+            # a guard body + trailing ``pass`` is paired with at least 2
+            # numbered instruction markers (Instructions: / Objectif: /
+            # Indices: / A implementer: / Algorithme: / A vous de jouer / ...).
+            # The student replaces the guard branches or fills the body.
+            # Suppresses the "real skeleton + pass + instructions block" FP
+            # class that tripped the detector on App-13-TSP, Lean-8/10,
+            # Lean-15/17, App-1b-NQueens, CSP-3-Advanced, EdgeDetection, etc.
+            # Recall-safe: a real solution has 1) at least one substantive
+            # line in the body (return/assignment/call) and 2) ends with
+            # something other than `pass`. Both make the helper return False.
+            if skeleton_with_instructions_stub(next_code_source):
+                continue
+            # Exercise with None-stub assignments + print trailer: real def/class
+            # with `Q1 = None`, `IQR = None`, `nb_doublons = None`, etc. The
+            # student replaces the None values with real computations. Lab4
+            # DataWrangling, SW-12 GraphRAG, Planners-1, Arrow-33 pattern.
+            # Suppresses the "def-with-None-stubs + print" FP class.
+            # Recall-safe: a complete solution has substantive body lines
+            # (returns, calls, computed assignments), not None stubs.
+            if exercise_with_none_stub_or_marker(next_code_source):
+                continue
+            # MiniZinc/C# exercise with `A COMPLETER` markers in a model string.
+            # App-8-MiniZinc pattern (% A COMPLETER :...). The student fills
+            # the missing constraints. Not a leak.
+            if exercise_with_a_completer_minizinc(next_code_source):
+                continue
+            # C# exercise with `en attente de votre implementation` announcement.
+            # CSP-3-Advanced / CSP-7-Soft / App-1b-NQueens pattern: a model
+            # constructor + informational Console.WriteLine about expected
+            # results, with NO real solver calls. The student writes the
+            # constraints in place.
+            if exercise_with_attente_implementation(next_code_source):
+                continue
+            # Python exercise with `# Exercice` / `# Indice` / `# Etape`
+            # guidance headers, no substantive call/return body. Arrow-33
+            # pattern. The student follows the indicesteps.
+            if exercise_with_exercice_indice_skeleton(next_code_source):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
