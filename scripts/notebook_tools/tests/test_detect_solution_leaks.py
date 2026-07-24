@@ -20,6 +20,7 @@ from detect_solution_leaks import (
     _last_exercise_header_match,
     _numbered_exercise_header_between,
     closest_preceding_header_is_example,
+    closest_preceding_header_is_methodological,
     code_cell_first_comment_labels_example,
     commented_template_stub,
     discover_notebooks,
@@ -480,6 +481,88 @@ class TestClosestPrecedingHeaderIsExample:
             ("code", _SOLUTION_BODY),
         )
         assert closest_preceding_header_is_example(cells, 2) is True
+
+
+class TestClosestPrecedingHeaderIsMethodological:
+    # A code cell whose closest preceding markdown header is a methodological
+    # commentary header (Interpretation / Analyse / Methodologie / Discussion /
+    # Resultats et discussion) is a data table or worked derivation attached to
+    # the surrounding narrative, NOT an exercise solution leak. Pins the 2 real
+    # FPs closed by helper-1 (Lean-17-b cell#14 under `### Interpretation`,
+    # SC-23 cell#25 under `### Analyse`) + the recall-safe negatives.
+
+    def _cells(self, *specs):
+        cells = []
+        for ct, src in specs:
+            cells.append({"cell_type": ct, "source": [src]})
+        return cells
+
+    def test_interpretation_header_is_true(self):
+        # Lean-17-b case: data table under ### Interpretation.
+        cells = self._cells(("markdown", "### Interprétation : slice-genus"),
+                            ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is True
+
+    def test_analyse_header_is_true(self):
+        # SC-23 case: TokenBridgeSimulator under ### Analyse.
+        cells = self._cells(("markdown", "### Analyse : Securite et Limites"),
+                            ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is True
+
+    def test_methodologie_header_is_true(self):
+        cells = self._cells(("markdown", "### Méthodologie"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is True
+
+    def test_results_and_discussion_header_is_true(self):
+        cells = self._cells(("markdown", "### Résultats et discussion"),
+                            ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is True
+
+    def test_exercise_header_is_false(self):
+        # A real exercise solution: closest header is ### Exercice N.
+        cells = self._cells(("markdown", "### Exercice 4 : a faire"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is False
+
+    def test_example_header_is_false(self):
+        # Worked-example headers are NOT methodological (handled by the
+        # example helper, not this one).
+        cells = self._cells(("markdown", "### Exemple guide : demo"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is False
+
+    def test_prose_only_header_is_false(self):
+        cells = self._cells(("markdown", "Just prose, no header at all."),
+                            ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is False
+
+    def test_intervening_methodological_header_wins_over_section(self):
+        # "## Exercices" section, then "### Interprétation" sub-header, then
+        # code: the closest header (Interpretation) wins -> True. This is the
+        # FP class helper-1 closes (code sits under a section but its nearest
+        # sub-header is methodological narrative).
+        cells = self._cells(
+            ("markdown", "## 10. Exercices\n\nIntro."),
+            ("markdown", "### Interprétation des résultats"),
+            ("code", _SOLUTION_BODY),
+        )
+        assert closest_preceding_header_is_methodological(cells, 2) is True
+
+    def test_prose_between_code_and_header_still_finds_it(self):
+        cells = self._cells(
+            ("markdown", "### Analyse"),
+            ("markdown", "Un paragraphe explicatif sans header."),
+            ("code", _SOLUTION_BODY),
+        )
+        assert closest_preceding_header_is_methodological(cells, 2) is True
+
+    def test_documented_recall_vector_solution_under_analyse(self):
+        # Recall vector (po-2026 c.716): a REAL solution whose closest header
+        # is ### Analyse WOULD be suppressed by helper-1. 0 triggers on the
+        # current corpus (recall-safe in practice), but this test PINS the
+        # documented behaviour so a future refactor does not silently flip it
+        # without a deliberate decision. If you change the heuristic to close
+        # this vector, update this test accordingly.
+        cells = self._cells(("markdown", "### Analyse"), ("code", _SOLUTION_BODY))
+        assert closest_preceding_header_is_methodological(cells, 1) is True
 
 
 class TestCodeCellFirstCommentLabelsExample:
