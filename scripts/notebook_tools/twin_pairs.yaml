@@ -365,7 +365,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: da13439ee00e75ef65a0729087c450a34847b415
-    csharp_sha: dc33fc60f854fd06855701e387985cc5a73ed693
+    csharp_sha: c463b0da453cb9d53d722ec13a27f89035df8ca9
   known_differences:
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -413,7 +413,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: c577dc03216f318a392f373ba61aa85287037f98
-    csharp_sha: e495c6935e61214af55a64d5598412720e7f80fe
+    csharp_sha: b514156edf4e4e8533a9105c42c17bc24e09d023
   known_differences:
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -429,7 +429,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: 466d8b8b098d63782651c8357dbfc798a448d029
-    csharp_sha: 05db832236c4344172f9db52526e8441d5748cd1
+    csharp_sha: f89c42e298da074aa14990cc1279557bc7e312b7
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -445,7 +445,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: 243abda6c6d8da742e47ae61a60d780b770e77ad
-    csharp_sha: 3734352b4af21f92da63865c32b78d6fd3b5dd31
+    csharp_sha: 4ee17fda8afb065f28f37dde6fe1b96104257495
   known_differences:
   - 'Socle pedagogique commun : Item Response Theory (modeles de competences / IRT) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -461,7 +461,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: ece691bf53797d4b37c404f62932f5a656daa6aa
-    csharp_sha: f0c94045444eff8102b6ca6a4da47f363e15f133
+    csharp_sha: a3ae179fce9fbfa45df6eabba7984a3a8fc69fea
   known_differences:
   - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -477,7 +477,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: be07a64cf703c3bef33d6898601ce6b021d3abf3
-    csharp_sha: 9cfc62e7089756ed550cbae76645a95589a0fe93
+    csharp_sha: 0aeed2f0efdf0afda422702b3a99c5d5985de589
   known_differences:
   - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
