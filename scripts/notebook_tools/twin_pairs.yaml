@@ -96,13 +96,15 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
+    date: "2026-07-24"
     by: po-2024
-    python_sha: bebd658f4b477751460733c1bc8ce635acd348a0
+    python_sha: dc0421dd7de4bc4dd61181a44c5704a30206f879
     csharp_sha: b090ec4eeb0a2cc1d75facafed5113eb24e6393e
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+    - "Re-audit 2026-07-24 (c.836) : Python a evolue via #8158 (Prong-B #3801 -- capstone 'allocation de budget' cell 22, budget_total 100->80, pour retirer la degenerescence de l'allocation uniforme 20,20,20,20,20). Le C# (27 cellules) ne contient PAS ce capstone budget : il couvre les concepts partages (objectifs hierarchiques, variables de relaxation MkOr(c_i, r_i), violations ponderees) sans la cellule capstone Python-only. Parite semantique preservee au niveau des concepts partages ; C# legitimement inchange (b090ec4e)."
+    - "FLAG po-2025 (hors-scope c.836) : Python cell 21 (prose) dit encore 'budget de 100 unites' alors que cell 22 (code) = budget_total=80 -- residuel prose non mis a jour par #8158."
 
 # --- Tranche 2 (c.802, po-2024, 2026-07-23) : extensions Search/Part2-CSP (CSP-1..4) + Search/Part1-Foundations (Search-1..3) ---
 # Meme mecanisme (registre curated YAML + check_twin_parity.py), substance
@@ -281,14 +283,15 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-23"
+    date: "2026-07-24"
     by: po-2024
     python_sha: 9e37f461f597d0b3d486672402540afd2718bffd
-    csharp_sha: cfee38be39500a5e92cfb680b8bdfde25eb24161
+    csharp_sha: ad3adf67599a5594530d077a0bde8c3f272fc936
   known_differences:
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
     - "parity_level = surface : meme theme (evaluation de modeles + recherche d'hyperparametres) mais le Python est une SELECTION, pas une parite cellule-par-cellule. A noter pour toute re-audit : combler l'ecart exigerait d'etendre le Python (multi-cycle, cf memo #4956)."
+    - "Re-audit 2026-07-24 (c.836) : C# a evolue via #8180 (correction arrondi CV mean MAE 1,36 -> 1,35, audit claims #8052) ; Python inchange (9e37f461). Parite surface preservee (theme partage evaluation + hyperparametres, Python reste une selection non cellule-par-cellule -- l'arrondi MAE corrige est cote C# uniquement)."
 
 - name: "ML-5 TimeSeries"
   family: ML.NET/Python
