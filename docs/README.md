@@ -110,6 +110,18 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Vidéo, Texte) |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
 
+## Métadonnées notebooks (docs/notebook-metadata/)
+
+Schémas canoniques de métadonnées par notebook : registre datasets (licence + checksum), matrice coût/ressource, et registre de revues éditoriales tierces. Consommés par `scripts/audit/check_*.py` et liés depuis `THIRD_PARTY_NOTICES.md`. Triage #7422 (c.839, po-2023 — slice `notebook-metadata/` non couverte par c.549/c.557/c.600/c.705/c.715/c.728n/c.728r/c.728s/c.734/c.728y+36/c.728y+37).
+
+| Fichier | Verdict | Raison |
+|---------|---------|--------|
+| [notebook-metadata/DATASET_REGISTRY.md](notebook-metadata/DATASET_REGISTRY.md) | **KEEP** | Registre canonique datasets (~25 fichiers, 9 familles) avec licence + checksum SHA256 — alimenté par `scripts/audit/check_dataset_registry.py --audit` ; lié depuis [THIRD_PARTY_NOTICES.md §0](../THIRD_PARTY_NOTICES.md) (séparation licences code vs datasets). Issue #8055 tranche 2 (V0 pilote c.795). 210 lignes |
+| [notebook-metadata/DATASET_CARD.md](notebook-metadata/DATASET_CARD.md) | **KEEP** | Template grade B-méthodologique pour dataset sensible (caractère synthétique + périmètre RGPD + procédure re-validation sur fork). Complète `DATASET_REGISTRY.md` avec une couche descriptive par dataset. Issue #8055 tranche 2. 154 lignes |
+| [notebook-metadata/cost-matrix.md](notebook-metadata/cost-matrix.md) | **KEEP** | Schéma `cost:` frontmatter portable (api_usd_est / cpu_min / gpu_min / vram_gb / qc_cloud_required) — pilote V0 c.794, issue #8056. Consommé par `scripts/audit/check_cost_metadata.py` ; intégration audit sémantique #8052. 375 lignes — référence opérationnelle majeure |
+| [notebook-metadata/EDITORIAL_REVIEW_CARD.md](notebook-metadata/EDITORIAL_REVIEW_CARD.md) | **KEEP** | Template canonique c.764 — copié/adapté par chaque reviewer pour ajouter une entrée à `editorial-review-registry.md`. 5 portées : typo / factual / pedagogie / substance / full (seules `factual`/`substance`/`full` permettent promotion `BETA → FINAL`, cf `docs/PARCOURS.md` §Axe 1). 93 lignes |
+| [notebook-metadata/editorial-review-registry.md](notebook-metadata/editorial-review-registry.md) | **KEEP** | Pilote fondateur c.764 (phase 2 issue #8051 critère #4) — registre whitelist YAML curé manuellement des revues éditoriales tierces. Sans signal `editorial_reviewed_by` non-null dans ce registre, `classify_editorial()` n'émet jamais `FINAL` (598 entrées historiques rétrogradées par défaut, design anti-auto-promotion). Consommé par `scripts/audit/check_editorial_review.py`. 179 lignes |
+
 ## Lecture transversale
 
 | Fichier | Description |
