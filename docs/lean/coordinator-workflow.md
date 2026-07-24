@@ -25,14 +25,24 @@ cd D:/CoursIA/MyIA.AI.Notebooks/GameTheory/social_choice_lean
 lake build SocialChoice.Voting   # ou autre module touche
 ```
 
-Lake = elan installe sous `C:\Users\MYIA\.elan\bin\`. Lean v4.29.1 OK.
+Lake = elan installe sous `C:\Users\MYIA\.elan\bin\`. Toolchain courante **v4.31.0-rc1** (cf. `lean-toolchain` et `lake-manifest.json` `inputRev`).
 
-Si "no such file or directory" sur des oleans Mathlib (cache corrompu) :
+### Cache Mathlib local (junction partage) — ne PAS `cache get` par defaut
+
+Les oleans Mathlib sont **deja presents localement** via un cache mutualise junctionne. Le defaut est de **reutiliser** ce cache ; `cache get` est un fallback.
+
+- **Emplacement** : `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/.lake/packages/mathlib/.lake/build/lib/lean/` — le `conway_lean` (lake-pivot) porte le checkout Mathlib a rev **v4.31.0-rc1**.
+- **Mutualisation** : les autres lakes junctionnent leur `.lake/packages` vers celui de `conway_lean` (ex. `game_theory_lean/.lake/packages` est une `Junction` -> `conway_lean/.lake/packages`). Verifier : `(Get-Item <lake>/.lake/packages).LinkType` doit valoir `Junction`.
+- **Lake reutilise les oleans** : un `lake build <module-set>` sur un worktree propre compile en ~1min (ex. `RepeatedGames.GrimTrigger` = 2948 jobs ~49s, Mathlib reused integralement), PAS 30-60min de recompile frais.
+
+**Piege false-absent (incident 2026-07-24, re-propage sur 3 cycles)** : chercher les oleans dans `.mathlib-cache/` (chemin unused) OU dans le repertoire SOURCE `.../mathlib/Mathlib/` renvoie **0 fichier** — Lake stocke les oleans dans `.lake/build/lib/lean/`, PAS alongside la source. Un `find .../Mathlib/ -name '*.olean'` vide **ne prouve PAS** un cache vide : verifier `.lake/build/lib/lean/Mathlib/` (snapshot 2026-07-24 : ~8100 oleans).
+
+**Fallback `cache get` (UNIQUEMENT si junction cassee / oleans manquants dans `.lake/build/lib/lean/`)** :
 ```bash
-lake exe cache get   # ~3min, 8232 oleans pre-builts depuis Azure
+lake exe cache get   # ~3min, oleans pre-builts depuis Azure — fallback, pas defaut
 ```
 
-Toujours `cache get` AVANT un build neuf, pas apres.
+Si le build echoue alors que la junction est intacte et `.lake/build/lib/lean/Mathlib/` peuple, le probleme est le **code** (cf. incident 2026-05-10), pas le cache.
 
 ### CI != Lake build local
 
