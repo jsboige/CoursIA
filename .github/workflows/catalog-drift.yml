@@ -58,6 +58,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      # PyYAML is required by generate_catalog.py's editorial-review registry
+      # loader (_load_editorial_registry, added in #8345). Without it the
+      # generator crashes: ModuleNotFoundError: No module named 'yaml'.
+      - name: Install PyYAML
+        run: pip install pyyaml
+
       # Canonical regeneration (local to the runner only — nothing is written
       # back to the branch). git-tracked notebooks only, for CI determinism.
       - name: Regenerate catalog + README markers
