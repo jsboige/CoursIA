@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 198 |
+| Notebooks | 197 |
 | PRODUCTION | 0 |
 | BETA | 160 |
-| ALPHA | 38 |
+| ALPHA | 37 |
 
-## ML/DataScienceWithAgents (28 notebooks)
+## ML/DataScienceWithAgents (27 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -45,18 +45,17 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
 | 15 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
 | 16 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
-| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
-| 18 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
-| 19 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
-| 20 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
-| 21 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
-| 22 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
-| 23 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
-| 24 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | BETA | Oui |
-| 25 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | ALPHA | Oui |
-| 26 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 27 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 28 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 17 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
+| 18 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
+| 19 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
+| 20 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
+| 21 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
+| 22 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
+| 23 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | BETA | Oui |
+| 24 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | ALPHA | Oui |
+| 25 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 26 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 27 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
 ## ML/ML.Net (19 notebooks)
 

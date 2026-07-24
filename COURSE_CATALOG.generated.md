@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-23 06:18
+Generated: 2026-07-24 06:11
 Total notebooks: 836
 
 ## Status Summary
@@ -15,8 +15,8 @@ Total notebooks: 836
 - **PRODUCTION**: 0
 - **BETA**: 745
 - **TEMPLATE**: 4
-- **ALPHA**: 63
-- **DRAFT**: 24
+- **ALPHA**: 62
+- **DRAFT**: 25
 
 ## By Series
 
@@ -286,7 +286,7 @@ Total notebooks: 836
 | 114 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 115 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | BETA | 45min | po-2025 |
 
-### ML (47 notebooks) — DEMO:3, READY:44 | ALPHA:5, BETA:42
+### ML (47 notebooks) — DEMO:3, READY:44 | ALPHA:4, BETA:42, DRAFT:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -306,7 +306,7 @@ Total notebooks: 836
 | 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
 | 15 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
 | 16 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
-| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
+| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | DRAFT | 30min | po-2023 |
 | 18 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
 | 19 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | BETA | 30min | po-2023 |
 | 20 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
@@ -874,7 +874,7 @@ Total notebooks: 836
 | 31 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
 | 32 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
 | 33 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 34 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 34 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
 | 35 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
 | 36 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 

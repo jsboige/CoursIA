@@ -12,7 +12,7 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 series: ALL
 total: 836
 breakdown: SymbolicAI=220, GenAI=141, Search=115, QuantConnect=105, Probas=58, GameTheory=55, ML=47, IIT=36, Sudoku=36, RL=17, CaseStudies=6
-maturity: BETA=745, ALPHA=63, DRAFT=24, TEMPLATE=4
+maturity: BETA=745, ALPHA=62, DRAFT=25, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
