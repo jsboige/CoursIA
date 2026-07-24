@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-check_cost_metadata.py — Vérificateur cohérence frontmatter `cost:`.
+check_cost_metadata.py — Vérificateur cohérence matrice de coût `cost:`.
 
 Issue #8056 (P1) — matrice coût/ressource par notebook.
 
+Forme CANONIQUE (design-gate c.866) : `nb.metadata['cost']` (JSON, invisible au
+rendu markdown). La cellule markdown `---YAML---` est LÉGACY, RETIREE du mandat
+(markdown-it promeut le bloc `---` en setext-H2 supersize = guard #8352 ERROR).
+Ce vérificateur lit `metadata['cost']` D'ABORD, retombe sur le scan cellule
+`---...---` en backward-compat pendant la migration de masse (ordre non-bloquant).
+
 But : extraire pour un notebook :
-  - Le bloc YAML `cost:` de la première cellule markdown le portant
-    (convention c.800 = cell[1], après le titre markdown cell[0])
+  - La matrice `cost:` — depuis `nb.metadata['cost']` (canonical) ou, à défaut,
+    le bloc YAML `---...---` d'une cellule markdown (legacy fallback)
   - Les usages réels : appels API, .cuda(), HF_TOKEN, QuantBook, etc.
   - Signaler les :
       (1) gpu_required: false mais cellule code lance torch.cuda / tensorflow GPU
@@ -64,7 +70,12 @@ TOKEN_PATTERNS = {
 
 
 def parse_cost_frontmatter(cell_source: str) -> dict:
-    """Parse le bloc YAML `--- ... ---` d'une cellule markdown (c.800 = cell[1])."""
+    """Parse le bloc YAML `--- ... ---` d'une cellule markdown (LÉGACY fallback).
+
+    Forme canonique = `nb.metadata['cost']` (cf check_notebook). Cette fonction ne
+    sert qu'au backward-compat pour les notebooks pas encore migrés (convention
+    c.800 = cell[1], après le titre markdown cell[0]).
+    """
     # Pattern : début de cellule = `---`, lignes YAML, `---` final
     pattern = r'^---\s*\n(.*?)\n---\s*\n'
     match = re.match(pattern, cell_source, re.DOTALL)
@@ -114,24 +125,38 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
 
     findings = []
     cost_meta = {}
+    cost_source = None  # provenance: 'metadata' (canonical) | 'markdown_cell' (legacy fallback)
     code_cells_source = []
 
-    # Extraction frontmatter : scan de TOUTES les cellules markdown.
-    # Convention c.800 = frontmatter à cell[1] (après le titre markdown cell[0],
-    # avant le code Papermill params). L'ancienne lecture cell[0]-seule ratait
-    # tous les notebooks c.800/c.801/c.821/c.822/c.823/c.824 (L829 NEW).
-    # Le premier bloc YAML `---...---` contenant `cost:` gagne ; backward-compatible
-    # (cell[0] markdown avec frontmatter reste détecté en premier).
-    for cell in nb.cells:
-        if cell.get('cell_type') != 'markdown':
-            continue
-        source = cell.get('source', '')
-        if isinstance(source, list):
-            source = ''.join(source)
-        parsed = parse_cost_frontmatter(source)
-        if 'cost' in parsed:
-            cost_meta = parsed.get('cost', {})
-            break
+    # Extraction de la matrice de coût.
+    # PR A (#8056, design-gate c.866) : la forme CANONIQUE est `nb.metadata['cost']`
+    # (JSON, invisible au rendu markdown). La cellule markdown `---YAML---` est la
+    # forme LÉGACY, RETIREE du mandat : markdown-it promeut le bloc `---` en
+    # setext-H2 supersize (guard #8352 ERROR). On lit metadata d'abord, puis on
+    # retombe sur le scan cellule en backward-compat (les deux formes coexistent
+    # pendant la migration de masse ; l'ordre est non-bloquant).
+    # Cf docs/notebook-metadata/cost-matrix.md, PR exemplar #8323 (Infer-3/4).
+    nb_metadata = nb.metadata or {}
+    md_cost = nb_metadata.get('cost')
+    if isinstance(md_cost, dict) and md_cost:
+        cost_meta = dict(md_cost)
+        cost_source = 'metadata'
+
+    # Fallback LÉGACY : scan de TOUTES les cellules markdown pour un bloc
+    # `---...---` contenant `cost:` (convention c.800 = cell[1]). Backward-compat
+    # pour les notebooks pas encore migrés vers metadata.cost.
+    if not cost_meta:
+        for cell in nb.cells:
+            if cell.get('cell_type') != 'markdown':
+                continue
+            source = cell.get('source', '')
+            if isinstance(source, list):
+                source = ''.join(source)
+            parsed = parse_cost_frontmatter(source)
+            if 'cost' in parsed:
+                cost_meta = parsed.get('cost', {})
+                cost_source = 'markdown_cell'
+                break
 
     # Agrégation cellules code
     for idx, cell in enumerate(nb.cells):
@@ -209,6 +234,7 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
     return {
         'notebook': str(notebook_path),
         'cost_meta_found': bool(cost_meta),
+        'cost_source': cost_source,
         'cost_meta': cost_meta,
         'uses_gpu': uses_gpu,
         'api_used': sorted(api_used),
@@ -240,6 +266,7 @@ def main():
     lines = [
         f"notebook: {result['notebook']}",
         f"cost_meta_found: {result['cost_meta_found']}",
+        f"cost_source: {result['cost_source']!r}",
         f"uses_gpu: {result['uses_gpu']}",
         f"api_used: {result['api_used']}",
         f"tokens_required: {result['tokens_required']}",
