@@ -27,10 +27,17 @@ HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
 # a fence are code, not markdown: a `# comment` there is a shell/python comment,
 # NOT a heading, and must not be counted as H1 / HINT-AS-HEADING.
 FENCE_RE = re.compile(r'^\s*(`{3,}|~{3,})')
-# Text that should NOT be a heading (it's an aside / hint / step / inline label)
+# Text that should NOT be a heading (it's an aside / hint / step / inline label).
+# Every stem is optionally-plural (`indices?`, `astuces?`, ...): the bare `\b`
+# after a singular stem FAILS to match the plural form (`indice\b` does not match
+# `Indices` — the `s` is inside the word, no boundary before it). That gap made
+# `### Indices` / `### Astuces` / `### Conseils` invisible to this scanner, which
+# is why it reported 0 hint-headings while ~194 plural-form hint-headings across
+# ~102 notebooks survived the #3968 remediation uncaught (the "scanner reports 0"
+# acceptance criterion of #3968 was vacuously satisfied). See #3966 follow-up.
 HINT_RE = re.compile(
-    r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
-    r'etape|étape|step|rappel|warning|important|aide|piste|nb)\b',
+    r'^(indices?|astuces?|hints?|tips?|conseils?|notes?|remarques?|attention|todo|'
+    r'etapes?|étapes?|steps?|rappels?|warnings?|important|aides?|pistes?|nb)\b',
     re.IGNORECASE)
 # A numbered step WITH a descriptive title (`Step 1: Load Data`, `Step 1
 # Import configuration`, `Étape 3 : Installation`) is a real titled SECTION
@@ -52,8 +59,8 @@ TITLED_STEP_RE = re.compile(
 # `### Points clés à retenir` stays H3 would create an asymmetric hierarchy.
 # See #3968.
 COMPOUND_HINT_RE = re.compile(
-    r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
-    r'etape|étape|step|rappel|warning|important|aide|piste|nb)-',
+    r'^(indices?|astuces?|hints?|tips?|conseils?|notes?|remarques?|attention|todo|'
+    r'etapes?|étapes?|steps?|rappels?|warnings?|important|aides?|pistes?|nb)-',
     re.IGNORECASE)
 # `Step`/`Étape` followed by a NON-numeric word forms a technical compound
 # noun (`Step recursif` = the recursive step of an algorithm, `Step function`,
@@ -70,7 +77,7 @@ STEP_COMPOUND_RE = re.compile(
 # back at prior named content, not a bare aside (`## Rappel`). A bare
 # `## Rappel` has no digit reference, so it stays flagged. See #3968.
 RAPPEL_REFERENCE_RE = re.compile(
-    r'^rappel\s+.*\d',
+    r'^rappels?\s+.*\d',
     re.IGNORECASE)
 # --- COLLAPSED-MARKDOWN detection (#3966) ---
 # A GFM table separator fragment: a pipe followed (after optional spaces) by a
