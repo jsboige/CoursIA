@@ -1,0 +1,649 @@
+# Registre de parite des jumeaux Python/C# (#8057, parent #4208).
+#
+# Chaque entree decrit une paire de notebooks jumeaux : le chemin des deux
+# cotes, le niveau de parite, le dernier audit (date + auteur + git blob SHA de
+# chaque notebook au moment de l'audit) et les differences connues documentees.
+#
+# Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
+# SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
+# Apres une audit firsthand, rebaseline avec :
+#   python scripts/notebook_tools/check_twin_parity.py --update [--family ...]
+#
+# parity_level :
+#   surface     = meme plan/sections, implimentations independantes
+#   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
+#   native-both = traduction fidele cellule-par-cellule (rare)
+#
+# PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
+# Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
+# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
+# + Probas/Infer.NET-PyMC (c.812, 11 paires ; C# Infer.NET EP/VMP compile vs Python PyMC NUTS/HMC + ADVI). Voir #8057.
+
+- name: "Z3-Python-01 Introduction"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bc1a9639efda2a7855b8346c08ab2a14c7e2cf2e
+    csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+  known_differences:
+    - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
+    - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
+    - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."
+
+- name: "Z3-Python-02 Sudoku"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 1d3b193234ee666375f84e5c7a389ccee9d389f4
+    csharp_sha: fedc5982513ac15be379f4b0ed0845032d2dc9a6
+  known_differences:
+    - "Python : pyz3. C# : Microsoft.Z3 .NET (idiomes API comme NB-01)."
+    - "Cote Python : modelisation Sudoku (81 cellules Int 1-9, alldifferent lignes/colonnes/blocs). Doc-honesty cures c.19 (PR #8045 : compte indices ~35 -> 30 pour puzzle_facile). SHA rebaseline c.802 apres DRIFT detecte par check_twin_parity.py : 4dcb5921 -> 1d3b1932 (commit e8a3be3ae merge le 2026-07-23)."
+
+- name: "Z3-Python-03 Tactics"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4b18990a0ad8338f341a30e9d6999a4f59ec4757
+    csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
+  known_differences:
+    - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
+    - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."
+
+- name: "Z3-Python-04 Strings & Regex"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5d3bf0ee8baf55766e5db4d30bf84705e2f9644d
+    csharp_sha: c8f8372242c5da1bdecbc1e03be05e2d28ce2154
+  known_differences:
+    - "Python : pyz3 (Range, Concat, Plus, Re, InRe, Length sur Seq). C# : Microsoft.Z3 .NET (ctx.MkRange, MkConcat, MkRe...)."
+    - "Cote Python : fix code-correctness c.17 (PR #8040) — date AAAA-MM-JJ sous-contrainte (Plus(Range)=[0-9]+ variable) resverree en groupes longueur-fixe [0-9]{n} via helper chiffres(n). Le concept (string regex Z3) est commun aux deux cotes ; le detail du fix date est specifique au notebook Python."
+
+- name: "Z3-Python-05 Quantifiers & Proofs"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 519b4a3d04f5b673650394a729f03d7fa07711b1
+    csharp_sha: dcc4aa5c50ff122180e2b2dd97bf25cdbb4d1b2a
+  known_differences:
+    - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
+    - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."
+
+- name: "Z3-Python-06 Advanced Optimization"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-24"
+    by: po-2026
+    python_sha: dbbec1f0d8f93c4cfadd534b67138c04314a6b88
+    csharp_sha: 39a44f588e5a0da9fd8983b7fca62b0f1196c16a
+  known_differences:
+    - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
+    - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+    - "2026-07-24 (po-2026) : doc-honesty #8052 -- cell#21 prose disait 'budget de 100 unites' alors que code[22] tourne budget_total=80 (et cell#23 interprete deja correctement 'budget de 80, inferieur a la demande ideale 5x20=100'). Markdown-only align du nombre a l'output (100->80), code et outputs intacts. python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-24 (po-2026) : Prong-B (#3801) porte au twin C# -- capstone budget 100->80 (cas non-degenere). Avant : C# restait a budget=100 (cas degenere, valeur=420, cout=0) tandis que Python etait passe a 80 (#8158). Apres port : les deux jumeaux alignes a budget=80 (valeur=368, cout=6), l'arbitrage multi-objectif (hierarchie + valeur) visible des deux cotes. DRIFT resorbe."
+
+# --- Tranche 2 (c.802, po-2024, 2026-07-23) : extensions Search/Part2-CSP (CSP-1..4) + Search/Part1-Foundations (Search-1..3) ---
+# Meme mecanisme (registre curated YAML + check_twin_parity.py), substance
+# distincte : idiomes framework Python (collections.deque, heapq, typing) vs
+# C# (.NET collections generiques Queue<T>/PriorityQueue/Dictionary), Choco-
+# solver 4.10.17 via IKVM 8.15.0 cote C# sur CSP-1..4 uniquement (pas sur
+# Search-1..3 qui restent from-scratch des deux cotes). Verifie firsthand via
+# `git ls-tree HEAD` 2026-07-23, DRIFT detecte sur Z3-Python-02 (post-fix
+# #8045 doc-honesty) = le mecanisme de detection marche (voir c.802 body PR).
+
+- name: "CSP-1 Fundamentals"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: bca6fbf50753112b361a10d576750c60c311fd25
+    csharp_sha: 2eda392d47bfd1e0809398a4b16ccc42c69b8238
+  known_differences:
+    - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
+    - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
+    - "Visualisation : Python = matplotlib (graphes de contraintes, trace de backtracking, distributions). C# = rendu ASCII du graphe de contraintes (pas de plotting .NET headless)."
+    - "Infrastructure : C# requiert l'assemblage du home IKVM (AppContext['IKVM.Home'] via copie recursive, recette #4711) avant tout premier appel Choco ; Python ne requiert que matplotlib."
+    - "Exercices : les deux cotes ont des stubs C.1-conformes (4-Reines backtracking manuel, MRV sur 4-Reines, SEND+MORE=MONEY). Cote C# l'exercice SEND+MORE utilise Choco ; cote Python (notebook CSP-1) reste conceptuel."
+
+- name: "CSP-2 Consistency"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-24"
+    by: po-2023
+    python_sha: fe90bbf647b1e06931df4dad0b2c192d7b932d73
+    csharp_sha: 1d8c847d17346eb815ace3bbcbaefd19025ce9a9
+  known_differences:
+    - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
+    - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."
+    - "Visualisation : Python = matplotlib (graphes de contraintes colorees par domaine, propagation tracee). C# = sortie textuelle via Console.WriteLine (pas de plotting .NET headless sur ce notebook)."
+    - "Idiomes framework : Python = pur (list/dict/set + recursion). C# = generiques System.Collections.Generic + delegation Func<Variable, IEnumerable<int>> pour les domaines."
+    - "DRIFT cote Python corrige c.818 (rebaseline fe90bbf6, was 41a4f050) : doc-honesty po-2025 #8139 a substitue des PLACEHOLDER qualitatifs ('petit/moyen/grand', 'reference/moins/le moins', 'modeste/significatif/important') par des nombres reels deterministes (BT 876 assigns / FC 67 / MAC 20 pour N=8) + tableau croisant taille N / variant / ratio BT/MAC. Substance algorithmique inchangee (memes implementations AC-3/FC/MAC). Cote C# inchange (SHA 7c545623 identique)."
+
+- name: "CSP-3 Advanced"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 3cc2cf6ccd1c627e9e0f2eb59bc747361db69670
+    csharp_sha: bbb5e24c4d4eb763b454b6d8f48aba9a5747b584
+  known_differences:
+    - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
+    - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."
+    - "Concepts avances : latin squares (N-Reines etendu), magic series, Golomb rulers. Cote Python = from-scratch, cote C# = Choco + benchmarks comparatifs."
+
+- name: "CSP-4 Scheduling"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 7cc9d727066893f89ec2dacb06295134db19039f
+    csharp_sha: 4d533e0a938a7145a79c9a8417d1892e97461a90
+  known_differences:
+    - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
+    - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."
+    - "Cas etudies : job-shop scheduling (3 machines x 3 jobs, makespan minimal), equipement maintenance planning."
+    - "Note infrastructure : ce notebook (.NET) est explicite sur la pre-configuration IKVM (AppContext['IKVM.Home'] + tzdb OK) - voir cellule d'initialisation 'IKVM 8.15.0 pret (home=ikvm-home-8.15.0-win-x64, tzdb=True) - Choco-solver charge'."
+
+- name: "Search-1 StateSpace"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ee8bec932d2af35b24448652b37c260cdb35ded8
+    csharp_sha: 49eb598b3917e357482c85e8175e8ba6f223122d
+  known_differences:
+    - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
+    - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."
+    - "Pas d'extension solveur tiers cote C# sur ce notebook (uniquement depuis CSP-1+) - implementation from-scratch sur les deux cotes."
+    - "Visualisation : Python = matplotlib (grille 8-puzzle animee, graphe d'etats). C# = sortie textuelle des traces (Console.WriteLine des etats successeurs explorés)."
+
+- name: "Search-2 Uninformed"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d69404a7e4f8c2c7dba4e4aabea624d092aff1d7
+    csharp_sha: d29a5facae7635ba1ef366b61c4ff2acc3bf25aa
+  known_differences:
+    - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
+    - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
+    - "Pas d'extension solveur tiers sur ce notebook - implementation from-scratch sur les deux cotes (memes algorithmes, idiomes distincts)."
+    - "Benchmarks : les deux cotes mesurent le nombre de noeuds explorés, la longueur du chemin optimal, et le cout uniforme quand applicable."
+
+- name: "Search-3 Informed"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ef0d2597c51669af6da574e368e6aacef1fa044c
+    csharp_sha: 0b24fbcc661131d1c783694fa17c0402e9866abf
+  known_differences:
+    - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
+    - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."
+    - "Asymetrie pedagogique interessante : le notebook Python inclut une discussion sur l'admissibilite vs consistance des heuristiques (h <= h* + coherence), le C# se concentre sur les benchmarks (noeuds explores pour h=Manhattan vs h=Euclidean sur le meme probleme)."
+    - "Pas d'extension solveur tiers - implementation from-scratch sur les deux cotes."
+
+# === Tranche ML.NET/Python (c.803, po-2024 2026-07-23) — acceptance #8057 checkbox 3 ===
+# 8 paires ML.NET(C#) <-> sklearn/statsmodels(Python). SHAs verifies firsthand `git ls-tree HEAD`.
+# ML-6 ONNX exclu : format d'echange (pas un algo ML), SKIP per campaign #4956 (CLOSED).
+
+- name: "ML-1 Introduction"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: def93e424a6efe47d05a5eb40e6baf454fa01f53
+    csharp_sha: cb4aa57859c9d9e6dedde3de66c4b0973b4bf1bf
+  known_differences:
+    - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
+    - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."
+    - "Meme concept demontre des deux cotes (pipeline regression de base) ; asymetrie d'idiome MLContext-vs-estimator, pas d'ecart algorithmique."
+
+- name: "ML-2 Data&Features"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 5839320e691dba96c850a2962a7591515ab4e586
+    csharp_sha: b41ce675ccf59044a9a7c14d60238c05b81f4b83
+  known_differences:
+    - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
+    - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."
+    - "Difference conceptuelle : ML.NET exprime les transforms comme un pipeline chained (.Append), sklearn comme un ColumnTransformer declaratif (colonnes numeriques vs categorielles routees separement)."
+
+- name: "ML-3 Entrainement&AutoML"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: fb9b7682f7637a5e79497ba3c617a3b5ee6b63d7
+    csharp_sha: 8dda111e9203b5c3f0a9bc794293d2e3b503fcc1
+  known_differences:
+    - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
+    - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
+    - "Asymetrie de couverture : Python expose nativement `GridSearchCV` + `cross_val_score` (recherche d'hyperparametres + CV K-fold) ; le C# compare manuellement SDCA vs LightGbm sans AutoML sur ce notebook (AutoML apparait en ML-4)."
+
+- name: "ML-4 Evaluation"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
+  parity_level: surface
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: ba50827336ed3ff842187c635ad01f9061d5986a
+    csharp_sha: 74aead9b8219984c181d13c461ecc717c619385c
+  known_differences:
+    - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
+    - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
+    - "parity_level = surface : meme theme (evaluation de modeles + recherche d'hyperparametres) mais le Python est une SELECTION, pas une parite cellule-par-cellule. A noter pour toute re-audit : combler l'ecart exigerait d'etendre le Python (multi-cycle, cf memo #4956)."
+
+- name: "ML-5 TimeSeries"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
+  parity_level: surface
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: c8695475d659b33759039a5ab6f621f1e1b13826
+    csharp_sha: 1ee06f522a4b7a122627a4113c7a3c92dc7854d7
+  known_differences:
+    - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
+    - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."
+    - "parity_level = surface : meme probleme (prevision de series temporelles avec saisonnalite) mais algorithmes distincts (SSA spectral vs STL/SARIMAX statistique). Les resultats numeriques ne sont pas directement comparables ; c'est une parite de OBJECTIF pedagogique, pas de methode."
+
+- name: "ML-7 Recommendation"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: b823380d75f0d87b9666fe6c5458cfe7566e2a28
+    csharp_sha: a36aa7a2e12bd343ca79c738a954aad255ecd070
+  known_differences:
+    - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
+    - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."
+    - "Difference conceptuelle : ML.NET expose un trainer SPECIALISE recommandation (MatrixFactorization avec метriques de ranking) ; sklearn NMF est un decomposeur generique applique a la matrice user-item. Meme mathematique de fond (factorisation), abstraction differente."
+
+- name: "ML-8 Clustering"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 1ca21efdd41f9b57fde4ee7b24b98f0b24ba8f1e
+    csharp_sha: fdc7675363c636a501ae52efb6247dab610a96ed
+  known_differences:
+    - "Socle pedagogique commun : K-Means (K=3) avec normalisation MinMax preprocess ; evaluation par metriques de cohesion de clusters."
+    - "Parite conceptuelle proche du natif : C# = `mlContext.Clustering.Trainers.KMeans(\"Features\", numberOfClusters: 3)` + `NormalizeMinMax`, prediction via `PredictedClusterId` (uint). Python = `sklearn.cluster.KMeans(n_clusters=3, n_init=10)` + `MinMaxScaler` via Pipeline."
+    - "Asymetrie de metriques : Python expose `davies_bouldin_score` + `silhouette_score` (comparaison de qualite de clustering) ; le C# se concentre sur l'affectation PredictedClusterId. n_init=10 explicite cote Python (ML.NET gere les restarts en interne)."
+
+- name: "ML-9 Anomaly-Detection"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: c4aaf62d0cf0271f014827793f96aa70c7dd15d5
+    csharp_sha: f23f6817497f2fc9bf7170214941b1d418f127c0
+  known_differences:
+    - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
+    - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
+    - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."
+
+# -- Tranche 7 (c.812, po-2024) : Probas/Infer.NET-PyMC (11 paires, 2..12).
+# Familles de programmation probabiliste : C# Infer.NET (EP/VMP, modele compile)
+# vs Python PyMC (MCMC NUTS/HMC + ADVI, backend PyTensor). Topics identiques.
+
+- name: Probas-2 Gaussian-Mixtures
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 95ffd1e7291d7ace4f06a0bf6dcc6a1b04106d38
+    csharp_sha: f55b9531a3181995760e9ebeb553972cfc1e12cf
+  known_differences:
+  - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-3 Factor-Graphs
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
+    csharp_sha: 71e8a8ab7a8c6d38515626b94d062aa9c4c1d875
+  known_differences:
+  - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-4 Bayesian-Networks
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: aa853aa35f024e6af153991847a0bebf91caaadf
+    csharp_sha: 92f9db61a2fa34db87bbd2b9922ea9347dfabfe7
+  known_differences:
+  - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-5 Causal-Inference
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: c577dc03216f318a392f373ba61aa85287037f98
+    csharp_sha: e495c6935e61214af55a64d5598412720e7f80fe
+  known_differences:
+  - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-6 Debugging
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 9c6d4bdd4181e08e63eaf417954b44bce448a02e
+    csharp_sha: 21c3019d71d07aa21d151643f279fa69764bc88f
+  known_differences:
+  - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-7 Skills-IRT
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 243abda6c6d8da742e47ae61a60d780b770e77ad
+    csharp_sha: 3734352b4af21f92da63865c32b78d6fd3b5dd31
+  known_differences:
+  - 'Socle pedagogique commun : Item Response Theory (modeles de competences / IRT) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-8 TrueSkill
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 02beb4247f8c3087e6743bb2b7915ad7215b60e3
+    csharp_sha: b3122444408af43475485135a714c982226d711b
+  known_differences:
+  - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-9 Classification
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: be07a64cf703c3bef33d6898601ce6b021d3abf3
+    csharp_sha: 9cfc62e7089756ed550cbae76645a95589a0fe93
+  known_differences:
+  - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-10 Model-Selection
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: a9659a12d6e0672d694b500ecb53161bd31daeef
+    csharp_sha: 8f551c9b7560f813842919283fdea3c8c3131bcd
+  known_differences:
+  - 'Socle pedagogique commun : selection de modele (WAIC/LOO, evidence) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-11 Topic-Models
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: b2eabcd0b9ddc11477c59b0474068367e8f84962
+    csharp_sha: a599efb43e5aa2194148bbdc14fd05ab0dc119b4
+  known_differences:
+  - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-12 Modeles-Hierarchiques
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: a11ea49af8f7aaa1b140dfa68bddbff690a6ef0b
+    csharp_sha: 156ac25e0570949b2f2db13a4593b9ca829ea5c4
+  known_differences:
+  - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+# -- Tranche 7 (suite, c.812, po-2024) : Probas/Infer.NET-PyMC paires 13-19.
+# Complete la famille (2-19). Memes moteurs : Infer.NET EP/VMP vs PyMC NUTS/ADVI.
+
+- name: Probas-13 Crowdsourcing
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-13-Crowdsourcing.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2026
+    python_sha: dd2ad73ebc3394d32bd70069ddf53a2b3e920c47
+    csharp_sha: 21a8d2a1f11937b450ac0ff615a4335971fa24e2
+  known_differences:
+  - 'Socle pedagogique commun : crowdsourcing (agregation d''annotations bruitees) modelise dans les deux stacks.'
+  - '2026-07-24 (po-2026) : backfill #8081 finding A4a -- les deux jumeaux omettaient le contexte fondateur (seisme Haiti 2010 + plateforme Ushahidi) du chap. 7 "Harnessing the Crowd" de Model-Based Machine Learning (Winn & Bishop). Meme cellule markdown ajoutee aux deux (parite semantique preservee). Les deux shas rebaselined dans cette PR.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-14 Sequences
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-14-Sequences.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 765544fe8ac71c15305c2cb91f9b16909e86e1df
+    csharp_sha: 0615f621145fb72de2e690c6bb7ef79838b06b53
+  known_differences:
+  - 'Socle pedagogique commun : modeles de sequences (chaines de Markov cachees / HMM) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-15 Recommenders
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 3a4321e6b0e610dfd533982b543997bd9a436c83
+    csharp_sha: 30cbe41bd3c333fb5d360a866b69b98380362112
+  known_differences:
+  - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-16 Sparse-Gaussian-Process
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 3bd78943aceb19a022104e3e5aaded508945adde
+    csharp_sha: 70554d0502ec3be47f752958f2cf601df2ffd371
+  known_differences:
+  - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-17 Kalman-Filter
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 292b08c0a854679cabb78ca3f60a36e4d691d5d8
+    csharp_sha: 903f162463207547ed2a695e090d2abf54e6951e
+  known_differences:
+  - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-18 Change-Point
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-23'
+    by: po-2024
+    python_sha: 8c5f8a67fd7f461d3b5bf1146a8f2d763b2b1448
+    csharp_sha: bc73b40e881fabdfb719b21855b23d093ea1c54a
+  known_differences:
+  - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+- name: Probas-19 Survival-Analysis
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 071a2a1f1848fbd25de2c8e313b004b0d4706f8c
+    csharp_sha: 62974bb4be0cf95716c3a109fa70bcfacb9d647f
+  known_differences:
+  - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

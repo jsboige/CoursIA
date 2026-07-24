@@ -6,7 +6,7 @@
 series: SymbolicAI
 pedagogical_count: 220
 breakdown: SMT=42, Tweety=32, Lean=28, SmartContracts=27, SemanticWeb=25, Planners=23, Argument_Analysis=22, SymbolicLearning=20, root=1
-maturity: PRODUCTION=177, BETA=42, ALPHA=1
+maturity: BETA=211, ALPHA=6, DRAFT=3
 -->
 
 > **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
@@ -63,11 +63,11 @@ La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les 
 
 ### Phase 4 : Applications (Planners + SmartContracts, ~30h)
 
-Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (13 notebooks Python, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (23 notebooks : 14 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (21 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (22 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
@@ -404,7 +404,7 @@ SymbolicAI/
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (23 notebooks : 13 Python + 9 jumeaux C# + 0-Setup + 1 archive Fast-Downward-Legacy)
+├── Planners/                  # Planification automatique (23 notebooks : 14 Python incluant Planners-0-Setup + 9 jumeaux C# + 1 archive Fast-Downward-Legacy)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
@@ -440,7 +440,7 @@ SymbolicAI/
 │   ├── Z3-Linq2Z3/             # Serie Z3.Linq C# (SMT declaratif via LINQ) (18 notebooks)
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
-│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (12 notebooks : 6 Python + 6 jumeaux C#)
+│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (24 notebooks : 18 Python [01..06 + 07..18] + 6 jumeaux C# sur 01..06)
 │   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-06-Advanced-Optimization.ipynb (+ *-Csharp)
 │   │   └── README.md
 │   └── README.md              # Chapeau SMT
@@ -592,12 +592,12 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ## Audit Qualité (juillet 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 21 juillet 2026)
+### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 22 juillet 2026 — c.756)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
-| Lean (proofs natifs + companions Python) | 28 | 26 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
+| Lean (proofs natifs + companions Python) | 29 | 27 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
 | SemanticWeb (C# + Python) | 25 | 24 pédagogiques (12 Python + 12 C# jumeaux) | 1 (RDF.Net-Legacy) | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 23 | 22 pédagogiques (14 Python + 9 C# jumeaux) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
@@ -606,9 +606,9 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 24 | 24 (100%, 18 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 219/220 notebooks pédagogiques (99%) — soit 220 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **21 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence).
+**Total** : 220/221 notebooks pédagogiques (99%) — soit 221 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **22 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality ajoutés post-§E 21/07).
 
-> **Note (21/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
+> **Note (22/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC), **+ c.756 (22/07) Lean 28→29** = ajout de Lean-17-Knots-a-Conway-and-Proofs + Lean-17-Knots-b-Invariants-Companion + Lean-18-Search-AStar-Optimality (post-§E 21/07 audit #7783). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 
 ### Problèmes connus (juillet 2026)
 

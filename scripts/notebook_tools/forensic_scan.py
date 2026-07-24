@@ -95,6 +95,25 @@ def get_last_commit_date(path: Path, repo_root: Path) -> str | None:
         return None
 
 
+def get_last_commit_sha(path: Path, repo_root: Path) -> str | None:
+    """Short SHA (7 chars hex) of the last commit touching `path`.
+
+    Companion of get_last_commit_date. Used by generate_catalog.py to feed
+    `last_success_sha` and `executed_at` (cf docs/PARCOURS.md axe reproductibilite).
+    """
+    rel = path.relative_to(repo_root).as_posix()
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_root), "log", "-1", "--format=%h", "--", rel],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return out.stdout.strip() or None
+    except subprocess.CalledProcessError:
+        return None
+
+
 def is_excluded(path: Path) -> bool:
     if any(part in EXCLUDE_DIRS for part in path.parts):
         return True
@@ -118,7 +137,11 @@ def main() -> int:
     parser.add_argument("--root", default="MyIA.AI.Notebooks", help="Notebook root")
     parser.add_argument("--repo-root", default=".", help="Git repo root")
     parser.add_argument("--json-out", default=None, help="JSON output file")
-    parser.add_argument("--with-git", action="store_true", help="Include git last-commit (slow)")
+    parser.add_argument(
+        "--with-git",
+        action="store_true",
+        help="Include git last-commit (slow) + short SHA (cf docs/PARCOURS.md axe reproductibilite)",
+    )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -140,6 +163,8 @@ def main() -> int:
         if args.with_git:
             commit_date = get_last_commit_date(nb_path, repo_root)
             info["last_commit"] = commit_date
+            info["executed_at"] = commit_date  # alias for PARCOURS.md axe reproductibilite
+            info["last_commit_sha"] = get_last_commit_sha(nb_path, repo_root)
             if commit_date:
                 try:
                     dt = datetime.fromisoformat(commit_date.replace("Z", "+00:00"))

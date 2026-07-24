@@ -1,4 +1,4 @@
-> **ARCHIVED 2026-07-22** — Document de référence sur les leçons consolidées ML/trading post-ladder #1409 (2026-05-14, Mission ML-Training-Pipeline). Verdict méthodologique **canonique** maintenu pour audit PR ML futures (cf `.claude/rules/pr-review-discipline.md` §C "7 disciplines") : pattern empirique M5-M17 (direction imprévisible, vol prévisible, parcimonie HAR, transaction costs tuent edges) + politique datasets anti-FAANG/Mag7 + ladder #1409 (L4 DT = seul BEATS 24/26). Cité par 10+ fichiers actifs (`docs/qc/quantconnect.md` L22/L25/L283/L285, `ML-Training-Pipeline/README.md` L67, `ML-Training-Pipeline/CURRICULUM.md` L17 FINAL VERDICT, `ML-Training-Pipeline/docs/M12_HF_PROPOSAL.md` L13/L200, `.claude/agents/training-specialist.md` L88, `.claude/skills/train-model/SKILL.md` L69, `STABLE_SNAPSHOT.md` L108). **Note** : 2 cross-refs internes obsolètes pointent vers `docs/quantconnect.md` et `docs/kernels-runtime.md` (root, déplacés) — sub-grain `c.728y+43 ref-quality` à dispatcher. Source triage : issuecomment à venir (#7422).
+> **ARCHIVED 2026-07-22** — Document de référence sur les leçons consolidées ML/trading post-ladder #1409 (2026-05-14, Mission ML-Training-Pipeline). Verdict méthodologique **canonique** maintenu pour audit PR ML futures (cf `../../.claude/rules/pr-review-discipline.md` §C "7 disciplines") : pattern empirique M5-M17 (direction imprévisible, vol prévisible, parcimonie HAR, transaction costs tuent edges) + politique datasets anti-FAANG/Mag7 + ladder #1409 (L4 DT = seul BEATS 24/26). Cité par 10+ fichiers actifs (`docs/qc/quantconnect.md` L22/L25/L283/L285, `ML-Training-Pipeline/README.md` L67, `ML-Training-Pipeline/CURRICULUM.md` L17 FINAL VERDICT, `ML-Training-Pipeline/docs/M12_HF_PROPOSAL.md` L13/L200, `.claude/agents/training-specialist.md` L88, `.claude/skills/train-model/SKILL.md` L69, `STABLE_SNAPSHOT.md` L108). **Note** : 5 cross-refs internes obsolètes corrigés en `c.728y+43 ref-quality` — 3 chemins absolus post-reorg S3 (`docs/quantconnect.md` → `docs/qc/quantconnect.md`, `docs/kernels-runtime.md` → `docs/reference/kernels-runtime.md`) + 2 chemins `.claude/rules/` depuis archive (manquaient `../`). Source triage : #7422.
 
 # ML Trading — Etat consolide
 
@@ -73,7 +73,7 @@ Tout training ou evaluation ML applique au trading qui ne respecte pas ces 7 dis
 6. **Anti-survivorship bias** : pas de panier "stocks survivants" (CRSP/Norgate ideal, sinon documenter le biais). **Pas de FAANG** (cf section datasets).
 7. **Anti-data-snooping** : log des hypotheses tentees, deflated Sharpe pour comptes exhaustifs. Pas de "j'ai trouve une strategie parmi 10000" sans correction Bonferroni / deflated Sharpe.
 
-**Audit PR : ces 7 points doivent etre visibles dans le body ou refusable CHANGES_REQUESTED** (cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section C).
+**Audit PR : ces 7 points doivent etre visibles dans le body ou refusable CHANGES_REQUESTED** (cf [../../.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C).
 
 **Consequences observees en cas de non-respect** :
 - DirAcc plateauent a freq(up_days) sans qu'on s'en rende compte (LSTM/Transformer 0.5795 = freq SPY) — metrique trompeuse, succes apparent qui n'apprend rien
@@ -121,11 +121,11 @@ Datasets s'arretent ~aout 2024. Pour periode recente : completer via Binance API
 
 *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh, Wiley 2025) — https://www.hands-on-ai-trading.com/
 
-Le livre documente precisement les ecueils ci-dessus et les bonnes pratiques (vol forecasting, regime gating, Kelly capped, multi-asset). A relire en cas de doute methodo. Repo exemples : https://github.com/QuantConnect/HandsOnAITradingBook (cf section "Livre de reference" de [quantconnect.md](quantconnect.md)).
+Le livre documente precisement les ecueils ci-dessus et les bonnes pratiques (vol forecasting, regime gating, Kelly capped, multi-asset). A relire en cas de doute methodo. Repo exemples : https://github.com/QuantConnect/HandsOnAITradingBook (cf section "Livre de reference" de [../qc/quantconnect.md](../qc/quantconnect.md)).
 
 ## Pointeurs cross-doc
 
-- Infrastructure QC + MCP + backtest : [docs/quantconnect.md](quantconnect.md)
-- Env Conda ML training + GPU wrapper : [docs/kernels-runtime.md](kernels-runtime.md)
+- Infrastructure QC + MCP + backtest : [../qc/quantconnect.md](../qc/quantconnect.md)
+- Env Conda ML training + GPU wrapper : [../reference/kernels-runtime.md](../reference/kernels-runtime.md)
 - Historique training par iteration : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md` + `docs/M<N>_*.md`
-- Regles audit PR ML : [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section C
+- Regles audit PR ML : [../../.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C

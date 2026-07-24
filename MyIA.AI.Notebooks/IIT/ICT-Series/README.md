@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 34
-breakdown: ICT-Series=34
-maturity: BETA=22, PRODUCTION=9, ALPHA=3
+pedagogical_count: 33
+breakdown: ICT-Series=33
+maturity: BETA=30, DRAFT=3
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -26,10 +26,17 @@ ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). L
 ```bash
 # Depuis MyIA.AI.Notebooks/IIT/
 powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
-pip install -r requirements.txt                  # dépendances ICT additionnelles (numpy, scipy, networkx…)
+pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy, scipy, matplotlib…)
+
+# Recommandé : installer le package `ict/` en mode editable (issue #8076).
+# Rend `from ict import …` résolvable depuis n'importe quel cwd, sans dépendre
+# du répertoire ICT-Series/. Extras : [llm] (torch/transformers, GPU),
+# [extras] (pandas, sympy), [dev] (pytest).
+# Depuis MyIA.AI.Notebooks/IIT/ICT-Series/  (dans l'env pyphi activé) :
+pip install -e .                                 # cœur ; ou pip install -e .[dev,llm]
 ```
 
-Le package `ict/` est importé en relatif depuis le répertoire `ICT-Series/` : chaque notebook insère le dossier courant dans `sys.path` puis `from ict import …`. Lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
+Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. `pyproject.toml`) : une fois installé, `from ict import …` résout depuis n'importe quel `cwd`. En l'absence d'install editable, l'ancien contrat reste valable : chaque notebook insère le dossier courant dans `sys.path`, il faut alors lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
 
 | Élément | Emplacement | Rôle |
 |---------|-------------|------|
@@ -144,7 +151,7 @@ Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedC
 
 ## Socle théorique transverse — distillation Thom 1991
 
-Les **strates 6 et 7** (langage / circulation de prégnances, genres comme espaces de possibles extensibles) s'appuient sur une **distillation consolidée** de René Thom, *Esquisse d'une sémiophysique* (1991) — universelle linguistique (Nom/Verbe, valence Tesnière), genres / hypergenres (prototype moineau, opérations catastrophistes : factitif, aspect, lavage, conflit de prégnances), préprogrammes morphogènes (Ch.3 §B), instrument (Ch.3 §K, chimpanzé + banane inaccessible = plication affective de la forme), blastula BP (Ch.4), PGO (Ch.5), axiomatique aristotélicienne (Ch.6), ABP/FBM et privation = métastabilité (Ch.7), opérations catégorielles (Ch.8). Grade C-documentaire ; lecture ICT candidate, **pas** démonstration. Distinguo explicite avec la [matrice des dissociations ossaturée 4-objets](../../../../docs/ict/dissociations-matrix.md) (c.728y+34, [#7734](https://github.com/jsboige/CoursIA/issues/7734), opérationnelle per-claim) : la distillation est **socle théorique transverse** ; la matrice est **registre par-claim**. Voir [thom-synthese-distillation.md](thom-synthese-distillation.md), issue-source [#7739](https://github.com/jsboige/CoursIA/issues/7739), Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588).
+Les **strates 6 et 7** (langage / circulation de prégnances, genres comme espaces de possibles extensibles) s'appuient sur une **distillation consolidée** de René Thom, *Esquisse d'une sémiophysique* (1991) — universelle linguistique (Nom/Verbe, valence Tesnière), genres / hypergenres (prototype moineau, opérations catastrophistes : factitif, aspect, lavage, conflit de prégnances), préprogrammes morphogènes (Ch.3 §B), instrument (Ch.3 §K, chimpanzé + banane inaccessible = plication affective de la forme), blastula BP (Ch.4), PGO (Ch.5), axiomatique aristotélicienne (Ch.6), ABP/FBM et privation = métastabilité (Ch.7), opérations catégorielles (Ch.8). Grade C-documentaire ; lecture ICT candidate, **pas** démonstration. Distinguo explicite avec la [matrice des dissociations ossaturée 4-objets](../../../docs/ict/dissociations-matrix.md) (c.728y+34, [#7734](https://github.com/jsboige/CoursIA/issues/7734), opérationnelle per-claim) : la distillation est **socle théorique transverse** ; la matrice est **registre par-claim**. Voir [thom-synthese-distillation.md](thom-synthese-distillation.md), issue-source [#7739](https://github.com/jsboige/CoursIA/issues/7739), Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588).
 
 ## Lien avec la causalité du dépôt
 
@@ -153,6 +160,10 @@ ICT-5 est l'un des quatre points d'ancrage du **fil rouge causalité** du dépô
 ## Matrice de dissociations (ossature 4-objets)
 
 Chaque claim de la série est situé dans l'espace `s_t` (saillance) / `q_t(z)` (représentation prédictive) / `π_t(z)` (prégnance-valence) / `W_t` (workspace), avec proxy, contrôle, seeds, **verdict** sobre (`Établi` / `Fortement soutenu` / `Spéculatif`) et **portée** explicite (régime de validité). La matrice complète — [`docs/ict/dissociations-matrix.md`](../../../docs/ict/dissociations-matrix.md) ([#7734](https://github.com/jsboige/CoursIA/issues/7734)) — rend l'état scientifique de la série lisible d'un coup d'œil et discipline la montée en généralité. Elle complète la **grille 3-régimes** (invariants / dissociations / obstructions, [`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md), #7399) qui est, elle, transversale et conceptuelle.
+
+## Quatrième fil de lecture — généalogie de la représentation interne
+
+[`docs/ict/genealogy-representation-interne.md`](../../../docs/ict/genealogy-representation-interne.md) ([#7735](https://github.com/jsboige/CoursIA/issues/7735)) complète la grille 3-régimes par un axe **diachronique** : la généalogie successive de `p̂` à travers les notebooks ICT-10 → ICT-17 (six maillons : `p̂` scalaire → `p̂` action → *free energy* → surprise transitionnelle → MDL ↔ K → ε-machine Crutchfield). Le **descendant formel le plus naturel de `p̂` n'est ni le SAE (ICT-21), ni la J-lens (ICT-SAE-JLens-TeteATete), c'est l'état causal prédictif** (ICT-17). **Distinct** de la prégnance thomienne (rectification A1, [#7733](https://github.com/jsboige/CoursIA/issues/7733), PR #7889) et du global workspace ICT-24 (`W_t` ≠ `p̂` structuré, garde-fou 2). **Raccroche** le parapluie [#7396](https://github.com/jsboige/CoursIA/issues/7396) (pivot états → représentations).
 
 ## Validation
 

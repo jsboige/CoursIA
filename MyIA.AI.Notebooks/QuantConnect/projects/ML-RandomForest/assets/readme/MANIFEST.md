@@ -6,6 +6,8 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 | Figure | Fichier | Dimensions | Poids | Source (cellule · output) | Sujet *(c.452 reformulé CONTENT-driven)* |
 |--------|---------|------------|-------|---------------------------|-----------------------------------------|
+
+> **Migration c.787 (2026-07-22, doctrine #5780 amendée post-#7771)** : format canonical `## <filename>.png` + champ `**Description visuelle** :` adjacent pour les 6 figures (`detect_manifest_field.py --check` exit 0 obligatoire). Tells visuels c.778-L1/L2/L3 vérifiés firsthand vision MiniMax M3 + PIL RGB stats 100×50 redimensionnée : **6/6 matplotlib-blanc** (mean RGB 245-248 ≥ 245, std 17-31, bg blanc 78-81% = L778-L2 tell dominant) **+ 1 bar-chart-bleu accent** sur `mrf-synthese.png` (mean B=230 > R=198 = L779-L2 tell barres `steelblue` `#4682B4` sur fond blanc). Out-of-scope c.788+ : 5 autres MANIFESTs QC project restants (AllWeather 6f / EMA-Cross-Crypto 5f / EMA-Cross-Index 6f / ForexCarry 7f / RiskParity hors-scope = format non-canonical).
 | H1 — Sweep n_estimators (3 configs + SPY) | `mrf-h1-nestimators.png` | 1000×712 | 197 Ko | cellule 11 · output 4 | **Dual-panel** 1000×712 : haut « H1: Number of Estimators » 2018-2026, 4 courbes `n_est=50` bleu **(S=0.841 DD=-35.29% winner**, 1.0→3.85), `n_est=100` orange (S=0.794 DD=-36.13% current, 1.0→3.45), `n_est=200` vert (S=0.656 DD=-41.07% perdant, 1.0→2.7), `SPY Buy-Hold` rouge (S=0.778 DD=-33.72%, 1.0→2.9) ; bas « Drawdowns » 2018-2026, aire rouge SPY max -33% + aires colorées par config. **Verdict** : **n_est=50 winner marginal** (1.05× SPY) — moins d'arbres = MIEUX (anti-intuitif, less overfitting). n_est=200 perdant confirme overfitting |
 | H2 — Sweep max_depth (3 configs + SPY) | `mrf-h2-maxdepth.png` | 1389×989 | 192 Ko | cellule 14 · output 4 | **Dual-panel** 1389×989 : haut « H2: Max Depth » 2018-2026, 4 courbes `depth=3` bleu (S=0.645 DD=-42.8% **perdant**, 1.0→2.65), `depth=5` orange (S=0.794 DD=-36.13% current, 1.0→3.45), `depth=10` vert **(S=1.064 DD=-36.03% winner spectaculaire**, 1.0→6.15), `SPY Buy-Hold` rouge (S=0.778 DD=-33.72%, 1.0→2.9) ; bas « Drawdowns ». **Verdict** : **depth=10 winner 2.1× SPY** — profondeur plus grande = MIEUX. Underfitting depth=3 perdant |
 | H3 — Sweep threshold (3 configs + SPY) | `mrf-h3-threshold.png` | 1000×712 | 196 Ko | cellule 17 · output 4 | **Dual-panel** 1000×712 : haut « H3: Prediction Threshold » 2018-2026, 4 courbes `threshold=0.5` bleu **(S=0.83 DD=-41.51% winner**, 1.0→3.65), `threshold=0.54` orange (S=0.794 DD=-36.13% current, 1.0→3.85), `threshold=0.58` vert (S=0.69 DD=-26.28% **perdant**, 1.0→2.65), `SPY Buy-Hold` rouge ; bas « Drawdowns ». **Verdict** : **threshold=0.5 winner 1.05× current**, sweet spot à 0.5. threshold=0.58 perdant (trop conservateur) |
@@ -17,9 +19,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ## Contenu réel vérifié par figure (audit visuel MiniMax M3, c.452)
 
-### `mrf-h1-nestimators.png` — Dual-panel sweep n_estimators (3 configs + SPY Buy-Hold)
+## mrf-h1-nestimators.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, source matplotlib `plt.subplots(2, 1, figsize=(14, 8))` downscale à 1000×712) « H1: Number of Estimators » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.1 USD, axe X = 2018-2026) : **4 courbes colorées** avec Sharpe+DD dans la légende :
+- **Source** : notebook `research.ipynb` (cellule 11, output 4)
+- **Description visuelle** : Dual-panel sweep hyperparamétrique n_estimators — Equity haut + Drawdowns bas, 1000×712, fond blanc matplotlib. Palette `tab:blue` (n_est=50 winner), `tab:orange` (n_est=100 current), `tab:green` (n_est=200 perdant), `tab:red` (SPY Buy-Hold baseline). **Signature chromatique** : matplotlib-blanc (mean RGB=(245,245,241), std=(21,22,31), bg blanc 78%) — c.778-L2 tell dominant dual-panel equity sweeps.
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, source matplotlib `plt.subplots(2, 1, figsize=(14, 8))` downscale à 1000×712) « H1: Number of Estimators » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.1 USD, axe X = 2018-2026) : **4 courbes colorées** avec Sharpe+DD dans la légende :
 - `n_est=50` bleu **(S=0.841 DD=-35.29% winner**, 1.0 → 3.85, pic 4.10 mi-2025, pullback fin 2025 ~3.8)
 - `n_est=100` orange (S=0.794 DD=-36.13% current, 1.0 → 3.45, pic 3.7 mi-2022)
 - `n_est=200` vert (S=0.656 DD=-41.07% **perdant**, 1.0 → 2.7, croissance molle)
@@ -33,9 +37,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 197 Ko (PNG lossless downscale 1000×712, source 1389×989)
 
-### `mrf-h2-maxdepth.png` — Dual-panel sweep max_depth (3 configs + SPY) — winner spectaculaire
+## mrf-h2-maxdepth.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1389×989, source `plt.subplots(2, 1, figsize=(14, 8))` natif) « H2: Max Depth » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~6.2 USD) : 4 courbes :
+- **Source** : notebook `research.ipynb` (cellule 14, output 4)
+- **Description visuelle** : Dual-panel sweep hyperparamétrique max_depth — Equity haut + Drawdowns bas, 1389×989 natif, fond blanc matplotlib. Palette `tab:blue` (depth=3 perdant), `tab:orange` (depth=5 current), `tab:green` (depth=10 winner spectaculaire), `tab:red` (SPY Buy-Hold baseline). **Signature chromatique** : matplotlib-blanc (mean RGB=(248,246,244), std=(17,19,26), bg blanc 80%) — c.778-L2 tell dominant dual-panel equity sweeps, écart winner/current le plus discriminant des 5 sweeps (6.15 vs 3.45 fin 2025).
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1389×989, source `plt.subplots(2, 1, figsize=(14, 8))` natif) « H2: Max Depth » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~6.2 USD) : 4 courbes :
 - `depth=3` bleu (S=0.645 DD=-42.8% **perdant**, 1.0 → 2.65, croissance molle, profile aplati)
 - `depth=5` orange (S=0.794 DD=-36.13% current, 1.0 → 3.45)
 - `depth=10` vert **(S=1.064 DD=-36.03% winner spectaculaire**, 1.0 → 6.15, **pic 6.15 fin 2025**, leader de tout le sweep H2)
@@ -49,9 +55,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 192 Ko (PNG lossless natif 1389×989 après optimisation)
 
-### `mrf-h3-threshold.png` — Dual-panel sweep threshold (3 configs + SPY)
+## mrf-h3-threshold.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, downscale depuis 1389×989) « H3: Prediction Threshold » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.05 USD) : 4 courbes :
+- **Source** : notebook `research.ipynb` (cellule 17, output 4)
+- **Description visuelle** : Dual-panel sweep hyperparamétrique threshold — Equity haut + Drawdowns bas, 1000×712 downscale depuis 1389×989, fond blanc matplotlib. Palette `tab:blue` (threshold=0.5 winner), `tab:orange` (threshold=0.54 current), `tab:green` (threshold=0.58 perdant), `tab:red` (SPY Buy-Hold). **Signature chromatique** : matplotlib-blanc (mean RGB=(247,245,243), std=(18,21,27), bg blanc 78%) — c.778-L2 tell dominant dual-panel equity sweeps, sweet spot threshold=0.5 (DD plus profond -41% vs SPY -33%).
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, downscale depuis 1389×989) « H3: Prediction Threshold » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.05 USD) : 4 courbes :
 - `threshold=0.5` bleu **(S=0.83 DD=-41.51% winner**, 1.0 → 3.65)
 - `threshold=0.54` orange (S=0.794 DD=-36.13% current, 1.0 → 3.85, **pic 4.05 mi-2025**)
 - `threshold=0.58` vert (S=0.69 DD=-26.28% **perdant**, 1.0 → 2.65, profile aplati 2023-2026)
@@ -63,9 +71,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 196 Ko (PNG lossless downscale 1000×712)
 
-### `mrf-h4-universe.png` — Dual-panel sweep universe (3 configs + SPY) — univers restreint GAGNE
+## mrf-h4-universe.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1389×989, natif) « H4: Universe Size » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~6.65 USD) : 4 courbes :
+- **Source** : notebook `research.ipynb` (cellule 20, output 4)
+- **Description visuelle** : Dual-panel sweep hyperparamétrique universe — Equity haut + Drawdowns bas, 1389×989 natif, fond blanc matplotlib. Palette `tab:blue` (Universe 5 winner spectaculaire), `tab:orange` (Universe 10 current), `tab:green` (Universe 15), `tab:red` (SPY Buy-Hold). **Signature chromatique** : matplotlib-blanc (mean RGB=(248,246,244), std=(17,20,27), bg blanc 81%) — c.778-L2 tell dominant dual-panel equity sweeps, univers restreint leader net fin 2025 (6.65 vs 3.45).
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1389×989, natif) « H4: Universe Size » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~6.65 USD) : 4 courbes :
 - `Universe 5` bleu **(S=1.118 DD=-35.0% winner spectaculaire**, 1.0 → 6.65, **pic 6.65 fin 2025**, leader de tout le projet ML-RandomForest)
 - `Universe 10` orange (S=0.794 DD=-36.13% current, 1.0 → 3.45)
 - `Universe 15` vert (S=0.84 DD=-29.21%, 1.0 → 3.85)
@@ -77,9 +87,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 190 Ko (PNG lossless natif 1389×989 après optimisation)
 
-### `mrf-h5-trainfreq.png` — Dual-panel sweep rebal freq (3 configs + SPY) — Monthly rebal GAGNE
+## mrf-h5-trainfreq.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, downscale depuis 1389×989) « H5: Rebalancing Frequency » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.7 USD) : 4 courbes :
+- **Source** : notebook `research.ipynb` (cellule 23, output 4)
+- **Description visuelle** : Dual-panel sweep hyperparamétrique rebal_frequency — Equity haut + Drawdowns bas, 1000×712 downscale depuis 1389×989, fond blanc matplotlib. Palette `tab:blue` (Weekly perdant), `tab:orange` (Biweekly current), `tab:green` (Monthly winner), `tab:red` (SPY Buy-Hold). **Signature chromatique** : matplotlib-blanc (mean RGB=(246,245,242), std=(19,21,28), bg blanc 78%) — c.778-L2 tell dominant dual-panel equity sweeps, hiérarchie monotone Weekly<Biweekly<Monthly, pic Monthly 4.7 fin 2025.
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Dual-panel** (1000×712, downscale depuis 1389×989) « H5: Rebalancing Frequency » + « Drawdowns » 2018-2026. **Haut — Equity** (axe Y = 1.0 → ~4.7 USD) : 4 courbes :
 - `Weekly rebal` bleu (S=0.495 DD=-40.74% **perdant**, 1.0 → 2.0, profile aplati après 2022)
 - `Biweekly rebal` orange (S=0.794 DD=-36.13% current, 1.0 → 3.45)
 - `Monthly rebal` vert **(S=0.919 DD=-30.35% winner**, 1.0 → 4.25, **pic 4.7 fin 2025**, leader)
@@ -91,9 +103,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 191 Ko (PNG lossless downscale 1000×712)
 
-### `mrf-synthese.png` — Mono-panel Feature Importance (RandomForest, 11 features)
+## mrf-synthese.png
 
-**Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Mono-panel bar chart horizontal** (989×590, `figsize=(10, 6)`) « Feature Importance (RandomForest, moyenne sur tous les entrainements) ». **11 barres bleues triées desc** (axe X = 0.00 → ~0.10 Importance, axe Y = features) :
+- **Source** : notebook `research.ipynb` (cellule 26, output 0)
+- **Description visuelle** : Mono-panel bar chart horizontal Feature Importance RandomForest — 989×590 natif, fond blanc matplotlib. 11 barres `steelblue` `#4682B4` triées desc (axe X = 0.00 → ~0.10 Importance, axe Y = features). **Signature chromatique** : matplotlib-blanc + bar-chart-bleu (mean RGB=(198,216,230), std=(71,48,29), bg blanc 51%, B-mean=230 > R-mean=198 = c.779-L2 tell barres bleues sur fond blanc) — c.778-L2 + c.779-L2 tells conjoints mono-panel bar chart.
+- **Alt-text (FR)** *(c.452 reformulé CONTENT-driven)* : **Mono-panel bar chart horizontal** (989×590, `figsize=(10, 6)`) « Feature Importance (RandomForest, moyenne sur tous les entrainements) ». **11 barres bleues triées desc** (axe X = 0.00 → ~0.10 Importance, axe Y = features) :
 - `bb_position` ~0.103 **winner** (Bollinger Bands position)
 - `mom_10` ~0.100 (momentum 10 jours)
 - `macd_hist` ~0.097 (MACD histogramme)

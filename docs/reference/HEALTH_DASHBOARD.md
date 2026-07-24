@@ -1,25 +1,25 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-22**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-24**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**830** notebooks référencés au catalogue.
+**836** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 664 | 80.0% |
-| DEMO | 164 | 19.8% |
+| READY | 670 | 80.1% |
+| DEMO | 164 | 19.6% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 518 |
-| WSL requis | 42 |
+| **local** (exécutable sans GPU/cloud/WSL) | 523 |
+| WSL requis | 43 |
 | GPU requis | 93 |
 | Cloud requis (QC / GenAI Docker) | 105 |
 | API key requise | 135 |
@@ -29,14 +29,14 @@
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| GameTheory | 50 | 0 | 0 | 50 | 100% |
+| GameTheory | 55 | 0 | 0 | 55 | 100% |
 | GenAI | 57 | 82 | 2 | 141 | 40% |
-| IIT | 37 | 0 | 0 | 37 | 100% |
+| IIT | 36 | 0 | 0 | 36 | 100% |
 | ML | 44 | 3 | 0 | 47 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 38 | 67 | 0 | 105 | 36% |
 | RL | 16 | 1 | 0 | 17 | 94% |
-| Search | 113 | 0 | 0 | 113 | 100% |
+| Search | 115 | 0 | 0 | 115 | 100% |
 | Sudoku | 34 | 2 | 0 | 36 | 94% |
 | SymbolicAI | 211 | 9 | 0 | 220 | 96% |
 
@@ -44,11 +44,11 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 535 |
-| .NET (C#) | 225 |
+| Python 3 | 534 |
+| .NET (C#) | 229 |
 | Python 3 (ipykernel) | 20 |
-| Lean 4 (WSL) | 17 |
-| Python (GameTheory WSL + OpenSpiel) | 8 |
+| Lean 4 (WSL) | 18 |
+| Python (GameTheory WSL + OpenSpiel) | 10 |
 | Python 3 (WSL) | 7 |
 | Python 3 (PyPhi/IIT) | 4 |
 | Lean 4 | 3 |

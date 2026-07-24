@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 113
-breakdown: Applications=40, Part1-Foundations=29, Part4-Metaheuristics=20, Part2-CSP=18, Part3-Advanced=6
-maturity: PRODUCTION=84, BETA=29
+pedagogical_count: 115
+breakdown: Applications=40, Part1-Foundations=29, Part4-Metaheuristics=22, Part2-CSP=18, Part3-Advanced=6
+maturity: BETA=106, ALPHA=6, DRAFT=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -77,7 +77,7 @@ flowchart LR
 
 ### Side-track avancé : métaheuristiques composables (Part 4, C# .NET 9)
 
-En parallèle du parcours Python, la [Partie 4 — MetaGeneticSharp](Part4-Metaheuristics/README.md) propose un **side-track .NET 9** de 20 notebooks (MGS-1 à MGS-19 plus le pont MGS-7b) qui **reconstruit et compose** les métaheuristiques au-dessus de GeneticSharp plutôt que d'importer une boîte noire. Il prolonge Search-5 (GeneticAlgorithms) et Search-11 (Métaheuristiques) et se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'au TSP) ; **MGS-7b, MGS-8 à 14** visualisent les paysages de fitness (MGS-7b projette les benchmarks en dimension N≥5) et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'analyse quantitative de paysage et la méta-stratégie (No-Free-Lunch, contrôle de paramètres) ; **MGS-19** démonte le recuit simulé pour éprouver l'opérateur de Metropolis seul. Optionnel pour qui vise le cœur Python, central pour qui veut *construire* ses métaheuristiques en .NET.
+En parallèle du parcours Python, la [Partie 4 — MetaGeneticSharp](Part4-Metaheuristics/README.md) propose un **side-track .NET 9** de 22 notebooks (MGS-1 à MGS-19 plus la trilogie MGS-7b/7c/7d de projection N-D des paysages) qui **reconstruit et compose** les métaheuristiques au-dessus de GeneticSharp plutôt que d'importer une boîte noire. Il prolonge Search-5 (GeneticAlgorithms) et Search-11 (Métaheuristiques) et se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'au TSP) ; **MGS-7b, MGS-8 à 14** visualisent les paysages de fitness (MGS-7b projette les benchmarks en dimension N≥5) et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'analyse quantitative de paysage et la méta-stratégie (No-Free-Lunch, contrôle de paramètres) ; **MGS-19** démonte le recuit simulé pour éprouver l'opérateur de Metropolis seul. Optionnel pour qui vise le cœur Python, central pour qui veut *construire* ses métaheuristiques en .NET.
 
 ## Ce que chaque notebook apporte
 
@@ -125,7 +125,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Side track C# .NET 9 (cf. [Search-5](Part1-Foundations/Search-5-GeneticAlgorithms.ipynb), [Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb)) : reconstruire et **composer** les métaheuristiques au-dessus de GeneticSharp plutôt que d'en importer une boîte noire.
 
-La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP), et **MGS-7b** franchit le passage à la dimension supérieure en projetant un paysage $n$-D sur la heatmap 2-D (pont vers la visualisation) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet ; **MGS-19** prolonge la thèse « composants > métaphores » jusqu'au **démontage** — extraire l'opérateur de Metropolis du recuit simulé et l'éprouver seul sur un GA, pour vérifier que le bénéfice du recuit tient au couplage perturbation+acceptation, pas à l'acceptation seule.
+La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP), et la **trilogie MGS-7b/7c/7d** franchit le passage à la dimension supérieure en projetant un paysage $n$-D sur la heatmap 2-D (8 fonctions CEC couvertes : Sphère/Rastrigin/Schwefel/Ackley en 7b, Rosenbrock/Griewank en 7c, Michalewicz/Dixon-Price en 7d) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet ; **MGS-19** prolonge la thèse « composants > métaphores » jusqu'au **démontage** — extraire l'opérateur de Metropolis du recuit simulé et l'éprouver seul sur un GA, pour vérifier que le bénéfice du recuit tient au couplage perturbation+acceptation, pas à l'acceptation seule.
 
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
@@ -137,6 +137,8 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 | 6 | MGS-6 Benchmarks | Comparaison honnête des composés vs GA vs Uniform vs Islands |
 | 7 | MGS-7 TSP | Grammaire agnostique à la représentation (permutation, `OrderedCrossover`) |
 | 7b | [MGS-7b LandscapeMultidim](Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb) | Projection N-D des paysages : la surcharge `RenderHeatmap(..., int dimension, ...)` projette en MAX un paysage $n$-D sur la heatmap 2-D (Sphère 2-D vs 5-D, Rastrigin $n \in \{2,5,10,30\}$, Schwefel $n \in \{5,30\}$) — pont entre MGS-6 (heatmap 2-D) et MGS-8 (LandscapeExplorer) |
+| 7c | [MGS-7c RosenbrockGriewank](Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb) | Prolonge 7b sur deux fonctions au comportement structurellement différent : **Rosenbrock** (vallée étroite) et **Griewank** (produit-cosinus) en projection N-D |
+| 7d | [MGS-7d MichalewiczDixonPrice](Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb) | Clôt la trilogie : **Michalewicz** (steep ridges) et **Dixon-Price** (vallée étroite non-scalable) — complète les 8 fonctions CEC projetées en N-D |
 | 8 | MGS-8 LandscapeExplorer | Visualiser la surface de fitness (heatmaps, trajectoire de convergence) |
 | 9 | MGS-9 EverestRelief | Relief terrestre réel comme paysage de fitness (DEM, flipbook) |
 | 10 | MGS-10 CenterBias | Biais central vs robustesse au déplacement (banc Kudela 2022) |
@@ -152,7 +154,7 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 
 ### Applications GA spécialisées → `Applications/Hybrid/`
 
-Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](Applications/README.md) ci-dessous : **App-9 / App-9b** et **App-10 / App-10b**. La Partie 4 ne contient plus que la série MGS numérotée (MGS-1 à MGS-19, plus le pont MGS-7b de projection N-D).
+Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](Applications/README.md) ci-dessous : **App-9 / App-9b** et **App-10 / App-10b**. La Partie 4 ne contient plus que la série MGS numérotée (MGS-1 à MGS-19, plus la trilogie MGS-7b/7c/7d de projection N-D).
 
 ### Applications
 
@@ -347,7 +349,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python (12) + C# natif (Search-16 QuikGraph) | **12 jumeaux C#** (Search-1 à 11, 15) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
-| [Part4-Metaheuristics](Part4-Metaheuristics/) | 20 (MGS-1 à MGS-19 + MGS-7b) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
+| [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) |
 | Racine | 0 | — | (aucun — voir [archive/](archive/) pour les anciens notebooks racine) |
 
@@ -524,7 +526,7 @@ Search/
 │       └── App-18b-HyperparameterTuning-CSharp.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 20 notebooks MGS-1..19 (+ pont MGS-7b projection N-D) (moteur, composition, composés, benchmarks, TSP, projection N-D des paysages, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module
+├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 22 notebooks MGS-1..19 (+ trilogie MGS-7b/7c/7d projection N-D) (moteur, composition, composés, benchmarks, TSP, projection N-D des paysages, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module
 │
 └── archive/                                # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir archive/README.md
     ├── README.md
@@ -600,7 +602,7 @@ Allez directement aux applications qui correspondent à votre domaine : **App-3/
 
 ---
 
-## Statistiques catalogue à jour (audit fichier-entier §E, 2026-07-07)
+## Statistiques catalogue à jour (audit fichier-entier §E, 2026-07-24)
 
 Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'`. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `search_lean/` ne contiennent aucun `.ipynb`). La répartition de maturité (PRODUCTION/BETA) est portée par le marqueur `CATALOG-STATUS` en tête de fichier, régénéré quotidiennement par l'automatisation.
 
@@ -609,10 +611,10 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 | **Part 1 — Fondements** (`Part1-Foundations/`) | **29** (**12 Python** : Search-1 → Search-11, 15 + **17 C#** : 12 jumeaux `-Csharp` (Search-1 à 11 et 15) + Search-16 QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **6** (3 Python : Search-12, 13, 14 + **3 jumeaux C#**) | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970) |
-| **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **20** (MGS-1 → MGS-19, plus le pont **MGS-7b LandscapeMultidim** de projection N-D des paysages, tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, **projection N-D des paysages (MGS-7b)**, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion |
+| **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **22** (MGS-1 → MGS-19, plus la **trilogie MGS-7b/7c/7d** de projection N-D des paysages — 8 fonctions CEC couvertes au total, tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, **projection N-D des paysages (trilogie MGS-7b/7c/7d)**, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion |
 | **Applications** (`Applications/`) | **40** (26 CSP + 10 Hybrid + 4 Search — **20 binômes Python ⇄ C#** App-1 à App-20) | 20 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS) |
 | **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
-| **Total** | **115** (gît-tracked : 40 + 29 + 20 + 18 + 6 + 2) | Python + C# | 5 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
+| **Total** | **115** (gît-tracked : 40 + 29 + 22 + 18 + 6 = 115 pédagogiques + 2 archive = 117) | Python + C# | 5 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
 
 **Note de maturité** : la validation end-to-end (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`) est documentée PR par PR dans l'EPIC #4956 pour les jumeaux C#, et dans les PRs po-2025:CoursIA-2 pour la série landscape-bias MGS-10 → MGS-19 (analyse comparative NFL/WOA encore en cours, cf EPIC #3975).
 
@@ -734,7 +736,7 @@ flowchart LR
     class LA,LM,LP,LK,LG,LB lean
 ```
 
-La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 115 notebooks Python/C# gît-tracked (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi — `pedagogical_count: 113` hors archive) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `search_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
+La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 115 notebooks Python/C# gît-tracked (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi — `pedagogical_count: 115` incluant les 22 de la Partie 4) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `search_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 

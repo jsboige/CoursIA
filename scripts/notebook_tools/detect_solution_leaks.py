@@ -33,6 +33,18 @@ STUB_PATTERNS = [
     r'//\s*TODO',
     r'Console\.WriteLine\(["\']Exercice a completer',
     r'Console\.WriteLine\(["\']Exercices a completer',
+    # Lean stub idioms (Lean line comments start with `--`).
+    r'--\s*TODO',
+    # Lean `sorry` tactic admits the goal — an exercise cell using it is a stub
+    # (the proof is unverified, intentionally left for the student).
+    r'\bsorry\b',
+    # .NET Interactive / F# `.Display("...a completer")` idiom (the existing
+    # patterns only cover Console.WriteLine / print).
+    r'\.Display\s*\([^)]*(?:a compl[ée]ter|compl[ée]ter)',
+    # Python assignment-stub: `result = None  # TODO etudiant` /
+    # `matrice = None  # Remplacez None`. `return None` only matches a return
+    # statement, not an assignment that defers the work to the student.
+    r'=\s*None\s*#.*(?:TODO|Remplacez|a compl[ée]ter|compl[ée]ter)',
 ]
 
 EXERCISE_HEADER_RE = re.compile(
@@ -46,6 +58,171 @@ SOLUTION_MARKER_RE = re.compile(
     r'[Ss]olution|[Rr][eé]ponse|[Rr]esultat|ref\s*:',
     re.IGNORECASE,
 )
+
+# A worked-example header line (Exemple guide / Exemple resolu / Example / Worked).
+# Used for closest-preceding-header attribution: a code cell whose nearest header
+# is a worked example is NOT an exercise solution leak, even if a broader
+# "Exercices" section header sits further back (cf exercise-example-labeling.md,
+# content-based rule). Distinguished from EXERCISE_HEADER_RE (Exercice/Exercise).
+EXAMPLE_HEADER_RE = re.compile(
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
+# Any markdown ATX/SETEXT-like header line, for closest-header attribution.
+HEADER_LINE_RE = re.compile(r'^#{1,6}\s+.+$', re.MULTILINE)
+
+# A worked-example label appearing as the FIRST code comment line of a code cell
+# (e.g. "# Exemple guide : ...", "// Example 1 : ...", "-- Exemple resolu").
+# Mirrors EXAMPLE_HEADER_RE for the case where the worked-example label lives in
+# a leading code comment rather than a markdown header. Cf exercise-example-labeling.md
+# (content-based rule): a code cell that self-labels as a worked example is never an
+# exercise solution leak, even under a broader "## Exercices" section header.
+EXAMPLE_CODE_COMMENT_RE = re.compile(
+    r'^\s*(?:#|//|--)\s*(?:\d+[.:]\s*)?(?:Exempl?es?|Examples?|Worked)',
+    re.IGNORECASE,
+)
+
+
+def closest_preceding_header_is_example(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a worked
+    example.
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell owned by
+    a worked example is never an exercise solution leak — this suppresses false
+    positives where a code cell sits under a ``## Exercices`` section header but
+    its actual nearest sub-header is ``### Exemple guide`` (in the same cell or
+    an intervening one). Cf exercise-example-labeling.md (content-based rule).
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(EXAMPLE_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
+def code_cell_first_comment_labels_example(source: str) -> bool:
+    """Return True if the first non-empty line of the code is a worked-example
+    comment label.
+
+    Some notebooks label a worked example via a leading code comment
+    (``# Exemple guide : ...``, ``// Example 1 : ...``) sitting under a
+    ``## Exercices`` section header, with NO intervening markdown sub-header.
+    Such a cell is a worked example, not an exercise solution leak — it would be
+    a false positive under header-only attribution. Suppresses that FP.
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    for line in source.split('\n'):
+        if not line.strip():
+            continue
+        return bool(EXAMPLE_CODE_COMMENT_RE.search(line))
+    return False
+
+
+def _header_level(line: str) -> int:
+    """Return the ATX heading level (count of leading ``#``), or 0 if not a
+    header line."""
+    m = re.match(r'^(#{1,6})\s', line)
+    return len(m.group(1)) if m else 0
+
+
+def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> bool:
+    """Return True if a markdown header at the same or higher level than the
+    exercise header appears between ``exercise_idx`` and ``code_idx``.
+
+    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``,
+    or a ``### 6.1 ...`` sibling of ``### Exercice 2``) starts a new section and
+    breaks the attribution of the code cell to the exercise: the code then
+    belongs to that later section, not the exercise. A DEEPER sub-header (e.g.
+    ``### Indice`` under a ``## Exercice 1``) does NOT break the section (it is
+    a child of the exercise, common in worked exercise scaffolding).
+
+    This suppresses cross-cell false positives where a demo/visualisation code
+    cell sits a few cells after an exercise header but is actually owned by a
+    later ``## Conclusion`` / ``## Section N`` section. Cf exercise-example-labeling.md
+    (content-based rule). Safe default: if the exercise header level cannot be
+    determined, do not suppress.
+    """
+    ex_src = ''.join(cells[exercise_idx].get('source', []))
+    ex_level = 0
+    for line in ex_src.split('\n'):
+        if EXERCISE_HEADER_RE.search(line):
+            ex_level = _header_level(line)
+            break
+    if not ex_level:
+        return False
+    for k in range(exercise_idx + 1, code_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        for header_line in HEADER_LINE_RE.findall(src):
+            if _header_level(header_line) <= ex_level:
+                return True
+    return False
+
+
+def _last_exercise_header_match(source: str):
+    """Return the last exercise-header match in ``source`` (markdown cell).
+
+    A single markdown cell may hold a parent section header (``## N. Exercices``,
+    num-less because the ``N.`` is a section number) AND a numbered sub-header
+    (``### Exercice 1 — ...``) describing the actual exercise. With
+    ``re.MULTILINE``, ``EXERCISE_HEADER_RE.search(source)`` returns the FIRST
+    match — the num-less parent — hiding the real numbered sub-header one line
+    below. The LAST header line is closest to the code cell that follows (cf
+    ``closest_preceding_header_is_example``, which already uses
+    ``header_lines[-1]`` for the same reason).
+
+    Prefer the LAST numbered match (closes the ``Exercice ?`` message class
+    for the single-sub-header MULTI-HEADER pattern: num-less parent + ONE
+    numbered child). Falls back to ``EXERCISE_HEADER_RE.search`` (first match)
+    when there are MULTIPLE numbered matches in the cell — that is the
+    "suggestions block" pattern (``## Exercices suggeres`` + ``#### Exercice 1,
+    2, 3`` siblings), where the original first-match behaviour is correct: the
+    suggestions are a SEPARATE numbering, not duplicates of earlier exercises.
+
+    Recall-safe: never converts a numbered attribution to num-less; never
+    re-orders numbered matches relative to their declaration order.
+    """
+    matches = list(EXERCISE_HEADER_RE.finditer(source))
+    if not matches:
+        return None
+    numbered = [m for m in matches if m.group(1)]
+    # Multi-sub-header suggestions block: keep the original first-match
+    # behaviour (the suggestions are a SEPARATE numbering, not duplicates).
+    if len(numbered) > 1:
+        return matches[0]
+    if numbered:
+        return numbered[-1]
+    return matches[-1]
+
+
+def _numbered_exercise_header_between(cells, start_idx, end_idx) -> bool:
+    """Return True if a markdown cell strictly between ``start_idx`` and
+    ``end_idx`` (exclusive) holds a NUMBERED exercise header.
+
+    A separate-cell num-less ``## Exercices`` section header followed by a
+    numbered ``### Exercice N`` sub-header independently scans forward to the
+    same code cell, producing a duplicate HIGH (``Exercice ?`` from the parent
+    and ``Exercice N`` from the child). The numbered header is the closer
+    attribution; the duplicate ``Exercice ?`` is the FP class. Caller skips
+    the num-less iteration when this returns True.
+    """
+    for k in range(start_idx + 1, end_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        if any(m.group(1) for m in EXERCISE_HEADER_RE.finditer(src)):
+            return True
+    return False
 
 
 def is_stub_code(source: str) -> bool:
@@ -70,6 +247,79 @@ def is_stub_code(source: str) -> bool:
     return False
 
 
+# A code line that DEFINES a new construct (function/class/proof). When such a
+# line is EXECUTABLE (not commented out), the cell contains a real definition and
+# cannot be a pure commented-template stub. Used by commented_template_stub as a
+# fast early-exit (the real recall guard is the "non-trivial executable line"
+# fallback below it).
+EXECUTABLE_DEFINITION_RE = re.compile(
+    r'^\s*(?:def |class |struct |namespace |interface |enum |theorem |lemma |defn |'
+    r'inductive |instance |record |void |int |bool |string |float |double |var )',
+)
+
+# A prompt / TODO marker indicating the cell is a skeleton left for the student.
+# A real complete solution never carries one of these.
+PROMPT_MARKER_RE = re.compile(
+    r'(?:TODO|a compl[ée]ter|compl[ée]ter|impl[ée]mentez|impl[ée]menter|'
+    r'[àa] compl|votre code|student fills|etudiant|r[ée]pondez|r[ée]aliser)',
+    re.IGNORECASE,
+)
+
+
+def commented_template_stub(source: str) -> bool:
+    """Return True if the cell is a "commented-template" exercise stub.
+
+    Some exercise cells embed the FULL solution as COMMENTED-OUT code (``# ...``,
+    ``// ...``, ``-- ...``) plus a small amount of executable scaffolding (data
+    assignments, a prompt print), so the student uncomments and fills the TODOs.
+    Such a cell is a legitimate exercise skeleton, NOT a solution leak — but it
+    trips ``len(source) > 8`` and has no matching STUB_PATTERN, so it is a HIGH
+    false positive. Suppresses that FP.
+
+    Recall-safe: a real (complete) solution always has EITHER an executable
+    definition (``def``/``class``/``theorem``/...) OR at least one non-trivial
+    executable line (a loop, a solver call, ...). Both make this return False.
+    Only cells whose executable code is ENTIRELY trivial (assignments, prints,
+    imports, collection literals) AND that carry a prompt/TODO marker are
+    suppressed. A complete solution never carries a prompt marker.
+
+    Cf exercise-example-labeling.md (content-based rule).
+    """
+    exec_lines = []
+    for raw in source.split('\n'):
+        s = raw.strip()
+        if not s:
+            continue
+        # comment lines for the languages in this repo
+        if (s.startswith('#') or s.startswith('//') or s.startswith('--')
+                or s.startswith('(*') or s.startswith('/*') or s.endswith('*)') or s.endswith('*/')):
+            continue
+        exec_lines.append(s)
+
+    # Fast early-exit: an executable definition => real code, not a template.
+    if any(EXECUTABLE_DEFINITION_RE.search(l) for l in exec_lines):
+        return False
+
+    # Every executable line must be trivial (assignment / print / import /
+    # collection literal / closing bracket). ANY non-trivial line (loop, call,
+    # statement) => real code => not a template.
+    for s in exec_lines:
+        if s.startswith(('print(', 'Print(', 'Console.', 'Display(', 'printf', 'puts(', 'puts ')):
+            continue
+        if s.startswith(('import ', 'from ', 'using ', 'open ', 'require ', '#!')):
+            continue
+        if re.match(r'^[A-Za-z_][\w\[\]."\']*\s*(?:=|:=)', s):  # assignment target = / :=
+            continue
+        if s.startswith(('[', '(', '{', '{|')) or s.endswith((']', ')', '}', ',', '|}')):
+            continue  # collection literal / continuation
+        if s in (']', ')', '}', '|}'):
+            continue
+        return False  # non-trivial executable line -> not a pure template
+
+    # Must carry a prompt/TODO marker (a complete solution never does).
+    return bool(PROMPT_MARKER_RE.search(source))
+
+
 def scan_notebook(path: str) -> list[dict]:
     """Scan a single notebook for solution leaks."""
     findings = []
@@ -88,7 +338,11 @@ def scan_notebook(path: str) -> list[dict]:
 
         source = ''.join(cell.get('source', []))
 
-        m = EXERCISE_HEADER_RE.search(source)
+        # Last-numbered-match wins within a markdown cell (closes the
+        # 'Exercice ?' message class for multi-header cells where a num-less
+        # parent '## N. Exercices' sits above a numbered sub-header
+        # '### Exercice M — ...'). See _last_exercise_header_match.
+        m = _last_exercise_header_match(source)
         if not m:
             continue
 
@@ -121,6 +375,16 @@ def scan_notebook(path: str) -> list[dict]:
         if next_code_source is None:
             continue
 
+        # Num-less section header in its own cell ("## Exercices"): if a
+        # NUMBERED exercise sub-header sits between this cell and the next code
+        # cell, the numbered header owns the code (processed in its own
+        # iteration). Without this skip the code cell is flagged twice —
+        # "Exercice ?" here and "Exercice N" at the numbered header. Suppresses
+        # the duplicate FP. The numbered header still flags the code if it is a
+        # real leak, so this is recall-safe.
+        if not num and _numbered_exercise_header_between(cells, i, next_code_idx):
+            continue
+
         if has_soumis:
             if not is_stub_code(next_code_source):
                 findings.append({
@@ -136,6 +400,32 @@ def scan_notebook(path: str) -> list[dict]:
             continue
 
         if not is_stub_code(next_code_source):
+            # Closest-preceding-header attribution: a code cell whose nearest
+            # header is a worked example (Exemple guide / Exemple resolu / ...)
+            # is not an exercise leak, even if a broader "## Exercices" section
+            # header sits further back. Suppress the false positive.
+            # Also suppress when the code cell SELF-LABELS as a worked example
+            # via its first comment line ('# Exemple guide : ...') under such a
+            # section — no markdown sub-header to attribute to. Cf exercise-example-labeling.md.
+            if (closest_preceding_header_is_example(cells, next_code_idx)
+                    or code_cell_first_comment_labels_example(next_code_source)):
+                continue
+            # Cross-cell attribution guard: if a same-or-higher-level markdown
+            # section header (e.g. "## Conclusion", "## Section 6", a "### 6.1"
+            # sibling) appears between the exercise header and this code cell,
+            # the code belongs to that later section, not the exercise. Suppress
+            # the false positive. A deeper sub-header ("### Indice" under
+            # "## Exercice 1") does not break the section.
+            if intervening_section_breaks_attribution(cells, i, next_code_idx):
+                continue
+            # Commented-template stub: the whole solution is commented out and
+            # only data assignments + a prompt print execute (the student
+            # uncomments and fills the TODOs). A legitimate exercise skeleton,
+            # not a leak. Suppresses the commented-solution-prompt FP class.
+            # Recall-safe: a real solution has an executable def/class or a
+            # non-trivial executable line, which makes the helper return False.
+            if commented_template_stub(next_code_source):
+                continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
                 findings.append({

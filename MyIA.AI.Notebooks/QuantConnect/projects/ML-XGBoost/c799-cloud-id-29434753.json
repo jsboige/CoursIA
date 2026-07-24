@@ -1,0 +1,87 @@
+{
+  "cycle": "c.799",
+  "issue": "#7575",
+  "lane": "myia-po-2024:CoursIA-2",
+  "model": "MiniMax M3",
+  "qc_lite_workspace": "jsboige",
+  "project": {
+    "cloud_id": 29434753,
+    "name": "ML-XGBoost",
+    "organization_id": "d600793ee4caecb03441a09fc2d00f7f",
+    "local_id": 621690819,
+    "algorithm_language": "Python"
+  },
+  "backtest_intent": {
+    "name": "c.799-ml-xgboost-v2-rerun",
+    "rationale": "Re-execute v2 hyperparameters via qc_lite to obtain fresh QC Cloud metrics (Sharpe/CAGR/MaxDD) for evidence-citation in PR body. Same hyperparameters as previous v2 (committed 2026-03-28), date range 2015-01-01 to 2024-12-31 (10y strict).",
+    "source_code_sha_pre": "pre-c.799-upload",
+    "claimed_values_from_prior_backtest": {
+      "backtest_id": "7aefec67e21b48d5d39cbd604ff6d1eb",
+      "created": "2026-03-28T20:13:39Z",
+      "window": "2015-2026 (~11y with extended tail)",
+      "sharpe_ratio": 0.566,
+      "compounding_annual_return_pct": 14.794,
+      "drawdown_pct": 38.6,
+      "total_net_profit_pct": 371.678,
+      "net_profit_absolute_usd": 380301.26,
+      "tradeable_dates": 2825,
+      "total_orders": 2260
+    }
+  },
+  "compile": {
+    "compile_id": "de057a216543849e861e032a8b070b79-35fe5dc6b8f765e76168f47a7d2b815c",
+    "state": "BuildSuccess",
+    "errors": 0,
+    "timestamp_utc": "2026-07-22T22:15:00Z"
+  },
+  "backtest": {
+    "backtest_id": "9cc2bcb4809c514efb84e3cdaf89d610",
+    "status": "Completed",
+    "completed": true,
+    "progress_at_completion": 1,
+    "window": "2015-01-01 to 2024-12-31 (10y strict)",
+    "tradeable_dates": 2516,
+    "total_orders": 1994,
+    "statistics": {
+      "sharpe_ratio": 0.787,
+      "compounding_annual_return_pct": 19.493,
+      "drawdown_pct": 35.9,
+      "total_net_profit_pct": 494.293,
+      "net_profit_absolute_usd": 497083.44,
+      "probabilistic_sharpe_ratio_pct": 15.403
+    },
+    "equity_final_absolute_usd": 597083.44,
+    "duration_seconds_estimate": "~25 minutes (queued 2026-07-22T22:17:07Z, completed ~22:42:00Z)"
+  },
+  "delta_vs_prior": {
+    "sharpe_ratio_delta": 0.221,
+    "sharpe_ratio_pct_change": 39.0,
+    "cagr_delta_pp": 4.699,
+    "maxdd_delta_pp": -2.7,
+    "total_net_profit_delta_pp": 122.615,
+    "interpretation": "10y-strict window (2015-2024) outperforms 11y-extended (2015-2026 with partial 2025-2026 tail). The 2025-2026 tail in prior backtest pulled metrics down (deeper drawdown). Removing it yields: Sharpe +39%, CAGR +4.7pp, MaxDD -2.7pp (better), TotalNetProfit +33%."
+  },
+  "hyperparameters": {
+    "lookback": 90,
+    "n_estimators": 100,
+    "max_depth": 5,
+    "learning_rate": 0.03,
+    "prediction_threshold": 0.001,
+    "max_positions": 9,
+    "position_size_pct_per_position": 11.11,
+    "rebalance_cadence": "biweekly (alternating Mondays: odd=train, even=trade)",
+    "allocation_pct": 90,
+    "universe": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "WMT", "DIS", "NFLX", "PYPL", "ADBE", "CRM"]
+  },
+  "compliance": {
+    "r1_catalog_byte_id": "verified",
+    "l143_secrets_hygiene": "0 hit",
+    "l268_lf_only": "0 hit CR",
+    "l677_l4_body_off_worktree": "C:/tmp/c799_pr_ml_xgboost_body.md",
+    "l761_l2_rest_api": "gh api ... -F body=@file",
+    "l528_l529_md_only": "0 churn notebook",
+    "sota_prong_a": "vrai QC Cloud (qc_lite MCP), 0 mock fallback (lesson #7952/#7953)",
+    "qc_rate_limit_announcement": "posted dashboard before backtest",
+    "g_var_3_rotation": "c.798 docs-hygiene-hub -> c.799 qc-backtest = cross-genre strict"
+  }
+}

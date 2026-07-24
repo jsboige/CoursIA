@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport Final Phase 29 - Résolution Complète Authentification Qwen ComfyUI
 
 **Date**: 2025-11-02 00:53:00 UTC+1  

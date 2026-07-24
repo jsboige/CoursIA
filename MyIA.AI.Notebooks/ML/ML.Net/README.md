@@ -4,7 +4,7 @@
 series: ML-ML.Net
 pedagogical_count: 19
 breakdown: ML.Net=19
-maturity: PRODUCTION=18, ALPHA=1
+maturity: BETA=19
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)

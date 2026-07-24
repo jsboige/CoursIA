@@ -17,7 +17,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 |-----------|---------|------|
 | **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
-| **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
+| **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
@@ -330,6 +330,70 @@ backstop PERIODIQUE** (spot-check de batch) et non un gate par-PR bloquant
 chaque merge. Une lane vision (MiniMax / ai-01) self-vision-QA sa propre
 figure en bonus ; une lane no-vision merge sur la sequence + spot-check
 aval. Reference canon : `svg-6927-canon` (memoire ai-01).
+
+---
+
+## Twin parity register (#8057)
+
+Le registre `twin_pairs.yaml` (a cote de `check_twin_parity.py`) decrit chaque
+paire de notebooks jumeaux Python/C# (Search/CSP, ML.NET/Python, Z3/SMT,
+SemanticWeb, Probas/InferNET-PyMC, GameTheory/.NET-Parity). Pour chaque paire
+il enregistre :
+
+- les chemins Python et C# des deux jumeaux,
+- le `parity_level` (`surface` | `semantic` | `native-both`),
+- le `last_audit` (date + auteur + git blob SHA de chaque notebook au moment
+  du dernier audit),
+- les `known_differences` documentees (idiomes framework, bibliotheques
+  differentes, fix specifiques a un seul cote, etc.).
+
+### `check_twin_parity.py` (#8057, c.801/c.802)
+
+Detecte la **derive silencieuse des jumeaux** : pour chaque paire, compare
+le git blob SHA courant (via `git ls-tree HEAD`) au SHA audite. Verdict par
+paire :
+
+- **OK** : les deux cotes sont au SHA audite, parite tenue.
+- **DRIFT** : un cote a evolue (SHA different) sans re-audit -> la parite
+  n'est plus garantie, **re-audit obligatoire**.
+- **MISSING** : un chemin est absent de git (typo, deplacement, jumeau
+  jamais cree).
+
+```bash
+# verifier toutes les paires vs le registre
+python scripts/notebook_tools/check_twin_parity.py
+# exit 1 si DRIFT/MISSING (CI-ready via --check)
+python scripts/notebook_tools/check_twin_parity.py --check
+# restreindre a une famille
+python scripts/notebook_tools/check_twin_parity.py --family SMT/Z3-API
+# rebaseline apres audit firsthand (ecrit les SHAs courants)
+python scripts/notebook_tools/check_twin_parity.py --update
+# sortie machine (json)
+python scripts/notebook_tools/check_twin_parity.py --json
+```
+
+### CI integration (`.github/workflows/twin-parity.yml`, c.818)
+
+Le workflow `.github/workflows/twin-parity.yml` **fail** toute PR qui
+introduit DRIFT/MISSING dans le registre. Pour deriver legitimement (par
+exemple un fix doc-honesty sur un seul cote), le worker doit :
+
+1. **Re-auditer la paire firsthand** (lecture cellule-par-cellule des deux
+   jumeaux, verdict ecrit dans `known_differences` du registre).
+2. **Rebaseline les SHAs** : `python scripts/notebook_tools/check_twin_parity.py --update [--family ...]`.
+3. Committer le registre rebaseline **dans la meme PR** que l'edit du cote
+   modifie (le PR porte a la fois le diff du notebook et le diff du
+   registre).
+
+**Anti-pattern** : editer un cote sans toucher au registre = la CI fail
+avec un message explicite pointant vers la paire et le cote qui a drift.
+Le check est **bloquant** (contrairement a `catalog-drift.yml` qui est
+read-only) parce que la derive silencieuse casse la promesse de parite
+bilingue (#4956).
+
+**Owner** : po-2024 (registre + check) + po-2025 (re-audit + rebaseline sur
+les paires Search/CSP, SMT/Z3, SemanticWeb, Probas/InferNET). Voir
+`docs/reference/twin-parity.md` pour la procedure complete.
 
 ---
 

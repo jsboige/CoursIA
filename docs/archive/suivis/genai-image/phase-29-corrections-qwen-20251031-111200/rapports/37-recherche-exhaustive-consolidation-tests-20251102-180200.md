@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 37 : Recherche Exhaustive et Consolidation Tests API - Phase 29
 
 **Date** : 2025-11-02 18:02:00 UTC+1  

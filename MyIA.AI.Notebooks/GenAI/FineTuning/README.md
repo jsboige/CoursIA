@@ -4,7 +4,7 @@
 series: GenAI-FineTuning
 pedagogical_count: 5
 breakdown: FineTuning=5
-maturity: PRODUCTION=4, BETA=1
+maturity: BETA=5
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ PostTraining](../PostTraining/README.md)

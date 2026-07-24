@@ -2,6 +2,16 @@
 
 Ce répertoire centralise la documentation projet déportée du CLAUDE.md. Chaque fichier documente un aspect précis du projet CoursIA (infrastructure, procédures, règles, état des séries).
 
+## Racine (docs/)
+
+Fichiers présents directement à la racine du répertoire `docs/`. Triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens).
+
+| Fichier | Verdict | Raison |
+|---------|---------|--------|
+| [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — 58 liens internes vérifiés c.805 (aucun mort), 11 sections cohérentes avec disque, organisation par catégorie stable |
+| [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
+| [grothendieckian-lens.md](grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
+
 ## Référence (docs/reference/)
 
 Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
@@ -84,7 +94,8 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
-| [lean/stable_marriage_intractable_diagnosis.md](archive/lean-intractable-diagnosis/stable-marriage.md) | Diagnostic des preuves stable-marriage intractables (archivé c.696) |
+
+> Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
 ## Curriculum (docs/curriculum/)
 
@@ -98,6 +109,18 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/trading.md](curriculum/trading.md) | Parcours trading algorithmique (QuantConnect, ML, Probas) |
 | [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Vidéo, Texte) |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
+
+## Métadonnées notebooks (docs/notebook-metadata/)
+
+Schémas canoniques de métadonnées par notebook : registre datasets (licence + checksum), matrice coût/ressource, et registre de revues éditoriales tierces. Consommés par `scripts/audit/check_*.py` et liés depuis `THIRD_PARTY_NOTICES.md`. Triage #7422 (c.839, po-2023 — slice `notebook-metadata/` non couverte par c.549/c.557/c.600/c.705/c.715/c.728n/c.728r/c.728s/c.734/c.728y+36/c.728y+37).
+
+| Fichier | Verdict | Raison |
+|---------|---------|--------|
+| [notebook-metadata/DATASET_REGISTRY.md](notebook-metadata/DATASET_REGISTRY.md) | **KEEP** | Registre canonique datasets (~25 fichiers, 9 familles) avec licence + checksum SHA256 — alimenté par `scripts/audit/check_dataset_registry.py --audit` ; lié depuis [THIRD_PARTY_NOTICES.md §0](../THIRD_PARTY_NOTICES.md) (séparation licences code vs datasets). Issue #8055 tranche 2 (V0 pilote c.795). 210 lignes |
+| [notebook-metadata/DATASET_CARD.md](notebook-metadata/DATASET_CARD.md) | **KEEP** | Template grade B-méthodologique pour dataset sensible (caractère synthétique + périmètre RGPD + procédure re-validation sur fork). Complète `DATASET_REGISTRY.md` avec une couche descriptive par dataset. Issue #8055 tranche 2. 154 lignes |
+| [notebook-metadata/cost-matrix.md](notebook-metadata/cost-matrix.md) | **KEEP** | Schéma `cost:` frontmatter portable (api_usd_est / cpu_min / gpu_min / vram_gb / qc_cloud_required) — pilote V0 c.794, issue #8056. Consommé par `scripts/audit/check_cost_metadata.py` ; intégration audit sémantique #8052. 375 lignes — référence opérationnelle majeure |
+| [notebook-metadata/EDITORIAL_REVIEW_CARD.md](notebook-metadata/EDITORIAL_REVIEW_CARD.md) | **KEEP** | Template canonique c.764 — copié/adapté par chaque reviewer pour ajouter une entrée à `editorial-review-registry.md`. 5 portées : typo / factual / pedagogie / substance / full (seules `factual`/`substance`/`full` permettent promotion `BETA → FINAL`, cf `docs/PARCOURS.md` §Axe 1). 93 lignes |
+| [notebook-metadata/editorial-review-registry.md](notebook-metadata/editorial-review-registry.md) | **KEEP** | Pilote fondateur c.764 (phase 2 issue #8051 critère #4) — registre whitelist YAML curé manuellement des revues éditoriales tierces. Sans signal `editorial_reviewed_by` non-null dans ce registre, `classify_editorial()` n'émet jamais `FINAL` (598 entrées historiques rétrogradées par défaut, design anti-auto-promotion). Consommé par `scripts/audit/check_editorial_review.py`. 179 lignes |
 
 ## Lecture transversale
 
@@ -123,6 +146,7 @@ Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documenta
 | Fichier | Description |
 |---------|-------------|
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
+| [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice canonique `notebook × claim × proxy × contrôle × seeds × verdict × portée` (grade C-documentaire, #7734, #4588) |
 
 ## Ledgers cumulatifs (docs/ledgers/)
 
@@ -154,7 +178,7 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 **Sous-répertoires archives** :
 
 - [archive/investigation-mcp-nuget/](archive/investigation-mcp-nuget/INDEX.md) — Investigation MCP Jupyter / NuGet (26 fichiers)
-- [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (13+ fichiers)
+- [archive/genai/](archive/genai/README.md) — Infrastructure GenAI détaillée (16 fichiers)
 - [archive/suivis/genai-image/](archive/suivis/genai-image/INDEX.md) — Suivi ComfyUI/Qwen (8 fichiers + 4 phases)
 
 ## Carte rapide

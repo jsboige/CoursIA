@@ -13,7 +13,7 @@ All 4 notebooks in this directory are **(c) standalone research** — independen
 | `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
 | `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
 
-Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
+Full classification: [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
 
 ## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
 

@@ -1,4 +1,4 @@
-> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+> **ARCHIVED 2026-07-22** — c.728y+45 docs-hygiene triage #7422 (`docs/archive/` racine, 1 fichier). Verdict **KEEP-AS-ARCHIVE (SUPERSEDED)** : snapshot T22.12 du 2026-05-10 = décisionnel historique (issue #456 fermée le même jour), **0 inbound refs actifs** (dormant) mais préservé pour traçabilité (qui a recommandé quoi à quelle date). Recommendations verbatim non-adoptées (vérifié firsthand 2026-07-22 : `docker-configurations/services/` actuel = 19 services dont `tts-fishaudio`/`tts-multi`/`whisper-webui`/`planners-fast-downward` absents de l'audit, Whisper COMPUTE_TYPE default `float16` non migré `int8`, pas de service `flux-*` ajouté, machine topology RTX 3080 Ti + RTX 3090 inchangée OK). Audit ne reflète plus l'état runtime mais documente le raisonnement T22.12. Pas de SUPERSEDED-BY canonique (état courant dispersé entre `docs/genai-services.md` + `.env` files).
 
 # GenAI Stack Audit Report - T22.12 (issue #456)
 

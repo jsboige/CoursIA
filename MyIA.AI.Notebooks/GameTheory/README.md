@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 50
-breakdown: root=43, SocialChoice=7
-maturity: PRODUCTION=36, BETA=14
+pedagogical_count: 55
+breakdown: root=48, SocialChoice=7
+maturity: BETA=52, ALPHA=3
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -103,6 +103,24 @@ La cellule 39 du notebook `GameTheory-6-EvolutionTrust` nomme explicitement la *
 2. **Head-to-head obligatoire.** Nommer un mécanisme sans l'exécuter produit des assertions invérifiables (Prong-B fondateur #3801). Le notebook 6 après #7594 cite le Moran process *avec sa sortie réelle* — Defector 28 %, TitForTat 12 % — et explicite pourquoi l'intuition « moraliste » du IPD round-robin ne survit pas au passage en population FINIE.
 3. **Cross-fertilisation écologique.** Le Moran process est l'outil de référence en evolutionary game theory (Nowak 2006 *Evolutionary Dynamics*) — bien plus qu'un gadget. Sans cette capacité, le notebook 6 reste aveugle à 60 % de la littérature post-Axelrod.
 
+### Point fixe discriminant : pourquoi `regret=0` définit l'équilibre (GameTheory-4c)
+
+La cellule `perturbed_br` du notebook `GameTheory-4c-NashExistence-Python` (side-track Python du 4b Lean) illustre numériquement le théorème du point fixe de Brouwer appliqué à Matching Pennies : si `x*` est un point fixe de `perturbed_br`, alors la **carte n'en bouge pas** — c'est-à-dire que le vecteur de **regret** y est identiquement nul. Avant la PR [#7664](https://github.com/jsboige/CoursIA/pull/7664) (2026-07-21), cette cellule ne vérifiait qu'un seul seed `(0.5, 0.5)` — qui est précisément l'équilibre de Nash de Matching Pennies. Or à l'équilibre, le regret est `0` par définition, donc la perturbation `ε` est un **no-op** et la carte renvoie l'identité : « `(0.5, 0.5)` est point fixe » était **tautologiquement vrai par construction**, sans exercer la machinerie regret/perturbation. Le pattern Prong-B fondateur ([#3801](https://github.com/jsboige/CoursIA/issues/3801)) — un solveur démontré sur un cas où sa capacité distinctive ne fait rien (cf. BFS-vs-A* `8905f8845`).
+
+**Ce que la PR #7664 a first-hand exécuté** (cellules `70b72753` code + `134eeb5b` markdown du notebook) — un contraste à deux seeds qui rend visible *pourquoi* l'équilibre est un point fixe :
+
+| Seed | Vecteur de regret | `perturbed_br` renvoie | Fixed point ? |
+|---|---|---|---|
+| `(0.8, 0.2)` (non-équilibre) | `[0.24, 0]` (non-nul) | `[0.8047, 0.1953]` ≠ entrée | **Non** — la carte déplace activement le point |
+| `(0.5, 0.5)` (équilibre de Nash) | `[0, 0]` (nul) | `(0.5, 0.5)` = entrée | **Oui** — par définition, le seul point fixe |
+
+**Pourquoi cette section manquait avant** : tester **uniquement** `(0.5, 0.5)` revient à tester `f(x*) = x*` après avoir choisi `x*` par définition. Sans seed non-équilibre, on ne distingue jamais le « point fixe » du « point arbitraire où le regret est nul par accident ». La cellule 2ab3160a du notebook — qui montre la convergence joueur par joueur depuis un départ non-équilibre — fait déjà la moitié du travail ; #7664 amène le **test single-cell** au même standard de discrimination et l'accompagne d'un markdown qui nomme explicitement l'anti-tautologie (« Tester uniquement l'équilibre serait tautologique »).
+
+**À retenir** :
+1. **`regret ≡ 0 ⟺ fixed point`** (par définition du regret-based no-regret learning, voir Hart & Mas-Colell 2000 *Simple Adaptive Strategies*). Brouwer appliqué à `perturbed_br` n'a rien de magique : c'est exactement le critère de no-regret qui définit la convergence vers Nash.
+2. **Anti-tautologie systématique.** Pour tout test de point fixe / optimalité / convergence, exiger **au moins un seed non-équilibre** qui doit être déplacé. Sans cela, le test ne prouve rien qu'une lecture de la définition ne donne déjà.
+3. **Lien avec le Lean 4b.** Le `Brouwer/Kakutani` prouvé formellement dans `GameTheory-4b-Lean-NashExistence` (lake `minimax_lean` côté Sion, sans `sorry`) **garantit l'existence** d'un tel point fixe ; le 4c-Python **l'illustre numériquement** par une carte `perturbed_br` concrète sur Matching Pennies — la preuve formelle et la simulation numérique se complètent sans se substituer.
+
 ## Progression recommandée
 
 ### Découvreur (fondements statiques, ~5h)
@@ -186,7 +204,7 @@ flowchart TD
 | 4 | [GameTheory-4-NashEquilibrium](GameTheory-4-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
 | 4 (C#) | [GameTheory-4-NashEquilibrium-Csharp](GameTheory-4-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
 | 4b | [GameTheory-4b-Lean-NashExistence](GameTheory-4b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
-| 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | Illustrations numériques point fixe | 35 min |
+| 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664] | 35 min |
 | 4c | [GameTheory-4c-NashExistence-Csharp](GameTheory-4c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
 | 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5 (C#) | [GameTheory-5-ZeroSum-Minimax-Csharp](GameTheory-5-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
@@ -302,7 +320,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
-| 4c | NashExistence-Python | Illustrations numériques point fixe, visualisation convergence |
+| 4c | NashExistence-Python | Point fixe Brouwer **discriminant** (`regret ≡ 0 ⟺ fixed point`, double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664]) — visualisation convergence Nash via `perturbed_br` |
 | 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
 | 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
 | 15c | CooperativeGames-Python | Exemples avancés (Glove Game, politique française) |

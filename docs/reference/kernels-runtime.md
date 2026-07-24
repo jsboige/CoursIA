@@ -246,51 +246,68 @@ Mapping avec `prover/config.py PROVIDERS` :
 3. Vérifier le nom exact du modèle côté endpoint (changements silencieux possibles).
 4. Ports vLLM locaux 5001/5002 sur ai-01 = surveiller dispo (escalations Cycle 20). Preferer endpoint stable si flaky.
 
-## Training wrapper checkpoints (ai-01)
+## Training checkpoints & thermal backoff (ai-01)
 
-Wrapper outer-supervisor reutilisable pour training BG long-running avec checkpoints + reprise + thermal backoff. **Reutiliser systematiquement pour toute training BG sur ai-01** (pas creer de wrapper concurrent).
+Librairie canonique de training BG long-running avec checkpoints + reprise + thermal backoff. **Reutiliser systematiquement pour toute training BG sur ai-01** (pas creer de wrapper concurrent).
 
-**Path canonique** : `scripts/training/train_with_checkpoints.py`
+**Path canonique** : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (lib Python, import direct).
 
-### Pattern d'usage
+> **Note** : la documentation précedemment citait un wrapper outer-supervisor `scripts/training/train_with_checkpoints.py` qui n'a jamais ete cree (`ls scripts/training/` = `No such file or directory`, `git log --grep "train_with_checkpoints"` = 0 commit). Le pattern reel est l'import direct de `gpu_training.py` ci-dessous.
 
-```bash
-python scripts/training/train_with_checkpoints.py \
-  --script <path_to_train_xxx.py> \
-  --config <yaml_or_args> \
-  --output-dir results/<run_name>_<TIMESTAMP> \
-  --gpu-index 2 \
-  --max-temp 80 \
-  --cool-sleep 60 \
-  --heartbeat 30 \
-  --max-restarts 5
+### Pattern d'usage (import direct)
+
+```python
+from shared.gpu_training import TrainingCheckpoint
+
+ckpt = TrainingCheckpoint(
+    checkpoint_path='results/run_<TS>/checkpoint.pt',
+    model_save_path='results/run_<TS>/final_model.pt',
+    max_temp=80,    # defaut
+    cool_sleep=60,  # defaut training BG long
+)
+
+start_epoch, history = ckpt.resume(model, optimizer, scheduler, grad_scaler)
+
+for epoch in range(start_epoch, EPOCHS):
+    ckpt.thermal_check()                       # watchdog inter-epoch
+    train_metrics = train_epoch(model, ...)    # batch_thermal_check intra-epoch
+    val_metrics = evaluate(model, ...)
+    ckpt.update(epoch, val_metrics['loss'], history, model, optimizer, scheduler, grad_scaler)
+
+ckpt.finalize(model)
 ```
 
 ### Sortie ecrite dans `<output_dir>/`
 
-- `train.log` : stdout+stderr unbuffered du subprocess
-- `wrapper_status.json` : etat actualise chaque heartbeat
-- `train.pid` (child) + `wrapper.pid` (outer)
-- `checkpoint.jsonl` : combos completes (monitor growth pour detecter "fake success")
+- `checkpoint.pt` : state dict complet model + optimizer + scheduler + grad_scaler + epoch + history (reprenable via `ckpt.resume`)
+- `final_model.pt` : modele final after `ckpt.finalize()`
+- `train.log` : stdout+stderr unbuffered du notebook appelant
 
 ### Thermal backoff
 
-Source reutilisee : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (`get_gpu_temp`, `thermal_check`, `batch_thermal_check`, `TrainingCheckpoint`). Defauts : `max_temp=80`, `cool_sleep=15`.
+Librairie source : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (`get_gpu_temp`, `thermal_check`, `batch_thermal_check`, `TrainingCheckpoint`). 18 tests PR #7454, fixes GPU-thermal #7335/#7454/#7456. Defauts : `max_temp=80`, `cool_sleep=15` ; surclasser en `cool_sleep=60` pour training BG long-running sur ai-01 (defaut kernel).
 
 ### Contraintes hard
 
-- **GPU 2 only** sur ai-01. Le wrapper refuse `--gpu-index 0|1` (protection vLLM tournant sur GPU 0/1).
-- Pre-flight check : GPU 2 mem < 1GB ET temp < `max_temp` avant lancement.
-- Auto-restart jusqu'a 5 sur non-zero exit. Risque "fake success" (code 0 sans atteindre la fin) : surveiller via `checkpoint.jsonl` growth.
+- **GPU 2 only** sur ai-01 (protection vLLM tournant sur GPU 0/1). Le notebook appelant doit cibler explicitement `cuda:2` (`model.to('cuda:2')`).
+- Pre-flight check : GPU 2 mem < 1GB ET temp < `max_temp` via `thermal_check()` avant lancement.
+- Reprise : `ckpt.resume(...)` recharge automatiquement `checkpoint.pt` si present, sinon demarre depuis le debut. Le monitoring de la croissance `history` (loss/val_loss par epoch) detecte le pattern "fake success" (entrainement termine sans progression).
 
 ### Monitoring
 
 ```bash
-tail -f <output_dir>/train.log
-cat <output_dir>/wrapper_status.json
-wc -l <output_dir>/checkpoint.jsonl
-nvidia-smi -i 2 --query-gpu=temperature.gpu,memory.used,utilization.gpu --format=csv,noheader
-grep -E "VERDICT|SKIPPED|exited with code" <output_dir>/train.log
+# Temperature GPU live (defaut kernel)
+watch -n 5 'nvidia-smi -i 2 --query-gpu=temperature.gpu,memory.used,utilization.gpu --format=csv,noheader'
+
+# Suivi progression entrainement (dans le notebook)
+ckpt.update(epoch, val_metrics['loss'], history, ...)  # ajoute une entree history
+print(history.tail(10))                                # log rapide cross-epoch
+
+# Detection "fake success"
+python -c "import json; h=json.load(open('<output_dir>/history.json')); \
+  losses=[e['val_loss'] for e in h['epochs']]; \
+  print('val_loss progression:', losses[-10:]); \
+  print('FAKE_SUCCESS' if abs(losses[-1]-losses[0]) < 1e-6 else 'OK')"
 ```
 
 ## Verification rapide (toute machine)
