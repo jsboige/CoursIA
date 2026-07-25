@@ -1144,13 +1144,15 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2023
+    date: "2026-07-25"
+    by: po-2024
     python_sha: 8d03359d12709b134f644e187d04249b6e1fcadf
-    csharp_sha: 435f49ca3c491cf320ddd9b9471fecc94f759f41
+    csharp_sha: cf417c956caa557bee5abcaa2ac19fab3ddfe917
+    note: "cost-parity reconciled (#8475): C# CoutChemin now excludes the depart cell terrain cost (path.Skip(1)), matching the Python twin's canonical convention (path cost = sum of edge weights / entered cells). Committed outputs aligned: BFS/Greedy 56->55, A* table 17->16 (now matches the A* g-cost summary, which was already 16). See #8475."
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
     - "Python : unified-planning engines. C# : from-scratch BFS/DFS/A* BCL .NET (meme algorithme, implementation idiomatic)."
+    - "Node counts differ legitimately (Python A* 75 vs C# 42): implementation-level difference in exploration order, NOT a parity defect. Costs are now identical cross-twin (BFS/Greedy 55, A* 16)."
 - name: "Planners-4 Fast-Downward"
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
