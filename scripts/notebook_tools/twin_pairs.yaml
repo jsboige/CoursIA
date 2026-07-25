@@ -1372,3 +1372,20 @@
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+
+# === Tranche 10 GameTheory/SocialChoice completeness (c.738, po-2026) — famille supplementaire #8057 ===
+
+- name: "SocialChoice-1 Arrow-Impossibility"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 7d36e37d511dc526c1b48dbbc1679d4f13ff561d
+    csharp_sha: bcd847ee1490f87c4dd06282df95603af250813b
+  known_differences:
+    - "Socle pedagogique commun : theoreme d'impossibilite d'Arrow (1951) — formalisation d'un profil de preferences social, les 3 axiomes (Unanimite/Pareto, Independence of Irrelevant Alternatives/IIA, Non-dictature), et demonstration qu'aucune agregation ne peut satisfaire les 3 simultanement. Les deux twins couvrent les axiomes + une approche de refutation (encodage SAT / enumeration force-brute montrant la contradiction)."
+    - "Idiomes framework : Python = demonstrations riches (41 cellules, preuve formelle en 4 etapes d'apres Geanakoplos 2005, visualisation de la synthese des resultats). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 4 using, 30 cellules (regles de vote from-scratch + structure de la preuve + refutation par enumeration complete force-brute)."
+    - "Asymetrie pedagogique : Python developpe la preuve formelle structuree (Geanakoplos 2005) + visualisation ; le C# demontre la non-satisfaisabilite par enumeration exhaustive en BCL pure sans dependance externe. Meme socle theorique (Arrow 1951, theoreme d'impossibilite), leviers de demonstration differents."
