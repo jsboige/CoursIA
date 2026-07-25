@@ -1096,13 +1096,14 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2023
+    date: "2026-07-25"
+    by: po-2024
     python_sha: 8d03359d12709b134f644e187d04249b6e1fcadf
-    csharp_sha: 435f49ca3c491cf320ddd9b9471fecc94f759f41
+    csharp_sha: c80529e7f253a8e73c1fb3779cf55fc25ac4820b
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
     - "Python : unified-planning engines. C# : from-scratch BFS/DFS/A* BCL .NET (meme algorithme, implementation idiomatic)."
+    - "Re-baseline 2026-07-25 (po-2024, PR #8436) : SHA C# avance depuis l'audit 2026-07-23 via #8436 (fix d'une inconsistance de metrique de cout dans la cellule Prong-B du twin C# : la ligne de resume A* utilisait astarWcost=16 au lieu de CoutChemin=17, contredisant sa propre table) ; drift verifie paraphite-preservant (Python twin non touche, parite semantique intacte, le fix corrige une incoherence interne au twin C#)."
 - name: "Planners-4 Fast-Downward"
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
