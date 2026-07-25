@@ -12,7 +12,7 @@ The detection half is formally tested here. Four clusters, mirroring the
 detector's documented contract (docstring):
 
   1. TestDetectCell      -- CJK glyph detection in markdown + code sources
-  2. TestAllowlist        -- legitimate multilingual demo + known gated residual skipped
+  2. TestAllowlist        -- legitimate multilingual demo allowed; resolved residual no longer allowlisted
   3. TestScanNotebook     -- end-to-end nb read + allowed short-circuit + hit report
   4. TestMainExitCodes    -- --check exit contract (0 clean / 1 residue / 2 error)
 
@@ -103,10 +103,15 @@ class TestAllowlist:
         assert reason is not None
         assert "TTS" in reason or "multilingue" in reason
 
-    def test_qc_cloud_gated_residual_allowed(self):
+    def test_qc_cloud_residual_resolved_not_allowed(self):
+        # The Risk-Parity CJK code-comment residual (简化 in cell14) was fixed
+        # 2026-07-25 (-> simplifié). The cell turned out to be pure numpy/scipy
+        # (deterministic, seed=42), NOT QC-Cloud-gated as previously assumed, so a
+        # local re-exec proved the committed output byte-identical. The obsolete
+        # allowlist entry was retired; the notebook must now scan clean + NOT be
+        # allowlisted. Guards against re-adding a suppression for a resolved defect.
         reason = mod._is_allowed("MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb")
-        assert reason is not None
-        assert "gated" in reason.lower()
+        assert reason is None
 
     def test_random_notebook_not_allowed(self):
         assert mod._is_allowed("MyIA.AI.Notebooks/ML/Some-Notebook.ipynb") is None

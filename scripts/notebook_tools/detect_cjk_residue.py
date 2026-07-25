@@ -33,11 +33,12 @@ Filtres faux-positifs (EXCLUS — CJK legitime)
   `GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb` contient volontairement du
   japonais (`こんにちは！多言語音声合成のデモンストレーションです。`) pour demontrer
   la synthese multilingue. Allowliste avec raison documentee.
-- Residu gated connu : `QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb` porte
-  un residu CJK dans un code-comment dont la correction exige une re-exec via QC
-  Cloud (QuantBook, gated). Allowliste de façon temporaire, documentée comme
-  « known gated residual — fix needs QC-Cloud re-exec », pour ne pas bloquer le CI
-  sur un defect deja connu et tracé. Retirer de l'allowlist des que re-executed.
+- (Anciennement) residu gated connu sur `QC-Py-Cloud-03-Risk-Parity.ipynb` : residu
+  CJK dans un code-comment, allowliste temporairement le temps de la correction.
+  **RESOLU 2026-07-25** (简化 -> simplifié, re-exec numpy/scipy deterministe — la
+  cellule n'etait pas QC-Cloud-gated : elle est pure numpy/scipy) ; entree ALLOWED
+  retirée, le notebook scanne clean desormais. Mécanisme conservé pour un futur
+  residu gated le cas échéant.
 
 ALLOWED = dictionnaire {substring de chemin: raison}. Un notebook dont le chemin
 contient une cle de ALLOWED est skip entierement (toutes ses cellules CJK sont
@@ -89,8 +90,6 @@ CJK_RE = re.compile(r"[　-〿぀-ゟ゠-ヿ一-鿿＀-￯]")
 ALLOWED: dict[str, str] = {
     "GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb":
         "demo TTS multilingue legiTIME (japonais volontaire pour la synthese)",
-    "QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb":
-        "known gated residual (code-comment) -- fix needs QC-Cloud re-exec; retirer apres re-exec",
 }
 
 
