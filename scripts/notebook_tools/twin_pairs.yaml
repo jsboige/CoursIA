@@ -1497,3 +1497,19 @@
     - "Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d'optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite, patterns de coupe optimaux, allocation lineaire sous contraintes de risque)."
     - "Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l'echelle). C# = **Choco-solver via IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l'assembleur IKVM."
     - "Asymetrie de couverture : Python plus etendu (56 vs 19 cellules) -- ajoute la visualisation du bin packing (`plot_bin_packing`), un benchmark comparatif heuristique First-Fit-Decreasing vs CP-SAT (complexite pratique vs garantie d'optimalite), une section dediee au Dominance Breaking, et 2 exemples guides (Multi-Knapsack, Bin Packing avec conflits). Le C# se concentre sur la resolution des 4 problemes cles via Choco + 3 exercices d'approfondissement, avec une cellule de comparaison OR-Tools CP-SAT vs Choco. Meme socle algorithmique (combinatorial optimization), leviers de demonstration differents (viz riche + benchmark empirique cote Python vs resolutions Choco compactes cote C#)."
+# === Tranche 10 GameTheory/SocialChoice completeness (c.738, po-2026) — famille supplementaire #8057 ===
+
+- name: "SocialChoice-1 Arrow-Impossibility"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 7d36e37d511dc526c1b48dbbc1679d4f13ff561d
+    csharp_sha: bcd847ee1490f87c4dd06282df95603af250813b
+  known_differences:
+    - "Socle pedagogique commun : theoreme d'impossibilite d'Arrow (1951) — formalisation d'un profil de preferences social, les 3 axiomes (Unanimite/Pareto, Independence of Irrelevant Alternatives/IIA, Non-dictature), et demonstration qu'aucune agregation ne peut satisfaire les 3 simultanement. Les deux twins couvrent les axiomes + une approche de refutation (encodage SAT / enumeration force-brute montrant la contradiction)."
+    - "Idiomes framework : Python = demonstrations riches (41 cellules, preuve formelle en 4 etapes d'apres Geanakoplos 2005, visualisation de la synthese des resultats). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 4 using, 30 cellules (regles de vote from-scratch + structure de la preuve + refutation par enumeration complete force-brute)."
+    - "Asymetrie pedagogique : Python developpe la preuve formelle structuree (Geanakoplos 2005) + visualisation ; le C# demontre la non-satisfaisabilite par enumeration exhaustive en BCL pure sans dependance externe. Meme socle theorique (Arrow 1951, theoreme d'impossibilite), leviers de demonstration differents."
