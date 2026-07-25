@@ -1237,3 +1237,21 @@
     - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
     - "po-2025 a enrichi firsthand (c.678, PR #8173) le cote Python (instance discriminante m_deliver_direct vs m_deliver_via_intermediate)."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8173 (enrichissement method-selection demonstration (backtracking) cote Python) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+
+# === Tranche 6 GameTheory/.NET-Parity completeness (c.734, po-2026) — famille supplementaire #8057 ===
+
+- name: "GameTheory-10 ForwardInduction-SPE"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 4e6012c9ddacf33ff951f6068155bf38fa5a4ff6
+    csharp_sha: 76c53cf7c98bf8e089035bf7304e8e45b5e6488d
+  known_differences:
+    - "Socle pedagogique commun : raffinements d'equilibre sur formes extensives — Sous-jeux et SPE (backward induction), menaces/promesses credibles, induction avant (Forward Induction), perfection en mains tremblantes (trembling-hand perfection), application Burn Money, comparaison des raffinements. 8 sections en miroir, exercices alignes (Ex 4 jeu d'entree avec signal de prix, Ex 5 identification des SPE communs)."
+    - "Algorithmes partages : les deux twins implementent backward induction (SPE), trembling-hand perfection (perturbation epsilon) et l'analyse Burn Money — parite au niveau algorithmique, pas seulement narratif."
+    - "Idiomes framework : Python = numpy + matplotlib (viz : Ellipse pour les nœuds d'arbre de jeu, 9 appels plt, courbes de comparaison des raffinements) + dataclasses + typing. C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet tiers, presentation tabulaire/asci sans viz graphique."
+    - "Asymetrie pedagogique : Python exploite matplotlib pour la visualisation des arbres extensifs et des frontieres de raffinements ; le C# travaille en BCL pure sans viz (tableaux + asci). Meme socle theorique (Selten SPE/trembling-hand + Kohlberg-Mertens forward induction + Burn Money), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."
