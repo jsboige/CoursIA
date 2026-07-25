@@ -186,6 +186,22 @@
     - "Cas etudies : job-shop scheduling (3 machines x 3 jobs, makespan minimal), equipement maintenance planning."
     - "Note infrastructure : ce notebook (.NET) est explicite sur la pre-configuration IKVM (AppContext['IKVM.Home'] + tzdb OK) - voir cellule d'initialisation 'IKVM 8.15.0 pret (home=ikvm-home-8.15.0-win-x64, tzdb=True) - Choco-solver charge'."
 
+- name: "CSP-6 Hybridization"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 756bd37298dc5456c4bf0ef14d133ca55dfd6d1b
+    csharp_sha: 41227c7457f831f81e09a6cd0da594743faba025
+  known_differences:
+    - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
+    - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."
+    - "Cote Python : ortools.sat.python.cp_model + matplotlib + numpy (17 cellules code, predicteur lineaire from-scratch avec descente de gradient). Cote C# : Google.OrTools.Sat natif (NuGet Google.OrTools, 0 bridge IKVM, design option b #4956 ; 15 cellules code, predicteur ponderation manuelle + gradient simplifie)."
+    - "Note API : l'API C# de Google.OrTools 9.15 expose solver.WallTime() mais PAS solver.NumBranches() / NumConflicts() (contrairement a l'API Python). Le cote C# reporte donc le wall-time la ou le cote Python reporte branches/conflits -- difference d'idiome API, pas de defaut de parite (les deux mesurent le cout de resolution, chacun via les compteurs disponibles dans son langage)."
+
 - name: "Search-1 StateSpace"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
@@ -404,10 +420,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
+    date: '2026-07-25'
+    by: po-2024
     python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
-    csharp_sha: 620b7fd3b52de649ffb063e27b568cd7520bd6fa
+    csharp_sha: f5158092a1488ec4a9a397bffe0f1ae02835f7c0
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -984,7 +1000,7 @@
   last_audit:
     date: "2026-07-25"
     by: po-2024
-    python_sha: 241861d0ed68d31c6000a79ac7985b4e04972d7e
+    python_sha: 7131d0cdb8d17a1e10d1419682e0de2230bf4959
     csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
@@ -1341,6 +1357,21 @@
     - "Idiomes framework : Python = stdlib + numpy/matplotlib (viz des paysages de fitness, courbes de convergence par temperature, 11 imports, 62 cellules avec demos riches N-Reines). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 2 using, 28 cellules (implementation minimale from-scratch, presentation tabulaire)."
     - "Asymetrie pedagogique : Python exploite matplotlib pour la visualisation des paysages de fitness et courbes de refroidissement + section comparative N-Reines approfondie ; le C# travaille en BCL pure sans viz (tableaux + asci), implementation plus compacte. Meme socle theorique (3 metaheuristiques classiques + citations), leviers de demonstration differents."
 
+- name: "Search-5 GeneticAlgorithms"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 8b6074cc1daf3b00c21f2456b489215b4129a254
+    csharp_sha: 7084e6b3164abadce004bd0937451a134a7b9294
+  known_differences:
+    - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."
+    - "Idiomes framework : Python = demos riches multi-frameworks (76 cellules) : AG from-scratch (OneMax) + framework **DEAP** + framework **PyGAD** (optimisation continue) + concepts avances + comparaison quantitative GA-vs-solveurs-exacts. C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 25 cellules (AG from-scratch compact, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python couvre 3 frameworks (from-scratch + DEAP + PyGAD) + comparaison vs solveurs exacts (large spectre d'outils) ; le C# demontre le cycle AG canonique en BCL pure sans dependance externe. Meme socle theorique (algorithmes evolutionnaires, Holland 1975 / Goldberg 1989), leviers de demonstration differents."
+
 - name: "GameTheory-13 ImperfectInfo-CFR"
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
@@ -1436,6 +1467,22 @@
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
 
+# === Tranche 8 GameTheory/SocialChoice completeness (c.736, po-2026) — famille supplementaire #8057 ===
+
+- name: "SocialChoice-3 Voting-Methods"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: eff4f8e91fa3d4fe07e7fa7eabf712e3109b2651
+    csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+  known_differences:
+    - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
+    - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."
 - name: "App-2 GraphColoring"
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring.ipynb
@@ -1451,5 +1498,3 @@
     - "Divergence sur la methode EXACTE (chi) : Python utilise OR-Tools CP-SAT (ortools.sat.python.cp_model.CpModel + solver, solveur industriel SAT-based, SOTA) pour le chi optimal ; le C# implemente un backtracking from-scratch (CanColor / k-coloriable, 0 dependance externe, 0 NuGet). Meme resultat (chi exact), deux paradigmes : solveur SOTA cote Python vs implementation pedagogique a la main cote C#."
     - "Asymetrie pedagogique : le C# ajoute une section dediee au paradoxe de Mycielski (graphes triangle-free mais chromatiquement grands, construction de M_k depuis K_2) que Python ne couvre pas ; Python ajoute 4 cellules de visualisation matplotlib (graphe des departements francais, coloration greedy/DSATUR, benchmark G(n,p), carte finale) absentes cote C# (sortie texte / table markdown). Meme socle theorique, angles de demonstration differents."
     - "Idiomes framework : Python = ortools.sat.python.cp_model + numpy + matplotlib + networkx, 56 cellules (26 code ; formulation CSP, 3 heuristiques + CP-SAT exact, enumeration solutions, benchmark G(n,p) ; 3 exemples guides + 3 exercices). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 26 cellules (12 code ; Greedy/DSATUR/Welsh-Powell + backtracking exact + Mycielski + benchmark Erdos-Renyi ; 3 exercices)."
-
-

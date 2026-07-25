@@ -15,7 +15,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
@@ -231,6 +231,27 @@ verifie que les cellules de titre "Exercice" portent un stub
 solution complete. Complementaire a
 [.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md) :
 labeling PAR CONTENU, pas par titre.
+
+### `detect_cjk_residue.py` (#8428)
+
+Regression-guard du defect fleet-wide **#8428** : residus de glyphes CJK
+(mots chinois inseres mid-prose FR/EN pendant la generation/enrichissement LLM —
+`风险管理`, `胜利=1`, `分布式约束优化`, `dataset支撑`). Apres le sweep manuel
+(8 PRs 2026-07-25), ce detecteur veille a ce que le reservoir ne se re-remplisse
+pas silencieusement. Scanne markdown ET code, allowlist documentee pour le CJK
+legitime (demo TTS japonaise multilingue) + le residu gated connu
+(QC-Py-Cloud-03, fix = re-exec QC-Cloud). Conservative : signale tout glyphe CJK
+non explicitement allowliste.
+
+```bash
+python scripts/notebook_tools/detect_cjk_residue.py                    # toute la flotte
+python scripts/notebook_tools/detect_cjk_residue.py NB.ipynb --check   # exit 1 si residu (CI-ready)
+python scripts/notebook_tools/detect_cjk_residue.py --family Probas    # une famille
+```
+
+Baseline c.884 : 937 notebooks, **0 residu inattendu**, 2 allowed (fleet clean
+post-sweep). Le guard n'empeche que la recidive ; la correction d'un nouveau
+residu reste byte-surgical par notebook (cf #8428 fix pattern).
 
 ---
 
