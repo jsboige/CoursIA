@@ -404,10 +404,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
+    date: '2026-07-25'
+    by: po-2024
     python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
-    csharp_sha: 620b7fd3b52de649ffb063e27b568cd7520bd6fa
+    csharp_sha: f5158092a1488ec4a9a397bffe0f1ae02835f7c0
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
