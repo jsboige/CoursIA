@@ -757,6 +757,20 @@
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
     - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."
+- name: "GameTheory-7 ExtensiveForm"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: da5dc9d2c05d6688d03a1097215d4cb7b69228a6
+    csharp_sha: 818b2295149aad115c286816c9ad242f964b400c
+  known_differences:
+    - "Socle pedagogique commun : jeux sous forme extensive (arbre de jeu sequentiel avec noeuds de decision/terminal/chance + infosets), backward induction (induction en arriere) pour calculer les SPE (Subgame Perfect Equilibria), exemple canonique du jeu d'entree sur le marche (entrant vs incumbente)."
+    - "Idiomes framework : Python = `@dataclass` + `networkx` (graphe arborescent + rendu matplotlib des arbres de jeu) + implementation manuelle de `backward_induction` + `ConvertToNormal` (reduction extensive-vers-normal). C# = **BCL .NET pur 0 NuGet** (modele `GameNode` decision/terminal/chance + `ExtensiveFormGame` from-scratch) + **rendu ASCII de l'arbre** (pas de viz graphique, fidele a la contrainte 0-NuGet de la serie)."
+    - "Asymetrie de couverture pedagogique : le Python detaille 35 cellules (15 code + 20 markdown, 9 sections + 3 exercices sur l'entree multi-joueurs, Chain-Store paradox, SPE verification, conversion extensive-vers-normale, integration Lean). Le C# couvre 24 cellules (10 code + 14 markdown, 5 couches : modele, exemple entree, SPE par backward induction, Card Game to normal form, exercices) -- coverage plus compacte, fidele au format twin de la serie. Meme theorie (Kuhn 1953, Selten 1965 SPE), leviers pedagogiques differents."
 
 # === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
 
@@ -1144,13 +1158,14 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
+    date: "2026-07-25"
     by: po-2023
     python_sha: 8d03359d12709b134f644e187d04249b6e1fcadf
-    csharp_sha: 435f49ca3c491cf320ddd9b9471fecc94f759f41
+    csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
-    - "Python : unified-planning engines. C# : from-scratch BFS/DFS/A* BCL .NET (meme algorithme, implementation idiomatic)."
+    - "Python : BFS/DFS/Greedy/A* via networkx + matplotlib heatmap terrain. C# : from-scratch BFS/DFS/Greedy/A* BCL .NET 9 + PriorityQueue (meme algorithme, implementation idiomatic)."
+    - "Prong-B terrain pondere (#3801) : parite stricte apres c.908 (BFS cout 55, A* cout 16 = Python twin). L'off-by-one CoutChemin(path.Sum) -> path.Skip(1).Sum a ete corrige en c.908 (avant : BFS=56, A*=17 = +1 par chemin, causait la fausse note 'parite semantique intacte' de #8436 qui alignait le twin C# sur l'erreur au lieu du ground truth)."
 - name: "Planners-4 Fast-Downward"
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
@@ -1237,6 +1252,25 @@
     - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
     - "po-2025 a enrichi firsthand (c.678, PR #8173) le cote Python (instance discriminante m_deliver_direct vs m_deliver_via_intermediate)."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8173 (enrichissement method-selection demonstration (backtracking) cote Python) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+
+# === Tranche 7 Search/Part1-Foundations completeness (c.735, po-2026) — famille supplementaire #8057 ===
+
+- name: "Search-4 LocalSearch"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 46c0f7def3b5d5a0590fc4be85cb0a889fa9c125
+    csharp_sha: 55536c0fbc1e28b660208f9d7e21c40d6fd563fe
+  known_differences:
+    - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."
+    - "Citations canoniques presentes des deux cotes (audit #8081 po-2023 c.909) : Kirkpatrick/Gelatt/Vecchi 1983 (Simulated Annealing, Science), Glover 1986/1989 (Tabu Search), Russell & Norvig AIMA (cadre local search)."
+    - "Idiomes framework : Python = stdlib + numpy/matplotlib (viz des paysages de fitness, courbes de convergence par temperature, 11 imports, 62 cellules avec demos riches N-Reines). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 2 using, 28 cellules (implementation minimale from-scratch, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python exploite matplotlib pour la visualisation des paysages de fitness et courbes de refroidissement + section comparative N-Reines approfondie ; le C# travaille en BCL pure sans viz (tableaux + asci), implementation plus compacte. Meme socle theorique (3 metaheuristiques classiques + citations), leviers de demonstration differents."
+
 - name: "GameTheory-13 ImperfectInfo-CFR"
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
