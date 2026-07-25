@@ -242,9 +242,12 @@ def run_lake(
         except FileNotFoundError:
             return -2, "", f"lake executable not found: {lake}"
     else:
+        # set -o pipefail: propage l'exit code de `lake` (premier segment) au lieu
+        # de l'exit code de `tail -N` (toujours 0). Sinon result.returncode ne
+        # reflete PAS l'echec reel du build. Cf audit cross-source c.8106/c.8107.
         cmd = (
             f"source ~/.elan/env 2>/dev/null; "
-            f"cd {project_path} && lake {args} 2>&1 | tail -{tail}"
+            f"set -o pipefail; cd {project_path} && lake {args} 2>&1 | tail -{tail}"
         )
         try:
             return _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], timeout)
