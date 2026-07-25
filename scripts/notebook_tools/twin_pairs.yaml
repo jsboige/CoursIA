@@ -468,11 +468,12 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
+    date: '2026-07-25'
+    by: po-2024
     python_sha: 243abda6c6d8da742e47ae61a60d780b770e77ad
-    csharp_sha: 4ee17fda8afb065f28f37dde6fe1b96104257495
+    csharp_sha: 7723219b3c6654629210ed5f0757d04dc3bd6e54
   known_differences:
+  - '2026-07-25 (po-2024) #8530 : csharp_sha rebaseline suite a enrichissement du twin C# Infer-7 -- ajout attribution source MBML Ch.2 (Junker-Sijtsma, modele DINA) sur le twin C# uniquement (distillation-source attribution #8081). python twin (PyMC-7) inchange. Procedural : la PR introduisait DRIFT au gate #8057 car le blob C# avait evolue sans refresh du SHA registre.'
   - 'Socle pedagogique commun : Item Response Theory (modeles de competences / IRT) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
