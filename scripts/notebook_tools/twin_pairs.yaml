@@ -1476,10 +1476,11 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-25"
-    by: po-2026
-    python_sha: eff4f8e91fa3d4fe07e7fa7eabf712e3109b2651
+    by: po-2024
+    python_sha: 60761b6615f1b766abc6d30055f7acc5afa9021d
     csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
   known_differences:
+    - "2026-07-25 (po-2024) #8559 : determinism rebaseline -- plurality/borda/copeland tie-break etait `sorted(set(...), key=lambda x:-score)` (stable-sort + hash-dependent set iteration = PYTHONHASHSEED non-determinisme, 4 outcome buckets sur 41 seeds). Fix : tuple tiebreak `key=lambda x:(-score, x)` (lexicographique). Outputs regeneres (cell#12 rules -> A>B>C deterministe ; cell#23 Arrow MC -> 12/3/0 deterministe). markdown cell#13/#14/#16 aligne a la nouvelle verite (symmetric profile donne meme classement A>B>C ; departage alphabétique). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
     - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
     - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
     - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."
