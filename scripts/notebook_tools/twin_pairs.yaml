@@ -1341,6 +1341,21 @@
     - "Idiomes framework : Python = stdlib + numpy/matplotlib (viz des paysages de fitness, courbes de convergence par temperature, 11 imports, 62 cellules avec demos riches N-Reines). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 2 using, 28 cellules (implementation minimale from-scratch, presentation tabulaire)."
     - "Asymetrie pedagogique : Python exploite matplotlib pour la visualisation des paysages de fitness et courbes de refroidissement + section comparative N-Reines approfondie ; le C# travaille en BCL pure sans viz (tableaux + asci), implementation plus compacte. Meme socle theorique (3 metaheuristiques classiques + citations), leviers de demonstration differents."
 
+- name: "Search-5 GeneticAlgorithms"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 8b6074cc1daf3b00c21f2456b489215b4129a254
+    csharp_sha: 7084e6b3164abadce004bd0937451a134a7b9294
+  known_differences:
+    - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."
+    - "Idiomes framework : Python = demos riches multi-frameworks (76 cellules) : AG from-scratch (OneMax) + framework **DEAP** + framework **PyGAD** (optimisation continue) + concepts avances + comparaison quantitative GA-vs-solveurs-exacts. C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 25 cellules (AG from-scratch compact, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python couvre 3 frameworks (from-scratch + DEAP + PyGAD) + comparaison vs solveurs exacts (large spectre d'outils) ; le C# demontre le cycle AG canonique en BCL pure sans dependance externe. Meme socle theorique (algorithmes evolutionnaires, Holland 1975 / Goldberg 1989), leviers de demonstration differents."
+
 - name: "GameTheory-13 ImperfectInfo-CFR"
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
