@@ -29,7 +29,10 @@ Pour chaque paire du registre, on :
   5. **OK** sinon (les deux cotes sont au SHA audite, parite tenue).
 
 Le bouclage d'audit : apres avoir re-audite une paire firsthand, on rebaseline
-avec `--update` qui reecrit les SHAs courants comme nouvelle reference.
+avec `--update` qui reecrit les SHAs courants comme nouvelle reference. Le
+rebaseline est **selectif** (une paire ou une famille) ou **explicitement
+global** (--yes-all-pairs) ; bare `--update` est refuse pour eviter la
+corruption silencieuse du signal de drift (cf #8508, L963/L974).
 
 Cet outil lit seulement par defaut (git ls-tree). Le mode `--update` ecrit le
 registre (curated YAML, pas un notebook -> pas de souci de re-exec C.2).
@@ -42,8 +45,12 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
-    # rebaseline apres audit firsthand (ecrit les SHAs courants)
-    python check_twin_parity.py --update
+    # rebaseline UNE paire nommee apres audit firsthand (preferé)
+    python check_twin_parity.py --update --pair "Z3-Python-01 Introduction"
+    # rebaseline une famille entiere apres audit firsthand
+    python check_twin_parity.py --update --family SMT/Z3-API
+    # rebaseline TOUT le registre (opt-in explicite, a eviter sauf intention)
+    python check_twin_parity.py --update --yes-all-pairs
     # sortie machine
     python check_twin_parity.py --json
     # mode per-pair : ne FAIL que sur le drift INTRODUIT par la PR en cours
@@ -249,7 +256,17 @@ def main(argv=None) -> int:
                    help="Exit 1 si DRIFT/MISSING detecte (CI-ready)")
     p.add_argument("--update", action="store_true",
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
-                        "(a lancer APRES une audit firsthand d'une paire)")
+                        "(a lancer APRES une audit firsthand d'une paire). "
+                        "REQUIRES un selecteur (--family <famille> ou --pair <nom>) ; "
+                        "bare --update est REFUSE pour eviter la corruption silencieuse "
+                        "du signal de drift (L963/L974, cf #8508). Pour rebaseliner "
+                        "TOUT le registre intentionnellement : --yes-all-pairs.")
+    p.add_argument("--pair", default=None,
+                   help="Restreindre --update a UNE paire nommee (ex. "
+                        "'Z3-Python-01 Introduction'). Doit matcher le champ 'name'.")
+    p.add_argument("--yes-all-pairs", action="store_true",
+                   help="Opt-in explicite : autorise --update a rebaseliner TOUTES les "
+                        "paires du registre (sinon refuse sans --family/--pair, cf #8508).")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     p.add_argument("--per-pair", action="store_true",
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
@@ -265,6 +282,10 @@ def main(argv=None) -> int:
         p.error("--base necessite --per-pair")
     if args.update and (args.per_pair or args.base):
         p.error("--update est incompatible avec --per-pair/--base")
+    if args.pair and not args.update:
+        p.error("--pair n'a de sens qu'avec --update (rebaseline selectif d'une paire)")
+    if args.yes_all_pairs and not args.update:
+        p.error("--yes-all-pairs n'a de sens qu'avec --update")
 
     repo_root = _repo_root()
     reg_path = Path(args.registry)
@@ -379,16 +400,34 @@ def main(argv=None) -> int:
 
     if args.update:
         # IMPORTANT : --update DOIT TOUJOURS reecrire TOUTES les paires du
-        # registre (meme avec --family), sinon on DETRUIT les paires des
-        # autres familles en re-ecrivant le YAML filtre. On ne met a jour
-        # que les paires qui matchent le filtre (ou toutes si pas de filtre).
+        # registre (meme avec --family/--pair), sinon on DETRUIT les paires
+        # des autres familles en re-ecrivant le YAML filtre. On ne met a jour
+        # que les paires qui matchent le selecteur.
+        #
+        # Garde-fou #8508 (L963/L974) : rebaseliner TOUT le registre par
+        # accident corrompt silencieusement le signal de drift que le registre
+        # existe precisement pour porter. Bare --update est REFUSE ; le
+        # rebaseline est volontaire (--family / --pair) ou explicitement
+        # global (--yes-all-pairs).
+        if not args.family and not args.pair and not args.yes_all_pairs:
+            p.error(
+                "--update rebaseline le registre ; fournir --family <famille>, "
+                "--pair <nom>, ou --yes-all-pairs pour rebaseliner TOUTES les "
+                "paires. Bare --update est refuse (anti-silent-corruption, "
+                "cf #8508, L963/L974)."
+            )
         all_pairs = load_registry(reg_path)
-        target = (
-            [pp for pp in all_pairs if pp.get("family") == args.family]
-            if args.family else all_pairs
-        )
-        if args.family and not target:
-            print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+        if args.pair:
+            target = [pp for pp in all_pairs if pp.get("name") == args.pair]
+            if not target:
+                p.error(f"Aucune paire nommee '{args.pair}' dans le registre.")
+        elif args.family:
+            target = [pp for pp in all_pairs if pp.get("family") == args.family]
+            if not target:
+                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+        else:
+            # only reachable via --yes-all-pairs (guarded above)
+            target = all_pairs
         updated = 0
         for pp in target:
             audit, cur_py = update_pair(repo_root, pp)

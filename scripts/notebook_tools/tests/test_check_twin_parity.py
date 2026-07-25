@@ -87,5 +87,87 @@ def test_pre_existing_drift_does_not_fail_gate():
     assert _classify_per_pair("DRIFT", "DRIFT") == "DRIFT_PRE_EXISTING"
 
 
+# --- --update guard + --pair selector (#8508) ---------------------------------
+# Bare --update rebaselines the WHOLE registry (silent drift-signal corruption,
+# L963/L974). The fix refuses it unless --family / --pair / --yes-all-pairs is
+# given. These tests pin the guard + the selective rebaseline behaviour.
+
+
+def _tmp_registry(tmp_path, names):
+    """Build a throwaway registry whose pair paths point at stable tracked files
+    (the blob-SHA logic is path-agnostic; we only test the selector/guard here)."""
+    import yaml
+    # two stable tracked files in the repo (exist in git -> _git_blob_sha works)
+    stable_a = "scripts/notebook_tools/check_twin_parity.py"
+    stable_b = "scripts/notebook_tools/validate_pr_notebooks.py"
+    paths = [stable_a, stable_b]
+    pairs = []
+    for i, name in enumerate(names):
+        pairs.append({
+            "name": name,
+            "family": f"FAM{i}",
+            "python": paths[i % len(paths)],
+            "csharp": paths[(i + 1) % len(paths)],
+            "parity_level": "semantic",
+            "last_audit": {"date": "2020-01-01", "by": "test", "python_sha": "old", "csharp_sha": "old"},
+        })
+    reg = tmp_path / "twin_pairs.yaml"
+    reg.write_text(yaml.safe_dump(pairs, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return reg
+
+
+def test_bare_update_is_refused(tmp_path):
+    """#8508: bare `--update` must refuse (would rebaseline ALL pairs silently)."""
+    from check_twin_parity import main
+    reg = _tmp_registry(tmp_path, ["A", "B"])
+    with pytest.raises(SystemExit):
+        main(["--registry", str(reg), "--update"])
+
+
+def test_update_pair_selects_one_pair_only(tmp_path):
+    """`--update --pair <name>` rebaselines ONLY the named pair; the other's
+    last_audit is unchanged."""
+    import yaml
+    from check_twin_parity import main
+    reg = _tmp_registry(tmp_path, ["AAA", "BBB"])
+    rc = main(["--registry", str(reg), "--update", "--pair", "AAA"])
+    assert rc == 0
+    pairs = yaml.safe_load(reg.read_text(encoding="utf-8"))
+    by_name = {p["name"]: p for p in pairs}
+    # AAA rebaselined (SHA no longer the 'old' sentinel)
+    assert by_name["AAA"]["last_audit"]["python_sha"] != "old"
+    # BBB untouched (its sentinel 'old' SHA preserved)
+    assert by_name["BBB"]["last_audit"]["python_sha"] == "old"
+
+
+def test_update_unknown_pair_errors(tmp_path):
+    """`--update --pair <nonexistent>` must error (no silent no-op)."""
+    from check_twin_parity import main
+    reg = _tmp_registry(tmp_path, ["AAA", "BBB"])
+    with pytest.raises(SystemExit):
+        main(["--registry", str(reg), "--update", "--pair", "ZZZ"])
+
+
+def test_update_yes_all_pairs_rebaselines_everything(tmp_path):
+    """`--update --yes-all-pairs` is the explicit opt-in that rebaselines ALL
+    pairs (backward-compat for intentional full rebaseline)."""
+    import yaml
+    from check_twin_parity import main
+    reg = _tmp_registry(tmp_path, ["AAA", "BBB"])
+    rc = main(["--registry", str(reg), "--update", "--yes-all-pairs"])
+    assert rc == 0
+    pairs = yaml.safe_load(reg.read_text(encoding="utf-8"))
+    # BOTH pairs rebaselined (no 'old' sentinel remains)
+    assert all(p["last_audit"]["python_sha"] != "old" for p in pairs)
+
+
+def test_pair_without_update_errors(tmp_path):
+    """`--pair` without `--update` makes no sense -> argparse error."""
+    from check_twin_parity import main
+    reg = _tmp_registry(tmp_path, ["AAA", "BBB"])
+    with pytest.raises(SystemExit):
+        main(["--registry", str(reg), "--pair", "AAA"])
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
