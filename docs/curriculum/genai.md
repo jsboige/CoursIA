@@ -172,8 +172,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | 10. Hébergement Local de Modèles Génératifs | BETA | Non |
-| 2 | 11. Quantization des LLMs | BETA | Non |
-| 3 | 12 - Test-Time Scaling : le second axe de mise a l'eche | BETA | Non |
+| 2 | 11. Quantization | BETA | Non |
+| 3 | 12. Test Time Scaling | BETA | Non |
 | 4 | 13. Orchestration agentique du test-time scaling | BETA | Non |
 | 5 | 14. Memoire persistante pour le test-time scaling | BETA | Non |
 | 6 | 15. Tree-of-Thoughts sur de vrais problemes de recherch | BETA | Non |
@@ -189,8 +189,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 5. RAG Modern - Retrieval Augmented Generation | BETA | Non |
 | 17 | PDF et Web Search : Sources Documentaires avec OpenAI | BETA | Non |
 | 18 | Code Interpreter : Exécution de Code avec OpenAI | BETA | Non |
-| 19 | Modèles de Raisonnement : gpt-5-mini | BETA | Non |
-| 20 | Patterns de Production : APIs Avancées OpenAI | BETA | Non |
+| 19 | 8. Reasoning Models | BETA | Non |
+| 20 | 9. Production Patterns | BETA | Non |
 
 ## GenAI/Vibe-Coding (6 notebooks)
 

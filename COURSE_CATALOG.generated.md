@@ -1,22 +1,22 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-24 06:11
+Generated: 2026-07-25 06:03
 Total notebooks: 836
 
 ## Status Summary
 
-- **READY**: 670
-- **DEMO**: 164
+- **READY**: 671
+- **DEMO**: 163
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 745
+- **BETA**: 746
 - **TEMPLATE**: 4
 - **ALPHA**: 62
-- **DRAFT**: 25
+- **DRAFT**: 24
 
 ## By Series
 
@@ -122,8 +122,8 @@ Total notebooks: 836
 | 96 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | ALPHA | 30min | po-2025 |
 | 97 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 98 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | BETA | 45min | po-2025 |
-| 99 | 11. Quantization des LLMs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 100 | 12 - Test-Time Scaling : le second axe de mise a l | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 99 | 11. Quantization | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 100 | 12. Test Time Scaling | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 101 | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
 | 102 | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
 | 103 | 15. Tree-of-Thoughts sur de vrais problemes de rec | Python 3 | READY | BETA | 30min | po-2025 |
@@ -139,8 +139,8 @@ Total notebooks: 836
 | 113 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
 | 114 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | BETA | 30min | po-2025 |
 | 115 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | BETA | 30min | po-2025 |
-| 116 | Modèles de Raisonnement : gpt-5-mini | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 117 | Patterns de Production : APIs Avancées OpenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 116 | 8. Reasoning Models | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 117 | 9. Production Patterns | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 118 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
 | 119 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 45min | po-2025 |
 | 120 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 45min | po-2025 |
@@ -232,7 +232,7 @@ Total notebooks: 836
 | 60 | Search-5-GeneticAlgorithms-Csharp : Algorithmes Gé | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 61 | Search-5 : Algorithmes génétiques | Python 3 | READY | BETA | 1h | po-2025 |
 | 62 | Search-6 — Recherche adversariale (jeux à somme nu | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 63 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | BETA | 30min | po-2025 |
+| 63 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | BETA | 45min | po-2025 |
 | 64 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree S | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 65 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | BETA | 45min | po-2025 |
 | 66 | Search-8-DancingLinks-Csharp : L'algorithme X et D | .NET (C#) | READY | BETA | 45min | po-2025 |
@@ -275,7 +275,7 @@ Total notebooks: 836
 | 103 | MGS-18 — Banc CEC consolide : la combinaison des d | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 104 | MGS-19 — Recuit simulé décomposé : l'opérateur de  | .NET (C#) | READY | BETA | 30min | po-2025 |
 | 105 | MGS-2 : Composition de métaheuristiques -- Match e | .NET (C#) | READY | ALPHA | 45min | po-2025 |
-| 106 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 106 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 107 | MGS-4 : Le Modèle Insulaire -- populations structu | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 108 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | DRAFT | 45min | po-2025 |
 | 109 | MGS-6 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | ALPHA | 30min | po-2025 |
@@ -286,7 +286,7 @@ Total notebooks: 836
 | 114 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 115 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | BETA | 45min | po-2025 |
 
-### ML (47 notebooks) — DEMO:3, READY:44 | ALPHA:4, BETA:42, DRAFT:1
+### ML (47 notebooks) — DEMO:3, READY:44 | ALPHA:5, BETA:42
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -306,7 +306,7 @@ Total notebooks: 836
 | 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | BETA | 15min | po-2023 |
 | 15 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | BETA | 30min | po-2023 |
 | 16 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
-| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | DRAFT | 30min | po-2023 |
+| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | ALPHA | 30min | po-2023 |
 | 18 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | BETA | 30min | po-2023 |
 | 19 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | BETA | 30min | po-2023 |
 | 20 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | BETA | 30min | po-2023 |
@@ -563,7 +563,7 @@ Total notebooks: 836
 | 219 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 220 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (105 notebooks) — DEMO:67, READY:38 | ALPHA:33, BETA:60, DRAFT:11, TEMPLATE:1
+### QuantConnect (105 notebooks) — DEMO:66, READY:39 | ALPHA:32, BETA:61, DRAFT:11, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -572,30 +572,30 @@ Total notebooks: 836
 | 3 | QC-Py-01 : Configuration et Premier Backtest Quant | Python 3 | DEMO | BETA | 30min | po-2026 |
 | 4 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 | DEMO | BETA | 30min | po-2026 |
 | 5 | QC-Py-03 - Data Management in QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 6 | QC-Py-04 - Research Workflow with QuantBook | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 7 | QC-Py-05 - Universe Sélection dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 6 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 7 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 8 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 9 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 10 | QC-Py-08 - Multi-Asset Portfolio Stratégies | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 11 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 12 | QC-Py-10 - Risk Management et Portfolio Management | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 12 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 13 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 14 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | BETA | 1h30 | po-2026 |
 | 15 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 16 | QC-Py-14 - Portfolio Construction et Exécution Mod | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 17 | QC-Py-15 - Parameter Optimization et Walk-Forward  | Python 3 | DEMO | BETA | 1h30 | po-2026 |
+| 17 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h30 | po-2026 |
 | 18 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 19 | QC-Py-17 - Sentiment Analysis pour le Trading | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 19 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 20 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 21 | QC-Py-19 - Machine Learning Classification pour Di | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 22 | QC-Py-20 - Machine Learning Regression pour Price  | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 21 | Objectifs d'Apprentissage | Python 3 | DEMO | ALPHA | 1h | po-2026 |
+| 22 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 23 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 24 | QC-Py-22 - Modern Time Series Deep Learning (SOTA  | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 25 | QC-Py-23 - State Space Models (Mamba) pour Trading | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 24 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 25 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 26 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | DRAFT | 45min | po-2026 |
 | 27 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 28 | QC-Py-25 - Reinforcement Learning pour le Trading | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 29 | QC-Py-26 - LLM Trading Signals | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 28 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 29 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 30 | QC-Py-27 - Production Deployment | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 31 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 32 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | ALPHA | 45min | po-2026 |
@@ -630,7 +630,7 @@ Total notebooks: 836
 | 61 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
 | 62 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 63 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 64 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 64 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | BETA | 30min | po-2026 |
 | 65 | Research QuantBook: Dual Momentum No TLT | Python 3 | READY | BETA | 45min | po-2026 |
 | 66 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 67 | Research QuantBook: EMA Cross Equity | Python 3 | READY | BETA | 45min | po-2026 |
@@ -717,7 +717,7 @@ Total notebooks: 836
 | 38 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 39 | GameTheory-6c : Jeux Répétés et Théorème Folk (Fol | Python 3 | READY | BETA | 30min | po-2024 |
 | 40 | GameTheory-7-ExtensiveForm (Twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 41 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 30min | po-2024 |
+| 41 | GameTheory-7-ExtensiveForm | Python 3 | READY | BETA | 45min | po-2024 |
 | 42 | GameTheory-8-CombinatorialGames (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 43 | GameTheory 8 - Jeux Combinatoires | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
 | 44 | GameTheory 8b - Jeux Combinatoires en Lean | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
@@ -814,7 +814,7 @@ Total notebooks: 836
 | 34 | Infer-5-Causal-Inference : Inférence Causale et do | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 35 | Infer-6-Debugging : Troubleshooting et Bonnes Prat | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 36 | Infer-7-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | BETA | 1h | po-2023 |
-| 37 | Infer-8-TrueSkill : Système de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 37 | Infer-8-TrueSkill : Système de Classement et Appre | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 38 | Infer-9-Classification : Classification Bayesienne | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 39 | PyMC-1 : Configuration et Premier Modèle | Python 3 | READY | BETA | 30min | po-2023 |
 | 40 | PyMC-10 : Sélection de Modèles et Comparaison Baye | Python 3 | READY | BETA | 45min | po-2023 |
@@ -833,7 +833,7 @@ Total notebooks: 836
 | 53 | PyMC-5-Causal-Inference : Inference Causale et do- | Python 3 | READY | BETA | 30min | po-2023 |
 | 54 | PyMC-6-Debugging : Troubleshooting et Bonnes Prati | Python 3 | READY | BETA | 30min | po-2023 |
 | 55 | PyMC-7 : Modèles de Competences (IRT et DINA) | Python 3 | READY | BETA | 30min | po-2023 |
-| 56 | PyMC-8 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | BETA | 30min | po-2023 |
+| 56 | PyMC-8 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | BETA | 45min | po-2023 |
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
 

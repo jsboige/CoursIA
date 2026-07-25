@@ -1,6 +1,6 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-24**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-25**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
@@ -10,8 +10,8 @@
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 670 | 80.1% |
-| DEMO | 164 | 19.6% |
+| READY | 671 | 80.3% |
+| DEMO | 163 | 19.5% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
@@ -34,7 +34,7 @@
 | IIT | 36 | 0 | 0 | 36 | 100% |
 | ML | 44 | 3 | 0 | 47 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
-| QuantConnect | 38 | 67 | 0 | 105 | 36% |
+| QuantConnect | 39 | 66 | 0 | 105 | 37% |
 | RL | 16 | 1 | 0 | 17 | 94% |
 | Search | 115 | 0 | 0 | 115 | 100% |
 | Sudoku | 34 | 2 | 0 | 36 | 94% |

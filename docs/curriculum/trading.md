@@ -20,12 +20,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 197 |
+| Notebooks | 198 |
 | PRODUCTION | 0 |
-| BETA | 160 |
+| BETA | 161 |
 | ALPHA | 37 |
 
-## ML/DataScienceWithAgents (27 notebooks)
+## ML/DataScienceWithAgents (28 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -45,17 +45,18 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 14 | Lab 3 - Pré-qualifier des Candidats avec l'IA | BETA | Non |
 | 15 | Lab 4 - Le Nettoyage de Données avec Pandas | BETA | Oui |
 | 16 | Lab 5 - De la Visualisation au Machine Learning | BETA | Oui |
-| 17 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
-| 18 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
-| 19 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
-| 20 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
-| 21 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
-| 22 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
-| 23 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | BETA | Oui |
-| 24 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | ALPHA | Oui |
-| 25 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
-| 26 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
-| 27 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
+| 17 | Lab 6 - Anatomie de votre premier Agent d'IA | ALPHA | Non |
+| 18 | Lab 7 - Votre premier Agent Analyste de Données | BETA | Non |
+| 19 | Lab 8: Introduction au Framework ADK et Multi-Provider | BETA | Non |
+| 20 | Lab 9: Premier Agent ADK pour Data Science | BETA | Oui |
+| 21 | Lab 10: Data File Analyzer (DS-STAR Component) | BETA | Oui |
+| 22 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | ALPHA | Oui |
+| 23 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | BETA | Oui |
+| 24 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Componen | BETA | Oui |
+| 25 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Compone | ALPHA | Oui |
+| 26 | Lab 15: Kaggle Challenge avec MLE-STAR | BETA | Oui |
+| 27 | Lab 16: Data Science Agent avec GCP BigQuery | ALPHA | Oui |
+| 28 | Lab 17: Projet Final - Pipeline DS-STAR Complet | ALPHA | Oui |
 
 ## ML/ML.Net (19 notebooks)
 
@@ -172,29 +173,29 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 1 | QC-Py-01 : Configuration et Premier Backtest QuantConne | BETA | Non |
 | 2 | QC-Py-02 : QuantConnect Platform Fundamentals - QCAlgor | BETA | Non |
 | 3 | QC-Py-03 - Data Management in QuantConnect | BETA | Non |
-| 4 | QC-Py-04 - Research Workflow with QuantBook | BETA | Non |
-| 5 | QC-Py-05 - Universe Sélection dans QuantConnect | BETA | Non |
+| 4 | Objectifs d'Apprentissage | BETA | Non |
+| 5 | Objectifs d'Apprentissage | BETA | Non |
 | 6 | QC-Py-06 : Options Trading dans QuantConnect | BETA | Non |
 | 7 | QC-Py-07 : Futures et Forex Trading dans QuantConnect | BETA | Non |
 | 8 | QC-Py-08 - Multi-Asset Portfolio Stratégies | BETA | Non |
 | 9 | QC-Py-09 : Types d'Ordres et Order Management dans Quan | BETA | Non |
-| 10 | QC-Py-10 - Risk Management et Portfolio Management | BETA | Non |
+| 10 | Objectifs d'Apprentissage | BETA | Non |
 | 11 | QC-Py-11 - Indicateurs Techniques dans QuantConnect | BETA | Non |
 | 12 | QC-Py-12 - Backtesting et Analyse de Performance | BETA | Non |
 | 13 | QC-Py-13 - Alpha Models et Algorithm Framework | BETA | Non |
 | 14 | QC-Py-14 - Portfolio Construction et Exécution Models | BETA | Non |
-| 15 | QC-Py-15 - Parameter Optimization et Walk-Forward Analy | BETA | Non |
+| 15 | Objectifs d'Apprentissage | BETA | Non |
 | 16 | QC-Py-16 - Alternative Data dans QuantConnect | BETA | Non |
-| 17 | QC-Py-17 - Sentiment Analysis pour le Trading | BETA | Non |
+| 17 | Objectifs d'Apprentissage | BETA | Non |
 | 18 | QC-Py-18 - Feature Engineering pour Machine Learning Tr | ALPHA | Non |
-| 19 | QC-Py-19 - Machine Learning Classification pour Directi | ALPHA | Non |
-| 20 | QC-Py-20 - Machine Learning Regression pour Price Predi | BETA | Non |
+| 19 | Objectifs d'Apprentissage | ALPHA | Non |
+| 20 | Objectifs d'Apprentissage | BETA | Non |
 | 21 | QC-Py-21 - Portfolio Optimization avec Machine Learning | BETA | Non |
-| 22 | QC-Py-22 - Modern Time Series Deep Learning (SOTA 2024- | BETA | Non |
-| 23 | QC-Py-23 - State Space Models (Mamba) pour Trading | BETA | Non |
+| 22 | Objectifs d'Apprentissage | BETA | Non |
+| 23 | Objectifs d'Apprentissage | BETA | Non |
 | 24 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et | BETA | Non |
-| 25 | QC-Py-25 - Reinforcement Learning pour le Trading | BETA | Non |
-| 26 | QC-Py-26 - LLM Trading Signals | BETA | Non |
+| 25 | Objectifs d'Apprentissage | BETA | Non |
+| 26 | Objectifs d'Apprentissage | BETA | Non |
 | 27 | QC-Py-27 - Production Deployment | BETA | Non |
 | 28 | QC-Py-28 - Market Regime Detection | BETA | Non |
 | 29 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | ALPHA | Non |
@@ -231,7 +232,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 4 | Research QuantBook: BTC ML Enhanced | ALPHA | Non |
 | 5 | Research QuantBook: Multi-Channel ZigZag Crypto | ALPHA | Non |
 | 6 | Research QuantBook: Deep Learning LSTM pour SPY | ALPHA | Non |
-| 7 | Research QuantBook: DualMomentum (Antonacci) | ALPHA | Non |
+| 7 | Research QuantBook: DualMomentum (Antonacci) | BETA | Non |
 | 8 | Research QuantBook: Dual Momentum No TLT | BETA | Non |
 | 9 | Research QuantBook: EMA-Cross Alpha Model | ALPHA | Non |
 | 10 | Research QuantBook: EMA Cross Equity | BETA | Non |
