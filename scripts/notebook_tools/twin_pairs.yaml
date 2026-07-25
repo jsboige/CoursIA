@@ -186,6 +186,22 @@
     - "Cas etudies : job-shop scheduling (3 machines x 3 jobs, makespan minimal), equipement maintenance planning."
     - "Note infrastructure : ce notebook (.NET) est explicite sur la pre-configuration IKVM (AppContext['IKVM.Home'] + tzdb OK) - voir cellule d'initialisation 'IKVM 8.15.0 pret (home=ikvm-home-8.15.0-win-x64, tzdb=True) - Choco-solver charge'."
 
+- name: "CSP-6 Hybridization"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 756bd37298dc5456c4bf0ef14d133ca55dfd6d1b
+    csharp_sha: 41227c7457f831f81e09a6cd0da594743faba025
+  known_differences:
+    - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
+    - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."
+    - "Cote Python : ortools.sat.python.cp_model + matplotlib + numpy (17 cellules code, predicteur lineaire from-scratch avec descente de gradient). Cote C# : Google.OrTools.Sat natif (NuGet Google.OrTools, 0 bridge IKVM, design option b #4956 ; 15 cellules code, predicteur ponderation manuelle + gradient simplifie)."
+    - "Note API : l'API C# de Google.OrTools 9.15 expose solver.WallTime() mais PAS solver.NumBranches() / NumConflicts() (contrairement a l'API Python). Le cote C# reporte donc le wall-time la ou le cote Python reporte branches/conflits -- difference d'idiome API, pas de defaut de parite (les deux mesurent le cout de resolution, chacun via les compteurs disponibles dans son langage)."
+
 - name: "Search-1 StateSpace"
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
@@ -259,9 +275,9 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: 7fcff428e20f614d6dd2567a7af4107d106f46d4
+    date: '2026-07-25'
+    by: ai-01
+    python_sha: 7f38036c4fa60f0d36e3d7486812561948cca90e
     csharp_sha: a379bbc58b935a4b6fa0afda1c6337f091035845
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
@@ -404,10 +420,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
+    date: '2026-07-25'
+    by: po-2024
     python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
-    csharp_sha: 620b7fd3b52de649ffb063e27b568cd7520bd6fa
+    csharp_sha: f5158092a1488ec4a9a397bffe0f1ae02835f7c0
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -984,7 +1000,7 @@
   last_audit:
     date: "2026-07-25"
     by: po-2024
-    python_sha: 241861d0ed68d31c6000a79ac7985b4e04972d7e
+    python_sha: 7131d0cdb8d17a1e10d1419682e0de2230bf4959
     csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
@@ -1341,6 +1357,21 @@
     - "Idiomes framework : Python = stdlib + numpy/matplotlib (viz des paysages de fitness, courbes de convergence par temperature, 11 imports, 62 cellules avec demos riches N-Reines). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 2 using, 28 cellules (implementation minimale from-scratch, presentation tabulaire)."
     - "Asymetrie pedagogique : Python exploite matplotlib pour la visualisation des paysages de fitness et courbes de refroidissement + section comparative N-Reines approfondie ; le C# travaille en BCL pure sans viz (tableaux + asci), implementation plus compacte. Meme socle theorique (3 metaheuristiques classiques + citations), leviers de demonstration differents."
 
+- name: "Search-5 GeneticAlgorithms"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: 8b6074cc1daf3b00c21f2456b489215b4129a254
+    csharp_sha: 7084e6b3164abadce004bd0937451a134a7b9294
+  known_differences:
+    - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."
+    - "Idiomes framework : Python = demos riches multi-frameworks (76 cellules) : AG from-scratch (OneMax) + framework **DEAP** + framework **PyGAD** (optimisation continue) + concepts avances + comparaison quantitative GA-vs-solveurs-exacts. C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 25 cellules (AG from-scratch compact, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python couvre 3 frameworks (from-scratch + DEAP + PyGAD) + comparaison vs solveurs exacts (large spectre d'outils) ; le C# demontre le cycle AG canonique en BCL pure sans dependance externe. Meme socle theorique (algorithmes evolutionnaires, Holland 1975 / Goldberg 1989), leviers de demonstration differents."
+
 - name: "GameTheory-13 ImperfectInfo-CFR"
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
@@ -1356,6 +1387,69 @@
     - "Idiomes framework : Python = `numpy` + `matplotlib` (courbes de convergence) + OpenSpiel (cfr/CFR+/Linear CFR, benchmark Leduc Poker, comparaisons a l'echelle) + MCCFR external sampling. C# = pur `System.*` (Linq, Collections.Generic, `#nullable enable`), 0 NuGet, CFR/CFR+/RegretMatcher from-scratch, visualisation ASCII (valeur du jeu vs iterations)."
     - "Asymetrie de couverture : Python plus etendu (44 vs 22 cellules) -- couvre MCCFR, integration OpenSpiel, Leduc Poker, Deep CFR (apercu), distance de Nash ; le C# se concentre sur le socle CFR vanilla + CFR+ avec 3 exercices (Leduc, exploitabilite best-response, MCCFR). Meme theorie centrale (Zinkevich / Tammelin / Kuhn), leviers de demonstration differents (ecosysteme OpenSpiel cote Python vs implementation from-scratch minimaliste cote C#)."
     - "Re-baseline 2026-07-25 (po-2025, meme cycle) : SHA Python avance e78c9337 -> 9bca3f3f via #8489 (correction doc-honesty markdown cell[30] : 'moins de 0.01%' -> '~0.01% (exploitabilite 0.000112, soit ~0.011%)', alignement sur la sortie committee). Drift verifie parite-preservant : prose markdown seule, aucune cellule de code ni algorithme touche (n'affecte pas l'axe de parite semantic)."
+
+# === Tranche GT-14..17 fin-de-veine (c.914, po-2023) — cloture famille GameTheory/.NET-Parity 16/16 #8057 ===
+
+- name: "GameTheory-14 DifferentialGames"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 1fadd569c0e0fd7da3d20263db1734e008f8c325
+    csharp_sha: 17c7e9394da43390c00791aa53912181dc497a2e
+  known_differences:
+    - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
+    - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`, 0 NuGet, 0 numpy, 0 scipy), integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot."
+    - "Asymetrie de couverture : Python (40 cellules, 14 code) resout numeriquement via scipy (ODE + optimisation) ; C# (26 cellules, 10 code) construit RK4 from-scratch et privilegie les formes analytiques du duopole. Meme theorie centrale (Stackelberg/Cournot), leviers numeriques differents (scipy cote Python vs RK4 from-scratch cote C#)."
+
+- name: "GameTheory-15 CooperativeGames"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: d9f12903dea2485bd5db631883cac049f3ff2581
+    csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
+  known_differences:
+    - "Socle pedagogique commun : jeux cooperatifs a utilite transferable, fonction caracteristique et coalitions, valeur de Shapley (Shapley 1953) et ses axiomes (efficacite, symetrie, joueur nul, additivite), glove game (jeu des gants) comme exemple canonique."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + module local `cooperative_games` + `itertools` (enumeration des coalitions/permutations). C# = BCL .NET 9 pur (`System.Linq`, `System.Collections.Generic`, 0 NuGet), calcul de Shapley from-scratch via permutations Linq."
+    - "Asymetrie de couverture : Python (54 cellules, 25 code) plus etendu (module local dedie, visualisations matplotlib, proprietes additionnelles des jeux cooperatifs) ; C# (34 cellules, 13 code) se concentre sur le glove game et le calcul de Shapley from-scratch. Meme theorie centrale (Shapley 1953), couverture Python plus large."
+
+- name: "GameTheory-16 MechanismDesign"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: cc862bf7dd006a631afab9f762012b6d4b3622a3
+    csharp_sha: fd5fd04b331a2cbef35868a55e5e25436493b00f
+  known_differences:
+    - "Socle pedagogique commun : theorie des mecanismes et principe de revelation, encheres premier et second prix, Vickrey 1961 (sincerite de l'enchere au second prix), mecanisme VCG (Vickrey-Clarke-Groves) et regle de Clarke."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `abc`/`itertools` (classes abstraites de mecanismes). C# = BCL .NET 9 pur (`System.Linq`, `System.Text`, 0 NuGet), encheres et VCG from-scratch avec lecture-interpreter des resultats."
+    - "Asymetrie de couverture : Python (49 cellules, 15 code) couvre les principes fondamentaux et le theoreme de revelation ; C# (24 cellules, 9 code) ajoute Gale-Shapley (mariages stables, 1962) et double auction (echange bilateral) comme exemples travailles distincts. Meme theorie centrale (revelation/Vickrey/VCG), exemples complementaires cote C#."
+
+- name: "GameTheory-17 MultiAgent-RL"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 3be092acbcd19093e20425200c97a973c99ff75f
+    csharp_sha: 06dff5d8a085846f7feb1dc3e08765da35c5f2ce
+  known_differences:
+    - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."
+    - "Asymetrie de couverture : Python (38 cellules, 12 code) s'appuie sur l'ecosysteme OpenSpiel/pyspiel ; C# (24 cellules, 11 code) implémente FP/NFSP/PSRO from-scratch en version table-based avec une section 'Verdict SOTA' honnete sur la portabilite (le NFSP neuronal n'est pas repliquable sans framework ML -> version table-based). Meme theorie centrale (self-play/FP/NFSP/PSRO), leviers d'implementation differents (framework OpenSpiel cote Python vs from-scratch minimaliste cote C#)."
+
 # === Tranche 9 Search/Applications completeness (c.737, po-2026) — famille supplementaire #8057 ===
 
 - name: "App-1 NQueens"
@@ -1373,6 +1467,22 @@
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
 
+# === Tranche 8 GameTheory/SocialChoice completeness (c.736, po-2026) — famille supplementaire #8057 ===
+
+- name: "SocialChoice-3 Voting-Methods"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: eff4f8e91fa3d4fe07e7fa7eabf712e3109b2651
+    csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+  known_differences:
+    - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
+    - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."
 # === Tranche 10 GameTheory/SocialChoice completeness (c.738, po-2026) — famille supplementaire #8057 ===
 
 - name: "SocialChoice-1 Arrow-Impossibility"

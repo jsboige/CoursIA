@@ -256,6 +256,12 @@ def main(argv=None) -> int:
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
                    help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+    p.add_argument("--pair", default=None,
+                   help="Restreindre --update a une paire nommee (ex. 'Search-9-LP'). "
+                        "Impossible a combiner avec --family.")
+    p.add_argument("--yes-all-pairs", action="store_true",
+                   help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
+                        "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -265,6 +271,14 @@ def main(argv=None) -> int:
         p.error("--base necessite --per-pair")
     if args.update and (args.per_pair or args.base):
         p.error("--update est incompatible avec --per-pair/--base")
+    # --update exige un selecteur (anti-corruption silencieuse du registre, cf #8508)
+    if args.update and not (args.family or args.pair or args.yes_all_pairs):
+        p.error("--update exige un selecteur explicite : --family <f>, --pair <name>, "
+                "OU --yes-all-pairs. Le defaut '--update' seul reecrirait le last_audit "
+                "de TOUTES les paires du registre, ce qui masque des DRIFTs legitimes "
+                "(cf issue #8508 + lecons L963/L974).")
+    if args.pair and args.family:
+        p.error("--pair et --family sont mutuellement exclusifs avec --update.")
 
     repo_root = _repo_root()
     reg_path = Path(args.registry)
@@ -381,14 +395,26 @@ def main(argv=None) -> int:
         # IMPORTANT : --update DOIT TOUJOURS reecrire TOUTES les paires du
         # registre (meme avec --family), sinon on DETRUIT les paires des
         # autres familles en re-ecrivant le YAML filtre. On ne met a jour
-        # que les paires qui matchent le filtre (ou toutes si pas de filtre).
+        # que les paires qui matchent le filtre (ou toutes si --yes-all-pairs).
+        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU --yes-all-pairs.
         all_pairs = load_registry(reg_path)
-        target = (
-            [pp for pp in all_pairs if pp.get("family") == args.family]
-            if args.family else all_pairs
-        )
-        if args.family and not target:
-            print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+        if args.pair:
+            target = [pp for pp in all_pairs if pp.get("name") == args.pair]
+            if not target:
+                names = sorted({pp.get("name", "?") for pp in all_pairs})
+                print(
+                    f"Aucune paire nommee '{args.pair}'. "
+                    f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
+                    file=sys.stderr,
+                )
+                return 1
+        elif args.family:
+            target = [pp for pp in all_pairs if pp.get("family") == args.family]
+            if not target:
+                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
+        else:
+            # --yes-all-pairs (filet anti-corruption silencieuse, cf #8508)
+            target = all_pairs
         updated = 0
         for pp in target:
             audit, cur_py = update_pair(repo_root, pp)
