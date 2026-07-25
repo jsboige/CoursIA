@@ -404,10 +404,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: da13439ee00e75ef65a0729087c450a34847b415
-    csharp_sha: c463b0da453cb9d53d722ec13a27f89035df8ca9
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: c95f5dad99b0c333e3b99fdaf3bcc7cd30d929dc
+    csharp_sha: 4896731d08a95887ecdda3e548790ca5bde5a911
   known_differences:
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
