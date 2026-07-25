@@ -1435,3 +1435,20 @@
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+
+# === Tranche 8 GameTheory/SocialChoice completeness (c.736, po-2026) — famille supplementaire #8057 ===
+
+- name: "SocialChoice-3 Voting-Methods"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2026
+    python_sha: eff4f8e91fa3d4fe07e7fa7eabf712e3109b2651
+    csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+  known_differences:
+    - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
+    - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."
