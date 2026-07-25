@@ -17,7 +17,13 @@
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
 # + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
-# + Probas/Infer.NET-PyMC (c.812, 11 paires ; C# Infer.NET EP/VMP compile vs Python PyMC NUTS/HMC + ADVI). Voir #8057.
+# + Probas/Infer.NET-PyMC (c.812, 11 paires ; C# Infer.NET EP/VMP compile vs Python PyMC NUTS/HMC + ADVI)
+# + GameTheory/.NET-Parity (c.804, 3 paires) + SemanticWeb/dotNetRDF-rdflib (c.809, 11 paires)
+# + Search/Part3-Advanced (c.833, 3 paires) + Tweety/IKVM-JPype (c.810, 11 paires) + SymbolicAI/Planners (c.836, 9 paires).
+#   Consolidation c.867/#8264 (po-2024, 2026-07-25) : ces 5 dernieres familles (37 paires) etaient
+#   initialement 5 tranches PR serial-conflictuelles (#8124/#8165/#8169/#8172/#8192, toutes editant
+#   ce fichier -> au plus 1 pouvait merger). Fold en une seule PR rebaselinee sur le format post-#8372,
+#   SHA courant recalcule par `git ls-tree HEAD` (requis par le gate CI --per-pair). Voir #8057.
 
 - name: "Z3-Python-01 Introduction"
   family: SMT/Z3-API
@@ -647,3 +653,539 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+
+
+# ======================================================================
+# CONSOLIDATION c.867 (po-2024, 2026-07-25, #8264) : fold des 5 tranches serial-conflictuelles
+# #8124 (GameTheory 3) + #8165 (SemanticWeb 11) + #8169 (Search-P3 3) + #8172 (Tweety 11) + #8192 (Planners 9) = 37 paires.
+# Rebaseline sur le format post-#8372. Pour CHAQUE paire : test -f des 2 twins (37/37 existent),
+# SHA courant recalcule (git ls-tree HEAD) — requis par le gate CI --per-pair (register-SHA != tree-SHA
+# sur paire nouvelle = DRIFT_INTRODUCED -> FAIL). 9 paires ont drift depuis l'audit 2026-07-23
+# (enrichissement/prose/output paraphite-preservant, verifie via git log) -> re-baseline 2026-07-25.
+
+# === Tranche 4 GameTheory/.NET-Parity (c.804, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+# Python = nashpy + scipy.optimize.linprog (libs matures) ; C# = from-scratch (SimplexMax Dantzig+Bland, BestResponseRow).
+# Les twins C# reimplementent les solveurs a la main (valeur pedagogique vs invoquer une lib). SHAs `git ls-tree HEAD`.
+
+- name: "GameTheory-2 NormalForm"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: a4e8702fb81723b13912f48feda5d7f582e93902
+    csharp_sha: 344836d7a5f385a161d68ab1d8924a3d67c7a2ce
+  known_differences:
+    - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
+    - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."
+    - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib). Meme concepts, abstraction differente (lib vs from-scratch)."
+- name: "GameTheory-4 NashEquilibrium"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: e2d19dec8863909c0d4f785db97bfaadc8b575da
+    csharp_sha: a2de7867ae9c7777ef4b4a5cfb2134b619eb0851
+  known_differences:
+    - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
+    - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
+    - "Asymetrie de couverture : Python utilise scipy.linprog pour les equilibres mixtes (LP battle-tested) ; le C# implemente la meilleure reponse manuellement et couvre les purs en detail. Meme theorie, leviers algorithmiques differents (LP vs enumeration)."
+- name: "GameTheory-5 ZeroSum-Minimax"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 233b8385a1751e8e13a78211fb4671c87595ae52
+    csharp_sha: e9909bf449d1b53f67965096b80a648abcc9eccd
+  known_differences:
+    - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."
+    - "Idiomes framework : Python = `scipy.optimize.linprog` (solveur LP mature pour le minimax). C# = **Simplexe from-scratch** `SimplexMax` (methode de Dantzig + regle de Bland anti-cyclage) + `SolveMatrixGame` qui reduit le jeu matriciel a un LP et lit sigma dans les variables duales."
+    - "Asymetrie notable : le C# REIMPLEMENTE l'algorithme du simplexe a la main (valeur pedagogique : comprendre Dantzig + Bland) plutot que d'invoquer scipy.linprog. parity_level = semantic (meme theoreme minimax, meme reduction LP ; le solveur LP est from-scratch cote C# vs lib cote Python)."
+
+# === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+
+- name: "SW-2 RDF-Basics"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5939ccd9146913c9d650d1a7a2326b63beb859ad
+    csharp_sha: a28d8587a98c7584e0de7b8193187b1d2b920544
+  known_differences:
+    - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
+    - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
+    - "API idiomatique differente : C# via `Graph` + `IGraph` + `IUriNode`/`ILiteralNode` fortement types ; Python via `Graph()` + `URIRef`/`Literal` plus dynamiques. Meme fondement W3C RDF 1.1."
+- name: "SW-3 Graph-Operations"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3b-Python-GraphOperations.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 67d24fdcfb3ccfb484eabf75578a71e9639131d6
+    csharp_sha: ac6e12a25ad4b93a10bfe76c08df9ac65636da69
+  known_differences:
+    - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."
+- name: "SW-4 SPARQL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4b-Python-SPARQL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ca77e6a8869febafe182e51fbb41372489fd89ae
+    csharp_sha: 2665b2384dace718433e7b6cf6ae611b4386464f
+  known_differences:
+    - "Socle commun : execution de requetes SPARQL 1.1 (SELECT/CONSTRUCT/ASK) sur un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` moteur Leviathan + `VDS.RDF.Query.Builder` fluent). Python = `rdflib` (`graph.query()` natif). Moteurs SPARQL equivalents, syntaxe de binding idiomatique differente."
+- name: "SW-5 Linked-Data"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5b-Python-LinkedData.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 67511cf48e09ce533a7312c3aa19530b15c3e93e
+    csharp_sha: 9cfb80bc05aa73594102d90d93276e52356a4977
+  known_differences:
+    - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."
+- name: "SW-6 RDFS"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: fd60c05c49ed10bc4532cc8ba89a9830673da6ff
+    csharp_sha: f7a8a4f6cd60d8ce6484a1eac41072fe304e60f5
+  known_differences:
+    - "Socle commun : raisonnement RDFS (subClassOf, subPropertyOf, inference de hierarchies)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` OntologyGraph + `VDS.RDF.Query`). Python = `rdflib` + `owlrl` (moteur de closure RDFS/OWL-RL, derive les triplets inferes). Approche legerement differente : C# expose le modele ontologique oriente-objet ; Python deroule la closure de raisonnement explicitement."
+- name: "SW-7 OWL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7b-Python-OWL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 6c6b4450577e70359c9414dccd3baaec51d8615c
+    csharp_sha: 272171f25440e4d3aa967bcd6d03de29b9720f08
+  known_differences:
+    - "Socle commun : modelisation OWL (classes, proprietes, restrictions, axiomes)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` : OntologyGraph, OwlReasoner). Python = `owlready2` (API OWL orientee-objet dediee, world/Thing/Property). Deux librairies OWL matures mais aux philosophies differentes : dotNetRDF traite OWL comme une couche sur RDF ; owlready2 est nativement orientee OWL."
+- name: "SW-8 SHACL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-CSharp-SHACL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 4d4511936245c8c4b5d8665149a9461ae519df2e
+    csharp_sha: fce2451b700090a2515d64a49e550eae1e0c0e6b
+  known_differences:
+    - "Socle commun : validation de graphe RDF par contraintes SHACL (Shapes Constraint Language, W3C 2017)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Shacl` moteur de validation integre). Python = `pyshacl` (validateur SHACL dedie, reference) + `rdflib` pour le graphe. pyshacl est l'implementation de reference Python ; dotNetRDF embarque SHACL depuis la v3."
+- name: "SW-9 JSON-LD"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-Python-JSONLD.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 88c26aeba63abc5b25e788c7e27c1154023d0f84
+    csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
+  known_differences:
+    - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Writing` JsonLdWriter). Python = `rdflib` (plugin JSON-LD via `rdflib-jsonld` integre, `graph.serialize(format='json-ld')`)."
+- name: "SW-10 RDF-Star"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-CSharp-RDFStar.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 23bb1656347488b97e360b34c9c67bcd52e29784
+    csharp_sha: e184307cf2a6180399e776bf200058e283fb9bf2
+  known_differences:
+    - "Socle commun : meta-modelisation RDF-star (triplets sur des triplets, quotes nestees)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` support RDF-star). Python = `rdflib` (`rdflib.term` triplets-nommes). RDF-star est une extension communautaire (pas encore W3C standardise) ; support experimental des deux cotes."
+- name: "SW-11 Knowledge-Graphs"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d3d6083bd49c7fa2892e3f74edf2e17421a29c11
+    csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
+  known_differences:
+    - "Socle commun : construction d'un graphe de connaissances (RDF + ontologie + requetage)."
+    - "Asymetrie de profondeur (surface) : le Python combine TROIS librairies -- `rdflib` (RDF), `owlready2` (ontologie OWL), et `networkx` (algorithmes de graphe : centralite, composantes connexes, plus courts chemins). Le C# reste sur `dotNetRDF` seul (`VDS.RDF.Query`), sans dimension d'analyse de graphe (centralite/communautes)."
+    - "Le Python ajoute donc une dimension d'analyse topologique (networkx) absente du C# -> parite `surface` (le C# est un pendant tronque sur cet aspect)."
+- name: "SW-13 Reasoners"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 241861d0ed68d31c6000a79ac7985b4e04972d7e
+    csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
+  known_differences:
+    - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8343 (doc-honesty prose (benchmark speedup claim aligned to committed output)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+
+# === Tranche 6 Search/Part3-Advanced (c.833, po-2023, 2026-07-23) — famille supplementaire #8057 ===
+
+- name: "Search-12 Pattern Databases"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: bcdb32319ade2386884f9f0ff96a9b0b7e4281b8
+    csharp_sha: 282a079e88070b58473f64e7e32d91cfcca860c8
+  known_differences:
+    - "Socle pedagogique commun : taquin 4x4 (15-puzzle), heuristique Manhattan, puis construction d'une Pattern Database (PDB) pour un sous-ensemble de tuiles afin d'estimer h* plus precisement que Manhattan."
+    - "Idiomes framework : Python = `collections.deque` (BFS sur l'espace des patterns) + `numpy`/`matplotlib` (matrices + visualisation du plateau). C# = pur BCL `System.Collections.Generic` + `System.Linq` (`Dictionary`, `Queue`, `Array.IndexOf`), sans dependance externe."
+    - "Asymetrie visualisation : cote Python, matplotlib rend le plateau/la PDB graphiquement ; cote C#, le rendu est textuel (pas d'equivalent numpy/matplotlib en BCL standard). Algorithme et donnees (GOAL, Manhattan, Successors) verifies firsthand identiques des deux cotes."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8207 (doc-honesty prose (PDB speedup ~1 ordre, pas 2)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Search-13 Limited Discrepancy Search"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: cbe0c5000098c5eba6a854db1e0e27e0424dfad1
+    csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
+  known_differences:
+    - "Socle pedagogique commun : sac a dos 0/1, Limited Discrepancy Search (LDS) borne le nombre d'ecarts a l'heuristique gloutonne (ratio valeur/poids decroissant) pour trouver l'optimum sans explorer tout l'arbre."
+    - "Idiomes framework : Python = tuples nommes `(name, weight, value)` + fonctions pures (`greedy_knapsack`, `lds`). C# = `record Item(string Name, int Weight, int Value)` (immuable) + methodes retournant un tuple `(Value, Selection, Nodes)`."
+    - "Difference d'instance (verifiee firsthand) : le notebook Python enumere 7 objets A-G (dont F et G de valeur nulle, pieges pour le greedy) ; le notebook C# enumere 5 objets A-E seulement. Meme concept LDS, instance C# = coeur 5-objets, instance Python = coeur + 2 pieges. La parite est conceptuelle (LDS/k), pas cellule-par-cellule."
+- name: "Search-14 Weighted A*"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: bfca3c80c9ab075d707e17b2de6879469f34a9b5
+    csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+  known_differences:
+    - "Socle pedagogique commun : Weighted A* (best-first sur f(n)=g(n)+W*h(n), W>=1) sur un terrain pondere, balayage de W, garantie de sous-optimalite bornee cout <= W*C* (Pohl 1970)."
+    - "Idiomes framework : Python = `heapq` (min-heap, re-push sur meilleur g) + `itertools.product` + `random.Random(seed)` (Mersenne Twister). C# = `PriorityQueue<T, double>` (.NET 6+, min-heap natif) + `Random(seed)` (.NET PRNG, distinct du Mersenne Twister Python)."
+    - "Asymetrie RNG (verifiee firsthand) : les deux cotes generent une grille aleatoire 25x25 avec `seed=42`, mais `random.Random(42)` (Python) et `new Random(42)` (.NET) produisent des terrains DIFFERENTS -> les couts/nombres de nœuds exacts ne coincident pas entre C# et Python. Le concept (regime W, interpolation bornee, garantie W*C*) et la structure de demo (balayage W, Greedy vs A* vs Weighted) sont identiques ; seules les valeurs numeriques le sont pas (cause RNG). Parite conceptuelle, pas numerique."
+
+# === Tranche 7 Tweety/IKVM-JPype (c.810, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+# Python = JPype (pont vers JVM) ; C# = IKVM (bytecode Java traduit en .NET). 9 semantic lib-vs-lib + 2 surface (Tweety-6 ASPIC+ from-scratch, Tweety-11 causal from-scratch).
+
+- name: "Tweety-2 Basic-Logics"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 8e6911b972f4a4b66d2ac1798bd6e60ad536e358
+    csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+  known_differences:
+    - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
+    - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."
+- name: "Tweety-3 Advanced-Logics"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 7042113bc062921ba05a30e9a349de6680b26da7
+    csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
+  known_differences:
+    - "Socle commun : logiques avancees (conditionnelle, modale, QBF) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-advanced-logics.dll\"` + `using org.tweetyproject.logics.cl.reasoner` etc.). Python via JPype (`from org.tweetyproject.logics.cl.reasoner import SimpleCReasoner`). Meme moteur Java TweetyProject, deux ponts (IKVM traduit vs JPype JVM)."
+- name: "Tweety-4 Belief-Revision"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: f60819ab890345e2dc5815e1ddc1da7dd24a7150
+    csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+  known_differences:
+    - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Tweety-5 Abstract-Argumentation"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: ae9dbea73f1c0105b7b0a0d9afd3a2160596b2d3
+    csharp_sha: 0993ec2e3068216e3b07f1448dd5776de232692b
+  known_differences:
+    - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8320/#8170 (doc-honesty md52 non-determinism output alignment + hyphenation) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Tweety-6 Structured-Argumentation"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 850ec6797689e4f9747fa8a5009d4cd6e3489dde
+    csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
+  known_differences:
+    - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
+    - "Asymetrie de profondeur (surface) : le Python invoque la vraie bibliotheque Java TweetyProject (ASPIC+) via JPype ; le C# REIMPLEMENTE le moteur ASPIC+ **from-scratch** (cellule de setup : 'aucune dependance externe -- moteur ASPIC+ from-scratch'), sans la bibliotheque. Le C# est un pendant pedagogique reimplante, pas une parite de librairie -> `surface`."
+- name: "Tweety-7a Extended-Frameworks"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: f2ca2fab9dd2d840b9d3b36723f8810d585f92c1
+    csharp_sha: 62f6921da965958ab0277d2cee822d284a47e568
+  known_differences:
+    - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Tweety-7b Ranking-Probabilistic"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: bf6043e38c93444b921444f8ba6aa400a2882577
+    csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+  known_differences:
+    - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Tweety-8 Agent-Dialogues"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 250f9ca0a3bdab41d5190b4841af74287d027f73
+    csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
+  known_differences:
+    - "Socle commun : dialogues multi-agents argumentatifs (protocols, ExecutableExtension) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers chargeant les DLL TweetyProject). Python via JPype (`from org.tweetyproject.agents.dialogues import ExecutableExtension`). Meme moteur Java."
+- name: "Tweety-9 Preferences"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: e3703d684417078d85ab16120673c5b55fc0ab58
+    csharp_sha: 715a7887df6004fcf73f4c14624d39bfca671117
+  known_differences:
+    - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"`). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Tweety-10 MLN"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 59821257489bf34aab34dead6b1bf633c9eb2a0e
+    csharp_sha: fc482a5d73fe50c7a4cce563edaf1987a0536a7b
+  known_differences:
+    - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."
+- name: "Tweety-11 Causal"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 1544722434842ecbf010d6009510e6cf6a330779
+    csharp_sha: d60c424c0e1334c0dbf3f9fa6b9376bad215c330
+  known_differences:
+    - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."
+    - "Asymetrie de profondeur (surface) : le Python s'appuie sur la vraie bibliotheque Java Tweety `causal-1.30.jar` via JPype (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausal`) ; le C# est un jumeau **from-scratch** (titre explicite 'twin C# from-scratch', aucune reference a org.tweetyproject) qui reimplemente le do-calcul pedagogiquement. Parite `surface` (C# = pendant reimplante, pas de librairie)."
+
+# + SymbolicAI/Planners (po-2023 c.836, 9 paires Python<->C# : Intro/PDDL/State-Space/Fast-Downward/
+#   Heuristics/Domains/OR-Tools/Temporal/HTN). Voir #8057. Planners-5b-Lean-Relaxation = Python-only
+#   (relaxation Lean, pas de jumeau C#) -> exclu. Planners-10/11/12 = Python-only (neuro-symbolique)
+#   -> exclus. Asymetrie engine : Python invoque des solveurs SOTA externes (unified-planning,
+#   fast-downward Docker, OR-Tools CP-SAT) ; C# = reimplementation from-scratch BCL .NET (0 NuGet),
+#   demonstration pedagogique du MEME concept (parite conceptuelle, pas invocation du meme solver).
+
+- name: "Planners-1 Introduction"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: d6f0f8fff2a6331cb4c979b90eda1ce526aa97fd
+    csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
+  known_differences:
+    - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
+    - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet)."
+- name: "Planners-2 PDDL-Basics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: b7a6f2c16c6d299b8492f507a3beb80d500b36a3
+    csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
+  known_differences:
+    - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
+    - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."
+- name: "Planners-3 State-Space"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 8d03359d12709b134f644e187d04249b6e1fcadf
+    csharp_sha: 435f49ca3c491cf320ddd9b9471fecc94f759f41
+  known_differences:
+    - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
+    - "Python : unified-planning engines. C# : from-scratch BFS/DFS/A* BCL .NET (meme algorithme, implementation idiomatic)."
+- name: "Planners-4 Fast-Downward"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
+    csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
+  known_differences:
+    - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
+    - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward) + unified-planning. C# : from-scratch BCL .NET (reimplementation pedagogique, ne peut pas invoquer fast-downward)."
+    - "Asymetrie engine importante : Python = solveur SOTA reel ; C# = demo from-scratch. Parite CONCEPTUELLE (memes algorithmes A*/GBFS/EHC expliques), pas invocation du meme binaire."
+- name: "Planners-5 Heuristics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 18790ce7c2eb67b9ae02ebdcc829842b62f38de4
+    csharp_sha: 64708cbd5657ac6c52dc7211f0cfa0833d46f732
+  known_differences:
+    - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
+    - "Python : unified-planning + fast-downward heuristics. C# : from-scratch delete-relaxation BCL."
+    - "po-2025 a verifie firsthand (c.678) la parite conceptuelle : les deux cotes gerent la degenerescence via une instance discriminante (h^add > h*)."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8336+#8340 (Prong-B heuristic-guided benchmark ajoute aux DEUX cotes (enrichissement parallele)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Planners-6 Domains"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: b34b53f0aeee982e98144fc52db3a22d1f3b3d1a
+    csharp_sha: 6e2892db270a1d736e1324ecaaf38160889f6d1b
+  known_differences:
+    - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
+    - "Python : modelisation unified-planning des domaines canoniques. C# : from-scratch BCL .NET (meme domaines de reference)."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA C# avance depuis l'audit 2026-07-23 via #8361 (4 cellules d'interpretation ajoutees au twin C# (aligne sur l'interp Python existante)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+- name: "Planners-7 OR-Tools"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 7a857203d3ecf3d7f4b8f3d6e8ce48078578b3fa
+    csharp_sha: 6acd159baa6ba26452ad2397b1c6a8a92395da92
+  known_differences:
+    - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
+    - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : from-scratch BCL .NET (0 NuGet, Job-Shop modelise main, instance canonique Fisher & Thompson ft3 reprise cote Python)."
+    - "Asymetrie engine : Python = solveur CP-SAT reel ; C# = demo from-scratch. Meme instance de reference (ft3)."
+- name: "Planners-8 Temporal"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 45500904dbf2675c50a3c267f28207e3d7309758
+    csharp_sha: 76d9b0bc9b45c4b8b85ff5d9cf9d0ba53b62e495
+  known_differences:
+    - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
+    - "Python : unified-planning temporal + CP-SAT + Gantt. C# : from-scratch BCL .NET (ordonnancement usine)."
+    - "po-2025 a verifie firsthand (c.678) : probleme temporel genuine avec parallelisme inherant (pas un cas degenere)."
+- name: "Planners-9 HTN"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 68182974b7bcf566966d8031212cf0eabf9ff9f8
+    csharp_sha: 8d70f1020b83b60706f94aabb2e425b083b35a7d
+  known_differences:
+    - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
+    - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
+    - "po-2025 a enrichi firsthand (c.678, PR #8173) le cote Python (instance discriminante m_deliver_direct vs m_deliver_via_intermediate)."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8173 (enrichissement method-selection demonstration (backtracking) cote Python) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
