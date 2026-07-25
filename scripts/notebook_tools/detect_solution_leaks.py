@@ -125,6 +125,62 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
     return False
 
 
+# A "methodological commentary" header line (``### Interprétation``,
+# ``### Interpretation``, ``### Analyse``, ``### Analyse mathematique``,
+# ``### Methodologie`` ...). Used for closest-preceding-header attribution:
+# a code cell whose nearest header is a methodological commentary section
+# (NOT an Exercice and NOT an Exemple guide) is a data table / worked
+# derivation attached to the surrounding narrative, NOT an exercise
+# solution leak. Closes the Lean-17-Knots-b-Invariants-Companion cell 14
+# FP class (c.875 sub-grain of EPIC #8053): a slice-genus data table
+# sitting under ``### Interprétation`` between the exercise header and
+# the next exercise sub-section. Cf exercise-example-labeling.md
+# (content-based rule): a code cell whose closest header is interpretive
+# narrative, not an exercise, is not an exercise solution leak.
+METHODOLOGICAL_HEADER_RE = re.compile(
+    r'^#+\s*(?:Interpr[ée]tation|Interpretation|Analyse'
+    r'|Analyse\s+math[ée]matique|Methodologie|M[ée]thodologie'
+    r'|Discussion|Notes\s+math[ée]matiques'
+    r'|R[ée]sultats\s+et\s+discussion)\b',
+    re.IGNORECASE,
+)
+
+
+def closest_preceding_header_is_methodological(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a
+    methodological commentary header (``### Interprétation``,
+    ``### Analyse``, ...).
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell whose
+    nearest header is a methodological narrative (interpretation of results,
+    mathematical analysis, discussion, methodology) is a data table / worked
+    derivation attached to the surrounding narrative, NOT an exercise solution
+    leak. Suppresses the FP class where a code cell sits under a
+    ``## Exercices`` (or ``### Exercice N``) section header but its actual
+    nearest sub-header is ``### Interprétation`` (in the same cell or an
+    intervening one). Cf exercise-example-labeling.md (content-based rule).
+
+    Recall-safe contract: a code cell that *is* a real exercise solution has
+    its closest preceding header being either (a) the ``### Exercice N``
+    sub-header itself, or (b) a worked-example header (``### Exemple guide``
+    — already handled by ``closest_preceding_header_is_example``), or (c)
+    a section header that does NOT match ``METHODOLOGICAL_HEADER_RE``. None
+    of those match the methodological regex, so the helper returns False and
+    the leak is still emitted.
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(METHODOLOGICAL_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
 def _header_level(line: str) -> int:
     """Return the ATX heading level (count of leading ``#``), or 0 if not a
     header line."""
@@ -793,6 +849,21 @@ def scan_notebook(path: str) -> list[dict]:
             # the false positive. A deeper sub-header ("### Indice" under
             # "## Exercice 1") does not break the section.
             if intervening_section_breaks_attribution(cells, i, next_code_idx):
+                continue
+            # Methodological commentary attribution: if the closest preceding
+            # header is a methodological narrative header (``### Interprétation``
+            # / ``### Analyse`` / ``### Discussion`` / ...), the code cell is a
+            # data table or worked derivation attached to the surrounding
+            # narrative, NOT an exercise solution leak. Closes the
+            # Lean-17-Knots-b-Invariants-Companion cell 14 FP class (c.875
+            # sub-grain of EPIC #8053): a slice-genus data table sitting
+            # under ``### Interprétation`` between the exercise header and
+            # the next exercise sub-section. Recall-safe: a real exercise
+            # solution has its closest preceding header being either an
+            # ``### Exercice N`` sub-header or a worked-example header
+            # (already handled by ``closest_preceding_header_is_example``),
+            # neither of which matches the methodological regex.
+            if closest_preceding_header_is_methodological(cells, next_code_idx):
                 continue
             # Commented-template stub: the whole solution is commented out and
             # only data assignments + a prompt print execute (the student
