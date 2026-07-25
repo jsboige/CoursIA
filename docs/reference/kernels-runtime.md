@@ -11,14 +11,34 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
 | .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
-| dotnet-interactive | >= 1.0.700 (PIN 1.0.552801 sur ai-01) | `dotnet interactive --version` |
+| dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install`.
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui casse `#!import` (cf tableau ci-dessous).
 
-**Execution** : toujours cell-by-cell via MCP Jupyter (Papermill ne supporte pas .NET Interactive). Le kernel `.net-csharp` preserve l'etat entre cellules.
+**Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
-**Versions a EVITER** : 1.0.522904 (Roslyn bug), 1.0.712001 (`#!import` bug). PIN sur 1.0.552801 si possible.
+Ce document affirmait « Papermill ne supporte pas .NET Interactive » et renvoyait vers l'execution cell-by-cell par MCP Jupyter. **C'est faux**, et la consequence etait couteuse : le chemin MCP hang (#835), donc des notebooks .NET etaient committes sans re-execution (violation C.2/H.3, cf l'anti-pattern PR #1591 cite en CLAUDE.md regle F). Verifie firsthand sur ai-01 le 2026-07-25 (dni 1.0.617701) — Papermill execute bien un notebook `.net-csharp` de bout en bout, `execution_count` et sorties reelles a l'appui, y compris a travers un `#!import`.
+
+La **seule** limite reelle est l'**injection de parametres** : Papermill n'a pas de traducteur C#, donc une cellule taguee `parameters` avec `-p` produit `Translator for 'C#' language does not support parameter introspection.` — l'avertissement est emis, l'injection est ignoree, **et le notebook s'execute quand meme**. Les notebooks .NET du depot ne prennent pas de parametres Papermill ; `BATCH_MODE` passe par variable d'environnement, pas par `-p`, et reste donc disponible.
+
+Deux limites voisines, **distinctes** de celle-ci, restent vraies : le restore `#r "nuget:"` est bloque cluster-wide en Papermill headless (cf [dotnet-plotly-zero-restore.md](dotnet-plotly-zero-restore.md)), et la **CI** ne peut pas re-executer ces notebooks faute de kernel installe sur le runner — d'ou l'exigence d'execution **locale** avant commit ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D).
+
+### Version : 1.0.617701, pas « >= 1.0.700 »
+
+| Version | Etat | Preuve |
+|---------|------|--------|
+| 1.0.522904 | a eviter | bug Roslyn |
+| 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
+| **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
+| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369 |
+
+Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
+
+```bash
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet interactive jupyter install
+```
 
 ## Python 3.10+ (notebooks Python)
 
@@ -99,7 +119,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 #### .NET
 
 - SDKs : 8.0.x, 9.0.x, 10.0.x
-- dotnet-interactive : **1.0.552801** (PINNED)
+- dotnet-interactive : **1.0.617701** (installe, verifie 2026-07-25 — cf [tableau des versions](#version--10617701-pas--100700))
 - Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
 #### Jupyter kernels (10 registered)
