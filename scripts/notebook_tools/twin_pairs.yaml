@@ -12,7 +12,7 @@
 # `--update` refuse de tourner sans selecteur (--pair / --family / --yes-all-pairs) :
 # sans lui il rebaselinerait les 116 paires d'un coup et masquerait des DRIFTs
 # legitimes (#8508). L'ecriture est chirurgicale : seules les lignes `last_audit`
-# de la paire ciblee changent, ce fichier garde ses commentaires (#8568).
+# de la paire ciblee changent, ce fichier garde ses commentaires (#8570).
 #
 # parity_level :
 #   surface     = meme plan/sections, implimentations independantes

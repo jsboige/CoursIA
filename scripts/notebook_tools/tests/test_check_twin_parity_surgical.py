@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebaseline chirurgical du registre de jumeaux (#8568).
+"""Rebaseline chirurgical du registre de jumeaux (#8570).
 
 Avant : `--update` (meme avec un selecteur) re-serialisait le registre entier
 via `yaml.safe_dump`. Mesure firsthand sur les 116 paires -- rebaseliner UNE
@@ -14,7 +14,7 @@ le schema et le vocabulaire `parity_level`. Consequences :
     PRECEDENT, donc l'entree affirmait « auditee par X le <date d'avant> » avec
     des SHAs d'aujourd'hui -- la tracabilite mentait.
 
-C'est pourquoi la remediation CI prescrivait l'edition manuelle. Depuis #8568
+C'est pourquoi la remediation CI prescrivait l'edition manuelle. Depuis #8570
 l'ecriture est chirurgicale et la provenance est horodatee : la commande courte
 redevient la bonne.
 
@@ -57,7 +57,7 @@ def registry_backup():
     """Sauvegarde + restauration du registre autour de chaque test."""
     if not REGISTRY.exists():
         pytest.skip(f"registre introuvable : {REGISTRY}")
-    backup = REGISTRY.with_suffix(".yaml.bak.c8568")
+    backup = REGISTRY.with_suffix(".yaml.bak.c8570")
     shutil.copy2(REGISTRY, backup)
     try:
         yield REGISTRY
@@ -91,7 +91,7 @@ def test_diff_limited_to_target_block(registry_backup):
     name = _first_pair_name(raw)
 
     new_raw, touched = ctp.surgical_rebaseline(
-        raw, {name: {"by": "sentinelle-c8568", "date": "1999-01-01"}}
+        raw, {name: {"by": "sentinelle-c8570", "date": "1999-01-01"}}
     )
     assert touched == 1
 
@@ -99,7 +99,7 @@ def test_diff_limited_to_target_block(registry_backup):
     assert len(before) == len(after), "aucune ligne ajoutee ni supprimee"
     changed = [i for i, (b, a) in enumerate(zip(before, after)) if b != a]
     assert len(changed) == 2, f"attendu 2 lignes (date + by), obtenu {len(changed)}"
-    assert all("sentinelle-c8568" in after[i] or "1999-01-01" in after[i]
+    assert all("sentinelle-c8570" in after[i] or "1999-01-01" in after[i]
                for i in changed)
 
 
@@ -145,7 +145,7 @@ def test_other_pairs_untouched(registry_backup):
 
     raw = REGISTRY.read_text(encoding="utf-8")
     name = _first_pair_name(raw)
-    new_raw, _ = ctp.surgical_rebaseline(raw, {name: {"by": "sentinelle-c8568"}})
+    new_raw, _ = ctp.surgical_rebaseline(raw, {name: {"by": "sentinelle-c8570"}})
 
     before = {p["name"]: p["last_audit"] for p in yaml.safe_load(raw)}
     after = {p["name"]: p["last_audit"] for p in yaml.safe_load(new_raw)}

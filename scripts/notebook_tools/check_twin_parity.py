@@ -222,7 +222,7 @@ def update_pair(
     un rebaseline qui conserverait le `by`/`date` de l'audit precedent ferait
     affirmer a l'entree « auditee par <l'auditeur d'avant> le <la date d'avant> »
     alors que les SHAs sont ceux d'aujourd'hui -- la tracabilite mentirait, ce
-    que le registre existe precisement pour empecher (cf #8568).
+    que le registre existe precisement pour empecher (cf #8570).
 
     Retourne (last_audit_dict mis a jour, sha_utilise_pour_python ou None si missing).
     """
@@ -257,7 +257,7 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
     """Reecrit UNIQUEMENT les lignes `last_audit` des paires ciblees.
 
     Pourquoi ne pas re-serialiser via `yaml.safe_dump` (comportement d'avant
-    #8568) : un dump complet detruit **tout** le fichier autour des donnees.
+    #8570) : un dump complet detruit **tout** le fichier autour des donnees.
     Mesure firsthand sur le registre a 116 paires -- un rebaseline d'UNE paire
     produisait `1108 insertions(+), 658 deletions(-)` et supprimait les **67
     lignes de commentaire**, dont l'en-tete de 15 lignes qui documente le
@@ -525,7 +525,7 @@ def main(argv=None) -> int:
             updates[pp["name"]] = audit
         # Rebaseline CHIRURGICAL : seules les lignes `last_audit` des paires
         # ciblees changent. Un `yaml.safe_dump` complet (comportement d'avant
-        # #8568) reformatait les ~1475 lignes et supprimait les 67 commentaires
+        # #8570) reformatait les ~1475 lignes et supprimait les 67 commentaires
         # du registre, dont l'en-tete qui documente le schema.
         raw = reg_path.read_text(encoding="utf-8")
         new_raw, updated = surgical_rebaseline(raw, updates)
