@@ -387,7 +387,7 @@
     date: '2026-07-24'
     by: po-2023
     python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
-    csharp_sha: 0d407e2eeed7769b879c2a67a9ab3cb27f067f84
+    csharp_sha: 620b7fd3b52de649ffb063e27b568cd7520bd6fa
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
