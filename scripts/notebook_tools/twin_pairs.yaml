@@ -501,10 +501,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
+    date: '2026-07-25'
     by: po-2023
-    python_sha: ece691bf53797d4b37c404f62932f5a656daa6aa
-    csharp_sha: a3ae179fce9fbfa45df6eabba7984a3a8fc69fea
+    python_sha: 4936068731fae6f80c19f3fa259363171c5831de
+    csharp_sha: 6036be3c4270c195322e806106424ee228c2444c
   known_differences:
   - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
