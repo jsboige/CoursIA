@@ -29,7 +29,17 @@ Pour chaque paire du registre, on :
   5. **OK** sinon (les deux cotes sont au SHA audite, parite tenue).
 
 Le bouclage d'audit : apres avoir re-audite une paire firsthand, on rebaseline
-avec `--update` qui reecrit les SHAs courants comme nouvelle reference.
+avec `--update --pair "<nom>" --by "<lane>"`, qui reecrit les SHAs courants
+comme nouvelle reference.
+
+`--update` EXIGE un selecteur (`--pair`, `--family`, ou l'opt-in
+`--yes-all-pairs`) : sans lui, il reecrirait le `last_audit` des 116 paires et
+masquerait des DRIFTs legitimes (#8508, lecons L963/L974). `--by` horodate
+l'audit a ton nom -- la date est toujours remise a aujourd'hui.
+
+L'ecriture est CHIRURGICALE : seules les lignes `last_audit` des paires ciblees
+changent (cf `surgical_rebaseline`). Le diff d'un rebaseline vaut donc les
+lignes reellement modifiees, commentaires et formatage du registre intacts.
 
 Cet outil lit seulement par defaut (git ls-tree). Le mode `--update` ecrit le
 registre (curated YAML, pas un notebook -> pas de souci de re-exec C.2).
@@ -42,8 +52,11 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
-    # rebaseline apres audit firsthand (ecrit les SHAs courants)
-    python check_twin_parity.py --update
+    # rebaseline apres audit firsthand (ecrit les SHAs courants).
+    # --pair + --by obligatoires en pratique : le selecteur evite de rebaseliner
+    # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
+    python check_twin_parity.py --update --pair "Probas-4 Bayesian-Networks" \
+        --by "myia-po-2024:CoursIA-2"
     # sortie machine
     python check_twin_parity.py --json
     # mode per-pair : ne FAIL que sur le drift INTRODUIT par la PR en cours
@@ -71,7 +84,9 @@ Voir aussi
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -82,6 +97,9 @@ except ImportError:  # pragma: no cover
     yaml = None
 
 DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.yaml"
+
+# Sentinelle : distingue « cle absente de l'update » de « valeur None ».
+_MISSING = object()
 
 
 def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -195,8 +213,16 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     }
 
 
-def update_pair(repo_root: Path, pair: dict) -> tuple[dict, str | None]:
+def update_pair(
+    repo_root: Path, pair: dict, by: str | None = None, date: str | None = None
+) -> tuple[dict, str | None]:
     """Rebaseline une paire : enregistre les SHAs courants comme nouvelle ref.
+
+    `by` / `date` horodatent l'audit. Ils sont OBLIGATOIREMENT rafraichis :
+    un rebaseline qui conserverait le `by`/`date` de l'audit precedent ferait
+    affirmer a l'entree « auditee par <l'auditeur d'avant> le <la date d'avant> »
+    alors que les SHAs sont ceux d'aujourd'hui -- la tracabilite mentirait, ce
+    que le registre existe precisement pour empecher (cf #8570).
 
     Retourne (last_audit_dict mis a jour, sha_utilise_pour_python ou None si missing).
     """
@@ -204,15 +230,84 @@ def update_pair(repo_root: Path, pair: dict) -> tuple[dict, str | None]:
     cs = pair["csharp"]
     cur_py = _git_blob_sha(repo_root, py)
     cur_cs = _git_blob_sha(repo_root, cs)
-    today = pair.get("last_audit", {}).get("date")  # conserve si deja la
-    by = pair.get("last_audit", {}).get("by", "manual")
     audit = {
-        "date": today,
-        "by": by,
+        "date": date or _dt.date.today().isoformat(),
+        "by": by or pair.get("last_audit", {}).get("by", "manual"),
         "python_sha": cur_py,
         "csharp_sha": cur_cs,
     }
     return audit, cur_py
+
+
+# Cles scalaires du bloc `last_audit` reecrites par le rebaseline chirurgical.
+_AUDIT_KEYS = ("date", "by", "python_sha", "csharp_sha")
+
+
+def _fmt_audit_value(key: str, value) -> str:
+    """Rend une valeur de `last_audit` dans le style du registre.
+
+    `date` est quotee (comme les 116 entrees existantes), le reste est nu.
+    """
+    if value is None:
+        return "null"
+    return f'"{value}"' if key == "date" else str(value)
+
+
+def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
+    """Reecrit UNIQUEMENT les lignes `last_audit` des paires ciblees.
+
+    Pourquoi ne pas re-serialiser via `yaml.safe_dump` (comportement d'avant
+    #8570) : un dump complet detruit **tout** le fichier autour des donnees.
+    Mesure firsthand sur le registre a 116 paires -- un rebaseline d'UNE paire
+    produisait `1108 insertions(+), 658 deletions(-)` et supprimait les **67
+    lignes de commentaire**, dont l'en-tete de 15 lignes qui documente le
+    schema et le vocabulaire `parity_level`. Le vrai changement (4 lignes)
+    devenait irreviewable, et la documentation du registre disparaissait sans
+    que personne ne l'ait demande.
+
+    L'edition ligne-a-ligne ci-dessous preserve commentaires, ordre, quoting et
+    espacement : le diff d'un rebaseline vaut exactement les lignes changees.
+
+    Args:
+        raw: contenu texte du registre YAML.
+        updates: {nom_de_paire: {"date":.., "by":.., "python_sha":.., "csharp_sha":..}}
+
+    Returns:
+        (nouveau_texte, nombre_de_paires_effectivement_touchees)
+    """
+    out: list[str] = []
+    current: str | None = None
+    in_audit = False
+    touched: set[str] = set()
+
+    for line in raw.splitlines(keepends=True):
+        m_entry = re.match(r"^-\s+name:\s*(.+?)\s*$", line)
+        if m_entry:
+            current = m_entry.group(1).strip().strip("\"'")
+            in_audit = False
+        elif re.match(r"^\s{2}last_audit:\s*$", line):
+            in_audit = current in updates
+        elif re.match(r"^\s{2}\S", line):
+            # toute autre cle de premier niveau de l'entree ferme le bloc
+            in_audit = False
+
+        if in_audit:
+            m_kv = re.match(r"^(\s+)(\w+):\s*(.*)$", line)
+            if m_kv and m_kv.group(2) in _AUDIT_KEYS:
+                key = m_kv.group(2)
+                new = updates[current].get(key, _MISSING)
+                # On ne reecrit que si la VALEUR change : sinon un rebaseline
+                # sur une paire deja a jour normaliserait le quoting (le
+                # registre melange 'x' et "x") et polluerait le diff de lignes
+                # sans changement reel.
+                old = m_kv.group(3).strip().strip("\"'")
+                if new is not _MISSING and str(new) != old:
+                    line = f"{m_kv.group(1)}{key}: {_fmt_audit_value(key, new)}\n"
+                    touched.add(current)
+
+        out.append(line)
+
+    return "".join(out), len(touched)
 
 
 def _classify_per_pair(base_status: str, head_status: str) -> str:
@@ -262,6 +357,11 @@ def main(argv=None) -> int:
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
+    p.add_argument("--by", default=None,
+                   help="Auteur de l'audit inscrit dans last_audit.by (ex. "
+                        "'myia-po-2024:CoursIA-2'). Avec --update, la date est "
+                        "TOUJOURS mise a aujourd'hui : sans --by, l'entree garderait "
+                        "l'auteur de l'audit precedent alors que les SHAs sont neufs.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -415,19 +515,26 @@ def main(argv=None) -> int:
         else:
             # --yes-all-pairs (filet anti-corruption silencieuse, cf #8508)
             target = all_pairs
-        updated = 0
+        updates: dict[str, dict] = {}
+        skipped: list[str] = []
         for pp in target:
-            audit, cur_py = update_pair(repo_root, pp)
-            if cur_py is not None:
-                pp["last_audit"] = audit
-                updated += 1
-        # re-ecrit le registre ENTIER (conserve l'ordre + les autres paires)
-        if yaml is None:
-            raise SystemExit("Erreur : PyYAML requis pour --update.")
-        reg_path.write_text(
-            yaml.safe_dump(all_pairs, sort_keys=False, allow_unicode=True, width=100),
-            encoding="utf-8",
-        )
+            audit, cur_py = update_pair(repo_root, pp, by=args.by)
+            if cur_py is None:
+                skipped.append(pp.get("name", "?"))
+                continue
+            updates[pp["name"]] = audit
+        # Rebaseline CHIRURGICAL : seules les lignes `last_audit` des paires
+        # ciblees changent. Un `yaml.safe_dump` complet (comportement d'avant
+        # #8570) reformatait les ~1475 lignes et supprimait les 67 commentaires
+        # du registre, dont l'en-tete qui documente le schema.
+        raw = reg_path.read_text(encoding="utf-8")
+        new_raw, updated = surgical_rebaseline(raw, updates)
+        reg_path.write_text(new_raw, encoding="utf-8")
+        if skipped:
+            print(
+                f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
+                file=sys.stderr,
+            )
         msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
         print(msg)
         return 0
