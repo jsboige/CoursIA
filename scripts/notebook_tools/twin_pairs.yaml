@@ -799,6 +799,20 @@
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."
     - "Idiomes framework : Python = `networkx` (arbre de jeu) + `numpy` + `matplotlib` (rendu graphique des arbres et des trajectoires d'induction) + `@dataclass` + implementation manuelle de l'induction arriere. C# = **BCL .NET pur 0 NuGet** (modele d'arbre de jeu from-scratch + section dediee « Visualisation ASCII de l'arbre de jeu » en sortie console)."
     - "Asymetrie de couverture pedagogique : le C# (26 cellules, 10 sections) couvre davantage de paradoxes explicitement (entree sur marche, Centipede, War of Attrition, Chain-Store + efficacite/rationalite limitee + viz ASCII) ; le Python (35 cellules, 7 sections + 4 exercices) detal l'algorithme, les limites de l'induction arriere et un resume. Meme theorie (Selten 1965 SPE, Selten 1978 Chain-Store), structuration pedagogique differente (Python focalise algorithme+limites, C# focalise catalogage des paradoxes + viz ASCII)."
+- name: "GameTheory-10 ForwardInduction-SPE"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 4e6012c9ddacf33ff951f6068155bf38fa5a4ff6
+    csharp_sha: 76c53cf7c98bf8e089035bf7304e8e45b5e6488d
+  known_differences:
+    - "Socle pedagogique commun : les raffinements d'equilibre au-dela du SPE (Selten 1965) -- sous-jeux et equilibre parfait, menaces et promesses credibles, induction avant (forward induction), perfection en mains tremblantes (trembling-hand perfection, Selten 1975), application canonique du jeu du « Burn Money » (signal costly), comparaison des raffinements. Distinct du GT-9 (induction arriere + paradoxes) : le GT-10 porte sur les RAFFINEMENTS de la notion d'equilibre (forward induction, trembling-hand), pas sur l'algorithme de resolution."
+    - "Idiomes framework : Python = `matplotlib` (patches `Ellipse` pour rendre les ensembles d'information / infosets sur l'arbre de jeu) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet** (modele d'arbre + sous-jeux + raffinements from-scratch, sortie console)."
+    - "Couverture tres parallele (twins proches) : les deux cotes suivent les 8 memes sections (SPE, menaces/promesses credibles, forward induction, trembling-hand, Burn Money, comparaison des raffinements, exercices, resume) -- un des twins les plus structurellement alignes de la serie. Le Python (37 cellules : 15 code + 22 markdown) ajoute la viz graphique matplotlib des infosets (Ellipse) ; le C# (34 cellules : 13 code + 21 markdown) reste en console. Meme theorie (Selten 1965/1975), idiomes de visualisation differents."
 
 # === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
 
