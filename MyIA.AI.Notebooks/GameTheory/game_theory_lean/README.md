@@ -119,9 +119,9 @@ préservé ici — anti-régression 4 étapes respectée).
 | Sous-module | Lignes (FR / EN) | Sorries (FR / EN) | Contenu |
 |-------------|------------------|------------------|---------|
 | [`StableMarriage.Definitions`](StableMarriage/Definitions.lean) | 125 / 132 | 0 / 0 | `PrefProfile`, `Matching`, `IsStable`, ordre `ManLE` |
-| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | 173 / 180 | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
-| [`StableMarriage.Lemmas`](StableMarriage/Lemmas.lean) | 898 / 902 | 0 / 0 | Lemmes intermédiaires (44 lemmes, 0 sorry) |
-| [`StableMarriage.Lattice`](StableMarriage/Lattice.lean) | 885 / 881 | 3 / 3 | Treillis des mariages (join/meet), optimalité homme/femme ; **3 énoncés contrefactuels documentés**, ni eux ni leur traduction anglaise ne sont prouvables |
+| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | 168 / 177 | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
+| [`StableMarriage.Lemmas`](StableMarriage/Lemmas.lean) | 898 / 907 | 0 / 0 | Lemmes intermédiaires (44 lemmes, 0 sorry) |
+| [`StableMarriage.Lattice`](StableMarriage/Lattice.lean) | 885 / 881 | 0 / 0 | Treillis des mariages (join/meet), optimalité homme/femme ; les énoncés contrefactuels `man_optimality_key_step` et `doctor_optimal_eq_top` ont été **retirés et réfutés** (`NoCrossCounterexample.*_is_false`, carré latin 3×3), Lattice est sorry-free |
 | [`StableMarriage.GaleShapley`](StableMarriage/GaleShapley.lean) | 181 / 171 | 0 / 0 | Terminaison, stabilité, optimalité homme, existence d'un stable |
 
 **Théorèmes clés** (`namespace StableMarriage`) :
@@ -148,7 +148,7 @@ Trois sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 | Sous-module | Lignes (FR / EN) | Sorries (FR / EN) | Contenu |
 |-------------|------------------|------------------|---------|
 | [`CooperativeGames.Basic`](CooperativeGames/Basic.lean) | 607 / 606 | 0 / 0 | `Coalition = Finset N`, `TUGame`, unanimity/majority games, `BondedWeights`, **théorème de Bondareva-Shapley** (forward) |
-| [`CooperativeGames.ConeKernel`](CooperativeGames/ConeKernel.lean) | 753 / 547 | 0 / 0 | `BondarevaCone.augCone`, séparateur, **Bondareva-Shapley bidirectionnel** (forward + backward), `marginalVector_mem_core`, `convex_core_nonempty` |
+| [`CooperativeGames.ConeKernel`](CooperativeGames/ConeKernel.lean) | 753 / 757 | 0 / 0 | `BondarevaCone.augCone`, séparateur, **Bondareva-Shapley bidirectionnel** (forward + backward), `marginalVector_mem_core`, `convex_core_nonempty` |
 | [`CooperativeGames.Shapley`](CooperativeGames/Shapley.lean) | 2 024 / 2 034 | 0 / 0 | `Solution`, **les quatre axiomes de Shapley** (efficience, symétrie, joueur nul, additivité), unicité, `mobius_decomposition`, `shapley_smulGame`, `shapley_addGames` |
 
 **Théorèmes clés** (`namespaces Solution`, `ShapleyValue`, `Mobius`,
@@ -222,9 +222,10 @@ lake build
 lake build StableMarriage
 lake build CooperativeGames
 
-# Vérifier l'état sorry actuel (manifest attendu = 6 : 3+3 dans Lattice)
-grep -c '\bsorry\b' StableMarriage/Lattice.lean        # 3
-grep -c '\bsorry\b' StableMarriage/Lattice_en.lean     # 3
+# Vérifier l'état sorry actuel (Lattice est sorry-free : 0 sorry de tactique)
+# NB : `grep -c '\bsorry\b'` brut renvoie 3 par fichier car le mot apparaît
+# dans des commentaires de prose (historique des tentatives de preuve) ;
+# le compte canonique (strip_comments de scripts/lean/check_i18n_siblings.py) = 0.
 
 # Cache Mathlib (premier build, ~40s ; incrémental ensuite ~13s)
 lake exe cache get
