@@ -984,7 +984,7 @@
   last_audit:
     date: "2026-07-25"
     by: po-2024
-    python_sha: 241861d0ed68d31c6000a79ac7985b4e04972d7e
+    python_sha: 7131d0cdb8d17a1e10d1419682e0de2230bf4959
     csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
