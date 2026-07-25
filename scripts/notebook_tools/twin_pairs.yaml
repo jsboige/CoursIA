@@ -681,6 +681,20 @@
     - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
     - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."
     - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib). Meme concepts, abstraction differente (lib vs from-scratch)."
+- name: "GameTheory-3 Topology2x2"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 3f608255b72f69479d0dc48a373ed56b9322ead1
+    csharp_sha: 2f63d179ba1cb5d04f9d025592ce215a4e05fbd5
+  known_differences:
+    - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."
+    - "Asymetrie : Python s'appuie sur networkx pour la viz de graphes d'isomorphisme entre jeux ; C# travaille en pur System.* (Linq pour les manipulations). Valeur pedagogique = voir la structure OrdinalGame sous deux perspectives framework (lib graph externe vs Linq integre)."
 - name: "GameTheory-4 NashEquilibrium"
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
