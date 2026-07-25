@@ -103,10 +103,17 @@ class TestAllowlist:
         assert reason is not None
         assert "TTS" in reason or "multilingue" in reason
 
-    def test_qc_cloud_gated_residual_allowed(self):
-        reason = mod._is_allowed("MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb")
+    def test_texte_multilingual_allowed(self):
+        reason = mod._is_allowed("MyIA.AI.Notebooks/GenAI/Texte/9_Production_Patterns.ipynb")
         assert reason is not None
-        assert "gated" in reason.lower()
+        assert "multilingue" in reason.lower() or "mandarin" in reason.lower()
+
+    def test_qcpy03_no_longer_allowed(self):
+        # QC-Py-Cloud-03 was FALSELY allowlisted as "needs QC-Cloud re-exec" (it is local
+        # Python, no QuantBook). The 简化 residue was fixed by local re-exec in #8553, so the
+        # gated-residual allowlist entry is removed — the notebook must NOT be skipped now.
+        reason = mod._is_allowed("MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb")
+        assert reason is None
 
     def test_random_notebook_not_allowed(self):
         assert mod._is_allowed("MyIA.AI.Notebooks/ML/Some-Notebook.ipynb") is None
