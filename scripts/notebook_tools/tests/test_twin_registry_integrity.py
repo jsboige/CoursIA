@@ -25,7 +25,19 @@ yaml = pytest.importorskip("yaml")
 
 REGISTRY = Path(__file__).resolve().parents[1] / "twin_pairs.yaml"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+# Cle minimale qu'une entree doit posseder (sous-ensemble). Un merge union mal
+# tombe peut aussi INJECTER des cles etrangeres (interlacement ligne a ligne) :
+# ALLOWED_KEYS (ensemble exact) couvre ce second mode (cf test ci-dessous, #8542).
 REQUIRED_KEYS = {"name", "family", "python", "csharp", "parity_level", "last_audit"}
+ALLOWED_KEYS = {
+    "name", "family", "python", "csharp", "parity_level",
+    "last_audit", "known_differences",
+}
+# Plancher d'entrees (2026-07-25, 98 paires sur origin/main). Un merge union qui
+# detruit/absorbe silencieusement une entree (interlacement) fait chuter le
+# compte sous ce plancher -> echec CI bruyant. A LEVER au fur et a mesure que le
+# registre grossit (jamais baisser sans investiguer une perte silencieuse, #8542).
+MIN_ENTRIES = 98
 
 
 def _entries() -> list:
@@ -119,3 +131,40 @@ def test_registered_notebooks_exist_on_disk():
         if p and not (repo_root / p).exists()
     ]
     assert not missing, f"notebooks introuvables : {missing}"
+
+
+def test_entries_have_exact_key_set():
+    """Mode de defaillance n3 du merge union (#8542, Constat 2) : l'interlacement
+    ligne a ligne peut INJECTER des cles etrangeres dans une entree (les champs
+    d'une paire appendee se retrouvent meles au bloc d'une autre). Le YAML peut
+    encore parser, les cles requises peuvent encore etre presentes, aucune cle
+    n'est dupliquee -- mais la structure est corrompue. Cet assert verifie que
+    chaque entree possede EXACTEMENT l'ensemble de cles canonique (ni plus, ni
+    moins), ce qu'aucun des tests precedents ne couvrait.
+    """
+    bad = []
+    for entry in _entries():
+        keys = set(entry.keys())
+        extra = keys - ALLOWED_KEYS
+        missing = REQUIRED_KEYS - keys
+        if extra or missing:
+            name = entry.get("name", "?")
+            if extra:
+                bad.append(f"{name} -> cles inattendues: {sorted(extra)}")
+            if missing:
+                bad.append(f"{name} -> cles manquantes: {sorted(missing)}")
+    assert not bad, "entrees au schema corrompu (interlacement merge union ?) : " + "; ".join(bad)
+
+
+def test_entry_count_floor():
+    """Mode de defaillance n4 du merge union (#8542, Constat 2) : l'interlacement
+    peut FUSIONNER ou ABSORBER silencieusement une entree entiere dans le bloc
+    d'une autre, faisant chuter le compte total sans declencher d'erreur de parse
+    ni de cle dupliquee. Le plancher MIN_ENTRIES (leve periodiquement a mesure que
+    le registre grossit) transforme cette perte silencieuse en echec CI bruyant.
+    """
+    n = len(_entries())
+    assert n >= MIN_ENTRIES, (
+        f"le registre a perdu des entrees : {n} < {MIN_ENTRIES} "
+        f"(interlacement merge union ou suppression accidentee ? cf #8542)"
+    )
