@@ -1435,3 +1435,269 @@
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+- name: App-2 GraphColoring
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-2-GraphColoring.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-2b-GraphColoring-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 3b9b6fb8f001002a3a36444c15c414d119bea2fe
+    csharp_sha: e0782a57e2693c57a62d87d0652127f2bf207781
+  known_differences:
+    - "Socle pedagogique commun : Coloration de graphe (CSP : nombre chromatique, DSATUR, Welsh-Powell, OR-Tools CP-SAT exact) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT (exact chi) + greedy/DSATUR/Welsh-Powell + search_helpers ; C# = backtracking from-scratch + Mycielski (BCL pure)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-3 NurseScheduling
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-3-NurseScheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-3b-NurseScheduling-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 4fdd12c2d22df5dd64e280b12af5b4709d586b5a
+    csharp_sha: 52f7b50aa5d1f9553673ecce518df546dd4c1f93
+  known_differences:
+    - "Socle pedagogique commun : Planning d'infirmieres (CSP : contraintes horaires, preferences, couverture) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + matplotlib gantt + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-4 JobShopScheduling
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-4-JobShopScheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-4b-JobShopScheduling-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ad8806b9ab124538f95f946a52872566efb03aad
+    csharp_sha: e16eeb2276ddc4c9edb0d8c4b7505691d88f7e35
+  known_differences:
+    - "Socle pedagogique commun : Job-shop scheduling (CSP : ordonnancement machines, makespan minimal) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + deepcopy/state + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-5 Timetabling
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-5-Timetabling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-5-Timetabling-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: e717ca87c5efa311c3e79e799327e7d19e2cc691
+    csharp_sha: 52a9869b22cfe957076dd0819b8508ba7221e99a
+  known_differences:
+    - "Socle pedagogique commun : Emploi du temps / Timetabling (CSP : creneaux, salles, conflits) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + itertools combinations + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-6 Minesweeper
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-6-Minesweeper.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-6-Minesweeper-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: a0a5d1ff2462770aa37fda5dd0c426ff6cd31589
+    csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
+  known_differences:
+    - "Socle pedagogique commun : Demineur (CSP : contraintes sommes exactes, library python-constraint) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = library python-constraint (ExactSum) + OR-Tools ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-7 Wordle
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-7-Wordle.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-7b-Wordle-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: f07a9680882345ad9f56a69e24f8092acfe8a68e
+    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+  known_differences:
+    - "Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l'information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-8 MiniZinc
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-8-MiniZinc.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-8-MiniZinc-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ec0193b63167a8de6ea813efb2dfc5e765c149cd
+    csharp_sha: a23abb89caa43b005af88529f9f757810b5ec384
+  known_differences:
+    - "Socle pedagogique commun : MiniZinc (modeling language CSP, OR-Tools CP-SAT cross-solve) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = minizinc + OR-Tools CP-SAT ; C# = Google.OrTools.Sat NuGet (C# binding du meme solver OR-Tools)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-9 EdgeDetection
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-9-EdgeDetection.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-9b-EdgeDetection-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: e92fbd594f761ed425a53a59adb09017994c216b
+    csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
+  known_differences:
+    - "Socle pedagogique commun : Detection de contours / Edge detection (metaheuristique DEAP + scipy sobel) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = DEAP metaheuristique + scipy.signal/sobel + matplotlib ; C# = System.Net.Http + SkiaSharp (traitement bitmap)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-10 Portfolio
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-10-Portfolio.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-10b-Portfolio-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 1deeabe00fa6c14f4809f26e28d088473ecb4fd6
+    csharp_sha: dad13c7fac88520807664b25ab6b95095f608677
+  known_differences:
+    - "Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp C#) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = cvxpy convex optimization + math.comb ; C# = GeneticSharp NuGet (GA)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-11 Picross
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-11-Picross.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-11b-Picross-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: c74eb8bc47ad9556f85778d653086915b18480ce
+    csharp_sha: 973726eeb2c0cdb97ddf65a47013f42f1fbadd55
+  known_differences:
+    - "Socle pedagogique commun : Picross / Nonogram (CSP : contraintes lignes/colonnes, OR-Tools) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + matplotlib colors + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-12 ConnectFour
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Search\App-12-ConnectFour.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Search\App-12-ConnectFour-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 7b29b76a0a3644fc6b05d18d2e47cc294018165e
+    csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
+  known_differences:
+    - "Socle pedagogique commun : Puissance 4 / Connect Four (IA jeux combinatoires : minimax alpha-beta, MCTS, framework AIMA) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = numpy/matplotlib + framework AIMA (Game, namedtuple) + viz ; C# = System.* BCL pure, 0 NuGet, 29 cellules compactes."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-13 TSP Metaheuristics
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-13-TSP-Metaheuristics.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-13b-TSP-Metaheuristics-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 715858e6d162f56c1bb26db5441d6ca43d3c1b64
+    csharp_sha: c1aa93b3ef1995aad5abe0f24e07b8fa3efff577
+  known_differences:
+    - "Socle pedagogique commun : TSP / Voyageur de commerce (metaheuristiques + OR-Tools routing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools constraint_solver routing + permutations ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-14 ConnectFour Adversarial
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Search\App-14-ConnectFour-Adversarial.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Search\App-14-ConnectFour-Adversarial-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 5098122cf762afaf6ea657f3715aee00257e65b8
+    csharp_sha: 2ec088ff8d391f7e8bc39e967730ca6c7c821b01
+  known_differences:
+    - "Socle pedagogique commun : Puissance 4 adversarial (variant Connect-4, IA jeux combinatoires) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = collections + typing (variant Connect-4 adversarial) ; C# = System.* BCL pure (System.Text), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-15 SportsScheduling
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-15-SportsScheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-15b-SportsScheduling-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 16612e0a99b13c68f31c32810289e0065a27cfde
+    csharp_sha: 10bf1bd2e2f20c0267fe9ad891b9bc084c9ac482
+  known_differences:
+    - "Socle pedagogique commun : Planning sportif / Sports scheduling (CSP : round-robin, contraintes equipes) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass ; C# = Google.OrTools.Sat NuGet + ScottPlot viz."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-16 Crossword CSP
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-16-Crossword-CSP.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-16-Crossword-CSP-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ea73a6737bd5ddf570edf52107c5101e6db45342
+    csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
+  known_differences:
+    - "Socle pedagogique commun : Generateur de mots croises (CSP : slots, intersections, dictionnaire) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass + viz grille + stats ; C# = BCL pure (System.Linq/Text), 0 NuGet, 24 cellules."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-17 VRP Logistics
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-17-VRP-Logistics.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-17b-VRP-Logistics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: e9319b2646a8911db3c485f40ea2d715d0aa61e5
+    csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+  known_differences:
+    - "Socle pedagogique commun : VRP / Routing logistique (CSP + OR-Tools routing, distances) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = OR-Tools routing + math.sqrt distances ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-18 HyperparameterTuning
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-18-HyperparameterTuning.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\Hybrid\App-18b-HyperparameterTuning-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 784450547d99e1be919c24f29428c44cca877cb7
+    csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
+  known_differences:
+    - "Socle pedagogique commun : Hyperparameter tuning (scipy.optimize + Gaussian Process / Bayes opt) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = scipy.optimize + scipy.stats norm + sklearn ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-19 ProceduralGeneration WFC
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-19-ProceduralGeneration-WFC.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-19-ProceduralGeneration-WFC-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: b48dc3f3cbd0e802177081c34dab88d12053158a
+    csharp_sha: 7422b47e09f277958bd16c05b60e45fbda93fdd1
+  known_differences:
+    - "Socle pedagogique commun : Generation procedurale WFC / Wave Function Collapse (CSP + ipywidgets interactif) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = WFC + ipywidgets interactif + matplotlib GridSpec ; C# = BCL pure (System.Text), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+- name: App-20 SudokuBenchmark
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications\CSP\App-20-SudokuBenchmark-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications\CSP\App-20b-SudokuBenchmark-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: a98eb19800861b6a81c02053b6dccd91412130bc
+    csharp_sha: 0f2dbea5dad14954250d2262b6e5baa3ba60df6a
+  known_differences:
+    - "Socle pedagogique commun : Benchmark Sudoku (comparaison solveurs, timing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = typing + random + time (from-scratch benchmark) ; C# = System.Diagnostics (Stopwatch) BCL pure."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
