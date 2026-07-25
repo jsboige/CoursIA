@@ -1530,3 +1530,67 @@
     - "Divergence sur la methode EXACTE (chi) : Python utilise OR-Tools CP-SAT (ortools.sat.python.cp_model.CpModel + solver, solveur industriel SAT-based, SOTA) pour le chi optimal ; le C# implemente un backtracking from-scratch (CanColor / k-coloriable, 0 dependance externe, 0 NuGet). Meme resultat (chi exact), deux paradigmes : solveur SOTA cote Python vs implementation pedagogique a la main cote C#."
     - "Asymetrie pedagogique : le C# ajoute une section dediee au paradoxe de Mycielski (graphes triangle-free mais chromatiquement grands, construction de M_k depuis K_2) que Python ne couvre pas ; Python ajoute 4 cellules de visualisation matplotlib (graphe des departements francais, coloration greedy/DSATUR, benchmark G(n,p), carte finale) absentes cote C# (sortie texte / table markdown). Meme socle theorique, angles de demonstration differents."
     - "Idiomes framework : Python = ortools.sat.python.cp_model + numpy + matplotlib + networkx, 56 cellules (26 code ; formulation CSP, 3 heuristiques + CP-SAT exact, enumeration solutions, benchmark G(n,p) ; 3 exemples guides + 3 exercices). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 26 cellules (12 code ; Greedy/DSATUR/Welsh-Powell + backtracking exact + Mycielski + benchmark Erdos-Renyi ; 3 exercices)."
+
+
+# === Tranche 11 Search/Applications/CSP remainder (c.756, po-2026) — famille supplementaire #8057 ===
+# App-6/App-8/App-16/App-19 : 4 paires Py<->C# non enregistrees dans la tranche 9 (App-1/App-2).
+# Verifie firsthand (G.1) : twins genuins (meme sujet FR, 0 null_exec des deux cotes),
+# parite semantique (Python = solveurs SOTA OR-Tools/MiniZinc/python-constraint + numpy/matplotlib ;
+# C# = BCL System.* + backtracking from-scratch), meme socle que App-1/App-2 deja registered.
+- name: App-6 Minesweeper
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: a0a5d1ff2462770aa37fda5dd0c426ff6cd31589
+    csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
+  known_differences:
+  - 'Socle pedagogique commun : Demineur comme CSP canonique -- formulation (cases comme variables, domaines mine/pas-mine, contraintes de voisinage numerique), propagation de contraintes + inference de probabilites. Les deux twins couvrent la modelisation CSP du demineur et la resolution deterministe ; Python ajoute l''analyse probabiliste (NP-completude, decision sous incertitude), le C# la demonstration compacte BCL.'
+  - 'Idiomes framework : Python = python-constraint (module `constraint`) + numpy + matplotlib, 55 cellules (23 code ; formulation CSP, resolution, analyse probabiliste, visualisations). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 22 cellules (10 code ; backtracking + DFS + propagation de contraintes from-scratch).'
+  - 'Asymetrie pedagogique : Python met l''accent sur la dimension probabiliste (estimation de la probabilite de mine par case, decision sous incertitude, lien NP-completude) et la visualisation matplotlib ; le C# demontre la resolution backtracking/DFS en BCL pure, presentation compacte sans dependance externe. Meme socle theorique (CSP du demineur, propagation), angles complementaires.'
+- name: App-8 MiniZinc
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ec0193b63167a8de6ea813efb2dfc5e765c149cd
+    csharp_sha: a23abb89caa43b005af88529f9f757810b5ec384
+  known_differences:
+  - 'Socle pedagogique commun : modelisation declarative par contraintes -- separation formulation/resolution, le solveur industriel fait le travail de recherche. Cas d''etude partages : N-Reines, Sudoku, allocation. Les deux twins demontrent qu''un modele declaratif concis (vs un solveur code a la main) suffit a resoudre des CSP combinatoires.'
+  - 'Divergence sur le solveur declaratif : Python utilise **MiniZinc** (appel via subprocess au binaire `minizinc`, modele .mzn, MiniZinc instance) en complement d''OR-Tools CP-SAT ; le C# utilise **Google.OrTools.Sat** (CpModel, NuGet officiel Google.OrTools) cote .NET. Deux ecosystems declaratifs SOTA, meme paradigme (formuler les contraintes, laisser le solveur resoudre).'
+  - 'Idiomes framework : Python = subprocess MiniZinc + ortools.sat.python.cp_model + numpy + matplotlib, 47 cellules (19 code ; modele .mzn, CP-SAT, comparaison, benchmark). C# = Google.OrTools.Sat + System.Diagnostics + System.Globalization, 24 cellules (14 code ; CpModel OR-Tools cote .NET, formulation declarative).'
+  - 'Asymetrie pedagogique : Python illustre le langage de modelisation MiniZinc (.mzn) et l''orchestration subprocess d''un solveur externe (chaine d''outils MiniZinc) ; le C# demontre OR-Tools CP-SAT cote .NET (NuGet natif). Meme concept (CP declarative), deux chaine d''outils differentes.'
+- name: App-16 Crossword-CSP
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ea73a6737bd5ddf570edf52107c5101e6db45342
+    csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
+  known_differences:
+  - 'Socle pedagogique commun : generateur de mots croises comme CSP -- variables = mots a placer, domaines = vocabulaire filtre par longueur, contraintes = intersections de lettres entre mots horizontaux/verticaux. Resolution par backtracking + propagation de contraintes.'
+  - 'Divergence sur le solveur : Python utilise OR-Tools CP-SAT (ortools.sat.python.cp_model, solveur industriel SAT-based) en complement du backtracking ; le C# implemente un backtracking + propagation from-scratch en BCL pure (System.Collections.Generic / System.Linq / System.Text), 0 NuGet.'
+  - 'Idiomes framework : Python = ortools.sat.python.cp_model + numpy + matplotlib + dataclasses, 25 cellules (11 code ; formulation CSP, CP-SAT, backtracking, visualisation grille). C# = pur System.* + System.Text, 24 cellules (11 code ; backtracking + propagation from-scratch). Cellule counts quasi-identiques (25 vs 24), twins proches.'
+- name: App-19 ProceduralGeneration-WFC
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: b48dc3f3cbd0e802177081c34dab88d12053158a
+    csharp_sha: 7422b47e09f277958bd16c05b60e45fbda93fdd1
+  known_differences:
+  - 'Socle pedagogique commun : generation procedurale de niveaux via Wave Function Collapse (WFC) -- variables = cellules de la grille, domaines = tuiles compatibles, contraintes = regles d''adjacence entre tuiles. Collapse iteratif + propagation jusqu''a une grille coherente. Algorithme partage (WFC), meme concept CSP sous-jacent.'
+  - 'Divergence sur l''implementation : Python s''appuie sur un module dedie `wfc_cpsat` (reduction WFC -> CP-SAT, formulation OR-Tools) + IPython/ipywidgets pour l''exploration interactive ; le C# implemente le WFC en backtracking + BFS + propagation from-scratch en BCL pure (System.Collections.Generic / System.Text), 0 NuGet.'
+  - 'Idiomes framework : Python = wfc_cpsat + ortools CP-SAT + ipywidgets + numpy + matplotlib, 34 cellules (16 code ; formulation WFC->CP-SAT, interface interactive, visualisations). C# = pur System.*, 22 cellules (10 code ; WFC backtracking + BFS + propagation from-scratch). Meme algorithme (Wave Function Collapse), leviers d''implementation differents.'
