@@ -259,9 +259,9 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: 7fcff428e20f614d6dd2567a7af4107d106f46d4
+    date: '2026-07-25'
+    by: ai-01
+    python_sha: 7f38036c4fa60f0d36e3d7486812561948cca90e
     csharp_sha: a379bbc58b935a4b6fa0afda1c6337f091035845
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
