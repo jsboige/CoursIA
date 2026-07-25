@@ -1435,3 +1435,17 @@
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+- name: App-12 ConnectFour
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: 7b29b76a0a3644fc6b05d18d2e47cc294018165e
+    csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
+  known_differences:
+    - "Socle pedagogique commun : Puissance 4 (Connect Four) comme benchmark de comparaison d'algorithmes IA jeux combinatoires — moteur de jeu (grille 6x7, drop piece, detection alignement 4), heuristique fenetres de 4, puis 4 IA : joueur aleatoire (baseline), Minimax avec elagage alpha-beta, Monte Carlo Tree Search (MCTS), joueur glouton (heuristique 1-ply). Les deux twins couvrent le tournoi round-robin + iterative deepening alpha-beta (limite de temps) + les 3 memes exercices (negamax, iterative deepening, ordonnancement des coups et mesure du speedup)."
+    - "Idiomes framework : Python = numpy/matplotlib + framework AIMA (collections.namedtuple, classe Game), 59 cellules (moteur, 4 IA sect3-6, tournoi sect7, framework AIMA sect8 avec approfondissement iteratif + benchmark, 3 exercices). C# = pur System.* (System/Random/Collections.Generic/Linq), 0 NuGet, 29 cellules (moteur, heuristique fenetres sect3, minimax alpha-beta sect4, MCTS sect5, glouton sect6, tournoi sect7, iterative deepening sect8, 3 exercices)."
+    - "Asymetrie pedagogique : Python ajoute la visualisation matplotlib (affichage grille + resultats tournoi multi-fig) + une section dediee au framework AIMA du livre de reference (sect8 : adaptateur ConnectFour_AIMA, IterativeDeepeningAlphaBeta avec limite de temps, benchmark comparatif) ; le C# demontre les memes algorithmes en BCL pure sans dependance externe, presentation compacte (cellule[41] utility() stub fut nettoye CJK #8523). Meme socle theorique (jeux a somme nulle, minimax, UCT/MCTS), leviers de demonstration differents."
