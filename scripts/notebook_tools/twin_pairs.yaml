@@ -507,10 +507,11 @@
   parity_level: semantic
   last_audit:
     date: '2026-07-25'
-    by: po-2023
+    by: po-2024
     python_sha: 4936068731fae6f80c19f3fa259363171c5831de
-    csharp_sha: 6036be3c4270c195322e806106424ee228c2444c
+    csharp_sha: edf5441fc3bb6b8b419ed1c42cdca9c15088ddf7
   known_differences:
+  - '2026-07-25 (po-2024) #8548 : correction attribution source cote C# uniquement -- cell[7] Herbrich et Graepel 2006 remplace par Herbrich Minka et Graepel (2007 NIPS 20) avec Minka comme auteur EP, cell[55] reference alignee, NOUVELLE cellule markdown lineage (MBML Ch.3 Meeting Your Match + distinction Infer-7 = Ch.2 skill-from-answers vs Infer-8 = Ch.3 skill-from-match-result). Edition markdown-only, 0 changement de code 0 output drift -- parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par le raffinement de citation. python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'
   - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
