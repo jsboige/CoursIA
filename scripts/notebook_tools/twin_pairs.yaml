@@ -1435,3 +1435,17 @@
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
     - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+- name: App-16 Crossword-CSP
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-25'
+    by: po-2026
+    python_sha: ea73a6737bd5ddf570edf52107c5101e6db45342
+    csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
+  known_differences:
+    - "Socle pedagogique commun : Generateur de mots croises comme CSP canonique — modelisation (slots variables, domaines = mots du dictionnaire par longueur, contraintes aux intersections), resolution par backtracking + propagation/forward-checking + generation aleatoire. Les deux twins couvrent les 3 memes exercices (comptage mots elimines, grille optimisee max-intersections, contraintes de theme)."
+    - "Idiomes framework : Python = OR-Tools CP-SAT (cp_model, CpModel) + backtracking/propagation from-scratch, 25 cellules (modelisation, visualisation, solveur CP-SAT sect3, backtracking sect4, propagation sect5, generation sect6, statistiques sect7, 3 exercices). C# = pur System.* (System.Linq/System.Text/System.Collections.Generic), 0 NuGet, 24 cellules (modelisation + intersections sect1.1, backtracking from-scratch sect2, forward-checking sect3 + comparaison, generation sect4, 3 exercices)."
+    - "Asymetrie pedagogique : Python met l'accent sur OR-Tools CP-SAT (3eme solveur SOTA au-dela du backtracking) + visualisation de grille + analyse statistique de complexite ; le C# demontre backtracking + forward-checking en BCL pure sans dependance externe, avec comparaison directe des deux approches from-scratch. Meme socle theorique (CSP mots croises, propagation de contraintes), leviers de demonstration differents."
