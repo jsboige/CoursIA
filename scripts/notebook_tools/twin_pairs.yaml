@@ -6,8 +6,13 @@
 #
 # Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
 # SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
-# Apres une audit firsthand, rebaseline avec :
-#   python scripts/notebook_tools/check_twin_parity.py --update [--family ...]
+# Apres une audit firsthand, rebaseline UNE paire avec :
+#   python scripts/notebook_tools/check_twin_parity.py --update \
+#       --pair "<nom exact de l'entree>" --by "<machine:workspace>"
+# `--update` refuse de tourner sans selecteur (--pair / --family / --yes-all-pairs) :
+# sans lui il rebaselinerait les 116 paires d'un coup et masquerait des DRIFTs
+# legitimes (#8508). L'ecriture est chirurgicale : seules les lignes `last_audit`
+# de la paire ciblee changent, ce fichier garde ses commentaires (#8568).
 #
 # parity_level :
 #   surface     = meme plan/sections, implimentations independantes
