@@ -827,6 +827,20 @@
     - "Socle pedagogique commun : jeux bayesiens (information incomplete / types et croyances), equilibre bayesien de Nash (BNE), applications canoniques : Bataille des Sexes avec incertitude, Cournot avec couts incertains, encheres a valeurs privees (first-price/second-price), introduction aux jeux de signalisation (signaling). Distinct des GT precedents (jeux a information complete) : le GT-11 introduit la « typologie des joueurs » et le calcul d'equilibre sous croyances."
     - "Idiomes framework : Python = `scipy` (`integrate` pour les integrales d'esperance sur les types continus, `optimize.fsolve`/`minimize` pour resoudre les conditions du BNE) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** (le `#r \"Microsoft.DotNet.Interactive\"` est le kernel lui-meme, pas une dependance ; resolution analytique from-scratch via System.Math)."
     - "Asymetrie de couverture et de puissance de calcul : le Python (48 cellules : 15 code + 33 markdown, 7 sections) exploite scipy pour les equilibres numeriques (Bataille des Sexes + Cournot + encheres resolus a la machine) ; le C# (26 cellules : 13 code + 13 markdown, meme canevas + References academiques) reste sur la resolution analytique manuelle (System.Math), couverture +compacte. Meme theorie (Harsanyi 1967-68 BNE), leviers numeriques differents (scipy vs from-scratch analytique)."
+- name: "GameTheory-12 ReputationGames"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 6ef5e387bca07af24e6b0a4c27d739227c069e9e
+    csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
+  known_differences:
+    - "Socle pedagogique commun : jeux de reputation dans les interactions repetees sous information incomplete -- pourquoi la reputation change tout, cheap talk (communication non couteuse), modele de Kreps-Wilson (reputation du « tough incumbent » dans la chaine de magasins), Gang of Four / KMRW (cooperation emergente dans le dilemme du prisonnier fini), equilibre bayesien parfait (PBE). Suit naturellement le GT-11 (jeux bayesiens) en appliquant le BNE aux dynamiques de reputation."
+    - "Idiomes framework : Python = `scipy.optimize.fsolve` (resolution des conditions d'equilibre Kreps-Wilson) + `matplotlib` (courbes de gain / trajectoires de reputation) + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** avec une **simulation numerique Monte-Carlo from-scratch** (Random + System.Math, etude de l'impact du parametre epsilon sur les gains)."
+    - "Asymetrie methodologique notable : le C# (23 cellules) met l'accent sur la simulation Monte-Carlo from-scratch (tirages aleatoires pour estimer l'effet d'epsilon) ; le Python (29 cellules : 13 code + 16 markdown, 7 sections + exercice Chain-Store) priviliegie la resolution analytique via scipy.fsolve + visualisation matplotlib. Meme theorie (Kreps-Wilson 1982, KMRW), leviers de validation differents (scipy analytique cote Python, Monte-Carlo empirique cote C#)."
 
 # === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
 
