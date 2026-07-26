@@ -213,23 +213,47 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             })
 
     # Litmus 4 : free_alternative pointe vers un notebook inexistant.
-    # Le champ admet deux natures : un path relatif (vers un notebook/.md
-    # alternative gratuit) OU un sentinel semantique ('self' = ce notebook est
-    # deja l'alternative gratuite ; 'ollama'/'openai' = moteur gratuit ; 'N/A'
-    # = non-applicable ; 'none'/'null'). On ne verifie l'existence QUE des
-    # valeurs path-shaped : un sentinel n'est pas un fichier, le flagger =
-    # faux positif. Avant ce fix, le litmus produisait 101 FP fleet-wide
-    # (55x 'self', 18x '10_LocalLlama.ipynb' base fausse, 13x 'ollama',
-    # 5x 'N/A', 1x 'openai'...). Les sentinels explicites sont court-circuites
-    # en premier ; les valeurs path-shaped sont cherchees en dual-base (repo
-    # root OU MyIA.AI.Notebooks/, convention majoritaire).
-    SENTINELS = ('self', 'none', 'null', 'n/a', '')
+    # Le champ admet deux natures (design-gate tranche sur #8056) : un path
+    # relatif vers un notebook/.md alternative gratuit, OU un sentinel
+    # semantique. Un sentinel est canonique quand il porte une information que
+    # `null` detruit : 'self' = ce notebook EST l'alternative gratuite (oppose
+    # de `null` = « aucune alternative connue ») ; 'ollama' = un moteur local
+    # gratuit couvre le sujet, ce qu'aucun chemin du depot n'exprime ; 'n/a' =
+    # non-applicable, synonyme tolere de `null`.
+    #
+    # On ne verifie l'existence QUE des valeurs path-shaped : un sentinel n'est
+    # pas un fichier, le flagger = faux positif. Avant #8588 le litmus produisait
+    # 101 FP fleet-wide (55x 'self', 18x '10_LocalLlama.ipynb' base fausse,
+    # 13x 'ollama', 5x 'N/A'...). Les valeurs path-shaped sont cherchees en
+    # dual-base (repo root OU MyIA.AI.Notebooks/, convention majoritaire).
+    #
+    # 'openai' n'est PAS un sentinel : c'est precisement le service payant dont
+    # on cherche a s'affranchir. Le nommer comme alternative gratuite est une
+    # erreur de saisie -- desormais flaggee (voir plus bas), au lieu d'etre
+    # silencieusement toleree parce qu'elle ne ressemble pas a un chemin.
+    SENTINELS = ('self', 'ollama', 'none', 'null', 'n/a', '')
+    # Services payants : ne peuvent pas etre l'alternative *gratuite*.
+    PAID_SERVICES = (
+        'openai', 'anthropic', 'azure', 'replicate', 'runway',
+        'midjourney', 'gpt', 'claude', 'gemini',
+    )
     free_alt = cost_meta.get('free_alternative')
     if free_alt and str(free_alt).lower() not in SENTINELS:
         free_alt_str = str(free_alt)
         looks_like_path = ('/' in free_alt_str) or ('\\' in free_alt_str) \
             or free_alt_str.lower().endswith(('.ipynb', '.md'))
-        if looks_like_path:
+        if free_alt_str.lower() in PAID_SERVICES:
+            findings.append({
+                'pattern': 'free_alternative_is_paid_service',
+                'detail': (
+                    f"cost.free_alternative vaut '{free_alt}' : c'est un service "
+                    f"payant, il ne peut pas etre l'alternative gratuite. "
+                    f"Attendu : 'self' si ce notebook est deja gratuit, un "
+                    f"chemin repo-relatif, un moteur local ('ollama'), ou null."
+                ),
+                'severity': 'MAJOR',
+            })
+        elif looks_like_path:
             candidates = [
                 repo_root / free_alt,
                 repo_root / 'MyIA.AI.Notebooks' / free_alt,
@@ -240,6 +264,18 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                     'detail': f'cost.free_alternative pointe vers {free_alt} mais fichier absent',
                     'severity': 'MAJOR',
                 })
+        else:
+            # Ni sentinel canonique, ni chemin, ni service payant connu : la
+            # valeur ne resout vers rien que le lecteur puisse suivre.
+            findings.append({
+                'pattern': 'free_alternative_unresolvable',
+                'detail': (
+                    f"cost.free_alternative vaut '{free_alt}' : ni sentinel "
+                    f"canonique ({', '.join(s for s in SENTINELS if s)}), ni "
+                    f"chemin repo-relatif. Le lecteur ne peut pas le suivre."
+                ),
+                'severity': 'MINOR',
+            })
 
     # Litmus 5 : QC notebook sans qc_cloud validator
     uses_qc = any(detect_quantbook_usage(src) for _, src in code_cells_source)

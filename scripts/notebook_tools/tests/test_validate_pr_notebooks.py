@@ -204,6 +204,45 @@ class TestValidateNotebookH3:
         assert result["passed"] is False
         assert any("execution_count is null" in e for e in result["errors"])
 
+    def test_skip_exec_for_quantbook_content_outside_qc_paths(self, tmp_path):
+        """A notebook that instantiates QuantBook() can only run on QC Cloud,
+        wherever it lives. The carve-out follows the RUNTIME REQUIREMENT, not
+        the directory: anchoring on the path alone left 16 QuantBook notebooks
+        outside it (ESGF-2026/lean-workspace, QuantConnect/research,
+        kit-transitoire), 8 with null execution_count — a landmine firing on
+        whoever next touched one of those files. See #8056."""
+        # Neither under QC_CLOUD_PATHS nor flagged qc_reference.
+        odd_path = tmp_path / "ESGF-2026" / "lean-workspace" / "research.ipynb"
+        nb = _write_nb(odd_path, [
+            _code("from QuantConnect.Research import *\nqb = QuantBook()",
+                  exec_count=None),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+
+    def test_skip_exec_for_self_quantbook_attribute(self, tmp_path):
+        """`self.QuantBook` is the other spelling of the same requirement
+        (kept in sync with check_cost_metadata.detect_quantbook_usage)."""
+        odd_path = tmp_path / "elsewhere" / "research.ipynb"
+        nb = _write_nb(odd_path, [
+            _code("qb = self.QuantBook", exec_count=None),
+        ])
+        assert validate_notebook(nb)["passed"] is True
+
+    def test_no_skip_when_quantbook_only_mentioned_in_markdown(self, tmp_path):
+        """Narrowness guard: prose ABOUT QuantBook is not a runtime
+        requirement. Only a code cell instantiating it opts out of H.3 —
+        otherwise any tutorial mentioning QC would silently gain the right to
+        ship empty outputs."""
+        odd_path = tmp_path / "elsewhere" / "tutorial.ipynb"
+        nb = _write_nb(odd_path, [
+            _md("On instancie ensuite `QuantBook()` sur QC Cloud."),
+            _code("print('local, executable here')", exec_count=None),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+
 
 # ---------------------------------------------------------------------------
 # validate_notebook — C.1 checks (forbidden patterns)
