@@ -37,7 +37,7 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
   "vram_tier": "LITE",            // Catégorie VRAM (cf table §"Tiers VRAM")
   "network": true,                // Accès réseau requis (téléchargement modèle, appel API)
   "external_account": "openai",   // Compte externe obligatoire (openai, anthropic, hf, qc, ...) | "none"
-  "free_alternative": null,       // Notebook du dépôt qui couvre le même sujet sans coût | null
+  "free_alternative": null,       // Chemin repo-relatif vers un notebook équivalent sans coût, sentinel canonique, ou null. Cf §"Sentinels de `free_alternative`".
   "reduced_pedagogical": null,    // Version pédagogique réduite (sous-ensemble ou mock) | null
   "reproducibility": "HIGH",      // HIGH=déterministe, MED=seed-dépendant, LOW=stochastique
   "last_validated": "2026-07-24", // Date dernière exécution validée (ISO8601, papermill/QC Cloud/MCP)
@@ -117,6 +117,24 @@ Le catalogue anti-drift expose `cost` via l'inférence du frontmatter. Schéma c
 ```
 
 Le champ `cost.free_alternative` permet le routage machine : si `po-2025` n'a pas le GPU ou l'API key, le catalogue pointe vers le notebook équivalent exécutable localement.
+
+### Sentinels de `free_alternative`
+
+Le champ admet **deux natures** : un chemin repo-relatif, ou un **sentinel sémantique**. Le critère qui décide qu'un sentinel est canonique : **il porte une information que `null` détruit** (design-gate tranché sur #8056).
+
+| Valeur | Statut | Sens |
+|---|---|---|
+| `<chemin repo-relatif>` | forme nominale | Un notebook du dépôt couvre le même sujet sans coût. Résolu en dual-base (racine du dépôt **ou** `MyIA.AI.Notebooks/`). |
+| `self` | **canonique** | Ce notebook **est** l'alternative gratuite. Opposé de `null` — ne jamais normaliser vers `null`, ce serait lire 55 réponses positives comme 55 absences de réponse. |
+| `ollama` | **canonique** | Un moteur local gratuit couvre le sujet. Aucun chemin du dépôt ne l'exprime. |
+| `n/a` | toléré | Synonyme de `null`. Traité à l'identique par le checker ; pas de migration (coût non nul, gain nul). |
+| `null` | forme nominale | Aucune alternative gratuite connue. |
+| **service payant** (`openai`, `anthropic`, `replicate`, …) | **erreur** | C'est précisément le service dont on cherche à s'affranchir. Flaggé `free_alternative_is_paid_service` (MAJOR). |
+| autre valeur non-chemin | **erreur** | Ne résout vers rien que le lecteur puisse suivre. Flaggé `free_alternative_unresolvable` (MINOR). |
+
+Un **basename nu** (`10_LocalLlama.ipynb`) est un chemin imprécis, pas un sentinel : le lecteur ne peut pas le suivre et la dual-base ne le résout pas. Le checker ne le résout **pas** par `glob` sur l'arbre — ça ferait taire le finding sans corriger la référence, et deviendrait ambigu au premier basename partagé. **On répare la donnée, pas le détecteur.**
+
+Implémentation : `scripts/audit/check_cost_metadata.py`, litmus 4.
 
 ## Peuplement pilote (cycle c.794)
 
@@ -374,6 +392,8 @@ Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](ht
 | `metadata.cost.api_usd_est: 0.0` mais cellule appelle `openai.ChatCompletion.create()` | CRITICAL |
 | `metadata.cost.external_account: none` mais cellule demande `HF_TOKEN` | MAJOR |
 | `metadata.cost.free_alternative` pointe vers un notebook inexistant | MAJOR |
+| `metadata.cost.free_alternative` nomme un **service payant** (`openai`, `anthropic`, …) | MAJOR |
+| `metadata.cost.free_alternative` : valeur ni sentinel canonique ni chemin | MINOR |
 | Notebook QC sans `qc_cloud` validator | MAJOR |
 | Notebook GPU sans `sk_visual` validator (cf #5780 sweep) | MINOR |
 
