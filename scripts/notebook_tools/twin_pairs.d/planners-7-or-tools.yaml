@@ -1,0 +1,14 @@
+- name: "Planners-7 OR-Tools"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 7a857203d3ecf3d7f4b8f3d6e8ce48078578b3fa
+    csharp_sha: 6acd159baa6ba26452ad2397b1c6a8a92395da92
+  known_differences:
+    - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
+    - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : from-scratch BCL .NET (0 NuGet, Job-Shop modelise main, instance canonique Fisher & Thompson ft3 reprise cote Python)."
+    - "Asymetrie engine : Python = solveur CP-SAT reel ; C# = demo from-scratch. Meme instance de reference (ft3)."

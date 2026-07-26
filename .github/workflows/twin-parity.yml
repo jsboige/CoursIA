@@ -33,7 +33,7 @@ name: Twin Parity Check
 # has drifted.
 #
 # Paths watched:
-#   - scripts/notebook_tools/twin_pairs.yaml (registry)
+#   - scripts/notebook_tools/twin_pairs.d/** (registry file-per-entry, #8542)
 #   - scripts/notebook_tools/check_twin_parity.py (the tool itself)
 #   - All jumeau notebooks: MyIA.AI.Notebooks/**/*.ipynb (broad pattern;
 #     the tool itself filters down to the pairs in the registry).
@@ -45,7 +45,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'scripts/notebook_tools/twin_pairs.yaml'
+      - 'scripts/notebook_tools/twin_pairs.d/**'
       - 'scripts/notebook_tools/check_twin_parity.py'
       - 'MyIA.AI.Notebooks/**/*.ipynb'
   workflow_dispatch:
