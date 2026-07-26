@@ -17,6 +17,7 @@ Exit codes:
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -56,7 +57,20 @@ ALLOW_NULL_EXEC_COUNT_KERNELS = {"lean4", "lean4-wsl", "lean"}
 
 # Paths that require QC Cloud (python3 kernel but need QuantBook runtime).
 # H.3 is advisory-only for these — they can only be executed via QC Cloud.
+# NOTE: this list is a FAST PATH, not the definition. The definition is
+# "the notebook instantiates QuantBook" — see QUANTBOOK_PATTERN below.
 QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
+
+# The actual reason a null execution_count is tolerated is not WHERE a notebook
+# lives, it is WHAT IT NEEDS: `QuantBook()` only exists inside the QC Cloud
+# research runtime, which is on no worker machine. Anchoring on the path alone
+# left 16 QuantBook notebooks outside the carve-out (ESGF-2026/lean-workspace,
+# QuantConnect/research, partner-course kit-transitoire), 8 of them with null
+# execution_count — a latent CI landmine that fires on whoever next touches one
+# of those files, for a reason that is not their PR's fault. Same predicate as
+# check_cost_metadata.detect_quantbook_usage (Litmus 5/7) so the cost gate and
+# the execution gate agree on what "is a QC notebook" means. See #8056.
+QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
 
 # Research-exploration archive snapshots (path suffix). An `*_archive.ipynb` is
 # a frozen log of exploratory iteration; its error outputs (KeyError/NameError
@@ -138,14 +152,28 @@ def _output_text(output: dict) -> str:
 
 def _is_qc_cloud(rel_path: str, data: dict) -> bool:
     """Whether a notebook can ONLY be executed via QC Cloud (so a null
-    execution_count is tolerated everywhere — CI AND local). True if the path
-    is under a QC Cloud directory OR the notebook is explicitly flagged as a
-    QC reference template (metadata.qc_reference=True, content-aware unification
-    with regression_scan.py:261 / #3776)."""
+    execution_count is tolerated everywhere — CI AND local). True if:
+      - the path is under a QC Cloud directory (fast path), OR
+      - the notebook is explicitly flagged as a QC reference template
+        (metadata.qc_reference=True, content-aware unification with
+        regression_scan.py:261 / #3776), OR
+      - a code cell instantiates `QuantBook()` (content-aware — the runtime
+        requirement itself, wherever the notebook happens to live).
+    """
     normalized = rel_path.replace("\\", "/")
     if any(p in normalized for p in QC_CLOUD_PATHS):
         return True
-    return data.get("metadata", {}).get("qc_reference") is True
+    if data.get("metadata", {}).get("qc_reference") is True:
+        return True
+    for cell in data.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        source = cell.get("source", "")
+        if isinstance(source, list):
+            source = "".join(source)
+        if QUANTBOOK_PATTERN.search(source):
+            return True
+    return False
 
 
 def validate_notebook(nb_path: Path) -> dict:
