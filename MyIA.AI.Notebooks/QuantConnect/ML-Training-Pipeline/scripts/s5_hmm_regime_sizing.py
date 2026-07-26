@@ -99,6 +99,13 @@ N_REGIMES = 2
 BLOCK_SIZE = 22
 REFIT_EVERY = 22  # HMM refit cadence (was vestigial in S3/S4; we actually use it)
 RIDGE_ALPHA = 1.0  # Ridge shrinkage towards equal-weight (matches S4 default)
+# Hermes review concern 1: the default alpha=1.0 compresses bull/bear toward
+# equal-weight, so the continuous-vs-hard delta is small *by construction*. To
+# rule out that NO BEATS is an artefact of shrinkage (rather than a genuine
+# refutation), we sweep alpha and report the verdict per alpha. alpha=0.0 = no
+# shrink (pure inverse-vol bull/bear, max blend amplitude); alpha=1.0 = S4's
+# default. Robust verdict = NO BEATS at EVERY alpha.
+ALPHA_GRID = [0.0, 0.1, 0.5, 1.0]
 HMM_MIN_TRAIN = 252  # min days to fit the regime model
 
 
@@ -288,11 +295,22 @@ def _max_drawdown(returns: np.ndarray) -> float:
 
 
 def walk_forward_sizing(
-    prices: pd.DataFrame, seed: int, tx_bps: int = TX_COST_BPS
+    prices: pd.DataFrame, seed: int, tx_bps: int = TX_COST_BPS, alpha: float = RIDGE_ALPHA
 ) -> dict:
     """Walk-forward 5-fold backtest comparing continuous (S5) vs hard (S4) vs
     static baselines. Transaction costs are turnover-aware and applied once per
-    rebalance day."""
+    rebalance day.
+
+    Rebalance cadence: **daily, by design** (Hermes review concern 3). The HMM
+    emits a fresh regime probability every bar, and a *sizing* strategy is
+    meant to re-derive the blend each day — so n_rebalances approximates n_obs
+    (both ~2000 in the full panel). This is conservative for the NO BEATS
+    verdict: more rebalancing = more turnover cost = a lower bar for continuous
+    to clear, not a higher one. Static baselines (equal/inv_vol) pay no cost.
+
+    alpha: Ridge shrinkage toward equal-weight (concern 1 sweep). 0.0 = pure
+    inverse-vol bull/bear (max blend amplitude); 1.0 = S4 default.
+    """
     returns = prices.drop(columns=["^VIX"]).pct_change().dropna()
     n = len(returns)
 
@@ -311,6 +329,10 @@ def walk_forward_sizing(
         if test_end - test_start < 20:
             continue
         splits.append((train_end, test_start, test_end))
+
+    # OOS window span = first test_start .. last test_end (for honest metrics).
+    oos_start = splits[0][1] if splits else 0
+    oos_end = splits[-1][2] if splits else n
 
     rets = returns.values
     idx_global = returns.index
@@ -335,8 +357,8 @@ def walk_forward_sizing(
             regime_label = 1 if pb > 0.5 else 0
 
             if len(lookback) >= 20:
-                # Continuous sizing (S5 hypothesis).
-                new_cont = continuous_regime_weights(lookback, pb)
+                # Continuous sizing (S5 hypothesis), swept over alpha (concern 1).
+                new_cont = continuous_regime_weights(lookback, pb, alpha)
                 cost_cont = estimate_trade_cost(w_cont, new_cont)
                 # Hard-switch sizing (S4 baseline, direct comparator).
                 new_hard = hard_regime_weights(lookback, regime_label)
@@ -372,9 +394,14 @@ def walk_forward_sizing(
     out["delta_continuous_vs_hard"] = out["sharpe_continuous"] - out["sharpe_hard"]
     out["delta_continuous_vs_equal"] = out["sharpe_continuous"] - out["sharpe_equal"]
     out["seed"] = seed
+    out["alpha"] = alpha
     out["n_obs"] = len(strat["continuous"])
     out["n_rebalances"] = n_rebalances
-    out["mean_p_bear"] = float(np.mean(p_bear_series[test_start:test_end]))
+    # Hermes review concern 2: mean p_bear over the FULL OOS window, not just
+    # the last fold (the prior code used the post-loop test_start/test_end, i.e.
+    # fold 5 only — misleading in the verdict table).
+    out["mean_p_bear"] = float(np.mean(p_bear_series[oos_start:oos_end]))
+    out["frac_bear_days"] = float(np.mean(p_bear_series[oos_start:oos_end] > 0.5))
     return out
 
 
@@ -424,29 +451,46 @@ def aggregate_and_verdict(seed_results: list[dict]) -> dict:
 
 def write_verdict(results: dict, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
-    md = [f"# S5 HMM Regime Sizing — Verdict", "",
+    by_alpha = results["by_alpha"]
+    md = ["# S5 HMM Regime Sizing — Verdict (robustness sweep)", "",
           f"Hypothesis: {results['hypothesis']}", "",
           f"Date: {time.strftime('%Y-%m-%d %H:%M')}", "",
-          f"- **Verdict**: {results['verdict']}",
-          f"- Continuous Sharpe: {results['mean_sharpe_continuous']:.4f}",
-          f"- Hard-switch (S4) Sharpe: {results['mean_sharpe_hard']:.4f}",
-          f"- Equal-weight Sharpe: {results['mean_sharpe_equal']:.4f}",
-          f"- Inv-vol Sharpe: {results['mean_sharpe_inv_vol']:.4f}",
-          f"- Delta vs hard: {results['mean_delta_continuous_vs_hard']:+.6f} "
-          f"(SE={results['se_delta']:.6f}, t={results['t_stat']:.3f})",
-          f"- Seeds positive: {results['n_positive']}/{results['n_seeds']} "
-          f"(p_sign={results['p_sign']:.4f})",
-          f"- Gate: delta >= {results['gate_delta']}, t >= {results['gate_t_stat']}, "
-          f">= 3/4 seeds positive", "",
-          "## Per-seed summary", "",
-          "| Seed | Continuous | Hard | Delta | Equal | InvVol | mean p_bear |",
-          "|------|-----------|------|-------|-------|--------|-------------|"]
-    for r in results["seed_results"]:
+          f"- **Robust verdict**: **{results['robust_verdict']}**",
+          f"- Sweep: alpha (Ridge shrink toward equal-weight) in {results['alpha_grid']}. "
+          f"alpha=0.0 = pure inverse-vol bull/bear (max blend amplitude); alpha=1.0 = S4 default.",
+          f"- Robust = NO BEATS at EVERY alpha (excludes shrinkage-artefact, Hermes concern 1).", "",
+          "## Alpha-sweep summary", "",
+          "| alpha | Continuous | Hard | Equal | Delta vs hard | t | seeds pos | Verdict |",
+          "|-------|-----------|------|-------|--------------|---|-----------|---------|"]
+    for a in sorted(by_alpha, key=lambda x: float(x)):
+        v = by_alpha[a]
         md.append(
-            f"| {r['seed']} | {r['sharpe_continuous']:.4f} | {r['sharpe_hard']:.4f} | "
-            f"{r['delta_continuous_vs_hard']:+.4f} | {r['sharpe_equal']:.4f} | "
-            f"{r['sharpe_inv_vol']:.4f} | {r['mean_p_bear']:.3f} |"
+            f"| {a} | {v['mean_sharpe_continuous']:.4f} | {v['mean_sharpe_hard']:.4f} | "
+            f"{v['mean_sharpe_equal']:.4f} | {v['mean_delta_continuous_vs_hard']:+.6f} | "
+            f"{v['t_stat']:.3f} | {v['n_positive']}/{v['n_seeds']} | {v['verdict']} |"
         )
+    # Per-seed detail for the reference alpha (1.0 = S4 default).
+    ref = results.get("reference_alpha_1.0")
+    if ref:
+        md += ["", "## Per-seed detail (alpha=1.0, S4 default shrinkage)", "",
+               "| Seed | Continuous | Hard | Delta | Equal | InvVol | mean p_bear | frac bear days |",
+               "|------|-----------|------|-------|-------|--------|-------------|----------------|"]
+        for r in ref["seed_results"]:
+            md.append(
+                f"| {r['seed']} | {r['sharpe_continuous']:.4f} | {r['sharpe_hard']:.4f} | "
+                f"{r['delta_continuous_vs_hard']:+.4f} | {r['sharpe_equal']:.4f} | "
+                f"{r['sharpe_inv_vol']:.4f} | {r['mean_p_bear']:.3f} | "
+                f"{r.get('frac_bear_days', float('nan')):.3f} |"
+            )
+    md += ["",
+           "## Methodology notes",
+           "- mean p_bear / frac bear days measured over the FULL OOS window (all folds), "
+           "not just the last fold (Hermes concern 2).",
+           "- Rebalance cadence: **daily, by design** (n_rebalances approx n_obs). The HMM emits "
+           "a fresh regime probability every bar; a sizing strategy re-derives the blend daily. "
+           "Conservative for NO BEATS: more rebalancing = more turnover cost (Hermes concern 3).",
+           "- OOS: real expanding-window HMM refit on [0,t) every 22 days (neither S3 nor S4 do "
+           "this — they fit on the test block itself). No future leak."]
     verdict_path = output_dir / "verdict.md"
     verdict_path.write_text("\n".join(md) + "\n", encoding="utf-8")
     return verdict_path
@@ -478,36 +522,59 @@ def main() -> None:
     print(f"  active panel ({len(active_symbols)}): {active_symbols}")
 
     t0 = time.time()
-    seed_results = []
-    for seed in seeds:
-        print(f"\nSeed {seed}...", end=" ", flush=True)
-        t1 = time.time()
-        r = walk_forward_sizing(prices, seed)
-        if "error" in r:
-            print(f"ERROR: {r['error']}")
+    alphas = [1.0] if smoke else list(ALPHA_GRID)
+    by_alpha: dict[float, dict] = {}
+    for alpha in alphas:
+        print(f"\n=== alpha={alpha} (Ridge shrink toward equal-weight) ===")
+        seed_results = []
+        for seed in seeds:
+            print(f"  Seed {seed}...", end=" ", flush=True)
+            t1 = time.time()
+            r = walk_forward_sizing(prices, seed, alpha=alpha)
+            if "error" in r:
+                print(f"ERROR: {r['error']}")
+                continue
+            seed_results.append(r)
+            print(
+                f"cont={r['sharpe_continuous']:.4f} hard={r['sharpe_hard']:.4f} "
+                f"eq={r['sharpe_equal']:.4f} delta={r['delta_continuous_vs_hard']:+.4f} "
+                f"p_bear={r['mean_p_bear']:.3f} ({time.time()-t1:.1f}s)",
+                flush=True,
+            )
+        if not seed_results:
+            print(f"No valid results for alpha={alpha}")
             continue
-        seed_results.append(r)
-        print(
-            f"cont={r['sharpe_continuous']:.4f} hard={r['sharpe_hard']:.4f} "
-            f"eq={r['sharpe_equal']:.4f} delta={r['delta_continuous_vs_hard']:+.4f} "
-            f"p_bear={r['mean_p_bear']:.3f} ({time.time()-t1:.1f}s)",
-            flush=True,
-        )
+        by_alpha[alpha] = aggregate_and_verdict(seed_results)
 
     print(f"\nTotal time: {time.time()-t0:.1f}s")
-    if not seed_results:
+    if not by_alpha:
         print("No valid results.")
         return
 
-    results = aggregate_and_verdict(seed_results)
+    # Robust verdict (Hermes review concern 1): NO BEATS at EVERY alpha excludes
+    # the shrinkage-artefact explanation. If any alpha BEATS, the hypothesis is
+    # NOT robustly refuted and the finding goes back to ai-01.
+    all_no_beats = all(v["verdict"] == "NO BEATS" for v in by_alpha.values())
+    robust_verdict = "ROBUST NO BEATS" if all_no_beats else "NOT ROBUST (>=1 alpha BEATS)"
+    summary = {
+        "hypothesis": next(iter(by_alpha.values()))["hypothesis"],
+        "robust_verdict": robust_verdict,
+        "alpha_grid": alphas,
+        "by_alpha": {str(a): by_alpha[a] for a in by_alpha},
+        "reference_alpha_1.0": by_alpha.get(1.0),
+    }
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "results.json").write_text(
-        json.dumps(results, indent=2, default=str), encoding="utf-8"
+        json.dumps(summary, indent=2, default=str), encoding="utf-8"
     )
-    vpath = write_verdict(results, RESULTS_DIR)
-    print(f"\nVerdict: {results['verdict']}  "
-          f"(delta {results['mean_delta_continuous_vs_hard']:+.4f}, "
-          f"t={results['t_stat']:.2f}, {results['n_positive']}/{results['n_seeds']} pos)")
+    vpath = write_verdict(summary, RESULTS_DIR)
+    print(f"\nRobust verdict: {robust_verdict}")
+    for alpha in by_alpha:
+        v = by_alpha[alpha]
+        print(f"  alpha={alpha}: {v['verdict']}  "
+              f"delta={v['mean_delta_continuous_vs_hard']:+.4f}  "
+              f"t={v['t_stat']:.2f}  {v['n_positive']}/{v['n_seeds']} pos")
+    print(f"Verdict written to {vpath}")
     print(f"Verdict written to {vpath}")
 
 
