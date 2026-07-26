@@ -1,0 +1,14 @@
+- name: "ML-3 Entrainement&AutoML"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 5b38d83083746e16aa6e0543d9a34dcc7fb4ce3f
+    csharp_sha: e04023c41908e290abec4245a65262d37b5b95b1
+  known_differences:
+    - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
+    - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
+    - "Asymetrie de couverture : Python expose nativement `GridSearchCV` + `cross_val_score` (recherche d'hyperparametres + CV K-fold) ; le C# compare manuellement SDCA vs LightGbm sans AutoML sur ce notebook (AutoML apparait en ML-4)."

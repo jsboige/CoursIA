@@ -1,0 +1,13 @@
+- name: "Z3-Python-05 Quantifiers & Proofs"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 519b4a3d04f5b673650394a729f03d7fa07711b1
+    csharp_sha: dcc4aa5c50ff122180e2b2dd97bf25cdbb4d1b2a
+  known_differences:
+    - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
+    - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."

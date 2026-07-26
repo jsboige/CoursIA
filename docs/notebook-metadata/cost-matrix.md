@@ -29,6 +29,7 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
 {
   "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit.
   "api_provider": "openai",       // openai | anthropic | mistral | hf | replicate | google | local | none
+  "qcc_tokens_est": 0,            // QuantConnect Cloud compute tokens (QCC) estimés par exécution end-to-end. 0 si non-QC. Cf §"Coût QCC / QuantConnect".
   "cpu_min": 1,                   // Estimation CPU-only minutes (range ou best-case)
   "gpu_min": 0,                   // Estimation GPU minutes (range ou best-case)
   "gpu_required": false,          // true si impossible sans GPU
@@ -75,6 +76,7 @@ source de vérité, le badge est un confort de lecture.
 |-------|-------------|----------------|
 | `cost.api_usd_est` | ✓ | `0` |
 | `cost.api_provider` | ✓ | `"none"` |
+| `cost.qcc_tokens_est` | optionnel | `0` (0 = non-QC ; à peupler pour tout quantbook QC Cloud) |
 | `cost.cpu_min` | ✓ | `0` |
 | `cost.gpu_min` | optionnel | (omission = pas d'estimation GPU) |
 | `cost.gpu_required` | ✓ | `false` |
@@ -250,6 +252,7 @@ cost:
 cost:
   api_usd_est: 0.0             # QC Cloud = pas de coût API par backtest (free tier)
   api_provider: qc_cloud
+  qcc_tokens_est: 840          # ~70 QCC/cellule code (cf §"Coût QCC / QuantConnect")
   cpu_min: 0
   gpu_min: 0
   gpu_required: false
@@ -262,6 +265,23 @@ cost:
   last_validated: 2026-07-23T01:30Z
   validator: qc_cloud          # MCP qc-mcp-lite create_backtest + read_backtest
 ```
+
+#### Coût QCC / QuantConnect — pourquoi un champ dédié
+
+QuantConnect Cloud facture l'exécution des quantbooks en **QCC tokens** (QuantConnect
+Compute), une monnaie de quota propre au cloud QC — **non convertible en USD** et
+**non gratuite** au-delà du free tier. Le champ `api_usd_est: 0.0` est donc
+techniquement correct (pas de coût API *en USD*) mais **trompeur** sans
+`qcc_tokens_est` : il présente le quantbook comme « gratuit » alors qu'il consomme
+du quota QCC. `qcc_tokens_est` ferme ce gap en exposant le coût réel en quota QC.
+
+**Estimation** (acceptance [#8056](https://github.com/jsboige/CoursIA/issues/8056) :
+« sessions QuantConnect ≈ 800-1200 QCC tokens pour un notebook de 14 cellules ») :
+heuristic dérivable **~70 QCC par cellule code**, plancher `max(400, n_code_cells × 70)`.
+C'est une **estimation** (le suffixe `_est` l'atteste), pas une mesure — ré-estimer
+après une exécution QC Cloud réelle (`read_backtest` retourne le QCC consommé). Le
+litmus correspondant dans `check_cost_metadata.py` signale tout quantbook
+(`QuantBook()` détecté) dont `qcc_tokens_est` est absent ou `0`.
 
 ### GenAI/Image GPU lourd (référence HIGH tier)
 

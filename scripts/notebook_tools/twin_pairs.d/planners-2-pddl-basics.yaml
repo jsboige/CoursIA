@@ -1,0 +1,13 @@
+- name: "Planners-2 PDDL-Basics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: b7a6f2c16c6d299b8492f507a3beb80d500b36a3
+    csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
+  known_differences:
+    - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
+    - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."

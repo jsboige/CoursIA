@@ -1,0 +1,13 @@
+- name: "Tweety-8 Agent-Dialogues"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 250f9ca0a3bdab41d5190b4841af74287d027f73
+    csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
+  known_differences:
+    - "Socle commun : dialogues multi-agents argumentatifs (protocols, ExecutableExtension) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers chargeant les DLL TweetyProject). Python via JPype (`from org.tweetyproject.agents.dialogues import ExecutableExtension`). Meme moteur Java."

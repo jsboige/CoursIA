@@ -1,0 +1,14 @@
+- name: "GameTheory-6 EvolutionTrust"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 373e27b2981cec9c298ebc7b69bb7789b826ad23
+    csharp_sha: 97245aa3c47623829847ccb2e14c7d7017a9e1ea
+  known_differences:
+    - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
+    - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."

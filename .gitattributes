@@ -22,13 +22,13 @@ lake-manifest.json text eol=lf
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
 
-# Le registre twin-parity (#8057) est une liste append-only : chaque lane ajoute
-# des entrees disjointes en fin de fichier. Sans union merge, N PRs de
-# registration ouvertes = une seule mergeable, les autres DIRTY -- conflit serie
-# systematique (3e recurrence : #8415 consolidation, #8476 re-apply on fresh
-# main, #8499 recovery tranche). `union` concatene les deux cotes du hunk au
-# lieu de poser des marqueurs, ce qui est exactement le resultat voulu pour des
-# appends disjoints. Filet de securite contre le seul mode de defaillance
-# (rebaselines concurrents de la meme entree -> cle dupliquee) :
-# scripts/notebook_tools/tests/test_twin_registry_integrity.py
-scripts/notebook_tools/twin_pairs.yaml merge=union
+# Registre twin-parity (#8057) : autrefois un mono-fichier `twin_pairs.yaml`
+# (liste append-only) sur lequel un `merge=union` etait declare pour mitiger le
+# conflit serie systematique entre N tranches de registration (recurrences
+# #8415/#8476/#8499/#8505/#8526/#8492, toutes resolues a la main). #8542 Option
+# C a deplace le registre vers `twin_pairs.d/` (un fichier par paire) : deux PRs
+# qui enregistrent des paires differentes touchent des fichiers differentes ->
+# la classe de conflit est supprimee a la source, le driver `union` n'a donc
+# plus d'objet (et de toute facon n'etait jamais honore par le merge cote serveur
+# GitHub). Ne PAS le re-ajouter : le filet de securite structural est desormais
+# scripts/notebook_tools/tests/test_twin_registry_integrity.py (file-per-entry).

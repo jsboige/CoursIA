@@ -1,0 +1,13 @@
+- name: "SW-4 SPARQL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4b-Python-SPARQL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ca77e6a8869febafe182e51fbb41372489fd89ae
+    csharp_sha: 2665b2384dace718433e7b6cf6ae611b4386464f
+  known_differences:
+    - "Socle commun : execution de requetes SPARQL 1.1 (SELECT/CONSTRUCT/ASK) sur un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` moteur Leviathan + `VDS.RDF.Query.Builder` fluent). Python = `rdflib` (`graph.query()` natif). Moteurs SPARQL equivalents, syntaxe de binding idiomatique differente."

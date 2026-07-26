@@ -11,10 +11,13 @@ l'etat anterieur, et les deux implimentations derivent separement sans que
 personne ne re-audite la parite. Aujourd'hui la parite est **declarative**
 (des notes eparses dans des READMEs) ; ce outil la rend **auditable**.
 
-Le registre `twin_pairs.yaml` (a cote de ce script) decrit chaque paire :
-le chemin des deux notebooks, le `parity_level` (surface | semantic |
-native-both), le `last_audit` (date, auteur, et le **git blob SHA** de chaque
-notebook au moment de l'audit) et les `known_differences` documentees.
+Le registre vit dans le repertoire `twin_pairs.d/` (a cote de ce script,
+#8542 Option C) : **un fichier YAML par paire** + `_schema.yaml` (documentation).
+Chaque entree decrit une paire : le chemin des deux notebooks, le `parity_level`
+(surface | semantic | native-both), le `last_audit` (date, auteur, et le **git
+blob SHA** de chaque notebook au moment de l'audit) et les `known_differences`
+documentees. Le file-per-entry supprime a la source la classe de conflit serie
+qui frappait l'ancien mono-fichier (recurrences #8415/#8476/#8499/#8505/#8526/#8499).
 
 Comment ca marche
 -----------------
@@ -29,7 +32,17 @@ Pour chaque paire du registre, on :
   5. **OK** sinon (les deux cotes sont au SHA audite, parite tenue).
 
 Le bouclage d'audit : apres avoir re-audite une paire firsthand, on rebaseline
-avec `--update` qui reecrit les SHAs courants comme nouvelle reference.
+avec `--update --pair "<nom>" --by "<lane>"`, qui reecrit les SHAs courants
+comme nouvelle reference.
+
+`--update` EXIGE un selecteur (`--pair`, `--family`, ou l'opt-in
+`--yes-all-pairs`) : sans lui, il reecrirait le `last_audit` des 116 paires et
+masquerait des DRIFTs legitimes (#8508, lecons L963/L974). `--by` horodate
+l'audit a ton nom -- la date est toujours remise a aujourd'hui.
+
+L'ecriture est CHIRURGICALE : seules les lignes `last_audit` des paires ciblees
+changent (cf `surgical_rebaseline`). Le diff d'un rebaseline vaut donc les
+lignes reellement modifiees, commentaires et formatage du registre intacts.
 
 Cet outil lit seulement par defaut (git ls-tree). Le mode `--update` ecrit le
 registre (curated YAML, pas un notebook -> pas de souci de re-exec C.2).
@@ -42,8 +55,11 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
-    # rebaseline apres audit firsthand (ecrit les SHAs courants)
-    python check_twin_parity.py --update
+    # rebaseline apres audit firsthand (ecrit les SHAs courants).
+    # --pair + --by obligatoires en pratique : le selecteur evite de rebaseliner
+    # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
+    python check_twin_parity.py --update --pair "Probas-4 Bayesian-Networks" \
+        --by "myia-po-2024:CoursIA-2"
     # sortie machine
     python check_twin_parity.py --json
     # mode per-pair : ne FAIL que sur le drift INTRODUIT par la PR en cours
@@ -63,7 +79,8 @@ Exit codes
 
 Voir aussi
 ----------
-- twin_pairs.yaml (registre curated, a cote de ce script)
+- twin_pairs.d/ (registre curated file-per-entry, a cote de ce script)
+- twin_pairs.d/_schema.yaml (schema + vocabulaire parity_level + historique des tranches)
 - Issue #8057 (metadonnee de parite des jumeaux Python/C#)
 - Issue #8264 (batch rebaseline precedent -- pattern DRIFT pre-existant)
 - Issue #4208 (parent : open-courseware fiabilise/publie)
@@ -71,7 +88,9 @@ Voir aussi
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -81,7 +100,34 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.yaml"
+# Le registre vit desormais en un fichier par paire sous `twin_pairs.d/`
+# (#8542 Option C). Un fichier = une entree = plus rien a fusionner en serie
+# (la classe de conflit recurrente #8415/#8476/#8499/#8505/#8526/#8492 est
+# supprimee a la source, pas seulement mitiguee). Le loader agrgege le
+# repertoire ; l'ecriture chirurgicale (#8570) s'applique desormais a UN fichier
+# d'une entree -- triviale, mais meme code, memes garanties (seules les lignes
+# `last_audit` changent, commentaires du fichier preserves).
+DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.d"
+
+# Sentinelle : distingue « cle absente de l'update » de « valeur None ».
+_MISSING = object()
+
+
+def _slug(name: str) -> str:
+    """Slug stable et deterministe du `name` d'une paire -> nom de fichier.
+
+    Invariant : deux noms distincts produisent deux slugs distincts (verifie sur
+    les 116 paires a la migration #8542, 0 collision). Permet de retomber sur le
+    fichier d'une paire depuis son `name` sans index supplementaire.
+    """
+    s = str(name).lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s
+
+
+def _pair_file(registry_dir: Path, name: str) -> Path:
+    """Chemin du fichier d'une paire dans le registre file-per-entry."""
+    return registry_dir / f"{_slug(name)}.yaml"
 
 
 def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -118,6 +164,64 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     return r.stdout.decode("utf-8", errors="replace")
 
 
+def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list:
+    """Charge le registre a un ref git arbitraire (HEAD, origin/main, <sha>...).
+
+    Robuste a la frontiere de migration #8542 : le base-ref peut etre l'ANCIEN
+    mono-fichier `twin_pairs.yaml` (liste) tandis que le HEAD est le nouveau
+    repertoire `twin_pairs.d/` (file-per-entry). On essaie le repertoire d'abord,
+    puis on retombe sur le fichier legacy.
+
+    Indispensable au mode `--per-pair --base origin/main` en CI : sur la PR de
+    migration elle-meme, origin/main porte encore l'ancien format.
+    """
+    if yaml is None:
+        raise SystemExit("PyYAML requis pour --per-pair.")
+    try:
+        reg_rel = reg_path.resolve().relative_to(repo_root).as_posix()
+    except ValueError:
+        reg_rel = Path(reg_path.name).as_posix()
+
+    # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
+    r_ls = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
+        capture_output=True, text=True, cwd=str(repo_root),
+    )
+    entries: list = []
+    if r_ls.returncode == 0 and r_ls.stdout.strip():
+        for line in r_ls.stdout.splitlines():
+            fname = line.split("/")[-1]
+            if not fname.endswith(".yaml") or fname.startswith("_"):
+                continue
+            txt = _git_show_file(repo_root, git_ref, line)
+            if txt is None:
+                continue
+            data = yaml.safe_load(txt)
+            if isinstance(data, dict):
+                entries.append(data)
+            elif isinstance(data, list):
+                entries.extend(data)
+        if entries:
+            return entries
+        # repertoire present mais vide de paires -> on continue vers le legacy
+
+    # (2) Retombe sur l'ancien mono-fichier `twin_pairs.yaml` (a cote du script).
+    legacy_rel = "scripts/notebook_tools/twin_pairs.yaml"
+    reg_text_base = _git_show_file(repo_root, git_ref, legacy_rel)
+    if reg_text_base is None:
+        # tente aussi le chemin absolu fourni en --registry (si c'etait un fichier)
+        reg_text_base = _git_show_file(repo_root, git_ref, reg_rel)
+    if reg_text_base is None:
+        raise SystemExit(
+            f"Impossible de lire le registre au base-ref '{git_ref}' "
+            f"(ni repertoire {reg_rel}/ ni fichier legacy twin_pairs.yaml)."
+        )
+    data_base = yaml.safe_load(reg_text_base)
+    if not isinstance(data_base, list):
+        raise SystemExit("Le registre au base-ref n'est pas une liste.")
+    return data_base
+
+
 def _repo_root() -> Path:
     r = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
@@ -129,13 +233,33 @@ def _repo_root() -> Path:
 
 
 def load_registry(path: Path) -> list:
+    """Charge le registre. `path` = un répertoire file-per-entry (`twin_pairs.d/`)
+    ou un fichier YAML mono-liste (override `--registry`, ou ancien format).
+
+    En mode répertoire (#8542 Option C), chaque `*.yaml` ne commençant pas par
+    `_` est un fichier d'UNE paire (un dict, ou une liste d'un dict — tranches
+    verbatim de l'ancien mono-fichier). Les fichiers `_`-préfixés (`_schema.yaml`)
+    sont de la documentation, ignorée.
+    """
     if path is None or not path.exists():
         raise SystemExit(f"Erreur : registre introuvable : {path}")
     if yaml is None:
         raise SystemExit("Erreur : PyYAML requis (pip install pyyaml).")
+    if path.is_dir():
+        entries: list = []
+        for f in sorted(path.glob("*.yaml")):
+            if f.name.startswith("_"):
+                continue
+            data = yaml.safe_load(f.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                entries.append(data)
+            elif isinstance(data, list):
+                entries.extend(data)
+            # None (fichier de commentaires) ou autre type -> ignore
+        return entries
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
-        raise SystemExit("Erreur : le registre doit etre une liste de paires.")
+        raise SystemExit("Erreur : le registre (fichier) doit etre une liste de paires.")
     return data
 
 
@@ -195,8 +319,16 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     }
 
 
-def update_pair(repo_root: Path, pair: dict) -> tuple[dict, str | None]:
+def update_pair(
+    repo_root: Path, pair: dict, by: str | None = None, date: str | None = None
+) -> tuple[dict, str | None]:
     """Rebaseline une paire : enregistre les SHAs courants comme nouvelle ref.
+
+    `by` / `date` horodatent l'audit. Ils sont OBLIGATOIREMENT rafraichis :
+    un rebaseline qui conserverait le `by`/`date` de l'audit precedent ferait
+    affirmer a l'entree « auditee par <l'auditeur d'avant> le <la date d'avant> »
+    alors que les SHAs sont ceux d'aujourd'hui -- la tracabilite mentirait, ce
+    que le registre existe precisement pour empecher (cf #8570).
 
     Retourne (last_audit_dict mis a jour, sha_utilise_pour_python ou None si missing).
     """
@@ -204,15 +336,84 @@ def update_pair(repo_root: Path, pair: dict) -> tuple[dict, str | None]:
     cs = pair["csharp"]
     cur_py = _git_blob_sha(repo_root, py)
     cur_cs = _git_blob_sha(repo_root, cs)
-    today = pair.get("last_audit", {}).get("date")  # conserve si deja la
-    by = pair.get("last_audit", {}).get("by", "manual")
     audit = {
-        "date": today,
-        "by": by,
+        "date": date or _dt.date.today().isoformat(),
+        "by": by or pair.get("last_audit", {}).get("by", "manual"),
         "python_sha": cur_py,
         "csharp_sha": cur_cs,
     }
     return audit, cur_py
+
+
+# Cles scalaires du bloc `last_audit` reecrites par le rebaseline chirurgical.
+_AUDIT_KEYS = ("date", "by", "python_sha", "csharp_sha")
+
+
+def _fmt_audit_value(key: str, value) -> str:
+    """Rend une valeur de `last_audit` dans le style du registre.
+
+    `date` est quotee (comme les 116 entrees existantes), le reste est nu.
+    """
+    if value is None:
+        return "null"
+    return f'"{value}"' if key == "date" else str(value)
+
+
+def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
+    """Reecrit UNIQUEMENT les lignes `last_audit` des paires ciblees.
+
+    Pourquoi ne pas re-serialiser via `yaml.safe_dump` (comportement d'avant
+    #8570) : un dump complet detruit **tout** le fichier autour des donnees.
+    Mesure firsthand sur le registre a 116 paires -- un rebaseline d'UNE paire
+    produisait `1108 insertions(+), 658 deletions(-)` et supprimait les **67
+    lignes de commentaire**, dont l'en-tete de 15 lignes qui documente le
+    schema et le vocabulaire `parity_level`. Le vrai changement (4 lignes)
+    devenait irreviewable, et la documentation du registre disparaissait sans
+    que personne ne l'ait demande.
+
+    L'edition ligne-a-ligne ci-dessous preserve commentaires, ordre, quoting et
+    espacement : le diff d'un rebaseline vaut exactement les lignes changees.
+
+    Args:
+        raw: contenu texte du registre YAML.
+        updates: {nom_de_paire: {"date":.., "by":.., "python_sha":.., "csharp_sha":..}}
+
+    Returns:
+        (nouveau_texte, nombre_de_paires_effectivement_touchees)
+    """
+    out: list[str] = []
+    current: str | None = None
+    in_audit = False
+    touched: set[str] = set()
+
+    for line in raw.splitlines(keepends=True):
+        m_entry = re.match(r"^-\s+name:\s*(.+?)\s*$", line)
+        if m_entry:
+            current = m_entry.group(1).strip().strip("\"'")
+            in_audit = False
+        elif re.match(r"^\s{2}last_audit:\s*$", line):
+            in_audit = current in updates
+        elif re.match(r"^\s{2}\S", line):
+            # toute autre cle de premier niveau de l'entree ferme le bloc
+            in_audit = False
+
+        if in_audit:
+            m_kv = re.match(r"^(\s+)(\w+):\s*(.*)$", line)
+            if m_kv and m_kv.group(2) in _AUDIT_KEYS:
+                key = m_kv.group(2)
+                new = updates[current].get(key, _MISSING)
+                # On ne reecrit que si la VALEUR change : sinon un rebaseline
+                # sur une paire deja a jour normaliserait le quoting (le
+                # registre melange 'x' et "x") et polluerait le diff de lignes
+                # sans changement reel.
+                old = m_kv.group(3).strip().strip("\"'")
+                if new is not _MISSING and str(new) != old:
+                    line = f"{m_kv.group(1)}{key}: {_fmt_audit_value(key, new)}\n"
+                    touched.add(current)
+
+        out.append(line)
+
+    return "".join(out), len(touched)
 
 
 def _classify_per_pair(base_status: str, head_status: str) -> str:
@@ -262,6 +463,11 @@ def main(argv=None) -> int:
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
+    p.add_argument("--by", default=None,
+                   help="Auteur de l'audit inscrit dans last_audit.by (ex. "
+                        "'myia-po-2024:CoursIA-2'). Avec --update, la date est "
+                        "TOUJOURS mise a aujourd'hui : sans --by, l'entree garderait "
+                        "l'auteur de l'audit precedent alors que les SHAs sont neufs.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
@@ -285,26 +491,12 @@ def main(argv=None) -> int:
 
     # --- Mode --per-pair : comparaison HEAD vs base-ref ---
     if args.per_pair:
-        # Charge le registre a HEAD (working tree) et au base-ref (git show)
+        # Charge le registre a HEAD (working tree) et au base-ref (git show).
+        # Le base-ref peut porter l'ancien mono-fichier (frontiere de migration
+        # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
+        # le fichier legacy.
         pairs_head = load_registry(reg_path)
-        # reg_path peut etre absolu ou relatif -- on prend toujours le path
-        # relatif au repo_root pour `git show <ref>:<relpath>`.
-        # IMPORTANT : on normalise en forward-slashes (git sur Windows
-        # refuse les backslashes dans `<ref>:<path>`).
-        try:
-            reg_rel = reg_path.resolve().relative_to(repo_root).as_posix()
-        except ValueError:
-            # reg_path n'est pas sous repo_root : on tente quand meme avec son nom
-            reg_rel = Path(reg_path.name).as_posix()
-        reg_text_base = _git_show_file(repo_root, args.base, reg_rel)
-        if reg_text_base is None:
-            raise SystemExit(f"Impossible de lire le registre au base-ref '{args.base}' : {reg_rel}")
-        if yaml is None:
-            raise SystemExit("PyYAML requis pour --per-pair.")
-        data_base = yaml.safe_load(reg_text_base)
-        if not isinstance(data_base, list):
-            raise SystemExit("Le registre au base-ref n'est pas une liste.")
-        pairs_base = data_base
+        pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
 
@@ -392,11 +584,9 @@ def main(argv=None) -> int:
             print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
     if args.update:
-        # IMPORTANT : --update DOIT TOUJOURS reecrire TOUTES les paires du
-        # registre (meme avec --family), sinon on DETRUIT les paires des
-        # autres familles en re-ecrivant le YAML filtre. On ne met a jour
-        # que les paires qui matchent le filtre (ou toutes si --yes-all-pairs).
-        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU --yes-all-pairs.
+        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU
+        # --yes-all-pairs. Sans lui, --update rebaselinerait les 116 paires et
+        # masquerait des DRIFTs legitimes.
         all_pairs = load_registry(reg_path)
         if args.pair:
             target = [pp for pp in all_pairs if pp.get("name") == args.pair]
@@ -415,19 +605,44 @@ def main(argv=None) -> int:
         else:
             # --yes-all-pairs (filet anti-corruption silencieuse, cf #8508)
             target = all_pairs
-        updated = 0
+        updates: dict[str, dict] = {}
+        skipped: list[str] = []
         for pp in target:
-            audit, cur_py = update_pair(repo_root, pp)
-            if cur_py is not None:
-                pp["last_audit"] = audit
-                updated += 1
-        # re-ecrit le registre ENTIER (conserve l'ordre + les autres paires)
-        if yaml is None:
-            raise SystemExit("Erreur : PyYAML requis pour --update.")
-        reg_path.write_text(
-            yaml.safe_dump(all_pairs, sort_keys=False, allow_unicode=True, width=100),
-            encoding="utf-8",
-        )
+            audit, cur_py = update_pair(repo_root, pp, by=args.by)
+            if cur_py is None:
+                skipped.append(pp.get("name", "?"))
+                continue
+            updates[pp["name"]] = audit
+        # Rebaseline CHIRURGICAL (#8570) : seules les lignes `last_audit` des
+        # paires ciblees changent. En mode file-per-entry (#8542), on applique
+        # surgical_rebaseline a CHAQUE fichier d'une paire ciblee -- un fichier,
+        # une entree, le code est le meme, le diff vaut les lignes changees.
+        # (Un yaml.safe_dump complet reformaterait et supprimerait les
+        # commentaires + casserait le quoting `date: "..."` -> datetime.date.)
+        if reg_path.is_dir():
+            written = 0
+            for name, audit in updates.items():
+                pfile = _pair_file(reg_path, name)
+                if not pfile.exists():
+                    print(f"Aucun fichier pour la paire '{name}' "
+                          f"(attendu : {pfile.name}).", file=sys.stderr)
+                    continue
+                raw = pfile.read_text(encoding="utf-8")
+                new_raw, _ = surgical_rebaseline(raw, {name: audit})
+                if new_raw != raw:
+                    pfile.write_text(new_raw, encoding="utf-8")
+                    written += 1
+            updated = written
+        else:
+            # mono-fichier legacy (--registry <file.yaml>)
+            raw = reg_path.read_text(encoding="utf-8")
+            new_raw, updated = surgical_rebaseline(raw, updates)
+            reg_path.write_text(new_raw, encoding="utf-8")
+        if skipped:
+            print(
+                f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
+                file=sys.stderr,
+            )
         msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
         print(msg)
         return 0

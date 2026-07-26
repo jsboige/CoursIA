@@ -1,0 +1,14 @@
+- name: "SW-2 RDF-Basics"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 5939ccd9146913c9d650d1a7a2326b63beb859ad
+    csharp_sha: a28d8587a98c7584e0de7b8193187b1d2b920544
+  known_differences:
+    - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
+    - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
+    - "API idiomatique differente : C# via `Graph` + `IGraph` + `IUriNode`/`ILiteralNode` fortement types ; Python via `Graph()` + `URIRef`/`Literal` plus dynamiques. Meme fondement W3C RDF 1.1."

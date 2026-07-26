@@ -1,0 +1,15 @@
+- name: "Search-2 Uninformed"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d69404a7e4f8c2c7dba4e4aabea624d092aff1d7
+    csharp_sha: d29a5facae7635ba1ef366b61c4ff2acc3bf25aa
+  known_differences:
+    - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
+    - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
+    - "Pas d'extension solveur tiers sur ce notebook - implementation from-scratch sur les deux cotes (memes algorithmes, idiomes distincts)."
+    - "Benchmarks : les deux cotes mesurent le nombre de noeuds explorés, la longueur du chemin optimal, et le cout uniforme quand applicable."
