@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-25 06:03
+Generated: 2026-07-26 06:23
 Total notebooks: 836
 
 ## Status Summary
@@ -827,7 +827,7 @@ Total notebooks: 836
 | 47 | 17. Filtre de Kalman : systèmes dynamiques lineair | Python 3 | READY | BETA | 30min | po-2023 |
 | 48 | 18. Detection de Rupture (Change-Point) : inferer  | Python 3 | READY | BETA | 30min | po-2023 |
 | 49 | 19. Analyse de survie / fiabilite bayesienne : inf | Python 3 | READY | BETA | 30min | po-2023 |
-| 50 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | BETA | 30min | po-2023 |
+| 50 | PyMC-2 : Distributions Gaussiennes et Mélanges | Python 3 | READY | BETA | 30min | po-2023 |
 | 51 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | BETA | 30min | po-2023 |
 | 52 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | BETA | 30min | po-2023 |
 | 53 | PyMC-5-Causal-Inference : Inference Causale et do- | Python 3 | READY | BETA | 30min | po-2023 |

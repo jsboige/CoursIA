@@ -202,7 +202,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 9 | 17. Filtre de Kalman : systèmes dynamiques lineaires ga | BETA | Oui |
 | 10 | 18. Detection de Rupture (Change-Point) : inferer le mo | BETA | Oui |
 | 11 | 19. Analyse de survie / fiabilite bayesienne : inferer  | BETA | Oui |
-| 12 | PyMC-2 : Distributions Gaussiennes et Melanges | BETA | Oui |
+| 12 | PyMC-2 : Distributions Gaussiennes et Mélanges | BETA | Oui |
 | 13 | PyMC-3 : Graphes de Facteurs et Inference Discrete | BETA | Oui |
 | 14 | PyMC-4 : Reseaux Bayesiens | BETA | Oui |
 | 15 | PyMC-5-Causal-Inference : Inference Causale et do-calcu | BETA | Oui |
