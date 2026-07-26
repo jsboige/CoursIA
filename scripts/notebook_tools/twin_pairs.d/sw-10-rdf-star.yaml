@@ -1,0 +1,13 @@
+- name: "SW-10 RDF-Star"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-CSharp-RDFStar.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 23bb1656347488b97e360b34c9c67bcd52e29784
+    csharp_sha: e184307cf2a6180399e776bf200058e283fb9bf2
+  known_differences:
+    - "Socle commun : meta-modelisation RDF-star (triplets sur des triplets, quotes nestees)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` support RDF-star). Python = `rdflib` (`rdflib.term` triplets-nommes). RDF-star est une extension communautaire (pas encore W3C standardise) ; support experimental des deux cotes."

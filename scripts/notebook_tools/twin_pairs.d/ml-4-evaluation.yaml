@@ -1,0 +1,14 @@
+- name: "ML-4 Evaluation"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
+  parity_level: surface
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: e93e9e81f6746f1facc000693ffa115b4e280dba
+    csharp_sha: 24c497936bd864ce6f68913ad95a68b34bba098c
+  known_differences:
+    - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
+    - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
+    - "parity_level = surface : meme theme (evaluation de modeles + recherche d'hyperparametres) mais le Python est une SELECTION, pas une parite cellule-par-cellule. A noter pour toute re-audit : combler l'ecart exigerait d'etendre le Python (multi-cycle, cf memo #4956)."

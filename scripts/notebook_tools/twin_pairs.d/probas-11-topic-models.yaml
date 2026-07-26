@@ -1,0 +1,15 @@
+- name: Probas-11 Topic-Models
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: bb264641367a75a1bb904e0ccd0473dfec5d62bf
+    csharp_sha: b8952c28ef68974ddfc0e76a924da664e3974871
+  known_differences:
+  - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

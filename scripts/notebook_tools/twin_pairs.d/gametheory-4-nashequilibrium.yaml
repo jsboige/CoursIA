@@ -1,0 +1,14 @@
+- name: "GameTheory-4 NashEquilibrium"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: e2d19dec8863909c0d4f785db97bfaadc8b575da
+    csharp_sha: a2de7867ae9c7777ef4b4a5cfb2134b619eb0851
+  known_differences:
+    - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
+    - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
+    - "Asymetrie de couverture : Python utilise scipy.linprog pour les equilibres mixtes (LP battle-tested) ; le C# implemente la meilleure reponse manuellement et couvre les purs en detail. Meme theorie, leviers algorithmiques differents (LP vs enumeration)."

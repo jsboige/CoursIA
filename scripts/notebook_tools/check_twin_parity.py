@@ -11,10 +11,13 @@ l'etat anterieur, et les deux implimentations derivent separement sans que
 personne ne re-audite la parite. Aujourd'hui la parite est **declarative**
 (des notes eparses dans des READMEs) ; ce outil la rend **auditable**.
 
-Le registre `twin_pairs.yaml` (a cote de ce script) decrit chaque paire :
-le chemin des deux notebooks, le `parity_level` (surface | semantic |
-native-both), le `last_audit` (date, auteur, et le **git blob SHA** de chaque
-notebook au moment de l'audit) et les `known_differences` documentees.
+Le registre vit dans le repertoire `twin_pairs.d/` (a cote de ce script,
+#8542 Option C) : **un fichier YAML par paire** + `_schema.yaml` (documentation).
+Chaque entree decrit une paire : le chemin des deux notebooks, le `parity_level`
+(surface | semantic | native-both), le `last_audit` (date, auteur, et le **git
+blob SHA** de chaque notebook au moment de l'audit) et les `known_differences`
+documentees. Le file-per-entry supprime a la source la classe de conflit serie
+qui frappait l'ancien mono-fichier (recurrences #8415/#8476/#8499/#8505/#8526/#8499).
 
 Comment ca marche
 -----------------
@@ -76,7 +79,8 @@ Exit codes
 
 Voir aussi
 ----------
-- twin_pairs.yaml (registre curated, a cote de ce script)
+- twin_pairs.d/ (registre curated file-per-entry, a cote de ce script)
+- twin_pairs.d/_schema.yaml (schema + vocabulaire parity_level + historique des tranches)
 - Issue #8057 (metadonnee de parite des jumeaux Python/C#)
 - Issue #8264 (batch rebaseline precedent -- pattern DRIFT pre-existant)
 - Issue #4208 (parent : open-courseware fiabilise/publie)
@@ -96,10 +100,34 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
-DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.yaml"
+# Le registre vit desormais en un fichier par paire sous `twin_pairs.d/`
+# (#8542 Option C). Un fichier = une entree = plus rien a fusionner en serie
+# (la classe de conflit recurrente #8415/#8476/#8499/#8505/#8526/#8492 est
+# supprimee a la source, pas seulement mitiguee). Le loader agrgege le
+# repertoire ; l'ecriture chirurgicale (#8570) s'applique desormais a UN fichier
+# d'une entree -- triviale, mais meme code, memes garanties (seules les lignes
+# `last_audit` changent, commentaires du fichier preserves).
+DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.d"
 
 # Sentinelle : distingue « cle absente de l'update » de « valeur None ».
 _MISSING = object()
+
+
+def _slug(name: str) -> str:
+    """Slug stable et deterministe du `name` d'une paire -> nom de fichier.
+
+    Invariant : deux noms distincts produisent deux slugs distincts (verifie sur
+    les 116 paires a la migration #8542, 0 collision). Permet de retomber sur le
+    fichier d'une paire depuis son `name` sans index supplementaire.
+    """
+    s = str(name).lower()
+    s = re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+    return s
+
+
+def _pair_file(registry_dir: Path, name: str) -> Path:
+    """Chemin du fichier d'une paire dans le registre file-per-entry."""
+    return registry_dir / f"{_slug(name)}.yaml"
 
 
 def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -136,6 +164,64 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     return r.stdout.decode("utf-8", errors="replace")
 
 
+def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list:
+    """Charge le registre a un ref git arbitraire (HEAD, origin/main, <sha>...).
+
+    Robuste a la frontiere de migration #8542 : le base-ref peut etre l'ANCIEN
+    mono-fichier `twin_pairs.yaml` (liste) tandis que le HEAD est le nouveau
+    repertoire `twin_pairs.d/` (file-per-entry). On essaie le repertoire d'abord,
+    puis on retombe sur le fichier legacy.
+
+    Indispensable au mode `--per-pair --base origin/main` en CI : sur la PR de
+    migration elle-meme, origin/main porte encore l'ancien format.
+    """
+    if yaml is None:
+        raise SystemExit("PyYAML requis pour --per-pair.")
+    try:
+        reg_rel = reg_path.resolve().relative_to(repo_root).as_posix()
+    except ValueError:
+        reg_rel = Path(reg_path.name).as_posix()
+
+    # (1) Le ref porte-t-il le REPERTOIRE file-per-entry ?
+    r_ls = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/"],
+        capture_output=True, text=True, cwd=str(repo_root),
+    )
+    entries: list = []
+    if r_ls.returncode == 0 and r_ls.stdout.strip():
+        for line in r_ls.stdout.splitlines():
+            fname = line.split("/")[-1]
+            if not fname.endswith(".yaml") or fname.startswith("_"):
+                continue
+            txt = _git_show_file(repo_root, git_ref, line)
+            if txt is None:
+                continue
+            data = yaml.safe_load(txt)
+            if isinstance(data, dict):
+                entries.append(data)
+            elif isinstance(data, list):
+                entries.extend(data)
+        if entries:
+            return entries
+        # repertoire present mais vide de paires -> on continue vers le legacy
+
+    # (2) Retombe sur l'ancien mono-fichier `twin_pairs.yaml` (a cote du script).
+    legacy_rel = "scripts/notebook_tools/twin_pairs.yaml"
+    reg_text_base = _git_show_file(repo_root, git_ref, legacy_rel)
+    if reg_text_base is None:
+        # tente aussi le chemin absolu fourni en --registry (si c'etait un fichier)
+        reg_text_base = _git_show_file(repo_root, git_ref, reg_rel)
+    if reg_text_base is None:
+        raise SystemExit(
+            f"Impossible de lire le registre au base-ref '{git_ref}' "
+            f"(ni repertoire {reg_rel}/ ni fichier legacy twin_pairs.yaml)."
+        )
+    data_base = yaml.safe_load(reg_text_base)
+    if not isinstance(data_base, list):
+        raise SystemExit("Le registre au base-ref n'est pas une liste.")
+    return data_base
+
+
 def _repo_root() -> Path:
     r = subprocess.run(
         ["git", "rev-parse", "--show-toplevel"],
@@ -147,13 +233,33 @@ def _repo_root() -> Path:
 
 
 def load_registry(path: Path) -> list:
+    """Charge le registre. `path` = un répertoire file-per-entry (`twin_pairs.d/`)
+    ou un fichier YAML mono-liste (override `--registry`, ou ancien format).
+
+    En mode répertoire (#8542 Option C), chaque `*.yaml` ne commençant pas par
+    `_` est un fichier d'UNE paire (un dict, ou une liste d'un dict — tranches
+    verbatim de l'ancien mono-fichier). Les fichiers `_`-préfixés (`_schema.yaml`)
+    sont de la documentation, ignorée.
+    """
     if path is None or not path.exists():
         raise SystemExit(f"Erreur : registre introuvable : {path}")
     if yaml is None:
         raise SystemExit("Erreur : PyYAML requis (pip install pyyaml).")
+    if path.is_dir():
+        entries: list = []
+        for f in sorted(path.glob("*.yaml")):
+            if f.name.startswith("_"):
+                continue
+            data = yaml.safe_load(f.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                entries.append(data)
+            elif isinstance(data, list):
+                entries.extend(data)
+            # None (fichier de commentaires) ou autre type -> ignore
+        return entries
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
-        raise SystemExit("Erreur : le registre doit etre une liste de paires.")
+        raise SystemExit("Erreur : le registre (fichier) doit etre une liste de paires.")
     return data
 
 
@@ -385,26 +491,12 @@ def main(argv=None) -> int:
 
     # --- Mode --per-pair : comparaison HEAD vs base-ref ---
     if args.per_pair:
-        # Charge le registre a HEAD (working tree) et au base-ref (git show)
+        # Charge le registre a HEAD (working tree) et au base-ref (git show).
+        # Le base-ref peut porter l'ancien mono-fichier (frontiere de migration
+        # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
+        # le fichier legacy.
         pairs_head = load_registry(reg_path)
-        # reg_path peut etre absolu ou relatif -- on prend toujours le path
-        # relatif au repo_root pour `git show <ref>:<relpath>`.
-        # IMPORTANT : on normalise en forward-slashes (git sur Windows
-        # refuse les backslashes dans `<ref>:<path>`).
-        try:
-            reg_rel = reg_path.resolve().relative_to(repo_root).as_posix()
-        except ValueError:
-            # reg_path n'est pas sous repo_root : on tente quand meme avec son nom
-            reg_rel = Path(reg_path.name).as_posix()
-        reg_text_base = _git_show_file(repo_root, args.base, reg_rel)
-        if reg_text_base is None:
-            raise SystemExit(f"Impossible de lire le registre au base-ref '{args.base}' : {reg_rel}")
-        if yaml is None:
-            raise SystemExit("PyYAML requis pour --per-pair.")
-        data_base = yaml.safe_load(reg_text_base)
-        if not isinstance(data_base, list):
-            raise SystemExit("Le registre au base-ref n'est pas une liste.")
-        pairs_base = data_base
+        pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
 
@@ -492,11 +584,9 @@ def main(argv=None) -> int:
             print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
     if args.update:
-        # IMPORTANT : --update DOIT TOUJOURS reecrire TOUTES les paires du
-        # registre (meme avec --family), sinon on DETRUIT les paires des
-        # autres familles en re-ecrivant le YAML filtre. On ne met a jour
-        # que les paires qui matchent le filtre (ou toutes si --yes-all-pairs).
-        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU --yes-all-pairs.
+        # Selecteur obligatoire depuis c.909 (#8508) : --family OU --pair OU
+        # --yes-all-pairs. Sans lui, --update rebaselinerait les 116 paires et
+        # masquerait des DRIFTs legitimes.
         all_pairs = load_registry(reg_path)
         if args.pair:
             target = [pp for pp in all_pairs if pp.get("name") == args.pair]
@@ -523,13 +613,31 @@ def main(argv=None) -> int:
                 skipped.append(pp.get("name", "?"))
                 continue
             updates[pp["name"]] = audit
-        # Rebaseline CHIRURGICAL : seules les lignes `last_audit` des paires
-        # ciblees changent. Un `yaml.safe_dump` complet (comportement d'avant
-        # #8570) reformatait les ~1475 lignes et supprimait les 67 commentaires
-        # du registre, dont l'en-tete qui documente le schema.
-        raw = reg_path.read_text(encoding="utf-8")
-        new_raw, updated = surgical_rebaseline(raw, updates)
-        reg_path.write_text(new_raw, encoding="utf-8")
+        # Rebaseline CHIRURGICAL (#8570) : seules les lignes `last_audit` des
+        # paires ciblees changent. En mode file-per-entry (#8542), on applique
+        # surgical_rebaseline a CHAQUE fichier d'une paire ciblee -- un fichier,
+        # une entree, le code est le meme, le diff vaut les lignes changees.
+        # (Un yaml.safe_dump complet reformaterait et supprimerait les
+        # commentaires + casserait le quoting `date: "..."` -> datetime.date.)
+        if reg_path.is_dir():
+            written = 0
+            for name, audit in updates.items():
+                pfile = _pair_file(reg_path, name)
+                if not pfile.exists():
+                    print(f"Aucun fichier pour la paire '{name}' "
+                          f"(attendu : {pfile.name}).", file=sys.stderr)
+                    continue
+                raw = pfile.read_text(encoding="utf-8")
+                new_raw, _ = surgical_rebaseline(raw, {name: audit})
+                if new_raw != raw:
+                    pfile.write_text(new_raw, encoding="utf-8")
+                    written += 1
+            updated = written
+        else:
+            # mono-fichier legacy (--registry <file.yaml>)
+            raw = reg_path.read_text(encoding="utf-8")
+            new_raw, updated = surgical_rebaseline(raw, updates)
+            reg_path.write_text(new_raw, encoding="utf-8")
         if skipped:
             print(
                 f"Ignorees (notebook absent de git) : {', '.join(skipped)}",

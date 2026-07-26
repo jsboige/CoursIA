@@ -1,0 +1,13 @@
+- name: "Tweety-10 MLN"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 59821257489bf34aab34dead6b1bf633c9eb2a0e
+    csharp_sha: fc482a5d73fe50c7a4cce563edaf1987a0536a7b
+  known_differences:
+    - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."

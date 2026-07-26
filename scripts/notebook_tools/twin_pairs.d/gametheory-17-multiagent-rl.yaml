@@ -1,0 +1,14 @@
+- name: "GameTheory-17 MultiAgent-RL"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2023
+    python_sha: 3be092acbcd19093e20425200c97a973c99ff75f
+    csharp_sha: 06dff5d8a085846f7feb1dc3e08765da35c5f2ce
+  known_differences:
+    - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."
+    - "Asymetrie de couverture : Python (38 cellules, 12 code) s'appuie sur l'ecosysteme OpenSpiel/pyspiel ; C# (24 cellules, 11 code) implémente FP/NFSP/PSRO from-scratch en version table-based avec une section 'Verdict SOTA' honnete sur la portabilite (le NFSP neuronal n'est pas repliquable sans framework ML -> version table-based). Meme theorie centrale (self-play/FP/NFSP/PSRO), leviers d'implementation differents (framework OpenSpiel cote Python vs from-scratch minimaliste cote C#)."
