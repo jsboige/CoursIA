@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Rebaseline chirurgical du registre de jumeaux (#8570).
+"""Rebaseline chirurgical du registre de jumeaux (#8570, porte sur #8542).
 
-Avant : `--update` (meme avec un selecteur) re-serialisait le registre entier
-via `yaml.safe_dump`. Mesure firsthand sur les 116 paires -- rebaseliner UNE
-paire produisait `1108 insertions(+), 658 deletions(-)` et supprimait les **67
-lignes de commentaire** du fichier, dont l'en-tete de 15 lignes qui documente
-le schema et le vocabulaire `parity_level`. Consequences :
+Avant #8570 : `--update` (meme avec un selecteur) re-serialisait le registre
+entier via `yaml.safe_dump`. Mesure firsthand sur les 116 paires -- rebaseliner
+UNE paire produisait `1108 insertions(+), 658 deletions(-)` et supprimait les
+**67 lignes de commentaire** du fichier, dont l'en-tete qui documente le schema
+et le vocabulaire `parity_level`. Consequences :
 
   * le vrai changement (4 lignes) devenait irreviewable -- motif poison-catalogue
     applique au registre ;
@@ -14,16 +14,26 @@ le schema et le vocabulaire `parity_level`. Consequences :
     PRECEDENT, donc l'entree affirmait « auditee par X le <date d'avant> » avec
     des SHAs d'aujourd'hui -- la tracabilite mentait.
 
-C'est pourquoi la remediation CI prescrivait l'edition manuelle. Depuis #8570
-l'ecriture est chirurgicale et la provenance est horodatee : la commande courte
-redevient la bonne.
+Depuis #8570 l'ecriture est chirurgicale et la provenance est horodatee.
+Depuis #8542 (Option C) le registre est un **repertoire** `twin_pairs.d/`, un
+fichier par paire, et la documentation vit dans `_schema.yaml`. La cible du
+rebaseline est donc le raw d'UN fichier d'entree -- exactement ce que la boucle
+`--update` passe a `surgical_rebaseline` (cf `_pair_file` + boucle `reg_path.is_dir()`).
 
 Ces tests couvrent :
-    1. les commentaires du registre survivent a un `--update --pair`
+    1. les commentaires d'un fichier d'entree survivent au rebaseline
     2. le diff se limite au bloc `last_audit` de la paire ciblee
     3. un rebaseline sans changement de valeur est un no-op byte-identique
     4. `--by` inscrit l'auteur et la date est remise a aujourd'hui
-    5. les autres paires restent byte-identiques
+    5. les fichiers des autres paires restent byte-identiques
+    6. `_schema.yaml` (la documentation) n'est jamais une cible de rebaseline
+
+Note de conception -- **pas de `pytest.skip` sur registre absent**. Un registre
+introuvable est precisement la panne que ces tests doivent attraper : #8586 a
+repointe le loader vers `twin_pairs.d/` en laissant ce module sur l'ancien
+`twin_pairs.yaml`, et les gardes sont passees en SKIP silencieux (`sss.s`).
+La suite restait verte pendant que la couverture s'evaporait. Un test qui skippe
+est pire qu'un test qui echoue : il ne signale rien. D'ou `pytest.fail`.
 
 Run:
     pytest scripts/notebook_tools/tests/test_check_twin_parity_surgical.py
@@ -39,7 +49,8 @@ import pytest
 
 SCRIPT_DIR = Path(__file__).resolve().parent.parent
 SCRIPT = SCRIPT_DIR / "check_twin_parity.py"
-REGISTRY = SCRIPT_DIR / "twin_pairs.yaml"
+REGISTRY_DIR = SCRIPT_DIR / "twin_pairs.d"
+SCHEMA_FILE = REGISTRY_DIR / "_schema.yaml"
 
 
 def _load_module():
@@ -52,43 +63,80 @@ def _load_module():
 ctp = _load_module()
 
 
+def _entry_files() -> list[Path]:
+    """Fichiers de paires du registre (hors documentation `_`-prefixee).
+
+    Echoue -- ne skippe pas -- si le registre est introuvable ou vide : c'est
+    la regression #8586 elle-meme.
+    """
+    if not REGISTRY_DIR.is_dir():
+        pytest.fail(
+            f"registre introuvable : {REGISTRY_DIR}. "
+            "Si le registre a demenage, ce module doit suivre : un skip ici "
+            "rendrait la suite verte sans rien garder (regression #8586)."
+        )
+    files = [f for f in sorted(REGISTRY_DIR.glob("*.yaml"))
+             if not f.name.startswith("_")]
+    if not files:
+        pytest.fail(f"registre vide : aucun fichier de paire dans {REGISTRY_DIR}")
+    return files
+
+
 @pytest.fixture
 def registry_backup():
-    """Sauvegarde + restauration du registre autour de chaque test."""
-    if not REGISTRY.exists():
-        pytest.skip(f"registre introuvable : {REGISTRY}")
-    backup = REGISTRY.with_suffix(".yaml.bak.c8570")
-    shutil.copy2(REGISTRY, backup)
+    """Sauvegarde + restauration du REPERTOIRE de registre autour de chaque test."""
+    files = _entry_files()
+    backup = REGISTRY_DIR.with_name(REGISTRY_DIR.name + ".bak.c8570")
+    if backup.exists():
+        shutil.rmtree(backup)
+    shutil.copytree(REGISTRY_DIR, backup)
     try:
-        yield REGISTRY
+        yield files
     finally:
-        shutil.copy2(backup, REGISTRY)
-        backup.unlink(missing_ok=True)
+        shutil.rmtree(REGISTRY_DIR)
+        shutil.move(str(backup), str(REGISTRY_DIR))
 
 
-def _first_pair_name(raw: str) -> str:
-    for line in raw.splitlines():
-        if line.startswith("- name:"):
-            return line.split(":", 1)[1].strip().strip("\"'")
-    pytest.skip("registre sans entree exploitable")
+def _pair_name(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.lstrip("- ").rstrip()
+        if stripped.startswith("name:"):
+            return stripped.split(":", 1)[1].strip().strip("\"'")
+    pytest.fail(f"fichier de paire sans `name:` exploitable : {path}")
 
 
-def test_comments_survive_surgical_rebaseline(registry_backup):
-    """Le bug fondateur : `safe_dump` supprimait les 67 commentaires."""
-    raw = REGISTRY.read_text(encoding="utf-8")
-    name = _first_pair_name(raw)
+def test_comments_survive_surgical_rebaseline():
+    """Le bug fondateur : `safe_dump` supprimait les commentaires.
+
+    Raw craft pour que la garde soit deterministe -- elle ne doit pas dependre
+    de quel fichier d'entree porte, ce jour-la, un commentaire.
+    """
+    raw = (
+        "# en-tete documentaire de l'entree\n"
+        "- name: Paire-Temoin\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n"
+        "  # commentaire interne, au milieu du bloc\n"
+        "  last_audit:\n"
+        "    date: '2020-01-01'\n"
+        "    by: auditeur-precedent\n"
+    )
     before = sum(1 for line in raw.splitlines() if line.lstrip().startswith("#"))
-    assert before > 0, "le registre doit porter son en-tete documentaire"
+    assert before == 2
 
-    new_raw, _ = ctp.surgical_rebaseline(raw, {name: {"by": "test-lane"}})
+    new_raw, touched = ctp.surgical_rebaseline(raw, {"Paire-Temoin": {"by": "test-lane"}})
     after = sum(1 for line in new_raw.splitlines() if line.lstrip().startswith("#"))
+    assert touched == 1
     assert after == before, "un rebaseline ne doit supprimer aucun commentaire"
+    assert "# en-tete documentaire de l'entree" in new_raw
+    assert "  # commentaire interne, au milieu du bloc" in new_raw
 
 
 def test_diff_limited_to_target_block(registry_backup):
     """Seules les lignes changees de la paire ciblee bougent."""
-    raw = REGISTRY.read_text(encoding="utf-8")
-    name = _first_pair_name(raw)
+    pfile = registry_backup[0]
+    raw = pfile.read_text(encoding="utf-8")
+    name = _pair_name(pfile)
 
     new_raw, touched = ctp.surgical_rebaseline(
         raw, {name: {"by": "sentinelle-c8570", "date": "1999-01-01"}}
@@ -109,11 +157,14 @@ def test_noop_is_byte_identical(registry_backup):
     Sans cette garantie, un rebaseline sur une paire a jour normaliserait le
     quoting (le registre melange 'x' et "x") et polluerait le diff.
     """
-    raw = REGISTRY.read_text(encoding="utf-8")
-    name = _first_pair_name(raw)
     import yaml
 
-    entry = next(p for p in yaml.safe_load(raw) if p["name"] == name)
+    pfile = registry_backup[0]
+    raw = pfile.read_text(encoding="utf-8")
+    name = _pair_name(pfile)
+
+    data = yaml.safe_load(raw)
+    entry = data[0] if isinstance(data, list) else data
     audit = entry["last_audit"]
 
     new_raw, touched = ctp.surgical_rebaseline(
@@ -139,17 +190,58 @@ def test_update_pair_stamps_fresh_provenance():
     )
 
 
-def test_other_pairs_untouched(registry_backup):
-    """Rebaseliner une paire ne doit rien changer aux 115 autres."""
-    import yaml
+def test_other_pair_files_untouched(registry_backup):
+    """Rebaseliner une paire ne doit rien changer aux 115 autres FICHIERS.
 
-    raw = REGISTRY.read_text(encoding="utf-8")
-    name = _first_pair_name(raw)
-    new_raw, _ = ctp.surgical_rebaseline(raw, {name: {"by": "sentinelle-c8570"}})
+    Rejoue la boucle de production (`--update` en mode repertoire) : lire le
+    fichier de la paire, `surgical_rebaseline`, reecrire ce fichier-la seul.
+    """
+    files = registry_backup
+    assert len(files) > 1, "registre trop petit pour tester l'isolation"
 
-    before = {p["name"]: p["last_audit"] for p in yaml.safe_load(raw)}
-    after = {p["name"]: p["last_audit"] for p in yaml.safe_load(new_raw)}
-    assert set(before) == set(after), "aucune paire ajoutee ni perdue"
-    for other in before:
-        if other != name:
-            assert before[other] == after[other], f"paire {other} modifiee a tort"
+    target = files[0]
+    name = _pair_name(target)
+    others_before = {f: f.read_bytes() for f in files[1:]}
+
+    new_raw, _ = ctp.surgical_rebaseline(
+        target.read_text(encoding="utf-8"), {name: {"by": "sentinelle-c8570"}}
+    )
+    target.write_text(new_raw, encoding="utf-8")
+
+    assert "sentinelle-c8570" in target.read_text(encoding="utf-8")
+    for f, content in others_before.items():
+        assert f.read_bytes() == content, f"fichier {f.name} modifie a tort"
+
+
+def test_pair_file_resolves_from_name(registry_backup):
+    """`name` -> fichier : le mapping dont depend l'ecriture file-per-entry.
+
+    En mode repertoire la boucle `--update` retrouve le fichier via `_pair_file`.
+    Si ce mapping derive, le rebaseline n'ecrit nulle part -- en silence.
+    """
+    for pfile in registry_backup:
+        name = _pair_name(pfile)
+        assert ctp._pair_file(REGISTRY_DIR, name) == pfile, (
+            f"'{name}' resout vers {ctp._pair_file(REGISTRY_DIR, name).name}, "
+            f"mais son entree vit dans {pfile.name}"
+        )
+
+
+def test_schema_file_is_never_a_rebaseline_target(registry_backup):
+    """La documentation (`_schema.yaml`) est hors du champ du rebaseline.
+
+    C'est la ou vivent, depuis #8542, les lignes de commentaire que le bug
+    fondateur supprimait. Aucun `name` de paire ne doit y resoudre, et le
+    chargeur doit l'ignorer.
+    """
+    if not SCHEMA_FILE.exists():
+        pytest.fail(f"documentation du registre absente : {SCHEMA_FILE}")
+    comments = sum(1 for line in SCHEMA_FILE.read_text(encoding="utf-8").splitlines()
+                   if line.lstrip().startswith("#"))
+    assert comments > 0, "_schema.yaml doit porter la documentation du registre"
+
+    for pfile in registry_backup:
+        assert ctp._pair_file(REGISTRY_DIR, _pair_name(pfile)) != SCHEMA_FILE
+
+    loaded_names = {p["name"] for p in ctp.load_registry(REGISTRY_DIR)}
+    assert loaded_names == {_pair_name(f) for f in registry_backup}
