@@ -201,17 +201,34 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                 'severity': 'MAJOR',
             })
 
-    # Litmus 4 : free_alternative pointe vers un notebook inexistant
+    # Litmus 4 : free_alternative pointe vers un notebook inexistant.
+    # Le champ admet deux natures : un path relatif (vers un notebook/.md
+    # alternative gratuit) OU un sentinel semantique ('self' = ce notebook est
+    # deja l'alternative gratuite ; 'ollama'/'openai' = moteur gratuit ; 'N/A'
+    # = non-applicable ; 'none'/'null'). On ne verifie l'existence QUE des
+    # valeurs path-shaped : un sentinel n'est pas un fichier, le flagger =
+    # faux positif. Avant ce fix, le litmus produisait 101 FP fleet-wide
+    # (55x 'self', 18x '10_LocalLlama.ipynb' base fausse, 13x 'ollama',
+    # 5x 'N/A', 1x 'openai'...). Les sentinels explicites sont court-circuites
+    # en premier ; les valeurs path-shaped sont cherchees en dual-base (repo
+    # root OU MyIA.AI.Notebooks/, convention majoritaire).
+    SENTINELS = ('self', 'none', 'null', 'n/a', '')
     free_alt = cost_meta.get('free_alternative')
-    if free_alt:
-        # free_alt est un path relatif du repo
-        alt_path = repo_root / free_alt
-        if not alt_path.exists():
-            findings.append({
-                'pattern': 'free_alternative_missing',
-                'detail': f'cost.free_alternative pointe vers {free_alt} mais fichier absent',
-                'severity': 'MAJOR',
-            })
+    if free_alt and str(free_alt).lower() not in SENTINELS:
+        free_alt_str = str(free_alt)
+        looks_like_path = ('/' in free_alt_str) or ('\\' in free_alt_str) \
+            or free_alt_str.lower().endswith(('.ipynb', '.md'))
+        if looks_like_path:
+            candidates = [
+                repo_root / free_alt,
+                repo_root / 'MyIA.AI.Notebooks' / free_alt,
+            ]
+            if not any(p.exists() for p in candidates):
+                findings.append({
+                    'pattern': 'free_alternative_missing',
+                    'detail': f'cost.free_alternative pointe vers {free_alt} mais fichier absent',
+                    'severity': 'MAJOR',
+                })
 
     # Litmus 5 : QC notebook sans qc_cloud validator
     uses_qc = any(detect_quantbook_usage(src) for _, src in code_cells_source)
