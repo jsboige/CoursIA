@@ -76,6 +76,45 @@ re-exécution différée sur QC Cloud, RECOVERABLE-MACHINE).
 
 ---
 
+## Élargissement de la fenêtre : le contenu, pas le chemin (2026-07-26)
+
+La fenêtre d'analyse était `projects/*/quantbook.ipynb` — **un chemin ET un
+basename**, soit deux proxys de la vraie raison. Ce qui fait d'un notebook un
+quantbook est ce dont il a **besoin** : `QuantBook()` n'existe que dans le
+runtime research de QC Cloud, et c'est ce runtime manquant qui produit la
+pathologie #7575 (cellules code jamais exécutées). L'outil interroge donc
+désormais le **contenu** (`--scope repo`, défaut), même prédicat que
+`validate_pr_notebooks.py` et `check_cost_metadata.py` — les trois outils
+répondent la même chose à « qu'est-ce qu'un notebook QC ». `--scope projects`
+conserve l'ancienne fenêtre pour comparaison.
+
+| Mesure (2026-07-26) | `--scope projects` | `--scope repo` (défaut) |
+|---|---|---|
+| Notebooks dans la fenêtre | 46 | **93** |
+| `HEALTHY` | 28 | 59 |
+| `STOP_REPAIR_STRIPPED` | 9 | 9 |
+| `STOP_REPAIR_UNEXEC` | 9 | 9 |
+| `PREEXISTING_UNEXEC` | 0 | **16** |
+| `--check` exit | 0 | 1 |
+
+**Aucune des entrées existantes n'est reclassifiée** : les quantbooks
+canoniques sont scannés d'abord et gardent leur cross-référence `config.json`.
+Les 47 notebooks nouvellement dans la fenêtre s'ajoutent, ils ne déplacent rien.
+
+Le point saillant : **7 des 16 vivent dans `QuantConnect/projects/`**, le
+répertoire même que l'outil prétendait couvrir — ils n'étaient manqués que sur
+le basename (`Research.ipynb`, `research_robustness_output.ipynb`,
+`research_long_short_harvest.ipynb`, …). Les 9 autres : 7 dans
+`ESGF-2026/lean-workspace/*-Researcher/`, 1 dans `partner-course-quant-trading/`,
+1 dans `QuantConnect/research/`.
+
+**Ces 16 ne sont pas triés ici** — cette section les rend visibles, elle ne
+prononce aucun verdict de re-exécution. Le triage (RECOVERABLE-MACHINE via QC
+Cloud vs INTRINSIC vs archivage) reste suivi par **#7575**. L'outil n'est câblé
+dans aucun workflow CI : l'élargissement ne peut donc pas rendre la CI rouge.
+
+---
+
 ## Snapshot historique DEPRECATED (2026-05-04 → 2026-07-20)
 
 > **Historique préservé tel quel pour mémoire uniquement**, **PAS comme source

@@ -336,3 +336,131 @@ class TestIntegration6891:
         assert by_name["Stripped"]["config"]["status"] == "ALIVE"
         assert by_name["DeadCloud"]["config"]["status"] == "DEAD"
         assert by_name["Preexisting"]["config"]["status"] == "DEAD"
+
+
+# -- _uses_quantbook (fenetre par CONTENU, #7575 / #8598) --
+
+class TestUsesQuantbook:
+    def test_code_cell_instantiating_quantbook(self):
+        nb = _nb([_cell("code", "qb = QuantBook()")])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_self_quantbook_attribute(self):
+        nb = _nb([_cell("code", "history = self.QuantBook.History(spy, 10)")])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_source_as_list_of_lines(self):
+        nb = _nb([_cell("code", ["import x\n", "qb = QuantBook()\n"])])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_markdown_mention_only_is_not_a_quantbook(self):
+        # Un tutoriel qui PARLE de QuantBook n'a pas besoin du runtime QC Cloud.
+        nb = _nb([_cell("markdown", "On utilise `QuantBook()` pour la recherche.")])
+        assert aqm._uses_quantbook(nb) is False
+
+    def test_no_mention_at_all(self):
+        nb = _nb([_cell("code", "import pandas as pd")])
+        assert aqm._uses_quantbook(nb) is False
+
+
+# -- scan_repo : sur-ensemble strict de scan_projects --
+
+def _write_nb(path: Path, cells, kernel="python3") -> Path:
+    """Write an arbitrary notebook at ``path`` (parents created)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_nb(cells, kernel=kernel), ensure_ascii=False),
+                    encoding="utf-8")
+    return path
+
+
+class TestScanRepo:
+    """La fenetre est le CONTENU (``QuantBook()``), pas le chemin ni le basename."""
+
+    @staticmethod
+    def _tree(tmp_path):
+        nb_root = tmp_path / "MyIA.AI.Notebooks"
+        quant_root = nb_root / "QuantConnect" / "projects"
+        # Canonique : dans la fenetre d'origine, avec config.json.
+        _write_project(quant_root, "Canonical", [
+            _cell("code", "qb = QuantBook()", execution_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout", "text": "ok"}]),
+        ], config={"cloud-id": 12345})
+        # Hors fenetre d'origine (ni le dossier, ni le basename) mais VRAI quantbook.
+        _write_nb(nb_root / "QuantConnect" / "research" / "research.ipynb", [
+            _cell("code", "qb = QuantBook()", execution_count=None, outputs=[]),
+        ])
+        # Meme dossier canonique, autre basename -- la seconde moitie du proxy.
+        _write_nb(quant_root / "Canonical" / "research.ipynb", [
+            _cell("code", "qb = QuantBook()", execution_count=None, outputs=[]),
+        ])
+        # Bruit : ne doit PAS entrer dans la fenetre.
+        _write_nb(nb_root / "Search" / "tutorial.ipynb",
+                  [_cell("markdown", "`QuantBook()` sert a la recherche.")])
+        _write_nb(nb_root / "ML" / "plain.ipynb",
+                  [_cell("code", "import pandas", execution_count=None, outputs=[])])
+        _write_nb(nb_root / "Foo" / ".ipynb_checkpoints" / "x.ipynb",
+                  [_cell("code", "qb = QuantBook()", execution_count=None, outputs=[])])
+        (nb_root / "Bad").mkdir(parents=True, exist_ok=True)
+        (nb_root / "Bad" / "broken.ipynb").write_text("{not json", encoding="utf-8")
+        return nb_root, quant_root
+
+    def _paths(self, results, nb_root):
+        return {Path(r["path"]).relative_to(nb_root).as_posix() for r in results}
+
+    def test_catches_quantbooks_outside_the_path_window(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        got = self._paths(aqm.scan_repo(nb_root, quant_root), nb_root)
+        assert "QuantConnect/research/research.ipynb" in got
+        assert "QuantConnect/projects/Canonical/research.ipynb" in got
+
+    def test_ignores_non_quantbooks_checkpoints_and_unreadable(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        got = self._paths(aqm.scan_repo(nb_root, quant_root), nb_root)
+        assert "Search/tutorial.ipynb" not in got   # markdown-only mention
+        assert "ML/plain.ipynb" not in got          # aucune mention
+        assert "Foo/.ipynb_checkpoints/x.ipynb" not in got
+        assert "Bad/broken.ipynb" not in got        # JSON invalide : pas de crash
+
+    def test_is_a_strict_superset_that_reclassifies_nothing(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        old = {r["path"]: r for r in aqm.scan_projects(quant_root)}
+        new = {r["path"]: r for r in aqm.scan_repo(nb_root, quant_root)}
+        assert set(old) <= set(new)
+        for path, before in old.items():
+            assert new[path]["classification"] == before["classification"]
+
+    def test_canonical_entries_keep_their_config_cross_reference(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        new = {Path(r["path"]).as_posix(): r for r in aqm.scan_repo(nb_root, quant_root)}
+        canonical = next(v for k, v in new.items() if k.endswith("Canonical/quantbook.ipynb"))
+        assert canonical["config"]["status"] == "ALIVE"
+
+    def test_no_duplicate_entries(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        results = aqm.scan_repo(nb_root, quant_root)
+        paths = [r["path"] for r in results]
+        assert len(paths) == len(set(paths))
+
+    def test_missing_notebooks_root_yields_canonical_only(self, tmp_path):
+        """Rien a elargir n'est pas une erreur -- main() garde l'exit 2 explicite."""
+        _, quant_root = self._tree(tmp_path)
+        results = aqm.scan_repo(tmp_path / "nope", quant_root)
+        assert [r["path"] for r in results] == [r["path"] for r in aqm.scan_projects(quant_root)]
+
+
+class TestMainScope:
+    def test_default_scope_is_wider_than_projects(self, tmp_path, capsys):
+        nb_root, quant_root = TestScanRepo._tree(tmp_path)
+        rc = aqm.main(["--root", str(tmp_path), "--json"])
+        assert rc == 0
+        wide = json.loads(capsys.readouterr().out)["scanned"]
+        rc = aqm.main(["--root", str(tmp_path), "--scope", "projects", "--json"])
+        assert rc == 0
+        narrow = json.loads(capsys.readouterr().out)["scanned"]
+        assert wide > narrow
+
+    def test_explicit_missing_notebooks_root_exits_2(self, tmp_path):
+        self_tree = TestScanRepo._tree(tmp_path)
+        assert self_tree  # fixture built
+        rc = aqm.main(["--root", str(tmp_path), "--notebooks-root", "nope"])
+        assert rc == 2
