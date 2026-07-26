@@ -176,11 +176,22 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             'severity': 'MAJOR',
         })
 
-    # Litmus 2 : api_usd_est: 0 mais API usage
+    # Litmus 2 : api_usd_est: 0 mais API usage.
+    # FP guard: quand cost.api_provider declare une inference locale/gratuite
+    # (local, hf, huggingface, ollama), la presence du keyword 'openai'/
+    # 'replicate' reflete un client OpenAI-compatible pointant vers un serveur
+    # local (vLLM, Ollama, endpoint HF Inference) — pas un appel API payant en
+    # USD. cost.api_usd_est: 0.0 est alors correct, le flag CRITICAL = faux
+    # positif (5 FP fleet-wide avant ce fix : notebooks 'Local'/HF avec
+    # provider=local/hf). On ne flag QUE si le provider est un payant cloud ou
+    # absent/none (cas ambigu a investiguer, cf litmus 3 pour le compte).
+    FREE_API_PROVIDERS = ('local', 'hf', 'huggingface', 'ollama')
+    api_provider_val = str(cost_meta.get('api_provider', '')).lower()
     api_used = set()
     for _, src in code_cells_source:
         api_used.update(detect_api_usage(src))
-    if api_used and cost_meta.get('api_usd_est', 0.0) == 0.0:
+    if api_used and cost_meta.get('api_usd_est', 0.0) == 0.0 \
+            and api_provider_val not in FREE_API_PROVIDERS:
         for provider in api_used:
             findings.append({
                 'pattern': 'api_used_but_cost_zero',
