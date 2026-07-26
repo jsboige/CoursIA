@@ -231,6 +231,19 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             'severity': 'MINOR',
         })
 
+    # Litmus 7 : QuantBook détecté sans estimation QCC (cf #8376/#8056)
+    # QCC (QuantConnect Cloud compute tokens) = quota non-USD consommé par tout
+    # quantbook exécuté via QC Cloud. api_usd_est: 0.0 est techniquement correct
+    # (pas de USD) mais trompeur : le notebook n'est PAS gratuit. Le champ dédié
+    # cost.qcc_tokens_est (~70 QCC/cellule, plancher max(400, n_cells x 70))
+    # rend la dépense visible. Absent/0 sur un QuantBook = lacune de coût.
+    if uses_qc and not cost_meta.get('qcc_tokens_est'):
+        findings.append({
+            'pattern': 'qc_notebook_no_qcc_estimate',
+            'detail': 'Notebook QuantConnect (QuantBook) mais cost.qcc_tokens_est absent ou 0 (cf #8376/#8056)',
+            'severity': 'MAJOR',
+        })
+
     return {
         'notebook': str(notebook_path),
         'cost_meta_found': bool(cost_meta),
