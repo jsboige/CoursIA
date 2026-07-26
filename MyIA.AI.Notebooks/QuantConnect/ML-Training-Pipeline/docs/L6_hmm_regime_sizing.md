@@ -10,7 +10,7 @@
 Utiliser la **probabilité de régime HMM continue** comme scalaire de sizing
 (blend `(1-p_bear)·w_bull + p_bear·w_bear`) **ne bat pas** le switch dur de S4,
 à **aucun** niveau de shrinkage Ridge testé. Le verdict est *robuste* au sweep
-d'alpha {0.0, 0.1, 0.5, 1.0} : NO BEATS partout → l'éventuel sous-performance
+d'alpha {0.0, 0.1, 0.5, 1.0} : NO BEATS partout → l'éventuelle sous-performance
 n'est pas un artefact de shrinkage (cf. finding 1).
 
 ## Hypothèse (décision coordination ai-01 2026-07-19, #1409)
@@ -101,6 +101,19 @@ Détail par seed (alpha=1.0, défaut S4) :
    L'inverse-vol statique (0.4214, déterministe) est encore sous. Le conditionnement
    par régime n'ajoute pas d'alpha au-delà de la pondération égale sur cet univers.
 
+   **Réserve de comparabilité, à ne pas gommer** : cette comparaison-là n'est pas
+   symétrique en coûts. Les stratégies régime-conditionnelles paient 5 bps sur leur
+   turnover quotidien ; les baselines statiques (`equal`, `inv_vol`) n'en paient
+   **aucun** — le script le dit lui-même (`walk_forward_sizing`, docstring : *« Static
+   baselines (equal/inv_vol) pay no cost »* ; `strat["equal"]` n'a pas de terme de
+   coût). L'écart de **0.021** Sharpe vs `equal` est donc un **majorant** du déficit
+   réel : une part en revient au coût que la baseline ne supporte pas. Ce qui n'est
+   **pas** affecté, c'est le verdict du gate — `continuous` vs `s4_hard` sont tous
+   deux facturés au même barème, donc le ROBUST NO BEATS de l'hypothèse L6 tient
+   sans réserve. La conclusion prudente est : le conditionnement par régime
+   n'établit pas d'alpha au-delà de l'equal-weight sur cet univers ; il faudrait un
+   run à coûts symétriques pour le réfuter au sens fort.
+
 4. **Robustesse au shrinkage = l'artefact exclus.** NO BEATS à CHAQUE alpha
    (concern Hermes 1) : la sous-performance n'est pas un masquage par shrinkage.
    Mesures `p_bear`/frac-bear sur la fenêtre OOS **entière** (concern Hermes 2),
@@ -123,7 +136,8 @@ allocation risk-based.**
 
 L'hypothèse centrale de l'Epic — que des signaux *long-horizon trend & regime*
 ajoutent de la valeur au-delà de l'equal-weight après coûts — est **réfutée** sur
-cet univers (11 ETF anti-FAANG, 2017-2026, yfinance daily). Conformément à la
+cet univers (11 ETF anti-FAANG, 2017-2026, yfinance daily), sous la réserve de
+comparabilité posée au finding 3 (baselines statiques non facturées). Conformément à la
 décision ai-01 2026-07-19 (« si L6 NO BEATS → Epic se parque honnêtement, pas de
 L7 inventé »), l'Epic #1409 atteint son **point de parc honnête** : un résultat
 négatif multi-axes documenté, sans invention d'un L7 ad hoc.
@@ -133,6 +147,9 @@ négatif multi-axes documenté, sans invention d'un L7 ad hoc.
 - 11 symboles (SPY, TLT, 9 ETF sectoriels), ~2373 lignes, 2017-01-03 → 2026-06-11
   (yfinance daily close, data-source-to-convert AUTORISÉ).
 - Observations OOS : 1975 par seed, 5-fold expanding, re-fit HMM tous les 22j.
+- Coûts : `TX_COST_BPS = 5` appliqué au turnover des stratégies actives
+  (`continuous`, `hard`) ; baselines statiques (`equal`, `inv_vol`) non facturées
+  — asymétrie assumée, portée du finding 3.
 - Runtime : CPU (conda `coursia-ml-training`, statsmodels 0.14.6, regle F).
 
 ## Script
