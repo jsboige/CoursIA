@@ -1,0 +1,14 @@
+- name: "ML-7 Recommendation"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 367fa531d64984ae94bfde4fd5c0937d41ccc9c4
+    csharp_sha: 74a61b1d6bae7e24f27fb54a49fe83612fc6efcc
+  known_differences:
+    - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
+    - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."
+    - "Difference conceptuelle : ML.NET expose un trainer SPECIALISE recommandation (MatrixFactorization avec метriques de ranking) ; sklearn NMF est un decomposeur generique applique a la matrice user-item. Meme mathematique de fond (factorisation), abstraction differente."

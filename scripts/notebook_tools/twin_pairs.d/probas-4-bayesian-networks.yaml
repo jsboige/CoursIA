@@ -1,0 +1,15 @@
+- name: Probas-4 Bayesian-Networks
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: aa853aa35f024e6af153991847a0bebf91caaadf
+    csharp_sha: 9c17a3f5b36b0aa517a8f5809c2aa385b90dbf10
+  known_differences:
+  - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

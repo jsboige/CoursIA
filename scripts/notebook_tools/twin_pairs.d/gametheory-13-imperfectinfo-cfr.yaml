@@ -1,0 +1,15 @@
+- name: "GameTheory-13 ImperfectInfo-CFR"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2025
+    python_sha: 9bca3f3f80165a5b43824f718074c5c2723b6552
+    csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
+  known_differences:
+    - "Socle pedagogique commun : jeux a information imparfaite, Kuhn Poker (Kuhn 1950/1953) comme jeu de reference, regret matching (Hannan), CFR vanilla (Zinkevich et al. 2007) avec recursion contrefactuelle, variante CFR+ (Tammelin 2014), convergence de la strategie moyenne vers la valeur du jeu / equilibre de Nash."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` (courbes de convergence) + OpenSpiel (cfr/CFR+/Linear CFR, benchmark Leduc Poker, comparaisons a l'echelle) + MCCFR external sampling. C# = pur `System.*` (Linq, Collections.Generic, `#nullable enable`), 0 NuGet, CFR/CFR+/RegretMatcher from-scratch, visualisation ASCII (valeur du jeu vs iterations)."
+    - "Asymetrie de couverture : Python plus etendu (44 vs 22 cellules) -- couvre MCCFR, integration OpenSpiel, Leduc Poker, Deep CFR (apercu), distance de Nash ; le C# se concentre sur le socle CFR vanilla + CFR+ avec 3 exercices (Leduc, exploitabilite best-response, MCCFR). Meme theorie centrale (Zinkevich / Tammelin / Kuhn), leviers de demonstration differents (ecosysteme OpenSpiel cote Python vs implementation from-scratch minimaliste cote C#)."
+    - "Re-baseline 2026-07-25 (po-2025, meme cycle) : SHA Python avance e78c9337 -> 9bca3f3f via #8489 (correction doc-honesty markdown cell[30] : 'moins de 0.01%' -> '~0.01% (exploitabilite 0.000112, soit ~0.011%)', alignement sur la sortie committee). Drift verifie parite-preservant : prose markdown seule, aucune cellule de code ni algorithme touche (n'affecte pas l'axe de parite semantic)."

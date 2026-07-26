@@ -1,0 +1,15 @@
+- name: "CSP-4 Scheduling"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: 7cc9d727066893f89ec2dacb06295134db19039f
+    csharp_sha: 4d533e0a938a7145a79c9a8417d1892e97461a90
+  known_differences:
+    - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
+    - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."
+    - "Cas etudies : job-shop scheduling (3 machines x 3 jobs, makespan minimal), equipement maintenance planning."
+    - "Note infrastructure : ce notebook (.NET) est explicite sur la pre-configuration IKVM (AppContext['IKVM.Home'] + tzdb OK) - voir cellule d'initialisation 'IKVM 8.15.0 pret (home=ikvm-home-8.15.0-win-x64, tzdb=True) - Choco-solver charge'."

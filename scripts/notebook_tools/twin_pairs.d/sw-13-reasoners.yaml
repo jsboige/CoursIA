@@ -1,0 +1,14 @@
+- name: "SW-13 Reasoners"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-25"
+    by: po-2024
+    python_sha: 7131d0cdb8d17a1e10d1419682e0de2230bf4959
+    csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
+  known_differences:
+    - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8343 (doc-honesty prose (benchmark speedup claim aligned to committed output)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

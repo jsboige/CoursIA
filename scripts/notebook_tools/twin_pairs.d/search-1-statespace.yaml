@@ -1,0 +1,15 @@
+- name: "Search-1 StateSpace"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: ee8bec932d2af35b24448652b37c260cdb35ded8
+    csharp_sha: 49eb598b3917e357482c85e8175e8ba6f223122d
+  known_differences:
+    - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
+    - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."
+    - "Pas d'extension solveur tiers cote C# sur ce notebook (uniquement depuis CSP-1+) - implementation from-scratch sur les deux cotes."
+    - "Visualisation : Python = matplotlib (grille 8-puzzle animee, graphe d'etats). C# = sortie textuelle des traces (Console.WriteLine des etats successeurs explorés)."

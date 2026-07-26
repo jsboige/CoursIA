@@ -1,0 +1,14 @@
+- name: "Planners-8 Temporal"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-23"
+    by: po-2023
+    python_sha: 45500904dbf2675c50a3c267f28207e3d7309758
+    csharp_sha: 76d9b0bc9b45c4b8b85ff5d9cf9d0ba53b62e495
+  known_differences:
+    - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
+    - "Python : unified-planning temporal + CP-SAT + Gantt. C# : from-scratch BCL .NET (ordonnancement usine)."
+    - "po-2025 a verifie firsthand (c.678) : probleme temporel genuine avec parallelisme inherant (pas un cas degenere)."

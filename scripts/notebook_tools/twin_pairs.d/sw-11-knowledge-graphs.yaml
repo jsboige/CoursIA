@@ -1,0 +1,14 @@
+- name: "SW-11 Knowledge-Graphs"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-23"
+    by: po-2024
+    python_sha: d3d6083bd49c7fa2892e3f74edf2e17421a29c11
+    csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
+  known_differences:
+    - "Socle commun : construction d'un graphe de connaissances (RDF + ontologie + requetage)."
+    - "Asymetrie de profondeur (surface) : le Python combine TROIS librairies -- `rdflib` (RDF), `owlready2` (ontologie OWL), et `networkx` (algorithmes de graphe : centralite, composantes connexes, plus courts chemins). Le C# reste sur `dotNetRDF` seul (`VDS.RDF.Query`), sans dimension d'analyse de graphe (centralite/communautes)."
+    - "Le Python ajoute donc une dimension d'analyse topologique (networkx) absente du C# -> parite `surface` (le C# est un pendant tronque sur cet aspect)."

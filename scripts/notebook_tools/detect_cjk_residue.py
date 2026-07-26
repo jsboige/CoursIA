@@ -33,11 +33,18 @@ Filtres faux-positifs (EXCLUS — CJK legitime)
   `GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb` contient volontairement du
   japonais (`こんにちは！多言語音声合成のデモンストレーションです。`) pour demontrer
   la synthese multilingue. Allowliste avec raison documentee.
-- Residu gated connu : `QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb` porte
-  un residu CJK dans un code-comment dont la correction exige une re-exec via QC
-  Cloud (QuantBook, gated). Allowliste de façon temporaire, documentée comme
-  « known gated residual — fix needs QC-Cloud re-exec », pour ne pas bloquer le CI
-  sur un defect deja connu et tracé. Retirer de l'allowlist des que re-executed.
+- Notebooks multilingues legiTIME (suite) : `GenAI/Texte/9_Production_Patterns.ipynb`
+  cell[20] demontre une salutation multilingue (`你好，世界！` = « Hello World » mandarin,
+  aux cotes de l'italien). Allowliste avec raison documentee.
+- Residu gated connu : a titre exceptionnel, un notebook dont le residu CJK exige une
+  re-exec gated (ex QuantBook via QC Cloud) peut etre allowliste de façon temporaire,
+  documente comme « known gated residual — fix needs <env> re-exec », pour ne pas bloquer
+  le CI sur un defect connu et tracé. Retirer de l'allowlist des que re-executed.
+  ATTENTION G.1 : verifier que le special-exec est REELLEMENT requis (kernel type, usage
+  QuantBook) — le filename/famille ne suffit pas. « Allowlisted/needs-special-exec » n'est
+  pas un bouton defer : un residu en commentaire ou un notebook Python local n'a pas besoin
+  de QC Cloud. (Incident c.889 : QC-Py-Cloud-03 etait faussement allowliste « needs
+  QC-Cloud » alors qu'il est Python local — defect fixe par re-exec locale en #8553.)
 
 ALLOWED = dictionnaire {substring de chemin: raison}. Un notebook dont le chemin
 contient une cle de ALLOWED est skip entierement (toutes ses cellules CJK sont
@@ -89,8 +96,8 @@ CJK_RE = re.compile(r"[　-〿぀-ゟ゠-ヿ一-鿿＀-￯]")
 ALLOWED: dict[str, str] = {
     "GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb":
         "demo TTS multilingue legiTIME (japonais volontaire pour la synthese)",
-    "QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb":
-        "known gated residual (code-comment) -- fix needs QC-Cloud re-exec; retirer apres re-exec",
+    "GenAI/Texte/9_Production_Patterns.ipynb":
+        "demo multilingue legiTIME (cell[20]: 你好，世界！ = 'Hello World' mandarin, aux cotes de Ciao mondo! italien)",
 }
 
 

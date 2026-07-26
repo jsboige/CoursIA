@@ -176,11 +176,22 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             'severity': 'MAJOR',
         })
 
-    # Litmus 2 : api_usd_est: 0 mais API usage
+    # Litmus 2 : api_usd_est: 0 mais API usage.
+    # FP guard: quand cost.api_provider declare une inference locale/gratuite
+    # (local, hf, huggingface, ollama), la presence du keyword 'openai'/
+    # 'replicate' reflete un client OpenAI-compatible pointant vers un serveur
+    # local (vLLM, Ollama, endpoint HF Inference) — pas un appel API payant en
+    # USD. cost.api_usd_est: 0.0 est alors correct, le flag CRITICAL = faux
+    # positif (5 FP fleet-wide avant ce fix : notebooks 'Local'/HF avec
+    # provider=local/hf). On ne flag QUE si le provider est un payant cloud ou
+    # absent/none (cas ambigu a investiguer, cf litmus 3 pour le compte).
+    FREE_API_PROVIDERS = ('local', 'hf', 'huggingface', 'ollama')
+    api_provider_val = str(cost_meta.get('api_provider', '')).lower()
     api_used = set()
     for _, src in code_cells_source:
         api_used.update(detect_api_usage(src))
-    if api_used and cost_meta.get('api_usd_est', 0.0) == 0.0:
+    if api_used and cost_meta.get('api_usd_est', 0.0) == 0.0 \
+            and api_provider_val not in FREE_API_PROVIDERS:
         for provider in api_used:
             findings.append({
                 'pattern': 'api_used_but_cost_zero',
@@ -201,17 +212,34 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                 'severity': 'MAJOR',
             })
 
-    # Litmus 4 : free_alternative pointe vers un notebook inexistant
+    # Litmus 4 : free_alternative pointe vers un notebook inexistant.
+    # Le champ admet deux natures : un path relatif (vers un notebook/.md
+    # alternative gratuit) OU un sentinel semantique ('self' = ce notebook est
+    # deja l'alternative gratuite ; 'ollama'/'openai' = moteur gratuit ; 'N/A'
+    # = non-applicable ; 'none'/'null'). On ne verifie l'existence QUE des
+    # valeurs path-shaped : un sentinel n'est pas un fichier, le flagger =
+    # faux positif. Avant ce fix, le litmus produisait 101 FP fleet-wide
+    # (55x 'self', 18x '10_LocalLlama.ipynb' base fausse, 13x 'ollama',
+    # 5x 'N/A', 1x 'openai'...). Les sentinels explicites sont court-circuites
+    # en premier ; les valeurs path-shaped sont cherchees en dual-base (repo
+    # root OU MyIA.AI.Notebooks/, convention majoritaire).
+    SENTINELS = ('self', 'none', 'null', 'n/a', '')
     free_alt = cost_meta.get('free_alternative')
-    if free_alt:
-        # free_alt est un path relatif du repo
-        alt_path = repo_root / free_alt
-        if not alt_path.exists():
-            findings.append({
-                'pattern': 'free_alternative_missing',
-                'detail': f'cost.free_alternative pointe vers {free_alt} mais fichier absent',
-                'severity': 'MAJOR',
-            })
+    if free_alt and str(free_alt).lower() not in SENTINELS:
+        free_alt_str = str(free_alt)
+        looks_like_path = ('/' in free_alt_str) or ('\\' in free_alt_str) \
+            or free_alt_str.lower().endswith(('.ipynb', '.md'))
+        if looks_like_path:
+            candidates = [
+                repo_root / free_alt,
+                repo_root / 'MyIA.AI.Notebooks' / free_alt,
+            ]
+            if not any(p.exists() for p in candidates):
+                findings.append({
+                    'pattern': 'free_alternative_missing',
+                    'detail': f'cost.free_alternative pointe vers {free_alt} mais fichier absent',
+                    'severity': 'MAJOR',
+                })
 
     # Litmus 5 : QC notebook sans qc_cloud validator
     uses_qc = any(detect_quantbook_usage(src) for _, src in code_cells_source)
@@ -229,6 +257,19 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             'pattern': 'gpu_no_visual_validator',
             'detail': 'Notebook GPU sans sk_visual validator (cf sweep #5780)',
             'severity': 'MINOR',
+        })
+
+    # Litmus 7 : QuantBook détecté sans estimation QCC (cf #8376/#8056)
+    # QCC (QuantConnect Cloud compute tokens) = quota non-USD consommé par tout
+    # quantbook exécuté via QC Cloud. api_usd_est: 0.0 est techniquement correct
+    # (pas de USD) mais trompeur : le notebook n'est PAS gratuit. Le champ dédié
+    # cost.qcc_tokens_est (~70 QCC/cellule, plancher max(400, n_cells x 70))
+    # rend la dépense visible. Absent/0 sur un QuantBook = lacune de coût.
+    if uses_qc and not cost_meta.get('qcc_tokens_est'):
+        findings.append({
+            'pattern': 'qc_notebook_no_qcc_estimate',
+            'detail': 'Notebook QuantConnect (QuantBook) mais cost.qcc_tokens_est absent ou 0 (cf #8376/#8056)',
+            'severity': 'MAJOR',
         })
 
     return {

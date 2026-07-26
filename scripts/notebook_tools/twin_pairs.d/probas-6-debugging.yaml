@@ -1,0 +1,15 @@
+- name: Probas-6 Debugging
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
+  parity_level: semantic
+  last_audit:
+    date: '2026-07-24'
+    by: po-2023
+    python_sha: 466d8b8b098d63782651c8357dbfc798a448d029
+    csharp_sha: f89c42e298da074aa14990cc1279557bc7e312b7
+  known_differences:
+  - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

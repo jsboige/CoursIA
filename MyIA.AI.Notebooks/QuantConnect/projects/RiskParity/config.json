@@ -1,0 +1,6 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Inverse-volatility risk parity with trend filter, rank-based allocation, and a BND safe-haven fallback when fewer than 2 assets are trending.",
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}
