@@ -2882,14 +2882,39 @@ private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
     `p' = (p.1 - 2^k + 2^(k-1), …)`." The `hR_i` link the (opaque, so the arm
     stays whnf-free) supercell children to the concrete wave-1 results.
 
-    This is an HONEST isolation, not a disguised sorry: it is exactly the S4
-    frame-translation + light-cone agreement content (the `evolve_cone_agree` /
-    `quadrant_cone_agree` locality composition over the `evolve_half_step`
-    split), factored out of the whnf-hard call site. ai-01 owns its proof
-    (tree-lock #6875); the boundary is evolve-level for wiring-compilability —
-    ai-01 may refactor to the raw-cone `∀ r ∈ lightCone …` form if preferred.
-    Net sorry count is FLAT: this named sorry replaces the monolithic nw
-    call-site sorry (isolation refactor; anti-régression §D does not apply). -/
+    **Correction de l'énoncé (c.19) — l'isolation d'origine était SOUS-HYPOTHÉSÉE,
+    donc FAUSSE, et non pas seulement « difficile ».** La version antérieure ne
+    prenait que les 16 sous-cellules *arbitraires*, les `R_i` et leurs équations
+    de définition : aucune hypothèse de `wf`/`level`, aucune `ih`. Or
+    `hashlifeResultAux` n'est reliée à `evolve` que sur des entrées bien formées —
+    sur une entrée malformée elle retombe sur la branche `| _ + 1, c` de
+    `Hashlife.lean` (L202-205) et renvoie `emptyOfLevel (c.level - 1)`, c.-à-d.
+    une cellule *toute morte*.
+
+    **Contre-exemple** (réfutation de l'ancien énoncé) : `k = 1`, les 16
+    sous-cellules toutes égales à `leaf true`. Alors chaque `n_i = node (leaf …)
+    (leaf …) (leaf …) (leaf …)` est un nœud *de feuilles*, qui ne filtre pas le
+    motif « nœud de nœuds » ; `hashlifeResultAux 2 n_i` tombe donc sur la branche
+    malformée et vaut `emptyOfLevel 0` (morte). Le membre de droite est alors
+    `isAlive` d'une grille vide = `false` partout, tandis que le membre de gauche
+    est la vraie évolution du bloc plein 4×4 du parent, non vide à la génération
+    2. Les deux membres diffèrent : l'énoncé n'était pas un théorème. Aucune
+    itération de prover ne pouvait le fermer — ce qui explique les cycles
+    dépensés dessus depuis #6875.
+
+    **Réparation** : on ajoute les quatre `centralCorrect n_i (k-1)` — exactement
+    l'information sémantique manquante (« chaque résultat wave-1 calcule bien le
+    demi-pas `evolve 2^(k-1)` de son propre nœud »). Elles sont *déjà disponibles*
+    en amont : le site d'appel `p4_succ_membership` calcule `hn1`/`hn2`/`hn4`/`hn5`
+    (L3159-3173) et dispose de `ih` ; le bras les dérive et les transmet ici. Le
+    contenu résiduel de S4 est ainsi réduit à sa substance propre — translation de
+    repère + accord de cône de lumière (`evolve_cone_agree` / `quadrant_cone_agree`
+    par-dessus le découpage `evolve_half_step`) — sans plomberie `ih`.
+
+    Sorry count FLAT (8 → 8) : aucune preuve supprimée, l'énoncé est *renforcé*
+    (anti-régression §D ne s'applique pas). ai-01 en garde la preuve (tree-lock
+    #6875) ; la frontière reste au niveau `evolve` pour la compilabilité du
+    câblage. -/
 private theorem p4_nw_supercell_agree
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -2899,6 +2924,10 @@ private theorem p4_nw_supercell_agree
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
+    (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
+    (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
+    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
     (p : Int × Int) :
     isAlive (evolve (2^(k - 1)) (evolve (2^(k - 1))
         ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
@@ -2932,6 +2961,14 @@ private theorem p4_nw_membership_arm
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hR1_w : R1.wf = true) (hR2_w : R2.wf = true)
@@ -2958,10 +2995,22 @@ private theorem p4_nw_membership_arm
   · -- membership: fold `evolve 2^k` via half-step + supercell agreement into hsup.1
     rw [← isAlive_true_iff_mem_local]
     rw [evolve_half_step k hk1]
+    -- S4 exige que chaque résultat wave-1 calcule bien le demi-pas de SON nœud :
+    -- c'est `centralCorrect n_i (k-1)`, obtenu de `ih` (niveau `k+1 = (k-1)+2`,
+    -- `k-1 < k` par `hk1`). Sans ces quatre faits l'énoncé de S4 est faux — cf.
+    -- le contre-exemple `emptyOfLevel` documenté sur `p4_nw_supercell_agree`.
+    have hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) :=
+      ih _ (k - 1) (by omega) hn1_w (by rw [hn1_l]; omega)
+    have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+      ih _ (k - 1) (by omega) hn2_w (by rw [hn2_l]; omega)
+    have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+      ih _ (k - 1) (by omega) hn4_w (by rw [hn4_l]; omega)
+    have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+      ih _ (k - 1) (by omega) hn5_w (by rw [hn5_l]; omega)
     rw [p4_nw_supercell_agree k hk1
           nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
           sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
-          R1 R2 R4 R5 hR1 hR2 hR4 hR5 p]
+          R1 R2 R4 R5 hR1 hR2 hR4 hR5 hcc1 hcc2 hcc4 hcc5 p]
     exact hsup.1
   · -- 2^k ≤ p.1
     exact hsup.2.1
@@ -3185,6 +3234,8 @@ noncomputable def p4_succ_membership
         (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
         (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
         rfl rfl rfl rfl
+        hn1.1 hn2.1 hn4.1 hn5.1
+        hn1.2 hn2.2 hn4.2 hn5.2
         r1.1 r2.1 r4.1 r5.1
         (wf_of_cellWf r1.2) (wf_of_cellWf r2.2) (wf_of_cellWf r4.2) (wf_of_cellWf r5.2)
         ih p hnw
