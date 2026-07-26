@@ -7,7 +7,7 @@
     date: "2026-07-26"
     by: myia-ai-01:CoursIA
     python_sha: aa853aa35f024e6af153991847a0bebf91caaadf
-    csharp_sha: cdc3727ded5f1d8e133d9204452dc011bed2c59b
+    csharp_sha: b469c42d74815b4451245dbb3930c14a23b3964a
   known_differences:
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
