@@ -21,11 +21,23 @@ Ces tests couvrent :
     5. Le registre de reference reste byte-identique apres chaque test
        (chaque test restore via backup).
 
+Depuis #8542 (Option C) le registre est le **repertoire** `twin_pairs.d/`
+(un fichier par paire + `_schema.yaml` documentaire). La fixture sauvegarde
+donc le repertoire, et l'agregation passe par `load_registry` -- le meme
+chargeur que la production, pour que le test ne reimplemente pas la lecture.
+
+Note de conception -- **pas de `pytest.skip` sur registre absent**. #8586 a
+repointe la production vers `twin_pairs.d/` en laissant ce module sur
+l'ancien `twin_pairs.yaml` : les 4 gardes sont passees en SKIP silencieux et
+la suite est restee verte pendant que la garde anti-corruption #8508 ne
+gardait plus rien. Un test qui skippe ne signale rien. D'ou `pytest.fail`.
+
 Run:
     pytest scripts/notebook_tools/tests/test_check_twin_parity_update_guard.py
 """
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -38,30 +50,49 @@ SCRIPT_DIR = (
     Path(__file__).resolve().parent.parent  # scripts/notebook_tools/tests/../
 )
 SCRIPT = SCRIPT_DIR / "check_twin_parity.py"
-REGISTRY = SCRIPT_DIR / "twin_pairs.yaml"
+REGISTRY_DIR = SCRIPT_DIR / "twin_pairs.d"
 
-REPO_ROOT = REGISTRY.resolve().parents[2]  # scripts/notebook_tools -> scripts -> repo
+REPO_ROOT = SCRIPT_DIR.parents[1]  # scripts/notebook_tools -> scripts -> repo
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("check_twin_parity", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+ctp = _load_module()
 
 
 @pytest.fixture
 def registry_backup():
-    """Sauvegarde + restauration du registre autour de chaque test.
+    """Sauvegarde + restauration du REPERTOIRE de registre autour de chaque test.
 
     Meme si les tests qui reussissent sont read-only (--update n'ecrit
     que si selecteur OK), cette fixture protege contre les regressions
     silencieuses : si un futur patch casse la garde et que --update
     sans selecteur se met a reecrire, le test est restaure apres
     execution (rollback propre).
+
+    Echoue -- ne skippe pas -- si le registre est introuvable : c'est
+    exactement la panne #8586 que ces gardes doivent attraper.
     """
-    if not REGISTRY.exists():
-        pytest.skip(f"registre introuvable : {REGISTRY}")
-    backup = REGISTRY.with_suffix(".yaml.bak.c909")
-    shutil.copy2(REGISTRY, backup)
+    if not REGISTRY_DIR.is_dir():
+        pytest.fail(
+            f"registre introuvable : {REGISTRY_DIR}. "
+            "Si le registre a demenage, ce module doit suivre : un skip ici "
+            "rendrait la suite verte sans rien garder (regression #8586)."
+        )
+    backup = REGISTRY_DIR.with_name(REGISTRY_DIR.name + ".bak.c909")
+    if backup.exists():
+        shutil.rmtree(backup)
+    shutil.copytree(REGISTRY_DIR, backup)
     try:
         yield backup
     finally:
-        shutil.copy2(backup, REGISTRY)
-        backup.unlink(missing_ok=True)
+        shutil.rmtree(REGISTRY_DIR)
+        shutil.move(str(backup), str(REGISTRY_DIR))
 
 
 def _run_update(*extra_args: str) -> subprocess.CompletedProcess:
@@ -105,17 +136,15 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     ses SHAs `last_audit` correspondent aux blobs git courants, et
     les autres paires sont **byte-identiques** a la sauvegarde pre-test.
 
-    Note : `update_pair` est intentionnellement **idempotent cote
-    date** : il ne touche la date que si le SHA a change (cf
-    `check_twin_parity.py` l.207 `today = pair.get('last_audit', {})`).
-    On ne peut donc pas exiger `date == today` ici -- le bon invariant
-    est « les SHAs de la cible sont les blobs courants, les autres
-    paires n'ont pas ete modifiees ».
+    Note : l'invariant teste ici est « les SHAs de la cible sont les
+    blobs courants, les autres paires n'ont pas ete modifiees ». La
+    fraicheur de `date`/`by` (rafraichis depuis #8570, ils ne peuvent
+    plus heriter de l'audit precedent) est couverte separement par
+    `test_check_twin_parity_surgical.py::test_update_pair_stamps_fresh_provenance`.
     """
     import subprocess as _sp
-    import yaml
 
-    all_pairs_before = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    all_pairs_before = ctp.load_registry(REGISTRY_DIR)
     assert isinstance(all_pairs_before, list) and all_pairs_before, "registre vide"
     # Choisir une cible connue (Search-1 StateSpace existe dans le registre actuel).
     target_entry = next(
@@ -149,7 +178,7 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
         f"Le script aurait du annoncer 1 paire mise a jour. stdout={result.stdout!r}"
     )
 
-    after = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    after = ctp.load_registry(REGISTRY_DIR)
 
     # 1) La cible a les SHAs courants (= ce que `git rev-parse HEAD:<path>` retourne).
     target_after = next(p for p in after if p.get("name") == target_name)
