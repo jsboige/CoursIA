@@ -1,0 +1,15 @@
+- name: "Search-6 AdversarialSearch"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-27"
+    by: po-2024
+    python_sha: 8608b6f46014d1b18984265609f1b1e3e741eb39
+    csharp_sha: 0d5371ae6b7236a387e89ed008909d0953212da4
+  known_differences:
+    - "Socle commun : jeux a somme nulle a information parfaite (Tic-Tac-Toe/Morpion), minimax, elagage alpha-beta, iterative deepening, tables de transposition."
+    - "Asymetrie de couverture : le jumeau Python (44 cellules, 16 code) inclut une section benchmark comparatif detaillee + visualisation matplotlib du Tic-Tac-Toe ; le jumeau C# (23 cellules, 10 code) est plus court, sortie textuelle des traces (pas de matplotlib)."
+    - "Idiomes framework : Python = numpy/matplotlib pour les benchmarks et la visualisation ; C# = implementation from-scratch (System.Collections.Generic, pas de NuGet graphique)."
+    - "Les deux cotes restent from-scratch sur le coeur algorithmique (minimax, alpha-beta, transposition) -- pas de solveur tiers invoque."

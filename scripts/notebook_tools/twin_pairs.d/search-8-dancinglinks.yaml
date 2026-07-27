@@ -1,0 +1,15 @@
+- name: "Search-8 DancingLinks"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-27"
+    by: po-2024
+    python_sha: 9fe64f2e2bccf773fc0293f1ae3f82fe09cfb544
+    csharp_sha: b1a44f1710ef8dd954dfbe5f4cd5405295bc8598
+  known_differences:
+    - "Socle commun : probleme de couverture exacte, algorithme X de Knuth, structure de donnees Dancing Links (DLX), implementation DLX, application polyominos, comparaison de performances DLX vs backtracking."
+    - "Asymetrie de couverture : le jumeau Python (60 cellules, 21 code) couvre 3 applications (Sudoku solver, Pavage de polyominos, Pentominoes) + visualisation matplotlib ; le jumeau C# (22 cellules, 10 code) couvre uniquement le pavage de polyominos (Sudoku et Pentominoes absents), pas de matplotlib."
+    - "Implementation DLX : les deux cotes codent la structure de listes doublement chainees a la main (noeud avec L/R/U/D/C) -- c'est le coeur pedagogique, identique conceptuellement. Aucun solveur tiers."
+    - "Le jumeau C# est explicitement plus compact (tranche pedagogique focalisee sur DLX + polyominos) ; le jumeau Python est la version de reference complete."
