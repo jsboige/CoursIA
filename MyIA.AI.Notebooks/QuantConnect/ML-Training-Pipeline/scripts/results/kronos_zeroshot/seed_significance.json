@@ -1,0 +1,283 @@
+{
+  "model": "Kronos",
+  "source_file": "results.json",
+  "test": "one-sample t-test + sign + Wilcoxon on per-seed edge vs majority",
+  "alpha": 0.05,
+  "n_configs": 9,
+  "n_significant": 6,
+  "n_significant_positive": 0,
+  "n_degenerate": 0,
+  "summary_verdict": "Kronos: 6/9 stochastic configs statistically significant (alpha=0.05); 0 with positive edge. 0 degenerate (deterministic/n<2).",
+  "configs": [
+    {
+      "symbol": "SPY",
+      "horizon": 24,
+      "majority": 0.5461416070007955,
+      "n_seeds": 5,
+      "diraccs": [
+        0.41739130434782606,
+        0.5478260869565218,
+        0.5304347826086957,
+        0.5565217391304348,
+        0.5043478260869565
+      ],
+      "mean_edge": -0.034837259174708535,
+      "std_edge": 0.056152641012045035,
+      "deterministic": false,
+      "t_stat": -1.3872629721497316,
+      "t_p_value": 0.23765213507064736,
+      "df": 4,
+      "ci95_low": -0.10455997192342503,
+      "ci95_high": 0.03488545357400796,
+      "wilcoxon_p_value": 0.3125,
+      "sign": {
+        "n": 5,
+        "n_pos": 2,
+        "n_neg": 3,
+        "p_value": 1.0
+      },
+      "verdict": "NOT SIGNIFICANT (t_p=0.238 >= 0.05): edge not distinguishable from 0 at n=5 -- consistent with NO BEATS (low power)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 66,
+      "majority": 0.5461416070007955,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5292307692307692,
+        0.49846153846153846,
+        0.46769230769230774,
+        0.5292307692307693,
+        0.5046153846153846
+      ],
+      "mean_edge": -0.040295453154641656,
+      "std_edge": 0.025521773973326407,
+      "deterministic": false,
+      "t_stat": -3.5304509996878313,
+      "t_p_value": 0.02422072117135718,
+      "df": 4,
+      "ci95_low": -0.0719849210676149,
+      "ci95_high": -0.008605985241668425,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 132,
+      "majority": 0.5461416070007955,
+      "n_seeds": 5,
+      "diraccs": [
+        0.47022900763358777,
+        0.4793893129770993,
+        0.5099236641221374,
+        0.516030534351145,
+        0.5312977099236641
+      ],
+      "mean_edge": -0.04476756119926879,
+      "std_edge": 0.02567428764528597,
+      "deterministic": false,
+      "t_stat": -3.89897127474253,
+      "t_p_value": 0.017556741513302377,
+      "df": 4,
+      "ci95_low": -0.07664639984794808,
+      "ci95_high": -0.01288872255058951,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 24,
+      "majority": 0.5130246020260492,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5043478260869565,
+        0.4956521739130434,
+        0.4434782608695652,
+        0.5304347826086957,
+        0.5043478260869565
+      ],
+      "mean_edge": -0.0173724281130057,
+      "std_edge": 0.03194986621021538,
+      "deterministic": false,
+      "t_stat": -1.2158401521721827,
+      "t_p_value": 0.29089158527035497,
+      "df": 4,
+      "ci95_low": -0.057043426733657074,
+      "ci95_high": 0.02229857050764567,
+      "wilcoxon_p_value": 0.375,
+      "sign": {
+        "n": 5,
+        "n_pos": 1,
+        "n_neg": 4,
+        "p_value": 0.375
+      },
+      "verdict": "NOT SIGNIFICANT (t_p=0.291 >= 0.05): edge not distinguishable from 0 at n=5 -- consistent with NO BEATS (low power)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 66,
+      "majority": 0.5130246020260492,
+      "n_seeds": 5,
+      "diraccs": [
+        0.4861538461538462,
+        0.49230769230769234,
+        0.4953846153846154,
+        0.48307692307692307,
+        0.5076923076923078
+      ],
+      "mean_edge": -0.020101525102972195,
+      "std_edge": 0.009583022463013832,
+      "deterministic": false,
+      "t_stat": -4.690417533209889,
+      "t_p_value": 0.009374837336354473,
+      "df": 4,
+      "ci95_low": -0.03200041908927444,
+      "ci95_high": -0.008202631116669957,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 132,
+      "majority": 0.5130246020260492,
+      "n_seeds": 5,
+      "diraccs": [
+        0.48244274809160304,
+        0.4854961832061068,
+        0.5068702290076337,
+        0.49160305343511446,
+        0.4763358778625954
+      ],
+      "mean_edge": -0.02447498370543848,
+      "std_edge": 0.011627134512769368,
+      "deterministic": false,
+      "t_stat": -4.706897237101371,
+      "t_p_value": 0.009260942155720134,
+      "df": 4,
+      "ci95_low": -0.03891197803221667,
+      "ci95_high": -0.010037989378660293,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 24,
+      "majority": 0.5314761215629522,
+      "n_seeds": 5,
+      "diraccs": [
+        0.4521739130434782,
+        0.4608695652173913,
+        0.5130434782608695,
+        0.5130434782608695,
+        0.5043478260869565
+      ],
+      "mean_edge": -0.04278046938903921,
+      "std_edge": 0.029743706741716627,
+      "deterministic": false,
+      "t_stat": -3.2161437877907098,
+      "t_p_value": 0.03239903250337285,
+      "df": 4,
+      "ci95_low": -0.07971215922335934,
+      "ci95_high": -0.0058487795547190885,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 66,
+      "majority": 0.5314761215629522,
+      "n_seeds": 5,
+      "diraccs": [
+        0.49230769230769234,
+        0.5661538461538462,
+        0.5046153846153846,
+        0.4800000000000001,
+        0.5046153846153846
+      ],
+      "mean_edge": -0.021937660024490647,
+      "std_edge": 0.033253553442723204,
+      "deterministic": false,
+      "t_stat": -1.4751536002470491,
+      "t_p_value": 0.21419804739688048,
+      "df": 4,
+      "ci95_low": -0.06322740014666489,
+      "ci95_high": 0.019352080097683595,
+      "wilcoxon_p_value": 0.3125,
+      "sign": {
+        "n": 5,
+        "n_pos": 1,
+        "n_neg": 4,
+        "p_value": 0.375
+      },
+      "verdict": "NOT SIGNIFICANT (t_p=0.214 >= 0.05): edge not distinguishable from 0 at n=5 -- consistent with NO BEATS (low power)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 132,
+      "majority": 0.5314761215629522,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5083969465648854,
+        0.5022900763358779,
+        0.5145038167938931,
+        0.4793893129770993,
+        0.5282442748091604
+      ],
+      "mean_edge": -0.024911236066768993,
+      "std_edge": 0.017980299872289808,
+      "deterministic": false,
+      "t_stat": -3.098013806470854,
+      "t_p_value": 0.036290946950740186,
+      "df": 4,
+      "ci95_low": -0.04723672709509898,
+      "ci95_high": -0.0025857450384390024,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    }
+  ]
+}
