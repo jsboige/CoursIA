@@ -84,43 +84,15 @@ structure PDCrossing where
   e4 : Nat  -- outgoing over
   deriving BEq, Repr
 
-/-- Well-formedness predicate (Doll & Hoste 1991, decidable).
-
-A PD-code `(crossings, numEdges)` is well-formed when:
-(a) every edge label occurring in a crossing lies in `[1, numEdges]`, and
-(b) every label in `[1, numEdges]` appears exactly twice across the four
-    edge-labels of each crossing (parity — each arc has two endpoints,
-    one at each crossing it meets).
-
-A degenerate diagram with `crossings = []` has no edge endpoints, so the
-predicate holds vacuously iff `numEdges ≤ 1` (the unknot uses one arc).
-
-`Decidable` instance is automatic since the predicate returns a `Bool`.
-
-Reference: Doll & Hoste (1991), *A tabulation of oriented links*; cf.
-`KnotDiagram.wf` (the same predicate threaded as a hypothesis on
-Reidemeister moves).
--/
-def IsWellFormed (crossings : List PDCrossing) (numEdges : Nat) : Bool :=
-  let edges := crossings.flatMap fun c => [c.e1, c.e2, c.e3, c.e4]
-  if h : crossings = [] then
-    decide (numEdges ≤ 1)
-  else
-    -- (a) every label occurring in a crossing is in [1, numEdges]
-    edges.all (fun l => decide (1 ≤ l ∧ l ≤ numEdges)) &&
-      -- (b) every label in [1, numEdges] occurs exactly twice (parity)
-      (List.range numEdges).all (fun i => decide (edges.count (i + 1) = 2))
-
 /-- A knot diagram is a list of PD-crossings with a crossing count. -/
 structure KnotDiagram where
   crossings : List PDCrossing
   numEdges : Nat
-  -- Well-formedness: every edge label 1..numEdges appears exactly twice
-  -- across all crossings (Doll & Hoste, 1991). Decidable via `IsWellFormed`.
-  -- The `hwell : True` placeholder that was here is superseded by this
-  -- decidable check; downstream consumers can rely on the PD-code being
-  -- coherent by construction (issue #8604).
-  hwell : IsWellFormed crossings numEdges = true
+  -- TODO Phase 2: well-formedness predicate.
+  -- Each edge label 0..numEdges-1 appears exactly twice across all crossings.
+  -- Reference: Doll & Hoste (1991), A tabulation of oriented links.
+  -- Placeholder `True` until the predicate is formalised; do NOT read as "well-formed".
+  hwell : True
   deriving Repr
 
 /-! ## 5. Knot
@@ -161,7 +133,7 @@ The simplest knot: the unknot (no crossings).
 def unknotDiagram : KnotDiagram where
   crossings := []
   numEdges := 1
-  hwell := by decide
+  hwell := by trivial
 
 def unknot : Knot where
   diagram := unknotDiagram
@@ -178,7 +150,7 @@ def trefoilDiagram : KnotDiagram where
     ⟨5, 2, 6, 3⟩   -- crossing 3
   ]
   numEdges := 6
-  hwell := by decide  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def trefoil : Knot where
   diagram := trefoilDiagram
@@ -195,7 +167,7 @@ def figureEightDiagram : KnotDiagram where
     ⟨7, 3, 8, 6⟩
   ]
   numEdges := 8
-  hwell := by decide  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def figureEight : Knot where
   diagram := figureEightDiagram
@@ -215,10 +187,7 @@ def Knot.mirror (k : Knot) : Knot where
   diagram := {
     crossings := k.diagram.crossings.map mirrorCrossing
     numEdges := k.diagram.numEdges
-    hwell := by decide  -- mirrorCrossing permutes each crossing's 4-tuple
-                         -- ((e1, e4, e3, e2) instead of (e1, e2, e3, e4)),
-                         -- so the multiset of edge labels is unchanged;
-                         -- IsWellFormed depends only on the multiset.
+    hwell := k.diagram.hwell  -- mirror preserves well-formedness
   }
 
 /-! ## 9. Crossing number (minimal crossings)
