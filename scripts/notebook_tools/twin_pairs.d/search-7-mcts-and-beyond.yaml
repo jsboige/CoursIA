@@ -1,0 +1,15 @@
+- name: "Search-7 MCTS-And-Beyond"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-27"
+    by: po-2024
+    python_sha: 582680ddc89dc6fb61e49ee717868b30cb4b413f
+    csharp_sha: 01d1bdcd8d02769a4f7ad3d3fd1fe6f71bf698a3
+  known_differences:
+    - "Socle commun : limites de minimax, algorithme MCTS (selection/expansion/simulation/retropropagation), test sur Tic-Tac-Toe, comparaison MCTS vs minimax, framework OpenSpiel, AlphaGo/AlphaZero, extensions avancees. Structure des sections quasi-identique (le jumeau le plus proche cellule-a-cellule de la famille)."
+    - "Idiomes RNG : Python = module `random` (PRNG Mersenne Twister) ; C# = `new Random()` (PRNG .NET). Les deux sont sedees mais les suites different -- les statistiques MCTS (taux de victoire) fluctuent d'un run a l'autre, parite conceptuelle pas bitwise."
+    - "Visualisation : Python = matplotlib pour les comparatifs MCTS vs minimax ; C# = traces textuels (le terme 'matplotlib' n'apparait qu'en prose de comparaison, pas en import)."
+    - "Section OpenSpiel : les deux cotes presentent le framework OpenSpiel (Google DeepMind) en prose ; aucun des deux n'invoque la librairie OpenSpiel directement (concept pedagogique, pas appel de service)."
