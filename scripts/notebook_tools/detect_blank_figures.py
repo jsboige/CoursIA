@@ -89,6 +89,14 @@ from pathlib import Path
 # La separation est de plusieurs ordres de grandeur -> aucun chevauchement.
 MIN_DIM = 8         # px : une figure < 8px de cote n'est pas une viz reelle
 MIN_BYTES = 1024    # o  : un PNG decode < 1 Ko ne porte pas de vraie figure
+# Porte de sortie par contenu (#8634) : un petit PNG peut etre legitime s'il est
+# riche en couleurs (pixel-art, grille de broderie, sprite, heatmap miniature). La
+# taille du payload mesure la resolution, pas le contenu -- ce sont deux axes
+# independants. On ne declenche tiny_payload QUE si l'image porte aussi trop peu
+# de couleurs distinctes (ou si elle est indecodable, auquel cas on retombe sur la
+# taille pour ne pas regresser la couverture de #6891).
+MIN_DISTINCT_COLORS = 4  # nb de couleurs RGB distinctes en dessous duquel une
+                         # petite image est consideree sans contenu reel
 
 _IMAGE_MIMES = ("image/png", "image/jpeg")
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -125,6 +133,25 @@ def _png_dimensions(raw: bytes) -> tuple[int, int] | None:
     return (width, height)
 
 
+def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool | None:
+    """Return True if the image carries enough distinct colors to be a real figure.
+
+    Returns False if it decodes but is monochrome / near-monochrome (canvas blanc,
+    placeholder uni). Returns None if PIL is unavailable or the image cannot be
+    decoded -- in which case the caller keeps the size-based behaviour (no
+    coverage regression, #6891). PIL is a repo dependency (Image notebooks) but
+    the detector must remain functional without it.
+    """
+    try:
+        from PIL import Image
+        import io
+
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+        return len(set(im.getdata())) >= min_colors
+    except Exception:
+        return None
+
+
 def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict | None:
     """Return a finding dict if the image is degenerate, else None."""
     reasons = []
@@ -137,7 +164,12 @@ def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict
             reasons.append(f"degenerate_dimensions({w}x{h})")
 
     if size < min_bytes:
-        reasons.append(f"tiny_payload({size}B)")
+        # Porte de sortie par contenu (#8634) : une petite image riche en couleurs
+        # (pixel-art, grille de broderie 24x16 a 17 couleurs) n'est pas degeneree.
+        # On ne flagge tiny_payload que si l'image n'a PAS assez de contenu, ou si
+        # elle est indecodable (None -> fallback taille, pas de regression #6891).
+        if _has_real_content(raw) is not True:
+            reasons.append(f"tiny_payload({size}B)")
 
     if not reasons:
         return None
