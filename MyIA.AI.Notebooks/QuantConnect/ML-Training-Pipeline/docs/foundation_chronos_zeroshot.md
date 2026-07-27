@@ -9,9 +9,11 @@
 Un **foundation-model zero-shot** (Amazon Chronos-Bolt-base, ~200M params, pré-entraîné sur
 ~100B séries, *aucun* entraînement sur l'univers) **ne bat pas majority-class** sur le panier
 anti-biais en prévision de **direction**, à aucun des 3 horizons demandés par #8607
-(h=22/66/132). Sur 3 symboles × 3 horizons = 9 configurations, **aucune** ne produit un edge à
-la fois positif, **consistant à travers les horizons**, et économiquement significatif (tous
-< 1 pt de DirAcc, consommés par le coût de transaction de 10 bps).
+(h=22/66/132). La grille théorique est 3 symboles × 3 horizons = 9, mais **seules 7
+configurations ont été effectivement exécutées** (GLD n'a été évalué qu'à h≈22 ; SPY et TLT
+aux 3 horizons). Sur ces 7, **aucune** ne produit un edge à la fois positif, **consistant à
+travers les horizons**, et économiquement significatif (5 à edge strictement négatif, 2
+positives dégénérées ; toutes < 1 pt de DirAcc, consommés par le coût de transaction de 10 bps).
 
 ## Hypothèse (#8607)
 
@@ -73,11 +75,11 @@ allègement** : edge ≥ 2σ cross-seed, ≥3/4 seeds positifs, bat majority-cla
    inversion de signe est la signature d'un bruit d'échantillonnage cross-fenêtre, pas d'un
    signal prédictif. Aucun edge positif n'est ni consistant, ni économiquement significatif.
 
-3. **Aucune configuration ne bat majority-class de façon robuste.** Sur 9 configurations
-   (3 symboles × 3 horizons), 7 ont un edge strictement négatif, et les 2 positives (TLT h≈22,
-   SPY h=66) sont dégénérées (Finding 1) + inversées (Finding 2). La barre pleine de #8607
-   (edge ≥2σ cross-seed **ET** ≥3/4 seeds positifs **ET** bat majority) n'est satisfaite par
-   **aucune** configuration.
+3. **Aucune configuration ne bat majority-class de façon robuste.** Sur les **7 configurations
+   exécutées** (la grille 3×3 en compte 9 ; GLD n'a été évalué qu'à h≈22), 5 ont un edge
+   strictement négatif, et les 2 positives (TLT h≈22, SPY h=66) sont dégénérées (Finding 1) +
+   inversées (Finding 2). La barre pleine de #8607 (edge ≥2σ cross-seed **ET** ≥3/4 seeds
+   positifs **ET** bat majority) n'est satisfaite par **aucune** configuration.
 
 4. **Le coût de transaction achève l'edge résiduel.** Même en supposant les edges positifs
    réels (< 1 pt de DirAcc), le coût de 10 bps par rebalancement les consomme intégralement.
