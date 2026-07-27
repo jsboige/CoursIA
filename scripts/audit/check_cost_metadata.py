@@ -50,9 +50,13 @@ GPU_PATTERNS = [
 ]
 
 # API payantes (litmus 2 : api_usd_est = 0 mais cellule appelle API)
+# Note FP-c.912 : `anthropic.` matchait la ponctuation de fin de phrase
+# ("OpenAI/Anthropic.") et `claude`/`gemini` nus prenaient des panos SOTA
+# en prose. On resserre `anthropic.` en `anthropic.\w` (préserve
+# `anthropic.Anthropic(...)`, élimine le faux positif typographique).
 API_PATTERNS = {
     'openai': r'openai\.ChatCompletion|openai\.Image|openai\.Audio|from openai',
-    'anthropic': r'anthropic\.|from anthropic|claude',
+    'anthropic': r'anthropic\.\w|from anthropic|claude',
     'mistral': r'mistralai|from mistral',
     'google': r'google\.generativeai|gemini',
     'replicate': r'replicate\.',
@@ -67,6 +71,48 @@ TOKEN_PATTERNS = {
     'qc': r'os\.getenv\(["\']QC_USER|os\.getenv\(["\']QC_API_TOKEN',
     'comfyui': r'os\.getenv\(["\']COMFYUI',
 }
+
+
+def strip_commented_lines(code_source: str) -> str:
+    r"""Filtre les lignes commentées (Python) et les triple-quoted strings
+    avant que les regex `API_PATTERNS`/`TOKEN_PATTERNS` ne soient appliquées.
+
+    Avant c.912 (#8618), les regex étaient appliquées sur la source brute des
+    cellules code, sans distinguer une ligne de code d'une ligne de commentaire
+    ou de prose de cellule markdown. Conséquence :
+    `anthropic.` matchait la ponctuation de fin de phrase ("OpenAI/Anthropic.")
+    en commentaire d'avertissement, et `claude`/`gemini` nus prenaient des
+    panoramas SOTA en prose (print multi-ligne avec triple-quoted).
+
+    Le filtre fait 2 passes :
+    1. Retrait des triple-quoted strings (les plus fréquents en docstring).
+       Un panorama SOTA type "Gemini 2.0, GPT-5, Claude 3.5" à l'intérieur d'un
+       print multi-ligne matche gemini/claude sans être un appel d'API.
+    2. Filtrage des lignes dont le strip() commence par le caractère Python
+       de commentaire.
+
+    Trade-off (volontairement borné) : on ne retire PAS les littéraux
+    simple/double-quoted parce qu'un appel d'API authentique passe souvent par
+    argument string (os.getenv(TOKEN), model_id=anthropic/...). Conséquence :
+    une config-dict littérale qui mentionne anthropic/claude-... peut subsister
+    comme signal — c'est un cas rare et le coût (1 finding résiduel) reste
+    inférieur au coût de destruction d'un appel API authentique.
+
+    Le filtre triple-quoted est appliqué sur le bloc entier (et pas ligne par
+    ligne) parce qu'un triple-quoted peut s'étendre sur N lignes.
+    """
+    # 1. Retrait des triple-quoted strings (les plus fréquents en docstring).
+    no_triple = _TRIPLE_QUOTED_RE.sub('', code_source)
+    # 2. Filtrage des lignes commentées.
+    out_lines = []
+    for line in no_triple.splitlines():
+        if line.lstrip().startswith('#'):
+            continue
+        out_lines.append(line)
+    return '\n'.join(out_lines)
+
+
+_TRIPLE_QUOTED_RE = re.compile(r'"""[\s\S]*?"""|\'\'\'[\s\S]*?\'\'\'')
 
 
 def parse_cost_frontmatter(cell_source: str) -> dict:
@@ -96,19 +142,32 @@ def detect_gpu_usage(code_source: str) -> bool:
 
 
 def detect_api_usage(code_source: str) -> list:
-    """Litmus 2 : cellule code appelle API payante."""
+    """Litmus 2 : cellule code appelle API payante.
+
+    Filtre les lignes commentées (`#`) avant regex (cf c.912, issue #8618)
+    pour éviter qu'une ligne de prose `"OpenAI/Anthropic."` matche
+    `anthropic.` (ponctuation) ou que `claude`/`gemini` nus prennent
+    un panorama SOTA en prose.
+    """
+    filtered = strip_commented_lines(code_source)
     found = []
     for provider, pattern in API_PATTERNS.items():
-        if re.search(pattern, code_source, re.IGNORECASE):
+        if re.search(pattern, filtered, re.IGNORECASE):
             found.append(provider)
     return found
 
 
 def detect_token_usage(code_source: str) -> list:
-    """Litmus 3 : cellule code lit token externe."""
+    """Litmus 3 : cellule code lit token externe.
+
+    Filtre les lignes commentées (`#`) avant regex (cf c.912, issue #8618).
+    Les tokens sont peu probables en commentaire mais l'uniformité du
+    filtre (litmus 2 + litmus 3) simplifie la discipline d'audit.
+    """
+    filtered = strip_commented_lines(code_source)
     found = []
     for provider, pattern in TOKEN_PATTERNS.items():
-        if re.search(pattern, code_source):
+        if re.search(pattern, filtered):
             found.append(provider)
     return found
 
