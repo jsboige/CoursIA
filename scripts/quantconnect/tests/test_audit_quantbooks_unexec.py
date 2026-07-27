@@ -65,7 +65,7 @@ def _write_project(root: Path, name: str, cells, config: dict | None = None,
 
 class TestIsUnexecutedCode:
     def test_code_cell_without_exec_count(self):
-        c = _cell("code", execution_count=None, outputs=[])
+        c = _cell("code", "qb = QuantBook()", execution_count=None, outputs=[])
         assert aqm._is_unexecuted_code(c) is True
 
     def test_code_cell_with_exec_count(self):
@@ -82,8 +82,21 @@ class TestIsUnexecutedCode:
 
     def test_outputs_none_treated_as_empty(self):
         # Cell where outputs key is missing entirely
-        c = {"cell_type": "code", "execution_count": None}
+        c = {"cell_type": "code", "source": "qb = QuantBook()", "execution_count": None}
         assert aqm._is_unexecuted_code(c) is True
+
+    def test_empty_code_cell_is_not_unexecuted(self):
+        # Une cellule vide satisfait ``ec is None and outputs == []`` par
+        # construction : il n'y a rien a executer, donc rien a signaler.
+        # Sans ce garde-fou, --check echoue en CI sur un notebook sain et la
+        # seule remediation serait de supprimer les cellules vides.
+        assert aqm._is_unexecuted_code(_cell("code", "")) is False
+
+    def test_whitespace_only_code_cell_is_not_unexecuted(self):
+        assert aqm._is_unexecuted_code(_cell("code", "  \n\t\n")) is False
+
+    def test_empty_source_as_list_is_not_unexecuted(self):
+        assert aqm._is_unexecuted_code(_cell("code", ["", "\n"])) is False
 
 
 # -- _has_strip_marker --
@@ -200,6 +213,25 @@ class TestScanNotebook:
         assert r["unexecuted_indexes"] == [1, 2]
         assert r["strip_marker"] is False
 
+    def test_def_only_cell_is_still_caught(self, tmp_path):
+        """Le verdict est conservatif : un ``def`` unexec est signale comme le reste.
+
+        La docstring du module a longtemps promis l'inverse ("un notebook avec
+        un seul ``def`` unexec et pas d'autre cellule = HEALTHY", "pas de faux
+        positif ... parce qu'on regarde aussi le markdown contextuel"). Aucune
+        de ces deux clauses n'a jamais ete implementee : le markdown contextuel
+        ne fait que ROUTER entre les classes STOP_REPAIR_*, il ne produit
+        jamais HEALTHY. Ce test epingle le contrat reel.
+        """
+        proj = _write_project(tmp_path, "DefOnly", [
+            _cell("markdown", "## Fonctions utilitaires"),
+            _cell("code", "def helper(x):\n    return x * 2",
+                  execution_count=None, outputs=[]),
+        ])
+        r = aqm.scan_notebook(proj / "quantbook.ipynb")
+        assert r["classification"] == "PREEXISTING_UNEXEC"
+        assert r["code_unexecuted"] == 1
+
     def test_error_unreadable(self, tmp_path):
         proj = tmp_path / "BadProj"
         proj.mkdir()
@@ -260,8 +292,8 @@ class TestMain:
         assert out["results"][0]["classification"] == "HEALTHY"
 
     def test_project_filter(self, tmp_path, capsys):
-        _write_project(tmp_path, "Good", [_cell("code", execution_count=1)])
-        _write_project(tmp_path, "Bad", [_cell("code", execution_count=None)])
+        _write_project(tmp_path, "Good", [_cell("code", "x = 1", execution_count=1)])
+        _write_project(tmp_path, "Bad", [_cell("code", "x = 1", execution_count=None)])
         rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".",
                        "--project", "Bad", "--json"])
         assert rc == 0
@@ -279,9 +311,23 @@ class TestMain:
         assert rc == 2
 
     def test_check_exits_1_when_preexisting(self, tmp_path):
-        _write_project(tmp_path, "Bad", [_cell("code", execution_count=None)])
+        _write_project(tmp_path, "Bad", [_cell("code", "x = 1", execution_count=None)])
         rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".", "--check"])
         assert rc == 1
+
+    def test_check_ignores_empty_cells(self, tmp_path):
+        """Un notebook dont les seules cellules 'unexec' sont vides est sain.
+
+        Le gate CI ne doit pas exiger une remediation dont la seule forme
+        possible serait de supprimer des cellules vides.
+        """
+        _write_project(tmp_path, "EmptyOnly", [
+            _cell("code", "x = 1", execution_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout", "text": "ok"}]),
+            _cell("code", "", execution_count=None, outputs=[]),
+        ])
+        rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".", "--check"])
+        assert rc == 0
 
     def test_check_exits_0_when_clean(self, tmp_path):
         _write_project(tmp_path, "Good", [_cell("code", execution_count=1)])

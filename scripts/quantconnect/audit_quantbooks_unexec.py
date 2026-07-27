@@ -51,10 +51,16 @@ Pour chaque quantbook ainsi identifie :
                                 unexec). Nouvelle occurrence non encore triee --
                                 celle que ``--check`` flagge en CI.
 
-Le verdict est **conservatif** : si une cellule est unexec, on l'attrape.
-Pas de faux positif sur les cellules volontairement non executees (defs,
-helpers) parce qu'on regarde aussi le markdown contextuel -- un notebook
-avec un seul ``def`` unexec et pas d'autre cellule = HEALTHY.
+Le verdict est **conservatif** : toute cellule code **non vide** sans
+``execution_count`` ni sortie est attrapee, quel qu'en soit le contenu. Une
+cellule qui ne contient qu'un ``def`` ou un helper est donc signalee comme
+les autres -- c'est voulu (regle C.2 : un notebook se commite execute de bout
+en bout), et le markdown contextuel ne l'en exempte pas : ``_has_strip_marker``
+et ``_has_unexec_marker`` **routent** entre les classes STOP_REPAIR_*, ils ne
+produisent jamais HEALTHY.
+
+Seul faux positif ecarte : les **cellules vides**, qui satisfont le predicat
+par construction sans rien avoir a executer.
 
 Cross-reference avec ``config.json``
 ------------------------------------
@@ -131,9 +137,27 @@ def _is_code(cell: dict) -> bool:
     return cell.get("cell_type") == "code"
 
 
+def _source_text(cell: dict) -> str:
+    """Source d'une cellule en texte, que nbformat la stocke en str ou en list."""
+    src = cell.get("source", "")
+    if isinstance(src, list):
+        src = "".join(src)
+    return src
+
+
 def _is_unexecuted_code(cell: dict) -> bool:
-    """Cellule code sans execution_count ET sans outputs = JAMAIS executee."""
+    """Cellule code NON VIDE sans execution_count ET sans outputs = JAMAIS executee.
+
+    La clause "non vide" n'est pas cosmetique : une cellule code vide satisfait
+    ``ec is None and outputs == []`` par construction -- il n'y a rien a executer,
+    donc rien a signaler. Sans ce garde-fou, ``--check`` echoue en CI sur un
+    notebook dont les seules cellules "unexec" sont vides, et la seule
+    remediation possible serait de les supprimer : un faux positif qui pousse a
+    modifier un notebook sain (mesure sur le depot : 1 notebook, 2 cellules).
+    """
     if not _is_code(cell):
+        return False
+    if not _source_text(cell).strip():
         return False
     ec = cell.get("execution_count")
     outs = cell.get("outputs") or []
