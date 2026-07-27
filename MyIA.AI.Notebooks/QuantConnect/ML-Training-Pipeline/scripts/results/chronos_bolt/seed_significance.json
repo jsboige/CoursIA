@@ -1,0 +1,174 @@
+{
+  "model": "Chronos-Bolt",
+  "source_file": "results.json",
+  "test": "one-sample t-test + sign + Wilcoxon on per-seed edge vs majority",
+  "alpha": 0.05,
+  "n_configs": 7,
+  "n_significant": 0,
+  "n_significant_positive": 0,
+  "n_degenerate": 7,
+  "summary_verdict": "Chronos-Bolt: 0/0 stochastic configs statistically significant (alpha=0.05); 0 with positive edge. 7 degenerate (deterministic/n<2).",
+  "configs": [
+    {
+      "symbol": "GLD",
+      "horizon": 24,
+      "majority": 0.5314761215629522,
+      "n_seeds": 1,
+      "diraccs": [
+        0.4608695652173913
+      ],
+      "mean_edge": -0.0706065563455609,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 24,
+      "majority": 0.5461416070007955,
+      "n_seeds": 1,
+      "diraccs": [
+        0.49565217391304356
+      ],
+      "mean_edge": -0.050489433087751945,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 66,
+      "majority": 0.5461416070007955,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5507692307692308
+      ],
+      "mean_edge": 0.004627623768435285,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 132,
+      "majority": 0.5461416070007955,
+      "n_seeds": 1,
+      "diraccs": [
+        0.4931297709923664
+      ],
+      "mean_edge": -0.053011836008429125,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 24,
+      "majority": 0.5130246020260492,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5217391304347826
+      ],
+      "mean_edge": 0.008714528408733435,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 66,
+      "majority": 0.5130246020260492,
+      "n_seeds": 1,
+      "diraccs": [
+        0.4769230769230769
+      ],
+      "mean_edge": -0.036101525102972265,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 132,
+      "majority": 0.5130246020260492,
+      "n_seeds": 1,
+      "diraccs": [
+        0.499236641221374
+      ],
+      "mean_edge": -0.013787960804675148,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    }
+  ]
+}
