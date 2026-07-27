@@ -133,6 +133,19 @@ def _png_dimensions(raw: bytes) -> tuple[int, int] | None:
     return (width, height)
 
 
+def _flattened_pixels(im):
+    """Return the flat pixel sequence of a PIL image, across Pillow versions.
+
+    `Image.getdata()` is deprecated since Pillow 12 and REMOVED in Pillow 14
+    (2027-10-15) in favour of `get_flattened_data()`. Both return the same
+    sequence for an RGB image (verified). Calling the deprecated name is not a
+    cosmetic warning here: see `_has_real_content` below for why it would
+    silently disable the content gate.
+    """
+    getter = getattr(im, "get_flattened_data", None) or im.getdata
+    return getter()
+
+
 def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool | None:
     """Return True if the image carries enough distinct colors to be a real figure.
 
@@ -141,13 +154,22 @@ def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool
     decoded -- in which case the caller keeps the size-based behaviour (no
     coverage regression, #6891). PIL is a repo dependency (Image notebooks) but
     the detector must remain functional without it.
+
+    The `None` fallback is deliberate but load-bearing, and that makes the Pillow
+    API surface a correctness concern rather than a lint one: anything raising in
+    here degrades to `None`, i.e. back to the size-only rule that #8634 was filed
+    to fix. Under `python -W error::DeprecationWarning` -- how a CI run pins
+    warnings -- a deprecated call raises, is swallowed, and the pixel-art of
+    #8634 is flagged again with no error and no failing test. Hence
+    `_flattened_pixels`: the supported API is called on the nominal path, so the
+    gate cannot revert by warning.
     """
     try:
         from PIL import Image
         import io
 
         im = Image.open(io.BytesIO(raw)).convert("RGB")
-        return len(set(im.getdata())) >= min_colors
+        return len(set(_flattened_pixels(im))) >= min_colors
     except Exception:
         return None
 
