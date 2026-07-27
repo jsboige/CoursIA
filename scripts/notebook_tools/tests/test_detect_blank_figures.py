@@ -48,6 +48,7 @@ from detect_blank_figures import (  # noqa: E402
     _PNG_SIGNATURE,
     _classify_image,
     _decode_image,
+    _flattened_pixels,
     _has_real_content,
     detect_cell,
     _human_report,
@@ -769,3 +770,50 @@ class TestContentGate:
         nb_path = _write_nb(tmp_path / "mono.ipynb", [_code_cell_with_png(mono_b64)])
         result = scan_notebook(nb_path)
         assert len(result["hits"]) == 1
+
+
+class TestContentGateSurvivesDeprecation:
+    """The content gate must not revert to size-only because of a Pillow warning.
+
+    `_has_real_content` swallows every exception into `None`, and `None` means
+    "fall back to the size rule" -- the very rule #8634 was filed against. So any
+    call that can *raise* on the nominal path silently undoes #8637. Pillow 12
+    deprecated `Image.getdata()` and removes it in Pillow 14 (2027-10-15): under
+    a warnings-as-errors run the deprecation raises, is swallowed, and the
+    pixel-art of #8634 is flagged again -- with no error and no failing test.
+
+    These tests pin the nominal path as warning-free, so the regression surfaces
+    here rather than in a scan verdict two years from now.
+    """
+
+    def test_content_gate_is_warning_free(self):
+        # The happy path must not emit ANY warning: one turned into an error by
+        # `-W error` would be swallowed into None and silently disable the gate.
+        import warnings
+
+        raw = base64.b64decode(PNG_PIXELART_B64)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert _has_real_content(raw) is True
+
+    def test_pixelart_stays_free_under_warnings_as_errors(self):
+        # End-to-end guard: this is what regresses on Pillow 14 if the deprecated
+        # API is called -- the pixel-art gets flagged tiny_payload again.
+        import warnings
+
+        raw = base64.b64decode(PNG_PIXELART_B64)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert _classify_image("image/png", raw, MIN_DIM, MIN_BYTES) is None
+
+    def test_uses_supported_pillow_api_when_available(self):
+        # Prefer get_flattened_data(); fall back to getdata() on older Pillow.
+        pytest.importorskip("PIL")
+        from PIL import Image
+
+        im = Image.new("RGB", (2, 2))
+        im.putdata([(0, 0, 0), (1, 1, 1), (2, 2, 2), (3, 3, 3)])
+        if hasattr(im, "get_flattened_data"):
+            assert list(_flattened_pixels(im)) == list(im.get_flattened_data())
+        else:  # Pillow < 12: the legacy name is the only one available
+            assert len(list(_flattened_pixels(im))) == 4
