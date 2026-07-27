@@ -143,13 +143,12 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 
 ## Audit sémantique cross-famille (docs/audit/)
 
-Cadrage méthodologique et rapports d'audit distillation (grade B-méthodologique, EPIC #4208 + #8052).
+Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPIC #4208 + #8052). Les **comptes-rendus** de cycle et les **findings** ne vivent pas ici : dashboard RooSync pour l'éphémère, issue GitHub pour l'actionnable (règle HARD [audit-cross-source-distillation.md](../.claude/rules/audit-cross-source-distillation.md)).
 
 | Fichier | Description |
 |---------|-------------|
-| [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`. Grade B-méthodologique, #8052. 138 lignes |
-| [audit/c803-mapping.md](audit/c803-mapping.md) | Audit distillation MBML/Infer.NET — mapping 36 notebooks Probas/ (17 Infer + 17 PyMC + 2 racine) vs *MBML Book* (Herbrich) + TrueSkill Herbrich 2007 + WinBUGS/JAGS. 5 catégories : FIDÈLE inline/biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS / HORS-SCOPE. Pilote c.803, #8081. 124 lignes |
-| [audit/history/c793/summary.md](audit/history/c793/summary.md) | Résumé du cycle c.793 (pilote audit sémantique cross-famille) — scope = protocole + grille outillée + 3 notebooks DecInfer échantillonnés. F-c793-1 MAJOR = `pymc` mentioned-not-imported (fallback silencieux possible). Archive de facto (déjà sous-dossier `history/`). 66 lignes |
+| [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. 164 lignes |
+| [audit/c803-mapping.md](audit/c803-mapping.md) | Audit distillation MBML/Infer.NET — mapping 36 notebooks Probas/ (17 Infer + 17 PyMC + 2 racine) vs *MBML Book* (Herbrich) + TrueSkill Herbrich 2007 + WinBUGS/JAGS. 5 catégories : FIDÈLE inline/biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS / HORS-SCOPE. Pilote c.803, #8081. 124 lignes. **Statut à trancher** — sortie d'audit committée, cf #7422 |
 
 ## ICT (docs/ict/)
 
