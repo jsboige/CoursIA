@@ -290,4 +290,38 @@ theorem figureEight_wf : figureEightDiagram.wf = true := by
   -- 4 crossings, labels {1,..,8} each appearing exactly twice.
   decide
 
+/-! ## 12. Mirror preserves well-formedness (Issue #8604 sub-track #8644)
+
+`mirrorCrossing` swaps `e2 ↔ e4` (over/under strands). The resulting
+4-element label list `[e1, e4, e3, e2]` is a permutation of
+`[e1, e2, e3, e4]`. Both lists are concrete 4-element `List Nat` and
+the multiset is identical, so the count-per-label invariant is preserved.
+
+We establish this for each **named knot** (concrete decidable case) below.
+The polymorphic generalisation (`∀ (c : PDCrossing), Perm [...] [...]`)
+is reserved for the Lean-capable lane (po-2026) — proof work requires
+non-trivial hand-case-analysis on 4 labels with possible collisions,
+out of scope for a non-specialist worker (cf. CI failure post-mortem
+`Basic.lean:218` of the abandoned hwell-replace PR; the polymorphism
+on `PDCrossing` prevents `decide` from closing such goals directly,
+cf. C918-L1 ★ on `decide` ≠ prouveur universel).
+-/
+
+/-- Mirror of the unknot is well-formed: trivially `[]`'s image is `[]`,
+    and `numEdges = 1 ≤ 1`. -/
+theorem mirror_unknot_wf : unknot.mirror.diagram.wf = true := by
+  decide
+
+/-- Mirror of the trefoil is well-formed: the slot-permutation
+    `e2 ↔ e4` preserves label multiset, so the parity check still sees
+    each of `1..6` exactly twice across the 3 mirrored crossings. -/
+theorem mirror_trefoil_wf : trefoil.mirror.diagram.wf = true := by
+  decide
+
+/-- Mirror of the figure-eight is well-formed: same reasoning as the
+    trefoil case but with 4 crossings and labels `1..8` each appearing
+    exactly twice in the mirrored list. -/
+theorem mirror_figureEight_wf : figureEight.mirror.diagram.wf = true := by
+  decide
+
 end Knots
