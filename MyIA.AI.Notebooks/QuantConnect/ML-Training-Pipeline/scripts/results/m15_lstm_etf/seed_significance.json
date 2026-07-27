@@ -1,0 +1,283 @@
+{
+  "model": "M15",
+  "source_file": "results.json",
+  "test": "one-sample t-test + sign + Wilcoxon on per-seed edge vs majority",
+  "alpha": 0.05,
+  "n_configs": 9,
+  "n_significant": 9,
+  "n_significant_positive": 0,
+  "n_degenerate": 0,
+  "summary_verdict": "M15: 9/9 stochastic configs statistically significant (alpha=0.05); 0 with positive edge. 0 degenerate (deterministic/n<2).",
+  "configs": [
+    {
+      "symbol": "SPY",
+      "horizon": 24,
+      "majority": 0.5480265455815578,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5056326620770901,
+        0.5030372197474505,
+        0.5055222177226374,
+        0.5002392961013142,
+        0.5014725913927033
+      ],
+      "mean_edge": -0.044845748173318725,
+      "std_edge": 0.0024023374928321315,
+      "deterministic": false,
+      "t_stat": -41.74190417315559,
+      "t_p_value": 1.9688034613082267e-06,
+      "df": 4,
+      "ci95_low": -0.047828644149703475,
+      "ci95_high": -0.041862852196933975,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 66,
+      "majority": 0.5480265455815578,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5006697612732095,
+        0.5037201591511936,
+        0.5022214854111405,
+        0.5011870026525199,
+        0.5031697612732096
+      ],
+      "mean_edge": -0.04583291162930321,
+      "std_edge": 0.001286407201182638,
+      "deterministic": false,
+      "t_stat": -79.66801329753456,
+      "t_p_value": 1.4878504171204354e-07,
+      "df": 4,
+      "ci95_low": -0.04743019713804176,
+      "ci95_high": -0.04423562612056466,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 132,
+      "majority": 0.5480265455815578,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5024993734632918,
+        0.5022656922045287,
+        0.5022589188347094,
+        0.502834655269343,
+        0.5028075617900661
+      ],
+      "mean_edge": -0.04549330526917004,
+      "std_edge": 0.0002802162004570285,
+      "deterministic": false,
+      "t_stat": -363.02727300241656,
+      "t_p_value": 3.45439716191985e-10,
+      "df": 4,
+      "ci95_low": -0.04584123963699098,
+      "ci95_high": -0.0451453709013491,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 24,
+      "majority": 0.5127488648271045,
+      "n_seeds": 5,
+      "diraccs": [
+        0.49821448293634724,
+        0.4970180024297758,
+        0.496999595037367,
+        0.4971652615690461,
+        0.49451459706218015
+      ],
+      "mean_edge": -0.015966477020161206,
+      "std_edge": 0.0013640983167319241,
+      "deterministic": false,
+      "t_stat": -26.172694108884386,
+      "t_p_value": 1.2663176637668424e-05,
+      "df": 4,
+      "ci95_low": -0.017660228790057592,
+      "ci95_high": -0.014272725250264821,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 66,
+      "majority": 0.5127488648271045,
+      "n_seeds": 5,
+      "diraccs": [
+        0.4991511936339523,
+        0.5009018567639257,
+        0.500132625994695,
+        0.4997944297082228,
+        0.49845490716180374
+      ],
+      "mean_edge": -0.013061862174584559,
+      "std_edge": 0.0009342298766911508,
+      "deterministic": false,
+      "t_stat": -31.263410070495937,
+      "t_p_value": 6.238058086992687e-06,
+      "df": 4,
+      "ci95_low": -0.014221861778518302,
+      "ci95_high": -0.011901862570650816,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 132,
+      "majority": 0.5127488648271045,
+      "n_seeds": 5,
+      "diraccs": [
+        0.5001761076152997,
+        0.49928202279916284,
+        0.5007653907895717,
+        0.4977207610558329,
+        0.49984759917906757
+      ],
+      "mean_edge": -0.013190488539317513,
+      "std_edge": 0.0011592375589945312,
+      "deterministic": false,
+      "t_stat": -25.443300039319215,
+      "t_p_value": 1.4170925812409608e-05,
+      "df": 4,
+      "ci95_low": -0.014629872081686634,
+      "ci95_high": -0.011751104996948392,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 24,
+      "majority": 0.530562347188264,
+      "n_seeds": 5,
+      "diraccs": [
+        0.4959687810624747,
+        0.49734933549313404,
+        0.4955270036446637,
+        0.49970548172145934,
+        0.49663144718919117
+      ],
+      "mean_edge": -0.033525937366079415,
+      "std_edge": 0.001643471949141223,
+      "deterministic": false,
+      "t_stat": -45.61457528929933,
+      "t_p_value": 1.3814859744309403e-06,
+      "df": 4,
+      "ci95_low": -0.03556657731738584,
+      "ci95_high": -0.03148529741477299,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 66,
+      "majority": 0.530562347188264,
+      "n_seeds": 5,
+      "diraccs": [
+        0.4980106100795756,
+        0.4979177718832891,
+        0.4996286472148541,
+        0.4998342175066313,
+        0.4989323607427056
+      ],
+      "mean_edge": -0.03169762570285286,
+      "std_edge": 0.0008880174501285884,
+      "deterministic": false,
+      "t_stat": -79.81605067181971,
+      "t_p_value": 1.476848579649922e-07,
+      "df": 4,
+      "ci95_low": -0.03280024500045423,
+      "ci95_high": -0.030595006405251486,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 132,
+      "majority": 0.530562347188264,
+      "n_seeds": 5,
+      "diraccs": [
+        0.49835745781883944,
+        0.49883498039109436,
+        0.4984726051057662,
+        0.4977986548087539,
+        0.4986724195154331
+      ],
+      "mean_edge": -0.032135123660286605,
+      "std_edge": 0.00039636224222412936,
+      "deterministic": false,
+      "t_stat": -181.2895208346571,
+      "t_p_value": 5.5535713630895206e-09,
+      "df": 4,
+      "ci95_low": -0.032627272386703626,
+      "ci95_high": -0.03164297493386958,
+      "wilcoxon_p_value": 0.0625,
+      "sign": {
+        "n": 5,
+        "n_pos": 0,
+        "n_neg": 5,
+        "p_value": 0.0625
+      },
+      "verdict": "SIGNIFICANT-NEGATIVE (t-test): edge < 0 statistically -- reliably under majority",
+      "significant_at_alpha": true
+    }
+  ]
+}
