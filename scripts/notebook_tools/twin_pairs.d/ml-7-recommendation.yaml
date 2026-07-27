@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
+    date: "2026-07-27"
+    by: myia-po-2024:CoursIA-2
     python_sha: 367fa531d64984ae94bfde4fd5c0937d41ccc9c4
-    csharp_sha: 74a61b1d6bae7e24f27fb54a49fe83612fc6efcc
+    csharp_sha: 51f854bc04819455da53a88d781b42e8069b3498
   known_differences:
     - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
     - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."

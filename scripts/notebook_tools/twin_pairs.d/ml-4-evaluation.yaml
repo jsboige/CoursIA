@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
   parity_level: surface
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: e93e9e81f6746f1facc000693ffa115b4e280dba
-    csharp_sha: 24c497936bd864ce6f68913ad95a68b34bba098c
+    date: "2026-07-27"
+    by: myia-po-2024:CoursIA-2
+    python_sha: d6441104584b98aa69326bbb56b5e342e56d71a2
+    csharp_sha: aee6a19e8afc21d499a0ff34edfd353c15e1cc1b
   known_differences:
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
