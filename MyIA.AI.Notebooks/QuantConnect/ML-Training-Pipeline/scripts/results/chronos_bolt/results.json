@@ -1,0 +1,89 @@
+{
+  "model": "amazon/chronos-bolt-base",
+  "is_mock": false,
+  "mode": "zero-shot",
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "n_seeds": 5,
+  "cost_bps": 10.0,
+  "walk_forward_folds": 5,
+  "device": "cuda:0 (RTX 3070 8GB)",
+  "note": "std_edge=0 everywhere: zero-shot inference is deterministic, seeds sample no training stochasticity (see verdict.md C893-L)",
+  "sweep": [
+    {
+      "symbol": "GLD",
+      "pred_len": 24,
+      "diracc": 0.4608695652173913,
+      "majority": 0.5314761215629522,
+      "edge": -0.0706065563455609,
+      "mean_edge": -0.0706065563455609,
+      "std_edge": 0.0,
+      "beats_valid": false
+    },
+    {
+      "symbol": "SPY",
+      "pred_len": 24,
+      "diracc": 0.49565217391304356,
+      "majority": 0.5461416070007955,
+      "edge": -0.050489433087751945,
+      "mean_edge": -0.050489433087751945,
+      "std_edge": 0.0,
+      "beats_valid": false
+    },
+    {
+      "symbol": "SPY",
+      "pred_len": 66,
+      "diracc": 0.5507692307692308,
+      "majority": 0.5461416070007955,
+      "edge": 0.004627623768435285,
+      "mean_edge": 0.004627623768435285,
+      "std_edge": 0.0,
+      "beats_valid": true
+    },
+    {
+      "symbol": "SPY",
+      "pred_len": 132,
+      "diracc": 0.4931297709923664,
+      "majority": 0.5461416070007955,
+      "edge": -0.053011836008429125,
+      "mean_edge": -0.053011836008429125,
+      "std_edge": 0.0,
+      "beats_valid": false
+    },
+    {
+      "symbol": "TLT",
+      "pred_len": 24,
+      "diracc": 0.5217391304347826,
+      "majority": 0.5130246020260492,
+      "edge": 0.008714528408733435,
+      "mean_edge": 0.008714528408733435,
+      "std_edge": 0.0,
+      "beats_valid": true
+    },
+    {
+      "symbol": "TLT",
+      "pred_len": 66,
+      "diracc": 0.4769230769230769,
+      "majority": 0.5130246020260492,
+      "edge": -0.036101525102972265,
+      "mean_edge": -0.036101525102972265,
+      "std_edge": 0.0,
+      "beats_valid": false
+    },
+    {
+      "symbol": "TLT",
+      "pred_len": 132,
+      "diracc": 0.499236641221374,
+      "majority": 0.5130246020260492,
+      "edge": -0.013787960804675148,
+      "mean_edge": -0.013787960804675148,
+      "std_edge": 0.0,
+      "beats_valid": false
+    }
+  ]
+}
