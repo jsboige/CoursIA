@@ -11,6 +11,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — 58 liens internes vérifiés c.805 (aucun mort), 11 sections cohérentes avec disque, organisation par catégorie stable |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
 | [grothendieckian-lens.md](grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
+| [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 
 ## Référence (docs/reference/)
 
@@ -57,6 +58,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/dotnet-plotly-zero-restore.md](reference/dotnet-plotly-zero-restore.md) | Pattern .NET Interactive — figures Plotly « zero-restore » (technique C548-L2) |
 | [reference/notebook-formatting.md](reference/notebook-formatting.md) | Mise en forme visuelle des notebooks — directives + vérification de rendu |
 | [reference/notebook-parity-table.md](reference/notebook-parity-table.md) | Table de parité cross-série — notebooks Python ⇄ .NET |
+| [reference/notebook-counts-reconciliation.md](reference/notebook-counts-reconciliation.md) | Réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. 174 lignes. Linked #8050 |
 | [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
 
 ## GenAI (docs/genai/)
@@ -139,6 +141,16 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [translation/epic-4957-status.md](translation/epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
 
+## Audit sémantique cross-famille (docs/audit/)
+
+Cadrage méthodologique et rapports d'audit distillation (grade B-méthodologique, EPIC #4208 + #8052).
+
+| Fichier | Description |
+|---------|-------------|
+| [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`. Grade B-méthodologique, #8052. 138 lignes |
+| [audit/c803-mapping.md](audit/c803-mapping.md) | Audit distillation MBML/Infer.NET — mapping 36 notebooks Probas/ (17 Infer + 17 PyMC + 2 racine) vs *MBML Book* (Herbrich) + TrueSkill Herbrich 2007 + WinBUGS/JAGS. 5 catégories : FIDÈLE inline/biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS / HORS-SCOPE. Pilote c.803, #8081. 124 lignes |
+| [audit/history/c793/summary.md](audit/history/c793/summary.md) | Résumé du cycle c.793 (pilote audit sémantique cross-famille) — scope = protocole + grille outillée + 3 notebooks DecInfer échantillonnés. F-c793-1 MAJOR = `pymc` mentioned-not-imported (fallback silencieux possible). Archive de facto (déjà sous-dossier `history/`). 66 lignes |
+
 ## ICT (docs/ict/)
 
 Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documentaire).
@@ -147,6 +159,8 @@ Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documenta
 |---------|-------------|
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
 | [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice canonique `notebook × claim × proxy × contrôle × seeds × verdict × portée` (grade C-documentaire, #7734, #4588) |
+| [ict/cadrage-trajectoires-representations.md](ict/cadrage-trajectoires-representations.md) | Cadrage « trajectoires de représentations » — pivot états → représentations (échelle LLM, strate 5). Grade C-documentaire, livrable N2 de #7396, See #4588. 169 lignes |
+| [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4ᵉ fil de lecture ICT — généalogie backward de `p̂` (ICT-10 → ICT-17), 6 maillons diachroniques. Grade C-documentaire, #7735 + Part of #7396, See #4588. 96 lignes |
 
 ## Ledgers cumulatifs (docs/ledgers/)
 
@@ -186,6 +200,7 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 ```
 docs/
   reference/         Docs vivantes liées depuis CLAUDE.md / rules
+  audit/             Audit sémantique cross-famille (sampling-protocol + c803-mapping + history/) — #8052, #8081
   genai/             Infrastructure GenAI
   qc/                QuantConnect reference
   lean/              Prover itération + endpoints
@@ -196,6 +211,7 @@ docs/
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801)
   suivis/            Suivis de cycle (transitions de série)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
+  PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)
 ```
 
