@@ -1,0 +1,220 @@
+{
+  "model": "Chronos-Bolt",
+  "source_file": "results.json",
+  "test": "one-sample t-test + sign + Wilcoxon on per-seed edge vs majority",
+  "alpha": 0.05,
+  "n_configs": 9,
+  "n_significant": 0,
+  "n_significant_positive": 0,
+  "n_degenerate": 9,
+  "summary_verdict": "Chronos-Bolt: 0/0 stochastic configs statistically significant (alpha=0.05); 0 with positive edge. 9 degenerate (deterministic/n<2).",
+  "configs": [
+    {
+      "symbol": "SPY",
+      "horizon": 24,
+      "majority": 0.5480265455815578,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5049884033427825
+      ],
+      "mean_edge": -0.043038142238775334,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 66,
+      "majority": 0.5480265455815578,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5062002652519894
+      ],
+      "mean_edge": -0.04182628032956848,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 132,
+      "majority": 0.5480265455815578,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5058826716879915
+      ],
+      "mean_edge": -0.04214387389356633,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 24,
+      "majority": 0.5127488648271045,
+      "n_seeds": 1,
+      "diraccs": [
+        0.49628170673342414
+      ],
+      "mean_edge": -0.016467158093680323,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 66,
+      "majority": 0.5127488648271045,
+      "n_seeds": 1,
+      "diraccs": [
+        0.4973740053050398
+      ],
+      "mean_edge": -0.015374859522064688,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 132,
+      "majority": 0.5127488648271045,
+      "n_seeds": 1,
+      "diraccs": [
+        0.49835068444902025
+      ],
+      "mean_edge": -0.014398180378084213,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 24,
+      "majority": 0.530562347188264,
+      "n_seeds": 1,
+      "diraccs": [
+        0.49828811250598243
+      ],
+      "mean_edge": -0.03227423468228158,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 66,
+      "majority": 0.530562347188264,
+      "n_seeds": 1,
+      "diraccs": [
+        0.5010145888594164
+      ],
+      "mean_edge": -0.029547758328847595,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 132,
+      "majority": 0.530562347188264,
+      "n_seeds": 1,
+      "diraccs": [
+        0.500789097583939
+      ],
+      "mean_edge": -0.029773249604325036,
+      "std_edge": 0.0,
+      "deterministic": true,
+      "t_stat": NaN,
+      "t_p_value": NaN,
+      "ci95_low": NaN,
+      "ci95_high": NaN,
+      "wilcoxon_p_value": NaN,
+      "sign": {
+        "n": 1,
+        "p_value": NaN
+      },
+      "verdict": "DEGENERATE (deterministic / n<2): no cross-seed variance, t-test undefined (cf C893-L for the Chronos case)",
+      "significant_at_alpha": false
+    }
+  ]
+}
