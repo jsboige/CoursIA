@@ -42,11 +42,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from detect_blank_figures import (  # noqa: E402
     MIN_BYTES,
     MIN_DIM,
+    MIN_DISTINCT_COLORS,
     SKIP_DIRS,
     _OUTPUT_SUFFIX,
     _PNG_SIGNATURE,
     _classify_image,
     _decode_image,
+    _has_real_content,
     detect_cell,
     _human_report,
     _iter_notebooks,
@@ -124,6 +126,42 @@ def _make_noisy_png(width: int, height: int) -> bytes:
 
 # A 50x50 noisy PNG: ~7.5 KB decoded > MIN_BYTES=1024, dim > MIN_DIM=8 -> CLEAN
 PNG_LARGE_B64 = base64.b64encode(_make_noisy_png(50, 50)).decode("ascii")
+
+
+def _make_multicolor_png(width: int, height: int, palette: list[bytes]) -> bytes:
+    """Synthesize a small PNG with several DISTINCT colors (pixel-art / grid).
+
+    Used to exercise the content-gate escape hatch (#8634): such an image is
+    small in bytes but carries real content, so it must NOT be flagged. Rows are
+    painted round-robin from `palette` (>= MIN_DISTINCT_COLORS colors) so the
+    decoded image is genuinely multicolor.
+    """
+    assert len(palette) >= MIN_DISTINCT_COLORS, "palette must carry real content"
+
+    def chunk(chunk_type: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + chunk_type
+            + data
+            + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+        )
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)  # 8-bit RGB
+    rows = []
+    for row in range(height):
+        pixel = palette[row % len(palette)]
+        rows.append(b"\x00" + pixel * width)
+    raw = b"".join(rows)
+    idat = zlib.compress(raw, level=9)
+    return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+# A 24x16 pixel-art grid with 6 distinct colors (the 04-4 cross-stitch shape,
+# #8632/#8634): small canvas, real content -> CLEAN via the content gate.
+_PALETTE_6 = [bytes(c) for c in [(51, 131, 98), (153, 207, 217), (253, 215, 85),
+                                  (44, 106, 69), (200, 50, 30), (120, 80, 160)]]
+PNG_PIXELART_B64 = base64.b64encode(_make_multicolor_png(24, 16, _PALETTE_6)).decode("ascii")
 
 
 def _md(source: str) -> dict:
@@ -640,13 +678,94 @@ class TestMainExitCodes:
         assert parsed["total_hits"] == 1
 
     def test_custom_thresholds_passed_through(self, tmp_path, capsys):
-        # A 50x50 noisy PNG = ~7.5 KB. With --min-bytes 20000 -> degenerate on tiny_payload
-        nb_path = _write_nb(tmp_path / "test.ipynb", [_code_cell_with_png(PNG_LARGE_B64)])
-        rc = main([str(nb_path), "--check", "--min-bytes", "20000"])
-        assert rc == 1
+        # Post-content-gate (#8634): a noisy/rich PNG is no longer flagged on
+        # size alone (it carries real content). To still demonstrate that
+        # --min-bytes propagates, use a MONOCHROME PNG (1 color, so
+        # _has_real_content=False -> not exempt) whose only signal is tiny_payload.
+        # Threshold below its byte count -> clean; above -> degenerate.
+        raw = _make_png(100, 100, pixel=b"\x80\x80\x80")  # ~334 B, monochrome, 100x100 (dim OK)
+        size = len(raw)
+        mono_b64 = base64.b64encode(raw).decode("ascii")
+        nb_path = _write_nb(tmp_path / "test.ipynb", [_code_cell_with_png(mono_b64)])
+        assert main([str(nb_path), "--check", "--min-bytes", str(size - 1)]) == 0
+        assert main([str(nb_path), "--check", "--min-bytes", str(size + 1)]) == 1
 
     def test_invalid_family_exits_2(self, tmp_path, capsys):
         rc = main(["--family", "NonExistentFamily", "--root", str(tmp_path)])
         assert rc == 2
         captured = capsys.readouterr()
         assert "family not found" in captured.err.lower()
+
+
+# ---------------------------------------------------------------------------
+# 10. Content gate (#8634) -- escape hatch for small but rich images
+# ---------------------------------------------------------------------------
+# The founding #6891 incident was about EMPTY figures (1x1, 70 B). The size
+# threshold (MIN_BYTES) caught them. But size measures RESOLUTION, not CONTENT:
+# pixel-art, cross-stitch grids, sprites, mini heatmaps are small in bytes yet
+# carry real visual content. The content gate adds a content-based escape: a
+# small image is exempted from tiny_payload iff it decodes and carries >=
+# MIN_DISTINCT_COLORS distinct colors. Indecodable images (PIL absent / corrupt)
+# fall back to the size signal -- no coverage regression.
+
+class TestContentGate:
+    def test_min_distinct_colors_is_4(self):
+        # Calibrated so a 1-color canvas is caught but a 4-color pixel-art is freed
+        assert MIN_DISTINCT_COLORS == 4
+
+    def test_has_real_content_true_for_multicolor(self):
+        # A 24x16 grid with 6 colors carries real content
+        assert _has_real_content(_make_multicolor_png(24, 16, _PALETTE_6)) is True
+
+    def test_has_real_content_false_for_monochrome(self):
+        # A single-color image (canvas blanc) carries no real content
+        assert _has_real_content(_make_png(50, 50, pixel=b"\xff\xff\xff")) is False
+
+    def test_has_real_content_none_for_non_image_bytes(self):
+        # Random/corrupt bytes cannot be decoded -> None (fall back to size)
+        assert _has_real_content(b"\x00" * 50) is None
+        assert _has_real_content(b"") is None
+
+    def test_has_real_content_respects_custom_threshold(self):
+        # With min_colors higher than the palette size, a 6-color image is "poor"
+        assert _has_real_content(_make_multicolor_png(24, 16, _PALETTE_6), min_colors=10) is False
+
+    def test_pixelart_not_flagged_on_tiny_payload(self):
+        # THE #8634 case: a small (24x16, <1024 B) but rich image is CLEAN
+        raw = _make_multicolor_png(24, 16, _PALETTE_6)
+        assert len(raw) < MIN_BYTES  # sanity: it IS under the size threshold
+        assert _classify_image("image/png", raw, MIN_DIM, MIN_BYTES) is None
+
+    def test_monochrome_small_still_flagged(self):
+        # #6891 must NOT regress: a small monochrome (canvas blanc) stays flagged
+        raw = _make_png(50, 50, pixel=b"\xff\xff\xff")  # 50x50 white, ~150 B, 1 color
+        assert len(raw) < MIN_BYTES
+        result = _classify_image("image/png", raw, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert any("tiny_payload" in r for r in result["reasons"])
+
+    def test_1x1_still_flagged_via_min_dim(self):
+        # The true 1x1 placeholder is caught by degenerate_dimensions regardless
+        raw = _make_png(1, 1)
+        result = _classify_image("image/png", raw, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert "degenerate_dimensions(1x1)" in result["reasons"]
+
+    def test_indecodable_small_falls_back_to_size(self):
+        # A corrupt "JPEG" under MIN_BYTES: _has_real_content=None -> size signal
+        result = _classify_image("image/jpeg", b"\xff\xd8" + b"\x00" * 50, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert any("tiny_payload" in r for r in result["reasons"])
+
+    def test_scan_notebook_frees_pixelart(self, tmp_path):
+        # End-to-end: a notebook whose only figure is rich pixel-art scans clean
+        nb_path = _write_nb(tmp_path / "pixelart.ipynb", [_code_cell_with_png(PNG_PIXELART_B64)])
+        result = scan_notebook(nb_path)
+        assert result["hits"] == []
+
+    def test_scan_notebook_still_catches_monochrome(self, tmp_path):
+        # End-to-end: a monochrome small figure is still caught (#6891 preserved)
+        mono_b64 = base64.b64encode(_make_png(50, 50, pixel=b"\xff\xff\xff")).decode("ascii")
+        nb_path = _write_nb(tmp_path / "mono.ipynb", [_code_cell_with_png(mono_b64)])
+        result = scan_notebook(nb_path)
+        assert len(result["hits"]) == 1
