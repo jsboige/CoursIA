@@ -1,0 +1,16 @@
+- name: "SocialChoice-04 Computational-Aggregation-SAT-Z3"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
+  parity_level: surface
+  last_audit:
+    date: "2026-07-27"
+    by: po-2024
+    python_sha: c0d45f4de1281b82707fa32f4e0ad020c5aad0b0
+    csharp_sha: 64e14757bdf161f3bf84fbe8096cf0217d58c8fd
+  known_differences:
+    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
+    - "Le C# est HONNETE sur ce point : il contient une section dediee '§5 Verdict SOTA (EPIC #3801)' qui auto-declare que DPLL from-scratch n'est pas un substitut SOTA aux solveurs modernes, plus une 'Limite honnête (Prong B)' sous la conclusion. Ce point SOTA est un candidat d'enrichissement future (brancher un vrai solveur SAT NuGet), pas un verdict parity."
+    - "Asymetrie de couverture forte : Python (68 cellules, 21 code, 47 markdown) couvre §1-8 + une Partie 2 complete SMT-Z3 (8 sous-sections : Config, Encodage SMT, UNSAT, SAT 2-alternatives, Relaxation, Benchmarks, SAT vs SMT, Exercices Z3) ; C# (33 cellules, 12 code, 21 markdown) replie Z3 dans une seule §7. La Partie 2 SMT du Python est largement absente du C#."
+    - "Parite Z3 CONFIRMEE : les deux cotes utilisent Z3 pour la branche SMT (Python z3-py ; C# Microsoft.Z3 4.12.2). Le SMT est nativement twinned ; l'asymetrie porte uniquement sur le SAT (PySAT 3-solveurs vs C# DPLL from-scratch)."
+    - "Axes de benchmark differents : Python §6 = benchmark de SOLVERS (Glucose3 vs Minisat22 vs Cadical103 sur l'encodage d'Arrow) ; C# §6 = benchmark STRUCTUREL Arrow vs Sen (compare les deux theoremes, pas les solveurs). Visualisation : Python §7 'Espace des Solutions' via matplotlib/numpy ; C# sans librairie de plotting."
