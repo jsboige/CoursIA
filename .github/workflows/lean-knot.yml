@@ -57,7 +57,7 @@ on:
       # so lean_server.py (and the helper it loads) ARE gate inputs. Omitting
       # them reopened #8712 one layer down: #8725 edited the enumerator, no
       # path matched, the gate never ran on the PR, and an import that dies on
-      # a bare runner reached main unobserved (#8727).
+      # a bare runner reached main unobserved (#8722).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:

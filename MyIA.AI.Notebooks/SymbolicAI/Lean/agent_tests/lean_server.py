@@ -28,7 +28,7 @@ from typing import Dict, List, Optional, Tuple
 # (``count_real_sorries``) already proved this is the only honest way to exclude
 # docstring prose from a keyword scan (#6171, #8722 cause 2).
 #
-# Loaded LAZILY, by direct path, on purpose (#8727). ``from prover.lean_utils
+# Loaded LAZILY, by direct path, on purpose (#8722). ``from prover.lean_utils
 # import ...`` executes ``prover/__init__.py`` first, which imports the prover
 # agents -- ``agent_framework``, the OpenAI client, ~1250 modules. The
 # proof-integrity CI gate (.github/workflows/lean-axiom.yml) does nothing but
@@ -191,9 +191,13 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
       already absolute. The only absolute prefix is ``_root_.``, which is
       stripped so the emitted name is the true root-qualified identifier.
 
-    * **``end`` pops only on a name match** (#8727). ``namespace`` is the only
+    * **``end`` pops only on a name match** (#8722). ``namespace`` is the only
       construct pushed, but ``end`` closes others (``section``); an unmatched
       ``end`` used to pop anyway and under-qualify the whole rest of the file.
+      Live instance: ``game_theory_lean/SocialChoice/Voting.lean`` opens
+      ``namespace SocialChoice`` (l.36) then ``section SinglePeaked`` (l.177);
+      ``end SinglePeaked`` (l.513) emptied the stack, so ``section BanksSet``
+      (l.661+) and everything after it was emitted unqualified.
     """
     src = _module_source_path(project, module_name)
     if src is None:
@@ -211,7 +215,7 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
         m_close = _NS_CLOSE_RE.match(line)
         if m_close:
             # Pop only when the ``end`` names the namespace actually on top
-            # (#8727). ``namespace`` is the ONLY construct we push, but ``end``
+            # (#8722). ``namespace`` is the ONLY construct we push, but ``end``
             # closes several others -- ``section Foo``, and any ``end`` that
             # survives comment stripping. Popping unconditionally lets one such
             # line unbalance the stack, and every declaration after it is

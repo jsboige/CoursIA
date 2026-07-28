@@ -159,7 +159,7 @@ def test_enumeration_root_prefix_strips_to_absolute(tmp_path):
 
 
 def test_enumeration_end_pops_only_on_a_name_match(tmp_path):
-    """An unmatched ``end`` must NOT pop the namespace stack (#8727).
+    """An unmatched ``end`` must NOT pop the namespace stack (#8722).
 
     ``namespace`` is the only construct the enumerator pushes, but ``end``
     closes others too (``section Foo ... end Foo``), and one can survive
