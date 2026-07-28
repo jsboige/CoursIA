@@ -67,11 +67,11 @@ Deux séries applicatives indépendantes exploitent les formalismes des phases p
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (22 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (22 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, plus 1 groupe-I2 contre-arguments ASPIC, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
-La série SymbolicLearning (12 notebooks Python, doublés de jumeaux C# from-scratch) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
+La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch, BCL-only) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
 
 ---
 
@@ -404,7 +404,7 @@ SymbolicAI/
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (23 notebooks : 14 Python incluant Planners-0-Setup + 9 jumeaux C# + 1 archive Fast-Downward-Legacy)
+├── Planners/                  # Planification automatique (23 notebooks : 14 Python incluant Planners-0-Setup + 9 jumeaux C# ; archive Fast-Downward-Legacy hors compte)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
@@ -597,7 +597,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
-| Lean (proofs natifs + companions Python) | 29 | 27 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
+| Lean (proofs natifs + companions Python) | 28 | 26 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
 | SemanticWeb (C# + Python) | 25 | 24 pédagogiques (12 Python + 12 C# jumeaux) | 1 (RDF.Net-Legacy) | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 23 | 22 pédagogiques (14 Python + 9 C# jumeaux) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
@@ -606,9 +606,9 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
 | SMT/Z3-API (Python + 6 jumeaux C#) | 24 | 24 (100%, 18 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 220/221 notebooks pédagogiques (99%) — soit 221 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **22 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality ajoutés post-§E 21/07).
+**Total** : 220 notebooks pédagogiques — soit 220 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **22 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality ajoutés post-§E 21/07).
 
-> **Note (22/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC), **+ c.756 (22/07) Lean 28→29** = ajout de Lean-17-Knots-a-Conway-and-Proofs + Lean-17-Knots-b-Invariants-Companion + Lean-18-Search-AStar-Optimality (post-§E 21/07 audit #7783). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
+> **Note (22/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC), **Lean 28** (18 preuves natives + 10 companions Python/WSL). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 
 ### Problèmes connus (juillet 2026)
 
@@ -707,7 +707,7 @@ La famille SymbolicAI est couverte sur **trois stacks** selon les formalismes (E
 | **SemanticWeb** | ● (12) | ◐ (12) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; jumeaux SW-8/9/10/13 + side-tracks 3b/6b (#4956) |
 | **Planners** | ● (13) | ◐ (9 jumeaux) | ◐ (1, Planners-5b) | PDDL/CP-SAT Python + jumeaux C# 1-9 (#4956) + companion Lean pour la relaxation h-add |
 | **SmartContracts** | ● (27) | — | ◐ (lake `erc20_lean`) | Pipeline Solidity/Foundry/Wagmi en Python, focus DeFi et ZK ; invariant de conservation ERC-20 prouvé (0 sorry, bilingue FR/EN) |
-| **Argument Analysis** | ● (21) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
+| **Argument Analysis** | ● (22) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
 | **SymbolicLearning** | ● (12) | ◐ (8 jumeaux) | — | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
 | **SMT / Z3** (Z3-Linq2Z3 + Z3-API) | ● (6) | ● (24) | — | Z3-Python API complète + 6 jumeaux C# (#4956) + Z3.Linq DSL C# 18 nb (missionnaires, cryptarithms, sudoku) |
 
