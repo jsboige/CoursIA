@@ -473,6 +473,28 @@ def _fmt_audit_value(key: str, value) -> str:
     return f'"{value}"' if key == "date" else str(value)
 
 
+def write_registry_text(path: Path, text: str) -> None:
+    """Ecrit un fichier de registre en preservant ses fins de ligne LF.
+
+    `Path.write_text(..., encoding="utf-8")` ouvre le fichier avec
+    `newline=None`, ce qui traduit chaque `\\n` en `os.linesep` -- donc en
+    `\\r\\n` sous Windows. La moitie de la flotte tourne sous Windows : un
+    rebaseline y reecrivait silencieusement **toutes** les lignes du fichier en
+    CRLF, y compris celles que `surgical_rebaseline` venait de laisser
+    intactes. Le diff annonce (« exactement les lignes changees ») devenait un
+    diff de fichier entier, et la ligne qu'un relecteur doit examiner -- le SHA
+    -- se retrouvait noyee dans le bruit.
+
+    `newline=""` desactive toute traduction : le texte est ecrit tel quel.
+
+    Incident : PR #8709 et #8713, deux rebaselines d'une seule paire chacun,
+    affichant `+23/-16` et `+24/-16` la ou le changement reel valait deux
+    lignes.
+    """
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
+
+
 def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
     """Reecrit UNIQUEMENT les lignes `last_audit` des paires ciblees.
 
@@ -778,14 +800,14 @@ def main(argv=None) -> int:
                 raw = pfile.read_text(encoding="utf-8")
                 new_raw, _ = surgical_rebaseline(raw, {name: audit})
                 if new_raw != raw:
-                    pfile.write_text(new_raw, encoding="utf-8")
+                    write_registry_text(pfile, new_raw)
                     written += 1
             updated = written
         else:
             # mono-fichier legacy (--registry <file.yaml>)
             raw = reg_path.read_text(encoding="utf-8")
             new_raw, updated = surgical_rebaseline(raw, updates)
-            reg_path.write_text(new_raw, encoding="utf-8")
+            write_registry_text(reg_path, new_raw)
         if skipped:
             print(
                 f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
