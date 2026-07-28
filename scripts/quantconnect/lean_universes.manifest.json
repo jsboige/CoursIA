@@ -21,6 +21,14 @@
       "start": "2015-01-01",
       "end": null,
       "regen_date": "2026-07-28"
+    },
+    "fama_french": {
+      "purpose": "FamaFrench quantbook (ai-01 c.38 dispatch) -- iShares factor ETFs (VLUE/MTUM/SIZE/QUAL/USMV) + risk-off (TLT/XLP/XLU) + SPY. NB: NOT Kenneth French raw factor data -- daily equity ETFs representing the Fama-French factor model, hence on the free yfinance path (not futures/forex).",
+      "issue": "#8734",
+      "tickers": ["VLUE", "MTUM", "SIZE", "QUAL", "USMV", "TLT", "XLP", "XLU", "SPY"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
     }
   }
 }
