@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2024
-    python_sha: 9f0c7a44ffd98bfc97b6ef091ae28fe7d6802541
+    date: "2026-07-28"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 3e358b91d925700d4ab743b74c7799a5f654d02c
     csharp_sha: f5158092a1488ec4a9a397bffe0f1ae02835f7c0
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
