@@ -29,6 +29,14 @@
       "start": "2015-01-01",
       "end": null,
       "regen_date": "2026-07-29"
+    },
+    "ml_deep_learning": {
+      "purpose": "ML-DeepLearning quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT) loaded over a trailing 5y window. NB: the notebook trains an sklearn Ridge/RandomForest proxy as a stand-in for a real LSTM (documented in-cell, real Keras code shown in a comment) -- re-exec is faithful to that committed pedagogy, not a model change.",
+      "issue": "#8734",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT"],
+      "start": "2021-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
     }
   }
 }
