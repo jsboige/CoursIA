@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 60cf3ee8917259360b11b4aea5af240f237ef2ca
-    csharp_sha: 0b24fbcc661131d1c783694fa17c0402e9866abf
+    date: "2026-07-28"
+    by: myia-po-2024:CoursIA-2
+    python_sha: c946847a736c7d0214d7ba2a558668ea98efffed
+    csharp_sha: c87ea42f25f7b6159092f06ab485a5a581671e4d
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
     - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."
