@@ -35,6 +35,24 @@ Le bouclage d'audit : apres avoir re-audite une paire firsthand, on rebaseline
 avec `--update --pair "<nom>" --by "<lane>"`, qui reecrit les SHAs courants
 comme nouvelle reference.
 
+L'angle mort du registre (`--coverage`)
+---------------------------------------
+Tout ce qui precede ne voit que les paires **deja declarees**. Une paire jamais
+enregistree ne derive jamais, n'echoue jamais, n'apparait jamais : `--check`
+peut afficher `OK=136 DRIFT=0` pendant que des paires reelles ne sont
+surveillees par personne. `--coverage` mesure cet angle mort en partant du
+disque (`git ls-files`) plutot que du registre : pour chaque notebook C#
+versionne non declare, il cherche un jumeau Python et distingue
+
+  UNREGISTERED  jumeau present, paire absente du registre -> lacune reelle
+  CSHARP-ONLY   aucun jumeau -> notebook C#-only legitime, informatif
+
+Le predicat est objectif (« un jumeau existe-t-il dans git ? »), sans liste
+d'exceptions a maintenir. `--coverage` ne modifie rien : il **designe** les
+tranches a enregistrer. L'enregistrement lui-meme reste un audit de parite
+firsthand, une tranche a la fois (#8057) -- jamais une inscription en masse,
+qui fabriquerait un `last_audit` que personne n'a fait.
+
 `--update` EXIGE un selecteur (`--pair`, `--family`, ou l'opt-in
 `--yes-all-pairs`) : sans lui, il reecrirait le `last_audit` des 116 paires et
 masquerait des DRIFTs legitimes (#8508, lecons L963/L974). `--by` horodate
@@ -62,6 +80,10 @@ Usage
         --by "myia-po-2024:CoursIA-2"
     # sortie machine
     python check_twin_parity.py --json
+    # recenser les paires reelles absentes du registre (angle mort)
+    python check_twin_parity.py --coverage
+    # ... et en faire un gate, une fois les lacunes resorbees
+    python check_twin_parity.py --coverage --check
     # mode per-pair : ne FAIL que sur le drift INTRODUIT par la PR en cours
     # (paire OK au base-ref mais DRIFT au HEAD). Necessite --base <ref>.
     # Compare le registre+blobs au base-ref (avant la PR) vs au HEAD (apres la PR).
@@ -128,6 +150,98 @@ def _slug(name: str) -> str:
 def _pair_file(registry_dir: Path, name: str) -> Path:
     """Chemin du fichier d'une paire dans le registre file-per-entry."""
     return registry_dir / f"{_slug(name)}.yaml"
+
+
+_CSHARP_TOKEN = re.compile(r"[-_][Cc][Ss]harp")
+
+
+def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]:
+    """Jumeaux Python plausibles d'un notebook C#, parmi `known_paths`.
+
+    Le depot porte TROIS conventions de nommage, et un scan qui n'en teste
+    qu'une classe a tort en « C#-only » tout ce qui suit les deux autres :
+
+        Tweety-10-MLN-Csharp.ipynb      <-> Tweety-10-MLN.ipynb          (suffixe retire)
+        Sudoku-7-Norvig-Csharp.ipynb    <-> Sudoku-7-Norvig-Python.ipynb (suffixe substitue)
+        SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
+
+    Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
+    la sortie de `git ls-files`), pas un acces disque -- testable sans depot.
+    Le meme repertoire est prefere ; a defaut on accepte un stem identique
+    ailleurs dans l'arbre.
+    """
+    p = Path(csharp_path)
+    stem = p.stem
+    variants = [
+        _CSHARP_TOKEN.sub("", stem),
+        _CSHARP_TOKEN.sub("-Python", stem),
+        re.sub(r"([-_])[Cc][Ss]harp([-_])", r"\1Python\2", stem),
+    ]
+    out: list[str] = []
+    seen: set[str] = set()
+    for v in variants:
+        if not v or v == stem or v in seen:
+            continue
+        seen.add(v)
+        same_dir = (p.parent / f"{v}.ipynb").as_posix()
+        if same_dir in known_paths:
+            out.append(same_dir)
+        else:
+            out.extend(sorted(q for q in known_paths if Path(q).stem == v))
+    return out
+
+
+def scan_coverage(repo_root: Path, pairs: list) -> dict:
+    """Recense les notebooks C# versionnes NON couverts par le registre.
+
+    Le registre ne sait detecter la derive que des paires qu'il declare deja :
+    une paire jamais enregistree ne derive jamais, n'echoue jamais, n'apparait
+    jamais. `--check` peut donc afficher `OK=136 DRIFT=0` alors que des paires
+    reelles ne sont surveillees par personne. Ce scan rend cet angle mort
+    mesurable.
+
+    Verdicts, sur la seule base d'un predicat objectif (« un jumeau Python
+    existe-t-il dans git ? ») :
+
+      UNREGISTERED  jumeau present, paire absente du registre -> lacune reelle
+      CSHARP-ONLY   aucun jumeau -> notebook C#-only legitime, informatif
+
+    Les `*_output.ipynb` (artefacts d'execution) sont exclus des deux cotes.
+    """
+    r = subprocess.run(
+        ["git", "ls-files", "--", "*.ipynb"],
+        cwd=repo_root, capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        raise SystemExit("Erreur : `git ls-files` a echoue (depot inaccessible ?).")
+
+    tracked = {
+        line.replace("\\", "/")
+        for line in r.stdout.splitlines()
+        if line and not Path(line).stem.endswith("_output")
+    }
+    registered = {
+        str(pp.get("csharp", "")).replace("\\", "/")
+        for pp in pairs
+        if pp.get("csharp")
+    }
+
+    unregistered, csharp_only = [], []
+    for cs in sorted(p for p in tracked if _CSHARP_TOKEN.search(Path(p).name)):
+        if cs in registered:
+            continue
+        cands = python_twin_candidates(cs, tracked)
+        (unregistered if cands else csharp_only).append(
+            {"csharp": cs, "python_candidates": cands}
+        )
+
+    n_cs = sum(1 for p in tracked if _CSHARP_TOKEN.search(Path(p).name))
+    return {
+        "csharp_tracked": n_cs,
+        "registered": n_cs - len(unregistered) - len(csharp_only),
+        "unregistered": unregistered,
+        "csharp_only": csharp_only,
+    }
 
 
 def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -452,6 +566,10 @@ def main(argv=None) -> int:
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
                         "(a lancer APRES une audit firsthand d'une paire)")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
+    p.add_argument("--coverage", action="store_true",
+                   help="Recense les notebooks C# versionnes NON couverts par le "
+                        "registre (jumeau Python present mais paire non declaree). "
+                        "Avec --check, sort 1 s'il reste des paires non enregistrees.")
     p.add_argument("--per-pair", action="store_true",
                    help="Mode per-pair : compare HEAD vs --base <ref>. Ne FAIL que "
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
@@ -471,6 +589,9 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
+    if args.coverage and (args.update or args.per_pair or args.base):
+        p.error("--coverage est un mode de recensement seul : incompatible avec "
+                "--update / --per-pair / --base.")
     if args.per_pair and not args.base:
         p.error("--per-pair necessite --base <ref>")
     if args.base and not args.per_pair:
@@ -488,6 +609,33 @@ def main(argv=None) -> int:
 
     repo_root = _repo_root()
     reg_path = Path(args.registry)
+
+    # --- Mode --coverage : angle mort du registre (paires jamais declarees) ---
+    if args.coverage:
+        cov = scan_coverage(repo_root, load_registry(reg_path))
+        n_unreg, n_only = len(cov["unregistered"]), len(cov["csharp_only"])
+        if args.json:
+            print(json.dumps(cov, ensure_ascii=False, indent=2))
+        else:
+            for e in cov["unregistered"]:
+                print(f"[UNREGISTERED] {e['csharp']}")
+                for c in e["python_candidates"]:
+                    print(f"        <-> {c}")
+            for e in cov["csharp_only"]:
+                print(f"[CSHARP-ONLY]  {e['csharp']}")
+            print(
+                f"\nNotebooks C# versionnes : {cov['csharp_tracked']} | "
+                f"enregistres={cov['registered']} "
+                f"NON-ENREGISTRES={n_unreg} C#-only={n_only}"
+            )
+            if n_unreg:
+                print(
+                    f"\n{n_unreg} paire(s) reelle(s) hors registre : invisibles au "
+                    f"gate de derive tant qu'elles n'y sont pas declarees.\n"
+                    f"Enregistrer par tranche APRES audit de parite firsthand "
+                    f"(cf #8057), jamais en masse."
+                )
+        return 1 if (args.check and n_unreg) else 0
 
     # --- Mode --per-pair : comparaison HEAD vs base-ref ---
     if args.per_pair:
