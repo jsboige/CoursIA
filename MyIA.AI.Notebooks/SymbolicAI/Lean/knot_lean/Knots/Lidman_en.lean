@@ -65,7 +65,6 @@ def knot_11n102_diagram : KnotDiagram where
     ⟨21, 16, 22, 17⟩   -- crossing 11
   ]
   numEdges := 22
-  hwell := by trivial  -- TODO Phase 2: proper well-formedness check
 
 def knot_11n102 : Knot where
   diagram := knot_11n102_diagram

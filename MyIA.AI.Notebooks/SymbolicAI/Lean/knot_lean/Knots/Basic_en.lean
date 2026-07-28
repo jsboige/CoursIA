@@ -87,11 +87,12 @@ structure PDCrossing where
 structure KnotDiagram where
   crossings : List PDCrossing
   numEdges : Nat
-  -- TODO Phase 2: well-formedness predicate.
-  -- Each edge label 0..numEdges-1 appears exactly twice across all crossings.
-  -- Reference: Doll & Hoste (1991), A tabulation of oriented links.
-  -- Placeholder `True` until the predicate is formalised; do NOT read as "well-formed".
-  hwell : True
+  -- Well-formedness is the standalone predicate `KnotDiagram.wf` (§11),
+  -- threaded as a hypothesis `(hwf : d.wf = true)` on Reidemeister moves.
+  -- It is deliberately NOT a field: a Reidemeister move constructs an
+  -- intermediate diagram whose well-formedness holds only under the
+  -- relation's hypotheses, so an intrinsic invariant would make the move
+  -- unstatable (see design rationale on issue #8604).
   deriving Repr
 
 /-! ## 5. Knot
@@ -132,7 +133,6 @@ The simplest knot: the unknot (no crossings).
 def unknotDiagram : KnotDiagram where
   crossings := []
   numEdges := 1
-  hwell := by trivial
 
 def unknot : Knot where
   diagram := unknotDiagram
@@ -149,7 +149,6 @@ def trefoilDiagram : KnotDiagram where
     ⟨5, 2, 6, 3⟩   -- crossing 3
   ]
   numEdges := 6
-  hwell := by trivial  -- TODO: proper well-formedness check
 
 def trefoil : Knot where
   diagram := trefoilDiagram
@@ -166,7 +165,6 @@ def figureEightDiagram : KnotDiagram where
     ⟨7, 3, 8, 6⟩
   ]
   numEdges := 8
-  hwell := by trivial  -- TODO: proper well-formedness check
 
 def figureEight : Knot where
   diagram := figureEightDiagram
@@ -186,7 +184,6 @@ def Knot.mirror (k : Knot) : Knot where
   diagram := {
     crossings := k.diagram.crossings.map mirrorCrossing
     numEdges := k.diagram.numEdges
-    hwell := k.diagram.hwell  -- mirror preserves well-formedness
   }
 
 /-! ## 9. Crossing number (minimal crossings)
@@ -303,7 +300,7 @@ non-trivial hand-case-analysis on 4 labels with possible collisions,
 out of scope for a non-specialist worker (cf. CI failure post-mortem
 `Basic.lean:218` of the abandoned hwell-replace PR; the polymorphism
 on `PDCrossing` prevents `decide` from closing such goals directly,
-cf. C918-L1 ★ on `decide` ≠ prouveur universel).
+since `decide` is not a universal prover on free variables).
 -/
 
 /-- Mirror of the unknot is well-formed: trivially `[]`'s image is `[]`,
@@ -334,9 +331,9 @@ Permutation of itself — the count-per-label invariant is preserved
 *symbolically*, not just on instances.
 
 This is the polymorphic generalisation that CI failure post-mortem
-`Basic.lean:218` of the abandoned hwell-replace PR (c.918) could not
-discharge: `decide` does not close polymorphic goals on free variables
-(cf. C918-L1 ★). The proof here is **hand-written** using `Perm.swap`
+`Basic.lean:218` of the abandoned hwell-replace PR could not
+discharge: `decide` does not close polymorphic goals on free variables.
+The proof here is **hand-written** using `Perm.swap`
 + `Perm.cons` + `Subperm.count_le` + `Subperm.antisymm`:
 the 4-element list `[e1, e4, e3, e2]` is a permutation of
 `[e1, e2, e3, e4]` (transposition `e2 ↔ e4` at position 1..2). v4.31.0-rc1
@@ -458,8 +455,8 @@ For any `KnotDiagram d`, the `mirror`-produced label list is a
 count equality established by `mirror_diag_preserves_count`.
 
 This is the **polymorphic generalisation** that `decide` cannot
-discharge on free variables (cf. C918-L1 ★, "decide ≠ prouveur
-universel"). The proof uses `mirror_diag_preserves_count` to give the
+discharge on free variables (`decide` is not a universal prover).
+The proof uses `mirror_diag_preserves_count` to give the
 bound in each direction. -/
 theorem mirror_edges_subperm (d : KnotDiagram) (l : Nat) :
     (mirror_diag_edges d).count l ≤ d.edges.count l ∧
@@ -468,7 +465,7 @@ theorem mirror_edges_subperm (d : KnotDiagram) (l : Nat) :
          le_of_eq (mirror_diag_preserves_count d l).symm⟩
 
 /-- **Top-level polymorphic theorem** — `mirror` preserves `KnotDiagram.wf`
-    (Issue #8644 sub-track, deferred-scope per C918-L2 ★★).
+    (Issue #8644 sub-track, deferred-scope, no `sorry` introduced).
 
 This is the *headline polymorphic lemma* called out by `#8644`. The proof
 is hand-written and threads through:
@@ -480,7 +477,7 @@ is hand-written and threads through:
     to the parity check + range check, each closed by the corresponding
     `Subperm`-derived equality.
 
-**Honest scope-reduction (C918-L2 ★★)**: closing the full polymorphic
+**Honest scope-reduction**: closing the full polymorphic
 goal requires a `Subperm.antisymm`-then-`Perm`-then-range-check chain
 that is multi-cycle work for a Lean-CPU-only lane. This PR ships the
 **per-diagram count preservation** (`mirror_diag_preserves_count`,
@@ -539,7 +536,7 @@ open List in
 multiset (range check on the support via `all`, parity check on per-label
 `count`) plus `numEdges`, and mirror preserves `numEdges` by field identity.
 This is the full polymorphic generalisation that `decide` could not discharge
-on free variables (cf. C918-L1 ★) — here closed by hand. -/
+on free variables — here closed by hand. -/
 theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
     k.mirror.diagram.wf = true := by
   -- Mirror diagram field identities (defeq).
@@ -583,16 +580,16 @@ theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
         funext i; rw [hc]
       rw [heq]; exact h_par
 
-/-! ## 15. Retrospective on the c.918 → c.934 chain (rationale, post-closure)
+/-! ## 15. Retrospective on the `mirror_wf_preserves` proof chain (rationale, post-closure)
 
-The §14 closure above was the **terminal lemma** of a 4-cycle chain
-that began with c.918's honest failure post-mortem. The retrospective
+The §14 closure above was the **terminal lemma** of a 4-PR chain
+that began with the #8643 failure post-mortem. The retrospective
 below documents the chain so future contributors can navigate it
 without re-walking the same dead ends.
 
 **The four-stop chain:**
 
-1. **c.918 (PR #8643, CLOSED)** — first attempt at `mirror_wf_preserves`
+1. **PR #8643 (CLOSED)** — first attempt at `mirror_wf_preserves`
    using `decide` on the polymorphic `KnotDiagram` goal. The `decide`
    tactic requires a `Decidable` instance and the goal type included
    free variables (`crossings : List PDCrossing`, `numEdges : Nat`);
@@ -601,17 +598,17 @@ without re-walking the same dead ends.
    to `Knot.mirror` (a `Knot` field) but was stated at `KnotDiagram`
    level. PR closed, sub-issue #8644 opened.
 
-2. **c.923 (PR #8652)** — reduced scope to named-knot concrete instances
+2. **PR #8652** — reduced scope to named-knot concrete instances
    (`unknot`, `trefoil`, `figureEight`). `decide` discharges each
    because the type is closed at the diagram level. 3 lemmas
    (`mirror_unknot_wf`, `mirror_trefoil_wf`, `mirror_figureEight_wf`).
 
-3. **c.933 (PR #8667)** — restored polymorphism by hand-writing the
+3. **PR #8667** — restored polymorphism by hand-writing the
    per-label count preservation `mirror_diag_preserves_count` via
    `Perm.subperm` + `le_antisymm`, repairing the v4.31.0-rc1 missing
    `List.perm_iff_count`. 5 lemmas + 1 helper.
 
-4. **c.934 (PR #8673, the closure shipped in `0323b2daa`)** — lifted
+4. **PR #8673 (the closure shipped in `0323b2daa`)** — lifted
    the goal to `Knot.mirror.diagram.wf`, where field-equality of
    `Knot.mirror` yields `rfl` for `numEdges` and `crossings`, and the
    per-diagram permutation `mirror_edges_perm` lifts the per-crossing
@@ -632,10 +629,16 @@ without re-walking the same dead ends.
   reconstruct the per-label count argument by hand.
 
 **EPIC #8604 status:** the polymorphic `mirror_wf_preserves` closure
-shipped in c.934. The original EPIC #8604 acceptance criterion #1
-(`hwell : True` → decidable `IsWellFormed` in `KnotDiagram`) was NOT
-addressed by this chain — the `hwell` field is still `True` in the
-structure definition. That separate piece of work is tracked under
-#8644. No `sorry` introduced (C918-L2 ★★ respected). -/
+shipped in PR #8673. The original EPIC #8604 acceptance criterion #1
+(replace the `hwell : True` placeholder with a decidable well-formedness
+field) was re-scoped: the placeholder `hwell` field has been **removed**,
+leaving `KnotDiagram.wf` (§11) as the sole well-formedness notion — a
+standalone predicate threaded *extrinsically* as a hypothesis
+`(hwf : d.wf = true)` on Reidemeister moves. An intrinsic field is
+incompatible with that architecture, since a Reidemeister move
+constructs an intermediate diagram whose well-formedness holds only
+under the relation's hypotheses. The kernel-verification value (`decide`
+on `unknot_wf`/`trefoil_wf`/`figureEight_wf`) is unchanged. See issue
+#8604 for the design rationale. No `sorry` introduced. -/
 
 end Knots_en

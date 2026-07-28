@@ -441,8 +441,8 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       ¬ IsTricolorable d₁ ∧
       IsTricolorable d₂ := by
   -- Witness pair.
-  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial },
-           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial },
+  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 },
+           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 },
            ?_, ?_, ?_⟩
   -- (a) Reidemeister1 d₁ d₂: a single free-ρ R1 twist, witness c = ⟨3,4,3,4⟩.
   --     d₁ = {[⟨1,2,1,2⟩], numEdges = 2}; d₂ = {[⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges = 4}.
@@ -467,7 +467,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       rfl
   -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
   --     edges to the same colour, contradicting the ≥2-colours requirement.
-  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
     rintro ⟨coloring, hcond, hedges, htwo⟩
     -- The sole crossing ⟨1,2,1,2⟩ is in d₁.crossings; apply the Fox condition to it.
     have hfox := hcond (⟨1, 2, 1, 2⟩ : PDCrossing)
@@ -494,7 +494,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     exact hne (by rw [hAll i, hAll j])
   -- (c) d₂ IS tricolorable: edges 1,2 (Fin index 0,1) = red, edges 3,4 (index 2,3) = blue;
   --     Fox is all-equal within each crossing, ≥2 colours used.
-  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
     refine' ⟨fun i : Fin 4 => if i.val ≤ 1 then TriColor.red else TriColor.blue, ?_, ?_, ?_⟩
     · -- Fox at every crossing of d₂.
       intro c hc
@@ -543,8 +543,8 @@ Why `Reidemeister1' d₁ d₂` fails:
 the counter-example by construction. -/
 theorem pr1_counterexample_excluded_under_rho_determined :
     ¬ Reidemeister1'
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Unfold Reidemeister1': wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery ∨ surgery)).
   rintro ⟨_hwf₁, _hwf₂, a, _hrange₁, _hrange₂, _ρ, hsurg⟩
   rcases hsurg with ht | ht
@@ -553,9 +553,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality ht by congruence, then the RHS
     -- ({ d₁ with crossings := X }).crossings reduces to X = d₁.crossings ++ [⟨a,a,3,4⟩].
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings ++ [⟨a, a, 3, 4⟩] :=
       congrArg (·.crossings) ht
     -- The RHS reduces to [⟨1,2,1,2⟩] ++ [⟨a,a,3,4⟩]; second elements: ⟨3,4,3,4⟩ = ⟨a,a,3,4⟩.
@@ -569,9 +569,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality by congruence (term-mode, robust
     -- against literal-form mismatch that blocks `subst`/`rw`).
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings ++ [⟨a, a, 5, 6⟩] :=
       congrArg (·.crossings) ht
     -- Length contradiction: LHS has length 1, RHS has length 3.
@@ -603,8 +603,8 @@ is currently twist-only and needs an untwist arm + `.symm` before the equivalenc
 `reidemeister_equiv_symm` can carry it. See #2874.) -/
 theorem pr1_counterexample_excluded_under_connected :
     ¬ Reidemeister1Connected
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Reidemeister1Connected unfolds as wf₁ ∧ wf₂ ∧ (∃ i a Y' ρ, bounds ∧ edges ∧
   -- proper-arc ∧ isRenameOf ∧ surgery). The surgery is single-arm (twist only):
   -- d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++ [⟨a,3,4,4⟩], numEdges := 4 }.
@@ -615,14 +615,14 @@ theorem pr1_counterexample_excluded_under_connected :
   -- let omega combine `hbnd : i.val < e` with `hlen : e = 1` directly.
   have hi : i.val = 0 := by
     have hlen :
-        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings).length = 1 := by rfl
     have hbnd := i.isLt
     omega
   have hfield :
-      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
         : KnotDiagram).crossings =
-      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
         : KnotDiagram).crossings.set i.val Y') ++ [⟨a, 3, 4, 4⟩] :=
     congrArg (·.crossings) hsurg
   rw [hi] at hfield
@@ -666,11 +666,11 @@ supplied by hand, with each crossing's Fox condition discharged by `decide`.
 
 /-- The witness `d₁` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD1Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
 
 /-- The witness `d₂` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD2Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
 
 /-- `witnessD1Connected` is tricolorable (Path B): both crossings are
     `⟨1,2,3,4⟩`, each reading `(red, blue, green)` on the Fox strands
