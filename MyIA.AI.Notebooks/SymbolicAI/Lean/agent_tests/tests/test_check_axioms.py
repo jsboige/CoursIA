@@ -383,6 +383,71 @@ def test_extract_axioms_handles_real_lean_format():
     assert "unknot_wf" not in axioms  # "does not depend on any axioms" emits nothing
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# Multi-line wrapped axiom list (#8738) — the dangerous class the gate was blind to
+# ──────────────────────────────────────────────────────────────────────────
+
+# Real Lean output shape that exposed #8738 on knot_lean/Knots.Invariant
+# (figureEight_not_tricolorable, pre-#8731). When an axiom name is long
+# (~58 chars for ``<decl>._native.native_decide.ax_1_1``), Lean's pretty-printer
+# wraps the bracketed list onto continuation lines that do NOT re-emit the
+# ``'decl' depends on axioms:`` prefix. The old line-by-line parser required
+# ``]`` on the SAME line as the prefix (``output.split("\n")`` then a per-line
+# regex needing the closing bracket), so this declaration contributed NOTHING:
+# ``_extract_axioms`` returned ``[]``, ``forbidden`` stayed ``[]``, ``success``
+# stayed ``True``, and ``native_decide`` -- the axiom class a proof-integrity
+# gate exists to catch -- sailed through. Fix #8740 runs ``re.finditer`` on the
+# full output so ``[^\]]*`` spans newlines. Verbatim shape from the #8738 body.
+MULTILINE_NATIVE_DECIDE_OUTPUT = (
+    "'Knots.figureEight_not_tricolorable' depends on axioms: [propext,\n"
+    " Classical.choice,\n"
+    " Quot.sound,\n"
+    " Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1]\n"
+)
+
+
+def test_extract_axioms_multiline_wrapped_list():
+    """#8738: ``re.finditer`` on the full output captures a wrapped axiom list.
+
+    Reverting to a per-line ``output.split('\\n')`` loop drops the
+    ``native_decide`` axiom and regresses the gate to green-blind on exactly
+    the most dangerous axiom class (long names force the wrap). This test
+    fails if the parser stops letting ``[^\\]]*`` span newlines.
+    """
+    axioms = LeanVerifier._extract_axioms(MULTILINE_NATIVE_DECIDE_OUTPUT)
+    assert set(axioms) == {
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1",
+    }
+    # The regression signal: the native_decide axiom MUST survive parsing.
+    assert any("native_decide" in a for a in axioms), (
+        "native_decide axiom dropped - parser regressed to line-by-line (#8738)"
+    )
+
+
+def test_check_axioms_multiline_native_decide_fails_gate():
+    """#8738 criterion 2 (end-to-end): the gate fails on a native_decide multi-line list.
+
+    Before #8740, the line-by-line parser returned ``forbidden=[]`` on this
+    output, so ``success=True``: the gate certified a module that genuinely
+    depends on ``native_decide`` -- the failure mode the gate exists to catch.
+    The three standard axioms are in the default whitelist, so only the
+    ``native_decide`` axiom is forbidden, which must drive ``success`` to
+    False. This is the end-to-end gate test the issue's acceptance criterion 2
+    asks for.
+    """
+    r = _check_with_output(
+        ["Knots.figureEight_not_tricolorable"],
+        MULTILINE_NATIVE_DECIDE_OUTPUT,
+        fail_on_sorry=True,
+    )
+    assert r["success"] is False
+    assert len(r["forbidden"]) == 1
+    assert "native_decide" in r["forbidden"][0]
+
+
 def test_real_lean_output_passes_whitelist_with_quot_sound():
     """Sur la sortie reelle, gate SUCCESS une fois Quot.sound whitelisté.
 
