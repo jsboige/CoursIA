@@ -23,6 +23,16 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# NOTE: ``strip_lean_comments`` is imported LAZILY inside
+# ``_enumerate_module_declarations`` via a direct-path loader to bypass
+# ``prover/__init__.py`` (which loads the prover agents -- agent_framework,
+# OpenAI client, etc.). Importing eagerly at module top would break every
+# test that just wants ``LeanVerifier`` (#8722).
+_strip_lean_comments = None
+_STRIP_FROM_PROVER_LEAN_UTILS = (
+    Path(__file__).resolve().parent / "prover" / "lean_utils.py"
+)
+
 
 def _to_wsl_path(win_path: str) -> str:
     """Convert ``C:\\foo\\bar`` to ``/mnt/c/foo/bar`` for use inside WSL bash."""
@@ -146,11 +156,45 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
     ``example`` (which may be anonymous) are intentionally excluded. Returns an
     empty list when the source file cannot be located -- callers MUST treat that
     as "gate cannot run" (fail-loud for the CI gate), never as "gate passed".
+
+    #8722 fixes two pre-existing defects that fabricated phantom names and made
+    ``#print axioms <bogus>`` fail the whole module:
+
+    * **Comment stripping.** The regex is line-anchored with ``^`` -- any
+      docstring prose that begins column 0 with a declaration keyword
+      (``theorem``, ``lemma``, ``def``) was captured as a declaration. The
+      same defect was already corrected for the sorry counter via
+      ``count_real_sorries`` (lean-knot ``sorry-filter-mode: real`` since
+      2026-07-11, fixing #6171). Reuse ``strip_lean_comments`` from
+      ``prover.lean_utils`` so a future Lean syntax tweak has one place to fix.
+
+    * **Namespace qualification of dotted names.** Lean 4 only treats
+      ``_root_.`` as the absolute escape: ``def Knot.crossingNumber`` written
+      inside ``namespace Knots`` declares ``Knots.Knot.crossingNumber``, not
+      ``Knot.crossingNumber``. The old heuristic ``"if '.' in name, emit as-is"``
+      was wrong -- always qualify by the namespace stack, then strip ``_root_.``
+      if present.
     """
     src = _module_source_path(project, module_name)
     if src is None:
         return []
     text = src.read_text(encoding="utf-8", errors="replace")
+    # #8722: strip line + nested block comments BEFORE enumerating, so docstring
+    # prose that begins column 0 with ``theorem``/``lemma``/``def`` is not
+    # captured as a declaration (observed on knot_lean: Basic.lean:328 emitted
+    # ``Knots.statement``, Invariant.lean:1147 emitted ``Knots.at``). Lazy
+    # direct-path import so the axiom gate can be used without pulling in the
+    # prover agents (prover/__init__.py loads agent_framework, OpenAI, etc.).
+    global _strip_lean_comments
+    if _strip_lean_comments is None:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location(
+            "_prover_lean_utils_strip_only", _STRIP_FROM_PROVER_LEAN_UTILS
+        )
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        _strip_lean_comments = _mod.strip_lean_comments
+    text = _strip_lean_comments(text)
     ns_stack: List[str] = []
     decls: List[str] = []
     for line in text.splitlines():
@@ -160,16 +204,33 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
             continue
         m_close = _NS_CLOSE_RE.match(line)
         if m_close:
-            if ns_stack:
+            # Match-and-pop only -- orphan ``end`` (e.g. inside a docstring
+            # that survived stripping, or a future ``section Foo ... end Foo``
+            # that we never opened as a namespace) must NOT pop the stack.
+            # Lean 4 namespaces are opened by ``namespace`` only; ``section``
+            # is a separate, non-namespace construct.
+            if ns_stack and ns_stack[-1] == m_close.group("ns"):
                 ns_stack.pop()
             continue
         m = _DECL_HEAD_RE.match(line)
         if m:
             name = m.group("name")
-            if "." in name or not ns_stack:
-                decls.append(name)
-            else:
+            # ``_root_.`` is the only absolute escape. Strip the prefix and emit
+            # the bare identifier (with its remaining dots) regardless of the
+            # enclosing namespace.
+            if name.startswith("_root_."):
+                decls.append(name[len("_root_."):])  # also strip the trailing "."
+                continue
+            # Otherwise always qualify by the namespace stack. ``ns_stack`` is
+            # the dotted path of enclosing namespaces (``["Knots"]`` inside
+            # ``namespace Knots``); joining with the declared name -- whether
+            # bare (``crossingNumber``) or dotted (``Knot.crossingNumber``) --
+            # produces the fully-qualified Lean name. At top level (empty
+            # stack), the bare name is emitted unchanged.
+            if ns_stack:
                 decls.append(".".join(ns_stack + [name]))
+            else:
+                decls.append(name)
     return decls
 
 

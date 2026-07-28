@@ -92,6 +92,122 @@ def test_enumeration_missing_source_returns_empty(tmp_path):
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# #8722 -- three forms pinned by the enumerator fix
+# ──────────────────────────────────────────────────────────────────────────
+
+def test_enumeration_dotted_name_qualifies_by_namespace(tmp_path):
+    """``def Knot.crossingNumber`` inside ``namespace Knots`` declares
+    ``Knots.Knot.crossingNumber`` -- not ``Knot.crossingNumber``.
+
+    Lean 4 only treats ``_root_.`` as the absolute escape. The old heuristic
+    (``"if '.' in name, emit as-is"``) emitted the dotted name unqualified,
+    making ``#print axioms`` resolve nothing and fail the whole module.
+    (#8722 cause 1)
+    """
+    src = (
+        "namespace Knots\n"
+        "def Knot.crossingNumber (k : Knot) : Nat := 0\n"
+        "def KnotDiagram.edges (d : KnotDiagram) : List Nat := []\n"
+        "def KnotDiagram.wf (d : KnotDiagram) : Bool := true\n"
+        "theorem plain : True := trivial\n"
+        "end Knots\n"
+    )
+    mod = tmp_path / "Knots"
+    mod.mkdir()
+    (mod / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == [
+        "Knots.Knot.crossingNumber",
+        "Knots.KnotDiagram.edges",
+        "Knots.KnotDiagram.wf",
+        "Knots.plain",
+    ]
+
+
+def test_enumeration_strips_docstring_prose_at_column_0(tmp_path):
+    """Prose that begins column 0 with ``theorem``/``lemma``/``def`` must NOT
+    be captured as a declaration.
+
+    Before #8722, the regex was line-anchored with ``^`` -- any docstring
+    prose that started a line with a declaration keyword was emitted as a
+    phantom name. Observed on knot_lean: ``Basic.lean:328`` (a ``/-! ... -/``
+    block with the line ``lemma statement working for any...``) emitted
+    ``Knots.statement``; ``Invariant.lean:1147`` emitted ``Knots.at``.
+    """
+    src = (
+        "namespace Knots\n"
+        "/-! Section header prose mentions ``theorem`` and ``lemma``.\n"
+        "lemma statement working for *any* diagram whose wf holds.\n"
+        "def description of the function goes here.\n"
+        "-/\n"
+        "theorem real_one : True := trivial\n"
+        "-- one-line comment: lemma over there -> ignored\n"
+        "def real_two : Nat := 0\n"
+        "end Knots\n"
+    )
+    mod = tmp_path / "Knots"
+    mod.mkdir()
+    (mod / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["Knots.real_one", "Knots.real_two"], (
+        f"docstring prose must not be enumerated; got {decls!r}"
+    )
+
+
+def test_enumeration_root_prefix_stripped(tmp_path):
+    """``def _root_.Global.foo : ...`` declares ``Global.foo``, namespace
+    ignored.
+
+    Lean 4 ``_root_.`` is the only absolute escape; anything starting with it
+    is rooted at the top level. The enumerator must strip the prefix and emit
+    the bare (still dotted) name, regardless of the enclosing namespace.
+    (#8722 cause 1, second branch)
+    """
+    src = (
+        "namespace Knots\n"
+        "def _root_.Global.foo : Nat := 0\n"
+        "def _root_.Bar.baz : Nat := 1\n"
+        "theorem normal : True := trivial\n"
+        "end Knots\n"
+    )
+    mod = tmp_path / "Knots"
+    mod.mkdir()
+    (mod / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["Global.foo", "Bar.baz", "Knots.normal"]
+
+
+def test_enumeration_end_with_matching_namespace_pops(tmp_path):
+    """``end <ns>`` pops the stack only when it matches the top namespace.
+
+    Lean 4 namespaces are opened by ``namespace`` only; ``section`` is a
+    separate, non-namespace construct that we don't track. The regex must
+    NOT pop on an unmatched ``end`` (e.g. one that survives comment stripping
+    inside a docstring) -- otherwise the rest of the file is silently
+    under-qualified.
+    """
+    src = (
+        "namespace Outer\n"
+        "namespace Inner\n"
+        "theorem deep : True := trivial\n"
+        "end Other  -- typo'd: should NOT pop Inner\n"
+        "theorem still_inner : True := trivial\n"
+        "end Inner\n"
+        "theorem back_in_outer : True := trivial\n"
+        "end Outer\n"
+    )
+    mod = tmp_path / "Knots"
+    mod.mkdir()
+    (mod / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == [
+        "Outer.Inner.deep",
+        "Outer.Inner.still_inner",  # typo'd end Other did not pop Inner
+        "Outer.back_in_outer",
+    ]
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────
 
