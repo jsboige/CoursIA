@@ -2889,32 +2889,42 @@ def test_candidates_list_prefers_workspace_relative_entry():
         )
 
 
-def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch):
-    """If _WORKSPACE_ROOT is None, the legacy drive-letter list still resolves.
+def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch, tmp_path):
+    """If _WORKSPACE_ROOT is None, the candidate list still resolves to the
+    first existing entry — the safety-net a harness copy dropped outside the
+    CoursIA layout (no MyIA.AI.Notebooks/ ancestor) relies on.
 
-    Defends the safety-net path: a harness copy dropped outside the
-    CoursIA layout (e.g. into a standalone dir without MyIA.AI.Notebooks/
-    ancestor) must keep working via the original candidates.
+    Regenerated post-#4365 (#8698): the lake is now ``game_theory_lean``
+    (CooperativeGames was absorbed, cf ``config.py`` _COOPERATIVE_GAMES_CANDIDATES
+    which now points at GameTheory/game_theory_lean). The prior form asserted
+    against hardcoded ``C:\\dev\\CoursIA\\...cooperative_games_lean`` paths that
+    (a) named an absorbed lake and (b) only existed on hosts with a stale
+    sibling checkout — so the test passed or failed depending on the operator's
+    machine, not on the resolver code. It now stands up its own layout under
+    ``tmp_path`` and proves the resolver skips a non-existent decoy.
     """
     import prover.config as cfg
-    from pathlib import Path
 
-    # Pretend no workspace root was found.
+    # Real candidate the fallback can resolve to, plus a decoy that must be
+    # skipped — proves "first EXISTING entry wins", not just "first entry".
+    real = tmp_path / "game_theory_lean"
+    real.mkdir()
+    decoy = tmp_path / "absent_lean"
+
+    # Pretend no workspace root was found (harness outside CoursIA layout).
     monkeypatch.setattr(cfg, "_WORKSPACE_ROOT", None)
-    # Remove the workspace-relative first entry from the candidate list so
-    # resolution falls back to the drive-letter list (mirrors what
-    # _workspace_root()==None would produce).
-    monkeypatch.setattr(cfg, "_COOPERATIVE_GAMES_CANDIDATES", [
-        Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-        Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    ])
+    monkeypatch.setattr(cfg, "_COOPERATIVE_GAMES_CANDIDATES", [decoy, real])
+
     cfg.COOPERATIVE_GAMES_DIR = next(
         (p for p in cfg._COOPERATIVE_GAMES_CANDIDATES if p.exists()),
         cfg._COOPERATIVE_GAMES_CANDIDATES[0],
     )
-    # On this Windows host, C:\dev\CoursIA exists — the legacy path resolves.
+    assert cfg.COOPERATIVE_GAMES_DIR == real, (
+        "legacy fallback must skip absent candidates and resolve to the first "
+        "existing one"
+    )
     assert cfg.COOPERATIVE_GAMES_DIR.exists(), (
-        "legacy drive-letter fallback must still resolve to a real path"
+        "legacy fallback must resolve to a real path"
     )
 
 
