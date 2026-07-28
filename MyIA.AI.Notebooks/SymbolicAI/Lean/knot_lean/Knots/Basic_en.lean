@@ -570,8 +570,13 @@ theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
     rw [Bool.and_eq_true] at h ⊢
     obtain ⟨h_all, h_par⟩ := h
     refine ⟨?_, ?_⟩
-    · -- Range check: `all` is invariant under permutation (`Perm.all_eq`).
-      rw [hmedges, hp.all_eq]; exact h_all
+    · -- Range check: the predicate does not depend on position, only on
+      -- membership, so transport it pointwise via `Perm.mem_iff` (the oldest
+      -- perm lemma — survives version bumps; does not lean on `Perm.all_eq`).
+      rw [hmedges]
+      rw [List.all_eq_true] at h_all ⊢
+      intro x hx
+      exact h_all x (hp.mem_iff.mp hx)
     · -- Parity check: per-label `count` is invariant under permutation.
       have heq : (fun i => decide (k.mirror.diagram.edges.count (i + 1) = 2)) =
                  (fun i => decide (k.diagram.edges.count (i + 1) = 2)) := by
