@@ -132,6 +132,56 @@ Ce notebook explore l'hébergement **local** de LLMs via des serveurs compatible
 3. **DeepSeek R1** : Modèle raisonnant local (alternative à o1)
 4. **Qwen 2.5** : Tool calling et multimodal local
 5. **Benchmarking** : Comparaison performances et coûts
+
+---
+
+## Pourquoi héberger localement ?
+
+| Aspect | Cloud (OpenAI) | Local (vLLM/Ollama) |
+|--------|----------------|---------------------|
+| **Coût** | Par token ($) | Fixe (matériel + électricité) |
+| **Latence** | Réseau + queue | Direct GPU |
+| **Confidentialité** | Données envoyées | Données locales |
+| **Disponibilité** | Dépend du service | 100% contrôle |
+| **Modèles** | Limité au catalogue | Open-source illimité |
+
+---
+
+## Modèles locaux recommandés (2025-2026)
+
+| Modèle | Taille | VRAM | Capacités |
+|--------|--------|------|-----------|
+| **DeepSeek R1** (distill) | 8B-70B | 8-48GB | Raisonnement, code |
+| **Qwen 2.5** | 7B-72B | 8-48GB | Tool calling, multimodal |
+| **Llama 3.1** | 8B-70B | 8-48GB | Généraliste |
+| **Mistral/Mixtral** | 7B-8x7B | 8-48GB | Code, MoE |
+
+---
+
+## Installation & Import
+
+On installe/importe ce qui est nécessaire :
+- `requests` pour les appels HTTP bruts,
+- `openai` version 1.0.0+,
+- `semantic-kernel` si on veut tester SK,
+- d'autres libs selon besoin (json, time, etc.).
+
+> **Note d'exécution** : les sorties committées dans ce notebook ont été produites
+> avec un fichier `.env` configurant **3 endpoints OpenAI-compatibles** sur
+> des backends hétérogènes (c.939, po-2023, 2026-07-28) : `cloud-gpt5.2`
+> (https://api.openai.com/v1, gpt-5.2), `local-mini-v2` (Qwen2.5-0.5B-Instruct
+> via FastAPI local c.911, port 8185) et `vllm-qwen3.6` (qwen3.6-35b-a3b
+> via serveur vLLM distant 192.168.0.47:5002). Les cellules théoriques
+> (sections 1-2) et les blocs `Commandes Docker` cell[56] + `Exercice 3`
+> cell[57-59] montrent comment déployer réellement des modèles locaux ;
+> les chiffres 3-endpoints des cellules d'interprétation 35/42/47/52/55
+> sont mesurés firsthand sur cette machine worker, pas un mock. Pour
+> reproduire un déploiement local complet, suivre la procédure cell[56] +
+> Exercice 3.
+
+> **Reference** : vLLM et son kernel `PagedAttention` sont décrits par Kwon et al.
+> 2023, *Efficient Memory Management for Large Language Model Serving with
+> PagedAttention*, SOSP'23, arXiv:2309.06180.
 """
     _set_cell_source(nb.cells[0], cell0_new)
 
