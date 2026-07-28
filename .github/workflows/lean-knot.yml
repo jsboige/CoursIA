@@ -44,6 +44,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      # A change to the gate must run the gate. Without these three lines the
+      # workflows that define this CI are the only files it never checks, so a
+      # defect in them ships unverified -- which is exactly how the broken
+      # `cd` reached main (#8712): the axiom job could not run on the PR that
+      # introduced it, and its first execution ever was post-merge.
+      - '.github/workflows/lean-knot.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
   pull_request:
     branches: [main]
     paths:
@@ -51,6 +59,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      - '.github/workflows/lean-knot.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
   workflow_dispatch:
 
 jobs:
