@@ -214,6 +214,101 @@ def build_search_cpu_cost(nb: dict, by: str, today: str) -> dict:
     }
 
 
+# --- Profile rl-cpu : notebooks RL CPU-purs (gymnasium/torch/SB3, petits envs) ---
+# Issue #8056 (P1) — rollout family-partitionné. Le profile `rl-cpu` couvre les
+# notebooks d'apprentissage par renforcement pédagogiques : gymnasium / stable-
+# baselines3 / torch en local CPU, petits environnements (CartPole, etc.), timesteps
+# modestes (10-5000). Gratuit, pas d'API cloud / compte externe / GPU requis.
+#
+# Diffère de `search-cpu` sur deux axes honnêtes :
+#   1. `reproducibility: MED` (l'entraînement RL est STOCHASTIQUE, seeds) vs `HIGH`
+#      (algorithmes déterministes).
+#   2. `cpu_min` plus élevé (boucles d'entraînement itératives vs algo single-pass).
+
+# Gate RL-spécifique : PLUS PRÉCISE que le `is_cpu_pure` générique. Raisonnement
+# (C920-L ★★, FP prose) : le mot « openai » apparaît dans la PROSE des notebooks RL
+# (« gym.openai.com/envs/ », « jeux d'OpenAI », « spinningup.openai.com ») sans qu'aucun
+# appel API cloud ne soit fait — gymnasium/SB3 sont des libs LOCALES. Le `_API_RE`
+# générique (mot isolé « openai ») FP-skipperait rl_1 (intro CartPole), rl_6c (PPO),
+# rl_6d (SAC) — les notebooks les plus pédagogiques. On matche donc un VRAI appel API
+# (import/instance), pas le mot isolé. Le signal GPU réel (`torch.cuda`,
+# `.cuda(`) est conservé → rl_6e (GRPO, CUDA-hard) reste correctement skippé.
+_RL_API_RE = re.compile(
+    # Imports explicites des SDK cloud (jamais en prose) — couvre `import openai`,
+    # `from openai import …`, `import anthropic`, `from anthropic import Anthropic`.
+    r"\b(?:from|import)\s+(?:openai|anthropic|replicate)\b"
+    # Appels dotted sur les modules (openai.ChatCompletion / openai.OpenAI /
+    # anthropic.Anthropic) — code réel, jamais de la prose.
+    r"|openai\.(?:ChatCompletion|OpenAI|chat)\b"
+    r"|anthropic\.(?:Anthropic|messages)\b"
+    # replicate.run(…) — appel explicite.
+    r"|replicate\.run\s*\(",
+    re.I,
+)
+
+
+def is_rl_cpu_pure(nb: dict) -> bool:
+    """True si notebook RL CPU-pur : pas de QuantBook, pas de GPU réel, pas d'appel
+    API cloud explicite.
+
+    Plus précise que `is_cpu_pure` pour RL : ignore le FP prose « openai »
+    (gym.openai.com, « jeux d'OpenAI ») qui n'est PAS un appel API. Gymnasium et
+    stable-baselines3 sont des libs locales CPU. Le signal GPU réel (`torch.cuda`,
+    `.cuda(`) est conservé (rl_6e GRPO = CUDA-hard → skippé).
+    """
+    if _uses_quantbook(nb):
+        return False
+    src = _source_text(nb)
+    if _GPU_RE.search(src):  # torch.cuda.is_available() etc. → GPU réel
+        return False
+    if _ACCOUNT_RE.search(src):  # token / env-var secret
+        return False
+    if _RL_API_RE.search(src):  # vrai appel API cloud (import/instance)
+        return False
+    return True
+
+
+def _rl_cpu_min_estimate(n_code: int) -> int:
+    """Heuristic cpu_min RL (minutes) : boucles d'entraînement pédagogiques sur petits
+    environnements (CartPole, timesteps 10-5000 = secondes à ~1 min sur CPU). Plus
+    élevé que search-cpu (entraînement itératif vs algo single-pass) : ≤12 → 2,
+    13-18 → 3, >18 → 4."""
+    if n_code <= 12:
+        return 2
+    if n_code <= 18:
+        return 3
+    return 4
+
+
+def build_rl_cpu_cost(nb: dict, by: str, today: str) -> dict:
+    """Bloc `metadata['cost']` canonique pour un notebook RL CPU-pur pédagogique.
+
+    Diffère de `build_search_cpu_cost` : `reproducibility: MED` (stochastique, seeds)
+    vs `HIGH` (déterministe) ; `cpu_min` via `_rl_cpu_min_estimate` (boucles
+    d'entraînement). `network: False` (gymnasium/torch/SB3 sont pip-installés en
+    local, aucun appel réseau au runtime). Champs notebook-specific
+    (`reduced_pedagogical`) : null (honnête, pas fabriqué).
+    """
+    n_code = _count_code_cells(nb)
+    return {
+        "api_usd_est": 0.0,  # gratuit, CPU local
+        "api_provider": "none",
+        "qcc_tokens_est": 0,  # non-QC
+        "cpu_min": _rl_cpu_min_estimate(n_code),  # heuristic entraînement
+        "gpu_min": 0,
+        "gpu_required": False,  # CPU OK pour petits envs RL
+        "vram_gb": 0,
+        "vram_tier": "NONE",
+        "network": False,  # pip install local, pas d'appel runtime
+        "external_account": "none",
+        "free_alternative": "self",  # sentinelle canonique : déjà gratuit
+        "reduced_pedagogical": None,  # notebook-specific (jugement humain) ; null = honnête
+        "reproducibility": "MED",  # stochastique (seeds), pas déterministe
+        "last_validated": today,  # date d'établissement de la metadata (inspection source)
+        "validator": "manual",  # inspection source, pas re-exécution machine claimée
+    }
+
+
 # --- Dispatch par profile -------------------------------------------------------
 # Chaque profile : (gate d'éligibilité, builder de cost, raison de skip si inéligible).
 PROFILES = {
@@ -226,6 +321,11 @@ PROFILES = {
         "eligible": is_cpu_pure,
         "build": build_search_cpu_cost,
         "skip_reason": "skipped-not-cpu-pure",
+    },
+    "rl-cpu": {
+        "eligible": is_rl_cpu_pure,
+        "build": build_rl_cpu_cost,
+        "skip_reason": "skipped-not-rl-cpu-pure",
     },
 }
 
