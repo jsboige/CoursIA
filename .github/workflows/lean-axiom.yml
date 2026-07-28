@@ -1,0 +1,169 @@
+name: Lean Axiom Check (reusable)
+
+# Reusable Level 3 axiom-check CI for any Lean project in the repo.
+# Closes #8677 criterion 4 (criterion B.3 of pr-review-discipline:
+# "Proof integrity SUCCESS"). The Python helper `LeanVerifier.check_axioms`
+# was wired in #8680 (sorryAx policy + per-declaration `#print axioms`).
+# This workflow is the *câblage CI* on the lake side: opt-in per lake,
+# caller pattern below.
+#
+# The check is NOT a build run — we assume `lean-build.yml` already ran
+# successfully upstream. We just need the lake project cached and the
+# toolchain present, so we run the same setup steps. If `lake build`
+# fails, the `#print axioms` step will too, and the job will exit 1 with
+# the lake error in the logs.
+#
+# Callers invoke this via:
+#   jobs:
+#     proof-integrity:
+#       uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+#       with:
+#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+#         display-name:   knot_lean
+#         target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
+#         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Classical.choice"
+#
+# Output:
+# - On success: prints "OK: no forbidden axioms" plus a per-declaration
+#   summary (declaration -> axioms list) for review traceability.
+# - On failure: prints the forbidden axioms with the declarations that
+#   pulled them in, then exits 1. The PR review rule B.3 is satisfied by
+#   quoting the relevant block from this log.
+
+on:
+  workflow_call:
+    inputs:
+      project-path:
+        description: "Repo-relative path to the lake project root"
+        type: string
+        required: true
+      display-name:
+        description: "Human-readable project name (for job labels)"
+        type: string
+        required: true
+      target-modules:
+        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file."
+        type: string
+        required: true
+      allow-axioms:
+        description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  axiom-check:
+    name: "Proof integrity (${{ inputs.display-name }})"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.project-path }}/.lake
+        key: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
+        restore-keys: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-
+
+    - name: Lake build
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        set -o pipefail
+        lake exe cache get || true
+        lake -R build 2>&1 | tail -10
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    - name: Run axiom check
+      working-directory: ${{ inputs.project-path }}
+      env:
+        MODULES: ${{ inputs.target-modules }}
+        ALLOW: ${{ inputs.allow-axioms }}
+        DISPLAY_NAME: ${{ inputs.display-name }}
+      run: |
+        set -eu
+        cd "$GITHUB_WORKSPACE"
+        python - <<'PY'
+        import os
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Locate the agent_tests helper. The workflow runs from the lake
+        # project root, so the repo root is two levels up from
+        # `agent_tests/` (`<lake>/..` = `Lean/`, then `..` = `SymbolicAI`).
+        # Easier: walk up looking for the helper.
+        repo_root = Path(os.getcwd())
+        for _ in range(6):
+            if (repo_root / "MyIA.AI.Notebooks").exists():
+                break
+            repo_root = repo_root.parent
+        else:
+            sys.exit("could not locate repo root (no MyIA.AI.Notebooks/)")
+        sys.path.insert(0, str(repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "agent_tests"))
+
+        from lean_server import LeanVerifier  # noqa: E402
+
+        modules = [m.strip() for m in os.environ["MODULES"].split(",") if m.strip()]
+        allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
+        display_name = os.environ["DISPLAY_NAME"]
+
+        project_path = Path(os.environ.get("GITHUB_WORKSPACE", "")) / os.environ.get("PROJECT_PATH_INNER", "")
+        # The `working-directory` step already put us in the lake root.
+        project_path = Path(os.getcwd()).resolve()
+        verifier = LeanVerifier()
+        verifier.project_dir = str(project_path)
+
+        all_clean = True
+        print(f"=== Proof integrity axiom check ({display_name}) ===")
+        print(f"Project: {project_path}")
+        print(f"Modules: {modules}")
+        print(f"Additional allow-list: {allow if allow else '(none)'}")
+        print()
+        for mod in modules:
+            print(f"--- Module {mod} ---")
+            result = verifier.check_axioms(
+                mod,
+                whitelist=[
+                    "Classical.choice",
+                    "propext",
+                    "funext",
+                    "Quot.lift",
+                    "Quot.mk",
+                    *allow,
+                ],
+                fail_on_sorry=True,
+                # CI gate path: pass fail_on_sorry=True explicitly. The
+                # post-#8680 default is False (prover path), which is the
+                # right behaviour for the agent harness tracking sorries
+                # via `has_sorry` separately, but wrong for a CI integrity
+                # gate where a transitive sorryAx must fail the run.
+            )
+            print(f"  axioms: {result['axioms']}")
+            print(f"  forbidden: {result['forbidden']}")
+            print(f"  has_sorry: {result['has_sorry']}")
+            if not result["success"]:
+                all_clean = False
+                print(f"  FAIL")
+            else:
+                print(f"  OK")
+
+        print()
+        if all_clean:
+            print("OK: no forbidden axioms (sorryAx caught transitively if any).")
+        else:
+            print("FAIL: forbidden axioms detected. See per-module breakdown above.")
+            sys.exit(1)
+        PY
