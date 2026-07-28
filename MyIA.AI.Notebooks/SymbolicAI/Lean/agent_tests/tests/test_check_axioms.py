@@ -158,6 +158,65 @@ def test_enumeration_root_prefix_strips_to_absolute(tmp_path):
     assert decls == ["globalHelper", "Outer.inner", "Knots.local_thm"]
 
 
+def test_enumeration_end_pops_only_on_a_name_match(tmp_path):
+    """An unmatched ``end`` must NOT pop the namespace stack (#8722).
+
+    ``namespace`` is the only construct the enumerator pushes, but ``end``
+    closes others too (``section Foo ... end Foo``), and one can survive
+    comment stripping. Popping unconditionally unbalances the stack and
+    under-qualifies every declaration that follows -- which ``#print axioms``
+    then reports as an unknown constant, failing the whole module.
+
+    Authored by po-2023:CoursIA-2 in #8726; carried here after #8725 shipped
+    the same repair without this case.
+    """
+    src = (
+        "namespace Outer\n"
+        "namespace Inner\n"
+        "theorem deep : True := trivial\n"
+        "end Other\n"  # closes nothing we opened -- must not pop Inner
+        "theorem still_inner : True := trivial\n"
+        "end Inner\n"
+        "theorem back_in_outer : True := trivial\n"
+        "end Outer\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == [
+        "Outer.Inner.deep",
+        "Outer.Inner.still_inner",
+        "Outer.back_in_outer",
+    ]
+
+
+def test_enumeration_skips_private_declarations(tmp_path):
+    """``private`` names are not addressable, so they must not be emitted (#8722).
+
+    Lean 4 mangles a private declaration to ``_private.<Module>.<hash>.<name>``.
+    Emitting the source name makes ``#print axioms`` answer ``unknown constant``
+    and fails the ENTIRE module -- observed on ``Knots.Invariant``, whose three
+    private list helpers (``mem_set_fwd``, ``mem_drop_out``, ``mem_set_self``)
+    sank a module in which every public theorem had checked out fine.
+
+    The other modifiers must keep working: ``protected``/``noncomputable``/
+    ``partial`` names stay addressable and must still be enumerated.
+    """
+    src = (
+        "namespace Knots\n"
+        "private theorem mem_set_fwd : True := trivial\n"
+        "theorem public_thm : True := trivial\n"
+        "private noncomputable def hidden : Nat := 0\n"
+        "protected theorem prot_thm : True := trivial\n"
+        "noncomputable def slow : Nat := 0\n"
+        "end Knots\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["Knots.public_thm", "Knots.prot_thm", "Knots.slow"]
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────

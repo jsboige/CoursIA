@@ -27,7 +27,31 @@ from typing import Dict, List, Optional, Tuple
 # ``--`` line comments) rather than a second copy -- the sorry counter
 # (``count_real_sorries``) already proved this is the only honest way to exclude
 # docstring prose from a keyword scan (#6171, #8722 cause 2).
-from prover.lean_utils import strip_lean_comments
+#
+# Loaded LAZILY, by direct path, on purpose (#8722). ``from prover.lean_utils
+# import ...`` executes ``prover/__init__.py`` first, which imports the prover
+# agents -- ``agent_framework``, the OpenAI client, ~1250 modules. The
+# proof-integrity CI gate (.github/workflows/lean-axiom.yml) does nothing but
+# ``from lean_server import LeanVerifier`` on a bare ``setup-python`` runner
+# with no ``pip install`` step, so the eager form makes the gate die with
+# ``ModuleNotFoundError: No module named 'agent_framework'`` before it can check
+# a single axiom. Reaching the file directly keeps the one-copy guarantee
+# without dragging the agent stack into a gate that only parses text.
+_strip_lean_comments = None
+_LEAN_UTILS_PATH = Path(__file__).resolve().parent / "prover" / "lean_utils.py"
+
+
+def _get_strip_lean_comments():
+    """Return ``prover.lean_utils.strip_lean_comments``, loaded on first use."""
+    global _strip_lean_comments
+    if _strip_lean_comments is None:
+        import importlib.util as ilu
+
+        spec = ilu.spec_from_file_location("_lean_utils_strip_only", _LEAN_UTILS_PATH)
+        mod = ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _strip_lean_comments = mod.strip_lean_comments
+    return _strip_lean_comments
 
 
 def _to_wsl_path(win_path: str) -> str:
@@ -109,7 +133,7 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 # emitted fully qualified. See pr-review-discipline.md §B.3 / issue #8677.
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
-    r"(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*"
+    r"(?P<mods>(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*)"
     r"(?:theorem|lemma|def|opaque|axiom|abbrev|structure|inductive|class)\s+"
     r"(?P<name>[A-Za-z_][A-Za-z0-9_'.]*)",
     re.MULTILINE,
@@ -166,11 +190,28 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
       ``Knots.Knot.crossingNumber`` in Lean 4 -- a dotted source name is NOT
       already absolute. The only absolute prefix is ``_root_.``, which is
       stripped so the emitted name is the true root-qualified identifier.
+
+    * **``end`` pops only on a name match** (#8722). ``namespace`` is the only
+      construct pushed, but ``end`` closes others (``section``); an unmatched
+      ``end`` used to pop anyway and under-qualify the whole rest of the file.
+      Live instance: ``game_theory_lean/SocialChoice/Voting.lean`` opens
+      ``namespace SocialChoice`` (l.36) then ``section SinglePeaked`` (l.177);
+      ``end SinglePeaked`` (l.513) emptied the stack, so ``section BanksSet``
+      (l.661+) and everything after it was emitted unqualified.
+
+    * **``private`` declarations are skipped** (#8722). Lean 4 mangles a private
+      name to ``_private.<Module>.<hash>.<name>``, so its source name is not a
+      resolvable constant; emitting it fails the whole module. Their axioms are
+      still counted, transitively, via the public declarations that use them.
+      Live instance: ``Knots.Invariant`` (``mem_set_fwd``, ``mem_drop_out``,
+      ``mem_set_self``).
     """
     src = _module_source_path(project, module_name)
     if src is None:
         return []
-    text = strip_lean_comments(src.read_text(encoding="utf-8", errors="replace"))
+    text = _get_strip_lean_comments()(
+        src.read_text(encoding="utf-8", errors="replace")
+    )
     ns_stack: List[str] = []
     decls: List[str] = []
     for line in text.splitlines():
@@ -180,11 +221,32 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
             continue
         m_close = _NS_CLOSE_RE.match(line)
         if m_close:
-            if ns_stack:
+            # Pop only when the ``end`` names the namespace actually on top
+            # (#8722). ``namespace`` is the ONLY construct we push, but ``end``
+            # closes several others -- ``section Foo``, and any ``end`` that
+            # survives comment stripping. Popping unconditionally lets one such
+            # line unbalance the stack, and every declaration after it is
+            # emitted under-qualified: on ``namespace Outer / namespace Inner``,
+            # a stray ``end Other`` turned ``Outer.Inner.still_inner`` into
+            # ``Outer.still_inner``, which ``#print axioms`` reports as an
+            # unknown constant -- failing the whole module for a typo.
+            if ns_stack and ns_stack[-1] == m_close.group("ns"):
                 ns_stack.pop()
             continue
         m = _DECL_HEAD_RE.match(line)
         if m:
+            if "private" in m.group("mods"):
+                # A ``private`` declaration is NOT addressable by its source name
+                # (#8722). Lean 4 mangles it to ``_private.<Module>.<hash>.<name>``,
+                # so ``#print axioms Knots.mem_set_fwd`` answers ``unknown
+                # constant`` and takes the WHOLE module's verdict down with it --
+                # observed on Knots.Invariant (mem_set_fwd / mem_drop_out /
+                # mem_set_self), which reported ``build_failed_returncode_1``
+                # while every public theorem in it had checked out fine.
+                # Nothing is lost by skipping them: a private lemma reaches the
+                # kernel only through the public theorems that use it, and those
+                # are enumerated, so its axioms are still counted transitively.
+                continue
             name = m.group("name")
             if name.startswith("_root_."):
                 # ``_root_.`` is the ONLY absolute prefix in Lean 4: it escapes
