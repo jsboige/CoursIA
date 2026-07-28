@@ -504,6 +504,30 @@ class LeanVerifier:
                 input=stdin_input,
             )
             output = result.stdout + "\n" + result.stderr
+
+            # Gate de build (trou #8681, ai-01 c.32) : si ``lean --stdin``
+            # termine en echec (returncode != 0), la sortie ne contient pas
+            # de lignes ``depends on axioms:`` -- ``_extract_axioms`` renvoie
+            # alors ``[]`` et ``success`` tombe a ``True`` : un build MORT
+            # validait l'integrite de preuve. Le garde ``no_declarations_enumerated``
+            # ne couvre pas ce cas (l'enumeration lit le SOURCE, pas le build,
+            # donc elle compte 37 declarations pendant que l'elaboration est
+            # morte). On lit ``returncode`` AVANT le parsing : un process
+            # sortie-en-non-zero ne peut JAMAIS valider l'integrite.
+            if result.returncode != 0:
+                return {
+                    "success": False,
+                    "axioms": [],
+                    "forbidden": [],
+                    "whitelist": whitelist,
+                    "has_sorry": False,
+                    "fail_on_sorry": fail_on_sorry,
+                    "declarations": declarations,
+                    "enumerated": True,
+                    "raw_output": output,
+                    "error": f"build_failed_returncode_{result.returncode}",
+                }
+
             axioms = self._extract_axioms(output)
             forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
             has_sorry = "sorryAx" in axioms
@@ -644,16 +668,21 @@ class LeanVerifier:
         """Extract axiom names from ``#print axioms`` output.
 
         Lean emits one line per declaration in the form
-        ``'Foo.bar' depends on axioms [A, B, C]`` (or ``'Foo.bar' depends on
-        axioms []``). Parse the bracketed list of each such line and union the
-        names across declarations. The previous comma-split over the whole line
-        captured garbage such as ``'Foo.bar' depends on axioms [Classical.choice``
-        as an "axiom name", which silently poisoned the forbidden-axiom check
-        (#8677).
+        ``'Foo.bar' depends on axioms: [A, B, C]`` (or ``'Foo.bar' does not
+        depend on any axioms`` when none). Parse the bracketed list of each
+        such line and union the names across declarations.
+
+        The match is anchored on the literal colon (``axioms:``) -- the
+        previous regex ``r"depends on axioms \\[([^\\]]*)\\]"`` (no colon)
+        matched the *fixture* format used by tests but never the real Lean
+        output, so the gate silently returned ``[]`` on every healthy build
+        and the criterion-4 forbidden-axiom check (#8677) was a no-op.
+        Verified by ai-01's rebuild of ``knot_lean`` and reproduction in
+        PR #8681 review (``.reason about regex #8677``, msg-20260728T165702).
         """
         axioms = []
         for line in output.split("\n"):
-            m = re.search(r"depends on axioms \[([^\]]*)\]", line)
+            m = re.search(r"depends on axioms:\s*\[([^\]]*)\]", line)
             if not m:
                 continue
             inner = m.group(1).strip()

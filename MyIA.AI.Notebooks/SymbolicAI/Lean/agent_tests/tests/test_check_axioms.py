@@ -38,14 +38,24 @@ Q = "'"
 
 
 def _axiom_line(name: str, axioms: list) -> str:
+    """Build a ``#print axioms`` line as Lean actually emits it.
+
+    Lean 4 emits ``'Foo.bar' depends on axioms: [A, B, C]`` (with a colon
+    before the bracketed list). The previous no-colon form
+    (``depends on axioms [...]``) matched only the test fixture and never
+    the real output -- the regex in ``lean_server.py`` is now anchored on
+    the literal colon, and the fixture follows suit so a change in Lean's
+    output format would break the test (#8677 criterion 4).
+    """
     inner = ", ".join(axioms) if axioms else ""
-    return f"{Q}{name}{Q} depends on axioms [{inner}]"
+    return f"{Q}{name}{Q} depends on axioms: [{inner}]"
 
 
 class _FakeCompletedProcess:
-    def __init__(self, stdout: str = "", stderr: str = ""):
+    def __init__(self, stdout: str = "", stderr: str = "", returncode: int = 0):
         self.stdout = stdout
         self.stderr = stderr
+        self.returncode = returncode
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -109,13 +119,15 @@ def test_extract_axioms_ignores_non_axiom_lines():
 # check_axioms gate logic (subprocess mocked)
 # ──────────────────────────────────────────────────────────────────────────
 
-def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir="."):
+def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir=".",
+                        returncode=0, whitelist=None):
     verifier = LeanVerifier(project_dir)
     with patch.object(lean_server, "_enumerate_module_declarations", return_value=decls), \
             patch.object(lean_server, "_resolve_lake_command", return_value=(["lean"], {})), \
             patch.object(lean_server.subprocess, "run",
-                         return_value=_FakeCompletedProcess(fake_stdout)):
-        return verifier.check_axioms("Knots.Basic", fail_on_sorry=fail_on_sorry)
+                         return_value=_FakeCompletedProcess(fake_stdout, returncode=returncode)):
+        return verifier.check_axioms("Knots.Basic", fail_on_sorry=fail_on_sorry,
+                                     whitelist=whitelist)
 
 
 def test_clean_proof_passes_gate():
@@ -163,3 +175,146 @@ def test_no_declarations_prover_path_stays_green():
     r = _check_with_output([], "", fail_on_sorry=False)
     assert r["success"] is True
     assert r["enumerated"] is False
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Build-dead gate (trou #8681, ai-01 c.32) : un build MORT ne valide jamais
+# ──────────────────────────────────────────────────────────────────────────
+
+def test_dead_build_fails_ci_gate():
+    """returncode != 0 (build cassé) + output vide -> success=False.
+
+    Avant le fix #8681, ce cas renvoyait success=True car _extract_axioms([])
+    donnait forbidden=[]/has_sorry=False : un build mort validait l'intégrité.
+    L'énumération compte 1 déclaration (elle lit le source, pas le build), donc
+    le garde ``no_declarations_enumerated`` ne couvrait pas ce cas.
+    """
+    r = _check_with_output(
+        ["Knots.Basic.t1"], "", fail_on_sorry=True, returncode=1,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_1"
+    assert r["enumerated"] is True  # le source enumerait bien la déclaration
+    assert r["axioms"] == []
+
+
+def test_dead_build_fails_prover_path_too():
+    """Le gate de build mort s'applique AUSSI au chemin prover (fail_on_sorry=False).
+
+    Un build cassé ne doit JAMAIS valider l'intégrité, même dans le chemin prover
+    qui préserve le vert historique sur sorryAx : le vert historique suppose un
+    build vivant. returncode != 0 = défaillance, pas un gap de preuve.
+    """
+    r = _check_with_output(
+        ["Knots.Basic.t1"], "", fail_on_sorry=False, returncode=2,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_2"
+
+
+def test_dead_build_with_misleading_output_still_fails():
+    """Si returncode != 0, on n'analyse même pas l'output (qui pourrait être
+    partiel/muettoxique). On ne fait pas confiance à un process mort."""
+    # output contient une ligne axiom valide, mais returncode=1 -> échec quand même
+    out = _axiom_line("Knots.Basic.t1", ["Classical.choice", "propext"])
+    r = _check_with_output(
+        ["Knots.Basic.t1"], out, fail_on_sorry=True, returncode=1,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_1"
+    assert r["axioms"] == []
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Real Lean output (verbatim, c.938v5 #8677 criterion 4 — anchor the regex)
+# ──────────────────────────────────────────────────────────────────────────
+
+# Real Lean 4 #print axioms output for knot_lean/Knots.Basic, captured by
+# ai-01's rebuild on 2026-07-28 (msg-20260728T165702). Test must break if
+# Lean changes the format -- if it doesn't, the test doesn't test Lean.
+REAL_KNOTS_BASIC_OUTPUT = (
+    "'Knots.mirror_wf_preserves' depends on axioms: [propext, Quot.sound]\n"
+    "'Knots.mirror_edges_perm'   depends on axioms: [propext, Quot.sound]\n"
+    "'Knots.count_lift_append'   depends on axioms: [propext, Quot.sound]\n"
+    "'Knots.unknot_wf' does not depend on any axioms\n"
+)
+
+
+def test_extract_axioms_handles_real_lean_format():
+    """La regex doit matcher le format REEL de Lean (avec deux-points).
+
+    C'est précisément le cas qui a faussé le gate en c.938v4 : la regex
+    ``r"depends on axioms \\[([^\\]]*)\\]"`` (sans deux-points) matchait
+    uniquement la fixture de test et rendait ``[]`` sur toute sortie Lean
+    reelle -> ``forbidden=[]``, ``success=True`` structurellement. PR #8681
+    c.938v5 ancre la regex sur le deux-points et la fixture suit.
+    """
+    from lean_server import LeanVerifier
+
+    axioms = LeanVerifier._extract_axioms(REAL_KNOTS_BASIC_OUTPUT)
+    # mirror_wf_preserves / mirror_edges_perm / count_lift_append -> propext + Quot.sound
+    assert set(axioms) == {"propext", "Quot.sound"}
+    assert "unknot_wf" not in axioms  # "does not depend on any axioms" emits nothing
+
+
+def test_real_lean_output_passes_whitelist_with_quot_sound():
+    """Sur la sortie reelle, gate SUCCESS une fois Quot.sound whitelisté.
+
+    C'est la validation qui manquait en c.938v4 : prouver que le gate peut
+    rougir ET verdir sur du Lean réel, pas seulement sur des fixtures.
+    """
+    r = _check_with_output(
+        ["Knots.mirror_wf_preserves", "Knots.mirror_edges_perm",
+         "Knots.count_lift_append", "Knots.unknot_wf"],
+        REAL_KNOTS_BASIC_OUTPUT,
+        fail_on_sorry=True,
+        whitelist=[
+            "Classical.choice", "propext", "funext",
+            "Quot.lift", "Quot.mk", "Quot.sound",
+        ],
+    )
+    assert r["success"] is True
+    assert set(r["axioms"]) == {"propext", "Quot.sound"}
+    assert r["forbidden"] == []  # propext + Quot.sound whitelisted
+    assert r["has_sorry"] is False
+
+
+def test_real_lean_output_fails_when_quot_sound_not_whitelisted():
+    """Même sortie reelle, whitelist SANS Quot.sound -> rouge.
+
+    C'est le test « deliberement casse » : si on retire une entree de la
+    whitelist par accident, le gate rougit sur la sortie Lean reelle. Le
+    test verifie que la regex capture bien ``Quot.sound`` (sinon le test
+    passerait au vert, prouvant que le gate est cassé).
+    """
+    r = _check_with_output(
+        ["Knots.mirror_wf_preserves", "Knots.mirror_edges_perm",
+         "Knots.count_lift_append", "Knots.unknot_wf"],
+        REAL_KNOTS_BASIC_OUTPUT,
+        fail_on_sorry=True,
+        whitelist=[
+            "Classical.choice", "propext", "funext",
+            "Quot.lift", "Quot.mk",
+            # Quot.sound deliberately omitted
+        ],
+    )
+    assert r["success"] is False
+    assert "Quot.sound" in r["forbidden"], (
+        f"Quot.sound must appear in forbidden when not whitelisted; got {r['forbidden']!r}"
+    )
+
+
+def test_extract_axioms_does_not_match_no_colon_format():
+    """Une fixture no-colon ne doit PAS matcher la nouvelle regex.
+
+    Test anti-régression : si quelqu'un re-introduit le format sans
+    deux-points (l'ancien comportement buggy), ce test le détecte.
+    """
+    from lean_server import LeanVerifier
+
+    no_colon_fixture = "'Foo.bar' depends on axioms [propext, Quot.sound]"
+    axioms = LeanVerifier._extract_axioms(no_colon_fixture)
+    # Sans deux-points, Lean n'aurait jamais émis ça -- la regex doit retourner []
+    assert axioms == [], (
+        f"La regex anchored sur ':' ne doit PAS matcher le format obsolète ; got {axioms!r}"
+    )

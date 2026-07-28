@@ -61,3 +61,22 @@ jobs:
       display-name: knot_lean
       sorry-baseline: "17"
       sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`)
+  # that the textual sorry counter cannot see. Runs after the build to
+  # reuse the cached lake artifacts.
+  # Opt-in per lake; knot_lean is the pilote because it has a stable
+  # sorry profile (17 real tactic sorries, all enumerated + justified).
+  # NOTE: `uses: ./...` (not `@main`) -- `lean-axiom.yml` is introduced by
+  # THIS PR; resolving it from `main` would mean the pilot job silently
+  # fails to dispatch on the branch and never proves the gate works.
+  # Once the workflow lands on `main`, future lakes can either keep `./`
+  # (resolved per-PR) or switch to `@main` (resolved once).
+  proof-integrity:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      display-name: knot_lean
+      target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
+      allow-axioms: ""
