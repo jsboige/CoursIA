@@ -431,6 +431,13 @@ markdown interpretation -> code exercice -> ...) selon la convention
 Audit hierarchie markdown : pas de saut H1->H3, titres uniques, structure
 progressive pedagogique.
 
+- Cible **obligatoire** : sans argument / chemin errone / repertoire sans
+  notebook -> **exit 2**, jamais `0/0 notebooks flagged` (un scan vide n'est
+  pas un scan propre).
+- `--fail-on-findings` : exit 1 des qu'un notebook est flague. Par defaut mode
+  recensement (exit 0), ce qu'attend le job informationnel de
+  `.github/workflows/markdown-rendering-guard.yml`.
+
 ---
 
 ## Anti-banner / hygiene (Stop & Repair, secrets-hygiene §6)

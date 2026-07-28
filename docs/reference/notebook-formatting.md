@@ -34,7 +34,15 @@ Un **indice / objectif / étape / conseil / note / remarque / attention / TODO**
 python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/Sudoku
 # Tout l'arbre
 python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks
+# En porte (exit 1 des qu'un notebook est flague) — sinon recensement, exit 0
+python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks --fail-on-findings
 ```
+
+**La cible est obligatoire.** Sans argument, ou sur un chemin mal orthographie, ou
+sur un repertoire sans notebook, le scanner sort en **erreur (exit 2)** au lieu
+d'afficher `0/0 notebooks flagges` — un scan vide n'est pas un scan propre. Meme
+classe de defaut que le critere d'acceptation « le scanner rapporte 0 » de #3968,
+satisfait a vide pendant que ~194 hint-headings au pluriel survivaient.
 
 Etat initial (2026-06-23) : **261/676 notebooks flagges** (GenAI 71, QuantConnect 47, SymbolicAI 43, Sudoku 28, ML 23, Probas 17, GameTheory 14, Search 11, RL 5, CaseStudies 2).
 
