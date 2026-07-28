@@ -406,34 +406,51 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                 })
                 total = None
             if total is not None:
-                try:
-                    breakdown_sum = sum(float(v) for v in breakdown.values())
-                except (TypeError, ValueError):
+                # bool est subclass de int en Python (float(True) == 1.0) : un
+                # montant USD n'est jamais un booleen. Rejeter explicitement
+                # AVANT la sommation, sinon {"openai": true} passerait le gate
+                # en silence (NIT Hermes review #8688).
+                bool_keys = sorted(k for k, v in breakdown.items() if isinstance(v, bool))
+                if bool_keys:
                     findings.append({
                         'pattern': 'api_cost_breakdown_non_numeric',
                         'detail': (
-                            f'cost.api_cost_breakdown contient des valeurs '
-                            f'non-numeriques : {sorted(breakdown.keys())}. '
-                            f'Chaque cle (provider) doit avoir une valeur float USD.'
+                            f'cost.api_cost_breakdown contient une valeur '
+                            f'booleenne (true/false) pour : {bool_keys}. '
+                            f'Chaque cle (provider) doit avoir une valeur '
+                            f'float USD, pas un bool (float(True)==1.0 trompe la sommation).'
                         ),
                         'severity': 'MAJOR',
                     })
                 else:
-                    # Tolerance 1 cent (arrondi USD) : evite les FP de precision
-                    # float (0.1+0.2 != 0.3 en binaire) sans tolerer un vrai
-                    # desequilibre. round(..., 2) serait equivalent.
-                    if abs(breakdown_sum - total) > 0.01:
+                    try:
+                        breakdown_sum = sum(float(v) for v in breakdown.values())
+                    except (TypeError, ValueError):
                         findings.append({
-                            'pattern': 'api_cost_breakdown_sum_mismatch',
+                            'pattern': 'api_cost_breakdown_non_numeric',
                             'detail': (
-                                f'cost.api_cost_breakdown somme '
-                                f'{breakdown_sum:.2f} != api_usd_est {total:.2f} '
-                                f'(delta {breakdown_sum - total:+.2f}). La '
-                                f'ventilation doit sommer au total autoritatif '
-                                f'(design-gate #8056).'
+                                f'cost.api_cost_breakdown contient des valeurs '
+                                f'non-numeriques : {sorted(breakdown.keys())}. '
+                                f'Chaque cle (provider) doit avoir une valeur float USD.'
                             ),
                             'severity': 'MAJOR',
                         })
+                    else:
+                        # Tolerance 1 cent (arrondi USD) : evite les FP de precision
+                        # float (0.1+0.2 != 0.3 en binaire) sans tolerer un vrai
+                        # desequilibre. round(..., 2) serait equivalent.
+                        if abs(breakdown_sum - total) > 0.01:
+                            findings.append({
+                                'pattern': 'api_cost_breakdown_sum_mismatch',
+                                'detail': (
+                                    f'cost.api_cost_breakdown somme '
+                                    f'{breakdown_sum:.2f} != api_usd_est {total:.2f} '
+                                    f'(delta {breakdown_sum - total:+.2f}). La '
+                                    f'ventilation doit sommer au total autoritatif '
+                                    f'(design-gate #8056).'
+                                ),
+                                'severity': 'MAJOR',
+                            })
 
     return {
         'notebook': str(notebook_path),
