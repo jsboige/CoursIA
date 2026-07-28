@@ -21,9 +21,12 @@ post-write (L965 ★ + L925-E ★).
 Usage :
   # Dry-run (par défaut) — affiche ce qui serait peuplé
   python scripts/audit/populate_gametheory_cost.py --tranche 1
+  python scripts/audit/populate_gametheory_cost.py --tranche 2
 
-  # Appliquer la tranche 1
+  # Appliquer
   python scripts/audit/populate_gametheory_cost.py --tranche 1 --apply \\
+      --by myia-po-2023:CoursIA-2
+  python scripts/audit/populate_gametheory_cost.py --tranche 2 --apply \\
       --by myia-po-2023:CoursIA-2
 
   # Lister les NBs sans cost (audit gap)
@@ -37,17 +40,18 @@ import sys
 from pathlib import Path
 
 
-# === Profils canoniques par NB (tranche 1) ===
+# === Profils canoniques par NB (tranches 1+2) ===
 #
 # Schéma calqué sur `Infer-3-Factor-Graphs` + `GameTheory-1-Setup` ajusté :
 # - Setup : `network: true` (pip install nashpy/openspiel)
-# - NormalForm / Topology2x2 : CPU pure, `network: false`
+# - NormalForm / Topology2x2 / ZeroSum / EvolutionTrust : CPU pure, `network: false`
 # - C# twins : `validator: dotnet-interactive` (Microsoft.SemanticKernel local)
 # - Lean twins : `validator: lean_build` (lake build)
 #
-# `cpu_min` estimé heuristique sur cellules code × ~10s/cellule (range documenté).
+# `cpu_min` estimé heuristique sur cellules code × ~10-15s/cellule (range documenté).
 
 PROFILES = {
+    # === Tranche 1 (c.927, GT-1/2/3) ===
     "GameTheory-1-Setup": {
         "kernel": "python3",
         "validator": "papermill",
@@ -83,18 +87,65 @@ PROFILES = {
         "network": False,
         "notes": "Jumeau .NET Interactive C# : classification topologique 2×2. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
     },
+    # === Tranche 2 (c.934, GT-5/6) ===
+    "GameTheory-5-ZeroSum-Minimax": {
+        "kernel": "gametheory-wsl",
+        "validator": "papermill",
+        "cpu_min": 4,            # 14 cellules, jeux à somme nulle + théorème Minimax
+        "network": False,
+        "notes": "Jeux à somme nulle + théorème du Minimax (Von Neumann 1928) ; équilibre via nashpy, visualisations numpy/matplotlib. Kernel gametheory-wsl Python+nashpy.",
+    },
+    "GameTheory-5-ZeroSum-Minimax-Csharp": {
+        "kernel": ".net-csharp",
+        "validator": "dotnet-interactive",
+        "cpu_min": 3,            # 12 cellules .NET
+        "network": False,
+        "notes": "Jumeau .NET Interactive C# : jeux à somme nulle + Minimax. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
+    },
+    "GameTheory-6-EvolutionTrust": {
+        "kernel": "python3",
+        "validator": "papermill",
+        "cpu_min": 5,            # 20 cellules, dilemme itéré + évolution
+        "network": False,
+        "notes": "Dilemme du Prisonnier itéré + évolution de la confiance (Axelrod IPD Tournament) ; stratégies TFT, Pavlov, Generous, etc. via numpy. Reproduction déterministe (seed fixe).",
+    },
+    "GameTheory-6-EvolutionTrust-Csharp": {
+        "kernel": ".net-csharp",
+        "validator": "dotnet-interactive",
+        "cpu_min": 3,            # 12 cellules .NET
+        "network": False,
+        "notes": "Jumeau .NET Interactive C# : Axelrod IPD Tournament + évolution de la confiance. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
+    },
+}
+
+
+# Mapping tranche -> liste ordonnée de NBs
+TRANCHES = {
+    1: [
+        "GameTheory-1-Setup",
+        "GameTheory-2-NormalForm",
+        "GameTheory-2-NormalForm-Csharp",
+        "GameTheory-3-Topology2x2",
+        "GameTheory-3-Topology2x2-Csharp",
+    ],
+    2: [
+        "GameTheory-5-ZeroSum-Minimax",
+        "GameTheory-5-ZeroSum-Minimax-Csharp",
+        "GameTheory-6-EvolutionTrust",
+        "GameTheory-6-EvolutionTrust-Csharp",
+    ],
 }
 
 
 def build_cost(notebook_name: str, by: str, today: str) -> dict:
-    """Construit le bloc `metadata.cost]` canonique pour un NB GT.
+    """Construit le bloc `metadata['cost']` canonique pour un NB GT.
 
     Champs dérivés : cpu_min, gpu_min, validator, notes, last_validated.
     Champs constants GT : api_usd_est=0, api_provider=none, gpu_required=false,
     vram_gb=0, vram_tier=NONE, external_account=none, free_alternative=self
     (sentinel canonique, le NB est lui-même l'alternative gratuite), reduced_pedagogical=null,
     reproducibility=HIGH (algorithmes déterministes, seed non requis pour la classification
-    topologique / équilibre Nash).
+    topologique / équilibre Nash / stratégie itérée).
     """
     profile = PROFILES[notebook_name]
     return {
@@ -150,7 +201,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--tranche", type=int, default=1,
-        help="Tranche GT costfm à peupler (1 = GT-1/2/3, atomique 5 NBs)",
+        help="Tranche GT costfm à peupler (1 = GT-1/2/3, 2 = GT-5/6)",
     )
     ap.add_argument(
         "--by", default="anonymous",
@@ -190,18 +241,12 @@ def main(argv=None) -> int:
         print(f"\n[AUDIT] {n_with_cost} WITH cost / {n_without} WITHOUT cost (total {len(nbs)})")
         return 0
 
-    if args.tranche != 1:
-        print(f"ERROR: tranche {args.tranche} pas encore implémenté (seul 1)", file=sys.stderr)
+    if args.tranche not in TRANCHES:
+        print(f"ERROR: tranche {args.tranche} pas encore implémentée (1 ou 2)", file=sys.stderr)
         return 2
 
     today = args.today or _dt.date.today().isoformat()
-    nb_names = [
-        "GameTheory-1-Setup",
-        "GameTheory-2-NormalForm",
-        "GameTheory-2-NormalForm-Csharp",
-        "GameTheory-3-Topology2x2",
-        "GameTheory-3-Topology2x2-Csharp",
-    ]
+    nb_names = TRANCHES[args.tranche]
     gt_dir = Path("MyIA.AI.Notebooks/GameTheory")
     counts = {"populated": 0, "skipped-has-cost": 0}
     for name in nb_names:
@@ -216,9 +261,9 @@ def main(argv=None) -> int:
         print(f"  [{marker:7s}] {status:25s} {nb_path.name}")
 
     mode = "APPLY" if args.apply else "DRY-RUN"
-    print(f"\n[{mode}] tranche=1 by={args.by} today={today}")
-    print(f"  populated    : {counts['populated']}")
-    print(f"  skipped-existing: {counts['skipped-has-cost']}")
+    print(f"\n[{mode}] tranche={args.tranche} by={args.by} today={today}")
+    print(f"  populated        : {counts['populated']}")
+    print(f"  skipped-existing : {counts['skipped-has-cost']}")
     return 0
 
 
