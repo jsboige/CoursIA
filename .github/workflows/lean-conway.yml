@@ -21,6 +21,14 @@ name: Lean Conway CI
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
 #   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
 # Raising this baseline requires a documented justification in the PR body.
+#
+# Proof-integrity gate (c.949, See #8677, follows PR #8740 knot_lean pattern):
+# Wired with `target-modules=Conway.Life.Computation` only (v1 — the module
+# that holds the 105 native_decide-driven theorems). fail-on-sorry=false
+# (acknowledged 8 sorries in HashlifeCorrectness.lean — same justification
+# pattern as knot_lean's fail-on-sorry=false for its 17 sorries). allow-axioms
+# is empty per global axiom policy (fail_on_sorry=True par défaut, écarts
+# locaux justifiés — each native_decide hit is documented as a follow-up).
 
 on:
   push:
@@ -30,6 +38,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
   pull_request:
     branches: [main]
     paths:
@@ -37,6 +46,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
   workflow_dispatch:
 
 jobs:
@@ -47,3 +57,12 @@ jobs:
       display-name: conway_lean
       sorry-baseline: "8"
       sorry-filter-mode: standalone-tactic
+
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      target-modules: "Conway.Life.Computation"
+      allow-axioms: ""
+      fail-on-sorry: false
