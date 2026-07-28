@@ -158,6 +158,38 @@ def test_enumeration_root_prefix_strips_to_absolute(tmp_path):
     assert decls == ["globalHelper", "Outer.inner", "Knots.local_thm"]
 
 
+def test_enumeration_end_pops_only_on_a_name_match(tmp_path):
+    """An unmatched ``end`` must NOT pop the namespace stack (#8727).
+
+    ``namespace`` is the only construct the enumerator pushes, but ``end``
+    closes others too (``section Foo ... end Foo``), and one can survive
+    comment stripping. Popping unconditionally unbalances the stack and
+    under-qualifies every declaration that follows -- which ``#print axioms``
+    then reports as an unknown constant, failing the whole module.
+
+    Authored by po-2023:CoursIA-2 in #8726; carried here after #8725 shipped
+    the same repair without this case.
+    """
+    src = (
+        "namespace Outer\n"
+        "namespace Inner\n"
+        "theorem deep : True := trivial\n"
+        "end Other\n"  # closes nothing we opened -- must not pop Inner
+        "theorem still_inner : True := trivial\n"
+        "end Inner\n"
+        "theorem back_in_outer : True := trivial\n"
+        "end Outer\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == [
+        "Outer.Inner.deep",
+        "Outer.Inner.still_inner",
+        "Outer.back_in_outer",
+    ]
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────
