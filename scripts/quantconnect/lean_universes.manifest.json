@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Provenance spec for local LEAN daily equity data. The zips themselves are gitignored (regenerable binaries, machine-local under <lean-workspace>/data/equity/usa/daily/); this manifest is the COMMITTED text record that pins 'what data produced a shipped quantbook metric', so the regen is reproducible from the repo. Regenerate via scripts/quantconnect/provision_lean_data.py.",
+  "source": "yfinance",
+  "converter": "scripts/quantconnect/yfinance_to_lean_daily.py",
+  "freshness_min_year": 2024,
+  "note": "Closes the reproducibility gap surfaced by #8734 (forward-fill defect) + ai-01 c.37 (msg-20260728T220240): a shipped Sharpe must rest on data anyone can regenerate, not on machine-local zips only the author has. The regen_date pins when a shipped metric's data was last provisioned; re-running the provisioner yields FRESH data (current to today) and the freshness_min_year gate enforces it before any re-exec. See #8734, #8737 (detector), #8627 (converter).",
+  "universes": {
+    "turn_of_month": {
+      "purpose": "TurnOfMonth quantbook (#8730 correctif) -- SPY/QQQ/IWM/DIA daily bars from 2005 (preserves GFC + Recovery sub-periods).",
+      "issue": "#8730",
+      "tickers": ["SPY", "QQQ", "IWM", "DIA"],
+      "start": "2005-01-01",
+      "end": null,
+      "regen_date": "2026-07-28"
+    },
+    "ema_cross_alpha": {
+      "purpose": "EMA-Cross-Alpha quantbook (#8714 correctif) -- 5 large-cap tech stocks from 2015.",
+      "issue": "#8714",
+      "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-28"
+    }
+  }
+}
