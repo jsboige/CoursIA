@@ -390,6 +390,7 @@ class LeanVerifier:
         module_name: str,
         whitelist: list = None,
         fail_on_sorry: bool = False,
+        timeout: int = 300,
     ) -> dict:
         """Check axioms used by a module via ``#print axioms``.
 
@@ -419,6 +420,12 @@ class LeanVerifier:
                 transitively depends on ``sorryAx``. Default False (prover
                 behaviour -- sorry is tracked at Level 2, so Level 3 stays green
                 on a parse gap to avoid flipping historical results).
+            timeout: Seconds before elaborating the enumerated declarations
+                against prebuilt oleans times out (passed to ``subprocess.run``).
+                Default 300: ``#print axioms`` elaborates each declaration, which
+                on a cold Mathlib cache can exceed the previous hard-coded 60 s
+                (issue #8677). Callers -- e.g. the CI review gate -- can raise it
+                without re-editing this module.
 
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
@@ -431,6 +438,13 @@ class LeanVerifier:
                 "funext",
                 "Quot.lift",
                 "Quot.mk",
+                # Quot.sound: the soundness axiom for quotients. Together with
+                # Quot.lift / Quot.mk it is one of Lean's three quotient axioms,
+                # and propext + funext both follow from it -- so any proof touching
+                # quotient soundness (most of Mathlib) needs it. Listing two of
+                # the three quotient axioms but omitting Quot.sound made the gate
+                # forbid it and fail falsely (issue #8677).
+                "Quot.sound",
             ]
 
         project = Path(self.project_dir)
@@ -473,7 +487,7 @@ class LeanVerifier:
                 cwd=str(project),
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=timeout,
                 env=env,
                 input=stdin_input,
             )

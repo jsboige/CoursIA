@@ -269,3 +269,116 @@ def test_litmus7_qc_notebook_with_qcc_estimate_ok(tmp_path):
         cost_meta={"validator": "qc_cloud", "qcc_tokens_est": 1200},
     )
     assert "qc_notebook_no_qcc_estimate" not in _patterns(res["findings"])
+
+
+# ---------------------------------------------------------------------------
+# Litmus 8 — api_cost_breakdown falsifiable gate (design-gate #8056)
+# ---------------------------------------------------------------------------
+
+def test_litmus8_breakdown_absent_ok(tmp_path):
+    """Mono-provider: no api_cost_breakdown -> no finding (optional field)."""
+    res = _findings_for(
+        tmp_path, "x = 1", cost_meta={"api_usd_est": 0.0, "api_provider": "none"}
+    )
+    pats = _patterns(res["findings"])
+    assert not any(p.startswith("api_cost_breakdown") for p in pats)
+
+
+def test_litmus8_breakdown_sum_equals_total_ok(tmp_path):
+    """Multi-provider with breakdown summing exactly to api_usd_est -> ok."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={
+            "api_usd_est": 0.42,
+            "api_cost_breakdown": {"openai": 0.30, "anthropic": 0.12},
+        },
+    )
+    pats = _patterns(res["findings"])
+    assert "api_cost_breakdown_sum_mismatch" not in pats
+
+
+def test_litmus8_breakdown_sum_mismatch_fails(tmp_path):
+    """Breakdown sum != api_usd_est -> finding (the falsifiable gate bites)."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={
+            "api_usd_est": 0.50,
+            "api_cost_breakdown": {"openai": 0.30, "anthropic": 0.12},  # 0.42 != 0.50
+        },
+    )
+    assert "api_cost_breakdown_sum_mismatch" in _patterns(res["findings"])
+
+
+def test_litmus8_breakdown_float_rounding_ok(tmp_path):
+    """0.1+0.2-style float drift within 1-cent tolerance -> ok (no FP)."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={
+            "api_usd_est": 0.30,
+            "api_cost_breakdown": {"openai": 0.10, "anthropic": 0.20},  # 0.30000000004
+        },
+    )
+    assert "api_cost_breakdown_sum_mismatch" not in _patterns(res["findings"])
+
+
+def test_litmus8_breakdown_malformed_fails(tmp_path):
+    """Breakdown present but not a non-empty dict -> malformed finding."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={"api_usd_est": 0.42, "api_cost_breakdown": "openai+anthropic"},
+    )
+    assert "api_cost_breakdown_malformed" in _patterns(res["findings"])
+
+
+def test_litmus8_breakdown_non_numeric_values_fails(tmp_path):
+    """Breakdown with non-numeric values -> non_numeric finding."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={
+            "api_usd_est": 0.42,
+            "api_cost_breakdown": {"openai": 0.30, "anthropic": "twelve cents"},
+        },
+    )
+    assert "api_cost_breakdown_non_numeric" in _patterns(res["findings"])
+
+
+def test_litmus8_breakdown_without_numeric_total_fails(tmp_path):
+    """Breakdown present but api_usd_est missing/non-numeric -> finding."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={"api_cost_breakdown": {"openai": 0.30, "anthropic": 0.12}},
+    )
+    assert "api_usd_est_not_numeric" in _patterns(res["findings"])
+
+
+def test_litmus8_breakdown_bool_value_rejected(tmp_path):
+    """Un bool n'est pas un montant USD : float(True)==1.0 en Python trompe la
+    sommation (bool est subclass de int). Le gate doit le rejeter explicitement
+    (NIT Hermes review #8688), sinon {"openai": true} passerait en silence."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={"api_usd_est": 1.0, "api_cost_breakdown": {"openai": True}},
+    )
+    pats = _patterns(res["findings"])
+    assert "api_cost_breakdown_non_numeric" in pats
+    assert "api_cost_breakdown_sum_mismatch" not in pats  # le bool est rejeté avant sommation
+
+
+def test_litmus8_breakdown_int_value_accepted(tmp_path):
+    """Un int (non-bool) est un montant USD valide : {openai: 1} -> somme 1.0 == total.
+    Garde-fou anti-regression : le guard bool ne doit pas rejeter les ints légitimes."""
+    res = _findings_for(
+        tmp_path,
+        "x = 1",
+        cost_meta={"api_usd_est": 1.0, "api_cost_breakdown": {"openai": 1}},
+    )
+    pats = _patterns(res["findings"])
+    assert "api_cost_breakdown_non_numeric" not in pats
+    assert "api_cost_breakdown_sum_mismatch" not in pats

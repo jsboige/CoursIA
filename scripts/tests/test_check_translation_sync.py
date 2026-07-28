@@ -20,6 +20,13 @@ verdict WRONG_SCRIPT ni la fonction ``_has_expected_script``), les tests
 d import et de detection FAIL (ImportError sur ``_has_expected_script`` /
 aucune anomalie WRONG_SCRIPT remontee), donc la suite garde le fix.
 
+Extension #6949 point 1 (signal honnete de taux de remplissage) : un
+``SRC_DRIFT=0`` sur une table 0% traduite se lisait a tort comme « a jour ».
+``csv_fill_stats`` + ``_format_fill_line`` exposent le taux de remplissage par
+langue a cote du compte de drift, pour qu'un compteur nu cesse d'etre lu comme
+un achevement. Couverture : denominateur (rows bien formees seules), pivot fr
+toujours 100%, suffixe « AUCUNE traduction deposee » quand toutes cibles a 0%.
+
 Run: ``python -m pytest scripts/tests/test_check_translation_sync.py -q``
 """
 
@@ -162,3 +169,96 @@ def test_check_csv_empty_text_no_wrong_script(tmp_path):
     _write_csv(csv_path, nb_rel, "abc", {"zh": ""})
     anomalies = C.check_csv(csv_path, tmp_path)
     assert not any(a["verdict"] == "WRONG_SCRIPT" for a in anomalies)
+
+
+# ---------------------------------------------------------------------------
+# #6949 point 1 — taux de remplissage (signal honnete)
+# ---------------------------------------------------------------------------
+
+def _write_fill_csv(csv_path, rows):
+    """Ecrit un CSV multi-rows pour ``csv_fill_stats``.
+
+    ``rows`` = liste de dicts ``{lang: text}``. Le pivot ``fr`` est toujours
+    rempli (notebook source) ; les cibles ne le sont que si la row le dit.
+    Une row ``None`` produit une ligne malformee (``cell_id`` vide) pour tester
+    l'exclusion du denominateur.
+    """
+    fields = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
+    fields += [f"text_{l}" for l in C.ALL_LANGS]
+    fields += [f"hash_{l}" for l in C.ALL_LANGS]
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        for i, row in enumerate(rows):
+            d = {k: "" for k in fields}
+            d["notebook"] = "nb.ipynb"
+            if row is None:  # row malformée (cell_id vide) -> doit etre exclue du denominateur
+                d["cell_id"] = ""
+                w.writerow(d)
+                continue
+            d["cell_id"] = f"cell{i}"
+            d["text_fr"] = "source fr"  # pivot toujours rempli
+            for lang, txt in row.items():
+                d[f"text_{lang}"] = txt
+            w.writerow(d)
+
+
+def test_csv_fill_stats_all_zero(tmp_path):
+    """Table sans aucune traduction : pivot 100%, toutes cibles 0%."""
+    csv_path = tmp_path / "fill.csv"
+    _write_fill_csv(csv_path, [{}, {}])  # 2 rows, fr seulement
+    stats = C.csv_fill_stats(csv_path)
+    assert stats["fr"] == {"filled": 2, "total": 2}
+    for lang in C.TARGET_LANGS:
+        assert stats[lang] == {"filled": 0, "total": 2}, f"{lang} should be 0/2"
+
+
+def test_csv_fill_stats_fully_translated(tmp_path):
+    """Table 100% traduite sur 2 cibles : 2/2 pour ces cibles."""
+    csv_path = tmp_path / "fill.csv"
+    _write_fill_csv(csv_path, [{"en": "x", "es": "y"}, {"en": "x", "es": "y"}])
+    stats = C.csv_fill_stats(csv_path)
+    assert stats["en"] == {"filled": 2, "total": 2}
+    assert stats["es"] == {"filled": 2, "total": 2}
+    # les autres cibles restent à 0
+    assert stats["zh"] == {"filled": 0, "total": 2}
+
+
+def test_csv_fill_stats_partial(tmp_path):
+    """1 traduction en sur 2 rows -> 1/2 (le denominateur se voit)."""
+    csv_path = tmp_path / "fill.csv"
+    _write_fill_csv(csv_path, [{"en": "x"}, {}])
+    stats = C.csv_fill_stats(csv_path)
+    assert stats["en"] == {"filled": 1, "total": 2}
+
+
+def test_csv_fill_stats_malformed_rows_excluded(tmp_path):
+    """Une row malformée (cell_id vide) n'entre pas dans le dénominateur.
+
+    Discipline #6949 : le dénominateur = cellules bien formées que le CSV
+    référence. Une row cassée ne gonfle pas artificiellement le total.
+    """
+    csv_path = tmp_path / "fill.csv"
+    _write_fill_csv(csv_path, [{}, None, {}])  # 2 valides + 1 malformée
+    stats = C.csv_fill_stats(csv_path)
+    assert stats["fr"]["total"] == 2  # pas 3
+
+
+def test_format_fill_line_zero_suffix(tmp_path):
+    """Toutes cibles à 0% -> suffixe 'AUCUNE traduction déposée'."""
+    stats = {lang: {"filled": 0, "total": 5} for lang in C.ALL_LANGS}
+    stats["fr"] = {"filled": 5, "total": 5}
+    line = C._format_fill_line(stats)
+    assert "AUCUNE traduction déposée" in line
+    assert "en=0.0%" in line
+    assert "5 cellules" in line
+
+
+def test_format_fill_line_no_suffix_when_translated():
+    """Au moins une cible > 0% -> pas de suffixe, pct réelle affichée."""
+    stats = {lang: {"filled": 0, "total": 2} for lang in C.ALL_LANGS}
+    stats["fr"] = {"filled": 2, "total": 2}
+    stats["en"] = {"filled": 1, "total": 2}
+    line = C._format_fill_line(stats)
+    assert "AUCUNE" not in line
+    assert "en=50.0%" in line
