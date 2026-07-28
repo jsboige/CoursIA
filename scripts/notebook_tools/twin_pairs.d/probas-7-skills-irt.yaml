@@ -4,11 +4,17 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2024
-    python_sha: f9689516625121e099c85fd68910c307e53d6cad
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA
+    python_sha: dbef71a833532109dc7379d3511f87bc3353f7e5
     csharp_sha: 7723219b3c6654629210ed5f0757d04dc3bd6e54
   known_differences:
+  - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie creee par #8530 -- le backfill attribution MBML
+    Ch.2 n''avait touche que le twin C# (Infer-7), laissant PyMC-7 sans rattachement au chapitre alors que son jumeau
+    l''avait. Ajout cote PyMC d''une cellule "Origine pedagogique : MBML Ch.2" (distillation PyMC du Ch.2 Assessing
+    People''s Skills), pedigree Rasch/Lord/Birnbaum/Junker-Sijtsma renvoye aux sections 2/4 existantes (non duplique).
+    Les DEUX jumeaux portent desormais le rattachement MBML Ch.2 (parite retriever, asymetrie resolue). Edition
+    markdown-only, +14/-1, 0 code 0 output. python_sha rebaseline ; csharp_sha inchange (Infer-7 non touche).'
   - '2026-07-25 (po-2024) #8530 : csharp_sha rebaseline suite a enrichissement du twin C# Infer-7 -- ajout attribution source MBML Ch.2 (Junker-Sijtsma, modele DINA) sur le twin C# uniquement (distillation-source attribution #8081). python twin (PyMC-7) inchange. Procedural : la PR introduisait DRIFT au gate #8057 car le blob C# avait evolue sans refresh du SHA registre.'
   - 'Socle pedagogique commun : Item Response Theory (modeles de competences / IRT) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
