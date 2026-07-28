@@ -834,6 +834,9 @@ analyze_ratio.py
 # Whisper comparison results (regenerable)
 scripts/whisper_comparison_results.json
 
+# Cycle c.939 run results (regenerable via scripts/exec_c939_cells.py)
+MyIA.AI.Notebooks/GenAI/Texte/c939_run_results.json
+
 # Final model files referenced by executed notebooks (tracked via git LFS)
 # These must be at the END of .gitignore (last matching pattern wins)
 !MyIA.AI.Notebooks/QuantConnect/Python/transformer_checkpoint.pt
