@@ -499,3 +499,84 @@ theorem mirror_wf_preserves_partial (d : KnotDiagram) :
               (fun c => [c.e1, c.e2, c.e3, c.e4])).count l) := by
   intro l
   exact mirror_diag_preserves_count d l
+
+/-! ## 14. Closure: `mirror` preserves `KnotDiagram.wf` (Issue #8644)
+
+Section §13 proved the per-crossing permutation `mirrorCrossing_perm` and the
+per-diagram count preservation `mirror_diag_preserves_count`. This section
+closes the polymorphic theorem deferred to the Lean-capable lane by PR #8667:
+`mirror` preserves `KnotDiagram.wf` for **any** knot.
+
+The cleanest route lifts `mirrorCrossing_perm` to a full-diagram permutation
+`mirror_edges_perm` via `List.Perm.flatMap` — `mirror` only swaps `e2 ↔ e4`
+inside each crossing, so the flat-mapped edge list is a permutation of the
+original. From a permutation, both the per-label `count` (parity check) and
+`all` (range check) are preserved directly, and `mirror` preserves `numEdges`
+by field identity. Hence `KnotDiagram.wf` — which depends only on `numEdges`
+plus the edge multiset — is invariant under mirror. No `sorry`, no `decide`
+on free variables.
+-/
+
+/-- The mirrored diagram's edge list is a permutation of the original's.
+    Lifts the per-crossing permutation `mirrorCrossing_perm` through the
+    flat-map: `(cs.map mirrorCrossing).flatMap F ~ cs.flatMap F` because each
+    `F (mirrorCrossing c) ~ F c` (the 4-element lists `[e1,e4,e3,e2]` and
+    `[e1,e2,e3,e4]` are permutations, `mirrorCrossing_perm`). -/
+open List in
+theorem mirror_edges_perm (d : KnotDiagram) :
+    mirror_diag_edges d ~ d.edges := by
+  show (d.crossings.map mirrorCrossing).flatMap (fun c => [c.e1, c.e2, c.e3, c.e4]) ~
+       d.crossings.flatMap (fun c => [c.e1, c.e2, c.e3, c.e4])
+  rw [List.flatMap_map]
+  -- After `(map f).flatMap g = flatMap (g ∘ f)`, the per-crossing function is
+  -- defeq `fun c => [c.e1, c.e4, c.e3, c.e2]` (mirrorCrossing swaps e2 ↔ e4).
+  exact List.Perm.flatMap_right d.crossings (fun c => mirrorCrossing_perm c)
+
+/-- `mirror` preserves `KnotDiagram.wf` (Issue #8644 closure).
+
+`mirrorCrossing` swaps `e2 ↔ e4`, so `mirror_diag_edges d` is a permutation of
+`d.edges` (`mirror_edges_perm`); `KnotDiagram.wf` depends only on the edge
+multiset (range check on the support via `all`, parity check on per-label
+`count`) plus `numEdges`, and mirror preserves `numEdges` by field identity.
+This is the full polymorphic generalisation that `decide` could not discharge
+on free variables (cf. C918-L1 ★) — here closed by hand. -/
+open List in
+theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
+    k.mirror.diagram.wf = true := by
+  -- Mirror diagram field identities (defeq).
+  have hmcross : k.mirror.diagram.crossings = k.diagram.crossings.map mirrorCrossing := rfl
+  have hmnum   : k.mirror.diagram.numEdges = k.diagram.numEdges := rfl
+  have hmedges : k.mirror.diagram.edges = mirror_diag_edges k.diagram := rfl
+  -- Full-diagram permutation of the edge list.
+  have hp : mirror_diag_edges k.diagram ~ k.diagram.edges := mirror_edges_perm k.diagram
+  -- Per-label count equality between mirrored and original edges
+  -- (uses `mirror_diag_preserves_count` from §13, which already reconstructs
+  -- the count-preservation that v4.31.0-rc1's missing `List.perm_iff_count`
+  -- would give directly).
+  have hc (l : Nat) : k.mirror.diagram.edges.count l = k.diagram.edges.count l := by
+    rw [hmedges]; exact mirror_diag_preserves_count k.diagram l
+  -- Mirror preserves emptiness of the crossings list.
+  have hem : k.mirror.diagram.crossings = [] ↔ k.diagram.crossings = [] := by
+    rw [hmcross]; exact List.map_eq_nil_iff
+  -- Unfold `wf` on both sides.
+  simp only [KnotDiagram.wf] at h ⊢
+  by_cases he : k.diagram.crossings = []
+  · -- Degenerate branch: mirror is empty too; both ifs reduce to `numEdges ≤ 1`.
+    have hme := hem.mpr he
+    simp only [hme, he, if_true, hmnum] at h ⊢
+    exact h
+  · -- Non-degenerate branch: mirror is non-empty too.
+    have hme : k.mirror.diagram.crossings ≠ [] := fun H => he (hem.mp H)
+    simp only [hme, he, if_false, hmnum] at h ⊢
+    rw [Bool.and_eq_true] at h ⊢
+    obtain ⟨h_all, h_par⟩ := h
+    refine ⟨?_, ?_⟩
+    · -- Range check: `all` is invariant under permutation.
+      rw [← hmedges, hp.all_eq]; exact h_all
+    · -- Parity check: per-label `count` is invariant under permutation.
+      have heq : (fun i => decide (k.mirror.diagram.edges.count (i + 1) = 2)) =
+                 (fun i => decide (k.diagram.edges.count (i + 1) = 2)) := by
+        funext i; rw [hc]
+      rw [heq]; exact h_par
+
+end Knots
