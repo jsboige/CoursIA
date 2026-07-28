@@ -7,9 +7,9 @@
     date: "2026-07-27"
     by: po-2024
     python_sha: 290e11ed4aae0abf7fad8e60a69f5275ac2d586c
-    csharp_sha: 651843696c9ea76ee910a22ed3d7e569fe6d9325
+    csharp_sha: 9ce89da728d9f8e4bfe999563a839807ac014bb2
   known_differences:
     - "Solveur SOTA distinct : Python = PuLP (interface declarative, solveur CBC par defaut) ; C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE). Les deux invoquent un vrai solveur industriel -- parite SOTA, pas reimplementation."
-    - "Asymetrie de couverture : le jumeau Python (47 cellules, 18 code) couvre §1-8 (intro, PuLP, formulation, Transport §4, sensibilite/dualite §5, PLNE §6, exemple guide multi-depots §7, resume §8) ; le jumeau C# (23 cellules, 9 code) couvre §1-6 (intro, OrTools production, diet formulation, sensibilite/dualite §4, PLNE sac a dos §5, Transport §6 ajoute par #8640/c.909). Le multi-depots §7 Python n'a pas d'equivalent C#."
+    - "Asymetrie de couverture : le jumeau Python (47 cellules, 18 code) couvre §1-8 (intro, PuLP, formulation, Transport §4, sensibilite/dualite §5, PLNE §6, exemple guide multi-depots §7, resume §8) ; le jumeau C# (27 cellules, 11 code) couvre §1-7 (intro, OrTools production, diet formulation, sensibilite/dualite §4, PLNE sac a dos §5, Transport §6 ajoute par #8640/c.909, multi-depots §7 + variante desequilibree ajoutes par c.913). Divergence positive : le Python laisse le multi-depots en exercice (stub PuLP) ; le C# en donne une solution OrTools traballee (290 EUR equilibre + 240 EUR cas deseilibre avec depot fictif)."
     - "Probleme de Transport : present des deux cotes (Python §4, C# §6) avec les MEMES donnees (3 usines x 4 magasins, equilibre 450=450, cout optimal 760 EUR) -- verifie firsthand c.909. GLOP renvoie un optimum degenere 5 routes vs 6 routes PuLP/CBC (memes 760 EUR, optima alternatifs, documente dans le notebook C#)."
     - "Analyse de sensibilite : les deux exposent les shadow prices / valeurs duales (Python `prob.constraints[i].pi` ; C# `Constraint.DualValue()`)."
