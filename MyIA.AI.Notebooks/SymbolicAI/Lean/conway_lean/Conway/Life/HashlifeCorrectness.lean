@@ -2936,6 +2936,21 @@ private theorem p4_nw_supercell_agree
       = isAlive (evolve (2^(k - 1)) ((node R1 R2 R4 R5).toGrid (0, 0)))
           (p.1 - (2^k : Int) + (2^(k - 1) : Int),
            p.2 - (2^k : Int) + (2^(k - 1) : Int)) := by
+  -- Step 1 (mechanical, proven): fold the LHS double half-step `2^(k-1) ∘ 2^(k-1)`
+  -- into a single `evolve 2^k` over the parent grid. `evolve_half_step` is proven
+  -- sorry-free (L2738); this is the trivial half of the agreement.
+  rw [← evolve_half_step k hk1]
+  -- Residual goal (the G3 wave-assembly research heart):
+  --   isAlive (evolve (2^k) parent.toGrid 0) p
+  --     = isAlive (evolve (2^(k-1)) (node R1 R2 R4 R5).toGrid 0) p'
+  -- where p' = p - 2^(k-1) (since 2^k - 2^(k-1) = 2^(k-1)). The wave-1 results
+  -- R1..R5 (hR1-5) and their `centralCorrect` facts (hcc1/2/4/5) encode the first
+  -- half-step's super-cell; the obstruction is G3 — how `(hashlifeResultAux (k+2)
+  -- parent)` decomposes into the four `(hashlifeResultAux (k+1) q_j)` sub-results
+  -- at the quadrant offsets — plus the NW point correspondence (p ↔ p', the
+  -- central-window re-anchoring). Locality machinery is proven sorry-free
+  -- (`step_light_cone`, `evolve_cone_agree`, `quadrant_cone_agree`); the assembly
+  -- glue is not. See #6724.
   sorry
 
 /-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
