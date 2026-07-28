@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: a9659a12d6e0672d694b500ecb53161bd31daeef
+    python_sha: 6e9d21e0bf5d9ab8cbfd35778d9a2f76b4753046
     csharp_sha: 8f551c9b7560f813842919283fdea3c8c3131bcd
   known_differences:
   - 'Socle pedagogique commun : selection de modele (WAIC/LOO, evidence) modelise dans les deux stacks.'

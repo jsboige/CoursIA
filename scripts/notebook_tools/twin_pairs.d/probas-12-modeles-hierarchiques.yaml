@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: a11ea49af8f7aaa1b140dfa68bddbff690a6ef0b
+    python_sha: 0c4d75e971dfb449a27990da64f6e68a4a7e4d58
     csharp_sha: 98789ab8f521ea377659fd593b020af2efbe16fa
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'

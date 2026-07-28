@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-25'
     by: po-2026
-    python_sha: c95f5dad99b0c333e3b99fdaf3bcc7cd30d929dc
+    python_sha: deea6eb2ae698527e3eab64f6402636f10f330c0
     csharp_sha: 4896731d08a95887ecdda3e548790ca5bde5a911
   known_differences:
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'

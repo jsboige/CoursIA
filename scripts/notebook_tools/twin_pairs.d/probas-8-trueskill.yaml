@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-25'
     by: po-2024
-    python_sha: 4936068731fae6f80c19f3fa259363171c5831de
+    python_sha: 6f181b4f4e05b5b5fd1c20119053a90c4019a317
     csharp_sha: edf5441fc3bb6b8b419ed1c42cdca9c15088ddf7
   known_differences:
   - '2026-07-25 (po-2024) #8548 : correction attribution source cote C# uniquement -- cell[7] Herbrich et Graepel 2006 remplace par Herbrich Minka et Graepel (2007 NIPS 20) avec Minka comme auteur EP, cell[55] reference alignee, NOUVELLE cellule markdown lineage (MBML Ch.3 Meeting Your Match + distinction Infer-7 = Ch.2 skill-from-answers vs Infer-8 = Ch.3 skill-from-match-result). Edition markdown-only, 0 changement de code 0 output drift -- parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par le raffinement de citation. python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'

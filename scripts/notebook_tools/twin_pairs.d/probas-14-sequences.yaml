@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-27"
     by: myia-ai-01:CoursIA
-    python_sha: 765544fe8ac71c15305c2cb91f9b16909e86e1df
+    python_sha: 4317eca367227db1ef15b8e081a66ca7c4bb0f87
     csharp_sha: 379aa78acb0ab84810670bf9b1b741b6a9c5ed95
   known_differences:
   - 'Socle pedagogique commun : modeles de sequences (chaines de Markov cachees / HMM) modelise dans les deux stacks.'

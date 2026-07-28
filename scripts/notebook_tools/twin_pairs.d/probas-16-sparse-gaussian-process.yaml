@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-23'
     by: po-2024
-    python_sha: f432393e9e2beb33826314902665eed32ee2809f
+    python_sha: 36d0252182d4774ba47cea62d81ca5919073c743
     csharp_sha: a4d1f404ec232c20737626f1aec1297ba0f57dd3
   known_differences:
   - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'

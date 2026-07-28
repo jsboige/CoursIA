@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-25'
     by: po-2023
-    python_sha: c782b9932a3f2e0ae0d7e976bc1ee97436723edf
+    python_sha: 1cb550aba947453c5ddd621172ae4f69f5ee30c4
     csharp_sha: 535ca94fb2f496c80ff13ce67e9d91bb37556622
   known_differences:
   - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'

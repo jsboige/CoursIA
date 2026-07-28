@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 7570745f7f7bb0d2ea5da23d1dcce799f760114d
+    python_sha: 9191a7581cf9c9c968d6cd2334551da30a3dbb5b
     csharp_sha: 13fffedbd5ebe85c0c7532839243f0cbb9d08010
   known_differences:
   - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'

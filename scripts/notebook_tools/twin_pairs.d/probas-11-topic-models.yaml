@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: bb264641367a75a1bb904e0ccd0473dfec5d62bf
+    python_sha: c55238dd3f72ecee8c5eb3cc02904be682db36d2
     csharp_sha: b8952c28ef68974ddfc0e76a924da664e3974871
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
