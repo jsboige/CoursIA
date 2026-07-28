@@ -241,16 +241,11 @@ def _kernel(nb: dict) -> str:
     return nb.get("metadata", {}).get("kernelspec", {}).get("name", "?")
 
 
-# Dossiers a ignorer (alignes sur detect_ascii_workaround.py:SKIP_DIRS).
-SKIP_DIRS = {
-    ".lake", ".git", "__pycache__", "_archives", "archive", "_archive",
-    ".ipynb_checkpoints", ".pytest_cache", "worktrees",
-    "foundry-lib",  # lib vendored tierce, pas a nous a fixer
-}
-
+# Marcheur + SKIP_DIRS canonique centralises dans notebook_walk (#8650) :
+# source unique pour le perimetre des scanners (ferme la derive detectee).
 # Artefacts papermill (*_output.ipynb) : la source canonique est le livrable, le
 # _output re-genere peut porter une figure stale -- on scanne la source.
-_OUTPUT_SUFFIX = "_output.ipynb"
+from notebook_walk import SKIP_DIRS, _OUTPUT_SUFFIX, iter_notebooks  # noqa: E402
 
 
 def _should_skip(rel: Path) -> bool:
@@ -260,15 +255,9 @@ def _should_skip(rel: Path) -> bool:
 
 
 def _iter_notebooks(root: Path, family: str | None):
-    base = root / "MyIA.AI.Notebooks"
-    if family:
-        base = base / family
-    if not base.exists():
-        return
-    for nb in sorted(base.rglob("*.ipynb")):
-        if _should_skip(nb.relative_to(base)):
-            continue
-        yield nb
+    # Delegue au marcheur partage : SKIP_DIRS canonique + filtre git tracked_only
+    # (exclut deterministement les arbres gitignores - lean-workspace, _output).
+    yield from iter_notebooks(root / "MyIA.AI.Notebooks", family=family)
 
 
 def _human_report(results: list[dict]) -> str:

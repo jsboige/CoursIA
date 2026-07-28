@@ -70,12 +70,11 @@ from urllib.parse import unquote
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 
-# Dossiers a ignorer (archives, vendores, caches)
-SKIP_DIRS = {
-    ".lake", ".git", "__pycache__", "_archives", "archive", "_archive",
-    ".ipynb_checkpoints", "_output", ".pytest_cache", "worktrees",
-    "foundry-lib",  # lib vendored tierce, pas a nous a fixer
-}
+# Dossiers a ignorer (archives, vendores, caches) -- source unique notebook_walk (#8650).
+# navlinks est l'impl de reference du filtre git tracked_only que notebook_walk
+# generalise aux 10 autres scanners ; seul son SKIP_DIRS avait derive (manquait
+# .claude, node_modules) -- il adopte maintenant le set canonique.
+from notebook_walk import SKIP_DIRS  # noqa: E402
 
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_nb_navlinks.json"
 
