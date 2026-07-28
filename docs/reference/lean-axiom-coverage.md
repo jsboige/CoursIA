@@ -10,7 +10,7 @@ Ce doc est la **preuve d'acceptance step 3** du ticket #8738 (« Les 10 lakes ca
 
 **Axiomes cibles** (ce que `LeanVerifier.check_axioms` flagge désormais comme `forbidden` après le fix parser multiline #8740) :
 
-- `native_decide.*` — réduit au kernel natif sans preuve, vide le gate
+- `native_decide.*` — réduit au kernel natif sans preuve, vide le gate. Note: la **whitelist** sur `conway_lean` liste les **19 noms explicites** (cliquet, pas wildcard) — voir §3.1 ci-dessous et PR #8746 (c.951).
 - `sorryAx` (et `*._root_.sorryAx`) — proof elision, capté déjà en transitif
 - `Classical.choice` (et `*._root_.Classical.choice`) — base axiomatique non-constructive
 
@@ -55,9 +55,33 @@ Ce doc est la **preuve d'acceptance step 3** du ticket #8738 (« Les 10 lakes ca
 
 **Profil d'usage** : `native_decide` est **délibéré et justifié** sur ce lake (cf. `Conway/README.md` §15 et `LEAN_INVENTORY.md` : « micro-preuves sur instances bornées, calibration du moteur de recherche exhaustive »). Le retirer serait une régression pédagogique : la substantifique moelle des notebooks `Conway/Life/Hashlife*` est précisément la vérification *native* que la simulation est cohérente sur N steps.
 
-**Recommandation** : **whitelist avec issue nommée** + paramètre `allow-axioms: "native_decide.*"` dans `lean-conway.yml` au moment où il sera branché sur `lean-axiom.yml`. Le mécanisme whitelist existe déjà dans le job CI (`lean-axiom.yml` input `allow-axioms`) — il faut juste le déclarer explicitement avec justification écrite.
+**Recommandation** : **whitelist avec issue nommée** + 19 noms explicites dans le paramètre `allow-axioms` de `lean-conway.yml` (pattern « cliquet » : tout nouveau `native_decide` produit un nom absent de la liste → le gate rougit). Le mécanisme whitelist existe déjà dans le job CI (`lean-axiom.yml` input `allow-axioms`) — il faut juste le déclarer explicitement avec justification écrite.
 
-**Issue fille à créer** : `See #8743` (whitelist `native_decide.*` sur `conway_lean`, justification : « micro-preuves bornées sur instances closes du simulateur, contrats pédagogiques explicites dans `LEAN_INVENTORY.md` §15 et `Conway/README.md` §calibration »).
+**Issue fille** : `See #8749` (triage THEOREME PAR THEOREME des 19 axiomes `native_decide` sur `conway_lean`, lots de 3-5, decide-noyau schema #8731 vs whitelist justifiée ; justif de la whitelist actuelle : « micro-preuves bornées sur instances closes du simulateur, contrats pédagogiques explicites dans `LEAN_INVENTORY.md` §15 et `Conway/README.md` §calibration »).
+
+**19 noms actuellement dans la whitelist** (verbatim du commit `84eef8c76` PR #8746, tranche 2 `Conway.KochenSpecker + Conway.FreeWillTheorem` ; names pré-bakés pour la tranche 3 `Conway.Life.*`) :
+
+```
+Conway.Life.hashlife_beacon_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_blinker_2._native.native_decide.ax_1_1
+Conway.Life.block_macrocell_roundtrip._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_block_4._native.native_decide.ax_1_1
+Conway.Life.glider_3periods._native.native_decide.ax_1_1
+Conway.Life.hashlife_block_4._native.native_decide.ax_1_1
+Conway.Life.eater1_macrocell_roundtrip._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_glider_4._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_glider_8._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_toad_2._native.native_decide.ax_1_1
+Conway.Life.eater1_still_life._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_beacon_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_glider_8._native.native_decide.ax_1_1
+Conway.Life.hashlife_block_1._native.native_decide.ax_1_1
+Conway.Life.glider_macrocell_roundtrip._native.native_decide.ax_1_1
+Conway.Life.hashlife_toad_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_glider_4._native.native_decide.ax_1_1
+Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1
+Conway.Life.glider_2periods._native.native_decide.ax_1_1
+```
 
 ### 3.2. GREEN — `knot_lean` (post-#8725)
 
@@ -92,24 +116,26 @@ Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du
 ## 5. Acceptance step 3 — verdict
 
 - [x] **knot_lean re-mesuré** : GREEN post-#8725 (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) body §« Mesure firsthand »)
-- [x] **conway_lean re-mesuré** : RED — recommandation whitelist `native_decide.*` avec issue nommée `#8743` à créer
+- [x] **conway_lean re-mesuré** : RED — whitelist `native_decide.*` (19 noms explicites) recommandée avec issue nommée `#8749` (triage THEOREME PAR THEOREME)
 - [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake
 - [x] **14 lacs GREEN** : câblage futur sans coût
 
-**Recommendation pour le coordinateur (ai-01)** : créer #8743 (whitelist `native_decide.*` sur `conway_lean`), à livrer après un PR de câblage `lean-conway.yml` → `lean-axiom.yml` qui matérialise la déclaration `allow-axioms: "native_decide.*"`. Le câblage lui-même est un MED/lean-ci-tooling dédié.
+**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage `lean-conway.yml` → `lean-axiom.yml` est un MED/lean-ci-tooling dédié.
 
-## 6. Acceptance step 4 — §B.3 pr-review-discipline.md
+## 6. Acceptance step 4 — note sur §B.3 pr-review-discipline.md
 
-Le gate `proof-integrity` couvre désormais `native_decide` (post-#8740). La règle `.claude/rules/pr-review-discipline.md` §B.3 mentionnait `sorryAx` (transitif) mais restait ambiguë sur `native_decide` (la classe d'axiomes la plus dangereuse). Le PR companion de ce triage doc met à jour §B.3 pour expliciter que la gate couvre `native_decide`, `sorryAx`, `Classical.choice` (cf. PR #8744 c.948).
+Le gate `proof-integrity` couvre désormais `native_decide` (post-#8740). La règle `.claude/rules/pr-review-discipline.md` §B.3 mentionnait `sorryAx` (transitif) mais restait ambiguë sur `native_decide` (la classe d'axiomes la plus dangereuse). **Note de scope** : la mise à jour §B.3 du fichier de règles est **gélée pour cette PR** (user sign-off requis, PR #8744 attend déjà cette signature avec le user en déplacement). Le présent triage doc harmonise la **substance** avec le gate (`native_decide` couvert, 19 noms déclarés), ce qui rend la règle §B.3 **désambiguïsée par convergence** côté doc — l'edit de la règle elle-même viendra dans une PR distincte post-sign-off. Cf. PR #8744 c.948.
 
 ## 7. Voir aussi
 
 - [#8738](https://github.com/jsboige/CoursIA/issues/8738) — ticket de référence (parser fix #8740, triage c.948)
 - PR [#8740](https://github.com/jsboige/CoursIA/pull/8740) — `fix(lean-tooling,#8738): proof-integrity gate reads multi-line axiom lists` (c.947, MERGED 2026-07-28)
+- PR [#8746](https://github.com/jsboige/CoursIA/pull/8746) — `ci(lean,#8677): proof-integrity gate v2 — KochenSpecker+FreeWillTheorem + 19 explicit native_decide names` (c.951, MERGED 2026-07-29)
 - PR [#8725](https://github.com/jsboige/CoursIA/pull/8725) — `Knots/Invariant.lean` retire `native_decide` tactic (po-2026, MERGED 2026-07-27)
-- PR [#8744](https://github.com/jsboige/CoursIA/pull/8744) — c.948 delivery (mise à jour §B.3 + ce doc triage)
+- [#8749](https://github.com/jsboige/CoursIA/issues/8749) — triage THEOREME PAR THEOREME des 19 axiomes `native_decide` sur `conway_lean` (par lots 3-5, schema #8731 vs whitelist)
 - `.github/workflows/lean-axiom.yml` — job réutilisable proof-integrity (4 inputs : `project-path`, `display-name`, `target-modules`, `allow-axioms`, `fail-on-sorry`)
 - `.github/workflows/lean-knot.yml` — seul workflow lake à appeler `lean-axiom.yml` actuellement
-- `.claude/rules/pr-review-discipline.md` §B.3 — règle de review Lean PRs (mise à jour c.948)
+- `.github/workflows/lean-conway.yml` — cible câblage (19 axiomes dans `allow-axioms`, scope=Conway.KochenSpecker+Conway.FreeWillTheorem en tranche 2)
+- `.claude/rules/pr-review-discipline.md` §B.3 — règle de review Lean PRs (mise à jour c.948 gélée pour sign-off user)
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py` — `LeanVerifier._extract_axioms` (parser multiline fixé par c.947)
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Conway/README.md` §15 + `LEAN_INVENTORY.md` — justification pédagogique de `native_decide` sur conway_lean
