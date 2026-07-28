@@ -49,6 +49,17 @@ on:
         description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
         type: string
         default: ""
+      fail-on-sorry:
+        description: >-
+          Whether a transitive `sorryAx` fails the run. Leave at `true` for a
+          lake whose proofs are meant to be complete. Set to `false` for a lake
+          with acknowledged open `sorry`s: the job then still hard-fails on
+          forbidden axioms, and reports `has_sorry` per module without gating
+          on it. This is an honesty knob, not a leniency one — a gate that can
+          never go green teaches reviewers to ignore it, which is the exact
+          mirror of a gate that can never go red.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -86,32 +97,35 @@ jobs:
       with:
         python-version: "3.13"
 
+    # No `working-directory:` here, and no `cd`, on purpose. Both paths are
+    # derived from the environment below. A `working-directory:` on this step
+    # is silently cancelled by any `cd` inside `run:`, which is exactly the
+    # defect this replaces: the step declared the lake root, the `run` block
+    # then moved to `$GITHUB_WORKSPACE`, and the check ran against the repo
+    # root where no lake exists. `lake build` (which has a correct
+    # `working-directory` and no `cd`) succeeded, so the job looked like an
+    # axiom violation while it was really a "no lake here" error. See #8712.
     - name: Run axiom check
-      working-directory: ${{ inputs.project-path }}
       env:
         MODULES: ${{ inputs.target-modules }}
         ALLOW: ${{ inputs.allow-axioms }}
         DISPLAY_NAME: ${{ inputs.display-name }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        FAIL_ON_SORRY: ${{ inputs.fail-on-sorry }}
       run: |
         set -eu
-        cd "$GITHUB_WORKSPACE"
         python - <<'PY'
         import os
         import subprocess
         import sys
         from pathlib import Path
 
-        # Locate the agent_tests helper. The workflow runs from the lake
-        # project root, so the repo root is two levels up from
-        # `agent_tests/` (`<lake>/..` = `Lean/`, then `..` = `SymbolicAI`).
-        # Easier: walk up looking for the helper.
-        repo_root = Path(os.getcwd())
-        for _ in range(6):
-            if (repo_root / "MyIA.AI.Notebooks").exists():
-                break
-            repo_root = repo_root.parent
-        else:
-            sys.exit("could not locate repo root (no MyIA.AI.Notebooks/)")
+        # Both roots come from the environment, never from the cwd: the cwd of
+        # this step is an implementation detail of the runner, and depending on
+        # it is what broke the gate on its first real run (#8712).
+        repo_root = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+        if not (repo_root / "MyIA.AI.Notebooks").exists():
+            sys.exit(f"repo root has no MyIA.AI.Notebooks/: {repo_root}")
         sys.path.insert(0, str(repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "agent_tests"))
 
         from lean_server import LeanVerifier  # noqa: E402
@@ -120,14 +134,19 @@ jobs:
         allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
         display_name = os.environ["DISPLAY_NAME"]
 
-        # The `working-directory` step already put us in the lake root.
-        project_path = Path(os.getcwd()).resolve()
+        fail_on_sorry = os.environ.get("FAIL_ON_SORRY", "true").strip().lower() == "true"
+
+        project_path = (repo_root / os.environ["PROJECT_PATH"]).resolve()
+        if not project_path.is_dir():
+            sys.exit(f"lake project path does not exist: {project_path}")
         verifier = LeanVerifier()
         verifier.project_dir = str(project_path)
 
         all_clean = True
+        sorry_modules = []
         print(f"=== Proof integrity axiom check ({display_name}) ===")
         print(f"Project: {project_path}")
+        print(f"Gate on sorry: {'yes' if fail_on_sorry else 'no (reported, not gated)'}")
         print(f"Modules: {modules}")
         print(f"Additional allow-list: {allow if allow else '(none)'}")
         print()
@@ -144,27 +163,73 @@ jobs:
                     "Quot.sound",
                     *allow,
                 ],
-                fail_on_sorry=True,
-                # CI gate path: pass fail_on_sorry=True explicitly. The
-                # post-#8680 default is False (prover path), which is the
-                # right behaviour for the agent harness tracking sorries
-                # via `has_sorry` separately, but wrong for a CI integrity
-                # gate where a transitive sorryAx must fail the run.
+                fail_on_sorry=fail_on_sorry,
+                # The post-#8680 default is False (prover path), right for the
+                # agent harness which tracks sorries via `has_sorry` separately.
+                # A CI gate wants True by default so a transitive sorryAx fails
+                # the run -- but a lake with acknowledged open sorries opts out
+                # via `fail-on-sorry: false` rather than staying permanently red.
             )
-            print(f"  declarations: {len(result['declarations'])} enumerated")
+            n_decls = len(result["declarations"])
+            print(f"  declarations: {n_decls} enumerated")
             print(f"  axioms: {result['axioms']}")
             print(f"  forbidden: {result['forbidden']}")
             print(f"  has_sorry: {result['has_sorry']}")
-            if not result["success"]:
+            # `error` is the ONLY field that separates "the lake did not build /
+            # was not found" from "a forbidden axiom was reached". Omitting it
+            # made a dead build indistinguishable from a real violation in the
+            # logs, and cost a full misattribution on #8712 -- the summary
+            # blamed forbidden axioms while `forbidden` was empty.
+            if result.get("error"):
+                print(f"  error: {result['error']}")
+                # `error` names the class of failure; `raw_output` names the
+                # cause. Without this tail, "build_failed_returncode_1" sends
+                # you to a local reproduction to learn what any CI log already
+                # had. Tail rather than head: Lean prints the failing
+                # declaration and its error last.
+                tail = (result.get("raw_output") or "").strip().splitlines()[-20:]
+                for line in tail:
+                    print(f"    | {line}")
+            if result["has_sorry"]:
+                sorry_modules.append(mod)
+
+            module_ok = result["success"]
+
+            # `fail_on_sorry` does double duty inside `check_axioms`: besides
+            # gating sorryAx, it also gates the "no declarations enumerated"
+            # guard (lean_server.py: `if fail_on_sorry: return success=False,
+            # error=no_declarations_enumerated`). So passing false to silence a
+            # known sorry would ALSO silence the guard that catches a module
+            # whose source could not be parsed -- and a check that enumerated
+            # zero declarations would report OK having verified nothing.
+            # That is the same defect this PR removes, merely mirrored: instead
+            # of a gate that can never go green, a gate that can never go red.
+            # Assert enumeration here, independently of the sorry policy.
+            if n_decls == 0:
+                module_ok = False
+                print(f"  FAIL: no declarations enumerated -- nothing was verified")
+
+            if not module_ok:
                 all_clean = False
                 print(f"  FAIL")
             else:
                 print(f"  OK")
 
         print()
+        if sorry_modules and not fail_on_sorry:
+            print(f"NOTE: sorry present in {', '.join(sorry_modules)} "
+                  f"(reported, not gated -- fail-on-sorry is false for this lake).")
         if all_clean:
-            print("OK: no forbidden axioms (sorryAx caught transitively if any).")
+            print("OK: no forbidden axioms"
+                  + (" (sorryAx caught transitively if any)." if fail_on_sorry else "."))
         else:
-            print("FAIL: forbidden axioms detected. See per-module breakdown above.")
+            # Say what actually failed. A fixed "forbidden axioms detected."
+            # line is a lie whenever the cause was a build/lookup error, and a
+            # gate that misreports its own cause is worse than no gate.
+            print("FAIL: see per-module breakdown above "
+                  "(`error:` for build/lookup failures, "
+                  "`declarations: 0` for a module whose source was not parsed, "
+                  "`forbidden:` for axiom violations"
+                  + (", `has_sorry:` for sorryAx)." if fail_on_sorry else ")."))
             sys.exit(1)
         PY
