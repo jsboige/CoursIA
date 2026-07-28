@@ -96,6 +96,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance notebook ↔ source canonique pour la série Probas/ (36 notebooks Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -148,7 +149,6 @@ Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPI
 | Fichier | Description |
 |---------|-------------|
 | [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. 164 lignes |
-| [audit/c803-mapping.md](audit/c803-mapping.md) | Audit distillation MBML/Infer.NET — mapping 36 notebooks Probas/ (17 Infer + 17 PyMC + 2 racine) vs *MBML Book* (Herbrich) + TrueSkill Herbrich 2007 + WinBUGS/JAGS. 5 catégories : FIDÈLE inline/biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS / HORS-SCOPE. Pilote c.803, #8081. 124 lignes. **Statut à trancher** — sortie d'audit committée, cf #7422 |
 
 ## ICT (docs/ict/)
 
@@ -199,7 +199,7 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 ```
 docs/
   reference/         Docs vivantes liées depuis CLAUDE.md / rules
-  audit/             Audit sémantique cross-famille (sampling-protocol + c803-mapping + history/) — #8052, #8081
+  audit/             Audit sémantique cross-famille (sampling-protocol + history/) — #8052
   genai/             Infrastructure GenAI
   qc/                QuantConnect reference
   lean/              Prover itération + endpoints
