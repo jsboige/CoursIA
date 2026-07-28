@@ -7,7 +7,7 @@
     date: "2026-07-28"
     by: myia-po-2024:CoursIA-2
     python_sha: 3e358b91d925700d4ab743b74c7799a5f654d02c
-    csharp_sha: f5158092a1488ec4a9a397bffe0f1ae02835f7c0
+    csharp_sha: 5fd0b931f358d0ff421b9f9c2c311f03f48d2891
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
