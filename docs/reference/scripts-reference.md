@@ -142,6 +142,35 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `fix_audio_dependencies.py`, `optimize_dvs.py` | Dépendances audio / optimisation |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
 
+## Audit, coûts & fidélité — `scripts/audit/`
+
+Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit sémantique claims↔outputs (#8052). Complémentaire de `scripts/notebook_tools/` (qui cible exécution / lint / catalogue) : cette famille cible les **axes transverses** (coût, fidélité prose↔sortie, sorry Lean, registre datasets). Deux familles : **checkers** read-only gatables en CI (exit-code gatable), **populateurs** qui écrivent `nb.metadata['cost']`.
+
+### Checkers (read-only, gatables CI)
+
+| Script | Usage |
+|--------|-------|
+| `check_cost_metadata.py` | Cohérence matrice de coût (#8056) : lit `nb.metadata['cost']` (canonique) avec fallback legacy YAML `---cost---` ; flague `gpu_required:false` mais imports CUDA / `torch.cuda` |
+| `check_dataset_registry.py` | Cohérence registre datasets (#8055 tr.2) : verdicts `DRIFT` / `MISSING` / `CARD_REQUIRED` / `OK` (litmus : EXTRACT, pas DECIDE), sortie YAML |
+| `check_denominators.py` | Détecteur léger de divergence entre 3 sources (disque / forensic / catalogue), #8050 ; `--strict` → exit 1 sur drift |
+| `check_editorial_review.py` | Cohérence registre editorial-review (YAML ↔ catalogue) : 6 validations dont `reviewer != owner_logique`, `evidence_pr` en état `MERGED` |
+| `check_lean_notebook_sorry.py` | Tally `sorry` par notebook Lean (#8051, kernel `lean4-wsl`) : strip commentaires puis compte `sorry` word-bounded — alimente l'axe scientific_review |
+| `extract_claims_vs_outputs.py` | Audit sémantique cellule-par-cellule (#8052 P0) : compare prose markdown (claims) vs sorties code (outputs) ; 5 classes de mismatch |
+
+### Populateurs (écrivent `nb.metadata['cost']`)
+
+| Script | Usage |
+|--------|-------|
+| `populate_cost_metadata.py` | Populate `metadata['cost']` pour ~69 notebooks QC QuantBook sans coût (#8056) ; `qcc_tokens_est = max(400, n_code_cells×70)` |
+| `populate_gametheory_cost.py` | Populate coût GameTheory (48 NBs, CPU-pure : nashpy + numpy + matplotlib) |
+| `populate_semantickernel_cost.py` | Populate coût GenAI / SemanticKernel (26 NBs, API-heavy : gpt-4o / Azure) |
+
+### Réparation d'assets (Stop & Repair)
+
+| Script | Usage |
+|--------|-------|
+| `regen_img1_dalle3.py` | Réparation asset DALL-E legacy via **vraie regen** DALL-E 3 (#8624, Stop & Repair L948) — jamais hand-edit d'output |
+
 ## Maintenance & environnement — `scripts/`
 
 | Chemin | Usage |
