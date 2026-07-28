@@ -169,6 +169,36 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     expected_py_sha = _cur_sha(target_py_path)
     expected_cs_sha = _cur_sha(target_cs_path)
 
+    # Rendre la cible DETERMINISTEMENT stale avant --update.
+    #
+    # Avant ce garde-fou, le test dependait de l'etat reel de la paire hardcoded
+    # "Search-1 StateSpace" : il supposait que son `last_audit.date` etait en
+    # retard sur aujourd'hui (afin que --update ait du travail -> "1 paire").
+    # Mais une PR legitime qui rebaseline cette paire (C868-L : un twin edite =
+    # rebaseline meme PR) met son `date` a aujourd'hui -> --update n'a plus rien
+    # a faire -> "0 paire" -> faux echec (regression observee : PR #8660 a
+    # rebaseline Search-1 avec date=2026-07-28, cassant ce test en CI).
+    #
+    # Fix robuste : on corrompt DELIBEREMENT la cible (date ancienne + SHAs
+    # bogus) AVANT --update. Ainsi --update a TOUJOURS du travail, et les
+    # assertions ci-dessous (SHA == HEAD blob apres rebaseline, autres paires
+    # intactes) verifient le comportement reel -- pas un accident d'etat.
+    import re as _re
+    target_yaml = next(
+        (yf for yf in sorted(REGISTRY_DIR.glob("*.yaml"))
+         if target_name in yf.read_text(encoding="utf-8")),
+        None,
+    )
+    assert target_yaml is not None, (
+        f"Aucun yaml dans {REGISTRY_DIR} pour la paire {target_name!r}."
+    )
+    _BOGUS_SHA = "0" * 40
+    _raw = target_yaml.read_text(encoding="utf-8")
+    _raw = _re.sub(r'(date: )"?(\d{4}-\d{2}-\d{2})"?', r'\g<1>"2020-01-01"', _raw)
+    _raw = _re.sub(r'(python_sha: )[0-9a-f]{40}', rf'\g<1>{_BOGUS_SHA}', _raw)
+    _raw = _re.sub(r'(csharp_sha: )[0-9a-f]{40}', rf'\g<1>{_BOGUS_SHA}', _raw)
+    target_yaml.write_text(_raw, encoding="utf-8")
+
     result = _run_update("--pair", target_name)
     assert result.returncode == 0, (
         f"--update --pair {target_name!r} aurait du reussir. "

@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: d69404a7e4f8c2c7dba4e4aabea624d092aff1d7
-    csharp_sha: d29a5facae7635ba1ef366b61c4ff2acc3bf25aa
+    date: "2026-07-28"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 59cf141f9089fb8e7a1281dfdf5f3d1cdcddea88
+    csharp_sha: 6d5cbf1ce87cb9a3284b06ee3b9d68759cf0a135
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
