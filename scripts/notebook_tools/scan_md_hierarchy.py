@@ -17,10 +17,16 @@ Detects (source-level, render-agnostic):
     (multiple competing H1s / H1 used mid-notebook -> title hierarchy muddled).
   - MULTI-H1: more than one H1 across the whole notebook.
 
-Usage: python scan_md_hierarchy.py <notebook-or-dir> [more...]
+Usage: python scan_md_hierarchy.py <notebook-or-dir> [more...] [--fail-on-findings]
 Outputs a per-notebook report + a machine-readable summary line per finding.
+
+An EMPTY scan is never reported as a clean scan: no argument, a mistyped path,
+or a directory holding no notebook exits 2 with a message on stderr instead of
+printing `0/0 notebooks flagged`. This scanner has already been fooled once by
+a vacuous zero (the #3968 acceptance criterion, see HINT_RE below); `0/0` was
+the second mouth of the same trap.
 """
-import json, re, sys, pathlib
+import argparse, json, re, sys, pathlib
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
 # Fenced code block delimiter (```... or ~~~...), possibly indented. Lines inside
@@ -188,18 +194,42 @@ def scan_notebook(path):
     return findings
 
 def iter_notebooks(args):
+    """Yield the notebooks designated by `args` (dirs are walked recursively).
+
+    Raises ValueError if a target designates nothing, so that a typo can never
+    be mistaken for a clean scan (see `main`).
+    """
+    unresolved = []
     for a in args:
         p = pathlib.Path(a)
         if p.is_dir():
             yield from sorted(p.rglob('*.ipynb'))
-        elif p.suffix == '.ipynb':
+        elif p.suffix == '.ipynb' and p.is_file():
             yield p
+        else:
+            unresolved.append(a)
+    if unresolved:
+        raise ValueError('not a notebook nor a directory: ' + ', '.join(unresolved))
 
-def main():
-    targets = sys.argv[1:]
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('paths', nargs='+', metavar='NOTEBOOK-OR-DIR',
+                        help='notebooks and/or directories to scan (recursive)')
+    parser.add_argument('--fail-on-findings', action='store_true',
+                        help='exit 1 when at least one notebook is flagged '
+                             '(default: always exit 0, census mode)')
+    args = parser.parse_args(argv)
+
+    try:
+        notebooks = list(iter_notebooks(args.paths))
+    except ValueError as exc:
+        parser.error(str(exc))
+
     total = 0
     flagged = 0
-    for nb in iter_notebooks(targets):
+    for nb in notebooks:
         if '_output' in nb.name or '.ipynb_checkpoints' in str(nb):
             continue
         total += 1
@@ -209,7 +239,15 @@ def main():
             print(f'\n## {nb.as_posix()}')
             for f in fs:
                 print(f"  [{f['kind']}] cell {f['cell']}  L{f.get('level','?')}  {f['text']}")
+    if total == 0:
+        # An empty scan is NOT a clean scan: say so, and fail. `0/0 flagged`
+        # otherwise reads as an all-clear while nothing has been looked at.
+        print('ERROR: no notebook found under the given paths -- nothing was '
+              'scanned, this is NOT an all-clear.', file=sys.stderr)
+        return 2
+    # Keep this the LAST stdout line: the CI census reads it with `tail -1`.
     print(f'\n=== {flagged}/{total} notebooks flagged ===')
+    return 1 if (flagged and args.fail_on_findings) else 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
