@@ -444,3 +444,83 @@ def test_extract_axioms_does_not_match_no_colon_format():
     assert axioms == [], (
         f"La regex anchored sur ':' ne doit PAS matcher le format obsolète ; got {axioms!r}"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #8738 — multi-line axiom lists (Lean's pretty-print wraps long names)
+# ──────────────────────────────────────────────────────────────────────────
+
+# Verbatim output from ai-01's reproduction on knot_lean/Knots.Invariant:1054,
+# BEFORE the #8731 elimination of native_decide (msg-20260728T165702 in #8738).
+# The four axioms (propext, Classical.choice, Quot.sound, plus the
+# native_decide witness) overflow Lean's ~100-col pretty-printer, so Lean
+# wraps the list across continuation lines WITHOUT re-emitting the
+# "'Knots...' depends on axioms:" prefix. Iterating line-by-line (#8681)
+# drops the declaration entirely; re.finditer on the whole output lets
+# [^\\]]* span newlines.
+REAL_MULTILINE_NATIVE_DECIDE_OUTPUT = (
+    "'Knots.figureEight_not_tricolorable' depends on axioms: [propext,\n"
+    " Classical.choice,\n"
+    " Quot.sound,\n"
+    " Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1]\n"
+)
+
+
+def test_extract_axioms_handles_multiline_lists():
+    """#8738 — la regex doit capturer les axiomes sur les listes multi-lignes.
+
+    Format reel de Lean quand la liste d'axiomes depasse la largeur
+    pretty-print (~100 colonnes) : ``'Knots.X' depends on axioms: [A,\n
+    B,\n C,\n D]`` -- continuation sans re-emission du prefixe. L'iteration
+    ligne-a-ligne de #8681 ratait les 3 lignes de continuation ; le fix
+    ``re.finditer`` traverse les newlines via ``[^\\]]*``.
+    """
+    axioms = LeanVerifier._extract_axioms(REAL_MULTILINE_NATIVE_DECIDE_OUTPUT)
+    assert set(axioms) == {
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1",
+    }, f"tous les axiomes multi-lignes doivent etre captures ; got {axioms!r}"
+
+
+def test_extract_axioms_mixed_single_and_multiline_lists():
+    """#8738 — mix single-line et multi-line dans la meme sortie.
+
+    Le cas reel : ``Knots.Invariant`` a 31 declarations, la majorite
+    tient sur une ligne, mais celle qui utilise ``native_decide`` wrappe.
+    La regex doit traiter les deux formes sans confusion.
+    """
+    out = (
+        _axiom_line("Knots.mirror_wf_preserves", ["propext", "Quot.sound"])
+        + "\n"
+        + REAL_MULTILINE_NATIVE_DECIDE_OUTPUT
+    )
+    axioms = LeanVerifier._extract_axioms(out)
+    assert "Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1" in axioms, (
+        f"l'axiome multi-ligne doit etre capture ; got {axioms!r}"
+    )
+    assert "propext" in axioms and "Quot.sound" in axioms
+
+
+def test_real_lean_output_fails_when_native_decide_not_whitelisted():
+    """#8738 — gate E2E rougit sur le module contenant ``native_decide``.
+
+    Test bout-en-bout qui valide le critere d'acceptance de #8738 :
+    ``check_axioms`` sur la sortie verbatim ci-dessus doit retourner
+    ``success: False`` avec l'axiome natif dans ``forbidden``, sans meme
+    avoir besoin d'un vrai build Lean (la sortie reelle suffit).
+    """
+    decls = ["Knots.figureEight_not_tricolorable"]
+    whitelist = [
+        "Classical.choice", "propext", "funext",
+        "Quot.lift", "Quot.mk", "Quot.sound",
+        # Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1
+        # deliberement omis -> gate rouge
+    ]
+    r = _check_with_output(decls, REAL_MULTILINE_NATIVE_DECIDE_OUTPUT,
+                           fail_on_sorry=True, whitelist=whitelist)
+    assert r["success"] is False
+    assert "Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1" in r["forbidden"], (
+        f"native_decide doit apparaitre dans forbidden ; got {r['forbidden']!r}"
+    )
