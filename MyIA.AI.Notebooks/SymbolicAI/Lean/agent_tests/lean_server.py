@@ -478,6 +478,30 @@ class LeanVerifier:
                 input=stdin_input,
             )
             output = result.stdout + "\n" + result.stderr
+
+            # Gate de build (trou #8681, ai-01 c.32) : si ``lean --stdin``
+            # termine en echec (returncode != 0), la sortie ne contient pas
+            # de lignes ``depends on axioms:`` -- ``_extract_axioms`` renvoie
+            # alors ``[]`` et ``success`` tombe a ``True`` : un build MORT
+            # validait l'integrite de preuve. Le garde ``no_declarations_enumerated``
+            # ne couvre pas ce cas (l'enumeration lit le SOURCE, pas le build,
+            # donc elle compte 37 declarations pendant que l'elaboration est
+            # morte). On lit ``returncode`` AVANT le parsing : un process
+            # sortie-en-non-zero ne peut JAMAIS valider l'integrite.
+            if result.returncode != 0:
+                return {
+                    "success": False,
+                    "axioms": [],
+                    "forbidden": [],
+                    "whitelist": whitelist,
+                    "has_sorry": False,
+                    "fail_on_sorry": fail_on_sorry,
+                    "declarations": declarations,
+                    "enumerated": True,
+                    "raw_output": output,
+                    "error": f"build_failed_returncode_{result.returncode}",
+                }
+
             axioms = self._extract_axioms(output)
             forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
             has_sorry = "sorryAx" in axioms

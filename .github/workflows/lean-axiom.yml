@@ -120,7 +120,6 @@ jobs:
         allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
         display_name = os.environ["DISPLAY_NAME"]
 
-        project_path = Path(os.environ.get("GITHUB_WORKSPACE", "")) / os.environ.get("PROJECT_PATH_INNER", "")
         # The `working-directory` step already put us in the lake root.
         project_path = Path(os.getcwd()).resolve()
         verifier = LeanVerifier()

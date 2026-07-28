@@ -43,9 +43,10 @@ def _axiom_line(name: str, axioms: list) -> str:
 
 
 class _FakeCompletedProcess:
-    def __init__(self, stdout: str = "", stderr: str = ""):
+    def __init__(self, stdout: str = "", stderr: str = "", returncode: int = 0):
         self.stdout = stdout
         self.stderr = stderr
+        self.returncode = returncode
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -109,12 +110,12 @@ def test_extract_axioms_ignores_non_axiom_lines():
 # check_axioms gate logic (subprocess mocked)
 # ──────────────────────────────────────────────────────────────────────────
 
-def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir="."):
+def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir=".", returncode=0):
     verifier = LeanVerifier(project_dir)
     with patch.object(lean_server, "_enumerate_module_declarations", return_value=decls), \
             patch.object(lean_server, "_resolve_lake_command", return_value=(["lean"], {})), \
             patch.object(lean_server.subprocess, "run",
-                         return_value=_FakeCompletedProcess(fake_stdout)):
+                         return_value=_FakeCompletedProcess(fake_stdout, returncode=returncode)):
         return verifier.check_axioms("Knots.Basic", fail_on_sorry=fail_on_sorry)
 
 
@@ -163,3 +164,51 @@ def test_no_declarations_prover_path_stays_green():
     r = _check_with_output([], "", fail_on_sorry=False)
     assert r["success"] is True
     assert r["enumerated"] is False
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Build-dead gate (trou #8681, ai-01 c.32) : un build MORT ne valide jamais
+# ──────────────────────────────────────────────────────────────────────────
+
+def test_dead_build_fails_ci_gate():
+    """returncode != 0 (build cassé) + output vide -> success=False.
+
+    Avant le fix #8681, ce cas renvoyait success=True car _extract_axioms([])
+    donnait forbidden=[]/has_sorry=False : un build mort validait l'intégrité.
+    L'énumération compte 1 déclaration (elle lit le source, pas le build), donc
+    le garde ``no_declarations_enumerated`` ne couvrait pas ce cas.
+    """
+    r = _check_with_output(
+        ["Knots.Basic.t1"], "", fail_on_sorry=True, returncode=1,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_1"
+    assert r["enumerated"] is True  # le source enumerait bien la déclaration
+    assert r["axioms"] == []
+
+
+def test_dead_build_fails_prover_path_too():
+    """Le gate de build mort s'applique AUSSI au chemin prover (fail_on_sorry=False).
+
+    Un build cassé ne doit JAMAIS valider l'intégrité, même dans le chemin prover
+    qui préserve le vert historique sur sorryAx : le vert historique suppose un
+    build vivant. returncode != 0 = défaillance, pas un gap de preuve.
+    """
+    r = _check_with_output(
+        ["Knots.Basic.t1"], "", fail_on_sorry=False, returncode=2,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_2"
+
+
+def test_dead_build_with_misleading_output_still_fails():
+    """Si returncode != 0, on n'analyse même pas l'output (qui pourrait être
+    partiel/muettoxique). On ne fait pas confiance à un process mort."""
+    # output contient une ligne axiom valide, mais returncode=1 -> échec quand même
+    out = _axiom_line("Knots.Basic.t1", ["Classical.choice", "propext"])
+    r = _check_with_output(
+        ["Knots.Basic.t1"], out, fail_on_sorry=True, returncode=1,
+    )
+    assert r["success"] is False
+    assert r["error"] == "build_failed_returncode_1"
+    assert r["axioms"] == []
