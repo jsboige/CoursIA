@@ -23,6 +23,12 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Reuse the canonical Lean comment-stripper (handles nested ``/- -/`` blocks and
+# ``--`` line comments) rather than a second copy -- the sorry counter
+# (``count_real_sorries``) already proved this is the only honest way to exclude
+# docstring prose from a keyword scan (#6171, #8722 cause 2).
+from prover.lean_utils import strip_lean_comments
+
 
 def _to_wsl_path(win_path: str) -> str:
     """Convert ``C:\\foo\\bar`` to ``/mnt/c/foo/bar`` for use inside WSL bash."""
@@ -146,11 +152,25 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
     ``example`` (which may be anonymous) are intentionally excluded. Returns an
     empty list when the source file cannot be located -- callers MUST treat that
     as "gate cannot run" (fail-loud for the CI gate), never as "gate passed".
+
+    Two correctness fixes (#8722):
+
+    * **Comments are stripped first** via ``strip_lean_comments`` (the same
+      helper ``count_real_sorries`` uses). Docstring prose beginning at column 0
+      with ``theorem``/``lemma``/``def`` (e.g. ``/- lemma statement working for
+      *any* ... -/``) is no longer enumerated as a phantom declaration, which
+      produced ``#print axioms <unknown>`` errors that failed the whole module.
+
+    * **Names are always qualified by the namespace stack.** A dotted name
+      (``def Knot.crossingNumber``) declared inside ``namespace Knots`` is
+      ``Knots.Knot.crossingNumber`` in Lean 4 -- a dotted source name is NOT
+      already absolute. The only absolute prefix is ``_root_.``, which is
+      stripped so the emitted name is the true root-qualified identifier.
     """
     src = _module_source_path(project, module_name)
     if src is None:
         return []
-    text = src.read_text(encoding="utf-8", errors="replace")
+    text = strip_lean_comments(src.read_text(encoding="utf-8", errors="replace"))
     ns_stack: List[str] = []
     decls: List[str] = []
     for line in text.splitlines():
@@ -166,10 +186,17 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
         m = _DECL_HEAD_RE.match(line)
         if m:
             name = m.group("name")
-            if "." in name or not ns_stack:
-                decls.append(name)
-            else:
+            if name.startswith("_root_."):
+                # ``_root_.`` is the ONLY absolute prefix in Lean 4: it escapes
+                # the enclosing namespace. Strip it to emit the root identifier.
+                decls.append(name[len("_root_."):])
+            elif ns_stack:
+                # A dotted source name is still nested in the namespace stack --
+                # ``def Knot.crossingNumber`` in ``namespace Knots`` is
+                # ``Knots.Knot.crossingNumber`` (#8722 cause 1).
                 decls.append(".".join(ns_stack + [name]))
+            else:
+                decls.append(name)
     return decls
 
 

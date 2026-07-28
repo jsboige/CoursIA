@@ -91,6 +91,73 @@ def test_enumeration_missing_source_returns_empty(tmp_path):
     assert _enumerate_module_declarations(tmp_path, "Does.Not.Exist") == []
 
 
+# ── #8722: the two defects that made the gate false-fail ──────────────────
+
+def test_enumeration_dotted_name_inside_namespace_is_qualified(tmp_path):
+    """#8722 cause 1: a dotted source name in a namespace is NOT absolute.
+
+    ``def Knot.crossingNumber`` written inside ``namespace Knots`` declares
+    ``Knots.Knot.crossingNumber`` -- the old ``if "." in name`` heuristic
+    emitted the bare ``Knot.crossingNumber`` (unknown to Lean), failing the
+    whole module's axiom check.
+    """
+    src = (
+        "namespace Knots\n"
+        "def Knot.crossingNumber (k : Nat) : Nat := 0\n"
+        "def KnotDiagram.edges (d : Nat) : List Nat := []\n"
+        "end Knots\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["Knots.Knot.crossingNumber", "Knots.KnotDiagram.edges"]
+
+
+def test_enumeration_ignores_docstring_prose_at_column_zero(tmp_path):
+    """#8722 cause 2: docstring prose starting with a decl keyword is a phantom.
+
+    A ``/- ... lemma statement working for *any* KnotDiagram ... -/`` block is
+    prose, not a declaration. Before comment-stripping it was enumerated as
+    ``Knots.statement`` (unknown), failing the module. The fix reuses
+    ``strip_lean_comments`` (same helper as ``count_real_sorries``, #6171).
+    """
+    src = (
+        "namespace Knots\n"
+        "/-! ## 13. Polymorphic section\n"
+        "\n"
+        "lemma statement working for *any* KnotDiagram whose well-formedness\n"
+        "theorem at the same time it proves it (the lemma + body are inseparable).\n"
+        "-/\n"
+        "theorem real_lemma : True := trivial\n"
+        "end Knots\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    # The two prose lines ("lemma statement...", "theorem at the same time...")
+    # must NOT appear; only the real declaration survives, properly qualified.
+    assert decls == ["Knots.real_lemma"]
+
+
+def test_enumeration_root_prefix_strips_to_absolute(tmp_path):
+    """``_root_.`` is the ONLY absolute escape in Lean 4 (#8722 cause 1, edge).
+
+    ``def _root_.globalName`` inside any namespace still declares ``globalName``
+    at the root, unqualified.
+    """
+    src = (
+        "namespace Knots\n"
+        "def _root_.globalHelper : Nat := 0\n"
+        "def _root_.Outer.inner : Nat := 0\n"
+        "theorem local_thm : True := trivial\n"
+        "end Knots\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["globalHelper", "Outer.inner", "Knots.local_thm"]
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────
