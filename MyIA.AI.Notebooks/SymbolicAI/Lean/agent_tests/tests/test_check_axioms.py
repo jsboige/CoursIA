@@ -241,6 +241,27 @@ def test_extract_axioms_ignores_non_axiom_lines():
     assert LeanVerifier._extract_axioms(out) == []
 
 
+def test_extract_axioms_multiline_bracket_native_decide():
+    # #8738: Lean wraps the axiom list to ~100 cols when it is long or a name is
+    # long (native_decide axioms). The first line carries no closing ']', so a
+    # per-line regex silently dropped the WHOLE declaration -- the gate rendered
+    # forbidden=[] / OK on a module that really uses native_decide. Reproduced
+    # firsthand by ai-01 c.37 on Knots/Invariant.lean:1054 (figureEight_not_
+    # tricolorable depends on a native_decide.ax_1_1 axiom).
+    out = (
+        "'Knots.figureEight_not_tricolorable' depends on axioms: [propext,\n"
+        " Classical.choice,\n"
+        " Quot.sound,\n"
+        " Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1]\n"
+    )
+    assert set(LeanVerifier._extract_axioms(out)) == {
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+        "Knots.figureEight_not_tricolorable._native.native_decide.ax_1_1",
+    }
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # check_axioms gate logic (subprocess mocked)
 # ──────────────────────────────────────────────────────────────────────────

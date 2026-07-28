@@ -756,10 +756,9 @@ class LeanVerifier:
     def _extract_axioms(output: str) -> list:
         """Extract axiom names from ``#print axioms`` output.
 
-        Lean emits one line per declaration in the form
-        ``'Foo.bar' depends on axioms: [A, B, C]`` (or ``'Foo.bar' does not
-        depend on any axioms`` when none). Parse the bracketed list of each
-        such line and union the names across declarations.
+        Lean emits one declaration per ``'Foo.bar' depends on axioms: [A, B, C]``
+        (or ``'Foo.bar' does not depend on any axioms``). Parse each bracketed
+        list and union the names across declarations.
 
         The match is anchored on the literal colon (``axioms:``) -- the
         previous regex ``r"depends on axioms \\[([^\\]]*)\\]"`` (no colon)
@@ -768,12 +767,26 @@ class LeanVerifier:
         and the criterion-4 forbidden-axiom check (#8677) was a no-op.
         Verified by ai-01's rebuild of ``knot_lean`` and reproduction in
         PR #8681 review (``.reason about regex #8677``, msg-20260728T165702).
+
+        Multi-line bracket handling (#8738, c.944): Lean wraps the axiom list to
+        ~100 columns whenever it is long or a name is long -- the exact case for
+        ``native_decide`` axioms (``Foo._native.native_decide.ax_1_1``). The
+        PREVIOUS implementation iterated line-by-line, so on the wrapped form
+        ``depends on axioms: [propext,`` the first line has no closing ``]`` and
+        the regex did not match; the continuation lines carry no
+        ``depends on axioms:`` prefix so they were skipped. The whole
+        declaration was silently dropped -> ``forbidden: []`` / ``OK`` on a
+        module that really uses ``native_decide``. Fix: search the FULL output
+        (``[^\]]*`` already accepts ``\n``), so a bracket that spans lines is
+        captured. ``re.DOTALL`` is not needed because the bracket class already
+        spans newlines, but it is harmless and makes the intent explicit.
         """
         axioms = []
-        for line in output.split("\n"):
-            m = re.search(r"depends on axioms:\s*\[([^\]]*)\]", line)
-            if not m:
-                continue
+        # Search the WHOLE output (not per-line) so a bracket that Lean wraps
+        # across multiple lines is captured. The inner ``[^\]]*`` accepts ``\n``.
+        for m in re.finditer(
+            r"depends on axioms:\s*\[([^\]]*)\]", output, re.DOTALL
+        ):
             inner = m.group(1).strip()
             if not inner:
                 continue
