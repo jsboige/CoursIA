@@ -262,3 +262,46 @@ def test_format_fill_line_no_suffix_when_translated():
     line = C._format_fill_line(stats)
     assert "AUCUNE" not in line
     assert "en=50.0%" in line
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# _fill_pct — floor anti-arrondi (ride ai-01 c.33 : fr=100.0% pour 24469/24470)
+# ──────────────────────────────────────────────────────────────────────────
+
+def test_fill_pct_floors_below_100_when_not_complete():
+    """24469/24470 ne doit PAS s'afficher 100.0% (ride #6949, ai-01 c.33).
+
+    ``round(99.9959, 1)`` -> ``100.0`` : dans un outil dont la raison d'être
+    est qu'un compteur n'affirme plus faussement la complétude, l'arrondi
+    refait le défaut un ordre plus bas. Le floor garde le pct sous le seuil.
+    """
+    assert C._fill_pct(24469, 24470) == 99.9
+    assert C._fill_pct(24469, 24470) != 100.0
+
+
+def test_fill_pct_100_only_when_complete():
+    """100.0 uniquement si filled == total exactement."""
+    assert C._fill_pct(24470, 24470) == 100.0
+    assert C._fill_pct(2, 2) == 100.0
+    # un de moins -> déjà sous le seuil
+    assert C._fill_pct(1, 2) == 50.0
+
+
+def test_fill_pct_zero_when_no_total():
+    """total=0 (table vide) -> 0.0, pas de ZeroDivisionError."""
+    assert C._fill_pct(0, 0) == 0.0
+
+
+def test_format_fill_line_floors_incomplete_target_below_100():
+    """Une cible à 24469/24470 s'affiche ``99.9%``, jamais ``100.0%``.
+
+    Exerce le path stderr ``_format_fill_line`` (qui n'affiche que les cibles,
+    pas le pivot fr) avec le floor anti-arrondi. Reproduit la ride #6949
+    signalée par ai-01 c.33 au niveau de la ligne lisible.
+    """
+    stats = {lang: {"filled": 0, "total": 24470} for lang in C.ALL_LANGS}
+    stats["fr"] = {"filled": 24470, "total": 24470}
+    stats["en"] = {"filled": 24469, "total": 24470}
+    line = C._format_fill_line(stats)
+    assert "en=99.9%" in line
+    assert "en=100.0%" not in line

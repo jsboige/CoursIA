@@ -47,6 +47,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -304,6 +305,22 @@ def csv_fill_stats(csv_path: Path) -> dict[str, dict[str, int]]:
     return stats
 
 
+def _fill_pct(filled: int, total: int) -> float:
+    """Pourcentage floored à 1 décimale — jamais arrondi vers le haut.
+
+    Discipline #6949 (ai-01 c.33) : un compteur ne doit pas affirmer faussement
+    la complétude. ``round(99.996, 1)`` vaut ``100.0`` pour ``24469/24470``, ce
+    qui réintroduit, un ordre de grandeur plus bas, le défaut que cet outil
+    dénonce (un ``SRC_DRIFT=0`` lu comme « à jour »). On floor donc : ``100.0``
+    n'apparaît que si ``filled == total`` exactement ; sinon le pct reste sous
+    le seuil de complétude. ``filled``/``total`` bruts restent disponibles à
+    côté du pct pour la précision exacte.
+    """
+    if not total:
+        return 0.0
+    return math.floor((100.0 * filled / total) * 10) / 10
+
+
 def _format_fill_line(stats: dict[str, dict[str, int]]) -> str:
     """Ligne lisible stderr : 'en=0.0% es=0.0% ... — AUCUNE traduction déposée'.
 
@@ -316,7 +333,7 @@ def _format_fill_line(stats: dict[str, dict[str, int]]) -> str:
     parts = []
     for lang in TARGET_LANGS:
         s = stats.get(lang, {"filled": 0, "total": 0})
-        pct = (100.0 * s["filled"] / s["total"]) if s["total"] else 0.0
+        pct = _fill_pct(s["filled"], s["total"])
         parts.append(f"{lang}={pct:.1f}%")
     line = f"REMPLISSAGE TRADUCTION ({total} cellules, {len(TARGET_LANGS)} langues cibles) : " + " ".join(parts)
     if total and all(stats[lang]["filled"] == 0 for lang in TARGET_LANGS):
@@ -378,8 +395,11 @@ def main() -> int:
         out: dict[str, dict[str, object]] = {}
         for lang in ALL_LANGS:
             s = stats.get(lang, {"filled": 0, "total": 0})
-            pct = (100.0 * s["filled"] / s["total"]) if s["total"] else 0.0
-            out[lang] = {"filled": s["filled"], "total": s["total"], "pct": round(pct, 1)}
+            out[lang] = {
+                "filled": s["filled"],
+                "total": s["total"],
+                "pct": _fill_pct(s["filled"], s["total"]),
+            }
         return out
 
     fill_report = {
