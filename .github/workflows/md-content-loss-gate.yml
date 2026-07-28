@@ -80,6 +80,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           fail=0
           checked=0
+          unreadable=0
           while IFS= read -r nb; do
             [ -z "$nb" ] && continue
             # Skip notebooks deleted by the PR.
@@ -98,8 +99,21 @@ jobs:
               fail=1
             elif [ "$rc" -eq 2 ]; then
               echo "::warning title=Markdown content-loss gate::$nb could not be read (rc=2); see detector log."
+              unreadable=$((unreadable + 1))
             fi
           done <<< "$CHANGED"
+
+          # Anti-self-disarmament guard (reserve ai-01 c.28 sur #8656) :
+          # si CHAQUE notebook tente etait illisible (rc=2), le gate n'a rien
+          # analyse -> il NE PEUT PAS certifier "no content loss". Un detecteur
+          # casse ou une ref git manquante desarmerait silencieusement ce gate
+          # (la classe de defaut meme qu'il attrape) en renvoyant un notice vert.
+          # On fail loud dans ce cas plutot que de donner un quitus a l'aveugle.
+          if [ "$checked" -gt 0 ] && [ "$unreadable" -eq "$checked" ]; then
+            echo "::error title=Markdown content-loss gate::All $checked changed notebook(s) were unreadable (rc=2) — the gate analyzed NOTHING and cannot certify content integrity. This is likely a broken detector or a missing git ref (BASE=$BASE), not a clean bill of health. Failing loud (anti-self-disarmament, #8655/#8656)."
+            echo "FIX: the gate could not read any changed notebook. Check the detector log above and the BASE ref ($BASE). Do NOT treat this as a pass." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
