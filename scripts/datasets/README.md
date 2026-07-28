@@ -1,173 +1,174 @@
-# Dataset Download Scripts
+# Scripts de téléchargement de datasets
 
-Collection of scripts for downloading and managing historical market data for QuantConnect strategies and educational notebooks.
+> Version anglaise originale préservée dans [README.en.md](README.en.md).
+
+Collection de scripts pour télécharger et gérer les données de marché historiques utilisées par les stratégies QuantConnect et les notebooks pédagogiques.
 
 ## Scripts
 
-| Script | Source | Output |
+| Script | Source | Sortie |
 |--------|--------|--------|
-| `download_yfinance.py` | yfinance (Yahoo Finance) | CSV per symbol |
-| `download_binance_archive.py` | Binance public archives | CSV per period |
-| `download_kaggle.py` | Kaggle datasets | Extracted files |
-| `download_qc_data.py` | QuantConnect (lean-cli / Object Store) | QC data files |
-| `manage_crypto_archive.py` | yfinance + CoinGecko fallback | Consolidated CSV per asset |
-| `stitch_crypto.py` | Bitstamp + Binance + yfinance | BTC/USD 1h continuous CSV |
-| `build_panier_anti_bias.py` | yfinance (26 symbols, 7 asset classes) | Multi-asset panier CSVs |
-| `dezip_forex.py` | FXCM/Oanda zip archives | Forex bid/ask OHLCV CSVs |
+| `download_yfinance.py` | yfinance (Yahoo Finance) | CSV par symbole |
+| `download_binance_archive.py` | Archives publiques Binance | CSV par période |
+| `download_kaggle.py` | Jeux de données Kaggle | Fichiers extraits |
+| `download_qc_data.py` | QuantConnect (lean-cli / Object Store) | Fichiers de données QC |
+| `manage_crypto_archive.py` | yfinance + fallback CoinGecko | CSV consolidé par actif |
+| `stitch_crypto.py` | Bitstamp + Binance + yfinance | CSV continu horaire BTC/USD |
+| `build_panier_anti_bias.py` | yfinance (26 symboles, 7 classes d'actifs) | CSV panier multi-actifs |
+| `dezip_forex.py` | Archives zip FXCM/Oanda | CSV OHLCV forex bid/ask |
 
-## Quick Start
+## Démarrage rapide
 
-### Stock/ETF data (yfinance)
+### Données actions/ETF (yfinance)
 
 ```bash
-# Single symbol
+# Symbole unique
 python scripts/datasets/download_yfinance.py --symbols SPY --start 2020-01-01 --end 2024-01-01
 
-# Multiple symbols
+# Plusieurs symboles
 python scripts/datasets/download_yfinance.py --symbols SPY,AAPL,TLT,GLD --start 2018-01-01
 
 # Crypto via yfinance
 python scripts/datasets/download_yfinance.py --symbols BTC-USD,ETH-USD --start 2019-01-01
 ```
 
-Output: `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/{SYMBOL}_{start}_{end}.csv`
+Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/yfinance/{SYMBOL}_{start}_{end}.csv`
 
-Cache: Parquet files in `datasets/yfinance_cache/` (use `--no-cache` to bypass).
+Cache : fichiers Parquet dans `datasets/yfinance_cache/` (utiliser `--no-cache` pour contourner).
 
-### Binance historical klines
+### Klines historiques Binance
 
 ```bash
-# Daily BTC/USDT for 2023
+# BTC/USDT journalier pour 2023
 python scripts/datasets/download_binance_archive.py --symbol BTCUSDT --start 2023-01-01 --end 2023-12-31
 
-# Hourly ETH/USDT futures
+# Futures ETH/USDT horaires
 python scripts/datasets/download_binance_archive.py --symbol ETHUSDT --market futures --interval 1h --start 2023-01-01
 ```
 
-Output: `MyIA.AI.Notebooks/QuantConnect/datasets/binance/{SYMBOL}_{INTERVAL}_{DATE}.csv`
+Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/binance/{SYMBOL}_{INTERVAL}_{DATE}.csv`
 
-Intervals: `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `8h`, `12h`, `1d`, `3d`, `1w`, `1mo`
+Intervalles : `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `8h`, `12h`, `1d`, `3d`, `1w`, `1mo`
 
-Markets: `spot` (default), `futures` (USDM)
+Marchés : `spot` (par défaut), `futures` (USDM)
 
-### Kaggle datasets
+### Jeux de données Kaggle
 
 ```bash
-# Download a dataset
+# Télécharger un dataset
 python scripts/datasets/download_kaggle.py --dataset stefanoleone992/mutual-fund-etf-dataset
 
-# Search datasets
+# Rechercher des datasets
 python scripts/datasets/download_kaggle.py --list --search "crypto historical"
 ```
 
-Output: `MyIA.AI.Notebooks/QuantConnect/datasets/kaggle/{dataset_slug}/`
+Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/kaggle/{dataset_slug}/`
 
-Prerequisite: `pip install kaggle` with `~/.kaggle/kaggle.json` configured.
+Pré-requis : `pip install kaggle` avec `~/.kaggle/kaggle.json` configuré.
 
-### QuantConnect data
+### Données QuantConnect
 
 ```bash
-# Equity daily data via lean-cli
+# Données actions journalières via lean-cli
 python scripts/datasets/download_qc_data.py --symbol SPY --start 2020-01-01 --end 2023-12-31
 
-# Crypto minute data
+# Données crypto à la minute
 python scripts/datasets/download_qc_data.py --symbol BTCUSD --security-type crypto --resolution minute --start 2023-01-01
 
-# From Object Store
+# Depuis l'Object Store
 python scripts/datasets/download_qc_data.py --mode object-store --key my-datasets/spy_daily.csv --output spy_daily.csv
 ```
 
-Output: `MyIA.AI.Notebooks/QuantConnect/datasets/qc/`
+Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/qc/`
 
-Prerequisite: `pip install lean` + `lean login` for lean-cli mode.
+Pré-requis : `pip install lean` + `lean login` pour le mode lean-cli.
 
-### Crypto archive (multi-source)
+### Archive crypto (multi-sources)
 
 ```bash
-# Build full BTC archive (2015-2024)
+# Construire l'archive complète BTC (2015-2024)
 python scripts/datasets/manage_crypto_archive.py --symbol BTC --start 2015-01-01 --end 2024-12-31
 
-# Build ETH archive
+# Construire l'archive ETH
 python scripts/datasets/manage_crypto_archive.py --symbol ETH --start 2017-01-01
 
-# Update existing archive with new data
+# Mettre à jour une archive existante avec de nouvelles données
 python scripts/datasets/manage_crypto_archive.py --symbol BTC --update
 
-# List available archives
+# Lister les archives disponibles
 python scripts/datasets/manage_crypto_archive.py --list
 ```
 
-Output: `MyIA.AI.Notebooks/QuantConnect/datasets/crypto_archive/{SYMBOL}_USDT_archive.csv`
+Sortie : `MyIA.AI.Notebooks/QuantConnect/datasets/crypto_archive/{SYMBOL}_USDT_archive.csv`
 
-Supported symbols: BTC, ETH, BNB, SOL, XRP, ADA, DOGE, DOT
+Symboles supportés : BTC, ETH, BNB, SOL, XRP, ADA, DOGE, DOT
 
-Primary source: yfinance. Fallback: CoinGecko (via `pycoingecko`).
+Source principale : yfinance. Fallback : CoinGecko (via `pycoingecko`).
 
-### Crypto stitching (BTC/USD continuous)
+### Stitching crypto (BTC/USD continu)
 
 ```bash
-# Stitch Bitstamp + Binance + yfinance into continuous hourly series
+# Assembler Bitstamp + Binance + yfinance en série horaire continue
 python scripts/datasets/stitch_crypto.py
 
-# Custom data root for personal archives
+# Racine de données personnalisée pour archives personnelles
 python scripts/datasets/stitch_crypto.py --data-root /path/to/data --output-dir datasets/crypto/
 
-# Skip yfinance download (offline mode)
+# Sauter le téléchargement yfinance (mode hors-ligne)
 python scripts/datasets/stitch_crypto.py --skip-download
 ```
 
-Output: `datasets/crypto/BTC_USD_1h_stitched.csv` (~101K rows, 2013-2024)
+Sortie : `datasets/crypto/BTC_USD_1h_stitched.csv` (~101K lignes, 2013-2024)
 
-Sources (priority order): Bitstamp 1h (primary 2018-2024), Binance BTC/USDT (pre-2018 extension), yfinance (gap fill to present).
+Sources (ordre de priorité) : Bitstamp 1h (primaire 2018-2024), Binance BTC/USDT (extension avant 2018), yfinance (comblement des trous jusqu'à aujourd'hui).
 
-Note: 2011-2012 data excluded by default (`--start-date 2013-01-01`). 2011 had only 307/8760 hours with massive gaps. 2012 had only 62.6% coverage (5501/8784h) with recurrent 10-22h gaps.
+Note : les données 2011-2012 sont exclues par défaut (`--start-date 2013-01-01`). 2011 n'avait que 307/8760 heures avec des trous massifs. 2012 n'avait que 62,6% de couverture (5501/8784h) avec des trous récurrents de 10-22h.
 
-### Anti-bias panier (multi-asset)
+### Panier anti-biais (multi-actifs)
 
 ```bash
-# Download and validate all 26 symbols
+# Télécharger et valider les 26 symboles
 python scripts/datasets/build_panier_anti_bias.py
 
-# Custom date range
+# Plage temporelle personnalisée
 python scripts/datasets/build_panier_anti_bias.py --start 2018-01-01 --end 2026-01-01
 
-# Validate existing files only (no download)
+# Valider uniquement les fichiers existants (pas de téléchargement)
 python scripts/datasets/build_panier_anti_bias.py --validate-only
 
-# Use cached files (no new downloads)
+# Utiliser les fichiers en cache (pas de nouveau téléchargement)
 python scripts/datasets/build_panier_anti_bias.py --skip-download
 ```
 
-Output: `datasets/panier/` with individual symbol CSVs + `panier_close_all.csv` + `panier_report.json`
+Sortie : `datasets/panier/` avec CSV par symbole + `panier_close_all.csv` + `panier_report.json`
 
-**Anti-bias policy**: FORBIDDEN symbols (AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META) are excluded.
-Panier covers 7 asset classes: US equity broad/sectors, volatility, bonds, commodities, international, crypto.
+**Politique anti-biais** : les symboles INTERDITS (AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META) sont exclus. Le panier couvre 7 classes d'actifs : actions US broad/sectorielles, volatilité, obligations, matières premières, international, crypto.
 
-### Forex data extraction
+### Extraction de données forex
 
 ```bash
-# List archive contents
+# Lister le contenu de l'archive
 python scripts/datasets/dezip_forex.py --list
 
-# Extract daily data
+# Extraire les données journalières
 python scripts/datasets/dezip_forex.py --extract daily
 
-# Extract hourly data
+# Extraire les données horaires
 python scripts/datasets/dezip_forex.py --extract hourly
 
-# Extract everything
+# Tout extraire
 python scripts/datasets/dezip_forex.py --extract all
 ```
 
-Output: `datasets/forex/` with per-pair per-resolution CSVs (mid-price OHLCV + spread).
+Sortie : `datasets/forex/` avec CSV par paire et par résolution (OHLCV mid-price + spread).
 
-Source: FXCM/Oanda nested zip archives with bid/ask OHLCV data.
+Source : archives zip imbriquées FXCM/Oanda avec données OHLCV bid/ask.
 
-## Common Options
+## Options communes
 
-All scripts accept `--output-dir` to override the default output path.
+Tous les scripts acceptent `--output-dir` pour surcharger le chemin de sortie par défaut.
 
-| Default path | Script |
+| Chemin par défaut | Script |
 |--------------|--------|
 | `datasets/yfinance/` | download_yfinance.py |
 | `datasets/binance/` | download_binance_archive.py |
@@ -178,26 +179,26 @@ All scripts accept `--output-dir` to override the default output path.
 | `datasets/panier/` | build_panier_anti_bias.py |
 | `datasets/forex/` | dezip_forex.py |
 
-## Prerequisites
+## Pré-requis
 
 ```bash
-# Core (required by all)
+# Cœur (requis par tous)
 pip install pandas
 
-# Per-script
+# Par script
 pip install yfinance          # download_yfinance.py, manage_crypto_archive.py
 pip install requests          # download_binance_archive.py
 pip install kaggle            # download_kaggle.py
-pip install lean              # download_qc_data.py (lean-cli mode)
-pip install pycoingecko       # manage_crypto_archive.py (CoinGecko fallback)
+pip install lean              # download_qc_data.py (mode lean-cli)
+pip install pycoingecko       # manage_crypto_archive.py (fallback CoinGecko)
 ```
 
-## Output Format
+## Format de sortie
 
-All scripts output CSV files with standard OHLCV columns where applicable:
+Tous les scripts produisent des fichiers CSV avec les colonnes OHLCV standard lorsque applicable :
 
-| Script | Columns |
+| Script | Colonnes |
 |--------|---------|
 | yfinance | Date, Open, High, Low, Close, Volume |
 | Binance | open_time, open, high, low, close, volume, close_time, quote_volume, trades, ... |
-| Crypto archive | date, close, volume (+ market_cap from CoinGecko) |
+| Archive crypto | date, close, volume (+ market_cap depuis CoinGecko) |
