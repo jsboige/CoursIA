@@ -834,7 +834,7 @@ analyze_ratio.py
 # Whisper comparison results (regenerable)
 scripts/whisper_comparison_results.json
 
-# Multi-endpoint run results (regenerable via scripts/exec_multi_endpoint_cells.py)
+# Multi-endpoint run results (c.939 — kept as gitignored data artifact)
 MyIA.AI.Notebooks/GenAI/Texte/c939_run_results.json
 
 # Final model files referenced by executed notebooks (tracked via git LFS)
