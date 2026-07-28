@@ -517,12 +517,12 @@ plus the edge multiset — is invariant under mirror. No `sorry`, no `decide`
 on free variables.
 -/
 
+open List in
 /-- The mirrored diagram's edge list is a permutation of the original's.
     Lifts the per-crossing permutation `mirrorCrossing_perm` through the
     flat-map: `(cs.map mirrorCrossing).flatMap F ~ cs.flatMap F` because each
     `F (mirrorCrossing c) ~ F c` (the 4-element lists `[e1,e4,e3,e2]` and
     `[e1,e2,e3,e4]` are permutations, `mirrorCrossing_perm`). -/
-open List in
 theorem mirror_edges_perm (d : KnotDiagram) :
     mirror_diag_edges d ~ d.edges := by
   show (d.crossings.map mirrorCrossing).flatMap (fun c => [c.e1, c.e2, c.e3, c.e4]) ~
@@ -530,8 +530,9 @@ theorem mirror_edges_perm (d : KnotDiagram) :
   rw [List.flatMap_map]
   -- After `(map f).flatMap g = flatMap (g ∘ f)`, the per-crossing function is
   -- defeq `fun c => [c.e1, c.e4, c.e3, c.e2]` (mirrorCrossing swaps e2 ↔ e4).
-  exact List.Perm.flatMap_right d.crossings (fun c => mirrorCrossing_perm c)
+  exact List.Perm.flatMap_left d.crossings (fun c _ => mirrorCrossing_perm c)
 
+open List in
 /-- `mirror` preserves `KnotDiagram.wf` (Issue #8644 closure).
 
 `mirrorCrossing` swaps `e2 ↔ e4`, so `mirror_diag_edges d` is a permutation of
@@ -540,7 +541,6 @@ multiset (range check on the support via `all`, parity check on per-label
 `count`) plus `numEdges`, and mirror preserves `numEdges` by field identity.
 This is the full polymorphic generalisation that `decide` could not discharge
 on free variables (cf. C918-L1 ★) — here closed by hand. -/
-open List in
 theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
     k.mirror.diagram.wf = true := by
   -- Mirror diagram field identities (defeq).
@@ -571,8 +571,8 @@ theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
     rw [Bool.and_eq_true] at h ⊢
     obtain ⟨h_all, h_par⟩ := h
     refine ⟨?_, ?_⟩
-    · -- Range check: `all` is invariant under permutation.
-      rw [← hmedges, hp.all_eq]; exact h_all
+    · -- Range check: `all` is invariant under permutation (`Perm.all_eq`).
+      rw [hmedges, hp.all_eq]; exact h_all
     · -- Parity check: per-label `count` is invariant under permutation.
       have heq : (fun i => decide (k.mirror.diagram.edges.count (i + 1) = 2)) =
                  (fun i => decide (k.diagram.edges.count (i + 1) = 2)) := by
