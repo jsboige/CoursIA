@@ -367,6 +367,74 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
             'severity': 'MAJOR',
         })
 
+    # Litmus 8 : api_cost_breakdown incoherent avec api_usd_est (design-gate #8056).
+    # `api_usd_est` est le scalaire AUTORITATIF (obligatoire, lu par les 327
+    # notebooks deja migres et les agregats). `api_cost_breakdown` est OPTIONNEL :
+    # un notebook mono-fournisseur ne l'ecrit pas (il dupliquerait son total pour
+    # zero information). Quand un multi-fournisseur l'ecrit, sum(valeurs) DOIT
+    # egaler api_usd_est — sinon la ventilation ment (gate FALSIFIABLE, decision
+    # ai-01 #8056 issuecomment 5106409423). Une ventilation libre serait
+    # decorative : personne ne peut la contredire, elle se perime en silence. Une
+    # ventilation dont la somme doit egaler le total casse le jour ou elle derive
+    # — meme lecon que #8678 (un compteur nu se perime) et #8680 (un gate incapable
+    # d'echouer n'est pas un gate).
+    breakdown = cost_meta.get('api_cost_breakdown')
+    if breakdown is not None:
+        if not isinstance(breakdown, dict) or not breakdown:
+            findings.append({
+                'pattern': 'api_cost_breakdown_malformed',
+                'detail': (
+                    'cost.api_cost_breakdown present mais pas un dict non-vide. '
+                    'Attendu : {"openai": 0.30, "anthropic": 0.12} sommant a '
+                    'api_usd_est, ou absent (mono-fournisseur).'
+                ),
+                'severity': 'MAJOR',
+            })
+        else:
+            # api_usd_est doit etre numerique pour pouvoir comparer la somme.
+            try:
+                total = float(cost_meta.get('api_usd_est'))
+            except (TypeError, ValueError):
+                findings.append({
+                    'pattern': 'api_usd_est_not_numeric',
+                    'detail': (
+                        'cost.api_usd_est absent ou non-numerique alors que '
+                        'api_cost_breakdown est present — le scalaire autoritatif '
+                        'manque (design-gate #8056).'
+                    ),
+                    'severity': 'MAJOR',
+                })
+                total = None
+            if total is not None:
+                try:
+                    breakdown_sum = sum(float(v) for v in breakdown.values())
+                except (TypeError, ValueError):
+                    findings.append({
+                        'pattern': 'api_cost_breakdown_non_numeric',
+                        'detail': (
+                            f'cost.api_cost_breakdown contient des valeurs '
+                            f'non-numeriques : {sorted(breakdown.keys())}. '
+                            f'Chaque cle (provider) doit avoir une valeur float USD.'
+                        ),
+                        'severity': 'MAJOR',
+                    })
+                else:
+                    # Tolerance 1 cent (arrondi USD) : evite les FP de precision
+                    # float (0.1+0.2 != 0.3 en binaire) sans tolerer un vrai
+                    # desequilibre. round(..., 2) serait equivalent.
+                    if abs(breakdown_sum - total) > 0.01:
+                        findings.append({
+                            'pattern': 'api_cost_breakdown_sum_mismatch',
+                            'detail': (
+                                f'cost.api_cost_breakdown somme '
+                                f'{breakdown_sum:.2f} != api_usd_est {total:.2f} '
+                                f'(delta {breakdown_sum - total:+.2f}). La '
+                                f'ventilation doit sommer au total autoritatif '
+                                f'(design-gate #8056).'
+                            ),
+                            'severity': 'MAJOR',
+                        })
+
     return {
         'notebook': str(notebook_path),
         'cost_meta_found': bool(cost_meta),
