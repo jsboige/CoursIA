@@ -21,6 +21,26 @@ name: Lean Conway CI
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
 #   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
 # Raising this baseline requires a documented justification in the PR body.
+#
+# Proof-integrity gate (c.950 reprise, See #8677, follows PR #8740 knot_lean pattern):
+# v2 scope élargi — Conway.KochenSpecker + Conway.FreeWillTheorem (les modules
+# d'affiche, à ranger PAR TRANCHES avant Conway.Life.Computation). The gate
+# lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
+# that would destroy the "new native_decide = new red" property required to
+# triage any future introduction one-by-one). fail-on-sorry=true (the
+# 8 acknowledged tactic sorries in HashlifeCorrectness.lean are governed by
+# the lean-build.yml `sorry-baseline: "8"`, not by this gate — no double-cover).
+#
+# Reprise rationale (ai-01 DM HIGH msg-20260728T231209-43cuju, c.950):
+#   1. allow-axioms MUST list the 19 explicit names — wildcard forbidden
+#   2. fail-on-sorry: true (not false)
+#   3. target-modules élargi — start with KochenSpecker + FreeWillTheorem,
+#      profile before gater, puis rest of Conway/Life/ by tranche
+#
+# Follow-up triage = PR #8752 (docs-only, jsboige himself, MED/prover-tooling):
+# 22-lake triage + §B.3 rule update. Will need to be re-aligned to the new
+# explicit-names approach once this PR lands (the triage doc still recommends
+# wildcard `native_decide.*`).
 
 on:
   push:
@@ -30,6 +50,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
   pull_request:
     branches: [main]
     paths:
@@ -37,6 +58,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
   workflow_dispatch:
 
 jobs:
@@ -47,3 +69,12 @@ jobs:
       display-name: conway_lean
       sorry-baseline: "8"
       sorry-filter-mode: standalone-tactic
+
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
+      allow-axioms: "Conway.Life.hashlife_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_blinker_2._native.native_decide.ax_1_1,Conway.Life.block_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_block_4._native.native_decide.ax_1_1,Conway.Life.glider_3periods._native.native_decide.ax_1_1,Conway.Life.hashlife_block_4._native.native_decide.ax_1_1,Conway.Life.eater1_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_toad_2._native.native_decide.ax_1_1,Conway.Life.eater1_still_life._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_block_1._native.native_decide.ax_1_1,Conway.Life.glider_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1,Conway.Life.glider_2periods._native.native_decide.ax_1_1"
+      fail-on-sorry: true
