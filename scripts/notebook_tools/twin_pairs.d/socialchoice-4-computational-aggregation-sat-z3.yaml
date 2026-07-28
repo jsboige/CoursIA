@@ -1,4 +1,4 @@
-- name: "SocialChoice-04 Computational-Aggregation-SAT-Z3"
+- name: "SocialChoice-4 Computational-Aggregation-SAT-Z3"
   family: GameTheory/SocialChoice
   python: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
