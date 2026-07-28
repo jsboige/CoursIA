@@ -756,26 +756,29 @@ class LeanVerifier:
     def _extract_axioms(output: str) -> list:
         """Extract axiom names from ``#print axioms`` output.
 
-        Lean emits one line per declaration in the form
+        Lean emits one declaration per line in the form
         ``'Foo.bar' depends on axioms: [A, B, C]`` (or ``'Foo.bar' does not
-        depend on any axioms`` when none). Parse the bracketed list of each
-        such line and union the names across declarations.
+        depend on any axioms`` when none). When the bracketed list is longer
+        than Lean's pretty-print column (~100 chars), Lean **wraps** the list
+        onto continuation lines without re-emitting the ``'Foo.bar' depends
+        on axioms:`` prefix -- the long axiom names (e.g.
+        ``Foo._native.native_decide.ax_1_1``) are exactly the ones that
+        trigger this wrap, so iterating line-by-line silently dropped them
+        (#8738, found on ``knot_lean/Knots.Invariant:1054`` post-#8731).
+        ``re.finditer`` on the full output lets ``[^\\]]*`` span newlines, and
+        the per-name ``.strip()`` absorbs the continuation indentation.
 
-        The match is anchored on the literal colon (``axioms:``) -- the
-        previous regex ``r"depends on axioms \\[([^\\]]*)\\]"`` (no colon)
-        matched the *fixture* format used by tests but never the real Lean
-        output, so the gate silently returned ``[]`` on every healthy build
-        and the criterion-4 forbidden-axiom check (#8677) was a no-op.
-        Verified by ai-01's rebuild of ``knot_lean`` and reproduction in
-        PR #8681 review (``.reason about regex #8677``, msg-20260728T165702).
+        The match stays anchored on the literal colon (``axioms:``) -- the
+        previous no-colon regex ``r"depends on axioms \\[([^\\]]*)\\]"``
+        matched only the test fixture and never real Lean output, so the gate
+        silently returned ``[]`` on every healthy build (#8677). Fixed in
+        PR #8681, anchored by ai-01's rebuild of ``knot_lean``
+        (msg-20260728T165702).
         """
         axioms = []
-        for line in output.split("\n"):
-            m = re.search(r"depends on axioms:\s*\[([^\]]*)\]", line)
-            if not m:
-                continue
-            inner = m.group(1).strip()
-            if not inner:
+        for m in re.finditer(r"depends on axioms:\s*\[([^\]]*)\]", output):
+            inner = m.group(1)
+            if not inner.strip():
                 continue
             for name in inner.split(","):
                 name = name.strip().rstrip(".")
