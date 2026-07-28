@@ -27,8 +27,9 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
 ```json
 // nb.metadata["cost"] — l'objet JSON sérialisé par le notebook (.ipynb = JSON).
 {
-  "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit.
+  "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit, null si inconnu. Cf §"Attribution multi-fournisseur".
   "api_provider": "openai",       // openai | anthropic | mistral | hf | replicate | google | local | none
+  "api_cost_breakdown": null,     // OPTIONNEL. Ventilation provider→USD, somme == api_usd_est (gate falsifiable). Cf §"Attribution multi-fournisseur".
   "qcc_tokens_est": 0,            // QuantConnect Cloud compute tokens (QCC) estimés par exécution end-to-end. 0 si non-QC. Cf §"Coût QCC / QuantConnect".
   "cpu_min": 1,                   // Estimation CPU-only minutes (range ou best-case)
   "gpu_min": 0,                   // Estimation GPU minutes (range ou best-case)
@@ -76,6 +77,7 @@ source de vérité, le badge est un confort de lecture.
 |-------|-------------|----------------|
 | `cost.api_usd_est` | ✓ | `0` |
 | `cost.api_provider` | ✓ | `"none"` |
+| `cost.api_cost_breakdown` | optionnel | `null` (multi-fournisseur seulement ; `sum == api_usd_est` vérifié) |
 | `cost.qcc_tokens_est` | optionnel | `0` (0 = non-QC ; à peupler pour tout quantbook QC Cloud) |
 | `cost.cpu_min` | ✓ | `0` |
 | `cost.gpu_min` | optionnel | (omission = pas d'estimation GPU) |
@@ -89,6 +91,55 @@ source de vérité, le badge est un confort de lecture.
 | `cost.reproducibility` | ✓ | `"HIGH"` |
 | `cost.last_validated` | ✓ | (date de création de la metadata) |
 | `cost.validator` | ✓ | `"manual"` |
+
+### Attribution multi-fournisseur (`api_cost_breakdown`)
+
+**Décision de schéma (design-gate #8056, issuecomment 5106409423) : scalaire
+autoritatif + ventilation optionnelle et falsifiable.**
+
+`api_usd_est` reste **le** champ autoritatif — c'est lui que lisent les
+consommateurs (agrégats, catalogue, badges). `api_cost_breakdown` est un champ
+**optionnel** qui ventile le coût par fournisseur quand cette information est
+réellement connue (plusieurs endpoints payants dans le même notebook) :
+
+```json
+"api_usd_est": 0.42,                 // TOTAL autoritatif, obligatoire
+"api_cost_breakdown": {              // optionnel
+  "openai": 0.30,
+  "anthropic": 0.12
+}
+```
+
+**Règle falsifiable (la seule qui compte) :** quand `api_cost_breakdown` est
+présent, `sum(valeurs)` **doit égaler** `api_usd_est`. Vérifié par
+`check_cost_metadata.py` (Litmus 8) — un écart > 1 cent déclenche le finding
+`api_cost_breakdown_sum_mismatch`.
+
+Pourquoi exiger la somme plutôt que laisser la ventilation libre ? Une
+ventilation libre est **décorative** : personne ne peut la contredire, elle se
+périme en silence au premier drift. Une ventilation dont la somme doit égaler
+le total est **falsifiable** — elle casse le jour où elle ment. Même leçon que
+le README central (`#8678` : un compteur nu se périme ; un compteur avec son
+dénominateur se contredit tout seul) et que le gate de preuve Lean (`#8680` :
+un gate incapable d'échouer n'est pas un gate).
+
+**Quand l'écrire :**
+- Notebook multi-fournisseur dont les sous-totaux par provider sont réellement
+  mesurés (ex : un notebook qui appelle GPT-5 pour le raisonnement **et**
+  Claude pour la vérification, coûts séparés dans les logs).
+
+**Quand NE PAS l'écrire (règles d'or) :**
+- **Mono-fournisseur** : écrire la ventilation dupliquerait le total pour zéro
+  information, et fabriquerait 327 occasions de drift. On laisse `null`.
+- **Sous-totaux reconstitués à la louche** : une fausse précision sur une
+  estimation `validator: "manual"` est pire que l'absence. On laisse `null` et
+  on documente la raison dans `notes` si pertinent.
+
+**`0.0` vs `null` sur `api_usd_est` (corollaire) :**
+- `0.0` **affirme** la gratuité (notebook local, pas d'appel facturé). C'est un
+  énoncé positif.
+- `null` (+ raison) = coût **inconnu**. Ne pas confondre : `0.0` n'est pas un
+  défaut pour « je ne sais pas », l'absence se lirait à tort comme gratuite.
 
 ### Tiers VRAM (déterminé par `vram_gb`)
 
@@ -262,6 +313,58 @@ cost:
   last_validated: 2026-07-23T01:30Z
   validator: papermill
 ```
+
+### .NET Interactive (profil canonique, cpu-only)
+
+Un notebook **.NET Interactive** (kernel `.net-csharp` / `.net-fsharp`) sans
+appel API n'a **pas le profil** d'un notebook Python appelant OpenAI. Le profil
+canonique ci-dessous est celui à appliquer aux familles .NET cpu-only pures
+(Sudoku solveurs, Search CSP, GameTheory twins C#) — il diffère du profil
+Python+API sur trois points : `validator`, `vram_tier`, `free_alternative`.
+
+```yaml
+# Profil canonique .NET Interactive cpu-only (ex: Sudoku solveur, Search CSP)
+cost:
+  api_usd_est: 0.0
+  api_provider: none
+  cpu_min: 1
+  gpu_min: 0
+  gpu_required: false
+  vram_gb: 0
+  vram_tier: NONE              # cpu-only — c.888 canonical (PAS LITE)
+  network: false
+  external_account: none
+  free_alternative: self       # le notebook local sans API EST son alternative gratuite
+  reduced_pedagogical: null
+  reproducibility: HIGH        # solveurs .NET déterministes (MEDIUM si stochastique)
+  last_validated: "2026-07-28T15:45Z"   # UTC obligatoire (cf leçon TZ : jamais local+Z)
+  validator: manual
+```
+
+**`validator: manual` est la valeur canonique pour .NET.** Le kernel
+`.net-csharp` s'exécute via `dotnet-interactive` headless local, **pas** via
+papermill (qui ne pilote pas les kernels .NET Interactive par défaut). Écrire
+`validator: papermill` suggère une validation automatisée absente — `manual`
+est honnête : la re-exécution se fait via `dotnet-interactive` sur chaque
+machine worker (cf `docs/reference/kernels-runtime.md`), le résultat est vérifié
+à la main. La CI ne peut pas Papermill-exécuter les notebooks .NET (advisory
+`#5214`) — `manual` reflète cette réalité.
+
+**`vram_tier: NONE` pour cpu-only** (leçon c.888) : un notebook sans GPU doit
+porter `NONE`, pas `LITE`. `LITE` décrit un besoin VRAM faible mais **réel**
+(< 8 GB) ; un notebook cpu-only n'a **aucun** besoin VRAM. La table générale
+« <8=LITE » s'applique aux notebooks GPU à faible VRAM, pas au cpu-only.
+
+**`free_alternative: self`** : un notebook .NET local sans API payante **EST**
+déjà gratuit — le sentinel `self` le dit (`null` signifierait à tort « aucune
+alternative gratuite connue », cf §"Sentinels de `free_alternative`").
+
+> **Note d'harmonisation (hors scope de ce PR).** Les profils historiques
+> `Probas/Infer.NET` et `ML/ML.NET` ci-dessus portent `validator: papermill` et
+> omettent `vram_tier: NONE`/`free_alternative: self`. Ils ont été migrés avant
+> la formalisation de ce profil canonique. Leur harmonisation vers
+> `validator: manual` se fait en tranche dédiée (pas un blanket-sweep — chaque
+> notebook vérifié `api_provider: none` au passage).
 
 ### QC / QuantConnect (Cloud obligatoire)
 
