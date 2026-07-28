@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-28"
     by: myia-po-2024:CoursIA-2
-    python_sha: 3e358b91d925700d4ab743b74c7799a5f654d02c
+    python_sha: b7da756b3ff929dce2ae48f0ade411f17e538ff5
     csharp_sha: 5fd0b931f358d0ff421b9f9c2c311f03f48d2891
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'

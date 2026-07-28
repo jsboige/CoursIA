@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: be07a64cf703c3bef33d6898601ce6b021d3abf3
+    python_sha: 8d1202fc9642226f9dceaa5dbb7030f102866200
     csharp_sha: 0aeed2f0efdf0afda422702b3a99c5d5985de589
   known_differences:
   - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'

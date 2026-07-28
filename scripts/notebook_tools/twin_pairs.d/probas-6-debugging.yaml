@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-26"
     by: myia-ai-01:CoursIA
-    python_sha: 466d8b8b098d63782651c8357dbfc798a448d029
+    python_sha: 3c4e51e64c2eb6252ddb02d0bc0e9d72bbe48f7e
     csharp_sha: 2d0a2abb27cc67aed8fb29cca5eab96c0f906edc
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'

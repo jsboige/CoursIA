@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: 0004ff47a53c570d0e9359a5c16495004ec485ee
+    python_sha: bf9cf961a45fb9007dc49656bf9819253222efb2
     csharp_sha: 62974bb4be0cf95716c3a109fa70bcfacb9d647f
   known_differences:
   - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'

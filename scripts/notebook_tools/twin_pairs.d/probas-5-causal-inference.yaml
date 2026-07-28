@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: c577dc03216f318a392f373ba61aa85287037f98
+    python_sha: b7b4da10760f3c20ca3f84563a84b13714ddc79f
     csharp_sha: b514156edf4e4e8533a9105c42c17bc24e09d023
   known_differences:
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'

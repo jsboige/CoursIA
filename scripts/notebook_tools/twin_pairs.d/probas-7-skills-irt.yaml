@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-25'
     by: po-2024
-    python_sha: 243abda6c6d8da742e47ae61a60d780b770e77ad
+    python_sha: f9689516625121e099c85fd68910c307e53d6cad
     csharp_sha: 7723219b3c6654629210ed5f0757d04dc3bd6e54
   known_differences:
   - '2026-07-25 (po-2024) #8530 : csharp_sha rebaseline suite a enrichissement du twin C# Infer-7 -- ajout attribution source MBML Ch.2 (Junker-Sijtsma, modele DINA) sur le twin C# uniquement (distillation-source attribution #8081). python twin (PyMC-7) inchange. Procedural : la PR introduisait DRIFT au gate #8057 car le blob C# avait evolue sans refresh du SHA registre.'

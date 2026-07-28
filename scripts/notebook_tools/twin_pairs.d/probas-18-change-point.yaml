@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-24'
     by: po-2023
-    python_sha: c26c5c335122f6dd628e5b85a19f4aa57196bd30
+    python_sha: c6f3f420d9e11f9cb171349f11677003ba11d748
     csharp_sha: 16f9c00c30cc4d6002dafe82631aa965ecd97769
   known_differences:
   - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
