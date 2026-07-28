@@ -1145,12 +1145,12 @@ non-empty structural lemma about `Reidemeister1Connected` that is reusable in
 both directions.
 
 **No new sorries are introduced.** The backward theorem is intentionally not
-stated here as a tactic-stub placeholder because the Knots-CI prose-header
-sorries baseline is locked at 25 (see `lean-knot.yml`) and a research stub
-would push it to 26. The proof obligation is therefore documented as a
+stated here as a tactic-stub placeholder because the Knots-CI sorries
+baseline is locked at 17 (see `lean-knot.yml`, `real` mode) and a research stub
+would push it to 18. The proof obligation is therefore documented as a
 comment-only contract and the next BG-prover / dedicated cycle will state the
 theorem at the same time it proves it (the lemma + body land in one commit,
-keeping the sorries baseline at 25 throughout).
+keeping the sorries baseline at 17 throughout).
 
 ### 8.1. Proof obligation (informal contract)
 
