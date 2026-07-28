@@ -7,9 +7,8 @@
     date: "2026-07-28"
     by: po-2024:CoursIA-2
     python_sha: 8eaa1026bcc06cbaa624c808ce8458ff9646ae6c
-    csharp_sha: a23abb89caa43b005af88529f9f757810b5ec384
+    csharp_sha: 240e04733ad2b9e1bcc0c8ec42a56a342408d5e9
   known_differences:
     - "Socle pedagogique commun : MiniZinc (modeling language CSP, OR-Tools CP-SAT cross-solve) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = minizinc + OR-Tools CP-SAT ; C# = Google.OrTools.Sat NuGet (C# binding du meme solver OR-Tools)."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
-    - "Asymetrie citations (c.932, 2026-07-28) : le twin Python porte une cellule finale ## References (Nethercote et al. 2007 + MiniZinc Handbook/Challenge, #8081 distillation-fidelity) ; le twin C# n'en a pas encore (left for a follow-up grain, atomicite 1-sujet/PR, pattern c.927 GT-4 Nash)."
