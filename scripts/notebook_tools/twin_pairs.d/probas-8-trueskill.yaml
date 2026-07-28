@@ -7,7 +7,7 @@
     date: "2026-07-28"
     by: myia-po-2026:CoursIA
     python_sha: 6f181b4f4e05b5b5fd1c20119053a90c4019a317
-    csharp_sha: 0841a27d524fc9926e9ecfafaf567a0288ef3115
+    csharp_sha: 0692a3135d770e65d149be40e3e10a90e4d5915b
   known_differences:
   - "2026-07-28 (myia-po-2026:CoursIA) #8704/#8715 : backfill section 14 \"Pour aller plus loin\" -- formules fermees EP V(t)/W(t)/tau^2 (Herbrich-Minka-Graepel 2007) ajoutees en markdown + NOUVELLE cellule code .NET executee (#r MathNet.Numerics, computation closed-form). Add-only (65 -> 69 cellules), 0 cellule existante alteree, 0 output drift sur les sections 1-13. Variance utilise la forme canonique sigma^2*(1-(sigma^2/c^2)*W(t)) (facteur de gain de Kalman sigma^2/c^2 present) -> posterior sigma=7,19 match exact Infer.NET cellule 16 N(29,21,7,19). python_sha inchange (twin PyMC-8 non touche ; note: PyMC-8 cell29 porte la variante sans facteur sigma^2/c^2 -> bug source trace en #8718). csharp_sha rebaseline suite au changement de blob."
   - '2026-07-25 (po-2024) #8548 : correction attribution source cote C# uniquement -- cell[7] Herbrich et Graepel 2006 remplace par Herbrich Minka et Graepel (2007 NIPS 20) avec Minka comme auteur EP, cell[55] reference alignee, NOUVELLE cellule markdown lineage (MBML Ch.3 Meeting Your Match + distinction Infer-7 = Ch.2 skill-from-answers vs Infer-8 = Ch.3 skill-from-match-result). Edition markdown-only, 0 changement de code 0 output drift -- parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par le raffinement de citation. python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'
