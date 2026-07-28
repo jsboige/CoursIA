@@ -17,7 +17,7 @@ maturity: BETA=746, ALPHA=62, DRAFT=24, TEMPLATE=4
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
 
-Dernière mise à jour : 2026-07-21
+Dernière mise à jour : 2026-07-28
 
 ## Vue d'ensemble
 
@@ -87,8 +87,7 @@ Search
 Probas
 ├── Infer/ - 19 notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - 19 notebooks PyMC (MCMC, Python) — miroir Infer
-├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson)
-├── Causal-Bridges/ - do(·) Pearl cross-paradigmes
+├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
 └── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
 
 Sudoku
@@ -99,7 +98,7 @@ Sudoku
 GameTheory
 ├── (à plat) - 17 notebooks : Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── game_theory_lean + *_lean/ - 8 lakes (Arrow, Shapley, Conway, Stable Marriage…)
+└── *_lean/ - 6 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
