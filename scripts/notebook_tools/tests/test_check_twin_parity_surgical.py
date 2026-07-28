@@ -245,3 +245,56 @@ def test_schema_file_is_never_a_rebaseline_target(registry_backup):
 
     loaded_names = {p["name"] for p in ctp.load_registry(REGISTRY_DIR)}
     assert loaded_names == {_pair_name(f) for f in registry_backup}
+
+
+def test_write_preserves_lf_on_every_platform(tmp_path):
+    """La garantie chirurgicale doit survivre a l'ECRITURE, pas seulement au calcul.
+
+    Les tests ci-dessus verifient `surgical_rebaseline` au niveau de la chaine :
+    ils passent sur toutes les plateformes, y compris quand le fichier ecrit sur
+    disque est integralement reecrit. `Path.write_text` ouvre avec
+    `newline=None`, qui traduit `\\n` en `os.linesep` -- donc en CRLF sous
+    Windows. Le calcul restait chirurgical, l'ecriture ne l'etait pas, et le
+    diff affichait le fichier entier (#8709, #8713 : `-16` lignes pour un
+    changement de deux).
+    """
+    target = tmp_path / "pair.yaml"
+    original = "- name: X\n  last_audit:\n    date: \"2020-01-01\"\n"
+    target.write_bytes(original.encode("utf-8"))
+
+    new_raw, _ = ctp.surgical_rebaseline(original, {"X": {"date": "2026-01-01"}})
+    ctp.write_registry_text(target, new_raw)
+
+    written = target.read_bytes()
+    assert b"\r\n" not in written, (
+        "le registre doit rester en LF : un CRLF fait apparaitre chaque ligne "
+        "inchangee comme modifiee et noie la ligne reellement auditee"
+    )
+    assert written.decode("utf-8").count("\n") == original.count("\n")
+
+
+def test_registry_blobs_are_lf_only():
+    """Aucun blob de registre versionne ne doit etre en CRLF.
+
+    Backstop du test precedent : meme si un ecrivain contourne
+    `write_registry_text`, le registre **dans git** reste homogene.
+
+    On interroge l'index (`git ls-files --eol`, colonne `i/`) et non le working
+    tree : avec `core.autocrlf=true` -- la configuration par defaut de la moitie
+    de la flotte -- le working tree est legitimement en CRLF alors que le blob
+    est en LF. Tester les octets sur disque ferait echouer ce test sur toutes
+    les machines Windows correctement configurees, pour un registre sain. C'est
+    aussi ce qui explique que le defaut ait pu voyager : la ou `autocrlf` est
+    actif il est invisible, la ou il ne l'est pas il committe du CRLF.
+    """
+    import subprocess
+
+    out = subprocess.run(
+        ["git", "ls-files", "--eol", str(REGISTRY_DIR)],
+        capture_output=True, text=True, cwd=SCRIPT_DIR,
+    )
+    if out.returncode != 0:
+        pytest.skip("hors depot git")
+    crlf = [line.split("\t")[-1] for line in out.stdout.splitlines()
+            if line.startswith("i/crlf")]
+    assert not crlf, f"blobs de registre en CRLF : {', '.join(crlf)}"
