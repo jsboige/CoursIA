@@ -269,6 +269,61 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     return anomalies
 
 
+def csv_fill_stats(csv_path: Path) -> dict[str, dict[str, int]]:
+    """Taux de remplissage par langue cible d'un CSV de synchro (#6949 point 1).
+
+    Rend visible le signal honnête que le compte de drift seul masque : un
+    ``SRC_DRIFT=0`` sur une table où ``text_en..text_pt`` sont vides se lit à
+    tort comme « à jour », alors qu'aucune traduction n'a été déposée (discipline
+    #6949 : un compteur nu se périmé ; un compteur avec son dénominateur se
+    contredit tout seul).
+
+    Compte, pour chaque langue cible (``TARGET_LANGS`` + le pivot ``fr``), les
+    cellules où ``text_<lang>`` est non-vide, sur le dénominateur des lignes
+    bien formées (``notebook`` + ``cell_id`` renseignés). Lecture CSV seule,
+    aucun chargement de notebook (I/O minime) — les ``ORPHAN_ROW`` rares
+    restent dans le dénominateur (signal honnête : « sur les N cellules que ce
+    CSV référence, X% sont traduites »).
+
+    Retourne ``{lang: {"filled": int, "total": int}}`` (total = dénominateur
+    commun, identique pour toutes les langues).
+    """
+    stats: dict[str, dict[str, int]] = {}
+    total = 0
+    filled: dict[str, int] = {lang: 0 for lang in ALL_LANGS}
+    with csv_path.open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if not row.get("notebook") or not row.get("cell_id"):
+                continue
+            total += 1
+            for lang in ALL_LANGS:
+                if row.get(f"text_{lang}", "").strip():
+                    filled[lang] += 1
+    for lang in ALL_LANGS:
+        stats[lang] = {"filled": filled[lang], "total": total}
+    return stats
+
+
+def _format_fill_line(stats: dict[str, dict[str, int]]) -> str:
+    """Ligne lisible stderr : 'en=0.0% es=0.0% ... — AUCUNE traduction déposée'.
+
+    N'inclut que les langues cibles (le pivot ``fr`` est à 100% par construction,
+    l'afficher n'apporte rien). Le suffixe ``AUCUNE traduction déposée`` est
+    ajouté quand toutes les cibles sont à 0% — il rend explicite que le compte de
+    drift est non-informatif sur une table vide.
+    """
+    total = next(iter(stats.values()))["total"] if stats else 0
+    parts = []
+    for lang in TARGET_LANGS:
+        s = stats.get(lang, {"filled": 0, "total": 0})
+        pct = (100.0 * s["filled"] / s["total"]) if s["total"] else 0.0
+        parts.append(f"{lang}={pct:.1f}%")
+    line = f"REMPLISSAGE TRADUCTION ({total} cellules, {len(TARGET_LANGS)} langues cibles) : " + " ".join(parts)
+    if total and all(stats[lang]["filled"] == 0 for lang in TARGET_LANGS):
+        line += " — AUCUNE traduction déposée (le compte de drift est non-informatif tant que 0%)"
+    return line
+
+
 def iter_csvs(target: Path) -> list[Path]:
     if target.is_file():
         return [target]
@@ -302,16 +357,51 @@ def main() -> int:
         return 0
 
     all_anomalies: list[dict] = []
+    fill_by_csv: dict[str, dict[str, dict[str, int]]] = {}
     for csv_path in csvs:
         all_anomalies.extend(check_csv(csv_path, repo_root))
+        fill_by_csv[str(csv_path)] = csv_fill_stats(csv_path)
+
+    # Agrégation du taux de remplissage (#6949 point 1) : somme des filled/total
+    # sur tous les CSV, pour un signal global honnête. Le pivot fr est à 100% par
+    # construction (c'est le notebook source) — on l'inclut dans le JSON pour
+    # auditabilité mais on ne l'affiche pas (cf ``_format_fill_line``).
+    global_fill: dict[str, dict[str, int]] = {
+        lang: {"filled": 0, "total": 0} for lang in ALL_LANGS
+    }
+    for stats in fill_by_csv.values():
+        for lang in ALL_LANGS:
+            global_fill[lang]["filled"] += stats[lang]["filled"]
+            global_fill[lang]["total"] += stats[lang]["total"]
+
+    def _with_pct(stats: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
+        out: dict[str, dict[str, object]] = {}
+        for lang in ALL_LANGS:
+            s = stats.get(lang, {"filled": 0, "total": 0})
+            pct = (100.0 * s["filled"] / s["total"]) if s["total"] else 0.0
+            out[lang] = {"filled": s["filled"], "total": s["total"], "pct": round(pct, 1)}
+        return out
+
+    fill_report = {
+        "global": _with_pct(global_fill),
+        "by_csv": {path: _with_pct(stats) for path, stats in fill_by_csv.items()},
+    }
 
     # Rapport lisible (stderr) + JSON (stdout, consommable CI).
     report = {
         "csvs_checked": len(csvs),
         "anomalies": all_anomalies,
         "anomaly_count": len(all_anomalies),
+        "fill_rate": fill_report,
     }
     print(json.dumps(report, ensure_ascii=False, indent=2))
+
+    # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
+    # pour qu'un SRC_DRIFT=0 sur une table 0% traduite ne se lise plus comme
+    # « à jour » (discipline #6949 : compteur nu se périmé ; avec dénominateur,
+    # se contredit tout seul).
+    if global_fill[PIVOT_LANG]["total"]:
+        print(_format_fill_line(global_fill), file=sys.stderr)
 
     if not all_anomalies:
         print(f"OK : {len(csvs)} CSV vérifié(s), 0 drift.", file=sys.stderr)
