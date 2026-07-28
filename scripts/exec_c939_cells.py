@@ -22,6 +22,7 @@ import json
 import os
 import sys
 import time
+import urllib.parse
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -58,6 +59,22 @@ ENDPOINTS = [
 ]
 
 
+def _is_openai_host(api_base: str) -> bool:
+    """True if api_base hostname is api.openai.com (gpt-5.2 family).
+
+    Used to discriminate the OpenAI-aware payload (`max_completion_tokens`
+    instead of `max_tokens`) — this is a CLASS discriminator, NOT a
+    sanitizer, so we compare the parsed hostname to avoid the CodeQL
+    py/incomplete-url-substring-sanitization alert (which fires on
+    `if "api.openai.com" in api_base`).
+    """
+    try:
+        host = urllib.parse.urlparse(api_base).hostname or ""
+    except (ValueError, AttributeError):
+        return False
+    return host == "api.openai.com"
+
+
 def call_chat(ep: dict, messages: list, max_tokens: int = 512,
               tools: Optional[list] = None, tool_choice: str = "auto",
               timeout: int = 60) -> dict:
@@ -80,7 +97,7 @@ def call_chat(ep: dict, messages: list, max_tokens: int = 512,
         "messages": messages,
     }
     # OpenAI gpt-5.2 requires max_completion_tokens (NOT max_tokens)
-    if "api.openai.com" in ep["api_base"]:
+    if _is_openai_host(ep["api_base"]):
         payload["max_completion_tokens"] = max_tokens
     else:
         payload["max_tokens"] = max_tokens
