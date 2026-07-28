@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-28"
     by: "myia-po-2023 + myia-po-2026 (reconciled)"
-    python_sha: a45887ec9042f2d988c6a023b627388a6af856f0
+    python_sha: 09946970090af6f1c6838ff1fce698db135ebd21
     csharp_sha: 0692a3135d770e65d149be40e3e10a90e4d5915b
   known_differences:
   - "2026-07-28 (myia-po-2026) #8704/#8715 : backfill section 14 \"Pour aller plus loin\" -- formules fermees EP V(t)/W(t)/tau^2 (Herbrich-Minka-Graepel 2007) ajoutees en markdown + NOUVELLE cellule code .NET executee (#r MathNet.Numerics, computation closed-form). Add-only (65 -> 69 cellules), 0 cellule existante alteree, 0 output drift sur les sections 1-13. Variance utilise la forme canonique sigma^2*(1-(sigma^2/c^2)*W(t)) (facteur de gain de Kalman sigma^2/c^2 present) -> posterior sigma=7,19 match exact Infer.NET cellule 16 N(29,21,7,19). python_sha inchange a ce stade (note: PyMC-8 cell29 portait la variante sans facteur sigma^2/c^2 -> bug source trace/corrige en #8718). csharp_sha rebaseline suite au changement de blob."
