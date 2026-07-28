@@ -4,11 +4,18 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2024
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA
     python_sha: 6f181b4f4e05b5b5fd1c20119053a90c4019a317
-    csharp_sha: edf5441fc3bb6b8b419ed1c42cdca9c15088ddf7
+    csharp_sha: 33124b9d5bc0fa13f43c51af04d24bf3fd3778a0
   known_differences:
+  - '2026-07-28 (myia-po-2023) #8709 / See #8704 : ajout cote C# d''une cellule markdown "14. Pour aller plus loin
+    : les formules fermees EP (Herbrich, Minka & Graepel, 2007)" avant la Conclusion -- formules fermees V(t)/W(t),
+    dynamique tau^2, tableau comparatif EP-vs-exact, adaptees du contexte Infer.NET depuis le jumeau PyMC-8 cell28
+    (section "7 bis" qui documentait deja ces memes formules). Edition markdown-only, +50/-0, 0 changement de code
+    0 output drift -- rapproche Infer-8 de son jumeau (PyMC-8 avait deja les formules, Infer-8 les acquiert).
+    Parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par cet ajout explicatif.
+    python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'
   - '2026-07-25 (po-2024) #8548 : correction attribution source cote C# uniquement -- cell[7] Herbrich et Graepel 2006 remplace par Herbrich Minka et Graepel (2007 NIPS 20) avec Minka comme auteur EP, cell[55] reference alignee, NOUVELLE cellule markdown lineage (MBML Ch.3 Meeting Your Match + distinction Infer-7 = Ch.2 skill-from-answers vs Infer-8 = Ch.3 skill-from-match-result). Edition markdown-only, 0 changement de code 0 output drift -- parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par le raffinement de citation. python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'
   - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
