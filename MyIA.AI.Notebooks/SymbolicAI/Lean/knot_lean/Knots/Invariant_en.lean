@@ -49,7 +49,7 @@ inductive TriColor where
   deriving BEq, DecidableEq, Repr
 
 /-- `TriColor` is a three-element type, hence a `Fintype`: needed to decide, by
-finite enumeration (`native_decide`), the existential
+finite enumeration (`decide`), the existential
 `∃ coloring : Fin n → TriColor, …` in `figureEight_not_tricolorable`. Without this
 instance, `Fintype (Fin n → TriColor)` (via `Pi.fintype`) fails to synthesize and
 `decide`/`native_decide` fail before any reduction. -/
@@ -198,7 +198,7 @@ def Knot.isTricolorable (k : Knot) : Prop :=
 /-! ### Decidability of tricolorability (finite enumeration)
 
 Tricolorability of a finite diagram is decidable: each predicate layer receives a
-named `Decidable` instance, so that synthesis at the use site (`native_decide` in
+named `Decidable` instance, so that synthesis at the use site (`decide` in
 `figureEight_not_tricolorable`) stays shallow. Without this decomposition, a single
 monolithic synthesis must chain `List.decidableBAll`, several `And.decidable`, the
 `DecidableEq TriColor` of the coloring `dite`s, and the `Fintype (Fin n →
@@ -1002,19 +1002,24 @@ continuity conjunct), this is the canonical distinguishing witness: the earlier
 permissive model admitted a spurious tricoloring `(0,0,0,1,0,0,1,2)` (README
 §Path B), which the arc constraint now excludes.
 
-Proof by finite enumeration (`native_decide`): the coloring space
+Proof by finite enumeration (kernel `decide`): the coloring space
 `Fin 8 → TriColor` (3⁸ = 6561) is exhausted, and for each the arc-continuity +
 Fox conjunction at all 4 crossings is refuted — either arc-continuity breaks, or
-Fox forces monochrome (contradicting "≥ 2 colors"). We use `native_decide` (not
-`decide`): the existential ranges over the function type `Fin 8 → TriColor`, whose
-`Decidable` instance rests on `Fintype.piFinset`; the kernel does not reduce that
-enumeration (`decide` fails with "did not reduce to 'isTrue' or 'isFalse'"),
-whereas the native evaluator handles it in a few ms — the same tool used by the
-finite-calibration lemmas in `conway_lean/Angel.lean`. Path-B non-regression
+Fox forces monochrome (contradicting "≥ 2 colors"). We use `decide` (not
+`native_decide`): the existential ranges over the function type `Fin 8 → TriColor`,
+whose `Decidable` instance rests on `Fintype.piFinset`. The kernel reduction of
+this enumeration exceeds the default recursion depth (failure
+`maximum recursion depth has been reached`), so the limit is raised via
+`set_option maxRecDepth 100000` — `decide` then terminates in ~33s. This is
+strictly preferable to `native_decide`: the **kernel verifies** the result rather
+than delegating to the C compiler / runtime (the TCB stays Lean, not
+`native_decide.ax`), and `#print axioms` now reports only
+`[propext, Classical.choice, Quot.sound]`. See #8723. Path-B non-regression
 witness (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
-  native_decide
+  set_option maxRecDepth 100000 in
+  decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 

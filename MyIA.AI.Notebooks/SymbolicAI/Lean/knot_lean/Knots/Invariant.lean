@@ -86,7 +86,7 @@ inductive TriColor where
   deriving BEq, DecidableEq, Repr
 
 /-- `TriColor` est un type à trois éléments, donc un `Fintype` : nécessaire pour
-décider par énumération finie (`native_decide`) l'existentiel
+décider par énumération finie (`decide`) l'existentiel
 `∃ coloring : Fin n → TriColor, …` dans `figureEight_not_tricolorable`. Sans cette
 instance, `Fintype (Fin n → TriColor)` (via `Pi.fintype`) ne se synthétise pas et
 `decide`/`native_decide` échouent en amont de toute réduction. -/
@@ -236,7 +236,7 @@ def Knot.isTricolorable (k : Knot) : Prop :=
 
 La tricolorabilité d'un diagramme fini est décidable : chaque couche prédicative
 reçoit une instance `Decidable` nommée, de sorte que la synthèse au point d'usage
-(`native_decide` dans `figureEight_not_tricolorable`) reste peu profonde. Sans cette
+(`decide` dans `figureEight_not_tricolorable`) reste peu profonde. Sans cette
 décomposition, une seule synthèse monolithique doit enchaîner `List.decidableBAll`,
 plusieurs `And.decidable`, les `DecidableEq TriColor` des `dite` de coloriage, et
 l'énumération `Fintype (Fin n → TriColor)` — ce qui épuise le budget de synthèse
@@ -1039,19 +1039,24 @@ d'arc-égalité `c₂ = c₄`), c'est le témoin de distinction canonique : le m
 permissif antérieur laissait passer une tricoloration parasite `(0,0,0,1,0,0,1,2)`
 (README §Path B), que la contrainte d'arc exclut désormais.
 
-Preuve par énumération finie (`native_decide`) : l'espace des coloriages
+Preuve par énumération finie (`decide` noyau) : l'espace des coloriages
 `Fin 8 → TriColor` (3⁸ = 6561) est parcouru, et pour chacun la conjonction
 d'arc-égalité + Fox aux 4 croisements est réfutée — soit l'arc-continuité casse,
-soit Fox force le monochrome (contredisant « ≥ 2 couleurs »). On emploie
-`native_decide` (et non `decide`) : l'existentiel porte sur le type-fonction
-`Fin 8 → TriColor`, dont l'instance `Decidable` repose sur `Fintype.piFinset` ; le
-noyau ne réduit pas cette énumération (`decide` échoue avec « did not reduce to
-'isTrue' or 'isFalse' »), là où l'évaluateur natif la traite en quelques ms —
-même outil que les lemmes de calibration finie de `conway_lean/Angel.lean`.
-Témoin de non-régression Path B (#2874). -/
+soit Fox force le monochrome (contredisant « ≥ 2 couleurs »). On emploie `decide`
+(et non `native_decide`) : l'existentiel porte sur le type-fonction
+`Fin 8 → TriColor`, dont l'instance `Decidable` repose sur `Fintype.piFinset`. La
+réduction noyau de cette énumération dépasse la profondeur de récursion par
+défaut (échec `maximum recursion depth has been reached`), on lève donc la
+limite via `set_option maxRecDepth 100000` — le `decide` termine alors en ~33s.
+C'est strictement préférable à `native_decide` : le **noyau vérifie** le
+résultat plutôt que de déléguer au compilateur C / runtime (le TCB reste Lean,
+pas `native_decide.ax`), et `#print axioms` ne relève plus que
+`[propext, Classical.choice, Quot.sound]`. Voir #8723. Témoin de
+non-régression Path B (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
-  native_decide
+  set_option maxRecDepth 100000 in
+  decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 
