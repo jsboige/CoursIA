@@ -583,4 +583,59 @@ theorem mirror_wf_preserves (k : Knot) (h : k.diagram.wf = true) :
         funext i; rw [hc]
       rw [heq]; exact h_par
 
+/-! ## 15. Retrospective on the c.918 → c.934 chain (rationale, post-closure)
+
+The §14 closure above was the **terminal lemma** of a 4-cycle chain
+that began with c.918's honest failure post-mortem. The retrospective
+below documents the chain so future contributors can navigate it
+without re-walking the same dead ends.
+
+**The four-stop chain:**
+
+1. **c.918 (PR #8643, CLOSED)** — first attempt at `mirror_wf_preserves`
+   using `decide` on the polymorphic `KnotDiagram` goal. The `decide`
+   tactic requires a `Decidable` instance and the goal type included
+   free variables (`crossings : List PDCrossing`, `numEdges : Nat`);
+   `decide` cannot decide such a goal. Catastrophic failure mode
+   `Invalid field 'mirror' on KnotDiagram` because the goal referred
+   to `Knot.mirror` (a `Knot` field) but was stated at `KnotDiagram`
+   level. PR closed, sub-issue #8644 opened.
+
+2. **c.923 (PR #8652)** — reduced scope to named-knot concrete instances
+   (`unknot`, `trefoil`, `figureEight`). `decide` discharges each
+   because the type is closed at the diagram level. 3 lemmas
+   (`mirror_unknot_wf`, `mirror_trefoil_wf`, `mirror_figureEight_wf`).
+
+3. **c.933 (PR #8667)** — restored polymorphism by hand-writing the
+   per-label count preservation `mirror_diag_preserves_count` via
+   `Perm.subperm` + `le_antisymm`, repairing the v4.31.0-rc1 missing
+   `List.perm_iff_count`. 5 lemmas + 1 helper.
+
+4. **c.934 (PR #8673, the closure shipped in `0323b2daa`)** — lifted
+   the goal to `Knot.mirror.diagram.wf`, where field-equality of
+   `Knot.mirror` yields `rfl` for `numEdges` and `crossings`, and the
+   per-diagram permutation `mirror_edges_perm` lifts the per-crossing
+   `mirrorCrossing_perm` through `List.Perm.flatMap`. Closed.
+
+**Why the lift through `Knot.mirror` was the right move:**
+
+- `KnotDiagram.wf` is a `Bool` predicate that depends only on `numEdges`
+  and the edge multiset — both preserved by `mirror` (the former by
+  field identity, the latter by permutation).
+- The `Knot` wrapper is a thin newtype-style binder that gives
+  `Knot.mirror` a definitional identity. Lifting through it cost
+  nothing on the `wf` side (the projection `k.diagram` is defeq) and
+  bought access to `mirrorCrossing_perm` at the diagram level.
+- `decide` is rejected at the polymorphic goal because the
+  `KnotDiagram.wf` definition is a `decide`-able instance on concrete
+  edge lists, not on a general `KnotDiagram`. The proof has to
+  reconstruct the per-label count argument by hand.
+
+**EPIC #8604 status:** the polymorphic `mirror_wf_preserves` closure
+shipped in c.934. The original EPIC #8604 acceptance criterion #1
+(`hwell : True` → decidable `IsWellFormed` in `KnotDiagram`) was NOT
+addressed by this chain — the `hwell` field is still `True` in the
+structure definition. That separate piece of work is tracked under
+#8644. No `sorry` introduced (C918-L2 ★★ respected). -/
+
 end Knots_en
