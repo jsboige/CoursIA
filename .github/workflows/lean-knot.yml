@@ -68,8 +68,13 @@ jobs:
   # reuse the cached lake artifacts.
   # Opt-in per lake; knot_lean is the pilote because it has a stable
   # sorry profile (17 real tactic sorries, all enumerated + justified).
+  # NOTE: `uses: ./...` (not `@main`) -- `lean-axiom.yml` is introduced by
+  # THIS PR; resolving it from `main` would mean the pilot job silently
+  # fails to dispatch on the branch and never proves the gate works.
+  # Once the workflow lands on `main`, future lakes can either keep `./`
+  # (resolved per-PR) or switch to `@main` (resolved once).
   proof-integrity:
-    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean

@@ -21,7 +21,7 @@ name: Lean Axiom Check (reusable)
 #         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
 #         display-name:   knot_lean
 #         target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
-#         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Classical.choice"
+#         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Quot.sound,Classical.choice"
 #
 # Output:
 # - On success: prints "OK: no forbidden axioms" plus a per-declaration
@@ -46,7 +46,7 @@ on:
         type: string
         required: true
       allow-axioms:
-        description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
+        description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
         type: string
         default: ""
 
@@ -141,6 +141,7 @@ jobs:
                     "funext",
                     "Quot.lift",
                     "Quot.mk",
+                    "Quot.sound",
                     *allow,
                 ],
                 fail_on_sorry=True,
@@ -150,6 +151,7 @@ jobs:
                 # via `has_sorry` separately, but wrong for a CI integrity
                 # gate where a transitive sorryAx must fail the run.
             )
+            print(f"  declarations: {len(result['declarations'])} enumerated")
             print(f"  axioms: {result['axioms']}")
             print(f"  forbidden: {result['forbidden']}")
             print(f"  has_sorry: {result['has_sorry']}")
