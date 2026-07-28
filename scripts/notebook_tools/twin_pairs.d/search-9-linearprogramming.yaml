@@ -5,10 +5,11 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-28"
-    by: po-2024:CoursIA-2
-    python_sha: 290e11ed4aae0abf7fad8e60a69f5275ac2d586c
-    csharp_sha: 7b07dc878a4ab996e0e318ee93140aca3942ba6f
+    by: myia-ai-01:CoursIA
+    python_sha: 8f12ab7133fbc93d321fef24ac340f97fe647402
+    csharp_sha: 3fcc002679a6df8a3b5babe1b611a7846e15efa2
   known_differences:
+    - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Solveur SOTA distinct : Python = PuLP (interface declarative, solveur CBC par defaut) ; C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE). Les deux invoquent un vrai solveur industriel -- parite SOTA, pas reimplementation."
     - "Asymetrie de couverture : le jumeau Python (47 cellules, 18 code) couvre §1-8 (intro, PuLP, formulation, Transport §4, sensibilite/dualite §5, PLNE §6, exemple guide multi-depots §7, resume §8) ; le jumeau C# (28 cellules, 11 code) couvre §1-7 (intro, OrTools production, diet formulation, sensibilite/dualite §4, PLNE sac a dos §5, Transport §6 ajoute par #8640/c.909, multi-depots §7 + variante desequilibree ajoutes par c.913 ; enonces complets des exercices melange-industriel et set-cover ajoutes par c.930 (#8676), alignant la parite pedagogique des exercices avec le jumeau Python). Divergence positive : le Python laisse le multi-depots en exercice (stub PuLP) ; le C# en donne une solution OrTools travaillee (290 EUR equilibre + 240 EUR cas desequilibre avec depot fictif)."
     - "Probleme de Transport : present des deux cotes (Python §4, C# §6) avec les MEMES donnees (3 usines x 4 magasins, equilibre 450=450, cout optimal 760 EUR) -- verifie firsthand c.909. GLOP renvoie un optimum degenere 5 routes vs 6 routes PuLP/CBC (memes 760 EUR, optima alternatifs, documente dans le notebook C#)."
