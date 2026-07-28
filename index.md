@@ -33,7 +33,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 ### Raisonnement formel et symbolique
 
 - **[SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)** — Lean 4 (preuves formelles), Tweety (argumentation), Semantic Web (RDF, OWL), Smart Contracts, Planners, SMT (Z3), Argument Analysis, Symbolic Learning. La plus vaste série du dépôt. *Avancé.*
-- **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, NumPyro). *Intermédiaire à avancé.*
+- **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, PyMC). *Intermédiaire à avancé.*
 - **[GameTheory](MyIA.AI.Notebooks/GameTheory/README.md)** — Théorie des jeux, équilibres de Nash, mechanism design, social choice (Arrow, Sen, Voting) avec ports Lean. *Intermédiaire à avancé.*
 
 ### Domaines connexes
