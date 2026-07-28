@@ -94,6 +94,73 @@ def _find_lake_root(start: Path) -> Optional[Path]:
         cur = cur.parent
 
 
+# --- Declaration enumeration for the axiom-integrity gate (#8677) ------------
+#
+# `#print axioms` expects a *declaration* name, not a module segment: emitting
+# `#print axioms Basic` for module `Knots.Basic` resolves nothing unless a
+# declaration is fortuitously named `Basic`. To feed real declaration names we
+# parse the module source, tracking `namespace`/`end` blocks so each name is
+# emitted fully qualified. See pr-review-discipline.md §B.3 / issue #8677.
+_DECL_HEAD_RE = re.compile(
+    r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
+    r"(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*"
+    r"(?:theorem|lemma|def|opaque|axiom|abbrev|structure|inductive|class)\s+"
+    r"(?P<name>[A-Za-z_][A-Za-z0-9_'.]*)",
+    re.MULTILINE,
+)
+_NS_OPEN_RE = re.compile(r"^\s*namespace\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
+_NS_CLOSE_RE = re.compile(r"^\s*end\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
+
+
+def _module_source_path(project: Path, module_name: str) -> Optional[Path]:
+    """Resolve the ``.lean`` file for a dotted ``module_name`` under ``project``."""
+    rel = Path(module_name.replace(".", "/") + ".lean")
+    direct = project / rel
+    if direct.exists():
+        return direct
+    # Nested lakes may root source trees one level below the lakefile; glob the
+    # basename as a fallback rather than walking every directory.
+    for hit in project.rglob(rel.name):
+        if hit.is_file():
+            return hit
+    return None
+
+
+def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]:
+    """Return fully-qualified declaration names declared in ``module_name``.
+
+    Parses the module source, tracking ``namespace``/``end`` blocks so each
+    declaration is qualified by its enclosing namespace(s). ``instance`` and
+    ``example`` (which may be anonymous) are intentionally excluded. Returns an
+    empty list when the source file cannot be located -- callers MUST treat that
+    as "gate cannot run" (fail-loud for the CI gate), never as "gate passed".
+    """
+    src = _module_source_path(project, module_name)
+    if src is None:
+        return []
+    text = src.read_text(encoding="utf-8", errors="replace")
+    ns_stack: List[str] = []
+    decls: List[str] = []
+    for line in text.splitlines():
+        m_open = _NS_OPEN_RE.match(line)
+        if m_open:
+            ns_stack.append(m_open.group("ns"))
+            continue
+        m_close = _NS_CLOSE_RE.match(line)
+        if m_close:
+            if ns_stack:
+                ns_stack.pop()
+            continue
+        m = _DECL_HEAD_RE.match(line)
+        if m:
+            name = m.group("name")
+            if "." in name or not ns_stack:
+                decls.append(name)
+            else:
+                decls.append(".".join(ns_stack + [name]))
+    return decls
+
+
 class LeanVerifier:
     """Verify Lean 4 files using lake build with content-hash caching.
 
@@ -318,18 +385,44 @@ class LeanVerifier:
             except OSError:
                 pass
 
-    def check_axioms(self, module_name: str, whitelist: list = None) -> dict:
-        """Check axioms used by a module via #print axioms.
+    def check_axioms(
+        self,
+        module_name: str,
+        whitelist: list = None,
+        fail_on_sorry: bool = False,
+    ) -> dict:
+        """Check axioms used by a module via ``#print axioms``.
 
-        Level 3 verification: after build succeeds, check that no
-        unexpected axioms (beyond sorry/classical.choice) are used.
+        Level 3 verification: after build succeeds, check that no unexpected
+        axioms (beyond the whitelist) are used, and -- when ``fail_on_sorry`` is
+        set -- that no declaration transitively depends on ``sorryAx``.
+
+        Two correctness gates (issue #8677, pr-review-discipline §B.3):
+
+        * ``#print axioms`` is emitted per **declaration** (enumerated from the
+          module source, namespace-qualified), not per module segment. The
+          command expects a declaration name, so the previous
+          ``module_name.split('.')[-1]`` form resolved nothing and made the gate
+          green-blind.
+        * ``sorryAx`` is the axiom that reveals a (possibly transitive) ``sorry``
+          in the dependency chain -- the one piece of information a textual
+          ``grep -c sorry`` can never see. The prover tracks sorry at Level 2 and
+          intentionally tolerates ``sorryAx`` here, so ``fail_on_sorry=False``
+          (the default) preserves that behaviour. The CI review gate passes
+          ``fail_on_sorry=True`` so a transitive sorry fails integrity.
 
         Args:
-            module_name: Dotted module name (e.g. 'SocialChoice.Voting')
-            whitelist: List of allowed axiom names (default: classical + propext + funext)
+            module_name: Dotted module name (e.g. 'Knots.Basic').
+            whitelist: Allowed axiom names (default: classical + propext + funext
+                + Quot).
+            fail_on_sorry: When True, ``success`` is False if any declaration
+                transitively depends on ``sorryAx``. Default False (prover
+                behaviour -- sorry is tracked at Level 2, so Level 3 stays green
+                on a parse gap to avoid flipping historical results).
 
         Returns:
-            dict with 'success', 'axioms' (list), 'forbidden' (list), 'raw_output'
+            dict with 'success', 'axioms', 'forbidden', 'has_sorry',
+            'fail_on_sorry', 'declarations', 'enumerated', 'raw_output'.
         """
         if whitelist is None:
             whitelist = [
@@ -341,10 +434,40 @@ class LeanVerifier:
             ]
 
         project = Path(self.project_dir)
+        # Re-root to the Lake root the same way verify_project_file does, so the
+        # import resolves against prebuilt oleans regardless of project_dir depth.
+        if not _has_lakefile(project):
+            root = _find_lake_root(project)
+            if root is not None:
+                project = root
+
+        declarations = _enumerate_module_declarations(project, module_name)
+        if not declarations:
+            # Prover path (fail_on_sorry=False): preserve historical green
+            # behaviour (Level 2 tracks sorry separately) -- do NOT flip Level 3
+            # on a source-parse gap. CI gate path (fail_on_sorry=True): fail
+            # loud so the review gate is never green-blind (#8677).
+            base = {
+                "axioms": [],
+                "forbidden": [],
+                "whitelist": whitelist,
+                "has_sorry": False,
+                "fail_on_sorry": fail_on_sorry,
+                "declarations": [],
+                "enumerated": False,
+                "raw_output": "",
+            }
+            if fail_on_sorry:
+                return {**base, "success": False, "error": "no_declarations_enumerated"}
+            return {**base, "success": True}
+
         cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
+        stdin_lines = [f"import {module_name}"] + [
+            f"#print axioms {decl}" for decl in declarations
+        ]
+        stdin_input = "\n".join(stdin_lines) + "\n"
 
         try:
-            stdin_input = f"import {module_name}\n#print axioms {module_name.split('.')[-1]}\n"
             result = subprocess.run(
                 cmd,
                 cwd=str(project),
@@ -354,17 +477,21 @@ class LeanVerifier:
                 env=env,
                 input=stdin_input,
             )
-
             output = result.stdout + "\n" + result.stderr
             axioms = self._extract_axioms(output)
             forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
+            has_sorry = "sorryAx" in axioms
+            success = len(forbidden) == 0 and not (fail_on_sorry and has_sorry)
 
             return {
-                "success": len(forbidden) == 0,
+                "success": success,
                 "axioms": axioms,
                 "forbidden": forbidden,
                 "whitelist": whitelist,
-                "has_sorry": "sorryAx" in axioms,
+                "has_sorry": has_sorry,
+                "fail_on_sorry": fail_on_sorry,
+                "declarations": declarations,
+                "enumerated": True,
                 "raw_output": output,
             }
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
@@ -372,6 +499,11 @@ class LeanVerifier:
                 "success": False,
                 "axioms": [],
                 "forbidden": [],
+                "whitelist": whitelist,
+                "has_sorry": False,
+                "fail_on_sorry": fail_on_sorry,
+                "declarations": declarations,
+                "enumerated": True,
                 "error": str(e),
                 "raw_output": "",
             }
@@ -483,15 +615,28 @@ class LeanVerifier:
 
     @staticmethod
     def _extract_axioms(output: str) -> list:
-        """Extract axiom names from #print axioms output."""
+        """Extract axiom names from ``#print axioms`` output.
+
+        Lean emits one line per declaration in the form
+        ``'Foo.bar' depends on axioms [A, B, C]`` (or ``'Foo.bar' depends on
+        axioms []``). Parse the bracketed list of each such line and union the
+        names across declarations. The previous comma-split over the whole line
+        captured garbage such as ``'Foo.bar' depends on axioms [Classical.choice``
+        as an "axiom name", which silently poisoned the forbidden-axiom check
+        (#8677).
+        """
         axioms = []
         for line in output.split("\n"):
-            line = line.strip()
-            if line and not line.startswith("[") and not line.startswith("error"):
-                for name in line.split(","):
-                    name = name.strip().rstrip(".")
-                    if name and name not in ("", "axioms"):
-                        axioms.append(name)
+            m = re.search(r"depends on axioms \[([^\]]*)\]", line)
+            if not m:
+                continue
+            inner = m.group(1).strip()
+            if not inner:
+                continue
+            for name in inner.split(","):
+                name = name.strip().rstrip(".")
+                if name:
+                    axioms.append(name)
         return list(set(axioms))
 
     @staticmethod

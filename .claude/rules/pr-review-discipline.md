@@ -26,7 +26,8 @@ Si dépassement : refuser le merge, exiger split en PRs cohérentes par feature.
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
 1. `grep -c sorry` avant/après par fichier modifié
 2. Lien vers `Lake build SUCCESS` (CI ou commit local prouvable)
-3. Lien vers `Proof integrity SUCCESS` (axiom check)
+3. Lien vers `Proof integrity SUCCESS` (axiom check) — produit par le job CI `proof-integrity` (câblé lake par lake, pilote `knot_lean`) qui exécute `LeanVerifier.check_axioms(module, fail_on_sorry=True)` : détecte un `sorry` **transitif** (l'axiome `sorryAx` dans la chaîne de dépendances) qu'un `grep -c sorry` ne verra jamais. Reproduction locale : `python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>').check_axioms('<Module>', fail_on_sorry=True))"` depuis `agent_tests/`. **Tant que le job n'est pas câblé sur le lake de la PR**, B.3 se lit **non applicable** (à écrire explicitement dans le body), jamais comme un gate silencieusement sauté — un reviewer ne doit pas avoir à choisir entre bloquer sur un artefact impossible et merger sur un gate mort (#8677).
+
 4. Si refactor du prover Python : justifier pourquoi le refactor est nécessaire pour le claim Lean (sinon split en 2 PRs)
 
 Sans ces 4 éléments → **CHANGES_REQUESTED** automatique.
