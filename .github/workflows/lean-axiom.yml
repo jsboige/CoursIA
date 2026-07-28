@@ -182,6 +182,14 @@ jobs:
             # blamed forbidden axioms while `forbidden` was empty.
             if result.get("error"):
                 print(f"  error: {result['error']}")
+                # `error` names the class of failure; `raw_output` names the
+                # cause. Without this tail, "build_failed_returncode_1" sends
+                # you to a local reproduction to learn what any CI log already
+                # had. Tail rather than head: Lean prints the failing
+                # declaration and its error last.
+                tail = (result.get("raw_output") or "").strip().splitlines()[-20:]
+                for line in tail:
+                    print(f"    | {line}")
             if result["has_sorry"]:
                 sorry_modules.append(mod)
 
