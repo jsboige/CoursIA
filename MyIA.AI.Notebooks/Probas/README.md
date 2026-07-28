@@ -658,12 +658,12 @@ La programmation probabiliste propose un changement de posture : ne plus demande
 
 ## Références canoniques (audit distillation #8081)
 
-La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/audit/c803-mapping.md`](../../docs/audit/c803-mapping.md) (c.803, 2026-07-23). Références canoniques principales :
+La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) (c.803, 2026-07-23). Références canoniques principales :
 
 - **[*Model-Based Machine Learning Book*](https://mbmlbook.com/)** (Herbrich / Bishop / Winn / Diethe) — couvre la majorité des notebooks probas appliqués (Murder Mystery Ch.1, Skills IRT Ch.2, TrueSkill Ch.3, BPM Ch.4, WetGrass Ch.5, LDA Ch.10, Crowdsourcing Ch.7/9c, Recommenders, Sequences Ch.12, GP Ch.16, Survival Ch.17).
 - **[*TrueSkill: A Bayesian Skill Rating System*](https://research.microsoft.com/~minka/papers/trueskill.pdf)** (Herbrich, Minka & Graepel, NeurIPS 2007) — fondement algorithmique de Infer-8 et PyMC-8, dont les formules fermées V(t)/W(t)/τ² (section 7 bis PyMC-8).
 - **[*Pattern Recognition and Machine Learning*](https://www.microsoft.com/en-us/research/people/cmbishop/prml-book/)** (Bishop, Springer 2006) — référence générale pour les modèles gaussiens, mixtures, EM, et la théorie de l'inférence bayésienne.
-- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (cf. c.803 décisions PR Backfill-1).
+- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (#8702).
 - **Lauritzen & Spiegelhalter (1988), Jensen, Lauritzen & Olesen (1990)** — fondement des réseaux bayésiens WetGrass/Sprinkler (Infer-4, PyMC-4).
 - **Blei, Ng & Jordan (2003)** — Latent Dirichlet Allocation, cité dans Infer-11 et PyMC-11 comme « Source primaire ».
 - **Salakhutdinov & Mnih (2008)** — Probabilistic Matrix Factorization, cité dans PyMC-15.
@@ -671,7 +671,7 @@ La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilist
 - **Rabiner (1989)** — HMM tutorial, base conceptuelle d'Infer-14 / PyMC-14.
 - **Minka, T., Winn, J., et al. (2018)** — *Infer.NET 2.4*, Microsoft Research Cambridge (cité PyMC-1).
 
-Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 37, Infer-15 cell 76) ou sur les **sources primaires** académiques. Le tableau de mapping [`docs/audit/c803-mapping.md`](../../docs/audit/c803-mapping.md) inventorie chaque notebook avec son verdict distillation (FIDÈLE inline / FIDÈLE biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS).
+Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 37, Infer-15 cell 76) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
 
 ## Licence
 
