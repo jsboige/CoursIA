@@ -111,6 +111,18 @@ _DECL_HEAD_RE = re.compile(
 _NS_OPEN_RE = re.compile(r"^\s*namespace\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
 _NS_CLOSE_RE = re.compile(r"^\s*end\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
 
+# Canonical Lean/Lake error marker (#8694). Lean 4 spells a diagnostic either
+# bare (``error:``) or tagged with a diagnostic class
+# (``error(lean.unknownIdentifier):``), and the marker appears either after the
+# ``<file>:<line>:<col>:`` position or at the very start of a lake-prefixed
+# line. Matching the SHAPE -- keyword, optional ``(<class>)``, colon -- rather
+# than the two literals we happened to have seen is what keeps a new Lean
+# spelling from silently reopening the #6790 false negative.
+# ``prover.tools._parse_lean_errors`` builds its regexes from the same token;
+# ``tests/test_error_marker_contract.py`` pins the two parsers to agree.
+_ERROR_TOKEN = r"error(?:\([^)]*\))?"
+_ERROR_MARKER_RE = re.compile(r"(?:^|:\s*)" + _ERROR_TOKEN + r":")
+
 
 def _module_source_path(project: Path, module_name: str) -> Optional[Path]:
     """Resolve the ``.lean`` file for a dotted ``module_name`` under ``project``."""
@@ -664,10 +676,21 @@ class LeanVerifier:
         missed that format, so the authority and the inline parser disagreed
         (``success`` flipped via exit code, but 0 parsed errors -> false
         negative).  Catch BOTH forms here.
+
+        Diagnostic **classes** (#8694): current Lean 4 tags many diagnostics
+        with a class between the keyword and the colon --
+        ``<f>:<l>:<c>: error(lean.unknownIdentifier): Unknown identifier `x` ``.
+        That form carries neither ``": error:"`` nor a leading ``"error:"``, so
+        both literal gates skipped it and the SAME #6790 false negative came
+        back through a new spelling.  Measured on a real broken build (2 errors
+        emitted, 1 of each spelling): this function returned only the legacy
+        one.  Match the marker **structurally** -- keyword, optional
+        ``(<class>)``, colon -- rather than enumerating known spellings, which
+        is what guarantees the next format silently reopens the hole.
         """
         errors = []
         for line in output.split("\n"):
             stripped = line.strip()
-            if ": error:" in stripped or stripped.startswith("error:"):
+            if _ERROR_MARKER_RE.search(stripped):
                 errors.append(stripped)
         return errors

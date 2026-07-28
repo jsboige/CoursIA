@@ -33,6 +33,17 @@ from .forensic_guards import (
     _is_axiom_declaration,
 )
 
+# Canonical Lean/Lake error marker (#8694) -- kept byte-identical to
+# ``LeanVerifier._ERROR_TOKEN`` (``agent_tests/lean_server.py``). Lean 4 spells
+# a diagnostic either bare (``error:``) or tagged with a diagnostic class
+# (``error(lean.unknownIdentifier):``); matching the SHAPE rather than the
+# literals we happened to have seen is what stops a new Lean spelling from
+# silently reopening the #6790 false negative. The two modules cannot share an
+# import (``lean_server.py`` lives one directory up and is spec-loaded by
+# ``prover/verifier.py``), so the agreement the docstrings claim is pinned by
+# ``tests/test_error_marker_contract.py`` instead of left to prose.
+_ERROR_TOKEN = r"error(?:\([^)]*\))?"
+
 
 def _count_sorries_from_build_output(raw_output) -> int:
     """Count 'uses sorry' warnings in lake build output.
@@ -101,6 +112,18 @@ def _parse_lean_errors(raw_output) -> list:
     ``error: <f>:<l>:<c>:``) on every line regardless of substring, then fall
     back to substring / line-start detection for non-positional errors.
 
+    Diagnostic **classes** (#8694): current Lean 4 tags many diagnostics with a
+    class between the keyword and the colon --
+    ``<f>:<l>:<c>: error(lean.unknownIdentifier): Unknown identifier `x` ``.
+    All four branches above anchored on the literal ``error:``, so that form
+    matched none of them and the #6790 false negative returned through a new
+    spelling: measured on a real broken build emitting one error of each
+    spelling, this helper reported 1 of 2. Every branch now builds its pattern
+    from ``_ERROR_TOKEN`` (keyword, optional ``(<class>)``, colon), so the
+    marker is matched by shape and a future class name needs no code change.
+    The change is purely additive -- every previously-detected line still
+    matches.
+
     Crash fix (#6790 forensic, BG run-4, exit 1): the preserve/revert gate
     ``_reverify_compiles_clean`` falls back to the pre-parsed ``errors`` LIST
     when ``raw_output`` is empty (``rv.get("raw_output", "") or
@@ -130,22 +153,24 @@ def _parse_lean_errors(raw_output) -> list:
         if "_GoalExtract.lean" in line or "_SorryVerify.lean" in line:
             continue
         # Standard positional: <file>:<line>:<col>: error: <msg>
-        m = re.search(r"(\d+):(\d+): error: (.*)", line)
+        m = re.search(r"(\d+):(\d+): " + _ERROR_TOKEN + r": (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
         # Lake-prefix positional: error: <file>:<line>:<col>: <msg>  (grain a-2)
-        m = re.search(r"error: .*?(\d+):(\d+): (.*)", line)
+        m = re.search(_ERROR_TOKEN + r": .*?(\d+):(\d+): (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
         # Non-positional, substring form: <file>: error: <msg> (module-level)
-        if ": error:" in line:
-            errors.append({"line": None, "message": line.split(": error:", 1)[1].strip()})
+        m = re.search(r":\s*" + _ERROR_TOKEN + r":", line)
+        if m:
+            errors.append({"line": None, "message": line[m.end():].strip()})
             continue
         # Non-positional, line-start form: error: <msg> (message-only / lake-prefix no-col)
-        if line.lstrip().startswith("error: "):
-            errors.append({"line": None, "message": line.lstrip().split("error: ", 1)[1].strip()})
+        m = re.match(_ERROR_TOKEN + r":", line.lstrip())
+        if m:
+            errors.append({"line": None, "message": line.lstrip()[m.end():].strip()})
             continue
     return errors
 
