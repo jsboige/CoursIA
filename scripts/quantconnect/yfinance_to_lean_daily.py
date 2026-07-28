@@ -29,18 +29,24 @@ LEAN daily format (firsthand-verified in #8401)
 The on-disk LEAN US-equity daily format, proven end-to-end in #8401 (the
 quantbook read ``735100`` back as close ``73.51`` for EFA 2007-01-03):
 
-    <data-folder>/equity/usa/daily/<TICKER>.zip
-        -> contains <TICKER>.csv
+    <data-folder>/equity/usa/daily/<ticker>.zip
+        -> contains <ticker>.csv  (ticker LOWERCASE -- LEAN's own equity data
+           uses lowercase, e.g. spy.zip/spy.csv; verified firsthand against the
+           21 in-repo reference zips, ai-01 c.26)
         -> one line per trading day, NO header:
            YYYYMMDD HH:MM,Open,High,Low,Close,Volume
         -> OHLC are integers scaled x10000 (73.51 -> 735100)
         -> Volume is the raw integer share volume
 
-The time component is the session close (16:00); LEAN's daily reader keys on the
-date, so this is the canonical daily-bar timestamp. Prices are RAW (unadjusted
-for dividends) -- benign for a price-momentum signal, documented transparently
-in the quantbook (cell[6]) and here. A full adjusted-close path needs a Security
-Master or a dividend-aware converter (deferred).
+The time component is ``00:00`` -- the LEAN daily-format convention (every daily
+bar carries midnight), NOT the equity session close. Verified firsthand against
+the 21 in-repo reference zips: every line carries ``00:00`` (e.g. ``spy.zip``
+first line ``19980102 00:00,973100,975300,965300,973600,2150000``). LEAN's daily
+reader keys on the date, so a wrong time does not break loudly -- which is why
+the convention is pinned by an anchoring test in the test suite. Prices are RAW
+(unadjusted for dividends) -- benign for a price-momentum signal, documented
+transparently in the quantbook (cell[6]) and here. A full adjusted-close path
+needs a Security Master or a dividend-aware converter (deferred).
 
 Usage
 -----
@@ -67,10 +73,13 @@ from typing import Iterable, Optional
 import pandas as pd
 
 PRICE_SCALE = 10_000  # LEAN stores equity OHLC as int = round(price * 10000)
-SESSION_CLOSE_TIME = "16:00"  # US equity market close; LEAN daily keys on date
+LEAN_DAILY_TIME = "00:00"  # LEAN daily-format convention: every daily bar carries midnight
+# (NOT the equity session close -- verified firsthand against the 21 in-repo
+# reference zips, ai-01 c.26). Renamed from SESSION_CLOSE_TIME to stop encoding
+# the falsehood that 00:00 is a session-close hour.
 
 
-def df_to_lean_rows(df, time: str = SESSION_CLOSE_TIME) -> list[str]:
+def df_to_lean_rows(df, time: str = LEAN_DAILY_TIME) -> list[str]:
     """Convert a yfinance OHLCV DataFrame to LEAN daily CSV lines.
 
     ``df`` is expected to be yfinance's daily format: a DatetimeIndex (timezone-
@@ -94,18 +103,23 @@ def df_to_lean_rows(df, time: str = SESSION_CLOSE_TIME) -> list[str]:
 
 
 def write_lean_zip(ticker: str, rows: Iterable[str], out_folder: Path) -> Path:
-    """Write ``<out_folder>/<TICKER>.zip`` containing ``<TICKER>.csv``.
+    """Write ``<out_folder>/<ticker>.zip`` containing ``<ticker>.csv`` (LOWERCASE).
 
-    LEAN expects the inner CSV named after the ticker (uppercase) with no header.
+    LEAN's own equity data uses lowercase symbol names (e.g. ``spy.zip`` /
+    ``spy.csv``), verified firsthand against the 21 in-repo reference zips
+    (ai-01 c.26). On a case-sensitive filesystem -- i.e. the Linux Docker
+    container where lean-cli runs LEAN, the very target of this converter -- an
+    uppercase ``SPY.zip`` written next to an existing ``spy.zip`` is a distinct,
+    silently-invisible file. The ticker is therefore lowercased unconditionally.
     Returns the path to the written zip.
     """
     out_folder = Path(out_folder)
     out_folder.mkdir(parents=True, exist_ok=True)
-    ticker_up = ticker.upper()
-    zip_path = out_folder / f"{ticker_up}.zip"
+    ticker_low = ticker.lower()
+    zip_path = out_folder / f"{ticker_low}.zip"
     body = "\n".join(rows) + ("\n" if rows else "")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(f"{ticker_up}.csv", body)
+        zf.writestr(f"{ticker_low}.csv", body)
     return zip_path
 
 
