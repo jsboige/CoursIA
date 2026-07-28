@@ -241,7 +241,9 @@ def build_quantbook_cost(nb: dict, by: str, today: str) -> dict:
 # Signaux d'usage non-CPU-pure — si PRÉSENTS, le notebook n'est PAS éligible au
 # profile `search-cpu` (coût non-nul) → skip (ne pas fabriquer un cost « 0/CPU » faux).
 _API_RE = re.compile(
-    r"openai|anthropic|mistral\.[a-z]|ChatCompletion|replicate\.|gpt-image|dall-?e",
+    # `mistralai` couvre le SDK officiel Mistral (`from mistralai import Mistral`),
+    # que `mistral\.[a-z]` rate (pas de `.` après mistral). Concern #1 Hermes (po-2026).
+    r"openai|anthropic|mistral\.[a-z]|\bmistralai\b|ChatCompletion|replicate\.|gpt-image|dall-?e",
     re.I,
 )
 _GPU_RE = re.compile(
@@ -250,6 +252,16 @@ _GPU_RE = re.compile(
 _ACCOUNT_RE = re.compile(
     r"HF_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|MISTRAL_API_KEY|"
     r"os\.getenv\(\s*[\"']\w*(_KEY|_TOKEN|API)",
+)
+# Libs HTTP génériques = réseau requis (un requests.get/httpx/urllib n'est pas
+# CPU-pur). On matche les imports ET les appels typiques pour éviter le FP sur le
+# mot isolé « requests » en prose (cf G.1, concern #2 Hermes po-2026 sur #8660) ;
+# mieux vaut FP-skip (gate conservatrice) que miss un notebook API payant.
+_HTTP_LIB_RE = re.compile(
+    r"\b(?:import|from)\s+(?:requests|httpx|aiohttp|urllib)\b"
+    r"|(?:requests|httpx)\.(?:get|post|put|delete|patch|head|request)\s*\("
+    r"|urllib\.request\b",
+    re.I,
 )
 # Restore NuGet au runtime = réseau requis (packages .NET téléchargés à l'exécution).
 # ATTENTION : ne PAS matcher le mot isolé « NuGet » (FP sur la prose, ex. « Aucune
@@ -268,16 +280,25 @@ def _source_text(nb: dict) -> str:
 
 
 def is_cpu_pure(nb: dict) -> bool:
-    """True si le notebook n'a AUCUN signal API/GPU/compte/QuantBook.
+    """True si le notebook n'a AUCUN signal API/GPU/compte/HTTP-lib/QuantBook.
 
-    Gate de sécurité du profile `search-cpu` : un notebook qui appelle une API ou le
-    GPU n'est PAS gratuit-CPU → le profile est inadéquat → skip. Évite de fabriquer
-    un cost « 0 USD / CPU-only » sur un notebook payant (Litmus anti-LIGHT).
+    Gate de sécurité du profile `search-cpu` : un notebook qui appelle une API
+    (provider nommé OU SDK officiel comme `mistralai`), le GPU, ou une lib HTTP
+    générique (`requests`/`httpx`/`urllib`) n'est PAS gratuit-CPU → le profile est
+    inadéquat → skip. Évite de fabriquer un cost « 0 USD / CPU-only » sur un
+    notebook payant (Litmus anti-LIGHT). Trade-off assumé : conservateur (FP-skip)
+    plutôt que miss — un notebook skip à tort reste sans cost-matrix, jamais
+    marqué faux-gratuit.
     """
     if _uses_quantbook(nb):
         return False
     src = _source_text(nb)
-    return not (_API_RE.search(src) or _GPU_RE.search(src) or _ACCOUNT_RE.search(src))
+    return not (
+        _API_RE.search(src)
+        or _GPU_RE.search(src)
+        or _ACCOUNT_RE.search(src)
+        or _HTTP_LIB_RE.search(src)
+    )
 
 
 def _cpu_min_estimate(n_code: int) -> int:

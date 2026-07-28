@@ -213,6 +213,30 @@ def test_is_cpu_pure_false_for_gpu():
     assert not pcm.is_cpu_pure(_make_gpu_nb())
 
 
+def _nb_with(source: str) -> dict:
+    """Notebook minimal à une cellule, source arbitraire (helper pour edge-cases)."""
+    return {"cells": [{"cell_type": "code", "execution_count": None, "metadata": {},
+                       "outputs": [], "source": [source]}],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+
+
+def test_is_cpu_pure_false_for_mistralai_sdk():
+    """Le SDK officiel Mistral (`from mistralai import …`, sans `.` après mistral)
+    doit être attrapé — concern #1 Hermes (po-2026) sur #8660."""
+    assert not pcm.is_cpu_pure(_nb_with("from mistralai import Mistral\nclient = Mistral()\n"))
+
+
+def test_is_cpu_pure_false_for_generic_http_libs():
+    """requests/httpx/urllib = réseau → NON CPU-pur. Couvre l'import ET l'appel,
+    et NE matche PAS le mot isolé « requests » en prose (concern #2 Hermes)."""
+    # Imports + appels typiques → gate refuse.
+    assert not pcm.is_cpu_pure(_nb_with("import requests\nr = requests.get('https://api.x')\n"))
+    assert not pcm.is_cpu_pure(_nb_with("from httpx import Client\nhttpx.get('https://x')\n"))
+    assert not pcm.is_cpu_pure(_nb_with("import urllib.request\nurllib.request.urlopen('https://x')\n"))
+    # Le mot « requests » en prose NE doit PAS déclencher le gate (anti-FP G.1).
+    assert pcm.is_cpu_pure(_nb_with("# On fait quelques requests vers le serveur local (prose).\nprint('ok')\n"))
+
+
 # === build_search_cpu_cost ===
 
 def test_search_cpu_cost_has_mandatory_fields():
