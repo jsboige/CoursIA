@@ -190,6 +190,33 @@ def test_enumeration_end_pops_only_on_a_name_match(tmp_path):
     ]
 
 
+def test_enumeration_skips_private_declarations(tmp_path):
+    """``private`` names are not addressable, so they must not be emitted (#8722).
+
+    Lean 4 mangles a private declaration to ``_private.<Module>.<hash>.<name>``.
+    Emitting the source name makes ``#print axioms`` answer ``unknown constant``
+    and fails the ENTIRE module -- observed on ``Knots.Invariant``, whose three
+    private list helpers (``mem_set_fwd``, ``mem_drop_out``, ``mem_set_self``)
+    sank a module in which every public theorem had checked out fine.
+
+    The other modifiers must keep working: ``protected``/``noncomputable``/
+    ``partial`` names stay addressable and must still be enumerated.
+    """
+    src = (
+        "namespace Knots\n"
+        "private theorem mem_set_fwd : True := trivial\n"
+        "theorem public_thm : True := trivial\n"
+        "private noncomputable def hidden : Nat := 0\n"
+        "protected theorem prot_thm : True := trivial\n"
+        "noncomputable def slow : Nat := 0\n"
+        "end Knots\n"
+    )
+    (tmp_path / "Knots").mkdir()
+    (tmp_path / "Knots" / "Basic.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "Knots.Basic")
+    assert decls == ["Knots.public_thm", "Knots.prot_thm", "Knots.slow"]
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────

@@ -133,7 +133,7 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 # emitted fully qualified. See pr-review-discipline.md §B.3 / issue #8677.
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
-    r"(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*"
+    r"(?P<mods>(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*)"
     r"(?:theorem|lemma|def|opaque|axiom|abbrev|structure|inductive|class)\s+"
     r"(?P<name>[A-Za-z_][A-Za-z0-9_'.]*)",
     re.MULTILINE,
@@ -198,6 +198,13 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
       ``namespace SocialChoice`` (l.36) then ``section SinglePeaked`` (l.177);
       ``end SinglePeaked`` (l.513) emptied the stack, so ``section BanksSet``
       (l.661+) and everything after it was emitted unqualified.
+
+    * **``private`` declarations are skipped** (#8722). Lean 4 mangles a private
+      name to ``_private.<Module>.<hash>.<name>``, so its source name is not a
+      resolvable constant; emitting it fails the whole module. Their axioms are
+      still counted, transitively, via the public declarations that use them.
+      Live instance: ``Knots.Invariant`` (``mem_set_fwd``, ``mem_drop_out``,
+      ``mem_set_self``).
     """
     src = _module_source_path(project, module_name)
     if src is None:
@@ -228,6 +235,18 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
             continue
         m = _DECL_HEAD_RE.match(line)
         if m:
+            if "private" in m.group("mods"):
+                # A ``private`` declaration is NOT addressable by its source name
+                # (#8722). Lean 4 mangles it to ``_private.<Module>.<hash>.<name>``,
+                # so ``#print axioms Knots.mem_set_fwd`` answers ``unknown
+                # constant`` and takes the WHOLE module's verdict down with it --
+                # observed on Knots.Invariant (mem_set_fwd / mem_drop_out /
+                # mem_set_self), which reported ``build_failed_returncode_1``
+                # while every public theorem in it had checked out fine.
+                # Nothing is lost by skipping them: a private lemma reaches the
+                # kernel only through the public theorems that use it, and those
+                # are enumerated, so its axioms are still counted transitively.
+                continue
             name = m.group("name")
             if name.startswith("_root_."):
                 # ``_root_.`` is the ONLY absolute prefix in Lean 4: it escapes
