@@ -253,8 +253,8 @@ def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
     vacuous PR1.5 model. -/
 theorem reidemeister1Connected_satisfiable :
     Reidemeister1Connected
-      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
-      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial } := by
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 } := by
   refine ⟨by decide, by decide, ⟨1, by decide⟩, 1, ⟨5,2,3,4⟩, ?_, ?_⟩
   · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
     exact { toFun := fun j => ⟨j.val, by omega⟩,
@@ -461,8 +461,8 @@ theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     `{1,2,3,4}` is unchanged, so `wf` holds on both sides. -/
 theorem reidemeister3Determined_satisfiable :
     Reidemeister3Determined
-      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
-      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial } := by
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
   refine ⟨by decide, by decide, ?_⟩
   refine ⟨⟨0, by decide⟩, ⟨1,3,2,4⟩, ?_, ?_, ?_, ?_, ?_⟩
   · -- ρ : Fin 4 ↪ Fin 4 (identity; numEdges equal on both sides)
