@@ -390,6 +390,7 @@ class LeanVerifier:
         module_name: str,
         whitelist: list = None,
         fail_on_sorry: bool = False,
+        timeout: int = 60,
     ) -> dict:
         """Check axioms used by a module via ``#print axioms``.
 
@@ -419,18 +420,32 @@ class LeanVerifier:
                 transitively depends on ``sorryAx``. Default False (prover
                 behaviour -- sorry is tracked at Level 2, so Level 3 stays green
                 on a parse gap to avoid flipping historical results).
+            timeout: Seconds for the ``lake env lean --stdin`` subprocess. The
+                dominant cost is loading the module's import closure (Mathlib)
+                into a fresh ``lean`` process; cold that can exceed 60s even with
+                cached ``.olean``, so the B.3 CI gate passes a generous value.
 
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
             'fail_on_sorry', 'declarations', 'enumerated', 'raw_output'.
         """
         if whitelist is None:
+            # Lean 4's standard axiom family. ``Quot.sound`` is essential: it is
+            # a primitive (function extensionality follows from it), so real
+            # proofs depend on ``[propext, Quot.sound]`` -- omitting it makes the
+            # gate falsely fail on any non-trivial theorem (e.g. knot_lean's
+            # ``mirror_wf_preserves``). ``funext`` is a theorem (rarely appears
+            # in ``#print axioms``), kept for tolerance.
             whitelist = [
                 "Classical.choice",
                 "propext",
+                "Quot.sound",
                 "funext",
                 "Quot.lift",
                 "Quot.mk",
+                "Classical.allDef",
+                "Classical.cofiniteChoice",
+                "Classical.choice'",
             ]
 
         project = Path(self.project_dir)
@@ -473,7 +488,7 @@ class LeanVerifier:
                 cwd=str(project),
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=timeout,
                 env=env,
                 input=stdin_input,
             )

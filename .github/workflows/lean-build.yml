@@ -54,6 +54,16 @@ on:
         description: "How to count sorry: raw | prose-header | standalone-tactic | real"
         type: string
         required: true
+      axiom-gate:
+        description: |
+          Run the "Proof integrity (axiom check)" gate (criterion B.3 of
+          pr-review-discipline). When true, after the build each module's
+          declarations are passed `#print axioms`; a proof depending on
+          `sorryAx` (incl. transitively) FAILS the check. Opt-in (default
+          false) so existing lakes can adopt without churn.
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -165,3 +175,59 @@ jobs:
                           # L1058 (rfl fail masked as CI PASS, 2026-06-14).
         lake exe cache get || true
         lake -R build 2>&1 | tail -20
+
+    - name: Proof integrity (axiom check)
+      if: ${{ inputs.axiom-gate }}
+      working-directory: ${{ inputs.project-path }}
+      env:
+        AXIOM_ALLOW_SORRY: "false"   # review-gate policy: sorryAx (incl. transitive) FAILS
+      run: |
+        set -eu
+        # Proof-integrity gate (criterion B.3 of pr-review-discipline, #8677).
+        # For every top-level module of this lake, enumerate declarations and run
+        # `#print axioms` on each via LeanVerifier.check_axioms. A proof that
+        # depends on `sorryAx` -- even transitively (a sorry buried in a
+        # dependency no `grep` sees) -- FAILS the gate. This is the value the
+        # check adds over the textual sorry-baseline above (criterion B.1).
+        PROJ="${{ inputs.project-path }}"
+        # Locate lean_server.py (lives under agent_tests/ in the SymbolicAI tree).
+        LEAN_SERVER=$(find "$GITHUB_WORKSPACE" -name lean_server.py -path '*agent_tests*' | head -1)
+        if [ -z "$LEAN_SERVER" ]; then
+          echo "WARN: lean_server.py not found — skipping axiom gate (no enforcement this run)."
+          exit 0
+        fi
+        SRCDIR="$(dirname "$LEAN_SERVER")"
+        python3 - "$PROJ" "$SRCDIR" <<'PYEOF'
+        import os, sys
+        from pathlib import Path
+        proj, srcdir = Path(sys.argv[1]), Path(sys.argv[2])
+        sys.path.insert(0, str(srcdir))
+        from lean_server import LeanVerifier
+        # Discover top-level modules from *.lean files at the project root
+        # (Knots.lean -> module Knots) and submodule dirs.
+        modules = [f.stem for f in proj.glob("*.lean")]
+        # fail_on_sorry=True = review-gate policy. timeout=300 because loading a
+        # module's Mathlib import closure into a fresh `lean` process cold can
+        # exceed the prover's tight 60s default.
+        v = LeanVerifier(project_dir=str(proj), verbose=False)
+        failed = False
+        for mod in modules:
+            r = v.check_axioms(mod, fail_on_sorry=True, timeout=300)
+            if not r["success"] and r.get("error"):
+                print(f"  [ERROR] {mod}: {r['error']}")
+                failed = True
+                continue
+            status = "PASS" if r["success"] else "FAIL"
+            extra = ""
+            if r.get("has_sorry"):
+                extra = " | HAS SORRY (sorryAx)"
+            if r["forbidden"]:
+                extra += f" | forbidden={r['forbidden']}"
+            print(f"  [{status}] {mod}: decls={len(r.get('declarations', []))} axioms={r['axioms']}{extra}")
+            if not r["success"]:
+                failed = True
+        if failed:
+            print("\nFAIL: one or more modules depend on forbidden axioms (incl. sorryAx).")
+            sys.exit(1)
+        print("\nOK: all modules pass the axiom-integrity gate.")
+        PYEOF

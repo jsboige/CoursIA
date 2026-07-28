@@ -61,3 +61,8 @@ jobs:
       display-name: knot_lean
       sorry-baseline: "17"
       sorry-filter-mode: real
+      # B.3 proof-integrity (axiom-check) pilot (#8677 criterion 4). FAILS when a
+      # knot_lean declaration depends on sorryAx, even transitively (a sorry no
+      # textual grep -c sorry ever sees). knot_lean is the first lake to enable
+      # the gate; other lakes adopt by passing axiom-gate: true in their caller.
+      axiom-gate: true
