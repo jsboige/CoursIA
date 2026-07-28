@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 59821257489bf34aab34dead6b1bf633c9eb2a0e
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA-2
+    python_sha: a9de35314797d3e7118609ca8de249fa568328d1
     csharp_sha: fc482a5d73fe50c7a4cce563edaf1987a0536a7b
   known_differences:
     - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."

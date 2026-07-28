@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2024
-    python_sha: e3703d684417078d85ab16120673c5b55fc0ab58
-    csharp_sha: 715a7887df6004fcf73f4c14624d39bfca671117
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA-2
+    python_sha: eb0da136578d44e8d939aae6b5877c0b22f9c259
+    csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
   known_differences:
     - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"`). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."

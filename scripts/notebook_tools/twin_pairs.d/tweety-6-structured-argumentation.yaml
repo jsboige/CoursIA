@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 850ec6797689e4f9747fa8a5009d4cd6e3489dde
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA-2
+    python_sha: d22ac429cb75a1683534430ab1802103bf4016c2
     csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
   known_differences:
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."

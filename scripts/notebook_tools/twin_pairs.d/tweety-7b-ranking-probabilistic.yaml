@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2024
-    python_sha: bf6043e38c93444b921444f8ba6aa400a2882577
+    date: "2026-07-28"
+    by: myia-po-2023:CoursIA-2
+    python_sha: a286a31b3665c886ac9b443d748269eb7a57f806
     csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
   known_differences:
     - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
