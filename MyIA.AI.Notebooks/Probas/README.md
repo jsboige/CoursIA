@@ -155,7 +155,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modèles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA).
+Si vous préférez Python au C#, commencez par **PyMC-1-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
@@ -214,7 +214,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Infer-101.ipynb              # Introduction Python/C# (standalone)
+├── Infer-101.ipynb              # Introduction C#/.NET (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco/GP (14-16) + frontières (17-19)
@@ -467,7 +467,7 @@ cd MyIA.AI.Notebooks/Probas/Infer/scripts
 .\setup_environment.ps1
 ```
 
-### Notebooks Python (Infer-101, Pyro_RSA)
+### Notebooks Python (Pyro_RSA)
 
 ```bash
 pip install pyro-ppl torch matplotlib numpy
@@ -549,9 +549,9 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 - Vous pouvez les visualiser sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
 - Installation Graphviz Windows : télécharger depuis https://graphviz.org/download/, puis ajouter `C:\Program Files\Graphviz\bin` au PATH.
 
-### Switcher entre kernels C# et Python dans un même notebook
+### Kernels : un par sous-série, jamais mélangés
 
-Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il utilise le mode **polyglot** de .NET Interactive, où chaque cellule spécifie son kernel via le tag `#kernel name`. Pour la série standard, chaque sous-série (Infer/ ou PyMC/) utilise un seul kernel.
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour `Infer/` et `Infer-101`, `Python 3` pour `PyMC/` et `Pyro_RSA`. Aucun notebook ne mélange les deux kernels. (Historiquement, `Infer-101` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET autonome.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
