@@ -232,41 +232,153 @@ def build_quantbook_cost(nb: dict, by: str, today: str) -> dict:
     }
 
 
-def populate_notebook(path: Path, by: str, today: str, apply: bool, profile: str = "quantbook") -> str:
-    """Peuple metadata.cost selon le profile (quantbook | probas-cpu). Retourne un code statut.
+# --- Profile search-cpu : notebooks CPU-purs déterministes (Search, etc.) -------
+# Issue #8056 (P1) — rollout family-partitionné. Le profile `search-cpu` couvre les
+# notebooks d'algorithmes CPU-purs déterministes (Search/Part1-Foundations, etc.) :
+# gratuit, pas d'API/GPU/compte externe, reproductibilité HIGH. Réutilisable pour
+# les tranches futures (résiduel ~105 notebooks Search).
 
-    Returns: 'populated' | 'skipped-has-cost' | 'skipped-no-match' | 'error'.
+# Signaux d'usage non-CPU-pure — si PRÉSENTS, le notebook n'est PAS éligible au
+# profile `search-cpu` (coût non-nul) → skip (ne pas fabriquer un cost « 0/CPU » faux).
+_API_RE = re.compile(
+    r"openai|anthropic|mistral\.[a-z]|ChatCompletion|replicate\.|gpt-image|dall-?e",
+    re.I,
+)
+_GPU_RE = re.compile(
+    r"\.cuda\(|torch\.cuda|device_lib|jax\.devices|tf\.config.*gpu"
+)
+_ACCOUNT_RE = re.compile(
+    r"HF_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|MISTRAL_API_KEY|"
+    r"os\.getenv\(\s*[\"']\w*(_KEY|_TOKEN|API)",
+)
+# Restore NuGet au runtime = réseau requis (packages .NET téléchargés à l'exécution).
+# ATTENTION : ne PAS matcher le mot isolé « NuGet » (FP sur la prose, ex. « Aucune
+# dépendance NuGet ») — exiger un vrai préfixe de directive (#r "nuget: …) ou commande
+# dotnet. Cf G.1 (vérifier les signaux sur la source exacte, pas un proxy).
+_NUGET_RE = re.compile(r"#r\s+[\"']?nuget|!dotnet add package|!dotnet restore")
+
+
+def _source_text(nb: dict) -> str:
+    """Concatène le source de toutes les cellules (pour scan de signaux)."""
+    parts = []
+    for cell in nb.get("cells", []):
+        s = cell.get("source", "")
+        parts.append("".join(s) if isinstance(s, list) else s)
+    return "\n".join(parts)
+
+
+def is_cpu_pure(nb: dict) -> bool:
+    """True si le notebook n'a AUCUN signal API/GPU/compte/QuantBook.
+
+    Gate de sécurité du profile `search-cpu` : un notebook qui appelle une API ou le
+    GPU n'est PAS gratuit-CPU → le profile est inadéquat → skip. Évite de fabriquer
+    un cost « 0 USD / CPU-only » sur un notebook payant (Litmus anti-LIGHT).
     """
+    if _uses_quantbook(nb):
+        return False
+    src = _source_text(nb)
+    return not (_API_RE.search(src) or _GPU_RE.search(src) or _ACCOUNT_RE.search(src))
+
+
+def _cpu_min_estimate(n_code: int) -> int:
+    """Heuristic cpu_min (minutes, estimé) : ≤15 cellules code → 1, 16-25 → 2, >25 → 3."""
+    if n_code <= 15:
+        return 1
+    if n_code <= 25:
+        return 2
+    return 3
+
+
+def build_search_cpu_cost(nb: dict, by: str, today: str) -> dict:
+    """Bloc `metadata['cost']` canonique pour un notebook CPU-pur déterministe.
+
+    Champs dérivés (honnêtes, pas fabriqués) :
+      - `cpu_min` : heuristic via _count_code_cells (estimation, suffixe non-_est car
+        champ entier conventionnel).
+      - `network` : True si restore NuGet détecté au runtime, False sinon.
+    `validator: manual` = matrice coût établie par inspection du source (pas une
+    re-exécution machine claimée). `free_alternative: self` = sentinelle canonique
+    (le notebook est DÉJÀ gratuit/CPU). `reduced_pedagogical: null` = honnête (ces
+    notebooks ne sont pas des sous-ensembles les uns des autres).
+    """
+    n_code = _count_code_cells(nb)
+    network = bool(_NUGET_RE.search(_source_text(nb)))
+    return {
+        "api_usd_est": 0.0,  # gratuit
+        "api_provider": "none",
+        "qcc_tokens_est": 0,  # non-QC
+        "cpu_min": _cpu_min_estimate(n_code),  # heuristic
+        "gpu_min": 0,
+        "gpu_required": False,
+        "vram_gb": 0,
+        "vram_tier": "NONE",
+        "network": network,  # True si NuGet restore au runtime
+        "external_account": "none",
+        "free_alternative": "self",  # sentinelle canonique : déjà gratuit
+        "reduced_pedagogical": None,  # notebook-specific (jugement humain) ; null = honnête
+        "reproducibility": "HIGH",  # algorithmes déterministes
+        "last_validated": today,  # date d'établissement de la metadata (inspection source)
+        "validator": "manual",  # inspection source, pas re-exécution machine claimée
+    }
+
+
+# --- Dispatch par profile -------------------------------------------------------
+# Chaque profile : (gate d'éligibilité, builder de cost, raison de skip si inéligible).
+# Uniformisation c.929 : eligible(nb, path) et build(nb, path, by, today) — `path` requis
+# par probas-cpu (po-2023, build_probas_cpu_cost lit l'index depuis le nom de fichier).
+# quantbook/search-cpu l'ignorent via lambda fin (signature uniforme, pas d'asymétrie).
+PROFILES = {
+    "quantbook": {
+        "eligible": lambda nb, path: _uses_quantbook(nb),
+        "build": lambda nb, path, by, today: build_quantbook_cost(nb, by=by, today=today),
+        "skip_reason": "skipped-no-quantbook",
+    },
+    "search-cpu": {
+        "eligible": lambda nb, path: is_cpu_pure(nb),
+        "build": lambda nb, path, by, today: build_search_cpu_cost(nb, by=by, today=today),
+        "skip_reason": "skipped-not-cpu-pure",
+    },
+    "probas-cpu": {
+        "eligible": _is_pymc_notebook,  # (nb, path) — subpath + import pymc/arviz
+        "build": build_probas_cpu_cost,  # (nb, path, by, today) — index depuis path.name
+        "skip_reason": "skipped-not-pymc",
+    },
+}
+
+
+def populate_notebook(path: Path, profile: str, by: str, today: str, apply: bool) -> str:
+    """Peuple metadata.cost pour le profile donné, si éligible + absent.
+
+    Returns: 'populated' | 'skipped-has-cost' | '<profile skip_reason>' | 'error: ...'.
+    """
+    prof = PROFILES[profile]
     try:
-        nb = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+        nb = json.loads(raw)
     except Exception as e:
         return f"error: {e}"
 
-    if profile == "quantbook":
-        if not _uses_quantbook(nb):
-            return "skipped-no-match"
-        cost = build_quantbook_cost(nb, by=by, today=today)
-    elif profile == "probas-cpu":
-        if not _is_pymc_notebook(nb, path):
-            return "skipped-no-match"
-        cost = build_probas_cpu_cost(nb, path, by=by, today=today)
-    else:
-        return f"error: unknown profile {profile!r}"
+    if not prof["eligible"](nb, path):
+        return prof["skip_reason"]
 
     meta = nb.setdefault("metadata", {})
     if "cost" in meta:  # idempotent : ne JAMAIS écraser un bloc existant
         return "skipped-has-cost"
 
+    cost = prof["build"](nb, path, by=by, today=today)
     if not apply:
         return "populated"  # dry-run : on rapporte, on n'écrit pas
 
     meta["cost"] = cost
-    # Round-trip json indent=1 (convention repo) ; LF-only ; pas de churn inutile.
-    path.write_text(
-        json.dumps(nb, indent=1, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    # Round-trip json indent=1 (convention repo), sort_keys=False (préserve l'ordre
+    # d'insertion original des notebooks non sérialisés avec sort_keys), LF-only.
+    # Préserve le trailing-newline original (byte-surgical : ne churn pas les
+    # notebooks qui n'en ont pas — C913-L).
+    had_trailing_nl = raw.endswith("\n")
+    out = json.dumps(nb, indent=1, ensure_ascii=False, sort_keys=False)
+    if had_trailing_nl:
+        out += "\n"
+    path.write_text(out, encoding="utf-8", newline="\n")
     return "populated"
 
 
@@ -290,8 +402,8 @@ def iter_notebooks(target: Path):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("target", type=Path, help="Notebook .ipynb ou dossier à peupler")
-    ap.add_argument("--profile", choices=["quantbook", "probas-cpu"], default="quantbook",
-                    help="Profile de coût : 'quantbook' (défaut) ou 'probas-cpu' (PyMC/Pyro/DecPyMC)")
+    ap.add_argument("--profile", choices=list(PROFILES), default="quantbook",
+                    help=f"Profile de coût (implémentés : {', '.join(PROFILES)})")
     ap.add_argument("--by", default="anonymous",
                     help="machine:workspace (provenance, pour le rapport)")
     ap.add_argument("--apply", action="store_true",
@@ -305,11 +417,13 @@ def main(argv=None) -> int:
         return 2
 
     today = args.today or _dt.date.today().isoformat()
-    counts = {"populated": 0, "skipped-has-cost": 0, "skipped-no-match": 0}
+    skip_key = PROFILES[args.profile]["skip_reason"]
+    counts = {"populated": 0, "skipped-has-cost": 0, skip_key: 0}
     errors = []
 
     for nb_path in iter_notebooks(args.target):
-        status = populate_notebook(nb_path, by=args.by, today=today, apply=args.apply, profile=args.profile)
+        status = populate_notebook(nb_path, profile=args.profile,
+                                   by=args.by, today=today, apply=args.apply)
         if status.startswith("error"):
             errors.append((nb_path, status))
         elif status in counts:
@@ -321,9 +435,9 @@ def main(argv=None) -> int:
 
     mode = "APPLY" if args.apply else "DRY-RUN"
     print(f"\n[{mode}] profile={args.profile} by={args.by} today={today}")
-    print(f"  populated (sans cost)            : {counts['populated']}")
+    print(f"  populated (sans cost, éligible) : {counts['populated']}")
     print(f"  skipped-has-cost (déjà peuplé)   : {counts['skipped-has-cost']}")
-    print(f"  skipped-no-match                 : {counts['skipped-no-match']}")
+    print(f"  {skip_key:<35} : {counts[skip_key]}")
     if errors:
         print(f"  errors                           : {len(errors)}", file=sys.stderr)
         for p, e in errors:
