@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-27 06:51
+Generated: 2026-07-28 06:12
 Total notebooks: 836
 
 ## Status Summary
@@ -237,7 +237,7 @@ Total notebooks: 836
 | 65 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | BETA | 45min | po-2025 |
 | 66 | Search-8-DancingLinks-Csharp : L'algorithme X et D | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 67 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | BETA | 45min | po-2025 |
-| 68 | Search-9 : Programmation Linéaire et Simplexe (C#  | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 68 | Search-9 : Programmation Linéaire et Simplexe (C#  | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 69 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | BETA | 45min | po-2025 |
 | 70 | CSP-1 : Fondamentaux des CSP - Version .NET (Choco | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 71 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | BETA | 45min | po-2025 |
