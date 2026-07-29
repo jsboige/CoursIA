@@ -2985,7 +2985,24 @@ private theorem p4_nw_g3_bridge
       = isAlive (evolve (2^(k - 1)) ((node R1 R2 R4 R5).toGrid (0, 0)))
           (p.1 - (2^k : Int) + (2^(k - 1) : Int),
            p.2 - (2^k : Int) + (2^(k - 1) : Int)) := by
-  -- G3 wave-assembly (the research heart — see docstring for the (a)/(b) plan).
+  -- Expose the **symmetric half-step form** (c.750→c.751 structural step): both
+  -- sides now carry an outer `evolve (2^(k-1))`, which is the locality-ready shape
+  -- for `evolve_cone_agree` (proven sorry-free, L963). The goal at the `sorry` is
+  -- the (a)/(b) decomposition site:
+  --
+  --   (a) **inner agreement** — `evolve (2^(k-1)) parent.toGrid` agrees (pointwise,
+  --       on the central light cone) with `(node R1 R2 R4 R5).toGrid`, assembled
+  --       from the 4 `hcc_j` (`centralCorrect_mem_shift`, L2443) + the armed
+  --       offset decomp `p4_nw_offset_decomp` (#8768). This is the **double-nine
+  --       overlap wall** (see docstring + L2104-2108): non-overlapping parent
+  --       quadrants vs overlapping wave-1 recombinations R2/R4/R5.
+  --   (b) **outer locality** — once (a) holds, `evolve_cone_agree (2^(k-1))
+  --       (2^(k-1))` transports the agreement through the outer evolve. The
+  --       subtlety (not a single apply): LHS evaluates at `p`, RHS at
+  --       `p' = p - 2^(k-1)` (NW correspondence), so the locality step needs the
+  --       point-shift alignment between the parent's central window and the
+  --       supercell `(node R1 R2 R4 R5)`'s shifted origin.
+  rw [evolve_half_step k hk1]
   sorry
 
 /-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
