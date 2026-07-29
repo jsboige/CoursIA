@@ -69,6 +69,28 @@ jobs:
         run: |
           set -uo pipefail
 
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` (visible dans le log du job, ligne `shell:`).
+          # L'errexit est donc **actif**, et `set -uo pipefail` ne l'annule pas —
+          # il ajoute `-u` et `-o pipefail`, il ne retire pas `-e`. Ne pas lire
+          # l'absence de `-e` sur cette ligne comme « rien ne peut faire echouer
+          # le job » : toute commande non protegee qui sort non-zero tue le step
+          # et transforme cet advisory en check rouge.
+          #
+          # Ce qui garde l'advisory vrai n'est donc PAS l'absence de `-e`, c'est
+          # que chaque commande faillible ci-dessous est soit dans une condition
+          # (`if`/`elif`/`case`, exempts d'errexit), soit suffixee `|| true`.
+          # Verifie firsthand : les 8 cas de test passent sous `bash -e` — la
+          # premiere passe, menee sous `bash -c` sans `-e`, testait le mauvais
+          # interpreteur. C'est exactement la faille nommee par #8894 (« un test
+          # unitaire ne peut pas observer l'interpreteur d'un autre job »).
+          #
+          # Et surtout : **jamais `|| true` sur la capture d'un code de retour**.
+          # `rc=$?` apres `cmd || true` lit le `0` de `true`, pas celui de `cmd` —
+          # cela desarme le controle en permanence, strictement pire que le bug
+          # d'errexit qu'on croyait corriger. Idiome correct si besoin un jour :
+          # `out=$(cmd) && rc=0 || rc=$?`.
+
           # Hors scope : bots (catalogue auto-regenere) et forks (PRs etudiantes,
           # cf .claude/rules/student-pr-reviews.md — review bienveillante, aucun
           # critere interne ne s'y applique).
