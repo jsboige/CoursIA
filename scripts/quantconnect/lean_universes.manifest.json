@@ -45,6 +45,22 @@
       "start": "2015-01-01",
       "end": null,
       "regen_date": "2026-07-29"
+    },
+    "ml_random_forest": {
+      "purpose": "ML-RandomForest quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT/GLD) loaded over a trailing 5y window. GLD was absent from local data (silent 5->3 ticker drop pre-guard, #8724); provisioned via yfinance so the documented 5-ticker universe actually computes. random_state=42 throughout = deterministic.",
+      "issue": "#8772",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT", "GLD"],
+      "start": "2012-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    },
+    "ml_svm": {
+      "purpose": "ML-SVM quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT/GLD) loaded over a trailing 5y window. Same universe as ML-RandomForest; GLD provisioned via yfinance (#8724). random_state=42 throughout = deterministic.",
+      "issue": "#8772",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT", "GLD"],
+      "start": "2012-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
     }
   }
 }
