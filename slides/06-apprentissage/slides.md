@@ -157,15 +157,15 @@ layout: dense
   - Ven/Sam: Est-ce qu'on est vendredi ou samedi?
   - Faim: A-t-on faim?
   - Clients: Combien de clients dans le restaurant ?
-    - parmi {Aucun, QuelquesUns, Complet}
+    - parmi \{Aucun, QuelquesUns, Complet\}
   - Prix: quelle est la gamme de prix ?
-    - {€, €€, €€€}
+    - \{€, €€, €€€\}
   - Pluie: Pleut-il?
   - Réservation: A-t-on réservé?
   - Type: Quel est le type de restaurant ?
-    - {Français, Italien, Thaïlandais, Rapide}
+    - \{Français, Italien, Thaïlandais, Rapide\}
   - Estimation de l'attente
-    - {0-10min, 10-30 min, 30-60 min, +60 min}
+    - \{0-10min, 10-30 min, 30-60 min, +60 min\}
 
 
 ---
@@ -472,14 +472,14 @@ layout: two-cols
 <div v-click="4">
 - **Sinon l’ensemble de test a « fuité »**
   - dans l’apprentissage.
+</div>
 
 
 ::right::
 
 
-<img src="images/img_011.png" width="380">
-<img src="images/img_012.png" width="380">
-</div>
+<img src="./images/img_011.png" width="380">
+<img src="./images/img_012.png" width="380">
 ---
 layout: two-cols
 ---
@@ -508,7 +508,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_013.png" width="380">
+<img src="./images/img_013.png" width="380">
 
 
 ---
@@ -540,8 +540,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_014.png" width="380">
-<img src="images/img_015.png" width="380">
+<img src="./images/img_014.png" width="380">
+<img src="./images/img_015.png" width="380">
 
 
 ---
@@ -675,8 +675,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_023.png" width="380">
-<img src="images/img_024.png" width="380">
+<img src="./images/img_023.png" width="380">
+<img src="./images/img_024.png" width="380">
 
 
 ---
@@ -977,14 +977,14 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_062.png" width="380">
-<img src="images/img_063.jpg" width="380">
-<img src="images/img_064.jpg" width="380">
-<img src="images/img_065.png" width="380">
-<img src="images/img_066.png" width="380">
-<img src="images/img_067.png" width="380">
-<img src="images/img_068.png" width="380">
-<img src="images/img_069.png" width="380">
+<img src="./images/img_062.png" width="380">
+<img src="./images/img_063.jpg" width="380">
+<img src="./images/img_064.jpg" width="380">
+<img src="./images/img_065.png" width="380">
+<img src="./images/img_066.png" width="380">
+<img src="./images/img_067.png" width="380">
+<img src="./images/img_068.png" width="380">
+<img src="./images/img_069.png" width="380">
 
 
 ---
@@ -1395,7 +1395,7 @@ layout: dense
 - partiellement ordonné alors on ne garde que les bornes S et G
 - Apprentissage des bornes
 - =Version Space learning
-- On démarre avec S = {False} et G = {True}
+- On démarre avec S = \{False\} et G = \{True\}
 - On ajoute les exemples en gérant faux positifs et négatifs pour G et S
 - 0, 1 ou plusieurs hypothèses résultantes
 - Problèmes:
