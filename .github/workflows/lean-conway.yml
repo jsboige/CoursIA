@@ -51,6 +51,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
+      - 'scripts/lean/check_target_coverage.py'
   pull_request:
     branches: [main]
     paths:
@@ -59,6 +60,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
+      - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
 
 jobs:
@@ -78,3 +80,27 @@ jobs:
       target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
       allow-axioms: "Conway.Life.hashlife_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_blinker_2._native.native_decide.ax_1_1,Conway.Life.block_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_block_4._native.native_decide.ax_1_1,Conway.Life.glider_3periods._native.native_decide.ax_1_1,Conway.Life.hashlife_block_4._native.native_decide.ax_1_1,Conway.Life.eater1_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_toad_2._native.native_decide.ax_1_1,Conway.Life.eater1_still_life._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_block_1._native.native_decide.ax_1_1,Conway.Life.glider_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1,Conway.Life.glider_2periods._native.native_decide.ax_1_1"
       fail-on-sorry: true
+
+  # Advisory proof-integrity coverage (See #8782). The `target-modules` list
+  # above is hand-maintained while the lakefile glob (.submodules Conway,
+  # Conway_en) grows as modules are added; a gate that inspects 2 of N compiled
+  # modules is a "vert hors-cible" -- visually indistinguishable from a targeted
+  # green in the check rollup. This job prints the delta (compiled vs target)
+  # and ALWAYS exits 0: it never fails CI, it makes the gap legible in the log.
+  # It intentionally does NOT decide which modules to gate or the blocking
+  # policy (options a/b/c in #8782) -- that is a coordinator design call.
+  target-coverage:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Advisory target-coverage delta
+        run: |
+          python3 scripts/lean/check_target_coverage.py \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
+            --target-modules "Conway.KochenSpecker,Conway.FreeWillTheorem" \
+            --lib-root Conway \
+            --name conway_lean
