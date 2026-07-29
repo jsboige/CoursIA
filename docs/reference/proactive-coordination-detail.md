@@ -78,6 +78,8 @@ gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
 ```
 3 zeros = grain libre. ≥1 hit = verifier l'etat de l'upstream (`gh pr view N --json mergedAt`) et choisir (a) reporter, (b) redécouper, (c) rafraichir la substance.
 
+**C715-L2 — Incident fondateur #8835/#8836 (po-2024, 2026-07-29)**. Deux écarts au triple-check ci-dessus ont laissé passer un doublon **déjà mergé** : (a) recherche `--state open` au lieu de `--state all` — la PR #8836 (mergée 14:03Z par jsboige) était invisible à toute recherche de PRs ouverts ; (b) recherche par **mots-clés** du titre (`"GradeBook is_absolute"`) au lieu du **numéro d'issue** (`"#8835"`) — le titre de #8836 (« top-tree rule form-invariant ») ne matchait pas les mots-clés choisis. Le correctif identique (même règle `_classify`, mêmes 2 fichiers, mêmes 5 critères d'acceptation) fut livré ~30 min après → PR #8838 fermée comme doublon CONFLICTING. **Le triple-check canonique l'aurait attrappé** : `gh pr list --search "#8835" --state all` retourne #8836 (son tag scope `notebook-tools,#8835` matche), et `git log --all --grep "#8835"` montre `6446bd7bd`. Leçon : avant de pousser un fix sur une issue, le triple-check C715-L2 est **non-négociable**, la recherche se fait par **numéro d'issue** (pas par mots-clés), et `--state all` (pas `open`) — un doublon mergé est le cas de collision le plus facile à manquer parce qu'il n'a aucune PR ouverte à voir.
+
 **Routine verification first-and** (à coller dans `~/.claude/CLAUDE.md` personalisation ou alias bash) :
 
 ```bash

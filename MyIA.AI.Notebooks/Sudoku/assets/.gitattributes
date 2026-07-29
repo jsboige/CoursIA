@@ -1,3 +1,0 @@
-# The unrolled Sudoku regex is a byte-exact artifact (13515 bytes, LF-delimited).
-# Never apply EOL conversion: a CRLF rewrite would change its length and line structure.
-*.regex.txt -text
