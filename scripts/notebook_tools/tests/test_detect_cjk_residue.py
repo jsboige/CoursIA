@@ -30,6 +30,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 # Make the sibling detector importable regardless of invocation cwd.
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -75,9 +77,17 @@ class TestDetectCell:
         # sorted by codepoint: 利 (U+5229) < 胜 (U+80DC)
         assert finding["glyphs"] == ["利", "胜"]
 
-    def test_fullwidth_form_detected(self):
-        finding = mod.detect_cell("largeur：50")  # fullwidth colon ＀-￯ range
-        assert finding is not None
+    def test_fullwidth_form_not_in_leak_class(self):
+        # #8826: Halfwidth/Fullwidth forms (＀-￯) are EXCLUDED from the leak
+        # detector -- typographic ASCII variants (fullwidth colon ：U+FF1A,
+        # logical-not ￢ U+FFE2), not Chinese WORDS. The #8428 residue class is
+        # unified ideographs + kana. `largeur：50` (fullwidth colon) is therefore
+        # NOT flagged: including ＀-￯ inverted signal/noise (logic slides ￢,
+        # regex ：) -- none of the 7 measured leaks uses fullwidth.
+        assert mod.detect_cell("largeur：50") is None
+        # Sanity: a fullwidth char adjacent to a REAL ideograph leak still flags
+        # (the ideograph is the residue, the fullwidth is incidental).
+        assert mod.detect_cell("largeur 风：50") is not None
 
     def test_clean_french_prose_no_hit(self):
         assert mod.detect_cell("L'optimisation de contraintes distribuées.") is None
@@ -180,5 +190,142 @@ class TestMainExitCodes:
         rc = mod.main(["--root", str(tmp_path), str(p), "--json"])
         out = json.loads(capsys.readouterr().out)
         assert out["total_hits"] == 1
-        assert out["notebooks_scanned"] == 1
+        assert out["scanned"] == 1
         assert rc == 0  # --json without --check does not fail
+
+
+# ===========================================================================
+# #8826 -- discriminating guard: CJK soldered into/dropped into Latin = leak;
+# pure-CJK (backticked term, quoted fixture, CJK-only line) = legit. The guard
+# must invert the signal/noise ratio: the 7 measured leaks are the POSITIVE
+# control; the legit multilingual/functional CJK is the NEGATIVE control.
+# ===========================================================================
+
+
+class TestDiscriminator:
+    """Unit tests for classify_cjk_leaks -- the #8826 scope-mixed rule."""
+
+    def test_soldered_cjk_latin_is_leak(self):
+        # CJK directly adjacent to a Latin letter, no separator (均匀ément).
+        leaks = mod.classify_cjk_leaks("volume plus均匀ément distribue")
+        assert leaks, "soldered CJK+Latin must be a leak"
+        assert "均" in leaks[0]["glyphs"]
+
+    def test_latin_cjk_soldered_other_direction(self):
+        # Latin immediately before CJK (de重建).
+        leaks = mod.classify_cjk_leaks("Necessite de重建 l'environnement")
+        assert leaks
+        assert "重" in leaks[0]["glyphs"]
+
+    def test_mid_latin_phrase_is_leak(self):
+        # A CJK run dropped into an otherwise-Latin line, spaces around it
+        # (可能性が高い = "fort probablement" in JP, in a French sentence).
+        leaks = mod.classify_cjk_leaks("G.1 n'a pas detecte —可能性が高い c'est (1)")
+        assert leaks
+        assert any("可" in lk["glyphs"] for lk in leaks)
+
+    def test_pure_cjk_backtick_span_is_legit(self):
+        # A backticked CJK term in a Latin line is NOT a leak (`` `风险管理` ``).
+        leaks = mod.classify_cjk_leaks("See `风险管理` (risk management) for details.")
+        assert leaks == [], "pure-CJK backtick span in a Latin line is legit"
+
+    def test_mixed_backtick_span_is_leak(self):
+        # A backtick span that MIXES CJK+Latin (`` `dataset支撑` ``) is a leak:
+        # the CJK is a corrupted Latin word, even though backticked. This is why
+        # files that DOCUMENT leak examples (detector, README, tests) need ALLOWED.
+        leaks = mod.classify_cjk_leaks("exemple typique: `dataset支撑` et `arbre de分支`")
+        assert leaks, "mixed CJK+Latin span is a leak even inside backticks"
+
+
+class TestLegitPureCjk:
+    def test_pure_cjk_string_value_no_leak(self):
+        leaks = mod.classify_cjk_leaks('prompt = "负面提示词"  # the negative prompt')
+        assert leaks == [], "a pure-CJK quoted value (no Latin inside) is legit"
+
+    def test_cjk_only_line_no_leak(self):
+        # An integrally-CJK line (multilingual demo) -- no Latin letters at all.
+        leaks = mod.classify_cjk_leaks("こんにちは！多言語音声合成のデモンストレーションです。")
+        assert leaks == [], "a CJK-only line is legit (no Latin to intrude into)"
+
+    def test_fenced_code_block_cjk_skipped(self):
+        # CJK inside a ``` fence is config/output, not prose -- skipped.
+        text = (
+            "Intro line in French.\n"
+            "```yaml\n"
+            "prompt: 风险管理 is not residue here\n"
+            "```\n"
+            "Outro in French.\n"
+        )
+        leaks = mod.classify_cjk_leaks(text)
+        assert leaks == [], "CJK inside a fenced code block is skipped"
+
+    def test_fullwidth_logic_not_not_flagged(self):
+        # ￢ (U+FFE2 fullwidth not) in a logic formula is NOT in the leak class.
+        leaks = mod.classify_cjk_leaks("Ex: ￢B1,1 ∨ P1,2 (propositional logic)")
+        assert leaks == [], "fullwidth logical-not is not CJK-word residue (#8826 narrowing)"
+
+
+class TestLeakPatterns:
+    """POSITIVE CONTROL (#8826 acceptance 4): the 7 measured leak patterns MUST
+    be detected. These are the exact residues from the #8826 census (5 non-archive;
+    the 2 docs/archive ones are the same class). A guard never seen to fire is not
+    a guard (#8681)."""
+
+    @pytest.mark.parametrize("phrase,glyph", [
+        ("volume plus均匀ément distribue", "均"),      # ML-XGBoost README:70
+        ("volume均等ément distribue", "均"),           # ML-XGBoost MANIFEST:139
+        ("la zone supérieure est拥挤", "拥"),          # ML.Net MANIFEST:59
+        ("Le rédacteur原始 ne pouvait pas", "原"),     # EMA-Cross MANIFEST:87
+        ("Le rédacteur原始 ne pouvait pas", "原"),     # LongShortHarvest MANIFEST:119
+        ("Necessite de重建 l'environnement", "重"),    # docs/archive RAPPORT (same class)
+        ("—可能性が高い c'est (1)", "可"),              # docs/archive ledger (same class)
+    ])
+    def test_measured_leak_detected(self, phrase, glyph):
+        leaks = mod.classify_cjk_leaks(phrase)
+        assert leaks, f"expected leak in {phrase!r}"
+        assert any(glyph in lk["glyphs"] for lk in leaks), (
+            f"{glyph!r} not in leak glyphs for {phrase!r}")
+
+
+class TestSourceFileScan:
+    """#8826: the guard now covers .py/.md/.cs, not just .ipynb -- that is where
+    #8823's `«经验 manquante»` lived (a .py), invisible to the ipynb-only scope."""
+
+    def test_md_file_leak_detected(self, tmp_path):
+        p = tmp_path / "README.md"
+        p.write_text("# Titre\n\nLe volume plus均匀ément distribue.\n", encoding="utf-8")
+        r = mod.scan_source_file(p, tmp_path)
+        assert r["allowed"] is None
+        assert len(r["hits"]) == 1
+        assert r["hits"][0]["lineno"] == 3
+
+    def test_py_file_pure_cjk_string_no_hit(self, tmp_path):
+        # A pure-CJK string literal in a .py is legit (no Latin in the span).
+        p = tmp_path / "x.py"
+        p.write_text('prompt = "负面提示词"\n', encoding="utf-8")
+        r = mod.scan_source_file(p, tmp_path)
+        assert r["hits"] == []
+
+    def test_py_file_soldered_leak_detected(self, tmp_path):
+        # #8823 class: a corrupted French word in a .py comment/string.
+        p = tmp_path / "learned_valence.py"
+        p.write_text("# 经验 manquante -- should be 'expérience'\n", encoding="utf-8")
+        r = mod.scan_source_file(p, tmp_path)
+        assert len(r["hits"]) == 1
+        assert r["hits"][0]["lineno"] == 1
+
+    def test_allowed_source_file_skipped(self, tmp_path):
+        # The detector's own ALLOWED path is skipped (irreducible legit).
+        nbtools = tmp_path / "scripts" / "notebook_tools"
+        nbtools.mkdir(parents=True)
+        p = nbtools / "detect_cjk_residue.py"
+        p.write_text("# docstring cites `dataset支撑` as the leak example\n", encoding="utf-8")
+        r = mod.scan_source_file(p, tmp_path)
+        assert r["allowed"] is not None
+        assert r["hits"] == []
+
+    def test_main_check_source_file_exits_1(self, tmp_path, capsys):
+        p = tmp_path / "dirty.md"
+        p.write_text("prose with 原始 leak\n", encoding="utf-8")
+        rc = mod.main(["--root", str(tmp_path), str(p), "--check"])
+        assert rc == 1
