@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2024
-    python_sha: 756bd37298dc5456c4bf0ef14d133ca55dfd6d1b
-    csharp_sha: 41227c7457f831f81e09a6cd0da594743faba025
+    date: "2026-07-29"
+    by: myia-po-2026:CoursIA
+    python_sha: 538364672e7cee086dc83874f6346223b393858e
+    csharp_sha: 0f53df75f68fda09bd0a0d5c9c578c0026d4ef77
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
     - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."

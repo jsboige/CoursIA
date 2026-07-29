@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: d07de883553ed1a90d6590ff0bcbfb146b068bd2
-    csharp_sha: bbb5e24c4d4eb763b454b6d8f48aba9a5747b584
+    date: "2026-07-29"
+    by: myia-po-2026:CoursIA
+    python_sha: c678bb0c802600a9607d5653b0ade2c0883b5717
+    csharp_sha: c0eb696b867d9797a9656abf5e2cd257740b55d4
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
     - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."

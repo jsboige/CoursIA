@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
-    by: po-2024
-    python_sha: c496a5c15adb2addf34cdaa16829ec56c2078be0
-    csharp_sha: 6d044cccd9ac43afb6151f2b4842158c902439da
+    date: "2026-07-29"
+    by: myia-po-2026:CoursIA
+    python_sha: 4769f5c44f303f32726217a77bf9b8052694acce
+    csharp_sha: 305187d00ab4611f768b77d42096763f0c52f756
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."
