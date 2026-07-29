@@ -453,3 +453,27 @@ class TestMainCLI:
             output = capsys.readouterr().out
             assert "Family" in output
             assert "Total" in output
+
+
+# ---------------------------------------------------------------------------
+# find_notebooks SKIP_DIRS guard (#8858-class)
+# ---------------------------------------------------------------------------
+
+class TestFindNotebooksSkipdirParent:
+    """``find_notebooks`` must NOT be silenced when the repo is cloned under
+    a parent whose name is in ``EXCLUDE_DIRS``.
+
+    ``NOTEBOOKS_DIR`` is absolute and ``find_notebooks`` walks it with
+    ``root.rglob`` (absolute paths), then filters ``EXCLUDE_DIRS`` on
+    ``p.parts`` (absolute components). A checkout cloned under e.g.
+    ``archive/`` would match every path and silence the whole scan — worse
+    than a false positive for a C.1 compliance gate.
+    """
+
+    def test_find_notebooks_under_archive_parent_not_silenced(self, tmp_path):
+        nb_root = tmp_path / "archive" / "repo" / "MyIA.AI.Notebooks"
+        nb_root.mkdir(parents=True)
+        (nb_root / "nb.ipynb").write_text("{}", encoding="utf-8")
+        with patch("audit_c1_c3.NOTEBOOKS_DIR", nb_root):
+            found = find_notebooks()
+        assert [p.name for p in found] == ["nb.ipynb"]

@@ -132,6 +132,24 @@ def get_series(path: Path, root: Path) -> str:
     return rel[0] if len(rel) > 1 else "TOP"
 
 
+def collect_notebooks(root: Path) -> list[Path]:
+    """All non-excluded ``*.ipynb`` under ``root``, sorted.
+
+    Extracted from ``main`` so the discovery logic (and its SKIP_DIRS
+    filtering) is unit-testable without invoking the full CLI.
+
+    #8858-class guard: ``is_excluded`` receives the path RELATIVE to
+    ``root`` (matching its relative-path semantics), not the absolute
+    rglob path — otherwise a skip-name component in the repo's ABSOLUTE
+    parent (e.g. a checkout cloned under ``_archives/``) would silence the
+    whole forensic scan.
+    """
+    return sorted(
+        p for p in root.rglob("*.ipynb")
+        if not is_excluded(p.relative_to(root))
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default="MyIA.AI.Notebooks", help="Notebook root")
@@ -151,7 +169,7 @@ def main() -> int:
         print(f"ERROR: root {root} does not exist", file=sys.stderr)
         return 1
 
-    notebooks = sorted(p for p in root.rglob("*.ipynb") if not is_excluded(p))
+    notebooks = collect_notebooks(root)
     print(f"Scanning {len(notebooks)} notebooks under {root}", file=sys.stderr)
 
     results = []
