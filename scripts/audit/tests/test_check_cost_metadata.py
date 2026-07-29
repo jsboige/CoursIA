@@ -545,3 +545,85 @@ def test_litmus9_detail_names_the_cell_indices(tmp_path):
     detail = next(f["detail"] for f in findings if f["pattern"] == _LITMUS9_PATTERN)
     assert "1, 2" in detail
     assert "2026-07-23T01:30Z" in detail
+
+
+# ---------------------------------------------------------------------------
+# Mode flotte (c.58) — agregation par pattern + recensement par validator
+# ---------------------------------------------------------------------------
+
+
+def _fleet_notebooks(tmp_path):
+    """Trois notebooks : deux porteurs de findings distincts, un sain."""
+    a = tmp_path / "a.ipynb"
+    _notebook(a, ["import torch; torch.cuda.is_available()"],
+              cost_meta={"validator": "papermill", "gpu_required": False})
+    b = tmp_path / "sub" / "b.ipynb"
+    _notebook(b, ["import torch; torch.cuda.is_available()"],
+              cost_meta={"validator": "manual", "gpu_required": False})
+    clean = tmp_path / "clean.ipynb"
+    _notebook(clean, ["x = 1"], cost_meta={"validator": "manual", "gpu_required": False})
+    return [a, b, clean]
+
+
+def test_aggregate_fleet_counts_patterns_and_validators(tmp_path):
+    """Le mode flotte apporte deux comptes qu'aucun appel notebook-unique ne
+    donne : findings PAR PATTERN, et recensement des validators declares."""
+    mod = _load_check()
+    agg = mod.aggregate_fleet(_fleet_notebooks(tmp_path), tmp_path)
+
+    assert agg["scanned"] == 3
+    assert agg["errors"] == []
+    assert agg["patterns"]["gpu_used_but_not_declared"] == 2
+    assert agg["validators"] == {"manual": 2, "papermill": 1}
+
+
+def test_aggregate_fleet_excludes_clean_notebooks_from_detail(tmp_path):
+    """`notebooks` porte le detail des SEULS notebooks a finding : un rapport
+    ou 941 lignes saines noient 71 lignes utiles ne se lit pas."""
+    mod = _load_check()
+    agg = mod.aggregate_fleet(_fleet_notebooks(tmp_path), tmp_path)
+
+    listed = {entry["notebook"] for entry in agg["notebooks"]}
+    assert listed == {"a.ipynb", "sub/b.ipynb"}
+
+
+def test_aggregate_fleet_unreadable_notebook_is_recorded_not_fatal(tmp_path):
+    """Un .ipynb corrompu est compte dans `errors` et laisse la marche
+    continuer : un audit qui s'arrete au premier fichier casse ne mesure rien.
+    L'erreur reste VISIBLE — elle n'est pas avalee."""
+    mod = _load_check()
+    broken = tmp_path / "broken.ipynb"
+    broken.write_text("{ pas du json", encoding="utf-8")
+    good = tmp_path / "good.ipynb"
+    _notebook(good, ["x = 1"], cost_meta={"validator": "manual"})
+
+    agg = mod.aggregate_fleet([broken, good], tmp_path)
+
+    assert agg["scanned"] == 1
+    assert len(agg["errors"]) == 1
+    assert agg["errors"][0]["notebook"] == "broken.ipynb"
+    assert agg["errors"][0]["error"]
+
+
+def test_format_fleet_report_shows_counts_and_offenders(tmp_path):
+    """Le rapport humain doit porter les comptes agreges ET nommer les
+    notebooks concernes (sinon il faut re-scanner pour agir)."""
+    mod = _load_check()
+    agg = mod.aggregate_fleet(_fleet_notebooks(tmp_path), tmp_path)
+    report = mod.format_fleet_report(agg)
+
+    assert "Notebooks scannes        : 3" in report
+    assert "gpu_used_but_not_declared" in report
+    assert "papermill" in report
+    assert "a.ipynb" in report
+    assert "clean.ipynb" not in report
+
+
+def test_format_fleet_report_handles_empty_fleet(tmp_path):
+    """Zero notebook scanne ne doit pas produire un rapport trompeur (ni
+    planter) : les sections vides s'annoncent explicitement."""
+    mod = _load_check()
+    report = mod.format_fleet_report(mod.aggregate_fleet([], tmp_path))
+
+    assert "Notebooks scannes        : 0" in report
+    assert "(aucun)" in report

@@ -189,6 +189,46 @@ une sortie de cellule à la main (Stop & Repair, cf
 > (`Probas/Infer.NET`, `ML/ML.NET`) — ceux-là *ont* été exécutés, leur défaut est une
 > étiquette inexacte, pas une exécution fantôme.
 
+#### Mode flotte — agréger avant de résorber
+
+Les neuf litmus n'avaient jusqu'ici qu'un mode **un notebook à la fois** : chacun
+était donc appliqué à la main, par quiconque y pensait, et **personne n'avait
+jamais agrégé le résultat**. Conséquence directe : un litmus vert ne pouvait pas
+être distingué d'un litmus *jamais exécuté* — c'est le même angle mort que
+« vert hors-cible ». `--all` / `--family` ferment cet écart (même prédicat,
+marcheur canonique [`notebook_walk`](../../scripts/notebook_tools/notebook_walk.py), #8650) :
+
+```bash
+python scripts/audit/check_cost_metadata.py --all                 # flotte entière
+python scripts/audit/check_cost_metadata.py --family QuantConnect # une famille
+python scripts/audit/check_cost_metadata.py --all --json          # sortie machine
+```
+
+**Mesure d'introduction du mode (2026-07-29) : 941 notebooks scannés, 71 porteurs
+d'au moins un finding, 86 findings sur 6 patterns** — `gpu_used_but_not_declared`
+31, `gpu_no_visual_validator` 18, `token_required_but_no_account` 17,
+`api_used_but_cost_zero` 13, `qc_notebook_no_qcc_estimate` 4,
+`qc_notebook_no_validator` 3. Le **litmus 9 est à zéro** : les 13 findings mesurés
+ci-dessus ont bien été corrigés en `validator: manual`, ils n'ont pas été
+escamotés par le marcheur (contrôle indépendant sur `--family QuantConnect` :
+`manual: 13`).
+
+**Écart de population assumé, 1020 vs 941 :** la mesure du litmus 9 ci-dessus
+parcourait le disque brut ; le mode flotte passe par `notebook_walk`, qui restreint
+aux fichiers **suivis par git** (`tracked_only=True`) et écarte `_output.ipynb`,
+`_archives/`, `.ipynb_checkpoints/`, `.lake/`. Les ~79 de différence sont des
+sorties d'exécution, des archives et des notebooks non suivis — hors périmètre
+d'un audit de métadonnées déclarées.
+
+**Pas de `--check`, pas de câblage CI, délibérément.** Les 86 findings sont
+**pré-existants** : un gate posé dessus naîtrait rouge et serait ignoré dès le
+premier jour. L'ordre est *agréger → résorber → gater*, jamais l'inverse. C'est
+d'ailleurs ce que dit déjà « [Ce que ce schéma n'est PAS](#ce-que-ce-schéma-nest-pas) » :
+le validateur **signale**, il ne décide pas si l'incohérence est bloquante.
+Résorber un pattern est un grain de substance séparé — et la correction se fait
+**à la source** (ré-exécuter, ou corriger la déclaration), jamais en éditant une
+sortie de cellule à la main.
+
 ### Tiers VRAM (déterminé par `vram_gb`)
 
 | Tier | VRAM (GB) | Modèles typiques |

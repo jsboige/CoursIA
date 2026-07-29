@@ -29,13 +29,42 @@ But : extraire pour un notebook :
 Litmus anti-LIGHT : ce script EXTRACT, il ne DÉCIDE pas. Le verdict final
 = revue humaine/agent compétent. Cf docs/notebook-metadata/cost-matrix.md.
 
+Mode flotte (c.58)
+------------------
+Jusqu'ici le vérificateur ne prenait QU'UN notebook positionnel : les neuf
+litmus étaient donc appliqués un notebook à la fois, à la main, par quiconque y
+pensait. Personne n'avait jamais agrégé le résultat sur la flotte — de sorte
+que le compte réel de findings (86 au moment de l'écriture, sur 6 patterns)
+n'était connu de personne, et qu'un litmus vert (le 9, #8790) ne pouvait pas
+être distingué d'un litmus jamais exécuté. `--all` / `--family` ferment cet
+écart : même prédicat, marcheur canonique `notebook_walk` (#8650), sortie
+agrégée par pattern ET recensement par validator.
+
+Ce que ce mode ne fait PAS, délibérément :
+  - pas de `--check` / exit non nul sur findings, et aucun câblage CI. Les 86
+    findings sont PRÉ-EXISTANTS : un gate posé dessus serait rouge à l'arrivée,
+    donc ignoré dès le premier jour (décision « ne se câble pas sur rouge
+    pré-existant », cf organe Slides #8817). L'ordre est : agréger, résorber,
+    PUIS gater — pas l'inverse.
+  - pas de correction automatique : ce script EXTRACT (litmus anti-LIGHT
+    ci-dessus). Résorber un pattern est un grain de substance séparé.
+
 Usage :
   python scripts/audit/check_cost_metadata.py <notebook>.ipynb [--out <fichier.yml>]
+  python scripts/audit/check_cost_metadata.py --all                # toute la flotte
+  python scripts/audit/check_cost_metadata.py --family QuantConnect # une famille
+  python scripts/audit/check_cost_metadata.py --all --json         # sortie machine
+
+Exit codes :
+  0 — audit produit (findings ou non : la sortie est advisory)
+  1 — erreur (notebook introuvable, famille inexistante, lecture impossible)
 """
 
 import argparse
+import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 import nbformat
@@ -543,13 +572,151 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
     }
 
 
+# === Mode flotte (c.58) ===
+
+NOTEBOOKS_DIRNAME = 'MyIA.AI.Notebooks'
+
+
+def _iter_fleet(repo_root: Path, family=None):
+    """Énumère les notebooks pédagogiques via le marcheur canonique (#8650).
+
+    Import différé : le mode notebook-unique n'a aucune raison de dépendre de
+    `scripts/notebook_tools/`, et les tests chargent ce module par
+    `spec_from_file_location` (un import de package cassé au niveau module
+    ferait tomber toute la suite, pas seulement le mode flotte).
+    """
+    walk_dir = Path(__file__).resolve().parent.parent / 'notebook_tools'
+    if str(walk_dir) not in sys.path:
+        sys.path.insert(0, str(walk_dir))
+    from notebook_walk import iter_notebooks  # noqa: PLC0415 (import différé, cf docstring)
+
+    yield from iter_notebooks(repo_root / NOTEBOOKS_DIRNAME, family=family)
+
+
+def aggregate_fleet(notebook_paths, repo_root: Path) -> dict:
+    """Applique `check_notebook` à chaque chemin et agrège le résultat.
+
+    Retourne : scanned, errors, `validators` (recensement — combien de notebooks
+    déclarent chaque validator), `patterns` (combien de findings par pattern),
+    et `notebooks` (le détail, notebooks sans finding exclus).
+
+    Un notebook illisible est compté dans `errors` et n'interrompt pas la
+    marche : un audit de flotte qui s'arrête au premier .ipynb corrompu ne
+    mesure rien (cf `ESGF-2026/.../research.ipynb`, gitignored et non
+    parsable). L'erreur reste VISIBLE dans le rapport — elle n'est pas avalée.
+    """
+    validators: Counter = Counter()
+    patterns: Counter = Counter()
+    errors: list = []
+    notebooks: list = []
+    scanned = 0
+
+    for nb_path in notebook_paths:
+        try:
+            rel = nb_path.resolve().relative_to(repo_root.resolve()).as_posix()
+        except (ValueError, OSError):
+            rel = str(nb_path).replace('\\', '/')
+        try:
+            result = check_notebook(nb_path, repo_root)
+        except Exception as exc:  # noqa: BLE001 — un notebook cassé ne stoppe pas l'audit
+            errors.append({'notebook': rel, 'error': f'{type(exc).__name__}: {exc}'})
+            continue
+        scanned += 1
+        cost_meta = result.get('cost_meta') or {}
+        if cost_meta.get('validator'):
+            validators[str(cost_meta['validator'])] += 1
+        findings = result.get('findings') or []
+        for finding in findings:
+            patterns[finding['pattern']] += 1
+        if findings:
+            notebooks.append({'notebook': rel, 'findings': findings})
+
+    return {
+        'scanned': scanned,
+        'errors': errors,
+        'validators': dict(validators.most_common()),
+        'patterns': dict(patterns.most_common()),
+        'notebooks': notebooks,
+    }
+
+
+def format_fleet_report(agg: dict) -> str:
+    """Rapport humain agrégé. Le DÉTAIL complet de chaque finding est en
+    `--json` : ici on donne pattern + sévérité par notebook, pour que la vue
+    reste scannable (86 details de 3 lignes noieraient les comptes, qui sont
+    précisément ce que le mode flotte apporte)."""
+    total_findings = sum(agg['patterns'].values())
+    lines = [
+        f"Notebooks scannes        : {agg['scanned']}",
+        f"Notebooks avec finding   : {len(agg['notebooks'])}",
+        f"Findings                 : {total_findings}",
+        f"Erreurs de lecture       : {len(agg['errors'])}",
+        "",
+    ]
+    if agg['errors']:
+        lines.append("--- erreurs de lecture ---")
+        for err in agg['errors']:
+            lines.append(f"  {err['notebook']}: {err['error']}")
+        lines.append("")
+
+    lines.append("--- validators declares (recensement) ---")
+    if agg['validators']:
+        for name, count in agg['validators'].items():
+            lines.append(f"  {name:24s} {count}")
+    else:
+        lines.append("  (aucun)")
+    lines.append("")
+
+    lines.append("--- findings par pattern ---")
+    if agg['patterns']:
+        for pattern, count in agg['patterns'].items():
+            lines.append(f"  {pattern:52s} {count}")
+    else:
+        lines.append("  (aucun)")
+    lines.append("")
+
+    if agg['notebooks']:
+        lines.append("--- notebooks concernes ---")
+        for entry in agg['notebooks']:
+            lines.append(f"## {entry['notebook']}")
+            for finding in entry['findings']:
+                lines.append(f"  - [{finding['severity']}] {finding['pattern']}")
+        lines.append("")
+
+    lines.append(
+        "NOTE: ce script EXTRACT, il ne DECIDE pas. Chaque finding se verifie "
+        "firsthand avant correction — et la correction se fait a la SOURCE "
+        "(re-executer, corriger la declaration), jamais en editant une sortie "
+        "de cellule a la main. Detail complet des findings : --json."
+    )
+    return '\n'.join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('notebook', type=Path, help='Chemin du .ipynb à auditer')
-    parser.add_argument('--out', type=Path, help='Fichier YAML de sortie (default: stdout)')
+    parser.add_argument('notebook', type=Path, nargs='?',
+                        help='Chemin du .ipynb à auditer (défaut si ni --all ni --family)')
+    parser.add_argument('--all', action='store_true',
+                        help='Auditer toute la flotte pédagogique (MyIA.AI.Notebooks/)')
+    parser.add_argument('--family',
+                        help='Auditer une famille (ex: QuantConnect, Probas) — implique le mode flotte')
+    parser.add_argument('--json', action='store_true',
+                        help='Sortie JSON machine-readable (détail complet des findings)')
+    parser.add_argument('--out', type=Path, help='Fichier de sortie (default: stdout)')
     parser.add_argument('--repo-root', type=Path, default=Path('.'),
                         help='Racine du repo (pour résoudre free_alternative)')
     args = parser.parse_args()
+
+    fleet = args.all or bool(args.family)
+    if fleet and args.notebook:
+        print("ERROR: <notebook> et --all/--family sont exclusifs", file=sys.stderr)
+        return 1
+    if not fleet and not args.notebook:
+        print("ERROR: fournir un notebook, ou --all / --family <nom>", file=sys.stderr)
+        return 1
+
+    if fleet:
+        return _run_fleet(args)
 
     if not args.notebook.exists():
         print(f"ERROR: notebook {args.notebook} introuvable", file=sys.stderr)
@@ -560,6 +727,9 @@ def main():
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1
+
+    if args.json:
+        return _emit(json.dumps(result, ensure_ascii=False, indent=2, default=str), args.out)
 
     # Sortie YAML
     lines = [
@@ -580,13 +750,30 @@ def main():
         lines.append(f"    severity: {f['severity']}")
         lines.append(f"    detail: {f['detail']!r}")
 
-    output = '\n'.join(lines)
-    if args.out:
-        args.out.write_text(output, encoding='utf-8')
-        print(f"Audit écrit: {args.out}")
+    return _emit('\n'.join(lines), args.out)
+
+
+def _emit(output: str, out_path) -> int:
+    if out_path:
+        out_path.write_text(output, encoding='utf-8')
+        print(f"Audit écrit: {out_path}")
     else:
         print(output)
     return 0
+
+
+def _run_fleet(args) -> int:
+    repo_root = args.repo_root
+    if args.family:
+        family_dir = repo_root / NOTEBOOKS_DIRNAME / args.family
+        if not family_dir.is_dir():
+            print(f"ERROR: famille introuvable: {family_dir}", file=sys.stderr)
+            return 1
+
+    agg = aggregate_fleet(_iter_fleet(repo_root, family=args.family), repo_root)
+    if args.json:
+        return _emit(json.dumps(agg, ensure_ascii=False, indent=2, default=str), args.out)
+    return _emit(format_fleet_report(agg), args.out)
 
 
 if __name__ == '__main__':
