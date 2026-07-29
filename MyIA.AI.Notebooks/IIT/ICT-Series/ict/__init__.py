@@ -89,6 +89,7 @@ from . import argumentation
 from . import inhibited_action
 from . import learned_valence
 from . import cech_obstruction
+from . import signaling_convention
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -105,4 +106,5 @@ __all__ = [
     "inhibited_action",
     "learned_valence",
     "cech_obstruction",
+    "signaling_convention",
 ]
