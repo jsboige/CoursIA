@@ -248,6 +248,45 @@ class TestStdinMode:
         rc = mod.main(["--root", str(tmp_path), "--stdin", "--check"])
         assert rc == 0
 
+    # #8846 -- --stdin must apply SKIP_DIRS (parity with the fleet mode that
+    # already skips them at L374/L140), else a PR that merely touches
+    # docs/archive/** inherits a cjk-residue label for pre-existing residue the
+    # PR never introduced. Acceptance criterion of #8846: a SKIP_DIRS path
+    # passed to --stdin must yield 0 hit. This test is RED on the unfixed code
+    # (the detector scanned it -- 1 hit), GREEN after the parity fix.
+    def test_stdin_skips_archive_paths(self, tmp_path, monkeypatch, capsys):
+        # `archive` is a canonical SKIP_DIRS member (#8650): pedagogical archives
+        # are not ours to fix, so a leak there is never attributed to a PR diff.
+        # git diff --name-only emits repo-relative forward-slash paths.
+        archived = tmp_path / "archive" / "leak.md"
+        archived.parent.mkdir(parents=True)
+        archived.write_text("# pre-existing均匀ément residue\n", encoding="utf-8")
+        monkeypatch.setattr(
+            sys, "stdin",
+            io.StringIO(f"{archived.relative_to(tmp_path).as_posix()}\n"),
+        )
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert out["total_hits"] == 0   # the archive leak is NOT attributed
+        assert out["scanned"] == 0      # ...and not even counted as scanned
+
+    def test_stdin_skips_other_skip_dirs_members(self, tmp_path, monkeypatch, capsys):
+        # Parity must hold for every SKIP_DIRS member, not just `archive`.
+        # `_archives` (plural) is a distinct canonical member (#8650).
+        archived = tmp_path / "_archives" / "leak.py"
+        archived.parent.mkdir(parents=True)
+        archived.write_text("# de重建 residue\n", encoding="utf-8")
+        monkeypatch.setattr(
+            sys, "stdin",
+            io.StringIO(f"{archived.relative_to(tmp_path).as_posix()}\n"),
+        )
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert out["total_hits"] == 0
+        assert out["scanned"] == 0
+
 
 # ===========================================================================
 # #8826 -- discriminating guard: CJK soldered into/dropped into Latin = leak;
