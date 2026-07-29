@@ -37,11 +37,12 @@ Epic #1646, Phase 5 (#2159). All `sorry`s eliminated at creation.
 
 ### Accessibility note (Epics #1452/#1453)
 
-This module exposes **6 `#check` verifications** on the direct image / inverse
-image pair, organised into 5 thematic sections: (1) the category of `𝒪ₓ`-modules
+This module exposes **8 `#check` verifications** on the direct image / inverse
+image pair, organised into 6 thematic sections: (1) the category of `𝒪ₓ`-modules
 on a scheme, (2) the direct image `f_*`, (3) the inverse image `f^*`, (4) the
-fundamental adjunction `f^* ⊣ f_*`, (5) the functoriality identities (identity,
-composition).
+fundamental adjunction `f^* ⊣ f_*`, (5) the functoriality identities of the
+direct image `f_*` (identity, composition), (6) the functoriality identities of
+the inverse image `f^*` (dual analogue).
 
 ### i18n — convention #4980 ratified 2026-07-04
 
@@ -63,6 +64,7 @@ namespace Grothendieck.DirectImage_en
 open CategoryTheory AlgebraicGeometry Limits
 open AlgebraicGeometry.Scheme (Modules)
 open AlgebraicGeometry.Scheme.Modules
+open AlgebraicGeometry.Scheme.Modules (pullbackId pullbackComp)
 
 variable {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z)
 
@@ -116,12 +118,12 @@ operations formalism.
 #check (pullbackPushforwardAdjunction f : pullback f ⊣ pushforward f)
 
 /-!
-## Section 5: Functoriality identities
+## Section 5: Functoriality identities of the direct image `f_*`
 
-The direct image (and dually the inverse image) behaves well with respect to
-identity and composition of scheme morphisms: pushing forward along the
-identity is the identity, and pushing forward along `f` then `g` identifies to
-the pushforward along the composite `f ≫ g`.
+The direct image `f_*` behaves well with respect to identity and composition of
+scheme morphisms: pushing forward along the identity is the identity, and
+pushing forward along `f` then `g` identifies to the pushforward along the
+composite `f ≫ g`.
 -/
 
 -- f_* along the identity identifies to the identity functor.
@@ -129,5 +131,20 @@ the pushforward along the composite `f ≫ g`.
 
 -- f_* then g_* identifies to the pushforward of the composite (f ≫ g)_*.
 #check (pushforwardComp f g : pushforward f ⋙ pushforward g ≅ pushforward (f ≫ g))
+
+/-!
+## Section 6: Functoriality identities of the inverse image `f^*`
+
+The inverse image `f^*` satisfies the dual identities: pulling back along the
+identity is the identity, and pulling back along `f ≫ g` identifies to pulling
+back along `g` then `f` (note the reversed order: `pullback g ⋙ pullback f`,
+since `f^*` is contravariant in `f`).
+-/
+
+-- f^* along the identity identifies to the identity functor.
+#check pullbackId X
+
+-- f^* of the composite: pullback g then pullback f = pullback (f ≫ g) (reversed order, contravariance).
+#check pullbackComp f g
 
 end Grothendieck.DirectImage_en

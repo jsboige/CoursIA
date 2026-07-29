@@ -39,11 +39,12 @@ EPIC #1646, Phase 5 (#2159). Tous les `sorry`s elimines a la creation.
 
 ### Note d'accessibilite (Epics #1452/#1453)
 
-Ce module expose **6 verifications `#check`** sur le couple image directe /
-image reciproque, organisees par 5 sections thematiques : (1) la categorie des
+Ce module expose **8 verifications `#check`** sur le couple image directe /
+image reciproque, organisees par 6 sections thematiques : (1) la categorie des
 `𝒪ₓ`-modules sur un schema, (2) l'image directe `f_*`, (3) l'image reciproque
 `f^*`, (4) l'adjonction fondamentale `f^* ⊣ f_*`, (5) les identites de
-fonctorialite (identite, composition).
+fonctorialite de l'image directe `f_*` (identite, composition), (6) les
+identites de fonctorialite de l'image reciproque `f^*` (analogue dual).
 
 ### Convention i18n (EPIC #4980 ratifiee par user 2026-07-04)
 
@@ -65,6 +66,7 @@ namespace Grothendieck.DirectImage
 open CategoryTheory AlgebraicGeometry Limits
 open AlgebraicGeometry.Scheme (Modules)
 open AlgebraicGeometry.Scheme.Modules
+open AlgebraicGeometry.Scheme.Modules (pullbackId pullbackComp)
 
 variable {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z)
 
@@ -118,12 +120,12 @@ le plus simple du formalisme des six operations de Grothendieck.
 #check (pullbackPushforwardAdjunction f : pullback f ⊣ pushforward f)
 
 /-!
-## Section 5 : Identites de fonctorialite
+## Section 5 : Identites de fonctorialite de l'image directe `f_*`
 
-L'image directe (et reciproquement l'image reciproque) se comporte bien vis-a-vis
-de l'identite et de la composition des morphismes de schemas : pousser en avant
-le long de l'identite est l'identite, et pousser en avant le long de `f` puis `g`
-s'identifie au pushforward le long de la composee `f ≫ g`.
+L'image directe `f_*` se comporte bien vis-a-vis de l'identite et de la
+composition des morphismes de schemas : pousser en avant le long de l'identite
+est l'identite, et pousser en avant le long de `f` puis `g` s'identifie au
+pushforward le long de la composee `f ≫ g`.
 -/
 
 -- f_* le long de l'identite s'identifie au foncteur identite.
@@ -131,5 +133,20 @@ s'identifie au pushforward le long de la composee `f ≫ g`.
 
 -- f_* puis g_* s'identifie au pushforward de la composee (f ≫ g)_*.
 #check (pushforwardComp f g : pushforward f ⋙ pushforward g ≅ pushforward (f ≫ g))
+
+/-!
+## Section 6 : Identites de fonctorialite de l'image reciproque `f^*`
+
+L'image reciproque `f^*` satisfait les identites duales : tirer en arriere le
+long de l'identite est l'identite, et tirer en arriere le long de `f ≫ g`
+s'identifie a tirer en arriere selon `g` puis `f` (notez l'ordre renverse :
+`pullback g ⋙ pullback f`, car `f^*` est contravariante en `f`).
+-/
+
+-- f^* le long de l'identite s'identifie au foncteur identite.
+#check pullbackId X
+
+-- f^* de la composee : pullback g puis pullback f = pullback (f ≫ g) (ordre renverse, contravariance).
+#check pullbackComp f g
 
 end Grothendieck.DirectImage
