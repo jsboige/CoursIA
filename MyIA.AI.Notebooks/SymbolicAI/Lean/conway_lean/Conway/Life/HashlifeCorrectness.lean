@@ -2999,9 +2999,15 @@ private theorem p4_nw_g3_bridge
   --   (b) **outer locality** — once (a) holds, `evolve_cone_agree (2^(k-1))
   --       (2^(k-1))` transports the agreement through the outer evolve. The
   --       subtlety (not a single apply): LHS evaluates at `p`, RHS at
-  --       `p' = p - 2^(k-1)` (NW correspondence), so the locality step needs the
-  --       point-shift alignment between the parent's central window and the
-  --       supercell `(node R1 R2 R4 R5)`'s shifted origin.
+  --       `p' = p - 2^k + 2^(k-1)` (NW correspondence — the goal's offset at the
+  --       theorem statement, not `p - 2^(k-1)`), so the locality step needs the
+  --       point-shift alignment between the parent's central window (origin
+  --       `(0,0)`) and the supercell `(node R1 R2 R4 R5)`'s shifted origin. That
+  --       alignment is now directly attackable: `evolve_shift` (translation-
+  --       invariance capstone, sorry-free, on `main` via #8797 —
+  --       `shift v (evolve n g) = evolve n (shift v g)`) lets the supercell's
+  --       shifted origin be rewritten to match the parent's before
+  --       `evolve_cone_agree` applies. The residual obstruction is (a), not (b).
   --
   -- **Extraction-test caveat** (ai-01 #8766 review): the `exact p4_nw_g3_bridge
   --   ...` at the call site (`p4_nw_supercell_agree`, below) proves the bridge is
