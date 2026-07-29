@@ -12,7 +12,8 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (switched 2026-07-11 to `real` mode, baseline=17; was prose-header/28):
+# Sorry profile (switched 2026-07-11 to `real` mode, baseline=16; was prose-header/28,
+# then 17 until #8766 discharged trefoil_not_unknot [sorry 5->4]):
 # knot_lean's docstrings legitimately reference "sorry" (Phase-1 scaffolding prose:
 # "sorry permanent", "sorry commentés", "chaque sorry", the MathlibPrerequisites
 # roadmap index, the TODO on well-formedness). Under `prose-header` mode these
@@ -26,14 +27,17 @@ name: Lean Knot CI
 # compiled-tactic sorries, immune to docstring edits.
 # Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
 #   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
-#   - Invariant.lean:           5 (tricolorable_invariant residual fox/col tactics;
+#   - Invariant.lean:           4 (tricolorable_invariant residual fox/col tactics;
+#                                  trefoil_not_unknot DISCHARGED by #8766 [sorry 5->4];
 #                                  the Fox linearity bridge + num are PROVEN — see
 #                                  Invariant.lean docstring for the resolved/open split)
 #   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 17. Raising this baseline requires a documented
+# Total real tactic sorry = 16 (re-verified 2026-07-29: canonical count_real_sorries
+# replica + CI run 30465509621 both report 16; was 17 before #8766's discharge).
+# Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
 on:
@@ -85,7 +89,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "17"
+      sorry-baseline: "16"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
@@ -93,7 +97,7 @@ jobs:
   # that the textual sorry counter cannot see. Runs after the build to
   # reuse the cached lake artifacts.
   # Opt-in per lake; knot_lean is the pilote because it has a stable
-  # sorry profile (17 real tactic sorries, all enumerated + justified).
+  # sorry profile (16 real tactic sorries, all enumerated + justified).
   # NOTE: `uses: ./...` (not `@main`) -- `lean-axiom.yml` is introduced by
   # THIS PR; resolving it from `main` would mean the pilot job silently
   # fails to dispatch on the branch and never proves the gate works.
@@ -106,9 +110,9 @@ jobs:
       display-name: knot_lean
       target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
       allow-axioms: ""
-      # This lake has 17 acknowledged tactic `sorry`s -- the same 17 the build
+      # This lake has 16 acknowledged tactic `sorry`s -- the same 16 the build
       # job declares as `sorry-baseline` above (verified firsthand: Conway 8,
-      # Invariant 5, Lidman 2, Reidemeister 2, Basic 0, with the `_en` siblings
+      # Invariant 4, Lidman 2, Reidemeister 2, Basic 0, with the `_en` siblings
       # mirroring exactly). Gating on `sorryAx` here would make the job red on
       # every run, forever, for a fact already tracked by the baseline counter
       # three lines up. `has_sorry` is still reported per module, and forbidden
