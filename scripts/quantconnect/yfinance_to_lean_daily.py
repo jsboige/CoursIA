@@ -86,6 +86,12 @@ def df_to_lean_rows(df, time: str = LEAN_DAILY_TIME) -> list[str]:
     naive or aware) with columns Open/High/Low/Close/Volume. Returns a list of
     ``YYYYMMDD HH:MM,O,H,L,C,V`` strings with OHLC scaled x10000 as int.
     """
+    # Drop rows with NaN in any consumed OHLCV field. yfinance's latest bar is
+    # often intraday-incomplete (Close/Adj Close NaN while the session is still
+    # open); without this guard it raises "cannot convert float NaN to integer"
+    # below and aborts the whole provisioning. Loses only the incomplete bar.
+    needed = ["Open", "High", "Low", "Close", "Volume"]
+    df = df.dropna(subset=[c for c in needed if c in df.columns])
     rows: list[str] = []
     for ts, rec in df.iterrows():
         # Normalise the timestamp to a date (drop tz, take date part).
