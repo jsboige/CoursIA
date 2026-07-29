@@ -90,6 +90,7 @@ from . import inhibited_action
 from . import learned_valence
 from . import cech_obstruction
 from . import signaling_convention
+from . import symbol_invention
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -107,4 +108,5 @@ __all__ = [
     "learned_valence",
     "cech_obstruction",
     "signaling_convention",
+    "symbol_invention",
 ]
