@@ -2876,6 +2876,60 @@ private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
     isAlive g p = true ↔ p ∈ g := by
   rw [isAlive]; exact List.elem_iff
 
+/-- **G3 wave-assembly bridge (named extraction, #6724 c.745).** The research
+    heart of `p4_nw_supercell_agree`, extracted as a NAMED lemma carrying ALL
+    the call-site hypotheses — per the ai-01 extraction protocol (DM
+    `msg-20260729T000329-m5ly00`: "isoler un sorry sans transporter les
+    hypothèses du site d'appel FABRIQUE un énoncé faux"). The signature mirrors
+    `p4_nw_supercell_agree` exactly (16 grandchildren, R1..R5 + hR1..5,
+    hcc1/2/4/5, p); the conclusion is the POST-`evolve_half_step` residual goal
+    (`evolve (2^k)` on the LHS). The specialization check — does
+    `exact p4_nw_g3_bridge ...` (called from the root) close the root's residual
+    goal? — IS the protocol's correctness test: if it compiles, the signature is
+    right (transports every call-site hypothesis); if not, the extraction is wrong.
+
+    **The body decomposes into two halves** (attack plan for the next cycle):
+    (a) **First-half-step toGrid agreement** (THE WALL): show that
+        `evolve (2^(k-1)) parent.toGrid` and `(node R1 R2 R4 R5).toGrid` agree on
+        the central light cone. This assembles the four `centralCorrect_mem_shift`
+        facts (hcc1/2/4/5 → R_j centre = evolve (2^(k-1)) n_j on the central
+        window) via `mem_toGrid_node` (node→4-quadrant decomposition, sorry-free
+        L1478). The quadrant-offset arithmetic (NW at (0,0), NE at (0, 2^level),
+        etc.) and the `2^level` half-size shifts are the assembly glue NOT yet
+        bridged.
+    (b) **Second-half-step locality** (SORRY-FREE once (a) holds):
+        `evolve_cone_agree` / `quadrant_cone_agree` (both sorry-free) transport
+        the agreement through the outer `evolve (2^(k-1))`, closing the goal
+        modulo the NW point correspondence p ↔ p' (p' = p - 2^(k-1)).
+
+    Sorry count FLAT (8 → 8): the sorry moves from the root's residual to this
+    named bridge — structural refinement, not reduction. The value is a NAMED,
+    reusable target: the next attacker opens `p4_nw_g3_bridge` instead of
+    re-discovering the obstruction inside an opaque `sorry`. See #6724. -/
+private theorem p4_nw_g3_bridge
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
+    (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
+    (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
+    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
+    (p : Int × Int) :
+    isAlive (evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0))) p
+      = isAlive (evolve (2^(k - 1)) ((node R1 R2 R4 R5).toGrid (0, 0)))
+          (p.1 - (2^k : Int) + (2^(k - 1) : Int),
+           p.2 - (2^k : Int) + (2^(k - 1) : Int)) := by
+  -- G3 wave-assembly (the research heart — see docstring for the (a)/(b) plan).
+  sorry
+
 /-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
     The wave-1/wave-2 correspondence for the nw quadrant, stated at the
     `evolve`-level so the arm lemma below wires it with a single `rw`. Reads:
@@ -2942,18 +2996,15 @@ private theorem p4_nw_supercell_agree
   -- into a single `evolve 2^k` over the parent grid. `evolve_half_step` is proven
   -- sorry-free (L2738); this is the trivial half of the agreement.
   rw [← evolve_half_step k hk1]
-  -- Residual goal (the G3 wave-assembly research heart):
-  --   isAlive (evolve (2^k) parent.toGrid 0) p
-  --     = isAlive (evolve (2^(k-1)) (node R1 R2 R4 R5).toGrid 0) p'
-  -- where p' = p - 2^(k-1) (since 2^k - 2^(k-1) = 2^(k-1)). The wave-1 results
-  -- R1..R5 (hR1-5) and their `centralCorrect` facts (hcc1/2/4/5) encode the first
-  -- half-step's super-cell; the obstruction is G3 — how `(hashlifeResultAux (k+2)
-  -- parent)` decomposes into the four `(hashlifeResultAux (k+1) q_j)` sub-results
-  -- at the quadrant offsets — plus the NW point correspondence (p ↔ p', the
-  -- central-window re-anchoring). Locality machinery is proven sorry-free
-  -- (`step_light_cone`, `evolve_cone_agree`, `quadrant_cone_agree`); the assembly
-  -- glue is not. See #6724.
-  sorry
+  -- Discharge the residual G3 goal via the named bridge `p4_nw_g3_bridge`
+  -- (extraction #6724 c.745). The `exact` IS the specialization test (ai-01
+  -- extraction protocol, DM msg-20260729T000329-m5ly00): it type-checks only
+  -- because the bridge transports every call-site hypothesis — a false
+  -- extraction (dropped hypothesis) would not close this goal.
+  exact p4_nw_g3_bridge k hk1
+    nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+    sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+    R1 R2 R4 R5 hR1 hR2 hR4 hR5 hcc1 hcc2 hcc4 hcc5 p
 
 /-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
     Discharges the nw quadrant of `p4_succ_membership` over OPAQUE wave-1
