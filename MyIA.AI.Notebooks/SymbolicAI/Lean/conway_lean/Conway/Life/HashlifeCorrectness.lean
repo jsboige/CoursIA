@@ -2900,6 +2900,50 @@ private theorem p4_nw_offset_decomp (k : Nat)
   rw [mem_toGrid_node, hR1_l]
   simp only [Int.zero_add, Int.add_zero]
 
+/-! ## P4 (a) — the named overlap wall
+
+The bridge `p4_nw_g3_bridge` decomposes (c.764) into a sorry-free **(b) outer-
+locality** transport (proven in the bridge via `evolve_shift` + `evolve_cone_agree`)
+and the residual **(a) inner-agreement** — the double-nine overlap wall. This is
+that wall, extracted as a NAMED lemma so the obstruction has a single, compiler-
+checked statement (the bridge's `exact p4_nw_overlap_wall …` proves the statement
+is strong enough for the (b) reduction; it does NOT prove the wall holds). -/
+
+/-- **crux (a) inner-agreement — the named overlap wall (#6724).** The residual
+    obstruction once (b) outer-locality is discharged: the `evolve 2^(k-1)`d parent
+    grid agrees, pointwise on `lightCone p (2^k)`, with the wave-1 supercell
+    `(node R1 R2 R4 R5)` evaluated at the supercell-local point
+    `r - (2^(k-1), 2^(k-1))`. This is the **double-nine overlap realignment**
+    (see `p4_nw_g3_bridge` docstring): reconciling the parent's four
+    NON-overlapping quadrants against the wave-1 `R2`/`R4`/`R5` recombinations that
+    STRADDLE the NW/NE, NW/SW and central boundaries. `centralCorrect` (the
+    `hcc_j`) gives quadrant-centre correctness; this lemma is the lift from those
+    centres to the full cone. -/
+private theorem p4_nw_overlap_wall
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
+    (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
+    (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
+    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
+    (p : Int × Int) :
+    ∀ r ∈ lightCone p (2^k),
+      isAlive (evolve (2^(k - 1))
+          ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+            (0, 0))) r
+        = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
+            (r.1 - (2^(k - 1) : Int), r.2 - (2^(k - 1) : Int)) := by
+  sorry
+
 /-- **G3 wave-assembly bridge (named extraction, #6724 c.745).** The research
     heart of `p4_nw_supercell_agree`, extracted as a NAMED lemma carrying ALL
     the call-site hypotheses — per the ai-01 extraction protocol (DM
@@ -2953,15 +2997,21 @@ private theorem p4_nw_offset_decomp (k : Nat)
         window (assembled from two `mem_toGrid_node` passes + `mem_toGrid_shift`
         L1437 / `toGrid_shift_between` L1453, but non-trivial due to the
         cross-quadrant grandchild realignment).
-    (b) **Second-half-step locality** (SORRY-FREE once (a) holds):
-        `evolve_cone_agree` / `quadrant_cone_agree` (both sorry-free) transport
-        the agreement through the outer `evolve (2^(k-1))`, closing the goal
-        modulo the NW point correspondence p ↔ p' (p' = p - 2^(k-1)).
+    (b) **Second-half-step locality** (PROVEN SORRY-FREE, c.764): the outer
+        `evolve (2^(k-1))` transport is now a theorem in the bridge body. The
+        RHS eval point `p' = p - 2^k + 2^(k-1) = p - 2^(k-1)` is aligned onto
+        `p` via `evolve_shift` + `isAlive_shift` (the supercell's shifted origin
+        rewritten to the parent's), then `evolve_cone_agree (t := 0)` transports
+        the agreement through the outer evolve. The (b) machinery (translation
+        invariance `evolve_shift`, #8797) this was waiting on has landed; the
+        residual is exactly (a).
 
-    Sorry count FLAT (8 → 8): the sorry moves from the root's residual to this
-    named bridge — structural refinement, not reduction. The value is a NAMED,
-    reusable target: the next attacker opens `p4_nw_g3_bridge` instead of
-    re-discovering the obstruction inside an opaque `sorry`. See #6724. -/
+    Sorry count FLAT (8 → 8) but the PROVEN share grows: the (b) transport is
+    now a sorry-free theorem (previously implicit inside the opaque sorry), and
+    the residual (a) is the NAMED lemma `p4_nw_overlap_wall` just above — a
+    single, compiler-checked statement the next attacker opens, instead of
+    re-discovering the obstruction inside the bridge's `sorry`. The bridge body
+    itself is sorry-free; its only sorry-dependency is `p4_nw_overlap_wall`. See #6724. -/
 private theorem p4_nw_g3_bridge
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3022,7 +3072,45 @@ private theorem p4_nw_g3_bridge
   --   (offsets pinned to `2^k`); it is still UNPROVEN — the (a) overlap wall
   --   above is the obstruction, not a malformed statement.
   rw [evolve_half_step k hk1]
-  sorry
+  -- **(b) outer locality — proven sorry-free (c.764).** Both sides carry an outer
+  -- `evolve (2^(k-1))`. The RHS evaluates at `p' = p - 2^k + 2^(k-1)`, which
+  -- simplifies to `p - 2^(k-1)` (since `2^k = 2·2^(k-1)`). We shift the RHS grid
+  -- by `(2^(k-1), 2^(k-1))` so both sides eval at `p`, then transport agreement
+  -- through the outer evolve with `evolve_cone_agree`. The residual is exactly
+  -- the (a) inner-agreement `p4_nw_overlap_wall`.
+  have h2k : (2^k : Int) = (2^(k - 1) : Int) + (2^(k - 1) : Int) := by
+    have hn : 2^k = 2^(k - 1) + 2^(k - 1) := by
+      set m := k - 1 with hm
+      have hkm : k = m + 1 := by omega
+      rw [hkm, Nat.pow_succ]; ring
+    exact mod_cast hn
+  have hpt1 : p.1 - (2^k : Int) + (2^(k - 1) : Int) = p.1 - (2^(k - 1) : Int) := by omega
+  have hpt2 : p.2 - (2^k : Int) + (2^(k - 1) : Int) = p.2 - (2^(k - 1) : Int) := by omega
+  rw [hpt1, hpt2]
+  -- RHS now evals at `(p - 2^(k-1))`; rewrite to eval at `p` on a shifted grid.
+  have hR : isAlive (evolve (2^(k - 1)) ((node R1 R2 R4 R5).toGrid (0, 0)))
+        (p.1 - (2^(k - 1) : Int), p.2 - (2^(k - 1) : Int))
+      = isAlive (evolve (2^(k - 1))
+          (shift ((2^(k - 1) : Int), (2^(k - 1) : Int)) ((node R1 R2 R4 R5).toGrid (0, 0)))) p := by
+    rw [← evolve_shift, isAlive_shift]
+  rw [hR]
+  -- Both sides eval at `p`. Transport through the outer `evolve (2^(k-1))`.
+  apply evolve_cone_agree (t := 0) (u := 2^(k - 1))
+  · -- h_cone : ∀ r ∈ lightCone p (2 * (0 + 2^(k-1))), ...
+    intro r hr
+    rw [isAlive_shift]
+    have h2u : 2 * (0 + 2^(k - 1)) = 2^k := by
+      set m := k - 1 with hm
+      have hkm : k = m + 1 := by omega
+      rw [hkm, Nat.pow_succ]; ring
+    rw [h2u] at hr
+    exact p4_nw_overlap_wall k hk1
+      nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+      R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l hR2_l hR4_l hR5_l
+      hcc1 hcc2 hcc4 hcc5 p r hr
+  · -- hq : p ∈ lightCone p (2 * 0)
+    exact self_mem_lightCone p 0
 
 /-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
     The wave-1/wave-2 correspondence for the nw quadrant, stated at the
