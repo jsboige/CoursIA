@@ -50,6 +50,12 @@ from count_exercises import (  # noqa: E402
 )
 
 LABEL_NAME = "exercises-below-threshold"
+# A SECOND, distinct label for notebooks the checker could NOT READ (issue #8819).
+# "I could not measure" and "I measured, it is below threshold" are two different
+# states calling for two different reactions, so they get two different labels --
+# collapsing them into one would re-create the very defect #8819 fixes (a gate
+# whose official signal reassures while the true state sleeps in the log).
+LABEL_UNPARSEABLE = "exercises-unparseable"
 
 
 @dataclass
@@ -74,20 +80,38 @@ class CheckResult:
     parse_errors: list[NotebookVerdict] = field(default_factory=list)
 
     def as_payload(self) -> dict:
-        """Machine-readable payload for the workflow to decide the label."""
+        """Machine-readable payload for the workflow to decide the labels.
+
+        Issue #8819: a notebook the checker could not read is NOT conforming --
+        it is UNVERIFIED. The summary therefore exposes ``unverified`` (parse
+        errors) at the top, and the payload carries TWO labels: one for
+        "measured, below threshold" (below_threshold) and one for "could not
+        measure" (unparseable). The workflow raises each when its count is > 0,
+        and crucially never claims "all conform" while ``unverified > 0``.
+        """
+        n_sub = len(self.sub_threshold)
+        n_parse = len(self.parse_errors)
+        n_ok = len(self.ok)
+        n_out = len(self.out_of_corpus)
         return {
-            "label": LABEL_NAME,
+            "labels": {
+                "below_threshold": {"name": LABEL_NAME, "count": n_sub},
+                "unparseable": {"name": LABEL_UNPARSEABLE, "count": n_parse},
+            },
             "summary": {
-                "total": sum(
-                    len(x) for x in (
-                        self.sub_threshold, self.ok,
-                        self.out_of_corpus, self.parse_errors,
-                    )
-                ),
-                "in_corpus": len(self.sub_threshold) + len(self.ok),
-                "out_of_corpus": len(self.out_of_corpus),
-                "sub_threshold": len(self.sub_threshold),
-                "parse_errors": len(self.parse_errors),
+                # unverified FIRST (issue #8819 criterion 4): a glance at the
+                # payload makes the gap obvious without arithmetic. A gate that
+                # claims more than it measured is the defect class #8819 fixes.
+                "unverified": n_parse,
+                "total": n_sub + n_ok + n_out + n_parse,
+                # in_corpus counts everything the convention COULD apply to,
+                # including unparseable ones -- an unread notebook is still in
+                # the corpus, just not measured.
+                "in_corpus": n_sub + n_ok + n_parse,
+                "out_of_corpus": n_out,
+                "below_threshold": n_sub,
+                "sub_threshold": n_sub,  # kept alias for readability
+                "parse_errors": n_parse,
             },
             "sub_threshold": [asdict(v) for v in self.sub_threshold],
             "ok": [asdict(v) for v in self.ok],
@@ -140,17 +164,25 @@ def check_notebooks(paths: list[Path]) -> CheckResult:
 
 
 def _render_text(result: CheckResult) -> str:
-    """Human-readable summary (the workflow log; the label is separate)."""
+    """Human-readable summary (the workflow log; the labels are separate).
+
+    Issue #8819 criterion 2: the closing line asserts ONLY what was measured.
+    ``All ... meet their threshold`` is conditional on ``parse_errors == 0`` --
+    otherwise the honest statement is "N could not be parsed -- NOT verified",
+    never a blanket claim of conformity over notebooks the checker never read.
+    """
     s = result.as_payload()["summary"]
     lines = [
         f"Notebooks checked   : {s['total']}",
         f"In corpus           : {s['in_corpus']}",
         f"Out of corpus       : {s['out_of_corpus']}",
-        f"Below threshold     : {s['sub_threshold']}",
-        f"Parse errors        : {s['parse_errors']}",
+        f"Below threshold     : {s['below_threshold']}",
+        f"Unverified (parse)  : {s['unverified']}",
     ]
     if result.sub_threshold:
-        lines.append("\n--- Below threshold (label target) ---")
+        lines.append(
+            f"\n--- Below threshold (label: {LABEL_NAME}) ---"
+        )
         for v in result.sub_threshold:
             lines.append(
                 f"  [{v.count}/{v.threshold}] ({v.kind}) {v.path}"
@@ -160,10 +192,18 @@ def _render_text(result: CheckResult) -> str:
         for v in result.out_of_corpus:
             lines.append(f"  ({v.kind}) {v.path} -- {v.detail}")
     if result.parse_errors:
-        lines.append("\n--- Parse errors (investigate manually) ---")
+        lines.append(
+            f"\n--- Unverified: could not parse (label: {LABEL_UNPARSEABLE}) ---"
+        )
         for v in result.parse_errors:
             lines.append(f"  {v.path}: {v.detail[:120]}")
-    if not result.sub_threshold:
+    # Criterion 2: assert only what was measured. A parse error means we did
+    # NOT measure that notebook, so "all meet threshold" would be a false claim.
+    if s["unverified"] > 0:
+        lines.append(
+            f"\n{s['unverified']} notebook(s) could not be parsed -- NOT verified."
+        )
+    elif not result.sub_threshold:
         lines.append(
             "\nAll in-corpus modified notebooks meet their threshold."
         )

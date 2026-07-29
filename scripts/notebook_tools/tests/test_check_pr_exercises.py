@@ -155,8 +155,11 @@ class TestAdvisoryContract:
         rc = cpe.main(["--paths", str(nb), "--json"])
         assert rc == 0
         payload = json.loads(capsys.readouterr().out)
-        assert payload["label"] == "exercises-below-threshold"
-        assert payload["summary"]["sub_threshold"] == 1
+        # Two distinct labels (#8819): below_threshold + unparseable.
+        assert payload["labels"]["below_threshold"]["name"] == "exercises-below-threshold"
+        assert payload["labels"]["unparseable"]["name"] == "exercises-unparseable"
+        assert payload["summary"]["below_threshold"] == 1
+        assert payload["summary"]["unverified"] == 0
         assert payload["summary"]["in_corpus"] == 1
         assert len(payload["sub_threshold"]) == 1
         assert payload["sub_threshold"][0]["threshold"] == 3
@@ -166,11 +169,92 @@ class TestAdvisoryContract:
         nb = _write_nb(tmp_path / "Course-Lesson.ipynb", _exercises(3))
         cpe.main(["--paths", str(nb), "--json"])
         payload = json.loads(capsys.readouterr().out)
-        assert payload["summary"]["sub_threshold"] == 0
+        assert payload["summary"]["below_threshold"] == 0
+        assert payload["summary"]["unverified"] == 0
 
     def test_no_paths_is_zero(self, capsys):
         rc = cpe.main([])
         assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# ACCEPTANCE 3 (#8819) -- controle positif: an UNREAD notebook is NOT conforming
+# ---------------------------------------------------------------------------
+
+class TestParseErrorNotConforming:
+    """Issue #8819: a notebook the checker could not read must NOT pass silently.
+
+    This is the defect the follow-up fixes: a corrupt notebook landed in
+    parse_errors, summary.sub_threshold stayed 0, and the workflow claimed
+    conformity over a notebook it never measured. The controle positif proves
+    the gate now raises a SEPARATE label for the unverified case and refuses
+    to assert "all conform".
+    """
+
+    def test_corrupt_notebook_lands_in_parse_errors_not_subthreshold(self, tmp_path):
+        """A corrupt .ipynb is unverified, not conforming."""
+        (tmp_path / "Course-Lesson.ipynb").write_text(
+            "{ this is not valid json ", encoding="utf-8"
+        )
+        nb = tmp_path / "Course-Lesson.ipynb"
+        result = cpe.check_notebooks([nb])
+        assert len(result.parse_errors) == 1
+        assert len(result.sub_threshold) == 0
+        assert result.parse_errors[0].status == "parse_error"
+
+    def test_corrupt_notebook_raises_unverified_label_count(self, tmp_path, capsys):
+        """The JSON payload exposes unverified > 0 so the workflow raises a label.
+
+        Before #8819: unverified notebooks were invisible to the label decision
+        (sub_threshold=0 -> "all conform"). Now unverified is the FIRST summary
+        key and its count drives the `exercises-unparseable` label.
+        """
+        (tmp_path / "Course-Lesson.ipynb").write_text(
+            "not json at all", encoding="utf-8"
+        )
+        cpe.main(["--paths", str(tmp_path / "Course-Lesson.ipynb"), "--json"])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["summary"]["unverified"] == 1
+        assert payload["summary"]["below_threshold"] == 0
+        assert payload["labels"]["unparseable"]["count"] == 1
+
+    def test_text_output_does_not_claim_conformity_when_unverified(self, tmp_path, capsys):
+        """Critère 2: the closing line must NOT say 'all meet threshold' when a
+        notebook is unverified -- that was the original false-claim defect."""
+        (tmp_path / "Course-Lesson.ipynb").write_text(
+            "broken {", encoding="utf-8"
+        )
+        cpe.main(["--paths", str(tmp_path / "Course-Lesson.ipynb")])
+        out = capsys.readouterr().out
+        assert "NOT verified" in out
+        assert "meet their threshold" not in out
+
+    def test_corrupt_notebook_still_exits_zero(self, tmp_path, capsys):
+        """Advisory contract preserved: unverified raises a label, never a red job."""
+        (tmp_path / "Course-Lesson.ipynb").write_text(
+            "broken", encoding="utf-8"
+        )
+        rc = cpe.main(["--paths", str(tmp_path / "Course-Lesson.ipynb")])
+        assert rc == 0
+
+    def test_in_corpus_counts_unverified(self, tmp_path, capsys):
+        """An unparseable notebook IS in the corpus (just unread), so in_corpus
+        must count it -- not silently drop it from the denominator."""
+        (tmp_path / "Course-Lesson.ipynb").write_text(
+            "broken", encoding="utf-8"
+        )
+        cpe.main(["--paths", str(tmp_path / "Course-Lesson.ipynb"), "--json"])
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["summary"]["in_corpus"] == 1
+
+    def test_subthreshold_and_parse_error_coexist_distinctly(self, tmp_path):
+        """A PR with one below-threshold notebook AND one corrupt one raises BOTH
+        labels -- they are independent states, never collapsed."""
+        good_below = _write_nb(tmp_path / "Course-Below.ipynb", _exercises(1))
+        (tmp_path / "Course-Broken.ipynb").write_text("broken", encoding="utf-8")
+        result = cpe.check_notebooks([good_below, tmp_path / "Course-Broken.ipynb"])
+        assert len(result.sub_threshold) == 1
+        assert len(result.parse_errors) == 1
 
 
 # ---------------------------------------------------------------------------
