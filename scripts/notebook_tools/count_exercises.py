@@ -682,8 +682,14 @@ def corpus_scope(root: Path) -> tuple[list[Path], dict[str, int]]:
     if not root.exists():
         return out, removed
     for nb_path in sorted(root.rglob("*.ipynb")):
-        parts = nb_path.parts
-        if any(exc in parts for exc in EXCLUDE_DIRS):
+        # #8858-class guard: root.rglob yields ABSOLUTE paths, so filtering
+        # on nb_path.parts (absolute components) matches the repo's ABSOLUTE
+        # path whenever the clone lives under a skip-named ancestor (e.g.
+        # .../archive/CoursIA/... or .../research/...) and silently empties
+        # the entire corpus -- a false-empty corpus then passes --check
+        # trivially. Filter on the path RELATIVE to the scan root instead.
+        rel_parts = nb_path.relative_to(root).parts
+        if any(exc in rel_parts for exc in EXCLUDE_DIRS):
             continue
         if nb_path.stem.endswith("_output"):
             continue
