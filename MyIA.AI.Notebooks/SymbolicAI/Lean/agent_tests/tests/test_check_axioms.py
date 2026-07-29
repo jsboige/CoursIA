@@ -383,6 +383,44 @@ def test_extract_axioms_handles_real_lean_format():
     assert "unknot_wf" not in axioms  # "does not depend on any axioms" emits nothing
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# Multi-line wrapped axiom list (#8738) — the dangerous class the gate was blind to
+# ──────────────────────────────────────────────────────────────────────────
+
+# The end-to-end gate test below reuses ``REAL_MULTILINE_NATIVE_DECIDE_OUTPUT``
+# (defined further down — verbatim Lean output exposing #8738): a long axiom name
+# (``<decl>._native.native_decide.ax_1_1``) wraps the bracketed list across lines
+# without re-emitting the ``'decl' depends on axioms:`` prefix, which the old
+# line-by-line parser (#8681) silently dropped. Fix #8740 (``re.finditer`` on the
+# full output) lets ``[^\]]*`` span newlines. The unit-parser coverage of this
+# shape (same fixture) lives in ``test_extract_axioms_handles_multiline_lists``.
+
+
+def test_check_axioms_multiline_native_decide_fails_gate():
+    """#8738 criterion 2 (end-to-end): the gate fails on a native_decide multi-line list.
+
+    Before #8740, the line-by-line parser returned ``forbidden=[]`` on this
+    output, so ``success=True``: the gate certified a module that genuinely
+    depends on ``native_decide`` -- the failure mode the gate exists to catch.
+    The three standard axioms are in the default whitelist, so only the
+    ``native_decide`` axiom is forbidden, which must drive ``success`` to
+    False. This is the end-to-end gate test the issue's acceptance criterion 2
+    asks for.
+    """
+    # Uses the DEFAULT whitelist (no explicit whitelist kwarg), unlike
+    # ``test_real_lean_output_fails_when_native_decide_not_whitelisted`` which
+    # passes one explicitly. Two distinct code paths: if the default whitelist
+    # is broken, only this test catches it.
+    r = _check_with_output(
+        ["Knots.figureEight_not_tricolorable"],
+        REAL_MULTILINE_NATIVE_DECIDE_OUTPUT,
+        fail_on_sorry=True,
+    )
+    assert r["success"] is False
+    assert len(r["forbidden"]) == 1
+    assert "native_decide" in r["forbidden"][0]
+
+
 def test_real_lean_output_passes_whitelist_with_quot_sound():
     """Sur la sortie reelle, gate SUCCESS une fois Quot.sound whitelisté.
 
