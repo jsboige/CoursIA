@@ -31,8 +31,14 @@ partager le même checkout Mathlib via une **jonction NTFS** (reparse-point,
 ne nécessite pas d'élévation admin) pointant vers un cache central :
 
 ```
-C:\dev\CoursIA\.mathlib-cache\<toolchain>-<rev8>\mathlib\
+<racine-du-depot>\.mathlib-cache\<toolchain>-<rev8>\mathlib\
 ```
+
+**La racine dépend de la machine** — `C:\dev\CoursIA\` sur les workers, `D:\CoursIA\`
+sur ai-01. Ne pas traiter un chemin absolu de cette doc comme canonique : une
+recherche large sur la mauvaise racine renvoie `0 olean` et se lit à tort comme
+« cache purgé » (cause n°1 de l'incident du 2026-07-29, cf caveat de mesure
+plus bas). Résoudre la racine avec `git rev-parse --show-toplevel`.
 
 Le script `setup_shared_mathlib.ps1` automatise cette mutualisation et persiste
 l'état dans `.mathlib-cache/<toolchain>-<rev8>/share-state.json`.
@@ -90,7 +96,8 @@ SymbolicAI/Tweety/argumentation_lean
 
 **Vérification** : un `cmd /c fsutil reparsepoint query <lake>\.lake\packages\mathlib`
 doit afficher un `Nom substitut` pointant vers
-`C:\dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.31.0-rc1-d568c8c0\mathlib`.
+`<racine-du-depot>\.mathlib-cache\leanprover_lean4_v4.31.0-rc1-d568c8c0\mathlib`
+(`C:\dev\CoursIA\...` sur les workers, `D:\CoursIA\...` sur ai-01).
 
 **Preuve de replay** (cf issue #4363, commentaires du 2026-07-02) :
 `lake build` à travers la junction = **0 recompilation** (Build completed
