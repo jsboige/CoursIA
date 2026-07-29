@@ -773,6 +773,43 @@ class TestExclusions:
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["ESGF-Real.ipynb"]
 
+    @pytest.mark.parametrize("skip_named_ancestor", [
+        "archive",   # the canonical #8858 case (clone under .../archive/CoursIA)
+        "research",  # the historical twin case
+        "bin",       # a common build-output / checkout-parent name
+    ])
+    def test_clone_under_skip_named_ancestor_is_not_silenced(
+        self, tmp_path, skip_named_ancestor
+    ):
+        """#8858-class guard: a checkout's ABSOLUTE path is not signal.
+
+        ``corpus_scope`` filters ``root.rglob`` results against ``EXCLUDE_DIRS``.
+        The bug: it tested ``nb_path.parts`` -- the ABSOLUTE components -- so a
+        clone living under a skip-named ancestor (e.g.
+        ``/home/u/archive/CoursIA/MyIA.AI.Notebooks``) matched ``archive`` in
+        its absolute path and was excluded wholesale. The corpus emptied, an
+        empty corpus counts zero below-threshold notebooks, and ``--check``
+        passes trivially -- a false-clean fleet scan with no signal that
+        anything was inspected.
+
+        The sibling ``test_excludes_research_archive`` does NOT catch this: it
+        makes ``research`` a SUBDIR of the scan root (a real relative
+        exclusion), not an ANCESTOR of the scan root (the false absolute one).
+        This test anchors the filter at ``relative_to(root)`` -- the same fix
+        as ``detect_papermill_path_leak.py``'s ``#8858-class guard``.
+        """
+        # The scan root lives UNDER a skip-named ancestor (real-world: a
+        # second clone, a CI checkout, a worktree under .../archive/...).
+        root = tmp_path / skip_named_ancestor / "clone" / "MyIA.AI.Notebooks"
+        nb_path = root / "ML" / "Lesson-1.ipynb"
+        _write_nb(nb_path, [_md("## Exercice 1"), _code("pass")])
+
+        corpus, removed = corpus_scope(root)
+        assert [p.name for p in corpus] == ["Lesson-1.ipynb"], (
+            f"clone under .../{skip_named_ancestor}/... was silenced: "
+            f"corpus={corpus!r} removed={removed!r}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Threshold / verdict integration
