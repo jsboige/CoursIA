@@ -382,3 +382,166 @@ def test_litmus8_breakdown_int_value_accepted(tmp_path):
     pats = _patterns(res["findings"])
     assert "api_cost_breakdown_non_numeric" not in pats
     assert "api_cost_breakdown_sum_mismatch" not in pats
+
+
+# ---------------------------------------------------------------------------
+# Litmus 9 — validator_asserts_execution_but_cells_unexecuted
+#
+# Rend `validator` / `last_validated` falsifiables : avant ce litmus, rien dans
+# le dépôt ne pouvait les contredire. Cf docs/notebook-metadata/cost-matrix.md.
+# ---------------------------------------------------------------------------
+
+_LITMUS9_PATTERN = "validator_asserts_execution_but_cells_unexecuted"
+
+
+def _notebook_cells(path: Path, specs, cost_meta=None) -> None:
+    """Écrit un notebook dont chaque cellule code est décrite par un spec.
+
+    spec = (source, execution_count, tags). `execution_count=None` = cellule
+    jamais exécutée ; `tags` = liste de tags de cellule (ou None).
+    Nécessaire pour le litmus 9 : les autres helpers laissent
+    `execution_count: None` partout (défaut de `new_code_cell`), ce qui ne
+    permet pas de distinguer exécuté / non exécuté.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = new_notebook()
+    cells = []
+    for source, exec_count, tags in specs:
+        cell = new_code_cell(source)
+        cell["execution_count"] = exec_count
+        if tags:
+            cell["metadata"]["tags"] = list(tags)
+        cells.append(cell)
+    nb.cells = cells
+    if cost_meta:
+        nb.metadata["cost"] = cost_meta
+    with path.open("w", encoding="utf-8") as f:
+        nbformat.write(nb, f, version=4)
+
+
+def _litmus9_patterns(tmp_path, specs, cost_meta):
+    mod = _load_check()
+    nb_path = tmp_path / "nb.ipynb"
+    _notebook_cells(nb_path, specs, cost_meta=cost_meta)
+    return _patterns(mod.check_notebook(nb_path, tmp_path)["findings"])
+
+
+def test_litmus9_papermill_with_unexecuted_cell_flags(tmp_path):
+    """`validator: papermill` affirme une exécution end-to-end. nbclient exécute
+    toute cellule code non vide (même celles qui échouent) : un
+    execution_count null PROUVE que la cellule n'a pas tourné."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("x = 1", 1, None), ("from AlgorithmImports import *", None, None)],
+        {"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+    )
+    assert _LITMUS9_PATTERN in pats
+
+
+def test_litmus9_papermill_all_executed_ok(tmp_path):
+    """Toutes les cellules exécutées : la déclaration n'est contredite par rien."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("x = 1", 1, None), ("y = 2", 2, None)],
+        {"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+    )
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus9_empty_cell_is_not_a_finding(tmp_path):
+    """FP guard : nbclient SKIPPE les cellules code vides (`not source.strip()`),
+    leur execution_count reste null après un run complet. Les flagger pousserait
+    à modifier un notebook sain — même garde-fou que
+    audit_quantbooks_unexec._is_unexecuted_code."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("x = 1", 1, None), ("   \n", None, None)],
+        {"validator": "papermill"},
+    )
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus9_skip_tagged_cell_is_exempt(tmp_path):
+    """Échappatoire honnête : une cellule délibérément non exécutable (code de
+    référence destiné à un autre runtime) se DÉCLARE par un tag de skip. Le
+    notebook cesse d'être contredit sans mentir, et le tag est visible dans le
+    fichier — contrairement à une exception codée en dur dans l'outil."""
+    for tag in ("skip-execution", "skip", "no-execute"):
+        pats = _litmus9_patterns(
+            tmp_path,
+            [("x = 1", 1, None), ("reference_only()", None, [tag])],
+            {"validator": "papermill"},
+        )
+        assert _LITMUS9_PATTERN not in pats, f"tag {tag} devrait exempter la cellule"
+
+
+def test_litmus9_qc_cloud_validator_exempt(tmp_path):
+    """`qc_cloud` = carve-out H.3 documenté : le runtime research QC n'existe sur
+    aucune machine worker. Le validator n'affirme pas une exécution locale."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("qb = QuantBook()", None, None)],
+        {"validator": "qc_cloud", "qcc_tokens_est": 400},
+    )
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus9_manual_validator_exempt(tmp_path):
+    """`manual` = un humain a relu. Aucune affirmation d'exécution, donc rien à
+    contredire — c'est aussi la valeur canonique vers laquelle un notebook non
+    exécutable localement doit être corrigé."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("x = 1", None, None)],
+        {"validator": "manual"},
+    )
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus9_absent_validator_exempt(tmp_path):
+    """Pas de `validator` déclaré = pas de claim. Le défaut `manual` ne doit pas
+    fabriquer un finding sur un notebook qui n'affirme rien."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("x = 1", None, None)],
+        {"api_usd_est": 0.0},
+    )
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus9_dotnet_interactive_validator_flags(tmp_path):
+    """`dotnet-interactive` affirme l'exécution du kernel .NET local, exigée par
+    l'advisory #5214 (`execution_count != null` = preuve d'exécution locale)."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("Console.WriteLine(1);", None, None)],
+        {"validator": "dotnet-interactive"},
+    )
+    assert _LITMUS9_PATTERN in pats
+
+
+def test_litmus9_sk_visual_validator_flags(tmp_path):
+    """`sk_visual` = vision check sur figures RENDUES : les figures viennent des
+    sorties du notebook, donc l'exécution est entraînée par la déclaration."""
+    pats = _litmus9_patterns(
+        tmp_path,
+        [("plt.show()", None, None)],
+        {"validator": "sk_visual", "gpu_required": True},
+    )
+    assert _LITMUS9_PATTERN in pats
+
+
+def test_litmus9_detail_names_the_cell_indices(tmp_path):
+    """Le finding doit être actionnable : nommer les index de cellules, pas
+    seulement leur nombre — sinon la remédiation demande de re-scanner."""
+    mod = _load_check()
+    nb_path = tmp_path / "nb.ipynb"
+    _notebook_cells(
+        nb_path,
+        [("a = 1", 1, None), ("b = 2", None, None), ("c = 3", None, None)],
+        cost_meta={"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+    )
+    findings = mod.check_notebook(nb_path, tmp_path)["findings"]
+    detail = next(f["detail"] for f in findings if f["pattern"] == _LITMUS9_PATTERN)
+    assert "1, 2" in detail
+    assert "2026-07-23T01:30Z" in detail

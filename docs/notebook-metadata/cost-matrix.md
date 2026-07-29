@@ -141,6 +141,54 @@ un gate incapable d'échouer n'est pas un gate).
 - `null` (+ raison) = coût **inconnu**. Ne pas confondre : `0.0` n'est pas un
   défaut pour « je ne sais pas », l'absence se lirait à tort comme gratuite.
 
+### `validator` / `last_validated` — la seconde règle falsifiable (Litmus 9)
+
+Ces deux champs affirment qu'une validation a eu lieu. Jusqu'au Litmus 9, **rien
+dans le dépôt ne pouvait les contredire** : les populators écrivent
+`last_validated: date.today()` au moment du *peuplement* — pas au moment d'une
+validation — et aucun consommateur ne le relit. Le tableau des défauts ci-dessus
+le dit d'ailleurs sans détour : le défaut de `cost.last_validated` est « date de
+création de la metadata ». Un champ que rien ne peut contredire est **décoratif** :
+il porterait la même valeur sur un notebook dont *aucune* cellule n'a jamais tourné.
+
+**Règle falsifiable :** quand `validator` affirme une **exécution de cellules**
+(`papermill`, `sk_visual`, `dotnet-interactive`), aucune cellule code non vide ne
+doit porter `execution_count: null`. Le fondement est mécanique : nbclient/papermill
+exécutent **toute** cellule code non vide — y compris celles qui échouent
+(`--allow-errors` ne change que le comportement d'arrêt, pas l'attribution du
+compteur). Donc `execution_count: null` **prouve** la non-exécution. Vérifié par
+`check_cost_metadata.py` (Litmus 9) → finding `validator_asserts_execution_but_cells_unexecuted`
+(MAJOR).
+
+**Validators hors périmètre, délibérément :**
+
+| Validator | Pourquoi il n'est pas contredit |
+|---|---|
+| `manual` | un humain a relu — aucune affirmation d'exécution. C'est aussi **la valeur de correction** pour un notebook non exécutable localement |
+| `qc_cloud` | carve-out H.3 documenté — le runtime research QC n'existe sur aucune machine worker |
+| `lean_build` | `lake build` SUCCESS porte sur le lake, pas sur les cellules |
+| `sk_agent` | périmètre ambigu, pas d'affirmation nette |
+
+**Échappatoire honnête (tag de skip).** Une cellule délibérément non exécutable —
+code de référence destiné à un autre runtime — se **déclare** par un tag de cellule
+(`skip-execution`, `skip`, `no-execute`). Le notebook cesse alors d'être contredit
+sans mentir, et l'exemption est **visible dans le fichier**, contrairement à une
+exception codée en dur dans l'outil. La contrepartie est la même que partout
+ailleurs : on corrige la **déclaration**, ou on ré-exécute — **jamais** on n'édite
+une sortie de cellule à la main (Stop & Repair, cf
+[secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6).
+
+> **Mesure à l'introduction (2026-07-29, 1020 notebooks scannés) :** 13 findings,
+> tous `validator: papermill`, tous dans `QuantConnect/Python` — série dont chaque
+> cellule code est du `[REFERENCE QC]` important `AlgorithmImports`, qui n'existe
+> que dans le runtime QC. Ces notebooks sont couverts par le carve-out H.3 **par
+> chemin** (`QC_CLOUD_PATHS`) alors qu'ils échappent au prédicat de contenu partagé
+> (`QuantBook()`) : le carve-out excuse l'**absence** d'exécution, il n'autorise pas
+> à en **affirmer** une. Correction attendue : `validator: manual`. Zéro finding sur
+> les autres validators, y compris sur la tranche .NET en attente d'harmonisation
+> (`Probas/Infer.NET`, `ML/ML.NET`) — ceux-là *ont* été exécutés, leur défaut est une
+> étiquette inexacte, pas une exécution fantôme.
+
 ### Tiers VRAM (déterminé par `vram_gb`)
 
 | Tier | VRAM (GB) | Modèles typiques |
@@ -499,6 +547,7 @@ Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](ht
 | `metadata.cost.free_alternative` : valeur ni sentinel canonique ni chemin | MINOR |
 | Notebook QC sans `qc_cloud` validator | MAJOR |
 | Notebook GPU sans `sk_visual` validator (cf #5780 sweep) | MINOR |
+| `metadata.cost.validator` affirme une exécution mais des cellules code portent `execution_count: null` (Litmus 9) | MAJOR |
 
 Ces extensions restent **hors scope c.794** (à dispatcher cycles c.795+) — la grille est volontairement extensible.
 
