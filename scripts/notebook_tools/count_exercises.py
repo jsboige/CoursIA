@@ -240,13 +240,15 @@ def _classify(
 
     # A notebook sitting directly at the top of MyIA.AI.Notebooks/ belongs to no
     # series; every taught series lives in a family directory. `GradeBook.ipynb`
-    # (the grading engine) is the only such file today.
-    if path.is_absolute():
-        try:
-            if len(path.relative_to(NOTEBOOKS_DIR).parts) == 1:
-                return ("tooling", None)
-        except ValueError:
-            pass
+    # (the grading engine) is the only such file today. Gate on the NORMALIZED
+    # `parts` (form-invariant), NOT on `path.is_absolute()`: a relative path --
+    # exactly what `check_pr_exercises.py --stdin` receives from
+    # `git diff --name-only` -- silently skipped the rule, so the PR gate and the
+    # fleet scan returned different verdicts for the same file, and the liar was
+    # the one posing labels (#8835). `parts` (= `_scope_parts`) already resolves
+    # both forms to the identical tuple, so every directory rule must consume it.
+    if len(parts) == 1:
+        return ("tooling", None)
 
     if SETUP_STEM_RE.search(stem) or any(SETUP_DIR_RE.search(p) for p in parts[:-1]):
         return ("setup", KIND_MINIMUM["setup"])

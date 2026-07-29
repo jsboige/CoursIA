@@ -17,6 +17,7 @@ _tools_dir = str(Path(__file__).resolve().parent.parent)
 if _tools_dir not in sys.path:
     sys.path.insert(0, _tools_dir)
 
+import count_exercises
 from count_exercises import (
     OUT_OF_CORPUS_KINDS,
     _classify,
@@ -30,6 +31,7 @@ from count_exercises import (
 
 def _write_nb(path: Path, cells: list[dict]) -> Path:
     """Write a minimal notebook with the given cells to path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     nb = {
         "cells": cells,
         "metadata": {},
@@ -727,8 +729,8 @@ class TestExclusions:
         """`Name_output.ipynb` execution artifacts are excluded to avoid
         double-counting the lab + its papermill output.
         """
-        (tmp_path / "Lab1-Real.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "Lab1-Real_output.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "Lab1-Real.ipynb", [])
+        _write_nb(tmp_path / "Course" / "Lab1-Real_output.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         names = sorted(p.name for p in result)
         assert names == ["Lab1-Real.ipynb"]
@@ -737,7 +739,7 @@ class TestExclusions:
         cp = tmp_path / ".ipynb_checkpoints"
         cp.mkdir()
         (cp / "x-checkpoint.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "y.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "y.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["y.ipynb"]
 
@@ -746,7 +748,7 @@ class TestExclusions:
             sub = tmp_path / d
             sub.mkdir()
             (sub / "skip.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "keep.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "keep.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["keep.ipynb"]
 
@@ -973,7 +975,7 @@ class TestCorpusScope:
         in_legacy_dir = tmp_path / "RDF.Net-Legacy" / "RDF.Net.ipynb"
         assert _classify(in_legacy_dir, standard_threshold=3, root=tmp_path) == ("legacy", None)
 
-        legacy_named = tmp_path / "04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb"
+        legacy_named = tmp_path / "GenAI-Image" / "04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb"
         kind, threshold = _classify(legacy_named, standard_threshold=3, root=tmp_path)
         assert kind == "standard"
         assert threshold == 3
@@ -994,7 +996,7 @@ class TestCorpusScope:
             ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
             ("DecInfer-9-Lean-Gittins", "lean"),
         ]:
-            kind, threshold = _classify(tmp_path / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
+            kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
             assert kind == expect, stem
             assert threshold == 0, f"{stem}: rule exempts this kind, floor must be 0"
 
@@ -1010,13 +1012,13 @@ class TestCorpusScope:
 
     def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
         """`--threshold 5` must not invent an exercise budget for setup/Lean."""
-        assert _classify(tmp_path / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
-        assert _classify(tmp_path / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
-        assert _classify(tmp_path / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
+        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
 
     def test_iter_pedagogical_notebooks_drops_out_of_corpus(self, tmp_path):
         cells = [_md("## Exercice 1"), _code("pass")]
-        _write_nb(tmp_path / "SW-4-Ontologies.ipynb", cells)
+        _write_nb(tmp_path / "Course" / "SW-4-Ontologies.ipynb", cells)
         _write_nb(tmp_path / "research.ipynb", cells)
         _write_nb(tmp_path / "quantbook.ipynb", cells)
         _write_nb(tmp_path / "Workbook-Template.ipynb", cells)
@@ -1032,7 +1034,7 @@ class TestCorpusScope:
         below the floor must still be reported, and `--check` must still exit 1.
         """
         _write_nb(
-            tmp_path / "SW-4-Ontologies.ipynb",
+            tmp_path / "Course" / "SW-4-Ontologies.ipynb",
             [_md("## Exercice 1 : une seule"), _code("# TODO etudiant\npass")],
         )
         targets = iter_pedagogical_notebooks(tmp_path)
@@ -1051,7 +1053,7 @@ class TestCorpusScope:
         reintroduce it one level up.
         """
         cells = [_md("## Exercice 1"), _code("pass")]
-        _write_nb(tmp_path / "SW-4-Ontologies.ipynb", cells)
+        _write_nb(tmp_path / "Course" / "SW-4-Ontologies.ipynb", cells)
         _write_nb(tmp_path / "research.ipynb", cells)
         _write_nb(tmp_path / "quantbook.ipynb", cells)
         _write_nb(tmp_path / "Workbook-Template.ipynb", cells)
@@ -1074,9 +1076,90 @@ class TestCorpusScope:
         """
         hostile = tmp_path / "_worktrees" / "RDF-Legacy-box"
         hostile.mkdir(parents=True)
-        nb = _write_nb(hostile / "SW-4-Ontologies.ipynb", [_md("## Exercice 1"), _code("pass")])
+        nb = _write_nb(hostile / "Course" / "SW-4-Ontologies.ipynb", [_md("## Exercice 1"), _code("pass")])
 
         assert _classify(nb, standard_threshold=3, root=hostile) == ("standard", 3)
         corpus, removed = corpus_scope(hostile)
         assert corpus == [nb]
         assert removed == {}
+
+
+# ---------------------------------------------------------------------------
+# #8835 -- path-form invariance: relative vs absolute must classify identically
+# ---------------------------------------------------------------------------
+class TestPathFormInvariance:
+    """#8835: ``classify_notebook`` must return the SAME verdict for a file
+    whether the path is relative (as ``check_pr_exercises.py --stdin`` receives
+    from ``git diff --name-only``) or absolute (as the ``count_exercises.py``
+    fleet scan passes it). The bug: the top-of-tree rule gated on
+    ``path.is_absolute()`` instead of the normalized ``parts``, so a RELATIVE
+    top-of-tree notebook silently skipped the rule and fell through to
+    ``standard`` -- the PR gate and the fleet scan then disagreed on the same
+    file, and the liar (the PR gate, which poses labels) wrongly flagged the
+    notebook ``exercises-below-threshold``. The fix gates on ``len(parts) == 1``
+    (form-invariant by construction, like every other directory rule).
+
+    What is fixed is the FORM-INVARIANCE, not one corpus line -- hence the
+    parametrization over ``tooling`` / ``setup`` / ``standard`` (acceptance
+    criterion 2). The ``tooling`` case is the discriminating one: on the buggy
+    code it returned ``standard`` for both forms (the relative form skipped the
+    rule, the absolute form failed ``relative_to(NOTEBOOKS_DIR)`` on a tmp file),
+    so the ``assert ... == "tooling"`` failed; on the fix it returns
+    ``tooling`` for both.
+    """
+
+    @pytest.mark.parametrize("rel_inside,expected_kind", [
+        ("GradeBook.ipynb", "tooling"),    # top-of-tree (the #8835 case)
+        ("ML/00-Setup.ipynb", "setup"),    # setup-stem in a family dir
+        ("ML/Lesson.ipynb", "standard"),   # standard in a family dir
+    ])
+    def test_relative_and_absolute_paths_agree(
+        self, tmp_path, monkeypatch, rel_inside, expected_kind
+    ):
+        # A minimal notebooks tree: one file at the root (top-of-tree), one
+        # setup-stem and one standard file inside a family dir.
+        root = tmp_path / "nb_root"
+        (root / "ML").mkdir(parents=True)
+        _write_nb(root / "GradeBook.ipynb", [])
+        _write_nb(root / "ML" / "00-Setup.ipynb", [])
+        _write_nb(root / "ML" / "Lesson.ipynb", [])
+        # chdir so the RELATIVE path resolves under tmp_path (mirrors a worker
+        # whose cwd is the repo root passing ``git diff --name-only`` output).
+        monkeypatch.chdir(tmp_path)
+        # Anchor NOTEBOOKS_DIR at the synthetic root so the OLD top-of-tree
+        # rule (which bypassed `parts` and read NOTEBOOKS_DIR directly) treats
+        # the absolute path as "under NOTEBOOKS_DIR" -- reproducing the reported
+        # divergence (relative -> standard, absolute -> tooling) on buggy code,
+        # so the equality assertion below FAILS there. The fixed rule consumes
+        # `parts` (= _scope_parts with root=), so it is unaffected by this patch.
+        monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
+
+        rel = Path("nb_root") / rel_inside
+        absolute = (root / rel_inside).resolve()
+
+        verdict_rel = _classify(rel, standard_threshold=3, root=root)
+        verdict_abs = _classify(absolute, standard_threshold=3, root=root)
+
+        # The invariant the bug broke: same verdict under either form.
+        assert verdict_rel == verdict_abs, (
+            f"form divergence for {rel_inside!r}: "
+            f"relative={verdict_rel} absolute={verdict_abs}"
+        )
+        # And the expected kind (top-of-tree -> tooling is the #8835 fix).
+        assert verdict_rel[0] == expected_kind, (
+            f"{rel_inside!r}: expected {expected_kind!r}, got {verdict_rel[0]!r}"
+        )
+
+    def test_top_of_tree_is_tooling_under_both_forms(self, tmp_path, monkeypatch):
+        """The exact #8835 reproduction: a top-of-tree notebook classifies as
+        ``tooling`` whether passed relative or absolute -- so neither consumer
+        (fleet scan nor PR gate) can disagree."""
+        root = tmp_path / "nb_root"
+        root.mkdir()
+        _write_nb(root / "GradeBook.ipynb", [])
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
+        rel = Path("nb_root/GradeBook.ipynb")
+        absolute = (root / "GradeBook.ipynb").resolve()
+        assert _classify(rel, standard_threshold=3, root=root) == ("tooling", None)
+        assert _classify(absolute, standard_threshold=3, root=root) == ("tooling", None)
