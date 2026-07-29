@@ -46,24 +46,50 @@ both algorithms agree on canonical small patterns.
 For level-2 inputs, `evolveHashlife` routes through `step4x4` (the
 quadtree base case). For larger inputs, it falls back to `step`. In both
 cases, the result should match `evolve n g`.
+
+### Why `native_decide` (not `decide`) — #8749
+
+These six consistency theorems use `native_decide` out of **structural
+necessity**, not convenience. The Lean kernel cannot prove them with
+`decide`: under `set_option maxRecDepth 100000`, each one fails with
+`reduction got stuck at the Decidable instance` (a compile error, within a
+few seconds) — a *definitive* failure, not a timeout that more reduction
+depth would lift. The reason is that `Grid = List (Int × Int)`: the
+`evolveHashlife`/`evolve` computation (`sortDedup` over `Int × Int`, then
+comparison via the `instDecidableEqList` / `instDecidableEqNat` /
+`Bool.decEq` instances) does not reduce to normal form; the kernel gets
+stuck before reaching `isTrue`/`isFalse`. The statements are TRUE (native
+`#eval` witnesses in section 5): this is precisely the role of
+`native_decide` — evaluate the computation as native code and add the
+result to the trust base rather than re-checking it in the kernel. Verified
+per-theorem for all six declarations in this section (#8749 probe,
+2026-07-29). The escape hatch would be a `Grid = List (Nat × Nat)` refactor
+(`Nat` reduces, `Int` does not); a deep rewrite, out of scope for this
+triage (see #8749 caveat).
 -/
 
-/-- Hashlife and reference agree on `block` after 1 generation. -/
+/-- Hashlife and reference agree on `block` after 1 generation.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
 
-/-- Hashlife and reference agree on `block` after 4 generations. -/
+/-- Hashlife and reference agree on `block` after 4 generations.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
 
-/-- Hashlife and reference agree on `blinker_h` after 2 generations. -/
+/-- Hashlife and reference agree on `blinker_h` after 2 generations.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
 
-/-- Hashlife and reference agree on `glider` after 4 generations. -/
+/-- Hashlife and reference agree on `glider` after 4 generations.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
 
-/-- Hashlife and reference agree on `beacon` after 2 generations. -/
+/-- Hashlife and reference agree on `beacon` after 2 generations.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
 
-/-- Hashlife and reference agree on `toad` after 2 generations. -/
+/-- Hashlife and reference agree on `toad` after 2 generations.
+    `native_decide` required: not reducible by `decide` (see Section 1, #8749). -/
 theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
 
 /-! ## Section 2: Eater 1 (Fishhook) — the simplest computational sink
