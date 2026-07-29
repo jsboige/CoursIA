@@ -71,9 +71,33 @@ WORKFLOWS_DIR = Path(".github/workflows")
 # on `--remove-label` alone -- a workflow that only removes labels cannot orphan
 # one (it cleans up; the danger is the one that sets them). Detection is on raw
 # text (the gh calls live inside shell `run:` blocks, which YAML parses as
-# strings, not structured keys).
+# strings, not structured keys) -- after stripping PURE-COMMENT lines (see
+# ``_strip_comment_lines``), so a workflow that merely DOCUMENTS the convention
+# in a header comment (this very file does) is not miscounted as a label-poser.
 LABEL_CREATE_RE = re.compile(r"gh\s+label\s+create")
 ADD_LABEL_RE = re.compile(r"--add-label\b")
+
+# A pure comment line: first non-whitespace char is `#`. Such a line is a
+# comment in BOTH YAML (workflow header) and shell (a `#` line inside a `run:`
+# block scalar is a shell no-op comment) -- safe to strip before detection in
+# either context. A real command never starts with `#` (echo "# x" starts with
+# `echo`), so stripping cannot remove an active label command.
+_PURE_COMMENT_LINE_RE = re.compile(r"^\s*#")
+
+
+def _strip_comment_lines(text: str) -> str:
+    """Drop pure-comment lines so the label-poser regexes do not match prose.
+
+    Without this, a workflow that DOCUMENTS the convention in its header (e.g.
+    ``# the bot poses a label via gh pr edit --add-label``) is miscounted as a
+    label-poser -- inflating the denominator. This very guard's own workflow
+    file is the case in point: it mentions the patterns in comments but poses no
+    label. Stripping leading-``#`` lines removes that self-count while leaving
+    every active ``run:`` command intact (commands do not start with ``#``).
+    """
+    return "\n".join(
+        ln for ln in text.splitlines() if not _PURE_COMMENT_LINE_RE.match(ln)
+    )
 
 
 @dataclass
@@ -199,8 +223,11 @@ def classify_workflow(repo_root: Path, wf_path: Path) -> WorkflowVerdict:
     rel = wf_path.relative_to(repo_root).as_posix()
     text = wf_path.read_text(encoding="utf-8", errors="replace")
 
+    # Detect label-posing on comment-stripped text: a workflow that only
+    # DOCUMENTS the gh pattern (header comment) must not count as a label-poser.
+    code = _strip_comment_lines(text)
     poses_label = bool(
-        LABEL_CREATE_RE.search(text) or ADD_LABEL_RE.search(text)
+        LABEL_CREATE_RE.search(code) or ADD_LABEL_RE.search(code)
     )
     paths = _extract_paths(text)
     has_paths = paths is not None
@@ -327,7 +354,13 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-    print("\nPASS: every paths-filtered label-poser self-covers its own file.")
+    # Verdict to stderr so stdout is pure data: in --json mode stdout holds ONLY
+    # the JSON document (a trailing PASS line would corrupt `json.loads`); in
+    # human mode stdout holds the report. Either way the verdict is a diagnostic.
+    print(
+        "\nPASS: every paths-filtered label-poser self-covers its own file.",
+        file=sys.stderr,
+    )
     return 0
 
 

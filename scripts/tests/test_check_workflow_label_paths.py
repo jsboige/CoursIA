@@ -174,6 +174,30 @@ class TestNegativeControl:
         assert v.poses_label is True
         assert v.has_paths is False  # not subject to the guard
 
+    def test_documentation_comment_not_counted_as_label_poser(self, tmp_path):
+        """A workflow that only DOCUMENTS the gh pattern in a header comment
+        (no active label command) must NOT be counted as a label-poser. This is
+        the self-referential case: label-paths-guard.yml explains the convention
+        in comments but poses no label -- without comment-stripping the guard
+        would inflate its own denominator (#8822: count precisely)."""
+        body = (
+            "# Issue #8822. A workflow that runs `gh pr edit --add-label` or\n"
+            "# `gh label create` and is filtered by paths must self-cover.\n"
+            "# This guard enforces that.\n"
+            "on:\n  pull_request:\n    branches: [main]\n"
+            "    paths:\n      - '.github/workflows/**'\n"
+            "workflow_dispatch:\n\n"
+            "jobs:\n  x:\n    runs-on: ubuntu-latest\n"
+            "    steps:\n      - run: python scripts/check_x.py\n"
+        )
+        _wf(tmp_path, "selfdoc.yml", body)
+        result = guard.scan(tmp_path)
+        v = result.verdicts[0]
+        # The only mention is in comments -- NOT an active label command.
+        assert v.poses_label is False
+        assert v.has_paths is True
+        assert result.violations == []
+
     def test_paths_filtered_no_label_not_flagged(self, tmp_path):
         """A paths-filtered workflow that poses NO label is not flagged --
         the guard fires only on label AND paths conjointly (#8782: don't fire
@@ -220,6 +244,25 @@ class TestNegativeControl:
         )
         rc = guard.main(["--root", str(tmp_path)])
         assert rc == 0
+
+    def test_json_mode_stdout_is_pure_json(self, tmp_path, capsys):
+        """--json must emit ONLY a JSON document on stdout -- a trailing PASS
+        line would corrupt json.loads. The verdict (PASS/FAIL) goes to stderr."""
+        _wf(
+            tmp_path, "ok.yml",
+            _workflow(
+                paths=["**/*.ipynb", ".github/workflows/ok.yml"],
+                run=_LABEL_RUN,
+            ),
+        )
+        rc = guard.main(["--root", str(tmp_path), "--json"])
+        assert rc == 0
+        captured = capsys.readouterr()
+        # stdout must be valid JSON (no PASS/FAIL contamination).
+        payload = json.loads(captured.out)
+        assert "summary" in payload
+        # The verdict is a stderr diagnostic, not stdout data.
+        assert "PASS" in captured.err
 
 
 # ---------------------------------------------------------------------------
