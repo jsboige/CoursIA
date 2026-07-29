@@ -112,6 +112,15 @@ X.X.
 ..X.
 ..XX
 ```
+
+### Why `native_decide` — #8749
+
+`isStillLife eater1` does not reduce under `decide` (`maxRecDepth 100000`:
+`reduction got stuck at the Decidable instance`, EXIT≠0, seconds). The cause
+is structural — `Grid = List (Int × Int)` (see Section 1 for detail); even
+the simplest case (still life, no evolution) gets stuck. The statement is
+TRUE (native `#eval` above); this is the role of `native_decide`. Verified
+per-theorem (#8749 probe, 2026-07-29).
 -/
 
 /-- The **eater 1** (fishhook), a 7-cell still life. -/
@@ -125,7 +134,8 @@ def eater1 : Grid :=
 #eval s!"step(eater1) = {step eater1}"
 #eval s!"isStillLife eater1 = {isStillLife eater1}"
 
-/-- The eater 1 is a still life. -/
+/-- The eater 1 is a still life. `native_decide` required: not reducible by
+    `decide` (see Section 2, #8749). -/
 theorem eater1_still_life : isStillLife eater1 = true := by native_decide
 
 /-! ## Section 3: Glider composition via multi-period evolution
@@ -137,15 +147,26 @@ glider wires.
 
 We verify for k = 1 (already in Life.lean), k = 2, and k = 3.
 The k = 2 case (8 generations) also verifies via `evolveHashlife`.
+
+### Why `native_decide` — #8749
+
+These three theorems (glider periodicity + hashlife coherence over 8
+generations) do not reduce under `decide` (`maxRecDepth 100000`: each stuck
+at the `Decidable` instance, EXIT≠0, verified per-theorem). Structural cause:
+`Grid = List (Int × Int)` (see Section 1). Statements TRUE (`#eval` section
+5); `native_decide` required.
 -/
 
-/-- After 8 generations (2 periods), the glider has shifted by (2, -2). -/
+/-- After 8 generations (2 periods), the glider has shifted by (2, -2).
+    `native_decide` required: not reducible by `decide` (see Section 3, #8749). -/
 theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by native_decide
 
-/-- After 12 generations (3 periods), the glider has shifted by (3, -3). -/
+/-- After 12 generations (3 periods), the glider has shifted by (3, -3).
+    `native_decide` required: not reducible by `decide` (see Section 3, #8749). -/
 theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by native_decide
 
-/-- Hashlife and reference agree on glider after 8 generations (2 periods). -/
+/-- Hashlife and reference agree on glider after 8 generations (2 periods).
+    `native_decide` required: not reducible by `decide` (see Section 3, #8749). -/
 theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by native_decide
 
 /-! ## Section 4: MacroCell round-trip verification
