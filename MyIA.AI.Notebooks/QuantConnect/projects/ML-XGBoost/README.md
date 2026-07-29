@@ -67,7 +67,7 @@ Le notebook entraîne le modèle GradientBoosting final sur l'ensemble de la pé
 - **bb_position** passe de **winner** dans RandomForest (~0.103) à **perdant** dans XGBoost (~0.018) — momentum/position Bollinger est marginal pour XGBoost, alors que c'était le signal dominant pour RandomForest.
 - **volume_ratio + volume_change** quasi-nuls dans les deux cas — l'information de volume n'est pas exploitable par ces deux modèles sur cet univers.
 
-**Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume plus均匀ément. Pour XGBoost, **les features de VOLATILITÉ dominent**, momentum marginal.
+**Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume plus uniformément. Pour XGBoost, **les features de VOLATILITÉ dominent**, momentum marginal.
 
 **Découverte majeure — XGBoost sous-performe SPY B&H systématiquement** : contrairement à ML-RandomForest où 4 winners sur 5 battent SPY (S=0.778), **ML-XGBoost sous-performe SPY Buy-Hold sur TOUS les sweeps** (S range 0.508-0.593, capital final ~2.1-2.3× vs 2.9× pour SPY). La stratégie XGBoost ML est **négativement valorisée** par rapport au benchmark sur 2018-2026. **L'algo ML XGBoost ne bat pas le simple buy-and-hold** sur la période.
 
