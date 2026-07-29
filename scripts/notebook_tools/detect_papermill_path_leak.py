@@ -246,40 +246,27 @@ def _collect_leaks(
 
 # Directories skipped during recursive scans. Mirrors the conventions in
 # ``scrub_papermill_paths.py`` and the other detectors.
-_SKIP_DIR_NAMES = frozenset({
-    ".git",
-    "_archives",
-    "__pycache__",
-    "node_modules",
-    ".venv",
-    "venv",
-})
+# Marcheur canonique centralise dans notebook_walk (#8650) : SKIP_DIRS canonique
+# (sur-ensemble strict de l'ancien ``_SKIP_DIR_NAMES`` local -- ajoute ``.lake``,
+# ``archive``, ``_archive``, ``foundry-lib``, ``.ipynb_checkpoints``, etc., donc
+# les arborescences vendored/archivees ne sont plus auditees), filtre git
+# tracked_only, et filtre sur le chemin RELATIF a la racine (immunise contre la
+# classe #8858 -- un filtre abs-parts reduit le scan au silence sous un parent
+# nomme ``_archives/`` / ``archive/``).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
 
 
 def iter_notebooks(root: Path) -> list[Path]:
-    """Yield every ``*.ipynb`` under ``root`` recursively, skipping noise dirs."""
+    """Yield every ``*.ipynb`` under ``root`` recursively (single-file passthrough).
+
+    Directory walk delegated to ``notebook_walk.iter_notebooks`` (#8650): canonical
+    SKIP_DIRS + git-tracked filter + RELATIVE-path filtering (#8858-immune).
+    """
     if root.is_file():
         return [root] if root.suffix == ".ipynb" else []
     if not root.is_dir():
         return []
-    out: list[Path] = []
-    for p in root.rglob("*.ipynb"):
-        # #8858-class guard: ``root.rglob`` yields ABSOLUTE paths, so
-        # filtering on ``p.parts`` (absolute components) would match the
-        # repo's own parent if it sits under a SKIP_DIR-name dir (e.g. a
-        # checkout cloned at ``_archives/repo/``). That makes the filter
-        # match EVERY path and silences the whole scan — worse than a
-        # false positive. Filter on the path RELATIVE to ``root`` instead
-        # (the in-repo SKIP_DIRS semantics, same as the single-file mode),
-        # falling back to ``p.parts`` when ``p`` is not under ``root``.
-        try:
-            rel_parts = p.relative_to(root).parts
-        except ValueError:
-            rel_parts = p.parts
-        if any(part in _SKIP_DIR_NAMES for part in rel_parts):
-            continue
-        out.append(p)
-    return sorted(out)
+    return list(_walk_notebooks(root))
 
 
 def scan_notebook(nb_path: Path, *, include_outputs: bool = False) -> list[dict]:
