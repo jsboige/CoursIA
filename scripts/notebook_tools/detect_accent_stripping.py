@@ -64,6 +64,9 @@ import sys
 import unicodedata
 from pathlib import Path
 
+# Marcheur + SKIP_DIRS canonique centralises dans notebook_walk (#8650).
+from notebook_walk import iter_notebooks  # noqa: E402
+
 # --- Dictionnaire cure : forme stripped (sans accent) -> forme accentuee correcte ---
 # CONSERVATEUR : la forme stripped ne doit PAS etre un mot francais valide seul,
 # sinon on genere des faux positifs massifs (le scan #2876 historique etait ~96% FP).
@@ -329,19 +332,18 @@ def scan_notebook(path):
 
 
 def _iter_notebooks(family_filter=None):
-    """Genere les chemins des notebooks pedagogiques (MyIA.AI.Notebooks/**/*.ipynb)."""
+    """Genere les chemins des notebooks pedagogiques (MyIA.AI.Notebooks/**/*.ipynb).
+
+    Delegue au marcheur canonique ``notebook_walk.iter_notebooks`` (#8650) :
+    SKIP_DIRS canonique, filtre git tracked_only, et filtre sur le chemin
+    RELATIF a la racine de scan. Cela immunise contre la classe #8858 (un filtre
+    sur les composants ABSOLUS fait matcher le parent du depot quand celui-ci vit
+    sous un dossier nomme ``_archive/`` / ``archive/`` et reduit le scan au
+    silence -- pire qu'un faux positif). Remplace aussi l'ancienne logique de
+    famille fragile (``nb.parts[1]`` assumait un chemin relatif a 2 composants).
+    """
     root = Path("MyIA.AI.Notebooks")
-    if not root.is_dir():
-        return
-    for nb in sorted(root.rglob("*.ipynb")):
-        # skip checkpoints et archives
-        if ".ipynb_checkpoints" in nb.parts or "_archive" in nb.parts:
-            continue
-        if family_filter is not None:
-            # family = sous-dossier de niveau 1 (ex. Sudoku, ML, Probas)
-            if len(nb.parts) < 2 or nb.parts[1] != family_filter:
-                continue
-        yield nb
+    yield from iter_notebooks(root, family=family_filter)
 
 
 def main(argv=None):

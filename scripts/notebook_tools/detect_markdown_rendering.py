@@ -71,6 +71,9 @@ import re
 import sys
 from pathlib import Path
 
+# Marcheur + SKIP_DIRS canonique centralises dans notebook_walk (#8650).
+from notebook_walk import iter_notebooks  # noqa: E402
+
 # ------------------------------------------------------------------ severities
 ERROR = "error"
 WARN = "warn"
@@ -262,9 +265,14 @@ def gather(root: Path) -> list[dict]:
     if root.is_file() and root.suffix == ".ipynb":
         return scan_notebook(root)
     findings: list[dict] = []
-    for p in sorted(root.rglob("*.ipynb")):
-        if ".ipynb_checkpoints" in p.parts:
-            continue
+    # Delegue au marcheur canonique ``notebook_walk.iter_notebooks`` (#8650) :
+    # SKIP_DIRS canonique + filtre git tracked_only + filtre sur le chemin
+    # RELATIF a la racine. Immunise contre la classe #8858 (l'ancien filtre
+    # ``".ipynb_checkpoints" in p.parts`` sur les composants ABSOLUS faisait
+    # matcher le parent du depot sous un dossier nomme ``_archive/`` /
+    # ``archive/`` et reduisait le scan au silence). Single-file pass-through
+    # preserved above.
+    for p in iter_notebooks(root):
         findings.extend(scan_notebook(p))
     return findings
 
