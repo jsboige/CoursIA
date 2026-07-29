@@ -81,18 +81,55 @@ def test_audit_targets_sorry_bearing_module():
 
 
 def test_audit_allowlists_native_decide_axioms():
-    """The 19 native_decide axioms are acknowledged (decide-kernel proofs);
-    the audit allow-lists them so it reports only a FORBIDDEN axiom as red.
-    The allow-list must be byte-identical to the blocking gate's so the two
-    jobs share one axiom policy (a drift here would silently re-open a gap)."""
+    """The audit allow-lists the native_decide axioms its module ACTUALLY depends
+    on, so it reports only a FORBIDDEN axiom (beyond them) as red. The first CI
+    run of this audit (#8782) revealed HashlifeCorrectness depends on **28**
+    native_decide axioms -- a footprint DISTINCT from the blocking gate's 19-name
+    list (triaged from the showcase modules KochenSpecker/FreeWillTheorem, #8749,
+    a different scope; the two sets have ZERO overlap). The audit audits a
+    different module, so its allow-list is its own (not a copy of the blocking
+    gate's). All 28 are decide-kernel (`._native.native_decide.ax_1_N`)."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
     assert "native_decide" in allow, (
-        "audit must allow-list the 19 native_decide axioms or it false-fails")
-    blocking_allow = jobs["proof-integrity"].get("with", {}).get("allow-axioms", "")
-    assert allow == blocking_allow, (
-        "audit and blocking gate must share the native_decide allow-list")
+        "audit must allow-list the native_decide axioms or it false-fails")
+    # The 28 revealed by the audit's first run -- pin the empirical footprint so
+    # a silent re-shrink (or accidental copy of the blocking gate's 19) is caught.
+    names = [a.strip() for a in allow.split(",") if a.strip()]
+    assert len(names) == 28, (
+        f"audit allow-list must carry the 28 HashlifeCorrectness native_decide "
+        f"axioms (empirical footprint); got {len(names)}")
+    # Sample members from each family revealed by the audit (P4 base cases,
+    # box-assez-grand lemmas, hashlife_correct_implies bridges).
+    for sample in [
+        "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝",
+        "Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4",
+        "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1",
+        "Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1",
+    ]:
+        assert sample in names, (
+            f"audit allow-list missing revealed axiom {sample!r}")
+
+
+def test_audit_allowlist_is_distinct_from_blocking_gate():
+    """The audit audits HashlifeCorrectness; the blocking gate audits the
+    showcase modules. Their native_decide footprints are disjoint (verified by
+    the audit's first CI run: zero overlap). Pinning that they DIFFER prevents
+    a future copy-paste of the blocking gate's 19 into the audit (which would
+    re-open the vert-hors-cible the audit exists to close)."""
+    jobs = _load_jobs()
+    audit_set = {a.strip() for a in
+                 jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "").split(",")
+                 if a.strip()}
+    blocking_set = {a.strip() for a in
+                    jobs["proof-integrity"].get("with", {}).get("allow-axioms", "").split(",")
+                    if a.strip()}
+    assert audit_set != blocking_set, (
+        "audit and blocking gate audit different modules -> their native_decide "
+        "allow-lists must differ (28 HashlifeCorrectness vs 19 showcase)")
+    assert audit_set.isdisjoint(blocking_set) or len(audit_set & blocking_set) <= 2, (
+        "the two native_decide footprints are empirically disjoint")
 
 
 def test_blocking_and_audit_are_complementary():
