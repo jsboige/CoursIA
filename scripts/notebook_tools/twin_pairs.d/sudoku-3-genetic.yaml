@@ -1,0 +1,14 @@
+- name: "Sudoku-3 Genetic"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-29"
+    by: po-2023:CoursIA
+    python_sha: cab27307b9ae093ac7bce95762ede96eb5753c09
+    csharp_sha: 22deefde347abceb07963a9a897a43f28d6228a3
+  known_differences:
+    - "Socle pedagogique commun : algorithme genetique (GA) applique au Sudoku -- population d'individus, selection, crossover, mutation, fonction de fitness (nombre de conflits). Meme concept evolutionnaire, meme cas d'application (resolution/amelioration d'une grille de Sudoku). Les deux exposent les memes primitives : Population, Crossover, Mutation, GeneticAlgorithm."
+    - "Divergence d'implementation : le C# delegue a la lib GeneticSharp (NuGet, expose GeneticAlgorithm/Population/Crossover/Mutation au niveau framework) ; le Python implemente le GA from scratch sur numpy (Population/Crossover/Mutation codes a la main, fitness a base de conflits). Meme paradigme genetique, deux niveaux d'abstraction : framework SOTA cote C# vs reconstruction pedagogique a la main cote Python."
+    - "Idiomes framework : C# = GeneticSharp (Nuget) + System.*, 13 cellules code ; Python = numpy (stdlib), 12 cellules code. Asymetrie attendue (lib dediee vs implmentation didactique), meme enseignement algorithmique sous-jacent."
