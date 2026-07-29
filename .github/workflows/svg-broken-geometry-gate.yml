@@ -98,8 +98,11 @@ jobs:
             # Skip notebooks deleted by the PR.
             [ -f "$nb" ] || continue
             checked=$((checked + 1))
-            out=$(python scripts/notebook_tools/detect_svg_broken_geometry.py "$nb" --check 2>&1)
-            rc=$?
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/detect_svg_broken_geometry.py "$nb" --check 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
               echo "::error title=SVG broken-geometry defect::$nb commits an inline SVG with a negative-dimension element (renders invisible; broken logY/log-scale layout)."
               echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
