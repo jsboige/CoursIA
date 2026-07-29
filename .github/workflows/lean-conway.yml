@@ -114,7 +114,13 @@ jobs:
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-      display-name: conway_lean
+      # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
+      # so it is distinguishable from the blocking proof-integrity job above in the
+      # CI check rollup ("Proof integrity (conway_lean (audit))" vs "(conway_lean)").
+      # Without it a reviewer saw two identical "Proof integrity (conway_lean)" checks
+      # and could not tell which tolerates the 8 acknowledged sorries from which
+      # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
+      display-name: conway_lean (audit)
       target-modules: "Conway.Life.HashlifeCorrectness"
       # allow-axioms: the 28 native_decide axioms that HashlifeCorrectness ACTUALLY
       # depends on (empirical footprint revealed by THIS audit job's first CI run).
