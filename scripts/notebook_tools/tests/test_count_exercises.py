@@ -20,6 +20,7 @@ if _tools_dir not in sys.path:
 from count_exercises import (
     OUT_OF_CORPUS_KINDS,
     _classify,
+    classify_notebook,
     corpus_scope,
     _is_stub_code,
     count_exercises_in_notebook,
@@ -1080,3 +1081,42 @@ class TestCorpusScope:
         corpus, removed = corpus_scope(hostile)
         assert corpus == [nb]
         assert removed == {}
+
+    @pytest.mark.parametrize(
+        "rel_path, expected_kind",
+        [
+            ("GradeBook.ipynb", "tooling"),                # root of NOTEBOOKS_DIR -> the #8835 bug
+            ("Search/SW-4-Ontologies.ipynb", "standard"),  # subdir, taught series
+            ("SymbolicAI/Lean-1-Setup.ipynb", "setup"),    # subdir, rule-exempt kind
+        ],
+    )
+    def test_classify_is_invariant_to_path_form(self, monkeypatch, rel_path, expected_kind):
+        """The same file must classify identically as a relative or absolute path.
+
+        The two #2161 organs disagree otherwise: the fleet `count_exercises.py
+        --check` resolves paths to absolute, while the PR gate
+        `check_pr_exercises.py --stdin` feeds `git diff --name-only` (relative).
+        A classification that flips with path form makes the two contradict, and
+        the liar is the one that writes the label (#8835). Paths are NOTEBOOKS_DIR
+        subpaths (the public `classify_notebook` API, root=None, exactly as the
+        two organs call it) run from the repo root so the relative form resolves
+        under NOTEBOOKS_DIR; the notebooks need not exist on disk because
+        classification is path-only. On the pre-fix code the `tooling` case fails
+        (relative -> `standard`); `setup`/`standard` already held the invariant.
+        """
+        from count_exercises import REPO_ROOT
+
+        monkeypatch.chdir(REPO_ROOT)
+        rel = Path("MyIA.AI.Notebooks") / rel_path
+        abso = rel.resolve()
+        assert not rel.is_absolute() and abso.is_absolute()  # the two forms under test
+        classified_rel = classify_notebook(rel)
+        classified_abs = classify_notebook(abso)
+        assert classified_rel == classified_abs, (
+            f"{rel_path}: relative {classified_rel} != absolute {classified_abs} "
+            f"(path form must not be signal, #8835)"
+        )
+        assert classified_rel[0] == expected_kind, (
+            f"{rel_path}: expected kind {expected_kind!r}, got {classified_rel[0]!r}"
+        )
+

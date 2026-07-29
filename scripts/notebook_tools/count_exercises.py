@@ -240,13 +240,19 @@ def _classify(
 
     # A notebook sitting directly at the top of MyIA.AI.Notebooks/ belongs to no
     # series; every taught series lives in a family directory. `GradeBook.ipynb`
-    # (the grading engine) is the only such file today.
-    if path.is_absolute():
-        try:
-            if len(path.relative_to(NOTEBOOKS_DIR).parts) == 1:
-                return ("tooling", None)
-        except ValueError:
-            pass
+    # (the grading engine) is the only such file today. Computed on the RESOLVED
+    # path relative to NOTEBOOKS_DIR -- `resolve()` is lexical, so a relative
+    # path and its absolute form agree (the fleet `--check` resolves to absolute,
+    # the PR gate feeds `git diff --name-only` relative; both must agree, #8835).
+    # The original `if path.is_absolute()` gate skipped this entirely on a
+    # relative path, silently dropping the file to `standard`. NB: this is the
+    # resolved path, NOT the raw `path.relative_to()` of the bug -- form-invariant
+    # by construction, like `_scope_parts` above.
+    try:
+        if len(path.resolve().relative_to(NOTEBOOKS_DIR.resolve()).parts) == 1:
+            return ("tooling", None)
+    except (ValueError, OSError):
+        pass
 
     if SETUP_STEM_RE.search(stem) or any(SETUP_DIR_RE.search(p) for p in parts[:-1]):
         return ("setup", KIND_MINIMUM["setup"])
