@@ -297,7 +297,13 @@ This is the key theorem that makes it a knot invariant.
 theorem tricolorable_invariant :
     ∀ (d₁ d₂ : KnotDiagram),
       ReidemeisterEquiv d₁ d₂ →
-      IsTricolorable d₁ ↔ IsTricolorable d₂ := by
+        (IsTricolorable d₁ ↔ IsTricolorable d₂) := by
+  -- NB: the inner `↔` MUST be parenthesised. Lean parses `A → B ↔ C` as
+  -- `(A → B) ↔ C` (→ binds tighter than ↔), which would make this an `Iff`
+  -- between a *function type* and a Prop — not the transfer function intended
+  -- here and described in the section docstring above. The parens restore the
+  -- intended shape `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot`
+  -- applies below.
   exact sorry
   -- BLOCKED (forward transfer, Phase 5 PR2). `ReidemeisterStep.r1` was rewired
   -- (Stage 2, #2874) to the GEOMETRICALLY CONNECTED move `Reidemeister1Connected`,
@@ -1029,12 +1035,23 @@ but the unknot doesn't, they are different knots.
 
 theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   intro h
-  -- If trefoil ≈ unknot, then trefoil tricolorable ↔ unknot tricolorable
-  -- But trefoil IS tricolorable and unknot IS NOT → contradiction
-  -- Sketch: have := (tricolorable_invariant trefoilDiagram unknotDiagram h).mp
-  --            trefoil_tricolorable
-  --         exact unknot_not_tricolorable this
-  exact sorry
+  -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
+  -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
+  -- The sketch that was left as `sorry` now type-checks: `tricolorable_invariant`
+  -- exists (sorry-bearing) and the two pieces are proven, so the corollary
+  -- composes them — its soundness rests SOLELY on the invariant's transfer sorry,
+  -- with no independent sorry of its own (standalone-tactic sorry 5 → 4). When
+  -- the Reidemeister transfer lands, this closes with zero rewiring.
+  --
+  -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
+  -- `def`s that delta-reduce on demand to the `KnotDiagram` level
+  -- (`ReidemeisterEquiv`, `IsTricolorable`); the `have` annotations force that
+  -- reduction, re-anchoring `h`/`trefoil_tricolorable`/`unknot_not_tricolorable`
+  -- at the diagram level the invariant speaks of.
+  have hreid : ReidemeisterEquiv trefoilDiagram unknotDiagram := h
+  have htc : IsTricolorable trefoilDiagram := trefoil_tricolorable
+  have hnunk : ¬ IsTricolorable unknotDiagram := unknot_not_tricolorable
+  exact hnunk ((tricolorable_invariant trefoilDiagram unknotDiagram hreid).mp htc)
   -- BLOCKED (Phase 4 update): the natural route (tricolorable_invariant +
   -- trefoil_tricolorable + unknot_not_tricolorable) is gated by
   -- tricolorable_invariant (this file), whose remaining blocker is the transfer
