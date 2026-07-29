@@ -31,6 +31,15 @@ jobs:
       - name: Inspect PR body for Grain tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Ce job n'a pas d'`actions/checkout` (il n'a rien a lire dans l'arbre).
+          # Sans depot git courant, `gh` ne peut pas deduire le repo cible et
+          # TOUTES les commandes `gh pr edit` / `gh label create` ci-dessous
+          # echouent — silencieusement, puisqu'elles sont suffixees `|| true`.
+          # Constat firsthand : depuis le merge de #8765, zero PR labellisee et
+          # les deux labels n'existaient meme pas dans le depot, alors que les
+          # `::warning::` etaient bien emis. GH_REPO restaure ce contexte sans
+          # payer un checkout.
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
@@ -62,10 +71,13 @@ jobs:
 
           if [ -z "$GRAIN_LINE" ]; then
             echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
+            # stderr LAISSE PASSER : `|| true` garde le job non bloquant, mais
+            # masquer la sortie d'erreur est ce qui a rendu la panne invisible.
+            # Un garde dont l'echec est muet n'est pas un garde.
             gh label create "variation-tag-missing" \
               --description "PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" \
-              --color "FBCA04" --force 2>/dev/null || true
-            gh pr edit "$PR_NUMBER" --add-label "variation-tag-missing" 2>/dev/null || true
+              --color "FBCA04" --force || true
+            gh pr edit "$PR_NUMBER" --add-label "variation-tag-missing" || true
             exit 0
           fi
 
@@ -76,6 +88,9 @@ jobs:
             DEEP|MED|LIGHT)
               echo "Tag conforme : TIER=$TIER GENRE=${GENRE:-?}"
               # Le label eventuel d'un push anterieur ne doit pas rester colle.
+              # Ici `2>/dev/null` reste justifie : retirer un label absent est
+              # une erreur ATTENDUE au cas nominal (la PR conforme du premier
+              # coup), pas le symptome d'une panne.
               gh pr edit "$PR_NUMBER" --remove-label "variation-tag-missing" 2>/dev/null || true
               gh pr edit "$PR_NUMBER" --remove-label "variation-tag-malformed" 2>/dev/null || true
               exit 0
@@ -86,6 +101,6 @@ jobs:
           echo "Ligne lue : $GRAIN_LINE"
           gh label create "variation-tag-malformed" \
             --description "Tag Grain present mais TIER != DEEP|MED|LIGHT" \
-            --color "FEF2C0" --force 2>/dev/null || true
-          gh pr edit "$PR_NUMBER" --add-label "variation-tag-malformed" 2>/dev/null || true
+            --color "FEF2C0" --force || true
+          gh pr edit "$PR_NUMBER" --add-label "variation-tag-malformed" || true
           exit 0
