@@ -484,14 +484,23 @@ def main(argv=None) -> int:
                 p = root / p
             if p.suffix not in _SCANNABLE_EXT or not p.exists():
                 continue
-            # #8846: SKIP_DIRS parity with the fleet mode (applied at L374/L140).
-            # A path under a pedagogical archive (docs/archive/**, .lake/,
-            # _output/, ...) is not ours to fix, so a leak there is never
-            # attributed to a PR diff. Without this, --stdin scanned what the
-            # fleet scan skips, so a PR that merely touched docs/archive/**
-            # inherited a cjk-residue label for pre-existing residue it never
-            # introduced (#8829 review follow-up).
-            if any(part in SKIP_DIRS for part in p.parts):
+            # #8846/#8858: SKIP_DIRS parity with the fleet mode (applied at
+            # L374/L140 on the RELATIVE path). The check must operate on the
+            # components RELATIVE TO the repo root, not on `p.parts` -- `p` was
+            # absolutised two lines above (`p = root / p`), so the absolute parts
+            # include the repo's parent directories. If the repo is cloned under a
+            # name that belongs to SKIP_DIRS (`worktrees`, `archive`, ...), every
+            # path matched and the scan returned 0 hit on the ENTIRE diff -- a
+            # total silence worse than #8846's false accusation (#8858). A leak
+            # under a pedagogical archive (docs/archive/**, .lake/, _output/, ...)
+            # is never attributed to a PR diff; the fleet scan skips the same.
+            try:
+                rel_parts = p.relative_to(root).parts
+            except ValueError:
+                # An explicit absolute path outside the repo: fall back to the
+                # current behaviour rather than raise.
+                rel_parts = p.parts
+            if any(part in SKIP_DIRS for part in rel_parts):
                 continue
             results.append(_scan_one(p, root))
     elif args.target:

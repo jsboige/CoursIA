@@ -287,6 +287,32 @@ class TestStdinMode:
         assert out["total_hits"] == 0
         assert out["scanned"] == 0
 
+    # #8858 -- the SKIP_DIRS check must operate on the path RELATIVE to the repo
+    # root, not on the absolute parts. `p` is absolutised (`p = root / p`), so if
+    # the repo itself is cloned UNDER a SKIP_DIRS member (`archive`, `worktrees`,
+    # ...), the absolute parts matched and the --stdin scan returned 0 hit on the
+    # ENTIRE diff -- a total silence worse than #8846's false accusation. Here the
+    # repo root sits under an `archive/` parent; a leaking .md INSIDE the repo
+    # (not under an archive subdir) must still be detected. RED on the unfixed
+    # code (0 hit), GREEN after the fix.
+    def test_stdin_detects_leak_when_repo_under_skipdir_parent(self, tmp_path, monkeypatch, capsys):
+        # The repo root lives UNDER a directory named `archive` (a canonical
+        # SKIP_DIRS member): the parent's name must NOT silence leaks inside.
+        repo = tmp_path / "archive" / "repo"
+        dirty = repo / "leak.md"
+        dirty.parent.mkdir(parents=True)
+        dirty.write_text("# volume plus均匀ément distribue\n", encoding="utf-8")
+        # git diff --name-only emits repo-relative forward-slash paths.
+        monkeypatch.setattr(
+            sys, "stdin",
+            io.StringIO(f"{dirty.relative_to(repo).as_posix()}\n"),
+        )
+        rc = mod.main(["--root", str(repo), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert out["total_hits"] == 1   # the leak INSIDE the repo IS detected
+        assert out["scanned"] == 1
+
 
 # ===========================================================================
 # #8826 -- discriminating guard: CJK soldered into/dropped into Latin = leak;
