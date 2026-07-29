@@ -54,6 +54,14 @@ Pour chaque notebook compare entre sa base git (defaut origin/main) et sa tete
      justifie en review (design #4). Sortie exploitable : fichier / cellule /
      avant-apres / ratio / motifs perdus.
 
+  6. EXEMPT LES NOTEBOOKS NOUVEAUX : un fichier absent a la base (creation)
+     n'a rien a perdre (tout est ajout). On le distingue d'un notebook
+     existant illisible via ``path_exists_at_ref`` (``git cat-file -e``) pour
+     ne pas confondre "nouveau fichier" et "detecteur casse" -- sinon le garde
+     anti-auto-desarmement (#8655/#8662) fail-loud sur toute creation de
+     notebook. Un nouveau fichier renvoie rc=0 (exempt), un fichier existant
+     illisible renvoie toujours rc=2 (fail loud preserve).
+
 Usage
 -----
     # un notebook, diff vs origin/main (head = working tree)
@@ -64,9 +72,11 @@ Usage
 
 Exit codes
 ----------
-    0 -- aucune perte de contenu detectee (ou mode non --check)
+    0 -- aucune perte de contenu detectee (ou mode non --check), y compris un
+         notebook NOUVEAU (absent a la base : rien a comparer -> exempt)
     1 -- une ou plusieurs pertes detectees (--check)
-    2 -- erreur (notebook illisible, ref git introuvable)
+    2 -- erreur (notebook EXISTANT illisible, ref git introuvable). Un notebook
+         absent a la base (nouveau fichier) ne declenche PAS rc=2 : il est exempt.
 
 Voir aussi
 ----------
@@ -176,6 +186,52 @@ def read_notebook_at_ref(nb_path: Path, ref: str) -> dict | None:
         return None
 
 
+def path_exists_at_ref(nb_path: Path, ref: str) -> bool:
+    """True si le chemin existe a ce ref (``git cat-file -e``), False sinon.
+
+    Permet de distinguer un notebook **NOUVEAU** (absent a la base -> il n'y a
+    rien a comparer, on l'exempte) d'un notebook **existant mais illisible**
+    (``read_notebook_at_ref`` renvoie None -> detecteur casse ou ref git
+    manquant -> on le signale en rc=2 pour que le garde anti-auto-desarmement
+    (#8655/#8662) continue de fail loud). Sans cette distinction, toute creation
+    de notebook tripe le garde : un fichier absent a la base est lu comme
+    "unreadable" et fait echouer la CI sur une fausse perte de contenu.
+
+    NB: un ref git **invalide** fait aussi echouer ``cat-file -e`` (sur tous les
+    chemins) ; on valide donc le ref separement via ``ref_resolves`` AVANT
+    d'appeler cette fonction, sinon un BASE casse desarmerait silencieusement le
+    garde (tout semblerait "nouveau").
+    """
+    rel = nb_path.as_posix()
+    try:
+        out = subprocess.run(
+            ["git", "cat-file", "-e", f"{ref}:{rel}"],
+            capture_output=True, check=False,
+        )
+    except (FileNotFoundError, OSError):
+        return False
+    return out.returncode == 0
+
+
+def ref_resolves(ref: str) -> bool:
+    """True si le ref git existe (``git cat-file -e <ref>``), False sinon.
+
+    Garde anti-regression : si le ref de base est invalide (ref manquant,
+    actions/checkout rate), ``path_exists_at_ref`` renverrait False pour tous
+    les chemins et toute la PR semblerait "nouveau fichier" -> rc=0 ->
+    desarmement silencieux du garde #8655/#8662. On valide le ref en amont pour
+    que ce cas reste un rc=2 (fail loud preserve).
+    """
+    try:
+        out = subprocess.run(
+            ["git", "cat-file", "-e", ref],
+            capture_output=True, check=False,
+        )
+    except (FileNotFoundError, OSError):
+        return False
+    return out.returncode == 0
+
+
 def _compare_cells(base_md: list[tuple[int, str]],
                    head_md: list[tuple[int, str]]) -> list[dict]:
     """Compare cellule-par-cellule (INDEX STABLE requis, design #1 #8655).
@@ -244,6 +300,37 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
             return {"notebook": str(nb_path), "error": f"head_ref {head_ref} unreadable"}
         head_label = head_ref
 
+    # Ref de base invalide (ref manquant, checkout rate) = detecteur/ref casse,
+    # PAS un nouveau fichier. On le signale en erreur (rc=2) pour que le garde
+    # anti-auto-desarmement (#8655/#8662) fail loud -- sinon un BASE casse
+    # ferait passer tous les chemins pour "nouveaux" et desarmerait le gate.
+    if not ref_resolves(base_ref):
+        return {"notebook": str(nb_path), "error": f"base_ref {base_ref} introuvable (ref git invalide)"}
+
+    # Notebook NOUVEAU (absent a la base) : rien a perdre (tout est ajout),
+    # donc exempt de content-loss. On retourne un resultat propre (pas
+    # d'erreur, pas de findings) plutot que de laisser read_notebook_at_ref
+    # renvoyer None -> "unreadable" -> declenchement intempestif du garde
+    # anti-auto-desarmement (#8655/#8662) sur toute creation de notebook.
+    if not path_exists_at_ref(nb_path, base_ref):
+        head_md_new = extract_md_cells(nb_head)
+        head_total_new = sum(_norm_len(s) for _, s in head_md_new)
+        return {
+            "notebook": str(nb_path),
+            "base_ref": base_ref,
+            "head_ref": head_label,
+            "new_file": True,
+            "findings": [],
+            "stats": {
+                "base_md_cells": 0,
+                "head_md_cells": len(head_md_new),
+                "cell_count_stable": False,
+                "base_total_normalized_chars": 0,
+                "head_total_normalized_chars": head_total_new,
+                "findings_count": 0,
+            },
+        }
+
     nb_base = read_notebook_at_ref(nb_path, base_ref)
     if nb_base is None:
         return {"notebook": str(nb_path), "error": f"base_ref {base_ref} unreadable"}
@@ -302,6 +389,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[NOTEBOOK] {nb}")
         print(f"[BASE]     {result['base_ref']}")
         print(f"[HEAD]     {result['head_ref']}")
+        if result.get("new_file"):
+            print("[NEW FILE] absent a la base -> exempt de content-loss "
+                  "(rien a perdre, tout est ajout ; #8655/#8662).")
         print(f"[STATS]    md_cells base={st['base_md_cells']} head={st['head_md_cells']} "
               f"stable={st['cell_count_stable']} | "
               f"normalized_chars base={st['base_total_normalized_chars']} "
