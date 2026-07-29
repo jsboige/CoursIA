@@ -92,6 +92,7 @@ from . import cech_obstruction
 from . import signaling_convention
 from . import symbol_invention
 from . import collective_adoption
+from . import inhibited_invention
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -111,4 +112,5 @@ __all__ = [
     "signaling_convention",
     "symbol_invention",
     "collective_adoption",
+    "inhibited_invention",
 ]
