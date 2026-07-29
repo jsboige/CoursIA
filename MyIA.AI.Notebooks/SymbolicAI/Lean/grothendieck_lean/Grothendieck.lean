@@ -8,6 +8,7 @@ import Grothendieck.ConstantSheaf
 import Grothendieck.Construction
 import Grothendieck.CoverageGen
 import Grothendieck.DenseTopology
+import Grothendieck.DirectImage
 import Grothendieck.Equivalences
 import Grothendieck.KanExtensions
 import Grothendieck.LeftExact
