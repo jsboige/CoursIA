@@ -27,6 +27,10 @@ name: Slides Build Advisory
 #      `deck-*.md` as a fallback AND FAILS LOUDLY (exit 1, a META-FAILURE of the
 #      gate itself, NOT advisory) if any tracked deck dir yields zero targets.
 #      A gate that enumerates zero targets is green and mute (#8680, #8782, #8678).
+#      The denominator is falsifiable in BOTH directions: a dir that does NOT
+#      match the NN/SN convention but DOES carry a deck file is caught too
+#      (renaming 01-introduction to intro-01 would otherwise shrink M silently),
+#      and an EMPTY discovery (M=0, e.g. a mass rename) refuses to assert.
 #
 #   2. FAIL-FAST IS A SAMPLE, NOT AN INVENTORY (#8807 trap 2). On S3 and 06,
 #      Rollup stopped at the markup crash BEFORE reaching asset resolution, so
@@ -51,6 +55,13 @@ on:
     branches: [main]
     paths:
       - 'slides/**'
+      # The workflow's own file MUST be in the filter, else the gate can never
+      # run on the PR that wires it (this PR touches .github/, not slides/) AND
+      # a live-control revert would strand the label: after revert, base..head
+      # contains no slides/ change, paths blocks re-run, slides-build-failed
+      # sticks dead (the exact defect on exercises-unparseable / #8820). A gate
+      # filtered by paths that also poses a label must self-cover (#8822).
+      - '.github/workflows/slides-build-advisory.yml'
   workflow_dispatch:
 
 permissions:
@@ -125,6 +136,22 @@ jobs:
             [ -d "$d" ] || continue
             base="$(basename "$d")"
             if ! printf '%s' "$base" | grep -qE '^(S)?[0-9]'; then
+              # SYMMETRIC of trap 1 (ai-01 #8821 review blocage 2): a dir that
+              # does NOT match the convention but DOES carry a deck file is
+              # invisible to discovery. Renaming 01-introduction to intro-01
+              # would silently drop it from M -- 15 OK lines for 16 dirs, the
+              # literal shape of the #8807 incident moved from file-test to
+              # name-test. The denominator must be falsifiable in BOTH
+              # directions, not just the "convention dir with no target" one.
+              # Check existence per-pattern (ls over a non-matching glob passes
+              # the literal and errors on it, masking a real slides.md).
+              has_deck=0
+              [ -f "${d}slides.md" ] && has_deck=1
+              for deck in "${d}"deck-*.md; do [ -f "$deck" ] && has_deck=1; done
+              if [ "$has_deck" -eq 1 ]; then
+                echo "::error::'$d' carries a deck file (slides.md or deck-*.md) but does NOT match the NN/SN convention -- invisible to discovery (#8807 trap 1, symmetrized). Rename the directory to match the convention or move the deck into a convention dir."
+                ZERO_TARGET_DIRS=$((ZERO_TARGET_DIRS + 1))
+              fi
               continue   # infra dir -- not a deck
             fi
             N_DECK_DIRS=$((N_DECK_DIRS + 1))
@@ -149,6 +176,18 @@ jobs:
           echo "Deck dirs tracked (M): $N_DECK_DIRS"
           echo "Build targets discovered (N): ${#TARGETS[@]}"
           printf '  target: %s\n' "${TARGETS[@]}"
+
+          # META-FAILURE (empty discovery, ai-01 #8821 review blocage 2): if
+          # NOTHING matched the convention, the gate measures nothing and must
+          # NOT print "valid" from an empty measure. A mass rename or a
+          # convention change would empty N_DECK_DIRS silently -- the job would
+          # otherwise emit "Discovery sanity above still validates the gate" from
+          # a vacuous inventory (the #8807 defect one notch higher: there the
+          # unmeasured item was one notebook, here it is the whole inventory).
+          if [ "$N_DECK_DIRS" -eq 0 ] || [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "::error::Discovery empty (M=$N_DECK_DIRS decks, N=${#TARGETS[@]} targets) -- the gate measures nothing. Refusing to assert validity from an empty measure (#8807, #8680)."
+            exit 1
+          fi
 
           # META-FAILURE: the gate itself is broken (incomplete discovery), NOT a
           # build failure. This is the one non-advisory exit -- a gate that
