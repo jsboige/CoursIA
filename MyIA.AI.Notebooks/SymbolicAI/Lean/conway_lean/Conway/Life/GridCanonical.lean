@@ -308,5 +308,72 @@ theorem mem_step_iff {g : Grid} {p : Int × Int} :
   unfold step
   rw [mem_sortDedup, List.mem_filter]
 
+/-! ## Commutation de `step` / `evolve` avec la translation
+
+Suite et fin de la chaîne d'invariance par translation : la couche locale
+(`isAlive_shift`, `liveNeighborCount_shift`, `aliveNext_shift` ci-dessus) établit
+que la **règle** B3/S23 est invariante ; cette couche établit que le **pas global**
+`step` puis l'**itération** `evolve` **commutent** avec la translation de grille :
+`shift v (evolve n g) = evolve n (shift v g)`. C'est la machinerie d'alignement
+des points `p ↔ p'` requise par le chemin (A) de #6724 avant d'appliquer
+`evolve_cone_agree` (qui ne conclut qu'en un même point). -/
+
+/-- Appartenance à une grille translatée : `p ∈ shift v g ↔ (p.1-v.1, p.2-v.2) ∈ g`. -/
+theorem mem_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
+    p ∈ shift v g ↔ (p.1 - v.1, p.2 - v.2) ∈ g := by
+  simp [shift, List.mem_map, mem_sortDedup]
+  constructor
+  · rintro ⟨a, b, hg, hp⟩
+    have hp' : a + v.1 = p.1 ∧ b + v.2 = p.2 := Prod.ext_iff.mp hp
+    have heq : (a, b) = (p.1 - v.1, p.2 - v.2) := by rw [Prod.ext_iff]; omega
+    rw [← heq]; exact hg
+  · intro h
+    refine ⟨p.1 - v.1, p.2 - v.2, h, ?_⟩
+    rw [Prod.ext_iff]; omega
+
+/-- Les voisins de Moore sont relatifs : `p ∈ mooreNeighbors a` équivaut à
+    `(p - v) ∈ mooreNeighbors (a - v)` (le voisinage translated coïncide). -/
+theorem mooreNeighbors_shift_mem (v a p : Int × Int) :
+    p ∈ mooreNeighbors a ↔ (p.1 - v.1, p.2 - v.2) ∈ mooreNeighbors (a.1 - v.1, a.2 - v.2) := by
+  simp [mooreNeighbors, Prod.ext_iff, Prod.eta]
+  omega
+
+/-- L'ensemble candidat est invariant par translation de la grille. -/
+theorem candidates_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
+    p ∈ candidates (shift v g) ↔ (p.1 - v.1, p.2 - v.2) ∈ candidates g := by
+  simp [candidates, mem_shift, mooreNeighbors_shift_mem, Prod.ext_iff]
+  constructor
+  · rintro (h | ⟨a, b, hg, hm⟩)
+    · exact Or.inl h
+    · refine Or.inr ⟨a - v.1, b - v.2, hg, (mooreNeighbors_shift_mem v (a, b) p).mp hm⟩
+  · rintro (h | ⟨a, b, hg, hm⟩)
+    · exact Or.inl h
+    · refine Or.inr ⟨a + v.1, b + v.2, ?_, ?_⟩
+      · have heq : (a + v.1 - v.1, b + v.2 - v.2) = (a, b) := by rw [Prod.ext_iff]; omega
+        rw [heq]; exact hg
+      · have heq : ((a + v.1) - v.1, (b + v.2) - v.2) = (a, b) := by rw [Prod.ext_iff]; omega
+        have hm' : (p.1 - v.1, p.2 - v.2) ∈ mooreNeighbors ((a + v.1) - v.1, (b + v.2) - v.2) := by
+          rw [heq]; exact hm
+        exact (mooreNeighbors_shift_mem v (a + v.1, b + v.2) p).mpr hm'
+
+/-- `step` commute avec la translation : `shift v (step g) = step (shift v g)`. -/
+theorem step_shift (v : Int × Int) (g : Grid) : shift v (step g) = step (shift v g) := by
+  apply Canonical.ext
+  · exact canonical_shift v (step g)
+  · exact canonical_step (shift v g)
+  · intro p
+    rw [mem_shift, mem_step_iff, mem_step_iff, aliveNext_shift]
+    constructor
+    · rintro ⟨hc, ha⟩; exact ⟨(candidates_shift v g p).mpr hc, ha⟩
+    · rintro ⟨hc, ha⟩; exact ⟨(candidates_shift v g p).mp hc, ha⟩
+
+/-- `evolve` commute avec la translation :
+    `shift v (evolve n g) = evolve n (shift v g)` (par induction sur `n`). -/
+theorem evolve_shift (v : Int × Int) (n : Nat) (g : Grid) :
+    shift v (evolve n g) = evolve n (shift v g) := by
+  induction n with
+  | zero => simp [evolve]
+  | succ k ih => rw [evolve_succ, step_shift, ih, ← evolve_succ]
+
 end Life
 end Conway
