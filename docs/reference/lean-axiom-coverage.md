@@ -83,6 +83,33 @@ Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1
 Conway.Life.glider_2periods._native.native_decide.ax_1_1
 ```
 
+### 3.1.a. Refactor attempt — `Grid = List (Nat × Nat)` (issue #8869, c.954)
+
+**Issue de référence** : [#8869](https://github.com/jsboige/CoursIA/issues/8869) (successeur de #8749, ouvert par ai-01 au moment de fermer ce dernier pour ne pas perdre l'objectif de fond).
+**Cycle-id de production** : c.954 (worker po-2023, lane `myia-po-2023:CoursIA-2`).
+**Statut au cycle c.954** : **critère #1 livré** (commentaire GitHub sur #8869, https://github.com/jsboige/CoursIA/issues/8869#issuecomment-5122261512, 2026-07-29T18:58:51Z). Critères #2-#5 différés (nécessitent env `lake build` fonctionnel sur `conway_lean`, corrompu au moment du diagnostic c.949).
+
+**Cause racine (mesurée po-2026, dossier #8749)** : `Grid = List (Int × Int)`. `Int` ne se réduit pas sous `decide` ; `Nat` si. Le noyau reste bloqué avant d'atteindre `isTrue`/`isFalse`, `maxRecDepth` explose. Deux mesures versées au dossier :
+- `hashlife_block_1` + `decide` + `maxRecDepth 100000` → >14 min sans terminer
+- membre droit remplacé par constante littérale → échec en ~18s (« reduction got stuck »)
+
+La seconde localise l'obstruction : ce n'est pas la taille du calcul, c'est que `evolveHashlife 1 block` ne se réduit pas en constructeur de liste sous le noyau, alors que la compilation native le calcule sans peine.
+
+**Trois options du ticket** + une quatrième :
+
+| Option | Résumé | Blast radius | Verdict c.954 |
+|---|---|---|---|
+| **1 — Origine décalée** | `Grid = List (Nat × Nat)` + convention d'origine + `shift` modulo bounding-box | Tout `Conway.Life.MacroCell` + Section 3 (périodicité) | **REJET** (portée des énoncés silencieusement restreinte : glider qui franchit l'origine, `glider_2periods : evolve 8 glider = shift (2, -2) glider` perd sa représentation en `Nat × Nat`) |
+| **2 — Type dédié + `DecidableEq` manuelle** | Garder `Grid = List (Int × Int)`, ajouter instance `DecidableEq (Int × Int)` écrite à la main, scopée au namespace `Conway.Life` | 1 instance locale + 6 occurrences `native_decide` → `decide` | **RECOMMANDÉ** (signatures byte-identiques, énoncés byte-identiques, blast radius confiné à `Conway.Life.Computation`) |
+| **3 — Translation-invariant** | Réécrire les 19 énoncés avec relation `~` modulo translation | 19 théorèmes à re-prouver + refonte de `MacroCell` | **REJET** (chantier, pas une issue ; violerait [anti-regression.md](../../.claude/rules/anti-regression.md) — énoncés VRAIS et PROUVÉS, on ne les reformule pas) |
+| **4 — Option 2 + lemmes de fold sur `sortDedup`** | Conjoint à Option 2 : lemmes explicites `sortDedup [a,b,c] = ...` pour les arités 2-9 des motifs Conway | Phase 1 + 5-10 lemmes | **PLAN B** (si Phase 1 ne suffit pas — `sortDedup` non-réductible même après `DecidableEq` manuelle) |
+
+**Recommandation c.954 (livrée par commentaire #8869, 2026-07-29)** : Phase 1 = Option 2 (instance `DecidableEq` manuelle, blast radius minimal, énoncés préservés verbatim). Phase 2 = Option 4 si `lake build` échoue sur `sortDedup` non-réductible.
+
+**Critère #5 (sortie INTRINSIC assumée)** : si `lake build` échoue après Option 2 + Option 4 combinées, la whitelist de 19 reste INTRINSIC (assumée, pas dette latente). Issue #8869 se ferme alors avec verdict mesuré, et la whitelist devient un plafond documenté plutôt qu'un objectif de réduction.
+
+**Statut whitelist après c.954** : inchangée. Les 19 noms explicites du commit `84eef8c76` (PR #8746 v2, c.951 MERGED) couvrent toujours les 19 occurrences actuelles. Une baisse éventuelle se fera par sous-grains successifs (1 nom retiré à la fois, après mesure `lake build` SUCCESS + `proof-integrity` vert sur le retrait), pas en une seule PR composite.
+
 ### 3.2. GREEN — `knot_lean` (post-#8725)
 
 Le gate `proof-integrity` est **déjà câblé** sur `knot_lean` (`lean-knot.yml` → `lean-axiom.yml`). Les 4 occurrences de `native_decide` sont toutes des **mentions docstring** dans `Knots/Invariant.lean` (lignes 92, 1046, 1051, 1053) — l'avertissement pédagogique « ne pas utiliser `native_decide` ici » qui a remplacé l'ancien usage par la preuve constructive `by decide` sur la fonction caractéristique `#is_tricolorable`. Le retrait a été livré via PR #8725 (po-2026), MERGED `2127f8c36` (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) §« Mesure firsthand (ai-01, c.37) »).
