@@ -3002,6 +3002,19 @@ private theorem p4_nw_g3_bridge
   --       `p' = p - 2^(k-1)` (NW correspondence), so the locality step needs the
   --       point-shift alignment between the parent's central window and the
   --       supercell `(node R1 R2 R4 R5)`'s shifted origin.
+  --
+  -- **Extraction-test caveat** (ai-01 #8766 review): the `exact p4_nw_g3_bridge
+  --   ...` at the call site (`p4_nw_supercell_agree`, below) proves the bridge is
+  --   SUFFICIENT to close the root goal — the compiler re-checks this each build,
+  --   so it IS the faithful-extraction test (#8763). It does NOT prove the bridge
+  --   is SATISFIABLE (provable): an over-general or under-hypothesized statement
+  --   passes `exact` and remains a dead-end. The `R_j.level = k` hypotheses
+  --   (added #8768) are load-bearing precisely here — drop them and the offsets
+  --   `2^R_j.level` in `mem_toGrid_node` stay opaque, leaving the bridge
+  --   under-hypothesized (the c.19 trap: a statement that type-checks at the call
+  --   site but cannot be proven). With them, the bridge is correctly-stated
+  --   (offsets pinned to `2^k`); it is still UNPROVEN — the (a) overlap wall
+  --   above is the obstruction, not a malformed statement.
   rw [evolve_half_step k hk1]
   sorry
 
