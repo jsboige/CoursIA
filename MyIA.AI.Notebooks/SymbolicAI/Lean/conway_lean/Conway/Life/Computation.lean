@@ -177,19 +177,31 @@ Verification structurelle : l'aller-retour `Grid → MacroCell → Grid`
 preserve les cellules vivantes pour les patterns canoniques. Cela verifie
 l'encodage/decodage du quadtree a la couche MacroCell (independamment de
 step/evolve).
+
+### Pourquoi `native_decide` — #8749
+
+Ces trois theoremes d'aller-retour ne se reduisent pas sous `decide`
+(`maxRecDepth 100000` : chacun stuck a l'instance `Decidable`, EXIT≠0,
+verifie par-theoreme). Cause structurelle `Grid = List (Int × Int)` (voir
+Section 1). L'egalite `mc.toGrid off == block` mobilise la meme instance
+`instDecidableEqList` non-reductible. Enonces VRAIS (`#eval` section 5) ;
+`native_decide` requis.
 -/
 
-/-- Le block survive a l'aller-retour MacroCell. -/
+/-- Le block survive a l'aller-retour MacroCell. `native_decide` requis :
+    non-reductible sous `decide` (voir Section 4, #8749). -/
 theorem block_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset block
      mc.toGrid off == block) = true := by native_decide
 
-/-- Le glider survive a l'aller-retour MacroCell. -/
+/-- Le glider survive a l'aller-retour MacroCell. `native_decide` requis :
+    non-reductible sous `decide` (voir Section 4, #8749). -/
 theorem glider_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset glider
      mc.toGrid off == glider) = true := by native_decide
 
-/-- L'eater 1 survive a l'aller-retour MacroCell. -/
+/-- L'eater 1 survive a l'aller-retour MacroCell. `native_decide` requis :
+    non-reductible sous `decide` (voir Section 4, #8749). -/
 theorem eater1_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset eater1
      mc.toGrid off == eater1) = true := by native_decide
@@ -225,25 +237,42 @@ def glider_meets_eater : Grid :=
 `evolveHashlifeFast` utilise l'algorithme recursif Hashlife pour avancer
 de `2^level` generations en une seule etape MacroCell. Ces theoremes
 verifient la correction du chemin rapide face a la reference `evolve` pour
-les patterns canoniques. -/
+les patterns canoniques.
 
-/-- `evolveHashlifeFast` coincide avec la reference sur `block` apres 4 generations. -/
+### Pourquoi `native_decide` — #8749
+
+Ces six theoremes (chemin rapide `evolveHashlifeFast` vs reference) ne se
+reduisent pas sous `decide` (`maxRecDepth 100000` : chacun stuck aux
+instances `instDecidableEqBool`/`instDecidableEqList`/`instDecidableEqNat`/
+`Nat.decLe`, EXIT≠0, verifie par-theoreme). Cause structurelle
+`Grid = List (Int × Int)` (voir Section 1) ; le chemin rapide mobilise la
+meme arithmetique `Int`/liste non-reductible que `evolveHashlife`. Enonces
+VRAIS (`#eval` section 5) ; `native_decide` requis.
+-/
+
+/-- `evolveHashlifeFast` coincide avec la reference sur `block` apres 4 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
 
-/-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 4 generations. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 4 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 8 generations
-    (2 periodes completes, deplacement (2, -2)). -/
+    (2 periodes completes, deplacement (2, -2)). `native_decide` requis : non-reductible
+    sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
 
-/-- `evolveHashlifeFast` coincide avec la reference sur `blinker` apres 2 generations. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `blinker` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
 
-/-- `evolveHashlifeFast` coincide avec la reference sur `beacon` apres 2 generations. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `beacon` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
 
-/-- `evolveHashlifeFast` coincide avec la reference sur `toad` apres 2 generations. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `toad` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
 theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
 
 -- temoins #eval pour les sauts plus grands (valide le chemin recursif)
