@@ -2435,9 +2435,11 @@ theorem centralCorrect_mem (c : MacroCell) (j : Nat) (p : Int × Int)
 
     Pure composition of `centralCorrect_mem` (G2 congruence, c.153) and
     `toGrid_shift_between` (#4797, the double-shift ingredient) — sorry-free gate
-    ingredient. The residual research heart (sorry 4→3) is `evolve_half_step`,
-    which consumes this gate to connect the induction hypothesis
-    `centralCorrect q_* (k-1)` to the four quadrant offsets at once. -/
+    ingredient. `evolve_half_step` (proven sorry-free) consumes this gate to fold
+    the half-step `2^k = 2^(k-1) ∘ 2^(k-1)`; the residual research heart is the
+    **G3 wave-assembly** — how `(hashlifeResultAux (k+2) parent)` decomposes into
+    the four `(hashlifeResultAux (k+1) q_j)` sub-results at the quadrant offsets —
+    carried by the `sorry` of `p4_nw_supercell_agree` (the NW supercell root). -/
 theorem centralCorrect_mem_shift (c : MacroCell) (j : Nat) (a b : Int) (p : Int × Int)
     (h : centralCorrect c j) :
     p ∈ (hashlifeResultAux (j + 2) c).toGrid (a, b) ↔
