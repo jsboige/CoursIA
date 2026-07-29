@@ -287,6 +287,30 @@ class TestStdinMode:
         assert out["total_hits"] == 0
         assert out["scanned"] == 0
 
+    def test_stdin_skipdirs_uses_repo_relative_not_absolute(self, tmp_path, monkeypatch, capsys):
+        # #8858: the --stdin SKIP_DIRS filter must test REPO-RELATIVE parts,
+        # not the absolute path. If the repo is cloned under a directory whose
+        # name is a SKIP_DIRS member (archive/_output/worktrees/...), testing the
+        # absolute path matches EVERY file and silences the whole scan (0 hit on
+        # a leaking diff) -- the inverse defect of #8846, and worse for an
+        # advisory organ (total silence is indistinguishable from a clean repo).
+        # Build a repo whose OWN root sits under a dir named `archive`.
+        repo_root = tmp_path / "archive" / "repo"
+        repo_root.mkdir(parents=True)
+        leaking = repo_root / "doc.md"
+        leaking.write_text("# a real均匀ément leak inside the repo\n", encoding="utf-8")
+        # The leak lives at the repo root (no archive/ component relative to it).
+        monkeypatch.setattr(
+            sys, "stdin",
+            io.StringIO(f"{leaking.relative_to(repo_root).as_posix()}\n"),
+        )
+        rc = mod.main(["--root", str(repo_root), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert out["total_hits"] == 1, (
+            "#8858: a leak under a repo cloned in an `archive`/ dir must STILL be "
+            "detected -- SKIP_DIRS must filter repo-relative, not absolute, parts")
+        assert out["scanned"] == 1
+
 
 # ===========================================================================
 # #8826 -- discriminating guard: CJK soldered into/dropped into Latin = leak;

@@ -491,7 +491,21 @@ def main(argv=None) -> int:
             # fleet scan skips, so a PR that merely touched docs/archive/**
             # inherited a cjk-residue label for pre-existing residue it never
             # introduced (#8829 review follow-up).
-            if any(part in SKIP_DIRS for part in p.parts):
+            #
+            # #8858: SKIP_DIRS must filter REPO-RELATIVE parts, not the absolute
+            # path (p was absolutised above as `root / p`). The fleet mode
+            # (L374) gets relative parts from `git ls-files`; --stdin must do the
+            # same via p.relative_to(root), else a repo cloned under a dir whose
+            # name is a SKIP_DIRS member (archive/_output/worktrees/...) matches
+            # EVERY file and silences the whole scan -- the inverse defect of
+            # #8846, worse for an advisory organ (total silence ~= clean repo).
+            try:
+                rel_parts = p.relative_to(root).parts
+            except ValueError:
+                # Path outside the repo root (named-absolute on --stdin): fall
+                # back to absolute parts rather than raise.
+                rel_parts = p.parts
+            if any(part in SKIP_DIRS for part in rel_parts):
                 continue
             results.append(_scan_one(p, root))
     elif args.target:
