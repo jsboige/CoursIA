@@ -47,24 +47,50 @@ canoniques.
 Pour les entrees de niveau 2, `evolveHashlife` passe par `step4x4` (le cas
 de base du quadtree). Pour les entrees plus grandes, il retombe sur `step`.
 Dans les deux cas, le resultat doit coincider avec `evolve n g`.
+
+### Pourquoi `native_decide` (et non `decide`) — #8749
+
+Ces six theoremes d'equivalence utilisent `native_decide` par **necessite
+structurelle**, non par commodite. Le noyau Lean ne peut pas les prouver par
+`decide` : avec `set_option maxRecDepth 100000`, chacun echoue par
+`reduction got stuck at the Decidable instance` (compilation en erreur,
+en quelques secondes) — un echec *definitif*, pas un depassement de temps
+que davantage de profondeur de reduction leverait. La cause est que
+`Grid = List (Int × Int)` : le calcul de `evolveHashlife`/`evolve` (tri
+`sortDedup` sur des `Int × Int`, puis comparaison par les instances
+`instDecidableEqList` / `instDecidableEqNat` / `Bool.decEq`) ne se reduit
+pas en forme normale, le noyau reste bloque avant d'atteindre
+`isTrue`/`isFalse`. Les enonces sont VRAIS (temoins `#eval` natifs en
+section 5) : c'est exactement le role de `native_decide` — evaluer le calcul
+en code natif et ajouter le resultat a la base de confiance plutot que de
+le reverifier dans le noyau. Verifie par-theoreme pour les six declarations
+de cette section (sondage #8749, 2026-07-29). L'echappatoire serait un
+refactor `Grid = List (Nat × Nat)` (Nat est reductible, Int ne l'est pas) ;
+refonte profonde, hors scope de ce triage (voir #8749 caveat).
 -/
 
-/-- Hashlife et reference sont d'accord sur `block` apres 1 generation. -/
+/-- Hashlife et reference sont d'accord sur `block` apres 1 generation.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
 
-/-- Hashlife et reference sont d'accord sur `block` apres 4 generations. -/
+/-- Hashlife et reference sont d'accord sur `block` apres 4 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
 
-/-- Hashlife et reference sont d'accord sur `blinker_h` apres 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `blinker_h` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
 
-/-- Hashlife et reference sont d'accord sur `glider` apres 4 generations. -/
+/-- Hashlife et reference sont d'accord sur `glider` apres 4 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
 
-/-- Hashlife et reference sont d'accord sur `beacon` apres 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `beacon` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
 
-/-- Hashlife et reference sont d'accord sur `toad` apres 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `toad` apres 2 generations.
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
 theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
 
 /-! ## Section 2 : Eater 1 (Fishhook) — le puits de calcul le plus simple
