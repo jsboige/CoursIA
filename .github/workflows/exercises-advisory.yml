@@ -72,7 +72,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
-          LABEL: exercises-below-threshold
+          LABEL_BELOW: exercises-below-threshold
+          LABEL_UNPARSEABLE: exercises-unparseable
         run: |
           set -uo pipefail
 
@@ -83,34 +84,80 @@ jobs:
           COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
           echo "Modified *.ipynb in this PR: $COUNT"
 
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
           if [ "$COUNT" -eq 0 ]; then
             echo "No modified notebooks to check."
-            # A label from an earlier push is stale here, but since `paths`
-            # scopes this job to *.ipynb changes, this branch is rare; still,
-            # a clean removal keeps the signal trustworthy.
-            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            unset_label "$LABEL_BELOW"; unset_label "$LABEL_UNPARSEABLE"
             exit 0
           fi
 
-          # Advisory: ALWAYS exit 0. We capture the JSON payload to decide the
-          # label, but the job itself never fails on a sub-threshold notebook.
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
           python scripts/notebook_tools/check_pr_exercises.py --json --stdin \
             < changed_ipynb.txt > payload.json
           cat payload.json
 
-          SUB=$(python -c "import json; print(json.load(open('payload.json'))['summary']['sub_threshold'])")
-          echo "Sub-threshold notebooks: $SUB"
+          SUB=$(python -c "import json; print(json.load(open('payload.json'))['summary']['below_threshold'])")
+          PARSE=$(python -c "import json; print(json.load(open('payload.json'))['summary']['unverified'])")
+          echo "Below-threshold notebooks: $SUB"
+          echo "Unverified (parse errors): $PARSE"
+
+          # Issue #8819: TWO distinct labels. "Could not measure" (unparseable)
+          # and "measured, below threshold" call for different reactions, so they
+          # never collapse into one. Each label is raised when its count > 0 and
+          # cleared otherwise (a stale label from an earlier push must not stick).
+          ensure_label "$LABEL_BELOW" \
+            "A modified notebook is below the >=3 exercises convention (#2161)" "D93F0B"
+          ensure_label "$LABEL_UNPARSEABLE" \
+            "A modified notebook could not be parsed -- NOT verified (#8819)" "BFD4F2"
+
+          # Review #8820 (Blocage 3): if check_pr_exercises.py died (truncated
+          # JSON, ImportError, OOM), payload.json is unreadable, the two
+          # python -c above fail, and SUB/PARSE are not integers. With only
+          # `set -uo pipefail` (no -e), each `[ "" -gt 0 ]` below exits rc=2 --
+          # which falls into the else branch, UNSETS both labels, and asserts
+          # verified conformity on a measurement that never happened. That is
+          # this PR's own defect (#8819) one layer down: #8816 said "all meet
+          # threshold" when ONE notebook was unreadable; this branch would say
+          # "all meet threshold (verified)" when NOTHING was read. `[ "$x" -eq
+          # "$x" ]` succeeds only for an integer, so its negation is true when
+          # the payload is illisible. NOT measured => NOT verified: pose the
+          # unparseable label and a loud ::error::, never a green claim.
+          if ! [ "${SUB:-}" -eq "${SUB:-}" ] 2>/dev/null \
+             || ! [ "${PARSE:-}" -eq "${PARSE:-}" ] 2>/dev/null; then
+            echo "::error::exercises payload illisible (check_pr_exercises.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNPARSEABLE"
+            exit 0
+          fi
 
           if [ "$SUB" -gt 0 ]; then
-            echo "::notice::$SUB modified notebook(s) below the >=3 exercises convention (#2161). See the '$LABEL' label for the list."
-            gh label create "$LABEL" \
-              --description "A modified notebook is below the >=3 exercises convention (#2161)" \
-              --color "D93F0B" --force 2>/dev/null || true
-            gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+            echo "::notice::$SUB modified notebook(s) below the >=3 exercises convention (#2161). See the '$LABEL_BELOW' label."
+            set_label "$LABEL_BELOW"
           else
-            echo "All modified notebooks meet their threshold."
-            # Removing an absent label is an EXPECTED error at the nominal
-            # (already-conforming) case -- stderr suppressed here, not stdout.
-            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            unset_label "$LABEL_BELOW"
+          fi
+
+          if [ "$PARSE" -gt 0 ]; then
+            echo "::warning::$PARSE modified notebook(s) could not be parsed -- NOT verified by the exercises gate (#8819). See the '$LABEL_UNPARSEABLE' label."
+            set_label "$LABEL_UNPARSEABLE"
+          else
+            unset_label "$LABEL_UNPARSEABLE"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unverified > 0 -- that was the
+          # original defect (a gate that reassures while the true state sleeps).
+          if [ "$PARSE" -gt 0 ]; then
+            echo "RESULT: $PARSE notebook(s) NOT verified (parse error) -- conformity neither claimed nor denied."
+          elif [ "$SUB" -gt 0 ]; then
+            echo "RESULT: $SUB notebook(s) below threshold -- labelled."
+          else
+            echo "RESULT: all in-corpus modified notebooks meet their threshold (verified)."
           fi
           exit 0
