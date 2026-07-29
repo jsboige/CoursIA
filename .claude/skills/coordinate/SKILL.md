@@ -36,7 +36,8 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 Pour chaque PR ouverte, dans l'ordre d'anciennete :
 
 1. Lire body + comments + reviews + diff (regle HARD "Read Body Before Any Action", `~/.claude/CLAUDE.md` global).
-2. Verifier l'etat A L'INSTANT-T : `gh pr view N --json state,mergedAt,mergeStateStatus` (jamais depuis le dashboard ou le cycle N-1 — lecon phantom-steer #5563).
+2. Verifier l'etat A L'INSTANT-T : `gh pr view N --json state,mergedAt,mergeStateStatus,reviews` (jamais depuis le dashboard ou le cycle N-1 — lecon phantom-steer #5563).
+   **`mergeStateStatus` ne dit RIEN de l'etat des reviews** : `reviews[].state` est un champ **separe**, et `CLEAN` coexiste parfaitement avec un `CHANGES_REQUESTED` non leve (le global `~/.claude/CLAUDE.md` l'exige deja : « le `mergeStateStatus` seul n'est pas une review »). Un `CHANGES_REQUESTED` non suivi d'un commit **ou** d'un commentaire de levee = **ne pas merger** — y compris quand la review est la sienne, qui ne s'auto-leve pas par ecoulement du temps (incident #8821).
 3. Gates : H.4 (notebooks : checkout + Papermill local OU log dans le body), catalogue byte-identique a main (`gh pr view N --json files` — lecon stale-catalog), scope reel = titre, criteres [pr-review-discipline](../../rules/pr-review-discipline.md).
 4. Merge : compte `jsboige` (defaut, seul compte avec MergePullRequest), `--squash` par defaut, `--merge` (preserve-SHA) pour la base d'un stack, **JAMAIS `--delete-branch`**.
 
