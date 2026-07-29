@@ -1,4 +1,4 @@
-"""Valence APPRISE, transferable, distincte de la prediction — la «经验 manquante» #7740.
+"""Valence APPRISE, transferable, distincte de la prediction — la «expérience manquante» #7740.
 
 Contexte
 --------
