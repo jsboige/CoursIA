@@ -86,6 +86,7 @@ from . import sensitivity
 from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
+from . import inhibited_action
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -99,4 +100,5 @@ __all__ = [
     "spectral", "sensitivity", "meta_proxy",
     "reversibility_budget",
     "argumentation",
+    "inhibited_action",
 ]
