@@ -76,6 +76,16 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Pillow is REQUIRED, not optional. `_has_min_colors` in the detector
+      # opens the raster to count distinct colours; without PIL it swallows the
+      # ImportError and returns None, which silently disables the content
+      # escape hatch of #8634 and falls back to the size-only rule. The gate
+      # then flags legitimate small-but-colour-rich figures (pixel-art, the
+      # 24x16 cross-stitch grid #8634 was filed for) as degenerate. Absent this
+      # install the #8634 fix is inoperative in the one place it matters.
+      - name: Install detector dependencies
+        run: python -m pip install --quiet Pillow
+
       - name: Gate changed notebooks
         run: |
           set -uo pipefail
@@ -100,8 +110,17 @@ jobs:
             # Skip notebooks deleted by the PR.
             [ -f "$nb" ] || continue
             checked=$((checked + 1))
-            out=$(python scripts/notebook_tools/detect_blank_figures.py --check "$nb" 2>&1)
-            rc=$?
+            # The `&& rc=0 || rc=$?` tail is load-bearing. The step runs under
+            # `bash -e`, where a bare `out=$(cmd)` that exits non-zero aborts
+            # the whole step IMMEDIATELY -- before `rc=$?` is read -- making the
+            # rc=1 / rc=2 branches below unreachable dead code. A real finding
+            # then surfaces as a bare `exit 1` naming no notebook, which is
+            # indistinguishable from the detector crashing. Membership in an
+            # `&&`/`||` list exempts the assignment from errexit; the explicit
+            # `fail` flag decides the step's outcome instead.
+            # NOT `|| true`: that would make `$?` read 0 from `true` itself, so
+            # rc would always be 0 and the gate could never fire at all.
+            out=$(python scripts/notebook_tools/detect_blank_figures.py --check "$nb" 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
               echo "::error title=Degenerate figure::$nb commits a degenerate placeholder figure (1x1 / tiny-payload PNG) that renders blank on GitHub/nbviewer."
               echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"

@@ -817,3 +817,62 @@ class TestContentGateSurvivesDeprecation:
             assert list(_flattened_pixels(im)) == list(im.get_flattened_data())
         else:  # Pillow < 12: the legacy name is the only one available
             assert len(list(_flattened_pixels(im))) == 4
+
+
+# ---------------------------------------------------------------------------
+# 11. Gate workflow contract (#8884) -- the environment the detector RUNS in
+# ---------------------------------------------------------------------------
+# Every test above exercises the detector as a library, in THIS job's
+# environment -- where Pillow is present transitively (scripts-tests.yml installs
+# matplotlib, which depends on Pillow). The GATE runs in a different job with its
+# own environment, and that is the gap #8884 fell through: the unit tests stayed
+# green while `degenerate-figure-gate.yml` had no `pip install` at all, so PIL was
+# missing, `_has_real_content` returned None, the #8634 content escape hatch was
+# inoperative, and the 24x16 cross-stitch grid was flagged again -- in CI only,
+# invisible from here.
+#
+# These two assertions are the ratchet. They are deliberately assertions about
+# the WORKFLOW FILE, not about the detector: a unit test cannot observe another
+# job's interpreter. Dropping the Pillow install, or reverting the loop to the
+# errexit-unsafe form, turns this file red instead of silently disarming the gate.
+
+_GATE_WORKFLOW = (
+    Path(__file__).resolve().parents[3] / ".github" / "workflows" / "degenerate-figure-gate.yml"
+)
+
+
+class TestGateWorkflowContract:
+    def test_gate_workflow_exists(self):
+        assert _GATE_WORKFLOW.is_file(), f"gate workflow missing: {_GATE_WORKFLOW}"
+
+    def test_gate_installs_pillow_explicitly(self):
+        # PIL is REQUIRED for the #8634 content gate, not optional. Relying on a
+        # transitive matplotlib dependency (as scripts-tests.yml does) is exactly
+        # the asymmetry that hid #8884.
+        text = _GATE_WORKFLOW.read_text(encoding="utf-8")
+        assert "pip install" in text and "Pillow" in text, (
+            "degenerate-figure-gate.yml must install Pillow explicitly; without it "
+            "_has_real_content() degrades to None and the #8634 escape hatch is dead"
+        )
+
+    def test_detector_invocation_is_errexit_safe(self):
+        # The step runs under `bash -e`: a bare `out=$(cmd)` that exits non-zero
+        # aborts before `rc=$?` is read, making the rc=1/rc=2 branches dead code
+        # and the failure anonymous. `&& rc=0 || rc=$?` preserves the real code.
+        text = _GATE_WORKFLOW.read_text(encoding="utf-8")
+        invocation = [
+            ln for ln in text.splitlines()
+            if "detect_blank_figures.py" in ln and "out=$(" in ln
+        ]
+        assert invocation, "expected an `out=$(... detect_blank_figures.py ...)` invocation"
+        line = invocation[0]
+        assert "&& rc=0 || rc=$?" in line, (
+            f"errexit-unsafe detector invocation: {line.strip()!r} -- use "
+            "`out=$(...) && rc=0 || rc=$?` so rc survives `bash -e`"
+        )
+        # `|| true` would make $? read 0 from `true` itself: rc always 0, so the
+        # gate could never fire at all -- strictly worse than the original bug.
+        assert "|| true" not in line, (
+            "`|| true` makes rc always 0 and permanently disarms the gate; "
+            "use `&& rc=0 || rc=$?`"
+        )
