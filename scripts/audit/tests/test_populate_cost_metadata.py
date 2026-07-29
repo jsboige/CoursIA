@@ -334,3 +334,131 @@ def test_search_cpu_preserves_cells(tmp_path):
     after = json.loads(p.read_text(encoding="utf-8"))
     assert after["metadata"]["custom_field"] == "keep"
     assert len(after["cells"]) == len(nb["cells"])
+
+
+# =============================================================================
+# Profile rl-cpu (RL CPU-pur — Issue #8056, rollout RL family)
+# =============================================================================
+
+def _make_rl_cpu(n_code: int = 10, gpu: bool = False) -> dict:
+    """Un notebook RL CPU-pur minimal (gymnasium/stable-baselines3), n cellules code.
+    Si `gpu=True`, ajoute un vrai signal GPU (torch.cuda) pour tester le skip."""
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "metadata": {},
+             "source": ["# RL demo (cf gym.openai.com/envs/#classic_control)\n"]},
+        ],
+        "metadata": {"kernelspec": {"name": "python3"}},
+        "nbformat": 4, "nbformat_minor": 5,
+    }
+    first = ("import torch\n"
+             f"print(torch.cuda.is_available())  # info\n") if gpu else "import gymnasium as gym\n"
+    nb["cells"].append({"cell_type": "code", "execution_count": 1, "metadata": {},
+                        "outputs": [], "source": [first]})
+    for _ in range(n_code - 1):
+        nb["cells"].append({"cell_type": "code", "execution_count": 1, "metadata": {},
+                            "outputs": [],
+                            "source": ["obs, info = env.reset(seed=0)\naction = policy(obs)\n"]})
+    return nb
+
+
+# === Gate is_rl_cpu_pure ===
+
+def test_is_rl_cpu_pure_true_for_local_rl():
+    """gymnasium/stable-baselines3 local = CPU-pur RL → éligible."""
+    assert pcm.is_rl_cpu_pure(_make_rl_cpu(10))
+
+
+def test_is_rl_cpu_pure_ignores_openai_prose_fp():
+    """FP prose critique (C920-L) : « gym.openai.com », « jeux d'OpenAI » ne sont PAS
+    des appels API cloud (gymnasium/SB3 = libs locales). Le gate précis ne doit PAS
+    skipper ces notebooks — sinon rl_1 (intro CartPole), rl_6c (PPO), rl_6d (SAC)
+    resteraient non couverts."""
+    assert pcm.is_rl_cpu_pure(_nb_with("env = gymnasium.make('CartPole-v1')  # voir gym.openai.com\n"))
+    assert pcm.is_rl_cpu_pure(_nb_with("# Inspiré de spinningup.openai.com — algorithme PPO from scratch.\n"))
+    assert pcm.is_rl_cpu_pure(_nb_with("PPO et SAC sont des algorithmes popularisés par OpenAI (Spinning Up).\n"))
+
+
+def test_is_rl_cpu_pure_false_for_quantbook():
+    assert not pcm.is_rl_cpu_pure(_make_quantbook(10))
+
+
+def test_is_rl_cpu_pure_false_for_real_gpu():
+    """Vrai signal GPU (`torch.cuda`, `.cuda(`) → skippé. Couvre rl_6e (GRPO, CUDA-hard)."""
+    assert not pcm.is_rl_cpu_pure(_make_rl_cpu(10, gpu=True))
+    assert not pcm.is_rl_cpu_pure(_nb_with("device = torch.device('cuda')\nx = x.cuda()\n"))
+
+
+def test_is_rl_cpu_pure_false_for_real_api_call():
+    """Un VRAI appel API cloud (import/instance OpenAI/anthropic/replicate) → skippé.
+    Le gate précis distingue l'appel réel de la prose (cf test ci-dessus)."""
+    assert not pcm.is_rl_cpu_pure(_nb_with("from openai import OpenAI\nclient = OpenAI()\n"))
+    assert not pcm.is_rl_cpu_pure(_nb_with("import openai\nr = openai.ChatCompletion.create()\n"))
+    assert not pcm.is_rl_cpu_pure(_nb_with("from anthropic import Anthropic\nclient = Anthropic()\n"))
+
+
+# === build_rl_cpu_cost ===
+
+def test_rl_cpu_cost_has_mandatory_fields():
+    cost = pcm.build_rl_cpu_cost(_make_rl_cpu(10), by="m:w", today="2026-07-28")
+    mandatory = {"api_usd_est", "api_provider", "cpu_min", "gpu_required",
+                 "network", "external_account", "reproducibility",
+                 "last_validated", "validator"}
+    assert mandatory <= set(cost)
+
+
+def test_rl_cpu_cost_canonical_values():
+    """RL CPU-pur : gratuit, CPU, network False (pip local). Diffère de search-cpu :
+    reproducibility MED (stochastique, seeds) vs HIGH (déterministe)."""
+    cost = pcm.build_rl_cpu_cost(_make_rl_cpu(10), by="m:w", today="2026-07-28")
+    assert cost["api_usd_est"] == 0.0
+    assert cost["api_provider"] == "none"
+    assert cost["qcc_tokens_est"] == 0
+    assert cost["gpu_required"] is False
+    assert cost["network"] is False  # pip install local, pas d'appel runtime
+    assert cost["external_account"] == "none"
+    assert cost["free_alternative"] == "self"  # sentinelle canonique
+    assert cost["reduced_pedagogical"] is None  # honnête, pas fabriqué
+    assert cost["reproducibility"] == "MED"  # stochastique (seeds), pas déterministe
+    assert cost["validator"] == "manual"
+
+
+def test_rl_cpu_cpu_min_heuristic():
+    """cpu_min RL plus élevé que search-cpu (boucles d'entraînement vs algo single-pass)."""
+    assert pcm.build_rl_cpu_cost(_make_rl_cpu(5), "", "")["cpu_min"] == 2    # ≤12
+    assert pcm.build_rl_cpu_cost(_make_rl_cpu(15), "", "")["cpu_min"] == 3   # 13-18
+    assert pcm.build_rl_cpu_cost(_make_rl_cpu(25), "", "")["cpu_min"] == 4   # >18
+
+
+# === Dispatch populate_notebook profile=rl-cpu ===
+
+def test_rl_cpu_populates_local_rl(tmp_path):
+    nb = _make_rl_cpu(10)
+    p = tmp_path / "nb.ipynb"
+    p.write_text(json.dumps(nb, indent=1), encoding="utf-8")
+    status = pcm.populate_notebook(p, profile="rl-cpu", by="m:w",
+                                   today="2026-07-28", apply=True)
+    assert status == "populated"
+    after = json.loads(p.read_text(encoding="utf-8"))
+    assert "cost" in after["metadata"]
+    assert after["metadata"]["cost"]["reproducibility"] == "MED"
+
+
+def test_rl_cpu_skips_gpu_notebook(tmp_path):
+    """rl_6e-style (CUDA-hard) → skippé avec la raison rl-cpu."""
+    nb = _make_rl_cpu(10, gpu=True)
+    p = tmp_path / "nb.ipynb"
+    p.write_text(json.dumps(nb, indent=1), encoding="utf-8")
+    status = pcm.populate_notebook(p, profile="rl-cpu", by="m:w",
+                                   today="2026-07-28", apply=True)
+    assert status == "skipped-not-rl-cpu-pure"
+
+
+def test_rl_cpu_idempotent(tmp_path):
+    nb = _make_rl_cpu(10)
+    nb["metadata"]["cost"] = {"existing": True}
+    p = tmp_path / "nb.ipynb"
+    p.write_text(json.dumps(nb, indent=1), encoding="utf-8")
+    status = pcm.populate_notebook(p, profile="rl-cpu", by="m:w",
+                                   today="2026-07-28", apply=True)
+    assert status == "skipped-has-cost"
