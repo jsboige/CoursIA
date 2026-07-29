@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: bca6fbf50753112b361a10d576750c60c311fd25
-    csharp_sha: 2eda392d47bfd1e0809398a4b16ccc42c69b8238
+    date: "2026-07-29"
+    by: myia-po-2026:CoursIA
+    python_sha: 3d1eb914c86fd13a11300c1a0126dd3bb8a538ad
+    csharp_sha: 9450858210e1e27af003de6c837431aa910741c7
   known_differences:
     - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
     - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."

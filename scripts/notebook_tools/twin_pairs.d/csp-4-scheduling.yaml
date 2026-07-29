@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 7cc9d727066893f89ec2dacb06295134db19039f
-    csharp_sha: 4d533e0a938a7145a79c9a8417d1892e97461a90
+    date: "2026-07-29"
+    by: myia-po-2026:CoursIA
+    python_sha: 58f92739d94c88eaeb8897f03222fe9c1e843ce8
+    csharp_sha: 0e80dc0651b879a00e82bd91601f9951cba43b7f
   known_differences:
     - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
     - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."
