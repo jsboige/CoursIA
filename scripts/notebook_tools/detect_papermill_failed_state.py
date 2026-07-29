@@ -151,7 +151,19 @@ def iter_notebooks(root: Path) -> list[Path]:
         return []
     out: list[Path] = []
     for p in root.rglob("*.ipynb"):
-        if any(part in _SKIP_DIR_NAMES for part in p.parts):
+        # #8858-class guard: ``root.rglob`` yields ABSOLUTE paths, so
+        # filtering on ``p.parts`` (absolute components) would match the
+        # repo's own parent if it sits under a SKIP_DIR-name dir (e.g. a
+        # checkout cloned at ``_archives/repo/``). That makes the filter
+        # match EVERY path and silences the whole scan — worse than a
+        # false positive. Filter on the path RELATIVE to ``root`` instead
+        # (the in-repo SKIP_DIRS semantics, same as the single-file mode),
+        # falling back to ``p.parts`` when ``p`` is not under ``root``.
+        try:
+            rel_parts = p.relative_to(root).parts
+        except ValueError:
+            rel_parts = p.parts
+        if any(part in _SKIP_DIR_NAMES for part in rel_parts):
             continue
         out.append(p)
     return sorted(out)

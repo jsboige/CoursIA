@@ -352,6 +352,23 @@ class TestScanTree(unittest.TestCase):
             )
             self.assertEqual(detector.scan_tree(root), [])
 
+    def test_parent_in_skipdir_not_silenced(self):
+        """#8858-class: a repo cloned UNDER a SKIP_DIR-name parent (e.g.
+        ``_archives/repo/``) must NOT be totally silenced by ``scan_tree``.
+        The SKIP_DIRS check operates on parts RELATIVE to root, so the repo's
+        absolute parent dir is irrelevant. RED on unfixed code (0 notebooks
+        scanned -> silent clean), GREEN after the relative-to-root fix."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td) / "_archives" / "repo"  # repo under a SKIP_DIR parent
+            (repo / "good").mkdir(parents=True)
+            # One failing notebook to anchor: if silenced, scan_tree returns [].
+            (repo / "good" / "fail.ipynb").write_text(
+                json.dumps(_nb([_failed_meta()])), encoding="utf-8"
+            )
+            defects = detector.scan_tree(repo.resolve())  # absolute root, as CI passes
+            self.assertTrue(any("fail.ipynb" in d.get("file", "") for d in defects),
+                            f"expected fail.ipynb defect, got {defects}")
+
 
 # --- CLI tests ---
 
