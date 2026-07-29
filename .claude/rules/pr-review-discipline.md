@@ -26,7 +26,21 @@ Si dépassement : refuser le merge, exiger split en PRs cohérentes par feature.
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
 1. `grep -c sorry` avant/après par fichier modifié
 2. Lien vers `Lake build SUCCESS` (CI ou commit local prouvable)
-3. Lien vers `Proof integrity SUCCESS` (axiom check) — produit par le job CI `proof-integrity` (câblé lake par lake, pilote `knot_lean`) qui exécute `LeanVerifier.check_axioms(module, fail_on_sorry=True)` : détecte un `sorry` **transitif** (l'axiome `sorryAx` dans la chaîne de dépendances) qu'un `grep -c sorry` ne verra jamais. Reproduction locale : `python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>').check_axioms('<Module>', fail_on_sorry=True))"` depuis `agent_tests/`. **Tant que le job n'est pas câblé sur le lake de la PR**, B.3 se lit **non applicable** (à écrire explicitement dans le body), jamais comme un gate silencieusement sauté — un reviewer ne doit pas avoir à choisir entre bloquer sur un artefact impossible et merger sur un gate mort (#8677).
+3. Lien vers `Proof integrity SUCCESS` (axiom check) — produit par le job CI `proof-integrity` (câblé lake par lake) qui exécute `LeanVerifier.check_axioms(module, fail_on_sorry=True)`. Reproduction locale : `python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>').check_axioms('<Module>', fail_on_sorry=True))"` depuis `agent_tests/`.
+
+   **Trois classes d'axiomes sont `forbidden`**, pas seulement le `sorry` :
+
+   | Classe | Ce qu'elle signale |
+   |---|---|
+   | `native_decide.*` | réduction par le noyau natif **sans preuve** — vide le théorème de son contenu |
+   | `sorryAx` | `sorry` **transitif** dans la chaîne de dépendances, qu'un `grep -c sorry` ne verra jamais |
+   | `Classical.choice` | base non-constructive (souvent légitime — se whiteliste au câblage, avec justification écrite) |
+
+   **Un `proof-integrity SUCCESS` antérieur au 2026-07-28 ne prouve PAS l'absence de `native_decide`.** Le parser lisait la sortie de `#print axioms` **ligne par ligne** ; or les noms natifs (`<theoreme>._native.native_decide.ax_1_1`, ~58 caractères) débordent la largeur de pretty-print de Lean et forcent un retour à la ligne — la déclaration entière était alors **silencieusement ignorée**. Le gate était donc structurellement aveugle à la classe exactement la plus dangereuse. Corrigé par #8740 (#8738) ; ne pas ré-invoquer un vert plus ancien comme preuve.
+
+   **Whitelist = noms explicites, jamais de wildcard.** `allow-axioms` liste les axiomes tolérés **un par un** (mécanisme à cliquet : tout nouveau `native_decide` produit un nom absent de la liste → le gate rougit). Un motif générique type `*native_decide*` détruirait la propriété « nouveau `native_decide` = nouveau rouge » et rendrait le gate incapable de rougir — un gate qui ne peut plus rougir n'est pas un gate.
+
+   **Tant que le job n'est pas câblé sur le lake de la PR**, B.3 se lit **non applicable** (à écrire explicitement dans le body), jamais comme un gate silencieusement sauté — un reviewer ne doit pas avoir à choisir entre bloquer sur un artefact impossible et merger sur un gate mort (#8677). État du câblage : **2 lakes sur 23** (`lean-knot.yml`, `lean-conway.yml`) ; statut par lake et axiomes constatés → [docs/reference/lean-axiom-coverage.md](../../docs/reference/lean-axiom-coverage.md).
 
 4. Si refactor du prover Python : justifier pourquoi le refactor est nécessaire pour le claim Lean (sinon split en 2 PRs)
 
