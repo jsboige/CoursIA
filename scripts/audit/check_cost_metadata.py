@@ -21,6 +21,10 @@ But : extraire pour un notebook :
       (4) free_alternative pointe vers un notebook inexistant
       (5) Notebook QC sans qc_cloud validator
       (6) Notebook GPU sans sk_visual validator
+      (7) QuantBook détecté sans estimation qcc_tokens_est (#8376)
+      (8) api_cost_breakdown dont la somme != api_usd_est (design-gate #8056)
+      (9) validator affirmant une exécution alors que des cellules code
+          non vides portent execution_count: null
 
 Litmus anti-LIGHT : ce script EXTRACT, il ne DÉCIDE pas. Le verdict final
 = revue humaine/agent compétent. Cf docs/notebook-metadata/cost-matrix.md.
@@ -451,6 +455,80 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                                 ),
                                 'severity': 'MAJOR',
                             })
+
+    # Litmus 9 : le validator AFFIRME une execution que le notebook contredit.
+    #
+    # `validator` et `last_validated` sont, avant ce litmus, les deux seuls
+    # champs de la matrice que RIEN ne peut contredire. Les populators ecrivent
+    # `last_validated: _dt.date.today()` au moment du peuplement — pas au moment
+    # d'une validation — et aucun consommateur ne le relit. Un champ que rien
+    # ne peut contredire est decoratif : il aurait la meme valeur sur un
+    # notebook dont AUCUNE cellule n'a jamais tourne. Meme raisonnement que le
+    # litmus 8 (une ventilation dont la somme doit egaler le total casse le jour
+    # ou elle ment) et que #8680 (un gate incapable d'echouer n'est pas un gate).
+    #
+    # Ce que le litmus rend falsifiable : nbclient/papermill executent CHAQUE
+    # cellule code non vide, y compris celles qui echouent (`--allow-errors` ne
+    # change que le comportement d'arret, pas l'attribution du compteur). Donc
+    # `execution_count: null` sur une cellule code non vide PROUVE que la
+    # cellule n'a pas ete executee — et contredit un validator qui affirme
+    # l'avoir ete.
+    #
+    # Perimetre : seuls les validators qui affirment une EXECUTION DE CELLULES.
+    # Sont exclus, et ce n'est pas un oubli :
+    #   - `manual`   : un humain a relu — aucune affirmation d'execution ;
+    #   - `qc_cloud` : carve-out documente (H.3) — le runtime research QC
+    #                  n'existe sur aucune machine worker ;
+    #   - `lean_build`: `lake build` SUCCESS, qui porte sur le lake, pas sur
+    #                  les cellules du notebook ;
+    #   - `sk_agent` : perimetre ambigu, pas d'affirmation nette.
+    # `dotnet-interactive` est retenu bien qu'absent de la liste canonique de
+    # cost-matrix.md (4 notebooks l'emploient) : il affirme une execution du
+    # kernel .NET local, exigee par l'advisory #5214.
+    #
+    # Echappatoire honnete : une cellule deliberement non executable (code de
+    # reference destine a un autre runtime) se declare par un tag de skip. Le
+    # notebook cesse alors d'etre contredit — sans mentir, et de facon visible
+    # dans le fichier. Fleet-wide au moment de l'ecriture : 0 cellule taguee.
+    EXECUTION_ASSERTING_VALIDATORS = ('papermill', 'sk_visual', 'dotnet-interactive')
+    SKIP_EXECUTION_TAGS = {'skip-execution', 'skip', 'no-execute'}
+    if validator in EXECUTION_ASSERTING_VALIDATORS:
+        unexecuted = []
+        for idx, cell in enumerate(nb.cells):
+            if cell.get('cell_type') != 'code':
+                continue
+            source = cell.get('source', '')
+            if isinstance(source, list):
+                source = ''.join(source)
+            # Une cellule code VIDE n'est pas executee par nbclient (skip
+            # explicite sur `not cell.source.strip()`) : son `execution_count`
+            # reste null apres un run complet. La flagger serait un faux
+            # positif qui pousse a modifier un notebook sain.
+            if not source.strip():
+                continue
+            tags = set((cell.get('metadata') or {}).get('tags') or [])
+            if tags & SKIP_EXECUTION_TAGS:
+                continue
+            if cell.get('execution_count') is None:
+                unexecuted.append(idx)
+        if unexecuted:
+            shown = ', '.join(str(i) for i in unexecuted[:5])
+            more = f', +{len(unexecuted) - 5}' if len(unexecuted) > 5 else ''
+            findings.append({
+                'pattern': 'validator_asserts_execution_but_cells_unexecuted',
+                'detail': (
+                    f"cost.validator: '{validator}' affirme une execution, mais "
+                    f"{len(unexecuted)} cellule(s) code non vides ont "
+                    f"execution_count: null (index {shown}{more}). "
+                    f"cost.last_validated"
+                    f"{' = ' + str(cost_meta['last_validated']) if cost_meta.get('last_validated') else ''}"
+                    f" date donc une validation que le notebook contredit. "
+                    f"Corriger la DECLARATION (validator: manual si le notebook "
+                    f"n'est pas executable localement) ou re-executer — jamais "
+                    f"editer les sorties a la main."
+                ),
+                'severity': 'MAJOR',
+            })
 
     return {
         'notebook': str(notebook_path),
