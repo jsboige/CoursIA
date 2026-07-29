@@ -189,6 +189,36 @@ une sortie de cellule à la main (Stop & Repair, cf
 > (`Probas/Infer.NET`, `ML/ML.NET`) — ceux-là *ont* été exécutés, leur défaut est une
 > étiquette inexacte, pas une exécution fantôme.
 
+### Sorties `error` commitées — l'échec d'exécution (Litmus 10)
+
+Le Litmus 9 mesure l'**absence** d'exécution (`execution_count: null`). Il ne voit
+jamais son **échec** : une cellule qui a tourné et levé une exception porte un
+`execution_count` non nul et une sortie `error` — elle passe le Litmus 9 sans bruit.
+Avant le Litmus 10, **aucun** des neuf litmus ne lisait `outputs` : une trace
+d'exception commitée n'était contredite par rien.
+
+**Règle falsifiable :** quand `validator` affirme une validation, aucune cellule ne
+doit porter de sortie `output_type: error`. Vérifié par `check_cost_metadata.py`
+(Litmus 10) → finding `validator_asserts_validation_but_cells_errored` (MAJOR).
+
+**Le périmètre inclut `qc_cloud`, exclu du Litmus 9** — et c'est l'application
+littérale de la phrase ci-dessus : le carve-out H.3 excuse une cellule **qui n'a pas
+pu tourner**, il n'excuse pas une cellule qui a **démontrablement tourné et échoué**.
+L'indisponibilité du runtime QC n'explique pas un `KeyError`. Le carve-out reste donc
+entier côté Litmus 9 (cellules non exécutées) et ne couvre pas ce cas-ci. `manual`
+reste hors périmètre, lui : il déclare une inspection de source, « pas de
+ré-exécution machine claimée » — aucune affirmation qu'un traceback contredirait.
+
+> **Mesure à l'introduction (2026-07-29, 1019 notebooks scannés) :** 3 notebooks
+> portent au moins une sortie `error`, dont 2 **sans** metadata `cost` (hors périmètre
+> du checker). Reste **un** finding : `partner-course-quant-trading/examples/
+> Crypto-MultiCanal/research_archive.ipynb` — 33/33 cellules exécutées, **13 sorties
+> `error`** (6 `KeyError`, 7 `NameError` en cascade depuis `KeyError: 'close'`), sous
+> `validator: qc_cloud, last_validated: 2026-07-26`. Le corpus n'utilise pas
+> l'exception non rattrapée comme ressort pédagogique — une exception *démontrée* est
+> rattrapée et ne produit pas de sortie `error` —, donc le litmus est **contradictoire,
+> pas bruyant**. Correction : ré-exécution QC Cloud (gated #6891) ou `validator: manual`.
+
 ### Tiers VRAM (déterminé par `vram_gb`)
 
 | Tier | VRAM (GB) | Modèles typiques |
@@ -548,6 +578,7 @@ Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](ht
 | Notebook QC sans `qc_cloud` validator | MAJOR |
 | Notebook GPU sans `sk_visual` validator (cf #5780 sweep) | MINOR |
 | `metadata.cost.validator` affirme une exécution mais des cellules code portent `execution_count: null` (Litmus 9) | MAJOR |
+| `metadata.cost.validator` affirme une validation mais des sorties `error` sont commitées (Litmus 10) | MAJOR |
 
 Ces extensions restent **hors scope c.794** (à dispatcher cycles c.795+) — la grille est volontairement extensible.
 

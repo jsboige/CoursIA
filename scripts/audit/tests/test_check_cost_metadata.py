@@ -13,7 +13,8 @@ import importlib.util
 from pathlib import Path
 
 import nbformat
-from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook
+from nbformat.v4 import (new_code_cell, new_markdown_cell, new_notebook,
+                         new_output)
 
 HERE = Path(__file__).resolve().parent
 CHECK_PATH = HERE.parent / "check_cost_metadata.py"
@@ -545,3 +546,102 @@ def test_litmus9_detail_names_the_cell_indices(tmp_path):
     detail = next(f["detail"] for f in findings if f["pattern"] == _LITMUS9_PATTERN)
     assert "1, 2" in detail
     assert "2026-07-23T01:30Z" in detail
+
+
+# ---------------------------------------------------------------------------
+# Litmus 10 — validator_asserts_validation_but_cells_errored
+#
+# Le litmus 9 mesure l'ABSENCE d'exécution ; il ne voit jamais son ÉCHEC. Une
+# cellule qui a tourné et levé une exception porte un `execution_count` non nul
+# — elle passe le litmus 9 sans bruit. Aucun des 9 litmus précédents ne lit
+# `outputs`. Cf docs/notebook-metadata/cost-matrix.md.
+# ---------------------------------------------------------------------------
+
+_LITMUS10_PATTERN = "validator_asserts_validation_but_cells_errored"
+
+
+def _notebook_error_cells(path: Path, specs, cost_meta=None) -> None:
+    """spec = (source, execution_count, ename|None) ; ename => output `error`."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = new_notebook()
+    cells = []
+    for source, exec_count, ename in specs:
+        cell = new_code_cell(source)
+        cell["execution_count"] = exec_count
+        if ename:
+            # `new_output` rend un NotebookNode : `nbformat.write` valide les
+            # sorties par acces d'attribut (`output.output_type`) et rejette un
+            # dict nu.
+            cell["outputs"] = [
+                new_output("error", ename=ename, evalue="boom",
+                           traceback=["Traceback..."])
+            ]
+        cells.append(cell)
+    nb.cells = cells
+    if cost_meta:
+        nb.metadata["cost"] = cost_meta
+    with path.open("w", encoding="utf-8") as f:
+        nbformat.write(nb, f, version=4)
+
+
+def _litmus10_patterns(tmp_path, specs, cost_meta):
+    mod = _load_check()
+    nb_path = tmp_path / "nb.ipynb"
+    _notebook_error_cells(nb_path, specs, cost_meta=cost_meta)
+    return _patterns(mod.check_notebook(nb_path, tmp_path)["findings"])
+
+
+def test_litmus10_qc_cloud_errored_cell_flags(tmp_path):
+    """Le carve-out `qc_cloud` du litmus 9 excuse une cellule QUI N'A PAS PU
+    tourner. Il ne s'étend pas à une cellule qui a tourné et échoué :
+    l'indisponibilité du runtime n'explique pas un KeyError."""
+    pats = _litmus10_patterns(
+        tmp_path,
+        [("df['close']", 1, "KeyError")],
+        {"validator": "qc_cloud", "last_validated": "2026-07-26"},
+    )
+    assert _LITMUS10_PATTERN in pats
+
+
+def test_litmus10_qc_cloud_unexecuted_without_error_is_exempt(tmp_path):
+    """Régression : étendre le périmètre à `qc_cloud` ne doit PAS annuler le
+    carve-out du litmus 9 pour les cellules simplement non exécutées."""
+    pats = _litmus10_patterns(
+        tmp_path,
+        [("qb = QuantBook()", None, None)],
+        {"validator": "qc_cloud", "qcc_tokens_est": 400},
+    )
+    assert _LITMUS10_PATTERN not in pats
+    assert _LITMUS9_PATTERN not in pats
+
+
+def test_litmus10_papermill_errored_cell_flags(tmp_path):
+    """Un validator affirmant l'exécution est contredit par un traceback commité
+    tout autant que par une cellule jamais exécutée."""
+    pats = _litmus10_patterns(
+        tmp_path,
+        [("1/0", 1, "ZeroDivisionError")],
+        {"validator": "papermill", "last_validated": "2026-07-26"},
+    )
+    assert _LITMUS10_PATTERN in pats
+
+
+def test_litmus10_manual_validator_exempt(tmp_path):
+    """`manual` déclare une inspection de source, « pas de re-exécution machine
+    claimée » : aucune affirmation d'exécution qu'un traceback contredirait."""
+    pats = _litmus10_patterns(
+        tmp_path,
+        [("df['close']", 1, "KeyError")],
+        {"validator": "manual"},
+    )
+    assert _LITMUS10_PATTERN not in pats
+
+
+def test_litmus10_clean_outputs_no_finding(tmp_path):
+    """Contrôle négatif : un notebook exécuté sans erreur ne doit rien lever."""
+    pats = _litmus10_patterns(
+        tmp_path,
+        [("x = 1", 1, None), ("y = 2", 2, None)],
+        {"validator": "papermill", "last_validated": "2026-07-26"},
+    )
+    assert _LITMUS10_PATTERN not in pats

@@ -25,6 +25,8 @@ But : extraire pour un notebook :
       (8) api_cost_breakdown dont la somme != api_usd_est (design-gate #8056)
       (9) validator affirmant une exécution alors que des cellules code
           non vides portent execution_count: null
+     (10) validator affirmant une validation alors que des sorties `error`
+          sont commitées (le litmus 9 voit l'absence d'exécution, pas son échec)
 
 Litmus anti-LIGHT : ce script EXTRACT, il ne DÉCIDE pas. Le verdict final
 = revue humaine/agent compétent. Cf docs/notebook-metadata/cost-matrix.md.
@@ -526,6 +528,68 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
                     f"Corriger la DECLARATION (validator: manual si le notebook "
                     f"n'est pas executable localement) ou re-executer — jamais "
                     f"editer les sorties a la main."
+                ),
+                'severity': 'MAJOR',
+            })
+
+    # Litmus 10 : le validator affirme une validation que les SORTIES contredisent.
+    #
+    # Le litmus 9 mesure l'ABSENCE d'execution (`execution_count: null`). Il ne
+    # voit jamais son ECHEC : une cellule qui a tourne et leve une exception
+    # porte un `execution_count` non nul et un output `error`, donc elle passe
+    # le litmus 9 sans bruit. Aucun des 9 litmus precedents ne lit `outputs` —
+    # une trace d'exception commitee n'est, avant celui-ci, contredite par rien.
+    #
+    # Pourquoi le perimetre inclut `qc_cloud`, exclu du litmus 9. Le carve-out
+    # du litmus 9 est justifie par « le runtime research QC n'existe sur aucune
+    # machine worker » : il excuse une cellule QUI N'A PAS PU TOURNER. Cette
+    # justification ne s'etend pas a une cellule qui a DEMONTRABLEMENT tourne et
+    # echoue — l'indisponibilite du runtime n'explique pas un `KeyError`. Le
+    # carve-out reste donc entier cote litmus 9 (cellules non executees) et ne
+    # couvre pas ce cas-ci.
+    #
+    # `manual` reste exclu, et ce n'est pas un oubli : il declare une inspection
+    # de source, « pas de re-execution machine claimee » (populate_cost_metadata
+    # .py). Il n'affirme aucune validation d'execution qu'un traceback pourrait
+    # contredire.
+    #
+    # Faux positifs mesures avant ecriture : sur 1019 notebooks du depot, 3
+    # portent au moins une sortie `error`, dont 2 sans metadata `cost` (donc
+    # hors perimetre de ce checker) — le corpus n'utilise pas l'exception non
+    # rattrapee comme ressort pedagogique (une exception DEMONTREE est rattrapee
+    # et ne produit pas d'output `error`). Le litmus est donc contradictoire,
+    # pas bruyant : il tient sur des preuves, pas sur une heuristique.
+    VALIDATION_ASSERTING_VALIDATORS = EXECUTION_ASSERTING_VALIDATORS + ('qc_cloud',)
+    if validator in VALIDATION_ASSERTING_VALIDATORS:
+        failed = []
+        for idx, cell in enumerate(nb.cells):
+            if cell.get('cell_type') != 'code':
+                continue
+            enames = [
+                out.get('ename') or 'error'
+                for out in (cell.get('outputs') or [])
+                if out.get('output_type') == 'error'
+            ]
+            if enames:
+                failed.append((idx, enames))
+        if failed:
+            n_err = sum(len(e) for _, e in failed)
+            shown = ', '.join(
+                f"{idx} ({'/'.join(sorted(set(e)))})" for idx, e in failed[:3]
+            )
+            more = f', +{len(failed) - 3}' if len(failed) > 3 else ''
+            findings.append({
+                'pattern': 'validator_asserts_validation_but_cells_errored',
+                'detail': (
+                    f"cost.validator: '{validator}' affirme une validation, mais "
+                    f"{n_err} sortie(s) error sont commitees dans "
+                    f"{len(failed)} cellule(s) (index {shown}{more}). "
+                    f"cost.last_validated"
+                    f"{' = ' + str(cost_meta['last_validated']) if cost_meta.get('last_validated') else ''}"
+                    f" date une validation que les sorties du notebook "
+                    f"contredisent. Reparer la CAUSE et re-executer, ou corriger "
+                    f"la DECLARATION — jamais editer les sorties a la main "
+                    f"(Stop & Repair)."
                 ),
                 'severity': 'MAJOR',
             })
