@@ -147,11 +147,127 @@ PROFILES = {
         "reproducibility": "MED",
         "notes": "Interoperabilite Python/.NET via pythonnet : appel .NET CLR depuis Python (rare, 1 appel chat gpt-4o pour exemple). Cout faible mais build CLR necessite .NET 9.0 SDK.",
     },
+    # === Tranche 2 (c.946) = NBs SK restants (10/10a/10b NotebookMaker, Createur
+    # de mail, Notebook-Generated, Notebook-Template, Workbook-Template-Python,
+    # Workbook-Template, Semantic-kernel-AutoInteractive, fort-boyard-python). ===
+    "10-SemanticKernel-NotebookMaker": {
+        "api_usd_est": 0.20,
+        "api_provider": "openai",
+        "cpu_min": 3,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Systeme multi-agents (Admin/Coder/Reviewer) pour generation de notebooks. ~8 appels OpenAIChatCompletion gpt-4o (3-4 tours x 2-3 agents). Cout superieur a SK-03 (rotation d'agents).",
+    },
+    "10a-SemanticKernel-NotebookMaker-batch": {
+        "api_usd_est": 0.40,
+        "api_provider": "openai",
+        "cpu_min": 5,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Variante batch du NotebookMaker : plusieurs notebooks generes en sequence. ~16 appels gpt-4o (~4 batch x 4 agents). Cout proportionnel au batch_size.",
+    },
+    "10b-SemanticKernel-NotebookMaker-batch-parameterized": {
+        "api_usd_est": 0.40,
+        "api_provider": "openai",
+        "cpu_min": 5,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Variante parametree du NotebookMaker batch : prompts/config injectes via parametres. ~16 appels gpt-4o (memes ordre de grandeur que 10a).",
+    },
+    "Créateur de mail personnalisé": {
+        "api_usd_est": 0.10,
+        "api_provider": "openai",
+        "cpu_min": 1,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Generation de mail personnalise via OpenAIChatCompletion. ~2 appels gpt-4o (1 generation + 1 variante). Cout faible (mail = sortie courte).",
+    },
+    "Notebook-Generated": {
+        "api_usd_est": 0.0,
+        "api_provider": "none",
+        "cpu_min": 2,
+        "network": False,
+        "external_account": None,
+        "free_alternative": "self",
+        "reproducibility": "HIGH",
+        "notes": "NB generique pandas/numpy/sklearn (Iris dataset). Pas d'API LLM : 0 appel. NB pedagogique pour AutoGen/SK NotebookMaker (lui-meme produit par l'agent). Cout CPU seul.",
+    },
+    "Notebook-Template": {
+        "api_usd_est": 0.0,
+        "api_provider": "none",
+        "cpu_min": 0,
+        "network": False,
+        "external_account": None,
+        "free_alternative": "self",
+        "reproducibility": "MED",
+        "notes": "Template squelette (5 cellules de stub) pour instanciation par NotebookMaker. Pas d'API ni CPU effectif : squelette a remplir. Provenance: SK-10.",
+    },
+    "Workbook-Template": {
+        "api_usd_est": 0.0,
+        "api_provider": "none",
+        "cpu_min": 0,
+        "network": False,
+        "external_account": None,
+        "free_alternative": "self",
+        "reproducibility": "MED",
+        "notes": "Template workbook (squelette) pour AutoInteractive workflow. Pas d'API ni CPU : instantiation par agent. Couplé a WorkbookUpdateInteraction.cs.",
+    },
+    "Workbook-Template-Python": {
+        "api_usd_est": 0.05,
+        "api_provider": "openai",
+        "cpu_min": 1,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Variante Python du Workbook template : 1 appel kernel.invoke pour exemple d'instanciation. Cout unitaire (template = 1 chat pour demo).",
+    },
+    "Semantic-kernel-AutoInteractive": {
+        "api_usd_est": 0.10,
+        "api_provider": "openai",
+        "cpu_min": 1,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Boucle interactive SK (user <-> kernel). ~1 appel completion par tour. Cout unitaire (interactif = usage ponctuel).",
+    },
+    "fort-boyard-python": {
+        "api_usd_est": 0.30,
+        "api_provider": "openai",
+        "cpu_min": 3,
+        "network": True,
+        "external_account": "openai",
+        "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+        "reproducibility": "LOW",
+        "notes": "Jeu Fort-Boyard : 42 enigmes generees par OpenAIChatCompletion. Cout eleve (NB pedagogique = beaucoup de generations). Variante csharp (fort-boyard-csharp) sans LLM.",
+    },
 }
 
 # Tranche 1 = SK-01..09 (9 NBs pedagogiques Python du chapitre fundamentals).
+# Tranche 2 = 10..10b + Createur de mail + Notebook-Generated/Template + Workbook-Template-(Python) + AutoInteractive + fort-boyard-python (10 NBs restants).
 TRANCHES = {
-    1: list(PROFILES.keys()),
+    1: [k for k in PROFILES.keys() if k.startswith(("01-", "02-", "03-", "04-", "05-", "06-", "07-", "08-", "09-"))],
+    2: [
+        "10-SemanticKernel-NotebookMaker",
+        "10a-SemanticKernel-NotebookMaker-batch",
+        "10b-SemanticKernel-NotebookMaker-batch-parameterized",
+        "Créateur de mail personnalisé",
+        "Notebook-Generated",
+        "Notebook-Template",
+        "Workbook-Template",
+        "Workbook-Template-Python",
+        "Semantic-kernel-AutoInteractive",
+        "fort-boyard-python",
+    ],
 }
 
 
@@ -174,7 +290,7 @@ def build_cost(notebook_name: str, by: str, today: str) -> dict:
         "reproducibility": p["reproducibility"],
         "last_validated": today,
         "validator": "manual",
-        "notes": p["notes"] + f" Provenance: {by} (c.945).",
+        "notes": p["notes"] + f" Provenance: {by} (c.946).",
     }
     return cost
 
@@ -212,7 +328,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--tranche", type=int, default=1,
-        help="Tranche SK costfm à peupler (1 = SK-01..09)",
+        help="Tranche SK costfm à peupler (1 = SK-01..09, 2 = 10..10b + Createur de mail + Templates + AutoInteractive + fort-boyard-python)",
     )
     ap.add_argument(
         "--by", default="anonymous",
@@ -257,7 +373,7 @@ def main(argv=None) -> int:
         return 0
 
     if args.tranche not in TRANCHES:
-        print(f"ERROR: tranche {args.tranche} pas encore implémentée (1)", file=sys.stderr)
+        print(f"ERROR: tranche {args.tranche} pas encore implémentée (1 ou 2)", file=sys.stderr)
         return 2
 
     today = args.today or _dt.date.today().isoformat()
