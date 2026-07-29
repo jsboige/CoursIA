@@ -68,8 +68,11 @@ jobs:
               basef="$tmp/base.ipynb"
               git show "$BASE:$nb" > "$basef" 2>/dev/null || basef="NONE"
             fi
-            out=$(python scripts/notebook_tools/cell_order_ci.py --base "$basef" --head "$nb")
-            rc=$?
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/cell_order_ci.py --base "$basef" --head "$nb") && rc=0 || rc=$?
             if [ $rc -ne 0 ]; then
               echo "::error title=Cell-order regression::$nb introduces new HIGH cell-ordering finding(s)."
               echo "$out"
