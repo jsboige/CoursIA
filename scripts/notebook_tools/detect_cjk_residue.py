@@ -484,6 +484,15 @@ def main(argv=None) -> int:
                 p = root / p
             if p.suffix not in _SCANNABLE_EXT or not p.exists():
                 continue
+            # #8846: SKIP_DIRS parity with the fleet mode (applied at L374/L140).
+            # A path under a pedagogical archive (docs/archive/**, .lake/,
+            # _output/, ...) is not ours to fix, so a leak there is never
+            # attributed to a PR diff. Without this, --stdin scanned what the
+            # fleet scan skips, so a PR that merely touched docs/archive/**
+            # inherited a cjk-residue label for pre-existing residue it never
+            # introduced (#8829 review follow-up).
+            if any(part in SKIP_DIRS for part in p.parts):
+                continue
             results.append(_scan_one(p, root))
     elif args.target:
         p = Path(args.target)
