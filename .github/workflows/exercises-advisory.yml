@@ -111,6 +111,25 @@ jobs:
           ensure_label "$LABEL_UNPARSEABLE" \
             "A modified notebook could not be parsed -- NOT verified (#8819)" "BFD4F2"
 
+          # Review #8820 (Blocage 3): if check_pr_exercises.py died (truncated
+          # JSON, ImportError, OOM), payload.json is unreadable, the two
+          # python -c above fail, and SUB/PARSE are not integers. With only
+          # `set -uo pipefail` (no -e), each `[ "" -gt 0 ]` below exits rc=2 --
+          # which falls into the else branch, UNSETS both labels, and asserts
+          # verified conformity on a measurement that never happened. That is
+          # this PR's own defect (#8819) one layer down: #8816 said "all meet
+          # threshold" when ONE notebook was unreadable; this branch would say
+          # "all meet threshold (verified)" when NOTHING was read. `[ "$x" -eq
+          # "$x" ]` succeeds only for an integer, so its negation is true when
+          # the payload is illisible. NOT measured => NOT verified: pose the
+          # unparseable label and a loud ::error::, never a green claim.
+          if ! [ "${SUB:-}" -eq "${SUB:-}" ] 2>/dev/null \
+             || ! [ "${PARSE:-}" -eq "${PARSE:-}" ] 2>/dev/null; then
+            echo "::error::exercises payload illisible (check_pr_exercises.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNPARSEABLE"
+            exit 0
+          fi
+
           if [ "$SUB" -gt 0 ]; then
             echo "::notice::$SUB modified notebook(s) below the >=3 exercises convention (#2161). See the '$LABEL_BELOW' label."
             set_label "$LABEL_BELOW"
