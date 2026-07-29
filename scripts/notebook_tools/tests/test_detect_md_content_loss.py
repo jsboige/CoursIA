@@ -186,7 +186,11 @@ class TestScanNotebook:
     def _scan(self, tmp_path, base_nb, head_nb, nb_name="x.ipynb"):
         p = tmp_path / nb_name
         p.write_text(json.dumps(head_nb), encoding="utf-8")
-        with mock.patch.object(dml, "read_notebook_at_ref", return_value=base_nb):
+        # Mock aussi ref_resolves (True) et path_exists_at_ref (True) : un
+        # notebook EXISTANT a la base atteint la comparaison (follow-up #8662).
+        with mock.patch.object(dml, "read_notebook_at_ref", return_value=base_nb), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
             return dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
 
     def test_truncation_end_to_end(self, tmp_path):
@@ -209,7 +213,11 @@ class TestMainExitCodes:
     def _run(self, tmp_path, base_nb, head_nb):
         p = tmp_path / "x.ipynb"
         p.write_text(json.dumps(head_nb), encoding="utf-8")
-        with mock.patch.object(dml, "read_notebook_at_ref", return_value=base_nb):
+        # Mock ref_resolves (True) et path_exists_at_ref (True) : notebook
+        # EXISTANT a la base -> la comparaison s'execute (follow-up #8662).
+        with mock.patch.object(dml, "read_notebook_at_ref", return_value=base_nb), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
             return dml.main([str(p), "--base", "MOCK", "--check"])
 
     def test_exit_1_on_truncation(self, tmp_path):
@@ -221,8 +229,49 @@ class TestMainExitCodes:
         assert self._run(tmp_path, _nb(_md(before)), _nb(_md(after))) == 0
 
     def test_exit_2_on_missing_base_ref(self, tmp_path):
-        # base_ref illisible -> erreur -> exit 2.
+        # Notebook EXISTANT mais illisible (ref valide, path presente, contenu
+        # illisible) -> erreur -> exit 2 (garde anti-auto-desarmement preserve).
         p = tmp_path / "x.ipynb"
         p.write_text(json.dumps(_nb(_md("ok"))), encoding="utf-8")
-        with mock.patch.object(dml, "read_notebook_at_ref", return_value=None):
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True), \
+             mock.patch.object(dml, "read_notebook_at_ref", return_value=None):
+            assert dml.main([str(p), "--base", "BAD_REF", "--check"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# 9. New-file exemption + invalid-ref guard (follow-up #8655/#8662)
+# ---------------------------------------------------------------------------
+class TestNewFileExemptionAndRefGuard:
+    """Un notebook NOUVEAU (absent a la base) est exempt de content-loss ; un
+    ref de base invalide reste rc=2 (garde anti-auto-desarmement preserve)."""
+
+    def test_new_file_exempt_no_findings(self, tmp_path):
+        # Notebook absent a la base (nouveau) -> exempt, 0 findings, new_file=True.
+        p = tmp_path / "x.ipynb"
+        p.write_text(json.dumps(_nb(_md(EXERCISE_BODY))), encoding="utf-8")
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=False), \
+             mock.patch.object(dml, "read_notebook_at_ref", return_value=None):
+            r = dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+        assert r.get("new_file") is True
+        assert r["stats"]["findings_count"] == 0
+        assert "error" not in r
+
+    def test_new_file_main_exits_0(self, tmp_path):
+        # main() renvoie 0 pour un nouveau fichier (rien a perdre, tout est ajoute).
+        p = tmp_path / "x.ipynb"
+        p.write_text(json.dumps(_nb(_md(EXERCISE_BODY))), encoding="utf-8")
+        with mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=False), \
+             mock.patch.object(dml, "read_notebook_at_ref", return_value=None):
+            assert dml.main([str(p), "--base", "MOCK", "--check"]) == 0
+
+    def test_invalid_ref_exits_2_disarm_preserved(self, tmp_path):
+        # Ref de base invalide -> rc=2 : le garde anti-auto-desarmement (#8662)
+        # reste arme. Sans ref_resolves, un BASE casse ferait passer tous les
+        # chemins pour "nouveaux" (path_exists_at_ref False) -> desarmement silencieux.
+        p = tmp_path / "x.ipynb"
+        p.write_text(json.dumps(_nb(_md("ok"))), encoding="utf-8")
+        with mock.patch.object(dml, "ref_resolves", return_value=False):
             assert dml.main([str(p), "--base", "BAD_REF", "--check"]) == 2
