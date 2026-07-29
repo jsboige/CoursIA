@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-28 06:12
+Generated: 2026-07-29 06:16
 Total notebooks: 836
 
 ## Status Summary
 
-- **READY**: 671
-- **DEMO**: 163
+- **READY**: 680
+- **DEMO**: 154
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 746
+- **BETA**: 753
 - **TEMPLATE**: 4
-- **ALPHA**: 62
+- **ALPHA**: 55
 - **DRAFT**: 24
 
 ## By Series
@@ -563,7 +563,7 @@ Total notebooks: 836
 | 219 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 220 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (105 notebooks) — DEMO:66, READY:39 | ALPHA:32, BETA:61, DRAFT:11, TEMPLATE:1
+### QuantConnect (105 notebooks) — DEMO:57, READY:48 | ALPHA:25, BETA:68, DRAFT:11, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -626,18 +626,18 @@ Total notebooks: 836
 | 57 | Research QuantBook: Adaptive Asset Allocation | Python 3 | READY | BETA | 45min | po-2026 |
 | 58 | Research QuantBook: All-Weather Portfolio | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 59 | Alpha Correlation Analysis | Python 3 | READY | BETA | 45min | po-2026 |
-| 60 | Research QuantBook: BTC ML Enhanced | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 60 | Research QuantBook: BTC ML Enhanced | Python 3 | READY | BETA | 45min | po-2026 |
 | 61 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
-| 62 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 63 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 62 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | READY | BETA | 45min | po-2026 |
+| 63 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | READY | BETA | 45min | po-2026 |
 | 64 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | BETA | 30min | po-2026 |
 | 65 | Research QuantBook: Dual Momentum No TLT | Python 3 | READY | BETA | 45min | po-2026 |
-| 66 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 66 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
 | 67 | Research QuantBook: EMA Cross Equity | Python 3 | READY | BETA | 45min | po-2026 |
 | 68 | Research QuantBook: EMA Crossover SPY Index | Python 3 | READY | BETA | 45min | po-2026 |
 | 69 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | READY | BETA | 45min | po-2026 |
 | 70 | Research QuantBook: ETF Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
-| 71 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 71 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | READY | BETA | 45min | po-2026 |
 | 72 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 73 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | READY | BETA | 30min | po-2026 |
 | 74 | Research QuantBook: Framework Composite FamaFrench | Python 3 | READY | BETA | 30min | po-2026 |
@@ -645,7 +645,7 @@ Total notebooks: 836
 | 76 | Framework Composite TrendWeather - Research | Python 3 | READY | BETA | 45min | po-2026 |
 | 77 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 78 | Research QuantBook: ML Classification (RandomFores | Python 3 | READY | BETA | 45min | po-2026 |
-| 79 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 79 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
 | 80 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
 | 81 | Research QuantBook: ML Ensemble | Python 3 | READY | BETA | 45min | po-2026 |
 | 82 | Research QuantBook: ML Feature Engineering | Python 3 | READY | BETA | 45min | po-2026 |
@@ -653,7 +653,7 @@ Total notebooks: 836
 | 84 | Research QuantBook: ML Regression | Python 3 | READY | BETA | 45min | po-2026 |
 | 85 | ML SVM - Support Vector Machine pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
 | 86 | ML Text Classification for Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 87 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 87 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
 | 88 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | READY | BETA | 30min | po-2026 |
 | 89 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 90 | Research QuantBook: Equity Multi-Layer EMA + ML Fi | Python 3 | READY | BETA | 45min | po-2026 |
@@ -662,14 +662,14 @@ Total notebooks: 836
 | 93 | Research QuantBook: Covered Call Strategy | Python 3 | READY | BETA | 45min | po-2026 |
 | 94 | Research QuantBook: PairsTrading (Statistical Arbi | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 95 | Portfolio Hybride IBKR (50%) + Binance (50%) — Pha | Python 3 | READY | DRAFT | 30min | po-2026 |
-| 96 | Research QuantBook: RL Portfolio Allocation | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 96 | Research QuantBook: RL Portfolio Allocation | Python 3 | READY | BETA | 45min | po-2026 |
 | 97 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | READY | BETA | 45min | po-2026 |
 | 98 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
 | 99 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 100 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 101 | Research QuantBook: Trend Following Competition | Python 3 | READY | BETA | 30min | po-2026 |
 | 102 | Research QuantBook: TrendStocks Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
-| 103 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 103 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | BETA | 30min | po-2026 |
 | 104 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 105 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
 

@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 198 |
 | PRODUCTION | 0 |
-| BETA | 161 |
-| ALPHA | 37 |
+| BETA | 168 |
+| ALPHA | 30 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -229,17 +229,17 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 1 | Research QuantBook: Adaptive Asset Allocation | BETA | Non |
 | 2 | Research QuantBook: All-Weather Portfolio | ALPHA | Non |
 | 3 | Alpha Correlation Analysis | BETA | Non |
-| 4 | Research QuantBook: BTC ML Enhanced | ALPHA | Non |
-| 5 | Research QuantBook: Multi-Channel ZigZag Crypto | ALPHA | Non |
-| 6 | Research QuantBook: Deep Learning LSTM pour SPY | ALPHA | Non |
+| 4 | Research QuantBook: BTC ML Enhanced | BETA | Non |
+| 5 | Research QuantBook: Multi-Channel ZigZag Crypto | BETA | Non |
+| 6 | Research QuantBook: Deep Learning LSTM pour SPY | BETA | Non |
 | 7 | Research QuantBook: DualMomentum (Antonacci) | BETA | Non |
 | 8 | Research QuantBook: Dual Momentum No TLT | BETA | Non |
-| 9 | Research QuantBook: EMA-Cross Alpha Model | ALPHA | Non |
+| 9 | Research QuantBook: EMA-Cross Alpha Model | BETA | Non |
 | 10 | Research QuantBook: EMA Cross Equity | BETA | Non |
 | 11 | Research QuantBook: EMA Crossover SPY Index | BETA | Non |
 | 12 | Research QuantBook: Multi-Stock EMA Crossover | BETA | Non |
 | 13 | Research QuantBook: ETF Pairs Trading | BETA | Non |
-| 14 | Research QuantBook: Fama-French Factor ETF Rotation | ALPHA | Non |
+| 14 | Research QuantBook: Fama-French Factor ETF Rotation | BETA | Non |
 | 15 | Research QuantBook: ForexCarry (G10 FX Momentum) | ALPHA | Non |
 | 16 | Research QuantBook: Framework Composite EMA-Trend | BETA | Non |
 | 17 | Research QuantBook: Framework Composite FamaFrench + Al | BETA | Non |
@@ -263,12 +263,12 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 35 | Research QuantBook: Options Wheel Tech Stocks | BETA | Non |
 | 36 | Research QuantBook: Covered Call Strategy | BETA | Non |
 | 37 | Research QuantBook: PairsTrading (Statistical Arbitrage | ALPHA | Non |
-| 38 | Research QuantBook: RL Portfolio Allocation | ALPHA | Non |
+| 38 | Research QuantBook: RL Portfolio Allocation | BETA | Non |
 | 39 | Research QuantBook: RegimeSwitching Alpha Model | BETA | Non |
 | 40 | Research QuantBook: RiskParity (Inverse-Volatility Weig | ALPHA | Non |
 | 41 | Research QuantBook: Sector-Momentum (Dual Momentum) | ALPHA | Non |
 | 42 | Research QuantBook: Trend Following Competition | BETA | Non |
 | 43 | Research QuantBook: TrendStocks Alpha Model | BETA | Non |
-| 44 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | ALPHA | Non |
+| 44 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | BETA | Non |
 | 45 | Research QuantBook: VIX-TermStructure (Short Volatility | ALPHA | Non |
 | 46 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issue #75 | BETA | Non |
