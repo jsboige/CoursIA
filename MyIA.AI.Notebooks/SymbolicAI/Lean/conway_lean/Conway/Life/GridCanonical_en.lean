@@ -121,6 +121,46 @@ theorem canonical_evolve_of_pos {n : Nat} (hn : 0 < n) (g : Grid) :
 theorem canonical_shift (v : Int × Int) (g : Grid) : Canonical (shift v g) :=
   canonical_sortDedup _
 
+/-! ## Translation-invariance of the local rule (B3/S23)
+
+These lemmas establish that Conway's rule (birth `B3` / survival `S23`) is
+translation-invariant: shifting the grid by vector `v` amounts to shifting the
+query point by `-v`. First sorry-free link of the translation-invariance chain
+(`isAlive_shift` → ... → `evolve_shift`) needed by path (A) of #6724: reduce the
+`p4_nw_g3_bridge` to a named overlap wall by aligning points `p ↔ p'` before
+applying `evolve_cone_agree` (which concludes only at a common point). -/
+
+/-- Cell liveness is translation-invariant:
+    `isAlive (shift v g) p = isAlive g (p.1 - v.1, p.2 - v.2)`. -/
+theorem isAlive_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
+    isAlive (shift v g) p = isAlive g (p.1 - v.1, p.2 - v.2) := by
+  simp [shift, isAlive, List.mem_map, mem_sortDedup]
+  constructor
+  · rintro ⟨a, b, hg, hp⟩
+    have hp' : a + v.1 = p.1 ∧ b + v.2 = p.2 := Prod.ext_iff.mp hp
+    have heq : (a, b) = (p.1 - v.1, p.2 - v.2) := by rw [Prod.ext_iff]; omega
+    rw [← heq]; exact hg
+  · intro h
+    refine ⟨p.1 - v.1, p.2 - v.2, h, ?_⟩
+    rw [Prod.ext_iff]; omega
+
+/-- Live-neighbour count is translation-invariant. -/
+theorem liveNeighborCount_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
+    liveNeighborCount (shift v g) p = liveNeighborCount g (p.1 - v.1, p.2 - v.2) := by
+  simp only [liveNeighborCount]
+  have hL : mooreNeighbors (p.1 - v.1, p.2 - v.2) =
+            (mooreNeighbors p).map (fun q => (q.1 - v.1, q.2 - v.2)) := by
+    simp [mooreNeighbors, Prod.ext_iff]; omega
+  rw [hL, List.countP_map]
+  congr 1
+  ext q
+  exact isAlive_shift v g q
+
+/-- The local transition rule `aliveNext` is translation-invariant. -/
+theorem aliveNext_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
+    aliveNext (shift v g) p = aliveNext g (p.1 - v.1, p.2 - v.2) := by
+  simp [aliveNext, isAlive_shift, liveNeighborCount_shift]
+
 /-- Membership in a `step` image, unfolded to the rule: `p` is in `step g`
     iff it is a candidate and `aliveNext` accepts it. -/
 theorem mem_step_iff {g : Grid} {p : Int × Int} :
