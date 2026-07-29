@@ -118,6 +118,21 @@ nécessite `lake update`.
 - **Race condition partagée** (cf `lean-rc1-convergence-method.md`) : ne pas
   paralléliser `lake build` sur 2+ lakes partageant la même junction cache.
   Séquentialiser.
+- **Ne jamais compter les oleans à la main pour conclure « cache purgé »** :
+  `find <lake>/.lake/packages/mathlib -name '*.olean'` renvoie **0** sur un cache
+  sain de 8124 oleans (Git-Bash `find` ne traverse pas les junctions), et
+  `os.path.islink()` renvoie **False** dessus — rien ne signale qu'on mesure un
+  lien. Noter l'asymétrie avec le caveat `rm` ci-dessus : `rm` traverse la
+  junction (et peut détruire le cache), `find` ne la traverse pas (et le déclare
+  vide). Utiliser `py scripts/lean/check_mathlib_cache.py`, qui résout chaque
+  `realpath`, compte via `os.walk`, affiche si le chemin est une junction et
+  dédoublonne les lakes partageant un même cache physique. Un `lake build` sur
+  une cible connue reste la preuve décisive (~2 min à chaud vs 30+ min à froid).
+  Incident fondateur : 5 cycles de lane Lean perdus sur un cache intact
+  (DM `msg-20260729T055956-n3f4ap`) — c'est le second mécanisme de faux-absent,
+  distinct de celui documenté dans
+  [`docs/lean/coordinator-workflow.md`](../../docs/lean/coordinator-workflow.md)
+  (oleans cherchés dans le répertoire source au lieu de `.lake/build/lib/lean/`).
 
 ### Histoire des issues
 

@@ -37,6 +37,8 @@ Les oleans Mathlib sont **deja presents localement** via un cache mutualise junc
 
 **Piege false-absent (incident 2026-07-24, re-propage sur 3 cycles)** : chercher les oleans dans `.mathlib-cache/` (chemin unused) OU dans le repertoire SOURCE `.../mathlib/Mathlib/` renvoie **0 fichier** — Lake stocke les oleans dans `.lake/build/lib/lean/`, PAS alongside la source. Un `find .../Mathlib/ -name '*.olean'` vide **ne prouve PAS** un cache vide : verifier `.lake/build/lib/lean/Mathlib/` (snapshot 2026-07-24 : ~8100 oleans).
 
+**Second mecanisme, meme symptome (incident 2026-07-29, 5 cycles de lane perdus)** : meme pointe sur le BON repertoire, `find` (Git-Bash) renvoie **0** parce qu'il **ne traverse pas les junctions Windows** — et `os.path.islink()` renvoie **False** dessus, donc rien ne signale qu'on mesure un lien. Deux mecanismes distincts produisent donc le meme « 0 olean » trompeur. Ne plus compter a la main : `py scripts/lean/check_mathlib_cache.py` resout les `realpath`, compte via `os.walk` et affiche les junctions ; un `lake build` sur une cible connue tranche (~2 min a chaud). Caveats : [`scripts/lean/README.md`](../../scripts/lean/README.md).
+
 **Fallback `cache get` (UNIQUEMENT si junction cassee / oleans manquants dans `.lake/build/lib/lean/`)** :
 ```bash
 lake exe cache get   # ~3min, oleans pre-builts depuis Azure — fallback, pas defaut
