@@ -1,0 +1,14 @@
+- name: "GameTheory-8c CombinatorialGames"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-07-29"
+    by: po-2023:CoursIA
+    python_sha: cddabe42e47d1258f444f3019bd5876407d59bee
+    csharp_sha: b0ecb44cd66eceae27918eb02ab60f1f02a7661a
+  known_differences:
+    - "Socle pedagogique commun : theorie des jeux combinatoires (Sprague-Grundy, nombres de Grundy, theoreme de Sprague-Grundy sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). Meme concept mathematique (fonction de Grundy/g(x), XOR nim-sum, jeux impartiaux a information complete), meme cas canonique (Nim). Les deux couvrent Nim, Sprague, Grundy."
+    - "Divergence d'implementation : le Python (numpy + matplotlib, 14 cellules code) implemente les nombres de Grundy et le XOR nim-sum avec visualisation (graphe de jeu, table de Grundy) ; le C# (pur System.* stdlib, 0 NuGet, 14 cellules code) implemente la meme logique combinatoire (Sprague-Grundy, nim-sum) sans dependance numerique. Meme theoreme, meme contenu algorithmique, sorties differentes (visualisation Python vs sorties texte/table C#)."
+    - "Idiomes framework : Python = numpy + matplotlib, 14 cellules code ; C# = pur System.* (System / System.Linq), 0 NuGet, 14 cellules code. Paire proche d'une traduction native (meme contenu algorithmique), mais les 2 implementations restent independantes (idiomes langage, structures de donnees, visualisation), d'ou parity_level semantic et non native-both."
