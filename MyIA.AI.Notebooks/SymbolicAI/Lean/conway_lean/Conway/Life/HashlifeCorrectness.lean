@@ -2925,8 +2925,34 @@ private theorem p4_nw_offset_decomp (k : Nat)
         derives them via the proven `hashlifeResultAux_level_cellWf`), and the
         named sorry-free lemma `p4_nw_offset_decomp` (just below `isAlive_true_iff_mem_local`)
         pins `(node R1 R2 R4 R5).toGrid`'s quadrant offsets to concrete `2^k`.
-        What remains unbridged is the *evolve-agreement* — relating the evolved
-        parent grid to the per-quadrant `R_j` results on the central cone.
+
+        **Firsthand map of the unbridged half (c.750) — the wall is the
+        DOUBLE-NINE OVERLAP realignment, not generic "agreement".** The
+        wave-1 sub-cells R_j are built from the parent's grandchildren, but
+        ONLY `R1` (from `node nw_nw nw_ne nw_sw nw_se`) is a clean parent
+        quadrant (the NW grandchild `n1`). `R2` (from `node nw_ne ne_nw nw_se
+        ne_sw`) straddles the NW/NE boundary, `R4` straddles NW/SW, and `R5`
+        (from `node nw_se ne_sw sw_ne se_nw`) is the centre straddling all four.
+        The parent decomposes via `mem_toGrid_node` into FOUR NON-OVERLAPPING
+        quadrants (`n1`/`n3`/`n7`/`n9`, offsets `(0,0)`/`(0,2^k)`/`(2^k,0)`/
+        `(2^k,2^k)`), while `(node R1 R2 R4 R5)` tiles the same central region
+        with these OVERLAPPING recombinations. Pointwise agreement between the
+        two grids on the central window therefore requires reconciling a
+        non-overlapping quadrant tiling against an overlapping double-nine
+        tiling — the level-dependent offset realignment of grandchildren that
+        belong to different parent quadrants. This IS the "geometric half of
+        P4.1" flagged OPEN at L2104-2108 ("genuinely non-structural … queueable
+        behind the `step_light_cone` P2 machinery"); that P2 precondition
+        (locality: `step_light_cone`/`evolve_cone_agree`/`quadrant_cone_agree`,
+        all sorry-free PROVEN) is now satisfied, so the overlap lemma is
+        attackable as a named multi-cycle target. The three composition pieces:
+        (i) `p4_nw_offset_decomp` — R-side quadrant offsets (ARMED, sorry-free);
+        (ii) `centralCorrect_mem_shift` L2443 — R_j ↔ evolve n_j membership
+        (AVAILABLE, sorry-free); (iii) the MISSING grid-level overlap lemma
+        relating `parent.toGrid` to the overlapping `n_j.toGrid` on the central
+        window (assembled from two `mem_toGrid_node` passes + `mem_toGrid_shift`
+        L1437 / `toGrid_shift_between` L1453, but non-trivial due to the
+        cross-quadrant grandchild realignment).
     (b) **Second-half-step locality** (SORRY-FREE once (a) holds):
         `evolve_cone_agree` / `quadrant_cone_agree` (both sorry-free) transport
         the agreement through the outer `evolve (2^(k-1))`, closing the goal
