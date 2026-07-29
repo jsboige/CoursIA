@@ -93,6 +93,7 @@ from . import signaling_convention
 from . import symbol_invention
 from . import collective_adoption
 from . import inhibited_invention
+from . import concept_inoculation
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -113,4 +114,5 @@ __all__ = [
     "symbol_invention",
     "collective_adoption",
     "inhibited_invention",
+    "concept_inoculation",
 ]
