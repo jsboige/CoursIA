@@ -15,6 +15,14 @@ name: Lean Build (reusable)
 #         sorry-baseline:    "0"
 #         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic
 #
+# Bidirectional gate (anti-regression §D, See #8853/#8856): sorry-baseline must
+# EXACTLY equal the counter's real output. The gate FAILs on above-baseline
+# (regression: a sorry-as-tactic was introduced) AND on below-baseline (stale:
+# a sorry was discharged but the baseline was not decremented — a stale floor
+# hides the next regression). When you discharge a sorry, decrement
+# sorry-baseline in the same PR; when you introduce one intentionally, raise it
+# with justification.
+#
 # Sorry-filter modes (chosen per project's sorry "profile"):
 #   raw               : grep -c "sorry"                          (every mention)
 #   prose-header      : grep "sorry" | grep -viE "sorries|sorry.s"   (excludes prose plural/possessive)
@@ -47,7 +55,7 @@ on:
         type: string
         required: true
       sorry-baseline:
-        description: "Known-good standalone/real sorry count (regression floor)"
+        description: "Current real sorry count (must EXACTLY match the counter; bidirectional gate fails above AND below)"
         type: string
         required: true
       sorry-filter-mode:
@@ -140,8 +148,23 @@ jobs:
           echo "scaffolding target), raise sorry-baseline in the caller workflow WITH"
           echo "a documented justification in the PR body."
           exit 1
+        elif [ "$SORRY_TOTAL" -lt "$BASELINE" ]; then
+          # Bidirectional enforcement (anti-regression §D, See #8853/#8856).
+          # The gate previously only failed on above-baseline regressions; a
+          # discharged sorry (real count drops) left the baseline stale with no
+          # signal, so the NEXT regression above the stale floor passed silently.
+          # A baseline must track the real count exactly. Real < baseline means
+          # the caller workflow's sorry-baseline is stale — decrement it here.
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) is BELOW baseline ($BASELINE)."
+          echo "A sorry was discharged (or the counter scope changed) but the"
+          echo "sorry-baseline in the caller workflow was not decremented to match."
+          echo "A stale baseline hides the next regression — the gate only flags"
+          echo "above-baseline. Decrement sorry-baseline to $SORRY_TOTAL in the"
+          echo "caller workflow, in this same PR (anti-regression §D, #8853/#8856)."
+          exit 1
         fi
-        echo "OK: sorry count at or below baseline ($SORRY_TOTAL <= $BASELINE)."
+        echo "OK: sorry count matches baseline exactly ($SORRY_TOTAL == $BASELINE)."
 
     - name: Install elan
       run: |
