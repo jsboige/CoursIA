@@ -9,6 +9,7 @@ backwards jumps must be flagged HIGH.
 import json
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_cell_ordering import (  # noqa: E402
@@ -19,6 +20,7 @@ from scan_cell_ordering import (  # noqa: E402
     scan_enchainement,
     scan_consecutive_code,
     scan_notebook,
+    find_notebooks,
 )
 
 
@@ -237,3 +239,28 @@ class TestScanNotebook:
         result = scan_notebook(p)
         assert "error" in result
         assert result["findings"] == []
+
+
+# ---------------------------------------------------------------------------
+# find_notebooks SKIP_DIRS guard (#8858-class)
+# ---------------------------------------------------------------------------
+
+class TestFindNotebooksSkipdirParent:
+    """``find_notebooks`` must NOT be silenced when the repo is cloned under
+    a parent whose name is in ``EXCLUDE_DIRS``.
+
+    ``NOTEBOOKS_DIR`` is absolute and ``find_notebooks`` walks it with
+    ``root.rglob`` (absolute paths), then filters ``EXCLUDE_DIRS`` on
+    ``p.parts`` (absolute components). A checkout cloned under e.g.
+    ``archive/`` would match every path and silence the whole scan — worse
+    than a false positive for a cell-ordering CI guard.
+    """
+
+    def test_find_notebooks_under_archive_parent_not_silenced(self, tmp_path):
+        import scan_cell_ordering as sco
+        nb_root = tmp_path / "archive" / "repo" / "MyIA.AI.Notebooks"
+        nb_root.mkdir(parents=True)
+        (nb_root / "nb.ipynb").write_text("{}", encoding="utf-8")
+        with patch.object(sco, "NOTEBOOKS_DIR", nb_root):
+            found = sco.find_notebooks()
+        assert [p.name for p in found] == ["nb.ipynb"]
