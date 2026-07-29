@@ -2876,6 +2876,30 @@ private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
     isAlive g p = true ↔ p ∈ g := by
   rw [isAlive]; exact List.elem_iff
 
+/-- **crux (a) offset building block (sorry-free, #6724 c.749).** The
+    `2^level`-pinned quadrant decomposition of a `node`'s `toGrid` membership.
+    `mem_toGrid_node` (L1478) already decomposes `(node nw ne sw se).toGrid
+    (r0,c0)` but leaves the quadrant offset as the OPAQUE `2 ^ nw.level`; this
+    specialization pins it to the concrete `2 ^ k` once `nw.level = k` is known.
+
+    This is the "lemme intermédiaire nommé sur les offsets seuls" prescribed for
+    crux (a) (DM `msg-20260729T010408-cromnx`): the quadrant-offset arithmetic
+    (NW `(0,0)`, NE `(0, 2^k)`, SW `(2^k, 0)`, SE `(2^k, 2^k)`) isolated from the
+    game-of-life theory. Proven by `mem_toGrid_node` + the level rewrite — no
+    `sorry`, no game semantics. It is the available offset machinery the bridge
+    `(a)` half assembles over (see `p4_nw_g3_bridge` docstring); the bridge is
+    armed below with `hR1_l … hR5_l : R_j.level = k` precisely so it can apply
+    this lemma to pin every `(node R1 R2 R4 R5)` offset. -/
+private theorem p4_nw_offset_decomp (k : Nat)
+    (R1 R2 R4 R5 : MacroCell) (hR1_l : R1.level = k) (p : Int × Int) :
+    p ∈ (node R1 R2 R4 R5).toGrid (0, 0) ↔
+      p ∈ R1.toGrid (0, 0) ∨
+      p ∈ R2.toGrid (0, (2 ^ k : Int)) ∨
+      p ∈ R4.toGrid ((2 ^ k : Int), 0) ∨
+      p ∈ R5.toGrid ((2 ^ k : Int), (2 ^ k : Int)) := by
+  rw [mem_toGrid_node, hR1_l]
+  simp only [Int.zero_add, Int.add_zero]
+
 /-- **G3 wave-assembly bridge (named extraction, #6724 c.745).** The research
     heart of `p4_nw_supercell_agree`, extracted as a NAMED lemma carrying ALL
     the call-site hypotheses — per the ai-01 extraction protocol (DM
@@ -2895,8 +2919,14 @@ private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
         facts (hcc1/2/4/5 → R_j centre = evolve (2^(k-1)) n_j on the central
         window) via `mem_toGrid_node` (node→4-quadrant decomposition, sorry-free
         L1478). The quadrant-offset arithmetic (NW at (0,0), NE at (0, 2^level),
-        etc.) and the `2^level` half-size shifts are the assembly glue NOT yet
-        bridged.
+        etc.) and the `2^level` half-size shifts are the assembly glue. **The
+        offset half is now armed (c.749):** the signature carries
+        `hR1_l … hR5_l : R_j.level = k` (transported from the call site, which
+        derives them via the proven `hashlifeResultAux_level_cellWf`), and the
+        named sorry-free lemma `p4_nw_offset_decomp` (just below `isAlive_true_iff_mem_local`)
+        pins `(node R1 R2 R4 R5).toGrid`'s quadrant offsets to concrete `2^k`.
+        What remains unbridged is the *evolve-agreement* — relating the evolved
+        parent grid to the per-quadrant `R_j` results on the central cone.
     (b) **Second-half-step locality** (SORRY-FREE once (a) holds):
         `evolve_cone_agree` / `quadrant_cone_agree` (both sorry-free) transport
         the agreement through the outer `evolve (2^(k-1))`, closing the goal
@@ -2915,6 +2945,8 @@ private theorem p4_nw_g3_bridge
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
     (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
     (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
@@ -2980,6 +3012,8 @@ private theorem p4_nw_supercell_agree
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
     (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
     (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
@@ -3004,7 +3038,8 @@ private theorem p4_nw_supercell_agree
   exact p4_nw_g3_bridge k hk1
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
-    R1 R2 R4 R5 hR1 hR2 hR4 hR5 hcc1 hcc2 hcc4 hcc5 p
+    R1 R2 R4 R5 hR1 hR2 hR4 hR5
+    hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p
 
 /-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
     Discharges the nw quadrant of `p4_succ_membership` over OPAQUE wave-1
@@ -3078,7 +3113,8 @@ private theorem p4_nw_membership_arm
     rw [p4_nw_supercell_agree k hk1
           nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
           sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
-          R1 R2 R4 R5 hR1 hR2 hR4 hR5 hcc1 hcc2 hcc4 hcc5 p]
+          R1 R2 R4 R5 hR1 hR2 hR4 hR5
+          hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p]
     exact hsup.1
   · -- 2^k ≤ p.1
     exact hsup.2.1
