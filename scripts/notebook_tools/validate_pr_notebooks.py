@@ -84,6 +84,33 @@ QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
 # #6803.
 ARCHIVE_NOTEBOOK_SUFFIX = "_archive.ipynb"
 
+# Notebooks whose OUTPUTS would embed personal data (student rosters, e-mails,
+# individual grades). Here an EMPTY output is the compliant state, not a defect
+# — CLAUDE.md §E: "Clear cell outputs avant commit UNIQUEMENT si les outputs
+# contiennent des donnees sensibles".
+#
+# Without this carve-out the gate is not merely wrong, it is DANGEROUS: it told
+# `MyIA.AI.Notebooks/GradeBook.ipynb` (.net-csharp, 12/12 cells null) twelve
+# times over ".net-csharp executes locally; commit execution proof, See #5214".
+# An agent obeying that instruction plus rule F ("install the kernel, never
+# bypass") would execute a notebook whose cells render `studentRecords
+# .DisplayTable()` — login, first name, last name, e-mail — and commit student
+# PII to a public repo. The gate would have been the proximate cause.
+#
+# DECLARED, never inferred: PII cannot be detected from source, so the notebook
+# must opt in via `metadata.pii_no_output: true` (same declarative shape as
+# `metadata.qc_reference`, #3776).
+#
+# The declaration is NOT a free pass on #5214 — it is load-bearing in the other
+# direction too. A notebook that declares it MUST carry zero outputs on every
+# code cell; a single committed output makes the gate FAIL loudly, because that
+# is the signature of personal data already sitting in git history. So the flag
+# excuses emptiness and forbids non-emptiness: it cannot be used to smuggle a
+# half-executed notebook past the execution proof. Both verdicts are exercised
+# in tests/test_validate_pr_notebooks.py (a guard nobody has seen fail is not
+# yet a guard — #8681/#8820).
+PII_NO_OUTPUT_KEY = "pii_no_output"
+
 # Kernels that render errors as TEXT, not as output_type=="error" (#5151).
 # Lean via lean4_jupyter/alectryon embeds the compiler's own message severity
 # in the cell output (text/plain + text/html). A `severity: error` message is
@@ -216,8 +243,14 @@ def validate_notebook(nb_path: Path) -> dict:
     # committed .NET cell MUST carry execution_count != null = EXEC_PROVED
     # (#5214: "CI skip .NET" != "outputs may be empty"). The Tweety-3 cluster
     # (#5194/#5199/#5202) was merged at execution_count:null + outputs:[].
+    # Declared PII notebook: empty outputs are the compliant state (see the
+    # PII_NO_OUTPUT_KEY comment above). Read once, used twice — it relaxes H.3
+    # and, symmetrically, makes any committed output a hard failure.
+    pii_no_output = data.get("metadata", {}).get(PII_NO_OUTPUT_KEY) is True
     allow_null_exec_count = (
-        any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
+        any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS)
+        or qc_cloud
+        or pii_no_output
     )
     saw_null_exec = False  # for the forensic verdict (H.5)
     saw_empty_display = False  # #6971 blank-render signature (see verdict below)
@@ -242,6 +275,22 @@ def validate_notebook(nb_path: Path) -> dict:
             continue
 
         result["total_code"] += 1
+
+        # The other half of the PII carve-out. Declaring `pii_no_output` buys
+        # tolerance for a null execution_count and, in exchange, forbids ANY
+        # committed output: an output on a notebook that renders student
+        # rosters is the signature of personal data already in git history.
+        # Failing here is what stops the flag from becoming an escape hatch
+        # from #5214 for ordinary half-executed notebooks.
+        if pii_no_output and cell.get("outputs"):
+            result["passed"] = False
+            result["errors"].append(
+                f"cell {i}: notebook declares metadata.{PII_NO_OUTPUT_KEY} but "
+                f"this cell carries {len(cell['outputs'])} committed output(s) — "
+                f"personal data may already be in git history. Clear the outputs "
+                f"and rotate/scrub upstream if they were pushed; do NOT hand-edit "
+                f"them into something plausible (Stop&Repair)."
+            )
 
         # C.1 check: forbidden patterns via the shared digit-bounded,
         # comment/docstring-aware scanner (#1505 — no more date false positives)
@@ -329,7 +378,12 @@ def validate_notebook(nb_path: Path) -> dict:
     # Forensic verdict (H.5): EXEC_PROVED / STRUCTURAL_ONLY / ADVISORY_NON_EXEC.
     # Distinguishes "real outputs present" from "structural-only / advisory" so
     # reviewers and bots apply CHANGES_REQUESTED on the second (#5214).
-    if allow_null_exec_count:
+    if pii_no_output:
+        # Its own verdict, ahead of ADVISORY_NON_EXEC: a reviewer must not read
+        # "advisory" (= we could not execute here) where the truth is "empty ON
+        # PURPOSE, and any output would be a data-protection incident".
+        result["forensic_verdict"] = "PII_NO_OUTPUT"
+    elif allow_null_exec_count:
         result["forensic_verdict"] = "ADVISORY_NON_EXEC"
     elif saw_null_exec:
         result["forensic_verdict"] = "STRUCTURAL_ONLY"

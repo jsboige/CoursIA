@@ -245,6 +245,92 @@ class TestValidateNotebookH3:
 
 
 # ---------------------------------------------------------------------------
+# validate_notebook — PII carve-out (metadata.pii_no_output)
+# ---------------------------------------------------------------------------
+
+class TestValidateNotebookPiiNoOutput:
+    """A grading notebook renders student logins, e-mails and marks. For it an
+    EMPTY output is the compliant state (CLAUDE.md §E), yet the gate used to
+    answer `.net-csharp executes locally; commit execution proof, See #5214` —
+    an instruction that, obeyed together with rule F, commits student PII to a
+    public repo. The carve-out is DECLARED (PII is undetectable from source)
+    and, crucially, symmetric: it excuses emptiness and forbids non-emptiness.
+
+    Both directions are exercised here on purpose. A guard nobody has seen fail
+    is not yet a guard (#8681/#8820)."""
+
+    def test_declared_pii_notebook_with_empty_outputs_passes(self, tmp_path):
+        """The trap that was armed on MyIA.AI.Notebooks/GradeBook.ipynb:
+        12/12 code cells null, 0 outputs, .net-csharp — FAIL before, PASS once
+        the notebook declares why it is empty."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+            _code("evaluations.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["errors"] == []
+
+    def test_declared_pii_notebook_gets_its_own_verdict(self, tmp_path):
+        """Not ADVISORY_NON_EXEC: 'we could not execute here' and 'empty ON
+        PURPOSE, any output is a data-protection incident' must not read alike
+        to a reviewer."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        assert validate_notebook(nb)["forensic_verdict"] == "PII_NO_OUTPUT"
+
+    def test_declared_pii_notebook_with_committed_output_fails(self, tmp_path):
+        """The self-tripping half. An output on a notebook that renders student
+        rosters is the signature of personal data already in git history — so
+        the declaration makes it a HARD failure instead of hiding it."""
+        roster = {"output_type": "stream", "name": "stdout",
+                  "text": ["login  prenom  nom  email\n"]}
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None,
+                  outputs=[roster]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("pii_no_output" in e and "git history" in e
+                   for e in result["errors"])
+
+    def test_flag_cannot_smuggle_a_half_executed_notebook(self, tmp_path):
+        """The abuse the carve-out must not enable: bolting the flag onto an
+        ordinary notebook to buy silence on #5214. Execution_count present, so
+        H.3 alone would pass — the committed output still fails it."""
+        nb = _write_nb(tmp_path / "ordinary.ipynb", [
+            _code("print('hello')", exec_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout",
+                            "text": ["hello\n"]}]),
+        ], extra_metadata={"pii_no_output": True})
+        assert validate_notebook(nb)["passed"] is False
+
+    def test_without_the_flag_the_same_notebook_still_fails_h3(self, tmp_path):
+        """Control: the exemption is opt-in, never inferred. Same cells, no
+        declaration — the #5214 instruction fires exactly as before."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+
+    def test_flag_must_be_true_not_merely_present(self, tmp_path):
+        """`is True`, not truthiness: a stray "false"/"" string must not open
+        the carve-out by accident."""
+        for value in (False, "true", 1, None):
+            nb = _write_nb(tmp_path / f"g{value}.ipynb", [
+                _code("studentRecords.DisplayTable()", exec_count=None),
+            ], kernelspec={"name": ".net-csharp", "language": "C#"},
+                extra_metadata={"pii_no_output": value})
+            assert validate_notebook(nb)["passed"] is False, value
+
+
+# ---------------------------------------------------------------------------
 # validate_notebook — C.1 checks (forbidden patterns)
 # ---------------------------------------------------------------------------
 

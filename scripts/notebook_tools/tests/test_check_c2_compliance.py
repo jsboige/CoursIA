@@ -569,6 +569,44 @@ class TestGetTargetNotebooksCatalog:
 
 
 # ---------------------------------------------------------------------------
+# check_notebook — declared PII carve-out (metadata.pii_no_output)
+# ---------------------------------------------------------------------------
+
+class TestPiiNoOutput:
+    """Second half of the carve-out introduced in validate_pr_notebooks.py.
+    Honouring the declaration in only one of the two scanners would leave this
+    one still reporting "missing execution_count" on a grading notebook — i.e.
+    still telling an agent to execute it and commit student PII."""
+
+    def test_declared_pii_notebook_is_compliant_while_empty(self, tmp_path):
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();"),
+            _code("evaluations.DisplayTable();"),
+        ], metadata={"pii_no_output": True})
+        assert check_notebook(nb)["violations"] == []
+
+    def test_declared_pii_notebook_with_output_is_a_violation(self, tmp_path):
+        """Symmetric: the flag excuses emptiness and criminalises non-emptiness."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();", outputs=[
+                {"output_type": "stream", "name": "stdout",
+                 "text": ["login prenom nom email\n"]}]),
+        ], metadata={"pii_no_output": True})
+        violations = check_notebook(nb)["violations"]
+        assert len(violations) == 1
+        assert "git history" in violations[0]["reason"]
+
+    def test_without_the_flag_missing_exec_count_still_flagged(self, tmp_path):
+        """Control: opt-in, never inferred."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();"),
+        ])
+        violations = check_notebook(nb)["violations"]
+        assert len(violations) == 1
+        assert violations[0]["reason"] == "missing execution_count"
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
