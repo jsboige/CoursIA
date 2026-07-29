@@ -2,13 +2,13 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-# Hommage Grothendieck — Partie 18 : Image directe et image reciproque des faisceaux
+# Hommage Grothendieck — Partie 30 : Image directe et image reciproque des faisceaux
 
 Alexandre Grothendieck (1928-2014).
 
 Extension Phase 5 (#2159, EPIC #1646).
 
-Les parties 1-17 ont etabli les fondamentaux : categories, cribles, topologies,
+Les parties 1-29 ont etabli les fondamentaux : categories, cribles, topologies,
 lois de treillis, identites de pullback, bases de faisceaux, cloture couvrante,
 calibration, sous-canonicalite, topologies denses, faisceaux, hom interne,
 cohomologie de Cech, limite de Mayer-Vietoris.

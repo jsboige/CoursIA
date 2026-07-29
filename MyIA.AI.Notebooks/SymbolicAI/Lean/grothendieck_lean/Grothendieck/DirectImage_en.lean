@@ -2,11 +2,11 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-# Grothendieck tribute — Part 18: Direct image and inverse image of sheaves
+# Grothendieck tribute — Part 30: Direct image and inverse image of sheaves
 
 Phase 5 extension (#2159, Epic #1646).
 
-Parts 1-17 established the foundations: categories, sieves, topologies, lattice
+Parts 1-29 established the foundations: categories, sieves, topologies, lattice
 laws, pullback identities, sheaf bases, covering closure, calibration,
 subcanonicality, dense topologies, sheaves, internal hom, Cech cohomology,
 Mayer-Vietoris limit.
