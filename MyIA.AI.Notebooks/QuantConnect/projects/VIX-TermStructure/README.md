@@ -23,6 +23,22 @@ lean backtest --project .
 
 **QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
+### Données VIX (quantbook)
+
+Le quantbook charge les séries VIX / VIX3M depuis des CSV locaux (`vix_daily.csv`,
+`vix3m_daily.csv`). `qb.add_data(CBOE, ...)` nécessite l'infra alternative-data de
+QC Cloud (vide en recherche Docker locale) ; VIX/VIX3M sont les **indices publics
+CBOE** (volatilité implicite 30 / 93 jours), disponibles gratuitement via yfinance
+(`^VIX` / `^VIX3M`). Les CSV sont **gitignorés** (`*.csv` sous `projects/`) — pour
+les régénérer de façon reproductible (1 commande) :
+
+```bash
+python scripts/quantconnect/provision_vix_csv.py --out-folder lean-workspace/data
+```
+
+Écrit les deux CSV dans le dossier de données LEAN (le point de montage Docker
+`/Lean/Data/`), où le quantbook les trouve via son `_find()`.
+
 ## Métriques de backtest (2015-2026)
 
 | Métrique | Valeur |
