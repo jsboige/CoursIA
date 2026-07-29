@@ -1,0 +1,91 @@
+name: Variation Tag Guard
+
+# Rend VISIBLE la conformite du tag `Grain: <TIER>/<GENRE>` exige par
+# .claude/rules/variation-protocol.md (mandat user 2026-07-21, anti-monoculture).
+#
+# ADVISORY, jamais bloquant : ce job sort toujours en exit 0. Il n'existe pas
+# pour punir un worker, mais pour que le coordinateur ne puisse plus merger
+# une PR sans tag *sans le voir*. Le protocole designe le tag comme condition
+# de merge et confie la lecture a ai-01 ; une condition qui repose sur la
+# seule vigilance humaine derive silencieusement (constat : plusieurs merges
+# NO-TAG malgre la regle publiee). Un signal automatique la rend auditable.
+#
+# Passage en bloquant : seulement apres une periode ou la flotte est conforme,
+# et par decision explicite — pas par durcissement unilateral de ce fichier.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-variation-tag:
+    name: Check Grain tag conformity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect PR body for Grain tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Hors scope : bots (catalogue auto-regenere) et forks (PRs etudiantes,
+          # cf .claude/rules/student-pr-reviews.md — review bienveillante, aucun
+          # critere interne ne s'y applique).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Le tag circule sous plusieurs habillages markdown observes en vrai :
+          # `**Grain: ...**`, `Grain: **DEEP/lean**`, et surtout `` `Grain: DEEP/lean` ``
+          # (backticks — la forme que le coordinateur lui-meme utilise). On neutralise
+          # asterisques et backticks avant de matcher, plutot que de multiplier les
+          # variantes de regex. Un tag rejete pour son habillage serait un faux
+          # negatif du guard, pas une non-conformite de l'auteur.
+          BODY_FLAT=$(printf '%s' "${PR_BODY:-}" | tr -d '*`')
+
+          # Puce de liste ou citation toleree devant le tag.
+          GRAIN_LINE=$(printf '%s\n' "$BODY_FLAT" | grep -m1 -E '^[[:space:]]*[->+]?[[:space:]]*Grain:' || true)
+
+          if [ -z "$GRAIN_LINE" ]; then
+            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
+            gh label create "variation-tag-missing" \
+              --description "PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" \
+              --color "FBCA04" --force 2>/dev/null || true
+            gh pr edit "$PR_NUMBER" --add-label "variation-tag-missing" 2>/dev/null || true
+            exit 0
+          fi
+
+          TIER=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*([A-Za-z]+)/.*|\1|p')
+          GENRE=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*[A-Za-z]+/([A-Za-z0-9_-]+).*|\1|p')
+
+          case "$TIER" in
+            DEEP|MED|LIGHT)
+              echo "Tag conforme : TIER=$TIER GENRE=${GENRE:-?}"
+              # Le label eventuel d'un push anterieur ne doit pas rester colle.
+              gh pr edit "$PR_NUMBER" --remove-label "variation-tag-missing" 2>/dev/null || true
+              gh pr edit "$PR_NUMBER" --remove-label "variation-tag-malformed" 2>/dev/null || true
+              exit 0
+              ;;
+          esac
+
+          echo "::warning::Ligne Grain presente mais TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT — le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
+          echo "Ligne lue : $GRAIN_LINE"
+          gh label create "variation-tag-malformed" \
+            --description "Tag Grain present mais TIER != DEEP|MED|LIGHT" \
+            --color "FEF2C0" --force 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label "variation-tag-malformed" 2>/dev/null || true
+          exit 0
