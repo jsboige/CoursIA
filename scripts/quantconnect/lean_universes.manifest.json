@@ -37,6 +37,14 @@
       "start": "2021-01-01",
       "end": null,
       "regen_date": "2026-07-29"
+    },
+    "ml_xgboost": {
+      "purpose": "ML-XGBoost quantbook (ai-01 c.38 dispatch) -- Top tech/large-cap stocks (AAPL/MSFT/GOOGL/AMZN/NVDA/META/TSLA/JPM/V/WMT/DIS/NFLX/PYPL/ADBE) loaded over a trailing 5y window. NB: despite the name, the notebook trains sklearn GradientBoostingRegressor as a documented stand-in for the xgboost library (no `import xgboost`); random_state=42 throughout = deterministic. Re-exec is faithful to committed pedagogy, not a model change.",
+      "issue": "#8734",
+      "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "WMT", "DIS", "NFLX", "PYPL", "ADBE"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
     }
   }
 }
