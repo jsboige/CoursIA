@@ -308,12 +308,24 @@ notebook touche :
 - **C.3** : scope strict re-exec Papermill (verifie `git diff` cellule
   source modifiee)
 - **H.5 verdict** : `EXEC_PROVED` / `STRUCTURAL_ONLY` /
-  `SUSPECT_REGRESSION` par parsing JSON du diff
+  `ADVISORY_NON_EXEC`, et (#8830) `PII_EXEMPT_EMPTY` /
+  `PII_LEAKAGE_SUSPECTED` (voir ci-dessous)
 
 Advisory `.NET execution_count` ≠ outputs vides autorises (#5214) : la CI
 ne peut pas Papermill-exec les notebooks .NET, mais une cellule .NET
 **DOIT** porter `execution_count != null` (preuve d'execution locale sur
 chaque worker `dotnet-interactive`).
+
+Exemption PII declaree `metadata.pii_no_output=True` (#8830) : un notebook
+transportant des donnees personnelles (ex. `GradeBook.ipynb` : login/nom/email/
+notes etudiants) est prescrit VIDE (CLAUDE.md « clear outputs si sensibles ») —
+son `execution_count: null` est correct, pas une violation C.2. L'exiger
+preuve d'execution prescrirait de committer un trombinoscope nominatif dans un
+depot public. Symetrique et falsifiable : declare + vide partout = PASS propre
+(`PII_EXEMPT_EMPTY`) ; declare + ≥1 output commite = FAIL
+(`PII_LEAKAGE_SUSPECTED` — les donnees sont peut-etre deja dans l'historique).
+Declaree uniquement (jamais inferee), sur le modele `metadata.qc_reference`
+(#3776).
 
 ### `check_c2_compliance.py` (regle C.2)
 

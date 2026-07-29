@@ -176,6 +176,23 @@ def _is_qc_cloud(rel_path: str, data: dict) -> bool:
     return False
 
 
+def _is_pii_no_output(data: dict) -> bool:
+    """Whether a notebook is a DECLARED PII notebook whose empty state is
+    prescribed (so null execution_count / stripped outputs are correct, not a
+    C.2 violation). #8830: a PR gate demanding execution proof on such a notebook
+    would prescribe committing student data (login/nom/email/notes) into a public
+    repo — the gate would be the immediate cause of the incident.
+
+    Declared only (never inferred: the presence of personal data is NOT
+    detectable from the source), on the model of ``metadata.qc_reference``
+    (#3776). The exemption is SYMMETRIC and falsifiable both ways (see
+    ``validate_notebook``): declared + empty everywhere = clean PASS; declared +
+    any committed output = FAIL (PII may already be in git history). Without the
+    symmetry the flag would become a #5214 escape hatch for any half-run notebook.
+    """
+    return data.get("metadata", {}).get("pii_no_output") is True
+
+
 def validate_notebook(nb_path: Path) -> dict:
     """Validate a single notebook for H.1/H.3 compliance.
 
@@ -205,6 +222,11 @@ def validate_notebook(nb_path: Path) -> dict:
     # advisory, and H.1 error outputs are advisory (expected without the
     # kernel/runtime). Covers .NET, Lean, QC Cloud, qc_reference templates.
     qc_cloud = _is_qc_cloud(rel_path, data)
+    # #8830: a declared PII notebook (metadata.pii_no_output=True) is prescribed
+    # empty — its null execution_count is correct, not a C.2 violation. The gate
+    # must NOT demand execution proof (that would prescribe committing student
+    # data). The symmetric "any output = FAIL" check runs after the loop.
+    pii_declared = _is_pii_no_output(data)
     ci_reexec_skipped = any(k in kernel for k in SKIP_EXEC_KERNELS) or qc_cloud
     # Research archive snapshot: error outputs are a deliberate record, not a
     # bug (#6803). H.1 is advisory; H.3 + C.1 still enforced below.
@@ -218,6 +240,7 @@ def validate_notebook(nb_path: Path) -> dict:
     # (#5194/#5199/#5202) was merged at execution_count:null + outputs:[].
     allow_null_exec_count = (
         any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
+        or pii_declared
     )
     saw_null_exec = False  # for the forensic verdict (H.5)
     saw_empty_display = False  # #6971 blank-render signature (see verdict below)
@@ -325,6 +348,31 @@ def validate_notebook(nb_path: Path) -> dict:
                     f"(severity:error — failed compile/import/proof)"
                 )
                 break  # one report per cell is enough
+
+    # #8830: declared PII exemption — SYMMETRIC and falsifiable both ways.
+    # Declared + 0 committed output everywhere = the prescribed empty state
+    # (CLAUDE.md: clear outputs when sensitive) = clean PASS, distinct from the
+    # advisory non-exec verdict. Declared + >=1 committed output = FAIL: the
+    # notebook was run and committed despite holding student data, so the data
+    # may already be in git history. The symmetry is what keeps the flag honest
+    # — without the FAIL arm it degrades into a #5214 escape hatch.
+    if pii_declared:
+        cells_with_output = sum(
+            1 for c in data.get("cells", [])
+            if c.get("cell_type") == "code" and c.get("outputs")
+        )
+        if cells_with_output > 0:
+            result["passed"] = False
+            result["errors"].append(
+                f"PII notebook (metadata.pii_no_output=True): {cells_with_output} "
+                f"code cell(s) carry committed output -- student data may be in "
+                f"git history. Strip outputs & execution_count and audit the "
+                f"history (or rotate the data). See #8830."
+            )
+            result["forensic_verdict"] = "PII_LEAKAGE_SUSPECTED"
+        else:
+            result["forensic_verdict"] = "PII_EXEMPT_EMPTY"
+        return result
 
     # Forensic verdict (H.5): EXEC_PROVED / STRUCTURAL_ONLY / ADVISORY_NON_EXEC.
     # Distinguishes "real outputs present" from "structural-only / advisory" so

@@ -584,3 +584,40 @@ class TestConstants:
         assert isinstance(EXCLUDE_PEDAGOGICAL, set)
         assert "research" in EXCLUDE_PEDAGOGICAL
         assert "archive" in EXCLUDE_PEDAGOGICAL
+
+
+# ---------------------------------------------------------------------------
+# check_notebook — #8830 declared PII exemption (symmetric)
+# ---------------------------------------------------------------------------
+class TestPiiNoOutputExemption:
+    """#8830: a declared PII notebook (metadata.pii_no_output=True) is prescribed
+    empty. Declared + empty = compliant; declared + any committed output = FAIL
+    (student data may be in git history). Opt-in only -- the broader kernel/QC
+    exemption gap (~54 quantbooks, #6891) is distinct and NOT widened here."""
+
+    def test_pii_declared_empty_compliant(self, tmp_path):
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code("var records = Load();", exec_count=None),
+            _code("GenerateWorkbook(records);", exec_count=None),
+        ], metadata={"pii_no_output": True})
+        result = check_notebook(nb)
+        assert result["violations"] == []
+
+    def test_pii_declared_with_output_violation(self, tmp_path):
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code("DisplayTable(records);", exec_count=1,
+                  outputs=[{"output_type": "stream", "text": ["Jean Dupont j@x.fr"]}]),
+        ], metadata={"pii_no_output": True})
+        result = check_notebook(nb)
+        assert len(result["violations"]) == 1
+        assert "#8830" in result["violations"][0]["reason"]
+
+    def test_pii_not_declared_still_checked(self, tmp_path):
+        # Without the flag, missing execution_count is still flagged -- the pii
+        # exemption does not widen into a kernel/QC exemption (#6891 is separate).
+        nb = _write_nb(tmp_path / "not_pii.ipynb", [
+            _code("var x = Load();", exec_count=None),
+        ], metadata={})
+        result = check_notebook(nb)
+        assert len(result["violations"]) == 1
+        assert result["violations"][0]["reason"] == "missing execution_count"

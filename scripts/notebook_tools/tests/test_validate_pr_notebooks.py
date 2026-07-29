@@ -597,3 +597,72 @@ class TestBlankRenderVerdict:
         ], kernelspec={"name": "lean4", "language": "lean4"})
         result = validate_notebook(nb)
         assert result["forensic_verdict"] == "ADVISORY_NON_EXEC"
+
+
+# ---------------------------------------------------------------------------
+# validate_notebook — #8830 declared PII exemption (symmetric, falsifiable)
+# ---------------------------------------------------------------------------
+class TestPiiNoOutputExemption:
+    """#8830: a declared PII notebook (metadata.pii_no_output=True) is prescribed
+    empty (CLAUDE.md: clear outputs when sensitive). The gate must NOT demand
+    execution proof -- obeying that + Rule F would prescribe committing student
+    data into a public repo. Symmetric and falsifiable both ways: declared +
+    empty = clean PASS; declared + any committed output = FAIL."""
+
+    DOTNET = {"name": ".net-csharp", "language": "C#", "display_name": ".NET (C#)"}
+
+    def test_pii_declared_empty_passes_clean(self, tmp_path):
+        # Declared + empty everywhere = prescribed state. Clean PASS with a
+        # distinct verdict (NOT the advisory non-exec one).
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code('#r "nuget: CsvHelper"\nvar records = Load();', exec_count=None),
+            _code("GenerateWorkbook(records);", exec_count=None),
+        ], kernelspec=self.DOTNET, extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "PII_EXEMPT_EMPTY"
+        assert result["errors"] == []
+
+    def test_pii_declared_null_exec_count_not_flagged(self, tmp_path):
+        # The CORE fix: a null execution_count on a declared PII notebook is NOT
+        # an H.3/C.2 violation. Before #8830 the gate prescribed committing proof.
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code("var x = Load();", exec_count=None),
+        ], kernelspec=self.DOTNET, extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert not any("execution_count is null" in e for e in result["errors"])
+
+    def test_pii_declared_with_output_fails(self, tmp_path):
+        # Symmetric FAIL arm: a declared PII notebook that committed output may
+        # have leaked student data into git history.
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code("studentRecords.DisplayTable();", exec_count=1,
+                  outputs=[{"output_type": "execute_result",
+                            "data": {"text/plain": ["Jean Dupont jdupont@x.fr"]}}]),
+        ], kernelspec=self.DOTNET, extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert result["forensic_verdict"] == "PII_LEAKAGE_SUSPECTED"
+        assert any("#8830" in e and "student data" in e for e in result["errors"])
+
+    def test_pii_not_declared_null_exec_count_still_fails(self, tmp_path):
+        # Without the flag, a .net-csharp notebook with null exec_count STILL
+        # fails (#5214) -- the exemption is opt-in, never an escape hatch.
+        nb = _write_nb(tmp_path / "not_pii.ipynb", [
+            _code("var x = Load();", exec_count=None),
+        ], kernelspec=self.DOTNET)
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+
+    def test_pii_declared_c1_violation_still_fails(self, tmp_path):
+        # The exemption waives the empty-state requirement, NOT C.1: a PII
+        # notebook must still not ship raise NotImplementedError.
+        nb = _write_nb(tmp_path / "pii.ipynb", [
+            _code("raise NotImplementedError", exec_count=None),
+        ], kernelspec=self.DOTNET, extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("C.1 violation" in e for e in result["errors"])

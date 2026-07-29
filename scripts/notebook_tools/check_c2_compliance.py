@@ -50,6 +50,15 @@ def check_notebook(nb_path: Path) -> dict:
     violations = []
     code_idx = 0
 
+    # #8830: a declared PII notebook (metadata.pii_no_output=True) is prescribed
+    # empty (CLAUDE.md: clear outputs when sensitive). Its empty state is correct,
+    # not a C.2 violation -- demanding execution proof here would prescribe
+    # committing student data. Symmetric: declared + any committed output = FAIL
+    # (data may be in history). Declared only (PII is not detectable from source),
+    # modelled on metadata.qc_reference. The broader kernel/QC exemption gap
+    # (~54 quantbooks) is a distinct concern governed by #6891 -- NOT added here.
+    pii_declared = notebook.get("metadata", {}).get("pii_no_output") is True
+
     for i, cell in enumerate(notebook.get("cells", [])):
         if cell.get("cell_type") != "code":
             continue
@@ -69,6 +78,18 @@ def check_notebook(nb_path: Path) -> dict:
         # and audit_c1_c3.py (cf #5261 C-family comment-awareness).
         lines = [l.strip() for l in source.split("\n") if l.strip()]
         if all(l.startswith(("#", "//")) for l in lines):
+            continue
+
+        if pii_declared:
+            # #8830 symmetric arm: empty is prescribed (skip exec_count checks);
+            # any committed output = student data may be in history = violation.
+            if cell.get("outputs"):
+                violations.append({
+                    "cell_index": i,
+                    "code_cell": code_idx,
+                    "reason": "PII notebook (pii_no_output) has committed output -- strip outputs & execution_count (See #8830)",
+                    "source_preview": source[:80].replace("\n", " "),
+                })
             continue
 
         # Check execution_count
