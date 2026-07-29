@@ -81,6 +81,57 @@ jobs:
       allow-axioms: "Conway.Life.hashlife_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_blinker_2._native.native_decide.ax_1_1,Conway.Life.block_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_block_4._native.native_decide.ax_1_1,Conway.Life.glider_3periods._native.native_decide.ax_1_1,Conway.Life.hashlife_block_4._native.native_decide.ax_1_1,Conway.Life.eater1_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_toad_2._native.native_decide.ax_1_1,Conway.Life.eater1_still_life._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_block_1._native.native_decide.ax_1_1,Conway.Life.glider_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1,Conway.Life.glider_2periods._native.native_decide.ax_1_1"
       fail-on-sorry: true
 
+  # Advisory proof-integrity AUDIT -- option (b) of #8782 (decision c.50,
+  # assigned to po-2023, taken up by po-2026 after 4 days idle + no WIP). The
+  # blocking `proof-integrity` job above targets Conway.KochenSpecker +
+  # Conway.FreeWillTheorem (the sorry-free showcase modules): it is green BY
+  # CONSTRUCTION on the 8 acknowledged tactic sorries, because it never
+  # inspects the module that carries them (#8809: SUCCESS beside a file with 8
+  # sorries). That is the "vert hors-cible" this issue opened on -- a gate
+  # whose green teaches reviewers to trust it while it slept through the only
+  # module that matters.
+  #
+  # This advisory job closes that gap: it runs the axiom audit ON the
+  # sorry-bearing module with fail-on-sorry: false. The 8 sorries surface as
+  # `has_sorry` (reported, not gated -- an honesty knob, not a leniency one),
+  # while a FORBIDDEN axiom -- one beyond the 19 native_decide allow-list and
+  # the standard defaults -- still hard-fails. So the job can go red on a real
+  # regression and green on the acknowledged state, neither of which the
+  # blocking gate could distinguish from "did not look".
+  #
+  # Criterion 1 (#8782, reformulated): the log renders WHICH declarations were
+  # enumerated, not only the module. The public anchor `hashlifeResult_central_correct`
+  # closes the private sorry chain (p4_nw_overlap_wall), so its `#print axioms`
+  # carries sorryAx -- the sorry is REACHED, not hidden. A module whose sorry
+  # sat in a private chain no public decl closes would read `enumerated=0`
+  # explicitly (lean-axiom.yml guards it), never as a silent clean.
+  #
+  # target-modules scope: Conway.Life.HashlifeCorrectness (where all 8 sorries
+  # AND 28 native_decide axioms live -- see allow-axioms below). Broader Life.*
+  # tranches follow the same incremental pattern as the blocking gate (start
+  # narrow, profile, expand).
+  proof-integrity-audit:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      target-modules: "Conway.Life.HashlifeCorrectness"
+      # allow-axioms: the 28 native_decide axioms that HashlifeCorrectness ACTUALLY
+      # depends on (empirical footprint revealed by THIS audit job's first CI run).
+      # These are DISTINCT from the blocking gate's 19-name list above: that list
+      # was triaged from the SHOWCASE modules (KochenSpecker/FreeWillTheorem, #8749),
+      # a different scope -- the 19 are vestigial for this module (zero overlap).
+      # Auditing HashlifeCorrectness directly revealed the true native_decide
+      # footprint of the P4/hashlife correctness machinery is 28, not 19 -- exactly
+      # the vert-hors-cible this issue opened on (the blocking gate was green
+      # because it never looked here). All 28 are decide-kernel
+      # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props),
+      # the same acknowledged class as the 19; allow-listing the exact set lets
+      # the audit go green-on-acknowledged + red-on-a-NEW native_decide (the
+      # "new native_decide = new red" property the no-wildcard rule preserves).
+      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1"
+      fail-on-sorry: false
+
   # Advisory proof-integrity coverage (See #8782). The `target-modules` list
   # above is hand-maintained while the lakefile glob (.submodules Conway,
   # Conway_en) grows as modules are added; a gate that inspects 2 of N compiled

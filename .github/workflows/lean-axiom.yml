@@ -172,6 +172,28 @@ jobs:
             )
             n_decls = len(result["declarations"])
             print(f"  declarations: {n_decls} enumerated")
+            # Criterion 1 (#8782): render WHICH declarations were audited, not
+            # only the count. A bare count hides both directions of the blind
+            # spot -- a module that enumerated zero decls (a gate that inspected
+            # nothing, "non applicable") AND a sorry-bearing module whose only
+            # public anchor reaching the proof front is buried among hundreds.
+            # Naming the audited decls lets a reviewer see, e.g.,
+            # `hashlifeResult_central_correct` in the list and trust that the
+            # private sorry chain behind it was reached transitively. Sample-
+            # bounded (head + tail) so a large module does not flood the log.
+            decls = result["declarations"]
+            if decls:
+                sample = decls[:12]
+                tail = decls[-3:] if len(decls) > 15 else []
+                parts = [", ".join(sample)]
+                if len(decls) > 12:
+                    omitted = len(decls) - 12 - (len(tail) if tail else 0)
+                    parts.append(f" ... (+{omitted} more)" if not tail
+                                 else f" ... (+{omitted} more) ... {', '.join(tail)}")
+                print(f"  enumerated decls: {''.join(parts)}")
+            else:
+                print(f"  enumerated decls: (none -- module is 'non applicable', "
+                      f"a gate that inspected nothing)")
             print(f"  axioms: {result['axioms']}")
             print(f"  forbidden: {result['forbidden']}")
             print(f"  has_sorry: {result['has_sorry']}")
