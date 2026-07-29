@@ -87,6 +87,7 @@ from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
 from . import inhibited_action
+from . import cech_obstruction
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -101,4 +102,5 @@ __all__ = [
     "reversibility_budget",
     "argumentation",
     "inhibited_action",
+    "cech_obstruction",
 ]
