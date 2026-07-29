@@ -26,6 +26,7 @@ The baseline validated c.884 on 937 pedagogical notebooks is **0 unexpected hits
 """
 from __future__ import annotations
 
+import io
 import json
 import sys
 from pathlib import Path
@@ -192,6 +193,60 @@ class TestMainExitCodes:
         assert out["total_hits"] == 1
         assert out["scanned"] == 1
         assert rc == 0  # --json without --check does not fail
+
+
+# ===========================================================================
+# #8829 review -- --stdin: decide the leak verdict on the PR's changed files
+# only (``git diff --name-only`` input), so the label attributes to the PR that
+# introduced the leak -- not to every PR while main carries pre-existing residue
+# in files the PR never touched.
+# ===========================================================================
+
+
+class TestStdinMode:
+    """--stdin reads paths from stdin and scans only those (the PR diff), not
+    the whole fleet. Non-scannable extensions (.yml/.json) are skipped."""
+
+    def test_stdin_scans_only_listed_files(self, tmp_path, monkeypatch, capsys):
+        dirty = tmp_path / "leak.md"
+        dirty.write_text("# volume plus均匀ément distribue\n", encoding="utf-8")
+        clean = tmp_path / "ok.py"
+        clean.write_text("x = 1\n", encoding="utf-8")
+        monkeypatch.setattr(sys, "stdin", io.StringIO(f"{dirty}\n{clean}\n"))
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0  # --json without --check never fails
+        assert out["total_hits"] == 1  # only the dirty .md leaks
+        assert out["scanned"] == 2  # both files scanned (dirty + clean)
+
+    def test_stdin_skips_non_scannable_extensions(self, tmp_path, monkeypatch, capsys):
+        # A .yml in the diff (e.g. this workflow editing itself) is NOT Latin
+        # prose -- scanning it could false-positive on a legit CJK entry. It is
+        # filtered out before scanning, so its CJK never reaches the results.
+        yml = tmp_path / "workflow.yml"
+        yml.write_text("name: 风险管理 demo\n", encoding="utf-8")
+        dirty = tmp_path / "leak.md"
+        dirty.write_text("# est拥挤 ici\n", encoding="utf-8")
+        monkeypatch.setattr(sys, "stdin", io.StringIO(f"{yml}\n{dirty}\n"))
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--json"])
+        out = json.loads(capsys.readouterr().out)
+        assert rc == 0
+        assert out["total_hits"] == 1  # the .md only; .yml skipped entirely
+        assert out["scanned"] == 1
+
+    def test_stdin_check_exits_1_when_diff_carries_leak(self, tmp_path, monkeypatch):
+        dirty = tmp_path / "leak.md"
+        dirty.write_text("# de重建 needed\n", encoding="utf-8")
+        monkeypatch.setattr(sys, "stdin", io.StringIO(f"{dirty}\n"))
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--check"])
+        assert rc == 1
+
+    def test_stdin_check_exits_0_on_clean_diff(self, tmp_path, monkeypatch):
+        clean = tmp_path / "ok.py"
+        clean.write_text("print('bonjour')\n", encoding="utf-8")
+        monkeypatch.setattr(sys, "stdin", io.StringIO(f"{clean}\n"))
+        rc = mod.main(["--root", str(tmp_path), "--stdin", "--check"])
+        assert rc == 0
 
 
 # ===========================================================================

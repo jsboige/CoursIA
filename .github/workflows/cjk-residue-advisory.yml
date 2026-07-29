@@ -70,30 +70,58 @@ jobs:
           # Without GH_REPO, gh pr edit/label create cannot infer the target repo.
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
           LABEL: cjk-residue
         run: |
           set -uo pipefail
 
-          # Run the discriminating guard over the whole fleet (notebooks + git-
-          # tracked .py/.md/.cs). --json for the file list; --check sets exit code.
-          python scripts/notebook_tools/detect_cjk_residue.py --json --check \
-            > payload.json 2> scan.log || true
-          cat payload.json
+          # The label is decided on what THIS PR changes (#8829 review), not on
+          # the state of main. A whole-fleet scan would pose `cjk-residue` on
+          # every PR while main carries pre-existing residue in files the PR
+          # never touched -- a label nobody can drop without fixing foreign
+          # files, which is learned-to-be-ignored even faster than #8822's
+          # "label survives its cause". The fleet scan stays (informational
+          # notice below); only the PR's own apport can trigger its label.
+          git diff --name-only --diff-filter=d "$BASE" "$HEAD" > changed.txt || true
 
-          LEAKS=$(python -c "import json; d=json.load(open('payload.json')); print(d['total_hits'])")
-          echo "CJK leak lines on this PR's base: $LEAKS"
+          python scripts/notebook_tools/detect_cjk_residue.py --json --check --stdin \
+            < changed.txt > pr_payload.json 2> pr_scan.log || true
+          cat pr_payload.json
 
-          if [ "$LEAKS" -gt 0 ]; then
+          PR_LEAKS=$(python -c "import json; d=json.load(open('pr_payload.json')); print(d['total_hits'])")
+          echo "CJK leak lines introduced/modified by THIS PR: $PR_LEAKS"
+
+          # Fleet scan -- INFORMATIONAL ONLY. Surfaces pre-existing residue
+          # elsewhere so a maintainer sees it, but NEVER decides the label: a PR
+          # is not blamed for files it did not touch.
+          python scripts/notebook_tools/detect_cjk_residue.py --json \
+            > fleet_payload.json 2> fleet_scan.log || true
+          FLEET_LEAKS=$(python -c "import json; d=json.load(open('fleet_payload.json')); print(d['total_hits'])" 2>/dev/null || echo "")
+          if [ "${FLEET_LEAKS:-}" -gt 0 ] 2>/dev/null; then
+            echo "::notice::Pre-existing CJK residue elsewhere in the repo ($FLEET_LEAKS leak line(s)) -- informational, NOT attributed to this PR. See #8826."
+          fi
+
+          # Integer-guard (#8820 Blocage 3 family): if pr_payload.json is
+          # illisible (check_pr_exercises-style death), the gate measured NOTHING.
+          # Do not claim clean AND do not falsely accuse -- surface ::error::
+          # and leave the label for a human. Never a green claim on a non-measure.
+          if ! [ "${PR_LEAKS:-}" -eq "${PR_LEAKS:-}" ] 2>/dev/null; then
+            echo "::error::CJK PR-diff payload illisible -- the gate measured NOTHING; conformity neither claimed nor denied."
+            exit 0
+          fi
+
+          if [ "$PR_LEAKS" -gt 0 ]; then
             FILES=$(python -c \
-              "import json; d=json.load(open('payload.json')); \
+              "import json; d=json.load(open('pr_payload.json')); \
                print('\n'.join('- '+r['path'] for r in d['results'] if r['allowed'] is None and r['hits']))")
-            echo "::notice::CJK residue detected ($LEAKS leak line(s)) across: $FILES -- see the '$LABEL' label (#8826/#8428)."
+            echo "::notice::CJK residue in THIS PR ($PR_LEAKS leak line(s)): $FILES -- see the '$LABEL' label (#8826/#8428)."
             gh label create "$LABEL" \
               --description "CJK residue: a Chinese/Japanese word soldered into Latin prose (#8428/#8826)" \
               --color "D93F0B" --force 2>/dev/null || true
             gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
           else
-            echo "No CJK residue detected."
+            echo "No CJK residue introduced by this PR."
             # A label from an earlier push is now stale -- remove it so the signal
             # stays trustworthy (self-cover lets this branch run on the fix commit).
             gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true

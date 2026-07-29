@@ -438,6 +438,12 @@ def _scan_one(path: Path, root: Path) -> dict:
     return scan_source_file(path, root)
 
 
+# Extensions the PR-diff (--stdin) mode scans. Mirrors the fleet scope
+# (notebooks + tracked .py/.md/.cs): a .yml/.json/.lock in the diff is NOT read
+# as Latin prose, so it is skipped rather than risk a content-judgement false hit.
+_SCANNABLE_EXT = {".ipynb", ".py", ".md", ".cs"}
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.split("\n\n")[0],
@@ -451,10 +457,35 @@ def main(argv=None) -> int:
     parser.add_argument("--root", default=".", help="Repo root (default: cwd)")
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
     parser.add_argument("--check", action="store_true", help="Exit 1 if any CJK leak (CI-ready)")
+    parser.add_argument(
+        "--stdin",
+        action="store_true",
+        help="Read paths to scan from stdin (one per line, as `git diff "
+             "--name-only` emits). Decides the leak verdict on exactly the PR's "
+             "changed files, not the whole fleet -- so a label can be attributed "
+             "to the PR that introduced the leak rather than to every PR while "
+             "main carries pre-existing residue (#8829 review).",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
-    if args.target:
+    if args.stdin:
+        # PR-diff mode (#8829 review): scan only the leak-bearing files the PR
+        # touches. The fleet scan (below, in the workflow) stays informational.
+        # Filter to scannable extensions so a .yml/.json in the diff is not read
+        # as prose (would match the fleet scope: notebooks + .py/.md/.cs only).
+        results = []
+        for line in sys.stdin:
+            line = line.strip()
+            if not line:
+                continue
+            p = Path(line)
+            if not p.is_absolute():
+                p = root / p
+            if p.suffix not in _SCANNABLE_EXT or not p.exists():
+                continue
+            results.append(_scan_one(p, root))
+    elif args.target:
         p = Path(args.target)
         if not p.is_absolute():
             p = root / p
