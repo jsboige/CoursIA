@@ -127,9 +127,11 @@ def test_transfer_neutral_becomes_attractive_control_stays_neutral():
 def test_prediction_distinctness_valence_rises_prediction_invariant():
     """Verdict DISTINCTNESS : pi monte, l'erreur p_hat ne change pas.
 
-    predict_fn est constant (la prediction mechanique n'apprend pas la valence) ;
-    le banc maintient donc valence et prediction separes. Si quelqu'un recoulait
-    pi a p_hat, ce test casserait (delta_valence monterait AVEC delta_prediction_error)."""
+    predict_fn est state-invariant (1 arg : la prediction mechanique ne lit pas
+    la valence) ; son erreur est donc invariante au conditionnement, et pi monte
+    -> valence != prediction. Le controle negatif associe
+    (``test_coupled_predictor_is_not_distinct``) prouve la reciproque : un p_hat
+    re-vetu sur pi fait tomber le verdict."""
     def constant_predict_fn(signal_idx: int) -> float:
         # Le signal 1 est mal predit (erreur 0.4), invariant au conditionnement.
         return 0.4 if signal_idx == 1 else 0.1
@@ -142,6 +144,23 @@ def test_prediction_distinctness_valence_rises_prediction_invariant():
     assert report["delta_valence"] > 0.3
     assert report["delta_prediction_error"] < 1e-6
     assert report["distinct"] == 1.0
+
+
+def test_coupled_predictor_is_not_distinct():
+    """Controle negatif : un p_hat re-vetu sur pi DOIT faire tomber le verdict.
+
+    Le banc passe le vecteur pi_t au predicteur (>=2 args) ; un re-vetement
+    parfait de la valence (``p_hat = 1 - pi``) voit son erreur suivre pi entre
+    pre (pi=0 -> err=1.0) et post (pi~1 -> err~0) -> delta_err > 0 -> NON
+    distinct. Sans le couplage expose, ce verdict etait satisfait par
+    construction (review ai-01 #8823) ; il est desormais refutable."""
+    report = valence_prediction_distinctness_test(
+        predict_fn=lambda i, pi: 1.0 - pi[i],
+        n_signals=4, conditioned_idx=1,
+        source_valence=1.0, n_condition=50, lr=0.1,
+    )
+    assert report["delta_prediction_error"] > 1e-6
+    assert report["distinct"] == 0.0
 
 
 def test_extinction_acquired_then_reversible():

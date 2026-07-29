@@ -39,6 +39,7 @@ comme moteur de l'apprentissage associatif) ; spec #7740 (protocole de condition
 signal neutre -> attractif, transfert, distinctness vs ``p_hat``).
 """
 
+import inspect
 from typing import Callable, Dict, Optional
 
 import numpy as np
@@ -107,6 +108,16 @@ class LearnedValence:
         Le fait que acquisition et extinction partagent la MEME regle (erreur de
         prediction) est precisement ce qui rend la valence reversible (#7740) :
         pas deux systemes, un seul qui s'adapte au signe de l'erreur.
+
+        Notes
+        -----
+        Si ``decay > 0``, la decroissance passive s'applique au vecteur ``pi``
+        ENTIER a chaque pas (tous les signaux), pas seulement au signal
+        conditionne : l'horloge du banc avance d'un pas a chaque appel de
+        ``condition``, et le temps passe donc globalement sur tout le paysage
+        associatif. Intentionnel (un signal non renforce decroit passivement
+        meme pendant qu'un autre est conditionne) ; le defaut ``decay=0.0`` le
+        desactive (review ai-01 #8823).
         """
         if not 0 <= signal_idx < self.n_signals:
             raise IndexError(f"signal_idx {signal_idx} hors borne [0, {self.n_signals}).")
@@ -187,15 +198,45 @@ def valence_transfer_test(
     return {
         "pre_valence_neutral": pre,
         "post_valence_neutral": post,
-        "transfer_ratio": post / (pre + 1e-12),
+        "transfer_gain": post - pre,
         "control_valence_unconditioned": control_post,
         "n_condition": float(n_condition),
         "transferred": 1.0 if transferred else 0.0,
     }
 
 
+def _call_predict_fn(
+    predict_fn: Callable[..., float],
+    signal_idx: int,
+    valence_vector: np.ndarray,
+) -> float:
+    """Invoque un predicteur sur ``(signal_idx[, valence_vector])``.
+
+    Dispatch selon l'arite de ``predict_fn`` :
+
+    - **1 parametre** ``(signal_idx)`` : predicteur *state-invariant* (la prediction
+      ne lit pas la valence). ``delta_err`` vaut alors 0 -> ``distinct``.
+    - **>=2 parametres** ``(signal_idx, valence_vector)`` : predicteur
+      *state-coupled*. Un re-vetement de la valence (ex.
+      ``lambda i, pi: 1.0 - pi[i]``) voit son erreur changer entre pre et post
+      (pi monte) -> ``delta_err > 0`` -> ``distinct == 0``.
+
+    C'est ce passage du vecteur de valence au predicteur qui rend le banc
+    REELLEMENT falsifiable (review ai-01 #8823) : sans lui, ``predict_fn``
+    ne pouvait pas observer la valence, et le verdict ``distinct`` etait
+    satisfait par construction pour toute fonction pure.
+    """
+    try:
+        n_params = len(inspect.signature(predict_fn).parameters)
+    except (ValueError, TypeError):
+        n_params = 1
+    if n_params >= 2:
+        return float(predict_fn(signal_idx, valence_vector))
+    return float(predict_fn(signal_idx))
+
+
 def valence_prediction_distinctness_test(
-    predict_fn: Callable[[int], float],
+    predict_fn: Callable[..., float],
     n_signals: int = 4,
     conditioned_idx: int = 1,
     source_valence: float = 1.0,
@@ -213,26 +254,33 @@ def valence_prediction_distinctness_test(
     - mais sa valence est apprise (monte apres conditionnement) ;
     - donc valence et prediction decorrelent.
 
-    ``predict_fn(i)`` renvoie l'erreur de prediction (0 = prediction parfaite,
-    grande = mauvaise prediction) pour le signal ``i``. On l'invoque AVANT et
-    APRES le conditionnement ; il est suppose invariant au conditionnement (la
-    prediction mechanique n'apprend pas la valence) — c'est l'independance qu'on
-    cherche a etablir.
+    ``predict_fn`` renvoie l'erreur de prediction (0 = prediction parfaite, grande
+    = mauvaise prediction) pour le signal ``i``. Deux arites acceptees :
+
+    - ``predict_fn(i)`` : prediction *state-invariant* (ne lit pas la valence).
+    - ``predict_fn(i, pi_t)`` : prediction *state-coupled* (peut lire la valence).
+
+    On l'invoque AVANT et APRES le conditionnement en passant le vecteur ``pi_t``
+    courant. Un predicteur invariant garde la meme erreur ; un predicteur couple a
+    la valence la voit changer. C'est cette possibilite de couplage qui rend le
+    verdict REELLEMENT falsifiable : un re-vetement de ``pi`` par ``p_hat`` est
+    desormais detectable (le controle negatif
+    ``test_coupled_predictor_is_not_distinct`` le prouve).
 
     Verdict falsifiable
     -------------------
     ``distinct`` est True si et seulement si le signal conditionne voit sa valence
     monter (delta_pi > 0.3) ET son erreur de prediction ne change pas
-    (|delta_err| < 1e-6). Un couplage ferait diverger les deux ensemble ; ici ils
-    sont independants par construction — le test verifie que le banc les maintient
-    bien separes.
+    (|delta_err| < 1e-6). Un predicteur state-invariant (1 arg) satisfait
+    ``delta_err == 0`` -> distinct ; un predicteur state-coupled (>=2 args) qui
+    re-vet la valence fait monter ``delta_err`` -> NON distinct.
     """
     lv = LearnedValence(n_signals, lr=lr, rng=np.random.default_rng(seed))
     pre_pi = lv.valence(conditioned_idx)
-    pre_err = predict_fn(conditioned_idx)
+    pre_err = _call_predict_fn(predict_fn, conditioned_idx, lv.valence_vector())
     lv.condition(conditioned_idx, source_valence=source_valence, steps=n_condition)
     post_pi = lv.valence(conditioned_idx)
-    post_err = predict_fn(conditioned_idx)
+    post_err = _call_predict_fn(predict_fn, conditioned_idx, lv.valence_vector())
     delta_pi = post_pi - pre_pi
     delta_err = abs(post_err - pre_err)
     distinct = delta_pi > 0.3 and delta_err < 1e-6
