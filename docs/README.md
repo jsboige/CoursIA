@@ -43,6 +43,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/regles-vigilance-detail.md](reference/regles-vigilance-detail.md) | Détails G.1-G.9 + incidents |
 | [reference/regles-validation-detail.md](reference/regles-validation-detail.md) | Détails H.1-H.7 + incident Sudoku-13 |
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
+| [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
@@ -60,6 +61,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/notebook-parity-table.md](reference/notebook-parity-table.md) | Table de parité cross-série — notebooks Python ⇄ .NET |
 | [reference/notebook-counts-reconciliation.md](reference/notebook-counts-reconciliation.md) | Réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. 174 lignes. Linked #8050 |
 | [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
+| [reference/orphan-branch-scan-l576.md](reference/orphan-branch-scan-l576.md) | Scan de branche orpheline (L576 ★★) — compound gate 3 ancres (`merge-base` + REST `commits/<sha>/pulls` + `gh pr list --search head:<branch>`) anti-FPOS du REST, decision matrix 5 lignes. Détail de référence pour la section « Orphan-branch scan » de `.claude/rules/git-workflow.md`. 105 lignes. Origine : investigation 5 branches `jsboige/*` attachées à #7086-#7091 (c.576) |
 
 ## GenAI (docs/genai/)
 
