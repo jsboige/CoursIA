@@ -87,6 +87,7 @@ from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
 from . import inhibited_action
+from . import learned_valence
 from . import cech_obstruction
 
 __all__ = [
@@ -102,5 +103,6 @@ __all__ = [
     "reversibility_budget",
     "argumentation",
     "inhibited_action",
+    "learned_valence",
     "cech_obstruction",
 ]
