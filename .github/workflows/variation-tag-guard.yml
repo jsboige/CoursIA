@@ -12,6 +12,28 @@ name: Variation Tag Guard
 #
 # Passage en bloquant : seulement apres une periode ou la flotte est conforme,
 # et par decision explicite — pas par durcissement unilateral de ce fichier.
+#
+# Ce que le guard verifiait jusqu'ici : la PRESENCE d'une ligne `Grain:` et la
+# validite du TIER. Deux omissions constatees a la main sur un seul cycle de
+# coordination (c.61) :
+#
+#   1. GENRE hors-liste. `tooling` x3, `test-coverage`, `refs`, `ci` ont tous
+#      obtenu un `Check Grain tag conformity` SUCCESS. Or G-VAR-3 compare des
+#      GENRES consecutifs : un genre absent de l'enumeration §1 rend cette
+#      comparaison arbitraire — deux tranches d'une meme vague peuvent porter
+#      deux etiquettes inventees et ne jamais declencher l'adjacence.
+#   2. `lane` absente. §3 l'exige explicitement ("un grain qui ne dit pas de
+#      quelle lane il vient est structurellement incomptable") parce que
+#      G-VAR-2 est un cap PAR LANE ET PAR JOUR. Le guard ne la regardait pas.
+#      Constate sur deux PR d'un meme rollout, aucune des deux signalee.
+#
+# Relever a la main ce qu'un organe devrait dire est le reflexe a supprimer :
+# ce fichier APPLIQUE la §1 telle qu'ecrite, il ne la modifie pas — aucun
+# fichier de `.claude/rules/` n'est touche, donc pas de sign-off requis.
+#
+# Un label distinct par classe de defaut (plutot qu'un label fourre-tout) rend
+# la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
+# ouvrir les logs du job.
 
 on:
   pull_request:
@@ -47,6 +69,28 @@ jobs:
         run: |
           set -uo pipefail
 
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` (visible dans le log du job, ligne `shell:`).
+          # L'errexit est donc **actif**, et `set -uo pipefail` ne l'annule pas —
+          # il ajoute `-u` et `-o pipefail`, il ne retire pas `-e`. Ne pas lire
+          # l'absence de `-e` sur cette ligne comme « rien ne peut faire echouer
+          # le job » : toute commande non protegee qui sort non-zero tue le step
+          # et transforme cet advisory en check rouge.
+          #
+          # Ce qui garde l'advisory vrai n'est donc PAS l'absence de `-e`, c'est
+          # que chaque commande faillible ci-dessous est soit dans une condition
+          # (`if`/`elif`/`case`, exempts d'errexit), soit suffixee `|| true`.
+          # Verifie firsthand : les 8 cas de test passent sous `bash -e` — la
+          # premiere passe, menee sous `bash -c` sans `-e`, testait le mauvais
+          # interpreteur. C'est exactement la faille nommee par #8894 (« un test
+          # unitaire ne peut pas observer l'interpreteur d'un autre job »).
+          #
+          # Et surtout : **jamais `|| true` sur la capture d'un code de retour**.
+          # `rc=$?` apres `cmd || true` lit le `0` de `true`, pas celui de `cmd` —
+          # cela desarme le controle en permanence, strictement pire que le bug
+          # d'errexit qu'on croyait corriger. Idiome correct si besoin un jour :
+          # `out=$(cmd) && rc=0 || rc=$?`.
+
           # Hors scope : bots (catalogue auto-regenere) et forks (PRs etudiantes,
           # cf .claude/rules/student-pr-reviews.md — review bienveillante, aucun
           # critere interne ne s'y applique).
@@ -69,38 +113,99 @@ jobs:
           # Puce de liste ou citation toleree devant le tag.
           GRAIN_LINE=$(printf '%s\n' "$BODY_FLAT" | grep -m1 -E '^[[:space:]]*[->+]?[[:space:]]*Grain:' || true)
 
+          # Chaque defaut constate est accumule ici, puis traduit en labels a la
+          # fin. Un `exit 0` precoce au cas nominal (l'ancienne structure) rendait
+          # impossible de verifier GENRE et `lane` : un TIER valide suffisait a
+          # clore le job. Les trois controles sont desormais independants.
+          DEFECTS=""
+          note_defect() { DEFECTS="$DEFECTS $1"; }
+
           if [ -z "$GRAIN_LINE" ]; then
-            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
-            # stderr LAISSE PASSER : `|| true` garde le job non bloquant, mais
-            # masquer la sortie d'erreur est ce qui a rendu la panne invisible.
-            # Un garde dont l'echec est muet n'est pas un garde.
-            gh label create "variation-tag-missing" \
-              --description "PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" \
-              --color "FBCA04" --force || true
-            gh pr edit "$PR_NUMBER" --add-label "variation-tag-missing" || true
-            exit 0
+            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
+            note_defect variation-tag-missing
+          else
+            echo "Ligne lue : $GRAIN_LINE"
+
+            TIER=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*([A-Za-z]+)/.*|\1|p')
+            GENRE=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*[A-Za-z]+/([A-Za-z0-9_-]+).*|\1|p')
+
+            case "$TIER" in
+              DEEP|MED|LIGHT)
+                echo "TIER=$TIER"
+                ;;
+              *)
+                echo "::warning::TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT — le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
+                note_defect variation-tag-malformed
+                ;;
+            esac
+
+            # Enumeration §1, reproduite telle quelle. Un genre hors-liste n'est
+            # pas "invalide" : il est INCOMPARABLE, donc G-VAR-3 ne peut pas voir
+            # l'adjacence qu'il est cense fermer. Le remede est de le mapper sur
+            # le genre de la liste qui decrit le TYPE DE TRAVAIL — jamais la
+            # famille de fichiers traversee (c'est la seconde voie de
+            # contournement documentee en §1).
+            case "$GENRE" in
+              lean|qc|training|genai|notebook-python|notebook-dotnet|docs|guard|refactor|ledger|readme|test)
+                echo "GENRE=$GENRE (dans la liste §1)"
+                ;;
+              "")
+                echo "::warning::GENRE illisible sur la ligne Grain. Format attendu : 'Grain: <TIER>/<GENRE>'."
+                note_defect variation-tag-genre-offlist
+                ;;
+              *)
+                echo "::warning::GENRE '$GENRE' hors de l'enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+                note_defect variation-tag-genre-offlist
+                ;;
+            esac
+
+            # `lane` : exigee par §3, cle d'agregation du cap G-VAR-2 (par lane,
+            # par jour). Cherchee d'abord sur la ligne du tag (sa place selon §1),
+            # puis dans le body — trouvee ailleurs, elle reste exploitable par un
+            # humain, donc simple note et pas de label. Un tag rejete pour son
+            # placement serait un faux negatif du guard.
+            LANE_RE='lane:?[[:space:]]+[A-Za-z0-9._-]+:[A-Za-z0-9._-]+'
+            if printf '%s' "$GRAIN_LINE" | grep -qE "$LANE_RE"; then
+              echo "lane declaree sur la ligne du tag."
+            elif printf '%s\n' "$BODY_FLAT" | grep -qE "$LANE_RE"; then
+              echo "::notice::lane declaree, mais hors de la ligne 'Grain:'. §1 la place sur la ligne du tag."
+            else
+              echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
+              note_defect variation-tag-lane-missing
+            fi
           fi
 
-          TIER=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*([A-Za-z]+)/.*|\1|p')
-          GENRE=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*[A-Za-z]+/([A-Za-z0-9_-]+).*|\1|p')
+          # Traduction en labels. Chaque classe de defaut a son propre label pour
+          # que sa nature se lise dans `gh pr list --json labels`. Les labels
+          # correspondant a un defaut ABSENT sont retires : un label colle par un
+          # push anterieur ne doit pas survivre a la correction.
+          #
+          # stderr LAISSE PASSER sur les `create`/`add` : `|| true` garde le job
+          # non bloquant, mais masquer l'erreur est ce qui avait rendu la panne
+          # de contexte `gh` invisible (#8786). Un garde dont l'echec est muet
+          # n'est pas un garde. Sur les `remove`, `2>/dev/null` reste justifie :
+          # retirer un label absent est l'issue ATTENDUE au cas nominal.
+          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing; do
+            case "$LABEL" in
+              variation-tag-missing)          COLOR="FBCA04"; DESC="PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" ;;
+              variation-tag-malformed)       COLOR="FEF2C0"; DESC="Tag Grain present mais TIER != DEEP|MED|LIGHT" ;;
+              variation-tag-genre-offlist)   COLOR="FEF2C0"; DESC="GENRE hors de l'enumeration variation-protocol §1" ;;
+              variation-tag-lane-missing)    COLOR="FEF2C0"; DESC="Tag Grain sans 'lane <machine:workspace>' (cap G-VAR-2 incomptable)" ;;
+            esac
+            case " $DEFECTS " in
+              *" $LABEL "*)
+                gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
+                gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+                ;;
+              *)
+                gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+                ;;
+            esac
+          done
 
-          case "$TIER" in
-            DEEP|MED|LIGHT)
-              echo "Tag conforme : TIER=$TIER GENRE=${GENRE:-?}"
-              # Le label eventuel d'un push anterieur ne doit pas rester colle.
-              # Ici `2>/dev/null` reste justifie : retirer un label absent est
-              # une erreur ATTENDUE au cas nominal (la PR conforme du premier
-              # coup), pas le symptome d'une panne.
-              gh pr edit "$PR_NUMBER" --remove-label "variation-tag-missing" 2>/dev/null || true
-              gh pr edit "$PR_NUMBER" --remove-label "variation-tag-malformed" 2>/dev/null || true
-              exit 0
-              ;;
-          esac
-
-          echo "::warning::Ligne Grain presente mais TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT — le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
-          echo "Ligne lue : $GRAIN_LINE"
-          gh label create "variation-tag-malformed" \
-            --description "Tag Grain present mais TIER != DEEP|MED|LIGHT" \
-            --color "FEF2C0" --force || true
-          gh pr edit "$PR_NUMBER" --add-label "variation-tag-malformed" || true
+          if [ -z "$DEFECTS" ]; then
+            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree."
+          else
+            echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
+          fi
           exit 0
