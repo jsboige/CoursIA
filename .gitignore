@@ -888,4 +888,8 @@ _freeze/
 # covers both the canonical target (Z3-Linq2Z3/data/meals/) and the stale wrong-CWD
 # location (Z3/data/meals/, from the old Z3/ series name before the Z3-API/Z3-Linq2Z3
 # split). Delete the stale Z3/data/ copy locally; it is orphaned (no notebook reads it there).
-MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/
+# EXCEPTION (#8901) : le cache derive data/meals/mealplan_cache.json (~205 Ko) est EPIINGLE
+# (derive stable consommee par 07/08/09 + port Python 16b/16c/16d) pour stopper la derive de
+# millesime. Le brut volumineux reste ignore ; seul le cache est tracke (cf Z3-Linq2Z3/.gitignore).
+MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
+!MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/mealplan_cache.json

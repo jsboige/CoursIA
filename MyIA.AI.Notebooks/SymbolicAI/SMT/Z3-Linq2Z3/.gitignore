@@ -1,3 +1,12 @@
 # Corpus MealPlanning telecharge a la demande par download_meal_data.py (#4617).
 # Trop volumineux pour le depot (Ciqual ANSES 2025 ~68 Mo + Recettes + RecipeML).
-data/
+# EXCEPTION (#8901) : data/meals/mealplan_cache.json (~205 Ko) est EPIINGLE — derive
+# stable consommee par les notebooks 07/08/09 et le port Python 16b/16c/16d (#1206),
+# pour stopper la derive de millesime (le corpus archive.org/ANSES bouge dans le temps :
+# 5424 -> 4042 recettes observees). Le brut ~68 Mo reste ignore ; seul le cache derive
+# est tracke. data/meals/ ne contient QUE ce cache (les bruts sont sous data/Ciqual,
+# data/RecipeML, data/Recettes) — la re-inclusion de meals/ est donc ciblee et sure.
+data/*
+!data/meals/
+data/meals/*
+!data/meals/mealplan_cache.json
