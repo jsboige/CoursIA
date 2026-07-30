@@ -88,9 +88,19 @@ jobs:
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
-        set -o pipefail
+        set -o pipefail   # propagate lake's exit code through the pipeline (FAILED must
+                          # exit != 0; See incident conway_lean HashlifeCorrectness L1058, 2026-06-14).
         lake exe cache get || true
-        lake -R build 2>&1 | tail -10
+        # On failure, surface the error lines the `tail` window loses (See #8915).
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          :
+        else
+          rc=$?
+          echo "::group::Error lines from the full lake log (See #8915)"
+          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+          echo "::endgroup::"
+          exit "$rc"
+        fi
 
     - name: Setup Python
       uses: actions/setup-python@v5
