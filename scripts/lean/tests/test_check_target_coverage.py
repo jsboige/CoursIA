@@ -9,21 +9,29 @@ Locks the advisory contract of the conway proof-integrity gate coverage check:
   - blind-spot detection (compiled-but-ungated modules);
   - phantom detection (gated-but-no-source modules);
   - lib-root scoping (``<lib>/`` subdir + ``<lib>.lean`` umbrella + ``<lib>_en.lean`` sibling);
-  - maximal walk excludes build cache / lakefile / toolchain.
+  - maximal walk excludes build cache / lakefile / toolchain;
+  - ``--from-workflow`` unions the target list over every gate job, so the report
+    cannot hold a stale copy of it (#8782).
 """
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_target_coverage import (  # noqa: E402
     _EXCLUDE_TOP_DIRS,
+    _uses_lean_axiom,
     discover_modules,
     main,
     parse_target_modules,
+    targets_from_workflow,
 )
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +188,202 @@ class TestAdvisoryExitZero:
         assert "25.0%" in out
 
 
+# ---------------------------------------------------------------------------
+# --from-workflow — the target list is read, never copied (#8782)
+# ---------------------------------------------------------------------------
+
+def _write_workflow(tmp_path: Path, body: str) -> Path:
+    wf = tmp_path / "wf.yml"
+    wf.write_text(body, encoding="utf-8")
+    return wf
+
+
+class TestUsesLeanAxiom:
+    """Both call forms occur in the repo; matching only one silently halves coverage."""
+
+    def test_pinned_remote_form(self):
+        # lean-conway.yml
+        assert _uses_lean_axiom("jsboige/CoursIA/.github/workflows/lean-axiom.yml@main")
+
+    def test_local_relative_form(self):
+        # lean-knot.yml (resolves per-PR)
+        assert _uses_lean_axiom("./.github/workflows/lean-axiom.yml")
+
+    def test_sha_pin_form(self):
+        assert _uses_lean_axiom("jsboige/CoursIA/.github/workflows/lean-axiom.yml@abc1234")
+
+    def test_other_reusable_workflow_rejected(self):
+        assert not _uses_lean_axiom("./.github/workflows/lean-build.yml")
+        assert not _uses_lean_axiom("actions/checkout@v4")
+
+    def test_non_string_rejected(self):
+        # a job with `steps:` and no `uses:` yields None, not a string
+        assert not _uses_lean_axiom(None)  # type: ignore[arg-type]
+
+
+class TestTargetsFromWorkflow:
+    def test_unions_across_jobs(self, tmp_path):
+        """The blocking gate and the audit gate are *both* the gate."""
+        wf = _write_workflow(tmp_path, """
+name: fake
+jobs:
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
+      fail-on-sorry: true
+  proof-integrity-audit:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      target-modules: "Conway.Life.HashlifeCorrectness"
+      fail-on-sorry: false
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == {
+            "Conway.KochenSpecker",
+            "Conway.FreeWillTheorem",
+            "Conway.Life.HashlifeCorrectness",
+        }
+        assert set(per_job) == {"proof-integrity", "proof-integrity-audit"}
+        assert per_job["proof-integrity-audit"] == {"Conway.Life.HashlifeCorrectness"}
+
+    def test_ignores_non_gate_jobs(self, tmp_path):
+        wf = _write_workflow(tmp_path, """
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: lake build
+  proof-integrity:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      target-modules: "Knots.Basic"
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == {"Knots.Basic"}
+        assert set(per_job) == {"proof-integrity"}  # `build` contributes nothing
+
+    def test_gate_job_with_empty_list_is_still_recorded(self, tmp_path):
+        """A gate that targets nothing is a finding, not an absence -- keep it visible."""
+        wf = _write_workflow(tmp_path, """
+jobs:
+  proof-integrity:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      fail-on-sorry: true
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == set()
+        assert per_job == {"proof-integrity": set()}  # recorded, not dropped
+
+    def test_no_gate_job_yields_empty_per_job(self, tmp_path):
+        wf = _write_workflow(tmp_path, """
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+""")
+        union, per_job = targets_from_workflow(wf)
+        assert union == set()
+        assert per_job == {}
+
+
+class TestFromWorkflowCli:
+    def test_reports_per_job_breakdown(self, tmp_path, capsys):
+        lake = _make_lake(tmp_path)
+        wf = _write_workflow(tmp_path, """
+jobs:
+  blocking:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      target-modules: "Conway.KochenSpecker"
+  audit:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      target-modules: "Conway.Life.GridCanonical"
+""")
+        rc = main(["--project-path", str(lake), "--from-workflow", str(wf),
+                   "--lib-root", "Conway", "--name", "fake"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "job blocking: 1" in out
+        assert "job audit: 1" in out
+        # union of the two -> 2 of the 4 compiled modules, neither in the blind spot
+        assert "Gate target-modules:                2" in out
+        assert "Conway.Life.GridCanonical" not in out.split("BLIND SPOT")[-1]
+
+    def test_no_gate_wired_is_not_a_zero_percent_figure(self, tmp_path, capsys):
+        """`no gate job` and `0% covered` are opposite claims; never print the latter for the former."""
+        lake = _make_lake(tmp_path)
+        wf = _write_workflow(tmp_path, """
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+""")
+        rc = main(["--project-path", str(lake), "--from-workflow", str(wf),
+                   "--lib-root", "Conway"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "NO GATE WIRED" in out
+        assert "nothing was measured" in out
+        # the sentinel returns before any coverage arithmetic is printed
+        assert "Covered" not in out
+        assert "0.0%" not in out
+        assert "BLIND SPOT" not in out
+
+    def test_missing_workflow_exits_zero(self, tmp_path, capsys):
+        lake = _make_lake(tmp_path)
+        rc = main(["--project-path", str(lake),
+                   "--from-workflow", str(tmp_path / "absent.yml"),
+                   "--lib-root", "Conway"])
+        assert rc == 0
+        assert "workflow not found" in capsys.readouterr().out
+
+    def test_source_flags_are_mutually_exclusive(self, tmp_path):
+        lake = _make_lake(tmp_path)
+        wf = _write_workflow(tmp_path, "jobs: {}\n")
+        with pytest.raises(SystemExit):
+            main(["--project-path", str(lake),
+                  "--target-modules", "A", "--from-workflow", str(wf)])
+
+    def test_a_source_is_required(self, tmp_path):
+        lake = _make_lake(tmp_path)
+        with pytest.raises(SystemExit):
+            main(["--project-path", str(lake)])
+
+
+class TestRealWorkflowRegression:
+    """The report this mode exists to stop having emitted.
+
+    Before ``--from-workflow``, the advisory step in ``lean-conway.yml`` was given
+    the *blocking* job's list literally, so it printed
+    ``Conway.Life.HashlifeCorrectness`` under "the gate never inspects their
+    axioms" -- false about precisely the module option (b) of #8782 had been
+    wired to cover. These assertions fail if any gate job's list is ever again
+    dropped from the coverage report.
+    """
+
+    def test_conway_union_covers_the_audit_job_target(self):
+        wf = _REPO_ROOT / ".github" / "workflows" / "lean-conway.yml"
+        if not wf.is_file():
+            pytest.skip(f"workflow not present: {wf}")
+        union, per_job = targets_from_workflow(wf)
+        assert len(per_job) >= 2, f"expected blocking + audit gate jobs, got {sorted(per_job)}"
+        assert "Conway.Life.HashlifeCorrectness" in union
+        assert "Conway.KochenSpecker" in union
+        assert "Conway.FreeWillTheorem" in union
+
+    def test_knot_union_is_non_empty(self):
+        wf = _REPO_ROOT / ".github" / "workflows" / "lean-knot.yml"
+        if not wf.is_file():
+            pytest.skip(f"workflow not present: {wf}")
+        union, per_job = targets_from_workflow(wf)
+        assert per_job, "lean-knot.yml has a proof-integrity job; it must be found"
+        assert "Knots.Basic" in union
+
+
 if __name__ == "__main__":
-    import pytest
     sys.exit(pytest.main([__file__, "-v"]))
