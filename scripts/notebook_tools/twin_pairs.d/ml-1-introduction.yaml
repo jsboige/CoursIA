@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: a0df0cd6648ba72245c1ba944b60654eaa39a72c
-    csharp_sha: d9c923863e86281a93761fd0d090a2cbb96f314e
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: fe6031b3f3c917b5f77d613d1fdf4a3d2db02ddc
+    csharp_sha: 0e5a5f450b7d111d2ae1bb4507dde72790604527
   known_differences:
     - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
     - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."

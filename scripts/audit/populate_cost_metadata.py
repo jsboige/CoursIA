@@ -153,7 +153,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
       - `Probas/PyMC/PyMC-1-Setup.ipynb` pour PyMC-2..19 ;
       - `Probas/DecisionTheory/PyMC/DecPyMC-1-Utility-Foundations.ipynb` pour DecPyMC-2..7 ;
       - `None` si NB lui-meme (PyMC-1, DecPyMC-1).
-    - `last_validated` : date du jour (etablissement metadata).
+    - `metadata_written` : date du jour (etablissement metadata).
     """
     idx = _extract_pymc_index(path)
     if idx is not None:
@@ -175,7 +175,7 @@ def build_probas_cpu_cost(nb: dict, path: Path, by: str, today: str) -> dict:
     cost = dict(PROBAS_CPU_FIELDS_COMMON)
     cost["notes"] = notes
     cost["reduced_pedagogical"] = reduced_pedagogical
-    cost["last_validated"] = today
+    cost["metadata_written"] = today
     return cost
 
 
@@ -209,7 +209,7 @@ def qcc_tokens_estimate(n_code_cells: int) -> int:
 def build_quantbook_cost(nb: dict, by: str, today: str) -> dict:
     """Construit le bloc `metadata['cost']` canonique pour un quantbook.
 
-    Champs dérivés : `qcc_tokens_est` (heuristic), `last_validated` (date de création
+    Champs dérivés : `qcc_tokens_est` (heuristic), `metadata_written` (date de création
     de la metadata — pas date d'exécution QC Cloud ; `validator: qc_cloud` nomme la
     MÉTHODE canonique de validation, pas une exécution récente).
     Champs notebook-specific (`reduced_pedagogical`, `free_alternative`) : null
@@ -227,7 +227,7 @@ def build_quantbook_cost(nb: dict, by: str, today: str) -> dict:
         "free_alternative": None,  # QuantBook = QC uniquement, pas d'alternative locale
         "reduced_pedagogical": None,  # notebook-specific (jugement humain) ; null = honnête
         "reproducibility": "MED",  # single-run backtest stochastique (doc template)
-        "last_validated": today,  # date d'établissement de la metadata (script)
+        "metadata_written": today,  # date d'établissement de la metadata (script)
         "validator": "qc_cloud",  # Litmus 5 : qc_cloud pour QuantBook (13/13)
     }
 
@@ -338,7 +338,7 @@ def build_search_cpu_cost(nb: dict, by: str, today: str) -> dict:
         "free_alternative": "self",  # sentinelle canonique : déjà gratuit
         "reduced_pedagogical": None,  # notebook-specific (jugement humain) ; null = honnête
         "reproducibility": "HIGH",  # algorithmes déterministes
-        "last_validated": today,  # date d'établissement de la metadata (inspection source)
+        "metadata_written": today,  # date d'établissement de la metadata (inspection source)
         "validator": "manual",  # inspection source, pas re-exécution machine claimée
     }
 
@@ -433,7 +433,7 @@ def build_rl_cpu_cost(nb: dict, by: str, today: str) -> dict:
         "free_alternative": "self",  # sentinelle canonique : déjà gratuit
         "reduced_pedagogical": None,  # notebook-specific (jugement humain) ; null = honnête
         "reproducibility": "MED",  # stochastique (seeds), pas déterministe
-        "last_validated": today,  # date d'établissement de la metadata (inspection source)
+        "metadata_written": today,  # date d'établissement de la metadata (inspection source)
         "validator": "manual",  # inspection source, pas re-exécution machine claimée
     }
 
@@ -530,7 +530,7 @@ def main(argv=None) -> int:
     ap.add_argument("--apply", action="store_true",
                     help="Écrire les modifications (défaut : dry-run)")
     ap.add_argument("--today", default=None,
-                    help="Date ISO pour last_validated (défaut : aujourd'hui)")
+                    help="Date ISO pour metadata_written (défaut : aujourd'hui)")
     args = ap.parse_args(argv)
 
     if not args.target.exists():

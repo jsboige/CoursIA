@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-ai-01:CoursIA
-    python_sha: beac5a59dd303901482179a02235e71c3f029b44
-    csharp_sha: d89e8b4376a85293402065fb2c121477f41b5632
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: f3d6b7c265dfa5bd1daea79295718512de999ac0
+    csharp_sha: e250e1fc294bd7be5cac4a85ca5a25d25e989ef2
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."

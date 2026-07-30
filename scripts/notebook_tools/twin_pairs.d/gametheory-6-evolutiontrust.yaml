@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
+    date: "2026-07-29"
     by: myia-po-2023:CoursIA-2
-    python_sha: 1a1967512d47a585a22e295ca0b13dc66ea4b6eb
-    csharp_sha: d3482f0830c10cc4d2188957c17c73ae4f59cea1
+    python_sha: e45fb36548d082806991c54c8d332f61347c894a
+    csharp_sha: ebd556fc1bbd7743aa60567b2fafab1853f384e7
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."

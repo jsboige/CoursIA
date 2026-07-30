@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: 6e9d21e0bf5d9ab8cbfd35778d9a2f76b4753046
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 4aef3828fcb8976eabcfbc56000d50487dc619e2
     csharp_sha: 8f551c9b7560f813842919283fdea3c8c3131bcd
   known_differences:
   - 'Socle pedagogique commun : selection de modele (WAIC/LOO, evidence) modelise dans les deux stacks.'

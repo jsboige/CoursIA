@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-po-2024:CoursIA-2
-    python_sha: ee7e4aa56f610cbe6c4a8522a3bfa6df7f682104
-    csharp_sha: 60682dce3b38c88bb95b09fbd1364cfc06399de9
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055
+    csharp_sha: bd37f3c7d0f3cffd8a4f5a2d495798de7bb50b85
   known_differences:
     - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
     - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."

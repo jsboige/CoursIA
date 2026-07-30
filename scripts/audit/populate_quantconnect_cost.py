@@ -162,7 +162,7 @@ def build_cost(notebook_name: str, by: str, today: str) -> dict:
         "free_alternative": "self",    # sentinel : le NB est lui-même l'alternative locale gratuite
         "reduced_pedagogical": None,
         "reproducibility": "HIGH",     # analyse de results.json pré-calculés + seeds fixés (c.893-c.904)
-        "last_validated": today,
+        "metadata_written": today,
         "validator": profile["validator"],
         "notes": profile["notes"],
     }
@@ -222,7 +222,7 @@ def main(argv=None) -> int:
     ap.add_argument("--tranche", type=int, default=1, help="Tranche QC cost à peupler (1 = ML-Training-Pipeline).")
     ap.add_argument("--by", default="anonymous", help="machine:workspace (provenance).")
     ap.add_argument("--apply", action="store_true", help="Écrire les modifications (défaut : dry-run).")
-    ap.add_argument("--today", default=None, help="Date ISO pour last_validated (défaut : aujourd'hui).")
+    ap.add_argument("--today", default=None, help="Date ISO pour metadata_written (défaut : aujourd'hui).")
     ap.add_argument("--audit", action="store_true", help="Lister les NBs QC sans cost (sans rien écrire).")
     args = ap.parse_args(argv)
 

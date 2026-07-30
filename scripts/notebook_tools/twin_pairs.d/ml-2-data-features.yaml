@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
-    by: myia-po-2024:CoursIA-2
-    python_sha: a338c4f85a725065b60b6ff065d04f3c648fd549
-    csharp_sha: d4fc39a64fe5960e994ef433160c6075c30fc888
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: af21e99f91c1f21b8aeacd2de14e5c4b2bfddc44
+    csharp_sha: f08215df5b5be9b9a64577a165a13fc386719c70
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."

@@ -72,7 +72,7 @@ def test_build_cost_has_all_mandatory_fields():
     cost = pcm.build_quantbook_cost(_make_quantbook(10), by="m:w", today="2026-07-26")
     mandatory = {"api_usd_est", "api_provider", "cpu_min", "gpu_required",
                  "network", "external_account", "reproducibility",
-                 "last_validated", "validator"}
+                 "metadata_written", "validator"}
     assert mandatory <= set(cost), f"champs obligatoires manquants: {mandatory - set(cost)}"
 
 
@@ -243,7 +243,7 @@ def test_search_cpu_cost_has_mandatory_fields():
     cost = pcm.build_search_cpu_cost(_make_search_cpu(10), by="m:w", today="2026-07-28")
     mandatory = {"api_usd_est", "api_provider", "cpu_min", "gpu_required",
                  "network", "external_account", "reproducibility",
-                 "last_validated", "validator"}
+                 "metadata_written", "validator"}
     assert mandatory <= set(cost)
 
 
@@ -403,7 +403,7 @@ def test_rl_cpu_cost_has_mandatory_fields():
     cost = pcm.build_rl_cpu_cost(_make_rl_cpu(10), by="m:w", today="2026-07-28")
     mandatory = {"api_usd_est", "api_provider", "cpu_min", "gpu_required",
                  "network", "external_account", "reproducibility",
-                 "last_validated", "validator"}
+                 "metadata_written", "validator"}
     assert mandatory <= set(cost)
 
 

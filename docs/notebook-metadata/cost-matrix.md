@@ -41,7 +41,7 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
   "free_alternative": null,       // Chemin repo-relatif vers un notebook équivalent sans coût, sentinel canonique, ou null. Cf §"Sentinels de `free_alternative`".
   "reduced_pedagogical": null,    // Version pédagogique réduite (sous-ensemble ou mock) | null
   "reproducibility": "HIGH",      // HIGH=déterministe, MED=seed-dépendant, LOW=stochastique
-  "last_validated": "2026-07-24", // Date dernière exécution validée (ISO8601, papermill/QC Cloud/MCP)
+  "metadata_written": "2026-07-24", // Date d'établissement de la metadata (ISO8601), pas la date de validation
   "validator": "papermill",       // papermill | qc_cloud | manual | lean_build | sk_agent | sk_visual
 }
 ```
@@ -89,7 +89,7 @@ source de vérité, le badge est un confort de lecture.
 | `cost.free_alternative` | optionnel | `null` (peut être ajouté après-coup) |
 | `cost.reduced_pedagogical` | optionnel | `null` |
 | `cost.reproducibility` | ✓ | `"HIGH"` |
-| `cost.last_validated` | ✓ | (date de création de la metadata) |
+| `cost.metadata_written` | ✓ | (date d'établissement de la metadata) |
 | `cost.validator` | ✓ | `"manual"` |
 
 ### Attribution multi-fournisseur (`api_cost_breakdown`)
@@ -141,15 +141,24 @@ un gate incapable d'échouer n'est pas un gate).
 - `null` (+ raison) = coût **inconnu**. Ne pas confondre : `0.0` n'est pas un
   défaut pour « je ne sais pas », l'absence se lirait à tort comme gratuite.
 
-### `validator` / `last_validated` — la seconde règle falsifiable (Litmus 9)
+### `validator` / `metadata_written` — la seconde règle falsifiable (Litmus 9)
 
-Ces deux champs affirment qu'une validation a eu lieu. Jusqu'au Litmus 9, **rien
-dans le dépôt ne pouvait les contredire** : les populators écrivent
-`last_validated: date.today()` au moment du *peuplement* — pas au moment d'une
-validation — et aucun consommateur ne le relit. Le tableau des défauts ci-dessus
-le dit d'ailleurs sans détour : le défaut de `cost.last_validated` est « date de
-création de la metadata ». Un champ que rien ne peut contredire est **décoratif** :
-il porterait la même valeur sur un notebook dont *aucune* cellule n'a jamais tourné.
+> **Note terminologique (#8843)** : ce champ s'appelait `last_validated` jusqu'au
+> 2026-07-29. Le nom suggérait à tort une date de validation, alors que les
+> populators écrivent `metadata_written: date.today()` au moment du *peuplement*
+> — pas au moment d'une validation. Le nouveau nom (`metadata_written`) reflète
+> honnêtement la sémantique : c'est la date d'établissement de la metadata, pas
+> un horodatage de validation. La règle falsifiable du Litmus 9 reste la même :
+> c'est `validator` qui affirme l'exécution, et c'est contre `validator` que
+> s'applique le prédicat, pas contre `metadata_written` (qui est décoratif).
+
+Ces deux champs s'articulent ainsi : `validator` *affirme* qu'une validation a
+eu lieu (papermill, QC Cloud, manuel, etc.), `metadata_written` *horodate*
+l'établissement de la metadata. Jusqu'au Litmus 9, **rien dans le dépôt ne
+pouvait contredire `validator`** : aucun consommateur ne relisait son affirmation
+contre l'état réel du notebook. Un champ `validator` que rien ne peut contredire
+est **décoratif** : il porterait la même valeur sur un notebook dont *aucune*
+cellule n'a jamais tourné.
 
 **Règle falsifiable :** quand `validator` affirme une **exécution de cellules**
 (`papermill`, `sk_visual`, `dotnet-interactive`), aucune cellule code non vide ne
@@ -301,7 +310,7 @@ cost:
   free_alternative: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb
   reproducibility: MED         # Pas de seed déterministe côté OpenAI
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill         # Exécuté via Papermill local + OpenAI API
 ```
 
@@ -320,7 +329,7 @@ cost:
   free_alternative: GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH        # torch.manual_seed(42) + déterminisme sampler
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: sk_visual         # sk-agent vision check sur figures rendues
 ```
 
@@ -340,7 +349,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # Variational message passing déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill         # .NET Interactive local (cf L532 MEMORY : strip probeAddresses banner post-re-exec)
 ```
 
@@ -358,7 +367,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: lean_build        # `lake build` SUCCESS + Lean REPL via sk-agent
 ```
 
@@ -378,7 +387,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: Probas/Probas-PyMC/PyMC-0-PyMC-Setup-Lightweight.ipynb
   reproducibility: HIGH        # `pm.sample(seed=42, cores=1)` déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
 
@@ -398,7 +407,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # ML.NET seed déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
 
@@ -425,7 +434,7 @@ cost:
   free_alternative: self       # le notebook local sans API EST son alternative gratuite
   reduced_pedagogical: null
   reproducibility: HIGH        # solveurs .NET déterministes (MEDIUM si stochastique)
-  last_validated: "2026-07-28T15:45Z"   # UTC obligatoire (cf leçon TZ : jamais local+Z)
+  metadata_written: "2026-07-28T15:45Z"   # UTC obligatoire (cf leçon TZ : jamais local+Z)
   validator: manual
 ```
 
@@ -471,7 +480,7 @@ cost:
   free_alternative: null       # Pas d'alternative locale (QuantBook = QC uniquement)
   reduced_pedagogical: QuantConnect/projects/research-research-only.ipynb
   reproducibility: MED         # Walk-forward OOS reproductible, single-run backtest stochastique
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: qc_cloud          # MCP qc-mcp-lite create_backtest + read_backtest
 ```
 
@@ -509,7 +518,7 @@ cost:
   free_alternative: GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: sk_visual
 ```
 
@@ -529,7 +538,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: MED         # Sharpe 0.333 / CAGR 4.589% / MaxDD 14.100% (#8064)
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: qc_cloud
 ```
 
@@ -549,7 +558,7 @@ cost:
   free_alternative: IIT/4-Subsystem-IIT.ipynb
   reduced_pedagogical: IIT/0-PyPhi-Setup-Lightweight.ipynb
   reproducibility: HIGH        # PyPhi seed + ground truth MIP
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
 
@@ -569,7 +578,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # Lean 4 type-check déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: lean_build
 ```
 

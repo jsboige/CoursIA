@@ -387,7 +387,7 @@ def test_litmus8_breakdown_int_value_accepted(tmp_path):
 # ---------------------------------------------------------------------------
 # Litmus 9 — validator_asserts_execution_but_cells_unexecuted
 #
-# Rend `validator` / `last_validated` falsifiables : avant ce litmus, rien dans
+# Rend `validator` / `metadata_written` falsifiables : avant ce litmus, rien dans
 # le dépôt ne pouvait les contredire. Cf docs/notebook-metadata/cost-matrix.md.
 # ---------------------------------------------------------------------------
 
@@ -433,7 +433,7 @@ def test_litmus9_papermill_with_unexecuted_cell_flags(tmp_path):
     pats = _litmus9_patterns(
         tmp_path,
         [("x = 1", 1, None), ("from AlgorithmImports import *", None, None)],
-        {"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+        {"validator": "papermill", "metadata_written": "2026-07-23T01:30Z"},
     )
     assert _LITMUS9_PATTERN in pats
 
@@ -443,7 +443,7 @@ def test_litmus9_papermill_all_executed_ok(tmp_path):
     pats = _litmus9_patterns(
         tmp_path,
         [("x = 1", 1, None), ("y = 2", 2, None)],
-        {"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+        {"validator": "papermill", "metadata_written": "2026-07-23T01:30Z"},
     )
     assert _LITMUS9_PATTERN not in pats
 
@@ -539,7 +539,7 @@ def test_litmus9_detail_names_the_cell_indices(tmp_path):
     _notebook_cells(
         nb_path,
         [("a = 1", 1, None), ("b = 2", None, None), ("c = 3", None, None)],
-        cost_meta={"validator": "papermill", "last_validated": "2026-07-23T01:30Z"},
+        cost_meta={"validator": "papermill", "metadata_written": "2026-07-23T01:30Z"},
     )
     findings = mod.check_notebook(nb_path, tmp_path)["findings"]
     detail = next(f["detail"] for f in findings if f["pattern"] == _LITMUS9_PATTERN)

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: c6f3f420d9e11f9cb171349f11677003ba11d748
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: f295cceb90dc134cb19ebda5860bb121a77e2174
     csharp_sha: 16f9c00c30cc4d6002dafe82631aa965ecd97769
   known_differences:
   - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'

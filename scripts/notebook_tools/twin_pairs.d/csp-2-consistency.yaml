@@ -5,9 +5,9 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-29"
-    by: myia-po-2026:CoursIA
-    python_sha: 2eaab041ae0062e0cdbecfbf2cac90103b55706b
-    csharp_sha: d47b5f7654892116b27f6e5aeab51a3b899b6d74
+    by: myia-po-2023:CoursIA-2
+    python_sha: 49861cbc522cd0dd1aa91e50475bdfa1bc050722
+    csharp_sha: e846c562a18f32cb4e643b607a1b6556aa0d3c85
   known_differences:
     - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
     - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."

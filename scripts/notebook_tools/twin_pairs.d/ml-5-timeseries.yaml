@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-27"
-    by: myia-po-2024:CoursIA-2
-    python_sha: 39ba5f983b84bee6d7b958056fdb82cea5e74936
-    csharp_sha: f44d2f55892431e3397c5493942a164c6191c0b3
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 1e5dfe1cf4d57382161653bcbd8bf705e5a3ce09
+    csharp_sha: 581fcb6c880b55928062698a37560736ff250681
   known_differences:
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."

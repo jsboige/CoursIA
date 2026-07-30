@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-ai-01:CoursIA
-    python_sha: 944805c717b29cfbd29c543418b14cf1ad81d5e3
-    csharp_sha: 29f89557a6fb3164dc2a341ed8e6a24e4051a5e4
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: e72c1162ba01878325ff0324e0e6a66e315f5a03
+    csharp_sha: 6f8406e999d2e74ff5e615e32efb8c7342396c73
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : probleme de couverture exacte, algorithme X de Knuth, structure de donnees Dancing Links (DLX), implementation DLX, application polyominos, comparaison de performances DLX vs backtracking."

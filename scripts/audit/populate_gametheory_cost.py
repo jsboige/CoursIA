@@ -140,7 +140,7 @@ TRANCHES = {
 def build_cost(notebook_name: str, by: str, today: str) -> dict:
     """Construit le bloc `metadata['cost']` canonique pour un NB GT.
 
-    Champs dérivés : cpu_min, gpu_min, validator, notes, last_validated.
+    Champs dérivés : cpu_min, gpu_min, validator, notes, metadata_written.
     Champs constants GT : api_usd_est=0, api_provider=none, gpu_required=false,
     vram_gb=0, vram_tier=NONE, external_account=none, free_alternative=self
     (sentinel canonique, le NB est lui-même l'alternative gratuite), reduced_pedagogical=null,
@@ -162,7 +162,7 @@ def build_cost(notebook_name: str, by: str, today: str) -> dict:
         "free_alternative": "self",    # sentinel canonique : GT est lui-même l'alternative gratuite (cf cost-matrix.md §Sentinels)
         "reduced_pedagogical": None,   # notebook-specific (jugement humain) ; null = honnête
         "reproducibility": "HIGH",
-        "last_validated": today,
+        "metadata_written": today,
         "validator": profile["validator"],
         "notes": profile["notes"],
     }
@@ -213,7 +213,7 @@ def main(argv=None) -> int:
     )
     ap.add_argument(
         "--today", default=None,
-        help="Date ISO pour last_validated (défaut : aujourd'hui)",
+        help="Date ISO pour metadata_written (défaut : aujourd'hui)",
     )
     ap.add_argument(
         "--audit", action="store_true",

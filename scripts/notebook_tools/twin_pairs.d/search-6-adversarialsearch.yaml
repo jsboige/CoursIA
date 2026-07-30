@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-6-AdversarialSearch-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-ai-01:CoursIA
-    python_sha: d26a0b6e8fcee510aea28342d2ac3ac5b81a7f54
-    csharp_sha: 3975fb9fe6db1730e666e05c423721a466dac9c3
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 9f45a455403482150ba47f98eb38746900ca057c
+    csharp_sha: a1d30fc3fabf281b7f7297e79718c7a63c2c1de4
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : jeux a somme nulle a information parfaite (Tic-Tac-Toe/Morpion), minimax, elagage alpha-beta, iterative deepening, tables de transposition."

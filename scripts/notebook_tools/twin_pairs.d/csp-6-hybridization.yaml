@@ -5,9 +5,9 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-29"
-    by: myia-po-2026:CoursIA
-    python_sha: 538364672e7cee086dc83874f6346223b393858e
-    csharp_sha: 0f53df75f68fda09bd0a0d5c9c578c0026d4ef77
+    by: myia-po-2023:CoursIA-2
+    python_sha: e5664cf24396bd2f82fc0f1c788d0b30db9f3686
+    csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
     - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."
