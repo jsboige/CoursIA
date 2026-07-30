@@ -293,4 +293,16 @@ theorem kelly_growth_eq_zero_iff (β : Bet) :
   · -- f* = 0 : alors g(f*) = g(0) = 0
     rw [h]; exact growth_zero β
 
+/-- **Croissance optimale non négative** : `g(f*) ≥ 0` en tout point. Comme ne rien
+    miser (`f = 0`, admissible) laisse le capital inchangé (`g(0) = 0` par `growth_zero`)
+    et `f*` maximise `g` (`kelly_optimal`), l'optimum est minoré par zéro. Le cas
+    d'égalité `g(f*) = 0` correspond au pari équitable `f* = 0` (voir
+    `kelly_growth_eq_zero_iff`). Ce corollaire est énoncé en prose au §9 et isolé ici
+    comme lemme nommé, pour usage direct par les consommateurs (pas de ré-derivation). -/
+theorem kelly_growth_nonneg (β : Bet) : 0 ≤ growth β (kellyFrac β) := by
+  have hfeas0 : Feasible β 0 := ⟨by rw [div_lt_iff₀ β.hb_pos]; linarith, by linarith⟩
+  have ho := kelly_optimal β 0 hfeas0
+  rw [growth_zero] at ho
+  exact ho
+
 end KellyLean
