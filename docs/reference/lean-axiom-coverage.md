@@ -18,6 +18,20 @@ Ce doc est la **preuve d'acceptance step 3** du ticket #8738 (« Les 10 lakes ca
 
 **Pas un audit formel** : ce triage ne **lance pas** `lake env lean` + `#print axioms` sur chaque lake (matière à ~6h de build pour les 22 lakes sans Lean compilé en local). Le triage **grep-firsthand** identifie les lacs qui *utiliseraient* `native_decide`/`Classical.choice` une fois le gate branché dessus ; il donne la liste des reds à traiter au cas par cas.
 
+### 1.1. Limite structurelle de la colonne `Classical.choice` (issue #8941)
+
+La colonne `Classical.choice` compte des **mentions textuelles du token**, pas des dépendances axiomatiques — et les deux sont **anti-corrélées** à ce qu'on veut savoir.
+
+La raison est mécanique : `Classical.choice` n'est **pas un token qu'on écrit** dans du source Lean. C'est un axiome que le **noyau attribue** ; il n'apparaît que dans la **sortie de `#print axioms`**, jamais dans le texte source. Un lake l'introduit typiquement via `noncomputable def` (qui force le recours au choix classique) ou `Classical.byContradiction` — sans jamais écrire la chaîne `Classical.choice`. La colonne vaut donc `0` pour à peu près tous les lacs, **non parce qu'ils ne l'utilisent pas, mais parce que la question n'est pas posée là où la réponse se trouve**.
+
+Ce que la colonne mesure réellement, c'est le nombre de **mentions en prose** (docstrings/commentaires qui *parlent* de l'axiome). Les trois lacs non nuls le confirment par leur propre texte — `sudoku_lean` (`ExactCover.lean:69,154`, commentaires « repose sur l'axiome `Classical.choice` »), `learning_theory_lean` (`PacFiniteBound.lean:215,376`, commentaires sur le non-`defeq` de `Classical.choice`) : ce sont des docstrings qui documentent le recours, pas des dépendances. Corollaire : un lake qui documente honnêtement son recours au choix classique **remonte** dans la colonne ; un lake qui l'utilise sans le dire reste à `0`. (`decision_theory_lean`, listé à `1`, ne contient plus aucune occurrence littérale du token en FR au `HEAD` courant — seul `Classical.not_not` subsiste : la valeur est elle aussi non fiable.)
+
+Le même défaut vaut, en plus grave, pour `sorryAx` (transitif, invisible au grep par construction — le doc le note déjà « capte déjà en transitif »). **`native_decide`, en revanche, est un vrai token source : sa colonne est fiable.**
+
+### 1.2. GREEN-par-grep ≠ GREEN-par-gate
+
+Tous les verdicts de la table ci-dessous sont **GREEN-par-grep** / **RED-par-grep** (issus de `git grep`, §1) **sauf** ceux explicitement marqués **« mesuré »** (issus de `#print axioms` via `LeanVerifier.check_axioms`). Les deux affirmations sont différentes : un lake GREEN-par-grep n'a aucun `native_decide` en source, mais peut très bien porter `Classical.choice` dans sa clôture axiomatique (cf §1.1). Câbler le gate `lean-axiom.yml` (`Classical.choice` est `forbidden` par défaut) sur un lake GREEN-par-grep peut donc recevoir un **rouge inattendu** — précisément le scénario de `grothendieck_lean`, première ligne **mesurée** de la table (cf §3.5).
+
 ## 2. Triage des 22 lacs Lean (hors vendored `.lake/packages/`)
 
 État au commit `35e1258df` (2026-07-29), `git ls-files <lake> | grep "\.lean$" | grep -v ".en.lean"` :
@@ -31,7 +45,7 @@ Ce doc est la **preuve d'acceptance step 3** du ticket #8738 (« Les 10 lakes ca
 | `MyIA.AI.Notebooks/Probas/decision_theory_lean` | 13 | 0 | 0 | 1 | 0 | borderline (1 occurrence : lottery axioms) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 3 | 0 | 0 | 0 | 0 | GREEN |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 33 | 0 | 0 | 0 | 0 | GREEN |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean` | 33 | 0 | 0 | 0† | 0 | **GREEN-par-grep** (⚠️ mesuré : `Classical.choice` PRÉSENT en clôture — cf §1.1, §3.5) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean` | 3 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | 5 | 0 | 0 | 0 | 0 | GREEN |
 | `MyIA.AI.Notebooks/Search/search_lean` | 6 | 0 | 0 | 0 | 0 | GREEN |
@@ -157,6 +171,24 @@ Ces lacs utilisent `Classical.choice` (4/2/1 occurrences respectivement). Comme 
 
 Aucune occurrence de `native_decide`, `sorryAx`, `Classical.choice` dans le code (hors docstring). Câblage futur sans coût : juste créer le `lean-<lake>.yml` qui appelle `lean-axiom.yml` avec `target-modules` listant les modules principaux du lake.
 
+### 3.5. `grothendieck_lean` — première ligne MESURÉE (audit réel #8941)
+
+`grothendieck_lean` est la **première ligne de la table issue d'une mesure `#print axioms` réelle** (vs grep). C'est le cas-test qui a révélé la limite §1.1 : la table lui donnait `Classical.choice = 0` et verdict GREEN, alors que l'axiome est **présent dans la clôture axiomatique de ses modules**.
+
+**Mesure** (issue #8941, `LeanVerifier.check_axioms` = `#print axioms` par déclaration sur les 33 modules FR de `grothendieck_lean`, 2026-07-30) :
+
+```
+modules ok      : 30/33
+declarations    : 164
+modules w/ sorry: 0
+axioms union    : ['Classical.choice', 'Quot.sound', 'propext']
+forbidden union : []
+```
+
+**Corroboration grep-firsthand (po-203, c.978, commit `2aa7b5607`)** : le mécanisme §1.1 se vérifie directement — `git grep -l noncomputable` sur les fichiers FR de `grothendieck_lean` renvoie **31 fichiers sur 33** (`Adjunction`, `Conservative`, `ConstantSheaf`, `Equivalences`, `KanExtensions`, `LeftExact`, `Limits`, `MayerVietorisSquare`, `MonoidalCategories`, `SchemesTour`, `SheafCohomology/Basic`, …). Chaque `noncomputable def` force le recours à `Classical.choice`, sans jamais écrire le token — d'où le `0` de la colonne grep. Les 3 modules non-énumérables (le `30/33`) sont un faux rouge distinct, traité par #8940 (hors sujet ici).
+
+**Implication de câblage** : `Classical.choice` est `forbidden` par défaut dans `check_axioms`. Câbler `lean-grothendieck.yml` → `lean-axiom.yml` exigera donc `allow-axioms: "Classical.choice"` **explicite et nommé** (jamais en wildcard — cliquet §B.3 [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md)), avec justification écrite : la théorie des catégories/sheaves de Grothendieck est intrinsèquement non-constructive, le choix classique y est l'attente pédagogique (et non un défaut). Le lake n'a **aucun** `native_decide` et **aucun** `sorry` : son seul contenu axiomatique non-trivial est ce choix classique structurel.
+
 ## 4. État du câblage CI
 
 | Lake | Workflow `lean-*.yml` | Appelle `lean-axiom.yml` ? | Verdict au gate |
@@ -183,6 +215,7 @@ Le gate `proof-integrity` couvre désormais `native_decide` (post-#8740). La rè
 ## 7. Voir aussi
 
 - [#8738](https://github.com/jsboige/CoursIA/issues/8738) — ticket de référence (parser fix #8740, triage c.948)
+- [#8941](https://github.com/jsboige/CoursIA/issues/8941) — limite structurelle de la colonne `Classical.choice` (grep vs `#print axioms`) + première ligne mesurée (`grothendieck_lean`, §3.5)
 - PR [#8740](https://github.com/jsboige/CoursIA/pull/8740) — `fix(lean-tooling,#8738): proof-integrity gate reads multi-line axiom lists` (c.947, MERGED 2026-07-28)
 - PR [#8746](https://github.com/jsboige/CoursIA/pull/8746) — `ci(lean,#8677): proof-integrity gate v2 — KochenSpecker+FreeWillTheorem + 19 explicit native_decide names` (c.951, MERGED 2026-07-29)
 - PR [#8725](https://github.com/jsboige/CoursIA/pull/8725) — `Knots/Invariant.lean` retire `native_decide` tactic (po-2026, MERGED 2026-07-27)
