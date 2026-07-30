@@ -88,6 +88,7 @@ from . import reversibility_budget
 from . import argumentation
 from . import inhibited_action
 from . import learned_valence
+from . import pregnance_animat
 from . import cech_obstruction
 from . import signaling_convention
 from . import symbol_invention
@@ -109,6 +110,7 @@ __all__ = [
     "argumentation",
     "inhibited_action",
     "learned_valence",
+    "pregnance_animat",
     "cech_obstruction",
     "signaling_convention",
     "symbol_invention",
