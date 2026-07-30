@@ -61,9 +61,15 @@ on:
         type: boolean
         default: true
 
+# A reusable workflow cannot request more than its caller grants. #8951 gave the
+# callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
+# implicitly sets pull-requests to none -- so this block's `pull-requests: write`
+# became unsatisfiable and both callers died at startup, gate included. The grant
+# was dead anyway (this file posts no comment, runs no `gh`, no github-script:
+# grep-verified), exactly like the one #8951 removed from lean-build.yml. Dropping
+# it completes that hardening instead of contradicting it. See #8949.
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   axiom-check:

@@ -51,6 +51,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
+      # The gate's own implementation: a change to it must re-run the gate.
+      # knot lists it already; conway did not (added with #8951's startup break).
+      - '.github/workflows/lean-axiom.yml'
       - 'scripts/lean/check_target_coverage.py'
   pull_request:
     branches: [main]
@@ -60,6 +63,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       - '.github/workflows/lean-conway.yml'
+      # The gate's own implementation: a change to it must re-run the gate.
+      # knot lists it already; conway did not (added with #8951's startup break).
+      - '.github/workflows/lean-axiom.yml'
       - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
 
