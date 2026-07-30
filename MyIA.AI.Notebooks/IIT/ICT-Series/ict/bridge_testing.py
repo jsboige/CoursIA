@@ -19,6 +19,13 @@ Ponts livres
   redondance -- l'importance marginale predit l'usage causal (ablation) a
   diversite realiste, mais est un **proxy trompeur** sous redondance severe (seule
   l'ablation distingue alors les features causeales des redondantes).
+* **Pont #4** (workspace -> diffusion fonctionnelle, c.1025) : **CONFIRME** sur
+  substrat reseau a bus broadcast -- la disponibilite globale (broadcast)
+  etend la porte fonctionnelle au-dela de la connectivite directe (elle fait
+  atteindre des modules structurellement inaccessibles). Controle nul
+  structural : un bus present mais ignore (``read_p=0``) est **fonctionnellement
+  inerte** (frac atteint = 0 exact) -- c'est le null « broadcast present mais
+  non exploite en aval » de #8077.
 
 Bridge #1 (sigma stabilite -> recuperabilite)
 ---------------------------------------------
@@ -428,4 +435,196 @@ def bridge_extraction_to_causal_usage(
         "mean_rho_uniqueness_ablation": float(np.mean(uniq_abl)),
         "partial_null_p95_mean": float(np.mean(null_arr)),
         "bridge_extraction_to_causal_usage": bridge,
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #4 : workspace (broadcast) -> diffusion fonctionnelle (portee)       #
+# --------------------------------------------------------------------------- #
+
+
+def _random_module_network(
+    rng: np.random.Generator, n_modules: int, density: Tuple[float, float]
+) -> np.ndarray:
+    """Reseau de modules a connectivite directe aleatoire et **clairsemee**.
+
+    Renvoie une matrice d'adjacence booleenne ``(n_modules, n_modules)`` ou
+    ``adj[i, j]`` indique un lien direct ``i -> j``. La densite est tiree dans
+    ``density`` (plage faible : connectivite directe **partielle**, laissant de
+    la place pour que le broadcast etende la portee -- sondage c.1025 : densite
+    trop elevee => connectivite directe saturee => regime degenere). Diagonale
+    nulle (un module ne s'influence pas lui-meme)."""
+    d = float(rng.uniform(*density))
+    adj = rng.random((n_modules, n_modules)) < d
+    np.fill_diagonal(adj, False)
+    return adj
+
+
+def _direct_reach_set(adj: np.ndarray, source: int) -> np.ndarray:
+    """Ensemble des modules atteignables par **chemins directs uniquement**
+    (fermeture transitive des aretes directes depuis ``source``). C'est la portee
+    de base, sans le bus broadcast -- le concurrent structurel du pont."""
+    n = adj.shape[0]
+    reached = np.zeros(n, dtype=bool)
+    reached[source] = True
+    for _ in range(n):
+        newly = (adj.T @ reached.astype(int)) > 0
+        if np.array_equal(reached, reached | newly):
+            break
+        reached |= newly
+    return reached
+
+
+def _broadcast_reach_set(
+    adj: np.ndarray, read_p: float, pub_p: float, source: int,
+    rng: np.random.Generator, max_iter: int = 60,
+) -> np.ndarray:
+    """Portee avec un **bus broadcast global** (substrat du pont #4).
+
+    A chaque iteration, un module ``j`` devient actif si (a) un predecesseur
+    direct actif le pointe, OU (b) le **bus** porte le signal ET ``j`` le lit
+    (probabilite ``read_p``). Un module nouvellement actif **publie** le signal
+    sur le bus avec probabilite ``pub_p`` (ignition) -- une fois le bus allume,
+    il le reste (memoire globale du workspace). ``read_p`` = **usage** du bus
+    par les modules en aval ; ``pub_p`` = **ignition** (le signal entre-t-il sur
+    le bus ?). Les deux sont necessaires : bus allume sans lecteurs = inert ;
+    lecteurs sans ignition = bus vide.
+    """
+    n = adj.shape[0]
+    active = np.zeros(n, dtype=bool)
+    active[source] = True
+    bus_has_signal = False
+    for it in range(max_iter):
+        new_active = active.copy()
+        for j in range(n):
+            if active[j]:
+                continue
+            direct_in = bool(np.any(active & adj[:, j]))
+            bus_in = bus_has_signal and (rng.random() < read_p)
+            if direct_in or bus_in:
+                new_active[j] = True
+        if not bus_has_signal and np.any(new_active & ~active):
+            for m in np.where(new_active & ~active)[0]:
+                if rng.random() < pub_p:
+                    bus_has_signal = True
+                    break
+        if np.array_equal(new_active, active) and it > 0:
+            break
+        active = new_active
+    return active
+
+
+def bridge_workspace_to_diffusion(
+    n_networks: int = 120,
+    n_modules: int = 40,
+    density: Tuple[float, float] = (0.02, 0.06),
+    n_shuffle: int = 200,
+    seed: int = 0,
+) -> Dict[str, float]:
+    r"""Bridge #4 : workspace (broadcast global) -> diffusion fonctionnelle (falsifiable, #8077 pont 4).
+
+    Hypothese naive de la strate Global Workspace (ICT-24, #4588) : la
+    **disponibilite globale** d'une information (le bus broadcast du workspace)
+    **change ce que d'autres mecanismes peuvent faire** -- elle etend la portee
+    fonctionnelle au-dela de la connectivite directe. Le substrat : un reseau de
+    modules (:func:`_random_module_network`) ou un signal entre au module source
+    et peut se propager par les liens directs (portee locale,
+    :func:`_direct_reach_set`) OU par le bus broadcast
+    (:func:`_broadcast_reach_set`).
+
+    La subtilite (qui rend le pont NON tautologique et falsifiable) est qu'on
+    isole ce que le broadcast apporte **de neuf** : la fraction des modules
+    **structurellement inaccessibles** par chemins directs (hors portee locale)
+    que le broadcast **fait atteindre**. Si le broadcast n'apportait rien, cette
+    fraction serait nulle (la portee = portee directe). La mesure discrimine
+    donc la contribution **unique** du bus au-dela de la connectivite.
+
+    Le **controle nul de l'issue** (« broadcast present mais non exploite en
+    aval ») : un bus structurellement present mais que les modules **ignorent**
+    (``read_p = 0``) est **fonctionnellement inerte** -- la fraction des
+    inaccessibles atteints tombe a **0 exact**. Le bus existe mais ne change rien
+    (c'est le null « dark broadcast » de #8077).
+
+    Test decisif : la **correlation partielle** (capacite_broadcast | n_inaccessibles)
+    -> fraction_inaccessibles_atteints, ou la capacite = ``read_p * pub_p``
+    (usage x ignition, les deux requis). ``n_inaccessibles`` est le concurrent
+    **reel** (le denominateur structurel : plus d'inaccessibles => plus d'opportunite
+    mais aussi plus dur a tous atteindre), et la partielle isole la contribution du
+    broadcast au-dela (sondage c.1025 : partielle +0.45 > brute +0.35, le controle
+    *affine* le signal, c.1024-L : concurrent reel, pas orthogonal).
+
+    Sondage C976-L (c.1025) AVANT d'asserter :
+      * graphes trop denses (K=30, dens 0.05-0.25) => connectivite directe saturee
+        (portee directe ~0.93) => regime degenere, partial non significatif.
+        Bon regime : graphes **clairsemes** (K=40, dens 0.02-0.06, portee directe
+        ~0.34) => vraie place pour le broadcast.
+      * formulation naive « increment = total - direct » est **confondue** par la
+        portee directe (rho +0.60) => borderline (partial ~+0.18, seuil nul). La
+        bonne mesure isole les **inaccessibles** atteints => partial +0.45 propre.
+
+    Verdict falsifiable
+    -------------------
+    ``bridge_workspace_to_diffusion`` : 1.0 si la capacite du broadcast predit
+        significativement la fraction des inaccessibles atteints au-dela du
+        denominateur structurel (partial positive > null p95) **et** le controle
+        nul structural (bus ignore) donne une fraction ~0 (bus inerte). 0.0 sinon.
+
+    Robuste (c.1014-L) : le verdict tient sur plusieurs graines (partial +0.41..+0.53
+    sur seeds {0,1,2,3,7,42}).
+    """
+    rng = np.random.default_rng(seed)
+    capacities: List[float] = []
+    fracs: List[float] = []
+    n_unreachable_list: List[int] = []
+    for _ in range(int(n_networks)):
+        adj = _random_module_network(rng, n_modules, density)
+        read_p = float(rng.uniform(0.0, 1.0))
+        pub_p = float(rng.uniform(0.0, 1.0))
+        direct = _direct_reach_set(adj, source=0)
+        n_unreachable = int((~direct).sum())
+        if n_unreachable < 2:
+            continue  # pas d'inaccessibles a mesurer (reseau quasi-sature)
+        broadcast = _broadcast_reach_set(adj, read_p, pub_p, source=0, rng=rng)
+        newly_reached = int((broadcast & ~direct).sum())
+        capacities.append(read_p * pub_p)
+        fracs.append(newly_reached / float(n_unreachable))
+        n_unreachable_list.append(n_unreachable)
+    cap = np.asarray(capacities, dtype=float)
+    frac = np.asarray(fracs, dtype=float)
+    n_un = np.asarray(n_unreachable_list, dtype=float)
+
+    rho_cap_frac = _spearman(cap, frac)
+    rho_nun_frac = _spearman(n_un, frac)
+    partial = _partial_spearman(cap, frac, n_un)
+
+    null_partial = np.array([
+        _partial_spearman(rng.permutation(cap), frac, n_un) for _ in range(int(n_shuffle))
+    ])
+    p95_partial_null = float(np.percentile(np.abs(null_partial), 95))
+
+    # controle nul structural : bus ignore (read_p=0) => inaccessibles atteints ~0
+    null_frac = []
+    for _ in range(30):
+        adj = _random_module_network(rng, n_modules, density)
+        direct = _direct_reach_set(adj, source=0)
+        n_unreachable = int((~direct).sum())
+        if n_unreachable < 2:
+            continue
+        dark = _broadcast_reach_set(adj, read_p=0.0, pub_p=1.0, source=0, rng=rng)
+        null_frac.append(int((dark & ~direct).sum()) / float(n_unreachable))
+    null_control_frac = float(np.mean(null_frac)) if null_frac else 0.0
+
+    bridge = 1.0 if (partial > p95_partial_null and partial > 0.2
+                     and null_control_frac < 0.05) else 0.0
+
+    return {
+        "n_networks": int(cap.size),
+        "n_modules": int(n_modules),
+        "mean_frac_unreachable_reached": float(np.mean(frac)),
+        "null_control_frac_dark_bus": null_control_frac,
+        "rho_capacity_frac": float(rho_cap_frac),
+        "rho_n_unreachable_frac": float(rho_nun_frac),
+        "partial_rho_capacity_frac_given_n_unreachable": float(partial),
+        "partial_null_p95": p95_partial_null,
+        "bridge_workspace_to_diffusion": bridge,
     }

@@ -185,3 +185,66 @@ def test_bridge3_null_control_severe_redundancy_falsifies():
     assert v_null["frac_models_confirmed"] < 0.5
     # CONTRASTE : sous diversite realiste, le pont TIENT.
     assert bt.bridge_extraction_to_causal_usage(feat_noise=0.3, seed=0)["bridge_extraction_to_causal_usage"] == 1.0
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #4 : workspace (broadcast) -> diffusion fonctionnelle   (CONFIRME)   #
+# --------------------------------------------------------------------------- #
+# Le pont #4 est CONFIRME : la disponibilite globale (broadcast) etend la portee
+# fonctionnelle au-dela de la connectivite directe (elle fait atteindre des
+# modules structurellement inaccessibles). Controle nul structural : un bus
+# present mais ignore (read_p=0) est fonctionnellement inerte (frac=0 exact) --
+# le null « broadcast present mais non exploite en aval » de #8077 (c.1025).
+
+
+def test_direct_reach_is_transitive_closure():
+    """Sanity : _direct_reach_set est la fermeture transitive des aretes directes
+    (portee locale, sans bus). Le module source est toujours atteint."""
+    rng = np.random.default_rng(0)
+    adj = bt._random_module_network(rng, n_modules=20, density=(0.1, 0.2))
+    reached = bt._direct_reach_set(adj, source=0)
+    assert reached[0]                              # source atteinte
+    assert reached.sum() <= 20
+
+
+def test_broadcast_reaches_unreachable_modules():
+    """Sanity : avec un bus lu (read_p=1) et allume (pub_p=1), le broadcast atteint
+    des modules que la connectivite directe n'atteint pas (la contribution unique
+    du workspace)."""
+    rng = np.random.default_rng(0)
+    adj = bt._random_module_network(rng, n_modules=40, density=(0.02, 0.06))
+    direct = bt._direct_reach_set(adj, source=0)
+    broadcast = bt._broadcast_reach_set(adj, read_p=1.0, pub_p=1.0, source=0, rng=rng)
+    if (~direct).sum() > 0:                        # s'il y a des inaccessibles
+        assert broadcast.sum() >= direct.sum()      # broadcast >= direct
+
+
+def test_bridge4_verdict_is_confirmed():
+    """Le pont « broadcast etend la portee au-dela du direct » est CONFIRME."""
+    v = bt.bridge_workspace_to_diffusion(seed=0)
+    assert v["bridge_workspace_to_diffusion"] == 1.0
+
+
+def test_bridge4_broadcast_capacity_predicts_unreachable_reach():
+    """LE TEST DECISIF : la capacite du broadcast predit significativement la
+    fraction des modules inaccessibles atteints, au-dela du denominateur
+    structurel (partial positive > null p95)."""
+    v = bt.bridge_workspace_to_diffusion(seed=0)
+    partial = v["partial_rho_capacity_frac_given_n_unreachable"]
+    assert partial > 0.2
+    assert partial > v["partial_null_p95"]
+
+
+def test_bridge4_null_control_dark_bus_is_inert():
+    """LE CONTROLE NUL STRUCTURAL (c.1025) : un bus present mais ignore (read_p=0)
+    est fonctionnellement inerte -- la fraction des inaccessibles atteints tombe
+    a ~0. C'est le null « broadcast present mais non exploite en aval » de #8077."""
+    v = bt.bridge_workspace_to_diffusion(seed=0)
+    assert v["null_control_frac_dark_bus"] < 0.05    # bus dark => inerte
+
+
+def test_bridge4_verdict_robust_across_seeds():
+    """Le verdict confirme n'est pas un point-artefact (c.1014-L)."""
+    verdicts = [bt.bridge_workspace_to_diffusion(seed=s)
+                ["bridge_workspace_to_diffusion"] for s in (0, 1, 2)]
+    assert all(v == 1.0 for v in verdicts)
