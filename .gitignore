@@ -891,5 +891,9 @@ _freeze/
 # EXCEPTION (#8901) : le cache derive data/meals/mealplan_cache.json (~205 Ko) est EPIINGLE
 # (derive stable consommee par 07/08/09 + port Python 16b/16c/16d) pour stopper la derive de
 # millesime. Le brut volumineux reste ignore ; seul le cache est tracke (cf Z3-Linq2Z3/.gitignore).
+# La negation est scopee au chemin CANONIQUE Z3-Linq2Z3/ (pas de glob **) : un ** ferait remonter
+# le vestige SMT/Z3/data/meals/ (ancien nom de serie, vintage 270 Ko 2026-07-02) en ?? sur les
+# machines qui le portent -> risque de committer le mauvais millesime que #8905 a deplace (#8901).
+# L'ignore (ligne du dessus) reste large pour couvrir les autres fichiers du vestige stale.
 MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
-!MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/mealplan_cache.json
+!MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/data/meals/mealplan_cache.json
