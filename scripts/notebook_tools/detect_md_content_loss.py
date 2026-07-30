@@ -116,6 +116,178 @@ MOTIF_PATTERNS = [
 ]
 NAV_LINK_RE = re.compile(r"\[[^\]]+\]\([^)]+\.ipynb\)")
 
+# Bloc frontmatter YAML `---\n...\n---` en TETE de cellule markdown (#8904/#8919).
+# Quand un notebook migre son cost de ce bloc vers nb['metadata']['cost'], le bloc
+# disparait de la cellule -> chute mecanique du ratio -> faux positif de content-loss.
+# On detecte ce cas pour le distinguer d'une troncature reelle (issue #8919).
+FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL)
+# Une cle cost dans le frontmatter : ligne indentee `  key: value` sous un `cost:`.
+_COST_KEY_LINE = re.compile(r"^([ \t]+)([A-Za-z_][\w]*)\s*:\s*(.*?)\s*$")
+
+
+def _strip_yaml_inline_comment(s: str) -> str:
+    """Retire un commentaire YAML inline (`` # ...``) hors d'une valeur quotee.
+
+    Un ``#`` ne compte comme debut de commentaire que s'il est precede d'un blanc
+    (espace/tab) : un ``#`` colle a un caractere (ex: URL ``http://h#frag``) ou a
+    l'interieur de guillemets est preserve (issue #8921-1 : les frontmatters reels
+    portent leur justification en commentaire de fin de ligne -- ``cpu_min: 1  #
+    cpu-only`` -- qu'il faut ignorer pour juger l'equivalence, sans quoi ``1`` est
+    declare divergent de... ``1``).
+    """
+    quote = None
+    for i, ch in enumerate(s):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and i > 0 and s[i - 1] in " \t":
+            return s[:i].rstrip()
+    return s
+
+
+def _normalize_cost_value(v) -> str:
+    """Normalise une valeur cost (str YAML du frontmatter OU objet JSON de metadata)
+    en une cle de comparaison canonique, insensible aux commentaires inline, a la
+    casse, aux guillemets et a l'ecriture numerique (issues #8919 + #8921-1/#8921-2).
+
+    Rend str YAML ("none", "true", "0.10", "1  # cpu-only") et objet JSON (None,
+    True, 0.1, 1) comparables : ``None`` / "none" / "null" / "~" -> "none" ;
+    booleens -> "true"/"false" ; nombres -> forme canonique ``str(float)``
+    (``0.10`` == ``0.1``, ``1`` == ``1.0`` -- #8921-2 : la comparaison est
+    numerique la ou elle etait textuelle) ; chaines -> depouillees du commentaire
+    inline (#8921-1), des guillemets et lowercasees.
+    """
+    if v is None:
+        return "none"
+    if isinstance(v, bool):  # NB: avant int (bool sous-classe de int en Python)
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        f = float(v)
+        if f != f or f in (float("inf"), float("-inf")):  # nan/inf -> texte brut
+            return str(v)
+        return str(f)  # #8921-2 : forme canonique (1 -> "1.0", 0.1 -> "0.1")
+    s = str(v).strip()
+    s = _strip_yaml_inline_comment(s).strip()  # #8921-1 : retire ` # commentaire`
+    if len(s) >= 2 and s[0] in "\"'" and s[-1] == s[0]:
+        s = s[1:-1]
+    low = s.lower()
+    if low in ("none", "null", "~", ""):
+        return "none"
+    try:  # #8921-2 : comparaison NUMERIQUE (0.10 == 0.1, pas textuelle)
+        f = float(low)
+    except ValueError:
+        return low
+    if f != f or f in (float("inf"), float("-inf")):  # nan/inf -> texte brut
+        return low
+    return str(f)
+
+
+def _parse_frontmatter_cost(md_text: str) -> dict | None:
+    """Parse le sous-bloc ``cost:`` d'un frontmatter YAML en tete de cellule.
+
+    Parser manuel (le detecteur reste stdlib-only, sans PyYAML -- cf
+    ``check_cost_metadata.parse_cost_frontmatter`` qui, lui, import yaml mais
+    n'est pas un gate CI leger). Structure attendue (cas #8904/#8916) :
+
+        ---
+        title: Foo/bar
+        cost:
+          api_usd_est: 0.0
+          cpu_min: 15
+          reduced_pedagogical: path/to/nb.ipynb
+          free_alternative: null
+        ---
+        # H1 ...
+
+    Retourne ``{key: raw_value_str}`` pour les cles du bloc ``cost:`` (None si la
+    cellule n'a pas de frontmatter ou pas de bloc ``cost:``). Les valeurs brutes
+    sont normalisees plus tard par ``_normalize_cost_value``.
+    """
+    m = FRONTMATTER_RE.match(md_text)
+    if not m:
+        return None
+    cost: dict[str, str] = {}
+    in_cost = False
+    cost_indent: str | None = None
+    for line in m.group(1).split("\n"):
+        if not in_cost:
+            if re.match(r"^cost\s*:\s*$", line):
+                in_cost = True
+            continue
+        kv = _COST_KEY_LINE.match(line)
+        if kv and kv.group(1) and not line.lstrip().startswith("#"):
+            # Ligne indentee `  key: value` -> cle du bloc cost.
+            cost[kv.group(2)] = kv.group(3)
+        elif line.strip() == "":
+            continue  # ligne vide dans le bloc cost -> on reste dedans
+        elif re.match(r"^\S", line):
+            # Ligne non indentee -> on sort du bloc cost (ex: autre cle top-level).
+            in_cost = False
+    return cost or None
+
+
+def _cost_equivalent(base_frontmatter_cost: dict, head_metadata_cost: dict | None
+                     ) -> tuple[bool, list[str]]:
+    """Compare champ-par-champ le cost du frontmatter base vs le metadata.cost head.
+
+    Retourne ``(equivalent, divergent_fields)``. Un champ diverge si sa valeur
+    normalisee differe (ou s'il manque d'un cote) -- SAUF deux progres legitimes
+    d'une migration (issue #8921-3) :
+
+    * ``base=none -> head=valeur`` (ex: ``free_alternative`` null -> chemin reel) :
+      une apparition de valeur est un GAIN, jamais une perte de contenu.
+    * ``metadata_written`` : horodatage d'ecriture, rafraichi au moment de la
+      migration -> exclu (une date plus recente est le comportement attendu, pas
+      une divergence).
+
+    Le test reste mordant sur le piege de #8908/#8912/#8914 : ``metadata.cost`` y
+    existait deja mais n'etait PAS equivalent (``cpu_min`` 0 au lieu de 20/45,
+    ``reduced_pedagogical`` None au lieu d'un chemin) -> la "suppression seche"
+    doit rester signaler.
+    """
+    head = head_metadata_cost or {}
+    divergent: list[str] = []
+    for key, base_val in base_frontmatter_cost.items():
+        if key == "metadata_written":  # #8921-3b : date rafraichie = attendue
+            continue
+        base_norm = _normalize_cost_value(base_val)
+        if base_norm == "none":  # #8921-3a : none -> valeur = gain, pas perte
+            continue
+        if base_norm != _normalize_cost_value(head.get(key)):
+            divergent.append(key)
+    return (len(divergent) == 0, divergent)
+
+
+def _frontmatter_non_cost_keys(md_text: str) -> list[str]:
+    """Cles top-level du frontmatter autres que ``title`` et le sous-bloc ``cost:``.
+
+    Une cle informative colocataire (ex: ``notes:``) doit etre migree vers
+    ``metadata.cost`` (``notes`` -> ``metadata.cost.notes``) pour que la
+    suppression du frontmatter soit invisible ; sinon sa perte est signalee
+    (issue #8921-4, cas Claudish : 5 lignes de routage perdues en silence parce
+    que le strip retirait le frontmatter ENTIER sur la seule foi du ``cost:``).
+    """
+    m = FRONTMATTER_RE.match(md_text)
+    if not m:
+        return []
+    extras: list[str] = []
+    in_cost = False
+    for line in m.group(1).split("\n"):
+        if re.match(r"^cost\s*:\s*$", line):
+            in_cost = True
+            continue
+        if in_cost:
+            if re.match(r"^\S", line):  # non-indente -> on sort du bloc cost
+                in_cost = False
+            else:
+                continue  # encore dans le bloc cost
+        kv = re.match(r"^([A-Za-z_][\w]*)\s*:", line)  # cle top-level (non indente)
+        if kv and kv.group(1) != "title":
+            extras.append(kv.group(1))
+    return extras
+
 
 def _normalize(md_text: str) -> str:
     """Normalise le contenu markdown pour la comparaison de volume.
@@ -233,19 +405,52 @@ def ref_resolves(ref: str) -> bool:
 
 
 def _compare_cells(base_md: list[tuple[int, str]],
-                   head_md: list[tuple[int, str]]) -> list[dict]:
+                   head_md: list[tuple[int, str]],
+                   head_cost: dict | None = None) -> list[dict]:
     """Compare cellule-par-cellule (INDEX STABLE requis, design #1 #8655).
 
     Ne descend au niveau cellule QUE quand le nombre de cellules markdown est
     inchange entre base et head ; sinon une fusion/scission decale les index et
     produirait des faux positifs position-par-position (26 FP observes sur
     10_LocalLlama.ipynb, cite dans l'issue). Retourne les cellules tronquees.
+
+    ``head_cost`` = ``nb_head['metadata']['cost']`` : permet de reconnaitre une
+    migration LEGITIME frontmatter ``cost:`` -> ``metadata.cost`` (issue #8919).
+    Quand la cellule base porte un bloc ``cost:`` equivalent champ-par-champ au
+    ``head_cost``, on retire le frontmatter du texte de base AVANT le ratio (la
+    cellule migree est invisible, comme une demotion #3966). Si le cost diverge
+    ou disparait sans migration, on signale ``FRONTMATTER_COST_DIVERGENCE`` -- le
+    gate reste mordant sur la suppression seche (piege #8908/#8912/#8914).
+
+    #8921 : le strip n'a lieu QUE si (a) le cost est equivalent ET (b) aucune cle
+    informative colocataire (ex: ``notes:``) n'est reste sur le carreau. Une cle
+    non migree vers ``metadata.cost`` est nommee divergente (cas Claudish : le
+    strip du frontmatter entier faisait disparaitre ``notes:`` en silence). Les
+    commentaires YAML inline sont ignores (#8921-1), la comparaison est numerique
+    (#8921-2), et ``none -> valeur`` / ``metadata_written`` sont des progres
+    legitimes, pas des divergences (#8921-3).
     """
     findings: list[dict] = []
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
     for (b_idx, b_src), (h_idx, h_src) in zip(base_md, head_md):
-        b_norm = _norm_len(b_src)
+        # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
+        # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
+        # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
+        # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
+        # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
+        b_src_ratio = b_src
+        divergent_cost: list[str] | None = None
+        base_cost = _parse_frontmatter_cost(b_src)
+        if base_cost is not None:
+            equiv, divergent = _cost_equivalent(base_cost, head_cost)
+            unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
+                           if not (head_cost and k in head_cost)]
+            if equiv and not unmigrated:
+                b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
+            else:
+                divergent_cost = divergent + unmigrated
+        b_norm = _norm_len(b_src_ratio)
         h_norm = _norm_len(h_src)
         if b_norm < MIN_ORIG_CHARS:
             continue  # cellule d'origine trop courte pour qu'une chute soit du bruit
@@ -259,6 +464,14 @@ def _compare_cells(base_md: list[tuple[int, str]],
                 "ratio": round(ratio, 3),
                 "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
                 "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
+            })
+        if divergent_cost:
+            # Le bloc cost a disparu de la cellule SANS migration equivalente :
+            # perte reelle de cost (le squelette metadata.cost ne suffit pas).
+            findings.append({
+                "kind": "FRONTMATTER_COST_DIVERGENCE",
+                "cell_idx": h_idx,
+                "divergent_fields": divergent_cost,
             })
     return findings
 
@@ -337,9 +550,12 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
 
     base_md = extract_md_cells(nb_base)
     head_md = extract_md_cells(nb_head)
+    # metadata.cost du head : permet de reconnaitre la migration frontmatter->cost
+    # (#8919). absent (None) si le head n'a pas de cost metadata.
+    head_cost = nb_head.get("metadata", {}).get("cost")
 
     findings: list[dict] = []
-    findings.extend(_compare_cells(base_md, head_md))
+    findings.extend(_compare_cells(base_md, head_md, head_cost))
     findings.extend(_compare_motifs(_collect_motifs(nb_base), _collect_motifs(nb_head)))
 
     base_total = sum(_norm_len(s) for _, s in base_md)
@@ -411,6 +627,11 @@ def main(argv: list[str] | None = None) -> int:
                 elif f["kind"] == "LOST_NAV_LINKS":
                     print(f"  - {f['kind']}: {f['delta']} lien(s) de navigation en moins "
                           f"({f['before_count']} -> {f['after_count']})")
+                elif f["kind"] == "FRONTMATTER_COST_DIVERGENCE":
+                    print(f"  - cell {f['cell_idx']} {f['kind']}: le bloc cost du "
+                          f"frontmatter a disparu sans migration equivalente ; "
+                          f"champ(s) divergent(s) ou manquant(s) dans metadata.cost "
+                          f"du head : {', '.join(f['divergent_fields'])}")
 
     if args.check and result["findings"]:
         return 1

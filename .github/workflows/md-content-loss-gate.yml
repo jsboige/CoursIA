@@ -120,7 +120,7 @@ jobs:
 
           if [ "$fail" -ne 0 ]; then
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "FIX: the demotion one-shot replaced a whole cell instead of just its heading line (joined-string bug). Restore the original markdown content and re-apply the heading->callout demotion LINE BY LINE (see `demote_md_asides.py --dir`). See issue #8655." >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: a markdown cell lost substantial content. Two usual causes (see the detector log above for which): (1) the demotion one-shot replaced a whole joined-string cell instead of its heading line only (#8655) -- restore the content and re-apply the heading->callout demotion LINE BY LINE via \`python scripts/notebook_tools/demote_md_asides.py --dir\` ; (2) a YAML frontmatter cost block was removed but its fields were NOT migrated equivalently into \`nb['metadata']['cost']\` (#8919) -- migrate the cost values verbatim (the detector names the divergent fields). A legit migration (fields preserved verbatim in metadata.cost) passes without this notice." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           echo "::notice title=Markdown content-loss gate::Checked $checked changed notebook(s); no content loss."
