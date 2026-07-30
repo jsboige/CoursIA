@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-30** — PM transiente (investigation MCP Jupyter / NuGet / .NET Interactive, Sept-Oct 2025). L'etat courant vit dans le serveur `mcp-jupyter` (roo-extensions) et `docs/reference/kernels-runtime.md`. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Analyse d'Architecture MCP et Évolution Git
 
 Ce document détaille l'analyse comparative des architectures des serveurs MCP Jupyter (Node.js et Python/Papermill) pour identifier la cause racine du problème de restauration NuGet avec .NET Interactive.
