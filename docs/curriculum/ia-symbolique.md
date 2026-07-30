@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 217 |
+| Notebooks | 221 |
 | PRODUCTION | 0 |
-| BETA | 211 |
+| BETA | 215 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -117,7 +117,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 22 | Planners-11: Unified Planning | BETA | Oui |
 | 23 | Planners-12: Learning to Plan avec LOOP | BETA | Non |
 
-## SymbolicAI/SMT (41 notebooks)
+## SymbolicAI/SMT (45 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -143,25 +143,29 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | 14. Bit-vectors : verifier le debordement arithmetique | BETA | Oui |
 | 21 | 15. Tableaux imbriqués et grilles 2D : carrés latins, S | BETA | Oui |
 | 22 | 16. Meal-Planner déclaratif : du modèle Z3 au plan hebd | BETA | Oui |
-| 23 | Z3-Python 17 — Théorie des tableaux : Select, Store et  | BETA | Oui |
-| 24 | Z3-Python 18 — Sudoku 4x4 : comparaison des modes `Arra | BETA | Oui |
-| 25 | LINQ to Z3 - Résolution de Contraintes Déclarative | BETA | Oui |
-| 26 | Sudoku : Théorème Explicite vs Modèle Implicite par Arr | BETA | Oui |
-| 27 | Sudoku 4x4 : comparaison des modes `Array` et `Constant | BETA | Oui |
-| 28 | Théorie des Tableaux Z3 — Select, Store et Switching | BETA | Oui |
-| 29 | Tableaux Imbriqués et Grilles 2D : API Déclarative `The | BETA | Oui |
-| 30 | Notebook 06 — Meal-Planner declaratif : du modèle Z3 au | BETA | Oui |
-| 31 | 07 — Données réelles & externe : Ciqual × RecipeML (cou | BETA | Oui |
-| 32 | 08 — Capstone hiérarchique : du squelette `int[][]` rée | BETA | Oui |
-| 33 | 09 — Convergence à l'échelle : l'encodage décide de la  | BETA | Oui |
-| 34 | 10 — Générer un témoin depuis `A & ~B` (fork Automata v | BETA | Oui |
-| 35 | Notebook 11 — Ordonnancement d'atelier (Job Shop Schedu | BETA | Oui |
-| 36 | Notebook 12 - Coloration de graphe : le graphe de Peter | BETA | Oui |
-| 37 | Notebook 13 — Cryptarithmes : l'arithmétique positionne | BETA | Oui |
-| 38 | Notebook 14 — De SAT à OPT : optimisation et contrainte | BETA | Oui |
-| 39 | 15 — Théorie des bit-vectors Z3 : vérifier le débordeme | BETA | Oui |
-| 40 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le  | BETA | Oui |
-| 41 | Notebook 18 - L'enigme d'Einstein : la logique des attr | BETA | Oui |
+| 23 | Z3-Python-16b — Meal-Planner : couche de données réelle | BETA | Oui |
+| 24 | Z3-Python-16c — Meal-Planner : capstone patient (restri | BETA | Oui |
+| 25 | Z3-Python-16d — Convergence à l'échelle : l'encodage dé | BETA | Oui |
+| 26 | Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à | BETA | Oui |
+| 27 | Z3-Python 17 — Théorie des tableaux : Select, Store et  | BETA | Oui |
+| 28 | Z3-Python 18 — Sudoku 4x4 : comparaison des modes `Arra | BETA | Oui |
+| 29 | LINQ to Z3 - Résolution de Contraintes Déclarative | BETA | Oui |
+| 30 | Sudoku : Théorème Explicite vs Modèle Implicite par Arr | BETA | Oui |
+| 31 | Sudoku 4x4 : comparaison des modes `Array` et `Constant | BETA | Oui |
+| 32 | Théorie des Tableaux Z3 — Select, Store et Switching | BETA | Oui |
+| 33 | Tableaux Imbriqués et Grilles 2D : API Déclarative `The | BETA | Oui |
+| 34 | Notebook 06 — Meal-Planner declaratif : du modèle Z3 au | BETA | Oui |
+| 35 | 07 — Données réelles & externe : Ciqual × RecipeML (cou | BETA | Oui |
+| 36 | 08 — Capstone hiérarchique : du squelette `int[][]` rée | BETA | Oui |
+| 37 | 09 — Convergence à l'échelle : l'encodage décide de la  | BETA | Oui |
+| 38 | 10 — Générer un témoin depuis `A & ~B` (fork Automata v | BETA | Oui |
+| 39 | Notebook 11 — Ordonnancement d'atelier (Job Shop Schedu | BETA | Oui |
+| 40 | Notebook 12 - Coloration de graphe : le graphe de Peter | BETA | Oui |
+| 41 | Notebook 13 — Cryptarithmes : l'arithmétique positionne | BETA | Oui |
+| 42 | Notebook 14 — De SAT à OPT : optimisation et contrainte | BETA | Oui |
+| 43 | 15 — Théorie des bit-vectors Z3 : vérifier le débordeme | BETA | Oui |
+| 44 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le  | BETA | Oui |
+| 45 | Notebook 18 - L'enigme d'Einstein : la logique des attr | BETA | Oui |
 
 ## SymbolicAI/SemanticWeb (25 notebooks)
 

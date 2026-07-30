@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 198 |
 | PRODUCTION | 0 |
-| BETA | 168 |
-| ALPHA | 30 |
+| BETA | 171 |
+| ALPHA | 27 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -255,14 +255,14 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 27 | Research QuantBook: ML Regression | BETA | Non |
 | 28 | ML SVM - Support Vector Machine pour Trading | ALPHA | Non |
 | 29 | ML Text Classification for Trading | ALPHA | Non |
-| 30 | ML XGBoost - Gradient Boosting pour Trading | ALPHA | Non |
+| 30 | ML XGBoost - Gradient Boosting pour Trading | BETA | Non |
 | 31 | Research QuantBook: Mean Reversion (Sector ETFs) | BETA | Non |
 | 32 | Research QuantBook: MomentumStrategy (Sector ETF Rotati | ALPHA | Non |
 | 33 | Research QuantBook: Equity Multi-Layer EMA + ML Filters | BETA | Non |
 | 34 | Research QuantBook: Option Wheel Strategy | BETA | Non |
 | 35 | Research QuantBook: Options Wheel Tech Stocks | BETA | Non |
 | 36 | Research QuantBook: Covered Call Strategy | BETA | Non |
-| 37 | Research QuantBook: PairsTrading (Statistical Arbitrage | ALPHA | Non |
+| 37 | Research QuantBook: PairsTrading (Statistical Arbitrage | BETA | Non |
 | 38 | Research QuantBook: RL Portfolio Allocation | BETA | Non |
 | 39 | Research QuantBook: RegimeSwitching Alpha Model | BETA | Non |
 | 40 | Research QuantBook: RiskParity (Inverse-Volatility Weig | ALPHA | Non |
@@ -270,5 +270,5 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 42 | Research QuantBook: Trend Following Competition | BETA | Non |
 | 43 | Research QuantBook: TrendStocks Alpha Model | BETA | Non |
 | 44 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | BETA | Non |
-| 45 | Research QuantBook: VIX-TermStructure (Short Volatility | ALPHA | Non |
+| 45 | Research QuantBook: VIX-TermStructure (Short Volatility | BETA | Non |
 | 46 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issue #75 | BETA | Non |

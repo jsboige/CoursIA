@@ -1,24 +1,24 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-29**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-07-30**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**836** notebooks référencés au catalogue.
+**848** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 680 | 81.3% |
-| DEMO | 154 | 18.4% |
+| READY | 695 | 82.0% |
+| DEMO | 151 | 17.8% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 523 |
+| **local** (exécutable sans GPU/cloud/WSL) | 535 |
 | WSL requis | 43 |
 | GPU requis | 93 |
 | Cloud requis (QC / GenAI Docker) | 105 |
@@ -31,20 +31,20 @@
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | GameTheory | 55 | 0 | 0 | 55 | 100% |
 | GenAI | 57 | 82 | 2 | 141 | 40% |
-| IIT | 36 | 0 | 0 | 36 | 100% |
+| IIT | 44 | 0 | 0 | 44 | 100% |
 | ML | 44 | 3 | 0 | 47 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
-| QuantConnect | 48 | 57 | 0 | 105 | 46% |
+| QuantConnect | 51 | 54 | 0 | 105 | 49% |
 | RL | 16 | 1 | 0 | 17 | 94% |
 | Search | 115 | 0 | 0 | 115 | 100% |
 | Sudoku | 34 | 2 | 0 | 36 | 94% |
-| SymbolicAI | 211 | 9 | 0 | 220 | 96% |
+| SymbolicAI | 215 | 9 | 0 | 224 | 96% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 534 |
+| Python 3 | 546 |
 | .NET (C#) | 229 |
 | Python 3 (ipykernel) | 20 |
 | Lean 4 (WSL) | 18 |
@@ -66,8 +66,8 @@
 
 | Série | Notebook | Maturité | Dernière validation |
 |-------|----------|----------|---------------------|
-| GenAI | Notebook de travail | TEMPLATE | 2026-07-29 |
-| GenAI | Notebook de travail | TEMPLATE | 2026-07-29 |
+| GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
+| GenAI | Notebook de travail | TEMPLATE | 2026-07-30 |
 
 ## Voir aussi
 

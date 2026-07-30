@@ -20,10 +20,10 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 163 |
+| Notebooks | 172 |
 | PRODUCTION | 0 |
-| BETA | 160 |
-| ALPHA | 3 |
+| BETA | 168 |
+| ALPHA | 4 |
 
 ## GameTheory (48 notebooks)
 
@@ -98,7 +98,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 2 | IIT - Sujets Avances : Partitionnement, Repertoires Cau | BETA | Oui |
 | 3 | IIT-3. Coarse-graining, blackboxing et l'échelle du $\P | BETA | Oui |
 
-## IIT/ICT-Series (30 notebooks)
+## IIT/ICT-Series (39 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -106,32 +106,41 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 2 | ICT-10 — Grammaire des catastrophes : *l'obstacle qui e | BETA | Oui |
 | 3 | ICT-11 — Profils d'agence causale : à quelle échelle l' | BETA | Oui |
 | 4 | ICT-12 — Champs de valence et animats : rôles mesures,  | BETA | Oui |
-| 5 | ICT-13 — Morphodynamique stratégique : une stratégie es | BETA | Oui |
-| 6 | ICT-14 — Énergie libre et surprise du représentant inte | BETA | Oui |
-| 7 | ICT-15 — Integrated Complexity : convergence Φ / F / K  | BETA | Oui |
-| 8 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
-| 9 | Grokking et compression-progress : la jambe K à l'épreu | BETA | Oui |
-| 10 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
-| 11 | ICT-18b — Budget de réversibilité : la jambe « fin » de | BETA | Oui |
-| 12 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | BETA | Oui |
-| 13 | ICT-19 — Raffinement et résolution des stubs (tranche 3 | BETA | Non |
-| 14 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | BETA | Oui |
-| 15 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | BETA | Non |
-| 16 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
-| 17 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
-| 18 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
-| 19 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
-| 20 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
-| 21 | ICT-3 — Robustesse & délai de gratification : étude qua | BETA | Oui |
-| 22 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
-| 23 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
-| 24 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
-| 25 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
-| 26 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
-| 27 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
-| 28 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
-| 29 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
-| 30 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
+| 5 | ICT-12b — Valence APPRISE, transferable, reversible : l | BETA | Oui |
+| 6 | ICT-12c — Animat prégnance/valence incarné : la dissoci | BETA | Oui |
+| 7 | ICT-12d — Animat inhibé (Laborit) : contrôlabilité, rig | BETA | Oui |
+| 8 | ICT-13 — Morphodynamique stratégique : une stratégie es | BETA | Oui |
+| 9 | ICT-14 — Énergie libre et surprise du représentant inte | BETA | Oui |
+| 10 | ICT-15 — Integrated Complexity : convergence Φ / F / K  | BETA | Oui |
+| 11 | ICT-15c — Méta-proxy d'obstruction : structure des désa | ALPHA | Oui |
+| 12 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
+| 13 | Grokking et compression-progress : la jambe K à l'épreu | BETA | Oui |
+| 14 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
+| 15 | ICT-18b — Budget de réversibilité : la jambe « fin » de | BETA | Oui |
+| 16 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | BETA | Oui |
+| 17 | ICT-19 — Raffinement et résolution des stubs (tranche 3 | BETA | Non |
+| 18 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | BETA | Oui |
+| 19 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | BETA | Non |
+| 20 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
+| 21 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
+| 22 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
+| 23 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
+| 24 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
+| 25 | ICT-26 — Convention de signalisation (expérience A, str | BETA | Oui |
+| 26 | ICT-27 — Invention de symboles (expérience B, strate 7) | BETA | Oui |
+| 27 | ICT-28 — Adoption collective et seuil de performativité | BETA | Oui |
+| 28 | ICT-29 — Inoculation d'un concept (expérience D, strate | BETA | Oui |
+| 29 | ICT-3 — Robustesse & délai de gratification : étude qua | BETA | Oui |
+| 30 | ICT-30 — Invention inhibée (expérience E, strate 7) | BETA | Oui |
+| 31 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
+| 32 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
+| 33 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
+| 34 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
+| 35 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
+| 36 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
+| 37 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
+| 38 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
+| 39 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
 
 ## Probas (2 notebooks)
 
