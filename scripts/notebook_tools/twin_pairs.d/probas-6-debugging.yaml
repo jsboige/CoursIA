@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-26"
-    by: myia-ai-01:CoursIA
+    date: "2026-07-30"
+    by: myia-po-2026:CoursIA
     python_sha: 3c4e51e64c2eb6252ddb02d0bc0e9d72bbe48f7e
-    csharp_sha: 2d0a2abb27cc67aed8fb29cca5eab96c0f906edc
+    csharp_sha: bbdad00b320f96b439a93788790d1f4c2805be49
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
@@ -19,3 +19,8 @@
     EP n''existe pas dans ce stack, et NUTS/ADVI n''exposent pas ce mode de defaillance (ADVI diverge autrement — ELBO plat,
     sans changement de signe). Divergence intrinseque au paradigme deja declare ci-dessus, pas un manque cote Python :
     porter la cellule cote PyMC exigerait de fabriquer un analogue, ce que l''issue proscrit explicitement.'
+  - 'Backfill EP mixture (#8892) : la cellule cible cote C# execute desormais un melange gaussien bimodal sous EP — prior
+    symetrique prec=10 (collapse reproductible : les deux moyennes post. identiques a 5.0737, le modele ne separe pas les modes)
+    vs prior asymetrique (convergence, moyennes -5.1493 / 4.9088). La defaillance est rendue demonstrable au lieu d etre
+    seulement narree en prose. C#-only, meme asymetrie assumee que ci-dessus : EP n existe pas cote PyMC, et l issue #8892
+    proscrit de fabriquer un analogue. Pas de contrepartie Python.'
