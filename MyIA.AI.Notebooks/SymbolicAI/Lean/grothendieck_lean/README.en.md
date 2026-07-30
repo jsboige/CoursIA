@@ -5,10 +5,10 @@ Alexandre Grothendieck (1928-2014).
 ## Status
 
 - **Toolchain**: `leanprover/lean4:v4.31.0-rc1`
-- **Sorry**: **0 sorry, 0 axiom** — all 32 leaf modules are complete at creation (Parts 1-32 merged)
-- **Build**: `lake build Grothendieck` — compiles the 32 leaf modules (~10783 FR+EN lines, verified post-c.745 #7856)
+- **Sorry**: **0 sorry, 0 axiom** — all 33 leaf modules are complete at creation
+- **Build**: `lake build Grothendieck` — compiles the 33 leaf modules (11,206 FR+EN lines, + 208 for the umbrella = **11,414 total**, measured 2026-07-30)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n coverage (EPIC #4980, ratified 2026-07-04)**: complete bilingual FR/EN coverage — **33 FR files** (1 umbrella `Grothendieck.lean` bilingual inline FR+EN + **32 leaf modules** FR canonical) + **32 `_en.lean` siblings** on `main` (leaf modules only; the umbrella is bilingual inline). Per the ratified convention (Option A: `Foo.lean` FR canonical + `Foo_en.lean` EN mirror for leaves), **all 32 leaf modules** are bilingual in Pattern A (`_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable). The umbrella `Grothendieck.lean` is bilingual inline (FR canonical first, EN mirror, see final doctring in the file) — *by design*, not an i18n gap. **`README.md`** present (FR canonical sibling of this file). Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n coverage (EPIC #4980, ratified 2026-07-04)**: complete bilingual FR/EN coverage — **34 FR files** (1 umbrella `Grothendieck.lean` bilingual inline FR+EN + **33 leaf modules** FR canonical) + **33 `_en.lean` siblings** on `main` (leaf modules only; the umbrella is bilingual inline). Per the ratified convention (Option A: `Foo.lean` FR canonical + `Foo_en.lean` EN mirror for leaves), **all 33 leaf modules** are bilingual in Pattern A (`_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable). The umbrella `Grothendieck.lean` is bilingual inline (FR canonical first, EN mirror, see final doctring in the file) — *by design*, not an i18n gap. **`README.md`** present (FR canonical sibling of this file). Out-of-scope: `.lake/packages/`, vendored libs.
 
 ## Purpose
 
@@ -26,20 +26,26 @@ The goal is to give learners a curated entry point into:
 
 ## Structure
 
-The formalization spans **32 leaf modules (Parts 1-32, ~10783 FR+EN lines, 0 sorry)**, imported
-in order by the umbrella `Grothendieck.lean` (which is itself bilingual inline FR/EN; no `_en` sibling for the umbrella). Each leaf module self-numbers via its header
-(`Grothendieck tribute — Part N`).
+The formalization spans **33 leaf modules (11,206 FR+EN lines, 0 sorry)**, imported
+in order by the umbrella `Grothendieck.lean` (which is itself bilingual inline FR/EN; no `_en` sibling for the umbrella).
+
+> **Two numberings coexist, and they do not agree.** The `Part` column below is the **import
+> order** in the umbrella; each file's header carries a *separate* `Part` number, inherited from
+> its authoring phase, which diverges from the import order on **26 of the 33 modules** and
+> contains duplicates (`Part 26` ×3, `Part 27` ×2). The `## References` section and the
+> `### The arc` section below refer to the **header** numbering, not to this table's.
+> Reconciliation tracked by #8960.
 
 | Part | File | `_en` | Content | Lines |
 |------|------|-------|---------|-------|
-| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only of the 32 leaves + bilingual FR/EN doctring lines 32-205); no `_en` sibling (the EN content lives in the same file as a mirror) | 207 |
+| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only of the 33 leaves + bilingual FR/EN doctring); no `_en` sibling (the EN content lives in the same file as a mirror) | 208 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 109 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 93 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | `#check` index of Grothendieck-related Mathlib definitions | 107 |
 | 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 95 |
 | 6 | `Grothendieck/Adjunction.lean` | `Adjunction_en.lean` | Adjunction of functors, unit/counit, turtle lemma, left/right adjoints | 168 |
-| 7 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 103 |
+| 7 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895) | 164 |
 | 8 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 148 |
 | 9 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Topology ordering, covering closure, sieve composition | 141 |
 | 10 | `Grothendieck/CoverageGen.lean` | `CoverageGen_en.lean` | Coverage-to-topology, sheaf characterization, sup of coverages | 177 |
@@ -65,22 +71,26 @@ in order by the umbrella `Grothendieck.lean` (which is itself bilingual inline F
 | 30 | `Grothendieck/KanExtensions.lean` | `KanExtensions_en.lean` | Kan extensions (generalized limits/colimits) | 270 |
 | 31 | `Grothendieck/Limits.lean` | `Limits_en.lean` | Limits and colimits | 242 |
 | 32 | `Grothendieck/MonoidalCategories.lean` | `MonoidalCategories_en.lean` | Monoidal categories, tensor, unit, associator | 244 |
+| 33 | `Grothendieck/DirectImage.lean` | `DirectImage_en.lean` | `#check` index (8) of the `f^* ⊣ f_*` adjunction — direct/inverse image of module sheaves (#8882) | 152 |
 
-The extension (Parts 1-32) was developed under Issue #2159 / Epic #1646 and is
-**complete**: all 32 leaf modules merged + 1 bilingual umbrella, 0 `sorry`, 0 axiom added.
+*The `Lines` column counts the **FR file alone**; the FR+EN total is roughly double.*
+
+The extension was developed under Issue #2159 / Epic #1646: the 33 leaf modules
+are merged + 1 bilingual umbrella, 0 `sorry`, 0 axiom added.
 
 ## Build
 
 ```bash
 # From this directory (WSL required)
 lake build Grothendieck
-# Builds the 32 leaf modules + 1 bilingual umbrella (~10783 FR+EN lines)
+# Builds the 33 leaf modules + 1 bilingual umbrella (11,414 FR+EN lines total)
+# Last verified build: 2026-07-30, "Build completed successfully (2821 jobs)"
 ```
 
 ## Sorry count
 
-**0 sorry, 0 axiom** — all 32 leaf modules are complete at creation
-(Parts 1-32 merged; umbrella `Grothendieck.lean` is imports-only without declarations).
+**0 sorry, 0 axiom** — all 33 leaf modules are complete at creation
+(the umbrella `Grothendieck.lean` is imports-only without declarations).
 
 ## Toolchain
 
@@ -106,14 +116,15 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)
-- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 32 `_en.lean` siblings on `main` in this lake + 1 bilingual inline umbrella)
+- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 33 `_en.lean` siblings on `main` in this lake + 1 bilingual inline umbrella)
+- Issue #8960 (reconciling the two `Part` numberings)
 - **[`README.md`](./README.md)** — FR canonical sibling of this file
 
 ## Conclusion
 
-This tribute is a **complete pedagogical tour** (32 leaf modules + 1 bilingual umbrella, ~10783 FR+EN lines, 0 `sorry`,
+This tribute is a **complete pedagogical tour** (33 leaf modules + 1 bilingual umbrella, 11,414 FR+EN lines, 0 `sorry`,
 0 axiom added) showing how Grothendieck's language — sites, sheaves,
-sheafification, points, cohomology, Yoneda — already lives in Mathlib 4. It is
+sheafification, points, cohomology, Yoneda, direct images — already lives in Mathlib 4. It is
 deliberately **not** a formalization of EGA/SGA; it is a curated index that lets
 learners see the library through Grothendieckian eyes.
 
@@ -124,7 +135,9 @@ The modules trace a coherent path: **sites and sieves** (Parts 1, 6, 8, 11, 12,
 its left exactness** (13, 14) → **points and conservative families** (15, 19) →
 **sheaf cohomology, Mayer-Vietoris, and Čech** (20-23), with **schemes and the
 Zariski site** (2, 3) and a **Mathlib map** (4) anchoring the tour to the library
-it indexes.
+it indexes. Finally, `DirectImage.lean` indexes the `f^* ⊣ f_*` adjunction — the
+simplest instance of the "six operations", transporting sheaves along morphisms
+of schemes.
 
 ### Scope, honestly
 
