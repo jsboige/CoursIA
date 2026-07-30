@@ -50,6 +50,27 @@ is_deck_dir() {
 
 # Deck dirs = top-level dirs under SLIDES_DIR matching the NN/SN convention
 # (and not gitignored). Mirrors the gate's `slides/*/` + `^(S)?[0-9]` filter.
+#
+# Symmetric of trap 1 (#8929, cf gate workflow L138-155): a dir that does NOT
+# match the convention but DOES carry a deck file is invisible to discovery
+# -- a pre-flight `check` would pass green where the gate goes red. Because
+# deck_dirs() feeds a process substitution (subshell), a probe side-effect set
+# here could not reach the parent; the symmetric probe runs in check_denominator
+# itself (where exit status is decided). deck_dirs() stays stdout-pure.
+_warn_nonconvention_with_deck() {
+  # Emit ERROR to stderr if $1 carries a deck; always returns 0 (set -e safe).
+  local d="$1" dk has_deck=0
+  [ -f "$d/slides.md" ] && has_deck=1
+  for dk in "$d"/deck-*.md; do [ -f "$dk" ] && has_deck=1; done
+  if [ "$has_deck" -eq 1 ]; then
+    echo "ERROR: '$d' porte un deck (slides.md / deck-*.md) mais ne matche pas la" >&2
+    echo "convention NN/SN -- invisible a la decouverte (symetrique du CASE A," >&2
+    echo "cf gate workflow L138-155). Renommer le dir ou deplacer le deck." >&2
+    return 1   # signals to the caller that a violation was found.
+  fi
+  return 0
+}
+
 deck_dirs() {
   local d
   for d in "$SLIDES_DIR"/*/; do
@@ -95,6 +116,23 @@ check_denominator() {
   while IFS= read -r d; do dirs+=("$d"); done < <(deck_dirs)
   local ndecks=${#decks[@]} ndirs=${#dirs[@]}
 
+  # Symmetric of trap 1 (#8929, cf gate workflow L138-155): a dir that does NOT
+  # match the NN/SN convention but DOES carry a deck is invisible to discovery.
+  # Ran in THIS parent (not in deck_dirs()'s subshell) so the finding can drive
+  # the exit status. `if ... ; then rc=1; fi` is the set -e safe form (a bare
+  # `[ ] && ` at end-of-list would abort the loop on the first infra dir).
+  local symtrap=0 sdir
+  for sdir in "$SLIDES_DIR"/*/; do
+    [ -d "$sdir" ] || continue
+    sdir="${sdir%/}"
+    if is_deck_dir "$sdir"; then
+      continue
+    fi
+    if ! _warn_nonconvention_with_deck "$sdir"; then
+      symtrap=1
+    fi
+  done
+
   # M=0 refusal (#8817 trap 1, cf CASE C): an empty discovery is the signature
   # of a mass rename or a broken glob — the check REFUSES to assert "all
   # covered" when there is nothing to cover. When N>0 the empty[] loop below
@@ -139,6 +177,11 @@ check_denominator() {
     echo "Either add a slides.md / deck-*.md under the dir, or — if it is not a"
     echo "deck — rename it so it does not match the NN/SN convention (the gate"
     echo "excludes non-convention dirs structurally; see is_deck_dir)."
+    return 1
+  fi
+  if [ "$symtrap" -eq 1 ]; then
+    # ERROR(s) already printed to stderr by _warn_nonconvention_with_deck.
+    echo "Denominator check: FAIL (a non-convention dir carries a deck -> invisible to discovery, #8929)."
     return 1
   fi
   echo "Denominator check: PASS (every tracked deck dir has >=1 deck)."
