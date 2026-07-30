@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2026
-    python_sha: d48da250a56ce5ae6495c7690e5bc2488f8ba73e
+    date: "2026-07-30"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 196bf38650379fdd7dfb4660d57aab39c6e8709e
     csharp_sha: ed6af3b9ba5d65195099faab92b5bcee4987b70d
   known_differences:
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
