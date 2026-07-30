@@ -78,6 +78,9 @@ on:
       - '.github/workflows/lean-game-theory.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main

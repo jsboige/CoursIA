@@ -23,6 +23,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main

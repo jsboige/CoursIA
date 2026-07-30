@@ -21,6 +21,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main

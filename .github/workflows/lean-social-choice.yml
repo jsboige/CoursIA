@@ -23,6 +23,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   fail-on-sorry:
     name: "Proof integrity (no sorry)"

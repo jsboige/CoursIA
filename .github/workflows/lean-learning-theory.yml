@@ -34,6 +34,9 @@ on:
       - 'MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
