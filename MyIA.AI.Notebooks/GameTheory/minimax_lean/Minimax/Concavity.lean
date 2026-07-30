@@ -40,15 +40,23 @@ open Finset Set
 variable {m n : Type*} [Fintype m] [Fintype n]
 variable (A : PayoffMatrix m n)
 
+/-- **Équation de corde** (affinité en `x`) : pour toute combinaison convexe
+`a • x + b • x'`, le payoff se décompose en `a * payoff A x y + b * payoff A x' y`.
+C'est le fait brut que factorisent `payoff_concave_in_x` et `payoff_convex_in_x`
+(l'inégalité de Jensen tenant avec égalité). -/
+lemma payoff_chord_eq_in_x (y : n → ℝ) (x x' : m → ℝ) (a b : ℝ) :
+    payoff A (a • x + b • x') y = a * payoff A x y + b * payoff A x' y := by
+  rw [payoff_add_in_x, payoff_smul_in_x, payoff_smul_in_x]
+
 /-- Le payoff est **concave en `x`** sur le simplexe (linéarité ⟹ concavité,
-l'inégalité de Jensen tenant avec égalité : `payoff_smul_in_x` donne la multiplication
-scalaire `a * payoff A x y`, et `smul_eq_mul` normalise le `•` du but `ConcaveOn`). -/
+l'inégalité de Jensen tenant avec égalité : `payoff_chord_eq_in_x` donne la
+décomposition affine, et `smul_eq_mul` normalise le `•` du but `ConcaveOn`). -/
 theorem payoff_concave_in_x (y : n → ℝ) :
     ConcaveOn ℝ (stdSimplex ℝ m) fun x => payoff A x y := by
   refine ⟨convex_stdSimplex ℝ m, ?_⟩
   intro x _hx x' _hx' a b _ha _hb _hab
   dsimp only
-  rw [payoff_add_in_x, payoff_smul_in_x, payoff_smul_in_x, smul_eq_mul, smul_eq_mul]
+  rw [payoff_chord_eq_in_x A y x x' a b, smul_eq_mul, smul_eq_mul]
 
 /-- Le payoff est **convexe en `x`** sur le simplexe (une fonction linéaire est à
 la fois concave et convexe). -/
@@ -57,7 +65,7 @@ theorem payoff_convex_in_x (y : n → ℝ) :
   refine ⟨convex_stdSimplex ℝ m, ?_⟩
   intro x _hx x' _hx' a b _ha _hb _hab
   dsimp only
-  rw [payoff_add_in_x, payoff_smul_in_x, payoff_smul_in_x, smul_eq_mul, smul_eq_mul]
+  rw [payoff_chord_eq_in_x A y x x' a b, smul_eq_mul, smul_eq_mul]
 
 /-- Le payoff est **concave en `y`** sur le simplexe. -/
 theorem payoff_concave_in_y (x : m → ℝ) :
