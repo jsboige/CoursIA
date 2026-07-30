@@ -165,9 +165,9 @@ jobs:
             # humain, donc simple note et pas de label. Un tag rejete pour son
             # placement serait un faux negatif du guard.
             LANE_RE='lane:?[[:space:]]+[A-Za-z0-9._-]+:[A-Za-z0-9._-]+'
-            if printf '%s' "$GRAIN_LINE" | grep -qE "$LANE_RE"; then
+            if printf '%s' "$GRAIN_LINE" | grep -qiE "$LANE_RE"; then
               echo "lane declaree sur la ligne du tag."
-            elif printf '%s\n' "$BODY_FLAT" | grep -qE "$LANE_RE"; then
+            elif printf '%s\n' "$BODY_FLAT" | grep -qiE "$LANE_RE"; then
               echo "::notice::lane declaree, mais hors de la ligne 'Grain:'. §1 la place sur la ligne du tag."
             else
               echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
