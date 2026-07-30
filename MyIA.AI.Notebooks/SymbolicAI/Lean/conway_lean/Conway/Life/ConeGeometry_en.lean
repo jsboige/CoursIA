@@ -156,6 +156,12 @@ coordinate directly, the proof is **simpler** than the loose analog: it consumes
 bridging through `manhattan_deviation`. No `hashlifeResultAux`, no whnf wall —
 pure `Int` window arithmetic. Sorry-free.
 
+This lemma lives in `ConeGeometry` (not `LightCone`) so that the P5
+`p5_large_n_jump` path in `HashlifeCorrectness` can consume it directly via
+`import Conway.Life.ConeGeometry`, without the circular reverse-import that would
+arise if it stayed in `LightCone` (which imports `HashlifeCorrectness`). The
+proof substance is independent of the P4 mono-verrou. -/
+
 /-- Power identity `2^(k+1) = 2 · 2^k` in `Int`, proven in pure `Nat` (rw +
 `Nat.pow_succ`) then lifted via `exact_mod_cast`. Shared by the two window-
 membership theorems `window_cheb_cone_in_domain` (this module) and
@@ -177,11 +183,6 @@ lemma pow_two_add_two_int (k : Nat) : (2^(k+2) : Int) = 4 * (2^k : Int) := by
   have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
   exact_mod_cast h
 
-This lemma lives in `ConeGeometry` (not `LightCone`) so that the P5
-`p5_large_n_jump` path in `HashlifeCorrectness` can consume it directly via
-`import Conway.Life.ConeGeometry`, without the circular reverse-import that would
-arise if it stayed in `LightCone` (which imports `HashlifeCorrectness`). The
-proof substance is independent of the P4 mono-verrou. -/
 theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     (hp1_lo : (2^k : Int) ≤ p.1) (hp1_hi : p.1 < 2^k + 2^(k+1))
     (hp2_lo : (2^k : Int) ≤ p.2) (hp2_hi : p.2 < 2^k + 2^(k+1))
