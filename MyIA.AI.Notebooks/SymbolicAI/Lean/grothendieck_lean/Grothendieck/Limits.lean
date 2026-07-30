@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 26 — Limites et colimites (au-delà de Yoneda)
+Grothendieck Partie 28 — Limites et colimites (au-delà de Yoneda)
 
 Alexandre Grothendieck (1928-2014).
 

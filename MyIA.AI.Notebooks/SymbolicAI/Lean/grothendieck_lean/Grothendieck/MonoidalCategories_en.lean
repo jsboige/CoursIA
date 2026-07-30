@@ -1,5 +1,5 @@
 /-
-Grothendieck Part 29 — Monoidal categories [English mirror of Monoidal.lean]
+Grothendieck Part 32 — Monoidal categories [English mirror of Monoidal.lean]
 
 Alexander Grothendieck (1928-2014).
 

@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-# Grothendieck tribute — Part 30: Direct image and inverse image of sheaves
+# Grothendieck tribute — Part 33: Direct image and inverse image of sheaves
 
 Phase 5 extension (#2159, Epic #1646).
 

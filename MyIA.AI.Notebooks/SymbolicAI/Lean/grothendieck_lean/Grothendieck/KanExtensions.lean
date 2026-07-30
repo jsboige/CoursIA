@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 28 — Extensions de Kan
+Grothendieck Partie 31 — Extensions de Kan
 
 Alexandre Grothendieck (1928-2014).
 

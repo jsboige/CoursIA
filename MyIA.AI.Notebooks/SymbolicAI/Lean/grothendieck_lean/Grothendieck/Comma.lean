@@ -1,5 +1,5 @@
 /-
-Grothendieck hommage — Partie 26 : Catégories comma
+Grothendieck hommage — Partie 27 : Catégories comma
 
 Alexandre Grothendieck (1928-2014).
 

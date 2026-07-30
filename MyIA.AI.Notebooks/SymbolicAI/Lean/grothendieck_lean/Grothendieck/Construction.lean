@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 27 — La construction de Grothendieck (catégories fibrées)
+Grothendieck Partie 30 — La construction de Grothendieck (catégories fibrées)
 
 Alexander Grothendieck (1928-2014).
 
