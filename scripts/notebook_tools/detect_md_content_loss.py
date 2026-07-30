@@ -125,28 +125,63 @@ FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL)
 _COST_KEY_LINE = re.compile(r"^([ \t]+)([A-Za-z_][\w]*)\s*:\s*(.*?)\s*$")
 
 
+def _strip_yaml_inline_comment(s: str) -> str:
+    """Retire un commentaire YAML inline (`` # ...``) hors d'une valeur quotee.
+
+    Un ``#`` ne compte comme debut de commentaire que s'il est precede d'un blanc
+    (espace/tab) : un ``#`` colle a un caractere (ex: URL ``http://h#frag``) ou a
+    l'interieur de guillemets est preserve (issue #8921-1 : les frontmatters reels
+    portent leur justification en commentaire de fin de ligne -- ``cpu_min: 1  #
+    cpu-only`` -- qu'il faut ignorer pour juger l'equivalence, sans quoi ``1`` est
+    declare divergent de... ``1``).
+    """
+    quote = None
+    for i, ch in enumerate(s):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and i > 0 and s[i - 1] in " \t":
+            return s[:i].rstrip()
+    return s
+
+
 def _normalize_cost_value(v) -> str:
     """Normalise une valeur cost (str YAML du frontmatter OU objet JSON de metadata)
-    en une cle de comparaison canonique, insensible a la casse et aux guillemets
-    (issue #8919 : equivalence apres normalisation null/None, casse, quotes).
+    en une cle de comparaison canonique, insensible aux commentaires inline, a la
+    casse, aux guillemets et a l'ecriture numerique (issues #8919 + #8921-1/#8921-2).
 
-    Rend str YAML ("none", "true", "0.0") et objet JSON (None, True, 0.0) comparables :
-    ``None`` / "none" / "null" / "~" -> "none" ; booleens -> "true"/"false" ;
-    nombres -> leur str ; chaines -> depouillees de guillemets et lowercaser.
+    Rend str YAML ("none", "true", "0.10", "1  # cpu-only") et objet JSON (None,
+    True, 0.1, 1) comparables : ``None`` / "none" / "null" / "~" -> "none" ;
+    booleens -> "true"/"false" ; nombres -> forme canonique ``str(float)``
+    (``0.10`` == ``0.1``, ``1`` == ``1.0`` -- #8921-2 : la comparaison est
+    numerique la ou elle etait textuelle) ; chaines -> depouillees du commentaire
+    inline (#8921-1), des guillemets et lowercasees.
     """
     if v is None:
         return "none"
     if isinstance(v, bool):  # NB: avant int (bool sous-classe de int en Python)
         return "true" if v else "false"
     if isinstance(v, (int, float)):
-        return str(v)
+        f = float(v)
+        if f != f or f in (float("inf"), float("-inf")):  # nan/inf -> texte brut
+            return str(v)
+        return str(f)  # #8921-2 : forme canonique (1 -> "1.0", 0.1 -> "0.1")
     s = str(v).strip()
+    s = _strip_yaml_inline_comment(s).strip()  # #8921-1 : retire ` # commentaire`
     if len(s) >= 2 and s[0] in "\"'" and s[-1] == s[0]:
         s = s[1:-1]
     low = s.lower()
     if low in ("none", "null", "~", ""):
         return "none"
-    return low
+    try:  # #8921-2 : comparaison NUMERIQUE (0.10 == 0.1, pas textuelle)
+        f = float(low)
+    except ValueError:
+        return low
+    if f != f or f in (float("inf"), float("-inf")):  # nan/inf -> texte brut
+        return low
+    return str(f)
 
 
 def _parse_frontmatter_cost(md_text: str) -> dict | None:
@@ -198,17 +233,60 @@ def _cost_equivalent(base_frontmatter_cost: dict, head_metadata_cost: dict | Non
     """Compare champ-par-champ le cost du frontmatter base vs le metadata.cost head.
 
     Retourne ``(equivalent, divergent_fields)``. Un champ diverge si sa valeur
-    normalisee differe (ou s'il manque d'un cote). C'est le test qui evite le
-    piege de #8908/#8912/#8914 : ``metadata.cost`` y existait deja mais n'etait PAS
-    equivalent (``cpu_min`` 0 au lieu de 20/45, ``reduced_pedagogical`` None au
-    lieu d'un chemin) -> la "suppression seche" doit rester signaler.
+    normalisee differe (ou s'il manque d'un cote) -- SAUF deux progres legitimes
+    d'une migration (issue #8921-3) :
+
+    * ``base=none -> head=valeur`` (ex: ``free_alternative`` null -> chemin reel) :
+      une apparition de valeur est un GAIN, jamais une perte de contenu.
+    * ``metadata_written`` : horodatage d'ecriture, rafraichi au moment de la
+      migration -> exclu (une date plus recente est le comportement attendu, pas
+      une divergence).
+
+    Le test reste mordant sur le piege de #8908/#8912/#8914 : ``metadata.cost`` y
+    existait deja mais n'etait PAS equivalent (``cpu_min`` 0 au lieu de 20/45,
+    ``reduced_pedagogical`` None au lieu d'un chemin) -> la "suppression seche"
+    doit rester signaler.
     """
     head = head_metadata_cost or {}
     divergent: list[str] = []
     for key, base_val in base_frontmatter_cost.items():
-        if _normalize_cost_value(base_val) != _normalize_cost_value(head.get(key)):
+        if key == "metadata_written":  # #8921-3b : date rafraichie = attendue
+            continue
+        base_norm = _normalize_cost_value(base_val)
+        if base_norm == "none":  # #8921-3a : none -> valeur = gain, pas perte
+            continue
+        if base_norm != _normalize_cost_value(head.get(key)):
             divergent.append(key)
     return (len(divergent) == 0, divergent)
+
+
+def _frontmatter_non_cost_keys(md_text: str) -> list[str]:
+    """Cles top-level du frontmatter autres que ``title`` et le sous-bloc ``cost:``.
+
+    Une cle informative colocataire (ex: ``notes:``) doit etre migree vers
+    ``metadata.cost`` (``notes`` -> ``metadata.cost.notes``) pour que la
+    suppression du frontmatter soit invisible ; sinon sa perte est signalee
+    (issue #8921-4, cas Claudish : 5 lignes de routage perdues en silence parce
+    que le strip retirait le frontmatter ENTIER sur la seule foi du ``cost:``).
+    """
+    m = FRONTMATTER_RE.match(md_text)
+    if not m:
+        return []
+    extras: list[str] = []
+    in_cost = False
+    for line in m.group(1).split("\n"):
+        if re.match(r"^cost\s*:\s*$", line):
+            in_cost = True
+            continue
+        if in_cost:
+            if re.match(r"^\S", line):  # non-indente -> on sort du bloc cost
+                in_cost = False
+            else:
+                continue  # encore dans le bloc cost
+        kv = re.match(r"^([A-Za-z_][\w]*)\s*:", line)  # cle top-level (non indente)
+        if kv and kv.group(1) != "title":
+            extras.append(kv.group(1))
+    return extras
 
 
 def _normalize(md_text: str) -> str:
@@ -339,26 +417,39 @@ def _compare_cells(base_md: list[tuple[int, str]],
     ``head_cost`` = ``nb_head['metadata']['cost']`` : permet de reconnaitre une
     migration LEGITIME frontmatter ``cost:`` -> ``metadata.cost`` (issue #8919).
     Quand la cellule base porte un bloc ``cost:`` equivalent champ-par-champ au
-    ``head_cost``, on retire ce bloc du texte de base AVANT le ratio (la cellule
-    migrée est invisible, comme une demotion #3966). Si le cost diverge ou
-    disparait sans migration, on signale ``FRONTMATTER_COST_DIVERGENCE`` -- le
+    ``head_cost``, on retire le frontmatter du texte de base AVANT le ratio (la
+    cellule migree est invisible, comme une demotion #3966). Si le cost diverge
+    ou disparait sans migration, on signale ``FRONTMATTER_COST_DIVERGENCE`` -- le
     gate reste mordant sur la suppression seche (piege #8908/#8912/#8914).
+
+    #8921 : le strip n'a lieu QUE si (a) le cost est equivalent ET (b) aucune cle
+    informative colocataire (ex: ``notes:``) n'est reste sur le carreau. Une cle
+    non migree vers ``metadata.cost`` est nommee divergente (cas Claudish : le
+    strip du frontmatter entier faisait disparaitre ``notes:`` en silence). Les
+    commentaires YAML inline sont ignores (#8921-1), la comparaison est numerique
+    (#8921-2), et ``none -> valeur`` / ``metadata_written`` sont des progres
+    legitimes, pas des divergences (#8921-3).
     """
     findings: list[dict] = []
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
     for (b_idx, b_src), (h_idx, h_src) in zip(base_md, head_md):
         # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
-        # porte un bloc cost equivalent au head_cost, on le retire du ratio.
+        # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
+        # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
+        # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
+        # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
         b_src_ratio = b_src
         divergent_cost: list[str] | None = None
         base_cost = _parse_frontmatter_cost(b_src)
         if base_cost is not None:
             equiv, divergent = _cost_equivalent(base_cost, head_cost)
-            if equiv:
+            unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
+                           if not (head_cost and k in head_cost)]
+            if equiv and not unmigrated:
                 b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
             else:
-                divergent_cost = divergent
+                divergent_cost = divergent + unmigrated
         b_norm = _norm_len(b_src_ratio)
         h_norm = _norm_len(h_src)
         if b_norm < MIN_ORIG_CHARS:

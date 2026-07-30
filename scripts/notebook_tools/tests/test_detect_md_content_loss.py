@@ -401,3 +401,134 @@ class TestFrontmatterCostMigration:
         head = _nb_with_cost(FAITHFUL_COST, _md(truncated))
         r = self._scan(tmp_path, base, head)
         assert any(f["kind"] == "TRUNCATED_CELL" for f in r["findings"])
+
+
+# ---------------------------------------------------------------------------
+# 11. Review #8921 : cas REELS (SK-1 commente, Claudish notes non migrees)
+# ---------------------------------------------------------------------------
+# Les frontmatters reels portent leur justification en commentaire YAML inline et
+# colocquent parfois une cle informative (notes:). La fonction d'equivalence doit
+# (1) ignorer les commentaires, (2) comparer numeriquement (0.10 == 0.1),
+# (3) accepter none -> valeur et metadata_written rafraichi comme des progres,
+# (4) signaler une cle colocataire (notes:) perdue faute de migration.
+SK1_FRONTMATTER = """---
+title: GenAI/SemanticKernel-Intro
+notes: |
+  Raisonnement sur le cout (migre vers metadata.cost.notes, c.945).
+cost:
+  api_usd_est: 0.10           # ~5 appels kernel.invoke gpt-4o (~800 tokens/call)
+  api_provider: openai        # openai_api_key + openai_chat_model_id=gpt-4o
+  cpu_min: 1                  # cpu-only (pure api client, pas de gpu)
+  gpu_required: false         # inference cote serveur openai
+  network: true               # appels api openai obligatoires
+  external_account: openai    # cle openai_api_key requise
+  reproducibility: HIGH
+  validator: openai_key
+  free_alternative: null
+  metadata_written: 2026-07-24
+---
+"""
+# Head : valeurs PROPRES (sans commentaires) + free_alternative enrichi (null ->
+# chemin reel = gain) + metadata_written rafraichi + notes migrees (c.945).
+SK1_HEAD_COST = {
+    "api_usd_est": 0.1, "api_provider": "openai", "cpu_min": 1,
+    "gpu_required": False, "network": True, "external_account": "openai",
+    "reproducibility": "HIGH", "validator": "openai_key",
+    "free_alternative": "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb",
+    "metadata_written": "2026-07-28",
+    "notes": "Raisonnement sur le cout migre (c.945).",
+}
+
+# Claudish : 5 lignes de notes (routage 3 tiers, alternative gratuite) NON migrees.
+CLAUDISH_FRONTMATTER = """---
+title: GenAI/Vibe-Coding/Claudish/notebooks/01-Intro
+notes: |
+  Routage 3 tiers (Claude/GPT/Gemini) selon le contexte.
+  CE notebook EST l'alternative gratuite (endpoint public communal).
+  Raisonnement humain sur le cout : 0 USD cote serveur.
+cost:
+  api_usd_est: 0.0
+  cpu_min: 1
+---
+"""
+
+
+class TestFrontmatterCostReviewFixes:
+    """Review #8921 : equivalence robuste aux commentaires, numerique, aux progres
+    (none -> valeur, date) et aux cles colocataires (notes:) non migrees."""
+
+    def _scan(self, tmp_path, base_nb, head_nb, nb_name="x.ipynb"):
+        p = tmp_path / nb_name
+        p.write_text(json.dumps(head_nb), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref", return_value=base_nb), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            return dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+
+    # --- #8921-1 : commentaires YAML inline ignores ---
+    def test_inline_comment_stripped(self):
+        # `1  # cpu-only` == `1` ; `openai  # cle requise` == `openai`.
+        assert dml._normalize_cost_value("1                  # cpu-only") == "1.0"
+        assert dml._normalize_cost_value("openai        # openai_api_key") == "openai"
+        # Un `#` colle a un caractere (URL) n'est PAS un commentaire -> preserve.
+        assert "h#frag" in dml._normalize_cost_value("http://h#frag")
+
+    # --- #8921-2 : comparaison numerique (0.10 == 0.1) ---
+    def test_numeric_comparison(self):
+        assert dml._normalize_cost_value("0.10") == dml._normalize_cost_value(0.1)
+        assert dml._normalize_cost_value("0.10") == dml._normalize_cost_value("0.1")
+        assert dml._normalize_cost_value(1) == dml._normalize_cost_value("1.0")
+
+    # --- #8921-3 : none -> valeur = gain ; metadata_written exclu ---
+    def test_none_to_value_is_gain_not_divergence(self):
+        # free_alternative null -> chemin reel : ne doit PAS etre divergent.
+        equiv, div = dml._cost_equivalent(
+            {"free_alternative": "null"}, {"free_alternative": "path/to/nb.ipynb"})
+        assert equiv is True and div == []
+
+    def test_metadata_written_excluded(self):
+        # Une date rafraichie a la migration n'est pas une divergence.
+        equiv, div = dml._cost_equivalent(
+            {"metadata_written": "2026-07-24"}, {"metadata_written": "2026-07-28"})
+        assert equiv is True and div == []
+
+    def test_value_to_none_is_loss_still_divergent(self):
+        # Symetrie : valeur -> none EST une perte (reduced_pedagogical path -> None).
+        equiv, div = dml._cost_equivalent(
+            {"reduced_pedagogical": "path/to/nb.ipynb"}, {"reduced_pedagogical": None})
+        assert equiv is False and "reduced_pedagogical" in div
+
+    # --- #8921-4 : cle colocataire (notes:) non migree ---
+    def test_frontmatter_non_cost_keys_detected(self):
+        # SK-1 porte une cle notes: hors cost: -> detectee.
+        assert "notes" in dml._frontmatter_non_cost_keys(SK1_FRONTMATTER)
+        # Le bloc QC de reference n'a que title + cost -> aucune cle extra.
+        assert dml._frontmatter_non_cost_keys(FRONTMATTER_COST_BLOCK) == []
+
+    # --- end-to-end : SK-1 VERT (commentaires + head plus riche + notes migrees) ---
+    def test_sk1_commented_frontmatter_richer_head_is_green(self, tmp_path):
+        body = "# SemanticKernel Intro\n\n" + ("Substantive prose. " * 15)
+        base = _nb(_md(SK1_FRONTMATTER + body))
+        head = _nb_with_cost(SK1_HEAD_COST, _md(body))  # frontmatter migre, notes aussi
+        r = self._scan(tmp_path, base, head)
+        assert r["stats"]["findings_count"] == 0, r["findings"]
+
+    # --- end-to-end : Claudish ROUGE (notes non migrees -> perte signalee) ---
+    def test_claudish_unmigrated_notes_signals(self, tmp_path):
+        body = "# Claudish Intro\n\n" + ("Substantive prose. " * 15)
+        base = _nb(_md(CLAUDISH_FRONTMATTER + body))
+        # cost migre mais metadata.cost SANS notes -> notes perdues -> ROUGE.
+        head = _nb_with_cost({"api_usd_est": 0.0, "cpu_min": 1}, _md(body))
+        r = self._scan(tmp_path, base, head)
+        kinds = {f["kind"] for f in r["findings"]}
+        assert "FRONTMATTER_COST_DIVERGENCE" in kinds, r["findings"]
+        div = [f for f in r["findings"] if f["kind"] == "FRONTMATTER_COST_DIVERGENCE"][0]
+        assert "notes" in div["divergent_fields"]  # la cle perdue est nommee
+
+    def test_claudish_no_metadata_cost_at_all_signals(self, tmp_path):
+        # metadata.cost = null (rien migre, ni cost ni notes) -> ROUGE.
+        body = "# Claudish Intro\n\n" + ("Substantive prose. " * 15)
+        base = _nb(_md(CLAUDISH_FRONTMATTER + body))
+        head = _nb(_md(body))  # aucun metadata.cost
+        r = self._scan(tmp_path, base, head)
+        assert any(f["kind"] == "FRONTMATTER_COST_DIVERGENCE" for f in r["findings"])
