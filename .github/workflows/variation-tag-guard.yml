@@ -209,3 +209,100 @@ jobs:
             echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
           fi
           exit 0
+
+  # G-VAR-2 est le seul gate du protocole qui ne se decide pas DANS la PR : il
+  # demande de savoir ce que la lane a DEJA merge aujourd'hui (au plus une LIGHT
+  # par lane et par jour, toutes categories LIGHT confondues). Compte a la main
+  # par le coordinateur jusqu'ici, qui a merge une 2e LIGHT deux fois en un
+  # cycle (#8964). Ce job rend le fait VISIBLE (advisory, exit 0).
+  #
+  # La logique de parsing + comptage vit dans scripts/variation_light_cap.py
+  # (testable, agnostique separateur/casse #8938, bodies lus en TEXTE ENTIER --
+  # le bug ligne-a-ligne avait rendu "18/38 sans tag" au lieu de "2/38"). Le job
+  # n'est que la plomberie CI : dataset des mergees du jour + label + commentaire.
+  check-light-cap:
+    name: G-VAR-2 light cap (cross-PR)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the cap detector (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/variation_light_cap.py
+      - name: Cross-PR LIGHT cap (G-VAR-2)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Meme garde-fou anti-spam que le job de tag : bots et forks hors
+          # scope (PRs etudiantes, .claude/rules/student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Jour courant en UTC : G-VAR-2 se compte par jour UTC (reset 00:00Z).
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Les PR deja mergees aujourd'hui = le jeu de comptage. La PR courante
+          # est OUVERTE (le job tourne sur opened/edited/synchronize/reopened,
+          # pas sur le merge) donc elle n'est PAS dans ce set -- c'est ce qui
+          # rend la 2e LIGHT detectable.
+          gh pr list --state merged --search "merged:$TODAY" \
+            --json number,body,mergedAt > /tmp/merged.json 2>/dev/null || true
+
+          # Le body circule par fichier : printf '%s' ne reinterprete rien
+          # (newlines, quotes, $), contrairement a un passage en arg CLI.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # ADVISORY : le script sort toujours en 0. Si le TIER n'est pas LIGHT
+          # ou la lane absente, il renvoie cap_reached=false et le label est
+          # retire (un label colle par un push anterieur ne survit pas).
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --check-pr "$PR_NUMBER" \
+            --body-file /tmp/pr_body.txt > /tmp/status.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/status.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "False")
+
+          # Label distinct (lisible dans gh pr list --json labels). advisory,
+          # donc create/add/remove tolerent l'echec sans tuer le job (|| true).
+          gh label create variation-light-cap-reached \
+            --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
+            --color B60205 --force 2>/dev/null || true
+
+          if [ "$CAP" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
+            LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            # Commentaire idempotent : un marqueur HTML invisible evite le spam
+            # a chaque synchronize. On ne poste que si aucun commentaire ne le
+            # porte deja.
+            MARK="<!-- gvar2-light-cap -->"
+            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+              BODY="${MARK}
+          **G-VAR-2 light cap reached** (advisory, non bloquant).
+          La lane \`${LANE}\` a deja merge une LIGHT aujourd'hui (${CB}).
+          G-VAR-2 plafonne a **une LIGHT par lane et par jour, toutes categories LIGHT confondees**
+          (guard, doc, refs, ... partagent un seul budget). La decision de merge reste au coordinateur."
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
+          else
+            # Cas nominal : on retire un label obsolete colle par un push anterieur.
+            gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+          fi
+          exit 0
