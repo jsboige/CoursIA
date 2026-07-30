@@ -26,6 +26,14 @@ Ponts livres
   structural : un bus present mais ignore (``read_p=0``) est **fonctionnellement
   inerte** (frac atteint = 0 exact) -- c'est le null « broadcast present mais
   non exploite en aval » de #8077.
+* **Pont #5** (MDL compression -> generalisation, c.1021/c.1024) :
+  **CONFIRME-CONDITIONNEL** -- la compressibilite du train predit la
+  generalisation held-out **sur source stationnaire** (rho ~ +0.9) et
+  l'**anti-predit sous decalage de source** (rho ~ -0.8). La lecture
+  MDL-as-generalization a donc un **domaine de validite** (source stationnaire),
+  pas une valeur de verite ; en dehors de ce domaine, la fleche s'inverse. C'est
+  le genre de fleche « vraie sous condition » de la taxonomie ``claim_type``
+  (#7734) -- distincte d'un pont binaire confirme/falsifie.
 
 Bridge #1 (sigma stabilite -> recuperabilite)
 ---------------------------------------------
@@ -627,4 +635,177 @@ def bridge_workspace_to_diffusion(
         "partial_rho_capacity_frac_given_n_unreachable": float(partial),
         "partial_null_p95": p95_partial_null,
         "bridge_workspace_to_diffusion": bridge,
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #5 : MDL (compression) -> generalisation (held-out)                  #
+# --------------------------------------------------------------------------- #
+
+
+def _markov_sequence(rng: np.random.Generator, n: int, n_states: int,
+                     regularity: float, drift: float) -> List[int]:
+    """Sequence markovienne stationnaire a structure reglable.
+
+    ``regularity`` in [0,1] : probabilite de repeter l'etat precedent (1 = cycle
+    quasi-deterministe = tres compressible ; 0 = iid = incompressible). ``drift``
+    in [0,1] : probabilite, a **chaque pas**, de tirer un etat iid.
+
+    .. warning::
+       ``drift`` est un levier **stationnaire** : il est applique uniformement a
+       chaque pas, a l'identique dans la moitie train et la moitie test. Il n'y a
+       donc **aucun changement de source entre train et test** -- la source reste
+       markovienne stationnaire a tous les niveaux de ``drift``. Sous ce regime,
+       ``drift`` degrade la compression du train ET la generalisation du test
+       *ensemble* (elles restent correlees) : c'est pourquoi le controle nul naif
+       « drift stationnaire eleve » **ne falsifie pas** le pont (rho reste ~+0.7).
+       Le **vrai** controle nul falsifiant exige une source **non-stationnaire**
+       (decouplage train/test) -- cf :func:`_markov_sequence_two_regime`.
+    """
+    s = int(rng.integers(0, n_states))
+    out = [s]
+    for _ in range(n - 1):
+        if rng.random() < drift:
+            s = int(rng.integers(0, n_states))      # tirage iid stationnaire
+        elif rng.random() < regularity:
+            s = s                                     # persistance (compressible)
+        else:
+            s = int(rng.integers(0, n_states))       # hasard
+        out.append(s)
+    return out
+
+
+def _markov_sequence_two_regime(rng: np.random.Generator, n_half: int,
+                                n_states: int, reg_train: float, dr_train: float,
+                                reg_test: float, dr_test: float) -> List[int]:
+    """Source **non-stationnaire** : la 1ere moitie (train) et la 2eme (test) viennent
+    de regimes markoviens **differents**. C'est le **controle nul falsifiant** du
+    pont #5 : si le train est compressible (``reg_train`` eleve, ``dr_train``
+    faible) mais le test vient d'une source decalee (``dr_test`` eleve), la
+    compression du train ne predit plus la generalisation held-out -- elle
+    **s'inverse** (rho ~ -0.8, robuste). C'est le null « compression misleads » de
+    #8077, et il borne le domaine de validite du verdict (source stationnaire).
+
+    Contrast avec :func:`_markov_sequence` (stationnaire), ou le ``drift`` uniforme
+    fait que compression et generalisation se degradent **ensemble** (restent
+    correlees, rho ~ +0.7 meme sous drift eleve) : le controle nul naif ne falsifie
+    donc PAS le pont. Seul le decouplage train/test (cette fonction) produit le
+    null falsifiant.
+    """
+    train = _markov_sequence(rng, n_half, n_states, reg_train, dr_train)
+    test = _markov_sequence(rng, n_half, n_states, reg_test, dr_test)
+    return train + test
+
+
+def bridge_compression_to_generalization(
+    n_trials: int = 60,
+    n: int = 300,
+    n_states: int = 4,
+    seed: int = 0,
+) -> Dict[str, float]:
+    r"""Bridge #5 : MDL (compression du train) -> generalisation held-out (falsifiable, #8077 pont 5).
+
+    Hypothese naive (MDL-as-generalization, Rissanen) : un modele qui **compresse
+    mieux** sa trajectoire d'entrainement (taux d'entropie faible) **generalise
+    mieux** sur du held-out (residuel MDL faible = peu de surprise sur les
+    transitions non vues). Le substrat : :mod:`ict.mdl` (``two_part_code`` ->
+    ``residual_bits`` = erreur de generalisation) et ``entropy_rate_estimate``
+    (compressibilite du train).
+
+    Verdict : **CONFIRME-CONDITIONNEL** (domaine de validite, pas valeur de verite)
+    -----------------------------------------------------------------------
+    La compressibilite du train predit la generalisation held-out **sur source
+    stationnaire** et l'**anti-predit sous decalage de source**. La fleche
+    MDL-as-generalization a donc un **domaine de validite** (source stationnaire) ;
+    en dehors, elle s'inverse. C'est le genre « vraie sous condition » de la
+    taxonomie ``claim_type`` (#7734).
+
+    Pour mesurer CE domaine (et non le cacher), la fonction echantillonne DEUX
+    regimes et expose les deux correlations de Spearman :
+
+    * **regime stationnaire** (:func:`_markov_sequence`, ``regularity`` et ``drift``
+      uniformes sur toute la sequence) -> ``rho_compress_gen`` (~+0.9) : la source
+      est stable, le train et le test viennent du meme regime, donc compresser le
+      train predit la generalisation. C'est le pole CONFIRME.
+    * **regime non-stationnaire** (:func:`_markov_sequence_two_regime`, train
+      compressible + test decale) -> ``rho_compress_gen_nonstationary`` (~-0.8) :
+      la source bascule entre train et test, donc un train tres compressible est
+      couple a un test imprevisible -> la compression **anti-predit** la
+      generalisation. C'est le pole FALSIFIE.
+
+    Sur le **controle nul naif** (``drift`` stationnaire eleve)
+    -------------------------------------------------------
+    ``drift`` est un levier **stationnaire** (applique uniformement) : il est
+    quasi-orthogonal a la fois au predicteur (compression) et a la sortie
+    (generalisation), avec ``rho_compress_drift ~ -0.1``. La **correlation
+    partielle** (compression | drift) est donc essentiellement egale a la
+    correlation brute (~+0.92 vs ~+0.91) -- le controle ne deplace **rien** parce
+    qu'il n'y avait **pas de concurrent** (arithmetique, pas une opinion). La
+    partielle n'est PAS ici le test decisif d'un « pouvoir predictif independant
+    au-dela du drift » : le verdict est porte par le **contraste stationnaire vs
+    non-stationnaire** (les deux ``rho_*_gen``), qui est le vrai discriminateur.
+
+    Verdict falsifiable
+    -------------------
+    ``bridge_compression_to_generalization`` : 1.0 si le **pattern conditionnel**
+        tient -- ``rho_compress_gen > 0.7`` (predit sur source stationnaire) ET
+        ``rho_compress_gen_nonstationary < -0.3`` (anti-predit sous decalage de
+        source). 0.0 sinon. Ce n'est ni un confirme ni un falsifie naif : c'est un
+        domaine de validite explicite (claim_type « vraie sous condition », #7734).
+
+    Robuste (c.1014-L) : le verdict conditionnel tient sur plusieurs graines (le
+    ``_markov_sequence`` est stochastique ET ``regularity``/``drift`` sont tires par
+    essai, donc le seed traverse le calcul et les correlations varient -- mesure
+    de robustesse reelle, contrairement au pont #1 deterministe).
+    """
+    from . import mdl as M
+
+    rng = np.random.default_rng(seed)
+
+    def _score(seq: List[int]) -> Tuple[float, float]:
+        tp = M.two_part_code(seq, split=0.5)
+        er = M.entropy_rate_estimate(seq[: int(0.5 * len(seq))], block=2)
+        # 1/(1+x) : grand = bon (compressible / generalise bien). Inversions monotones.
+        compress = 1.0 / (1.0 + float(er["entropy_rate"]))
+        gen = 1.0 / (1.0 + float(tp["residual_bits"]))
+        return compress, gen
+
+    # --- regime stationnaire : regularity et drift tires, source stable -------
+    comp_s, gen_s, drift_s = [], [], []
+    for _ in range(int(n_trials)):
+        reg = float(rng.uniform(0.0, 1.0))
+        dr = float(rng.uniform(0.0, 0.5))
+        seq = _markov_sequence(rng, n, n_states, reg, dr)
+        c, g = _score(seq)
+        comp_s.append(c); gen_s.append(g); drift_s.append(dr)
+    comp_s = np.asarray(comp_s); gen_s = np.asarray(gen_s); drift_s = np.asarray(drift_s)
+    rho_compress_gen = _spearman(comp_s, gen_s)
+    rho_drift_gen = _spearman(drift_s, gen_s)
+    rho_compress_drift = _spearman(comp_s, drift_s)
+    partial = _partial_spearman(comp_s, gen_s, drift_s)  # diagnostic (cf docstring)
+
+    # --- regime non-stationnaire : train compressible + test decale ------------
+    # regularite du train tiree (compressibilite variable) ; test systematiquement
+    # decale (dr_test eleve) -> decouplage train/test = le vrai null falsifiant.
+    comp_ns, gen_ns = [], []
+    for _ in range(int(n_trials)):
+        reg_train = float(rng.uniform(0.0, 1.0))
+        seq = _markov_sequence_two_regime(rng, n // 2, n_states,
+                                          reg_train, 0.0,    # train compressible
+                                          0.0, 0.5)           # test decale
+        c, g = _score(seq)
+        comp_ns.append(c); gen_ns.append(g)
+    comp_ns = np.asarray(comp_ns); gen_ns = np.asarray(gen_ns)
+    rho_compress_gen_nonstationary = _spearman(comp_ns, gen_ns)
+
+    bridge = 1.0 if (rho_compress_gen > 0.7 and rho_compress_gen_nonstationary < -0.3) else 0.0
+
+    return {
+        "n_trials": int(n_trials),
+        "rho_compress_gen": float(rho_compress_gen),
+        "rho_compress_gen_nonstationary": float(rho_compress_gen_nonstationary),
+        "rho_drift_gen": float(rho_drift_gen),
+        "rho_compress_drift": float(rho_compress_drift),
+        "partial_rho_compress_gen_given_drift": float(partial),
+        "bridge_compression_to_generalization": bridge,
     }

@@ -248,3 +248,81 @@ def test_bridge4_verdict_robust_across_seeds():
     verdicts = [bt.bridge_workspace_to_diffusion(seed=s)
                 ["bridge_workspace_to_diffusion"] for s in (0, 1, 2)]
     assert all(v == 1.0 for v in verdicts)
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #5 : MDL (compression) -> generalisation  (CONFIRME-CONDITIONNEL)    #
+# --------------------------------------------------------------------------- #
+# Le pont #5 n'est ni un confirme ni un falsifie naif : la compressibilite du
+# train predit la generalisation held-out **sur source stationnaire** et
+# l'**anti-predit sous decalage de source**. La fleche a un domaine de validite
+# (claim_type « vraie sous condition », #7734). Le controle nul naif (drift
+# stationnaire) est INERTE (drift quasi-orthogonal) -- le vrai discriminateur est
+# le contraste stationnaire vs non-stationnaire (c.1024, rework apres review).
+
+
+def test_markov_sequence_shape_and_bounds():
+    rng = np.random.default_rng(0)
+    seq = bt._markov_sequence(rng, n=50, n_states=4, regularity=0.8, drift=0.0)
+    assert len(seq) == 50
+    assert all(0 <= s < 4 for s in seq)
+
+
+def test_markov_sequence_regular_is_more_compressible_than_random():
+    """Sanity : une sequence reguliere (regularity=1, drift=0) a une entropie de
+    train inferieure a une sequence iid (regularity=0)."""
+    from ict import mdl
+    rng = np.random.default_rng(0)
+    reg = bt._markov_sequence(rng, 300, 4, regularity=1.0, drift=0.0)
+    rng = np.random.default_rng(0)
+    iid = bt._markov_sequence(rng, 300, 4, regularity=0.0, drift=0.0)
+    h_reg = mdl.entropy_rate_estimate(reg[:150], block=2)["entropy_rate"]
+    h_iid = mdl.entropy_rate_estimate(iid[:150], block=2)["entropy_rate"]
+    assert h_reg < h_iid            # regular = plus compressible
+
+
+@pytest.fixture(scope="module")
+def verdict5():
+    return bt.bridge_compression_to_generalization(seed=0)
+
+
+def test_bridge5_verdict_is_confirmed_conditional(verdict5):
+    """Le pont est CONFIRME-CONDITIONNEL : le pattern « predit sur source
+    stationnaire ET anti-predit sous decalage » tient (bridge=1.0)."""
+    assert verdict5["bridge_compression_to_generalization"] == 1.0
+
+
+def test_bridge5_stationary_compress_predicts_generalization(verdict5):
+    """Sur source stationnaire, la compressibilite du train predit fortement la
+    generalisation held-out (rho > 0.7) -- le pole CONFIRME."""
+    assert verdict5["rho_compress_gen"] > 0.7
+
+
+def test_bridge5_nonstationary_source_inverts(verdict5):
+    """LE VRAI FINDING (c.1022, porte au premier plan c.1024) : sous source
+    non-stationnaire (train compressible + test decale), la compression
+    **anti-predit** la generalisation (rho < -0.3). C'est le null « compression
+    misleads » de #8077, et il borne le domaine de validite du pont."""
+    assert verdict5["rho_compress_gen_nonstationary"] < -0.3
+
+
+def test_bridge5_drift_is_inert_control(verdict5):
+    """Le controle nul naif (drift stationnaire) est INERTE : drift est
+    quasi-orthogonal a la compression (|rho_compress_drift| faible), donc la
+    correlation partielle (compress | drift) est essentiellement egale a la
+    correlation brute. La partielle n'est PAS le test decisif d'un pouvoir
+    independant -- c'est le contraste stationnaire/non-stationnaire qui tranche."""
+    assert abs(verdict5["rho_compress_drift"]) < 0.4   # drift ~ orthogonal
+    # la partielle bouge a peine vs le brut (inertie, pas pouvoir independant)
+    assert abs(verdict5["partial_rho_compress_gen_given_drift"]
+               - verdict5["rho_compress_gen"]) < 0.06
+
+
+def test_bridge5_verdict_robust_across_seeds():
+    """Le verdict conditionnel n'est pas un point-artefact (c.1014-L) : le
+    ``_markov_sequence`` est stochastique ET regularity/drift sont tires par essai,
+    donc le seed traverse le calcul (mesure de robustesse reelle, contrairement au
+    pont #1 deterministe)."""
+    verdicts = [bt.bridge_compression_to_generalization(seed=s)
+                ["bridge_compression_to_generalization"] for s in (0, 1, 2)]
+    assert all(v == 1.0 for v in verdicts)
