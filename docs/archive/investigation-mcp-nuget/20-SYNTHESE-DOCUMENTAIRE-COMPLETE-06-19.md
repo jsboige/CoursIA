@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-30** — PM transiente (investigation MCP Jupyter / NuGet / .NET Interactive, Sept-Oct 2025). L'etat courant vit dans le serveur `mcp-jupyter` (roo-extensions) et `docs/reference/kernels-runtime.md`. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Synthèse Documentaire Complète (Documents 06-19) - Investigation MCP-NuGet
 
 Ce document est une synthèse exhaustive de l'investigation menée sur les problèmes d'exécution des notebooks .NET Interactive via le MCP Jupyter, basée sur l'analyse des documents de suivi numérotés de 06 à 19.
