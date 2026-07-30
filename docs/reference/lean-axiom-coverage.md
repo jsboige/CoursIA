@@ -106,6 +106,33 @@ La seconde localise l'obstruction : ce n'est pas la taille du calcul, c'est que 
 
 **Recommandation c.954 (livrée par commentaire #8869, 2026-07-29)** : Phase 1 = Option 2 (instance `DecidableEq` manuelle, blast radius minimal, énoncés préservés verbatim). Phase 2 = Option 4 si `lake build` échoue sur `sortDedup` non-réductible.
 
+> **MISE À JOUR c.786/c.795 — Option 2 mesurée INEFFICACE, Option 4 (insertionSort) retenue.**
+>
+> La sonde par-cible-isolée `decide` menée par po-2026 au c.786 a invalidé la
+> premise de la recommandation c.954 : le blocage n'est **ni** le type de
+> coordonnée (`Int` vs `Nat` — `mergeSort` reste stuck pour les DEUX), **ni**
+> l'absence d'instance `DecidableEq` manuelle (le prédicat `beq` sous-jacent
+> est `Bool.beq`, donc `DecidableEq` n'est jamais invoqué par le chemin de
+> réduction). La cause racine est **l'algorithme de tri lui-même** :
+> `List.mergeSort` ne se réduit pas sous le kernel `decide` (son `merge`
+> imbriqué est opaque), tandis que `List.insertionSort` se réduit (POC
+> vérifié sur le motif `eater1` 7-cellules, le cas classé INTRINSIC en #8749).
+>
+> En conséquence :
+> - **Option 2 (ligne RECOMMANDÉ ci-dessus) : SUPERSEDÉE** — mesurée sans
+>   effet. Noter que **#8872 est docs-only** (cette section 3.1.a) : aucune
+>   instance `DecidableEq` manuelle n'a jamais été committée en code. Il n'y
+>   a donc rien à retirer du code source ; cette annotation documente
+>   l'inopérance constatée, comme l'exige l'acceptance du dispatch c.58
+>   (« retire-la, ou annote en place pourquoi elle est inoperante »).
+> - **Option 4 (insertionSort swap) : GREENLIT ai-01 c.794/c.795** (DM
+>   `msg-20260729T220506-0zjzog`), implémentée dans la PR #8869 : swap
+>   `mergeSort lexLe` → `insertionSort lexLe` dans `Conway.Life.sortDedup`,
+>   recâblage de `Conway.Life.GridCanonical.canonical_sortDedup` via
+>   `List.pairwise_insertionSort` (instances `[Std.Total]`/`[IsTrans]`
+>   déchargées localement depuis `lexLe_total`/`lexLe_trans`). Coordonnées
+>   `Int × Int` conservées — aucun énoncé glider/origine/périodicité altéré.
+
 **Critère #5 (sortie INTRINSIC assumée)** : si `lake build` échoue après Option 2 + Option 4 combinées, la whitelist de 19 reste INTRINSIC (assumée, pas dette latente). Issue #8869 se ferme alors avec verdict mesuré, et la whitelist devient un plafond documenté plutôt qu'un objectif de réduction.
 
 **Statut whitelist après c.954** : inchangée. Les 19 noms explicites du commit `84eef8c76` (PR #8746 v2, c.951 MERGED) couvrent toujours les 19 occurrences actuelles. Une baisse éventuelle se fera par sous-grains successifs (1 nom retiré à la fois, après mesure `lake build` SUCCESS + `proof-integrity` vert sur le retrait), pas en une seule PR composite.
