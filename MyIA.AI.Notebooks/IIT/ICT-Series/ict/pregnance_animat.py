@@ -35,14 +35,14 @@ Portee de ce module (cycle-1 d'un livrable multi-cycle)
 -------------------------------------------------------
 ADDITIF : ne modifie ni ``ict.valence`` ni ``ict.learned_valence``. Couvre les
 mesures 1 (p_hat incarné + baselines), 2 (transfert incarné, approche), 3
-(choix d'action + entropie) et 6 (reversibilite comportementale) + leurs
-controles negatifs + la matrice de dissociation. Les mesures 4 (divergence
-energie-libre adaptive vs MSE) et 5 (information predictive, discretisation)
-sont de niveau recherche et **deferees** a un PR-suivi : les accomplir honnetement
-demanderait un estimateur FE adaptatif calibre et un binning d'information
-mutuelle qui n'existent pas encore dans la couche (``free_energy`` mode fixed
-est un habillage du MSE — piege	signalé ; ``signaling_convention`` n'a que la
-primitive ``mutual_information``). numpy seul, CPU.
+(choix d'action + entropie), 4 (profil d'energie libre incarne : precision fixe
+vs adaptive, gate FE porte depuis :mod:`ict.free_energy`) et 6 (reversibilite
+comportementale) + leurs controles negatifs + la matrice de dissociation. La
+mesure 5 (information predictive, discretisation en information mutuelle) reste
+de niveau recherche et **deferee** a un PR-suivi : l'accomplir honnetement
+demanderait un binning d'information mutuelle calibre qui n'existe pas encore
+dans la couche (``signaling_convention`` n'a que la primitive
+``mutual_information``). numpy seul, CPU.
 
 References
 ----------
@@ -70,6 +70,7 @@ from .valence import (
 )
 from .learned_valence import LearnedValence
 from .inhibited_action import action_entropy
+from . import free_energy as fe
 
 
 # --------------------------------------------------------------------------- #
@@ -190,6 +191,8 @@ class PregnanceAnimat:
         # valences intrinseques (sources) et journal des positions (mesures d'approche)
         self._intrinsics: Dict[int, float] = {}
         self._pos_trace: List[np.ndarray] = []
+        # journal des predictions lead-ahead q_hat (mesure 4 : energie libre incarnee)
+        self._pred_trace: List[np.ndarray] = []
 
     def reset(self, start: Optional[np.ndarray] = None) -> None:
         self.pos = np.asarray(start, dtype=float).copy() if start is not None \
@@ -297,6 +300,7 @@ class PregnanceAnimat:
             self._hist[i].append(obs[i].copy())
 
         phat_future = self._predict_each(t)
+        self._pred_trace.append(phat_future.copy())
         feasibility = self._feasibility(phat_future)
         target = self._choose_target(phat_future, feasibility)
         aim = self._aim_point(target, phat_future, obs, feasibility)
@@ -374,6 +378,14 @@ class PregnanceAnimat:
         de l'animat a celle de l'objet cible."""
         return np.asarray(self._pos_trace)
 
+    def prediction_trace(self) -> np.ndarray:
+        """Journal des predictions lead-ahead ``q_hat`` (une par pas, ``(T, n_objects, 2)``).
+
+        Necessaire a la mesure 4 (energie libre) : on apparie ``q_hat[t]`` (qui
+        predit la position future ``t+lead``) avec l'observation reelle
+        ``obs[t+lead]`` pour calculer la surprise pas-a-pas (cf :mod:`ict.free_energy`)."""
+        return np.asarray(self._pred_trace)
+
 
 def _run_episode(
     animat: PregnanceAnimat,
@@ -394,6 +406,7 @@ def _run_episode(
     animat.actions = []
     animat.captures = []
     animat._pos_trace = []
+    animat._pred_trace = []
     n_objects, n_steps, _ = trajectories.shape
     for t in range(n_steps):
         animat.step(trajectories[:, t, :], t)
@@ -747,6 +760,149 @@ def behavioral_reversibility_test(
         "approach_fraction_extinguished": float(extinguished_approach),
         "approach_drop": float(acquired_approach - extinguished_approach),
         "reversible": 1.0 if reversible else 0.0,
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Mesure 4 — energie libre incarnee : precision fixe vs adaptive (gate FE)     #
+# --------------------------------------------------------------------------- #
+
+
+def free_energy_profile_test(
+    kind: str = "balistique",
+    n_steps: int = 200,
+    size: int = 32,
+    source_valence: float = 1.0,
+    seed: int = 0,
+    floor_frac: float = 0.05,
+) -> Dict[str, float]:
+    r"""Profil d'energie libre de l'animat incarne (precision fixe vs adaptive).
+
+    Porte le gate 2 de :mod:`ict.free_energy` (la precision adaptive fait
+    diverger le classement par ``F`` du classement par MSE) du representant nu
+    (ICT-10 / ICT-14) au cadre incarne C1 : on calcule la surprise lead-ahead de
+    la prediction ``q_hat`` de l'animat contre l'observation reelle, en precision
+    FIXE puis ADAPTIVE, et on la confronte au MSE lead-ahead -- a travers les
+    regimes ``balistique`` (``q_hat`` credible) et ``erratique`` (``q_hat`` EMA
+    trompe par les renversements, cf mesure 1).
+
+    Le piege signale en entete de module (et gate 1 de :mod:`ict.free_energy`)
+    est qu'en precision FIXE, ``F`` n'est qu'une transformation monotone du MSE :
+    les deux classent pareil. La precision ADAPTIVE renormalise la surprise par
+    la variance attendue accumulee (EMA causale des erreurs passees) : sous
+    ``erratique``, le ``q_hat`` sur-confiant se plante, la variance attendue
+    gonfle, et la surprise adaptive peut amortir une partie de l'explosion que le
+    MSE brut exhibe. C'est le seul regime ou l'energie libre ajoute quelque chose
+    au-dela de l'erreur de prediction, meme incarnee.
+
+    La mesure est ORTHOGONALE a la matrice de dissociation (qui oppose ``p_hat``
+    a la valence) : ici on oppose deux lecteurs de ``q_hat`` lui-meme (FE vs MSE).
+    On l'isole donc comme un banc autonome plutot que d'alourdir le verdict
+    central.
+
+    Caveat -- pourquoi la precision adaptive est calculee inline (scale-aware)
+    -----------------------------------------------------------------------
+    Le ``mode='adaptive'`` de :func:`ict.free_energy.free_energy_trajectory`
+    planche la variance a ``1e-6`` (absolu) -- calibre pour des erreurs
+    moderees du representant nu. Sous les predictions quasi-parfaites du regime
+    balistique incarne (vitesse constante => ``q_hat`` exact), la variance EMA
+    s'effondre sous ce plancher et la surprise explose (~2000, artefact numerique
+    non un signal). Ce banc calcule donc la precision adaptive inline, plancher
+    a 5% de la variance globale (scale-aware), qui garde la surprise finie et
+    comparable. C'est la raison pour laquelle M4 etait deferée : le port incarne
+    du gate FE demande une precision calibree, pas le bare estimateur.
+
+    Verdict falsifiable
+    -------------------
+    ``fe_fixed_monotone_with_mse`` : en precision fixe, F et MSE rangent les
+        regimes identiquement (tous deux superieurs sous erratique) -- gate 1
+        incarne : FE est un habillage du MSE en RANG (monotonicite preservee).
+        Controle de coherence : doit tenir.
+    ``fe_adaptive_amortizes_mse`` : le ratio ``F_adaptive(erratique)/F_adaptive(balistique)``
+        est INFERIEUR au ratio MSE -- gate 2 incarne : la precision adaptive
+        amortit l'explosion de regime (FE adaptive moins sensible au regime que
+        le MSE brut). Un verdict 0 est aussi honnete : l'incarnation ne preserve
+        pas le gate 2 du representant nu.
+    """
+    def _profile(k: str) -> Dict[str, float]:
+        rng = np.random.default_rng(seed)
+        cfg = AnimatConfig(size=size)
+        neutral_idx, control_idx, n_objects = 1, 2, 3
+        animat = PregnanceAnimat(n_objects=n_objects, config=cfg, rng=rng)
+        animat.set_intrinsic_valences({0: source_valence})
+        trajs = _tethered_trajectories(k, n_steps, size, rng, n_objects=n_objects,
+                                       neutral_idx=neutral_idx, control_idx=control_idx)
+        _run_episode(animat, trajs, start=np.array([2.0, 2.0]))
+        lead = cfg.lead
+        preds = animat.prediction_trace()        # (T, n_objects, 2)
+        mses: List[float] = []
+        f_fix: List[float] = []
+        f_adap: List[float] = []
+        # objets in-arena partagent la cinematique `k` : source(0) + neutre tethered(1).
+        # le controle(2) est hors-arene (coords gigantesques) -> exclu.
+        for i in (0, 1):
+            obs_i = np.asarray(animat._hist[i], dtype=float)   # (T, 2)
+            if obs_i.shape[0] <= lead or preds.shape[0] <= lead:
+                continue
+            o_future = obs_i[lead:]          # obs[t+lead]
+            p_past = preds[:-lead, i, :]     # q_hat[t] predit obs[t+lead]
+            n = min(o_future.shape[0], p_past.shape[0])
+            o_future, p_past = o_future[:n], p_past[:n]
+            err = o_future - p_past
+            err_sq = np.sum(err ** 2, axis=1)            # (n,) erreur quadratique 2D
+            mses.append(float(np.mean(err_sq)))
+            # precision FIXE (sigma=1) : gate 1 (habillage du MSE en rang).
+            f_fix.append(float(np.mean(fe.gaussian_surprise(o_future, p_past, sigma=1.0))))
+            # precision ADAPTIVE scale-aware : EMA causale des erreurs passees,
+            # plancher a ``floor_frac`` de la variance globale (defaut 5%). Sans ce
+            # plancher, sous les predictions quasi-parfaites du regime balistique la
+            # variance EMA s'effondre vers le dust numerique et la surprise explose
+            # (pathologie documentee ci-dessous) -- le bare ``mode='adaptive'`` de
+            # :mod:`ict.free_energy` (plancher absolu 1e-6) est calibre pour des
+            # erreurs moderees, pas pour l'incarnation. ``floor_frac`` est expose pour
+            # le test de robustesse (sweep ±2x : gate 2 doit tenir sur la plage).
+            var0 = max(float(np.mean(err_sq)), 1e-6)
+            ema = np.empty(err_sq.shape[0])
+            prev = var0
+            for tt in range(err_sq.shape[0]):
+                ema[tt] = prev
+                prev = 0.3 * err_sq[tt] + 0.7 * prev
+            sigma_t = np.sqrt(np.maximum(ema, floor_frac * var0))
+            f_adap.append(float(np.mean(fe.gaussian_surprise(
+                o_future, p_past, sigma=sigma_t.reshape(-1, 1)
+            ))))
+        return {
+            "mse": float(np.mean(mses)),
+            "F_fixed": float(np.mean(f_fix)),
+            "F_adaptive": float(np.mean(f_adap)),
+        }
+
+    bal = _profile("balistique")
+    err = _profile("erratique")
+    mse_ratio = err["mse"] / max(bal["mse"], 1e-12)
+    fe_fix_ratio = err["F_fixed"] / max(bal["F_fixed"], 1e-12)
+    fe_adap_ratio = err["F_adaptive"] / max(bal["F_adaptive"], 1e-12)
+    # gate 1 incarne : en precision fixe, F et MSE rangent les regimes pareil
+    # (tous deux superieurs sous erratique) -- monotonicite preservee.
+    fe_fixed_monotone_with_mse = (
+        1.0 if (err["F_fixed"] > bal["F_fixed"]) == (err["mse"] > bal["mse"]) else 0.0
+    )
+    # gate 2 incarne : la precision adaptive amortit l'explosion de regime
+    # (ratio F_adaptive erratique/balistique INFERIEUR au ratio MSE).
+    fe_adaptive_amortizes_mse = 1.0 if fe_adap_ratio < mse_ratio else 0.0
+    return {
+        "mse_ballistic": bal["mse"],
+        "mse_erratic": err["mse"],
+        "mse_ratio_err_over_bal": mse_ratio,
+        "F_fixed_ballistic": bal["F_fixed"],
+        "F_fixed_erratic": err["F_fixed"],
+        "F_fixed_ratio_err_over_bal": fe_fix_ratio,
+        "F_adaptive_ballistic": bal["F_adaptive"],
+        "F_adaptive_erratic": err["F_adaptive"],
+        "F_adaptive_ratio_err_over_bal": fe_adap_ratio,
+        "fe_fixed_monotone_with_mse": fe_fixed_monotone_with_mse,
+        "fe_adaptive_amortizes_mse": fe_adaptive_amortizes_mse,
+        "floor_frac": float(floor_frac),
     }
 
 

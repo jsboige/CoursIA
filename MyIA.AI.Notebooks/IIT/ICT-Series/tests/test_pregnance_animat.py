@@ -36,6 +36,7 @@ from ict.pregnance_animat import (
     embodied_transfer_test,
     action_commitment_test,
     behavioral_reversibility_test,
+    free_energy_profile_test,
     dissociation_matrix,
 )
 
@@ -239,3 +240,79 @@ def test_dissociation_matrix_covers_three_regimes():
         assert kind in dm
         assert "err_phat_vs_persistence" in dm[kind]
         assert "transferred" in dm[kind]
+
+
+# --- Mesure 4 : profil d'energie libre incarnee (precision fixe vs adaptive) ---
+
+
+def test_prediction_trace_shape_matches_episodes():
+    """``prediction_trace()`` renvoie ``(T, n_objects, 2)`` -- une prediction
+    lead-ahead ``q_hat`` par pas, necessaire pour apparier ``(obs[t+lead],
+    q_hat[t])`` en mesure 4."""
+    rng = np.random.default_rng(0)
+    a = PregnanceAnimat(n_objects=3, config=AnimatConfig(size=16), rng=rng)
+    obs_t = np.array([[2.0, 2.0], [5.0, 5.0], [8.0, 3.0]])  # (n_obj=3, 2)
+    for t in range(12):
+        a.step(obs_t, t)
+    tr = a.prediction_trace()
+    assert tr.shape == (12, 3, 2)
+    assert np.all(np.isfinite(tr))
+
+
+def test_free_energy_profile_returns_all_keys():
+    """Le banc mesure 4 renvoie les ratios + les deux verdicts falsifiables."""
+    r = free_energy_profile_test(seed=0)
+    for key in (
+        "mse_ballistic", "mse_erratic", "mse_ratio_err_over_bal",
+        "F_fixed_ballistic", "F_fixed_erratic", "F_fixed_ratio_err_over_bal",
+        "F_adaptive_ballistic", "F_adaptive_erratic", "F_adaptive_ratio_err_over_bal",
+        "fe_fixed_monotone_with_mse", "fe_adaptive_amortizes_mse",
+    ):
+        assert key in r, f"cle manquante: {key}"
+
+
+def test_mse_regime_effect_erratic_worse_than_ballistic():
+    """Le regime erratique degrade la prediction ``q_hat`` (effet regime, mesure 1)
+    -- prealable au gate FE : sans effet regime, il n'y a rien a amortir."""
+    r = free_energy_profile_test(seed=0)
+    assert r["mse_erratic"] > r["mse_ballistic"]
+
+
+def test_fe_gate1_fixed_monotone_with_mse_holds():
+    """Gate 1 incarne : en precision fixe, F et MSE rangent les regimes pareil
+    (tous deux superieurs sous erratique) -- FE est un habillage du MSE en rang."""
+    r = free_energy_profile_test(seed=0)
+    assert r["fe_fixed_monotone_with_mse"] == 1.0
+
+
+def test_fe_gate2_adaptive_amortizes_regime_explosion():
+    """Gate 2 incarne : la precision adaptive amortit l'explosion de regime
+    (ratio F_adaptive erratique/balistique inferieur au ratio MSE)."""
+    r = free_energy_profile_test(seed=0)
+    assert r["fe_adaptive_amortizes_mse"] == 1.0
+    assert r["F_adaptive_ratio_err_over_bal"] < r["mse_ratio_err_over_bal"]
+
+
+def test_gate2_robust_to_floor_sweep():
+    """Robustesse de gate 2 (reviewer △2) : le verdict d'amortissement tient quand
+    on varie le plancher scale-aware ±2x autour de son defaut (0.025, 0.05, 0.10).
+    Si gate 2 ne tenait qu'a un seul point de tuning, le banc serait fragile.
+    """
+    for floor_frac in (0.025, 0.05, 0.10):
+        r = free_energy_profile_test(seed=0, floor_frac=floor_frac)
+        assert r["floor_frac"] == floor_frac
+        assert r["fe_adaptive_amortizes_mse"] == 1.0, (
+            f"gate 2 casse a floor_frac={floor_frac} (fragile au tuning)")
+        assert r["F_adaptive_ratio_err_over_bal"] < r["mse_ratio_err_over_bal"]
+
+
+def test_bare_floor_reproduces_pathology():
+    """Controle negatif (reviewer △2) : un plancher quasi-absolu (floor_frac ~ bare
+    estimateur 1e-6) fait EXPLOSER la surprise balistique (~142 vs ~1 a floor
+    scale-aware) -- c'est la pathologie qui motive le plancher scale-aware. Sans ce
+    controle, le design du floor serait une assertion non justifiee."""
+    bare = free_energy_profile_test(seed=0, floor_frac=1e-7)
+    aware = free_energy_profile_test(seed=0, floor_frac=0.05)
+    # la surprise balistique explose sous bare floor (q_hat quasi-parfait ->
+    # variance EMA effondree -> dust numerique).
+    assert bare["F_adaptive_ballistic"] > 10.0 * aware["F_adaptive_ballistic"]
