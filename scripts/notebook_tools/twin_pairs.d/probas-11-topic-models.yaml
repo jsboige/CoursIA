@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: c55238dd3f72ecee8c5eb3cc02904be682db36d2
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
     csharp_sha: b8952c28ef68974ddfc0e76a924da664e3974871
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'

@@ -5,9 +5,9 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-29"
-    by: myia-po-2026:CoursIA
-    python_sha: 58f92739d94c88eaeb8897f03222fe9c1e843ce8
-    csharp_sha: 0e80dc0651b879a00e82bd91601f9951cba43b7f
+    by: myia-po-2023:CoursIA-2
+    python_sha: 20b459c9021a688c4bb67adc3bbf36c273d6445d
+    csharp_sha: 1e5b22494e86fd48c2c3fcd0c4dbaf4ed3b6d76a
   known_differences:
     - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
     - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."

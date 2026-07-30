@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
-    python_sha: 57feaad6b90cec840a4ac63971f44eb12ea0ade0
-    csharp_sha: d8696f90ac42c47b53ded32401117e89fad5098f
+    date: "2026-07-30"
+    by: myia-po-2023:CoursIA-2
+    python_sha: fe336af927a925430b9b91f845559017e8caddbc
+    csharp_sha: f83e1708321a0fe1b24dc2f919f0ad1ceac53e6c
   known_differences:
     - "Socle pedagogique commun : resolution de Sudoku comme probleme de satisfaction de contraintes (CSP), suivant le formalisme AIMA (Artificial Intelligence: A Modern Approach) -- AC-3 (arc consistency / propagation de contraintes), backtracking avec heuristiques (MRV, LCV), assign/eliminate (Norvig-style propagation). Meme concept mathematique (variables, domaines, contraintes binaires, arc consistency), meme cas canonique (Sudoku). Les deux couvrent AC3, backtracking, Norvig, AIMA, csp."
     - "Divergence d'implementation : le Python (numpy, 19 cellules code) implemente le framework CSP a la AIMA (classe CSP, AC-3, backtracking) ; le C# (pur System.* stdlib, 0 NuGet, 18 cellules code) implemente le meme framework CSP (AC-3, backtracking, assign/eliminate) sans dependance externe. Paire proche d'une traduction native (meme algorithmes, meme structure AIMA), mais les 2 implementations restent independantes (idiomes langage, structures de donnees), d'ou parity_level semantic et non native-both."

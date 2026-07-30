@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-26"
-    by: myia-ai-01:CoursIA
-    python_sha: e2749731a468b238ea1dd15d87d18eab4a5f69e2
-    csharp_sha: b469c42d74815b4451245dbb3930c14a23b3964a
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 1eaf878c9bd25b664c687b12d6e61bc68eb20533
+    csharp_sha: 4428a5fa8017f817503e1a273cbdc5505963d5dc
   known_differences:
   - 'Socle pedagogique commun : reseaux bayesiens (DAG de dependances conditionnelles) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

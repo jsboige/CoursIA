@@ -288,7 +288,7 @@ def build_cost(notebook_name: str, by: str, today: str) -> dict:
         "free_alternative": p["free_alternative"],
         "reduced_pedagogical": None,
         "reproducibility": p["reproducibility"],
-        "last_validated": today,
+        "metadata_written": today,
         "validator": "manual",
         "notes": p["notes"] + f" Provenance: {by} (c.946).",
     }
@@ -340,7 +340,7 @@ def main(argv=None) -> int:
     )
     ap.add_argument(
         "--today", default=None,
-        help="Date ISO pour last_validated (défaut : aujourd'hui)",
+        help="Date ISO pour metadata_written (défaut : aujourd'hui)",
     )
     ap.add_argument(
         "--audit", action="store_true",

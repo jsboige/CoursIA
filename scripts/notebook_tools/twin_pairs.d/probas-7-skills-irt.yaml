@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-po-2023:CoursIA
-    python_sha: dbef71a833532109dc7379d3511f87bc3353f7e5
-    csharp_sha: 7723219b3c6654629210ed5f0757d04dc3bd6e54
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: f1f4080df62766027a4583aaee04b435dd931374
+    csharp_sha: b878dadd1b0836b518e89e16642e88265d490669
   known_differences:
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie creee par #8530 -- le backfill attribution MBML
     Ch.2 n''avait touche que le twin C# (Infer-7), laissant PyMC-7 sans rattachement au chapitre alors que son jumeau

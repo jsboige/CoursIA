@@ -5,9 +5,9 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-29"
-    by: myia-po-2026:CoursIA
-    python_sha: 520ab3339a6dcdfbe9dadf6e898c15f4824f3ba4
-    csharp_sha: 715b003e4100dd9bd7f8e7acc594ece23b5cef96
+    by: myia-po-2023:CoursIA-2
+    python_sha: 1856a7a0540d7a680e35356a371b1e7fe1cee27d
+    csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70
   known_differences:
     - "Socle commun : CSP distribue (DisCSP) -- formalisation, ABT (Asynchronous Backtracking, Yokoo 1992), AWC (Asynchronous Weak-Commitment, Yokoo 1995), Privacy-Preserving CSP, application multi-hopital, benchmark synthetique ABT vs AWC. Le C# se declare explicitement 'binome .NET du CSP-9-Distributed.ipynb' (H1) et cite Yokoo 1992."
     - "PARITE CELLULAIRE EXACTE : 47 cellules des deux cotes (19 code, 28 markdown) -- le twin le plus proche cellule-a-cellule des 5 residuels. Sections logiques 1-7 identiques ; le C# concentre parfois plusieurs H2 logiques dans une meme cellule markdown (surcomptage brut d'en-tetes a 34) mais la couverture structurelle reelle matche le Python."

@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
-    by: myia-po-2024:CoursIA-2
-    python_sha: 1694d32c7760664f121c62bd2eb4bc5f7b45e00c
-    csharp_sha: cac48a19d7eab86b6cd341b7b8b0c472ab62db5c
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: bf5811ada77206db3e65d62f60696662b1e8cd56
+    csharp_sha: cdfe398768e01d553c71bc82ee82227e708a3472
   known_differences:
     - "Socle pedagogique commun : integration de modeles ONNX (chargement, inference, inspection du graph, exercices). C# = ML.NET OnnxTransformer + OnnxRuntime ; Python = skl2onnx (export sklearn->ONNX) + onnxruntime (inference) + onnx (inspection structurelle). Cree comme twin de parite explicite en #5607 (EPIC #4956 .NET<->Python)."
     - "Asymetrie export-vs-load (pont Python->.NET) : le C# charge un modele ONNX pre-exporte (iris_model.onnx genere par scripts/ml/generate_iris_onnx.py, RandomForest sklearn) car l'export ML.NET->ONNX est experimental (documente en commentaire, c13/c15) ; le Python effectue l'export sklearn->ONNX lui-meme via skl2onnx (opset 15, zipmap=False). Le twin Python est le cote 'producteur' du pont ONNX, le C# le cote 'consommateur'."

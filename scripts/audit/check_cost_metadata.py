@@ -487,21 +487,22 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
 
     # Litmus 9 : le validator AFFIRME une execution que le notebook contredit.
     #
-    # `validator` et `last_validated` sont, avant ce litmus, les deux seuls
-    # champs de la matrice que RIEN ne peut contredire. Les populators ecrivent
-    # `last_validated: _dt.date.today()` au moment du peuplement — pas au moment
-    # d'une validation — et aucun consommateur ne le relit. Un champ que rien
-    # ne peut contredire est decoratif : il aurait la meme valeur sur un
-    # notebook dont AUCUNE cellule n'a jamais tourne. Meme raisonnement que le
-    # litmus 8 (une ventilation dont la somme doit egaler le total casse le jour
-    # ou elle ment) et que #8680 (un gate incapable d'echouer n'est pas un gate).
+    # Avant ce litmus, `validator` etait le seul champ de la matrice que RIEN
+    # ne pouvait contredire ; les populators ecrivaient
+    # `last_validated: _dt.date.today()` au peuplement (jamais relu, jamais
+    # falsifiable, etrange de fait — un notebook dont AUCUNE cellule n'a
+    # jamais tourne pouvait le porter sans mentir, ce qui en faisait un champ
+    # decoratif et a permis ecriture d'un faux gate — cf #8841). Le champ a
+    # ete renomme `metadata_written` (#8843) : sa seule semantique reelle
+    # (date d'etablissement de la metadata) a son nom, et ce litmus ne s'en
+    # sert plus.
     #
-    # Ce que le litmus rend falsifiable : nbclient/papermill executent CHAQUE
-    # cellule code non vide, y compris celles qui echouent (`--allow-errors` ne
-    # change que le comportement d'arret, pas l'attribution du compteur). Donc
-    # `execution_count: null` sur une cellule code non vide PROUVE que la
-    # cellule n'a pas ete executee — et contredit un validator qui affirme
-    # l'avoir ete.
+    # Ce qui reste a falsifier, c'est donc `validator` seul : nbclient/papermill
+    # executent CHAQUE cellule code non vide, y compris celles qui echouent
+    # (`--allow-errors` ne change que le comportement d'arret, pas
+    # l'attribution du compteur). Donc `execution_count: null` sur une cellule
+    # code non vide PROUVE que la cellule n'a pas ete executee — et contredit
+    # un validator qui affirme l'avoir ete.
     #
     # Perimetre : seuls les validators qui affirment une EXECUTION DE CELLULES.
     # Sont exclus, et ce n'est pas un oubli :
@@ -543,18 +544,20 @@ def check_notebook(notebook_path: Path, repo_root: Path) -> dict:
         if unexecuted:
             shown = ', '.join(str(i) for i in unexecuted[:5])
             more = f', +{len(unexecuted) - 5}' if len(unexecuted) > 5 else ''
+            seen_at = cost_meta.get('metadata_written') or 'unknown'
             findings.append({
                 'pattern': 'validator_asserts_execution_but_cells_unexecuted',
                 'detail': (
                     f"cost.validator: '{validator}' affirme une execution, mais "
                     f"{len(unexecuted)} cellule(s) code non vides ont "
                     f"execution_count: null (index {shown}{more}). "
-                    f"cost.last_validated"
-                    f"{' = ' + str(cost_meta['last_validated']) if cost_meta.get('last_validated') else ''}"
-                    f" date donc une validation que le notebook contredit. "
-                    f"Corriger la DECLARATION (validator: manual si le notebook "
-                    f"n'est pas executable localement) ou re-executer — jamais "
-                    f"editer les sorties a la main."
+                    f"cost.metadata_written={seen_at} (date d'etablissement de "
+                    f"la metadata, pas une validation). La declaration contredit "
+                    f"le notebook — un validator qui "
+                    f"affirme l'execution ne tient pas si une cellule code n'a "
+                    f"pas tourne. Corriger la DECLARATION (validator: manual "
+                    f"si le notebook n'est pas executable localement) ou "
+                    f"re-executer — jamais editer les sorties a la main."
                 ),
                 'severity': 'MAJOR',
             })

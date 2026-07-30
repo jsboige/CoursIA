@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-12-Modeles-Hierarchiques.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-24'
-    by: po-2023
-    python_sha: 0c4d75e971dfb449a27990da64f6e68a4a7e4d58
+    date: "2026-07-29"
+    by: myia-po-2023:CoursIA-2
+    python_sha: 91a08f3e69ac3eec7a3341d281a7b5386f018b5a
     csharp_sha: 98789ab8f521ea377659fd593b020af2efbe16fa
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
