@@ -182,9 +182,27 @@ jobs:
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
-        set -o pipefail   # propagate lake's exit code through `| tail` — without this a
-                          # FAILED lake build reports exit 0 (tail always succeeds), and the
-                          # CI step passes regardless. See incident conway_lean HashlifeCorrectness
-                          # L1058 (rfl fail masked as CI PASS, 2026-06-14).
+        # Keep the short `tail` summary on the nominal path, but tee the FULL log
+        # and surface its error lines on failure. Without this, lake's parallel
+        # build continues after a module failure, burying the `File.lean:L:C: error:`
+        # line under thousands of progress lines so `tail -20` shows only
+        # "Some required targets logged failures: / error: build failed" — a gate
+        # that fails silently, forcing local reproduction to learn *what* broke
+        # (cf conway_lean run 30502964271, 8545 targets, defect #8915).
+        #
+        # The 2026-06-14 invariant (a FAILED build MUST fail the step) is preserved:
+        # `set -o pipefail` makes the pipeline return lake's non-zero exit, and
+        # `if pipeline; then :; else exit $rc; fi` re-emits it (the `$?` in the else
+        # branch is the condition's exit — no intervening command). Proven locally
+        # against a mock burying scenario + real lake: see #8915 verification.
+        set -o pipefail
         lake exe cache get || true
-        lake -R build 2>&1 | tail -20
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+          :
+        else
+          rc=$?
+          echo "::group::Lake error lines (from full log)"
+          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+          echo "::endgroup::"
+          exit "$rc"
+        fi
