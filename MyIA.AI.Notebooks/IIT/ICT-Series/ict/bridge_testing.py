@@ -8,6 +8,18 @@ a la suivante soit causale. Ce module porte un protocole falsifiable **par pont
 testable**, sur le modele explicite ``hypothese + modele nul + intervention +
 verdict``, au compte-gouttes (un pont par PR, cf #8077).
 
+Ponts livres
+------------
+* **Pont #1** (sigma stabilite -> recuperabilite, c.1020) : **FALSIFIE** sur la
+  fronce de Thom -- la portee de recuperation est gouvernee par la largeur de
+  bassin (position du col), pas par la courbure locale ``sigma`` (proxy correle,
+  correlation partielle ~0).
+* **Pont #3** (extraction -> usage causal, c.1023) : **CONFIRME** sur substrat
+  lineaire a redondance, avec controle nul borne par la severite de la
+  redondance -- l'importance marginale predit l'usage causal (ablation) a
+  diversite realiste, mais est un **proxy trompeur** sous redondance severe (seule
+  l'ablation distingue alors les features causeales des redondantes).
+
 Bridge #1 (sigma stabilite -> recuperabilite)
 ---------------------------------------------
 Cf #8077, pont 1 du retour externe ChatGPT. Hypothese implicite de la strate
@@ -237,4 +249,183 @@ def bridge_stability_to_recoverability(
         "partial_rho_sigma_recovery_given_width": float(partial),
         "partial_null_p95": p95_partial_null,
         "bridge_sigma_to_recoverability": bridge,
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #3 : extraction (importance) -> usage causal (ablation)              #
+# --------------------------------------------------------------------------- #
+
+
+def _redundant_feature_dataset(
+    rng: np.random.Generator,
+    n_samples: int,
+    n_singleton: int,
+    n_dup_groups: int,
+    dup_size: int,
+    feat_noise: float,
+    y_noise: float,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Jeu de donnees synthetique a **features singleton** (uniques) + **groupes
+    dupliques** (redundantes). Substrat du pont #3 (extraction -> usage causal).
+
+    Chaque feature (singleton ou duplicata) porte le signal **source complet** :
+    une feature duplicata est donc **importante a la marge** (correlee a ``y`` via
+    la source commune) mais **redundante en ablation** (les autres duplicatas du
+    meme groupe compensent sa disparition). C'est le **controle nul de l'issue**
+    #8077 pont 3 : « ablation de la feature sans effet comportemental » — une
+    feature extraite (importante) qui n'est pas *causalement utilisee* (ablation
+    sans effet) sous redondance severe. ``feat_noise`` regle la colinearite (faible
+    = duplicatas quasi-identiques = redondance severe = falsification ; eleve =
+    diversite realiste = confirmation).
+    """
+    feats: List[np.ndarray] = []
+    for _ in range(int(n_singleton)):
+        s = rng.standard_normal(int(n_samples))
+        feats.append(s + feat_noise * rng.standard_normal(int(n_samples)))
+    for _ in range(int(n_dup_groups)):
+        s = rng.standard_normal(int(n_samples))
+        for _ in range(int(dup_size)):
+            feats.append(s + feat_noise * rng.standard_normal(int(n_samples)))
+    X = np.array(feats).T
+    # y charge sur les sources (inconnues de l'analyste) ; reconstruites comme
+    # moyennes de groupe (les duplicatas partagent la meme source latente).
+    sources: List[np.ndarray] = []
+    idx = 0
+    for _ in range(int(n_singleton)):
+        sources.append(X[:, idx])
+        idx += 1
+    for _ in range(int(n_dup_groups)):
+        sources.append(X[:, idx:idx + int(dup_size)].mean(axis=1))
+        idx += int(dup_size)
+    w = rng.uniform(0.5, 1.5, size=len(sources))
+    y = sum(float(w[i]) * sources[i] for i in range(len(sources)))
+    y = y + y_noise * rng.standard_normal(int(n_samples))
+    return X, y
+
+
+def _feature_causal_stats(
+    X: np.ndarray, y: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Par feature : **importance marginale**, **effet d'ablation** (contribution
+    unique), et **unicite**.
+
+    * ``importance_marginale`` = r^2(feature, ``y``) : ce qu'un SAE ou un analyste
+      calcule **observationnellement** (la « feature extraite est-elle informative ? »).
+    * ``effet_ablation`` = chute de R^2 du modele lineaire complet quand on retire
+      la feature = sa **contribution unique** (l'intervention ``do(feature := 0)``
+      au sens de Pearl ; l'usage *causal* reel).
+    * ``unicite`` = ``1 - max`` correlation pairwise avec les autres features
+      (le concurrent : la redondance, observable, qui confond importance et usage).
+
+    Numpy pur (OLS via :func:`numpy.linalg.lstsq`).
+    """
+    K = X.shape[1]
+    marg = np.array([np.corrcoef(X[:, i], y)[0, 1] ** 2 for i in range(K)])
+    Xc = X - X.mean(axis=0)
+    yc = y - y.mean()
+
+    def _r2(cols: List[int]) -> float:
+        A = Xc[:, cols]
+        coef, *_ = np.linalg.lstsq(A, yc, rcond=None)
+        pred = A @ coef
+        ss_res = float(np.sum((yc - pred) ** 2))
+        ss_tot = float(np.sum(yc ** 2))
+        return 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+    full = _r2(list(range(K)))
+    ablation = np.array([full - _r2([j for j in range(K) if j != i]) for i in range(K)])
+    C = np.corrcoef(X.T)
+    np.fill_diagonal(C, 0.0)
+    uniqueness = 1.0 - np.abs(C).max(axis=1)
+    return marg, ablation, uniqueness
+
+
+def bridge_extraction_to_causal_usage(
+    n_datasets: int = 40,
+    n_samples: int = 400,
+    n_singleton: int = 6,
+    n_dup_groups: int = 6,
+    dup_size: int = 3,
+    feat_noise: float = 0.3,
+    y_noise: float = 0.5,
+    n_shuffle: int = 50,
+    seed: int = 0,
+) -> Dict[str, float]:
+    r"""Bridge #3 : extraction (importance marginale) -> usage causal (ablation) (falsifiable, #8077 pont 3).
+
+    Hypothese implicite de la strate SAE/extraction (ICT-15..20, #5101) : une feature
+    **extraite** (informative, importante a la marge) est **causalement utilisee**
+    par le calcul, pas juste correlee. La lecture naive « importante => cause ».
+    Le substrat : un modele lineaire a features singleton + groupes dupliques
+    (:func:`_redundant_feature_dataset`), ou l'**importance marginale** (r^2 avec
+    ``y``) est l'observable d'extraction et l'**effet d'ablation** (chute de R^2
+    quand on retire la feature = contribution unique) est l'usage causal reel
+    (intervention ``do(.)`` de Pearl).
+
+    La subtilite (qui rend le pont NON tautologique et falsifiable) est la
+    **redondance** : une feature duplicata porte le signal source complet -> elle
+    est **importante a la marge** (correlee a ``y``) MAIS **redundante en ablation**
+    (les autres duplicatas compensent). C'est le controle nul de l'issue : une
+    feature extraite qui n'est pas causalement utilisee. Le test decisif est la
+    **correlation partielle** (importance | unicite) -> ablation, calculee **par
+    modele** (la bonne unite : dans le jeu de features extrait d'un modele, est-ce
+    que l'importance predit l'usage causal au-dela de la redondance ?).
+
+    Sondage C976-L (c.1023) AVANT d'asserter :
+      * aggregation cross-datasets (panel) -> CONFIRME mais confondu par le SNR
+        inter-datasets (faux signal). La bonne unite est **par-modele**.
+      * a ``feat_noise`` eleve (diversite realiste) : partial par-modele ~+0.5,
+        frac>0.2 ~0.9 -> **CONFIRME** (l'importance predit l'usage causal).
+      * a ``feat_noise`` faible (duplicatas quasi-identiques, redondance severe) :
+        partial par-modele ~+0.08, frac>0.2 ~0.33 -> **FALSIFIE** (l'importance ne
+        predit plus l'usage causal ; seule l'ablation revele quelles features sont
+        causalement utilisees). Transition monotone (non threshold-fragile, cf pont
+        #2 abandonne), bornee par la severite de la redondance.
+
+    Verdict falsifiable
+    -------------------
+    ``bridge_extraction_to_causal_usage`` : 1.0 si, sur la majorite des modeles,
+        la correlation partielle (importance | unicite) -> ablation est positive et
+        au-dela du null (l'extraction predit l'usage causal au-dela de la
+        redondance). 0.0 sinon : sous redondance severe, l'importance marginale est
+        un **proxy trompeur** de l'usage causal — seule l'intervention (ablation)
+        distingue les features causeales des features redondantes (do-calculus).
+    """
+    rng = np.random.default_rng(seed)
+    observed: List[float] = []
+    null_p95_per_model: List[float] = []
+    marg_abl: List[float] = []
+    uniq_abl: List[float] = []
+    for _ in range(int(n_datasets)):
+        X, y = _redundant_feature_dataset(
+            rng, n_samples, n_singleton, n_dup_groups, dup_size, feat_noise, y_noise
+        )
+        marg, abl, uniq = _feature_causal_stats(X, y)
+        observed.append(_partial_spearman(marg, abl, uniq))
+        marg_abl.append(_spearman(marg, abl))
+        uniq_abl.append(_spearman(uniq, abl))
+        # null par-modele : brouiller l'importance (casser le lien importance->ablation
+        # en gardant importance<->unicite), recompute la partielle.
+        null_partials = np.array([
+            _partial_spearman(rng.permutation(marg), abl, uniq) for _ in range(int(n_shuffle))
+        ])
+        null_p95_per_model.append(float(np.percentile(np.abs(null_partials), 95)))
+    observed_arr = np.asarray(observed, dtype=float)
+    null_arr = np.asarray(null_p95_per_model, dtype=float)
+    n_sig = int(np.sum((observed_arr > null_arr) & (observed_arr > 0.2)))
+    frac_significant = n_sig / float(observed_arr.size)
+    mean_partial = float(np.mean(observed_arr))
+
+    bridge = 1.0 if frac_significant > 0.5 else 0.0
+
+    return {
+        "n_datasets": int(n_datasets),
+        "feat_noise": float(feat_noise),
+        "mean_partial_rho_importance_ablation_given_uniqueness": mean_partial,
+        "frac_models_confirmed": float(frac_significant),
+        "mean_rho_importance_ablation": float(np.mean(marg_abl)),
+        "mean_rho_uniqueness_ablation": float(np.mean(uniq_abl)),
+        "partial_null_p95_mean": float(np.mean(null_arr)),
+        "bridge_extraction_to_causal_usage": bridge,
     }
