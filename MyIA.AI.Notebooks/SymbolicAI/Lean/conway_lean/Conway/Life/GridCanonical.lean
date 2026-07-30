@@ -73,7 +73,7 @@ fondamentales du moteur Life :
   précédent, pour la clôture réflexive.
 - `lexLe_total` : **lexLe total** — `(lexLe a b || lexLe b a) = true` (par
   `simp only [Bool.or_eq_true, lexLe_iff]` + `omega`). C'est l'hypothèse
-  que `List.pairwise_mergeSort` exige sur son argument comparateur.
+  que `List.pairwise_insertionSort` exige sur son argument comparateur.
 - `lexLe_trans` : **lexLe transitif** — `lexLe a c = true` depuis
   `lexLe a b = true` + `lexLe b c = true` (par `simp only [lexLe_iff] at *`
   + `omega`).
@@ -87,7 +87,8 @@ fondamentales du moteur Life :
 - `canonical_sortDedup` : **`sortDedup` produit une grid canonique** —
   `Canonical (sortDedup l)` pour toute liste `l` (par dépliage `sortDedup`
   + `List.Pairwise.sublist (List.dedup_sublist _)` (depuis
-  `pairwise_mergeSort` utilisant `lexLe_trans` + `lexLe_total`) +
+  `pairwise_insertionSort` via instances locales `lexLe_trans` +
+  `lexLe_total`) +
   `List.nodup_dedup _`). Le fait central : toute image `sortDedup` est
   canonique.
 - `Canonical.filter` : **filter préserve la canonicité** — `Canonical
@@ -180,7 +181,7 @@ theorem lexLe_iff {a b : Int × Int} :
   simp only [lexLe, Bool.or_eq_true, lexLt_iff, beq_iff_eq, Prod.ext_iff]
   omega
 
-/-- `lexLe` is total — the hypothesis `List.pairwise_mergeSort` needs. -/
+/-- `lexLe` is total — the hypothesis `List.pairwise_insertionSort` needs. -/
 theorem lexLe_total (a b : Int × Int) : (lexLe a b || lexLe b a) = true := by
   simp only [Bool.or_eq_true, lexLe_iff]
   omega
@@ -198,6 +199,17 @@ theorem lexLe_antisymm (a b : Int × Int)
   rw [Prod.ext_iff]
   omega
 
+/-- Instances de typeclass pour `lexLe`, pour que `List.pairwise_insertionSort`
+    (qui exige `[Std.Total r] [IsTrans α r]`) synthétise automatiquement. -/
+instance lexLe.isTrans : IsTrans (Int × Int) fun a b => lexLe a b = true :=
+  ⟨fun _ _ _ hab hbc => lexLe_trans _ _ _ hab hbc⟩
+
+instance lexLe.isTotal : Std.Total fun a b : Int × Int => lexLe a b = true :=
+  ⟨fun a b => by
+    have h : (lexLe a b || lexLe b a) = true := lexLe_total a b
+    rw [Bool.or_eq_true_eq_eq_true_or_eq_true] at h
+    exact h⟩
+
 /-! ## Canonical grids -/
 
 /-- A grid in canonical form: lexicographically sorted and duplicate-free.
@@ -206,14 +218,22 @@ def Canonical (g : Grid) : Prop :=
   g.Pairwise (fun a b => lexLe a b = true) ∧ g.Nodup
 
 /-- `sortDedup` always produces a canonical grid: sortedness comes from
-    `pairwise_mergeSort` (using totality and transitivity of `lexLe`) and
+    `pairwise_insertionSort` (using totality and transitivity of `lexLe`) and
     survives `dedup` because `dedup` yields a sublist; freedom from
-    duplicates is `nodup_dedup`. -/
+    duplicates is `nodup_dedup`.
+
+    `insertionSort` (not `mergeSort`) is used in `sortDedup` because the
+    kernel reducer can evaluate `List.insertionSort` under `decide` whereas
+    `List.mergeSort` stays stuck (measured po-2026 c.786). The Mathlib lemma
+    `List.pairwise_insertionSort` is typeclass-based (`[Std.Total r]`
+    `[IsTrans α r]`); we discharge those instances locally from
+    `lexLe_total` and `lexLe_trans`. -/
 theorem canonical_sortDedup (l : List (Int × Int)) : Canonical (sortDedup l) := by
   unfold sortDedup
-  exact ⟨List.Pairwise.sublist (List.dedup_sublist _)
-          (List.pairwise_mergeSort lexLe_trans lexLe_total l),
-        List.nodup_dedup _⟩
+  have hsort : List.Pairwise (fun a b => lexLe a b = true)
+      (List.insertionSort (fun a b => lexLe a b = true) l) :=
+    List.pairwise_insertionSort _ l
+  exact ⟨hsort.sublist (List.dedup_sublist _), List.nodup_dedup _⟩
 
 /-- Filtering preserves canonical form (`filter` yields a sublist). -/
 theorem Canonical.filter {g : Grid} (h : Canonical g) (q : (Int × Int) → Bool) :

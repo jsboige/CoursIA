@@ -103,10 +103,10 @@ def aliveNext (g : Grid) (p : Int × Int) : Bool :=
 def candidates (g : Grid) : List (Int × Int) :=
   g ++ g.flatMap mooreNeighbors
 
-/-- Reflexive closure of `lexLt`: a **total** comparator for `mergeSort`.
+/-- Reflexive closure of `lexLt`: a **total** comparator for `insertionSort`.
     On distinct pairs it decides exactly like `lexLt`; on equal pairs it is
-    `true`. Totality is what `List.pairwise_mergeSort` needs to certify that
-    the output is sorted (see `Conway.Life.GridCanonical`). -/
+    `true`. Totality is what `List.pairwise_insertionSort` needs to certify
+    that the output is sorted (see `Conway.Life.GridCanonical`). -/
 def lexLe (a b : Int × Int) : Bool :=
   lexLt a b || a == b
 
@@ -115,19 +115,30 @@ def lexLe (a b : Int × Int) : Bool :=
     The comparator is the total `lexLe` and deduplication uses Mathlib's
     `List.dedup`, so the canonical-form lemmas (`sortedness`, `Nodup`,
     membership, extensionality) are all derivable — see
-    `Conway.Life.GridCanonical`. The output is the same as with the strict
-    comparator + `eraseDups`: the comparators agree on all distinct pairs,
-    ties are *equal values* (so any tie-breaking yields the same list), and
-    on a sorted list both dedup flavours collapse each run of equal values
-    to a single copy. -/
+    `Conway.Life.GridCanonical`.
+
+    We use `insertionSort` (rather than `mergeSort`) because the kernel
+    reducer — used by `decide` on the `Computation` theorems — can fully
+    evaluate `List.insertionSort`, whereas `List.mergeSort` stays *stuck*
+    (its nested `merge` is opaque to `decide`). Measured po-2026 c.786
+    (per-target isolated `decide` probe): `mergeSort` stuck for BOTH `Nat`
+    and `Int` element types — the blocker is the sort algorithm, not the
+    coordinate type. `insertionSort` reduces under `decide` (verified POC
+    on the `eater1` 7-cell pattern, #8749 INTRINSIC case). This swap keeps
+    `Int × Int` coordinates (no glider/origin statement altered) and yields
+    a byte-identical canonical list — the comparators agree on all distinct
+    pairs and ties are *equal values*. -/
 def sortDedup (l : List (Int × Int)) : List (Int × Int) :=
-  (l.mergeSort lexLe).dedup
+  -- `insertionSort` (Mathlib) takes a Prop comparator; Lean core `mergeSort`
+  -- takes a Bool comparator. We lift `lexLe : → Bool` to `→ Prop` via
+  -- `= true` so the two comparators decide identically.
+  (List.insertionSort (fun a b => lexLe a b = true) l).dedup
 
 /-- `sortDedup` preserves membership. -/
 theorem mem_sortDedup {p : Int × Int} {l : List (Int × Int)} :
     p ∈ sortDedup l ↔ p ∈ l := by
   unfold sortDedup
-  rw [List.mem_dedup, List.mem_mergeSort]
+  rw [List.mem_dedup, List.mem_insertionSort]
 
 /-- One step of Conway's Game of Life (B3/S23 rule). -/
 def step (g : Grid) : Grid :=
