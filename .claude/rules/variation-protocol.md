@@ -14,6 +14,8 @@ Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>
 
 Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard`.
 
+**Forme canonique vs substance (le guard est agnostique à la ponctuation).** La ligne ci-dessus est la **forme canonique** (`—` em-dash, libellés minuscules). Le guard d'enforcement ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml)) matche par **mot-clé** (`Grain:`, `lane`) en casse insensible, après neutralisation de la décoration markdown (`tr -d '*\`'`) — il ne voit **ni** le séparateur (`—` / `·` / virgule) **ni** la casse des libellés (`Lane:` / backticks passent). Ce que G-VAR-2/G-VAR-3 et le coordinateur vérifient est la **substance** (TIER par le litmus, GENRE dans l'énumération §1, `lane` présente) — pas la ponctuation. Un tag existant en variante de présentation n'est **pas** une non-conformité à reformatter : ne pas forcer du churn cosmétique sur un tag valide. (See #8934 tranche (C).)
+
 ### TIER — test objectif, PAS auto-évaluation de valeur
 
 Le TIER se décide par un **test mécanique**, pour couper le gaming (« mon tranche-de-guards est de la *substance* ») :
