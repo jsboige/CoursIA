@@ -290,17 +290,271 @@ def test_forbidden_axiom_fails_both_paths():
     assert r_gate["forbidden"] == ["of_eq_true"]
 
 
-def test_no_declarations_ci_gate_fails_loud():
-    r = _check_with_output([], "", fail_on_sorry=True)
+def test_no_declarations_ci_gate_fails_loud(tmp_path):
+    """CI gate: an empty enumeration the gate cannot explain still fails loud.
+
+    The verdict is unchanged since #8677; only the *reason* is now specific
+    (here: the source file does not exist at all), so a red says which hole it
+    is instead of blaming the parser generically.
+    """
+    r = _check_with_output([], "", fail_on_sorry=True, project_dir=str(tmp_path))
     assert r["success"] is False
-    assert r["error"] == "no_declarations_enumerated"
+    assert r["error"] == "source_not_found"
+    assert r["empty_reason"] == "source_not_found"
     assert r["enumerated"] is False
 
 
-def test_no_declarations_prover_path_stays_green():
-    r = _check_with_output([], "", fail_on_sorry=False)
+def test_no_declarations_prover_path_stays_green(tmp_path):
+    r = _check_with_output([], "", fail_on_sorry=False, project_dir=str(tmp_path))
     assert r["success"] is True
     assert r["enumerated"] is False
+    assert r["empty_reason"] == "source_not_found"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Empty enumeration: five causes, ONE pass (ai-01 c.63, #8677 / #8782)
+#
+# ``_enumerate_module_declarations`` returns ``[]`` both when the gate CANNOT
+# RUN and when the module GENUINELY DECLARES NOTHING. Merging them into a single
+# ``no_declarations_enumerated`` failure is what forced ``target-modules`` to be
+# hand-curated (5 of 14 modules for knot, 2 of 26 for conway) instead of a
+# lakefile glob -- an aggregator like ``Knots.lean`` or ``Conway.lean`` made the
+# whole gate red. These tests pin each cause to its verdict.
+#
+# Nothing is mocked below: every empty-enumeration case returns before the
+# ``lake env lean`` call, so the real enumerator, the real classifier and the
+# real branch run against a real fixture on disk. A mock here would prove the
+# mock.
+# ──────────────────────────────────────────────────────────────────────────
+
+def _lake_fixture(tmp_path: Path, module: str, src: str) -> Path:
+    """Write ``src`` as ``module`` inside a minimal lake root, return the root.
+
+    The ``lakefile.lean`` makes ``_has_lakefile`` true so ``check_axioms`` does
+    not re-root upward out of the fixture.
+    """
+    (tmp_path / "lakefile.lean").write_text("-- fixture\n", encoding="utf-8")
+    dest = tmp_path / (module.replace(".", "/") + ".lean")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(src, encoding="utf-8")
+    return tmp_path
+
+
+def _check_real(tmp_path: Path, module: str, src: str, *, fail_on_sorry: bool):
+    root = _lake_fixture(tmp_path, module, src)
+    return LeanVerifier(str(root)).check_axioms(module, fail_on_sorry=fail_on_sorry)
+
+
+@pytest.mark.parametrize("fail_on_sorry", [True, False])
+def test_declaration_free_aggregator_passes(tmp_path, fail_on_sorry):
+    """A root aggregator (imports + docstring, zero declarations) is a PASS.
+
+    This is the shape ``code-style.md`` already names as legitimate -- "les
+    *root aggregators* (ex. ``CooperativeGames.lean``, ``Grothendieck.lean``,
+    ``Finiteness.lean`` -- imports-only + docstring FR, 0 declaration) sont
+    FR-only *by design*". With zero declarations there is nothing that could
+    depend on ``sorryAx`` and no axiom to whitelist: the module is vacuously
+    clean, and failing it was a false red on both paths.
+    """
+    src = (
+        "import Grothendieck.SheafBasics\n"
+        "import Grothendieck.SieveOps\n"
+        "\n"
+        "/-!\n"
+        "# Grothendieck : point d'entree du lake\n"
+        "Ce module n'expose que des imports.\n"
+        "-/\n"
+    )
+    r = _check_real(tmp_path, "Grothendieck", src, fail_on_sorry=fail_on_sorry)
+    assert r["success"] is True
+    assert r["empty_reason"] == "declaration_free_module"
+    assert r["enumerated"] is False
+    assert r["has_sorry"] is False
+    assert r["forbidden"] == []
+
+
+def test_mathlib_cartography_module_passes(tmp_path):
+    """``#check @...`` is a *command*, not a declaration (``Grothendieck/MathlibMap.lean``).
+
+    A cartography module maps what Mathlib already provides; it declares
+    nothing of its own, so ``#print axioms`` has no name to ask about. Same
+    shape in the already-wired ``conway_lean/Conway/MathlibMap.lean``.
+    """
+    src = (
+        "import Mathlib.CategoryTheory.Sites.Sieves\n"
+        "\n"
+        "/-- Un index vivant de ce que Mathlib 4 fournit. -/\n"
+        "#check @CategoryTheory.Sieve.pullback\n"
+        "#check @CategoryTheory.Sieve.pullback_inter\n"
+    )
+    r = _check_real(tmp_path, "Grothendieck.MathlibMap", src, fail_on_sorry=True)
+    assert r["success"] is True
+    assert r["empty_reason"] == "declaration_free_module"
+
+
+def test_prose_module_with_only_bindings_passes(tmp_path):
+    """``namespace`` / ``open`` / ``variable`` bind names but declare nothing.
+
+    The shape of ``Grothendieck/DirectImage.lean``: prose plus the binders that
+    let the prose typecheck, bridging to Mathlib's own ``pushforward`` /
+    ``pullback``. Zero declarations, therefore zero axioms to audit.
+    """
+    src = (
+        "import Mathlib.CategoryTheory.Sites.Sheaf\n"
+        "\n"
+        "namespace Grothendieck\n"
+        "open CategoryTheory\n"
+        "variable {C D : Type*} [Category C] [Category D]\n"
+        "end Grothendieck\n"
+    )
+    r = _check_real(tmp_path, "Grothendieck.DirectImage", src, fail_on_sorry=True)
+    assert r["success"] is True
+    assert r["empty_reason"] == "declaration_free_module"
+
+
+def test_declaration_keyword_inside_comment_stays_declaration_free(tmp_path):
+    """Prose beginning with ``theorem`` must not fake a declaration (#8722 dual).
+
+    #8722 fixed the enumerator so docstring prose at column 0 is no longer
+    enumerated as a phantom declaration. The classifier reuses the same
+    comment-stripped text and the same ``_DECL_HEAD_RE``, so a module whose only
+    ``theorem``-looking lines are prose is genuinely declaration-free -- it must
+    not be re-routed to a fail-loud reason by a second, sloppier parser.
+    """
+    src = (
+        "import Knots.Basic\n"
+        "/-!\n"
+        "theorem statement working for *any* KnotDiagram is deferred here.\n"
+        "def the reader should consult Knots.Basic instead.\n"
+        "-/\n"
+    )
+    r = _check_real(tmp_path, "Knots", src, fail_on_sorry=True)
+    assert r["success"] is True
+    assert r["empty_reason"] == "declaration_free_module"
+
+
+_OPEN_EXAMPLE = (
+    "import Mathlib.Tactic\n"
+    "/-- Un exemple laisse ouvert. -/\n"
+    "example : True := by sorry\n"
+)
+
+
+def test_sorry_without_declaration_fails_the_ci_gate(tmp_path):
+    """A live ``sorry`` with no declaration must NOT ride the pass out.
+
+    ``example`` is deliberately excluded from enumeration (it may be anonymous),
+    so ``example : True := by sorry`` yields an empty enumeration -- and
+    ``#print axioms`` can never see it either, since it defines no constant.
+    Letting it through the declaration-free pass would be a green over an
+    unexamined ``sorry``, the exact failure #8677 exists to prevent. This is
+    what makes "the declaration-free pass cannot mask a sorry" an enforced
+    invariant rather than an argument.
+    """
+    r = _check_real(tmp_path, "Knots.Scratch", _OPEN_EXAMPLE, fail_on_sorry=True)
+    assert r["success"] is False
+    assert r["error"] == "sorry_without_declaration"
+    assert r["empty_reason"] == "sorry_without_declaration"
+    assert r["has_sorry"] is True
+
+
+def test_sorry_without_declaration_prover_path_reports_but_stays_green(tmp_path):
+    """Same source, prover path: flagged, not fatal -- like ``sorryAx`` is.
+
+    The module already draws this line for the axiom output (a ``sorryAx`` sets
+    ``has_sorry`` and fails only under ``fail_on_sorry``); a textual sorry in a
+    declaration-free source is reported through the *same* field so the two
+    cannot diverge. Level 2 tracks sorry textually, so Level 3 stays green.
+    """
+    r = _check_real(tmp_path, "Knots.Scratch", _OPEN_EXAMPLE, fail_on_sorry=False)
+    assert r["success"] is True
+    assert r["has_sorry"] is True
+    assert r["empty_reason"] == "sorry_without_declaration"
+
+
+def test_sorry_in_docstring_prose_does_not_trip_the_guard(tmp_path):
+    """The guard runs on comment-STRIPPED text, so prose about sorries is fine.
+
+    Live shape, measured 2026-07-30: all three declaration-free Grothendieck
+    modules contain the token ``sorry`` -- inside ``Tous les `sorry`s elimines a
+    la creation``. A guard that read raw source would fail exactly the modules
+    this change exists to unblock, and would do it while quoting their own
+    claim of cleanliness back at them.
+    """
+    src = (
+        "import Grothendieck.SheafBasics\n"
+        "/-!\n"
+        "# Cartographie\n"
+        "Epic #1646. Tous les `sorry`s elimines a la creation.\n"
+        "-/\n"
+    )
+    r = _check_real(tmp_path, "Grothendieck.SchemesTour", src, fail_on_sorry=True)
+    assert r["success"] is True
+    assert r["empty_reason"] == "declaration_free_module"
+
+
+def test_all_private_module_fails_loud_with_its_own_reason(tmp_path):
+    """All-private is NOT declaration-free -- it is a genuine blind spot.
+
+    ``private`` names are skipped by the enumerator (#8722: Lean mangles them to
+    ``_private.<Module>.<hash>.<name>``, so ``#print axioms`` answers ``unknown
+    constant``). A module whose declarations are *all* private therefore
+    enumerates empty while having real content -- and ``private`` being
+    module-scoped, the public declarations that would reach those axioms
+    transitively cannot live outside this module. The gate genuinely cannot see
+    them, so it must say so rather than pass.
+    """
+    src = (
+        "namespace Knots\n"
+        "private theorem mem_set_fwd : True := trivial\n"
+        "private noncomputable def hidden : Nat := 0\n"
+        "end Knots\n"
+    )
+    r = _check_real(tmp_path, "Knots.Invariant", src, fail_on_sorry=True)
+    assert r["success"] is False
+    assert r["error"] == "all_private_declarations"
+    assert r["enumerated"] is False
+
+
+def test_all_private_module_prover_path_stays_green(tmp_path):
+    """The prover path keeps its historical green on a gate-cannot-run reason.
+
+    Level 2 tracks sorry textually, so Level 3 must not flip red on a blind
+    spot (#8677). Only the CI gate (``fail_on_sorry=True``) fails loud here --
+    unlike ``sorry_without_declaration`` above, which fails on both paths
+    because it is a live defect rather than a blind spot.
+    """
+    src = "private theorem hidden : True := trivial\n"
+    r = _check_real(tmp_path, "Knots.Invariant", src, fail_on_sorry=False)
+    assert r["success"] is True
+    assert r["empty_reason"] == "all_private_declarations"
+
+
+def test_parse_gap_is_the_drift_alarm(tmp_path):
+    """``no_declarations_enumerated`` now means "the two parsers disagreed".
+
+    The classifier matches on ``_DECL_HEAD_RE`` -- the *same* regex the
+    enumerator uses -- so while they agree this verdict is unreachable: any
+    source with a non-private declaration head makes the enumerator return that
+    declaration, never an empty list. That is the point. The branch is the alarm
+    for the day someone adds a filter to one and not the other; it stays
+    fail-loud so the drift surfaces as a red rather than as a silent green.
+
+    Asserted directly on the classifier, since no fixture can reach it through
+    ``check_axioms`` today -- claiming otherwise would need a mock, and a mocked
+    disagreement proves nothing about the real one.
+    """
+    root = _lake_fixture(
+        tmp_path,
+        "Knots.Mixed",
+        "private theorem hidden : True := trivial\ntheorem visible : True := trivial\n",
+    )
+    # Precondition: with both parsers in agreement, this source enumerates.
+    assert _enumerate_module_declarations(root, "Knots.Mixed") == ["visible"]
+    # The classifier's verdict IF it were ever reached on such a source.
+    assert lean_server._classify_empty_enumeration(root, "Knots.Mixed") == (
+        "no_declarations_enumerated"
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────

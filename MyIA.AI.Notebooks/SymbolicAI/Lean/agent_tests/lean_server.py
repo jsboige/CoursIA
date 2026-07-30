@@ -262,6 +262,104 @@ def _enumerate_module_declarations(project: Path, module_name: str) -> List[str]
     return decls
 
 
+# Reasons an enumeration can come back empty. Only ONE of them means "this
+# module has nothing to audit"; the others mean "the gate could not run", which
+# must stay fail-loud (#8677). Conflating them is what capped axiom coverage at
+# 2 lakes (see ``_classify_empty_enumeration`` below).
+EMPTY_SOURCE_NOT_FOUND = "source_not_found"
+EMPTY_DECLARATION_FREE = "declaration_free_module"
+EMPTY_ALL_PRIVATE = "all_private_declarations"
+EMPTY_SORRY_NO_DECLARATION = "sorry_without_declaration"
+EMPTY_PARSE_GAP = "no_declarations_enumerated"
+
+# A bare ``sorry`` token in comment-stripped source. Same notion as
+# ``prover.lean_utils.count_real_sorries`` (strip comments, then match the bare
+# word), inlined as a regex rather than imported: the CI gate loads this module
+# on a bare ``setup-python`` runner and ``_get_strip_lean_comments`` is the one
+# thing deliberately reached by path (see its comment). Two chars of prose --
+# ``sorry`` inside ``/-- Tous les `sorry`s elimines -/`` -- must not trip it,
+# which is why the check runs on the STRIPPED text.
+_BARE_SORRY_RE = re.compile(r"(?<![A-Za-z0-9_])sorry(?![A-Za-z0-9_])")
+
+
+def _classify_empty_enumeration(project: Path, module_name: str) -> str:
+    """Say WHY ``_enumerate_module_declarations`` returned an empty list.
+
+    ``#print axioms`` needs declaration names, so a module that yields none is
+    unauditable -- but "unauditable" covers two opposite situations that the
+    single ``no_declarations_enumerated`` error used to merge:
+
+    * **The gate could not run.** Source missing, or the parser walked a source
+      that visibly declares things and extracted nothing. Failing loud here is
+      the whole point of #8677: a silent green on a parse gap is worse than a
+      red, because it is indistinguishable from a real audit.
+    * **The module declares nothing, by design.** Root aggregators
+      (imports-only + docstring, the shape ``code-style.md`` already describes
+      for ``Grothendieck.lean`` / ``CooperativeGames.lean`` / ``Finiteness.lean``),
+      Mathlib cartography modules whose body is ``#check @...`` *commands*, and
+      prose/exposition modules that only bind ``variable``. There is no
+      declaration, therefore nothing that could depend on ``sorryAx`` and no
+      axiom to whitelist. Failing on these is a false red.
+
+    Measured impact of the conflation (ai-01, 2026-07-30, firsthand): of the 33
+    modules in ``grothendieck_lean``, 30 audit clean (164 declarations,
+    ``Classical.choice`` + ``propext`` + ``Quot.sound``, zero forbidden, zero
+    ``sorryAx``) and 3 -- ``DirectImage``, ``MathlibMap``, ``SchemesTour`` --
+    fail for having no declarations at all. The same shape exists in BOTH
+    already-wired lakes (``knot_lean/Knots.lean``, ``conway_lean/Conway.lean``,
+    ``conway_lean/Conway/MathlibMap.lean``), which is precisely why their
+    ``target-modules`` inputs are hand-curated lists (5 of 14 modules for knot,
+    2 for conway) rather than the lakefile glob. #8782 calls that gap a "vert
+    hors-cible" and leaves the choice of what to gate as a coordinator design
+    call -- but the choice was not really open: pointing the gate at a whole
+    lake was impossible while declaration-free modules made it red.
+
+    Distinguishing the cases reuses ``_DECL_HEAD_RE`` -- the same regex the
+    enumerator matches on -- rather than a second keyword list, so the two
+    notions of "is a declaration" cannot drift apart. ``EMPTY_PARSE_GAP`` is
+    therefore unreachable while the two agree, and that is its purpose: it is
+    the alarm that fires the day they stop agreeing.
+
+    Returns one of ``EMPTY_SOURCE_NOT_FOUND``, ``EMPTY_DECLARATION_FREE``,
+    ``EMPTY_ALL_PRIVATE``, ``EMPTY_SORRY_NO_DECLARATION``, ``EMPTY_PARSE_GAP``.
+    """
+    src = _module_source_path(project, module_name)
+    if src is None:
+        return EMPTY_SOURCE_NOT_FOUND
+    text = _get_strip_lean_comments()(
+        src.read_text(encoding="utf-8", errors="replace")
+    )
+    heads = [
+        m for m in (_DECL_HEAD_RE.match(line) for line in text.splitlines()) if m
+    ]
+    if not heads:
+        if _BARE_SORRY_RE.search(text):
+            # No declaration, yet a live ``sorry`` in the source. The only shapes
+            # that produce this are the ones the enumerator deliberately excludes
+            # because they are anonymous: ``example : T := by sorry``, and macro
+            # or ``#eval``-style bodies. ``#print axioms`` can never see them --
+            # they define no constant for anything to depend on -- so passing
+            # here would be a green over an unexamined ``sorry``, which is the
+            # exact failure #8677 exists to prevent. Fail loud instead: the pass
+            # below is then not merely *argued* to be sorry-proof, it is fenced.
+            # (Live check, 2026-07-30: the three declaration-free Grothendieck
+            # modules carry ``sorry`` only inside docstring prose -- "Tous les
+            # `sorry`s elimines a la creation" -- which comment stripping removes
+            # before this test, so none of them trips it.)
+            return EMPTY_SORRY_NO_DECLARATION
+        return EMPTY_DECLARATION_FREE
+    if all("private" in m.group("mods") for m in heads):
+        # Every declaration head was skipped as ``private``. NOT declaration-free:
+        # the module has content, and a private lemma is reachable by the kernel
+        # only through the public declarations that use it -- which, ``private``
+        # being module-scoped, cannot live outside this module. So an all-private
+        # module's axioms are genuinely unreachable by this gate. Kept fail-loud
+        # and named distinctly so the log says which hole it is, instead of
+        # blaming a parser that did its job.
+        return EMPTY_ALL_PRIVATE
+    return EMPTY_PARSE_GAP
+
+
 class LeanVerifier:
     """Verify Lean 4 files using lake build with content-hash caching.
 
@@ -531,6 +629,9 @@ class LeanVerifier:
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
             'fail_on_sorry', 'declarations', 'enumerated', 'raw_output'.
+            When the enumeration comes back empty, 'empty_reason' says which of
+            the four cases it is (see ``_classify_empty_enumeration``); only
+            ``declaration_free_module`` is a pass.
         """
         if whitelist is None:
             whitelist = [
@@ -558,22 +659,44 @@ class LeanVerifier:
 
         declarations = _enumerate_module_declarations(project, module_name)
         if not declarations:
-            # Prover path (fail_on_sorry=False): preserve historical green
-            # behaviour (Level 2 tracks sorry separately) -- do NOT flip Level 3
-            # on a source-parse gap. CI gate path (fail_on_sorry=True): fail
-            # loud so the review gate is never green-blind (#8677).
+            # An empty enumeration is not one situation but two (see
+            # ``_classify_empty_enumeration``): the gate could not run, or the
+            # module genuinely declares nothing. Only the first must fail.
+            empty_reason = _classify_empty_enumeration(project, module_name)
             base = {
                 "axioms": [],
                 "forbidden": [],
                 "whitelist": whitelist,
-                "has_sorry": False,
+                # A sorry found in a source that declares nothing is reported the
+                # same way a ``sorryAx`` in the axiom output is: flagged here,
+                # fatal only under ``fail_on_sorry``. That is what the flag is
+                # named for, and it keeps the prover path's historical green
+                # (Level 2 tracks sorry textually) consistent between the two.
+                "has_sorry": empty_reason == EMPTY_SORRY_NO_DECLARATION,
                 "fail_on_sorry": fail_on_sorry,
                 "declarations": [],
                 "enumerated": False,
+                "empty_reason": empty_reason,
                 "raw_output": "",
             }
+            if empty_reason == EMPTY_DECLARATION_FREE:
+                # Nothing is declared, so nothing can depend on ``sorryAx`` and
+                # there is no axiom to whitelist: the module is vacuously clean
+                # on BOTH paths. This cannot mask a sorry -- the classifier
+                # already routed any source carrying a live ``sorry`` token to
+                # ``EMPTY_SORRY_NO_DECLARATION``, so reaching here means the
+                # source has neither declarations nor sorries. It is the one
+                # relaxation that does not dent the #8677 ratchet, and it is
+                # what lets ``target-modules`` be a lakefile glob instead of a
+                # hand-curated list that silently omits aggregators.
+                return {**base, "success": True}
+            # Prover path (fail_on_sorry=False): preserve historical green
+            # behaviour (Level 2 tracks sorry separately) -- do NOT flip Level 3
+            # on a source-parse gap. CI gate path (fail_on_sorry=True): fail
+            # loud so the review gate is never green-blind (#8677). The error is
+            # now the SPECIFIC reason, so a red says which hole it is.
             if fail_on_sorry:
-                return {**base, "success": False, "error": "no_declarations_enumerated"}
+                return {**base, "success": False, "error": empty_reason}
             return {**base, "success": True}
 
         cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
