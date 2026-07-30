@@ -114,3 +114,110 @@ def test_replay_flags_only_second_light_per_lane():
 
 def test_replay_empty():
     assert vlc.replay([]) == []
+
+
+# --- re-qualification (#8970) ----------------------------------------------
+# Declared LIGHT, coordinator re-qualified MED at merge. The label is the final
+# word on the tier; the declared tag stays in the body (author intent preserved).
+LABEL_REQUAL_MED = [{"name": "grain-requalified:MED"}]
+LABEL_REQUAL_LIGHT = [{"name": "grain-requalified:LIGHT"}]
+
+
+def test_effective_grain_label_overrides_tier():
+    g = vlc.effective_grain({"body": BODY_EMDASH, "labels": LABEL_REQUAL_MED})
+    assert g["tier"] == "MED"
+    assert g["declared_tier"] == "LIGHT"
+    assert g["lane"] == "myia-po-2023:CoursIA"
+
+
+def test_effective_grain_no_label_keeps_declared():
+    g = vlc.effective_grain({"body": BODY_EMDASH})
+    assert g["tier"] == "LIGHT"
+    assert g["declared_tier"] == "LIGHT"
+
+
+def test_label_names_accepts_strings_and_dicts():
+    # gh yields [{"name": ...}]; synthetic data may carry bare strings.
+    assert vlc._label_names({"labels": [{"name": "a"}, {"name": "b"}]}) == ["a", "b"]
+    assert vlc._label_names({"labels": ["a", "b"]}) == ["a", "b"]
+    assert vlc._label_names({}) == []
+
+
+def test_requalified_tier_case_insensitive():
+    assert vlc._requalified_tier(["grain-requalified:med"]) == "MED"
+    assert vlc._requalified_tier(["other", "grain-requalified:LIGHT"]) == "LIGHT"
+    assert vlc._requalified_tier([]) is None
+    # An unrelated label must not be misread as a re-qualification.
+    assert vlc._requalified_tier(["variation-light-cap-reached"]) is None
+
+
+def test_requalified_med_does_not_spend_budget():
+    # #8970: a prior merged declared-LIGHT re-qualified MED is NOT a LIGHT, so it
+    # did not spend the budget -> a new LIGHT of the lane is NOT cap-reached.
+    prs = [
+        {"number": 8930, "body": BODY_EMDASH, "mergedAt": "2026-07-30T10:00:00Z",
+         "labels": LABEL_REQUAL_MED},
+    ]
+    status = vlc.light_cap_status(prs, "myia-po-2023:CoursIA")
+    assert status["cap_reached"] is False
+    assert status["consumed_by"] is None
+
+
+def test_requalified_med_spared_in_replay():
+    # #8970 acceptance: #8930 (declared LIGHT, re-qualified MED) is effective MED
+    # -> it is NOT in the LIGHT replay set, so it is neither flagged nor the
+    # budget owner. #8951 is the real 1st (and only) effective LIGHT -> OK.
+    prs = [
+        {"number": 8930, "body": BODY_EMDASH, "mergedAt": "2026-07-30T10:00:00Z",
+         "labels": LABEL_REQUAL_MED},
+        {"number": 8951, "body": BODY_EMDASH, "mergedAt": "2026-07-30T13:32:00Z"},
+    ]
+    rows = vlc.replay(prs)
+    assert [r["number"] for r in rows] == [8951]
+    assert rows[0]["cap_reached"] is False
+
+
+def test_no_regression_first_light_per_lane():
+    # #8970 acceptance: #8913/#8909/#8910 (1st LIGHT of each lane) stay unflagged
+    # beside a re-qualified PR; only #8951 (real 2nd po-2023 LIGHT) is flagged.
+    prs = [
+        {"number": 8910, "body": BODY_HYPHEN_BOLD, "mergedAt": "2026-07-30T02:54:00Z"},
+        {"number": 8909, "body": BODY_EMDASH, "mergedAt": "2026-07-30T03:28:00Z"},
+        {"number": 8913, "body": BODY_MIDDOT_BOLD_LANE, "mergedAt": "2026-07-30T03:47:00Z"},
+        {"number": 8930, "body": BODY_EMDASH, "mergedAt": "2026-07-30T10:00:00Z",
+         "labels": LABEL_REQUAL_MED},
+        {"number": 8951, "body": BODY_EMDASH, "mergedAt": "2026-07-30T13:32:00Z"},
+    ]
+    rows = vlc.replay(prs)
+    flagged = [r["number"] for r in rows if r["cap_reached"]]
+    assert flagged == [8951]
+    assert {r["number"] for r in rows if not r["cap_reached"]} == {8910, 8909, 8913}
+    assert 8930 not in {r["number"] for r in rows}  # spared: effective MED
+
+
+def test_downqualification_light_spends_budget():
+    # Symmetric case (#8970): a declared DEEP down-qualified to LIGHT IS an
+    # effective LIGHT -> it spends the budget. A later LIGHT is cap-reached.
+    prs = [
+        {"number": 700, "body": "Grain: DEEP/lean -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-07-30T08:00:00Z", "labels": LABEL_REQUAL_LIGHT},
+    ]
+    status = vlc.light_cap_status(prs, "myia-po-2023:CoursIA")
+    assert status["cap_reached"] is True
+    assert status["consumed_by"]["number"] == 700
+
+
+def test_downqualification_light_replayed_and_flaggable():
+    # A down-qualified LIGHT enters the replay set and can itself be flagged if
+    # a same-lane effective LIGHT merged earlier. declared_tier is carried.
+    prs = [
+        {"number": 9, "body": BODY_EMDASH, "mergedAt": "2026-07-30T03:28:00Z"},
+        {"number": 700, "body": "Grain: DEEP/lean -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-07-30T11:00:00Z", "labels": LABEL_REQUAL_LIGHT},
+    ]
+    rows = vlc.replay(prs)
+    assert [r["number"] for r in rows] == [9, 700]
+    flagged = [r for r in rows if r["cap_reached"]]
+    assert [r["number"] for r in flagged] == [700]
+    assert flagged[0]["consumed_by"] == 9
+    assert rows[1]["declared_tier"] == "DEEP"

@@ -257,8 +257,13 @@ jobs:
           # est OUVERTE (le job tourne sur opened/edited/synchronize/reopened,
           # pas sur le merge) donc elle n'est PAS dans ce set -- c'est ce qui
           # rend la 2e LIGHT detectable.
+          # `labels` inclus (#8970) : un PR re-qualifie MED au merge porte le label
+          # `grain-requalified:MED` -- le compteur le lit comme tier EFFECTIF et
+          # ne le compte plus comme LIGHT depensier (symetrique pour la
+          # down-qualification LIGHT). Sans cout d'API supplementaire (un seul
+          # champ dans le meme appel `gh pr list`).
           gh pr list --state merged --search "merged:$TODAY" \
-            --json number,body,mergedAt > /tmp/merged.json 2>/dev/null || true
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
 
           # Le body circule par fichier : printf '%s' ne reinterprete rien
           # (newlines, quotes, $), contrairement a un passage en arg CLI.

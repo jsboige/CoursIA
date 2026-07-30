@@ -91,6 +91,72 @@ def parse_grain(body: str) -> dict | None:
     }
 
 
+# --- re-qualification (#8970) ----------------------------------------------
+#
+# The DECLARED `Grain:` tag is not self-executing: the coordinator re-qualifies
+# it at merge (e.g. #8930 was declared LIGHT/tooling, then merged MED after the
+# diff revealed 43 lines of shell reasoning -- not scan-generable). That final
+# decision lives in a machine-readable GitHub label, `grain-requalified:<TIER>`,
+# applied at merge; the body is left intact (author intent preserved).
+#
+# This organ was flagging #8930 as CAP-REACHED on its declared LIGHT -- it
+# reproduced the WITHDRAWN decision (1 FP of 2 flags on the 2026-07-30 replay,
+# #8970). The label is the final word on the tier: a re-qualified-MED does not
+# spend the LIGHT budget; symmetrically, a re-qualified-LIGHT (down-qualification
+# of a declared DEEP) feeds the budget IN.
+
+# `grain-requalified:MED` / `grain-requalified:LIGHT` -- TIER captured, any case.
+_REQUALIFIED_RE = re.compile(r"^grain-requalified:([A-Za-z]+)$")
+
+
+def _label_names(pr: dict) -> list[str]:
+    """Normalize a PR's `labels` field.
+
+    `gh pr list --json ...,labels` yields a list of ``{"name": ...}`` objects;
+    synthetic replay data may carry bare strings. Both are accepted.
+    """
+    raw = pr.get("labels") or []
+    names: list[str] = []
+    for lb in raw:
+        if isinstance(lb, dict):
+            names.append(lb.get("name", ""))
+        else:
+            names.append(str(lb))
+    return names
+
+
+def _requalified_tier(labels: list[str]) -> str | None:
+    """Return the re-qualified TIER from a `grain-requalified:<TIER>` label.
+
+    None when no such label is present (the common case -- most PRs are not
+    re-qualified). Upper-cased to match `parse_grain`'s tier normalization.
+    """
+    for name in labels:
+        m = _REQUALIFIED_RE.match(name.strip())
+        if m:
+            return m.group(1).upper()
+    return None
+
+
+def effective_grain(pr: dict) -> dict | None:
+    """Declared `Grain:` tag, with the tier overridden by any re-qualification.
+
+    Returns ``{tier, declared_tier, lane}`` where ``tier`` is the EFFECTIVE tier
+    (re-qualified one wins, #8970) and ``declared_tier`` is what the body says.
+    None when the body carries no `Grain:` tag at all. Lane is never affected by
+    re-qualification (only the tier moves).
+    """
+    g = parse_grain(pr.get("body", ""))
+    if not g:
+        return None
+    rq = _requalified_tier(_label_names(pr))
+    return {
+        "tier": rq if rq else g["tier"],
+        "declared_tier": g["tier"],
+        "lane": g["lane"],
+    }
+
+
 # --- cap logic -------------------------------------------------------------
 
 def light_cap_status(merged_prs: list[dict], target_lane: str) -> dict:
@@ -105,7 +171,10 @@ def light_cap_status(merged_prs: list[dict], target_lane: str) -> dict:
     """
     earlier_lights = []
     for pr in merged_prs:
-        g = parse_grain(pr.get("body", ""))
+        # EFFECTIVE tier (#8970): a PR re-qualified MED at merge (label
+        # `grain-requalified:MED`) is not a LIGHT -- it did not spend the budget.
+        # Symmetrically, a down-qualified LIGHT (declared DEEP) DOES spend it.
+        g = effective_grain(pr)
         if not g or g["tier"] != "LIGHT" or g["lane"] != target_lane:
             continue
         earlier_lights.append(pr)
@@ -132,10 +201,14 @@ def replay(merged_prs: list[dict]) -> list[dict]:
     """
     lights = []
     for pr in merged_prs:
-        g = parse_grain(pr.get("body", ""))
+        # EFFECTIVE tier (#8970): re-qualification label overrides the declared
+        # one, so a re-qualified-MED is not replayed as a LIGHT (spared) and a
+        # down-qualified LIGHT (declared DEEP) enters the set.
+        g = effective_grain(pr)
         if not g or g["tier"] != "LIGHT" or not g["lane"]:
             continue
-        lights.append({**pr, "_tier": g["tier"], "_lane": g["lane"]})
+        lights.append({**pr, "_tier": g["tier"], "_declared": g["declared_tier"],
+                       "_lane": g["lane"]})
     lights.sort(key=lambda p: p.get("mergedAt", ""))
     # one pass: per lane, the first seen (chronologically) is the budget owner
     seen_lane: dict[str, int] = {}
@@ -148,6 +221,7 @@ def replay(merged_prs: list[dict]) -> list[dict]:
             "number": pr.get("number"),
             "lane": lane,
             "mergedAt": pr.get("mergedAt"),
+            "declared_tier": pr.get("_declared"),
             "cap_reached": cap,
             "consumed_by": owner,
         })
