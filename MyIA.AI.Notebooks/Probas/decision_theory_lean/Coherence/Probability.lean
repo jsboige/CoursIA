@@ -60,6 +60,29 @@ def SingleCoherent (q : Price Ω) : Prop := ∀ A s, ¬ IsSingleDutchBook q A s
 def ProbBounds (q : Price Ω) : Prop :=
   (∀ A, (0:ℝ) ≤ q A) ∧ (∀ A, q A ≤ 1) ∧ q ∅ = 0 ∧ q (Finset.univ : Event Ω) = 1
 
+/-! ### Accès nommés aux quatre bornes
+
+`ProbBounds` est un `def : Prop` (pas une `structure`) : ses quatre conjonctions
+n'exposent donc pas de projection auto-générée. On les isole ici comme lemmes
+nommés (les quatre bornes sont déjà énoncées en prose dans la docstring ci-dessus)
+et on les consomme dans `single_coherent_iff_prob_bounds` plutôt que de
+décomposer la conjonction à la main (`obtain ⟨hnn, hn1, h0, hu⟩ := hb`). -/
+section
+
+/-- Non-négativité : sous `ProbBounds`, `q A ≥ 0` pour tout événement. -/
+lemma probBounds_nonneg (q : Price Ω) (hb : ProbBounds q) (A : Event Ω) : (0:ℝ) ≤ q A := hb.1 A
+
+/-- Majoration par 1 : sous `ProbBounds`, `q A ≤ 1` pour tout événement. -/
+lemma probBounds_le_one (q : Price Ω) (hb : ProbBounds q) (A : Event Ω) : q A ≤ 1 := hb.2.1 A
+
+/-- Normalisation du vide : sous `ProbBounds`, `q ∅ = 0`. -/
+lemma probBounds_empty (q : Price Ω) (hb : ProbBounds q) : q (∅ : Event Ω) = 0 := hb.2.2.1
+
+/-- Normalisation du plein : sous `ProbBounds`, `q univ = 1`. -/
+lemma probBounds_univ (q : Price Ω) (hb : ProbBounds q) : q (Finset.univ : Event Ω) = 1 := hb.2.2.2
+
+end
+
 /-! ## Lemmes : chaque axiome violé admet un Dutch Book mono-livret (witness explicite) -/
 
 private lemma ind_nonneg (A : Event Ω) (ω : Ω) : (0:ℝ) ≤ ind A ω := by
@@ -150,7 +173,6 @@ theorem single_coherent_iff_prob_bounds (q : Price Ω) [Nonempty Ω] :
       · obtain ⟨s, hdb⟩ := single_dutch_book_of_high q (Finset.univ : Event Ω) hgt
         exact absurd hdb (hsc _ s)
   · -- ProbBounds ⟹ SingleCoherent
-    obtain ⟨hnn, hn1, h0, hu⟩ := hb
     intro A s hdb
     obtain ⟨w⟩ := ‹Nonempty Ω›
     rcases lt_trichotomy s 0 with hslt | hs0 | hsgt
@@ -162,7 +184,7 @@ theorem single_coherent_iff_prob_bounds (q : Price Ω) [Nonempty Ω] :
       by_cases hU : A = (Finset.univ : Event Ω)
       · -- A = univ : 𝟙_A(w) = 1, q A = 1 ⟹ 1 < 1, absurde
         have hiv : ind A w = 1 := by rw [hU]; unfold ind; simp
-        have hqv : q A = 1 := by rw [hU]; exact hu
+        have hqv : q A = 1 := by rw [hU]; exact probBounds_univ q hb
         linarith [hind w]
       · -- A ≠ univ : ∃ ω ∉ A, 𝟙_A = 0 ⟹ q A < 0, nie q A ≥ 0
         obtain ⟨ω, hω⟩ : ∃ ω, ω ∉ A := by
@@ -170,7 +192,7 @@ theorem single_coherent_iff_prob_bounds (q : Price Ω) [Nonempty Ω] :
           simp only [not_exists, Classical.not_not] at hnex
           exact absurd ((Finset.eq_univ_iff_forall).mpr hnex) hU
         have hiv : ind A ω = 0 := by unfold ind; rw [if_neg hω]
-        linarith [hind ω, hnn A]
+        linarith [hind ω, probBounds_nonneg q hb A]
     · -- s = 0 : ticketGain = 0, jamais < 0
       have h0gain : ticketGain q A 0 w = 0 := by simp [ticketGain]
       have h := hdb w
@@ -187,11 +209,11 @@ theorem single_coherent_iff_prob_bounds (q : Price Ω) [Nonempty Ω] :
         obtain ⟨ω, hω⟩ := hA
         have hiv : ind A ω = 1 := by unfold ind; rw [if_pos hω]
         have h1lt : (1:ℝ) < q A := by rw [← hiv]; exact hind ω
-        linarith [hn1 A]
+        linarith [probBounds_le_one q hb A]
       · -- A = ∅ : 𝟙_A(w) = 0, q A = q ∅ = 0 ⟹ 0 < 0, absurde
         rw [Finset.not_nonempty_iff_eq_empty] at hA
         have hiv : ind A w = 0 := by rw [hA]; unfold ind; simp
-        have hqv : q A = 0 := by rw [hA]; exact h0
+        have hqv : q A = 0 := by rw [hA]; exact probBounds_empty q hb
         linarith [hind w]
 
 /-! ## Réciproque constructive : une vraie probabilité est cohérente
