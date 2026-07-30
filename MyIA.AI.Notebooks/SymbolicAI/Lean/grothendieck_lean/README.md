@@ -5,10 +5,10 @@ Alexandre Grothendieck (1928-2014).
 ## État
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
-- **Sorry** : **0 sorry, 0 axiome** — les 32 modules leaf sont complets à la création (Parties 1-32 mergées)
-- **Build** : `lake build Grothendieck` — compile 32 modules leaf (~10783 lignes FR+EN, vérifié post-c.745 #7856)
+- **Sorry** : **0 sorry, 0 axiome** — les 33 modules leaf sont complets à la création
+- **Build** : `lake build Grothendieck` — compile 33 modules leaf (11 206 lignes FR+EN, + 208 pour l'umbrella = **11 414 au total**, mesuré 2026-07-30)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **Couverture i18n (EPIC #4980 ratifiée 2026-07-04)** : couverture bilingue FR/EN complète — **33 fichiers FR** (1 umbrella `Grothendieck.lean` bilingue inline FR+EN + **32 modules leaf** FR canonique) + **32 siblings `_en.lean`** sur `main` (les 32 modules leaf uniquement ; l'umbrella est bilingue inline). Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN pour les leafs), **tous les 32 modules leaf** sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). L'umbrella `Grothendieck.lean` est bilingue inline (FR canonique d'abord, EN en miroir, cf doctring final du fichier) — c'est *by design*, pas un gap i18n. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
+- **Couverture i18n (EPIC #4980 ratifiée 2026-07-04)** : couverture bilingue FR/EN complète — **34 fichiers FR** (1 umbrella `Grothendieck.lean` bilingue inline FR+EN + **33 modules leaf** FR canonique) + **33 siblings `_en.lean`** sur `main` (les 33 modules leaf uniquement ; l'umbrella est bilingue inline). Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN pour les leafs), **tous les 33 modules leaf** sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). L'umbrella `Grothendieck.lean` est bilingue inline (FR canonique d'abord, EN en miroir, cf doctring final du fichier) — c'est *by design*, pas un gap i18n. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Objectif
 
@@ -27,11 +27,17 @@ Le but est d'offrir aux apprenants un point d'entrée curaté vers :
 
 ## Structure
 
-La formalisation couvre **32 modules leaf (Parties 1-32, ~10783 lignes FR+EN, 0 sorry)**,
-importés dans l'ordre par le parapluie `Grothendieck.lean` (qui est lui-même bilingue inline FR/EN, pas de sibling `_en` pour l'umbrella). Chaque module leaf se
-numérote lui-même via son en-tête (`Grothendieck tribute — Part N`).
+La formalisation couvre **33 modules leaf (11 206 lignes FR+EN, 0 sorry)**,
+importés dans l'ordre par le parapluie `Grothendieck.lean` (qui est lui-même bilingue inline FR/EN, pas de sibling `_en` pour l'umbrella).
 
-*La trajectoire pédagogique des 32 modules leaf — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
+> **Deux numérotations coexistent, et elles ne coïncident pas.** La colonne `Partie` du tableau
+> ci-dessous est l'**ordre d'import** dans l'umbrella ; l'en-tête de chaque fichier porte un
+> numéro de `Partie` distinct, hérité de sa phase de rédaction, qui diverge de l'ordre d'import
+> sur **26 des 33 modules** et comporte des doublons (`Partie 26` ×3, `Partie 27` ×2). Les
+> diagrammes et la section `## References` réfèrent à la numérotation des **en-têtes** ; la
+> section `### La trajectoire` réfère à celle du **tableau**. Réconciliation suivie par #8960.
+
+*La trajectoire pédagogique des 33 modules leaf — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
 
 ```mermaid
 flowchart LR
@@ -47,14 +53,14 @@ flowchart LR
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only des 32 leaf + doctring bilingue FR/EN lignes 32-205) ; pas de sibling `_en` (le contenu EN vit dans le même fichier en miroir) | 207 |
+| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only des 33 leaf + doctring bilingue FR/EN) ; pas de sibling `_en` (le contenu EN vit dans le même fichier en miroir) | 208 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 109 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 93 |
 | 4 | `Grothendieck/MathlibMap.lean` | `MathlibMap_en.lean` | Index `#check` des définitions Mathlib liées à Grothendieck | 107 |
 | 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 cibles de micro-preuve pour le harnais du prouveur (Epic #1453) | 95 |
 | 6 | `Grothendieck/Adjunction.lean` | `Adjunction_en.lean` | Adjonction de foncteurs, unité/co-unit, lemme de la tortue (turtle), adjoints à droite/gauche | 168 |
-| 7 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Identités de pullback de cribles : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 103 |
+| 7 | `Grothendieck/SieveLattice.lean` | `SieveLattice_en.lean` | Identités de pullback de cribles (7) : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone`, `pullback_union` (#7895), `pullback_ofObjects`, `mem_iff_pullback_eq_top` | 164 |
 | 8 | `Grothendieck/SheafBasics.lean` | `SheafBasics_en.lean` | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 148 |
 | 9 | `Grothendieck/SieveOps.lean` | `SieveOps_en.lean` | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 141 |
 | 10 | `Grothendieck/CoverageGen.lean` | `CoverageGen_en.lean` | Coverage-vers-topologie, caractérisation des faisceaux, sup de coverages | 177 |
@@ -80,22 +86,26 @@ flowchart LR
 | 30 | `Grothendieck/KanExtensions.lean` | `KanExtensions_en.lean` | Extensions de Kan (limites/colimites généralisées) | 270 |
 | 31 | `Grothendieck/Limits.lean` | `Limits_en.lean` | Limites et colimites | 242 |
 | 32 | `Grothendieck/MonoidalCategories.lean` | `MonoidalCategories_en.lean` | Catégories monoïdales, tenseur, unité, associateur | 244 |
+| 33 | `Grothendieck/DirectImage.lean` | `DirectImage_en.lean` | Index `#check` (8) de l'adjonction `f^* ⊣ f_*` — image directe / réciproque des faisceaux de modules (#8882) | 152 |
 
-L'extension (Parties 1-32) a été développée sous l'Issue #2159 / Epic #1646 et
-est **complète** : tous les 32 modules leaf mergés + 1 umbrella bilingue, 0 `sorry`, 0 axiome ajouté.
+*La colonne `Lignes` compte le **fichier FR seul** ; le total FR+EN est le double approximatif.*
+
+L'extension a été développée sous l'Issue #2159 / Epic #1646 : les 33 modules leaf
+sont mergés + 1 umbrella bilingue, 0 `sorry`, 0 axiome ajouté.
 
 ## Build
 
 ```bash
 # Depuis ce répertoire (WSL requis)
 lake build Grothendieck
-# Compile les 32 modules leaf + 1 umbrella bilingue (~10783 lignes FR+EN)
+# Compile les 33 modules leaf + 1 umbrella bilingue (11 414 lignes FR+EN au total)
+# Dernier build vérifié : 2026-07-30, « Build completed successfully (2821 jobs) »
 ```
 
 ## Compte de sorry
 
-**0 sorry, 0 axiome** — tous les 32 modules leaf sont complets à la création
-(Parties 1-32 mergées ; umbrella `Grothendieck.lean` est imports-only sans déclaration).
+**0 sorry, 0 axiome** — tous les 33 modules leaf sont complets à la création
+(l'umbrella `Grothendieck.lean` est imports-only sans déclaration).
 
 ## Toolchain
 
@@ -120,15 +130,16 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
 - Epic #1453 (calibration du harnais prouveur)
 - Workspace hommage Conway (`../conway_lean/`)
-- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 32 siblings `_en.lean` sur `main` dans cette lake + 1 umbrella bilingue inline)
+- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 33 siblings `_en.lean` sur `main` dans cette lake + 1 umbrella bilingue inline)
+- Issue #8960 (réconciliation des deux numérotations `Partie`)
 - **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 - Série de notebooks Lean (`../README.md`)
 
 ## Conclusion
 
-Cet hommage est une **visite pédagogique complète** (32 modules leaf + 1 umbrella bilingue, ~10783 lignes FR+EN,
+Cet hommage est une **visite pédagogique complète** (33 modules leaf + 1 umbrella bilingue, 11 414 lignes FR+EN,
 0 `sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
-faisceaux, faisceautisation, points, cohomologie, Yoneda — vit déjà dans Mathlib 4. Ce
+faisceaux, faisceautisation, points, cohomologie, Yoneda, images directes — vit déjà dans Mathlib 4. Ce
 n'est délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
 qui laisse les apprenants voir la bibliothèque à travers des yeux grothendieckiens.
 
@@ -139,7 +150,7 @@ Les modules tracent un chemin cohérent : **sites et cribles** (Parties 1, 7, 9,
 **faisceautisation et son exactitude à gauche** (14, 15) → **points et familles
 conservatrices** (17, 22) → **cohomologie des faisceaux, Mayer-Vietoris et Čech**
 (23-26), avec **schémas et site de Zariski** (2, 3), une **carte Mathlib** (4)
-et le **lemme de Yoneda** (27) ancrant la visite à la bibliothèque qu'elle indexe. Les bases catégorielles (Adjonction, Équivalences, Monades) aux Parties 6, 16, 19 soutiennent toute la formalisation.
+et le **lemme de Yoneda** (27) ancrant la visite à la bibliothèque qu'elle indexe. Les bases catégorielles (Adjonction, Équivalences, Monades) aux Parties 6, 16, 19 soutiennent toute la formalisation. Enfin, `DirectImage.lean` indexe l'adjonction `f^* ⊣ f_*` — l'instance la plus simple des « six opérations », qui transporte les faisceaux le long des morphismes de schémas.
 
 *La construction verticale « faisceau » — chaque couche bâtie sur la précédente, de la donnée du site jusqu'à la cohomologie :*
 
