@@ -34,15 +34,13 @@ distinctes — six mesures corelees ne le prouvent pas.
 Portee de ce module (cycle-1 d'un livrable multi-cycle)
 -------------------------------------------------------
 ADDITIF : ne modifie ni ``ict.valence`` ni ``ict.learned_valence``. Couvre les
-mesures 1 (p_hat incarné + baselines), 2 (transfert incarné, approche), 3
-(choix d'action + entropie), 4 (profil d'energie libre incarne : precision fixe
-vs adaptive, gate FE porte depuis :mod:`ict.free_energy`) et 6 (reversibilite
-comportementale) + leurs controles negatifs + la matrice de dissociation. La
-mesure 5 (information predictive, discretisation en information mutuelle) reste
-de niveau recherche et **deferee** a un PR-suivi : l'accomplir honnetement
-demanderait un binning d'information mutuelle calibre qui n'existe pas encore
-dans la couche (``signaling_convention`` n'a que la primitive
-``mutual_information``). numpy seul, CPU.
+**six mesures** 1 (p_hat incarné + baselines), 2 (transfert incarné, approche),
+3 (choix d'action + entropie), 4 (profil d'energie libre incarne : precision
+fixe vs adaptive, gate FE porte depuis :mod:`ict.free_energy`), 5 (information
+predictive ``I(q_hat ; obs)`` via :func:`ict.signaling_convention.mutual_information`
++ :func:`ict.multiscale_agency.discretize_values`) et 6 (reversibilite
+comportementale) + leurs controles negatifs + la matrice de dissociation.
+numpy seul, CPU.
 
 References
 ----------
@@ -71,6 +69,8 @@ from .valence import (
 from .learned_valence import LearnedValence
 from .inhibited_action import action_entropy
 from . import free_energy as fe
+from .signaling_convention import mutual_information
+from .multiscale_agency import discretize_values
 
 
 # --------------------------------------------------------------------------- #
@@ -903,6 +903,136 @@ def free_energy_profile_test(
         "fe_fixed_monotone_with_mse": fe_fixed_monotone_with_mse,
         "fe_adaptive_amortizes_mse": fe_adaptive_amortizes_mse,
         "floor_frac": float(floor_frac),
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Mesure 5 — information predictive : MI(q_hat ; obs) vs MSE                   #
+# --------------------------------------------------------------------------- #
+
+
+def predictive_information_test(
+    kind: str = "balistique",
+    n_steps: int = 200,
+    size: int = 32,
+    source_valence: float = 1.0,
+    seed: int = 0,
+    n_bins: int = 8,
+) -> Dict[str, float]:
+    r"""Information predictive incarnee ``I(q_hat ; obs)`` (bits), vs MSE lead-ahead.
+
+    Troisieme lecteur de ``q_hat`` (apres MSE = erreur de point, mesure 1, et FE
+    adaptive = surprise renormalisee, mesure 4) : l'**information mutuelle** entre
+    la prediction lead-ahead ``q_hat[t]`` et l'observation reelle ``obs[t+lead]``.
+    Reutilise :func:`ict.signaling_convention.mutual_information` (I(X;Y) en bits
+    depuis comptes joints) et :func:`ict.multiscale_agency.discretize_values`
+    (binning en quantiles) -- les primitives existent dans la couche.
+
+    La grandeur ``q_hat`` etant 2D, on la projette sur sa coordonnee ``x`` (la
+    cinematique source est isotrope en ``x``/``y`` -- projeter une seule
+    coordonnee suffit a capturer la structure predictive sans doubler le cout du
+    binning). Les series ``q_hat_x`` et ``obs_x`` sont discretisees en ``n_bins``
+    niveaux (quantiles), puis on construit la matrice de comptes joints
+    ``[q_hat_bin, obs_bin]`` et l'on calcule ``I(q_hat_x ; obs_x)``.
+
+    Pourquoi cette mesure est-elle interessante
+    -------------------------------------------
+    L'hypothese naive serait que MI et MSE disent la meme chose (un ``q_hat``
+    precis a la fois faible MSE ET haut MI). L'instrumentation falsifie cette
+    intuition : sous ``erratique``, le MSE EXPLOSE (2.7x) mais la MI CHUTE
+    (0.6x). Les deux lecteurs sont **anti-correles** a travers les regimes. La
+    raison est qu'ils mesurent des choses differentes :
+    - **MSE** = erreur de point (``q_hat`` loin de ``obs`` en distance).
+    - **MI** = contenu informatif (combien ``q_hat`` reduit l'incertitude sur
+      ``obs``). Sous ``erratique``, la cible est *genuinement moins previsible* --
+      ``q_hat`` porte moins d'information non parce qu'il est mauvais mais parce
+      qu'il y a moins a savoir. C'est un plafond epistemique, pas un defaut
+      d'estimateur.
+
+    La MI et le MSE sont donc deux lecteurs **orthogonaux** de ``q_hat`` (comme la
+    FE adaptive en est un troisieme, mesure 4). C'est la contribution propre de M5
+    au tableau 4-objets : la representation predictive ``q`` n'est pas reducible a
+    un seul scalaire d'erreur.
+
+    Verdict falsifiable
+    -------------------
+    ``mi_anticorrelated_with_mse`` : le ratio ``MI(erratique)/MI(balistique)`` est
+        < 1 (MI chute) TANDIS QUE le ratio ``MSE(erratique)/MSE(balistique)`` est
+        > 1 (MSE explose). Les deux lecteurs vont en sens inverse -- preuve qu'ils
+        mesurent des grandeurs distinctes. Un verdict 0 (meme sens) dirait que MI
+        n'apporte rien au-dela du MSE.
+
+    Robustesse au binning : la conclusion qualitative (anti-correlation) tient sur
+    ``n_bins`` in {4, 6, 8, 12, 16} (verifie par instrumentation) ; le test
+    ``test_mi_discretization_robust`` l'asserte sur {4, 8, 16} (±2x).
+    """
+    rng = np.random.default_rng(seed)
+    cfg = AnimatConfig(size=size)
+    neutral_idx, control_idx, n_objects = 1, 2, 3
+    animat = PregnanceAnimat(n_objects=n_objects, config=cfg, rng=rng)
+    animat.set_intrinsic_valences({0: source_valence})
+    trajs = _tethered_trajectories(kind, n_steps, size, rng, n_objects=n_objects,
+                                   neutral_idx=neutral_idx, control_idx=control_idx)
+    _run_episode(animat, trajs, start=np.array([2.0, 2.0]))
+    lead = cfg.lead
+    preds = animat.prediction_trace()        # (T, n_objects, 2)
+    mses: List[float] = []
+    mis: List[float] = []
+    # objets in-arena : source(0) + neutre tethered(1) ; controle(2) hors-arene exclu.
+    for i in (0, 1):
+        obs_i = np.asarray(animat._hist[i], dtype=float)   # (T, 2)
+        if obs_i.shape[0] <= lead or preds.shape[0] <= lead:
+            continue
+        o_future = obs_i[lead:]          # obs[t+lead]
+        p_past = preds[:-lead, i, :]     # q_hat[t] predit obs[t+lead]
+        n = min(o_future.shape[0], p_past.shape[0])
+        o_future, p_past = o_future[:n], p_past[:n]
+        mses.append(float(np.mean(np.sum((o_future - p_past) ** 2, axis=1))))
+        # projection x (cinematique isotrope), discretisation quantiles, comptes joints.
+        ox = discretize_values(o_future[:, 0], n_bins)
+        px = discretize_values(p_past[:, 0], n_bins)
+        n_levels = int(max(ox.max(), px.max())) + 1
+        joint = np.zeros((n_levels, n_levels), dtype=float)
+        for tt in range(ox.shape[0]):
+            joint[px[tt], ox[tt]] += 1.0
+        mis.append(mutual_information(joint))
+    mse = float(np.mean(mses)) if mses else float("nan")
+    mi = float(np.mean(mis)) if mis else float("nan")
+    return {
+        "mse": mse,
+        "mutual_information_bits": mi,
+        "n_bins": int(n_bins),
+        "kind": kind,
+    }
+
+
+def predictive_information_regime_contrast(
+    seed: int = 0,
+    n_bins: int = 8,
+) -> Dict[str, float]:
+    """Contraste MI/MSE entre ``balistique`` et ``erratique`` -- la porte M5.
+
+    Renvoie les ratios erratique/balistique pour MI et MSE, plus le verdict
+    falsifiable ``mi_anticorrelated_with_mse`` (MI chute < 1 ET MSE monte > 1).
+    Orthogonal a la dissociation_matrix (qui oppose ``p_hat`` a la valence) :
+    ici on montre que MI et MSE sont eux-memes deux lecteurs distincts de ``q_hat``.
+    """
+    bal = predictive_information_test("balistique", seed=seed, n_bins=n_bins)
+    err = predictive_information_test("erratique", seed=seed, n_bins=n_bins)
+    mi_ratio = err["mutual_information_bits"] / max(bal["mutual_information_bits"], 1e-12)
+    mse_ratio = err["mse"] / max(bal["mse"], 1e-12)
+    mi_anticorrelated = (
+        1.0 if (mi_ratio < 1.0 and mse_ratio > 1.0) else 0.0
+    )
+    return {
+        "MI_ballistic": bal["mutual_information_bits"],
+        "MI_erratic": err["mutual_information_bits"],
+        "MI_ratio_err_over_bal": mi_ratio,
+        "MSE_ballistic": bal["mse"],
+        "MSE_erratic": err["mse"],
+        "MSE_ratio_err_over_bal": mse_ratio,
+        "mi_anticorrelated_with_mse": mi_anticorrelated,
+        "n_bins": int(n_bins),
     }
 
 

@@ -37,6 +37,8 @@ from ict.pregnance_animat import (
     action_commitment_test,
     behavioral_reversibility_test,
     free_energy_profile_test,
+    predictive_information_test,
+    predictive_information_regime_contrast,
     dissociation_matrix,
 )
 
@@ -316,3 +318,36 @@ def test_bare_floor_reproduces_pathology():
     # la surprise balistique explose sous bare floor (q_hat quasi-parfait ->
     # variance EMA effondree -> dust numerique).
     assert bare["F_adaptive_ballistic"] > 10.0 * aware["F_adaptive_ballistic"]
+
+
+# --- Mesure 5 : information predictive I(q_hat ; obs) vs MSE ---
+
+
+def test_predictive_information_returns_bits_and_mse():
+    """Le banc M5 renvoie MI en bits + le MSE lead-ahead sur la meme trajectoire."""
+    r = predictive_information_test("balistique", seed=0)
+    assert r["mutual_information_bits"] >= 0.0
+    assert r["mse"] > 0.0
+    assert r["n_bins"] == 8
+    assert r["kind"] == "balistique"
+
+
+def test_mi_anticorrelated_with_mse_across_regimes():
+    """La porte M5 : MI chute sous erratique (<1) TANDIS QUE MSE monte (>1) --
+    preuve que MI et MSE sont deux lecteurs orthogonaux de q_hat, pas redundants.
+    Anti-pattern : si MI disait la meme chose que MSE, les deux ratios iraient
+    dans le meme sens."""
+    c = predictive_information_regime_contrast(seed=0)
+    assert c["mi_anticorrelated_with_mse"] == 1.0
+    assert c["MI_ratio_err_over_bal"] < 1.0   # MI chute sous erratique
+    assert c["MSE_ratio_err_over_bal"] > 1.0  # MSE monte sous erratique
+
+
+def test_mi_discretization_robust():
+    """Robustesse au binning : la conclusion qualitative (anti-correlation MI/MSE)
+    tient sur n_bins in {4, 8, 16} (±2x autour du defaut 8). Si elle ne tenait
+    qu'a un seul n_bins, la conclusion serait un artefact de discretisation."""
+    for n_bins in (4, 8, 16):
+        c = predictive_information_regime_contrast(seed=0, n_bins=n_bins)
+        assert c["mi_anticorrelated_with_mse"] == 1.0, (
+            f"anti-correlation MI/MSE casse a n_bins={n_bins} (fragile au binning)")
