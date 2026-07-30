@@ -60,6 +60,29 @@ def SingleCoherent (q : Price Ω) : Prop := ∀ A s, ¬ IsSingleDutchBook q A s
 def ProbBounds (q : Price Ω) : Prop :=
   (∀ A, (0:ℝ) ≤ q A) ∧ (∀ A, q A ≤ 1) ∧ q ∅ = 0 ∧ q (Finset.univ : Event Ω) = 1
 
+/-! ### Accès nommés aux quatre bornes
+
+`ProbBounds` est un `def : Prop` (pas une `structure`) : ses quatre conjonctions
+n'exposent donc pas de projection auto-générée, et les appelants décomposent
+jusqu'ici la conjonction à la main (`obtain ⟨hnn, hn1, h0, hu⟩ := hb`, cf.
+`single_coherent_iff_prob_bounds`). Les quatre bornes étant déjà énoncées en
+prose dans la docstring ci-dessus, on les isole ici comme lemmes nommés. -/
+section
+
+/-- Non-négativité : sous `ProbBounds`, `q A ≥ 0` pour tout événement. -/
+lemma probBounds_nonneg (q : Price Ω) (hb : ProbBounds q) (A : Event Ω) : (0:ℝ) ≤ q A := hb.1 A
+
+/-- Majoration par 1 : sous `ProbBounds`, `q A ≤ 1` pour tout événement. -/
+lemma probBounds_le_one (q : Price Ω) (hb : ProbBounds q) (A : Event Ω) : q A ≤ 1 := hb.2.1 A
+
+/-- Normalisation du vide : sous `ProbBounds`, `q ∅ = 0`. -/
+lemma probBounds_empty (q : Price Ω) (hb : ProbBounds q) : q (∅ : Event Ω) = 0 := hb.2.2.1
+
+/-- Normalisation du plein : sous `ProbBounds`, `q univ = 1`. -/
+lemma probBounds_univ (q : Price Ω) (hb : ProbBounds q) : q (Finset.univ : Event Ω) = 1 := hb.2.2.2
+
+end
+
 /-! ## Lemmes : chaque axiome violé admet un Dutch Book mono-livret (witness explicite) -/
 
 private lemma ind_nonneg (A : Event Ω) (ω : Ω) : (0:ℝ) ≤ ind A ω := by
