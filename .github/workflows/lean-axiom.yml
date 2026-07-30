@@ -88,9 +88,20 @@ jobs:
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
+        # Same self-diagnosing pipeline as lean-build.yml (defect #8915): tee the
+        # full log and surface error lines on failure so the gate says *what* broke.
+        # 2026-06-14 invariant preserved via pipefail + `if; then :; else exit $rc`.
         set -o pipefail
         lake exe cache get || true
-        lake -R build 2>&1 | tail -10
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          :
+        else
+          rc=$?
+          echo "::group::Lake error lines (from full log)"
+          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+          echo "::endgroup::"
+          exit "$rc"
+        fi
 
     - name: Setup Python
       uses: actions/setup-python@v5
