@@ -1049,7 +1049,7 @@ live region by at most `2*jumpSize`, within the margin `n`). -/
 theorem isAlive_empty (p : Int × Int) : isAlive ([] : Grid) p = false := by
   simp [isAlive]
 
-/-- `sortDedup` of the empty list is empty (empty `mergeSort`, empty `dedup`). -/
+/-- `sortDedup` of the empty list is empty (empty `insertionSort`, empty `dedup`). -/
 theorem sortDedup_nil : sortDedup ([] : List (Int × Int)) = [] := by
   simp [sortDedup]
 
