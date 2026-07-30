@@ -78,6 +78,10 @@ Usage
     # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
     python check_twin_parity.py --update --pair "Probas-4 Bayesian-Networks" \
         --by "myia-po-2024:CoursIA-2"
+    # ATTENTION ordre : lance --update APRES toute normalisation outillee
+    # (strip_probe_banner, strip_machine_paths, scrub_papermill_paths) :
+    # ces scripts re-editent le notebook et deplacent son git blob SHA, ce
+    # qui invaliderait l'attestation. Rebaseline = derniere etape. Cf #8957.
     # sortie machine
     python check_twin_parity.py --json
     # recenser les paires reelles absentes du registre (angle mort)

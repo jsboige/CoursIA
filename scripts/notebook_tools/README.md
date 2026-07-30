@@ -406,6 +406,24 @@ exemple un fix doc-honesty sur un seul cote), le worker doit :
    modifie (le PR porte a la fois le diff du notebook et le diff du
    registre).
 
+> **Ordre des operations — rebaseline en DERNIER (#8957).**
+> `check_twin_parity` enregistre le **git blob SHA** de chaque jumeau : toute
+> edition du notebook le deplace, y compris une normalisation outillee qui ne
+> touche aucun contenu calcule (`strip_probe_banner.py --apply`,
+> `strip_machine_paths.py`, `scrub_papermill_paths.py`). Sur une PR a jumeau
+> .NET, l'enchainement canonique est :
+>
+> ```
+> 1. re-exec locale (kernel .NET-C#)
+> 2. normalisations outillees (strip probe banner, chemins machine, papermill)
+> 3. check_twin_parity.py --update   <- REBASELINE EN DERNIER
+> ```
+>
+> Inverser 2 et 3 (rebaseline puis strip) invalide l'attestation : le SHA
+> enregistre ne correspond plus au notebook strippe, et le gate twin-parity
+> sort rouge sur une parite pourtant vraie (cf #8957, mesure firsthand sur
+> #8906 ou un strip post-rebaseline a deplace le blob SHA).
+
 **Anti-pattern** : editer un cote sans toucher au registre = la CI fail
 avec un message explicite pointant vers la paire et le cote qui a drift.
 Le check est **bloquant** (contrairement a `catalog-drift.yml` qui est
@@ -457,6 +475,13 @@ les outputs.
 
 **Hook executant** : la re-execution d'un notebook .NET re-injecte le
 banner. Toujours `--apply` apres chaque re-exec .NET avant commit.
+
+**Ordre vs twin-parity (#8957)** : le strip (`--apply`) re-editte le notebook
+et deplace son git blob SHA. Sur une PR a jumeau .NET, la sequence est donc
+`re-exec -> strip_probe_banner -> check_twin_parity --update` : le rebaseline
+de parite vient **en dernier**, apres toute normalisation outillee (sinon le
+gate twin-parity sort rouge sur une parite pourtant vraie — cf section
+« Twin parity register » ci-dessus).
 
 ### `strip_machine_paths.py`, `scrub_papermill_paths.py`
 
