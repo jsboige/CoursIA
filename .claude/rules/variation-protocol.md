@@ -28,11 +28,37 @@ Le litmus LIGHT (« générable en série par scan ») est le **cœur anti-gamin
 
 ### GENRE — étiquette de rotation
 
-`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test`. Sert la règle anti-consécutif (§2, G-VAR-3).
+`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`. Sert la règle anti-consécutif (§2, G-VAR-3).
+
+**L'énumération est CLOSE.** Un genre écrit hors de cette liste n'est pas un quinzième genre : c'est un **alias** que le merge-gate normalise (table ci-dessous) avant d'appliquer les gates. La fermeture n'est pas de la bureaucratie de vocabulaire — c'est ce qui rend G-VAR-3 applicable. L'adjacence compare des genres ; si le vocabulaire est ouvert, deux grains du même travail sous deux étiquettes différentes ne sont **jamais** vus comme consécutifs, et le ban LIGHT devient inatteignable par simple choix de mot.
 
 **Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** C'est la seconde voie de contournement, et elle est plus discrète que la sur-cotation de tier : un même rollout scan-générable change d'étiquette à chaque tranche selon le répertoire qu'il traverse, et G-VAR-3 ne voit jamais deux fois le même genre. Une passe de stamping `metadata.cost` est du `ledger` — qu'elle traverse `GenAI/`, `Search/` ou `Probas/`. La tagger `genai` parce que les notebooks sont dans `GenAI/`, puis `data` parce que les suivants sont dans `Search/`, fait passer une vague unique pour de la variété.
 
 Test : **si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?** Si oui, le genre choisi décrit le répertoire, pas le travail — reprendre le genre du travail.
+
+**La seconde forme du même contournement : le genre composé `<famille>-<genre>`.** Le paragraphe ci-dessus interdit de *choisir* le genre d'après le répertoire ; la pratique a trouvé le chemin voisin, qui est d'**agrafer** le répertoire au genre. `lean-ci`, `lean-tooling`, `cjk-ci`, `audit-tooling` : chacun est un genre privé, valable pour une seule famille, donc invisible à l'adjacence. Une lane qui fait quatre fois le même type de travail dans quatre familles affiche quatre genres différents et ne déclenche jamais G-VAR-3. **Un genre composé se réduit toujours à sa tête** : `<famille>-<genre>` → `<genre>`. La famille se lit déjà dans les chemins du diff ; elle n'a rien à faire dans l'étiquette de rotation.
+
+**Table de normalisation** (mesurée sur les 55 PR taguées mergées depuis la ratification du 2026-07-21 — 18, soit **33 %**, portaient un genre hors liste) :
+
+| Écrit | Occurrences | Canonique | Motif |
+|---|---|---|---|
+| `lean-ci` | 4 | `guard` ou `tooling` (cf. discriminant) | composé `<famille>-<genre>` |
+| `test-coverage` | 3 | `test` | synonyme — garder les deux rend le ban `test` inatteignable |
+| `refs` | 2 | `docs` | l'hygiène de liens/références est du travail de documentation |
+| `lean-tooling` | 1 | `tooling` | composé |
+| `cjk-ci` | 1 | `guard` ou `tooling` | composé |
+| `audit-tooling` | 1 | `tooling` | composé |
+| `documentation` | 1 | `docs` | synonyme |
+| `data` | 1 | `ledger` | déjà tranché par l'incident fondateur §1 |
+| `Lean` | 1 | `lean` | les genres sont en minuscules |
+
+Deux entrées sont au contraire de **vraies lacunes**, et rejoignent l'énumération plutôt que d'être repliées : **`tooling`** (5 usages — script ou helper qui n'est pas une porte ; ni `guard`, ni `refactor` qui restructure de l'existant) et **`research-code`** (module de recherche/bibliothèque produisant un résultat falsifiable — `notebook-python` est faux dès que le livrable n'est pas un notebook).
+
+**`guard` vs `tooling` — le discriminant est « est-ce que ça peut rougir ».** Un livrable qui ajoute ou corrige un **check susceptible de passer au rouge** est `guard`. Un livrable qui ajoute ou corrige un **script, un helper, un convertisseur** sans statut d'échec propre est `tooling`. C'est ce qui tranche `lean-ci` au cas par cas plutôt qu'en bloc : le job CI qui fait échouer un lake est `guard` ; le wrapper qui l'appelle plus commodément est `tooling`.
+
+**Une entrée rejoint la liste des genres LIGHT de G-VAR-3 sur mesure, jamais sur intuition.** Cette liste (`guard` · `ledger` · `docs` · `readme` · `test`) porte le ban absolu des deux-consécutifs ; l'y ajouter à l'aveugle bloquerait du travail substantiel. Critère : **un genre y entre dès qu'il a accumulé ≥ 2 grains LIGHT mergés**. Au 2026-07-30, `tooling` est à 5 grains MED sur 5 et `research-code` à 1 DEEP sur 1 — aucun des deux ne qualifie ; ils y entreront d'eux-mêmes si la mesure change.
+
+**Un alias n'est pas une violation.** Le worker qui écrit `documentation` ou `lean-ci` n'est ni HOLD ni repris : le coordinateur normalise silencieusement et applique les gates au genre canonique — l'adjacence de `LIGHT/refs` se calcule contre `docs`. Ce qui compte est que deux grains du même travail soient **comptés comme le même genre**, pas que le worker ait mémorisé la liste.
 
 > Incident fondateur (2026-07-28, rollout `metadata.cost` #8056) : quatre tranches d'un seul rollout scan-générable ont porté **trois étiquettes différentes** — #8732 `DEEP/genai`, #8735 `MED/genai`, #8699 `MED/data`, #8697 antérieure. Aucune n'a déclenché G-VAR-2 ni G-VAR-3, alors que les quatre sont LIGHT par le litmus (« j'en génère une douzaine en scannant la série suivante » — c'est littéralement ce que fait « tranche 2 »). Le coordinateur en a mergé plusieurs sans auditer le tag : la responsabilité est partagée, et le merge-gate §3 lit désormais le genre contre le **type de travail**, pas contre le chemin des fichiers.
 
@@ -49,7 +75,7 @@ Le protocole ne mord que si `ai-01` **cesse de merger passivement la monoculture
 - **PR LIGHT d'une lane ayant déjà mergé une LIGHT aujourd'hui** (G-VAR-2 violé) → **HOLD** : commenter « variation-protocol G-VAR-2 : LIGHT-du-jour déjà consommée sur cette lane ; apporte un DEEP/MED ou attends demain », **ne pas merger**.
 - **2ᵉ même-GENRE consécutif** (G-VAR-3 violé) → **HOLD** *seulement si c'est un genre LIGHT (`guard`/`ledger`/`docs`/`readme`/`test`) OU un DEEP/MED non-distinct (variante scan-générée)* : « variation-protocol G-VAR-3 : `<genre>`→`<genre>` ; change de genre ». Ne pas merger. Un 2ᵉ DEEP/MED **genuinement distinct** dans le domaine-cœur de la lane (ex. Lean spécialiste, preuve différente) **passe** — ne pas HOLD une preuve dure au motif du seul label de genre.
 - **Plancher tenu par une LIGHT** (G-VAR-1 violé) → steer vers un grain DEEP/MED du pool, nommé.
-- **Tag mal dérivé** — tier sur-coté au regard du litmus (scan-générable étiqueté DEEP/MED), ou genre pris sur la famille plutôt que sur le type de travail → `ai-01` **re-qualifie le tag lui-même** avant d'appliquer les gates, puis traite la PR selon le tag corrigé. **Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag, c'est laisser le protocole s'auto-certifier — et c'est ainsi que le rollout #8056 a traversé quatre tranches sans jamais déclencher un gate.
+- **Tag mal dérivé** — tier sur-coté au regard du litmus (scan-générable étiqueté DEEP/MED), genre pris sur la famille plutôt que sur le type de travail, ou genre hors énumération (alias, composé `<famille>-<genre>` : **normaliser via la table §1** avant de comparer) → `ai-01` **re-qualifie le tag lui-même** avant d'appliquer les gates, puis traite la PR selon le tag corrigé. **Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag, c'est laisser le protocole s'auto-certifier — et c'est ainsi que le rollout #8056 a traversé quatre tranches sans jamais déclencher un gate.
 - **Tag incomplet — `lane` absente** → **HOLD jusqu'à ce que la lane soit déclarée**. G-VAR-2 est un cap **par lane et par jour** : un grain qui ne dit pas de quelle lane il vient est **structurellement incomptable**, et le cap devient inapplicable sans que personne n'ait à le contourner. Le champ `lane` de §1 n'est donc pas de la décoration de reporting, c'est la clé d'agrégation du gate. (Constaté sur #8697 et #8699, deux tranches du même rollout, toutes deux sans lane.)
 
 Le HOLD **ne sanctionne jamais la lane en idle** (cf [coordinator-discipline.md](coordinator-discipline.md) R4) : il est **toujours accompagné d'un grain DEEP/MED nommé** du pool global, poussé en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans grain de remplacement = échec coordinateur, pas enforcement.
