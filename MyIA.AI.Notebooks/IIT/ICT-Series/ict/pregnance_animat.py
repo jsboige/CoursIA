@@ -774,6 +774,7 @@ def free_energy_profile_test(
     size: int = 32,
     source_valence: float = 1.0,
     seed: int = 0,
+    floor_frac: float = 0.05,
 ) -> Dict[str, float]:
     r"""Profil d'energie libre de l'animat incarne (precision fixe vs adaptive).
 
@@ -853,19 +854,20 @@ def free_energy_profile_test(
             # precision FIXE (sigma=1) : gate 1 (habillage du MSE en rang).
             f_fix.append(float(np.mean(fe.gaussian_surprise(o_future, p_past, sigma=1.0))))
             # precision ADAPTIVE scale-aware : EMA causale des erreurs passees,
-            # plancher a 5% de la variance globale. Sans ce plancher, sous les
-            # predictions quasi-parfaites du regime balistique la variance EMA
-            # s'effondre vers le dust numerique et la surprise explose (pathologie
-            # documentee ci-dessous) -- le bare ``mode='adaptive'`` de
+            # plancher a ``floor_frac`` de la variance globale (defaut 5%). Sans ce
+            # plancher, sous les predictions quasi-parfaites du regime balistique la
+            # variance EMA s'effondre vers le dust numerique et la surprise explose
+            # (pathologie documentee ci-dessous) -- le bare ``mode='adaptive'`` de
             # :mod:`ict.free_energy` (plancher absolu 1e-6) est calibre pour des
-            # erreurs moderees, pas pour l'incarnation.
+            # erreurs moderees, pas pour l'incarnation. ``floor_frac`` est expose pour
+            # le test de robustesse (sweep ±2x : gate 2 doit tenir sur la plage).
             var0 = max(float(np.mean(err_sq)), 1e-6)
             ema = np.empty(err_sq.shape[0])
             prev = var0
             for tt in range(err_sq.shape[0]):
                 ema[tt] = prev
                 prev = 0.3 * err_sq[tt] + 0.7 * prev
-            sigma_t = np.sqrt(np.maximum(ema, 0.05 * var0))
+            sigma_t = np.sqrt(np.maximum(ema, floor_frac * var0))
             f_adap.append(float(np.mean(fe.gaussian_surprise(
                 o_future, p_past, sigma=sigma_t.reshape(-1, 1)
             ))))
@@ -900,6 +902,7 @@ def free_energy_profile_test(
         "F_adaptive_ratio_err_over_bal": fe_adap_ratio,
         "fe_fixed_monotone_with_mse": fe_fixed_monotone_with_mse,
         "fe_adaptive_amortizes_mse": fe_adaptive_amortizes_mse,
+        "floor_frac": float(floor_frac),
     }
 
 

@@ -291,3 +291,28 @@ def test_fe_gate2_adaptive_amortizes_regime_explosion():
     r = free_energy_profile_test(seed=0)
     assert r["fe_adaptive_amortizes_mse"] == 1.0
     assert r["F_adaptive_ratio_err_over_bal"] < r["mse_ratio_err_over_bal"]
+
+
+def test_gate2_robust_to_floor_sweep():
+    """Robustesse de gate 2 (reviewer △2) : le verdict d'amortissement tient quand
+    on varie le plancher scale-aware ±2x autour de son defaut (0.025, 0.05, 0.10).
+    Si gate 2 ne tenait qu'a un seul point de tuning, le banc serait fragile.
+    """
+    for floor_frac in (0.025, 0.05, 0.10):
+        r = free_energy_profile_test(seed=0, floor_frac=floor_frac)
+        assert r["floor_frac"] == floor_frac
+        assert r["fe_adaptive_amortizes_mse"] == 1.0, (
+            f"gate 2 casse a floor_frac={floor_frac} (fragile au tuning)")
+        assert r["F_adaptive_ratio_err_over_bal"] < r["mse_ratio_err_over_bal"]
+
+
+def test_bare_floor_reproduces_pathology():
+    """Controle negatif (reviewer △2) : un plancher quasi-absolu (floor_frac ~ bare
+    estimateur 1e-6) fait EXPLOSER la surprise balistique (~142 vs ~1 a floor
+    scale-aware) -- c'est la pathologie qui motive le plancher scale-aware. Sans ce
+    controle, le design du floor serait une assertion non justifiee."""
+    bare = free_energy_profile_test(seed=0, floor_frac=1e-7)
+    aware = free_energy_profile_test(seed=0, floor_frac=0.05)
+    # la surprise balistique explose sous bare floor (q_hat quasi-parfait ->
+    # variance EMA effondree -> dust numerique).
+    assert bare["F_adaptive_ballistic"] > 10.0 * aware["F_adaptive_ballistic"]
