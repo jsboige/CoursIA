@@ -95,6 +95,7 @@ from . import symbol_invention
 from . import collective_adoption
 from . import inhibited_invention
 from . import concept_inoculation
+from . import bridge_testing
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -117,4 +118,5 @@ __all__ = [
     "collective_adoption",
     "inhibited_invention",
     "concept_inoculation",
+    "bridge_testing",
 ]
