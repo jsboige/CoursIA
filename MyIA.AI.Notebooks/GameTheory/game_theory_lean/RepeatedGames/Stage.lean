@@ -68,4 +68,8 @@ lemma mutual_coop_better_than_mutual_defect (g : PrisonersDilemma) :
 /-- Le paiement de déviation `T` est strictement supérieur à `R`. -/
 lemma temptation_gt_reward (g : PrisonersDilemma) : g.T > g.R := g.hTR
 
+/-- Le paiement de punition `P` est strictement supérieur à `S`
+(Punishment > Sucker). -/
+lemma punishment_gt_sucker (g : PrisonersDilemma) : g.P > g.S := g.hPS
+
 end RepeatedGames
