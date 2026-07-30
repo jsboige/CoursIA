@@ -818,7 +818,8 @@ theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
     IsTricolorable d₂ := by
   obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
   -- Edge-count and crossing-list consequences of the surgery equation.
-  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := Reidemeister1Connected.numEdges_eq h
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
+    simpa using congrArg (·.numEdges) hsurg
   have hd₂cross : d₂.crossings =
       d₁.crossings.set i.val Y' ++
         [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
@@ -1514,7 +1515,8 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     IsTricolorable d₁ := by
   obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
   -- Surgery shape (mirrors `tricolorable_forward`).
-  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := Reidemeister1Connected.numEdges_eq h
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
+    simpa using congrArg (·.numEdges) hsurg
   have hd₂cross : d₂.crossings =
       d₁.crossings.set i.val Y' ++
         [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
