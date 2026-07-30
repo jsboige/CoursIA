@@ -128,8 +128,14 @@ jobs:
   # gate that inspects 5 of 14 compiled modules is a "vert hors-cible" --
   # visually indistinguishable from a targeted green in the check rollup. This
   # job prints the delta (compiled vs target) and ALWAYS exits 0: it never
-  # fails CI, it makes the gap legible in the log. It does NOT decide which
-  # modules to gate (options a/b/c in #8782) -- that is a coordinator design call.
+  # fails CI, it makes the gap legible in the log.
+  #
+  # `--from-workflow` reads THIS file and unions target-modules over every job
+  # whose `uses:` resolves to lean-axiom.yml, instead of restating the list a
+  # second time here. knot_lean has a single gate job today, so the union is
+  # the same set -- the point is that it stays the same set if a second gate
+  # job is ever added, which is exactly where the conway copy went stale
+  # (it reported the audit job's module as a blind spot). See #8782.
   target-coverage:
     runs-on: ubuntu-latest
     if: always()
@@ -138,10 +144,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
       - name: Advisory target-coverage delta
         run: |
           python3 scripts/lean/check_target_coverage.py \
             --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean \
-            --target-modules "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman" \
+            --from-workflow .github/workflows/lean-knot.yml \
             --lib-root Knots \
             --name knot_lean

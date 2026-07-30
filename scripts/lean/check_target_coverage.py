@@ -18,12 +18,38 @@ Usage (local)::
 
     python scripts/lean/check_target_coverage.py \
         --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
-        --target-modules "Conway.KochenSpecker,Conway.FreeWillTheorem" \
+        --from-workflow .github/workflows/lean-conway.yml \
+        --lib-root Conway \
         --name conway_lean
 
 Wired as a non-blocking final step in ``lean-axiom.yml`` (``if: always()``) so
 the coverage report lands in every Lean PR's CI log regardless of the blocking
 axiom verdict.
+
+``--from-workflow`` vs ``--target-modules`` (#8782)
+---------------------------------------------------
+``--target-modules`` takes the list literally, which means the caller keeps a
+copy. That is how this tool acquired the very defect it was built to detect: a
+tool that flags the drift of a hand-maintained list introduced a *second*
+hand-maintained copy of it, and the copies diverged the moment option (b) of
+#8782 landed. ``lean-conway.yml`` ended up with three copies -- the blocking
+gate (``Conway.KochenSpecker,Conway.FreeWillTheorem``), the advisory audit job
+(``Conway.Life.HashlifeCorrectness``), and this script's own ``--target-modules``
+flag, which had only ever been given the *blocking* job's list. The report then
+printed ``Conway.Life.HashlifeCorrectness`` under "the gate never inspects their
+axioms" -- a statement that was false about precisely the module the design
+decision had been taken to cover.
+
+``--from-workflow`` removes the copy by construction: it reads the workflow YAML
+and unions ``with.target-modules`` across **every** job whose ``uses:`` resolves
+to ``lean-axiom.yml`` (both the ``owner/repo/.github/...@ref`` and the local
+``./.github/...`` forms). Adding, retargeting or deleting a gate job moves the
+coverage report with it, and no third list exists to fall out of date.
+
+GitHub Actions forbids the ``env`` context inside ``jobs.<id>.with``, so sharing
+the list through a workflow-level variable is closed; reading the YAML is what
+remains. ``--target-modules`` is kept for ad-hoc local runs and for lakes whose
+gate is not (yet) expressed as a workflow job.
 
 Module discovery is filesystem-based (no ``lake build`` required): every
 ``.lean`` file under ``--project-path`` (excluding ``.lake/``, ``lakefile*``,
@@ -99,15 +125,63 @@ def parse_target_modules(raw: str) -> set[str]:
     return {m.strip() for m in raw.split(",") if m.strip()}
 
 
+def _uses_lean_axiom(uses: str) -> bool:
+    """True if a job's ``uses:`` resolves to the reusable ``lean-axiom.yml``.
+
+    Both call forms occur in the repo and must match:
+    ``jsboige/CoursIA/.github/workflows/lean-axiom.yml@main`` (lean-conway.yml)
+    and ``./.github/workflows/lean-axiom.yml`` (lean-knot.yml, per-PR resolution).
+    """
+    if not isinstance(uses, str):
+        return False
+    ref = uses.split("@", 1)[0].strip()  # drop @main / @sha
+    return ref.rsplit("/", 1)[-1] == "lean-axiom.yml"
+
+
+def targets_from_workflow(workflow_path: Path) -> tuple[set[str], dict[str, set[str]]]:
+    """Union ``with.target-modules`` over every lean-axiom job in a workflow.
+
+    Returns ``(union, per_job)``. An **empty** ``per_job`` means no job in the
+    file calls ``lean-axiom.yml`` -- reported by the caller as an explicit
+    "no gate wired" line, never folded into a 0%-coverage figure: those two
+    states have opposite meanings and a number that conflates them would be a
+    computed value measuring the wrong thing.
+    """
+    import yaml  # local import: only --from-workflow needs the dependency
+
+    doc = yaml.safe_load(workflow_path.read_text(encoding="utf-8")) or {}
+    jobs = doc.get("jobs") or {}
+
+    per_job: dict[str, set[str]] = {}
+    for job_id, job in jobs.items():
+        if not isinstance(job, dict) or not _uses_lean_axiom(job.get("uses", "")):
+            continue
+        raw = (job.get("with") or {}).get("target-modules", "")
+        # A gate job with an empty target list is still a gate job: record it so
+        # the report shows it contributed nothing, rather than hiding it.
+        per_job[str(job_id)] = parse_target_modules(str(raw))
+
+    union: set[str] = set()
+    for mods in per_job.values():
+        union |= mods
+    return union, per_job
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Advisory: lake compiled modules vs proof-integrity target-modules."
     )
     parser.add_argument("--project-path", required=True, help="Repo-relative lake root.")
-    parser.add_argument(
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
         "--target-modules",
-        required=True,
-        help="Comma-separated dotted modules the gate inspects (lean-axiom.yml input).",
+        help="Comma-separated dotted modules the gate inspects (lean-axiom.yml input). "
+        "Literal list -- keeps a copy; prefer --from-workflow in CI.",
+    )
+    source.add_argument(
+        "--from-workflow",
+        help="Path to a workflow YAML; union target-modules over every job whose "
+        "`uses:` resolves to lean-axiom.yml. No second copy of the list to drift.",
     )
     parser.add_argument("--name", default="lake", help="Display name for the report header.")
     parser.add_argument(
@@ -124,7 +198,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0  # advisory: never fail CI on a missing path
 
     compiled = discover_modules(project_path, args.lib_root)
-    targeted = parse_target_modules(args.target_modules)
+
+    per_job: dict[str, set[str]] = {}
+    if args.from_workflow:
+        wf = Path(args.from_workflow)
+        if not wf.is_file():
+            print(f"ADVISORY target-coverage ({args.name}): workflow not found: {wf}")
+            return 0  # advisory: never fail CI on a missing path
+        targeted, per_job = targets_from_workflow(wf)
+    else:
+        targeted = parse_target_modules(args.target_modules)
 
     covered = compiled & targeted
     blind_spot = sorted(compiled - targeted)  # compiled but gate never inspects
@@ -135,6 +218,29 @@ def main(argv: list[str] | None = None) -> int:
     print(f"=== ADVISORY: proof-integrity target coverage ({args.name}) ===")
     print(f"Project: {project_path}")
     print(f"lib-root scope: {args.lib_root or '(maximal walk of every .lean)'}")
+
+    if args.from_workflow:
+        print(f"Target source: {args.from_workflow} (union over lean-axiom jobs)")
+        if not per_job:
+            # NOT the same thing as 0% coverage, and must not be printed as such:
+            # "no gate job in this file" means the report has nothing to measure,
+            # whereas "0% covered" would assert the gate inspects nothing. Emitting
+            # the latter for the former is the failure this tool exists to catch.
+            print()
+            print(
+                "NO GATE WIRED -- no job in this workflow has `uses:` resolving to\n"
+                "      lean-axiom.yml, so there is no target list to compare against.\n"
+                "      This is not a coverage figure: nothing was measured. Check the\n"
+                "      workflow path, or whether the gate job was renamed/removed."
+            )
+            return 0
+        for job_id in sorted(per_job):
+            mods = per_job[job_id]
+            shown = ", ".join(sorted(mods)) if mods else "(none)"
+            print(f"  job {job_id}: {len(mods)} -> {shown}")
+    else:
+        print("Target source: --target-modules (literal list passed by the caller)")
+
     print(f"Compiled modules (filesystem walk): {len(compiled)}")
     print(f"Gate target-modules:                {len(targeted)}")
     print(f"Covered (in both):                  {len(covered)}  ({coverage_pct:.1f}% of compiled)")

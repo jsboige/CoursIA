@@ -147,14 +147,20 @@ jobs:
       allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1"
       fail-on-sorry: false
 
-  # Advisory proof-integrity coverage (See #8782). The `target-modules` list
-  # above is hand-maintained while the lakefile glob (.submodules Conway,
-  # Conway_en) grows as modules are added; a gate that inspects 2 of N compiled
+  # Advisory proof-integrity coverage (See #8782). The `target-modules` lists
+  # above are hand-maintained while the lakefile glob (.submodules Conway,
+  # Conway_en) grows as modules are added; a gate that inspects 3 of N compiled
   # modules is a "vert hors-cible" -- visually indistinguishable from a targeted
   # green in the check rollup. This job prints the delta (compiled vs target)
   # and ALWAYS exits 0: it never fails CI, it makes the gap legible in the log.
-  # It intentionally does NOT decide which modules to gate or the blocking
-  # policy (options a/b/c in #8782) -- that is a coordinator design call.
+  #
+  # `--from-workflow` reads THIS file and unions target-modules over every job
+  # whose `uses:` resolves to lean-axiom.yml. It replaces a literal
+  # `--target-modules` flag that had been given the blocking job's list only:
+  # when option (b) of #8782 added the audit job above, the advisory kept the
+  # old list and reported Conway.Life.HashlifeCorrectness as a blind spot --
+  # false about precisely the module the audit job inspects. A drift-detector
+  # that keeps its own copy of the list detects everyone's drift but its own.
   target-coverage:
     runs-on: ubuntu-latest
     if: always()
@@ -163,10 +169,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
       - name: Advisory target-coverage delta
         run: |
           python3 scripts/lean/check_target_coverage.py \
             --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
-            --target-modules "Conway.KochenSpecker,Conway.FreeWillTheorem" \
+            --from-workflow .github/workflows/lean-conway.yml \
             --lib-root Conway \
             --name conway_lean
