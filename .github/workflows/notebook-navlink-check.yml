@@ -20,6 +20,9 @@ on:
       - 'scripts/tests/baseline_nb_navlinks.json'
       - '.github/workflows/notebook-navlink-check.yml'
 
+permissions:
+  contents: read
+
 jobs:
   check-navlinks:
     runs-on: ubuntu-latest
