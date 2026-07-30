@@ -63,6 +63,9 @@ on:
       - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
