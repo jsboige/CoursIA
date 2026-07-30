@@ -36,6 +36,7 @@ from ict.pregnance_animat import (
     embodied_transfer_test,
     action_commitment_test,
     behavioral_reversibility_test,
+    free_energy_profile_test,
     dissociation_matrix,
 )
 
@@ -239,3 +240,54 @@ def test_dissociation_matrix_covers_three_regimes():
         assert kind in dm
         assert "err_phat_vs_persistence" in dm[kind]
         assert "transferred" in dm[kind]
+
+
+# --- Mesure 4 : profil d'energie libre incarnee (precision fixe vs adaptive) ---
+
+
+def test_prediction_trace_shape_matches_episodes():
+    """``prediction_trace()`` renvoie ``(T, n_objects, 2)`` -- une prediction
+    lead-ahead ``q_hat`` par pas, necessaire pour apparier ``(obs[t+lead],
+    q_hat[t])`` en mesure 4."""
+    rng = np.random.default_rng(0)
+    a = PregnanceAnimat(n_objects=3, config=AnimatConfig(size=16), rng=rng)
+    obs_t = np.array([[2.0, 2.0], [5.0, 5.0], [8.0, 3.0]])  # (n_obj=3, 2)
+    for t in range(12):
+        a.step(obs_t, t)
+    tr = a.prediction_trace()
+    assert tr.shape == (12, 3, 2)
+    assert np.all(np.isfinite(tr))
+
+
+def test_free_energy_profile_returns_all_keys():
+    """Le banc mesure 4 renvoie les ratios + les deux verdicts falsifiables."""
+    r = free_energy_profile_test(seed=0)
+    for key in (
+        "mse_ballistic", "mse_erratic", "mse_ratio_err_over_bal",
+        "F_fixed_ballistic", "F_fixed_erratic", "F_fixed_ratio_err_over_bal",
+        "F_adaptive_ballistic", "F_adaptive_erratic", "F_adaptive_ratio_err_over_bal",
+        "fe_fixed_monotone_with_mse", "fe_adaptive_amortizes_mse",
+    ):
+        assert key in r, f"cle manquante: {key}"
+
+
+def test_mse_regime_effect_erratic_worse_than_ballistic():
+    """Le regime erratique degrade la prediction ``q_hat`` (effet regime, mesure 1)
+    -- prealable au gate FE : sans effet regime, il n'y a rien a amortir."""
+    r = free_energy_profile_test(seed=0)
+    assert r["mse_erratic"] > r["mse_ballistic"]
+
+
+def test_fe_gate1_fixed_monotone_with_mse_holds():
+    """Gate 1 incarne : en precision fixe, F et MSE rangent les regimes pareil
+    (tous deux superieurs sous erratique) -- FE est un habillage du MSE en rang."""
+    r = free_energy_profile_test(seed=0)
+    assert r["fe_fixed_monotone_with_mse"] == 1.0
+
+
+def test_fe_gate2_adaptive_amortizes_regime_explosion():
+    """Gate 2 incarne : la precision adaptive amortit l'explosion de regime
+    (ratio F_adaptive erratique/balistique inferieur au ratio MSE)."""
+    r = free_energy_profile_test(seed=0)
+    assert r["fe_adaptive_amortizes_mse"] == 1.0
+    assert r["F_adaptive_ratio_err_over_bal"] < r["mse_ratio_err_over_bal"]
