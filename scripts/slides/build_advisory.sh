@@ -30,54 +30,54 @@ set -euo pipefail
 SLIDES_DIR="${SLIDES_DIR:-slides}"
 SLIDEV_BIN="${SLIDEV_BIN:-npx --no-install slidev}"
 
-# Top-level entries under slides/ that are NOT decks.
-# Kept as an explicit allowlist-inverted list so a new deck dir is covered by
-# default; a new non-deck dir must be added here (and the denominator check
-# will remind you, since it would otherwise count it as an empty deck dir).
-NON_DECK_DIRS="_assets _tools analysis node_modules node_modules.cache theme-ia101 themes"
-
-is_non_deck() {
-  local d="$1"
-  local x
-  for x in $NON_DECK_DIRS; do [ "$d" = "$x" ] && return 0; done
-  return 1
+# A deck dir is a top-level dir under SLIDES_DIR that is BOTH:
+#  (1) NOT gitignored (a build output / local workdir present on disk but
+#      ignored by git must not trip a false ERROR -- CASE 5 of #8926), and
+#  (2) matching the NN/SN naming convention the gate uses (`^(S)?[0-9]`).
+# This mirrors .github/workflows/slides-build-advisory.yml STRUCTURALLY: infra
+# dirs (_assets, _tools, analysis, theme-ia101, themes, node_modules) do not
+# match the convention and are excluded with no hand-maintained list to drift
+# against the gate (#8926: the former NON_DECK_DIRS allowlist-inverted
+# subtraction reproduced the pattern by hand and was guaranteed to diverge --
+# the day an infra dir was added under slides/, the gate would keep ignoring
+# it for free while this tool counted it as an empty deck dir -> false ERROR).
+is_deck_dir() {
+  local d="$1" name
+  git check-ignore -q -- "$d" 2>/dev/null && return 1   # (1) git = authority on "ignored"
+  name="$(basename "$d")"
+  printf '%s' "$name" | grep -qE '^(S)?[0-9]'           # (2) gate convention (workflow L138)
 }
 
-# Deck dirs = top-level dirs under SLIDES_DIR that are actual decks.
+# Deck dirs = top-level dirs under SLIDES_DIR matching the NN/SN convention
+# (and not gitignored). Mirrors the gate's `slides/*/` + `^(S)?[0-9]` filter.
 deck_dirs() {
-  local d name
+  local d
   for d in "$SLIDES_DIR"/*/; do
     [ -d "$d" ] || continue
     d="${d%/}"
-    name="$(basename "$d")"
-    is_non_deck "$name" && continue
-    echo "$name"
+    is_deck_dir "$d" || continue
+    echo "$(basename "$d")"
   done | sort
 }
 
 # Discover every deck file (repo-relative), one per line, sorted.
-# A deck is `slides.md` or `deck-*.md`, NOT under an `archive/`/`analysis/`/
-# `_assets/` subdir. The exclusion set mirrors the `case` in the canonical CI
-# gate `.github/workflows/slides-build-advisory.yml` so this local tool and the
-# gate agree on what is a deck — a deck author running `build_advisory.sh check`
-# before pushing sees the same inventory the PR gate will compute
-# (review nit #8868: the two had drifted — shell excluded only archive/).
+# A deck is `slides.md` or `deck-*.md` directly under a convention deck dir.
+# Like the gate (workflow L158-172), we glob the deck dir's direct children --
+# there is no sub-path exclusion list because a top-level NN/SN dir's direct
+# child cannot be under archive/analysis/_assets (those are peer infra dirs,
+# already excluded by is_deck_dir). A deck author running `build_advisory.sh
+# check` before pushing thus sees the same inventory the PR gate computes.
 discover_decks() {
-  local d name dk
+  local d dk
   for d in "$SLIDES_DIR"/*/; do
     [ -d "$d" ] || continue
     d="${d%/}"
-    name="$(basename "$d")"
-    is_non_deck "$name" && continue
+    is_deck_dir "$d" || continue
     if [ -f "$d/slides.md" ]; then
-      case "$d/slides.md" in */archive/*|*/analysis/*|*/_assets/*) continue ;; esac
       echo "$d/slides.md"
     fi
     for dk in "$d"/deck-*.md; do
       [ -f "$dk" ] || continue
-      case "$dk" in
-        */archive/*|*/analysis/*|*/_assets/*) continue ;;
-      esac
       echo "$dk"
     done
   done | sort
@@ -137,7 +137,8 @@ check_denominator() {
     printf '  - %s\n' "${empty[@]}"
     echo
     echo "Either add a slides.md / deck-*.md under the dir, or — if it is not a"
-    echo "deck — add it to NON_DECK_DIRS in scripts/slides/build_advisory.sh."
+    echo "deck — rename it so it does not match the NN/SN convention (the gate"
+    echo "excludes non-convention dirs structurally; see is_deck_dir)."
     return 1
   fi
   echo "Denominator check: PASS (every tracked deck dir has >=1 deck)."
