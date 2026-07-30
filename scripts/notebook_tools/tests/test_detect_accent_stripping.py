@@ -33,6 +33,7 @@ from detect_accent_stripping import (  # noqa: E402
     ACCENT_PAIRS,
     _STRIP_RE,
     _build_regex,
+    _iter_notebooks,
     _src_lines,
     main,
     scan_notebook,
@@ -382,3 +383,55 @@ class TestMainExitCodes:
         # The detector uses ensure_ascii=False (per source line 302).
         assert "problème" in out
         assert rc == 0  # no --check => exit 0
+
+
+# ---------------------------------------------------------------------------
+# Walker delegation (#8858-structural migration, c.959)
+# ---------------------------------------------------------------------------
+# _iter_notebooks delegates to notebook_walk.iter_notebooks (#8650): canonical
+# SKIP_DIRS + git-tracked filter + RELATIVE-path filtering. The old local walker
+# only knew ``_archive`` (singular) -- it missed ``archive/`` and ``_archives/``
+# and audited archived legacy notebooks (6 false hit-bearers on main, all under
+# Search/archive, SymbolicAI/archive, SymbolicAI/SymbolicLearning/_archives).
+# This locks the canonical coverage so the gap cannot regress.
+
+class TestWalkerDelegatesToNotebookWalk:
+    def test_archived_notebooks_excluded(self, tmp_path, monkeypatch):
+        root = tmp_path / "MyIA.AI.Notebooks"
+        live = root / "ML" / "live.ipynb"
+        archived = root / "SymbolicAI" / "archive" / "old.ipynb"
+        archived2 = root / "SL" / "_archives" / "legacy.ipynb"
+        for p in (live, archived, archived2):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            _write_nb(p, [_md("# ecole\n")])  # stripped (would be a hit if scanned)
+        monkeypatch.chdir(tmp_path)
+        names = {Path(p).name for p in _iter_notebooks()}
+        assert "live.ipynb" in names
+        assert "old.ipynb" not in names, (
+            "archived notebook (archive/) must be excluded by canonical SKIP_DIRS"
+        )
+        assert "legacy.ipynb" not in names, (
+            "archived notebook (_archives/) must be excluded by canonical SKIP_DIRS"
+        )
+
+    def test_relative_and_absolute_root_give_same_count(self, tmp_path, monkeypatch):
+        """#8858 immunity: nesting the tree under an archive-named parent, or
+        passing an absolute root, must NOT silence the scan (the old abs-parts
+        filter class). Build the same tree at two roots and compare counts."""
+        def build(base):
+            root = base / "MyIA.AI.Notebooks" / "ML"
+            root.mkdir(parents=True, exist_ok=True)
+            _write_nb(root / "a.ipynb", [_md("# ecole\n")])
+            _write_nb(root / "b.ipynb", [_md("# ouvert\n")])
+            return base
+
+        normal = build(tmp_path / "normal")
+        nested = build(tmp_path / "_archive" / "clone")  # parent named _archive
+        monkeypatch.chdir(normal)
+        n_normal = len(list(_iter_notebooks()))
+        monkeypatch.chdir(nested)
+        n_nested = len(list(_iter_notebooks()))
+        assert n_normal == n_nested == 2, (
+            f"#8858 parity failed: normal={n_normal} nested-under-_archive={n_nested} "
+            "(expected equal, non-zero)"
+        )
