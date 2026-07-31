@@ -148,77 +148,149 @@ def effective_tier(body: str | None, labels: list[str]) -> str | None:
 
 # --- cap logic -------------------------------------------------------------
 
+# G-VAR-2 is a RATIO, not an absolute cap (2026-07-31, user sign-off).
+#
+# The old `1 LIGHT/lane/day` scored a 1-PR lane and a 19-merge/13-DEEP lane
+# identically -- the second is the OPPOSITE of monoculture and was sanctioned
+# the same. A cap blind to throughput does not measure monoculture, it caps
+# throughput. Worse, it MANUFACTURES the duplicate work it claims to save:
+# #8961 (the strip->update ordering doc) sat held for a day; during that hold
+# the doc never reached `main`, and two other sessions rewrote it (#8983,
+# #8996, closed as duplicates) -- ~98 lines written three times.
+#
+# Budget = max(1, lane_grains_merged_today // 3). A lane merging 1-3 grains
+# keeps EXACTLY the old ceiling of one LIGHT (the small-lane case was never
+# the problem); a lane merging 19 gets six. The floor is what makes this a
+# strict relaxation: no lane is worse off than under the absolute cap.
+LIGHT_RATIO_DIVISOR = 3
+
+
+def light_budget(lane_grain_count: int) -> int:
+    """LIGHT allowance for a lane that merged `lane_grain_count` grains today.
+
+    `max(1, n // 3)`: floor of 1 so a low-output lane keeps the old ceiling,
+    then one extra LIGHT per full slice of 3 grains.
+    """
+    return max(1, lane_grain_count // LIGHT_RATIO_DIVISOR)
+
+
+def _lane_of(pr: dict) -> str | None:
+    """Declared lane of a PR, or None when untagged.
+
+    The lane is STRUCTURAL (the worker's workspace) and is never re-qualified:
+    it always comes from the body, even when a `grain-requalified:` label
+    overrides the tier. An untagged PR has no lane, so it cannot be attributed
+    -- it counts neither as a LIGHT nor in any lane's denominator.
+    """
+    g = parse_grain(pr.get("body", "") or "")
+    return g["lane"] if g else None
+
+
+def lane_grains(merged_prs: list[dict], target_lane: str) -> list[dict]:
+    """Every merged PR attributed to `target_lane`, ANY tier.
+
+    This is the ratio's denominator: DEEP and MED grains are what EARN the
+    LIGHT budget, so they must be counted, not just the LIGHTs.
+    """
+    return [pr for pr in merged_prs if _lane_of(pr) == target_lane]
+
+
+def lane_lights(merged_prs: list[dict], target_lane: str) -> list[dict]:
+    """Merged PRs of `target_lane` whose EFFECTIVE tier is LIGHT (#8970).
+
+    A declared LIGHT re-qualified up to MED does NOT spend the budget; a
+    declared DEEP re-qualified down to LIGHT DOES.
+    """
+    out = []
+    for pr in merged_prs:
+        if _lane_of(pr) != target_lane:
+            continue
+        if effective_tier(pr.get("body", ""), label_names(pr)) != "LIGHT":
+            continue
+        out.append(pr)
+    return out
+
+
 def light_cap_status(merged_prs: list[dict], target_lane: str) -> dict:
-    """Given the day's ALREADY-MERGED PRs, is a NEW LIGHT of `target_lane`
-    cap-reached?
+    """Given the day's ALREADY-MERGED PRs, would a NEW LIGHT of `target_lane`
+    exceed its budget?
 
     CI semantics: the current PR is OPEN (not yet merged), so it is NOT in
-    `merged_prs`. If the lane already has >= 1 LIGHT merged today, the current
-    PR would be the 2nd -> cap-reached. Returns {cap_reached, consumed_by}
-    where consumed_by is the earliest merged LIGHT of that lane (the one that
-    spent the budget), or None.
+    `merged_prs`. It is nonetheless counted in the denominator (`+ 1`): the
+    candidate is itself a grain of the day. Counting it is deliberately
+    conservative early in the day -- it stops a lane front-loading LIGHTs at
+    02:00 against a throughput it has not produced yet.
 
-    A PR counts as a LIGHT for the budget iff its EFFECTIVE tier (#8970
-    requalification) is LIGHT: a declared LIGHT re-qualified up to MED does
-    NOT spend it, a declared DEEP re-qualified down to LIGHT DOES.
+    Returns {cap_reached, budget, spent, lane_grains, consumed_by} where
+    consumed_by is the earliest merged LIGHT of the lane (kept for the
+    workflow's message), or None.
     """
-    earlier_lights = []
-    for pr in merged_prs:
-        labels = label_names(pr)
-        if effective_tier(pr.get("body", ""), labels) != "LIGHT":
-            continue
-        # lane is structural -- never re-qualified; it still comes from the body.
-        g = parse_grain(pr.get("body", ""))
-        if not g or g["lane"] != target_lane:
-            continue
-        earlier_lights.append(pr)
-    if not earlier_lights:
-        return {"cap_reached": False, "consumed_by": None}
-    # earliest merged LIGHT of the lane = the one that consumed the budget
-    earlier_lights.sort(key=lambda p: p.get("mergedAt", ""))
-    first = earlier_lights[0]
+    grains = lane_grains(merged_prs, target_lane)
+    lights = lane_lights(merged_prs, target_lane)
+    budget = light_budget(len(grains) + 1)  # +1 = the open candidate
+    lights.sort(key=lambda p: p.get("mergedAt", ""))
+    reached = len(lights) >= budget
+    first = lights[0] if lights else None
     return {
-        "cap_reached": True,
-        "consumed_by": {
-            "number": first.get("number"),
-            "mergedAt": first.get("mergedAt"),
-        },
+        "cap_reached": reached,
+        "budget": budget,
+        "spent": len(lights),
+        "lane_grains": len(grains) + 1,
+        "consumed_by": (
+            {"number": first.get("number"), "mergedAt": first.get("mergedAt")}
+            if reached and first else None
+        ),
     }
 
 
 def replay(merged_prs: list[dict]) -> list[dict]:
     """For every LIGHT PR in the set, decide cap_reached against the FULL set.
 
-    A LIGHT is cap-reached iff a LIGHT of its OWN lane merged strictly EARLIER
-    (earlier mergedAt). The first LIGHT of each lane is never cap-reached.
+    The day is over here (audit path), so each lane's denominator is KNOWN:
+    its budget is `max(1, lane_grains // 3)` over the whole set. The k-th LIGHT
+    of a lane (chronological, 1-based) is cap-reached iff `k > budget`. Under a
+    budget of 1 this reduces exactly to the old rule -- the first LIGHT of each
+    lane is never flagged.
+
     Returns the list sorted by mergedAt (chronological replay).
     """
+    # denominator per lane: ALL attributed grains, any tier (they earn budget)
+    grains_by_lane: dict[str, int] = {}
+    for pr in merged_prs:
+        lane = _lane_of(pr)
+        if lane:
+            grains_by_lane[lane] = grains_by_lane.get(lane, 0) + 1
+
     lights = []
     for pr in merged_prs:
-        labels = label_names(pr)
-        if effective_tier(pr.get("body", ""), labels) != "LIGHT":
+        lane = _lane_of(pr)
+        if not lane:
             continue
-        g = parse_grain(pr.get("body", ""))
-        if not g or not g["lane"]:
+        if effective_tier(pr.get("body", ""), label_names(pr)) != "LIGHT":
             continue
-        lights.append({**pr, "_tier": "LIGHT", "_lane": g["lane"]})
+        lights.append({**pr, "_tier": "LIGHT", "_lane": lane})
     lights.sort(key=lambda p: p.get("mergedAt", ""))
-    # one pass: per lane, the first seen (chronologically) is the budget owner
-    seen_lane: dict[str, int] = {}
+
+    # one pass: per lane, the k-th LIGHT spends the k-th unit of budget
+    spent: dict[str, list[int]] = {}
     out = []
     for pr in lights:
         lane = pr["_lane"]
-        owner = seen_lane.get(lane)
-        cap = owner is not None
+        budget = light_budget(grains_by_lane.get(lane, 0))
+        prior = spent.setdefault(lane, [])
+        cap = len(prior) >= budget
         out.append({
             "number": pr.get("number"),
             "lane": lane,
             "mergedAt": pr.get("mergedAt"),
             "cap_reached": cap,
-            "consumed_by": owner,
+            "budget": budget,
+            "lane_grains": grains_by_lane.get(lane, 0),
+            # the LIGHT that spent the last budget unit, for the message
+            "consumed_by": prior[-1] if cap and prior else None,
         })
-        if owner is None:
-            seen_lane[lane] = pr.get("number")
+        if not cap:
+            prior.append(pr.get("number"))
     return out
 
 
