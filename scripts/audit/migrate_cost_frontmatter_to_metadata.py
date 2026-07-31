@@ -45,6 +45,32 @@ Usage
   python scripts/audit/migrate_cost_frontmatter_to_metadata.py \\
       --project MyIA.AI.Notebooks/QuantConnect/projects/RiskParity --apply
 
+FORME GenAI (#9089, follow-up de #9088)
+---------------------------------------
+Le path GenAI (migrate_genai_notebook) est un SUPERSET du path QC. Il gere les
+3 axes ou la forme GenAI differe du quantbook QC :
+  - frontmatter en cell#0 OU cell#1 (Audio/Image le portent en cell#1, apres
+    la cell titre/navigation) ;
+  - metadata.cost ABSENT -> CREE depuis le frontmatter (pas de scanner QC) ;
+  - frontmatter MALFORME (closing `---` indente, avale par `notes: |`) ->
+    parse tolerant yaml.safe_load.
+De plus : un bloc top-level `notes:` migre vers `metadata.cost.notes` (guard
+#8921-4, « cas Claudish » — un colocataire substantiel ne doit pas etre
+silencieusement droppe avec le frontmatter), et les timestamps ISO auto-parses
+par yaml.safe_load sont re-serializes en chaines ISO (json.dumps ne serialise
+pas les datetime). Une cell frontmatter-only est SUPPRIMEE ; une cell
+frontmatter + trailing H1 est strippee en gardant le H1.
+
+`--shape` :
+  - `auto` (defaut) : GenAI-first (superset) ; fallback QC pour un diagnostic
+    plus fin sur les notebooks sans cell `--- cost:` (ex. deja migre ->
+    skip-already-migrated). Un quantbook QC est traite de facon identique par
+    les deux paths (union cost + strip).
+  - `qc` : path QC strict (cell#0, metadata.cost present, bien forme) — refuse
+    si metadata.cost absent (contrat quantbook : peupler via
+    populate_quantconnect_cost.py d'abord).
+  - `genai` : path GenAI uniquement.
+
 Exit codes : 0 = ok (dry-run ou apply) ; 1 = au moins une erreur/defaut de coherence.
 """
 
@@ -111,6 +137,94 @@ def strip_frontmatter_preserving_type(raw_source):
 
 def _lf_only(text: str) -> str:
     return text.replace("\r\n", "\n")
+
+
+# ---------------------------------------------------------------------------
+# GenAI shape (#9089, follow-up of #9088) — ADDITIVE, QC path unchanged.
+#
+# The GenAI shape differs from the QC quantbook shape on three axes:
+#   1. frontmatter in cell#0 OR cell#1 (Audio/Image carry it in cell#1, after a
+#      title/navigation cell);
+#   2. `metadata.cost` usually ABSENT (no QC scanner populates it first) — the
+#      frontmatter is the only source, so migration must CREATE it;
+#   3. MALFORMED frontmatter possible (3 Audio notebooks: the closing `---` is
+#      indented and swallowed by a `notes: |` block — no column-0 closer; a raw
+#      whole-body `yaml.safe_load` is tolerant of this).
+# Additionally: a top-level `notes:` colocataire migrates to
+# `metadata.cost.notes` (guard #8921-4, "cas Claudish" — a substantive prose
+# block must not be silently dropped with the frontmatter), and ISO timestamps
+# auto-parsed by yaml.safe_load (e.g. `metadata_written: 2026-07-23T09:30Z`)
+# are sanitized back to ISO strings (json.dumps cannot serialize datetimes).
+# ---------------------------------------------------------------------------
+
+
+def _sanitize(obj):
+    """yaml.safe_load auto-parses ISO timestamps into datetime objects, which
+    json.dumps cannot serialize. Convert them (and nested) back to ISO strings."""
+    import datetime
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    return obj
+
+
+# Well-formed frontmatter WITH trailing capture: opening `---`, body, col-0
+# closing `---`, optional trailing content. The body is parsed BETWEEN the
+# delimiters (a raw whole-body parse sees the closing `---` as a YAML doc
+# separator -> error).
+_WF_RE_TRAILING = re.compile(r"\A---\s*\n(.*?)\n---\s*\n?(.*)\Z", re.DOTALL)
+
+
+def parse_frontmatter_genai(src: str):
+    """GenAI frontmatter parser. Returns (fm_dict, trailing_str) or (None, None).
+
+    Well-formed (col-0 closing `---`): parse the body BETWEEN delimiters; the
+    closing `---` is a YAML doc separator, so a raw whole-body parse fails.
+    trailing = content after the closer (may be '' for frontmatter-only cells).
+
+    Malformed (no col-0 closer, e.g. indented `---` swallowed by `notes: |`):
+    tolerant whole-body `yaml.safe_load` (the indented closer becomes literal
+    content); the whole cell is frontmatter -> trailing = ''.
+    """
+    m = _WF_RE_TRAILING.match(src)
+    if m:
+        try:
+            data = yaml.safe_load(m.group(1)) or {}
+            if isinstance(data, dict):
+                return data, m.group(2)
+        except yaml.YAMLError:
+            pass
+    # Malformed fallback: tolerant whole-body parse.
+    body = re.sub(r"\A---\s*\n", "", src, count=1)
+    try:
+        data = yaml.safe_load(body)
+    except yaml.YAMLError:
+        return None, None
+    if isinstance(data, dict):
+        return data, ""
+    return None, None
+
+
+def find_genai_frontmatter_cell(nb: dict):
+    """Return (idx, fm_dict, trailing_str, src_str) for the first markdown cell
+    among #0/#1 whose source starts with `---` and parses to a dict with a
+    `cost` key. None if no such cell."""
+    for i in (0, 1):
+        if i >= len(nb.get("cells", [])):
+            continue
+        c = nb["cells"][i]
+        if c.get("cell_type") != "markdown":
+            continue
+        src = _as_str(c.get("source", ""))
+        if not src.startswith("---"):
+            continue
+        fm, trailing = parse_frontmatter_genai(src)
+        if isinstance(fm, dict) and isinstance(fm.get("cost"), dict):
+            return i, fm, trailing, src
+    return None
 
 
 def migrate_notebook(path: Path, apply: bool, by: str):
@@ -246,8 +360,186 @@ def migrate_notebook(path: Path, apply: bool, by: str):
     return report
 
 
+def migrate_genai_notebook(path: Path, apply: bool, by: str):
+    """Migre un notebook de la forme GenAI (#9089, follow-up de #9088).
+
+    Differencie du path QC (migrate_notebook, inchange) sur :
+      - frontmatter en cell#0 OU cell#1 ;
+      - metadata.cost absent -> CREE depuis le frontmatter ;
+      - frontmatter malforme (closing `---` indente) -> parse tolerant ;
+      - notes: -> metadata.cost.notes (guard #8921-4) ;
+      - cell frontmatter-only -> SUPPRIME la cell ; frontmatter+trailing -> garde le H1.
+
+    Memes gates que le path QC : byte-stable round-trip, code-sha256 inchange,
+    output-count inchange, diff minimal.
+    """
+    import copy
+    import hashlib
+    rel = str(path)
+    try:
+        original = path.read_text(encoding="utf-8")
+        nb_o = json.loads(original)
+    except Exception as exc:
+        return {"path": rel, "status": "error", "detail": f"read/parse: {exc}"}
+
+    found = find_genai_frontmatter_cell(nb_o)
+    if found is None:
+        return {"path": rel, "status": "skip-no-genai-frontmatter",
+                "detail": "no `--- cost:` cell among #0/#1"}
+    fm_idx, fm, trailing, fm_full_src = found
+    fm_cost = _sanitize(fm.get("cost") or {})
+
+    meta = nb_o.get("metadata", {})
+    meta_cost = meta.get("cost")
+    existing = meta_cost if isinstance(meta_cost, dict) else {}
+    merged = {**existing, **fm_cost}
+    # Guard #8921-4 : un bloc notes: substantiel migre vers metadata.cost.notes.
+    notes = fm.get("notes")
+    if isinstance(notes, str) and notes.strip() and "notes" not in merged:
+        merged["notes"] = notes.strip()
+
+    overwritten = {k: {"from": existing.get(k), "to": fm_cost.get(k)}
+                   for k in fm_cost if existing.get(k) != fm_cost.get(k)}
+    meta_only = sorted(k for k in existing if k not in fm_cost)
+
+    nb_n = copy.deepcopy(nb_o)
+    if trailing.strip():
+        # frontmatter + trailing -> garder la cell, source = trailing (preserver list/str).
+        old_cell = nb_n["cells"][fm_idx]
+        if isinstance(old_cell.get("source"), list):
+            old_cell["source"] = trailing.splitlines(keepends=True)
+        else:
+            old_cell["source"] = trailing
+        removed = False
+    else:
+        # frontmatter-only -> supprimer la cell.
+        del nb_n["cells"][fm_idx]
+        removed = True
+    nb_n.setdefault("metadata", {})["cost"] = merged
+
+    # ---- GATES ----
+    gates = {}
+    # 1. byte-stable baseline (tolere un \n final manquant dans l'original).
+    rt_orig = _lf_only(json.dumps(json.loads(original), indent=1, ensure_ascii=False) + "\n")
+    norm_orig = _lf_only(original)
+    if not norm_orig.endswith("\n"):
+        norm_orig += "\n"
+    gates["byte_stable_baseline"] = (rt_orig == norm_orig)
+
+    # 2. code sha256 inchange (ensemble ; la cell supprimee est markdown).
+    def _code_sha_set(nb):
+        out = []
+        for c in nb.get("cells", []):
+            if c.get("cell_type") == "code":
+                out.append(hashlib.sha256(_as_str(c.get("source", "")).encode("utf-8")).hexdigest())
+        return out
+    gates["code_sha_unchanged"] = (_code_sha_set(nb_o) == _code_sha_set(nb_n))
+
+    # 3. output-count inchange (la cell frontmatter est markdown : pas d'outputs).
+    def _output_count(nb):
+        return sum(len(c.get("outputs") or []) for c in nb.get("cells", []))
+    oc_o, oc_n = _output_count(nb_o), _output_count(nb_n)
+    gates["output_count_unchanged"] = (oc_o == oc_n)
+    gates["output_count"] = f"{oc_o}->{oc_n}"
+
+    # 4. diff minimal : seuls la cell frontmatter (source) et metadata.cost changent.
+    cells_o, cells_n = nb_o["cells"], nb_n["cells"]
+    minimal, diff_detail = True, []
+    if removed:
+        keep_o = [c for j, c in enumerate(cells_o) if j != fm_idx]
+        if len(keep_o) != len(cells_n):
+            minimal = False
+            diff_detail.append(f"len mismatch after removal {len(keep_o)} vs {len(cells_n)}")
+        else:
+            for j, (co, cn) in enumerate(zip(keep_o, cells_n)):
+                if co != cn:
+                    minimal = False
+                    diff_detail.append(f"kept cell#{j} differs")
+    else:
+        if len(cells_o) != len(cells_n):
+            minimal = False
+            diff_detail.append("len changed without removal")
+        else:
+            for j, (co, cn) in enumerate(zip(cells_o, cells_n)):
+                if j == fm_idx:
+                    for k in co:
+                        if k == "source":
+                            continue
+                        if co.get(k) != cn.get(k):
+                            minimal = False
+                            diff_detail.append(f"fm cell#{j} field {k} changed")
+                elif co != cn:
+                    minimal = False
+                    diff_detail.append(f"cell#{j} changed")
+    meta_o, meta_n = nb_o.get("metadata", {}), nb_n.get("metadata", {})
+    for k in set(list(meta_o.keys()) + list(meta_n.keys())):
+        if k == "cost":
+            continue
+        if meta_o.get(k) != meta_n.get(k):
+            minimal = False
+            diff_detail.append(f"metadata field {k} changed")
+    gates["minimal_diff"] = minimal
+    gates["diff_detail"] = diff_detail
+
+    if removed:
+        gates["kept_cell_starts_with_h1"] = "n/a (cell removed)"
+    else:
+        new_src = _as_str(nb_n["cells"][fm_idx].get("source", ""))
+        gates["kept_cell_starts_with_h1"] = new_src.lstrip().startswith("#")
+
+    new_content = _lf_only(json.dumps(nb_n, indent=1, ensure_ascii=False) + "\n")
+    all_ok = (gates["byte_stable_baseline"] and gates["code_sha_unchanged"]
+              and gates["output_count_unchanged"] and gates["minimal_diff"]
+              and (removed or gates["kept_cell_starts_with_h1"]))
+
+    report = {
+        "path": rel,
+        "fm_cell": f"#{fm_idx}",
+        "action": "remove-cell" if removed else "strip-keep-trailing",
+        "trailing_chars": len(trailing),
+        "cost_keys": sorted(fm_cost.keys()),
+        "overwritten_fields": overwritten,
+        "metadata_only_fields_preserved": meta_only,
+        "merged_cost_keys": len(merged),
+        "notes_migrated": "notes" in merged and isinstance(fm.get("notes"), str),
+        **gates,
+    }
+    if not apply:
+        report["status"] = "dry-run-genai" if all_ok else "dry-run-genai-GATE-FAIL"
+        return report
+    if not all_ok:
+        report["status"] = "aborted-genai-gate-fail"
+        return report
+    path.write_bytes(new_content.encode("utf-8"))
+    report["status"] = "migrated-genai"
+    return report
+
+
 def _iter_project(project_dir: Path):
     yield from sorted(project_dir.glob("*.ipynb"))
+
+
+def _dispatch(path: Path, apply: bool, by: str, shape: str):
+    """Choisit le path QC (migrate_notebook) ou GenAI (migrate_genai_notebook)
+    selon --shape.
+
+    Le path GenAI est un SUPERSET du path QC : il gere cell#0 OU cell#1, le
+    frontmatter malforme, la creation de metadata.cost si absent, ET migre
+    `notes:` -> metadata.cost.notes (guard #8921-4). Un quantbook QC (cell#0
+    bien forme + metadata.cost present) est traite de facon identique par les
+    deux paths (union cost + strip). `auto` prefere donc GenAI (uniformise la
+    migration notes sur tous les notebooks a frontmatter cost) et ne retombe
+    sur QC que si GenAI ne reconnait pas de cell `--- cost:` (ex. notebook
+    deja migre -> QC donne un skip-already-migrated plus specifique)."""
+    if shape == "qc":
+        return migrate_notebook(path, apply=apply, by=by)
+    if shape == "genai":
+        return migrate_genai_notebook(path, apply=apply, by=by)
+    # auto : GenAI-first (superset), fallback QC pour un diagnostic plus fin.
+    genai_dry = migrate_genai_notebook(path, apply=False, by=by)
+    if genai_dry["status"] != "skip-no-genai-frontmatter":
+        return migrate_genai_notebook(path, apply=apply, by=by)
+    return migrate_notebook(path, apply=apply, by=by)
 
 
 def main(argv=None) -> int:
@@ -257,6 +549,10 @@ def main(argv=None) -> int:
                     help="Répertoire projet QC (migrer tous ses *.ipynb).")
     ap.add_argument("--apply", action="store_true", help="Écrire (défaut : dry-run).")
     ap.add_argument("--by", default="anonymous", help="machine:workspace (provenance).")
+    ap.add_argument("--shape", choices=("auto", "qc", "genai"), default="auto",
+                    help="Forme de frontmatter : qc (cell#0, metadata.cost present, "
+                         "bien forme), genai (cell#0/#1, malforme, metadata.cost absent), "
+                         "auto (defaut : qc si preconditions tiennent, sinon genai).")
     args = ap.parse_args(argv)
 
     paths = list(args.notebooks)
@@ -274,22 +570,33 @@ def main(argv=None) -> int:
             counts["error"] = counts.get("error", 0) + 1
             rc = 1
             continue
-        rep = migrate_notebook(p, apply=args.apply, by=args.by)
+        rep = _dispatch(p, apply=args.apply, by=args.by, shape=args.shape)
         st = rep["status"]
         counts[st] = counts.get(st, 0) + 1
-        marker = "WRITE" if (args.apply and st == "migrated") else "DRY" if st == "dry-run" else "SKIP"
+        is_genai = st.endswith("-genai") or "genai" in st
+        wrote = (args.apply and st in ("migrated", "migrated-genai"))
+        marker = "WRITE" if wrote else ("DRY" if st.startswith("dry-run") else "SKIP")
         if st in ("error", "refused-no-metadata-cost", "aborted-not-equivalent",
-                  "aborted-non-minimal-diff"):
+                  "aborted-non-minimal-diff", "aborted-genai-gate-fail",
+                  "dry-run-genai-GATE-FAIL"):
             rc = 1
         ow = rep.get("overwritten_fields", {})
         total_overwritten += len(ow)
         name = p.name
         fields = ",".join(sorted(ow)) if ow else "-"
-        print(f"  [{marker:4s}] {st:26s} {name:24} overwrite=[{fields}] meta_only={rep.get('metadata_only_fields_preserved', [])}")
-        print(f"          byte_stable_baseline={rep.get('byte_stable_baseline')} "
-              f"field_equivalent={rep.get('field_equivalent')} "
-              f"minimal_diff={rep.get('minimal_diff')} "
-              f"h1={rep.get('new_cell0_starts_with_h1')}")
+        print(f"  [{marker:4s}] {st:28s} {name:26} overwrite=[{fields}] meta_only={rep.get('metadata_only_fields_preserved', [])}")
+        if is_genai:
+            print(f"          fm={rep.get('fm_cell')} act={rep.get('action')} "
+                  f"byte_stable={rep.get('byte_stable_baseline')} "
+                  f"code_sha={rep.get('code_sha_unchanged')} "
+                  f"out_cnt={rep.get('output_count_unchanged')}({rep.get('output_count')}) "
+                  f"minimal={rep.get('minimal_diff')} h1={rep.get('kept_cell_starts_with_h1')} "
+                  f"notes_migrated={rep.get('notes_migrated')}")
+        else:
+            print(f"          byte_stable_baseline={rep.get('byte_stable_baseline')} "
+                  f"field_equivalent={rep.get('field_equivalent')} "
+                  f"minimal_diff={rep.get('minimal_diff')} "
+                  f"h1={rep.get('new_cell0_starts_with_h1')}")
 
     mode = "APPLY" if args.apply else "DRY-RUN"
     print(f"\n[{mode}] by={args.by}  notebooks={len(paths)}  fields_overwritten={total_overwritten}")
