@@ -9,10 +9,12 @@ S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Sour
 Tout `[CLAIMED]` (dashboard) **et** tout body de PR portent en **première ligne** :
 
 ```
-Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>
+Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>
 ```
 
-Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard`.
+Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard #8954`.
+
+**Champ `prev:` — genre + numéro de PR (la forme que la flotte écrit réellement).** `prev:` documente le grain précédent de la lane pour l'adjacence G-VAR-3 (`<TIER>/<GENRE>`) **et** le lie à une PR vérifiable (`#<PR>`). Le numéro de PR est **plus vérifiable** qu'un genre auto-déclaré seul : un `prev: MED/lean` nu est re-dérivable de mémoire (donc contestable), tandis qu'un `prev: MED/lean #8954` pointe vers une PR réelle dont on peut relire le diff. Mesuré sur la flotte (55 PR taguées post-ratification 2026-07-21) : **100 %** portent déjà le numéro de PR (`prev: MED/tooling #8975`, `prev: MED/lean (#8954 …)`) — la spec précédente `prev: <TIER>/<GENRE>` (sans numéro) n'était respectée par personne. Le genre reste **obligatoire** (c'est la clé d'adjacence G-VAR-3) ; le numéro est obligatoire aussi. Le checker `variation-tag-guard.yml` ne valide pas le champ `prev:` (il valide `TIER` + `GENRE` + `lane`), donc cette forme n'ajoute ni ne retire aucun gate — c'est une **doc de spec** qui aligne la règle sur la pratique réelle plutôt que d'imposer du churn.
 
 **Forme canonique vs substance (le guard est agnostique à la ponctuation).** La ligne ci-dessus est la **forme canonique** (`—` em-dash, libellés minuscules). Le guard d'enforcement ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml)) matche par **mot-clé** (`Grain:`, `lane`) en casse insensible, après neutralisation de la décoration markdown (`tr -d '*\`'`) — il ne voit **ni** le séparateur (`—` / `·` / virgule) **ni** la casse des libellés (`Lane:` / backticks passent). Ce que G-VAR-2/G-VAR-3 et le coordinateur vérifient est la **substance** (TIER par le litmus, GENRE dans l'énumération §1, `lane` présente) — pas la ponctuation. Un tag existant en variante de présentation n'est **pas** une non-conformité à reformatter : ne pas forcer du churn cosmétique sur un tag valide. (See #8934 tranche (C).)
 

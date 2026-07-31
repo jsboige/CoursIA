@@ -121,7 +121,7 @@ jobs:
           note_defect() { DEFECTS="$DEFECTS $1"; }
 
           if [ -z "$GRAIN_LINE" ]; then
-            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
+            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>' (TIER = DEEP|MED|LIGHT)."
             note_defect variation-tag-missing
           else
             echo "Ligne lue : $GRAIN_LINE"
