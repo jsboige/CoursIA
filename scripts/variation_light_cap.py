@@ -91,6 +91,61 @@ def parse_grain(body: str) -> dict | None:
     }
 
 
+# --- requalification (coordinator override of the declared tag) ------------
+
+# variation-protocol says the DECLARED `Grain:` tag is not self-executing: the
+# coordinator re-qualifies it at merge (up: a declared LIGHT read as MED on the
+# strength of the diff; down: a declared DEEP read as LIGHT). Until #8970 that
+# decision lived only in a dashboard post -- invisible to this job, which then
+# flagged legitimately re-qualified work (1 FP / 2 flags on the 2026-07-30
+# wave: #8930, re-qualified LIGHT->MED, was still flagged CAP-REACHED).
+#
+# The channel is a GitHub LABEL applied at merge -- `grain-requalified:<TIER>`
+# -- machine-readable, leaves the worker's body intact, cheap to query
+# (`gh pr list --json ...,labels` adds the field to the SAME call, no extra
+# quota). A present label OVERRIDES the declared tier for counting, in BOTH
+# directions: up-qualification spares the LIGHT budget, down-qualification
+# consumes it (the symmetric case #8970 asks for). The LANE is structural
+# (the worker's workspace) and is never re-qualified -- it still comes from
+# the declared body.
+_REQUAL_LABEL_RE = re.compile(
+    r"grain-requalified:\s*(LIGHT|MED|DEEP)", re.IGNORECASE
+)
+
+
+def label_names(pr: dict) -> list[str]:
+    """Flatten a PR's `labels` field to a list of names.
+
+    Robust to the two shapes `gh ... --json labels` can return: a list of
+    strings (names) or a list of objects `{name, color, ...}` (the default).
+    """
+    out: list[str] = []
+    for lab in pr.get("labels") or []:
+        if isinstance(lab, str):
+            out.append(lab)
+        elif isinstance(lab, dict):
+            name = lab.get("name")
+            if name:
+                out.append(name)
+    return out
+
+
+def effective_tier(body: str | None, labels: list[str]) -> str | None:
+    """The TIER that counts for G-VAR-2.
+
+    A `grain-requalified:<TIER>` label (if present) OVERRIDES the declared
+    `Grain:` tag, in both directions -- up (LIGHT->MED spares the budget) and
+    down (DEEP->LIGHT consumes it). Returns the declared tier when no
+    requalification label is present, or None when neither is readable.
+    """
+    for lab in labels:
+        m = _REQUAL_LABEL_RE.search(lab)
+        if m:
+            return m.group(1).upper()
+    g = parse_grain(body or "")
+    return g["tier"] if g else None
+
+
 # --- cap logic -------------------------------------------------------------
 
 def light_cap_status(merged_prs: list[dict], target_lane: str) -> dict:
@@ -102,11 +157,19 @@ def light_cap_status(merged_prs: list[dict], target_lane: str) -> dict:
     PR would be the 2nd -> cap-reached. Returns {cap_reached, consumed_by}
     where consumed_by is the earliest merged LIGHT of that lane (the one that
     spent the budget), or None.
+
+    A PR counts as a LIGHT for the budget iff its EFFECTIVE tier (#8970
+    requalification) is LIGHT: a declared LIGHT re-qualified up to MED does
+    NOT spend it, a declared DEEP re-qualified down to LIGHT DOES.
     """
     earlier_lights = []
     for pr in merged_prs:
+        labels = label_names(pr)
+        if effective_tier(pr.get("body", ""), labels) != "LIGHT":
+            continue
+        # lane is structural -- never re-qualified; it still comes from the body.
         g = parse_grain(pr.get("body", ""))
-        if not g or g["tier"] != "LIGHT" or g["lane"] != target_lane:
+        if not g or g["lane"] != target_lane:
             continue
         earlier_lights.append(pr)
     if not earlier_lights:
@@ -132,10 +195,13 @@ def replay(merged_prs: list[dict]) -> list[dict]:
     """
     lights = []
     for pr in merged_prs:
-        g = parse_grain(pr.get("body", ""))
-        if not g or g["tier"] != "LIGHT" or not g["lane"]:
+        labels = label_names(pr)
+        if effective_tier(pr.get("body", ""), labels) != "LIGHT":
             continue
-        lights.append({**pr, "_tier": g["tier"], "_lane": g["lane"]})
+        g = parse_grain(pr.get("body", ""))
+        if not g or not g["lane"]:
+            continue
+        lights.append({**pr, "_tier": "LIGHT", "_lane": g["lane"]})
     lights.sort(key=lambda p: p.get("mergedAt", ""))
     # one pass: per lane, the first seen (chronologically) is the budget owner
     seen_lane: dict[str, int] = {}
@@ -182,6 +248,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--body-file", metavar="FILE",
                    help="--check-pr only: path to a file holding the current "
                         "PR body (alternative to --body)")
+    p.add_argument("--labels-file", metavar="FILE",
+                   help="--check-pr only: JSON array of the current PR's labels "
+                        "(so a requalification label on the open PR is honored; "
+                        "symmetric to the requalification read on merged PRs)")
     args = p.parse_args(argv)
 
     if not args.replay:
@@ -198,11 +268,29 @@ def main(argv: list[str] | None = None) -> int:
             body = Path(args.body_file).read_text(encoding="utf-8")
         if body is None:
             p.error("--check-pr requires --body or --body-file")
-        g = parse_grain(body)
-        if not g or g["tier"] != "LIGHT":
-            print(json.dumps({"cap_reached": False, "reason": "not LIGHT"}))
+        cur_labels: list[str] = []
+        if args.labels_file:
+            # Tolerate a missing/empty file (treat as no labels) rather than
+            # crash: the CI workflow always writes valid JSON (`gh pr view` or
+            # a `printf '[]'` fallback), but a manual invocation should not
+            # hard-fail on an absent file.
+            lpath = Path(args.labels_file)
+            raw = []
+            if lpath.exists() and lpath.read_text(encoding="utf-8").strip():
+                try:
+                    raw = json.loads(lpath.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    raw = []
+            # accept [str] or [{name}] (label_names handles objects via a dict)
+            cur_labels = label_names({"labels": raw})
+        # Effective tier (#8970): a requalification label overrides the declared
+        # one. Only an EFFECTIVE LIGHT is assessed against the cap.
+        eff = effective_tier(body, cur_labels)
+        if eff != "LIGHT":
+            print(json.dumps({"cap_reached": False, "reason": f"not LIGHT (effective {eff})"}))
             return 0
-        if not g["lane"]:
+        g = parse_grain(body)
+        if not g or not g["lane"]:
             print(json.dumps({"cap_reached": False, "reason": "no lane in tag"}))
             return 0
         status = light_cap_status(merged, g["lane"])
