@@ -393,6 +393,23 @@ python scripts/notebook_tools/check_twin_parity.py --update
 python scripts/notebook_tools/check_twin_parity.py --json
 ```
 
+> **Ordre des outils** (#8957) : `--update` ecrit le **git blob SHA** courant des
+> jumeaux. Toute edition du notebook deplace ce blob -- y compris une
+> normalisation outillee qui ne touche aucun contenu calcule
+> (`strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`).
+> Le rebaseline va donc **en dernier**, apres toute mutation du notebook, sinon
+> l'attestation est invalidee par le strip qui suit et le gate `--per-pair` sort
+> DRIFT-INTRO :
+>
+>     1. re-exec locale (.net-csharp / papermill)
+>     2. normalisations outillees (strip_probe_banner.py --apply, ...)
+>     3. check_twin_parity.py --update   <-- TOUJOURS en dernier
+>
+> Inverser les etapes 2 et 3 (attester la parite PUIS stripper le banner) est le
+> reflexe naturel et le piege exact : la parite est vraie, mais son empreinte a
+> bouge, et le worker comme le coordinateur ne peuvent le deviner sans relire
+> cette sequence.
+
 ### CI integration (`.github/workflows/twin-parity.yml`, c.818)
 
 Le workflow `.github/workflows/twin-parity.yml` **fail** toute PR qui
@@ -401,7 +418,7 @@ exemple un fix doc-honesty sur un seul cote), le worker doit :
 
 1. **Re-auditer la paire firsthand** (lecture cellule-par-cellule des deux
    jumeaux, verdict ecrit dans `known_differences` du registre).
-2. **Rebaseline les SHAs** : `python scripts/notebook_tools/check_twin_parity.py --update [--family ...]`.
+2. **Rebaseline les SHAs** : `python scripts/notebook_tools/check_twin_parity.py --update [--family ...]`. **En dernier** -- apres toute normalisation outillee du notebook (`strip_probe_banner.py --apply` deplace le blob SHA ; cf. *Ordre des outils* ci-dessus, #8957).
 3. Committer le registre rebaseline **dans la meme PR** que l'edit du cote
    modifie (le PR porte a la fois le diff du notebook et le diff du
    registre).
@@ -456,7 +473,11 @@ les outputs.
 - Hook CI : `.github/workflows/banner-guard.yml`
 
 **Hook executant** : la re-execution d'un notebook .NET re-injecte le
-banner. Toujours `--apply` apres chaque re-exec .NET avant commit.
+banner. Toujours `--apply` apres chaque re-exec .NET avant commit. Si le
+notebook a un jumeau (registre `twin_pairs.d/`), `--apply` deplace son git
+blob SHA : rebaselinez la parite (`check_twin_parity.py --update`) **apres**
+le strip, jamais avant -- sinon le strip invalide l'attestation et le gate
+sort DRIFT-INTRO (#8957).
 
 ### `strip_machine_paths.py`, `scrub_papermill_paths.py`
 
