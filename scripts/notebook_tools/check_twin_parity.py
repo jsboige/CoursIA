@@ -586,7 +586,11 @@ def main(argv=None) -> int:
                    help="Exit 1 si DRIFT/MISSING detecte (CI-ready)")
     p.add_argument("--update", action="store_true",
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
-                        "(a lancer APRES une audit firsthand d'une paire)")
+                        "(a lancer APRES une audit firsthand d'une paire). ORDRE : en "
+                        "DERNIER, apres toute normalisation outillee (strip_probe_banner / "
+                        "strip_machine_paths / scrub_papermill_paths) : ces outils re-"
+                        "edintent le notebook, donc un --update fait avant eux est invalide "
+                        "et declenche une fausse DRIFT (cf issue #8957).")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     p.add_argument("--coverage", action="store_true",
                    help="Recense les notebooks C# versionnes NON couverts par le "

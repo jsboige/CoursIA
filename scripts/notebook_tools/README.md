@@ -393,6 +393,14 @@ python scripts/notebook_tools/check_twin_parity.py --update
 python scripts/notebook_tools/check_twin_parity.py --json
 ```
 
+> **Ordre canonique rebaseline** (#8957) : `--update` atteste le git blob SHA
+> *courant* du notebook. Toute normalisation outillee (`strip_probe_banner.py`,
+> `strip_machine_paths.py`, `scrub_papermill_paths.py`) re-edite le fichier et
+> deplace ce SHA. Sequence : re-exec -> **strip / normalisation** ->
+> `check_twin_parity.py --update` **en dernier**. Inverser l'ordre (update puis
+> strip) pose une attestation sur un notebook qui va changer -> fausse DRIFT,
+> gate rouge alors que la parite est reelle.
+
 ### CI integration (`.github/workflows/twin-parity.yml`, c.818)
 
 Le workflow `.github/workflows/twin-parity.yml` **fail** toute PR qui
@@ -457,6 +465,12 @@ les outputs.
 
 **Hook executant** : la re-execution d'un notebook .NET re-injecte le
 banner. Toujours `--apply` apres chaque re-exec .NET avant commit.
+
+> **Ordre vs parite** (#8957) : sur une PR a paire jumelle, `--apply` re-edite
+> le notebook et deplace son git blob SHA. Lance-le **avant**
+> `check_twin_parity.py --update` : la rebaseline doit se faire en dernier,
+> sur le notebook deja normalise, sinon le gate twin-parity signale une fausse
+> DRIFT (parite reelle, empreinte deplacee).
 
 ### `strip_machine_paths.py`, `scrub_papermill_paths.py`
 
