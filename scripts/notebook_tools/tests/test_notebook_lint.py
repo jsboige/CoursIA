@@ -329,6 +329,20 @@ class TestCheckC2:
         nb = _nb([_code("# line 1\n# line 2\n# line 3")])
         assert check_c2(nb) == []
 
+    def test_csharp_comment_only_skipped(self):
+        # .NET Interactive C# '//'-only cell is a transition note, not
+        # executable code — must not be flagged for a missing execution_count.
+        # Mirrors scan_c1_source '//' awareness (#5261).
+        nb = _nb([_code("// Exercice : implementez le solveur ci-dessous\n"
+                        "// (cellule de transition, aucun enonce executable)")])
+        assert check_c2(nb) == []
+
+    def test_lean_comment_only_skipped(self):
+        # Lean '--'-only cell is non-executable prose (consistent with the
+        # validate_pr_notebooks gate, which special-cases Lean '--' per #5151).
+        nb = _nb([_code("-- Exercice : completez la preuve\n-- (note de transition)")])
+        assert check_c2(nb) == []
+
 
 # ---------------------------------------------------------------------------
 # check_structure
