@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 4de72c27634911bebbdc2c03ae36c9a52b570b1c
+    date: "2026-08-01"
+    by: myia-po-2026:CoursIA
+    python_sha: 205e5b7233e4db4630ba0ee1efec143a2661c46a
     csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
   known_differences:
     - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
