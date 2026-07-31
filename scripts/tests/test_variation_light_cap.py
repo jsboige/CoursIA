@@ -209,3 +209,85 @@ def test_replay_down_qualification_makes_later_light_cap_reached():
     assert [r["number"] for r in flagged] == [2]
     assert flagged[0]["consumed_by"] == 1
 
+
+
+# --- ratio budget (G-VAR-2 2026-07-31): 1 LIGHT per 3 merged grains ---------
+
+def _pr(n, lane, tier, at, labels=None):
+    d = {"number": n, "body": f"Grain: {tier}/x -- lane {lane}", "mergedAt": at}
+    if labels is not None:
+        d["labels"] = labels
+    return d
+
+
+def test_light_budget_floor_is_one():
+    # A low-output lane keeps EXACTLY the old ceiling -- the floor is what
+    # makes the ratio a strict relaxation: no lane is worse off than before.
+    assert vlc.light_budget(0) == 1
+    assert vlc.light_budget(1) == 1
+    assert vlc.light_budget(5) == 1
+
+
+def test_light_budget_grows_per_slice_of_three():
+    assert vlc.light_budget(6) == 2
+    assert vlc.light_budget(9) == 3
+    assert vlc.light_budget(20) == 6  # the 19-merge day + the open candidate
+
+
+def test_high_output_lane_is_not_capped_at_one():
+    # The motivating case: 9 grains merged (7 DEEP + 2 LIGHT). Under the old
+    # absolute cap the 2nd LIGHT was flagged; the lane is the OPPOSITE of
+    # monoculture, so it must not be.
+    lane = "myia-po-2024:CoursIA-2"
+    prs = [_pr(i, lane, "DEEP", f"2026-07-31T0{i}:00:00Z") for i in range(1, 8)]
+    prs += [_pr(8, lane, "LIGHT", "2026-07-31T08:00:00Z"),
+            _pr(9, lane, "LIGHT", "2026-07-31T09:00:00Z")]
+    rows = vlc.replay(prs)
+    assert {r["number"] for r in rows if r["cap_reached"]} == set()
+    assert all(r["budget"] == 3 for r in rows)  # 9 grains // 3
+
+
+def test_high_output_lane_still_capped_past_budget():
+    # The ratio relaxes, it does not disarm: a 4th LIGHT on a 9-grain lane
+    # (budget 3) IS flagged. A lane still cannot be majority-LIGHT.
+    lane = "myia-po-2024:CoursIA-2"
+    prs = [_pr(i, lane, "DEEP", f"2026-07-31T0{i}:00:00Z") for i in range(1, 6)]
+    prs += [_pr(6, lane, "LIGHT", "2026-07-31T06:00:00Z"),
+            _pr(7, lane, "LIGHT", "2026-07-31T07:00:00Z"),
+            _pr(8, lane, "LIGHT", "2026-07-31T08:00:00Z"),
+            _pr(9, lane, "LIGHT", "2026-07-31T09:00:00Z")]
+    rows = vlc.replay(prs)
+    assert {r["number"] for r in rows if r["cap_reached"]} == {9}
+
+
+def test_denominator_counts_all_tiers_not_just_lights():
+    # DEEP/MED grains are what EARN the budget; counting only LIGHTs would
+    # make the ratio self-referential (1 LIGHT always allows the next one).
+    lane = "myia-po-2023:CoursIA"
+    prs = [_pr(i, lane, "DEEP", f"2026-07-31T0{i}:00:00Z") for i in range(1, 7)]
+    assert len(vlc.lane_grains(prs, lane)) == 6
+    assert len(vlc.lane_lights(prs, lane)) == 0
+    # 6 merged + 1 open candidate = 7 -> budget 2, nothing spent -> allowed
+    st = vlc.light_cap_status(prs, lane)
+    assert st["cap_reached"] is False and st["budget"] == 2 and st["spent"] == 0
+
+
+def test_status_counts_the_open_candidate_in_denominator():
+    # Conservative on purpose: the candidate is itself a grain of the day, so
+    # a lane cannot front-load LIGHTs at 02:00 against unproduced throughput.
+    lane = "myia-po-2023:CoursIA"
+    prs = [_pr(1, lane, "LIGHT", "2026-07-31T02:00:00Z")]
+    st = vlc.light_cap_status(prs, lane)
+    assert st["lane_grains"] == 2       # 1 merged + the candidate
+    assert st["budget"] == 1 and st["spent"] == 1
+    assert st["cap_reached"] is True
+
+
+def test_budget_is_per_lane_not_global():
+    # A busy lane's budget must not bleed into a quiet lane's.
+    busy, quiet = "myia-po-2024:CoursIA-2", "myia-po-2025:CoursIA"
+    prs = [_pr(i, busy, "DEEP", f"2026-07-31T0{i}:00:00Z") for i in range(1, 7)]
+    prs += [_pr(7, quiet, "LIGHT", "2026-07-31T07:00:00Z"),
+            _pr(8, quiet, "LIGHT", "2026-07-31T08:00:00Z")]
+    rows = vlc.replay(prs)
+    assert {r["number"] for r in rows if r["cap_reached"]} == {8}  # quiet lane: budget 1
