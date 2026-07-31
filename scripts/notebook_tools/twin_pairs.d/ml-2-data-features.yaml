@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: af21e99f91c1f21b8aeacd2de14e5c4b2bfddc44
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 101ab5a0f5a70557bcddc84c4ebfebadbb8ecc64
     csharp_sha: f08215df5b5be9b9a64577a165a13fc386719c70
+    reason: "rebaseline python apres 2 fixes (#8052) : (1) table parite cellule 0 disait ColumnTransformer remainder='passthrough' mais code cellule 7 = remainder='drop' (passthrough ferait fuiter fare_amount le label dans les features) ; (2) cellules 4 et 18 citaient df.info() mais le code cellule 5 utilise df.dtypes (output=Series dtypes, pas rendering info()) -- df.describe()/isna() etait reels, seul df.info() fantome. Fix API-config identity. Python-only, csharp_sha unchanged, parite semantique preservee."
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."
