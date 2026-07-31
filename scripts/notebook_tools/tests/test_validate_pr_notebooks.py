@@ -153,6 +153,25 @@ class TestValidateNotebookH3:
         assert result["passed"] is True
         assert result["forensic_verdict"] == "EXEC_PROVED"
 
+    def test_csharp_comment_only_cell_skipped(self, tmp_path):
+        """A .NET C# cell that is purely '//'-comments is a transition note,
+        not executable code — it is skipped (not counted in total_code, not
+        flagged for a null execution_count), consistent with Lean '--' (#5151)
+        and the '//' awareness of scan_c1_source (#5261). Previously the gate
+        used 'comment_prefix = # if not lean', so a '//'-only cell with
+        execution_count null was a false H.3/C.2 hit."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("// Exercice : le solveur est introduit ci-dessous.\n"
+                  "// (cellule de transition, aucun enonce executable)",
+                  exec_count=None),
+            _code('Console.WriteLine("ok");', exec_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout",
+                            "text": ["ok"]}]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1  # comment-only cell skipped, real cell counted
+        assert result["passed"] is True
+
     def test_skip_exec_for_lean_kernel(self, tmp_path):
         """Lean notebooks tolerate a null execution_count (kept advisory — own
         rendering subtleties via lean4_jupyter/alectryon, out of #5214 scope)."""

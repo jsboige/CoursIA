@@ -269,7 +269,16 @@ def validate_notebook(nb_path: Path) -> dict:
         # Lean command cells — and with them any error output they carry
         # (#5151: the failing '#print axioms' / '#check' cells were skipped;
         # the notebook was only caught by its failing 'import' cell).
-        comment_prefix = "--" if "lean" in kernel else "#"
+        # C# / F# (.NET Interactive) line comments use '//' — a '//'-only cell is
+        # a transition note, not executable code, so it must not be counted as
+        # total_code nor flagged for a missing execution_count. Mirrors the '//'
+        # awareness of scan_c1_source (#5261) in the same ecosystem.
+        if "lean" in kernel:
+            comment_prefix = "--"
+        elif "csharp" in kernel or "fsharp" in kernel:
+            comment_prefix = "//"
+        else:
+            comment_prefix = "#"
         lines = [l.strip() for l in source.split("\n") if l.strip()]
         if all(l.startswith(comment_prefix) for l in lines):
             continue
