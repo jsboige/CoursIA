@@ -30,6 +30,9 @@ defaults:
   run:
     working-directory: MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI
 
+permissions:
+  contents: read
+
 jobs:
   compile-collect:
     name: Compile & Collect (no live server)
