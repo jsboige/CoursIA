@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 49861cbc522cd0dd1aa91e50475bdfa1bc050722
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
     csharp_sha: e846c562a18f32cb4e643b607a1b6556aa0d3c85
   known_differences:
     - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
