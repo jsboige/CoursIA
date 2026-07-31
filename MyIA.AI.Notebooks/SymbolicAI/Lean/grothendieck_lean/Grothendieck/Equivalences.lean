@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 27 — Équivalences de catégories
+Grothendieck Partie 29 — Équivalences de catégories
 
 Alexandre Grothendieck (1928-2014).
 

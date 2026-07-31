@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: d912aa6fa531a5c7e3f17e7a48273b13c475e91e
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: fb3b73b211652b5f98f80be2fb313371134d366d
     csharp_sha: 2af24ace90f1827f11fb857c728befa001822d16
   known_differences:
     - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."

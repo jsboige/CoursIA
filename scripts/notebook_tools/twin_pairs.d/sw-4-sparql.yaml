@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
     python_sha: ca77e6a8869febafe182e51fbb41372489fd89ae
-    csharp_sha: 2665b2384dace718433e7b6cf6ae611b4386464f
+    csharp_sha: 8423823352423ed333872a3c24dc84d946992957
   known_differences:
     - "Socle commun : execution de requetes SPARQL 1.1 (SELECT/CONSTRUCT/ASK) sur un graphe RDF."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` moteur Leviathan + `VDS.RDF.Query.Builder` fluent). Python = `rdflib` (`graph.query()` natif). Moteurs SPARQL equivalents, syntaxe de binding idiomatique differente."
+    - "Re-baseline 2026-07-31 (myia-po-2024:CoursIA-2, cycle c.1067) : SHA C# avance 2665b238 -> 84238233 (cell[7] + cell[9] : le code-block d'interpretation presentait l'objet comme un litteral `\"John Smith\"` / `\"Smith\"`, mais la sortie cell[6]/[8] montre que `.Object(string)` a emis une VARIABLE `?John Smith` / `?Smith` (piege QueryBuilder) ; code-block et tableau alignes sur la variable, note piege ajoutee). Drift verifie parite-preserving : prose markdown seule, aucune cellule de code touchee (n'affecte pas l'axe de parite semantic ; le twin Python n'utilise pas QueryBuilder)."

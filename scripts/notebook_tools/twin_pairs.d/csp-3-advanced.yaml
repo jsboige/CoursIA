@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 43d03b3249e2f0c886a2a1e2df0c533510ff666e
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: ea4369680e7b982cb3a6efc2d73b060e4218a4df
     csharp_sha: c6865e44c00885bccd47a4ee26cc0a3b45ff8099
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."

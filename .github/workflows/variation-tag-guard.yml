@@ -121,7 +121,7 @@ jobs:
           note_defect() { DEFECTS="$DEFECTS $1"; }
 
           if [ -z "$GRAIN_LINE" ]; then
-            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>' (TIER = DEEP|MED|LIGHT)."
+            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>' (TIER = DEEP|MED|LIGHT)."
             note_defect variation-tag-missing
           else
             echo "Ligne lue : $GRAIN_LINE"
@@ -220,6 +220,15 @@ jobs:
   # (testable, agnostique separateur/casse #8938, bodies lus en TEXTE ENTIER --
   # le bug ligne-a-ligne avait rendu "18/38 sans tag" au lieu de "2/38"). Le job
   # n'est que la plomberie CI : dataset des mergees du jour + label + commentaire.
+  #
+  # #8970 : le compteur lit le tier DECLARE, mais le protocole dit que le tag
+  # declare n'est pas auto-executable -- le coordinateur RE-qualifie au merge
+  # (up LIGHT->MED, down DEEP->LIGHT). Cette requalification est porte par un
+  # LABEL `grain-requalified:<TIER>` applique au merge (machine-readable, body
+  # intact, cheap : --json labels ajoute le champ a la MEME requete, pas de
+  # quota supplementaire). Le label OVERRIDE le tier declare pour le comptage,
+  # dans les deux sens. Sans lui, le compteur flaggait du travail legitiment
+  # re-qualifie (1 FP/2 flags sur la vague 2026-07-30 : #8930 LIGHT->MED).
   check-light-cap:
     name: G-VAR-2 light cap (cross-PR)
     runs-on: ubuntu-latest
@@ -256,21 +265,34 @@ jobs:
           # Les PR deja mergees aujourd'hui = le jeu de comptage. La PR courante
           # est OUVERTE (le job tourne sur opened/edited/synchronize/reopened,
           # pas sur le merge) donc elle n'est PAS dans ce set -- c'est ce qui
-          # rend la 2e LIGHT detectable.
+          # rend la 2e LIGHT detectable. On recupere aussi les LABELS pour
+          # honorer la requalification #8970 (grain-requalified:<TIER> qui
+          # override le tier declare) : ajouter le champ `labels` a la MEME
+          # requete ne consomme pas de quota supplementaire.
           gh pr list --state merged --search "merged:$TODAY" \
-            --json number,body,mergedAt > /tmp/merged.json 2>/dev/null || true
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
 
           # Le body circule par fichier : printf '%s' ne reinterprete rien
           # (newlines, quotes, $), contrairement a un passage en arg CLI.
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
-          # ADVISORY : le script sort toujours en 0. Si le TIER n'est pas LIGHT
-          # ou la lane absente, il renvoie cap_reached=false et le label est
-          # retire (un label colle par un push anterieur ne survit pas).
+          # Labels de la PR courante : une requalification peut etre pre-appliquee
+          # sur la PR ouverte (cas down-qualification, ou up-qualification
+          # anticipee). On les passe au detecteur pour que son verdict soit
+          # symetrique a celui porte sur les mergees. `gh pr view --json labels`
+          # renvoie [{name,...}] -- le script l'aplatit.
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # ADVISORY : le script sort toujours en 0. Si le TIER EFFECTIF n'est
+          # pas LIGHT (declare LIGHT re-qualifie up, ou declare non-LIGHT sans
+          # down-qualif) ou la lane absente, il renvoie cap_reached=false et le
+          # label est retire (un label colle par un push anterieur ne survit pas).
           python3 scripts/variation_light_cap.py \
             --replay /tmp/merged.json \
             --check-pr "$PR_NUMBER" \
-            --body-file /tmp/pr_body.txt > /tmp/status.json 2>/tmp/cap.err || true
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json > /tmp/status.json 2>/tmp/cap.err || true
 
           echo "--- detector output ---"
           cat /tmp/status.json 2>/dev/null || true

@@ -1,5 +1,5 @@
 /-
-Grothendieck Part 27 — Equivalences of categories [English mirror of Equivalences.lean]
+Grothendieck Part 29 — Equivalences of categories [English mirror of Equivalences.lean]
 
 Alexander Grothendieck (1928-2014).
 

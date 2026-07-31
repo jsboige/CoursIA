@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 29 — Catégories monoïdales
+Grothendieck Partie 32 — Catégories monoïdales
 
 Alexander Grothendieck (1928-2014).
 
