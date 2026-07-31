@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: f3d6b7c265dfa5bd1daea79295718512de999ac0
+    date: "2026-08-01"
+    by: myia-po-2026:CoursIA
+    python_sha: 302e714c9920f536e87ce2d89bff63125d45d0a4
     csharp_sha: e250e1fc294bd7be5cac4a85ca5a25d25e989ef2
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
