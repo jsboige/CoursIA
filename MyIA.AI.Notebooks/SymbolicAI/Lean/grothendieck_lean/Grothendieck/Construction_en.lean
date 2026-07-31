@@ -1,5 +1,5 @@
 /-
-Grothendieck Part 27 — The Grothendieck construction (fibered categories)
+Grothendieck Part 30 — The Grothendieck construction (fibered categories)
 (English mirror of Construction.lean)
 
 Alexander Grothendieck (1928-2014).
