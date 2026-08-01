@@ -4,11 +4,12 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2026
+    date: '2026-08-01'
+    by: myia-po-2023:CoursIA
     python_sha: f07a9680882345ad9f56a69e24f8092acfe8a68e
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+    csharp_sha: 00e6fa3db38788e412185290178b2a6235bea0d8
   known_differences:
     - "Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l'information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1057, EPIC #8052) : SHA C# avance 2c8194226 -> 00e6fa3db via §D.5 markdown-fix cote C# uniquement (cell[40] recap '296 mots identiques' + 'log2(296) = 8.21' -> 297 / 8.214, alignes aux outputs committes des DEUX twins qui chargent 297 mots). Cause : PR #8062 avait ajoute CRANE au WORD_LIST C# (296->297 pour parite twin) sans rafraichir le recap. Cote Python non modifie (python_sha f07a9680 inchange). Drift verifie markdown-only sur l'axe C#, aucune cellule de code touchee."
