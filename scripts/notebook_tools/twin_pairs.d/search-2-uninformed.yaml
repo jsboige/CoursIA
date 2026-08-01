@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
     python_sha: a52a0221e059b9823dac05b04f25f81413f7199d
-    csharp_sha: e8a25ef312f51ab75be56de9db60a9819033eb09
+    csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
+    reason: "c.1123 #8052 C# c19 IDDFS depth/iteration count (profondeur 3->2, 4->3 itérations); Python twin clean (generic d-table)"
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
