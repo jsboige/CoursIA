@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 7603bd23f94542ef31234f5dd68985d2ae246783
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
+    python_sha: 952bcfdc76d9081394fc63e46f999c1d826c54a4
     csharp_sha: d82c3b21f1f515ae25ec06eb1dc733ace1d39b05
   known_differences:
     - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."
