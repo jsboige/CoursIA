@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
+    date: '2026-08-01'
     by: po-2026
-    python_sha: 4fdd12c2d22df5dd64e280b12af5b4709d586b5a
+    python_sha: 46db7b7f58336a9d3e7c2875a766381071982542
     csharp_sha: 52f7b50aa5d1f9553673ecce518df546dd4c1f93
   known_differences:
     - "Socle pedagogique commun : Planning d'infirmieres (CSP : contraintes horaires, preferences, couverture) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
