@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2023
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
     python_sha: 3be092acbcd19093e20425200c97a973c99ff75f
-    csharp_sha: 06dff5d8a085846f7feb1dc3e08765da35c5f2ce
+    csharp_sha: 45c01bd69738c1140eba9b6702718861db90c816
   known_differences:
     - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."
