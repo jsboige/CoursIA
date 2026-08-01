@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-07-25'
     by: po-2026
-    python_sha: a0a5d1ff2462770aa37fda5dd0c426ff6cd31589
+    python_sha: d87bc2b4ae3f2abfdb2be0283a8e0d337e0465aa
     csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
   known_differences:
     - "Socle pedagogique commun : Demineur (CSP : contraintes sommes exactes, library python-constraint) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
