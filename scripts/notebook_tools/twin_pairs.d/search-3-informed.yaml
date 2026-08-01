@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
     python_sha: 8714484eea272c813ceff697541496fa1e9445e9
-    csharp_sha: 0be3eb092323ac4a3cf7e346f89c3bf65163a081
+    csharp_sha: bf8c96dd9e8698d84e62e40933356e8394d4fe58
+    reason: "c.1123 #8052 C# heuristic-value drift in 4 cells (c5/c8/c12/c19) vs c4 output table; Python twin uses different trip (Bordeaux->Strasbourg)"
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
     - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."
