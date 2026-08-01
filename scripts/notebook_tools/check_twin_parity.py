@@ -755,12 +755,20 @@ def main(argv=None) -> int:
                 # empreinte qui a bouge. Dans ce cas le rebaseline --update va EN DERNIER,
                 # apres ces strips, sinon l'attestation est invalidee par le strip qui suit
                 # (piege naturel, #8957).
+                #
+                # Ce rappel est un DIAGNOSTIC destine a l'humain : il va sur stderr, pas stdout.
+                # En mode --json, stdout est un contrat machine (un unique objet JSON consomme
+                # par le workflow CI via json.load) ; imprimer ce rappel sur stdout apres le
+                # JSON -> json.load levait "Extra data" et faisait tomber le gate en raw
+                # traceback (PRs #9097/#9098, exit 1 sur drift introduit). stderr reste visible
+                # dans les logs CI sans corrompre le rapport.
                 print(
                     "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
                     "deplace le blob SHA (strip_probe_banner.py --apply, "
                     "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
                     "--update va EN DERNIER, apres ces strips -- attester PUIS "
-                    "stripper invalide l'attestation (#8957)."
+                    "stripper invalide l'attestation (#8957).",
+                    file=sys.stderr,
                 )
             return 1
         return 0
