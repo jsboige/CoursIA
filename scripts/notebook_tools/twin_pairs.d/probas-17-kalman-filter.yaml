@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
     python_sha: 92f49cfd7f33fff4e811fdb0842db13c5223fb57
-    csharp_sha: 535ca94fb2f496c80ff13ce67e9d91bb37556622
+    csharp_sha: f9a250007ee3c1702bdedef7a253eab9a5ff7acf
   known_differences:
   - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
