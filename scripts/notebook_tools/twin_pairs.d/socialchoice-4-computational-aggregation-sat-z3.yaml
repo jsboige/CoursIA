@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-31"
-    by: myia-po-2024:CoursIA-2
-    python_sha: 871a25d65e0f12c7347a3cb6322931d84ce2c6b9
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
+    python_sha: bd66b19d97f2a1659befa2f87886688e778b84b5
     csharp_sha: 64e14757bdf161f3bf84fbe8096cf0217d58c8fd
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
@@ -14,3 +14,4 @@
     - "Asymetrie de couverture forte : Python (68 cellules, 21 code, 47 markdown) couvre §1-8 + une Partie 2 complete SMT-Z3 (8 sous-sections : Config, Encodage SMT, UNSAT, SAT 2-alternatives, Relaxation, Benchmarks, SAT vs SMT, Exercices Z3) ; C# (33 cellules, 12 code, 21 markdown) replie Z3 dans une seule §7. La Partie 2 SMT du Python est largement absente du C#."
     - "Parite Z3 CONFIRMEE : les deux cotes utilisent Z3 pour la branche SMT (Python z3-py ; C# Microsoft.Z3 4.12.2). Le SMT est nativement twinned ; l'asymetrie porte uniquement sur le SAT (PySAT 3-solveurs vs C# DPLL from-scratch)."
     - "Axes de benchmark differents : Python §6 = benchmark de SOLVERS (Glucose3 vs Minisat22 vs Cadical103 sur l'encodage d'Arrow) ; C# §6 = benchmark STRUCTUREL Arrow vs Sen (compare les deux theoremes, pas les solveurs). Visualisation : Python §7 'Espace des Solutions' via matplotlib/numpy ; C# sans librairie de plotting."
+    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1054, EPIC #8052) : SHA Python avance 871a25d6 -> bd66b19d via §D.5 markdown-fix cote Python uniquement (table d'encodage + solver-bound alignes aux outputs committes ; drift parite-preserving, le C# n'est pas touche). Cote C# non modifie (csharp_sha 64e14757 inchange). Drift verifie surface-preserving : prose markdown seule sur l'axe de couverture Python, aucune cellule de code C# touchee."
