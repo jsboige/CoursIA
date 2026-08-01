@@ -7,7 +7,7 @@
     date: "2026-08-01"
     by: myia-po-2023:CoursIA
     python_sha: 92f49cfd7f33fff4e811fdb0842db13c5223fb57
-    csharp_sha: f9a250007ee3c1702bdedef7a253eab9a5ff7acf
+    csharp_sha: d939f2694311d205a9c0980da216033ee4481389
   known_differences:
   - 'Socle pedagogique commun : filtre de Kalman (etat latent dynamique lineaire-gaussien) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
