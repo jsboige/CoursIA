@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: myia-po-2024:CoursIA-2 2026-07-31
-    python_sha: e8cbb855b1d3b44b93c091d28990202477441e96
+    date: "2026-08-01"
+    by: myia-po-2026:CoursIA 2026-08-01
+    python_sha: 97ba9b763f12116f3ffcf85b8e71ffb1bce6082a
     csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
