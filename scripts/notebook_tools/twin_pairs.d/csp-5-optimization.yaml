@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
+    date: "2026-08-02"
     by: myia-po-2023:CoursIA
     python_sha: 8d85f3cea371b53d8af97bc1b1794ad011dec604
-    csharp_sha: 40f1efebc6a5fd9341b3bbdadfbe08554e8e85fc
+    csharp_sha: 6fb8e7123b81e8fa53830aace174623f775a9d5a
   known_differences:
     - "Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d'optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite, patterns de coupe optimaux, allocation lineaire sous contraintes de risque)."
     - "Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l'echelle). C# = **Choco-solver via IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l'assembleur IKVM."
