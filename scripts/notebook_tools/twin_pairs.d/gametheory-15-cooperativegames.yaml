@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
+    date: "2026-08-01"
     by: po-2023
-    python_sha: d9f12903dea2485bd5db631883cac049f3ff2581
+    python_sha: 6ff3e939ebb545e0462f0f7ee2243746d5fff9a6
     csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
   known_differences:
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable, fonction caracteristique et coalitions, valeur de Shapley (Shapley 1953) et ses axiomes (efficacite, symetrie, joueur nul, additivite), glove game (jeu des gants) comme exemple canonique."
