@@ -220,25 +220,25 @@ or `Quot.lift` involved.
 -/
 
 /-- The Block is a still life: `isStillLife block = true`. -/
-theorem block_still_life : isStillLife block = true := by native_decide
+theorem block_still_life : isStillLife block = true := by decide
 
 /-- The Beehive is a still life. -/
-theorem beehive_still_life : isStillLife beehive = true := by native_decide
+theorem beehive_still_life : isStillLife beehive = true := by decide
 
 /-- The horizontal Blinker oscillates with period 2. -/
-theorem blinker_period_two : isOscillator blinker_h 2 = true := by native_decide
+theorem blinker_period_two : isOscillator blinker_h 2 = true := by decide
 
 /-- One step turns the horizontal Blinker into the vertical Blinker. -/
-theorem blinker_step : (step blinker_h == blinker_v) = true := by native_decide
+theorem blinker_step : (step blinker_h == blinker_v) = true := by decide
 
 /-- The Toad oscillates with period 2. -/
-theorem toad_period_two : isOscillator toad 2 = true := by native_decide
+theorem toad_period_two : isOscillator toad 2 = true := by decide
 
 /-- The Beacon oscillates with period 2. -/
-theorem beacon_period_two : isOscillator beacon 2 = true := by native_decide
+theorem beacon_period_two : isOscillator beacon 2 = true := by decide
 
 /-- The Glider is a spaceship of period 4, displacement `(1, -1)`. -/
-theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by native_decide
+theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by decide
 
 end Life
 end Conway
