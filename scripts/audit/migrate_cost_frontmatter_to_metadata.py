@@ -246,6 +246,247 @@ def migrate_notebook(path: Path, apply: bool, by: str):
     return report
 
 
+# ---------------------------------------------------------------------------
+# Extension GenAI (#9089) — forme frontmatter cell#0|cell#1, metadata.cost
+# souvent ABSENT (le frontmatter est l'unique source -> CRÉE), YAML MALFORMÉ
+# toléré (closer `---` indenté et avalé par un bloc `notes: |`).
+#
+# La route QC (migrate_notebook) est LAISSÉE INTACTE : cell#0 stricte,
+# metadata.cost pré-existant requis. Cette extension est activée par
+# `--shape genai` (défaut `qc`). Complémentaire de #9088 (qui migre les 6
+# notebooks GenAI actuels en one-shot) : ici on rend la logique durable.
+# ---------------------------------------------------------------------------
+
+import datetime as _datetime
+
+
+def _sanitize_yaml_scalars(obj):
+    """yaml.safe_load convertit `metadata_written: 2026-07-23T09:30Z` en un
+    objet datetime/date non JSON-sérialisable. Reconvertit récursivement ces
+    scalaires en chaînes ISO (round-trip JSON-safe)."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_yaml_scalars(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_yaml_scalars(v) for v in obj]
+    if isinstance(obj, (_datetime.datetime, _datetime.date)):
+        return obj.isoformat()
+    return obj
+
+
+def _col0_closer_index(lines_with_endings):
+    """Index du 2e `---` en colonne 0 (le closer du frontmatter), ou None si
+    absent. Le 1er `---` (ligne 0) est l'open. Un `---` indenté (`  ---`,
+    avalé dans un bloc `notes: |`) NE compte PAS comme closer colonne 0."""
+    seen_open = False
+    for i, ln in enumerate(lines_with_endings):
+        if ln.rstrip("\r\n") == "---":
+            if not seen_open:
+                seen_open = True
+                continue
+            return i
+    return None
+
+
+def _parse_genai_frontmatter_cell(raw_source):
+    """Parse une cellule markdown de frontmatter GenAI. Retourne
+    (cost_dict, disposition, new_source) :
+
+      - disposition == 'remove_cell' : cellule purement frontmatter (malformé
+        sans closer col0, OU well-formed avec trailing vide) -> supprimer la
+        cellule entière.
+      - disposition == 'strip_keep_h1' : well-formed, un H1 suit le closer ->
+        new_source = contenu trailing (à conserver, même format list/str que
+        l'entrée).
+
+    Retourne (None, None, None) si la cellule n'est pas un frontmatter cost
+    valide (pas de `---` ouvrant, YAML non parsable, ou pas de bloc `cost:`).
+    """
+    is_list = isinstance(raw_source, list)
+    text = "".join(raw_source) if is_list else (raw_source or "")
+    if not text.startswith("---"):
+        return None, None, None
+    lines = text.splitlines(keepends=True)
+
+    closer = _col0_closer_index(lines)
+    if closer is not None:
+        # Well-formed : body entre open (ligne 0) et closer.
+        body = "".join(lines[1:closer])
+        trailing_lines = lines[closer + 1:]
+        k = 0
+        while k < len(trailing_lines) and trailing_lines[k].strip() == "":
+            k += 1
+        trailing = trailing_lines[k:]
+        if trailing and trailing[0].lstrip().startswith("#"):
+            disposition = "strip_keep_h1"
+            new_text = "".join(trailing)
+        else:
+            disposition = "remove_cell"
+            new_text = None
+    else:
+        # Malformé : pas de closer col0. yaml.safe_load tolérant sur tout le
+        # body (le `---` ouvrant est un séparateur de doc YAML valide).
+        body = text
+        disposition = "remove_cell"
+        new_text = None
+
+    try:
+        data = yaml.safe_load(body)
+    except yaml.YAMLError:
+        return None, None, None
+    if not isinstance(data, dict) or not isinstance(data.get("cost"), dict):
+        return None, None, None
+
+    cost = _sanitize_yaml_scalars(data["cost"])
+    new_source = None
+    if new_text is not None:
+        new_source = new_text.splitlines(keepends=True) if is_list else new_text
+    return cost, disposition, new_source
+
+
+def _detect_genai_cost_cell(cells):
+    """Cherche la cellule de frontmatter cost parmi cell#0 et cell#1 (forme
+    GenAI : le frontmatter peut vivre en cell#1 après la cellule titre/nav).
+    Retourne (index, cost, disposition, new_source) ou (None, None, None, None).
+    """
+    for i in range(min(2, len(cells))):
+        c = cells[i]
+        if c.get("cell_type") != "markdown":
+            continue
+        cost, disposition, new_source = _parse_genai_frontmatter_cell(c.get("source", ""))
+        if cost is not None:
+            return i, cost, disposition, new_source
+    return None, None, None, None
+
+
+def migrate_notebook_genai(path: Path, apply: bool, by: str):
+    """Migre un notebook GenAI : frontmatter cell#0|cell#1, metadata.cost
+    possiblement ABSENT (CRÉÉ depuis le frontmatter seul), YAML malformé toléré.
+
+    Mêmes garanties que la route QC : byte-stabilité du re-dump, diff minimal
+    (seuls la cellule frontmatter et metadata.cost changent), équivalence du
+    merge. La disposition remove_cell supprime la cellule frontmatter (diff
+    minimal adapté : cell count diminue d'exactement 1).
+    """
+    rel = str(path)
+    try:
+        original = path.read_text(encoding="utf-8")
+    except Exception as exc:
+        return {"path": rel, "status": "error", "detail": f"read/parse: {exc}"}
+    try:
+        nb_orig = json.loads(original)
+    except Exception as exc:
+        return {"path": rel, "status": "error", "detail": f"parse: {exc}"}
+    cells = nb_orig.get("cells", [])
+    if not cells:
+        return {"path": rel, "status": "error", "detail": "no cells"}
+
+    idx, fm_cost, disposition, new_source = _detect_genai_cost_cell(cells)
+    if idx is None:
+        return {"path": rel, "status": "skip-already-migrated",
+                "detail": "no `---` cost frontmatter in cell#0/#1 (already migrated)"}
+
+    meta = nb_orig.get("metadata", {})
+    meta_cost = meta.get("cost")
+    if isinstance(meta_cost, dict) and meta_cost:
+        # UNION (même règle que QC) : metadata d'abord, frontmatter gagne.
+        merged = {**meta_cost, **fm_cost}
+        overwritten = {k: {"from": meta_cost.get(k), "to": fm_cost.get(k)}
+                       for k in fm_cost if meta_cost.get(k) != fm_cost.get(k)}
+        meta_only = sorted(k for k in meta_cost if k not in fm_cost)
+        created = False
+    else:
+        # GenAI : metadata.cost absent -> CRÉÉ depuis le frontmatter seul.
+        merged = {**fm_cost}
+        overwritten = {}
+        meta_only = []
+        created = True
+
+    # Copie de travail appliquant la disposition structurelle.
+    nb2 = json.loads(original)
+    meta2 = nb2.setdefault("metadata", {})
+    if disposition == "remove_cell":
+        del nb2["cells"][idx]
+    else:  # strip_keep_h1
+        nb2["cells"][idx]["source"] = new_source
+    meta2["cost"] = merged
+
+    expected = ({**meta_cost, **fm_cost}) if (isinstance(meta_cost, dict) and meta_cost) else {**fm_cost}
+    equivalent = (merged == expected)
+
+    # Byte-stabilité : préserve la convention de fin-de-fichier (trailing newline
+    # ou non) du notebook original. Contrairement à la route QC (qui ajoute
+    # toujours "\n"), la route GenAI détecte la convention -> re-dump truly
+    # byte-stable (hors des champs migrés). Voir leçon json-dumps-indent1.
+    lf_original = _lf_only(original)
+    has_nl = lf_original.endswith("\n")
+    rt_original = _lf_only(json.dumps(json.loads(original), indent=1, ensure_ascii=False))
+    rt_original += "\n" if has_nl else ""
+    byte_stable_baseline = (rt_original == lf_original)
+
+    # DIFF MINIMAL (GenAI) : seuls (a) la cellule frontmatter [supprimée OU
+    # source réécrite en H1 seul] et (b) metadata.cost peuvent changer.
+    cells_o = nb_orig.get("cells", [])
+    cells_n = nb2.get("cells", [])
+    minimal_diff = True
+    diff_detail = []
+    if disposition == "remove_cell":
+        kept_o = cells_o[:idx] + cells_o[idx + 1:]
+        if kept_o != cells_n:
+            minimal_diff = False
+            diff_detail.append(f"cells differ beyond frontmatter removal "
+                               f"(o={len(cells_o)} n={len(cells_n)} idx={idx})")
+    else:  # strip_keep_h1
+        if len(cells_o) != len(cells_n):
+            minimal_diff = False
+            diff_detail.append(f"cell count {len(cells_o)}->{len(cells_n)}")
+        else:
+            for i, (co, cn) in enumerate(zip(cells_o, cells_n)):
+                if i == idx:
+                    for k in co:
+                        if k == "source":
+                            continue
+                        if co.get(k) != cn.get(k):
+                            minimal_diff = False
+                            diff_detail.append(f"cell#{i} field '{k}' changed")
+                elif co != cn:
+                    minimal_diff = False
+                    diff_detail.append(f"cell#{i} changed")
+    meta_o = nb_orig.get("metadata", {})
+    for k in meta_o:
+        if k == "cost":
+            continue
+        if meta_o.get(k) != meta2.get(k):
+            minimal_diff = False
+            diff_detail.append(f"metadata field '{k}' changed")
+
+    report = {
+        "path": rel,
+        "frontmatter_cell": idx,
+        "disposition": disposition,
+        "created_metadata_cost": created,
+        "overwritten_fields": overwritten,
+        "metadata_only_fields_preserved": meta_only,
+        "byte_stable_baseline": byte_stable_baseline,
+        "field_equivalent": equivalent,
+        "minimal_diff": minimal_diff,
+        "diff_detail": diff_detail,
+    }
+    if not apply:
+        report["status"] = "dry-run"
+        return report
+    if not equivalent:
+        report["status"] = "aborted-not-equivalent"
+        return report
+    if not minimal_diff:
+        report["status"] = "aborted-non-minimal-diff"
+        return report
+    new_content = _lf_only(json.dumps(nb2, indent=1, ensure_ascii=False))
+    new_content += "\n" if has_nl else ""
+    path.write_bytes(new_content.encode("utf-8"))
+    report["status"] = "migrated"
+    return report
+
+
 def _iter_project(project_dir: Path):
     yield from sorted(project_dir.glob("*.ipynb"))
 
@@ -256,6 +497,9 @@ def main(argv=None) -> int:
     ap.add_argument("--project", type=Path,
                     help="Répertoire projet QC (migrer tous ses *.ipynb).")
     ap.add_argument("--apply", action="store_true", help="Écrire (défaut : dry-run).")
+    ap.add_argument("--shape", choices=("qc", "genai"), default="qc",
+                    help="Forme de frontmatter : qc (cell#0, metadata.cost requis) "
+                         "ou genai (cell#0/#1, cost créé, YAML malformé toléré). Défaut : qc.")
     ap.add_argument("--by", default="anonymous", help="machine:workspace (provenance).")
     args = ap.parse_args(argv)
 
@@ -274,7 +518,9 @@ def main(argv=None) -> int:
             counts["error"] = counts.get("error", 0) + 1
             rc = 1
             continue
-        rep = migrate_notebook(p, apply=args.apply, by=args.by)
+        rep = (migrate_notebook_genai(p, apply=args.apply, by=args.by)
+               if args.shape == "genai"
+               else migrate_notebook(p, apply=args.apply, by=args.by))
         st = rep["status"]
         counts[st] = counts.get(st, 0) + 1
         marker = "WRITE" if (args.apply and st == "migrated") else "DRY" if st == "dry-run" else "SKIP"
