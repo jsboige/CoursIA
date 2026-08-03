@@ -5,11 +5,10 @@
   parity_level: semantic
   last_audit:
     date: "2026-08-01"
-    by: myia-po-2023:CoursIA
-    python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+    by: myia-po-2026:CoursIA
+    python_sha: 99c03ee215fe487b384b0b016b233cdbf852df30
     csharp_sha: 0993ec2e3068216e3b07f1448dd5776de232692b
   known_differences:
     - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8320/#8170 (doc-honesty md52 non-determinism output alignment + hyphenation) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
-    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1052, EPIC #8052) : SHA Python avance ae9dbea7 -> 809a7fa5 via c59 recap-row markdown-fix (alignement 'absence stable fréquente' -> 'grande majorité' a l'output c51 92/100 + l'interpretation c52 deja correcte ; verdit markdown-fix qualitatif). Cote C# non touche (le twin C# ne porte pas cette recap row). Drift verifie parite-preserving : prose markdown seule, aucune cellule de code touchee (n'affecte pas l'axe de parite semantic). NOTE : ce re-baseline fait avancer le python_sha au-dela de la valeur proposee par #9106 (po-2026, 99c03ee2 = blob pre-fix) ; po-2026 devra re-resoudre cette 1 ligne (ae9dbea7 -> 809a7fa5) au rebase."

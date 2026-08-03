@@ -47,7 +47,7 @@ theorem nimSum_nil : nimSum [] = 0 := rfl
 
 /-- CALIBRATION (decide): the position [3,4,5] is a first-player win. -/
 theorem isWinningNim_345 : isWinningNim [3, 4, 5] = true := by
-  native_decide
+  decide
 
 /-- CALIBRATION (unfold + zero_xor): a single heap has nim-sum equal to its size. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
@@ -75,7 +75,7 @@ on small instances, plus the general XOR property that makes it work. -/
     Let me use [3, 5, 6]: 3 ^^^ 5 = 6, 6 ^^^ 6 = 0... also balanced.
     [3, 5, 7]: 3 ^^^ 5 = 6, 6 ^^^ 7 = 1 ≠ 0 — winning. -/
 theorem isWinningNim_357 : isWinningNim [3, 5, 7] = true := by
-  native_decide
+  decide
 
 /-- After removing k stones from heap i, the new nim-sum is the old nim-sum
     XOR'd with the change in that heap. This is the algebraic key to the
@@ -87,7 +87,7 @@ theorem isWinningNim_357 : isWinningNim [3, 5, 7] = true := by
     New position [2, 5, 7]: 2 ^^^ 5 ^^^ 7 = 0. P-position! -/
 theorem nimStrategy_357 :
     nimSum [2, 5, 7] = 0 ∧ 2 < 3 := by
-  native_decide
+  decide
 
 /-- XOR with zero is the identity. -/
 theorem xor_zero (n : Nat) : n ^^^ 0 = n := by
@@ -111,20 +111,20 @@ theorem nimSum3_assoc (a b c : Nat) : a ^^^ b ^^^ c = a ^^^ (b ^^^ c) := by
 theorem winning_move_357 :
     nimSum [3, 5, 7] = 1 ∧
     nimSum [2, 5, 7] = 0 := by
-  native_decide
+  decide
 
 /-- Another concrete strategy: position [1, 2, 3] has nimSum 0 (P-position),
     meaning the SECOND player wins. Any move the first player makes leads
     to an N-position (non-zero nimSum). -/
 theorem losing_position_123 : nimSum [1, 2, 3] = 0 := by
-  native_decide
+  decide
 
 /-- After the first player's move from [1, 2, 3], every resulting position
     has non-zero nimSum (N-position). -/
 theorem all_moves_from_123_winning :
     nimSum [0, 2, 3] ≠ 0 ∧ nimSum [1, 1, 3] ≠ 0 ∧ nimSum [1, 0, 3] ≠ 0 ∧
     nimSum [1, 2, 2] ≠ 0 ∧ nimSum [1, 2, 0] ≠ 0 := by
-  native_decide
+  decide
 
 /-- If `a ^^^ s < a` where `s = nimSum heaps`, then reducing heap `a` to
     `a ^^^ s` zeros the nim-sum. This is the **key property** of the winning
@@ -132,7 +132,7 @@ theorem all_moves_from_123_winning :
     at least one heap has that bit set, making `a ^^^ s < a` true.
 
     We verify this on concrete instances: -/
-theorem xor_reduce_3_1 : 3 ^^^ 1 = 2 ∧ 2 < 3 := by native_decide
+theorem xor_reduce_3_1 : 3 ^^^ 1 = 2 ∧ 2 < 3 := by decide
 
 /-- For [3, 5, 7]: the full strategy verification.
     nimSum = 1. Reducing heap 0 (size 3) to 3 ^^^ 1 = 2 zeros the sum. -/
@@ -141,7 +141,7 @@ theorem winning_move_verified_357 :
     s = 1 ∧
     (3 ^^^ s) < 3 ∧
     nimSum [3 ^^^ s, 5, 7] = 0 := by
-  native_decide
+  decide
 
 
 end Conway_en
