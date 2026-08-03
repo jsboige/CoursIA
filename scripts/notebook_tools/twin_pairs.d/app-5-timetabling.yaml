@@ -6,7 +6,7 @@
   last_audit:
     date: '2026-08-01'
     by: po-2026
-    python_sha: e717ca87c5efa311c3e79e799327e7d19e2cc691
+    python_sha: a0ddc663d62d71dc6b524f03eeedf69fe9d8c73f
     csharp_sha: 1df664fbb228832fec6d05c12efe390465bd65c0
   known_differences:
     - "Socle pedagogique commun : Emploi du temps / Timetabling (CSP : creneaux, salles, conflits) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."

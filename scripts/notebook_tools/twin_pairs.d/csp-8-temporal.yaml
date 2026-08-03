@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-29"
     by: myia-po-2023:CoursIA-2
-    python_sha: ada044d55500fef591dde86222fc041326dcfb14
+    python_sha: ded7deb24733cfda6621c66209b4f9702b86e340
     csharp_sha: 3859f46c9ec9b09dbbc50e7fc344d8844f82796b
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
