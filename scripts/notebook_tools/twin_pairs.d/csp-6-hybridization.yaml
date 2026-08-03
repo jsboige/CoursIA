@@ -4,9 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: e5664cf24396bd2f82fc0f1c788d0b30db9f3686
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
+    python_sha: c768174f8ed98eb7efdd282081b21d2306b38a02
+    reason: "c.1128 #8052 Python c35 phantom class name DynamicPortfolio->comparaison de stratégies (solve_task_graph); 0 code occurrences; C# twin preserved"
     csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
