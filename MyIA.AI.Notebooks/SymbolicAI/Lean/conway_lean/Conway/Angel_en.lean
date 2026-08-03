@@ -53,11 +53,11 @@ theorem chebyshev_self (a : ℤ × ℤ) : chebyshev a a = 0 := by
 
 /-- CALIBRATION (decide / native_decide): Conway's power-1 Angel is a king — 8 moves. -/
 theorem kingMoves_card : (angelMoves 1 (0, 0)).card = 8 := by
-  native_decide
+  decide
 
 /-- CALIBRATION (decide / native_decide): the power-2 Angel has 24 moves. -/
 theorem angelMoves2_card : (angelMoves 2 (0, 0)).card = 24 := by
-  native_decide
+  decide
 
 /-- CALIBRATION (Finset.card arithmetic, medium): an Angel of power `k` from any
     square has exactly `(2k+1)^2 - 1` moves — the combinatorial heart of the Angel
