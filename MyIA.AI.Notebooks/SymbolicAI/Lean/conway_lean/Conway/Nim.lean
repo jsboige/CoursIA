@@ -55,7 +55,7 @@ theorem nimSum_nil : nimSum [] = 0 := rfl
 
 /-- CALIBRATION (decide) : la position [3,4,5] est gagnante pour le premier joueur. -/
 theorem isWinningNim_345 : isWinningNim [3, 4, 5] = true := by
-  native_decide
+  decide
 
 /-- CALIBRATION (unfold + zero_xor) : un tas unique a un nim-sum égal à sa taille. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
@@ -84,7 +84,7 @@ du XOR qui la sous-tend. -/
     Utilisons [3, 5, 6] : 3 ^^^ 5 = 6, 6 ^^^ 6 = 0... aussi équilibrée.
     [3, 5, 7] : 3 ^^^ 5 = 6, 6 ^^^ 7 = 1 ≠ 0 — gagnante. -/
 theorem isWinningNim_357 : isWinningNim [3, 5, 7] = true := by
-  native_decide
+  decide
 
 /-- Après avoir retiré k pierres du tas i, le nouveau nim-sum est l'ancien nim-sum
     XOR avec le changement dans ce tas. C'est la clé algébrique de la stratégie
@@ -96,7 +96,7 @@ theorem isWinningNim_357 : isWinningNim [3, 5, 7] = true := by
     Nouvelle position [2, 5, 7] : 2 ^^^ 5 ^^^ 7 = 0. P-position ! -/
 theorem nimStrategy_357 :
     nimSum [2, 5, 7] = 0 ∧ 2 < 3 := by
-  native_decide
+  decide
 
 /-- Le XOR avec zéro est l'identité. -/
 theorem xor_zero (n : Nat) : n ^^^ 0 = n := by
@@ -120,20 +120,20 @@ theorem nimSum3_assoc (a b c : Nat) : a ^^^ b ^^^ c = a ^^^ (b ^^^ c) := by
 theorem winning_move_357 :
     nimSum [3, 5, 7] = 1 ∧
     nimSum [2, 5, 7] = 0 := by
-  native_decide
+  decide
 
 /-- Une autre stratégie concrète : la position [1, 2, 3] a un nimSum 0 (P-position),
     ce qui signifie que le SECOND joueur gagne. Tout coup du premier joueur mène
     à une N-position (nimSum non nul). -/
 theorem losing_position_123 : nimSum [1, 2, 3] = 0 := by
-  native_decide
+  decide
 
 /-- Après le coup du premier joueur depuis [1, 2, 3], toute position résultante
     a un nimSum non nul (N-position). -/
 theorem all_moves_from_123_winning :
     nimSum [0, 2, 3] ≠ 0 ∧ nimSum [1, 1, 3] ≠ 0 ∧ nimSum [1, 0, 3] ≠ 0 ∧
     nimSum [1, 2, 2] ≠ 0 ∧ nimSum [1, 2, 0] ≠ 0 := by
-  native_decide
+  decide
 
 /-- Si `a ^^^ s < a` où `s = nimSum heaps`, alors réduire le tas `a` à
     `a ^^^ s` annule le nim-sum. C'est la **propriété clé** de la stratégie
@@ -141,7 +141,7 @@ theorem all_moves_from_123_winning :
     au moins un tas a ce bit positionné, rendant `a ^^^ s < a` vrai.
 
     Nous vérifions cela sur des instances concrètes : -/
-theorem xor_reduce_3_1 : 3 ^^^ 1 = 2 ∧ 2 < 3 := by native_decide
+theorem xor_reduce_3_1 : 3 ^^^ 1 = 2 ∧ 2 < 3 := by decide
 
 /-- Pour [3, 5, 7] : la vérification complète de la stratégie.
     nimSum = 1. Réduire le tas 0 (taille 3) à 3 ^^^ 1 = 2 annule la somme. -/
@@ -150,7 +150,7 @@ theorem winning_move_verified_357 :
     s = 1 ∧
     (3 ^^^ s) < 3 ∧
     nimSum [3 ^^^ s, 5, 7] = 0 := by
-  native_decide
+  decide
 
 
 end Conway

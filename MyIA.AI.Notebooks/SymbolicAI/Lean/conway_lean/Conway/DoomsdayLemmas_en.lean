@@ -31,20 +31,20 @@ open Conway
 
 /-- CALIBRATION (decide): 2000 is a leap year (divisible by 400). -/
 theorem isLeapYear_2000 : isLeapYear 2000 = true := by
-  native_decide
+  decide
 
 /-- CALIBRATION (decide): 1900 is NOT a leap year (divisible by 100, not 400). -/
 theorem isLeapYear_1900 : isLeapYear 1900 = false := by
-  native_decide
+  decide
 
 /-- CALIBRATION (decide): 2024 is a leap year. -/
 theorem isLeapYear_2024 : isLeapYear 2024 = true := by
-  native_decide
+  decide
 
 /-- HOMAGE + CALIBRATION: John Conway passed away on Saturday, April 11, 2020.
     Closed evaluation of the Doomsday algorithm. -/
 theorem dayOfWeek_conway_death : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
-  native_decide
+  decide
 
 /-- CALIBRATION (case-decomposition): adding a full week is the identity.
     A naive `decide` fails (`d` is free); requires `cases d`. -/

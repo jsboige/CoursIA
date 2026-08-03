@@ -6,8 +6,9 @@
   last_audit:
     date: "2026-07-30"
     by: myia-po-2024:CoursIA-2
-    python_sha: 196bf38650379fdd7dfb4660d57aab39c6e8709e
+    python_sha: 36e761b00601e300e2e0755f3b6e75c5d446ef98
     csharp_sha: ed6af3b9ba5d65195099faab92b5bcee4987b70d
+    reason: "Markdown-only identity fix (Python cells 21+32): the two scaling-experiment intros cited N=1000 as a tested size, but the Python benchmarks never run it (cell 22 mc_sizes=[8,50,100,500], cell 33 cpsat_sizes=[8,50,100,500]; committed output + interpretation cells 27/34 cap at N=500). Aligned the intros to the actual cap of 500. The C# twin genuinely runs N=1000 (cell 14 sizes include 1000, output N=1000 resolu), so 1000 is a real tested size in C#, not a phantom; csharp unchanged, no parallel defect. No re-exec, no output change."
   known_differences:
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
