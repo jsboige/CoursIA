@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
+    date: "2026-08-01"
     by: po-2024
     python_sha: 9b8a7c5a644278888f991ab10ac8e87bd7ec6238
-    csharp_sha: 9de0aa08582035e96886cbada255c5ce9a7ceb3c
+    csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
   known_differences:
     - "Socle commun : metaheuristiques d'optimisation (PSO Particle Swarm, SA Simulated Annealing), fonctions de benchmark, benchmark comparatif, analyse de parametres, exemple guide."
     - "Bibliotheque vs from-scratch : Python invoque MEALPy (librairie metaheuristique, 40+ algorithmes) pour PSO/ABC/SA/BRO ; C# implemente PSO/SA/GA from-scratch (System.Random, pas de NuGet metaheuristique)."
