@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
+    date: "2026-08-01"
     by: po-2024
     python_sha: 037f3e5c663a9448b1009878f454be67951f9217
-    csharp_sha: 9de0aa08582035e96886cbada255c5ce9a7ceb3c
+    csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
     reason: "Measure/value fix (Python cell 21 « Interpretation : ABC sur Rosenbrock »): 3 value claims output-proven FALSE. The committed cell 20 output gives Solution ~[0.46,0.23,..] ~ [0,..,0] with Objectif 8.134688 (output itself prints «Optimal attendu: [1,..,1], f=0»), yet c21 claimed «solution proche de [1,..,1]» (near optimum) and table row «Vecteur proche de [1,..,1]» -- both backwards. Point 1 claimed «ABC adaptee a Rosenbrock», contradicted by c31 benchmark (ABC Rosenbrock 135.7250) and c34 synthesis «Catastrophique sur Rosenbrock (135,7)». Realigned all 3 to outputs (solution near [0,..,0] far from optimum f=8.13; «ABC peine sur Rosenbrock» with both §5 demo ~8.13 and §8 benchmark 135.7 cited). Markdown-only, 0 re-exec, no output change. C# twin has NO ABC (PSO/SA/GA/TSP from-scratch only, see known_differences), csharp unchanged."
   known_differences:
     - "Socle commun : metaheuristiques d'optimisation (PSO Particle Swarm, SA Simulated Annealing), fonctions de benchmark, benchmark comparatif, analyse de parametres, exemple guide."

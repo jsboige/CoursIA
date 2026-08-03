@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-01"
     by: myia-po-2024:CoursIA-2
-    python_sha: 63f23b87a3e1bc62f89faf34745d206caf1befdb
+    python_sha: 49ee6ce53f51c17c64db939771844e036310e778
     csharp_sha: 2ec088ff8d391f7e8bc39e967730ca6c7c821b01
   known_differences:
     - "Socle pedagogique commun : Puissance 4 adversarial (variant Connect-4, IA jeux combinatoires) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
