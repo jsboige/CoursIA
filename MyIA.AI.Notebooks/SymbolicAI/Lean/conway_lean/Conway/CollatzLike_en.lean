@@ -109,19 +109,19 @@ def collatzStep (n : Int) : Int :=
     6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 -/
 theorem collatz_6_trajectory :
     clIterate collatz 6 8 = [6, 3, 10, 5, 16, 8, 4, 2, 1] := by
-  native_decide
+  decide
 
 /-- Verify trajectory from 27 (the longest under 100):
     27 takes 111 steps to reach 1. We verify the first 10 steps. -/
 theorem collatz_27_first_10 :
     clIterate collatz 27 10 = [27, 82, 41, 124, 62, 31, 94, 47, 142, 71, 214] := by
-  native_decide
+  decide
 
 /-- Verify trajectory from 7:
     7 → 22 → 11 → 34 → 17 → 52 → 26 → 13 → 40 → 20 → 10 → 5 → 16 → 8 → 4 → 2 → 1 -/
 theorem collatz_7_trajectory :
     clIterate collatz 7 16 = [7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1] := by
-  native_decide
+  decide
 
 /-! ## Conway's (3n+1)/2 variant
 
@@ -144,13 +144,13 @@ def collatzCompressed : CollatzLike where
     6 → 3 → 5 → 8 → 4 → 2 → 1 (6 steps instead of 8) -/
 theorem collatzCompressed_6 :
     clIterate collatzCompressed 6 6 = [6, 3, 5, 8, 4, 2, 1] := by
-  native_decide
+  decide
 
 /-- Verify compressed trajectory from 7:
     7 → 11 → 17 → 26 → 13 → 20 → 10 → 5 → 8 → 4 → 2 → 1 -/
 theorem collatzCompressed_7 :
     clIterate collatzCompressed 7 11 = [7, 11, 17, 26, 13, 20, 10, 5, 8, 4, 2, 1] := by
-  native_decide
+  decide
 
 /-! ## Connection to FRACTRAN
 
@@ -170,7 +170,7 @@ def doubleProgram : List Frac := [frac 2 1 (by decide)]
 /-- Verify: running the doubling program from 3 for 4 steps. -/
 theorem fractran_double_3 :
     fractranRun doubleProgram 3 4 = [3, 6, 12, 24, 48] := by
-  native_decide
+  decide
 
 /-! ## Conway's 7n+1 variant — an open problem
 
@@ -192,11 +192,11 @@ def sevenNPlusOne : CollatzLike where
     We verify the first 5 steps. -/
 theorem sevenNPlusOne_3 :
     clIterate sevenNPlusOne 3 5 = [3, 22, 11, 78, 39, 274] := by
-  native_decide
+  decide
 
 /-- 7n+1 from 1: 1 → 8 → 4 → 2 → 1 (short cycle). -/
 theorem sevenNPlusOne_1 :
     clIterate sevenNPlusOne 1 4 = [1, 8, 4, 2, 1] := by
-  native_decide
+  decide
 
 end Conway_en

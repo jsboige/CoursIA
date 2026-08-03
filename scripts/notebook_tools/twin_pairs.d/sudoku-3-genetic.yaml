@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: fb1fa731e467d5b5f4e9d08253a7a6f36dd59482
+    date: "2026-08-03"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 9d99369424476c432f9edad3e34d8f66af430f2d
     csharp_sha: 7dfa219dc44150c1a09f884bc1f6c4f22c98f0eb
   known_differences:
     - "Socle pedagogique commun : algorithme genetique (GA) applique au Sudoku -- population d'individus, selection, crossover, mutation, fonction de fitness (nombre de conflits). Meme concept evolutionnaire, meme cas d'application (resolution/amelioration d'une grille de Sudoku). Les deux exposent les memes primitives : Population, Crossover, Mutation, GeneticAlgorithm."

@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-31"
     by: myia-po-2024:CoursIA-2
-    python_sha: 3c86b640ab9512ee3e6c66679c12fac732c2ccb8
+    python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
     csharp_sha: 23a665e9c31aa87889cbaf4630e4d87b3c32e8c2
     reason: "rebaseline python apres fix prose Exemple 2/AutoML (cellules 7/8/11, #8052) : la prose disait 'donnees quadratiques y=100x^2' et 'compare deux GradientBoosting' mais le code cellule 8 genere des SINUS (y=10sin(x)) et compare trois DecisionTreeRegressor (underfit/good/overfit) ; l'AutoML cellule 10 tourne sur ces memes donnees sinus (LinearRegression RMSE CV=7.01, RandomForest=3.06). Le comment cellule 8 'le RMSE test explose' contredisait l'output (overfit test=2.78, le plus bas). Fix aligne prose sur le code execute. Python-only, csharp_sha unchanged, parite semantique preservee."
   known_differences:
