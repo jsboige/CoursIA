@@ -112,6 +112,16 @@ def test_litmus1_gpu_declared_no_finding(tmp_path):
     assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
 
 
+def test_litmus1_cuda_availability_probe_is_not_gpu_usage(tmp_path):
+    """La SONDE `torch.cuda.is_available()` (affichée pour info par les notebooks
+    PyTorch CPU pédagogiques) ne doit PAS déclencher gpu_used_but_not_declared.
+    Couvre rl_6e (GRPO from-scratch, CPU pédagogique — output committé CUDA=False).
+    FP corrigé c.831 : la sonde ≠ exigence/usage GPU."""
+    code = "import torch\nprint(torch.cuda.is_available())\nx = torch.FloatTensor([1.0])"
+    res = _findings_for(tmp_path, code, cost_meta={"gpu_required": False})
+    assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
+
+
 # ---------------------------------------------------------------------------
 # Litmus 2 — api_used_but_cost_zero (FP guard: local provider, #8589)
 # ---------------------------------------------------------------------------
@@ -553,12 +563,15 @@ def test_litmus9_detail_names_the_cell_indices(tmp_path):
 
 
 def _fleet_notebooks(tmp_path):
-    """Trois notebooks : deux porteurs de findings distincts, un sain."""
+    """Trois notebooks : deux porteurs de findings distincts, un sain.
+    a/b utilisent un VRAI signal GPU non déclaré (model.cuda()) — la sonde
+    torch.cuda.is_available() est bénigne (FP corrigé c.831) et ne porte pas
+    de finding, donc on ne l'utilise plus comme finding-bearer ici."""
     a = tmp_path / "a.ipynb"
-    _notebook(a, ["import torch; torch.cuda.is_available()"],
+    _notebook(a, ["import torch", "model = net.cuda()"],
               cost_meta={"validator": "papermill", "gpu_required": False})
     b = tmp_path / "sub" / "b.ipynb"
-    _notebook(b, ["import torch; torch.cuda.is_available()"],
+    _notebook(b, ["import torch", "model = net.cuda()"],
               cost_meta={"validator": "manual", "gpu_required": False})
     clean = tmp_path / "clean.ipynb"
     _notebook(clean, ["x = 1"], cost_meta={"validator": "manual", "gpu_required": False})
