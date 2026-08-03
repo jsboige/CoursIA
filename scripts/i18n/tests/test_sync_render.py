@@ -55,7 +55,13 @@ from scripts.i18n.sync import (  # noqa: E402
     sync,
     write_csv,
 )
-from scripts.i18n.render import render  # noqa: E402
+from scripts.i18n.render import (  # noqa: E402
+    _render_tokens_to_markdown,
+    _tok_text,
+    _walk_translate,
+    render,
+)
+import mistune  # noqa: E402
 
 
 _FR_FIXTURE = """# Titre Principal
@@ -452,3 +458,292 @@ def test_extract_text_mixed_string_and_dict_children():
     """``children`` may contain raw strings (mistune inline literals)."""
     tok = {"children": ["literal string", {"type": "text", "raw": " ok"}]}
     assert _extract_text(tok) == "literal string ok"
+
+
+# --- Unit tests : _walk_translate + _render_tokens_to_markdown ------------- #
+# The three ``render`` integration tests above (gates 10-12) exercise the
+# pipeline end-to-end through the top-level ``render()`` entry point, but they
+# only assert on aggregate counts and the fallback/orphan behaviour — they do
+# NOT isolate the per-token branch logic of the two largest pure helpers:
+#   - ``_walk_translate``  : the 5-node-type section/counter/fallback state
+#                            machine that mutates tokens in place.
+#   - ``_render_tokens_to_markdown`` : the 8-token-type markdown emitter.
+# These focused tests build real mistune ASTs and call the helpers directly,
+# pinning the key-generation contract, the FR-fallback policy, the in-place
+# mutation, and the markdown re-emission — so a regression in one branch is
+# caught without re-running the whole sync+render round-trip.
+_MD_PARSER = mistune.create_markdown(renderer=None, plugins=["table"])
+
+
+def _walk_tokens(fr_md, csv_data=None, lang="en"):
+    """Mirror ``render()``'s internal walk: parse FR, walk every token in place.
+
+    Returns ``(tokens, stats, section)`` so tests can assert on the mutated
+    tokens, the counter dict, and the carried-over section slug.
+    """
+    tokens = _MD_PARSER(fr_md)
+    stats = {"n_cells": 0, "n_fallback": 0, "n_missing": 0}
+    section = [""]
+    p_count = [0]
+    list_count = [0]
+    h1_seen = [False]
+    for tok in tokens:
+        _walk_translate(tok, csv_data or {}, lang, section, stats,
+                        p_count, list_count, h1_seen)
+    return tokens, stats, section[0]
+
+
+def _translated(tok):
+    """Visible text of a token AFTER walk mutation (via the walk's own reader)."""
+    return _tok_text(tok)
+
+
+# --- _walk_translate : section / counter state machine ------------------- #
+def test_walk_h1_sets_section_slug():
+    """An h1 token sets the carried-over section slug (used by every downstream key)."""
+    _, stats, section = _walk_tokens("# My Title\n\nFirst.\n", {})
+    assert section == "my_title"
+    # h1 itself is counted as a cell.
+    assert stats["n_cells"] >= 1
+
+
+def test_walk_h1_resets_paragraph_counter():
+    """Each h1 restarts the per-section paragraph numbering (para1, then para1 again)."""
+    fr = "# Sec One\n\nA para.\n\n# Sec Two\n\nAnother para.\n"
+    # Provide a translation for the second h1's para1 only.
+    csvd = {"sec_one.para1": {"fr": "A para.", "en": "EN_A"},
+            "sec_two.para1": {"fr": "Another para.", "en": "EN_B"}}
+    _, stats, _ = _walk_tokens(fr, csvd)
+    # Both para1 keys resolve because the counter reset on the 2nd h1.
+    assert stats.get("n_translated", 0) == 2
+
+
+def test_walk_paragraph_before_any_h1_uses_intro_section():
+    """A paragraph appearing before the first h1 keys under the ``intro`` fallback."""
+    fr = "Preamble with no heading yet.\n"
+    csvd = {"intro.para1": {"fr": "Preamble with no heading yet.", "en": "EN_PRE"}}
+    tokens, stats, _ = _walk_tokens(fr, csvd)
+    para = next(t for t in tokens if t.get("type") == "paragraph")
+    assert _translated(para) == "EN_PRE"
+    assert stats.get("n_translated", 0) == 1
+
+
+def test_walk_empty_paragraph_is_skipped_not_counted():
+    """A whitespace-only paragraph returns early — it is neither counted nor keyed."""
+    fr = "# T\n\n   \n\nreal paragraph.\n"
+    _, stats, _ = _walk_tokens(fr, {})
+    # Only h1 (1) + the real paragraph (1) = 2 cells; the blank para is skipped.
+    assert stats["n_cells"] == 2
+
+
+# --- _walk_translate : CSV hit / FR fallback ----------------------------- #
+def test_walk_csv_hit_translates_and_counts_translated():
+    """A cell whose ``<key>.<lang>`` is non-empty gets translated (not fallback)."""
+    fr = "# My Title\n\nFirst para.\n"
+    csvd = {"my_title.para1": {"fr": "First para.", "en": "EN_FIRST"}}
+    tokens, stats, _ = _walk_tokens(fr, csvd)
+    para = next(t for t in tokens if t.get("type") == "paragraph")
+    assert _translated(para) == "EN_FIRST"
+    assert stats.get("n_translated", 0) == 1
+    assert stats["n_fallback"] >= 1  # the h1 (no heading key in CSV) falls back
+
+
+def test_walk_csv_miss_falls_back_to_fr_text():
+    """A cell whose target-lang entry is empty keeps the original FR text."""
+    fr = "# My Title\n\nFirst para.\n"
+    csvd = {"my_title.para1": {"fr": "First para.", "en": ""}}
+    tokens, stats, _ = _walk_tokens(fr, csvd)
+    para = next(t for t in tokens if t.get("type") == "paragraph")
+    assert _translated(para) == "First para."  # FR retained
+    assert stats["n_fallback"] >= 1
+
+
+def test_walk_unknown_token_type_is_a_noop():
+    """A token type outside the 5 handled kinds (e.g. block_code) is left untouched."""
+    fr = "# S\n\n```\ncode\n```\n"
+    tokens, stats, _ = _walk_tokens(fr, {})
+    code = next(t for t in tokens if t.get("type") == "block_code")
+    # block_code is not a translatable kind -> only the h1 was counted.
+    assert stats["n_cells"] == 1
+    assert (code.get("raw") or "").strip() == "code"
+
+
+# --- _walk_translate : block_quote / list / table keys ------------------- #
+def test_walk_blockquote_key_replaces_child_paragraph():
+    """Blockquote uses ``<section>.quote`` and rewrites its inner paragraph text."""
+    fr = "# S\n\n> A quote here.\n"
+    csvd = {"s.quote": {"fr": "A quote here.", "en": "EN_QUOTE"}}
+    tokens, stats, _ = _walk_tokens(fr, csvd)
+    assert stats.get("n_translated", 0) == 1
+    # Emission reflects the translated quote.
+    out = _render_tokens_to_markdown(tokens, csvd, "en", ["s"])
+    assert "> EN_QUOTE" in out
+
+
+def test_walk_list_items_numbered_sequentially():
+    """List items use ``<section>.list.item<N>`` (1-based) and translate each."""
+    fr = "# S\n\n- one\n- two\n"
+    csvd = {"s.list.item1": {"fr": "one", "en": "EN1"},
+            "s.list.item2": {"fr": "two", "en": "EN2"}}
+    _, stats, _ = _walk_tokens(fr, csvd)
+    assert stats.get("n_translated", 0) == 2
+
+
+def test_walk_table_header_and_row_col_keys():
+    """Tables use ``table.<section>.header.<N>`` and ``table.<section>.row.<R>.col.<C>``."""
+    fr = "# S\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n"
+    csvd = {
+        "table.s.header.1": {"fr": "A", "en": "ENA"},
+        "table.s.header.2": {"fr": "B", "en": "ENB"},
+        "table.s.row.1.col.1": {"fr": "1", "en": "EN1"},
+        "table.s.row.1.col.2": {"fr": "2", "en": "EN2"},
+    }
+    tokens, stats, _ = _walk_tokens(fr, csvd)
+    assert stats.get("n_translated", 0) == 4
+    out = _render_tokens_to_markdown(tokens, csvd, "en", ["s"])
+    assert "| ENA | ENB |" in out
+    assert "| EN1 | EN2 |" in out
+
+
+def test_walk_render_h2_does_not_reset_section_observed_asymmetry():
+    """OBSERVED ASYMMETRY (flagged for review, not fixed here).
+
+    ``sync.parse_markdown`` scopes a paragraph to its **h2** section (the key
+    for "Under sub." is ``sub.para1``), but ``render._walk_translate`` only
+    updates ``section`` on an **h1** — so the same paragraph is looked up as
+    ``main.para2`` on the render side. Consequently an h2-scoped translation
+    stored in the CSV under ``sub.para1`` is NOT found by render, which falls
+    back to FR. The existing round-trip test (gate 10, cell-count only) and
+    the fallback test (gate 11, all-empty EN) both pass regardless and do not
+    surface this. This assertion pins the CURRENT behaviour; it would flip if
+    the asymmetry is reconciled (a separate fix, not this PR's subject).
+    """
+    fr = "# Main\n\nIntro.\n\n## Sub\n\nUnder sub.\n"
+    # sync-side key for "Under sub." :
+    sync_keys = [c.key for c in parse_markdown(fr).cells if c.kind == "p"]
+    assert "sub.para1" in sync_keys, "sync must produce an h2-scoped key"
+    # render-side : section stays the h1 slug, and the sub.para1 translation is
+    # never consumed (render looks up main.<N>, finds nothing, falls back to FR).
+    tokens, stats, section = _walk_tokens(
+        fr, {"sub.para1": {"fr": "Under sub.", "en": "SHOULD_APPLY"}})
+    assert section == "main", "h2 must NOT have updated the carried-over section"
+    out = _render_tokens_to_markdown(tokens, {}, "en", [section])
+    assert "SHOULD_APPLY" not in "\n".join(out), (
+        "the h2-scoped EN translation leaked through — asymmetry may have been fixed")
+
+
+# --- _render_tokens_to_markdown : 8 token-type emission ------------------ #
+def test_render_emits_heading_with_level_hashes():
+    """A heading token emits ``#`` * level, with blank lines around it."""
+    fr = "# H1\n\nText.\n\n## H2\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert "# H1" in out
+    assert "## H2" in out
+    assert out[0] == "# H1"  # heading first, no leading blank
+
+
+def test_render_emits_blockquote_with_gt_prefix():
+    """A blockquote emits a ``> ``-prefixed line.
+
+    NOTE (observed limitation, flagged): ``_extract_text`` flattens the quote's
+    inline children WITHOUT preserving inter-line newlines, so a multi-line
+    blockquote (``> line one\\n> line two``) collapses to a single concatenated
+    string (``line oneline two``) and renders as ONE ``> `` line rather than
+    two. This pins the current behaviour; the multiline structure is lost in
+    extraction. (Distinct from the h2-section asymmetry surfaced above.)
+    """
+    fr = "# S\n\n> line one\n> line two\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", ["s"])
+    quote_lines = [ln for ln in out if ln.startswith("> ")]
+    assert quote_lines == ["> line oneline two"]
+
+
+def test_render_emits_unordered_list_with_dash():
+    """Unordered list items get a ``-`` prefix."""
+    fr = "- a\n- b\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert "- a" in out and "- b" in out
+
+
+def test_render_emits_ordered_list_with_number_dot():
+    """Ordered list items get a ``N.`` prefix (1-based)."""
+    fr = "1. first\n2. second\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert "1. first" in out and "2. second" in out
+
+
+def test_render_list_item_emits_single_dash_prefix():
+    """A single-line list item emits one ``- <text>`` line.
+
+    NOTE: the emitter's multiline-continuation branch (``for j, line in
+    enumerate(text.splitlines())``) is effectively unreachable through the real
+    pipeline because ``_extract_text`` flattens list-item children to a single
+    newline-free string. A list item therefore always renders as one line here.
+    """
+    fr = "- only line\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert "- only line" in out
+    # Exactly one item line, no spurious continuation.
+    assert sum(1 for ln in out if ln.startswith("- ")) == 1
+
+
+def test_render_emits_table_with_separator_row():
+    """A table emits header, a ``| --- | --- |`` separator, then body rows."""
+    fr = "# S\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", ["s"])
+    assert "| A | B |" in out
+    assert "| --- | --- |" in out
+    assert "| 1 | 2 |" in out
+
+
+def test_render_emits_block_code_fence():
+    """A fenced code block emits opening fence + raw + closing fence.
+
+    NOTE (observed limitation, flagged): mistune 3.x stores the fence language
+    under ``attrs.info`` (e.g. ``{'info': 'python'}``), but the emitter reads
+    ``tok.get("info", "")`` — the top-level field, which is ``None`` — so the
+    language hint is DROPPED in the rendered output (```` ```python ```` becomes
+    a bare ```` ``` ````). This pins the current behaviour; surfacing for review.
+    """
+    fr = "```python\nprint(1)\n```\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    joined = "\n".join(out)
+    assert "```" in out  # opening + closing fences present
+    assert "print(1)" in joined
+    # Pin the limitation: the language is NOT preserved on output.
+    assert "```python" not in joined
+
+
+def test_render_emits_thematic_break():
+    """A thematic break emits ``---``."""
+    fr = "# S\n\n---\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", ["s"])
+    assert "---" in out
+
+
+def test_render_inserts_blank_line_between_blocks():
+    """Two consecutive paragraphs are separated by a blank line (CommonMark spacing)."""
+    fr = "# H\n\nPara one.\n\nPara two.\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert "Para one." in out and "Para two." in out
+    # A blank line separates them.
+    i1 = out.index("Para one.")
+    assert out[i1 + 1] == "", "blank line must follow the first paragraph"
+
+
+def test_render_strips_trailing_blank_lines():
+    """The emitter strips trailing empty lines for clean output."""
+    fr = "# H\n\nText.\n"
+    tokens, _, _ = _walk_tokens(fr, {})
+    out = _render_tokens_to_markdown(tokens, {}, "en", [""])
+    assert out[-1] != "", "no trailing blank line"
+    assert out[-1] == "Text."
