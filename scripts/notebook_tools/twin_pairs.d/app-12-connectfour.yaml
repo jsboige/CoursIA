@@ -6,7 +6,8 @@
   last_audit:
     date: '2026-07-25'
     by: po-2026
-    python_sha: 7b29b76a0a3644fc6b05d18d2e47cc294018165e
+    python_sha: 77bf96c05321f063ddad84755458050e16154329
+    reason: "Markdown-only identity fix (cell 33 Participants table): row named MCTS(1000)/1000 itérations, but the actual tournament uses MCTS(500) — cell 34 code `MCTS(500): make_mcts_ai(500)`, cell 36 output ranking MCTS(500), cell 39 interpretation MCTS(500). Aligned to MCTS(500)/500 itérations. No re-exec, no output change. C# twin untouched (different System.* BCL engine)."
     csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
   known_differences:
     - "Socle pedagogique commun : Puissance 4 / Connect Four (IA jeux combinatoires : minimax alpha-beta, MCTS, framework AIMA) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
