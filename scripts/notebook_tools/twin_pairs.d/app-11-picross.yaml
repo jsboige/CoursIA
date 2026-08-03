@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
+    date: '2026-08-01'
     by: po-2026
-    python_sha: c74eb8bc47ad9556f85778d653086915b18480ce
+    python_sha: aa67371119c2d29ebd2bc269fad184bb723a56c5
     csharp_sha: 973726eeb2c0cdb97ddf65a47013f42f1fbadd55
   known_differences:
     - "Socle pedagogique commun : Picross / Nonogram (CSP : contraintes lignes/colonnes, OR-Tools) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
