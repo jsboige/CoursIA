@@ -2911,7 +2911,79 @@ is strong enough for the (b) reduction; it does NOT prove the wall holds). -/
     NON-overlapping quadrants against the wave-1 `R2`/`R4`/`R5` recombinations that
     STRADDLE the NW/NE, NW/SW and central boundaries. `centralCorrect` (the
     `hcc_j`) gives quadrant-centre correctness; this lemma is the lift from those
-    centres to the full cone. -/
+    centres to the full cone.
+
+    **Cycle c.8124 obstruction characterization (per ai-01 DM
+    `msg-20260725T165407`: option D = "caractériser l'obstruction" — what term
+    fails to reduce, what tactic blocks, where whnf explodes).** This is the
+    load-bearing investigation; the bridge's `exact p4_nw_overlap_wall …` proves
+    the statement is well-formed, but the wall does NOT resolve.
+
+    **Map of the attempted attack (c.8124 probe, just before this commit).**
+    The membership route:
+      1. Decompose RHS via `p4_nw_offset_decomp` L2886 → 4 disjuncts (R1.toGrid
+         (0,0) / R2.toGrid (0,2^k) / R4.toGrid (2^k,0) / R5.toGrid (2^k,2^k)).
+      2. Each R_j folds to `evolve (2^(k-1)) n_j.toGrid (0,0)` via
+         `centralCorrect_mem_shift` L2443 on `hR_j : R_j = hashlifeResultAux (k+1) n_j`.
+      3. Re-anchor RHS to LHS via `evolve_shift` (#8797, sorry-free) +
+         `mem_toGrid_shift` L1437 + `toGrid_shift_between` L1453.
+      4. Decompose LHS via `mem_toGrid_node` L1478 on parent →
+         (n1.toGrid (0,0)) ∨ (n3.toGrid (0,2^k)) ∨ (n7.toGrid (2^k,0)) ∨
+         (n9.toGrid (2^k,2^k)) (the parent's 4 NON-overlapping quadrants).
+      5. Equate the two tilings.
+
+    **The obstruction, in three pieces:**
+
+    *A. RHS expansion needs FOUR R_j-membership facts, one per R_j quadrant,
+    each using `centralCorrect_mem_shift` on its own `hcc_j`. But `hcc_3` and
+    `hcc_7` and `hcc_9` (which would match R2 and R4 and R5 to the **parent's**
+    quadrants, not the wave-1 input's quadrants) are NOT hypotheses here —
+    `p4_nw_overlap_wall` only has `hcc_1/hcc_2/hcc_4/hcc_5` because R1/R2/R4/R5
+    are the wave-1 results of n1/n2/n4/n5, not n3/n7/n9. The bridge assumes the
+    parent's grid is read off `n1/n3/n7/n9` (the clean quadrants), but the wave-1
+    result tiles the central region with `R1/R2/R4/R5` (the overlapping
+    recombinations). The two tilings DO agree on the central window (by the
+    geometric identity the wall asserts), but proving this requires either:
+      (α) decomposing the LHS grid into the overlapping-recombination grid via
+          `p4_double_nine_shape` style gymnastics (it doesn't — `evolve
+          (2^(k-1)) parent.toGrid` doesn't remember the wave-1 sub-cells), OR
+      (β) re-deriving the wave-1 inputs from `n1/n3/n7/n9` to get the missing
+          `hcc_*` for the central quadrant. Neither path is structural.
+
+    *B. The point `r - (2^(k-1), 2^(k-1))` evaluated against `(node R1 R2 R4
+    R5).toGrid (0,0)` lands in **shifted** quadrants, not the canonical
+    `(0,0)`/`(0,2^k)`/`(2^k,0)`/`(2^k,2^k)` offsets. The shift is precisely
+    `(2^(k-1), 2^(k-1))` — the canonical `centralCorrect` re-anchoring. So each
+    R_j-membership needs `toGrid_shift_between` (already available, sorry-free
+    L1453) BEFORE `centralCorrect_mem_shift` applies. Composing two translations
+    on the same grid is `omega`-clean BUT the OR-of-4 disjuncts splits across
+    them differently per quadrant — the `r - 2^(k-1)` shift maps NW→-ve, NE→+0,
+    SW→-ve, SE→+0 in the column-axis, so the disjointness of the 4 R_j quadrants
+    in the shifted coordinates does NOT line up with the disjointness of the 4
+    parent quadrants in the original coordinates. This is the "geometric half of
+    P4.1" flagged OPEN at L2104-2108.
+
+    *C. Even *if* (A) and (B) resolve at the membership level, the equality is
+    pointwise on the light cone, not on the full `[0, 2^k) × [0, 2^k)` grid. The
+    `isAlive (evolve (2^(k-1)) parent.toGrid (0,0)) r` term is an `evolve`
+    evaluated at r, but `parent.toGrid (0,0)` only has values in `[0, 2^k) ×
+    [0, 2^k)` — outside this window, the `evolve` reads undefined grid points
+    (returns `false`). On the central light cone (r ∈ [p.1 - 2^k, p.1 + 2^k] ×
+    same-col, with `p ∈ central window`), the reads are well-defined; off-centre,
+    they bleed off the edge. `lightCone` membership supplies the boundary
+    condition, but a clean proof would need a separate "inside `[0, 2^k)`" case
+    analysis that interacts badly with the 4-disjunct decomposition.
+
+    **Verdict.** The wall IS provable, but the proof is **non-trivial multi-cycle
+    work** that depends on a level-shifted overlap lemma (likely a new private
+    named helper analogous to `p4_nw_offset_decomp`, but for the SHIFTED offset
+    `(2^(k-1), 2^(k-1))` instead of `(2^k, 2^k)`). This is the next iteration's
+    target — named to keep the bridge's `exact p4_nw_overlap_wall …` test honest
+    while the new helper resolves the obstruction. The c.8124 cycle delivers
+    (i) the option-D characterization (this docstring), (ii) confirmation the
+    bridge signature is correctly-stated (the `exact` test passes, see commit
+    history), and (iii) the obstruction map (A)/(B)/(C) above for the next
+    attack. -/
 private theorem p4_nw_overlap_wall
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
