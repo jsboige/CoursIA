@@ -4,12 +4,11 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
-    by: myia-po-2023:CoursIA
-    python_sha: e45fb36548d082806991c54c8d332f61347c894a
-    csharp_sha: b1352e95a88555910b1b7bcfb90feb12891dc752
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: db8f5ea35f0f891863bcf212bc112b031cafa494
+    csharp_sha: ebd556fc1bbd7743aa60567b2fafab1853f384e7
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
     - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."
-    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1060, EPIC #8052) : SHA C# avance ebd556fc1 -> b1352e95a via §D.5 markdown-fix cote C# uniquement (cell[6] convention de score inversee : 'le score le plus bas gagne' -> 'plus le score est haut, meilleur c'est', alignee a l'output C# cell[11] 'plus HAUT = meilleur, convention Axelrod' ET au resume cell[27] 'plus HAUT = vainqueur'). Cross-twin parallel du #7921 mergee (po-2023 a fixe le twin Python cells 16+39 'reversed Axelrod rankings' ; le twin C# cell[6] etait reste stale). Cote Python non modifie (python_sha e45fb36548 inchange ; #9086 OPEN modifie cote Python — co-edition yaml sur python_sha vs csharp_sha, lignes differentes)."
