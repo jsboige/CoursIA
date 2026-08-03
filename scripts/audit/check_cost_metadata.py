@@ -74,10 +74,15 @@ import yaml
 # === Patterns de détection ===
 
 # Cellule code GPU
+# Note FP-c.831 : `torch.cuda.is_available()` est une SONDE bénigne (affichée pour
+# info par les notebooks PyTorch CPU pédagogiques, ex rl_6e GRPO — output committé
+# « CUDA=False », tourne en CPU). On l'exonère via lookahead négatif ; les vrais
+# signaux GPU (`torch.cuda.synchronize`, `torch.cuda.empty_cache`, `.cuda()`,
+# `.to("cuda")`) restent détectés.
 GPU_PATTERNS = [
     r'\.cuda\(\)',
     r'\.to\("cuda"\)',
-    r'torch\.cuda\.',
+    r'torch\.cuda\.(?!is_available\b)',
     r'tensorflow\.gpu',
     r'with\s+tf\.device\(["\']/gpu',
 ]
