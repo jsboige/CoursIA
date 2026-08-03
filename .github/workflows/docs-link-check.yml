@@ -10,6 +10,9 @@ on:
       - '**/README.md'
       - 'scripts/check_docs_links.py'
 
+permissions:
+  contents: read
+
 jobs:
   check-links:
     runs-on: ubuntu-latest

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-27"
+    date: "2026-07-31"
     by: po-2024
-    python_sha: 4ecd9674b07192aedfa58e35dda8bb327cc17ab9
+    python_sha: 9676659f00897939293e7bb0b36c5073ad89eb93
     csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
   known_differences:
     - "Socle commun : ILP moderne sur Knowledge Graphs -- construction du KG familial, extraction des relations, rule mining (decouverte de regles de Horn), enumeration des candidats, passage des regles d'association aux regles logiques, completion du KG."

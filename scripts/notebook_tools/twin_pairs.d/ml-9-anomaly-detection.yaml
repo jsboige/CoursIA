@@ -4,11 +4,11 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 6b572381934b41f131a0e134913e6b109c9d2ec2
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
     csharp_sha: bf2ddbc3863d9cecf4045ddb73e80399149a2584
-    reason: "rebaseline apres add metadata.cost (#8445) aux DEUX jumeaux (vrais CPU-only identiques) ; parite semantique preservee (metadata-only, 0 code churn)"
+    reason: "rebaseline python apres fix prose difficulte detection (cellules 20 et 25, #8052) : (1) cellule 25 disait anomalies '~3 ecarts-types : faciles a detecter' mais le code cellule 6 genere ~2-3 sigma et l'AUC=0.87 / DR@10FP=0.60 (cellule 13) montrant une detection non-triviale (cellule 5 dit explicitement 'non-triviale') ; (2) cellule 20 disait qu'a FPR<=5% 'on raterait la plupart' mais le sweep cellule 19 donne TPR=0.60 a FPR=0.04 (60% detectees, contredisait aussi la phrase precedente de la meme cellule). Fix aligne prose sur les outputs executes. Python-only, csharp_sha unchanged, parite semantique preservee."
   known_differences:
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."

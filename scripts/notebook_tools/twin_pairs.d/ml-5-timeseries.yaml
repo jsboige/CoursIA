@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 1e5dfe1cf4d57382161653bcbd8bf705e5a3ce09
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
     csharp_sha: 581fcb6c880b55928062698a37560736ff250681
+    reason: "rebaseline python apres fix intro horizon (cellule 1, #8052) : la prose disait 'horizon = 7 jours (1 semaine)' mais le SARIMA prevoit 366 jours (2024 entiere, cellules 13/14/16). 7 = periode saisonniere hebdo, pas l'horizon. Python-only, csharp_sha unchanged, parite (surface) preservee."
   known_differences:
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."

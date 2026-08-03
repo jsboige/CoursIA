@@ -55,7 +55,7 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 **S'applique quand** un worker voit une branche distante `jsboige/*` (via `git fetch`, listing `git branch -r`, ou topic-file date) et **envisage de la self-pick**. Risque : **REST `commits/<oid>/pulls` peut renvoyer un empty / faux negatif** pour une branche reellement attachee a une PR OPEN. Conclure « orpheline » sur REST seul = auto-pick dangereux d'un travail deja en cours.
 
-**Compound gate obligatoire** (3 ancres, voir [lecon-L576](https://github.com/jsboige/CoursIA/blob/main/.claude/memory/lecon-L576-rest-commits-pulls-fpos.md)) — TOUTES doivent etre passees avant de reclamer la branche :
+**Compound gate obligatoire** (3 ancres, detail : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md)) — TOUTES doivent etre passees avant de reclamer la branche :
 
 ```bash
 # 1. Integree upstream ?
@@ -80,7 +80,7 @@ gh pr list --state all --search "head:<branch>" --json number,state -q '.[].numb
 
 **Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Gate 3 est autoritatif ; l'investigation prend ~10 secondes et elimine le risque de double-pickup.
 
-**Voir aussi** : [lecon-L576](https://github.com/jsboige/CoursIA/blob/main/.claude/memory/lecon-L576-rest-commits-pulls-fpos.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 5 orphelines pour futurs grains cross-famille : L574 / L751 / L770 / L771 / L772+L789+L790+L791).
+**Voir aussi** : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). *Ce detail a longtemps ete cite a l'URL `.claude/memory/lecon-L576-...md` : ce chemin est ignore par `.gitignore` (ligne 651, etat local par machine), donc il ne peut jamais exister sur `main` et le lien etait mort par construction. Ne pas le retablir — la doc perenne vit dans `docs/`, cf [harness-hygiene.md](harness-hygiene.md).* Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 5 orphelines pour futurs grains cross-famille : L574 / L751 / L770 / L771 / L772+L789+L790+L791).
 ## PR Body Generation
 
 **Leçon ancrée** — L677-L4 ★★ (c.680, voir aussi c.683/c.684/c.685/c.686/c.687/c.688/c.689/c.690 réutilisations ; détail en mémoire locale per-machine) : le **body de PR se génère HORS worktree**, jamais dans un fichier du worktree (qui finirait stageé par `git add .` ou committe accidentellement).

@@ -4,11 +4,12 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2024
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
     python_sha: 7131d0cdb8d17a1e10d1419682e0de2230bf4959
-    csharp_sha: dfd74f207905fc06821f8c4010bc894ee8dcfb79
+    csharp_sha: 2bf1075659212ac6ca9f5e5ce46206791d3a9933
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8343 (doc-honesty prose (benchmark speedup claim aligned to committed output)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Re-baseline 2026-07-31 (myia-po-2024:CoursIA-2, cycle c.1066) : SHA C# avance dfd74f20 -> 2bf10756 (cell[8] G.1 self-correction note : la decomposition '5 inferez = propagation des types + reflexivite des proprietes (enseigne ⊂ enseigne, suit ⊂ suit)' etait fausse -- cell[9] affiche 'Sous-proprietes inferez : 0', donc AUCUNE reflexivite de propriete n'est materialisee ; reformule en 'inferences de type/domain-range, 3 verifiees, 0 subPropertyOf'). Drift verifie parite-preserving : prose markdown seule, aucune cellule de code touchee (n'affecte pas l'axe de parite semantic)."

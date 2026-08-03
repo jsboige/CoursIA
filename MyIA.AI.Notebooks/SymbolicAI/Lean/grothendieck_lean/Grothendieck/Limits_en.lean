@@ -1,5 +1,5 @@
 /-
-Grothendieck Part 26 — Limits and colimits (beyond Yoneda) [English mirror of Limits.lean]
+Grothendieck Part 28 — Limits and colimits (beyond Yoneda) [English mirror of Limits.lean]
 
 Alexander Grothendieck (1928-2014).
 

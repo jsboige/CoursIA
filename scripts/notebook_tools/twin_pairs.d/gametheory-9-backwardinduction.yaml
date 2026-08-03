@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-9-BackwardInduction-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2023
-    python_sha: 3e4b8db7fa1be8db9c169c8ae60ddf41e37b166f
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
+    python_sha: b8a8ccc15f082db239c2899eb07c871146de5ade
     csharp_sha: 0d8a290aead6260078144abe41c5987fc5c2893a
   known_differences:
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 9e7a223bdc320dba308747e3f9adfe48b9ddeaed
+    date: "2026-07-31"
+    by: myia-po-2023:CoursIA
+    python_sha: f14bf86f85c1f3751f34ce7455409cfdd6e12e54
     csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
   known_differences:
     - "Socle commun : logiques avancees (conditionnelle, modale, QBF) via TweetyProject."

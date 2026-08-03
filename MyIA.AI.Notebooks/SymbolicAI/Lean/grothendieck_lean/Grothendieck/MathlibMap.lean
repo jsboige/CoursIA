@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## `Grothendieck.MathlibMap` — Cartographie Mathlib
+## Partie 4 — `Grothendieck.MathlibMap` : Cartographie Mathlib
 
 Un index vivant de ce que Mathlib 4 fournit depuis le langage mathématique
 de Grothendieck. Chaque `#check` vérifie que la définition existe et est

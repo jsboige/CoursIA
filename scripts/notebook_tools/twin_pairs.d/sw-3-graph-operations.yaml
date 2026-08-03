@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
+    date: "2026-07-31"
+    by: myia-po-2023:CoursIA
     python_sha: 67d24fdcfb3ccfb484eabf75578a71e9639131d6
-    csharp_sha: ac6e12a25ad4b93a10bfe76c08df9ac65636da69
+    csharp_sha: 4938f5755414ebf12ea5a66c56aee03645359853
   known_differences:
     - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."

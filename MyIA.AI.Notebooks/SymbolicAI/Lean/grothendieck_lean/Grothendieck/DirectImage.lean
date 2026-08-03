@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-# Hommage Grothendieck — Partie 30 : Image directe et image reciproque des faisceaux
+# Hommage Grothendieck — Partie 33 : Image directe et image reciproque des faisceaux
 
 Alexandre Grothendieck (1928-2014).
 

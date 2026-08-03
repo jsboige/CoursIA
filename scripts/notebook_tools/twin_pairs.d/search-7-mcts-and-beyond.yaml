@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: dcd017361f025d0d3472db4c0537130f5bfde864
-    csharp_sha: 86f8da452e5c093452ff0388b98f18a2fca5abe8
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
+    python_sha: c0ae3ae621be9a46d92e856679370f410859aa5f
+    csharp_sha: 97aa863e71ed279785e9bdf3cdc14064b1a2d386
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : limites de minimax, algorithme MCTS (selection/expansion/simulation/retropropagation), test sur Tic-Tac-Toe, comparaison MCTS vs minimax, framework OpenSpiel, AlphaGo/AlphaZero, extensions avancees. Structure des sections quasi-identique (le jumeau le plus proche cellule-a-cellule de la famille)."

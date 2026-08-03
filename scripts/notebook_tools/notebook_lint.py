@@ -134,9 +134,13 @@ def check_c2(notebook: dict) -> list[dict]:
         if not source.strip():
             continue
 
-        # Skip comment-only cells
+        # Skip comment-only cells. Recognise the three line-comment forms used
+        # across the fleet: Python '#', C-family '//' (.NET Interactive C#/F#,
+        # also handled by scan_c1_source #5261), and Lean '--'. A cell whose
+        # non-blank lines are ALL comments is a transition note, not executable
+        # code, so it must not be flagged for a missing execution_count.
         lines = [l.strip() for l in source.split("\n") if l.strip()]
-        if all(l.startswith("#") for l in lines):
+        if all(l.startswith(("#", "//", "--")) for l in lines):
             continue
 
         # Skip QC reference cells (not executable locally)

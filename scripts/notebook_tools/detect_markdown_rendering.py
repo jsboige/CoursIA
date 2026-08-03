@@ -87,6 +87,13 @@ RULE_SEVERITY = {
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
+# a fenced-code marker: >=3 backticks OR tildes, optionally indented up to 3 spaces.
+# A ``` / ~~~ block renders its content VERBATIM, so a `---`/`===` line inside it is
+# literal text (ASCII art, a cryptarithme divider, a box-drawing rule) — NOT a setext
+# underline. Without fence-awareness the setext rules flagged ~11 such cells as
+# `setext_oversized` false positives (CSP cryptarithmes, Sudoku grids, Mermaid-ish
+# boxes). See PR follow-up to #8392 (same precision vein, different FP family).
+_FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
 _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # exercise-hint keywords, word-boundary. Deliberately NOT "note"/"remarque"
 # (those are legitimate section headings, not the oversized-hint defect).
@@ -138,14 +145,52 @@ def _is_frontmatter_block(lines) -> bool:
     return True
 
 
-def _frontmatter_supersizes(lines) -> bool:
+def _inside_fence_lines(lines) -> set[int]:
+    """Indices of lines that fall INSIDE a fenced-code block (verbatim, non-rendered).
+
+    CommonMark fenced code: a marker line of >=3 backticks or tildes (indent <=3)
+    opens a block; a later marker line of the SAME fence char with length >= the
+    opening closes it. Lines strictly between the two markers (exclusive of both) are
+    "inside" and render verbatim — so any ``---``/``===`` there is literal text, never a
+    setext underline. Backtick and tilde fences are independent: a tilde line never
+    closes a backtick block (and vice-versa). An unclosed fence leaves every subsequent
+    line inside (defensive: prefer a false-negative on setext over a false-positive).
+    """
+    inside: set[int] = set()
+    in_fence = False
+    fence_char = None
+    fence_len = 0
+    for i, ln in enumerate(lines):
+        m = _FENCE_RE.match(ln)
+        if m:
+            marker = m.group(1)
+            ch, ln_len = marker[0], len(marker)
+            if not in_fence:
+                in_fence, fence_char, fence_len = True, ch, ln_len
+                continue  # opening marker line itself is NOT inside
+            elif ch == fence_char and ln_len >= fence_len:
+                in_fence, fence_char, fence_len = False, None, 0
+                continue  # closing marker line is NOT inside
+            # a fence marker of the *other* char inside an open block is literal text
+        if in_fence:
+            inside.add(i)
+    return inside
+
+
+def _frontmatter_supersizes(lines, fenced: set[int] | None = None) -> bool:
     """A setext underline whose IMMEDIATELY-preceding line is text -> oversized H2.
 
     CommonMark: a setext heading underline must be on the line directly after the
     paragraph. A blank line before ``---`` makes it a thematic break (``<hr>``), which
     renders fine — so we require ``lines[j-1]`` to be non-blank, no blank-skipping.
+    ``fenced`` carries the code-fence line indices (see ``_inside_fence_lines``): a
+    ``---``/``===`` line inside a verbatim code block is literal text, not a setext
+    underline, so it is skipped.
     """
+    fenced = fenced or set()
     for j in range(1, len(lines)):
+        if j in fenced:
+            continue
         if _SETEXT_RE.match(lines[j]):
             prev = lines[j - 1].strip()
             if prev and prev != "---" and not prev.startswith("#") and not _SETEXT_RE.match(lines[j - 1]):
@@ -172,6 +217,9 @@ def scan_cell(cell) -> list[dict]:
     if not text.strip():
         return []
     lines = text.split("\n")
+    # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
+    # text, not a setext underline. Computed once, reused by both setext rules.
+    fenced = _inside_fence_lines(lines)
     findings: list[dict] = []
 
     # ---- frontmatter-in-markdown ------------------------------------------------
@@ -179,7 +227,7 @@ def scan_cell(cell) -> list[dict]:
         nz = _nonblank(lines)
         yamlish = sum(1 for ln in nz[1:] if ln.strip() != "---" and _YAML_KV_RE.match(ln))
         if yamlish >= 2:
-            if _frontmatter_supersizes(lines):
+            if _frontmatter_supersizes(lines, fenced):
                 rule = "frontmatter_supersize"
                 msg = "YAML frontmatter in a markdown cell renders as one oversized H2 block (setext)"
             else:
@@ -198,6 +246,8 @@ def scan_cell(cell) -> list[dict]:
     # A setext heading forms ONLY when the text line is IMMEDIATELY before the '---'
     # (no blank line between). `paragraph.\n\n---` is a thematic break and renders fine.
     for j in range(1, len(lines)):
+        if j in fenced:
+            continue  # `---`/`===` inside a verbatim code block is literal text
         if _SETEXT_RE.match(lines[j]):
             k = j - 1
             if k < 0:
@@ -222,7 +272,12 @@ def scan_cell(cell) -> list[dict]:
                 break  # one per cell is enough
 
     # ---- oversized hint (hint keyword as a heading) ------------------------------
-    for ln in lines:
+    # Fence-aware (parity with setext_oversized above): a hint keyword inside a
+    # verbatim code block (e.g. a `# Indice :` Python comment in an exercise
+    # scaffold) renders as literal code, NOT as an oversized heading -- skip it.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
         m = _HEADING_RE.match(ln)
         if not m:
             continue

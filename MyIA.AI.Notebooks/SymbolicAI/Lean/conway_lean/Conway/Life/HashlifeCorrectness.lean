@@ -2804,17 +2804,10 @@ private theorem window_cone_in_domain (k : Nat) (p q : Int × Int)
   obtain ⟨hq2lo, hq2hi⟩ := abs_le.mp hq2
   -- Power facts proven in pure Nat (rw only — omega splits the Nat `2^k` from
   -- `Nat.pow_succ` against the `(2^k : Int)` casts in scope), lifted to Int.
-  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := by
-    have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
-      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
-    exact_mod_cast h
-  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := by
-    have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
-      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
-    have h2 : (2 : Nat)^(k+2) = 2 * (2 : Nat)^(k+1) := by
-      rw [show (k + 2 : Nat) = Nat.succ (k + 1) from rfl, Nat.pow_succ, Nat.mul_comm]
-    have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
-    exact_mod_cast h
+  -- Factored into `Conway.Life.pow_two_add_one_int`/`pow_two_add_two_int`
+  -- (ConeGeometry, imported above), shared with `window_cheb_cone_in_domain`.
+  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := pow_two_add_one_int k
+  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := pow_two_add_two_int k
   -- Rewrite every power occurrence into a multiple of the single atom `2^k`,
   -- so the goal reduces to pure linear `Int` arithmetic in `2^k`. `linarith`
   -- (not `omega`) closes it: omega loses the positivity of `2^k` when juggling

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 8322e5764ed51ce22cca66780a4bb2367032f261
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: 183d8f84edcf34e6018de795ebc2540dfa3f74d0
     csharp_sha: 4af2b2213ed29adf3390baee09d29c9d9429818d
   known_differences:
     - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."

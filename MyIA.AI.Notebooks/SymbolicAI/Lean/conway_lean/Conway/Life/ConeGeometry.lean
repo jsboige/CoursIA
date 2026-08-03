@@ -246,7 +246,29 @@ This lemma lives in `ConeGeometry` (not `LightCone`) so that the P5
 `p5_large_n_jump` path in `HashlifeCorrectness` can consume it directly via
 `import Conway.Life.ConeGeometry`, without the circular reverse-import that would
 arise if it stayed in `LightCone` (which imports `HashlifeCorrectness`). The
-proof substance is independent of the P4 mono-verrou. -/
+proof substance is independent of the P4 mono-verru. -/
+
+/-- Power identity `2^(k+1) = 2 · 2^k` in `Int`, proven in pure `Nat` (rw +
+`Nat.pow_succ`) then lifted via `exact_mod_cast`. Shared by the two window-
+membership theorems `window_cheb_cone_in_domain` (this module) and
+`window_cone_in_domain` (`HashlifeCorrectness`, which imports this module),
+hence factored here rather than duplicated inline in each consumer. -/
+lemma pow_two_add_one_int (k : Nat) : (2^(k+1) : Int) = 2 * (2^k : Int) := by
+  have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+    rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+  exact_mod_cast h
+
+/-- Power identity `2^(k+2) = 4 · 2^k` in `Int`, proven in pure `Nat` (rw +
+`Nat.pow_succ` over two steps) then lifted via `exact_mod_cast`. Same shared
+rationale as `pow_two_add_one_int`: consumed by both window-membership theorems. -/
+lemma pow_two_add_two_int (k : Nat) : (2^(k+2) : Int) = 4 * (2^k : Int) := by
+  have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+    rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+  have h2 : (2 : Nat)^(k+2) = 2 * (2 : Nat)^(k+1) := by
+    rw [show (k + 2 : Nat) = Nat.succ (k + 1 : Nat) from rfl, Nat.pow_succ, Nat.mul_comm]
+  have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
+  exact_mod_cast h
+
 theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     (hp1_lo : (2^k : Int) ≤ p.1) (hp1_hi : p.1 < 2^k + 2^(k+1))
     (hp2_lo : (2^k : Int) ≤ p.2) (hp2_hi : p.2 < 2^k + 2^(k+1))
@@ -264,18 +286,11 @@ theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
   have hq2' : |q.2 - p.2| ≤ (2^k : Int) := by
     rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
-  -- Power facts in pure `Nat`, lifted to `Int` (linarith reads the atoms).
-  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := by
-    have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
-      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
-    exact_mod_cast h
-  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := by
-    have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
-      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
-    have h2 : (2 : Nat)^(k+2) = 2 * (2 : Nat)^(k+1) := by
-      rw [show (k + 2 : Nat) = Nat.succ (k + 1) from rfl, Nat.pow_succ, Nat.mul_comm]
-    have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
-    exact_mod_cast h
+  -- Power facts in pure `Nat`, lifted to `Int` (linarith reads the atoms),
+  -- factored into the named lemmas `pow_two_add_one_int`/`pow_two_add_two_int`
+  -- above (shared with `window_cone_in_domain` in `HashlifeCorrectness`).
+  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := pow_two_add_one_int k
+  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := pow_two_add_two_int k
   -- `Int.abs` bound unpacked into a two-sided `Int` clamp on `q.i - p.i`.
   obtain ⟨hq1lo, hq1hi⟩ := abs_le.mp hq1'
   obtain ⟨hq2lo, hq2hi⟩ := abs_le.mp hq2'

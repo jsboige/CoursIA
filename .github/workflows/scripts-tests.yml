@@ -51,6 +51,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   scripts-tests:
     name: Scripts Tests (CPU)

@@ -1,5 +1,5 @@
 /-
-Grothendieck Part 28 — Kan extensions [English mirror of KanExtensions.lean]
+Grothendieck Part 31 — Kan extensions [English mirror of KanExtensions.lean]
 
 Alexander Grothendieck (1928-2014).
 
