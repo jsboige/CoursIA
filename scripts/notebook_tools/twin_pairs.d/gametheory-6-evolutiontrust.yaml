@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: e45fb36548d082806991c54c8d332f61347c894a
+    date: "2026-07-31"
+    by: myia-po-2024:CoursIA-2
+    python_sha: db8f5ea35f0f891863bcf212bc112b031cafa494
     csharp_sha: ebd556fc1bbd7743aa60567b2fafab1853f384e7
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."

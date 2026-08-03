@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-01"
     by: myia-po-2024:CoursIA-2
     python_sha: 3cd0115d7c5acb77ac420e198b1492db0a674798
-    csharp_sha: 86f8da452e5c093452ff0388b98f18a2fca5abe8
+    csharp_sha: 97aa863e71ed279785e9bdf3cdc14064b1a2d386
     reason: "Markdown-only structural fix (Python cell 13): the MCTS-vs-Minimax comparison table omitted the MCTS(500) column even though the introducing sentence («100, 500, 1000, 5000 iterations») and the cell-12 benchmark output (5 rows: Minimax, MCTS(100), MCTS(500), MCTS(1000), MCTS(5000)) both include it. Added the MCTS(500) column with the committed-output values (Temps 0.009773->~0.010, Valeur 0.528455->~0.53, Action 4->centre). No re-exec, no output change. The C# twin uses a different comparison-table structure (Aspect|Signification), no parallel defect, csharp unchanged."
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
