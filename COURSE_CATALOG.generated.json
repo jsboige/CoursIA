@@ -16418,7 +16418,7 @@
     "status": "READY",
     "maturity": "BETA",
     "editorial": "BETA",
-    "reproducibility": "REPRODUCED",
+    "reproducibility": "EXECUTED",
     "scientific_review": "UNREVIEWED",
     "last_success_sha": "73aa7168e",
     "executed_at": "2026-07-31T21:34:18+02:00",
