@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
+    date: "2026-08-04"
     by: myia-po-2023:CoursIA
-    python_sha: cddabe42e47d1258f444f3019bd5876407d59bee
+    python_sha: c75a0237be52f739818b9e2df4ddece02a484d5d
     csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires (Sprague-Grundy, nombres de Grundy, theoreme de Sprague-Grundy sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). Meme concept mathematique (fonction de Grundy/g(x), XOR nim-sum, jeux impartiaux a information complete), meme cas canonique (Nim). Les deux couvrent Nim, Sprague, Grundy."
