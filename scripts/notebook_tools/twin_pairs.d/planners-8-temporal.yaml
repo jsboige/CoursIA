@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2023
-    python_sha: 45500904dbf2675c50a3c267f28207e3d7309758
-    csharp_sha: 76d9b0bc9b45c4b8b85ff5d9cf9d0ba53b62e495
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: dea984c63c87f8fd18e79a7c3a679f8afeb75605
+    csharp_sha: 131d4a0bea72a0ad043ed44798468fd98dd7a2e5
   known_differences:
     - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
     - "Python : unified-planning temporal + CP-SAT + Gantt. C# : from-scratch BCL .NET (ordonnancement usine)."
