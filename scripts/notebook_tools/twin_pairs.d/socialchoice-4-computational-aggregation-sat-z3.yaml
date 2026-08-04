@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-08-01"
+    date: "2026-08-04"
     by: myia-po-2023:CoursIA
-    python_sha: bd66b19d97f2a1659befa2f87886688e778b84b5
+    python_sha: 1c42f91298155aa42de2889dd59528d12a835846
     csharp_sha: 64e14757bdf161f3bf84fbe8096cf0217d58c8fd
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
