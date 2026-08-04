@@ -40,10 +40,10 @@ import Conway.Life
 namespace Conway
 namespace Life
 
-/-! ## Lightweight Spaceship (LWSS)
+/-! ## Vaisseau leger (LWSS)
 
-The smallest period-4 spaceship after the glider, with 9 live cells.
-Phase 1 (heading east):
+Le plus petit vaisseau de periode 4 apres le planeur, avec 9 cellules vivantes.
+Phase 1 (vers l'est) :
 
 ```
 .OOOO
@@ -52,7 +52,7 @@ O...O
 O..O.
 ```
 
-After 4 generations the pattern reappears, translated by `(0, 2)`.
+Apres 4 generations le motif reapparait, translate de `(0, 2)`.
 -/
 
 /-- The **LWSS** (Lightweight Spaceship), phase 1, east-bound. -/
@@ -71,10 +71,10 @@ def lwss : Grid :=
 /-- The LWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
 theorem lwss_spaceship : isSpaceship lwss 4 (0, 2) = true := by native_decide
 
-/-! ## Middleweight Spaceship (MWSS)
+/-! ## Vaisseau moyen (MWSS)
 
-A period-4 spaceship with 11 live cells: LWSS extended by one column and
-crowned with a single "hat" cell. Phase 1 (heading east):
+Un vaisseau de periode 4 avec 11 cellules vivantes : LWSS etendu d'une colonne
+et couronne d'une cellule "chapeau". Phase 1 (vers l'est) :
 
 ```
 .OOOOO
@@ -84,7 +84,7 @@ O...O.
 ..O...
 ```
 
-After 4 generations the pattern reappears, translated by `(0, 2)`.
+Apres 4 generations le motif reapparait, translate de `(0, 2)`.
 -/
 
 /-- The **MWSS** (Middleweight Spaceship), phase 1, east-bound. -/
@@ -103,10 +103,10 @@ def mwss : Grid :=
 /-- The MWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
 theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by native_decide
 
-/-! ## Heavyweight Spaceship (HWSS)
+/-! ## Vaisseau lourd (HWSS)
 
-A period-4 spaceship with 13 live cells: LWSS extended by two columns and
-crowned with a two-cell "hat". Phase 1 (heading east):
+Un vaisseau de periode 4 avec 13 cellules vivantes : LWSS etendu de deux colonnes
+et couronne d'un "chapeau" a deux cellules. Phase 1 (vers l'est) :
 
 ```
 .OOOOOO
@@ -116,7 +116,7 @@ O....O.
 ..OO...
 ```
 
-After 4 generations the pattern reappears, translated by `(0, 2)`.
+Apres 4 generations le motif reapparait, translate de `(0, 2)`.
 -/
 
 /-- The **HWSS** (Heavyweight Spaceship), phase 1, east-bound. -/
