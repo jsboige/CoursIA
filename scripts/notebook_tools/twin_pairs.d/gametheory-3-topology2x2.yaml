@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-02"
     by: myia-po-2024:CoursIA-2
     python_sha: fb3b73b211652b5f98f80be2fb313371134d366d
-    csharp_sha: 2af24ace90f1827f11fb857c728befa001822d16
+    csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06
   known_differences:
     - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."
