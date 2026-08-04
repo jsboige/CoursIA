@@ -87,3 +87,37 @@ gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
 gh pr view N --json state,mergedAt,baseRefOid 2>/dev/null | head -5
 git merge-base --is-ancestor <sha> origin/main && echo "MERGED" || echo "NOT-MERGED"
 ```
+
+---
+
+## Never-idle — les trois évasions mortes (R7)
+
+Détail déporté de [`.claude/rules/proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 (mandats user 2026-07-06 et 2026-07-19). La règle garde le test de résultat et les trois évasions en forme brève ; ce qui suit porte les exemples et les incidents.
+
+### Vocabulaire d'idle-honnête recensé
+
+Labels inventés par les workers pour faire passer un cycle vide pour un cycle honnête. **Bannis comme état terminal**, liste non-exhaustive par construction — c'est pourquoi l'autorité est le test de résultat, pas la liste :
+
+« CLEAN_DONE 0-PR » · « 0 grain frais » · « pool/lane exhausted/saturée » · « forensic-floor » · « drained-confirm » · « due-diligence contribution valide évite idle » · « NO-CHANGE-NEEDED honnête » · « Nᵉ cycle honnête / C644-L2 loophole applicable » · « rien à faire » · « en attente de dispatch ».
+
+### Évasion 1 — « ce n'est pas ma famille / ma capability »
+
+Ce qu'une lane **CPU** peut faire, cross-famille, sans aucun gate : i18n docstrings Lean · resync/audit README · enrichissement notebook · audit .NET · notebook de recherche QC read-only · module Python de recherche (ICT numpy-only) · traduction · prose pédagogique · docs.
+
+« ICT c'est po-2025 / Lean c'est po-2026 / QC c'est po-2024 » = **silo interdit** (R5) : ce sont des préférences de reporting, pas des murs.
+
+Les deux seules barrières réelles : **GPU-only** (forward-pass de modèle, génération image/vidéo) et **vision-only** (QA visuel du rendu → lanes MiniMax ou ai-01, cf [model-delegation.md](../../.claude/rules/model-delegation.md)).
+
+### Évasion 2 — « tout ce qui reste est gated »
+
+La quasi-totalité des issues dites gated (GPU / user / coord-decision / paywall) ont un **sous-grain non-gated** : documentation, notebook pédagogique CPU, audit, enrichissement, prose, test, module numpy.
+
+**Incident 2026-07-19** : quatre lanes se déclaraient simultanément « drained » alors que la seule famille ICT offrait **≥6 grains CPU frais non-claimés**. D'où l'obligation d'énumérer chaque issue ouverte **avec son gate précis** avant de conclure — un gate qualifie une prochaine action, jamais une issue entière.
+
+### Évasion 3 — « les micro-fixes suffisent »
+
+Nettoyage / tooling-FP / accents / doc sont plafonnés par **G-VAR-2** ([variation-protocol.md](../../.claude/rules/variation-protocol.md)) et ne sont jamais le plat principal. Une journée de FP-regex ou d'accents = sous-régime.
+
+Le pool a du travail à **tous les niveaux** : **DEEP** (preuve Lean, backtest, module de recherche, série notebook, moteur SOTA) · **MED** (enrichissement, audit borné, refactor, notebook pédagogique) · **LIGHT** (doc, plafonné).
+
+> **Note de cohérence (2026-08-04).** R6 et R7 ont longtemps écrit « plafonné à 1 item/lane/jour ». Ce chiffre est **périmé** depuis l'amendement G-VAR-2 du 2026-07-31 (sign-off user), qui l'a remplacé par le ratio `max(1, merges_du_jour // 3)`. Deux règles auto-chargées donnaient deux plafonds différents ; la référence unique est désormais G-VAR-2, qui se **calcule** (`scripts/variation_light_cap.py`).
