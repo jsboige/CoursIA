@@ -3,11 +3,15 @@
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
-    csharp_sha: 113030efaae912747548fb296a6c5d2e09846ab5
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
+      csharp_sha: 113030efaae912747548fb296a6c5d2e09846ab5
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
+      csharp_sha: 479d24e0d69d1bb2ee6dcca6d6d4b15c5e29aad0
   known_differences:
   - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
