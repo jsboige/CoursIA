@@ -36,6 +36,7 @@ from prover import (
 from prover.config import LEAN_PROJECT_DIR
 from prover.verifier import verify_with_lean
 from prover.trace import TraceLogger as _TL
+from prover.lean_utils import count_real_sorries  # #9402: real-token counter
 
 
 def main():
@@ -76,7 +77,7 @@ def main():
             sys.exit(1)
 
         content = lean_path.read_text(encoding="utf-8")
-        sorry_count = content.count("sorry")
+        sorry_count = count_real_sorries(content)  # #9402: real tokens, not prose
         if sorry_count == 0:
             print(f"No sorry found in {lean_path}")
             sys.exit(0)

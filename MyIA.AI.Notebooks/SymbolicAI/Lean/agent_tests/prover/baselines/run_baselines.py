@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from prover import DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
+from prover.lean_utils import count_real_sorries  # #9402: real-token counter
 
 
 BASELINES_DIR = Path(__file__).parent
@@ -34,7 +35,7 @@ def run_multi_baseline(demo_num: int, max_iterations: int = 5,
     demo = DEMOS[demo_num]
     filepath = demo["file"]
     original = Path(filepath).read_text(encoding="utf-8")
-    original_sorry = original.count("sorry")
+    original_sorry = count_real_sorries(original)
 
     trace = TraceLogger(output_dir=str(TRACES_DIR))
     prover = MultiAgentSorryProver(trace=trace, provider=provider)
@@ -45,7 +46,7 @@ def run_multi_baseline(demo_num: int, max_iterations: int = 5,
 
     # Verify file was restored
     final = Path(filepath).read_text(encoding="utf-8")
-    final_sorry = final.count("sorry")
+    final_sorry = count_real_sorries(final)
     file_ok = final == original or final_sorry < original_sorry
 
     trace.save(f"multi_demo{demo_num}")
@@ -80,7 +81,7 @@ def run_auto_baseline(demo_num: int, max_iterations: int = 5,
     demo = DEMOS[demo_num]
     filepath = demo["file"]
     original = Path(filepath).read_text(encoding="utf-8")
-    original_sorry = original.count("sorry")
+    original_sorry = count_real_sorries(original)
 
     trace = TraceLogger(output_dir=str(TRACES_DIR))
     prover = AutonomousProver(trace=trace, provider=provider)
@@ -90,7 +91,7 @@ def run_auto_baseline(demo_num: int, max_iterations: int = 5,
     elapsed = time.time() - start
 
     final = Path(filepath).read_text(encoding="utf-8")
-    final_sorry = final.count("sorry")
+    final_sorry = count_real_sorries(final)
     file_ok = final == original or final_sorry < original_sorry
 
     trace.save(f"auto_demo{demo_num}")
