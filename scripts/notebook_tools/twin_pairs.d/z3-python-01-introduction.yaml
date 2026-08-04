@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: bc1a9639efda2a7855b8346c08ab2a14c7e2cf2e
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
     csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
   known_differences:
     - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."

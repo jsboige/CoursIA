@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 4b18990a0ad8338f341a30e9d6999a4f59ec4757
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 596992096613fb08367a5e41fae56b1b01254572
     csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
   known_differences:
     - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
