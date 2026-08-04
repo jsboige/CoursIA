@@ -6,7 +6,6 @@
   last_audit:
     python_sha: 20ead2ac4fe55a2ec0d7dc3ad3434113aa3b8bab
     csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
-    csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
   known_differences:
     - "Socle pedagogique commun : Demineur (CSP : contraintes sommes exactes, library python-constraint) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = library python-constraint (ExactSum) + OR-Tools ; C# = BCL pure (System.*), 0 NuGet."

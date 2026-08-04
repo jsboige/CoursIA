@@ -81,25 +81,41 @@ def test_audit_targets_sorry_bearing_module():
 
 
 def test_audit_allowlists_native_decide_axioms():
-    """The audit allow-lists the native_decide axioms its module ACTUALLY depends
+    """The audit allow-lists the native_decide axioms its modules ACTUALLY depend
     on, so it reports only a FORBIDDEN axiom (beyond them) as red. The first CI
     run of this audit (#8782) revealed HashlifeCorrectness depends on **28**
     native_decide axioms -- a footprint DISTINCT from the blocking gate's 19-name
     list (triaged from the showcase modules KochenSpecker/FreeWillTheorem, #8749,
-    a different scope; the two sets have ZERO overlap). The audit audits a
-    different module, so its allow-list is its own (not a copy of the blocking
-    gate's). All 28 are decide-kernel (`._native.native_decide.ax_1_N`)."""
+    a different scope; the two sets have ZERO overlap). The audit audits
+    different modules, so its allow-list is its own (not a copy of the blocking
+    gate's). All are decide-kernel (`._native.native_decide.ax_1_N`).
+
+    **Widened to 46 by #9341** (`ci(lean,#8782)`), which took the audit from 3 to
+    7 covered modules by adding Oscillators/Spaceships/RLE. The 18 added entries
+    are the build-enumerated footprint of exactly those new modules -- 10 new
+    theorems, all still-life/spaceship/oscillator decidability
+    (`boat|loaf|pond|ship|tub_still_life`, `lwss|mwss|hwss_spaceship`,
+    `pulsar_period_three`, `pentadecathlon_period_15`). Coverage went UP, so the
+    widening is an expansion of what is audited, not a dilution of the gate.
+
+    This pin is the ratchet's ratchet: it caught #9341 widening the allow-list
+    without review and turned `main` red until the widening was justified in
+    writing. Raising it is only ever legitimate alongside that justification --
+    a new name that is NOT attributable to a newly covered module means an
+    unproven `native_decide` slipped in, and the pin must stay put instead."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
     assert "native_decide" in allow, (
         "audit must allow-list the native_decide axioms or it false-fails")
-    # The 28 revealed by the audit's first run -- pin the empirical footprint so
-    # a silent re-shrink (or accidental copy of the blocking gate's 19) is caught.
+    # Pin the empirical footprint so a silent re-shrink (or accidental copy of
+    # the blocking gate's 19) is caught -- and so any future widening has to
+    # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 28, (
-        f"audit allow-list must carry the 28 HashlifeCorrectness native_decide "
-        f"axioms (empirical footprint); got {len(names)}")
+    assert len(names) == 46, (
+        f"audit allow-list must carry the 46 native_decide axioms of the 7 "
+        f"covered Life modules (empirical footprint, #8782 + #9341); got "
+        f"{len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges).
     for sample in [
