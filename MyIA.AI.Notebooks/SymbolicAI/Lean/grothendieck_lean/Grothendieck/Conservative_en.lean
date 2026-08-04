@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 19 — Les familles conservatives de points
+Grothendieck Part 19 — Les familles conservatives de points
 
 La Partie 18 (ConstantSheaf.lean) a introduit le foncteur faisceau constant et son
 adjonction avec les sections globales.

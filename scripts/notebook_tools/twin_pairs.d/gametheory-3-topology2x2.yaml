@@ -4,11 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
-    by: myia-po-2024:CoursIA-2
     python_sha: ac9b8aee4ae0785bfefe6c10f64cfb3e13a38c54
+    csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06
     reason: "c.1129 #8052 Python c40 SINGLE_NASH ~75%->50% (family vs 1-nash count confusion; 288/576=50%) + DOMINANT subcategory->distinct family (144/25%) + c51 un seul swap->deux swaps (c13/c23: PD->Stag Hunt=PD->Chicken=2); C# twin preserved"
-    csharp_sha: 2af24ace90f1827f11fb857c728befa001822d16
   known_differences:
     - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."
