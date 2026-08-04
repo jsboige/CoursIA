@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2026
-    python_sha: e92fbd594f761ed425a53a59adb09017994c216b
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 5aa7d42e6e941a86dfcedbb3c9aded569d32d2b4
     csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
   known_differences:
     - "Socle pedagogique commun : Detection de contours / Edge detection (metaheuristique DEAP + scipy sobel) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-04"
     by: myia-po-2023:CoursIA
-    python_sha: 6c4872595591dd5d109c1b71d3b3453ecb3361bd
+    python_sha: d9bd33ad8b9e97f30827123edbfece15a1d630a8
     csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
   known_differences:
     - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."

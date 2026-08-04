@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 1544722434842ecbf010d6009510e6cf6a330779
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
     csharp_sha: d60c424c0e1334c0dbf3f9fa6b9376bad215c330
   known_differences:
     - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."

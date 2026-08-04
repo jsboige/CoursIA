@@ -7,8 +7,8 @@
     date: "2026-08-01"
     by: myia-po-2024:CoursIA-2
     python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
-    csharp_sha: e9954ecfef1cd034bb931d7c72db0495e9e98739
-    reason: "rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c7/c10/c33 sigma claim ~3 par capteur -> 2,5 a 8 (pression pic 8sigma); both twins fixed, parity preserved"
+    csharp_sha: 4f03355d4ba2fd4d898ed96a172927b7f3eb9be6
+    reason: "rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c31 COUNT off-by-one 10->9 (cell 27 loop t=1..9); both twins fixed, parity preserved"
   known_differences:
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
