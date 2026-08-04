@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4b-Python-SPARQL.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 441dbb88b6d54217818a9ebbca05d097b79cd932
-    csharp_sha: 8423823352423ed333872a3c24dc84d946992957
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 441dbb88b6d54217818a9ebbca05d097b79cd932
+      csharp_sha: 8423823352423ed333872a3c24dc84d946992957
   known_differences:
     - "Socle commun : execution de requetes SPARQL 1.1 (SELECT/CONSTRUCT/ASK) sur un graphe RDF."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` moteur Leviathan + `VDS.RDF.Query.Builder` fluent). Python = `rdflib` (`graph.query()` natif). Moteurs SPARQL equivalents, syntaxe de binding idiomatique differente."

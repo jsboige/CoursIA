@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 25c9790ba0ba6e5e4747515ff7fc7c60829569bb
-    csharp_sha: 6e23876720519849d48a72d95365cc0cc95384bd
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 25c9790ba0ba6e5e4747515ff7fc7c60829569bb
+      csharp_sha: 6e23876720519849d48a72d95365cc0cc95384bd
   known_differences:
     - "Socle pedagogique commun : resolution du Sudoku par programmation par contraintes avec OR-Tools CP-SAT (Google.OrTools), meme solveur sous-jacent, meme modelisation (variables IntVar par case, contraintes AllDifferent sur lignes/colonnes/blocs, objectif de satisfaction)."
     - "Idiomes framework symetriques : Python = `from ortools.sat.python import cp_model` (binding Python natif), C# = NuGet `#r \"nuget: Google.OrTools\"` + `using IntVar / SimpleCPSolver / SimpleConstraint` (binding .NET). Les deux cotes deleguent au meme moteur CP-SAT de Google, seules les API de binding different."

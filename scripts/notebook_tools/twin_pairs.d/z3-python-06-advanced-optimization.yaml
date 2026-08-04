@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
-    csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
+      csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
