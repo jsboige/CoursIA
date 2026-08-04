@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: myia-po-2023:CoursIA
-    python_sha: 1fadd569c0e0fd7da3d20263db1734e008f8c325
+    date: "2026-08-04"
+    by: myia-po-2024:CoursIA-2
+    python_sha: b60f1ce2b23e6a3f0fde01b9e0bbc9ad16a047d1
     csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
   known_differences:
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
