@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: po-2024:CoursIA-2
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
     python_sha: 8eaa1026bcc06cbaa624c808ce8458ff9646ae6c
-    csharp_sha: 240e04733ad2b9e1bcc0c8ec42a56a342408d5e9
+    csharp_sha: 2bce8a6cdcbc8659b9287c737f49321a98a0ac90
   known_differences:
     - "Socle pedagogique commun : MiniZinc (modeling language CSP, OR-Tools CP-SAT cross-solve) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = minizinc + OR-Tools CP-SAT ; C# = Google.OrTools.Sat NuGet (C# binding du meme solver OR-Tools)."
