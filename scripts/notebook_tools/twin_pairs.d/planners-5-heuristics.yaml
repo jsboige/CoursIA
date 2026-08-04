@@ -4,8 +4,8 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
-    by: myia-po-2023:CoursIA
+    date: "2026-08-04"
+    by: myia-po-2026:CoursIA
     python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
     csharp_sha: 38fbe3dd8890dae8c1e0772807baed5762eb1eda
   known_differences:

@@ -90,7 +90,12 @@ def to_csv_lines(close) -> list[str]:
 
 def write_csv(path: Path, lines: list[str]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # ``newline="\n"`` pins LF line endings on Windows too: ``Path.write_text``
+    # otherwise translates ``\n`` -> ``\r\n``, so the ``date,close`` CSVs minted on
+    # a Windows worker would differ byte-for-byte from those minted under the
+    # Linux Docker ``lean research`` container that consumes them (non-reproducible
+    # data files). Matches the canonical pattern in ``populate_cost_metadata.py``.
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     return path
 
 

@@ -6,7 +6,8 @@
   last_audit:
     date: "2026-07-25"
     by: po-2023
-    python_sha: da5dc9d2c05d6688d03a1097215d4cb7b69228a6
+    python_sha: f8eeb850da37e7d2e6723d1250f98c3aa187f643
+    reason: "Markdown-only hint fix (cell 25): Ultimatum backward-induction Indices 2/3 said x=0 / offre de 0 euro, but the discrete offer set is {2,4,5,6,8} (0 not admissible) and the notebook own stated SPE is spe_offer=2; aligned Indice 2/3 to x=2. No re-exec, no output change. C# twin untouched (different from-scratch engine)."
     csharp_sha: 818b2295149aad115c286816c9ad242f964b400c
   known_differences:
     - "Socle pedagogique commun : jeux sous forme extensive (arbre de jeu sequentiel avec noeuds de decision/terminal/chance + infosets), backward induction (induction en arriere) pour calculer les SPE (Subgame Perfect Equilibria), exemple canonique du jeu d'entree sur le marche (entrant vs incumbente)."

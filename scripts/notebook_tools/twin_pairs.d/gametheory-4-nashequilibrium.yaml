@@ -6,7 +6,8 @@
   last_audit:
     date: "2026-07-28"
     by: myia-po-2024:CoursIA-2
-    python_sha: e2d19dec8863909c0d4f785db97bfaadc8b575da
+    python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+    reason: "Markdown-only cross-file count refresh (cell 33): the companion Lean notebook GT-4b-Lean-NashExistence grew from 38 to 44 cells since the cite was written (verified firsthand by parsing origin/main: ...GameTheory-4b-Lean-NashExistence.ipynb -> 44 cells). No re-exec, no output change. C# twin untouched (different from-scratch engine, no Lean refs)."
     csharp_sha: fb4ff1f41cf14d9deb11ab755609cb3fb657d390
   known_differences:
     - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
