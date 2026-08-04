@@ -128,9 +128,24 @@ jobs:
   # explicitly (lean-axiom.yml guards it), never as a silent clean.
   #
   # target-modules scope: Conway.Life.HashlifeCorrectness (where all 8 sorries
-  # AND 28 native_decide axioms live -- see allow-axioms below). Broader Life.*
-  # tranches follow the same incremental pattern as the blocking gate (start
-  # narrow, profile, expand).
+  # AND 28 native_decide axioms live -- see allow-axioms below) PLUS the 4
+  # axiom-clean Life foundations: MacroCell + Hashlife (and their _en siblings).
+  # Those 4 were verified clean by STATIC analysis (grep over conway_lean source):
+  # native_decide=0, decide=0, sorry=0, and their import graph pulls in NONE of
+  # the nd-bearing Life modules (Computation/Oscillators/RLE/Spaceships/
+  # HashlifeMemo/HashlifeMarginDemo), so #print axioms resolves to the standard
+  # defaults only (propext/Classical.choice/Quot.* -- already allowed) and the
+  # audit stays green-on-acknowledged. MacroCell (43 decls) + Hashlife (20) are
+  # the data/structure layer the sorry-bearing proof builds on. The _en siblings
+  # ARE separate compiled modules (i18n convention: docstrings only differ) -- a
+  # coverage gate that counts compiled modules must not omit half a bilingual pair
+  # by default (the knot_lean 5/12-vs-5/14 miscount, #8782 pitfall 2). Moving the
+  # covered count 3 -> 7 closes 4 of the 50 blind-spot modules.
+  #
+  # RESIDUAL (follow-up, needs a warm Mathlib junction to enumerate): the 6
+  # nd-bearing sorry-free Life modules each carry their OWN native_decide axioms
+  # (NOT in the 28-name allow-list, which is HashlifeCorrectness-specific) -- adding
+  # them requires build-enumerated allow-axioms entries, not a static guess.
   proof-integrity-audit:
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
@@ -142,7 +157,7 @@ jobs:
       # and could not tell which tolerates the 8 acknowledged sorries from which
       # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
       display-name: conway_lean (audit)
-      target-modules: "Conway.Life.HashlifeCorrectness"
+      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.RLE"
       # allow-axioms: the 28 native_decide axioms that HashlifeCorrectness ACTUALLY
       # depends on (empirical footprint revealed by THIS audit job's first CI run).
       # These are DISTINCT from the blocking gate's 19-name list above: that list
@@ -156,7 +171,7 @@ jobs:
       # the same acknowledged class as the 19; allow-listing the exact set lets
       # the audit go green-on-acknowledged + red-on-a-NEW native_decide (the
       # "new native_decide = new red" property the no-wildcard rule preserves).
-      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1"
+      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.loaf_still_life._native.native_decide.ax_1_1,Conway.Life.boat_still_life._native.native_decide.ax_1_1,Conway.Life.tub_still_life._native.native_decide.ax_1_1,Conway.Life.pond_still_life._native.native_decide.ax_1_1,Conway.Life.ship_still_life._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.lwss_spaceship._native.native_decide.ax_1_1,Conway.Life.mwss_spaceship._native.native_decide.ax_1_1,Conway.Life.hwss_spaceship._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1"
       fail-on-sorry: false
 
   # Advisory proof-integrity coverage (See #8782). The `target-modules` lists
