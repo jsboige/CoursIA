@@ -184,3 +184,45 @@ def test_main_apply_writes_both_csvs(monkeypatch, tmp_path, capsys):
     assert text.startswith("date,close\n")
     assert "2024-01-02,1.0" in text
     assert "Done: 2 CBOE series provisioned" in capsys.readouterr().out
+
+
+
+# ---------------------------------------------------------------------------
+# main() integration: --start forwarding + fetch_series empty-data guard.
+# These two paths are NOT exercised by test_main_dry_run / test_main_apply
+# above (no --start passed; fetch_series mocked out entirely). Added in the
+# #9255 tranche to pin the remaining contracts.
+# ---------------------------------------------------------------------------
+
+def test_main_start_argument_forwarded_to_fetch_series(monkeypatch, tmp_path):
+    """The --start flag is forwarded to fetch_series once per SERIES entry."""
+    stub = _series([18.5], dates=["2024-01-02"])
+    captured = []
+
+    def _capture(ticker, start):
+        captured.append(start)
+        return stub
+
+    monkeypatch.setattr(pvc, "fetch_series", _capture)
+    pvc.main([
+        "--dry-run", "--out-folder", str(tmp_path), "--start", "2015-06-01"])
+    # fetch_series called once per SERIES entry, each forwarded the custom start.
+    assert len(captured) == len(pvc.SERIES)
+    assert all(s == "2015-06-01" for s in captured)
+
+
+def test_fetch_series_raises_on_empty(monkeypatch):
+    """fetch_series raises RuntimeError when yfinance returns empty/None.
+
+    Injects a fake yfinance module (lazy-imported inside fetch_series) so the
+    real import + network are not needed; exercises the empty-data guard at
+    module line 71 (`if df is None or df.empty: raise RuntimeError(...)`).
+    """
+    import sys
+    import types
+
+    fake_yf = types.ModuleType("yfinance")
+    fake_yf.download = lambda *a, **k: None
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+    with pytest.raises(RuntimeError, match="no data"):
+        pvc.fetch_series("^VIX", "2010-01-01")
