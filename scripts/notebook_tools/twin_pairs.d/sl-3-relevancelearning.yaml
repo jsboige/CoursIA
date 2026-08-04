@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: po-2024
-    python_sha: e85deb5d621775641b31cbacb96c70e55266cfe1
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 40f2cd7c36fcbb293ad79aae55109190e0272458
     csharp_sha: 7b065b84b9a88aa7f1986fda628aa70d2127e4ba
   known_differences:
     - "Socle commun : Relevance-Based Learning (RBL) approfondi -- determinations fonctionnelles, treillis des determinations, algorithme MINIMAL-CONSISTENT-DET, selection d'attributs guidee."
