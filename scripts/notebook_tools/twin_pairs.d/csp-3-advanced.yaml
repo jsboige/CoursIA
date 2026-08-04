@@ -4,11 +4,12 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: myia-po-2024:CoursIA-2
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
     python_sha: ea4369680e7b982cb3a6efc2d73b060e4218a4df
-    csharp_sha: c6865e44c00885bccd47a4ee26cc0a3b45ff8099
+    csharp_sha: 712df1e071c744065601cfcfd71b86da7458c23f
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
     - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."
     - "Concepts avances : latin squares (N-Reines etendu), magic series, Golomb rulers. Cote Python = from-scratch, cote C# = Choco + benchmarks comparatifs."
+    - "Parity GAP (instances distinctes, meme classe de defect que CSP-5 #9127/#9143) : les deux twins couvrent les memes contraintes globales (allDifferent, cumulative, circuit, table) mais sur des jeux de donnees differents -- les optima numeriques ne sont PAS directement comparables d'un twin a l'autre (ex. cumulative : C# makespan 9 sur taches durees [3,4,2,5] cap 2 vs Python makespan 6 sur taches [3,2,4,2] cap 2). La comparaison porte sur les patrons d'API Choco vs CP-SAT, pas sur l'egalite des optima. Le recap C# (cellules objectifs + conclusion + cellule cumulative) a ete reframed de 'parite algorithmique prouvee / optimums identiques' (claims faux) vers 'parallele d'implementation sur instances distinctes' (honnête), et le code comment stale 'makespan = 8' aligne sur la vraie borne ceil(18/2)=9 + output Choco 9."

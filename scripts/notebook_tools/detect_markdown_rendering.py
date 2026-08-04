@@ -272,7 +272,12 @@ def scan_cell(cell) -> list[dict]:
                 break  # one per cell is enough
 
     # ---- oversized hint (hint keyword as a heading) ------------------------------
-    for ln in lines:
+    # Fence-aware (parity with setext_oversized above): a hint keyword inside a
+    # verbatim code block (e.g. a `# Indice :` Python comment in an exercise
+    # scaffold) renders as literal code, NOT as an oversized heading -- skip it.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
         m = _HEADING_RE.match(ln)
         if not m:
             continue
