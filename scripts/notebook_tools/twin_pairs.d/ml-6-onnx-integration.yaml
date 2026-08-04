@@ -4,11 +4,11 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-04"
     by: myia-po-2024:CoursIA-2
     python_sha: 40517222f60d7acaacb6beeefdc225798309315e
-    csharp_sha: cdfe398768e01d553c71bc82ee82227e708a3472
-    reason: "rebaseline python apres fix prose .onnx (cellules 0/1/26/27, #8052) : la prose disait faussement que le jumeau .NET charge 'le meme fichier iris_model.onnx produit ici' ; en realite le C# charge iris_model.onnx canonique (scripts/ml/generate_iris_onnx.py) et ce notebook exporte iris_model_python.onnx (distinct, pour ne pas l'ecraser). Aligne la prose sur le code (cell 7) et les known_differences ci-dessous. Python-only, csharp_sha unchanged, parite semantique preservee."
+    csharp_sha: e8b19d04356dab090cb82f001db007990261ac73
+    reason: "rebaseline csharp apres fix prose CELL[2] (#8052) : la Note disait faussement \"nous allons creer un modele ONNX simple\" alors que le C# CHARGE un modele pre-exporte (iris_model.onnx, sklearn, scripts/ml/generate_iris_onnx.py) -- verifie par header \"Charger un modele ONNX externe\", CELL[7] (code de chargement), et known_differences ci-dessous. Aligne la Note sur le code. Csharp-only, python_sha unchanged, parite semantique preservee."
   known_differences:
     - "Socle pedagogique commun : integration de modeles ONNX (chargement, inference, inspection du graph, exercices). C# = ML.NET OnnxTransformer + OnnxRuntime ; Python = skl2onnx (export sklearn->ONNX) + onnxruntime (inference) + onnx (inspection structurelle). Cree comme twin de parite explicite en #5607 (EPIC #4956 .NET<->Python)."
     - "Asymetrie export-vs-load (pont Python->.NET) : le C# charge un modele ONNX pre-exporte (iris_model.onnx genere par scripts/ml/generate_iris_onnx.py, RandomForest sklearn) car l'export ML.NET->ONNX est experimental (documente en commentaire, c13/c15) ; le Python effectue l'export sklearn->ONNX lui-meme via skl2onnx (opset 15, zipmap=False). Le twin Python est le cote 'producteur' du pont ONNX, le C# le cote 'consommateur'."
