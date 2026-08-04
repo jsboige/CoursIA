@@ -1,0 +1,14 @@
+- name: "Sudoku-9 GraphColoring"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-08-03"
+    by: myia-po-2023:CoursIA
+    python_sha: 8468688beb8513f870e571c57eded9224f2c9cb7
+    csharp_sha: 1a629086fd9a29cd9fb4d705e44ba085d02a4583
+  known_differences:
+    - "Socle pedagogique commun : reformulation du Sudoku comme un probleme de coloration de graphe (une cellule = un noeud, le graphe de contraintes Sudoku, coloration propre a 9 couleurs), meme concept mathematique (graphe de conflits, coloration propre), meme cas d'application."
+    - "Idiomes framework : Python = networkx (construction du graphe) + OR-Tools CP-SAT (resolution de la coloration) ; C# = construction du graphe + solveur de coloration en stdlib. Meme reformulation graph-coloring, libs de graphe differentes."
+    - "Parite structurelle proche : Python 11 cellules code / 18 markdown ; C# 14 cellules code / 22 markdown."

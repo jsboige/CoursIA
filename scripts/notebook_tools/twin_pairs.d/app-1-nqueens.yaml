@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-08-01"
     by: myia-po-2024:CoursIA-2
-    python_sha: 196bf38650379fdd7dfb4660d57aab39c6e8709e
+    python_sha: 36e761b00601e300e2e0755f3b6e75c5d446ef98
     csharp_sha: 17128d989d96c86221f698d1586f00ddf5f6feb1
   known_differences:
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."

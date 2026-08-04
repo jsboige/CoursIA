@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: po-2024
-    python_sha: 491d562cf789839411bf8f755dd1476da1120d86
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
+    python_sha: 54e32cb14b4791558f1017d16974ea0ee19d62af
     csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
   known_differences:
     - "Socle commun : apprentissage logique symbolique -- Current-Best-Hypothesis (CBH) et Version Space / Candidate Elimination, sur le domaine restaurant (AIMA)."

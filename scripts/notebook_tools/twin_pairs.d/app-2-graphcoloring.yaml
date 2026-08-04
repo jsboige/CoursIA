@@ -5,8 +5,7 @@
   parity_level: semantic
   last_audit:
     date: "2026-08-01"
-    by: po-2024
-    python_sha: a3efacca3f758f7fbd166aaacf3f3fceece5a9ca
+    python_sha: af32c60315631ceca1c0709ef888712e1f431ed9
     csharp_sha: 6d9767a24d2c2d78165b68cd9dab09872c1a143e
   known_differences:
     - "Socle pedagogique commun : coloration de graphes comme CSP canonique -- formulation (variable couleur par sommet, domaines 1..k, contraintes != sur les aretes), heuristiques (Greedy, DSATUR, Welsh-Powell) + calcul exact du nombre chromatique chi. Cas d'etude partagees : graphe de Petersen, dodecaedre, graphes aleatoires G(n,p) (benchmark Erdos-Renyi)."
