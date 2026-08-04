@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-27"
-    by: po-2024
-    python_sha: dfb97d3c84b778e5d00d30d897fb8dcaebf32353
+    date: "2026-08-01"
+    by: myia-po-2026:CoursIA
+    python_sha: 5542ba3e5ac011dbb7e9af495067833f0f75e28c
     csharp_sha: fd623c2d84b2a6c4b7008519abbca9f0bb6237a2
   known_differences:
     - "AVERTISSEMENT DE PERIMETRE : le jumeau C# est explicitement un twin PARTIEL -- son titre porte '(tranche 1)' et sa conclusion s'intitule 'Bilan (tranches 1 + 2)'. parity_level=surface (pas semantic) car la couverture C# est incomplete vs Python."
