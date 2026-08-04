@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
+    date: "2026-08-04"
     by: myia-po-2026:CoursIA
-    python_sha: 99c03ee215fe487b384b0b016b233cdbf852df30
+    python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
     csharp_sha: 0993ec2e3068216e3b07f1448dd5776de232692b
   known_differences:
     - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
