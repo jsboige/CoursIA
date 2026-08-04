@@ -76,10 +76,29 @@ jobs:
         id: check
         run: |
           set +e
-          OUTPUT=$(python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main 2>&1)
+          # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
+          # Previously `OUTPUT=$(... 2>&1)` merged tool warnings (missing-notebook notices etc.,
+          # check_twin_parity.py emits 6 `print(..., file=sys.stderr)` sites) INTO the JSON file,
+          # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
+          # any PR where a warning fired -- masking the real drift verdict. Direct redirection
+          # captures python's exit code correctly AND keeps the report pure JSON.
+          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main > twin_parity_report.json 2>twin_parity_stderr.log
           EXIT=$?
-          echo "$OUTPUT" > twin_parity_report.json
           set -e
+          if [ -s twin_parity_stderr.log ]; then
+            echo "Twin-parity tool diagnostics (stderr, non-fatal):"
+            cat twin_parity_stderr.log
+          fi
+          # Guard: fail with a CLEAR ::error if the report is unparseable, instead of a raw
+          # json.load traceback. The report must be stdout-only JSON (stream separation above).
+          if ! python -c "import json; json.load(open('twin_parity_report.json'))" 2>/dev/null; then
+            echo "::error title=Twin parity report unparseable::The JSON report (twin_parity_report.json) could not be parsed. Tool exit was $EXIT. Report tail + stderr are shown below and uploaded as artifacts. This indicates the report stream was corrupted or the tool crashed before emitting JSON (see #8957 stream-separation fix)."
+            echo "--- report tail (last 400 chars) ---"
+            tail -c 400 twin_parity_report.json || true
+            echo "--- stderr ---"
+            cat twin_parity_stderr.log 2>/dev/null || true
+            exit 1
+          fi
           if [ $EXIT -eq 0 ]; then
             INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
             PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
@@ -118,5 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: twin-parity-report
-          path: twin_parity_report.json
+          path: |
+            twin_parity_report.json
+            twin_parity_stderr.log
           if-no-files-found: ignore

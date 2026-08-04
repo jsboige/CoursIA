@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-CSharp-SHACL.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
+    date: "2026-08-02"
     by: po-2024
-    python_sha: 4d4511936245c8c4b5d8665149a9461ae519df2e
+    python_sha: 47597549035c04803da74b9361a5b8c825e4f884
     csharp_sha: fce2451b700090a2515d64a49e550eae1e0c0e6b
+    reason: "c1 rdflib self-ref pointed at SW-8 (this notebook); rdflib introduced in SW-2b-Python-RDFBasics. Python-only, csharp PRESERVED."
   known_differences:
     - "Socle commun : validation de graphe RDF par contraintes SHACL (Shapes Constraint Language, W3C 2017)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Shacl` moteur de validation integre). Python = `pyshacl` (validateur SHACL dedie, reference) + `rdflib` pour le graphe. pyshacl est l'implementation de reference Python ; dotNetRDF embarque SHACL depuis la v3."

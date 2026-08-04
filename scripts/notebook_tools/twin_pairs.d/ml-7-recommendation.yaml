@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-31"
     by: myia-po-2024:CoursIA-2
-    python_sha: a3279c176b3266566d06cd2eebb8274aba150d0e
+    python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
     csharp_sha: 033dbe7f8ffda8fd0258a6f1a702436de69234df
     reason: "rebaseline python apres fix claim sparsite (cellules 1 et 22, #8052) : la prose disait 'La matrice est clairsemee (chaque utilisateur ne note que quelques films)' + table resume 'creuse' mais l'output cellule 4 affiche 'Notes observees : 23/25 (92% rempli)' (3 users sur 5 ont note TOUS les films) = matrice presque complete, l'oppose de clairsemee. Fix distingue systems reels (clairsemes, point pedago conserve) vs jouet (presque complet pour lisibilite). Python-only, csharp_sha unchanged, parite semantique preservee."
   known_differences:
