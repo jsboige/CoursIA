@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-04"
     by: myia-po-2023:CoursIA
-    python_sha: 67d24fdcfb3ccfb484eabf75578a71e9639131d6
-    csharp_sha: 4938f5755414ebf12ea5a66c56aee03645359853
+    python_sha: 91c69994024084bea93a0823230255624b828ce1
+    csharp_sha: 07cea4cbbc82bdb3c2a3f863b418b9a8b2a44fa2
+    reason: "Measure/value fix (C# cell 13 « Interpretation : Comparaison des formats de sortie »): 2 inverted-size claims contradicted the committed cell 12 output (4-triplet graphe Example.ttl). c12 measures NTriples 448 car / 4 lines and Turtle 531 car / 8 lines (5 @prefix + 1 statement), so Turtle is LARGER here (ratio 0.84:1) -- yet c13 claimed « tient en 3 lignes au lieu de 4 » (Turtle is 8 lines) and « ratio 2:1 (NTriples ~400 car vs Turtle ~300 car) » (backwards: Turtle 531 > NTriples 448). On this tiny graphe the 5 @prefix declarations dominate; compression appears only on larger graphs. Realigned both claims to the measured output (8 lines total; 531 vs 448 car, Turtle paradoxalement plus long) while preserving the valid general point « 5:1 ou plus sur des graphes plus grands ». Markdown-only, 0 re-exec, no output change. Python twin SW-3b uses rdflib with different output sizes (separate analysis), python unchanged."
   known_differences:
     - "Socle commun : parcours de graphe RDF, iteration des triplets, gestionnaires de parsing (handlers)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Parsing.Handlers`, iterate via `Graph.Triples`). Python = `rdflib` (`rdflib.collection`, `rdflib.parser`, iteration via `graph` set semantics)."

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-31"
-    by: po-2024
-    python_sha: 795040c265ec073893f2ec2a3597a78285cdf11c
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 5989c12479280ccd887129b7fd6bd98ae98c0734
     csharp_sha: ea011ad638e69c982deb3f508e45841b3d71a75a
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface car le jumeau Python INVOQUE un vrai moteur ILP SOTA (SWI-Prolog via pyswip + reference a Popper 'Learning From Failures') tandis que le C# reimplémente FOIL from-scratch (pas de moteur Prolog). Meme concept pedagogique, machineries differentes."
