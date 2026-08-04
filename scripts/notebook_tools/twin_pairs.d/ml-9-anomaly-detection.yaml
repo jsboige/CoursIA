@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
+    date: "2026-08-04"
     by: myia-po-2024:CoursIA-2
     python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
-    csharp_sha: 4f03355d4ba2fd4d898ed96a172927b7f3eb9be6
+    csharp_sha: f249f653b3d7572d14f7c5cb1ec12a3da74a4cb8
     reason: "rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c31 COUNT off-by-one 10->9 (cell 27 loop t=1..9); both twins fixed, parity preserved"
   known_differences:
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
