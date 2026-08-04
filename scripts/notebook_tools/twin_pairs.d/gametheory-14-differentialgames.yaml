@@ -5,9 +5,8 @@
   parity_level: semantic
   last_audit:
     date: "2026-07-31"
-    by: myia-po-2024:CoursIA-2
     python_sha: ecc84c3fa8b987ef5b0181a17ac5ff0573d3daa9
-    csharp_sha: 17c7e9394da43390c00791aa53912181dc497a2e
+    csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
   known_differences:
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
     - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`, 0 NuGet, 0 numpy, 0 scipy), integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot."
