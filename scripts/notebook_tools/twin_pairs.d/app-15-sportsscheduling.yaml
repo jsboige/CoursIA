@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2026
-    python_sha: 16612e0a99b13c68f31c32810289e0065a27cfde
+    date: '2026-08-01'
+    by: myia-po-2024:CoursIA-2
+    python_sha: f4a0ff10ad7ad37accc5b3133f0132679c735400
     csharp_sha: 10bf1bd2e2f20c0267fe9ad891b9bc084c9ac482
+    reason: "c.1133 #8052 Python c30 elem[13] Equite claim equilibre parfait / meme nombre D/E FALSE (5 rounds -> D+E=5 odd -> same count impossible) ; own c13 STATISTIQUES computed output shows variable D/E (Lille 4D/1E, Bordeaux 1D/4E, Paris 3D/2E...) ; own c14 sibling states it correctly (D/E non impose). Honest reframe aligning c30 on c13+c14. C# twin preserved (its Equilibre = consecutive-alternation constraint, different claim)."
   known_differences:
     - "Socle pedagogique commun : Planning sportif / Sports scheduling (CSP : round-robin, contraintes equipes) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass ; C# = Google.OrTools.Sat NuGet + ScottPlot viz."

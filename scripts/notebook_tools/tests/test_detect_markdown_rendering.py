@@ -148,5 +148,66 @@ class TestScanCell:
         assert scan_cell(_md(["\n"])) == []
 
 
+# --- oversized_hint fence-awareness ----------------------------------------
+
+
+class TestOversizedHintFenceAware:
+    """A hint keyword (`# Indice`/`# Hint`/`# Astuce`) that appears INSIDE a
+    fenced code block is a code comment (e.g. an exercise-scaffold line like
+    ``# Indice : reutilisez sf.branching_avalanche_sizes(...)``), NOT a rendered
+    markdown heading. The detector must skip fenced lines (parity with the
+    already-fence-aware ``setext_oversized`` rule). Founding FP: ICT-7
+    ScaleFreeSignatures exercise scaffolds (~14 false oversized_hint hits)."""
+
+    def _rules(self, cell):
+        return [f["rule"] for f in scan_cell(cell)]
+
+    def test_hint_comment_inside_backtick_fence_not_flagged(self):
+        # Canonical exercise scaffold: `# Indice :` as a Python comment inside a
+        # fenced code block -- renders as literal code, not an H1.
+        cell = _md([
+            "### Exercice 1\n",
+            "\n",
+            "Calculez la valeur.\n",
+            "\n",
+            "```\n",
+            "# Indice : reutilisez sf.branching_avalanche_sizes(mu, N, rng).\n",
+            "# Etape 1 : construire la liste des mu.\n",
+            "```\n",
+        ])
+        assert "oversized_hint" not in self._rules(cell)
+
+    def test_hint_comment_inside_tilde_fence_not_flagged(self):
+        # Tilde fences (~~~) are equivalent CommonMark fenced-code markers and
+        # must be treated identically.
+        cell = _md([
+            "### Exercice\n",
+            "\n",
+            "~~~\n",
+            "# Hint : use a heap for O(n log n).\n",
+            "~~~\n",
+        ])
+        assert "oversized_hint" not in self._rules(cell)
+
+    def test_real_hint_heading_outside_fence_still_flagged(self):
+        # Regression guard: a genuine `# Indice :` H1 in rendered markdown (no
+        # fence) IS a defect and must still be reported.
+        cell = _md([
+            "## Exercice\n",
+            "\n",
+            "Calculez.\n",
+            "\n",
+            "# Indice : pensez a la symetrie du probleme pour simplifier.\n",
+        ])
+        assert "oversized_hint" in self._rules(cell)
+
+    def test_subsection_hint_outside_fence_still_flagged(self):
+        # A `### Astuces` subsection heading outside a fence is still detected
+        # (this is the detector's current behaviour for rendered hint headings;
+        # the fix only adds fence-skipping, it does not change that policy).
+        cell = _md(["### Astuces\n", "\n", "- Utilisez X.\n"])
+        assert "oversized_hint" in self._rules(cell)
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
