@@ -115,14 +115,19 @@ X.X.
 ..XX
 ```
 
-### Pourquoi `native_decide` — #8749
+### `isStillLife eater1` — prouve par `decide` dans le noyau (zero axiome)
 
-`isStillLife eater1` ne se reduit pas sous `decide` (`maxRecDepth 100000` :
-`reduction got stuck at the Decidable instance`, EXIT≠0, secondes). La cause
-est structurelle — `Grid = List (Int × Int)` (voir Section 1 pour le
-detail) ; meme le cas le plus simple (vie stable, aucune evolution) coince.
-L'enonce est VRAI (`#eval` natif ci-dessus), c'est le role de
-`native_decide`. Verifie par-theoreme (sondage #8749, 2026-07-29).
+Apres le swap `mergeSort -> insertionSort` (#8895, 2026-07-30), `isStillLife eater1`
+se reduit sous `decide` : la verification statique (vie stable, aucune evolution)
+n'exerce que le tri `sortDedup` sur une grille fixe, desormais decide-reducible.
+`#print axioms Conway.Life.eater1_still_life` est vide (zero axiome) — preuve
+purement calculatoire dans le noyau. (Le sondage #8749 du 2026-07-29, anterieur a
+#8895, avait correctement constate l'obstruction sous `mergeSort` ; celle-ci est
+levee depuis.)
+
+Contraste avec les equivalences `evolveHashlife n g = evolve n g` de la Section 1 :
+celles-ci exercent la machinerie quadtree complete sur `Grid = List (Int × Int)` et
+restent non-reductibles sous `decide` (`native_decide` requis, voir Section 1).
 -/
 
 /-- L'**eater 1** (fishhook), une vie stable de 7 cellules. -/
@@ -136,9 +141,10 @@ def eater1 : Grid :=
 #eval s!"step(eater1) = {step eater1}"
 #eval s!"isStillLife eater1 = {isStillLife eater1}"
 
-/-- L'eater 1 est une vie stable. `native_decide` requis : non-reductible sous
-    `decide` (voir Section 2, #8749). -/
-theorem eater1_still_life : isStillLife eater1 = true := by native_decide
+/-- L'eater 1 est une vie stable. Prouve par `decide` dans le noyau
+    (zero axiome, `#print axioms` vide) — `isStillLife` sur grille fixe,
+    decide-reducible post-#8895 (critere 2 de #8869). -/
+theorem eater1_still_life : isStillLife eater1 = true := by decide
 
 /-! ## Section 3 : composition de gliders par evolution multi-periode
 

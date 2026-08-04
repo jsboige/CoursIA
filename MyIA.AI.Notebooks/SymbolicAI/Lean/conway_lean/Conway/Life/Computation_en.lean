@@ -113,14 +113,18 @@ X.X.
 ..XX
 ```
 
-### Why `native_decide` — #8749
+### `isStillLife eater1` — proven by `decide` in the kernel (zero axioms)
 
-`isStillLife eater1` does not reduce under `decide` (`maxRecDepth 100000`:
-`reduction got stuck at the Decidable instance`, EXIT≠0, seconds). The cause
-is structural — `Grid = List (Int × Int)` (see Section 1 for detail); even
-the simplest case (still life, no evolution) gets stuck. The statement is
-TRUE (native `#eval` above); this is the role of `native_decide`. Verified
-per-theorem (#8749 probe, 2026-07-29).
+After the `mergeSort -> insertionSort` swap (#8895, 2026-07-30), `isStillLife eater1`
+reduces under `decide`: the static check (still life, no evolution) exercises only the
+`sortDedup` sort on a fixed grid, now decide-reducible. `#print axioms
+Conway.Life.eater1_still_life` is empty (zero axioms) — a purely computational kernel
+proof. (The #8749 probe of 2026-07-29, prior to #8895, correctly observed the
+obstruction under `mergeSort`; it has since been lifted.)
+
+Contrast with the `evolveHashlife n g = evolve n g` equivalences of Section 1: those
+exercise the full quadtree machinery on `Grid = List (Int × Int)` and remain
+non-reducible under `decide` (`native_decide` required, see Section 1).
 -/
 
 /-- The **eater 1** (fishhook), a 7-cell still life. -/
@@ -134,9 +138,10 @@ def eater1 : Grid :=
 #eval s!"step(eater1) = {step eater1}"
 #eval s!"isStillLife eater1 = {isStillLife eater1}"
 
-/-- The eater 1 is a still life. `native_decide` required: not reducible by
-    `decide` (see Section 2, #8749). -/
-theorem eater1_still_life : isStillLife eater1 = true := by native_decide
+/-- The eater 1 is a still life. Proven by `decide` in the kernel
+    (zero axioms, `#print axioms` empty) — `isStillLife` on a fixed grid,
+    decide-reducible post-#8895 (criterion 2 of #8869). -/
+theorem eater1_still_life : isStillLife eater1 = true := by decide
 
 /-! ## Section 3: Glider composition via multi-period evolution
 
