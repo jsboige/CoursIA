@@ -112,6 +112,16 @@ def test_litmus1_gpu_declared_no_finding(tmp_path):
     assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
 
 
+def test_litmus1_cuda_availability_probe_is_not_gpu_usage(tmp_path):
+    """La SONDE `torch.cuda.is_available()` (affichée pour info par les notebooks
+    PyTorch CPU pédagogiques) ne doit PAS déclencher gpu_used_but_not_declared.
+    Couvre rl_6e (GRPO from-scratch, CPU pédagogique — output committé CUDA=False).
+    FP corrigé c.831 : la sonde ≠ exigence/usage GPU."""
+    code = "import torch\nprint(torch.cuda.is_available())\nx = torch.FloatTensor([1.0])"
+    res = _findings_for(tmp_path, code, cost_meta={"gpu_required": False})
+    assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
+
+
 # ---------------------------------------------------------------------------
 # Litmus 2 — api_used_but_cost_zero (FP guard: local provider, #8589)
 # ---------------------------------------------------------------------------
@@ -139,6 +149,38 @@ def test_litmus2_api_used_cost_zero_local_provider_suppressed(tmp_path):
         )
         assert "api_used_but_cost_zero" not in _patterns(res["findings"]), (
             f"provider={provider} should suppress the FP"
+        )
+
+
+def test_litmus2_gemini_bare_word_fp_suppressed(tmp_path):
+    """FP-c.1172 : bare `gemini` matched the Conway's Game of Life self-replicator
+    pattern (Andrew Wade, 2010) in notebooks Lean-16b/16c — variable `gemini_node`,
+    file `gemini.rle`, print("Gemini ..."). A bare word is never an API call.
+    The GoL code must NOT trigger api_used_but_cost_zero."""
+    code = (
+        'gemini_node, gemini_cells = load_pattern("gemini.rle")\n'
+        'print("Gemini (Andrew Wade, 2010) - self-replicator oblique")\n'
+    )
+    res = _findings_for(
+        tmp_path, code, cost_meta={"api_usd_est": 0.0, "api_provider": "none"}
+    )
+    assert "api_used_but_cost_zero" not in _patterns(res["findings"]), (
+        "bare 'gemini' (GoL pattern) must not be detected as a Google API call"
+    )
+
+
+def test_litmus2_gemini_real_api_call_still_detected(tmp_path):
+    """Real Gemini API references (SDK import or versioned model name) are still
+    detected after the c.1172 tightening."""
+    for code in (
+        "import google.generativeai as genai\ngenai.GenerativeModel('gemini-1.5-flash')",
+        "model = 'gemini-pro'\nresp = client.generate(model)",
+    ):
+        res = _findings_for(
+            tmp_path, code, cost_meta={"api_usd_est": 0.0, "api_provider": "none"}
+        )
+        assert "api_used_but_cost_zero" in _patterns(res["findings"]), (
+            f"real Gemini API call should still fire; code=\n{code}"
         )
 
 
@@ -553,12 +595,15 @@ def test_litmus9_detail_names_the_cell_indices(tmp_path):
 
 
 def _fleet_notebooks(tmp_path):
-    """Trois notebooks : deux porteurs de findings distincts, un sain."""
+    """Trois notebooks : deux porteurs de findings distincts, un sain.
+    a/b utilisent un VRAI signal GPU non déclaré (model.cuda()) — la sonde
+    torch.cuda.is_available() est bénigne (FP corrigé c.831) et ne porte pas
+    de finding, donc on ne l'utilise plus comme finding-bearer ici."""
     a = tmp_path / "a.ipynb"
-    _notebook(a, ["import torch; torch.cuda.is_available()"],
+    _notebook(a, ["import torch", "model = net.cuda()"],
               cost_meta={"validator": "papermill", "gpu_required": False})
     b = tmp_path / "sub" / "b.ipynb"
-    _notebook(b, ["import torch; torch.cuda.is_available()"],
+    _notebook(b, ["import torch", "model = net.cuda()"],
               cost_meta={"validator": "manual", "gpu_required": False})
     clean = tmp_path / "clean.ipynb"
     _notebook(clean, ["x = 1"], cost_meta={"validator": "manual", "gpu_required": False})
