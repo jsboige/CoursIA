@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
     python_sha: d4ab43338f4c2f7ace1f3377830af97bed5acf4b
-    csharp_sha: 62974bb4be0cf95716c3a109fa70bcfacb9d647f
+    csharp_sha: 8f48b984561f4a441c9b3f68fb0cb6c301c71323
   known_differences:
   - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-02"
-    by: myia-po-2023:CoursIA
-    python_sha: 3b1d487facae13480ee478d86de815da6feec6ee
+    date: "2026-08-04"
+    by: myia-po-2024:CoursIA-2
+    python_sha: c0bbf4a4714de6beb77fe46302772a40f46a2dad
     csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
   known_differences:
     - "Socle pedagogique commun : jeux a information imparfaite, Kuhn Poker (Kuhn 1950/1953) comme jeu de reference, regret matching (Hannan), CFR vanilla (Zinkevich et al. 2007) avec recursion contrefactuelle, variante CFR+ (Tammelin 2014), convergence de la strategie moyenne vers la valeur du jeu / equilibre de Nash."
