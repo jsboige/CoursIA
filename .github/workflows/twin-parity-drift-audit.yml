@@ -1,0 +1,119 @@
+name: Twin Parity Drift Audit (advisory)
+
+# Scheduled fleet-wide twin-parity drift audit (#8057 / #9399 volet b).
+#
+# This is the ADVISORY complement to twin-parity.yml (which is BLOCKING on
+# drift INTRODUCED by a PR). It runs the full register against main on a
+# schedule and surfaces how many recorded twin pairs are currently in DRIFT
+# (notebook moved since last audit, no re-attestation) -- the fleet-wide
+# stale-SHA backlog that the per-PR gate deliberately leaves alone
+# (drift_pre_existing does not fail a PR, cf #8264).
+#
+# Design gate (#9399 comment 5185704246, ai-01 c.82): (B) advisory, with a
+# promotion criterion to (A) blocking -- promote once the fleet-wide drift
+# count reaches 0 after volet (c) (excludes nb["metadata"] from the parity
+# hash, so a metadata.cost stamp no longer reddens like a content change).
+# Until then a non-zero drift is a ::warning + job summary line, NOT a red.
+#
+# Two hard requirements that make (B) a real gate rather than a cosmetic one
+# (both from the design-gate decision):
+#   1. The drift count lands in the JOB SUMMARY ($GITHUB_STEP_SUMMARY), not
+#      only in the log -- an advisory that only lives in logs is never read.
+#   2. A TOOL FAILURE (report unparseable, exit code other than 0/1, git
+#      ls-tree KO) still REDS the job. Only the drift CONSTAT is advisory.
+#      This keeps "the guard broke" distinguishable from "the guard found
+#      something" (the #9436 defect class: a step that dies without printing
+#      its number is indistinguishable from a green pass).
+#
+# Not chained to volet (c): the two are independent, and this can start
+# immediately. Volet (c) shrinks the count; this reports it.
+
+on:
+  schedule:
+    # Daily at 06:17 UTC (off the :00 mark to stagger fleet API load).
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift-audit:
+    name: "Fleet-wide drift count (advisory)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run fleet-wide twin parity check
+        id: check
+        run: |
+          set +e
+          # Stream separation (cf #8957): stdout = pure JSON report, stderr =
+          # diagnostics. Keeps json.load from choking on tool warnings.
+          python scripts/notebook_tools/check_twin_parity.py --json --check > twin_parity_report.json 2>twin_parity_stderr.log
+          EXIT=$?
+          if [ -s twin_parity_stderr.log ]; then
+            echo "Twin-parity tool diagnostics (stderr, non-fatal):"
+            cat twin_parity_stderr.log
+          fi
+          # Requirement 2: an UNPARSEABLE report is a TOOL FAILURE -> RED,
+          # even in advisory mode. Never let "guard broke" read as green.
+          if ! python -c "import json,sys; json.load(open('twin_parity_report.json'))" 2>/dev/null; then
+            echo "::error title=Twin parity report unparseable::The fleet-wide JSON report could not be parsed. Tool exit was $EXIT. This is a tool failure, not a drift constat -- the advisory gate reds on it (design-gate #9399 requirement 2)."
+            echo "--- report tail (last 400 chars) ---"
+            tail -c 400 twin_parity_report.json || true
+          exit 1
+          fi
+          # Parse counts -- let python write step outputs directly (avoids a
+          # fragile bash `read <<EOF` heredoc inside the YAML run block).
+          python -c "import json; d=json.load(open('twin_parity_report.json')); [print(f'{k}={v}') for k,v in (('total',d.get('total',0)),('ok',d.get('ok',0)),('drift',d.get('drift',0)),('missing',d.get('missing',0)))]" | tee -a "$GITHUB_OUTPUT"
+          echo "Parsed fleet-wide from JSON report (tool exit $EXIT)"
+          # Requirement 2 (second arm): an exit code OTHER than 0/1 is a tool
+          # failure -> RED. 0 = no drift, 1 = drift found (advisory below).
+          if [ "$EXIT" != "0" ] && [ "$EXIT" != "1" ]; then
+            echo "::error title=Twin parity tool crashed::Tool exit code was $EXIT (neither 0=clean nor 1=drift). This is a tool failure, not a drift constat -- advisory gate reds on it."
+          exit 1
+          fi
+
+      - name: Advisory drift report (summary)
+        if: always() && steps.check.outcome == 'success'
+        run: |
+          DRIFT="${{ steps.check.outputs.drift }}"
+          MISSING="${{ steps.check.outputs.missing }}"
+          TOTAL="${{ steps.check.outputs.total }}"
+          # Requirement 1: the count lands in the JOB SUMMARY.
+          # This step only runs when the check step SUCCEEDED (tool healthy):
+          # on a tool failure (RED above), we must NOT fabricate a "no drift"
+          # summary from empty outputs -- that would mask the guard break
+          # (#9436 defect class: a step that dies without its number).
+          {
+            echo "## Twin parity fleet-wide drift audit"
+            echo ""
+            echo "Recorded twin pairs: **${TOTAL:-?}**. Currently in DRIFT: **${DRIFT:-?}**. Missing: **${MISSING:-?}**."
+            echo ""
+            if [ "${DRIFT:-0}" = "0" ] && [ "${MISSING:-0}" = "0" ]; then
+              echo "No fleet-wide drift. Advisory gate is GREEN. Promotion criterion for design-gate #9399 (B)->(A) is met: this run can flip to blocking."
+            else
+              echo "**Advisory** (design-gate #9399 posture B): a non-zero drift count is a warning, not a red. These are pairs whose notebook moved since their last audit without a re-attestation -- the fleet-wide stale-SHA backlog the per-PR gate deliberately leaves to a dedicated rebaseline (cf #8264). Two of these are known metadata-stamp false positives today (Sudoku-8 / Sudoku-14 BDD: only a metadata.cost block moved, zero cell); volet (c) of #9399 will exclude nb[metadata] from the parity hash so a metadata stamp no longer reddens."
+              echo ""
+              echo "Drifted pairs:"
+              python -c "import json; d=json.load(open('twin_parity_report.json')); [print(f\"- **{p['name']}** ({p.get('family','?')}): {p.get('verdict') or p.get('status')}\") for p in d.get('pairs',[]) if (p.get('verdict') or p.get('status')) not in (None,'OK')]" || true
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Advisory: a non-zero drift is a ::warning, exit 0. Only the tool
+          # failures above red the job.
+          if [ "${DRIFT:-0}" != "0" ] || [ "${MISSING:-0}" != "0" ]; then
+            echo "::warning title=Twin parity fleet-wide drift (advisory)::${DRIFT:-?} pair(s) in DRIFT, ${MISSING:-?} MISSING across ${TOTAL:-?} recorded pairs. Advisory per design-gate #9399 posture (B). See job summary for the list. Volet (c) (#9399) will exclude nb[metadata] from the hash, shrinking this count."
+          fi
