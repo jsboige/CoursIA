@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: myia-po-2024:CoursIA-2
-    python_sha: 701afb02682fae6b9c06a7333445af50a576ba59
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 29d4937f4626cce2efeb08738e3276669d6bf798
     reason: "Markdown-only cross-file count refresh (cell 47): Lean companion-file line counts drifted as the .lean sources grew -- Bayesian.lean 224->278, Basic.lean 107->126, Nash.lean 139->159 (0 sorry unchanged, verified git wc -l origin/main). No re-exec, no output change. C# twin untouched (different from-scratch engine, no Lean refs)."
     csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
   known_differences:
