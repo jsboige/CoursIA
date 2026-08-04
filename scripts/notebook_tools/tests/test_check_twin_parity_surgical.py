@@ -146,12 +146,12 @@ def test_comments_survive_surgical_rebaseline():
 def test_diff_limited_to_target_block(registry_backup):
     """Seul le bloc d'audit de la paire ciblee bouge ; le reste est intact.
 
-    Depuis #9399, un rebaseline d'une paire legacy qui drift MIGRE le bloc
-    `last_audit:` vers la liste append-only `audits:` (ancien enregistrement +
-    nouveau). La garantie chirurgicale (#8570) est preservee : aucune cle
-    top-level hors audit (name/family/python/csharp/parity_level/known_differences)
-    ne change, et l'ancien enregistrement survit comme item[0] (anti-regression :
-    on ne jette pas l'historique d'audit).
+    Depuis #9399 (volet a, migration at-rest), le registre est en forme
+    append-only `audits:`. Un rebaseline qui drift APPEND une nouvelle entree ;
+    l'enregistrement precedent survit comme item[0]. La garantie chirurgicale
+    (#8570) est preservee : aucune cle top-level hors audit
+    (name/family/python/csharp/parity_level/known_differences) ne change
+    (anti-regression : on ne jette pas l'historique d'audit).
     """
     import yaml
 
@@ -159,12 +159,15 @@ def test_diff_limited_to_target_block(registry_backup):
     raw = pfile.read_text(encoding="utf-8")
     name = _pair_name(pfile)
     before = yaml.safe_load(raw)[0]
-    old_py = before["last_audit"]["python_sha"]
+    old_audit = ctp._latest_audit(before)
+    old_py = old_audit["python_sha"]
 
-    # SHA python change -> migration legacy -> audits:.
+    # SHA python change -> append a new entry (registry is audits: since the
+    # #9399 volet a at-rest migration). The lazy legacy->audits migration of a
+    # still-legacy yaml is covered by test_comments_survive_surgical_rebaseline.
     new_raw, touched = ctp.surgical_rebaseline(
         raw, {name: {"date": "1999-01-01", "by": "sentinelle-c8570",
-                     "python_sha": "f" * 40, "csharp_sha": before["last_audit"]["csharp_sha"]}}
+                     "python_sha": "f" * 40, "csharp_sha": old_audit["csharp_sha"]}}
     )
     assert touched == 1
     after = yaml.safe_load(new_raw)[0]
@@ -196,7 +199,7 @@ def test_noop_is_byte_identical(registry_backup):
 
     data = yaml.safe_load(raw)
     entry = data[0] if isinstance(data, list) else data
-    audit = entry["last_audit"]
+    audit = ctp._latest_audit(entry)
 
     new_raw, touched = ctp.surgical_rebaseline(
         raw,

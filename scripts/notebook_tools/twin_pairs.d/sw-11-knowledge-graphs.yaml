@@ -3,12 +3,12 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb
   parity_level: surface
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: a10e51c238cde777905354166118fd1bc5ad199a
-    csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
-    reason: "c58+c61+c64 SHACL cross-refs pointed at SW-9 (Linked Data); SHACL is SW-8 (cf. own c0 header). Python-only, csharp PRESERVED (parity=surface)."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: a10e51c238cde777905354166118fd1bc5ad199a
+      csharp_sha: 47e9629433702421b9bff134b157efe7673ed12c
+      reason: "c58+c61+c64 SHACL cross-refs pointed at SW-9 (Linked Data); SHACL is SW-8 (cf. own c0 header). Python-only, csharp PRESERVED (parity=surface)."
   known_differences:
     - "Socle commun : construction d'un graphe de connaissances (RDF + ontologie + requetage)."
     - "Asymetrie de profondeur (surface) : le Python combine TROIS librairies -- `rdflib` (RDF), `owlready2` (ontologie OWL), et `networkx` (algorithmes de graphe : centralite, composantes connexes, plus courts chemins). Le C# reste sur `dotNetRDF` seul (`VDS.RDF.Query`), sans dimension d'analyse de graphe (centralite/communautes)."
