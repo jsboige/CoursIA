@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
-    by: myia-po-2024:CoursIA-2
-    python_sha: a52a0221e059b9823dac05b04f25f81413f7199d
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: efceae68ca0b8a9d40ac5a362d4e9d73b9b41bf3
     csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
     reason: "c.1123 #8052 C# c19 IDDFS depth/iteration count (profondeur 3->2, 4->3 itérations); Python twin clean (generic d-table)"
   known_differences:
