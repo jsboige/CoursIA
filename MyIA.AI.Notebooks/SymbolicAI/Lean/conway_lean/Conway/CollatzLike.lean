@@ -101,18 +101,19 @@ import Conway.Fractran
 
 namespace Conway
 
-/-! ## Piecewise-linear functions
+/-! ## Fonctions linéaires par morceaux
 
-A Collatz-like function partitions ℤ into finitely many residue classes
-modulo `m`, and applies a different affine map `n ↦ (a·n + b) / c` to
-each class. The classic Collatz function (3n+1 problem) has m=2:
-  - n ≡ 0 (mod 2): n ↦ n/2
-  - n ≡ 1 (mod 2): n ↦ (3n+1)/2
+Une fonction de type Collatz partitionne ℤ en un nombre fini de classes
+de résidus modulo `m`, et applique une application affine différente
+`n ↦ (a·n + b) / c` à chaque classe. La fonction de Collatz classique
+(problème 3n+1) a m=2 :
+  - n ≡ 0 (mod 2) : n ↦ n/2
+  - n ≡ 1 (mod 2) : n ↦ (3n+1)/2
 
-Conway showed that for sufficiently complex choices of m, a, b, c,
-the question "does every trajectory reach 1?" becomes undecidable. -/
+Conway a montré que pour des choix suffisamment complexes de m, a, b, c,
+la question « toute trajectoire atteint-elle 1 ? » devient indécidable. -/
 
-/-- An affine map n ↦ (a·n + b) / c, applicable when the division is exact. -/
+/-- Application affine n ↦ (a·n + b) / c, applicable quand la division est exacte. -/
 structure AffineMap where
   a : Int
   b : Int
@@ -120,150 +121,152 @@ structure AffineMap where
   hc : c > 0
   deriving Repr
 
-/-- Apply an affine map, returning none if division isn't exact. -/
+/-- Applique une application affine, renvoie none si la division n'est pas exacte. -/
 def applyAffine (f : AffineMap) (n : Int) : Option Int :=
   let num := f.a * n + f.b
   if num % f.c = 0 then some (num / f.c) else none
 
-/-- A branch of a Collatz-like function: apply this map when
-    n mod m = r (for 0 ≤ r < m). -/
+/-- Une branche d'une fonction de type Collatz : appliquer cette application
+    quand n mod m = r (pour 0 ≤ r < m). -/
 structure CLBranch where
-  r : Nat          -- residue class
-  f : AffineMap    -- the map to apply
+  r : Nat          -- classe de résidu
+  f : AffineMap    -- l'application à appliquer
   deriving Repr
 
-/-- A Collatz-like function: partition ℤ into residue classes modulo m,
-    apply a different affine map to each. -/
+/-- Une fonction de type Collatz : partitionner ℤ en classes de résidus
+    modulo m, appliquer une application affine différente à chacune. -/
 structure CollatzLike where
-  m : Nat          -- modulus (number of cases)
+  m : Nat          -- module (nombre de cas)
   hm : m > 0
   branches : List CLBranch
   deriving Repr
 
-/-- The classic Collatz function as a CollatzLike.
-    n ≡ 0 (mod 2): n ↦ n/2 (i.e., a=1, b=0, c=2)
-    n ≡ 1 (mod 2): n ↦ (3n+1) (simplified as (3n+1)/1) -/
+/-- La fonction de Collatz classique comme CollatzLike.
+    n ≡ 0 (mod 2) : n ↦ n/2 (i.e., a=1, b=0, c=2)
+    n ≡ 1 (mod 2) : n ↦ (3n+1) (simplifié en (3n+1)/1) -/
 def collatz : CollatzLike where
   m := 2
   hm := by decide
   branches := [
-    ⟨0, ⟨1, 0, 2, by decide⟩⟩,   -- n even: n/2
-    ⟨1, ⟨3, 1, 1, by decide⟩⟩    -- n odd:  3n+1
+    ⟨0, ⟨1, 0, 2, by decide⟩⟩,   -- n pair : n/2
+    ⟨1, ⟨3, 1, 1, by decide⟩⟩    -- n impair : 3n+1
   ]
 
-/-- One step of a Collatz-like function. -/
+/-- Une étape d'une fonction de type Collatz. -/
 def clStep (f : CollatzLike) (n : Int) : Int :=
-  let r := ((n % f.m) + f.m) % f.m  -- non-negative residue
+  let r := ((n % f.m) + f.m) % f.m  -- résidu non négatif
   match f.branches.find? (fun b => b.r = r.natAbs) with
   | some branch => match applyAffine branch.f n with
     | some m => m
-    | none => n  -- stay put if division fails
-  | none => n    -- stay put if no branch matches
+    | none => n  -- rester sur place si la division échoue
+  | none => n    -- rester sur place si aucune branche ne correspond
 
-/-- Iterate a Collatz-like function for k steps. -/
+/-- Itère une fonction de type Collatz pendant k étapes. -/
 def clIterate (f : CollatzLike) : Int → Nat → List Int
   | n, 0 => [n]
   | n, k + 1 => n :: clIterate f (clStep f n) k
 
-/-! ## Proven properties of the classic Collatz function
+/-! ## Propriétés prouvées de la fonction de Collatz classique
 
-While the full Collatz conjecture ("every trajectory reaches 1") remains
-open, we can verify specific trajectories via `native_decide`. -/
+Bien que la conjecture de Collatz complète (« toute trajectoire atteint 1 »)
+reste ouverte, nous pouvons vérifier des trajectoires spécifiques via
+`native_decide`. -/
 
-/-- The classic 3n+1 step function: n ↦ n/2 if even, 3n+1 if odd. -/
+/-- Fonction d'étape 3n+1 classique : n ↦ n/2 si pair, 3n+1 si impair. -/
 def collatzStep (n : Int) : Int :=
   if n % 2 = 0 then n / 2 else 3 * n + 1
 
-/-- Verify the famous trajectory starting from 6:
+/-- Vérifie la célèbre trajectoire partant de 6 :
     6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 -/
 theorem collatz_6_trajectory :
     clIterate collatz 6 8 = [6, 3, 10, 5, 16, 8, 4, 2, 1] := by
   decide
 
-/-- Verify trajectory from 27 (the longest under 100):
-    27 takes 111 steps to reach 1. We verify the first 10 steps. -/
+/-- Vérifie la trajectoire partant de 27 (la plus longue sous 100) :
+    27 prend 111 étapes pour atteindre 1. Nous vérifions les 10 premières. -/
 theorem collatz_27_first_10 :
     clIterate collatz 27 10 = [27, 82, 41, 124, 62, 31, 94, 47, 142, 71, 214] := by
   decide
 
-/-- Verify trajectory from 7:
+/-- Vérifie la trajectoire partant de 7 :
     7 → 22 → 11 → 34 → 17 → 52 → 26 → 13 → 40 → 20 → 10 → 5 → 16 → 8 → 4 → 2 → 1 -/
 theorem collatz_7_trajectory :
     clIterate collatz 7 16 = [7, 22, 11, 34, 17, 52, 26, 13, 40, 20, 10, 5, 16, 8, 4, 2, 1] := by
   decide
 
-/-! ## Conway's (3n+1)/2 variant
+/-! ## Variante (3n+1)/2 de Conway
 
-Conway often studied the compressed form where both operations are
-combined: n ≡ 0 (mod 2): n/2; n ≡ 1 (mod 2): (3n+1)/2.
-This halves the number of steps by combining the guaranteed-even step
-after 3n+1 with the subsequent division by 2. -/
+Conway étudiait souvent la forme compressée où les deux opérations sont
+combinées : n ≡ 0 (mod 2) : n/2 ; n ≡ 1 (mod 2) : (3n+1)/2.
+Cela divise par deux le nombre d'étapes en combinant l'étape garantie
+paire après 3n+1 avec la division par 2 qui s'ensuit. -/
 
-/-- The compressed Collatz function: n even → n/2, n odd → (3n+1)/2.
-    This is the form Conway analyzed in "Unpredictable Iterations". -/
+/-- La fonction de Collatz compressée : n pair → n/2, n impair → (3n+1)/2.
+    C'est la forme que Conway a analysée dans « Unpredictable Iterations ». -/
 def collatzCompressed : CollatzLike where
   m := 2
   hm := by decide
   branches := [
-    ⟨0, ⟨1, 0, 2, by decide⟩⟩,    -- n even: n/2
-    ⟨1, ⟨3, 1, 2, by decide⟩⟩     -- n odd:  (3n+1)/2
+    ⟨0, ⟨1, 0, 2, by decide⟩⟩,    -- n pair : n/2
+    ⟨1, ⟨3, 1, 2, by decide⟩⟩     -- n impair : (3n+1)/2
   ]
 
-/-- Verify compressed trajectory from 6:
-    6 → 3 → 5 → 8 → 4 → 2 → 1 (6 steps instead of 8) -/
+/-- Vérifie la trajectoire compressée partant de 6 :
+    6 → 3 → 5 → 8 → 4 → 2 → 1 (6 étapes au lieu de 8) -/
 theorem collatzCompressed_6 :
     clIterate collatzCompressed 6 6 = [6, 3, 5, 8, 4, 2, 1] := by
   decide
 
-/-- Verify compressed trajectory from 7:
+/-- Vérifie la trajectoire compressée partant de 7 :
     7 → 11 → 17 → 26 → 13 → 20 → 10 → 5 → 8 → 4 → 2 → 1 -/
 theorem collatzCompressed_7 :
     clIterate collatzCompressed 7 11 = [7, 11, 17, 26, 13, 20, 10, 5, 8, 4, 2, 1] := by
   decide
 
-/-! ## Connection to FRACTRAN
+/-! ## Connexion à FRACTRAN
 
-Conway showed that any FRACTRAN program can be converted into a
-Collatz-like function and vice versa. This is the key insight behind
-the undecidability result: since FRACTRAN is Turing-complete, and
-FRACTRAN halting reduces to Collatz-like termination, the latter is
-undecidable.
+Conway a montré que tout programme FRACTRAN peut être converti en une
+fonction de type Collatz et vice-versa. C'est l'idée clé derrière le
+résultat d'indécidabilité : puisque FRACTRAN est Turing-complet, et que
+l'arrêt de FRACTRAN se réduit à la terminaison des fonctions de type
+Collatz, cette dernière est indécidable.
 
-We verify one step of this correspondence: a simple FRACTRAN program
-that doubles a number corresponds to a specific Collatz-like function. -/
+Nous vérifions une étape de cette correspondance : un programme FRACTRAN
+simple qui double un nombre correspond à une fonction de type Collatz
+spécifique. -/
 
-/-- The "doubling" FRACTRAN program: n ↦ 2n.
-    Single fraction 2/1: at each step, multiply by 2. -/
+/-- Le programme FRACTRAN de « doublement » : n ↦ 2n.
+    Fraction unique 2/1 : à chaque étape, multiplier par 2. -/
 def doubleProgram : List Frac := [frac 2 1 (by decide)]
 
-/-- Verify: running the doubling program from 3 for 4 steps. -/
+/-- Vérifie : exécuter le programme de doublement depuis 3 pendant 4 étapes. -/
 theorem fractran_double_3 :
     fractranRun doubleProgram 3 4 = [3, 6, 12, 24, 48] := by
   decide
 
-/-! ## Conway's 7n+1 variant — an open problem
+/-! ## Variante 7n+1 de Conway — un problème ouvert
 
-One of the simplest open generalizations: 7n+1 instead of 3n+1.
-Is every trajectory periodic? Not known. We verify that some starting
-values do reach 1. -/
+L'une des généralisations ouvertes les plus simples : 7n+1 au lieu de
+3n+1. Toute trajectoire est-elle périodique ? On l'ignore. Nous vérifions
+que certaines valeurs de départ atteignent bien 1. -/
 
-/-- The 7n+1 function: n even → n/2, n odd → 7n+1. -/
+/-- La fonction 7n+1 : n pair → n/2, n impair → 7n+1. -/
 def sevenNPlusOne : CollatzLike where
   m := 2
   hm := by decide
   branches := [
-    ⟨0, ⟨1, 0, 2, by decide⟩⟩,    -- n even: n/2
-    ⟨1, ⟨7, 1, 1, by decide⟩⟩     -- n odd:  7n+1
+    ⟨0, ⟨1, 0, 2, by decide⟩⟩,    -- n pair : n/2
+    ⟨1, ⟨7, 1, 1, by decide⟩⟩     -- n impair : 7n+1
   ]
 
-/-- Verify 7n+1 trajectory from 3:
-    3 → 22 → 11 → 78 → 39 → 274 → 137 → 960 → 480 → 240 → 120 → 60 → 30 → 15 → 106 → 53 → 372 → 186 → 93 → 652 → 326 → 163 → 1142 → 571 → 3998 → ... (long!)
-    We verify the first 5 steps. -/
+/-- Vérifie la trajectoire 7n+1 partant de 3 :
+    3 → 22 → 11 → 78 → 39 → 274 → 137 → 960 → 480 → 240 → 120 → 60 → 30 → 15 → 106 → 53 → 372 → 186 → 93 → 652 → 326 → 163 → 1142 → 571 → 3998 → ... (longue !)
+    Nous vérifions les 5 premières étapes. -/
 theorem sevenNPlusOne_3 :
     clIterate sevenNPlusOne 3 5 = [3, 22, 11, 78, 39, 274] := by
   decide
 
-/-- 7n+1 from 1: 1 → 8 → 4 → 2 → 1 (short cycle). -/
+/-- 7n+1 depuis 1 : 1 → 8 → 4 → 2 → 1 (cycle court). -/
 theorem sevenNPlusOne_1 :
     clIterate sevenNPlusOne 1 4 = [1, 8, 4, 2, 1] := by
   decide

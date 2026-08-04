@@ -39,19 +39,19 @@ import Conway.Life
 namespace Conway
 namespace Life
 
-/-! ## Still lifes
+/-! ## Structures stables (still lifes)
 
-We add five classical still-lifes to complement `block` and `beehive`
-from `Conway.Life`:
+Nous ajoutons cinq structures stables classiques pour completer `block`
+et `beehive` de `Conway.Life` :
 
-- **Loaf**: 7-cell pattern, one of the four most common still lifes
-- **Boat**: 5-cell pattern, the smallest asymmetric still life
-- **Tub**: 4-cell pattern, smallest still life with rotational symmetry
-- **Pond**: 8-cell pattern, larger square-ish still life
-- **Ship**: 6-cell pattern, related to the boat (rotated boat with extra cell)
+- **Loaf** : motif a 7 cellules, l'une des quatre structures stables les plus courantes
+- **Boat** : motif a 5 cellules, la plus petite structure stable asymetrique
+- **Tub** : motif a 4 cellules, la plus petite structure stable a symetrie rotationnelle
+- **Pond** : motif a 8 cellules, une structure stable plus grande quasi carree
+- **Ship** : motif a 6 cellules, apparente au boat (boat tourne avec une cellule supplementaire)
 -/
 
-/-- The **Loaf**: a 7-cell still life.
+/-- Le **Loaf** : une structure stable a 7 cellules.
     ```
     .XX.
     X..X
@@ -61,7 +61,7 @@ from `Conway.Life`:
 def loaf : Grid :=
   [(0, 1), (0, 2), (1, 0), (1, 3), (2, 1), (2, 3), (3, 2)]
 
-/-- The **Boat**: a 5-cell still life. Smallest asymmetric still life.
+/-- Le **Boat** : une structure stable a 5 cellules. Plus petite structure stable asymetrique.
     ```
     XX.
     X.X
@@ -70,7 +70,7 @@ def loaf : Grid :=
 def boat : Grid :=
   [(0, 0), (0, 1), (1, 0), (1, 2), (2, 1)]
 
-/-- The **Tub**: a 4-cell still life with full rotational symmetry.
+/-- Le **Tub** : une structure stable a 4 cellules a symetrie rotationnelle complete.
     ```
     .X.
     X.X
@@ -79,7 +79,7 @@ def boat : Grid :=
 def tub : Grid :=
   [(0, 1), (1, 0), (1, 2), (2, 1)]
 
-/-- The **Pond**: an 8-cell still life.
+/-- Le **Pond** : une structure stable a 8 cellules.
     ```
     .XX.
     X..X
@@ -89,7 +89,7 @@ def tub : Grid :=
 def pond : Grid :=
   [(0, 1), (0, 2), (1, 0), (1, 3), (2, 0), (2, 3), (3, 1), (3, 2)]
 
-/-- The **Ship**: a 6-cell still life.
+/-- Le **Ship** : une structure stable a 6 cellules.
     ```
     XX.
     X.X
@@ -98,50 +98,53 @@ def pond : Grid :=
 def ship : Grid :=
   [(0, 0), (0, 1), (1, 0), (1, 2), (2, 1), (2, 2)]
 
-/-! ## Still-life verifications
+/-! ## Verifications des structures stables
 
-Each predicate is reduced to a `Bool` by the kernel and decided by
-`native_decide` after compilation. -/
+Chaque predicat est reduit a un `Bool` par le noyau et decide par
+`native_decide` apres compilation. -/
 
--- Sanity-check evaluations (re-evaluated by `#eval` at elaboration time)
+-- Evaluations de verification (re-evaluees par `#eval` au moment de l'elaboration)
 #eval isStillLife loaf
 #eval isStillLife boat
 #eval isStillLife tub
 #eval isStillLife pond
 #eval isStillLife ship
 
-/-- The Loaf is a still life. -/
+/-- Le Loaf est une structure stable. -/
 theorem loaf_still_life : isStillLife loaf = true := by native_decide
 
-/-- The Boat is a still life. -/
+/-- Le Boat est une structure stable. -/
 theorem boat_still_life : isStillLife boat = true := by native_decide
 
-/-- The Tub is a still life. -/
+/-- Le Tub est une structure stable. -/
 theorem tub_still_life : isStillLife tub = true := by native_decide
 
-/-- The Pond is a still life. -/
+/-- Le Pond est une structure stable. -/
 theorem pond_still_life : isStillLife pond = true := by native_decide
 
-/-- The Ship is a still life. -/
+/-- Le Ship est une structure stable. -/
 theorem ship_still_life : isStillLife ship = true := by native_decide
 
-/-! ## Oscillators (borderline patterns)
+/-! ## Oscillateurs (motifs a la limite)
 
-These two patterns are the smallest "large" oscillators in classical
-Conway's Life. They sit at the limit of what `native_decide` can
-verify in a reasonable kernel budget; the witnesses below are kept as
-definitions, and the theorems are commented out pending a local
-`lake build` check on the target machine. If `lake build` succeeds
-within the kernel reduction limit, the theorems may be uncommented.
+Ces deux motifs sont les plus petits des « grands » oscillateurs du
+Jeu de la Vie classique de Conway. Ils se situent a la limite de ce
+que `native_decide` peut verifier dans un budget noyau raisonnable ;
+les temoins ci-dessous sont conserves comme definitions, et les
+theoremes sont mis en commentaire en attente d'une verification
+`lake build` locale sur la machine cible. Si `lake build` reussit
+dans la limite de reduction du noyau, les theoremes peuvent etre
+decommentes.
 
-The 13x13 layout for the pulsar follows the standard literature
-positioning. The pentadecathlon is given in its minimal phase (12
-cells, 10 rows by 5 columns); after 15 steps it returns to itself
-modulo the canonical sort order.
+La disposition 13x13 du pulsar suit le positionnement standard de la
+litterature. Le pentadecathlon est donne dans sa phase minimale
+(12 cellules, 10 lignes par 5 colonnes) ; apres 15 etapes, il revient
+a lui-meme modulo l'ordre de tri canonique.
 -/
 
-/-- The **Pulsar**: a 48-cell period-3 oscillator, discovered by Conway
-    in 1970. The largest commonly-occurring oscillator in random soups.
+/-- Le **Pulsar** : un oscillateur de periode 3 a 48 cellules, decouvert par
+    Conway en 1970. Le plus grand oscillateur apparaissant couramment dans les
+    soupes aleatoires.
     ```
     ..XXX...XXX..   row 0
     .............   row 1
@@ -169,14 +172,14 @@ def pulsar : Grid :=
    (10, 0), (10, 5), (10, 7), (10, 12),
    (12, 2), (12, 3), (12, 4), (12, 8), (12, 9), (12, 10)]
 
--- Verify pulsar: evolve 3 steps and check equality
+-- Verifie le pulsar : evolution sur 3 etapes et verification d'egalite
 #eval isOscillator pulsar 3
-/-- The Pulsar has period 3. -/
+/-- Le Pulsar est de periode 3. -/
 theorem pulsar_period_three : isOscillator pulsar 3 = true := by native_decide
 
-/-- The **Pentadecathlon**: a 12-cell period-15 oscillator, discovered
-    by Conway in 1970. Resembles a stretched-out blinker that
-    "breathes" for 15 generations. Minimal-phase coordinates:
+/-- Le **Pentadecathlon** : un oscillateur de periode 15 a 12 cellules,
+    decouvert par Conway en 1970. Ressemble a un blinker etire qui
+    « respire » pendant 15 generations. Coordonnees en phase minimale :
     ```
     ..X..   row 0
     ..X..   row 1
@@ -201,9 +204,9 @@ def pentadecathlon : Grid :=
    (8, 2),
    (9, 2)]
 
--- Verify pentadecathlon: evolve 15 steps and check equality
+-- Verifie le pentadecathlon : evolution sur 15 etapes et verification d'egalite
 #eval isOscillator pentadecathlon 15
-/-- The Pentadecathlon has period 15. -/
+/-- Le Pentadecathlon est de periode 15. -/
 theorem pentadecathlon_period_15 : isOscillator pentadecathlon 15 = true := by
   native_decide
 
