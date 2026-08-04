@@ -3,12 +3,12 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 52c83a05acef9340568c3a81c617ebc4dfc89592
-    csharp_sha: 17128d989d96c86221f698d1586f00ddf5f6feb1
-    reason: "Markdown-only identity fix (Python cells 21+32): the two scaling-experiment intros cited N=1000 as a tested size, but the Python benchmarks never run it (cell 22 mc_sizes=[8,50,100,500], cell 33 cpsat_sizes=[8,50,100,500]; committed output + interpretation cells 27/34 cap at N=500). Aligned the intros to the actual cap of 500. The C# twin genuinely runs N=1000 (cell 14 sizes include 1000, output N=1000 resolu), so 1000 is a real tested size in C#, not a phantom; csharp unchanged, no parallel defect. No re-exec, no output change."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 52c83a05acef9340568c3a81c617ebc4dfc89592
+      csharp_sha: 17128d989d96c86221f698d1586f00ddf5f6feb1
+      reason: "Markdown-only identity fix (Python cells 21+32): the two scaling-experiment intros cited N=1000 as a tested size, but the Python benchmarks never run it (cell 22 mc_sizes=[8,50,100,500], cell 33 cpsat_sizes=[8,50,100,500]; committed output + interpretation cells 27/34 cap at N=500). Aligned the intros to the actual cap of 500. The C# twin genuinely runs N=1000 (cell 14 sizes include 1000, output N=1000 resolu), so 1000 is a real tested size in C#, not a phantom; csharp unchanged, no parallel defect. No re-exec, no output change."
   known_differences:
     - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
     - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."

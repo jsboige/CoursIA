@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: aa49b097f61d8b7feb617d65304c7a327df489cc
-    csharp_sha: b1cedb474514fc7a8afdf87594c5fc229b6f4c0c
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: aa49b097f61d8b7feb617d65304c7a327df489cc
+      csharp_sha: b1cedb474514fc7a8afdf87594c5fc229b6f4c0c
   known_differences:
     - "Socle pedagogique commun : resolution de Sudoku par programmation par contraintes (CP) avec le solveur Choco -- modelisation (variables, domaines, contraintes), propagation, recherche. Meme solveur (Choco), meme cas d'application (Sudoku). Les deux couvrent Choco, choco, Solver."
     - "Divergence d'implementation : le C# accede a Choco via IKVM (bridge Java->.NET, NuGet IKVM 8.15.0 + IKVM.Image) -- Choco etant une lib Java, le C# la consomme a travers le runtime IKVM ; le Python (pur stdlib, 0 dependance Choco) implemente un solveur CP a la Choco from scratch (propagation, recherche). Meme paradigme CP, deux niveaux : le C# wrappe le vrai Choco via IKVM (RECOVERABLE-MACHINE per SOTA ledger Entry #008 : IKVM instable dans dotnet-interactive), le Python reconstruit la logique CP didactiquement."
