@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
-    python_sha: 1573791a1d0795c8480cffbd0660c6a0df9bf9cf
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 80a6bbf6ad351d92a0575ce0d649ce9d60f8d36c
     csharp_sha: 2b5ecf27a189d00765e6f80edf7c48eb10372cfe
   known_differences:
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable (TU) -- valeur de Shapley (formule axiomatique, calcul sur permutations), le core (stabilite, imputations), coalitions. Meme concept mathematique (Shapley value phi_i = somme sur permutations, core comme polytope des imputations stables), meme cas d'application (repartition de gains cooperatifs). Les deux couvrent Shapley, core, Coalition."

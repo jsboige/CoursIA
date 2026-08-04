@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-01"
-    by: myia-po-2026:CoursIA
-    python_sha: 759d92ac3a0bbe50f2e35eb36f46a4e42dbb655c
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 3ab6594d3173ebe0a612eeddc6014bceaf460636
     csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
   known_differences:
     - "Socle commun : dialogues multi-agents argumentatifs (protocols, ExecutableExtension) via TweetyProject."

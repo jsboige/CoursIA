@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-27"
-    by: po-2024
-    python_sha: ade47400f0d18409e85017f3ccbe199e1eabe180
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: c132ed57588fa697b3725533daeeb2d21816c7f5
     csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog (moteur reel) pour la resolution et l'unification ; C# reimplemente LGG (Plotkin), theta-subsomption, clause bottom from-scratch."

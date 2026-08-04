@@ -66,9 +66,11 @@ Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) ill
 
 <p align="center"><img src="assets/readme/img3-workflow2.webp" alt="Comparaison parallèle Qwen / FLUX / SD35 sur le même prompt (ville futuriste cyberpunk nocturne avec voitures volantes et néons rose/violet/cyan) — 3 modèles tournent en ~55 s avec variations mineures" width="840"/></p>
 
-**Pipeline conditionnel** — un score de qualité seuille les tentatives successives : tant que la sortie est sous le seuil (ligne rouge pointillée à 0.75), le pipeline re-tente automatiquement avec un seed différent. L'histogramme montre la stabilisation du score (≈0.53) après trois tentatives — sous le seuil mais dans une bande stable qui permet d'arbitrer entre relancer et accepter :
+**Pipeline conditionnel** — un score de qualité seuille les tentatives successives : tant que la sortie est sous le seuil (ligne rouge pointillée à 0.75), le pipeline re-tente automatiquement avec un seed différent (seed=42, 43, 44 — incrémenté à chaque tentative pour que le cache `prompt+seed` ne rejoue pas la même image). L'histogramme montre l'évolution du score sur trois tentatives — sous le seuil mais dans une bande stable qui permet d'arbitrer entre relancer et accepter :
 
-<p align="center"><img src="assets/readme/img3-workflow3.png" alt="Diagramme en barres matplotlib du score qualité (3 tentatives) d'un pipeline conditionnel — 3 barres orange identiques à ~0.53, ligne pointillée rouge à 0.75 (seuil) que le pipeline cherche à franchir en relançant" width="560"/></p>
+<p align="center"><img src="assets/readme/img3-workflow3.png" alt="Diagramme en barres matplotlib du score qualité (3 tentatives) d'un pipeline conditionnel — 3 barres orange à des hauteurs distinctes entre ~0.40 et ~0.65 selon le seed, ligne pointillée rouge à 0.75 (seuil) que le pipeline cherche à franchir en relançant" width="560"/></p>
+
+> **Note (issue #9346).** Avant le fix `seed=42 + attempt` de cell-11, les 3 tentatives partageaient `seed=42` : `_GENERATED_CACHE` rejouait la même image et la barre « Évolution » était plate. Le PNG `img3-workflow3.png` archivé a été produit par l'ancien code (re-run sur une machine avec la stack GenAI UP régénérera 3 barres distinctes).
 
 **Variations stylistiques** — un même prompt (chalet de montagne sous la neige) est exécuté sur SD35 avec trois styles distincts : photoréaliste, aquarelle, anime. Le pipeline ne change pas la géométrie de la scène, seulement l'apparence — c'est l'usage classique des conditioning nodes de ComfyUI :
 
