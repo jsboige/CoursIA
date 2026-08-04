@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
+    date: "2026-08-03"
     by: po-2024
-    python_sha: 996841d11b62afebbf53b83df76215808550c7ef
+    python_sha: ed9d05a9de5238035b5e0a6a94913c0136844a3d
     csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
   known_differences:
     - "2026-07-25 (po-2024) #8052 case-A : median-voter preference order -- cell#29 (devenu #29 apres #8566) table disait pic=5 => '4 > 6 > 2 > 0 > 8 > 10' mais l'output code (Electeur 4 pic=5: [4,6,2,8,0,10]) prouve '4 > 6 > 2 > 8 > 0 > 10' (single_peaked_preference sort stable par |x-5|). Markdown-only 1-line swap, no re-exec. csharp_sha inchange. python_sha rebaseline suite a ce changement de blob."
