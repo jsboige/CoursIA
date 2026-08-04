@@ -4,9 +4,10 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 1856a7a0540d7a680e35356a371b1e7fe1cee27d
+    date: "2026-08-01"
+    by: myia-po-2024:CoursIA-2
+    python_sha: adee0d476742b82cc2efb931e778f4fba271be35
+    reason: "c.1125 #8052 Python c44 stale pre-rename self-label Search-18->CSP-9-Distributed (C# twin already correct); print-literal src+out atomic"
     csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70
   known_differences:
     - "Socle commun : CSP distribue (DisCSP) -- formalisation, ABT (Asynchronous Backtracking, Yokoo 1992), AWC (Asynchronous Weak-Commitment, Yokoo 1995), Privacy-Preserving CSP, application multi-hopital, benchmark synthetique ABT vs AWC. Le C# se declare explicitement 'binome .NET du CSP-9-Distributed.ipynb' (H1) et cite Yokoo 1992."
