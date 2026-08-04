@@ -3,11 +3,15 @@
   python: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
   parity_level: surface
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: f42738edd2aadd75ac4653d1dc4ba41b464c48b3
-    csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: f42738edd2aadd75ac4653d1dc4ba41b464c48b3
+      csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: b8a55a010f8bcfdaa4bb1c6141c6408decdf8348
+      csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
     - "Le C# est HONNETE sur ce point : il contient une section dediee '§5 Verdict SOTA (EPIC #3801)' qui auto-declare que DPLL from-scratch n'est pas un substitut SOTA aux solveurs modernes, plus une 'Limite honnête (Prong B)' sous la conclusion. Ce point SOTA est un candidat d'enrichissement future (brancher un vrai solveur SAT NuGet), pas un verdict parity."
