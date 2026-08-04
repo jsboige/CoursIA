@@ -33,6 +33,15 @@ MODES
               write master.env (first-seen value per key; conflicts
               reported). Use only to initialize master.env from a legacy
               scattered layout.
+  --bootstrap-missing  close the .env blind spot (#9351): for every
+              service dir with a docker-compose.yml but no .env, parse
+              the compose file's ${KEY} references, and write a fresh
+              .env containing every referenced SECRET_KEY whose value is
+              present in master.env. Idempotent (services with an
+              existing .env are left to sync()). Use after pulling this
+              change to recover services that have NEVER had an .env
+              provisioned -- running sync() alone would leave them
+              invisible to --check.
 
 All printed output masks secret values (only the last 4 chars shown).
 Neither master.env nor any .env is committed (all gitignored).
@@ -46,10 +55,21 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MASTER_ENV = REPO_ROOT / ".secrets" / "master.env"
+SERVICES_ROOT = REPO_ROOT / "docker-configurations" / "services"
 
 # Service + notebooks .env files managed by this script.
+#
+# Note: TARGET_ENVS only enumerates .env files that ALREADY EXIST. A service
+# directory that lacks a .env is invisible to ``--check`` and to sync until
+# ``--bootstrap-missing`` has run (see ``bootstrap_missing_envs`` + the
+# ``--bootstrap-missing`` CLI flag). The whisper-api drift incident (#9351)
+# was undetectable by ``--check`` precisely because whisper-api/ had no .env;
+# the running container's API_KEY was injected at ``docker run``-time, drifted
+# from master.env, and the auditor saw ``[OK]`` because there was no file to
+# compare against. ``--bootstrap-missing`` closes this blind spot by writing
+# the missing .env from master.env so future ``--check`` runs SEE drift.
 TARGET_ENVS = [
-    *sorted((REPO_ROOT / "docker-configurations" / "services").glob("*/.env")),
+    *sorted(SERVICES_ROOT.glob("*/.env")),
     REPO_ROOT / "MyIA.AI.Notebooks" / "GenAI" / ".env",
     # Lean prover harness: agent_tests/prover/config.py loads this .env.
     # Centralizes MISTRAL_API_KEY (Leanstral trial, #5475) + ANTHROPIC_API_KEY
@@ -304,6 +324,108 @@ def sync(check_only: bool) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------- #
+# --bootstrap-missing: close the .env-blind-spot (#9351)
+#
+# When a service's docker-compose.yml references ${SOME_KEY} to interpolate a
+# master.env value, the SERVICE runs fine (docker compose expands the var) but
+# render_envs.py has nothing to compare against — ``--check`` reads ``[OK]``
+# because the .env file is missing, while the canonical divergence is silently
+# INVISIBLE. The fix: when invoked with --bootstrap-missing, scan every
+# service directory for a docker-compose.yml (or -hybrid sibling), parse its
+# ${KEY} references, and for each KEY that exists in master.env and that the
+# service does NOT yet have in its .env, write KEY=<master_value> to a fresh
+# .env. Future ``--check`` runs now have a file to compare against.
+# --------------------------------------------------------------------------- #
+_COMPOSE_GLOBS = ("docker-compose.yml", "docker-compose-hybrid.yml")
+# Matches ${VAR} and ${VAR:-default} interpolation tokens in compose YAML.
+# Intentionally naive: a token whose body is "}" or ":-" is ignored (defensive).
+_COMPOSE_VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-[^}]*)?\}")
+
+
+def _compose_referenced_keys(compose_path: Path, secret_keys: frozenset[str]) -> set[str]:
+    """Return the subset of ``secret_keys`` referenced by ${KEY} in compose_path.
+
+    Pure parser: no YAML library required (the patterns we look for are
+    trivial), no false positives from YAML comments (they don't contain ``${``).
+    A service that references ``${UNREGISTERED_KEY}`` is ignored — only keys
+    declared in ``SECRET_KEYS`` are considered, so the writer never emits a
+    value the script cannot later keep in sync.
+    """
+    if not compose_path.exists():
+        return set()
+    text = compose_path.read_text(encoding="utf-8")
+    found = set()
+    for m in _COMPOSE_VAR_RE.finditer(text):
+        key = m.group(1)
+        if key in secret_keys:
+            found.add(key)
+    return found
+
+
+def _service_compose_paths(service_dir: Path) -> list[Path]:
+    """Return the compose files for a service dir, in deterministic order."""
+    return [service_dir / g for g in _COMPOSE_GLOBS if (service_dir / g).exists()]
+
+
+def bootstrap_missing_envs(
+    services_root: Path = SERVICES_ROOT,
+    master_path: Path = MASTER_ENV,
+    secret_keys: frozenset[str] = SECRET_KEYS,
+) -> list[str]:
+    """Auto-create .env for services whose compose file references a SECRET_KEY
+    but who lack a .env. Returns the list of service-dir names that were
+    newly written. Dry-run path for tests: caller can monkeypatch
+    ``services_root`` / ``master_path`` / ``secret_keys``.
+
+    Precedence: if the service already has an .env, it is left untouched
+    (sync() handles updates). If the service has NO .env but has at least one
+    compose file, the union of ${KEY} references across BOTH compose files
+    becomes the candidate key set; only keys present in master.env get
+    written. Values originate from master.env — never from the running
+    container, the host shell, or an interactive prompt.
+
+    Returns ``None`` when master.env is missing (vs ``[]`` when no gaps
+    need filling), so the CLI can distinguish "no-op success" from "cannot
+    run" via different exit codes.
+    """
+    if not master_path.exists():
+        print(f"[X] {master_path} not found. Run with --bootstrap first.")
+        return None
+    master = read_env(master_path)
+    available = {k: v for k, v in master.items() if k in secret_keys and v}
+
+    written: list[str] = []
+    for service_dir in sorted(p for p in services_root.iterdir() if p.is_dir()):
+        env_path = service_dir / ".env"
+        if env_path.exists():
+            continue  # sync() handles this; we only fill gaps.
+        compose_paths = _service_compose_paths(service_dir)
+        if not compose_paths:
+            continue  # no docker-compose* => nothing to auto-provision.
+        referenced: set[str] = set()
+        for cp in compose_paths:
+            referenced |= _compose_referenced_keys(cp, secret_keys)
+        keys_to_emit = sorted(referenced & available.keys())
+        if not keys_to_emit:
+            continue
+        lines = [
+            f"# Auto-generated by render_envs.py --bootstrap-missing (cf #9351).",
+            f"# Edit values in .secrets/master.env, then re-run this script.",
+            "",
+        ]
+        lines.extend(f"{k}={available[k]}" for k in keys_to_emit)
+        lines.append("")
+        env_path.write_text("\n".join(lines), encoding="utf-8")
+        written.append(service_dir.name)
+        print(f"[+] {service_dir.name}: created .env with {len(keys_to_emit)} "
+              f"key(s) {[mask(available[k]) for k in keys_to_emit]}")
+    if not written:
+        print(f"[OK] No missing .env in {services_root} (all services have "
+              f".env OR no compose-referenced SECRET_KEYS).")
+    return written
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -312,9 +434,18 @@ def main() -> int:
                       help="one-shot: build master.env from existing .env values")
     mode.add_argument("--check", action="store_true",
                       help="report drift only, exit 1 on drift (CI / pre-commit)")
+    mode.add_argument("--bootstrap-missing", action="store_true",
+                      help="auto-create .env for service dirs that have a "
+                           "docker-compose.yml but no .env (closes the "
+                           "--check blind spot, cf #9351)")
     args = p.parse_args()
     if args.bootstrap:
         return bootstrap()
+    if args.bootstrap_missing:
+        # bootstrap_missing_envs returns None on missing master.env, [] on
+        # successful no-op, list on writes. Map None -> 1 (cannot run),
+        # otherwise -> 0 (success regardless of whether anything was written).
+        return 1 if bootstrap_missing_envs() is None else 0
     return sync(check_only=args.check)
 
 

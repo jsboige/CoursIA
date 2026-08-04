@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
     python_sha: 5743c084f9060ed197a7acf541bf2611f89c7505
-    csharp_sha: a4d1f404ec232c20737626f1aec1297ba0f57dd3
+    csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
   known_differences:
   - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

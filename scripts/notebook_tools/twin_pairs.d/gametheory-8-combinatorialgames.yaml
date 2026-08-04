@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2023
-    python_sha: a05c2bac3f2e12aa36afddb33e8e4b15653628de
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 934b533de1507708f0834c6476d28595664af3d6
     csharp_sha: 5ae7bab857a02e49e8f6f483e11787c5222fa010
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires impartiaux (positions P/N, jeu de Nim, nim-sum / theoreme de Bouton 1901, fonction mex (minimum excludant), valeurs de Grundy, theoreme de Sprague-Grundy, jeux de soustraction). Mathematique pure sans solveur tiers (les deux cotes implementent mex + Grundy + nim-sum from-scratch)."
