@@ -4,11 +4,12 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
+    date: "2026-08-01"
+    by: myia-po-2023:CoursIA
     python_sha: cddabe42e47d1258f444f3019bd5876407d59bee
-    csharp_sha: b0ecb44cd66eceae27918eb02ab60f1f02a7661a
+    csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires (Sprague-Grundy, nombres de Grundy, theoreme de Sprague-Grundy sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). Meme concept mathematique (fonction de Grundy/g(x), XOR nim-sum, jeux impartiaux a information complete), meme cas canonique (Nim). Les deux couvrent Nim, Sprague, Grundy."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 14 cellules code) implemente les nombres de Grundy et le XOR nim-sum avec visualisation (graphe de jeu, table de Grundy) ; le C# (pur System.* stdlib, 0 NuGet, 14 cellules code) implemente la meme logique combinatoire (Sprague-Grundy, nim-sum) sans dependance numerique. Meme theoreme, meme contenu algorithmique, sorties differentes (visualisation Python vs sorties texte/table C#)."
     - "Idiomes framework : Python = numpy + matplotlib, 14 cellules code ; C# = pur System.* (System / System.Linq), 0 NuGet, 14 cellules code. Paire proche d'une traduction native (meme contenu algorithmique), mais les 2 implementations restent independantes (idiomes langage, structures de donnees, visualisation), d'ou parity_level semantic et non native-both."
+    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1058, EPIC #8052) : SHA C# avance b0ecb44cd -> 71822adc6 via §D.5 markdown-fix cote C# uniquement (cell[7] tableau Interpretation : S({1,2}) periode 6->3 et S({1,3}) periode 6->2, alignes au output calcule C# cell[6] et au twin Python cell[7] qui portait deja les bonnes valeurs + observations). Cause : drift twin, le C# n'a pas suivi une correction Python. Les conjectures erronees 'Periode = 2*max(M)' (=4!=6) et '2*(somme)' (=8!=6) remplacees par les observations vraies du twin Python. Cote Python non modifie (python_sha cddabe42 inchange). Drift markdown-only sur l'axe C#, aucune cellule de code touchee."
