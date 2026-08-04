@@ -105,7 +105,7 @@ def resolve_dest(dest_arg: Optional[Path], workspace_arg: Optional[Path]) -> Pat
 
 def is_fresh(zip_path: Path, min_year: int) -> bool:
     """True iff the zip's last bar year >= min_year (presence != freshness, C942-L)."""
-    _first, last, _count = scan_zip(Path(zip_path))
+    _first, last, _count, _flat_tail = scan_zip(Path(zip_path))
     if last is None:
         return False
     return last.year >= min_year
@@ -132,13 +132,13 @@ def provision_universe(
     for ticker in spec["tickers"]:
         zip_path = dest / f"{ticker.lower()}.zip"
         if zip_path.exists() and not force:
-            _first, last, count = scan_zip(zip_path)
+            _first, last, count, _flat_tail = scan_zip(zip_path)
             if last is not None and last.year >= min_year:
                 print(f"[skip] {ticker}: FRESH (last {last}, {count} bars) -- --force to re-download")
                 results.append((ticker, "skip (fresh)", count, last))
                 continue
         bars = converter(ticker, dest, start, end, dry_run=False)
-        _first, last, _count = scan_zip(zip_path)
+        _first, last, _count, _flat_tail = scan_zip(zip_path)
         print(f"[ok]   {ticker}: provisioned {bars} bars (last {last})")
         results.append((ticker, "provisioned", bars, last))
     return results
@@ -155,7 +155,7 @@ def run_gate(dest: Path, tickers: list[str], min_year: int) -> list[tuple[str, O
     for ticker in tickers:
         zip_path = dest / f"{ticker.lower()}.zip"
         if zip_path.exists():
-            _first, last, count = scan_zip(zip_path)
+            _first, last, count, _flat_tail = scan_zip(zip_path)
             stale = True if last is None else last.year < min_year
         else:
             last, count = None, 0
