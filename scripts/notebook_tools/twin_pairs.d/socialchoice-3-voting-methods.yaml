@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 7d3ea48c681d137b25725c50e9c4d78678fd6ba8
-    csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 7d3ea48c681d137b25725c50e9c4d78678fd6ba8
+      csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
   known_differences:
     - "2026-07-25 (po-2024) #8052 case-A : median-voter preference order -- cell#29 (devenu #29 apres #8566) table disait pic=5 => '4 > 6 > 2 > 0 > 8 > 10' mais l'output code (Electeur 4 pic=5: [4,6,2,8,0,10]) prouve '4 > 6 > 2 > 8 > 0 > 10' (single_peaked_preference sort stable par |x-5|). Markdown-only 1-line swap, no re-exec. csharp_sha inchange. python_sha rebaseline suite a ce changement de blob."
     - "2026-07-25 (po-2024) #8564 : IIA verdict honnetete + contre-exemple Copeland -- cell#23 imprimait `=> respecte IIA` des que le compteur Monte-Carlo tombait a 0, mais Copeland (Condorcet-consistante) VIOLE IIA (theoreme). Fix : verdict existentiel seul (0/100 => 'aucune violation observee, n'etablit pas respecte IIA' ; >0 => 'VIOLE IIA (N contre-exemples)'). Ajout cellule contre-exemple constructif (profil cyclique 4 alts A>B>C>D / B>C>D>A / C>D>A>B : A bat B pairwise, Copeland classe B>A avec C,D vs A>B sans -- inversion = IIA violée prouvee). markdown cell#24 (devenu #26) corrigé ('Copeland respecte IIA car pairwise' etait faux). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."

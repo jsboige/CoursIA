@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: d9bd33ad8b9e97f30827123edbfece15a1d630a8
-    csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: d9bd33ad8b9e97f30827123edbfece15a1d630a8
+      csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
   known_differences:
     - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
     - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."

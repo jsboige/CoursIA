@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-    csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
+      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
   known_differences:
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

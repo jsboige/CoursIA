@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
-    csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
+      csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
   known_differences:
     - "Socle commun : Explanation-Based Learning (EBL) et Relevance-Based Learning (RBL) -- variabilisation, extraction de regle, speedup, determinations."
     - "Asymetrie de couverture : Python (44 cellules, 15 code) couvre EBL (simplification arithmetique, variabilisation, implementation complete, efficacite) + RBL (introduction aux determinations) ; C# (18 cellules, 9 code) couvre EBL (chainage avant avec unification, speedup) + RBL (verification de determination) -- structure plus serree."
