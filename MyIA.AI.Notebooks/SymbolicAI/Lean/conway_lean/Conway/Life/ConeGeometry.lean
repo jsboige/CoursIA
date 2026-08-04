@@ -133,134 +133,144 @@ import Mathlib
 namespace Conway
 namespace Life
 
-/-! ## Chebyshev (chessboard) distance and the tight locality cone
+/-! ## Distance de Chebyshev (échiquier) et cône de localité étroite
 
-The *tight* Game-of-Life locality is governed by the Chebyshev (L∞) distance:
-one B3/S23 generation reaches exactly the Moore neighborhood (Chebyshev radius
-1), so `t` generations reach Chebyshev radius `t`. The `lightCone` machinery in
-`LightCone` uses the Manhattan (L1) distance, which over-approximates the tight
-reach by a factor of 2 — `step_light_cone` demands Manhattan radius `2 * t`. The
-lemmas below formalize the Chebyshev cone structure that a *tight* single-jump
-correctness proof chains through:
+La localité *étroite* du Jeu de la Vie est gouvernée par la distance de
+Chebyshev (L∞) : une génération B3/S23 atteint exactement le voisinage de Moore
+(rayon de Chebyshev 1), donc `t` générations atteignent le rayon de Chebyshev
+`t`. La machinerie `lightCone` dans `LightCone` utilise la distance de Manhattan
+(L1), qui sur-approxime la portée étroite d'un facteur 2 — `step_light_cone`
+exige le rayon de Manhattan `2 * t`. Les lemmes ci-dessous formalisent la
+structure du cône de Chebyshev qu'une preuve de correction à saut unique
+*étroite* enchaîne :
 
-- the cone fits in a margin-`t` box (**margin sufficiency** — the geometric fact
-  that makes the `padCenter2` margin `2^k` sufficient for a single jump of `2^k`
-  generations: the tight Chebyshev reach `2^k` fits exactly in a margin-`2^k`
-  box, whereas the loose Manhattan-`2^k` light cone would need `2^(k+1)`); and
+- le cône tient dans une boîte de marge `t` (**suffisance de marge** — le fait
+  géométrique qui rend la marge `padCenter2` `2^k` suffisante pour un saut de
+  `2^k` générations : la portée Chebyshev étroite `2^k` tient exactement dans
+  une boîte de marge `2^k`, alors que le cône de lumière Manhattan-`2^k`
+  lâche nécessiterait `2^(k+1)`) ; et
 
-These are the elementary distance facts; they do not assert anything about
-`evolve` (the locality statement `step_light_cone` lives in `HashlifeCorrectness`).
-Epic #3846 (Hashlife correctness infrastructure, N2 tight-locality groundwork). -/
+Ce sont les faits de distance élémentaires ; ils n'affirment rien sur `evolve`
+(l'énoncé de localité `step_light_cone` vit dans `HashlifeCorrectness`).
+EPIC #3846 (infrastructure de correction Hashlife, fondation N2 de localité
+étroite). -/
 
-/-- Chebyshev (chessboard / L∞) distance between two cells: the larger of the
-    absolute coordinate displacements. -/
+/-- Distance de Chebyshev (échiquier / L∞) entre deux cellules : le plus grand
+    des déplacements absolus de coordonnées. -/
 def chebDist (p q : Int × Int) : Nat :=
   max (Int.natAbs (q.1 - p.1)) (Int.natAbs (q.2 - p.2))
 
-/-- Reflexivity: a cell is at Chebyshev distance 0 from itself. -/
+/-- Réflexivité : une cellule est à distance de Chebyshev 0 d'elle-même. -/
 theorem chebDist_self (p : Int × Int) : chebDist p p = 0 := by
   unfold chebDist; omega
 
-/-- Symmetry: the Chebyshev distance is invariant under swapping the two cells. -/
+/-- Symétrie : la distance de Chebyshev est invariante par échange des deux cellules. -/
 theorem chebDist_comm (p q : Int × Int) : chebDist p q = chebDist q p := by
   unfold chebDist; omega
 
-/-- Monotonicity in the radius: a larger radius weakly contains the cone. -/
+/-- Monotonie en le rayon : un rayon plus grand contient faiblement le cône. -/
 theorem chebDist_le_trans {t₁ t₂ : Nat} (h : t₁ ≤ t₂) {p q : Int × Int}
     (hd : chebDist p q ≤ t₁) : chebDist p q ≤ t₂ := hd.trans h
 
-/-- Margin sufficiency: a cell within Chebyshev radius `t` of `p` lies in the
-    margin-`t` box — each coordinate is within `t` of `p`'s coordinate. This is
-    the geometric reason a box margin of `t` (e.g. `padCenter2`'s `2^k` margin
-    at a level advancing `2^k` generations) covers the *tight* Chebyshev-`t`
-    reach, even though that same margin `t` does not cover the *loose*
-    Manhattan-`t` light cone (which reaches `2 * t`). -/
+/-- Suffisance de marge : une cellule à distance Chebyshev `≤ t` de `p` se
+    trouve dans la boîte de marge `t` — chaque coordonnée est à distance `≤ t`
+    de la coordonnée de `p`. C'est la raison géométrique pour laquelle une marge
+    de boîte `t` (par ex. la marge `2^k` de `padCenter2` à un niveau avançant de
+    `2^k` générations) couvre la portée Chebyshev-`t` *étroite*, alors que cette
+    même marge `t` ne couvre pas le cône de lumière Manhattan-`t` *lâche* (qui
+    atteint `2 * t`). -/
 theorem coord_bound_of_chebDist_le (p q : Int × Int) (t : Nat)
     (h : chebDist p q ≤ t) :
     Int.natAbs (q.1 - p.1) ≤ t ∧ Int.natAbs (q.2 - p.2) ≤ t := by
   unfold chebDist at h
   omega
 
-/-! ## Chebyshev triangle inequality and cone growth by a Moore step
+/-! ## Inégalité triangulaire de Chebyshev et croissance du cône par pas de Moore
 
-The foundational metric fact (`chebDist_triangle`) and the **tight-cone growth
-theorem** named by ai-01's N2 greenlight: a cell lies in the Chebyshev-`(t+1)`
-cone of `p` iff one can reach it from the Chebyshev-`t` cone via a single Moore
-neighborhood step. This is the inductive engine of the tight-locality statement
-(after one B3/S23 generation, reach expands by exactly one Moore shell), and the
-reason the tight Chebyshev reach grows linearly with `t` rather than as `2*t`.
+Le fait métrique fondateur (`chebDist_triangle`) et le **théorème de croissance
+du cône étroit** nommé par le greenlight N2 d'ai-01 : une cellule se trouve
+dans le cône Chebyshev-`(t+1)` de `p` ssi on peut l'atteindre depuis le cône
+Chebyshev-`t` par un seul pas de voisinage de Moore. C'est le moteur inductif de
+l'énoncé de localité étroite (après une génération B3/S23, la portée s'étend
+d'exactement une coque de Moore), et la raison pour laquelle la portée Chebyshev
+étroite croît linéairement avec `t` plutôt qu'en `2*t`.
 -/
 
-/-- Triangle inequality for the Chebyshev distance. -/
+/-- Inégalité triangulaire pour la distance de Chebyshev. -/
 theorem chebDist_triangle (p q r : Int × Int) :
     chebDist p q ≤ chebDist p r + chebDist r q := by
   unfold chebDist
   omega
 
-/-- The Chebyshev cone grows by exactly one Moore step: `q` is within Chebyshev
-    radius `t+1` of `p` iff there is a cell `r` within Chebyshev radius `t` of `p`
-    that is a Moore neighbor of `q` (Chebyshev radius `≤ 1`). Forward direction
-    steps from `q` toward `p` by one unit in each nonzero coordinate; backward
-    direction is the triangle inequality. This is the additive-growth lemma that
-    underpins the tight `t`-step locality (one Moore shell per generation). -/
+/-- Le cône de Chebyshev croît d'exactement un pas de Moore : `q` est à distance
+    Chebyshev `t+1` de `p` ssi il existe une cellule `r` à distance Chebyshev `t`
+    de `p` qui soit un voisin de Moore de `q` (distance Chebyshev `≤ 1`). La
+    direction forward progresse de `q` vers `p` d'une unité sur chaque coordonnée
+    non nulle ; la direction backward est l'inégalité triangulaire. C'est le
+    lemme de croissance additive qui sous-tend la localité étroite à `t` étapes
+    (une coque de Moore par génération). -/
 theorem chebDist_le_succ_iff (p q : Int × Int) (t : Nat) :
     chebDist p q ≤ t + 1 ↔
       ∃ r : Int × Int, chebDist p r ≤ t ∧ chebDist r q ≤ 1 := by
   constructor
-  · -- forward: step from `q` toward `p` by one unit in each nonzero coordinate
+  · -- forward : progresser de `q` vers `p` d'une unité sur chaque coordonnée non nulle
     intro h
     unfold chebDist at h
     refine ⟨(q.1 - if q.1 - p.1 = 0 then 0 else if 0 < q.1 - p.1 then 1 else -1,
              q.2 - if q.2 - p.2 = 0 then 0 else if 0 < q.2 - p.2 then 1 else -1), ?_, ?_⟩
     all_goals unfold chebDist; omega
-  · -- backward: triangle inequality
+  · -- backward : inégalité triangulaire
     rintro ⟨r, hr, hq⟩
     exact (chebDist_triangle p q r).trans (add_le_add hr hq)
 
-/-- The tight Chebyshev cone is nested in its successor: radius `t` ⊆ radius
-    `t+1`. Corollary of `chebDist_le_succ_iff` (or directly `Nat.le_succ`). -/
+/-- Le cône de Chebyshev étroit est inclus dans son successeur : rayon `t` ⊆
+    rayon `t+1`. Corollaire de `chebDist_le_succ_iff` (ou directement
+    `Nat.le_succ`). -/
 theorem chebDist_le_succ (p q : Int × Int) (t : Nat) (h : chebDist p q ≤ t) :
     chebDist p q ≤ t + 1 := h.trans (Nat.le_succ t)
 
-/-! ## W3 tight cone-in-domain: Chebyshev-tight locality stays in the domain
+/-! ## W3 cône étroit dans le domaine : la localité Chebyshev-étroite reste dans le domaine
 
-The tight Chebyshev analog of `window_cone_in_domain` (the **S2** closed lemma in
-`HashlifeCorrectness`, which used the *loose* Manhattan cone `manhattan p q ≤ 2^k`).
-For a point `p` in the centered window `[2^k, 2^k + 2^(k+1))²` (the region a
-Hashlife result covers), any cell `q` within **Chebyshev** radius `2^k` — the
-*tight* GoL speed-of-light cone, strictly smaller than the loose Manhattan-`2^k`
-cone (a Chebyshev-`t` ball fits in a Manhattan-`2t` ball, not the reverse) — stays
-inside the full MacroCell domain `[0, 2^(k+2))²`.
+L'analogue Chebyshev étroit de `window_cone_in_domain` (le lemme fermé **S2**
+dans `HashlifeCorrectness`, qui utilisait le cône Manhattan *lâche*
+`manhattan p q ≤ 2^k`). Pour un point `p` dans la fenêtre centrée
+`[2^k, 2^k + 2^(k+1))²` (la région couverte par un résultat Hashlife), toute
+cellule `q` à distance **Chebyshev** `2^k` — le cône de vitesse de la
+lumière GoL *étroit*, strictement plus petit que le cône Manhattan-`2^k`
+lâche (une boule Chebyshev-`t` tient dans une boule Manhattan-`2t`, pas
+l'inverse) — reste dans le domaine MacroCell complet `[0, 2^(k+2))²`.
 
-This is the missing tight locality bound for the N2 redesign arc (EPIC #3846, W3).
-The loose `window_cone_in_domain` demanded Manhattan-`2^k` agreement, over-
-approximating the real reach by a factor of 2; the tight version demands only
-Chebyshev-`2^k` agreement (the actual one-Moore-shell-per-generation reach
-formalized by `evolve_reach_chebyshev`). Because Chebyshev distance bounds each
-coordinate directly, the proof is **simpler** than the loose analog: it consumes
-`coord_bound_of_chebDist_le` (per-coordinate bound immediately) rather than
-bridging through `manhattan_deviation`. No `hashlifeResultAux`, no whnf wall —
-pure `Int` window arithmetic. Sorry-free.
+C'est la borne de localité étroite manquante pour l'arc de refonte N2 (EPIC
+#3846, W3). Le `window_cone_in_domain` lâche exigeait l'accord Manhattan-`2^k`,
+sur-approximant la portée réelle d'un facteur 2 ; la version étroite n'exige
+que l'accord Chebyshev-`2^k` (la portée réelle d'une-coque-de-Moore-par-
+génération formalisée par `evolve_reach_chebyshev`). Comme la distance de
+Chebyshev borne directement chaque coordonnée, la preuve est **plus simple**
+que l'analogue lâche : elle consomme `coord_bound_of_chebDist_le` (borne par
+coordonnée immédiate) au lieu de ponter via `manhattan_deviation`. Pas de
+`hashlifeResultAux`, pas de mur `whnf` — arithmétique de fenêtre `Int` pure.
+Sans sorry.
 
-This lemma lives in `ConeGeometry` (not `LightCone`) so that the P5
-`p5_large_n_jump` path in `HashlifeCorrectness` can consume it directly via
-`import Conway.Life.ConeGeometry`, without the circular reverse-import that would
-arise if it stayed in `LightCone` (which imports `HashlifeCorrectness`). The
-proof substance is independent of the P4 mono-verru. -/
+Ce lemme vit dans `ConeGeometry` (pas dans `LightCone`) pour que le chemin P5
+`p5_large_n_jump` dans `HashlifeCorrectness` puisse le consommer directement via
+`import Conway.Life.ConeGeometry`, sans l'import inverse circulaire qui
+surviendrait s'il restait dans `LightCone` (qui importe `HashlifeCorrectness`).
+La substance de la preuve est indépendante du mono-verrou P4. -/
 
-/-- Power identity `2^(k+1) = 2 · 2^k` in `Int`, proven in pure `Nat` (rw +
-`Nat.pow_succ`) then lifted via `exact_mod_cast`. Shared by the two window-
-membership theorems `window_cheb_cone_in_domain` (this module) and
-`window_cone_in_domain` (`HashlifeCorrectness`, which imports this module),
-hence factored here rather than duplicated inline in each consumer. -/
+/-- Identité de puissance `2^(k+1) = 2 · 2^k` dans `Int`, prouvée en `Nat` pur
+(rw + `Nat.pow_succ`) puis remontée via `exact_mod_cast`. Partagée par les deux
+théorèmes d'appartenance à la fenêtre `window_cheb_cone_in_domain` (ce module)
+et `window_cone_in_domain` (`HashlifeCorrectness`, qui importe ce module), d'où
+sa factorisation ici plutôt que sa duplication inline dans chaque consommateur. -/
 lemma pow_two_add_one_int (k : Nat) : (2^(k+1) : Int) = 2 * (2^k : Int) := by
   have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
     rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
   exact_mod_cast h
 
-/-- Power identity `2^(k+2) = 4 · 2^k` in `Int`, proven in pure `Nat` (rw +
-`Nat.pow_succ` over two steps) then lifted via `exact_mod_cast`. Same shared
-rationale as `pow_two_add_one_int`: consumed by both window-membership theorems. -/
+/-- Identité de puissance `2^(k+2) = 4 · 2^k` dans `Int`, prouvée en `Nat` pur
+(rw + `Nat.pow_succ` sur deux étapes) puis remontée via `exact_mod_cast`. Même
+rationale de partage que `pow_two_add_one_int` : consommée par les deux
+théorèmes d'appartenance à la fenêtre. -/
 lemma pow_two_add_two_int (k : Nat) : (2^(k+2) : Int) = 4 * (2^k : Int) := by
   have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
     rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
@@ -274,27 +284,28 @@ theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
     (hp2_lo : (2^k : Int) ≤ p.2) (hp2_hi : p.2 < 2^k + 2^(k+1))
     (hc : chebDist p q ≤ 2^k) :
     (0 : Int) ≤ q.1 ∧ q.1 < 2^(k+2) ∧ (0 : Int) ≤ q.2 ∧ q.2 < 2^(k+2) := by
-  -- Chebyshev radius bounds each coordinate directly (no manhattan bridge).
+  -- Le rayon de Chebyshev borne directement chaque coordonnée (pas de pont Manhattan).
   obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^k) hc
-  -- `coord_bound_of_chebDist_le` types its bounds as `Nat` (`Int.natAbs ... ≤
-  -- 2^k`); the window hypotheses below use native-Int `(2^k : Int)` (`HPower`).
-  -- Bridge the Nat-bound to an `Int.abs`-typed bound (mirroring the loose
-  -- analog's `manhattan_deviation` output, which is already Int-typed), then
-  -- unify the atoms via `Nat.cast_pow`.
+  -- `coord_bound_of_chebDist_le` type ses bornes comme `Nat` (`Int.natAbs ... ≤
+  -- 2^k`) ; les hypothèses de fenêtre ci-dessous utilisent du `(2^k : Int)` natif
+  -- (`HPower`). On ponte la borne `Nat` vers une borne typée `Int.abs` (miroir
+  -- de la sortie `manhattan_deviation` de l'analogue lâche, déjà typée Int),
+  -- puis on unifie les atomes via `Nat.cast_pow`.
   have hk_pow : (↑((2:Nat)^k) : Int) = (2^k : Int) := Nat.cast_pow 2 k
   have hq1' : |q.1 - p.1| ≤ (2^k : Int) := by
     rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
   have hq2' : |q.2 - p.2| ≤ (2^k : Int) := by
     rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
-  -- Power facts in pure `Nat`, lifted to `Int` (linarith reads the atoms),
-  -- factored into the named lemmas `pow_two_add_one_int`/`pow_two_add_two_int`
-  -- above (shared with `window_cone_in_domain` in `HashlifeCorrectness`).
+  -- Faits de puissance en `Nat` pur, remontés vers `Int` (linarith lit les
+  -- atomes), factorisés dans les lemmes nommés
+  -- `pow_two_add_one_int`/`pow_two_add_two_int` ci-dessus (partagés avec
+  -- `window_cone_in_domain` dans `HashlifeCorrectness`).
   have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := pow_two_add_one_int k
   have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := pow_two_add_two_int k
-  -- `Int.abs` bound unpacked into a two-sided `Int` clamp on `q.i - p.i`.
+  -- Borne `Int.abs` dépaquetée en un clamp `Int` bilatéral sur `q.i - p.i`.
   obtain ⟨hq1lo, hq1hi⟩ := abs_le.mp hq1'
   obtain ⟨hq2lo, hq2hi⟩ := abs_le.mp hq2'
-  -- Rewrite every power occurrence into a multiple of the single atom `2^k`.
+  -- Réécriture de chaque occurrence de puissance en un multiple du seul atome `2^k`.
   rw [hpe1] at hp1_hi hp2_hi
   rw [hpe2]
   refine ⟨?_, ?_, ?_, ?_⟩ <;> linarith

@@ -167,32 +167,32 @@ import Conway.Life
 namespace Conway
 namespace Life
 
-/-! ## The lexicographic comparator: order axioms -/
+/-! ## Le comparateur lexicographique : axiomes d'ordre -/
 
-/-- `lexLt` in terms of linear integer arithmetic. -/
+/-- `lexLt` en termes d'arithmétique linéaire sur les entiers. -/
 theorem lexLt_iff {a b : Int × Int} :
     lexLt a b = true ↔ a.1 < b.1 ∨ (a.1 = b.1 ∧ a.2 < b.2) := by
   unfold lexLt
   split_ifs <;> simp <;> omega
 
-/-- `lexLe` in terms of linear integer arithmetic. -/
+/-- `lexLe` en termes d'arithmétique linéaire sur les entiers. -/
 theorem lexLe_iff {a b : Int × Int} :
     lexLe a b = true ↔ a.1 < b.1 ∨ (a.1 = b.1 ∧ a.2 ≤ b.2) := by
   simp only [lexLe, Bool.or_eq_true, lexLt_iff, beq_iff_eq, Prod.ext_iff]
   omega
 
-/-- `lexLe` is total — the hypothesis `List.pairwise_insertionSort` needs. -/
+/-- `lexLe` est total — l'hypothèse qu'exige `List.pairwise_insertionSort`. -/
 theorem lexLe_total (a b : Int × Int) : (lexLe a b || lexLe b a) = true := by
   simp only [Bool.or_eq_true, lexLe_iff]
   omega
 
-/-- `lexLe` is transitive. -/
+/-- `lexLe` est transitif. -/
 theorem lexLe_trans (a b c : Int × Int)
     (hab : lexLe a b = true) (hbc : lexLe b c = true) : lexLe a c = true := by
   simp only [lexLe_iff] at *
   omega
 
-/-- `lexLe` is antisymmetric — what makes sorted Nodup lists rigid. -/
+/-- `lexLe` est antisymétrique — ce qui rend les listes triées Nodup rigides. -/
 theorem lexLe_antisymm (a b : Int × Int)
     (hab : lexLe a b = true) (hba : lexLe b a = true) : a = b := by
   simp only [lexLe_iff] at hab hba
@@ -210,24 +210,24 @@ instance lexLe.isTotal : Std.Total fun a b : Int × Int => lexLe a b = true :=
     rw [Bool.or_eq_true_eq_eq_true_or_eq_true] at h
     exact h⟩
 
-/-! ## Canonical grids -/
+/-! ## Grilles canoniques -/
 
-/-- A grid in canonical form: lexicographically sorted and duplicate-free.
-    Invariant of every `sortDedup` image, preserved by `filter`. -/
+/-- Une grille sous forme canonique : triée lexicographiquement et sans
+    doublon. Invariant de toute image de `sortDedup`, préservé par `filter`. -/
 def Canonical (g : Grid) : Prop :=
   g.Pairwise (fun a b => lexLe a b = true) ∧ g.Nodup
 
-/-- `sortDedup` always produces a canonical grid: sortedness comes from
-    `pairwise_insertionSort` (using totality and transitivity of `lexLe`) and
-    survives `dedup` because `dedup` yields a sublist; freedom from
-    duplicates is `nodup_dedup`.
+/-- `sortDedup` produit toujours une grille canonique : le tri vient de
+    `pairwise_insertionSort` (utilisant la totalité et la transitivité de
+    `lexLe`) et survit à `dedup` car `dedup` produit une sous-liste ; l'absence
+    de doublons est `nodup_dedup`.
 
-    `insertionSort` (not `mergeSort`) is used in `sortDedup` because the
-    kernel reducer can evaluate `List.insertionSort` under `decide` whereas
-    `List.mergeSort` stays stuck (measured po-2026 c.786). The Mathlib lemma
-    `List.pairwise_insertionSort` is typeclass-based (`[Std.Total r]`
-    `[IsTrans α r]`); we discharge those instances locally from
-    `lexLe_total` and `lexLe_trans`. -/
+    `insertionSort` (et non `mergeSort`) est utilisé dans `sortDedup` car le
+    réducteur du noyau peut évaluer `List.insertionSort` sous `decide` alors que
+    `List.mergeSort` reste bloqué (mesuré po-2026 c.786). Le lemme Mathlib
+    `List.pairwise_insertionSort` est basé sur des typeclasses
+    (`[Std.Total r]` `[IsTrans α r]`) ; nous déchargeons ces instances
+    localement à partir de `lexLe_total` et `lexLe_trans`. -/
 theorem canonical_sortDedup (l : List (Int × Int)) : Canonical (sortDedup l) := by
   unfold sortDedup
   have hsort : List.Pairwise (fun a b => lexLe a b = true)
@@ -235,24 +235,24 @@ theorem canonical_sortDedup (l : List (Int × Int)) : Canonical (sortDedup l) :=
     List.pairwise_insertionSort _ l
   exact ⟨hsort.sublist (List.dedup_sublist _), List.nodup_dedup _⟩
 
-/-- Filtering preserves canonical form (`filter` yields a sublist). -/
+/-- Le filtrage préserve la forme canonique (`filter` produit une sous-liste). -/
 theorem Canonical.filter {g : Grid} (h : Canonical g) (q : (Int × Int) → Bool) :
     Canonical (g.filter q) :=
   ⟨List.Pairwise.sublist List.filter_sublist h.1,
    List.Nodup.sublist List.filter_sublist h.2⟩
 
-/-- **Rigidity of canonical grids**: two canonical grids with the same
-    members are equal as lists. Same-membership gives a permutation
-    (`perm_ext_iff_of_nodup`), and a permutation between two lex-sorted
-    lists is the identity by antisymmetry (`Perm.eq_of_pairwise`). -/
+/-- **Rigidité des grilles canoniques** : deux grilles canoniques avec les
+    mêmes membres sont égales comme listes. La même-appartenance donne une
+    permutation (`perm_ext_iff_of_nodup`), et une permutation entre deux listes
+    lex-triées est l'identité par antisymétrie (`Perm.eq_of_pairwise`). -/
 theorem Canonical.ext {g₁ g₂ : Grid} (h₁ : Canonical g₁) (h₂ : Canonical g₂)
     (h : ∀ p, p ∈ g₁ ↔ p ∈ g₂) : g₁ = g₂ :=
   List.Perm.eq_of_pairwise (fun a b _ _ hab hba => lexLe_antisymm a b hab hba)
     h₁.1 h₂.1 ((List.perm_ext_iff_of_nodup h₁.2 h₂.2).mpr h)
 
-/-- The workhorse corollary: two `sortDedup` images are equal **iff** their
-    input lists have the same members. List equality of canonical grids is
-    exactly set equality. -/
+/-- Le corollaire workhorse : deux images `sortDedup` sont égales **ssi** leurs
+    listes d'entrée ont les mêmes membres. L'égalité de listes des grilles
+    canoniques est exactement l'égalité ensembliste. -/
 theorem sortDedup_eq_sortDedup_iff {l₁ l₂ : List (Int × Int)} :
     sortDedup l₁ = sortDedup l₂ ↔ ∀ p, p ∈ l₁ ↔ p ∈ l₂ := by
   constructor
@@ -262,21 +262,21 @@ theorem sortDedup_eq_sortDedup_iff {l₁ l₂ : List (Int × Int)} :
     exact Canonical.ext (canonical_sortDedup _) (canonical_sortDedup _)
       (fun p => by rw [mem_sortDedup, mem_sortDedup]; exact h p)
 
-/-! ## Canonicity of the Life-engine grids -/
+/-! ## Canonicité des grilles du moteur Life -/
 
-/-- `step` produces canonical grids. -/
+/-- `step` produit des grilles canoniques. -/
 theorem canonical_step (g : Grid) : Canonical (step g) :=
   canonical_sortDedup _
 
-/-- `evolve n` produces canonical grids for `n ≥ 1` (for `n = 0` the
-    output is the input, which need not be canonical). -/
+/-- `evolve n` produit des grilles canoniques pour `n ≥ 1` (pour `n = 0` la
+    sortie est l'entrée, qui n'a pas besoin d'être canonique). -/
 theorem canonical_evolve_of_pos {n : Nat} (hn : 0 < n) (g : Grid) :
     Canonical (evolve n g) := by
   obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
   rw [evolve_succ]
   exact canonical_step _
 
-/-- `shift` produces canonical grids. -/
+/-- `shift` produit des grilles canoniques. -/
 theorem canonical_shift (v : Int × Int) (g : Grid) : Canonical (shift v g) :=
   canonical_sortDedup _
 
@@ -321,8 +321,8 @@ theorem aliveNext_shift (v : Int × Int) (g : Grid) (p : Int × Int) :
     aliveNext (shift v g) p = aliveNext g (p.1 - v.1, p.2 - v.2) := by
   simp [aliveNext, isAlive_shift, liveNeighborCount_shift]
 
-/-- Membership in a `step` image, unfolded to the rule: `p` is in `step g`
-    iff it is a candidate and `aliveNext` accepts it. -/
+/-- Appartenance à une image de `step`, dépliée en la règle : `p` est dans
+    `step g` ssi c'est un candidat et `aliveNext` l'accepte. -/
 theorem mem_step_iff {g : Grid} {p : Int × Int} :
     p ∈ step g ↔ p ∈ candidates g ∧ aliveNext g p = true := by
   unfold step

@@ -164,25 +164,25 @@ import Conway.Life.HashlifeCorrectness
 namespace Conway
 namespace Life
 
-/-! ## Monotonicity: larger radius → larger cone
+/-! ## Monotonie : rayon plus grand → cône plus grand
 
-A light cone of radius `t₁` is contained in the light cone of any larger
-radius `t₂ ≥ t₁`. This follows directly from the membership characterization
-(`mem_lightCone_of_manhattan_le` / `manhattan_le_of_mem_lightCone`): a cell in
-the smaller cone is at Manhattan distance `≤ t₁ ≤ t₂`, hence in the larger
-cone. -/
+Un cône de lumière de rayon `t₁` est contenu dans le cône de lumière de tout
+rayon plus grand `t₂ ≥ t₁`. Cela découle directement de la caractérisation par
+appartenance (`mem_lightCone_of_manhattan_le` /
+`manhattan_le_of_mem_lightCone`) : une cellule dans le cône plus petit est à
+distance Manhattan `≤ t₁ ≤ t₂`, donc dans le cône plus grand. -/
 theorem lightCone_subset_of_le (p : Int × Int) {t₁ t₂ : Nat} (h : t₁ ≤ t₂) :
     lightCone p t₁ ⊆ lightCone p t₂ := by
   intro q hq
   exact mem_lightCone_of_manhattan_le p q t₂
     ((manhattan_le_of_mem_lightCone p q t₁ hq).trans h)
 
-/-! ## Per-coordinate bound: membership bounds each coordinate
+/-! ## Borne par coordonnée : l'appartenance borne chaque coordonnée
 
-A cell in `lightCone p t` has each coordinate within `t` of `p`'s
-corresponding coordinate. This is the "Manhattan-`t` ⊆ Chebyshev-`t`"
-direction (each coordinate's displacement is bounded by the total Manhattan
-distance). -/
+Une cellule dans `lightCone p t` a chaque coordonnée à distance `≤ t` de la
+coordonnée correspondante de `p`. C'est la direction « Manhattan-`t` ⊆
+Chebyshev-`t` » (le déplacement de chaque coordonnée est borné par la distance
+Manhattan totale). -/
 theorem coord_bound_of_mem_lightCone (p q : Int × Int) (t : Nat)
     (h : q ∈ lightCone p t) :
     Int.natAbs (p.1 - q.1) ≤ t ∧ Int.natAbs (p.2 - q.2) ≤ t := by
@@ -190,18 +190,19 @@ theorem coord_bound_of_mem_lightCone (p q : Int × Int) (t : Nat)
   unfold manhattan at hm
   refine ⟨?_, ?_⟩ <;> omega
 
-/-! ## Speed-of-light principle: Chebyshev-`t` ⊆ Manhattan-`2*t`
+/-! ## Principe de vitesse de la lumière : Chebyshev-`t` ⊆ Manhattan-`2*t`
 
-The converse direction that makes `2*t` the **tight** GoL radius. If each
-coordinate of `q` is within `t` of `p` (Chebyshev distance `≤ t`) — the exact
-region a single B3/S23 step can reach in one generation, lifted to `t` steps
-— then the Manhattan distance is `≤ 2*t`, so `q ∈ lightCone p (2 * t)`.
+La direction converse qui fait de `2*t` le rayon GoL **étroit**. Si chaque
+coordonnée de `q` est à distance `≤ t` de `p` (distance Chebyshev `≤ t`) — la
+région exacte qu'un seul pas B3/S23 peut atteindre en une génération, étendue
+à `t` pas — alors la distance Manhattan est `≤ 2*t`, donc
+`q ∈ lightCone p (2 * t)`.
 
-This is the formal justification for `step_light_cone`'s `2 * t` radius: the
-Moore-neighborhood influence of one generation has Chebyshev radius `1`, so
-`t` generations reach Chebyshev radius `t`, and that Chebyshev ball is
-contained in the Manhattan ball of twice the radius. The factor `2` is
-tight (the diagonal neighbor is at Manhattan distance `2`). -/
+C'est la justification formelle du rayon `2 * t` de `step_light_cone` :
+l'influence du voisinage de Moore d'une génération a un rayon Chebyshev `1`,
+donc `t` générations atteignent le rayon Chebyshev `t`, et cette boule
+Chebyshev est contenue dans la boule Manhattan de rayon double. Le facteur
+`2` est serré (le voisin diagonal est à distance Manhattan `2`). -/
 theorem mem_lightCone_of_chebyshev_le (p q : Int × Int) (t : Nat)
     (h1 : Int.natAbs (p.1 - q.1) ≤ t) (h2 : Int.natAbs (p.2 - q.2) ≤ t) :
     q ∈ lightCone p (2 * t) := by
@@ -209,15 +210,16 @@ theorem mem_lightCone_of_chebyshev_le (p q : Int × Int) (t : Nat)
   unfold manhattan
   omega
 
-/-! ## Translation invariance: shifting the center shifts the cone
+/-! ## Invariance par translation : décaler le centre décale le cône
 
-The light cone is translation-equivariant: membership of `q` in `lightCone p t`
-depends only on the displacement `q - p`, not on the absolute position `p`. This
-is the Grid-level counterpart of the `toGrid` offset-shift machinery in
-`HashlifeCorrectness` (`toGrid_shift`, `toGrid_shift_between`), and is the
-structural fact needed to relate the light cone before and after a `hashlifeJump`
-shifts the grid by `jumpResultOff` in `evolveHashlifeFastAux`. The cone is an
-isometry of the Manhattan metric, so its shape is preserved under translation. -/
+Le cône de lumière est équivariant par translation : l'appartenance de `q` à
+`lightCone p t` ne dépend que du déplacement `q - p`, pas de la position
+absolue `p`. C'est le pendant au niveau Grid de la machinerie de décalage
+`toGrid` dans `HashlifeCorrectness` (`toGrid_shift`,
+`toGrid_shift_between`), et le fait structurel nécessaire pour relier le cône
+de lumière avant et après qu'un `hashlifeJump` décale la grille de
+`jumpResultOff` dans `evolveHashlifeFastAux`. Le cône est une isométrie de la
+métrique Manhattan, donc sa forme est préservée par translation. -/
 theorem lightCone_translate (p q : Int × Int) (t : Nat) :
     q ∈ lightCone p t ↔ (q.1 - p.1, q.2 - p.2) ∈ lightCone (0, 0) t := by
   constructor
@@ -230,75 +232,82 @@ theorem lightCone_translate (p q : Int × Int) (t : Nat) :
     have hm := manhattan_le_of_mem_lightCone (0, 0) _ t h
     unfold manhattan at *; omega
 
-/-! ## Chebyshev (chessboard) distance and the tight locality cone
+/-! ## Distance de Chebyshev (échiquier) et cône de localité étroite
 
-The *tight* Game-of-Life locality is governed by the Chebyshev (L∞) distance:
-one B3/S23 generation reaches exactly the Moore neighborhood (Chebyshev radius
-1), so `t` generations reach Chebyshev radius `t`. The `lightCone` machinery
-above uses the Manhattan (L1) distance, which over-approximates the tight reach
-by a factor of 2 — `step_light_cone` demands Manhattan radius `2 * t`. The
-lemmas below formalize the Chebyshev cone structure that a *tight* single-jump
-correctness proof chains through:
+La localité *étroite* du Jeu de la Vie est gouvernée par la distance de
+Chebyshev (L∞) : une génération B3/S23 atteint exactement le voisinage de Moore
+(rayon de Chebyshev 1), donc `t` générations atteignent le rayon de Chebyshev
+`t`. La machinerie `lightCone` ci-dessus utilise la distance de Manhattan (L1),
+qui sur-approxime la portée étroite d'un facteur 2 — `step_light_cone` exige le
+rayon de Manhattan `2 * t`. Les lemmes ci-dessous formalisent la structure du
+cône de Chebyshev qu'une preuve de correction à saut unique *étroite* enchaîne :
 
-- the cone fits in a margin-`t` box (**margin sufficiency** — the geometric fact
-  that makes the `padCenter2` margin `2^k` sufficient for a single jump of `2^k`
-  generations: the tight Chebyshev reach `2^k` fits exactly in a margin-`2^k`
-  box, whereas the loose Manhattan-`2^k` light cone would need `2^(k+1)`); and
-- the tight cone is contained in the loose Manhattan-`2*t` light cone.
+- le cône tient dans une boîte de marge `t` (**suffisance de marge** — le fait
+  géométrique qui rend la marge `padCenter2` `2^k` suffisante pour un saut de
+  `2^k` générations : la portée Chebyshev étroite `2^k` tient exactement dans
+  une boîte de marge `2^k`, alors que le cône de lumière Manhattan-`2^k` lâche
+  nécessiterait `2^(k+1)`) ; et
+- le cône étroit est contenu dans le cône de lumière Manhattan-`2*t` lâche.
 
-These are the elementary distance facts; they do not yet assert anything about
-`evolve` (the locality statement `step_light_cone` lives in `HashlifeCorrectness`).
-Epic #3846 (Hashlife correctness infrastructure, N2 tight-locality groundwork). -/
+Ce sont les faits de distance élémentaires ; ils n'affirment encore rien sur
+`evolve` (l'énoncé de localité `step_light_cone` vit dans
+`HashlifeCorrectness`).
+EPIC #3846 (infrastructure de correction Hashlife, fondation N2 de localité
+étroite). -/
 
-/- The pure Chebyshev metric facts — `chebDist`, `chebDist_self`, `chebDist_comm`,
-   `chebDist_le_trans`, `coord_bound_of_chebDist_le` (margin sufficiency) — now
-   live in `Conway.Life.ConeGeometry` (the Mathlib-only base, extracted for the
-   EPIC #3846 cycle-break). They are in scope here via `import
-   Conway.Life.ConeGeometry` above, under the same `Conway.Life.*` names, so the
-   GoL-coupled bridges below resolve them unchanged. The first bridge,
-   `manhattan_le_of_chebDist_le`, ties the tight Chebyshev metric to the loose
-   Manhattan `manhattan` (defined in `HashlifeCorrectness`). -/
+/- Les faits métriques purs de Chebyshev — `chebDist`, `chebDist_self`,
+   `chebDist_comm`, `chebDist_le_trans`, `coord_bound_of_chebDist_le`
+   (suffisance de marge) — vivent désormais dans `Conway.Life.ConeGeometry`
+   (la base Mathlib uniquement, extraite pour le cycle-break EPIC #3846). Ils
+   sont dans le scope ici via l'`import Conway.Life.ConeGeometry` ci-dessus,
+   sous les mêmes noms `Conway.Life.*`, donc les ponts couplés au GoL
+   ci-dessous les résolvent inchangés. Le premier pont,
+   `manhattan_le_of_chebDist_le`, relie la métrique Chebyshev étroite à la
+   métrique Manhattan `manhattan` lâche (définie dans
+   `HashlifeCorrectness`). -/
 
-/-- Tight ⊆ loose (distance form): Chebyshev radius `t` is bounded by Manhattan
-    radius `2 * t`, because each coordinate displacement is `≤ t` and the
-    Manhattan distance is their sum. -/
+/-- Étroit ⊆ lâche (forme distance) : le rayon Chebyshev `t` est borné par le
+    rayon Manhattan `2 * t`, car chaque déplacement de coordonnée est `≤ t` et
+    la distance Manhattan est leur somme. -/
 theorem manhattan_le_of_chebDist_le (p q : Int × Int) (t : Nat)
     (h : chebDist p q ≤ t) : manhattan p q ≤ 2 * t := by
   unfold chebDist at h
   unfold manhattan
   omega
 
-/-- A cell within Chebyshev radius `t` lies in the Manhattan-`(2*t)` light cone.
-    This is the bridge from the tight Chebyshev reach to the loose
-    `lightCone p (2 * t)` radius that `step_light_cone` operates on. -/
+/-- Une cellule à distance Chebyshev `≤ t` se trouve dans le cône de lumière
+    Manhattan-`(2*t)`. C'est le pont depuis la portée Chebyshev étroite vers le
+    rayon lâche `lightCone p (2 * t)` sur lequel opère `step_light_cone`. -/
 theorem mem_lightCone_of_chebDist_le (p q : Int × Int) (t : Nat)
     (h : chebDist p q ≤ t) : q ∈ lightCone p (2 * t) :=
   mem_lightCone_of_manhattan_le p q (2 * t) (manhattan_le_of_chebDist_le p q t h)
 
-/-! ## Tight Chebyshev reach — the Game-of-Life speed of light
+/-! ## Portée Chebyshev étroite — la vitesse de la lumière du Jeu de la Vie
 
-The reach theorem below composes the pure metric facts `chebDist_triangle`,
-`chebDist_le_succ_iff`, and `chebDist_le_succ` (now in `Conway.Life.ConeGeometry`)
-with the B3/S23 `evolve` semantics, so it stays in this module (which imports
-both `ConeGeometry` and `HashlifeCorrectness`).
+Le théorème d'atteinte ci-dessous compose les faits métriques purs
+`chebDist_triangle`, `chebDist_le_succ_iff` et `chebDist_le_succ` (désormais
+dans `Conway.Life.ConeGeometry`) avec la sémantique `evolve` B3/S23, il reste
+donc dans ce module (qui importe à la fois `ConeGeometry` et
+`HashlifeCorrectness`).
 
-The fundamental TIGHT locality result, stated as a *reach* theorem: after `t`
-generations, a cell alive at `evolve t g` lies within Chebyshev distance `t` of
-some initially alive cell of `g`. This is the speed-of-light bound — strictly
-sharper than the Manhattan-`2*t` light cone demanded by `step_light_cone`. It
-wires the set-level growth (`chebDist_le_succ_iff`, one Moore shell adds
-Chebyshev-1) into the B3/S23 semantics: `candidates g = g ++ g.flatMap
-mooreNeighbors` is exactly the Chebyshev-1 dilation of the alive set, so each
-`step` grows the reachable region by exactly one Moore shell. Epic #3846, N2
-step 2. Sorry-free. -/
+Le résultat fondamental de localité ÉTROITE, énoncé comme théorème d'*atteinte*
+: après `t` générations, une cellule vivante à `evolve t g` se trouve à distance
+Chebyshev `≤ t` d'une cellule initialement vivante de `g`. C'est la borne de
+vitesse de la lumière — strictement plus fine que le cône de lumière
+Manhattan-`2*t` exigé par `step_light_cone`. Il câble la croissance au niveau
+ensemble (`chebDist_le_succ_iff`, une coque de Moore ajoute Chebyshev-1) dans la
+sémantique B3/S23 : `candidates g = g ++ g.flatMap mooreNeighbors` est exactement
+la dilation Chebyshev-1 de l'ensemble vivant, donc chaque `step` fait croître la
+région atteignable d'exactement une coque de Moore. EPIC #3846, N2 étape 2. Sans
+sorry. -/
 
-/-- Bridge between `isAlive` (Boolean membership) and List membership. -/
+/-- Pont entre `isAlive` (appartenance booléenne) et l'appartenance comme List. -/
 theorem isAlive_true_iff_mem (g : Grid) (p : Int × Int) :
     isAlive g p = true ↔ p ∈ g := by
   rw [isAlive]; exact List.elem_iff
 
-/-- A Moore neighbor of `p` is at Chebyshev distance at most 1 — the tight
-    bound (vs `manhattan_moore_le_two`'s loose `≤ 2`). -/
+/-- Un voisin de Moore de `p` est à distance Chebyshev au plus 1 — la borne
+    étroite (vs le `≤ 2` lâche de `manhattan_moore_le_two`). -/
 theorem chebDist_le_one_of_moore (p q : Int × Int)
     (hq : q ∈ mooreNeighbors p) : chebDist p q ≤ 1 := by
   unfold chebDist mooreNeighbors at *
@@ -330,20 +339,21 @@ theorem chebDist_le_one_of_moore (p q : Int × Int)
     rw [hd1, hd2]; decide
   · simp at h
 
-/-- **Tight GoL speed of light (reach form).** If `q` is alive after `t`
-    generations of evolution from `g`, then `q` is within Chebyshev radius `t`
-    of some initially-alive cell of `g`.
+/-- **Vitesse de la lumière GoL étroite (forme atteinte).** Si `q` est vivante
+    après `t` générations d'évolution depuis `g`, alors `q` est à distance
+    Chebyshev `≤ t` d'une cellule initialement vivante de `g`.
 
-    Proof by induction on `t`:
-    - Base `t = 0`: `evolve 0 g = g`, witness `p = q`, `chebDist q q = 0`.
-    - Step `t = n + 1`: `isAlive (evolve (n+1) g) q = aliveNext (evolve n g) q`
-      (by `isAlive_step_eq_aliveNext`), and `aliveNext … = true` puts
-      `q ∈ candidates (evolve n g)`. Membership splits (`List.mem_append`) into:
-      (a) `q ∈ evolve n g` — `q` alive at gen `n`, so the IH gives a witness
-      within `chebDist ≤ n ≤ n+1`; or (b) `q ∈ (evolve n g).flatMap mooreNeighbors`
-      — some `r` alive at gen `n` with `q ∈ mooreNeighbors r`, so the IH gives a
-      witness within `chebDist p r ≤ n`, `chebDist_le_one_of_moore` gives
-      `chebDist r q ≤ 1`, and the triangle inequality yields `≤ n+1`. -/
+    Preuve par récurrence sur `t` :
+    - Base `t = 0` : `evolve 0 g = g`, témoin `p = q`, `chebDist q q = 0`.
+    - Pas `t = n + 1` : `isAlive (evolve (n+1) g) q = aliveNext (evolve n g) q`
+      (par `isAlive_step_eq_aliveNext`), et `aliveNext … = true` place
+      `q ∈ candidates (evolve n g)`. L'appartenance se scinde (`List.mem_append`)
+      en : (a) `q ∈ evolve n g` — `q` vivante à la génération `n`, donc l'HR
+      donne un témoin à `chebDist ≤ n ≤ n+1` ; ou (b)
+      `q ∈ (evolve n g).flatMap mooreNeighbors` — un `r` vivant à la génération
+      `n` avec `q ∈ mooreNeighbors r`, donc l'HR donne un témoin à
+      `chebDist p r ≤ n`, `chebDist_le_one_of_moore` donne `chebDist r q ≤ 1`,
+      et l'inégalité triangulaire donne `≤ n+1`. -/
 theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
     (h_alive : isAlive (evolve t g) q = true) :
     ∃ p, isAlive g p = true ∧ chebDist p q ≤ t := by
@@ -359,12 +369,12 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
     unfold candidates at hmem
     rw [List.mem_append] at hmem
     rcases hmem with h_self | h_nbr
-    · -- (a) q alive at gen n: IH directly
+    · -- (a) q vivante à la génération n : HR directement
       have hq : isAlive (evolve n g) q = true :=
         (isAlive_true_iff_mem (evolve n g) q).mpr h_self
       obtain ⟨p, hp, hcheb⟩ := ih q hq
       exact ⟨p, hp, hcheb.trans (Nat.le_succ n)⟩
-    · -- (b) q is a Moore neighbor of some r alive at gen n
+    · -- (b) q est un voisin de Moore d'un r vivant à la génération n
       rw [List.mem_flatMap] at h_nbr
       obtain ⟨r, hr_mem, hrq⟩ := h_nbr
       have hr : isAlive (evolve n g) r = true :=
@@ -374,44 +384,48 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
-/-! ## N2 step 3 capstone: tight Chebyshev reach ⊆ padCenter2 margin
+/-! ## Couronnement N2 étape 3 : portée Chebyshev étroite ⊆ marge padCenter2
 
-Composing the tight reach theorem (`evolve_reach_chebyshev`, one Moore shell
-per generation) with the margin-arithmetic lemma
-(`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`, proven in
-`HashlifeCorrectness` L1102) yields the full sorry-free bridge named by ai-01's
-N2 greenlight: for a level-`k ≥ 1` MacroCell, a `2^k`-generation jump (the
-Hashlife `jumpSize k = 2^k`) reaches only cells within the per-side `padCenter2`
-margin `3·2^(k-1)` of some initially-alive cell. The **tight** Chebyshev-`2^k`
-reach — not the loose Manhattan-`2^(k+1)` cone — is what makes the `2^k` margin
-sufficient with 50% headroom (the diagonal of the reach is `2^k`, the margin is
+La composition du théorème d'atteinte étroit (`evolve_reach_chebyshev`, une
+coque de Moore par génération) avec le lemme d'arithmétique de marge
+(`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`, prouvé dans
+`HashlifeCorrectness` L1102) produit le pont complet sans sorry nommé par le
+greenlight N2 d'ai-01 : pour un MacroCell de niveau `k ≥ 1`, un saut de `2^k`
+générations (le `jumpSize k = 2^k` de Hashlife) n'atteint que des cellules dans
+la marge par côté `padCenter2` `3·2^(k-1)` d'une cellule initialement vivante.
+C'est la portée Chebyshev-`2^k` **étroite** — pas le cône Manhattan-`2^(k+1)`
+lâche — qui rend la marge `2^k` suffisante avec 50 % de marge restante (la
+diagonale de la portée est `2^k`, la marge est
 `3·2^(k-1) = 1.5·2^k`).
 
-Evaluation of the three MacroCell-layer ingredients ai-01 flagged (these govern
-the eventual wire into `p5_large_n_jump`, which remains P4-gated and out of
-scope here):
-- `padCenter2 c = padToLevelPlus1 (padToLevelPlus1 c)` (`Hashlife.lean` L260):
-  lifts a level-`k` cell into a level-`(k+2)` frame of side `2^(k+2) = 4·2^k`,
-  giving per-side margin `(4·2^k − 2^k)/2 = 3·2^(k-1)`.
-- `level_padCenter2` (`HashlifeCorrectness` L1638): `(padCenter2 c).level =
-  c.level + 2` — the level companion certifying the frame lift.
-- `hashlifeResult_central_correct` (`HashlifeCorrectness` L2753): the P4
-  decompose-compose theorem; its `succ` arm carries one of the two residual
-  sorries (L2734), so the MacroCell offset-wire is blocked on the P4 inductive
-  step (`p4_succ_membership`).
+Évaluation des trois ingrédients de couche MacroCell signalés par ai-01 (ils
+gouvernent le câblage éventuel dans `p5_large_n_jump`, qui reste gated-P4 et
+hors scope ici) :
+- `padCenter2 c = padToLevelPlus1 (padToLevelPlus1 c)` (`Hashlife.lean` L260) :
+  remonte une cellule de niveau `k` dans un cadre de niveau `(k+2)` de côté
+  `2^(k+2) = 4·2^k`, donnant une marge par côté
+  `(4·2^k − 2^k)/2 = 3·2^(k-1)`.
+- `level_padCenter2` (`HashlifeCorrectness` L1638) :
+  `(padCenter2 c).level = c.level + 2` — le compagnon de niveau certifiant le
+  lift de cadre.
+- `hashlifeResult_central_correct` (`HashlifeCorrectness` L2753) : le théorème
+  P4 de décompose-compose ; son bras `succ` porte l'un des deux sorries
+  résiduels (L2734), donc le câblage d'offset MacroCell est bloqué sur l'étape
+  inductive P4 (`p4_succ_membership`).
 
-This capstone is the **Grid-level / set-distance half** of the bridge — proved
-from already-sorry-free ingredients, so it is itself sorry-free and additive
-(anti-regression §D: the two residual sorries of `HashlifeCorrectness` are
-untouched). EPIC #3846, N2 step 3. -/
+Ce couronnement est la **moitié Grid-level / distance-ensembliste** du pont —
+prouvé à partir d'ingrédients déjà sans sorry, il est donc lui-même sans sorry
+et additif (anti-régression §D : les deux sorries résiduels de
+`HashlifeCorrectness` sont intouchés). EPIC #3846, N2 étape 3. -/
 
-/-- **Reach ⊆ padCenter2 margin** (N2 step 3, sorry-free capstone).
-    After `2^k` generations of evolution, every alive cell `q` has each
-    coordinate within the `padCenter2` per-side margin `3·2^(k-1)` of some
-    initially-alive cell `p`. This composes the tight Chebyshev reach
-    (`evolve_reach_chebyshev`, giving `chebDist p q ≤ 2^k`), the per-coordinate
-    bound (`coord_bound_of_chebDist_le`, giving `|q.i − p.i| ≤ 2^k`), and the
-    margin arithmetic (`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`). -/
+/-- **Atteinte ⊆ marge padCenter2** (N2 étape 3, couronnement sans sorry).
+    Après `2^k` générations d'évolution, toute cellule vivante `q` a chaque
+    coordonnée dans la marge par côté `padCenter2` `3·2^(k-1)` d'une cellule
+    initialement vivante `p`. Ceci compose la portée Chebyshev étroite
+    (`evolve_reach_chebyshev`, donnant `chebDist p q ≤ 2^k`), la borne par
+    coordonnée (`coord_bound_of_chebDist_le`, donnant `|q.i − p.i| ≤ 2^k`), et
+    l'arithmétique de marge (`padCenter2_margin_ge_jumpReach`,
+    `2^k ≤ 3·2^(k-1)`). -/
 theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
     (g : Grid) (q : Int × Int)
     (h_alive : isAlive (evolve ((2 : Nat)^k) g) q = true) :
@@ -424,12 +438,13 @@ theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
   have hmargin := padCenter2_margin_ge_jumpReach k hk
   exact ⟨p, hp, hb1.trans hmargin, hb2.trans hmargin⟩
 
-/-! ## W3 tight cone-in-domain — migrated to `Conway.Life.ConeGeometry`
+/-! ## W3 cône étroit dans le domaine — migré vers `Conway.Life.ConeGeometry`
 
-The tight Chebyshev cone-in-domain lemma `window_cheb_cone_in_domain` (W3,
-EPIC #3846) was extracted to `Conway.Life.ConeGeometry` — the Mathlib-only base
-module — as the dependency-cycle break that lets `HashlifeCorrectness` reach it
-for the P5 `p5_large_n_jump` wire without the circular reverse-import this module
-would otherwise impose (it imports `HashlifeCorrectness`). It is in scope here
-unchanged via the `import Conway.Life.ConeGeometry` above. See that module for
-the statement, proof, and the architectural wiring note. -/
+Le lemme de cône étroit dans le domaine `window_cheb_cone_in_domain` (W3,
+EPIC #3846) a été extrait vers `Conway.Life.ConeGeometry` — le module de base
+Mathlib uniquement — comme break de cycle de dépendances qui permet à
+`HashlifeCorrectness` de l'atteindre pour le câblage P5 `p5_large_n_jump` sans
+l'import inverse circulaire que ce module imposerait sinon (il importe
+`HashlifeCorrectness`). Il est dans le scope ici inchangé via l'`import
+Conway.Life.ConeGeometry` ci-dessus. Voir ce module pour l'énoncé, la preuve, et
+la note de câblage architectural. -/
