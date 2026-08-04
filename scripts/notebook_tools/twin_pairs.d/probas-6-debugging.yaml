@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-30"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 1d7a0e7864daeec3c2901d72c47f7441cfae3ce7
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 535e6267fcec7a6b286eec8dbacfd5d6a22276be
     csharp_sha: ac88e9ac8df3d3e4459371c22015e42b68ef9def
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
