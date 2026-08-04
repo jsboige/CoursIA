@@ -91,3 +91,39 @@ Commit UNIQUEMENT les notebooks dont la source a change (`git diff <nb> | grep -
 
 Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant (cf vague SW-13 #7751→#7872→#7944→#8343, 4 PRs pour colmater des claims fabriquées en série). Voir aussi [sota-not-workaround.md](sota-not-workaround.md) (axe-2 SOTA), [secrets-hygiene.md](secrets-hygiene.md) règle 6 (jamais hand-editer un output — corriger la cause + re-executer).
 
+## Valeurs quantitatives en prose : retirer plutôt que ré-épingler (rule C.5)
+
+**Mandat user #9377** — « les données quantitatives doivent être tenues par le CI, pas dans la prose manuelle ». Appliqué aux README (comptes de notebooks #9377, tailles #9425, comptes de cellules #9432), il vaut **à l'intérieur des notebooks**, où la même pathologie rouvre un ticket #8052 à chaque re-exécution.
+
+**Toutes les valeurs ne sont pas équivalentes** — c'est ce qui rend la règle applicable plutôt que dogmatique :
+
+| Classe | Exemple | Décision |
+|--------|---------|----------|
+| **Structurel** | `2^225` combinaisons → speedup `~2.8e24x` ; nombre de contraintes ; complexité | **GARDER** — stable d'une machine à l'autre, c'est du contenu pédagogique réel |
+| **Machine-dépendant** | temps absolus (`~21 s`, `24-127 ms`) | **RETIRER** — renvoi à la cellule de mesure, ou ordre de grandeur |
+| **Env-dépendant (observé)** | table de versions `NumPy 2.4.2` écrite à la main | **RETIRER** quand une cellule imprime déjà la version (source unique = l'output) |
+| **Env-dépendant (exigé)** | `Python 3.10+`, `.NET 9.0` | **GARDER** — c'est une **décision de projet**, pas une observation ; ne dérive pas |
+| **Stochastique seedé** | fitness d'un GA à `seed=42` | **GARDER** — reproductible, donc stable |
+| **Stochastique non seedé** | utilité CFR après une itération unique | **RETIRER** ou **seeder** — jamais citer une valeur d'instance |
+
+### L'arbitrage §D.5 ↔ #9377 : retirer gagne
+
+Les deux règles se croisent sur toute PR « alignement doc-honesty » et semblent se contredire :
+
+- **§D.5** ([pr-review-discipline.md](pr-review-discipline.md)) gouverne le **ré-épinglage** : si l'on remplace un nombre volatil par un autre nombre, celui-ci doit venir d'une **re-exécution fraîche**, jamais d'un alignement à la main sur une vieille sortie.
+- **#9377** dit de **préférer retirer** l'épingle.
+
+**Quand les deux s'appliquent, retirer gagne** — parce que retirer sort définitivement la valeur du domaine de §D.5. Une prose qui ne cite plus de nombre volatil ne peut plus dériver, donc ne peut plus déclencher un #8052 au prochain passage kernel. C'est la seule des deux issues qui **ferme** la boucle au lieu de la déplacer d'un cran.
+
+### Reformuler ne doit pas maquiller la contradiction
+
+Retirer la valeur ne veut pas dire écrire une affirmation théorique qui *a l'air* fausse à côté d'un output qui la contredit. Si la sortie committée affiche `-0.033` et que la prose devient « converge vers `-1/18` », le lecteur voit toujours l'écart.
+
+La prose honnête dit ce qui est réellement vrai : la valeur théorique **et** le fait que l'instance affichée s'en écarte, avec la raison (« une exécution unique de CFR fluctue ; la convergence est en espérance sur les itérations »). Le contenu pédagogique, c'est la loi **plus** l'écart, pas la loi seule.
+
+### Critère de relecture
+
+Une seule question sur la prose modifiée : **cite-t-elle encore un nombre qui rebougera au prochain passage kernel ?** Si oui, la PR ré-épingle et §D.5 s'applique dans toute sa rigueur (re-exécution fraîche exigée). Si non, la boucle est fermée.
+
+See #9377, #8052.
+
