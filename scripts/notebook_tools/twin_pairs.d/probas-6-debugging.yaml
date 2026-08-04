@@ -3,11 +3,15 @@
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
-    csharp_sha: ac88e9ac8df3d3e4459371c22015e42b68ef9def
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
+      csharp_sha: ac88e9ac8df3d3e4459371c22015e42b68ef9def
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
+      csharp_sha: 7a620e4f99806eb368c890e2ada2e9f8c83a0b2e
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

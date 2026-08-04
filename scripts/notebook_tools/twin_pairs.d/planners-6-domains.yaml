@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: ff148663a6bc7f6aa902861ac81c210ac343c22f
-    csharp_sha: a2cea4c4062bedc965149e009e8d5e1533194a53
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: ff148663a6bc7f6aa902861ac81c210ac343c22f
+      csharp_sha: a2cea4c4062bedc965149e009e8d5e1533194a53
   known_differences:
     - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
     - "Python : modelisation unified-planning des domaines canoniques. C# : from-scratch BCL .NET (meme domaines de reference)."

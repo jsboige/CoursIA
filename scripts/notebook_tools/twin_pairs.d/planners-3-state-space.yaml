@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-01"
-    by: myia-po-2026:CoursIA 2026-08-01
-    python_sha: 97ba9b763f12116f3ffcf85b8e71ffb1bce6082a
-    csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
+  audits:
+    - date: "2026-08-01"
+      by: myia-po-2026:CoursIA 2026-08-01
+      python_sha: 97ba9b763f12116f3ffcf85b8e71ffb1bce6082a
+      csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
     - "Python : BFS/DFS/Greedy/A* via networkx + matplotlib heatmap terrain. C# : from-scratch BFS/DFS/Greedy/A* BCL .NET 9 + PriorityQueue (meme algorithme, implementation idiomatic)."

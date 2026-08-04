@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-07-30"
-    by: myia-po-2023:CoursIA-2
-    python_sha: cdf6f4ac64d6577faf16ce163cdac5a11b3764ed
-    csharp_sha: a65d1739c559cff2f65d1e24d679a10e8637f0da
+  audits:
+    - date: "2026-07-30"
+      by: myia-po-2023:CoursIA-2
+      python_sha: cdf6f4ac64d6577faf16ce163cdac5a11b3764ed
+      csharp_sha: a65d1739c559cff2f65d1e24d679a10e8637f0da
   known_differences:
     - "Socle pedagogique commun : optimisation par essaim de particules (Particle Swarm Optimization) appliquee au Sudoku -- population de particules, vecteurs position/vitesse, update via best personnel (pbest) et global (gbest), fonction de fitness (conflits Sudoku). Meme algorithme, meme cas d'application (optimisation stochastique d'une grille)."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 15 cellules code) implemente le PSO avec visualisation (convergence de la fitness, trajectoires de l'essaim) ; le C# (pur System.* stdlib, 0 NuGet, 13 cellules code) implemente le PSO from scratch sans visualisation (sorties texte). Meme algorithme, deux angles : numerique+visualisation cote Python vs implementation pedagogique cote C#."

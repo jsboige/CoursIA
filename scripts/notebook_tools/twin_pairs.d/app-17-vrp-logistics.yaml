@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
-    csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
+      csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
   known_differences:
     - "Socle pedagogique commun : VRP / Routing logistique (CSP + OR-Tools routing, distances) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools routing + math.sqrt distances ; C# = BCL pure (System.*), 0 NuGet."
