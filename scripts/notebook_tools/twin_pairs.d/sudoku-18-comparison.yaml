@@ -1,0 +1,14 @@
+- name: "Sudoku-18 Comparison"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb
+  parity_level: semantic
+  last_audit:
+    date: "2026-08-03"
+    by: myia-po-2023:CoursIA
+    python_sha: 36401a556e3553e4dd2a7fc52d4222251f8d6c2e
+    csharp_sha: 7e11e158decc0f844680740fe09cdcfed43a9535
+  known_differences:
+    - "Socle pedagogique commun : comparaison synthese de TOUS les solveurs de la serie Sudoku (backtracking, dancing links, genetic, OR-Tools, Z3, BDD, probabiliste), meme concept (tableau de benchmark croise : temps de resolution / robustesse / complexite), meme arc conclusif (Fin de serie)."
+    - "Parite structurelle forte : Python et C# ont exactement la meme structure (25 cellules code / 43 markdown chacun), memes en-tetes de navigation ('Fin de serie'), memes solveurs compares. Les deux cotes instrumentent les memes familles de solveurs."
+    - "Idiomes framework : chaque cote invoque les solveurs disponibles dans son ecosysteme (Python = ortools/z3/numpy/stdlib ; C# = Infer.NET/Choco/Z3/BDD/stdlib). La comparaison croisee est le livrable pedagogique commun."
