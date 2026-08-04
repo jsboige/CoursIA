@@ -209,17 +209,17 @@ theorem shapley_null_player (G : TUGame_en N) (i : N)
     ring
   simp [hmc]
 
-/-- Valeur de Shapley pour les jeux d'unanimité :
-    φᵢ(uₜ) = 1/|T| si i ∈ T, sinon 0
-    SCHÉMA DE PREUVE :
-    Cas i ∉ T : i est un joueur nul dans u_T, donc φᵢ = 0 par `shapley_null_player`.
-      Preuve de joueur nul : v(S∪{i}) = (si T⊆S∪{i} alors 1 sinon 0).
-      Puisque i ∉ T, T⊆S∪{i} ↔ T⊆S. Donc v(S∪{i}) = v(S).
-    Cas i ∈ T : par symétrie (`shapley_symmetric`), tous les j ∈ T ont la même valeur.
-      Par efficience (`shapley_efficient`), la somme vaut v(univ) = 1.
-      Donc chacun obtient 1/|T|.
-      Argument direct : `marginalContribution i S = 1` ssi T\{i} ⊆ S et i ∉ S.
-      Comptage de tels S de taille s : C(n-|T|-1+1, s-|T|+1) ... donne 1/|T|. -/
+/-- Shapley value for unanimity games:
+    φᵢ(uₜ) = 1/|T| if i ∈ T, otherwise 0
+    PROOF SKETCH:
+    Case i ∉ T: i is a null player in u_T, hence φᵢ = 0 by `shapley_null_player`.
+      Null-player proof: v(S∪{i}) = (if T⊆S∪{i} then 1 else 0).
+      Since i ∉ T, T⊆S∪{i} ↔ T⊆S. Hence v(S∪{i}) = v(S).
+    Case i ∈ T: by symmetry (`shapley_symmetric`), all j ∈ T have the same value.
+      By efficiency (`shapley_efficient`), the sum equals v(univ) = 1.
+      Hence each gets 1/|T|.
+      Direct argument: `marginalContribution i S = 1` iff T\{i} ⊆ S and i ∉ S.
+      Counting such S of size s: C(n-|T|-1+1, s-|T|+1) ... yields 1/|T|. -/
 
 private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
     (s + 1 : ℝ) * shapleyCoef n s = (n - s - 1 : ℝ) * shapleyCoef n (s + 1) := by
@@ -231,7 +231,7 @@ private theorem shapleyCoef_shift (n s : ℕ) (hs : s + 2 ≤ n) :
   have hm : n - s - 1 = (n - s - 2) + 1 := by omega
   rw [hm, Nat.factorial_succ (n - s - 2)]
   simp only [Nat.cast_mul, Nat.cast_add, Nat.cast_one]
-  -- Convertir ↑(n - s - 2) en ↑n - ↑s - 2 via les lemmes de cast pour la soustraction dans ℕ
+  -- Convert ↑(n - s - 2) to ↑n - ↑s - 2 via cast lemmas for subtraction in ℕ
   rw [Nat.cast_sub (by omega : (2 : ℕ) ≤ n - s)]
   rw [Nat.cast_sub (by omega : (s : ℕ) ≤ n)]
   ring
@@ -241,7 +241,7 @@ private theorem shapleyCoef_top (n : ℕ) (hn : 0 < n) :
   unfold shapleyCoef
   have h1 : n - (n - 1) - 1 = 0 := by omega
   simp only [h1, Nat.factorial_zero, Nat.cast_one, mul_one]
-  -- Objectif : ↑n * (↑(n-1).factorial / ↑n.factorial) = 1
+  -- Goal: ↑n * (↑(n-1).factorial / ↑n.factorial) = 1
   have hfact : (n : ℝ) * ↑(Nat.factorial (n - 1)) = ↑(Nat.factorial n) := by
     have hsucc : n = (n - 1) + 1 := by omega
     rw [hsucc, Nat.factorial_succ]
@@ -252,46 +252,46 @@ private theorem pos_term_eq (G : TUGame_en N) :
     (∑ S, shapleyCoef (Fintype.card N) S.card * ∑ i ∈ Finset.univ \ S, G.v (S ∪ {i})) =
     (∑ T, (T.card : ℝ) * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T) := by
   classical
-  -- Étape 1 : Faire passer le coefficient dans la somme interne à gauche
+  -- Step 1: Move the coefficient inside the inner sum on the left
   simp only [Finset.mul_sum]
-  -- Étape 2 : Prouver ponctuellement : ↑|T| * c * v = ∑ j ∈ T, c * v
+  -- Step 2: Prove pointwise: ↑|T| * c * v = ∑ j ∈ T, c * v
   have hT (T : Finset N) :
       (T.card : ℝ) * shapleyCoef (Fintype.card N) (T.card - 1) * G.v T =
       ∑ j ∈ (T : Finset N), shapleyCoef (Fintype.card N) (T.card - 1) * G.v T := by
     rw [mul_assoc, ← nsmul_eq_mul, ← Finset.sum_const]
-  -- Étape 3 : Réécrire le membre de droite via hT ponctuellement
+  -- Step 3: Rewrite the right-hand side pointwise via hT
   rw [Finset.sum_congr rfl (fun T _ => hT T)]
-  -- Étape 4 : Aplatir les deux côtés en sommes sigma, puis appliquer la bijection
-  -- MGD : ∑ x, ∑ i ∈ univ\x, f(x,i) → ∑ p ∈ univ.sigma(fun x => univ\x), f(p.1,p.2)
+  -- Step 4: Flatten both sides into sigma sums, then apply the bijection
+  -- LHS: ∑ x, ∑ i ∈ univ\x, f(x,i) → ∑ p ∈ univ.sigma(fun x => univ\x), f(p.1,p.2)
   rw [Finset.sum_sigma']
-  -- MHD : ∑ T, ∑ j ∈ T, g(T,j) → ∑ p ∈ univ.sigma(fun T => T), g(p.1,p.2)
+  -- RHS: ∑ T, ∑ j ∈ T, g(T,j) → ∑ p ∈ univ.sigma(fun T => T), g(p.1,p.2)
   rw [Finset.sum_sigma']
-  -- Maintenant bijection sur les types sigma : (S, i) avec i∉S ↦ (S∪{i}, i)
+  -- Now bijection on the sigma types: (S, i) with i∉S ↦ (S∪{i}, i)
   -- f : (S, i) ↦ (S∪{i}, i), g : (T, j) ↦ (T\{j}, j)
   refine Finset.sum_bij' (fun p _ => ⟨p.1 ∪ {p.2}, p.2⟩)
       (fun p _ => ⟨p.1 \ {p.2}, p.2⟩) ?_ ?_ ?_ ?_ ?_
-  -- f dans le range : p.2 ∈ p.1 ∪ {p.2}
+  -- f lands in range: p.2 ∈ p.1 ∪ {p.2}
   · intro p hp
     simp only [Finset.mem_sigma] at hp ⊢
     exact ⟨Finset.mem_univ _, by
       rw [Finset.union_comm]
       exact Finset.mem_insert_self _ _⟩
-  -- g dans le range : p.2 ∈ univ \ (p.1 \ {p.2}) (i.e. p.2 ∉ p.1 \ {p.2})
+  -- g lands in range: p.2 ∈ univ \ (p.1 \ {p.2}) (i.e. p.2 ∉ p.1 \ {p.2})
   · intro p hp
     simp only [Finset.mem_sigma] at hp ⊢
     exact ⟨Finset.mem_univ _, Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, by
       intro h
       exact Finset.notMem_sdiff_of_mem_right (Finset.mem_singleton_self _) h⟩⟩
-  -- g∘f = id : (S∪{i})\{i} = S quand i∉S
+  -- g∘f = id: (S∪{i})\{i} = S when i∉S
   · intro p hp
     simp only [Finset.mem_sigma] at hp
     have hni : p.2 ∉ p.1 := (Finset.mem_sdiff.mp hp.2).2
     simp only
-    -- but : ⟨(p.fst ∪ {p.snd}) \ {p.snd}, p.snd⟩ = p
+    -- goal: ⟨(p.fst ∪ {p.snd}) \ {p.snd}, p.snd⟩ = p
     ext1
     · exact Finset.union_sdiff_cancel_right (Finset.disjoint_singleton_right.mpr hni)
     · rfl
-  -- f∘g = id : (T\{j})∪{j} = T quand j∈T
+  -- f∘g = id: (T\{j})∪{j} = T when j∈T
   · intro p hp
     simp only [Finset.mem_sigma] at hp
     simp only
@@ -299,7 +299,7 @@ private theorem pos_term_eq (G : TUGame_en N) :
     · rw [Finset.union_comm, ← Finset.insert_eq,
         (Finset.insert_sdiff_self_of_mem hp.2)]
     · rfl
-  -- valeurs cohérentes : c(|S|) * v(S∪{i}) = c(|S∪{i}|-1) * v(S∪{i})
+  -- consistent values: c(|S|) * v(S∪{i}) = c(|S∪{i}|-1) * v(S∪{i})
   · intro p hp
     simp only [Finset.mem_sigma] at hp
     have hni : p.2 ∉ p.1 := (Finset.mem_sdiff.mp hp.2).2
@@ -308,23 +308,23 @@ private theorem pos_term_eq (G : TUGame_en N) :
         Finset.card_insert_of_notMem hni, Nat.add_sub_cancel]
     simp only [this]
 
-/-- La valeur de Shapley vérifie l'efficience.
-    SCHÉMA DE PREUVE :
+/-- The Shapley value satisfies efficiency.
+    PROOF SKETCH:
     ∑ᵢ φᵢ(G) = ∑ᵢ ∑_{S:i∉S} c(|S|,n) · [v(S∪{i}) - v(S)]
-    On échange l'ordre des sommations :
+    Swap the order of summation:
     = ∑_S ∑_{i∉S} c(|S|,n) · [v(S∪{i}) - v(S)]
     = ∑_S c(|S|,n) · ∑_{i∉S} [v(S∪{i}) - v(S)]
-    Chaque i ∉ S apporte sa valeur marginale à S.
-    Télescopage : ∑_{i∉S} v(S∪{i}) - (n-|S|)·v(S)
-    Après réarrangement sur tous les S, les termes s'annulent pour laisser
+    Each i ∉ S contributes its marginal value to S.
+    Telescoping: ∑_{i∉S} v(S∪{i}) - (n-|S|)·v(S)
+    After rearranging over all S, the terms cancel out, leaving
     v(univ) - v(∅) = v(univ).
-    Identité clé : chaque v(S) apparaît comme +v(S) avec coefficient c(|S|-1,n)
-    et comme -v(S) avec coefficient c(|S|,n)·(n-|S|), qui s'annulent. -/
+    Key identity: each v(S) appears as +v(S) with coefficient c(|S|-1,n)
+    and as -v(S) with coefficient c(|S|,n)·(n-|S|), which cancel. -/
 theorem shapley_efficient (G : TUGame_en N) :
     ∑ i : N, shapleyValue G i = G.v Finset.univ := by
   classical
   unfold shapleyValue TUGame_en.marginalContribution
-  -- Échange : ∑ᵢ ∑_{S:i∉S} f(i,S) = ∑_S ∑_{i:i∉S} f(i,S)
+  -- Swap: ∑ᵢ ∑_{S:i∉S} f(i,S) = ∑_S ∑_{i:i∉S} f(i,S)
   have hswap :
     (∑ i ∈ Finset.univ, ∑ S ∈ Finset.univ.filter (fun S => i ∉ S),
         shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) =
@@ -332,21 +332,21 @@ theorem shapley_efficient (G : TUGame_en N) :
         shapleyCoef (Fintype.card N) S.card * (G.v (S ∪ {i}) - G.v S)) :=
     Finset.sum_comm' (fun i S => by simp)
   rw [hswap]
-  -- Factoriser shapleyCoef hors de la somme interne
+  -- Factor shapleyCoef out of the inner sum
   simp only [← Finset.mul_sum]
-  -- Séparer la soustraction dans les sommes internes : ∑ (a - b) = ∑ a - ∑ b
+  -- Separate the subtraction in the inner sums: ∑ (a - b) = ∑ a - ∑ b
   simp only [Finset.sum_sub_distrib]
-  -- Distribuer mul_sub à l'intérieur de la somme
+  -- Distribute mul_sub inside the sum
   simp only [mul_sub]
   rw [Finset.sum_sub_distrib]
-  -- Simplifier le terme négatif : v(x) constant en x_1, somme = (n - |x|) • v(x)
+  -- Simplify the negative term: v(x) constant in x_1, sum = (n - |x|) • v(x)
   simp only [Finset.sum_const, nsmul_eq_mul]
   simp only [← Finset.sdiff_eq_filter, Finset.card_univ_diff]
-  -- Réindexer le terme positif : ∑ S ∑_{i∉S} c(|S|)*v(S∪{i}) = ∑ T, |T|*c(|T|-1)*v(T)
+  -- Reindex the positive term: ∑ S ∑_{i∉S} c(|S|)*v(S∪{i}) = ∑ T, |T|*c(|T|-1)*v(T)
   rw [pos_term_eq]
-  -- Combiner en une seule somme de différences
+  -- Combine into a single sum of differences
   rw [← Finset.sum_sub_distrib]
-  -- Isoler le terme univ : tous les T ≠ univ ont un coefficient nul (shapleyCoef_shift)
+  -- Isolate the univ term: every T ≠ univ has a zero coefficient (shapleyCoef_shift)
   have : ∑ x ∈ Finset.univ,
       (↑x.card * shapleyCoef (Fintype.card N) (x.card - 1) * G.v x -
         shapleyCoef (Fintype.card N) x.card * (↑(Fintype.card N - x.card) * G.v x)) =
@@ -361,10 +361,10 @@ theorem shapley_efficient (G : TUGame_en N) :
         simp only [Finset.card_univ] at hcard
         rw [sub_eq_zero]
         by_cases hT0 : T.card = 0
-        · -- T = ∅ : les deux termes s'annulent car v(∅) = 0
+        · -- T = ∅: both terms cancel since v(∅) = 0
           have : T = ∅ := Finset.card_eq_zero.mp hT0
           simp [this, G.empty_zero]
-        · -- T ≠ ∅ : le décalage de coefficient s'applique
+        · -- T ≠ ∅: the coefficient shift applies
           have hTcard : 1 ≤ T.card := Nat.pos_of_ne_zero hT0
           have hshift := shapleyCoef_shift (Fintype.card N) (T.card - 1) (by omega)
           have h1 : (↑(T.card - 1) + 1 : ℝ) = ↑T.card := by
@@ -379,49 +379,49 @@ theorem shapley_efficient (G : TUGame_en N) :
           ring)
       (fun h => (h (Finset.mem_univ _)).elim)
   rw [this]
-  -- Simplifier : n - card univ = 0, donc le terme négatif s'annule
+  -- Simplify: n - card univ = 0, so the negative term cancels
   simp only [Finset.card_univ, tsub_self, Nat.cast_zero]
-  -- Terme positif : n * c(n,n-1) * v(univ) = v(univ) car n * c(n,n-1) = 1
+  -- Positive term: n * c(n,n-1) * v(univ) = v(univ) since n * c(n,n-1) = 1
   by_cases hN : IsEmpty N
-  · -- Cas vide : les deux côtés se réduisent à 0
+  · -- Empty case: both sides reduce to 0
     simp [G.empty_zero]
-  · -- Cas non vide : shapleyCoef_top s'applique
+  · -- Nonempty case: shapleyCoef_top applies
     haveI : Nonempty N := not_isEmpty_iff.mp hN
     have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨Classical.arbitrary N⟩
     rw [shapleyCoef_top (Fintype.card N) hn, one_mul]
     simp only [zero_mul, mul_zero, sub_zero]
 
-/-- La valeur de Shapley vérifie la symétrie.
-    SCHÉMA DE PREUVE (bijection par échange) :
-    Définir f : {S | i ∉ S} → {T | j ∉ T} par :
-    - f(S) = S                  si j ∉ S (les deux i,j absents)
-    - f(S) = (S\{j})∪{i}        si j ∈ S (échanger j avec i)
+/-- The Shapley value satisfies symmetry.
+    PROOF SKETCH (swap bijection):
+    Define f : {S | i ∉ S} → {T | j ∉ T} by:
+    - f(S) = S                  if j ∉ S (both i, j absent)
+    - f(S) = (S\{j})∪{i}        if j ∈ S (swap j with i)
 
-    Propriétés :
-    (1) |f(S)| = |S|, donc shapleyCoef n |f(S)| = shapleyCoef n |S|
-    (2) v(f(S)∪{j}) - v(f(S)) = v(S∪{i}) - v(S) :
-      - Cas j ∉ S : f(S)=S, marginalContribution j S = v(S∪{j})-v(S) = v(S∪{i})-v(S)
-        (par h avec i,j tous deux ∉ S)
-      - Cas j ∈ S : f(S)=(S\{j})∪{i}, f(S)∪{j}=S∪{i}, et
+    Properties:
+    (1) |f(S)| = |S|, hence shapleyCoef n |f(S)| = shapleyCoef n |S|
+    (2) v(f(S)∪{j}) - v(f(S)) = v(S∪{i}) - v(S):
+      - Case j ∉ S: f(S)=S, marginalContribution j S = v(S∪{j})-v(S) = v(S∪{i})-v(S)
+        (by h with i, j both ∉ S)
+      - Case j ∈ S: f(S)=(S\{j})∪{i}, f(S)∪{j}=S∪{i}, and
         v(f(S)) = v((S\{j})∪{i}) = v((S\{j})∪{j}) = v(S)
-        (par h appliqué à S' = S\{j}, puisque i∉S\{j} et j∉S\{j})
-    (3) f est une bijection (inverse : échanger i↔j)
+        (by h applied to S' = S\{j}, since i∉S\{j} and j∉S\{j})
+    (3) f is a bijection (inverse: swap i↔j)
 
-    Utiliser Finset.sum_bij pour conclure ∑_S g(S) = ∑_T g'(T). -/
+    Use Finset.sum_bij to conclude ∑_S g(S) = ∑_T g'(T). -/
 theorem shapley_symmetric (G : TUGame_en N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     shapleyValue G i = shapleyValue G j := by
   classical
   by_cases heq : i = j
   · subst heq; rfl
-  -- Preuve de bijection d'échange utilisant Finset.sum_bij
-  -- La fonction directe envoie {S | i ∉ S} → {T | j ∉ T} en échangeant j↔i
+  -- Swap-bijection proof using Finset.sum_bij
+  -- The forward map sends {S | i ∉ S} → {T | j ∉ T} by swapping j↔i
   unfold shapleyValue TUGame_en.marginalContribution
   set src := Finset.univ.filter (fun S : Finset N => i ∉ S)
   set tgt := Finset.univ.filter (fun S : Finset N => j ∉ S)
   have hmem_src {S} : S ∈ src ↔ i ∉ S := by simp [src]
   have hmem_tgt {T} : T ∈ tgt ↔ j ∉ T := by simp [tgt]
-  -- Définir les applications directe et inverse séparément pour qu'elles se réduisent correctement
+  -- Define the forward and inverse maps separately so they reduce correctly
   let fwd (S : Finset N) (_ : S ∈ src) : Finset N :=
     if hSj : j ∈ S then (S.erase j) ∪ {i} else S
   let inv (T : Finset N) (_ : T ∈ tgt) : Finset N :=
@@ -518,7 +518,7 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
   classical
   split_ifs with hiT
-  · -- Cas i ∈ T : par symétrie tous les j ∈ T obtiennent la même valeur, par efficience la somme vaut 1
+  · -- Case i ∈ T: by symmetry all j ∈ T get the same value, by efficiency the sum equals 1
     have h : shapleySolution (TUGame_en.unanimityGame T hT) i =
         if i ∈ T then (1 : ℝ) / T.card else 0 :=
       phi_unanimity (φ := shapleySolution)
@@ -526,7 +526,7 @@ theorem shapley_unanimity (T : Finset N) (hT : T.Nonempty) (i : N) :
         (fun G i => shapley_null_player G i) T hT i
     simp only [shapleySolution, if_pos hiT] at h
     exact h
-  · -- Cas i ∉ T : i est un joueur nul dans le jeu d'unanimité T
+  · -- Case i ∉ T: i is a null player in the unanimity game T
     apply shapley_null_player
     intro S hiS
     simp only [TUGame_en.unanimityGame]
@@ -650,9 +650,9 @@ noncomputable def mobiusReconstruction (G : TUGame_en N) : TUGame_en N where
     rw [this] at hne
     exact absurd rfl hne.ne_empty
 
-/-- Lemme : pour R ⊂ S, la somme alternée sur les sur-ensembles T de R contenus dans S est nulle.
-    Σ_{T : R ⊆ T ⊆ S} (-1)^(|T|-|R|) = (1-1)^|S\R| = 0 quand S\R est non vide.
-    Preuve : bijection T ↦ T \ R vers (S \ R).powerset, puis sum_powerset_neg_one_pow_card. -/
+/-- Lemma: for R ⊂ S, the alternating sum over supersets T of R contained in S is zero.
+    Σ_{T : R ⊆ T ⊆ S} (-1)^(|T|-|R|) = (1-1)^|S\R| = 0 when S\R is nonempty.
+    Proof: bijection T ↦ T \ R to (S \ R).powerset, then sum_powerset_neg_one_pow_card. -/
 private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R ≠ S) :
     ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
         ((-1 : ℝ) ^ (T.card - R.card)) = 0 := by
@@ -662,7 +662,7 @@ private theorem mobius_inner_sum_zero (S R : Finset N) (hR : R ⊆ S) (hne : R �
     intro h_empty
     have h_sub : S ⊆ R := Finset.sdiff_eq_empty_iff_subset.mp h_empty
     exact hne (subset_antisymm hR h_sub)
-  -- Réindexer via la bijection T ↦ T \ R vers (S \ R).powerset
+  -- Reindex via the bijection T ↦ T \ R to (S \ R).powerset
   have h_eq :
     ∑ T ∈ Finset.univ.filter (fun T => R ⊆ T ∧ T ⊆ S),
         ((-1 : ℝ) ^ (T.card - R.card)) =
@@ -721,18 +721,18 @@ private theorem mobius_inner_sum_self (S R : Finset N) (_hR : R ⊆ S) (hRS : R 
            fun h => by rw [h]; exact ⟨Finset.Subset.refl S, Finset.Subset.refl S⟩⟩
   rw [hSingleton, Finset.sum_singleton, Nat.sub_self, pow_zero]
 
-/-- Inversion de Mobius : v(S) = Σ_{∅≠T⊆S} a_T
-    Tout jeu se décompose de manière unique en somme de jeux d'unanimité pondérés
-    (dividendes de Harsanyi).
-    Preuve : inclusion-exclusion sur le treillis des sous-ensembles.
+/-- Mobius inversion: v(S) = Σ_{∅≠T⊆S} a_T
+    Every game decomposes uniquely as a sum of weighted unanimity games
+    (Harsanyi dividends).
+    Proof: inclusion-exclusion on the lattice of subsets.
     Σ_{T: ∅≠T⊆S} a_T = Σ_T Σ_{R⊆T} (-1)^(|T|-|R|) · v(R)
-    Après échange des sommes : Σ_R v(R) · Σ_{T: R⊆T⊆S} (-1)^(|T|-|R|) = Σ_R v(R)·δ_{R,S} = v(S). -/
+    After swapping the sums: Σ_R v(R) · Σ_{T: R⊆T⊆S} (-1)^(|T|-|R|) = Σ_R v(R)·δ_{R,S} = v(S). -/
 private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
     G.v S = ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
         mobiusCoeff G T := by
   classical
   simp only [mobiusCoeff]
-  -- Échanger l'ordre de sommation
+  -- Swap the order of summation
   have h_comm :
       ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ T ⊆ S),
           ∑ R ∈ Finset.univ.filter (fun R => R ⊆ T),
@@ -752,7 +752,7 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
         · intro h
           exact ⟨⟨h.1.1, h.1.2.2⟩, h.1.2.1⟩)
   rw [h_comm]
-  -- Maintenant montrer que chaque R contribue soit G.v R (si R = S) soit 0 (sinon)
+  -- Now show that each R contributes either G.v R (if R = S) or 0 (otherwise)
   suffices h : ∀ R ∈ (Finset.univ : Finset (Finset N)),
       ∑ T ∈ Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S),
           ((-1 : ℝ) ^ (T.card - R.card)) * G.v R =
@@ -763,10 +763,10 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
     exact (Fintype.sum_ite_eq' S (fun R => G.v R)).symm
   intro R _hR
   by_cases hRS : R = S
-  -- Cas R = S
+  -- Case R = S
   · rw [if_pos hRS, hRS]
     by_cases hSe : S = ∅
-    -- S = ∅ : le filtre est vide, la somme vaut 0 = G.v ∅
+    -- S = ∅: the filter is empty, the sum equals 0 = G.v ∅
     · rw [hSe]
       have hFilter : (Finset.univ : Finset (Finset N)).filter
           (fun T => T.Nonempty ∧ (∅ : Finset N) ⊆ T ∧ T ⊆ (∅ : Finset N)) = ∅ := by
@@ -776,7 +776,7 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
         subst hTe
         exact Finset.not_nonempty_empty hT.1
       rw [G.empty_zero, hFilter, Finset.sum_empty]
-    -- S ≠ ∅ : le filtre vaut {S}, la somme vaut 1 * G.v S
+    -- S ≠ ∅: the filter equals {S}, the sum equals 1 * G.v S
     · have hSne : S.Nonempty := Finset.nonempty_iff_ne_empty.mpr hSe
       have hSingleton : Finset.univ.filter (fun T => T.Nonempty ∧ S ⊆ T ∧ T ⊆ S) = {S} := by
         ext T
@@ -784,12 +784,12 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
         exact ⟨fun ⟨_, hST, hTS⟩ => le_antisymm hTS hST,
                fun h => by subst h; exact ⟨hSne, Finset.Subset.refl _, Finset.Subset.refl _⟩⟩
       rw [hSingleton, Finset.sum_singleton, Nat.sub_self, pow_zero, one_mul]
-  -- Cas R ≠ S
+  -- Case R ≠ S
   · rw [if_neg hRS]
     by_cases hRsub : R ⊆ S
-    -- Sous-cas R ⊆ S, R ≠ S
+    -- Sub-case R ⊆ S, R ≠ S
     · by_cases hRe : R = ∅
-      -- R = ∅ : G.v ∅ = 0
+      -- R = ∅: G.v ∅ = 0
       · rw [hRe]
         simp [G.empty_zero]
       -- R ≠ ∅, R ⊆ S, R ≠ S
@@ -807,7 +807,7 @@ private theorem mobius_decomposition_axiom (G : TUGame_en N) (S : Finset N) :
               ((-1 : ℝ) ^ (T.card - R.card))) * G.v R := by
           rw [Finset.sum_mul]
         rw [this, mobius_inner_sum_zero S R hRsub hRS, zero_mul]
-    -- Sous-cas R ⊄ S : aucun T ne satisfait R ⊆ T ⊆ S
+    -- Sub-case R ⊄ S: no T satisfies R ⊆ T ⊆ S
     · have hfilter : Finset.univ.filter (fun T => T.Nonempty ∧ R ⊆ T ∧ T ⊆ S) = ∅ := by
         refine Finset.eq_empty_of_forall_notMem (fun T hT => ?_)
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
@@ -824,11 +824,11 @@ end Mobius
 
 /-! ## Uniqueness theorem -/
 
-/- Théorème d'unicité de Shapley :
-    La valeur de Shapley est l'unique solution satisfaisant les quatre axiomes.
-    Stratégie de preuve : montrer que toute solution axiomatique φ coïncide avec
-    `shapleyValue` sur les jeux d'unanimité (phi_unanimity + phi_eq_shapley),
-    puis étendre à tous les jeux via la décomposition de Mobius et l'additivité. -/
+/- Shapley uniqueness theorem:
+    The Shapley value is the unique solution satisfying the four axioms.
+    Proof strategy: show that any axiomatic solution φ coincides with
+    `shapleyValue` on unanimity games (phi_unanimity + phi_eq_shapley),
+    then extend to all games via the Mobius decomposition and additivity. -/
 
 /-- phi coincides with shapleyValue on unanimity games -/
 private theorem phi_eq_shapley (φ : Solution N)
@@ -884,8 +884,8 @@ private theorem phi_weightedUnanimity (φ : Solution N)
   classical
   rw [phi_unanimity φ h_eff h_sym h_null T hT i]
   split_ifs with hiT
-  -- Cas i ∈ T
-  · -- Efficience : Σ_j φ(H, j) = H.v(univ) = c
+  -- Case i ∈ T
+  · -- Efficiency: Σ_j φ(H, j) = H.v(univ) = c
     have h_eff_T : ∑ j : N, φ (Solution.SmulGame c (TUGame_en.unanimityGame T hT)) j = c := by
       have h_val : (Solution.SmulGame c (TUGame_en.unanimityGame T hT)).v Finset.univ = c := by
         simp [Solution.SmulGame, TUGame_en.unanimityGame]
@@ -922,7 +922,7 @@ private theorem phi_weightedUnanimity (φ : Solution N)
       have hcp : 0 < T.card := Finset.Nonempty.card_pos hT
       norm_cast; omega
     field_simp; linarith
-  -- Cas i ∉ T
+  -- Case i ∉ T
   · rw [null_outside_smulUnanimity φ h_null c T hT i hiT]; ring
 
 /-- Any axiomatic phi coincides with shapleyValue on SmulGame c u_T -/
@@ -974,7 +974,7 @@ private theorem game_eq_mobius_sum (G : TUGame_en N) :
   ext S
   simp only [Solution.finsetSumGames]
   classical
-  -- Étape 1 : Pour T ∈ filtre Nonempty, f(T).v S = mobiusCoeff G T * (if T⊆S then 1 else 0)
+  -- Step 1: For T ∈ the Nonempty filter, f(T).v S = mobiusCoeff G T * (if T⊆S then 1 else 0)
   have h_term (T : Finset N) (hT : T ∈ Finset.univ.filter Finset.Nonempty) :
       (if hT' : T.Nonempty then
         Solution.SmulGame (Mobius.mobiusCoeff G T) (TUGame_en.unanimityGame T hT')
@@ -983,12 +983,12 @@ private theorem game_eq_mobius_sum (G : TUGame_en N) :
     simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hT
     rw [dif_pos hT]
     simp only [Solution.SmulGame, TUGame_en.unanimityGame]
-  -- Étape 2 : a * (if p then 1 else 0) = if p then a else 0
+  -- Step 2: a * (if p then 1 else 0) = if p then a else 0
   have h_mul (T : Finset N) :
       Mobius.mobiusCoeff G T * (if T ⊆ S then (1 : ℝ) else 0) =
       (if T ⊆ S then Mobius.mobiusCoeff G T else (0 : ℝ)) := by
     split_ifs <;> ring
-  -- Étape 3 : enchaîner les égalités pour obtenir la somme filtrée
+  -- Step 3: chain the equalities to obtain the filtered sum
   have h_rhs :
       ∑ T ∈ Finset.univ.filter Finset.Nonempty,
         (if hT : T.Nonempty then
@@ -1000,9 +1000,9 @@ private theorem game_eq_mobius_sum (G : TUGame_en N) :
     rw [← Finset.sum_filter, Finset.filter_filter]
   exact (Mobius.mobius_decomposition_axiom G S).trans h_rhs.symm
 
-/-- Unicité de la valeur de Shapley : toute solution axiomatique est égale à la valeur de Shapley.
-    Stratégie : décomposer G = ∑_{T≠∅} a_T · u_T via Mobius, puis φ et shapleyValue se
-    distribuent sur la somme et coïncide sur chaque terme via phi_eq_shapley_weighted. -/
+/-- Uniqueness of the Shapley value: any axiomatic solution equals the Shapley value.
+    Strategy: decompose G = ∑_{T≠∅} a_T · u_T via Mobius, then φ and shapleyValue
+    distribute over the sum and coincide on each term via phi_eq_shapley_weighted. -/
 theorem shapley_uniqueness (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -1030,16 +1030,16 @@ noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota
   v := fun S => if ∑ i ∈ S, weights i ≥ quota then 1 else 0
   empty_zero := by simp [hquota]
 
-/-! ## Jeux simples
+/-! ## Simple games
 
-Un *jeu simple* est un jeu à utilité transférable dont la fonction caractéristique ne prend
-que les valeurs `0` (coalition perdante) et `1` (coalition gagnante). C'est le cadre naturel
-des notions de pouvoir de vote : `VetoPlayer`, `Dictator`, `Critical`, et les indices de
-Banzhaf n'ont de sens que sous cette contrainte (sinon `v S ∈ {0, 1}` échoue et la
-normalisation de Banzhaf `2 ^ (|N| - 1)` ne correspond plus à l'étendue de `v`).
+A *simple game* is a transferable-utility game whose characteristic function takes only
+the values `0` (losing coalition) and `1` (winning coalition). This is the natural setting
+for notions of voting power: `VetoPlayer`, `Dictator`, `Critical`, and the Banzhaf
+indices only make sense under this constraint (otherwise `v S ∈ {0, 1}` fails and the
+Banzhaf normalization `2 ^ (|N| - 1)` no longer matches the range of `v`).
 
-Le prédicat `SimpleGame G` encapsule la contrainte `v ∈ {0, 1}` que les axiomes
-Veto/Dictator (greenlight architectural, cycle 73) supposeront. -/
+The predicate `SimpleGame G` encapsulates the `v ∈ {0, 1}` constraint that the
+Veto/Dictator axioms (architectural greenlight, cycle 73) will assume. -/
 def SimpleGame (G : TUGame_en N) : Prop :=
   ∀ S : Finset N, G.v S = 0 ∨ G.v S = 1
 
@@ -1068,13 +1068,13 @@ theorem eq_zero_of_ne_one {G : TUGame_en N} (hG : SimpleGame G) (S : Finset N)
 
 end SimpleGame
 
-/-! ## Jeux forts
+/-! ## Strong games
 
-Un jeu *fort* (à utilité transférable) est le dual d'un jeu propre : une coalition et son
-complément ne peuvent être toutes deux perdantes — `v S = 0 → v Sᶜ = 1`. Pour un jeu simple,
-cela signifie que le complément d'une coalition perdante est gagnant. Avec `ProperGame`,
-`StrongGame` définit un jeu de vote simple *auto-dual* (propre et fort). Un jeu de vote
-pondéré est fort dès que le quota ne dépasse pas la moitié du poids total. -/
+A *strong* (transferable-utility) game is the dual of a proper game: a coalition and its
+complement cannot both be losing — `v S = 0 → v Sᶜ = 1`. For a simple game, this means the
+complement of a losing coalition is winning. Together with `ProperGame`, `StrongGame`
+defines a *self-dual* simple voting game (proper and strong). A weighted voting game is
+strong whenever the quota does not exceed half of the total weight. -/
 def StrongGame (G : TUGame_en N) : Prop :=
   ∀ ⦃S : Finset N⦄, G.v S = 0 → G.v Sᶜ = 1
 
@@ -1087,11 +1087,11 @@ theorem complement_wins {G : TUGame_en N} (hG : StrongGame G) {S : Finset N}
 
 end StrongGame
 
-/-- Un jeu de vote pondéré dont le quota ne dépasse pas la moitié du poids total est fort : si
-    le poids d'une coalition est inférieur au quota, le poids de la coalition complémentaire
-    l'atteint (les deux poids complémentaires somment au total, qui vaut au moins `2 * quota`),
-    donc le complément gagne. Aucune hypothèse de signe sur les poids n'est nécessaire — c'est
-    une conséquence pure du rapport quota/total. -/
+/-- A weighted voting game whose quota does not exceed half of the total weight is strong: if
+    the weight of a coalition is below the quota, the weight of the complementary coalition
+    reaches it (the two complementary weights sum to the total, which is at least `2 * quota`),
+    hence the complement wins. No sign assumption on the weights is needed — this is a pure
+    consequence of the quota/total ratio. -/
 theorem weighted_voting_game_strong (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
     (hstrong : 2 * quota ≤ ∑ i, weights i) :
     StrongGame (WeightedVotingGame weights quota hquota) := by
@@ -1104,33 +1104,33 @@ theorem weighted_voting_game_strong (weights : N → ℝ) (quota : ℝ) (hquota 
     push_neg at hge
     rw [if_pos hge] at hlose
     linarith
-  -- Le poids de la coalition complémentaire vaut `total − ∑_S`, donc `≥ quota`.
+  -- The weight of the complementary coalition is `total − ∑_S`, hence `≥ quota`.
   have hSc : ∑ i ∈ Sᶜ, weights i = ∑ i, weights i - ∑ i ∈ S, weights i := by
     rw [← Finset.sum_add_sum_compl S weights]; ring
   have hSc_ge : ∑ i ∈ Sᶜ, weights i ≥ quota := by rw [hSc]; linarith
-  -- Le complément atteint le quota, donc sa valeur vaut `1`.
+  -- The complement reaches the quota, so its value is `1`.
   exact if_pos hSc_ge
 
-/-- Un jeu fort a une grande coalition gagnante.
+/-- A strong game has a winning grand coalition.
 
-    La coalition vide est toujours perdante (`TUGame_en.empty_zero`), et son complément est la
-    grande coalition `Finset.univ`. La propriété forte (`v S = 0 → v Sᶜ = 1`) appliquée à
-    `S = ∅` force donc `v univ = 1` : un jeu fort est non dégénéré au sens où la grande
-    coalition gagne. -/
+    The empty coalition is always losing (`TUGame_en.empty_zero`), and its complement is the
+    grand coalition `Finset.univ`. The strong property (`v S = 0 → v Sᶜ = 1`) applied to
+    `S = ∅` thus forces `v univ = 1`: a strong game is non-degenerate in the sense that the
+    grand coalition wins. -/
 theorem strong_grand_wins {G : TUGame_en N} (hG : StrongGame G) : G.v Finset.univ = 1 := by
   have hcomp : (∅ : Finset N)ᶜ = Finset.univ := by simp
   have := hG G.empty_zero
   rwa [hcomp] at this
 
-/-! ## Jeux monotones
+/-! ## Monotone games
 
-Un jeu *monotone* (à utilité transférable) est un jeu où élargir une coalition ne diminue
-jamais sa valeur : `S ⊆ T → v S ≤ v T`. Pour un jeu simple, cela se spécialise en la
-propriété d'up-set des coalitions gagnantes — `S` gagnant et `S ⊆ T` implique `T` gagnant
-— la caractéristique définitoire d'un jeu de vote simple *propre*.
+A *monotone* (transferable-utility) game is a game where enlarging a coalition never
+decreases its value: `S ⊆ T → v S ≤ v T`. For a simple game, this specializes to the
+up-set property of winning coalitions — `S` winning and `S ⊆ T` implies `T` winning
+— the defining feature of a *proper* simple voting game.
 
-Avec `SimpleGame`, `MonotoneGame` encapsule les hypothèses que les théorèmes d'indice de
-pouvoir Veto/Dictator supposent (greenlight architectural, ai-01 cycle 75→76). -/
+Together with `SimpleGame`, `MonotoneGame` encapsulates the assumptions that the
+Veto/Dictator power-index theorems rely on (architectural greenlight, ai-01 cycle 75→76). -/
 def MonotoneGame (G : TUGame_en N) : Prop :=
   ∀ ⦃S T : Finset N⦄, S ⊆ T → G.v S ≤ G.v T
 
@@ -1141,13 +1141,13 @@ theorem le_of_subset {G : TUGame_en N} (hG : MonotoneGame G) {S T : Finset N}
     (h : S ⊆ T) : G.v S ≤ G.v T :=
   hG h
 
-/-- Les coalitions gagnantes d'un jeu simple monotone forment un up-set : élargir une
-    coalition gagnante la maintient gagnante.
+/-- The winning coalitions of a monotone simple game form an up-set: enlarging a
+    winning coalition keeps it winning.
 
-    La monotonicité donne `v S ≤ v T` pour `S ⊆ T` ; puisque `v S = 1` et que `SimpleGame`
-    force `v T ∈ {0, 1}`, cela élimine `v T = 0`, laissant `v T = 1`. C'est la propriété
-    définitoire d'un jeu de vote simple *propre* et le pont entre `MonotoneGame` et la
-    théorie du veto. -/
+    Monotonicity gives `v S ≤ v T` for `S ⊆ T`; since `v S = 1` and `SimpleGame`
+    forces `v T ∈ {0, 1}`, this rules out `v T = 0`, leaving `v T = 1`. This is the
+    defining property of a *proper* simple voting game and the bridge between
+    `MonotoneGame` and veto theory. -/
 theorem winning_upward_closed {G : TUGame_en N} (hG : MonotoneGame G) (hG' : SimpleGame G)
     {S T : Finset N} (hST : S ⊆ T) (hwin : G.v S = 1) : G.v T = 1 := by
   -- Monotonicity: `v S ≤ v T`, and `v S = 1` so `1 ≤ v T`; with `v T ∈ {0,1}` this
@@ -1159,10 +1159,10 @@ theorem winning_upward_closed {G : TUGame_en N} (hG : MonotoneGame G) (hG' : Sim
 
 end MonotoneGame
 
-/-- Les coalitions perdantes d'un jeu simple monotone forment un down-set : rétrécir une
-    coalition perdante la maintient perdante. Le dual de la propriété d'up-set des
-    coalitions gagnantes : la monotonicité donne `v S ≤ v T`, et `v T = 0` force
-    `v S ≤ 0 < 1` ; `SimpleGame` élimine alors `v S = 1`, laissant `v S = 0`. -/
+/-- The losing coalitions of a monotone simple game form a down-set: shrinking a
+    losing coalition keeps it losing. The dual of the up-set property of winning
+    coalitions: monotonicity gives `v S ≤ v T`, and `v T = 0` forces
+    `v S ≤ 0 < 1`; `SimpleGame` then rules out `v S = 1`, leaving `v S = 0`. -/
 theorem losing_downward_closed {G : TUGame_en N} (hG : MonotoneGame G) (hG' : SimpleGame G)
     {S T : Finset N} (hST : S ⊆ T) (hlose : G.v T = 0) : G.v S = 0 := by
   -- Monotonicity: `v S ≤ v T = 0`, so `v S ≤ 0 < 1`; `SimpleGame` then rules out `v S = 1`.
@@ -1187,14 +1187,14 @@ theorem weighted_voting_game_monotone (weights : N → ℝ) (quota : ℝ) (hquot
   · exact zero_le_one                                 -- S does not, T does: 0 ≤ 1
   · exact le_refl _                                   -- neither: 0 ≤ 0
 
-/-! ## Jeux propres
+/-! ## Proper games
 
-Un jeu *propre* (à utilité transférable) est un jeu où une coalition et son complément ne
-peuvent être tous deux gagnants : `v S = 1 → v Sᶜ = 0`. Pour un jeu simple, c'est la
-propriété standard « deux coalitions complémentaires ne gagnent pas toutes deux » d'un
-jeu de vote simple propre (le complément d'une coalition gagnante est perdant). Un jeu de
-vote pondéré est propre dès que le quota dépasse strictement la moitié du poids total, car
-les poids de coalitions complémentaires somment au total. -/
+A *proper* (transferable-utility) game is a game where a coalition and its complement
+cannot both be winning: `v S = 1 → v Sᶜ = 0`. For a simple game, this is the standard
+"two complementary coalitions do not both win" property of a proper simple voting game
+(the complement of a winning coalition is losing). A weighted voting game is proper
+whenever the quota strictly exceeds half of the total weight, since the weights of
+complementary coalitions sum to the total. -/
 def ProperGame (G : TUGame_en N) : Prop :=
   ∀ ⦃S : Finset N⦄, G.v S = 1 → G.v Sᶜ = 0
 
@@ -1207,11 +1207,11 @@ theorem complement_loses {G : TUGame_en N} (hG : ProperGame G) {S : Finset N}
 
 end ProperGame
 
-/-- Un jeu de vote pondéré dont le quota dépasse strictement la moitié du poids total est
-    propre : si le poids d'une coalition atteint le quota, le poids de la coalition
-    complémentaire lui est strictement inférieur (les deux poids complémentaires somment au
-    total, qui vaut moins que `2 * quota`), donc le complément perd. Aucune hypothèse de
-    signe sur les poids n'est nécessaire — c'est une conséquence pure du rapport quota/total. -/
+/-- A weighted voting game whose quota strictly exceeds half of the total weight is
+    proper: if the weight of a coalition reaches the quota, the weight of the complementary
+    coalition is strictly smaller (the two complementary weights sum to the total, which is
+    less than `2 * quota`), hence the complement loses. No sign assumption on the weights is
+    needed — this is a pure consequence of the quota/total ratio. -/
 theorem weighted_voting_game_proper (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
     (hproper : 2 * quota > ∑ i, weights i) :
     ProperGame (WeightedVotingGame weights quota hquota) := by
@@ -1222,21 +1222,21 @@ theorem weighted_voting_game_proper (weights : N → ℝ) (quota : ℝ) (hquota 
     split_ifs at hwin with h
     · exact h
     · linarith
-  -- Le poids de la coalition complémentaire vaut `total − ∑_S`, donc `< quota`.
+  -- The weight of the complementary coalition is `total − ∑_S`, hence `< quota`.
   have hSc : ∑ i ∈ Sᶜ, weights i = ∑ i, weights i - ∑ i ∈ S, weights i := by
     rw [← Finset.sum_add_sum_compl S weights]; ring
   have hSc_lt : ∑ i ∈ Sᶜ, weights i < quota := by rw [hSc]; linarith
-  -- Le complément n'atteint pas le quota, donc sa valeur vaut `0`.
+  -- The complement does not reach the quota, so its value is `0`.
   split_ifs with h
   · linarith
   · rfl
 
-/-! ## Jeux auto-duaux
+/-! ## Self-dual games
 
-Un jeu *auto-dual* (à utilité transférable) est un jeu qui est simultanément *propre* (une
-coalition et son complément ne peuvent tous deux gagner) et *fort* (ils ne peuvent tous
-deux perdre). Pour un jeu simple, c'est le jeu de vote canonique « décisif » / auto-dual :
-pour toute coalition, exactement l'une d'elle et de son complément gagne. -/
+A *self-dual* (transferable-utility) game is a game that is simultaneously *proper* (a
+coalition and its complement cannot both win) and *strong* (they cannot both lose). For a
+simple game, this is the canonical "decisive" / self-dual voting game: for every
+coalition, exactly one of it and its complement wins. -/
 def SelfDualGame (G : TUGame_en N) : Prop :=
   ProperGame G ∧ StrongGame G
 
@@ -1262,19 +1262,19 @@ end SelfDualGame
 def Critical (G : TUGame_en N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
 
-/-- Un joueur critique doit être membre de la coalition : `Critical G i S` se déplie en
-    `i ∈ S ∧ …`, donc l'appartenance est la première conjonction. Cible BG-prover échauffement
-    (#1453) : extraction de conjonction triviale, exerce le harnais sur une seconde cible réelle
-    maintenant que le format bullet-sorry stub corrige GoalExtract (cycle 63). -/
+/-- A critical player must be a member of the coalition: `Critical G i S` unfolds to
+    `i ∈ S ∧ …`, so membership is the first conjunct. BG-prover warm-up target
+    (#1453): trivial conjunct extraction, exercises the harness on a second real target
+    now that the bullet-sorry stub format fixes GoalExtract (cycle 63). -/
 theorem critical_implies_mem (G : TUGame_en N) (i : N) (S : Finset N) :
     Critical G i S → i ∈ S := by
   intro h
   exact h.1
 
-/-- `Critical G i` est décidable via raisonnement classique (les comparaisons `TUGame_en.v` sont
-    des réels non calculables). Promu en instance globale pour que `BanzhafRaw` et tout théorème
-    le concernant synthétisent la MÊME instance, évitant le piège du mismatch opaque
-    `Classical.decPred`. -/
+/-- `Critical G i` is decidable via classical reasoning (the `TUGame_en.v` comparisons are
+    noncomputable reals). Promoted to a global instance so that `BanzhafRaw` and every theorem
+    about it synthesize the SAME instance, avoiding the opaque `Classical.decPred` mismatch
+    pitfall. -/
 noncomputable instance criticalDecidable (G : TUGame_en N) (i : N) :
     DecidablePred (fun S : Finset N => Critical G i S) := Classical.decPred _
 
@@ -1298,24 +1298,24 @@ def VetoPlayer (G : TUGame_en N) (i : N) : Prop :=
 def Dictator (G : TUGame_en N) (i : N) : Prop :=
   G.v {i} = 1 ∧ VetoPlayer G i
 
-/-- Un jeu a au plus un dictateur.
+/-- A game has at most one dictator.
 
-    Si à la fois `i` et `j` sont dictateurs, alors `j` est un joueur veto (seconde conjonction
-    de `Dictator`) et `i` gagne seul (`v {i} = 1`, première conjonction de `Dictator i`).
-    Appliquer la propriété de veto de `j` à la coalition gagnante `{i}` force `j ∈ {i}`,
-    c'est-à-dire `j = i`. -/
+    If both `i` and `j` are dictators, then `j` is a veto player (second conjunct of
+    `Dictator`) and `i` wins alone (`v {i} = 1`, first conjunct of `Dictator i`).
+    Applying the veto property of `j` to the winning coalition `{i}` forces `j ∈ {i}`,
+    i.e. `j = i`. -/
 theorem dictator_unique (G : TUGame_en N) (i j : N) (hi : Dictator G i) (hj : Dictator G j) :
     i = j := by
 -- `j` is a veto player (second conjunction of `Dictator`) and `i` wins alone
 -- (`v {i} = 1`, first conjunction), so the veto property forces `j in {i}`, i.e. `j = i`.
   exact (Finset.mem_singleton.mp (hj.2 {i} hi.1)).symm
 
-/-- Un dictateur a un indice brut de Banzhaf strictement positif. Le pendant positif de
-    `dummy_banzhaf_raw_zero` : un joueur muet ne change jamais la valeur d'une coalition
-    (BanzhafRaw = 0), alors qu'un dictateur gagne seul (`v {i} = 1`, première conjonction
-    de `Dictator`) et que la coalition vide a pour valeur `0` (`TUGame_en.empty_zero`), donc
-    `{i}` est une coalition critique (`i ∈ {i}`, `v {i} = 1`, `v ({i}.erase i) = v ∅ = 0`).
-    Ainsi le filtre des coalitions critiques est non vide et sa cardinalité est positive. -/
+/-- A dictator has a strictly positive raw Banzhaf index. The positive counterpart of
+    `dummy_banzhaf_raw_zero`: a dummy player never changes the value of a coalition
+    (BanzhafRaw = 0), whereas a dictator wins alone (`v {i} = 1`, first conjunct of
+    `Dictator`) and the empty coalition has value `0` (`TUGame_en.empty_zero`), so
+    `{i}` is a critical coalition (`i ∈ {i}`, `v {i} = 1`, `v ({i}.erase i) = v ∅ = 0`).
+    Hence the filter of critical coalitions is nonempty and its cardinality is positive. -/
 theorem dictator_banzhaf_pos (G : TUGame_en N) (i : N) (h : Dictator G i) :
     0 < BanzhafRaw G i := by
   have hcrit : Critical G i ({i} : Finset N) := by
@@ -1328,28 +1328,27 @@ theorem dictator_banzhaf_pos (G : TUGame_en N) (i : N) (h : Dictator G i) :
   simp only [BanzhafRaw]
   exact Finset.card_pos.mpr ⟨{i}, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
 
-/-- Un joueur veto rend perdante toute coalition à laquelle il **n'appartient** pas.
+/-- A veto player makes losing any coalition to which they **do not belong**.
 
-    La contraposée de la propriété de veto : `VetoPlayer G i` force `i ∈ S` pour toute coalition
-    gagnante `S`, donc `i ∉ S` élimine `v S = 1` ; combiné avec `SimpleGame` (qui force
-    `v S ∈ {0, 1}`), cela laisse `v S = 0`. Le pendant « coalition perdante » de
-    `veto_critical_of_winning` (où ce résultat montre qu'un joueur veto est critique dans
-    toute coalition *gagnante*, celui-ci montre que toute coalition *sans* le joueur veto
-    est perdante). -/
+    The contrapositive of the veto property: `VetoPlayer G i` forces `i ∈ S` for every winning
+    coalition `S`, so `i ∉ S` rules out `v S = 1`; combined with `SimpleGame` (which forces
+    `v S ∈ {0, 1}`), this leaves `v S = 0`. The "losing coalition" counterpart of
+    `veto_critical_of_winning` (where that result shows a veto player is critical in every
+    *winning* coalition, this one shows that every coalition *without* the veto player
+    is losing). -/
 theorem veto_losing_without {G : TUGame_en N} (hG : SimpleGame G) {i : N}
     (hv : VetoPlayer G i) {S : Finset N} (hni : i ∉ S) : G.v S = 0 := by
   apply SimpleGame.eq_zero_of_ne_one hG S
   intro hone
   exact absurd (hv S hone) hni
 
-/-- Un joueur veto est critique dans la grande coalition, à condition que la grande coalition
-    gagne.
+/-- A veto player is critical in the grand coalition, provided the grand coalition wins.
 
-    `VetoPlayer G i` force `i ∈ S` pour toute coalition gagnante `S`. Appliqué à
-    `S = univ.erase i`, si `v (univ.erase i) = 1` alors `i ∈ univ.erase i`, contredisant
-    `i ∉ univ.erase i` ; donc `v (univ.erase i) ≠ 1`, et `SimpleGame` force
-    `v (univ.erase i) = 0`. Avec `v univ = 1` (`hwin`) et `i ∈ univ`, cela fait de `univ`
-    une coalition critique pour `i`. -/
+    `VetoPlayer G i` forces `i ∈ S` for every winning coalition `S`. Applied to
+    `S = univ.erase i`, if `v (univ.erase i) = 1` then `i ∈ univ.erase i`, contradicting
+    `i ∉ univ.erase i`; hence `v (univ.erase i) ≠ 1`, and `SimpleGame` forces
+    `v (univ.erase i) = 0`. With `v univ = 1` (`hwin`) and `i ∈ univ`, this makes `univ`
+    a critical coalition for `i`. -/
 theorem veto_critical_in_grand {G : TUGame_en N} (hG : SimpleGame G) {i : N}
     (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
     Critical G i Finset.univ := by
@@ -1361,15 +1360,15 @@ theorem veto_critical_in_grand {G : TUGame_en N} (hG : SimpleGame G) {i : N}
     have hni : i ∉ Finset.univ.erase i := by simp [Finset.mem_erase]
     exact hni (hv (Finset.univ.erase i) heq)
 
-/-- Un joueur veto est critique dans *toute* coalition gagnante.
+/-- A veto player is critical in *every* winning coalition.
 
-    La forme générale dont `veto_critical_in_grand` est l'instance grande-coalition :
-    spécialiser `S` à `Finset.univ` la récupère. `VetoPlayer G i` force `i ∈ S` pour toute
-    coalition gagnante `S`. Pour montrer que `i` est critique dans une coalition gagnante
-    `S`, il nous faut `v (S.erase i) = 0` : si `v (S.erase i) = 1`, la propriété de veto
-    forcerait `i ∈ S.erase i`, contredisant `i ∉ S.erase i` ; donc `v (S.erase i) ≠ 1`,
-    et `SimpleGame` force `v (S.erase i) = 0`. Avec `v S = 1` (`hwin`) et `i ∈ S`, cela
-    fait de `S` une coalition critique pour `i`. -/
+    The general form of which `veto_critical_in_grand` is the grand-coalition instance:
+    specializing `S` to `Finset.univ` recovers it. `VetoPlayer G i` forces `i ∈ S` for every
+    winning coalition `S`. To show that `i` is critical in a winning coalition `S`, we need
+    `v (S.erase i) = 0`: if `v (S.erase i) = 1`, the veto property would force
+    `i ∈ S.erase i`, contradicting `i ∉ S.erase i`; hence `v (S.erase i) ≠ 1`,
+    and `SimpleGame` forces `v (S.erase i) = 0`. With `v S = 1` (`hwin`) and `i ∈ S`, this
+    makes `S` a critical coalition for `i`. -/
 theorem veto_critical_of_winning {G : TUGame_en N} (hG : SimpleGame G) {i : N}
     (hv : VetoPlayer G i) {S : Finset N} (hwin : G.v S = 1) :
     Critical G i S := by
@@ -1381,16 +1380,16 @@ theorem veto_critical_of_winning {G : TUGame_en N} (hG : SimpleGame G) {i : N}
     have hni : i ∉ S.erase i := by simp [Finset.mem_erase]
     exact hni (hv (S.erase i) heq)
 
-/-- Un joueur est veto si et seulement s'il est critique dans toute coalition gagnante.
+/-- A player is a veto player if and only if they are critical in every winning coalition.
 
-    La réciproque de `veto_critical_of_winning` : être joueur veto est *équivalent* à être
-    critique dans toute coalition gagnante. Le sens direct est `veto_critical_of_winning` (un
-    joueur veto appartient à toute coalition gagnante et son retrait la fait perdre) ; le sens
-    inverse est immédiat car la criticité `Critical G i S` inclut l'appartenance `i ∈ S`,
-    donc être critique dans toute coalition gagnante retrouve `VetoPlayer G i`
-    (`∀ coalition gagnante S, i ∈ S`). La caractérisation est significative en non-dégénérescence
-    (existence d'au moins une coalition gagnante) ; dans le cas pleinement dégénéré (aucune
-    coalition gagnante) les deux côtés sont vacuoment vrais. -/
+    The converse of `veto_critical_of_winning`: being a veto player is *equivalent* to being
+    critical in every winning coalition. The forward direction is `veto_critical_of_winning`
+    (a veto player belongs to every winning coalition and removing them makes it lose); the
+    reverse direction is immediate since criticality `Critical G i S` includes membership
+    `i ∈ S`, so being critical in every winning coalition recovers `VetoPlayer G i`
+    (`∀ winning coalition S, i ∈ S`). The characterization is significant under
+    non-degeneracy (existence of at least one winning coalition); in the fully degenerate
+    case (no winning coalition) both sides are vacuously true. -/
 theorem veto_iff_critical_of_winning {G : TUGame_en N} (hG : SimpleGame G) (i : N) :
     VetoPlayer G i ↔ ∀ S : Finset N, G.v S = 1 → Critical G i S := by
   constructor
@@ -1398,13 +1397,12 @@ theorem veto_iff_critical_of_winning {G : TUGame_en N} (hG : SimpleGame G) (i : 
   · intro h S hS
     exact (h S hS).1
 
-/-- Une *coalition gagnante minimale* : `S` est gagnante, mais tout sous-ensemble propre est
-    perdant.
+/-- A *minimal winning coalition*: `S` is winning, but every proper subset is losing.
 
-    Les coalitions gagnantes minimales sont les éléments minimaux de l'up-set des coalitions
-    gagnantes ; elles forment les coalitions « clés » irréductibles dont le poids atteint
-    tout juste le quota dans un jeu de vote pondéré. Un joueur veto, qui appartient à toute
-    coalition gagnante, appartient en particulier à toute coalition gagnante minimale. -/
+    Minimal winning coalitions are the minimal elements of the up-set of winning
+    coalitions; they form the irreducible "key" coalitions whose weight just reaches
+    the quota in a weighted voting game. A veto player, who belongs to every winning
+    coalition, belongs in particular to every minimal winning coalition. -/
 def MinimalWinning (G : TUGame_en N) (S : Finset N) : Prop :=
   G.v S = 1 ∧ ∀ T ⊂ S, G.v T = 0
 
@@ -1416,34 +1414,33 @@ theorem veto_mem_minimal_winning {G : TUGame_en N} (i : N) (hv : VetoPlayer G i)
     {S : Finset N} (hmin : MinimalWinning G S) : i ∈ S :=
   hv S hmin.1
 
-/-- Tout membre d'une coalition gagnante minimale est critique.
+/-- Every member of a minimal winning coalition is critical.
 
-    La minimalité dit que tout sous-ensemble propre perd, donc retirer tout membre `i ∈ S`
-    (ce qui donne le sous-ensemble propre `S.erase i`) rend `S` perdant : `v (S.erase i) = 0`.
-    Avec `v S = 1` et `i ∈ S`, c'est exactement `Critical G i S`. Aucune hypothèse
-    `SimpleGame` n'est requise — cela tient pour toute coalition `MinimalWinning` (qui force
-    déjà `v S = 1`). -/
+    Minimality says every proper subset loses, so removing any member `i ∈ S`
+    (yielding the proper subset `S.erase i`) makes `S` lose: `v (S.erase i) = 0`.
+    With `v S = 1` and `i ∈ S`, this is exactly `Critical G i S`. No `SimpleGame`
+    assumption is required — this holds for any `MinimalWinning` coalition (which already
+    forces `v S = 1`). -/
 theorem critical_of_minimal_winning {G : TUGame_en N} {S : Finset N}
     (hmin : MinimalWinning G S) {i : N} (himem : i ∈ S) : Critical G i S := by
   refine ⟨himem, hmin.1, ?_⟩
 -- `S.erase i` is a proper subset of `S` since `i in S`, so minimality makes it losing.
   exact hmin.2 (S.erase i) (Finset.erase_ssubset himem)
 
-/-- Le support d'un jeu : l'intersection de toutes ses coalitions gagnantes.
+/-- The carrier of a game: the intersection of all its winning coalitions.
 
-    En théorie du vote, le *support* est l'ensemble des joueurs qui appartiennent à toute
-    coalition gagnante. Par la définition de `VetoPlayer`, l'appartenance au support coïncide
-    exactement avec le fait d'être joueur veto (voir `mem_carrier_iff_veto`). La notion est
-    définie pour tout jeu ; elle est non triviale précisément en non-dégénérescence
-    (l'existence d'au moins une coalition gagnante), auquel cas le support est l'ensemble des
-    joueurs veto. -/
+    In voting theory, the *carrier* is the set of players who belong to every winning
+    coalition. By the definition of `VetoPlayer`, membership in the carrier coincides
+    exactly with being a veto player (see `mem_carrier_iff_veto`). The notion is defined for
+    every game; it is nontrivial precisely under non-degeneracy (the existence of at least
+    one winning coalition), in which case the carrier is the set of veto players. -/
 def carrier (G : TUGame_en N) : Set N :=
   ⋂₀ { S : Set N | ∃ t : Finset N, (t : Set N) = S ∧ G.v t = 1 }
 
-/-- Un joueur appartient au support (l'intersection de toutes les coalitions gagnantes) si et
-    seulement si c'est un joueur veto. Les deux directions sont les dépliages de l'intersection
-    (`Set.mem_sInter`, l'appartenance à une intersection arbitraire est l'appartenance à
-    chaque composante) et de `VetoPlayer` (un joueur veto réside dans toute coalition gagnante). -/
+/-- A player belongs to the carrier (the intersection of all winning coalitions) if and
+    only if they are a veto player. Both directions are the unfoldings of the intersection
+    (`Set.mem_sInter`, membership in an arbitrary intersection is membership in each
+    component) and of `VetoPlayer` (a veto player resides in every winning coalition). -/
 theorem mem_carrier_iff_veto (G : TUGame_en N) (i : N) :
     i ∈ carrier G ↔ VetoPlayer G i := by
   constructor
@@ -1454,13 +1451,13 @@ theorem mem_carrier_iff_veto (G : TUGame_en N) (i : N) :
     rintro S ⟨t, rfl, ht⟩
     exact Finset.mem_coe.mpr (hv t ht)
 
-/-- Un joueur veto a un indice brut de Banzhaf strictement positif quand la grande coalition gagne.
+/-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
 
-    Le pendant veto de `dummy_banzhaf_raw_zero` (un joueur muet a `BanzhafRaw = 0`) : un joueur
-    veto est critique dans la grande coalition (`veto_critical_in_grand`, utilisant `SimpleGame`),
-    donc le filtre des coalitions critiques est non vide et sa cardinalité est positive. Notez
-    que, contrairement à `dictator_banzhaf_pos`, ceci nécessite l'hypothèse « la grande coalition
-    gagne » `hwin` : sans aucune coalition gagnante un joueur est vacuoment veto mais a
+    The veto counterpart of `dummy_banzhaf_raw_zero` (a dummy player has `BanzhafRaw = 0`): a
+    veto player is critical in the grand coalition (`veto_critical_in_grand`, using `SimpleGame`),
+    so the filter of critical coalitions is nonempty and its cardinality is positive. Note
+    that, unlike `dictator_banzhaf_pos`, this requires the "grand coalition wins" assumption
+    `hwin`: without any winning coalition a player is vacuously a veto player but has
     `BanzhafRaw = 0`. -/
 theorem veto_banzhaf_raw_pos (G : TUGame_en N) (hG : SimpleGame G) (i : N)
     (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
@@ -1476,21 +1473,21 @@ private theorem shapleyCoef_pos (n s : ℕ) : 0 < shapleyCoef n s := by
   exact div_pos (by exact_mod_cast Nat.mul_pos (Nat.factorial_pos _) (Nat.factorial_pos _))
     (by exact_mod_cast Nat.factorial_pos _)
 
-/-- Un joueur veto a une valeur de Shapley strictement positive quand la grande coalition gagne.
+/-- A veto player has a strictly positive Shapley value when the grand coalition wins.
 
-    Le pendant Shapley de `dummy_shapley_zero` (un joueur muet a une valeur de Shapley `0`) et
-    l'analogue de `veto_banzhaf_raw_pos` pour la valeur de Shapley. La valeur de Shapley est la
-    somme pondérée des contributions marginales de `i` sur toutes les coalitions précédentes `S`
-    (avec `i ∉ S`). Pour un joueur veto dans un jeu simple, chaque tel ensemble précédent est
-    perdant (`v S = 0` par `veto_losing_without`), donc chaque contribution marginale est
-    `v (S ∪ {i}) ∈ {0, 1} ≥ 0`, et chaque terme de la somme est non négatif (coefficient positif
-    fois contribution non négative). La grande coalition privée de `i` est un tel ensemble
-    précédent ; sa contribution marginale est `v univ - v (univ \ {i}) = 1 - 0 = 1` (par `hwin`),
-    pondérée par le coefficient de Shapley strictement positif, ce qui donne un terme strictement
-    positif. La somme entière est au moins ce terme positif unique, donc strictement positive.
+    The Shapley counterpart of `dummy_shapley_zero` (a dummy player has Shapley value `0`) and
+    the analogue of `veto_banzhaf_raw_pos` for the Shapley value. The Shapley value is the
+    weighted sum of the marginal contributions of `i` over all preceding coalitions `S`
+    (with `i ∉ S`). For a veto player in a simple game, each such preceding set is losing
+    (`v S = 0` by `veto_losing_without`), so each marginal contribution is
+    `v (S ∪ {i}) ∈ {0, 1} ≥ 0`, and each term of the sum is nonnegative (positive coefficient
+    times nonnegative contribution). The grand coalition deprived of `i` is one such preceding
+    set; its marginal contribution is `v univ - v (univ \ {i}) = 1 - 0 = 1` (by `hwin`),
+    weighted by the strictly positive Shapley coefficient, yielding a strictly positive term.
+    The entire sum is at least this single positive term, hence strictly positive.
 
-    Comme pour `veto_banzhaf_raw_pos`, l'hypothèse de non-dégénérescence `hwin` est essentielle :
-    sans aucune coalition gagnante un joueur est vacuoment veto mais a une valeur de Shapley `0`. -/
+    As with `veto_banzhaf_raw_pos`, the non-degeneracy assumption `hwin` is essential:
+    without any winning coalition a player is vacuously a veto player but has Shapley value `0`. -/
 theorem veto_shapley_pos (G : TUGame_en N) (hG : SimpleGame G) (i : N)
     (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
     0 < shapleyValue G i := by
@@ -1502,7 +1499,7 @@ theorem veto_shapley_pos (G : TUGame_en N) (hG : SimpleGame G) (i : N)
     Finset.sdiff_union_of_subset (Finset.subset_univ _)
   have hvT : G.v T = 0 := veto_losing_without hG hv hTni
 -- Each term of the Shapley sum is nonneg: `v S = 0` (veto, `i not in S`),
-  -- donc la contribution marginale est `v (S ∪ {i}) ∈ {0, 1}` et le coefficient est > 0.
+  -- hence the marginal contribution is `v (S ∪ {i}) ∈ {0, 1}` and the coefficient is > 0.
   have hnonneg : ∀ S ∈ Finset.univ.filter fun S => i ∉ S,
       0 ≤ shapleyCoef (Fintype.card N) S.card * G.marginalContribution i S := by
     rintro S hS
@@ -1541,12 +1538,11 @@ theorem dummy_shapley_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
     shapleyValue G i = 0 :=
   ShapleyValue.shapley_null_player G i h
 
-/-- Les joueurs muets ne sont critiques dans aucune coalition, donc ont un indice brut de
-    Banzhaf nul.
+/-- Dummy players are critical in no coalition, hence have a zero raw Banzhaf index.
 
-    Un joueur muet ne change jamais la valeur d'une coalition, donc il ne peut jamais se
-    produire que `v S = 1` tandis que `v (S.erase i) = 0` : l'hypothèse de muet force
-    `v S = v (S.erase i)`, contredisant la criticalité. -/
+    A dummy player never changes the value of a coalition, so it can never happen that
+    `v S = 1` while `v (S.erase i) = 0`: the dummy assumption forces
+    `v S = v (S.erase i)`, contradicting criticality. -/
 theorem dummy_banzhaf_raw_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
     BanzhafRaw G i = 0 := by
 -- A dummy player is critical in no coalition: criticality requires `v S = 1`
@@ -1554,7 +1550,7 @@ theorem dummy_banzhaf_raw_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
   have hneq : ∀ S, Critical G i S → False := by
     rintro S ⟨hmem, hone, hzero⟩
     have hni : i ∉ S.erase i := by simp [Finset.mem_erase]
-    -- `S = (S.erase i) ∪ {i}` puisque `i ∈ S`.
+    -- `S = (S.erase i) ∪ {i}` since `i ∈ S`.
     have hS_eq : S = (S.erase i) ∪ {i} := by
       ext j
       simp only [Finset.mem_union, Finset.mem_erase, Finset.mem_singleton]
@@ -1576,14 +1572,14 @@ theorem dummy_banzhaf_raw_zero (G : TUGame_en N) (i : N) (h : DummyPlayer G i) :
   rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   exact fun S _ hcrit => hneq S hcrit
 
-/-- Un joueur veto n'est jamais un joueur muet, pourvu que la grande coalition gagne.
+/-- A veto player is never a dummy player, provided the grand coalition wins.
 
-    Le pendant veto de `dictator_not_dummy` : les deux rôles sont mutuellement exclusifs. Un
-    joueur muet ne change jamais la valeur d'une coalition ; appliqué à `Finset.univ.erase i`
-    (dont `i` est absent), ceci donne `v (univ.erase i ∪ {i}) = v (univ.erase i)`, i.e.
-    `v univ = v (univ.erase i)`. Mais un joueur veto force `v (univ.erase i) = 0` (via
-    `veto_losing_without`, puisque `i ∉ univ.erase i`), tandis que l'hypothèse de non-dégénérescence
-    `hwin : v univ = 1` donne `v univ = 1`. L'égalité `1 = 0` est une contradiction. -/
+    The veto counterpart of `dictator_not_dummy`: the two roles are mutually exclusive. A
+    dummy player never changes the value of a coalition; applied to `Finset.univ.erase i`
+    (from which `i` is absent), this gives `v (univ.erase i ∪ {i}) = v (univ.erase i)`, i.e.
+    `v univ = v (univ.erase i)`. But a veto player forces `v (univ.erase i) = 0` (via
+    `veto_losing_without`, since `i ∉ univ.erase i`), while the non-degeneracy assumption
+    `hwin : v univ = 1` gives `v univ = 1`. The equality `1 = 0` is a contradiction. -/
 theorem veto_not_dummy (G : TUGame_en N) (hG : SimpleGame G) (i : N) (hv : VetoPlayer G i)
     (hwin : G.v Finset.univ = 1) : ¬ DummyPlayer G i := by
   intro hd
@@ -1601,14 +1597,14 @@ theorem veto_not_dummy (G : TUGame_en N) (hG : SimpleGame G) (i : N) (hv : VetoP
   rw [hdummy] at hwin
   linarith
 
-/-- Un dictateur n'est jamais un joueur muet.
+/-- A dictator is never a dummy player.
 
-    Les deux rôles extrêmes de joueur sont mutuellement exclusifs. Un joueur muet n'ajoute
-    aucune valeur à toute coalition dont il est absent ; appliqué à la coalition vide, ceci
-    donne `v (∅ ∪ {i}) = v ∅`, i.e. `v {i} = 0` (via `TUGame_en.empty_zero`). Mais un dictateur
-    gagne seul (`v {i} = 1`, premier conjunct de `Dictator`), contradiction. C'est l'analogue
-    par type de joueur du dédoublement de signe pour BanzhafRaw (`dictator_banzhaf_pos` : `> 0`,
-    `dummy_banzhaf_raw_zero` : `= 0`). -/
+    The two extreme player roles are mutually exclusive. A dummy player adds no value to any
+    coalition from which they are absent; applied to the empty coalition, this gives
+    `v (∅ ∪ {i}) = v ∅`, i.e. `v {i} = 0` (via `TUGame_en.empty_zero`). But a dictator
+    wins alone (`v {i} = 1`, first conjunct of `Dictator`), a contradiction. This is the
+    player-type analogue of the sign split for BanzhafRaw (`dictator_banzhaf_pos`: `> 0`,
+    `dummy_banzhaf_raw_zero`: `= 0`). -/
 theorem dictator_not_dummy (G : TUGame_en N) (i : N) (h : Dictator G i) :
     ¬ DummyPlayer G i := by
   intro hd
@@ -1620,38 +1616,38 @@ theorem dictator_not_dummy (G : TUGame_en N) (i : N) (h : Dictator G i) :
     exact heq
   linarith [h.1]
 
-/-- Échange coalitional utilisé par `banzhaf_raw_symmetric`. Dans une coalition `S`, remplace
-    l'unique membre de `{i, j}` par l'autre (si `S` contient exactement un de `i, j`) ; les
-    coalitions contenant les deux ou aucun sont fixées. C'est une involution qui préserve la
-    valeur du jeu dès lors que `i, j` sont symétriques dans `G`. -/
+/-- Coalitional swap used by `banzhaf_raw_symmetric`. In a coalition `S`, it replaces
+    the unique member of `{i, j}` with the other (if `S` contains exactly one of `i, j`);
+    coalitions containing both or neither are fixed. It is an involution that preserves the
+    game value whenever `i, j` are symmetric in `G`. -/
 private def banzhafSwap (i j : N) (S : Finset N) : Finset N :=
   if i ∈ S ∧ j ∉ S then (S.erase i) ∪ {j}
   else if j ∈ S ∧ i ∉ S then (S.erase j) ∪ {i}
   else S
 
-/-- **Symétrie de l'indice brut de Banzhaf.**
+/-- **Symmetry of the raw Banzhaf index.**
 
-    Les joueurs symétriques (interchangeables) sont critiques dans le même nombre de coalitions,
-    donc ont des indices bruts de Banzhaf égaux. C'est l'analogue Banzhaf de `shapley_symmetric` :
-    l'axiome de symétrie est partagé par tout indice de pouvoir raisonnable (Banzhaf autant que
-    Shapley), même si seul le paquet complet des quatre axiomes caractérise Shapley de manière
-    unique.
+    Symmetric (interchangeable) players are critical in the same number of coalitions,
+    hence have equal raw Banzhaf indices. This is the Banzhaf analogue of `shapley_symmetric`:
+    the symmetry axiom is shared by every reasonable power index (Banzhaf as well as
+    Shapley), even though only the complete bundle of the four axioms characterizes Shapley
+    uniquely.
 
-    La bijection `banzhafSwap i j` échange `i ↔ j` dans chaque coalition. C'est une involution,
-    préserve la valeur du jeu (par `SymmetricPlayers`, après une séparation de cas sur
-    `S ∩ {i, j}`), et échange « critique pour `i` » avec « critique pour `j` » (l'appartenance
-    s'échange, la valeur est invariante, et `(σ S) \ {j} = σ (S \ {i})`). Les deux filtres de
-    coalitions critiques sont donc en bijection, et leurs cardinalités — les indices bruts de
-    Banzhaf — coïncident. -/
+    The bijection `banzhafSwap i j` swaps `i ↔ j` in each coalition. It is an involution,
+    preserves the game value (by `SymmetricPlayers`, after a case split on
+    `S ∩ {i, j}`), and swaps "critical for `i`" with "critical for `j`" (membership is
+    exchanged, the value is invariant, and `(σ S) \ {j} = σ (S \ {i})`). The two filters of
+    critical coalitions are thus in bijection, and their cardinalities — the raw Banzhaf
+    indices — coincide. -/
 theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     BanzhafRaw G i = BanzhafRaw G j := by
   classical
   by_cases heq : i = j
   · subst heq; rfl
-  -- L'hypothèse est symétrique en `i, j`.
+  -- The hypothesis is symmetric in `i, j`.
   have hsymm : Solution.SymmetricPlayers G j i := fun S hj hi => (h S hi hj).symm
-  -- Identité `(S.erase k) ∪ {k} = S` pour `k ∈ S`.
+  -- Identity `(S.erase k) ∪ {k} = S` for `k ∈ S`.
   have aux_readd (k : N) {S : Finset N} (hk : k ∈ S) : (S.erase k) ∪ {k} = S := by
     rw [Finset.union_comm, ← Finset.insert_eq, Finset.insert_erase hk]
 -- Behavior of `banzhafSwap i j` in each of the four membership cases.
@@ -1673,7 +1669,7 @@ theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
     intro S
     by_cases hSi : i ∈ S <;> by_cases hSj : j ∈ S
     · rw [swap_both hSi hSj, swap_both hSi hSj]
-    · -- i ∈ S, j ∉ S : σ S = (S.erase i) ∪ {j}, qui contient j, mais pas i.
+    · -- i ∈ S, j ∉ S: σ S = (S.erase i) ∪ {j}, which contains j, but not i.
       have hσ : banzhafSwap i j S = (S.erase i) ∪ {j} := swap_i_only hSi hSj
       rw [hσ]
       have hmem_j : j ∈ (S.erase i) ∪ ({j} : Finset N) :=
@@ -1689,7 +1685,7 @@ theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
         fun Hh => hSj (Finset.mem_of_mem_erase Hh)
       rw [Finset.erase_union_distrib, Finset.erase_singleton,
           Finset.erase_eq_self.mpr hnj_erase, Finset.union_empty, aux_readd i hSi]
-    · -- i ∉ S, j ∈ S : symétrique du cas précédent.
+    · -- i ∉ S, j ∈ S: symmetric to the previous case.
       have hσ : banzhafSwap i j S = (S.erase j) ∪ {i} := swap_j_only hSi hSj
       rw [hσ]
       have hmem_i : i ∈ (S.erase j) ∪ ({i} : Finset N) :=
@@ -1709,9 +1705,9 @@ theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
   have hval : ∀ S : Finset N, G.v (banzhafSwap i j S) = G.v S := by
     intro S
     by_cases hSi : i ∈ S <;> by_cases hSj : j ∈ S
-    · -- tous deux dedans : σ S = S.
+    · -- both in: σ S = S.
       rw [swap_both hSi hSj]
-    · -- i dedans, j dehors : σ S = (S.erase i) ∪ {j} ; valeur = v S par symétrie sur S.erase i.
+    · -- i in, j out: σ S = (S.erase i) ∪ {j}; value = v S by symmetry on S.erase i.
       have hσ : banzhafSwap i j S = (S.erase i) ∪ {j} := swap_i_only hSi hSj
       rw [hσ]
       have hjni : j ∉ S.erase i := fun Hh => hSj (Finset.mem_of_mem_erase Hh)
@@ -1817,18 +1813,19 @@ theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
 
 /-! ## Normalized Banzhaf index -/
 
-/-- L'indice de pouvoir normalisé (Penrose-Banzhaf absolu) : le compte brut de Banzhaf divisé
-    par `2 ^ (n - 1)`, le nombre de coalitions qui contiennent le joueur (chacun des autres
-    `n - 1` joueurs est indépendamment dedans ou dehors). Équivalent à la probabilité que `i`
-    soit pivot quand une coalition contenant `i` est tirée uniformément au hasard. La
-    normalisation rend l'indice comparable entre des ensembles de joueurs de tailles différentes. -/
+/-- The normalized power index (absolute Penrose-Banzhaf): the raw Banzhaf count divided by
+    `2 ^ (n - 1)`, the number of coalitions that contain the player (each of the other
+    `n - 1` players is independently in or out). Equivalent to the probability that `i`
+    is pivotal when a coalition containing `i` is drawn uniformly at random. The
+    normalization makes the index comparable across player sets of different sizes. -/
 noncomputable def BanzhafIndex (G : TUGame_en N) (i : N) : ℝ :=
   (BanzhafRaw G i : ℝ) / (2 : ℝ) ^ (Fintype.card N - 1)
 
-/-- **Symétrie de l'indice de Banzhaf normalisé.** Les joueurs symétriques (interchangeables)
-    ont des indices de Banzhaf normalisés égaux : ils ont les mêmes comptes bruts
-    (`banzhaf_raw_symmetric`) et partagent le même dénominateur de normalisation. C'est le pendant
-    de `shapley_symmetric` : l'axiome de symétrie est partagé par tout indice de pouvoir raisonnable. -/
+/-- **Symmetry of the normalized Banzhaf index.** Symmetric (interchangeable) players
+    have equal normalized Banzhaf indices: they have the same raw counts
+    (`banzhaf_raw_symmetric`) and share the same normalization denominator. This is the
+    counterpart of `shapley_symmetric`: the symmetry axiom is shared by every reasonable
+    power index. -/
 theorem banzhaf_index_symmetric (G : TUGame_en N) (i j : N)
     (h : Solution.SymmetricPlayers G i j) :
     BanzhafIndex G i = BanzhafIndex G j := by
@@ -1841,31 +1838,31 @@ theorem banzhaf_index_dummy_zero (G : TUGame_en N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
 
-/-- L'indice de Banzhaf normalisé est non négatif : `BanzhafRaw` est un compte naturel
-    (≥ 0 quand transtypé vers ℝ) et le dénominateur normalisateur `2 ^ (card N - 1) > 0`.
-    Cible réelle du prouveur BG (#1453, cycle 65), enchaîne sur #4071 (déf. BanzhafIndex).
-    Légèrement plus dur que les échauffements : nécessite `div_nonneg` plus un argument
-    de positivité sur le dénominateur. -/
+/-- The normalized Banzhaf index is nonnegative: `BanzhafRaw` is a natural count
+    (≥ 0 when cast to ℝ) and the normalizing denominator `2 ^ (card N - 1) > 0`.
+    Real BG-prover target (#1453, cycle 65), follows up on #4071 (def. BanzhafIndex).
+    Slightly harder than the warm-ups: requires `div_nonneg` plus a positivity
+    argument on the denominator. -/
 theorem banzhaf_index_nonneg (G : TUGame_en N) (i : N) : 0 ≤ BanzhafIndex G i := by
   simp only [BanzhafIndex]
   apply div_nonneg
   · exact Nat.cast_nonneg _
   · exact pow_nonneg (by norm_num) _
 
-/-- L'indice de Banzhaf normalisé est nul si et seulement si l'indice brut de Banzhaf est
-    nul : `BanzhafIndex = BanzhafRaw / 2^(card N - 1)` et le dénominateur normalisateur
-    `2 ^ (card N - 1)` est strictement positif (donc la division par lui est fidèle). Ceci
-    renforce `banzhaf_index_dummy_zero` (un sens) en une caractérisation structurelle nette.
-    Cible BG-prover (#1453, cycle 66, item 4) ; preuve iff `div_eq_zero_iff₀`. -/
+/-- The normalized Banzhaf index is zero if and only if the raw Banzhaf index is zero:
+    `BanzhafIndex = BanzhafRaw / 2^(card N - 1)` and the normalizing denominator
+    `2 ^ (card N - 1)` is strictly positive (so division by it is faithful). This
+    strengthens `banzhaf_index_dummy_zero` (one direction) into a clean structural
+    characterization. BG-prover target (#1453, cycle 66, item 4); iff proof via `div_eq_zero_iff₀`. -/
 theorem banzhaf_index_eq_zero_iff (G : TUGame_en N) (i : N) :
     BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0 := by
   simp [BanzhafIndex]
 
-/-- L'indice de Banzhaf normalisé est positif si et seulement si l'indice brut de Banzhaf
-    est positif : le dual `>0` de `banzhaf_index_eq_zero_iff`. Ensemble, les deux
-    théorèmes iff donnent une caractérisation fidèle — le normalisateur `2 ^ (card N - 1)`
-    est strictement positif, donc positivité et nullité sont toutes deux préservées par la
-    division. Cible BG-prover (#1453, cycle 67, item 5) ; iff de positivité. -/
+/-- The normalized Banzhaf index is positive if and only if the raw Banzhaf index is
+    positive: the `>0` dual of `banzhaf_index_eq_zero_iff`. Together, the two iff
+    theorems give a faithful characterization — the normalizer `2 ^ (card N - 1)`
+    is strictly positive, so both positivity and nullity are preserved by division.
+    BG-prover target (#1453, cycle 67, item 5); positivity iff. -/
 theorem banzhaf_index_pos_iff (G : TUGame_en N) (i : N) :
     0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i := by
   simp only [BanzhafIndex]
@@ -1877,12 +1874,11 @@ theorem banzhaf_index_pos_iff (G : TUGame_en N) (i : N) :
   · intro h
     exact div_pos (by exact_mod_cast h) hden
 
-/-- L'indice de Banzhaf normalisé vaut au plus 2 : `BanzhafRaw` compte les coalitions
-    critiques, bornées par le nombre total de coalitions `2 ^ card N` (voir
-    `banzhaf_raw_le_univ`) ; normaliser par `2 ^ (card N - 1)` laisse un quotient d'au
-    plus 2. Le joueur `i : N` force `0 < card N`, donc la soustraction Nat `card N - 1`
-    ne déborde pas.
-    Cible BG-prover (#1453, cycle 66, item 3) ; enchaîne `banzhaf_raw_le_univ`. -/
+/-- The normalized Banzhaf index is at most 2: `BanzhafRaw` counts critical coalitions,
+    bounded by the total number of coalitions `2 ^ card N` (see `banzhaf_raw_le_univ`);
+    normalizing by `2 ^ (card N - 1)` leaves a quotient of at most 2. The player
+    `i : N` forces `0 < card N`, so the Nat subtraction `card N - 1` does not underflow.
+    BG-prover target (#1453, cycle 66, item 3); follows up `banzhaf_raw_le_univ`. -/
 theorem banzhaf_index_le_two (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 2 := by
   have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
   have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
@@ -1898,18 +1894,18 @@ theorem banzhaf_index_le_two (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 2 
     _ = (2 ^ Fintype.card N : ℝ) := by rw [hcard]; norm_cast
     _ = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by rw [h2]
 
-/-- L'indice de Banzhaf normalisé vaut au plus 1 : le compte brut `BanzhafRaw` n'enregistre
-    que les coalitions où `i` est critique, et un joueur critique doit être membre
-    (`critical_implies_mem`), donc le filtre des coalitions critiques est contenu dans le
-    filtre des coalitions *contenant* `i`. Il y a exactement `2 ^ (card N - 1)` telles
-    coalitions (bijection insertion/effacement avec les sous-ensembles de `N \ {i}` : chacun
-    des autres `card N - 1` joueurs est dedans ou dehors, et `i` est forcé dedans).
-    Normaliser `BanzhafRaw ≤ 2 ^ (card N - 1)` par `2 ^ (card N - 1)` laisse un quotient d'au
-    plus 1 — l'indice de Penrose-Banzhaf est une quantité de type probabilité dans `[0, 1]`.
-    Ceci resserre `banzhaf_index_le_two` (qui utilisait la borne plus grossière
-    `banzhaf_raw_le_univ ≤ 2 ^ card N`) et s'apparie avec `banzhaf_index_nonneg` pour
-    épingler l'indice dans `[0, 1]`. Le joueur `i : N` force `0 < card N`, donc la
-    soustraction Nat `card N - 1` ne déborde pas. -/
+/-- The normalized Banzhaf index is at most 1: the raw count `BanzhafRaw` records only
+    coalitions where `i` is critical, and a critical player must be a member
+    (`critical_implies_mem`), so the filter of critical coalitions is contained in the
+    filter of coalitions *containing* `i`. There are exactly `2 ^ (card N - 1)` such
+    coalitions (insert/erase bijection with the subsets of `N \ {i}`: each of the other
+    `card N - 1` players is in or out, and `i` is forced in).
+    Normalizing `BanzhafRaw ≤ 2 ^ (card N - 1)` by `2 ^ (card N - 1)` leaves a quotient of
+    at most 1 — the Penrose-Banzhaf index is a probability-like quantity in `[0, 1]`.
+    This tightens `banzhaf_index_le_two` (which used the coarser bound
+    `banzhaf_raw_le_univ ≤ 2 ^ card N`) and pairs with `banzhaf_index_nonneg` to pin the
+    index in `[0, 1]`. The player `i : N` forces `0 < card N`, so the Nat subtraction
+    `card N - 1` does not underflow. -/
 theorem banzhaf_index_le_one (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 1 := by
   have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
   have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
@@ -1958,13 +1954,13 @@ theorem banzhaf_index_le_one (G : TUGame_en N) (i : N) : BanzhafIndex G i ≤ 1 
   unfold BanzhafRaw
   exact_mod_cast (Finset.card_le_card hsubset).trans hmemcard.le
 
-/-- Cas d'égalité de `banzhaf_index_le_one` : un dictateur atteint l'indice de Banzhaf
-    maximal `1`. Dans un jeu simple monotone, un dictateur `i` est critique dans *toute*
-    coalition qui le contient — la monotonicité fait que toute telle coalition gagne (puisque
-    `{i}` gagne), et la propriété de veto fait que son retrait perd — donc `i` est critique
-    dans exactement les `2^(|N|-1)` coalitions qui le contiennent, ce qui donne
-    `BanzhafIndex G i = 2^(|N|-1) / 2^(|N|-1) = 1`. Ceci caractérise l'atteinte de la
-    borne supérieure prouvée par `banzhaf_index_le_one`. -/
+/-- Equality case of `banzhaf_index_le_one`: a dictator reaches the maximal Banzhaf
+    index `1`. In a monotone simple game, a dictator `i` is critical in *every* coalition
+    that contains them — monotonicity makes every such coalition win (since `{i}` wins),
+    and the veto property makes removing them lose — so `i` is critical in exactly the
+    `2^(|N|-1)` coalitions containing them, which gives
+    `BanzhafIndex G i = 2^(|N|-1) / 2^(|N|-1) = 1`. This characterizes the attainment of
+    the upper bound proved by `banzhaf_index_le_one`. -/
 theorem dictator_banzhaf_index_eq_one (G : TUGame_en N) (i : N)
     (hG : SimpleGame G) (hM : MonotoneGame G) (h : Dictator G i) :
     BanzhafIndex G i = 1 := by
