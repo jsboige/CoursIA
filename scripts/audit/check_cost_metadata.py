@@ -74,10 +74,15 @@ import yaml
 # === Patterns de détection ===
 
 # Cellule code GPU
+# Note FP-c.831 : `torch.cuda.is_available()` est une SONDE bénigne (affichée pour
+# info par les notebooks PyTorch CPU pédagogiques, ex rl_6e GRPO — output committé
+# « CUDA=False », tourne en CPU). On l'exonère via lookahead négatif ; les vrais
+# signaux GPU (`torch.cuda.synchronize`, `torch.cuda.empty_cache`, `.cuda()`,
+# `.to("cuda")`) restent détectés.
 GPU_PATTERNS = [
     r'\.cuda\(\)',
     r'\.to\("cuda"\)',
-    r'torch\.cuda\.',
+    r'torch\.cuda\.(?!is_available\b)',
     r'tensorflow\.gpu',
     r'with\s+tf\.device\(["\']/gpu',
 ]
@@ -91,7 +96,15 @@ API_PATTERNS = {
     'openai': r'openai\.ChatCompletion|openai\.Image|openai\.Audio|from openai',
     'anthropic': r'anthropic\.\w|from anthropic|claude',
     'mistral': r'mistralai|from mistral',
-    'google': r'google\.generativeai|gemini',
+    # FP-c.1172 : le `gemini` nu matchait le pattern "Gemini" de Conway's
+    # Game of Life (Andrew Wade, 2010, self-replicator) dans les notebooks
+    # Lean-16b/16c (variable `gemini_node`, fichier `gemini.rle`). On resserre
+    # au contexte API reel : import du SDK `google.generativeai`, endpoint REST
+    # `generativelanguage.googleapis`, ou nom de modele versionne
+    # (`gemini-1.5`, `gemini-pro`, `gemini-2.0`). Le mot nu ne signale jamais
+    # un appel API. Complement du fix c.912 qui avait resserre `anthropic.` mais
+    # laisse `gemini`/`claude` nus (cf commentaire lignes 86-89).
+    'google': r'google\.generativeai|generativelanguage\.googleapis|gemini-\d|gemini-pro|gemini-flash',
     'replicate': r'replicate\.',
     'hf_inference_api': r'huggingface_hub\.InferenceClient',
 }
