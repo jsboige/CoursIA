@@ -8,6 +8,14 @@
       by: myia-po-2023:CoursIA
       python_sha: 0a90f51abb3cd11a411f066ab9c4e4a26828ffbd
       csharp_sha: 1fc425b660a9f944860ed9c56971f1ae433c40e3
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 7ad0ad6e708d1b9a9e27cad116d306c529fd6ab8
+      csharp_sha: 1fc425b660a9f944860ed9c56971f1ae433c40e3
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: a1558a85213d6ed776afa664afc57ea777fb7bb2
+      csharp_sha: 1fc425b660a9f944860ed9c56971f1ae433c40e3
   known_differences:
     - "Socle pedagogique commun : Picross / Nonogram (CSP : contraintes lignes/colonnes, OR-Tools) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT + matplotlib colors + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
