@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: a4518639c3bc575395b112d7cf3d57f4518ec09d
-    csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: a4518639c3bc575395b112d7cf3d57f4518ec09d
+      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
   known_differences:
     - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."
