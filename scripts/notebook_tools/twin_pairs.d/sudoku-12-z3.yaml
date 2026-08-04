@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
-    python_sha: 2e25dae8e9b743238c2aeb1bf8ad45ef9d916e24
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: b96f422f56c22836ef891e82a3f2df25d59453f1
     csharp_sha: 8d3b07ab2b79096fca427c6c3781091c9de88ce8
   known_differences:
     - "Socle pedagogique commun : resolution de Sudoku par SMT (Satisfiability Modulo Theories) avec le vrai solveur Z3 (Microsoft Research) -- modelisation des contraintes Sudoku comme formules logiques (BitVec, contraintes all-different sur lignes/colonnes/carres), resolution par le solveur SMT. Les deux cotes utilisent le VRAI Z3 SOTA (meme moteur sous-jacent), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, BitVec, Solver."
