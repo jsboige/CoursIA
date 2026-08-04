@@ -100,7 +100,7 @@ Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-d�
 | Classe | Exemple | Décision |
 |--------|---------|----------|
 | **Structurel** | `2^225` combinaisons → speedup `~2.8e24x` ; nombre de contraintes ; complexité | **GARDER** — stable d'une machine à l'autre, c'est du contenu pédagogique réel |
-| **Machine-dépendant** | temps absolus (`~21 s`, `24-127 ms`) | **RETIRER** — renvoi à la cellule de mesure, ou ordre de grandeur |
+| **Machine-dépendant** | temps absolus (`~21 s`, `24-127 ms`) | **RETIRER** — renvoi à la cellule de mesure ; si le coût relatif porte le propos, l'écrire en **rapport** (cf ci-dessous) |
 | **Env-dépendant (observé)** | table de versions `NumPy 2.4.2` écrite à la main | **RETIRER** quand une cellule imprime déjà la version (source unique = l'output) |
 | **Env-dépendant (exigé)** | `Python 3.10+`, `.NET 9.0` | **GARDER** — c'est une **décision de projet**, pas une observation ; ne dérive pas |
 | **Stochastique seedé** | fitness d'un GA à `seed=42` | **GARDER** — reproductible, donc stable |
@@ -114,6 +114,14 @@ Les deux règles se croisent sur toute PR « alignement doc-honesty » et semble
 - **#9377** dit de **préférer retirer** l'épingle.
 
 **Quand les deux s'appliquent, retirer gagne** — parce que retirer sort définitivement la valeur du domaine de §D.5. Une prose qui ne cite plus de nombre volatil ne peut plus dériver, donc ne peut plus déclencher un #8052 au prochain passage kernel. C'est la seule des deux issues qui **ferme** la boucle au lieu de la déplacer d'un cran.
+
+### Le coût relatif se garde, le coût absolu se retire
+
+C'est la classe la plus fournie en pratique (temps de calcul comparant deux approches), et « retirer » y perd parfois du contenu réel : quand le propos **est** que telle approche coûte plus cher que telle autre, effacer les chiffres efface la leçon.
+
+La sortie est de passer de l'absolu au **rapport**. `0.2 s contre 0.1 s` devient `~2x le coût du filtrage` : les deux mesures viennent de la même exécution sur la même machine, donc leur rapport est **invariant** là où chacune dérive. Le lecteur garde l'information qui compte (l'ordre de grandeur relatif) et la prose sort du domaine de §D.5.
+
+Deux réserves : le rapport n'est valable que si les deux termes sont **mesurés dans la même cellule** (comparer un timing d'aujourd'hui à un timing d'une ancienne exécution ne vaut rien), et il ne remplace pas une complexité — `$O(n^2)$` reste la bonne façon de dire un coût asymptotique.
 
 ### Reformuler ne doit pas maquiller la contradiction
 
