@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2023
-    python_sha: bfca3c80c9ab075d707e17b2de6879469f34a9b5
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: b97a441e1192d137bf999626a8685d071fc2056f
     csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
   known_differences:
     - "Socle pedagogique commun : Weighted A* (best-first sur f(n)=g(n)+W*h(n), W>=1) sur un terrain pondere, balayage de W, garantie de sous-optimalite bornee cout <= W*C* (Pohl 1970)."

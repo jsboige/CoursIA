@@ -4,10 +4,8 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-03"
-    by: po-2024
     python_sha: b9163796240b41de977427a322d20dde3d19732d
-    csharp_sha: 76c53cf7c98bf8e089035bf7304e8e45b5e6488d
+    csharp_sha: 111bf7e843ba260a52ff4bb8abb585e1b34067d6
   known_differences:
     - "Socle pedagogique commun : les raffinements d'equilibre au-dela du SPE (Selten 1965) -- sous-jeux et equilibre parfait, menaces et promesses credibles, induction avant (forward induction), perfection en mains tremblantes (trembling-hand perfection, Selten 1975), application canonique du jeu du « Burn Money » (signal costly), comparaison des raffinements. Distinct du GT-9 (induction arriere + paradoxes) : le GT-10 porte sur les RAFFINEMENTS de la notion d'equilibre (forward induction, trembling-hand), pas sur l'algorithme de resolution."
     - "Idiomes framework : Python = `matplotlib` (patches `Ellipse` pour rendre les ensembles d'information / infosets sur l'arbre de jeu) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet** (modele d'arbre + sous-jeux + raffinements from-scratch, sortie console)."
