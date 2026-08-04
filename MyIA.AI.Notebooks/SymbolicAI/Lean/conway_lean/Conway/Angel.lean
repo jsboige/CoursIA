@@ -37,35 +37,35 @@ import Mathlib.Data.Finset.Prod
 
 namespace Conway
 
-/-- Chebyshev (king-move) distance on the integer lattice. -/
+/-- Distance de Chebyshev (coup de roi) sur le reseau entier. -/
 def chebyshev (a b : ℤ × ℤ) : ℤ :=
   max (|a.1 - b.1|) (|a.2 - b.2|)
 
-/-- Squares an Angel of power `k` can reach from `p`: the (2k+1)×(2k+1) Chebyshev
-    box around `p`, excluding `p` itself (the Angel must move). -/
+/-- Cases qu'un Ange de pouvoir `k` peut atteindre depuis `p` : le carre Chebyshev
+    (2k+1)×(2k+1) autour de `p`, `p` lui-meme exclu (l'Ange doit bouger). -/
 def angelMoves (k : ℕ) (p : ℤ × ℤ) : Finset (ℤ × ℤ) :=
   ((Finset.Icc (p.1 - (k : ℤ)) (p.1 + (k : ℤ))) ×ˢ
    (Finset.Icc (p.2 - (k : ℤ)) (p.2 + (k : ℤ)))).erase p
 
--- The power-1 Angel is exactly a chess king (8 moves); power-2 has 24.
+-- L'Ange de pouvoir 1 est exactement un roi d'echecs (8 coups) ; le pouvoir 2 en a 24.
 #eval (angelMoves 1 (0, 0)).card   -- 8
 #eval (angelMoves 2 (0, 0)).card   -- 24
 
-/-- Proved anchor: the Chebyshev distance from a square to itself is 0. -/
+/-- Ancre prouvee : la distance de Chebyshev d'une case a elle-meme vaut 0. -/
 theorem chebyshev_self (a : ℤ × ℤ) : chebyshev a a = 0 := by
   simp [chebyshev]
 
-/-- CALIBRATION (decide / native_decide): Conway's power-1 Angel is a king — 8 moves. -/
+/-- CALIBRATION (decide / native_decide) : l'Ange de pouvoir 1 de Conway est un roi — 8 coups. -/
 theorem kingMoves_card : (angelMoves 1 (0, 0)).card = 8 := by
   decide
 
-/-- CALIBRATION (decide / native_decide): the power-2 Angel has 24 moves. -/
+/-- CALIBRATION (decide / native_decide) : l'Ange de pouvoir 2 a 24 coups. -/
 theorem angelMoves2_card : (angelMoves 2 (0, 0)).card = 24 := by
   decide
 
-/-- CALIBRATION (Finset.card arithmetic, medium): an Angel of power `k` from any
-    square has exactly `(2k+1)^2 - 1` moves — the combinatorial heart of the Angel
-    problem setup (`card_erase_of_mem` + `card_product` + `Int.card_Icc`). -/
+/-- CALIBRATION (arithmetique Finset.card, moyen) : un Ange de pouvoir `k` depuis
+    n'importe quelle case a exactement `(2k+1)^2 - 1` coups — le cœur combinatoire du
+    setup du probleme de l'Ange (`card_erase_of_mem` + `card_product` + `Int.card_Icc`). -/
 theorem angelMoves_card (k : ℕ) (p : ℤ × ℤ) :
     (angelMoves k p).card = (2 * k + 1) ^ 2 - 1 := by
   simp [angelMoves, Finset.card_product, Int.card_Icc]
