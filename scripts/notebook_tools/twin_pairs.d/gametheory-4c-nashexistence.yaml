@@ -8,6 +8,10 @@
       by: myia-po-2023:CoursIA
       python_sha: c6db511801c503cacd18a0af26ffe0182d0b70f8
       csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: d961920fe442d4cd9e6948327d5cd72c79f0c36b
+      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
   known_differences:
     - "Socle pedagogique commun : existence d'un equilibre de Nash (theoreme de point fixe de Brouwer / Kakutani), structure de jeu et conditions d'existence. Meme concept mathematique (equilibre, point fixe, convexite), meme cas d'application (jeux strategiques, illustration de l'existence). Les deux couvrent le theoreme de Nash."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 15 cellules code) calcule et visualise numeriquement les equilibres (support enumeration / approche numerique + tracé du best-response correspondence) ; le C# (pur System.* stdlib, 0 NuGet, 10 cellules code) demontre l'existence de maniere constructive/algebrique (sans solveur numerique externe). Meme theoreme, deux angles : numerique+visualisation cote Python vs construction algebrique cote C#."
