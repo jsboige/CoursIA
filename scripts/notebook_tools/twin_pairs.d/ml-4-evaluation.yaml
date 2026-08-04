@@ -4,10 +4,11 @@
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
+    date: "2026-08-02"
+    by: myia-po-2024:CoursIA-2
     python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
-    csharp_sha: 583ce5c7234878fc5ec2b668289b131b640ef1ac
+    csharp_sha: 3702afa3bac062ae4d142e0debd3ffce521940ab
+    reason: "rebaseline csharp apres fix citation-title (#8052) : reference Hastie/Tibshirani/Friedman (2009) -- le titre anglais The Elements of Statistical Learning etait corrupt par francisation (le mot Elements remplace par le mot francais equivalent a capitale accentuee) -> restore titre canonique EN. Springer 2009 2e ed. Python twin unchanged, python_sha preserve. Parite surface preservee (citation bibliographique, pas de valeur calculee)."
   known_differences:
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
