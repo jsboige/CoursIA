@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 88c26aeba63abc5b25e788c7e27c1154023d0f84
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
     csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
   known_differences:
     - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."
