@@ -5,8 +5,8 @@
   parity_level: semantic
   last_audit:
     date: "2026-08-04"
-    by: myia-po-2024:CoursIA-2
-    python_sha: e45fb36548d082806991c54c8d332f61347c894a
+    by: myia-po-2023:CoursIA
+    python_sha: db8f5ea35f0f891863bcf212bc112b031cafa494
     csharp_sha: b1352e95a88555910b1b7bcfb90feb12891dc752
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
