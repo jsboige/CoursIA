@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-08-01"
     by: myia-po-2024:CoursIA-2
-    python_sha: b8a8ccc15f082db239c2899eb07c871146de5ade
+    python_sha: 42ffe90e4fb6c1d688dc6bb5c8e5258fb805246f
     csharp_sha: 0d8a290aead6260078144abe41c5987fc5c2893a
   known_differences:
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."

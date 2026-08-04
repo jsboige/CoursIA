@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-23"
-    by: po-2024
-    python_sha: 67511cf48e09ce533a7312c3aa19530b15c3e93e
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 607ce735712708a08ebc37db2f5a7d19a0d16dfc
     csharp_sha: 9cfb80bc05aa73594102d90d93276e52356a4977
   known_differences:
     - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."

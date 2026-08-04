@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-25'
-    by: po-2026
-    python_sha: 1deeabe00fa6c14f4809f26e28d088473ecb4fd6
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
     csharp_sha: dad13c7fac88520807664b25ab6b95095f608677
   known_differences:
     - "Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp C#) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."

@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-regen_img1_dalle3.py — REPAIR THE LEGACY ASSET (issue #8624).
+regen_img1_dalle3.py — REPAIR THE LEGACY ASSETS (issue #8624 + #9348).
 
 Le NB `01-1-OpenAI-DALL-E-3.ipynb` régénère une image via gpt-image-1 puis
 l'affiche avec matplotlib. Le filtre non-ASCII du titre (c.916 / PR #8636)
-protège la SORTIE du notebook, mais l'asset historique
-`MyIA.AI.Notebooks/GenAI/Image/01-Foundation/assets/readme/img1-dalle3.webp`
-(committé avant ce fix) garde un glyphe □ cuit dans le bandeau de titre.
+protège la SORTIE du notebook, mais deux assets historiques gardent un glyphe
+□ + le libellé legacy « DALL-E 3 » cuit dans le bandeau de titre (committés
+avant ce fix) :
+
+- `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/assets/readme/img1-dalle3.webp`
+- `MyIA.AI.Notebooks/GenAI/Image/assets/readme/dalle3-cover.webp`
+
+c.928 (PR #8636) a régénéré le premier ; le second est resté legacy (Classe 4
+c.973 vision-audit = alt-text incoherent — titre intégré annonce « DALL-E 3 »
+alors que le modèle réellement appelé est `gpt-image-1`, vérifiable dans le NB
+source cellule 82075ed6 + disclosure `dalle3-gpt-image1-disclosure`). Doctrine
+#5780 demande que les deux fichiers soient byte-identique (racine Image README
+illustre la figure dans le contexte introductif « 01-Foundation - Modèles de
+base » ; 01-Foundation README l'illustre dans le contexte « DALL-E 3 cellule 14
+output 3 »).
 
 L948 ★★ Stop & Repair : on ne scrubbe pas la SORTIE d'une cellule, on répare
-la CAUSE + ré-exécute. Ici la cause = image legacy figée dans le `.webp`,
+la CAUSE + ré-exécute. Ici la cause = image legacy figée dans les `.webp`,
 le fix = re-générer l'image via le même pipeline puis re-burn le bandeau
-ASCII-only + sauver. SOTA-OK : vraie regen via stack GenAI.
+ASCII-only + sauver aux DEUX emplacements (byte-identique). SOTA-OK : vraie
+regen via stack GenAI (appel OpenAI `gpt-image-1` direct, pas ComfyUI).
 
 Usage:
-    python scripts/audit/regen_img1_dalle3.py            # regen + save
+    python scripts/audit/regen_img1_dalle3.py            # regen + save (BOTH)
     python scripts/audit/regen_img1_dalle3.py --check   # verify (no regen)
     python scripts/audit/regen_img1_dalle3.py --audit   # quick audit only
 """
@@ -31,8 +44,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NB_PATH = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"
-ASSET_DIR = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/assets/readme"
-ASSET_PATH = ASSET_DIR / "img1-dalle3.webp"
+ASSET_DIR_01F = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/assets/readme"
+ASSET_DIR_ROOT = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/Image/assets/readme"
+ASSET_PATHS = [
+    ASSET_DIR_01F / "img1-dalle3.webp",
+    ASSET_DIR_ROOT / "dalle3-cover.webp",
+]
+# Rétrocompat — single-path callers (tests, audit script) pointent sur 01-Foundation.
+ASSET_PATH = ASSET_PATHS[0]
 ENV_PATH = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/.env"
 
 # gpt-image-1 params (calqués sur cell 11 du NB, identique au pipeline pédagogique)
@@ -48,18 +67,59 @@ TITLE = "Paysage Urbain Futuriste - gpt-image-1"
 
 
 def _load_env() -> dict[str, str]:
-    """Charge le .env GenAI (gitignored) sans dépendre de python-dotenv."""
+    """Charge le .env GenAI (gitignored) sans dépendre de python-dotenv.
+
+    Look-up multi-origine : si exécuté depuis un worktree qui n'a pas de
+    .env propre (cas fréquent — le .env est gitignored et l'API key vit
+    sur l'arbre principal), on cherche dans l'ordre :
+      1. ENV_PATH canonique (worktree-local)
+      2. .env dans REPO_ROOT (souvent worktree → pas de .env)
+      3. .env dans les parents successifs de REPO_ROOT
+      4. .env dans les siblings de REPO_ROOT (autres worktrees + main repo)
+    Les secrets ne doivent JAMAIS transiter par un fichier versionné
+    (cf [secrets-hygiene.md] règle HARD).
+    """
     env: dict[str, str] = {}
-    if not ENV_PATH.exists():
-        print(f"[err] .env introuvable : {ENV_PATH}", file=sys.stderr)
-        sys.exit(2)
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    candidates: list[Path] = []
+    candidates.append(ENV_PATH)
+    candidates.append(REPO_ROOT / "MyIA.AI.Notebooks/GenAI/.env")
+    # Remonter les parents
+    cur = REPO_ROOT
+    for _ in range(8):
+        cur = cur.parent
+        candidates.append(cur / "MyIA.AI.Notebooks/GenAI/.env")
+    # Siblings de REPO_ROOT (couvre le cas « worktree enfant du main repo »)
+    parent = REPO_ROOT.parent
+    if parent.exists():
+        for sib in parent.iterdir():
+            if sib.is_dir():
+                candidates.append(sib / "MyIA.AI.Notebooks/GenAI/.env")
+    seen = set()
+    for p in candidates:
+        try:
+            rp = p.resolve()
+        except OSError:
             continue
-        k, v = line.split("=", 1)
-        env[k.strip()] = v.strip()
-    return env
+        if rp in seen:
+            continue
+        seen.add(rp)
+        if not p.exists() or not p.is_file():
+            continue
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            env.setdefault(k.strip(), v.strip())
+        if env:
+            print(f"[ok] .env chargé depuis : {p}")
+            return env
+    print(
+        f"[err] .env introuvable (tenté dans {len(seen)} chemins, ex. "
+        f"{candidates[0]})",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 def _ascii_title(title: str) -> str:
@@ -118,16 +178,19 @@ def _burn_title(png_bytes: bytes, title: str, out_path: Path) -> None:
 
 
 def audit() -> int:
-    """Vérifie que l'asset existe et n'est pas manifestement cassé (taille)."""
-    if not ASSET_PATH.exists():
-        print(f"[err] asset absent : {ASSET_PATH}")
-        return 1
-    size = ASSET_PATH.stat().st_size
-    print(f"[ok] asset present : {ASSET_PATH} ({size} bytes)")
-    if size < 10_000:
-        print(f"[warn] asset suspicieusement petit ({size} bytes)")
-        return 2
-    return 0
+    """Vérifie que les assets existent et ne sont pas manifestement cassés (taille)."""
+    rc = 0
+    for p in ASSET_PATHS:
+        if not p.exists():
+            print(f"[err] asset absent : {p}")
+            rc = 1
+            continue
+        size = p.stat().st_size
+        print(f"[ok] asset present : {p} ({size} bytes)")
+        if size < 10_000:
+            print(f"[warn] asset suspicieusement petit ({size} bytes)")
+            rc = max(rc, 2)
+    return rc
 
 
 def check() -> int:
@@ -152,7 +215,7 @@ def check() -> int:
 
 
 def regen() -> int:
-    """Regen + save. Idempotent : re-run = re-write."""
+    """Regen + save BOTH assets byte-identique. Idempotent : re-run = re-write."""
     api_key = _load_env().get("OPENAI_API_KEY")
     if not api_key or api_key == "<placeholder>":
         print("[err] OPENAI_API_KEY absente ou placeholder", file=sys.stderr)
@@ -167,16 +230,43 @@ def regen() -> int:
 
     safe_title = _ascii_title(TITLE)
     print(f"[regen] Bandeau titre ASCII-only : {safe_title!r}")
-    _burn_title(png_bytes, safe_title, ASSET_PATH)
-    final = ASSET_PATH.stat().st_size
-    print(f"[ok] asset sauvé : {ASSET_PATH} ({final} bytes)")
+    # Burn le titre et sauver vers TOUS les chemins target (doctrine #5780 byte-identique).
+    # On burn dans un buffer BytesIO une seule fois, puis on écrit les bytes identiques
+    # vers chaque chemin — garantit byte-identity sans dépendre du timestamp WebP.
+    import io as _io
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from PIL import Image
+
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.imshow(img)
+    ax.axis("off")
+    ax.set_title(safe_title, fontsize=16, pad=20)
+    fig.tight_layout()
+    webp_buf = _io.BytesIO()
+    fig.savefig(webp_buf, format="webp", bbox_inches="tight", dpi=85)
+    plt.close(fig)
+    webp_bytes = webp_buf.getvalue()
+    print(f"[regen] WebP burn ({len(webp_bytes)} bytes) prêt pour distribution multi-cible")
+
+    for p in ASSET_PATHS:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(webp_bytes)
+        final = p.stat().st_size
+        print(f"[ok] asset sauvé : {p} ({final} bytes)")
+    # Affiche le SHA1 partagé pour confirmer byte-identity (doctrine #5780).
+    import hashlib
+    sha1 = hashlib.sha1(webp_bytes).hexdigest()
+    print(f"[ok] SHA1 byte-identique des 2 assets : {sha1}")
     return 0
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Regen img1-dalle3.webp (issue #8624).")
+    ap = argparse.ArgumentParser(description="Regen img1-dalle3.webp + dalle3-cover.webp (issue #8624 + #9348).")
     ap.add_argument("--check", action="store_true", help="Vérifier deps + .env")
-    ap.add_argument("--audit", action="store_true", help="Audit rapide (taille asset)")
+    ap.add_argument("--audit", action="store_true", help="Audit rapide (taille assets)")
     args = ap.parse_args()
     if args.check:
         return check()

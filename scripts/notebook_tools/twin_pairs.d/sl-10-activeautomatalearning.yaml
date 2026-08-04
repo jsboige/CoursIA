@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb
   parity_level: native-both
   last_audit:
-    date: "2026-07-27"
-    by: po-2024
-    python_sha: e73df51576a2dbe1cc7c703be611fc723aed43a2
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: fdeaf01f01084c49f4a24079d8191092609312b8
     csharp_sha: 329bc61e49b55b0261a76bb80305f29d4556d67c
   known_differences:
     - "Socle commun : apprentissage actif d'automates -- algorithme L* d'Angluin, modele MAT (Minimally Adequate Teacher), table d'observation, oracle d'equivalence, pont vers Infer.NET (DFA exact a reconnaissance probabiliste)."

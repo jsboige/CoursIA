@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb
   parity_level: semantic
   last_audit:
-    date: '2026-07-31'
-    by: myia-po-2024:CoursIA-2
-    python_sha: 33bdf83aba0071cfe0d5aaac2f239668b9008173
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
     csharp_sha: c1aa93b3ef1995aad5abe0f24e07b8fa3efff577
   known_differences:
     - "Socle pedagogique commun : TSP / Voyageur de commerce (metaheuristiques + OR-Tools routing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
