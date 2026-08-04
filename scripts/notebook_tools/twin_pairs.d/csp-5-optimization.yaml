@@ -4,8 +4,8 @@
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-08-03"
-    by: myia-po-2023:CoursIA
+    date: "2026-08-04"
+    by: myia-po-2026:CoursIA
     python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
     csharp_sha: 056338a84a6e3491bcc5ce5be7fd8904a4f9783b
   known_differences:
