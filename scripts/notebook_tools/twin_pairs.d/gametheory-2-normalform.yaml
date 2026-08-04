@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
+    date: "2026-08-02"
     by: myia-po-2024:CoursIA-2
     python_sha: 183d8f84edcf34e6018de795ebc2540dfa3f74d0
-    csharp_sha: 4af2b2213ed29adf3390baee09d29c9d9429818d
+    csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
   known_differences:
     - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
     - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."

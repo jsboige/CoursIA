@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb
   parity_level: surface
   last_audit:
-    date: "2026-07-27"
+    date: "2026-08-03"
     by: po-2024
-    python_sha: 0b4c12b4d9133ea693d82775f7a8a06a5b1d511d
+    python_sha: 0c683cf6e0555230549c7fc0cea61995c876eb3e
     csharp_sha: 8bb63a9acc5195d1ec87cf70d8f80b27a411796c
   known_differences:
     - "Bibliotheque vs from-scratch : Python invoque NetworkX (librairie mature, algorithmes de graphes prets a l'emploi : plus courts chemins, centralites, flot max, Louvain, matching) ; C# implemente les algorithmes from-scratch sur une adjacency list maison (BFS, DFS, Dijkstra, Ford-Fulkerson). parity_level=surface (meme plan pedagogique, implementations independantes)."
