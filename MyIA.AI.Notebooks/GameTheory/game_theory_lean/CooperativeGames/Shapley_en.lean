@@ -32,7 +32,7 @@ variable {N : Type*} [Fintype N] [DecidableEq N]
 
 /-! ## Solutions and axioms -/
 
-/-- Un concept de solution associe à chaque jeu un vecteur de paiements -/
+/-- A solution concept maps each game to a payoff vector -/
 def Solution (N : Type*) [Fintype N] := TUGame_en N → (N → ℝ)
 
 namespace Solution
@@ -41,8 +41,8 @@ variable (φ : Solution N)
 
 /-! ## The four Shapley axioms -/
 
-/-- Axiome 1 : Efficience
-    Les paiements s'additionnent pour donner la valeur de la grande coalition -/
+/-- Axiom 1: Efficiency
+    Payoffs add up to the value of the grand coalition -/
 def Efficiency : Prop :=
   ∀ G : TUGame_en N, ∑ i : N, φ G i = G.v Finset.univ
 
@@ -51,8 +51,8 @@ def SymmetricPlayers (G : TUGame_en N) (i j : N) : Prop :=
   ∀ S : Finset N, i ∉ S → j ∉ S →
     G.v (S ∪ {i}) = G.v (S ∪ {j})
 
-/-- Axiome 2 : Symétrie
-    Des joueurs symétriques reçoivent des paiements égaux -/
+/-- Axiom 2: Symmetry
+    Symmetric players receive equal payoffs -/
 def Symmetry : Prop :=
   ∀ G : TUGame_en N, ∀ i j : N,
     SymmetricPlayers G i j → φ G i = φ G j
@@ -62,19 +62,19 @@ def NullPlayer (G : TUGame_en N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S →
     G.v (S ∪ {i}) = G.v S
 
-/-- Axiome 3 : Joueur nul
-    Un joueur sans contribution marginale reçoit 0 -/
+/-- Axiom 3: Null Player
+    A player with no marginal contribution receives 0 -/
 def NullPlayerAxiom : Prop :=
   ∀ G : TUGame_en N, ∀ i : N,
     NullPlayer G i → φ G i = 0
 
-/-- Somme de deux jeux TU -/
+/-- Sum of two TU games -/
 def AddGames (G H : TUGame_en N) : TUGame_en N where
   v := fun S => G.v S + H.v S
   empty_zero := by simp [G.empty_zero, H.empty_zero]
 
-/-- Axiome 4 : Additivité
-    La solution d'une somme de jeux est la somme des solutions -/
+/-- Axiom 4: Additivity
+    The solution of a sum of games is the sum of the solutions -/
 def Additivity : Prop :=
   ∀ G H : TUGame_en N, ∀ i : N,
     φ (AddGames G H) i = φ G i + φ H i
@@ -83,7 +83,7 @@ end Solution
 
 /-! ## The Shapley value -/
 
-/-- Le coefficient de Shapley pour une coalition de taille s dans un jeu à n joueurs :
+/-- The Shapley coefficient for a coalition of size s in an n-player game:
     c(s,n) = s! * (n - s - 1)! / n! -/
 noncomputable def shapleyCoef (n s : ℕ) : ℝ :=
   (Nat.factorial s * Nat.factorial (n - s - 1)) / Nat.factorial n
@@ -93,15 +93,15 @@ noncomputable def shapleyValue (G : TUGame_en N) (i : N) : ℝ :=
   ∑ S ∈ (Finset.univ.filter fun S => i ∉ S),
     shapleyCoef (Fintype.card N) S.card * G.marginalContribution i S
 
-/-- Le concept de solution de Shapley -/
+/-- The Shapley solution concept -/
 noncomputable def shapleySolution : Solution N :=
   fun G i => shapleyValue G i
 
 /-! ## Characterization via unanimity games (any axiomatic solution) -/
 
-/-- Toute solution efficiente, symétrique et respectant le joueur nul donne 1/|T|
-    aux joueurs de T et 0 aux joueurs hors de T dans le jeu d'unanimité u_T.
-    Utilise directement les trois axiomes (efficience, symétrie, joueur nul). -/
+/-- Any efficient, symmetric solution respecting the null player gives 1/|T|
+    to players in T and 0 to players outside T in the unanimity game u_T.
+    Uses the three axioms directly (efficiency, symmetry, null player). -/
 private theorem phi_unanimity (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -111,8 +111,8 @@ private theorem phi_unanimity (φ : Solution N)
     if i ∈ T then (1 : ℝ) / T.card else 0 := by
   classical
   split_ifs with hiT
-  · -- Cas i ∈ T : par symétrie tous les j ∈ T obtiennent la même valeur, par efficience somme = 1
-    -- Étape 1 : Par symétrie, tous les j ∈ T ont la même valeur que i
+  · -- Case i ∈ T: by symmetry all j ∈ T get the same value, by efficiency sum = 1
+    -- Step 1: By symmetry, all j ∈ T have the same value as i
     have h_eq : ∀ j ∈ T, φ (unanimityGame T hT) j = φ (unanimityGame T hT) i := by
       intro j hjT
       by_cases hij : j = i; · subst hij; rfl
@@ -130,7 +130,7 @@ private theorem phi_unanimity (φ : Solution N)
           simp only [Finset.mem_union, Finset.mem_singleton] at this
           tauto
         rw [if_neg hni, if_neg hnj]
-    -- Étape 2 : Les joueurs hors de T sont nuls
+    -- Step 2: Players outside T are null
     have h_null_out : ∀ j, j ∉ T → φ (unanimityGame T hT) j = 0 := by
       intro j hjT'
       apply h_null
@@ -147,12 +147,12 @@ private theorem phi_unanimity (φ : Solution N)
       · exfalso; exact ‹¬T ⊆ S› (hto ‹T ⊆ S ∪ {j}›)
       · exfalso; exact ‹¬T ⊆ S ∪ {j}› (fun k hk => Finset.mem_union_left {j} (‹T ⊆ S› hk))
       · rfl
-    -- Étape 3 : Efficience : somme = v(univ) = 1
+    -- Step 3: Efficiency: sum = v(univ) = 1
     have h_sum_one : ∑ j, φ (unanimityGame T hT) j = 1 := by
       have := h_eff (unanimityGame T hT)
       simp only [unanimityGame, if_pos (Finset.subset_univ T)] at this
       exact this
-    -- Étape 4 : ∑_{∈T} = 1 (car ∑_{∉T} = 0)
+    -- Step 4: ∑_{∈T} = 1 (since ∑_{∉T} = 0)
     have h_sum_T : ∑ j ∈ T, φ (unanimityGame T hT) j = 1 := by
       have h_out_sum : ∑ j ∈ Finset.filter (fun j => j ∉ T) Finset.univ,
           φ (unanimityGame T hT) j = 0 :=
@@ -167,20 +167,20 @@ private theorem phi_unanimity (φ : Solution N)
         rw [this]
         rw [Finset.sum_add_sum_compl T (fun j => φ (unanimityGame T hT) j)]
       linarith
-    -- Étape 5 : Tous égaux dans T, donc T.card * φ G i = 1
+    -- Step 5: All equal in T, so T.card * φ G i = 1
     have h_card : (T.card : ℝ) * φ (unanimityGame T hT) i = 1 := by
       have : ∑ _ ∈ T, φ (unanimityGame T hT) i = (T.card : ℝ) * φ (unanimityGame T hT) i := by
         rw [Finset.sum_const, nsmul_eq_mul]
       rw [← this]
       exact (Finset.sum_congr rfl (fun j hj => (h_eq j hj).symm)).trans h_sum_T
-    -- Étape 6 : Donc φ G i = 1 / T.card
+    -- Step 6: Hence φ G i = 1 / T.card
     have hT0 : (T.card : ℝ) ≠ 0 := by
       have hcp : 0 < T.card := Finset.Nonempty.card_pos hT
       norm_cast
       omega
     field_simp
     linarith
-  · -- Cas i ∉ T : i est un joueur nul dans unanimityGame T
+  · -- Case i ∉ T: i is a null player in unanimityGame T
     apply h_null
     intro S hiS
     simp only [TUGame_en.unanimityGame]
@@ -623,9 +623,9 @@ end ShapleyValue
 
 namespace Mobius
 
-/-- Le coefficient de Mobius (dividende de Harsanyi) du jeu G pour la coalition T :
+/-- The Mobius coefficient (Harsanyi dividend) of game G for coalition T:
     a_T = Σ_{R ⊆ T} (-1)^{|T|-|R|} * G.v(R)
-    Cela capture la valeur « pure » de la coalition T au-delà de ses sous-ensembles. -/
+    This captures the pure value of coalition T beyond its subsets. -/
 noncomputable def mobiusCoeff (G : TUGame_en N) (T : Finset N) : ℝ :=
   ∑ R ∈ Finset.univ.filter (fun R => R ⊆ T),
     ((-1 : ℝ) ^ (T.card - R.card)) * G.v R
@@ -873,8 +873,8 @@ private theorem null_outside_smulUnanimity (φ : Solution N)
       · exfalso; exact ‹¬T ⊆ S› (hto ‹T ⊆ S ∪ {k}›)
       · exfalso; exact ‹¬T ⊆ S ∪ {k}› (fun m hm => Finset.mem_union_left {k} (‹T ⊆ S› hm)))
 
-/-- φ sur un jeu d'unanimité pondéré : φ(SmulGame c u_T, i) = c * φ(u_T, i).
-    Démontré directement à partir des axiomes, sans multiplication scalaire générale. -/
+/-- φ on a weighted unanimity game: φ(SmulGame c u_T, i) = c * φ(u_T, i).
+    Proved directly from the axioms, without general scalar multiplication. -/
 private theorem phi_weightedUnanimity (φ : Solution N)
     (h_eff : φ.Efficiency)
     (h_sym : φ.Symmetry)
@@ -963,7 +963,7 @@ private theorem shapley_finsetSumGames {ι : Type*} [DecidableEq ι]
     rw [Solution.finsetSumGames_insert f hjs, ShapleyValue.shapley_addGames, ih,
       Finset.sum_insert hjs]; ring
 
-/-- Le jeu G est égal au finsetSumGames de ses termes de décomposition de Mobius.
+/-- Game G equals the finsetSumGames of its Mobius decomposition terms.
     G = ∑_{T≠∅} SmulGame (mobiusCoeff G T) (unanimityGame T) -/
 private theorem game_eq_mobius_sum (G : TUGame_en N) :
     G = Solution.finsetSumGames
@@ -1043,8 +1043,8 @@ Veto/Dictator (greenlight architectural, cycle 73) supposeront. -/
 def SimpleGame (G : TUGame_en N) : Prop :=
   ∀ S : Finset N, G.v S = 0 ∨ G.v S = 1
 
-/-- Un `WeightedVotingGame` est simple : sa fonction caractéristique est un `if … then 1 else 0`,
-donc la valeur de chaque coalition est `0` ou `1`. -/
+/-- A `WeightedVotingGame` is simple: its characteristic function is an `if … then 1 else 0`,
+so the value of each coalition is `0` or `1`. -/
 theorem weighted_voting_game_simple (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) :
     SimpleGame (WeightedVotingGame weights quota hquota) := by
   intro S
@@ -1055,8 +1055,8 @@ theorem weighted_voting_game_simple (weights : N → ℝ) (quota : ℝ) (hquota 
 
 namespace SimpleGame
 
-/-- Dans un jeu simple, une valeur différente de `0` doit être `1`. C'est la lecture par
-    contraposée utilisée par les théorèmes Veto/Dictator pour promouvoir `v S ≠ 0` en `v S = 1`. -/
+/-- In a simple game, a value other than `0` must be `1`. This is the contrapositive
+    reading used by the Veto/Dictator theorems to promote `v S ≠ 0` to `v S = 1`. -/
 theorem eq_one_of_ne_zero {G : TUGame_en N} (hG : SimpleGame G) (S : Finset N)
     (hne : G.v S ≠ 0) : G.v S = 1 :=
   (hG S).resolve_left hne
@@ -1171,9 +1171,9 @@ theorem losing_downward_closed {G : TUGame_en N} (hG : MonotoneGame G) (hG' : Si
   have : G.v S ≤ G.v T := MonotoneGame.le_of_subset hG hST
   linarith
 
-/-- Un jeu de vote pondéré à poids non négatifs est monotone : élargir une coalition ajoute
-    du poids non négatif, donc la somme des poids ne peut qu'augmenter, et `v` (un
-    `if sum ≥ quota then 1 else 0`) ne peut pas diminuer. -/
+/-- A weighted voting game with non-negative weights is monotone: enlarging a coalition adds
+    non-negative weight, so the sum of weights can only increase, and `v` (an
+    `if sum ≥ quota then 1 else 0`) cannot decrease. -/
 theorem weighted_voting_game_monotone (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
     (hw : ∀ i, 0 ≤ weights i) :
     MonotoneGame (WeightedVotingGame weights quota hquota) := by
@@ -1248,8 +1248,8 @@ theorem proper (G : TUGame_en N) (hG : SelfDualGame G) : ProperGame G := hG.1
 /-- A self-dual game is strong. -/
 theorem strong (G : TUGame_en N) (hG : SelfDualGame G) : StrongGame G := hG.2
 
-/-- Dans un jeu simple auto-dual, exactement l'une d'une coalition et de son complément gagne :
-    `v S = 1` force `v Sᶜ = 0` (propre), et `v S = 0` force `v Sᶜ = 1` (fort). -/
+/-- In a self-dual simple game, exactly one of a coalition and its complement wins:
+    `v S = 1` forces `v Sᶜ = 0` (proper), and `v S = 0` forces `v Sᶜ = 1` (strong). -/
 theorem complement_flip {G : TUGame_en N} (hG : SelfDualGame G) {S : Finset N}
     (hS : G.v S = 1 ∨ G.v S = 0) : G.v Sᶜ = 0 ∨ G.v Sᶜ = 1 := by
   rcases hS with h1 | h0
@@ -1282,9 +1282,9 @@ noncomputable instance criticalDecidable (G : TUGame_en N) (i : N) :
 noncomputable def BanzhafRaw (G : TUGame_en N) (i : N) : ℕ :=
   (Finset.univ.filter fun S => Critical G i S).card
 
-/-- `BanzhafRaw G i` est borné par le nombre total de coalitions (`2^|N|`) :
-    les coalitions critiques sont un sous-ensemble de `Finset.univ`. Première cible réellement
-    prouvable, non-smoke, pour le prover BG (#1453). -/
+/-- `BanzhafRaw G i` is bounded by the total number of coalitions (`2^|N|`):
+    critical coalitions are a subset of `Finset.univ`. First genuinely provable,
+    non-smoke target for the BG prover (#1453). -/
 theorem banzhaf_raw_le_univ (G : TUGame_en N) (i : N) :
     BanzhafRaw G i ≤ (Finset.univ : Finset (Finset N)).card := by
   unfold BanzhafRaw
@@ -1408,10 +1408,10 @@ theorem veto_iff_critical_of_winning {G : TUGame_en N} (hG : SimpleGame G) (i : 
 def MinimalWinning (G : TUGame_en N) (S : Finset N) : Prop :=
   G.v S = 1 ∧ ∀ T ⊂ S, G.v T = 0
 
-/-- Un joueur veto appartient à toute coalition gagnante minimale.
+/-- A veto player belongs to every minimal winning coalition.
 
-    Une coalition gagnante minimale est en particulier gagnante, donc la propriété de veto
-    (`∀ coalition gagnante S, i ∈ S`) force l'appartenance. -/
+    A minimal winning coalition is in particular winning, so the veto property
+    (`∀ winning coalition S, i ∈ S`) forces membership. -/
 theorem veto_mem_minimal_winning {G : TUGame_en N} (i : N) (hv : VetoPlayer G i)
     {S : Finset N} (hmin : MinimalWinning G S) : i ∈ S :=
   hv S hmin.1
@@ -1469,8 +1469,8 @@ theorem veto_banzhaf_raw_pos (G : TUGame_en N) (hG : SimpleGame G) (i : N)
   simp only [BanzhafRaw]
   exact Finset.card_pos.mpr ⟨Finset.univ, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
 
-/-- Tout coefficient de Shapley `s! * (n - s - 1)! / n!` est strictement positif, étant un ratio
-    de factorielles strictement positives (`0! = 1`). -/
+/-- Every Shapley coefficient `s! * (n - s - 1)! / n!` is strictly positive, being a ratio
+    of strictly positive factorials (`0! = 1`). -/
 private theorem shapleyCoef_pos (n s : ℕ) : 0 < shapleyCoef n s := by
   unfold shapleyCoef
   exact div_pos (by exact_mod_cast Nat.mul_pos (Nat.factorial_pos _) (Nat.factorial_pos _))
@@ -1835,8 +1835,8 @@ theorem banzhaf_index_symmetric (G : TUGame_en N) (i j : N)
   simp only [BanzhafIndex]
   rw [banzhaf_raw_symmetric G i j h]
 
-/-- Un joueur muet a un indice de Banzhaf normalisé nul : il n'est pivot dans aucune coalition,
-    donc son compte brut (et par suite sa part normalisée) est nul. -/
+/-- A dummy player has a zero normalized Banzhaf index: it is pivotal in no coalition,
+    so its raw count (and hence its normalized share) is zero. -/
 theorem banzhaf_index_dummy_zero (G : TUGame_en N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
