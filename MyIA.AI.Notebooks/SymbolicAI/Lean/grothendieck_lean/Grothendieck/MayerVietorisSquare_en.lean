@@ -1,5 +1,5 @@
 /-
-Grothendieck Partie 21 — Les carrés de Mayer-Vietoris
+Grothendieck Part 21 — Les carrés de Mayer-Vietoris
 
 La Partie 20 (SheafCohomology/Basic.lean) a introduit les groupes de cohomologie
 des faisceaux H^n(F) basés sur Ext, le préfaisceau de cohomologie, et la fonctorialité.
