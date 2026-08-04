@@ -38,6 +38,12 @@ jobs:
 
       - name: Compteurs quantitatifs ajoutes en prose
         run: |
-          git fetch origin "${{ github.base_ref }}" --depth=0 -q
+          # `checkout@v4` avec `fetch-depth: 0` a deja recupere l'historique
+          # complet de toutes les branches : `origin/<base_ref>` existe. Un
+          # `--depth=0` ici est invalide (git exige un entier positif) et tuait
+          # l'etape en exit 128 AVANT le scanner -- le job rougissait donc sur
+          # une panne d'infra, pas sur un finding, ce qui contredisait le
+          # caractere advisory annonce. Fetch sans profondeur, par surete.
+          git fetch origin "${{ github.base_ref }}" -q
           python scripts/notebook_tools/check_prose_quantitative_claims.py \
             --diff "origin/${{ github.base_ref }}...HEAD"

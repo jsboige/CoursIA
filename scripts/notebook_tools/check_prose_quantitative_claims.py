@@ -23,6 +23,22 @@ Le tri est celui de l'issue : **calcule = legitime, prose = interdit**.
 Ce qui reste autorise : les predicats (`0 sorry` dit que la preuve est
 complete), et tout nombre qui n'est pas une mesure d'artefact du depot.
 
+Angle mort connu -- mesure VIVANTE vs mesure FIGEE
+--------------------------------------------------
+Le scanner voit la forme (« N lignes »), pas le temps du recit. Il flague donc
+aussi les chiffres qui datent d'un incident **clos**, ou le nombre decrit un
+fait passe et ne peut plus deriver : personne n'ouvrira de PR pour
+resynchroniser une mesure d'evenement. Exemple rencontre a la mise en service
+(`variation-protocol-detail.md`) : « ~98 lignes redigees trois fois » chiffre
+le doublon #8961/#8983/#8996 du 2026-07-31 -- c'est la PIECE qui fonde le
+verdict, pas un compteur a tenir.
+
+La ligne de partage : un decompte d'**artefact vivant** derive et revient au
+CI ; un decompte **fige dans un recit au passe** est une preuve, et se garde.
+D'ou le mode advisory par defaut -- l'arbitrage est humain. Ne PAS « corriger »
+un chiffre d'incident au motif que le guard l'a signale : ce serait supprimer
+la preuve pour faire taire l'organe.
+
 Usage
 -----
     # CI sur une PR : ne juge que les lignes AJOUTEES
