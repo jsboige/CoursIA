@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb
   parity_level: surface
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: ed308f9e16da32919d2cebbe1e760f2f61d59d89
-    csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: ed308f9e16da32919d2cebbe1e760f2f61d59d89
+      csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
   known_differences:
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
     - "Asymetrie de profondeur (surface) : le Python invoque la vraie bibliotheque Java TweetyProject (ASPIC+) via JPype ; le C# REIMPLEMENTE le moteur ASPIC+ **from-scratch** (cellule de setup : 'aucune dependance externe -- moteur ASPIC+ from-scratch'), sans la bibliotheque. Le C# est un pendant pedagogique reimplante, pas une parite de librairie -> `surface`."

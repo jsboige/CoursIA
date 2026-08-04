@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
-    csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
+      csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
   known_differences:
     - "Socle commun : ILP moderne sur Knowledge Graphs -- construction du KG familial, extraction des relations, rule mining (decouverte de regles de Horn), enumeration des candidats, passage des regles d'association aux regles logiques, completion du KG."
     - "Librairies SOTA distinctes mais equivalents : Python = rdflib (construction/manipulation RDF) + AMIE (rule mining) ; C# = dotNetRDF (equivalent .NET de rdflib) + AMIE. parity_level=semantic car les deux cotes invoquent de vraies librairies KG (pas from-scratch) -- c'est le twin le plus proche lib-vs-lib de la famille SL."
