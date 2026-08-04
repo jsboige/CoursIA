@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-07-31"
     by: myia-po-2024:CoursIA-2
-    python_sha: 349824e5b0b13acdee29273dfac9e58656459e50
+    python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
     csharp_sha: 581fcb6c880b55928062698a37560736ff250681
     reason: "rebaseline python apres fix intro horizon (cellule 1, #8052) : la prose disait 'horizon = 7 jours (1 semaine)' mais le SARIMA prevoit 366 jours (2024 entiere, cellules 13/14/16). 7 = periode saisonniere hebdo, pas l'horizon. Python-only, csharp_sha unchanged, parite (surface) preservee."
   known_differences:

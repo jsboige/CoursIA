@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
+    date: "2026-07-31"
+    by: myia-po-2023:CoursIA
     python_sha: 5610e16db6926dc92a182150450844a218f29554
-    csharp_sha: cafe505628e7739a4587c56271c0304f14910581
+    csharp_sha: b372afaf4f67fcf120fb4acb9931936754182ac9
   known_differences:
     - "Socle pedagogique commun : automates symboliques et resolution de Sudoku via Z3 (automates finis symboliques, representation symbolique des contraintes, liens avec SMT). Meme concept (automates symboliques + Z3 comme backend de decision), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, symbolic, Solver."
     - "Divergence d'implementation : le C# (pur System.* stdlib, 0 NuGet, 18 cellules code) construit la logique d'automate symbolique from scratch avec references a Z3 ; le Python (pyz3, 10 cellules code) utilise les bindings Z3 directement pour la partie symbolique. Meme enseignement (automates symboliques + Z3), deux niveaux : construction from scratch cote C# vs bindings Z3 cote Python."
