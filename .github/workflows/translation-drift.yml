@@ -69,12 +69,24 @@ jobs:
             exit 0
           fi
           COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["anomaly_count"])')"
+          # Fill rate by target language (#6949 point 1): a drift count alone is
+          # non-informative while 0% of cells carry a translation. The check
+          # script already prints this on stderr and in the JSON report; here we
+          # surface it into the PR annotation so a SRC_DRIFT=0 on a 0%-translated
+          # table can no longer read as "up to date" at the merge gate (#8678:
+          # a bare count perishes, a count plus its denominator self-contradicts).
+          FILL_SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); t=["en","es","ar","fa","zh","ru","pt"]; print(" ".join("%s=%s%%" % (l, gf.get(l,{}).get("pct",0.0)) for l in t))')"
+          ANY_FILLED="$(echo "$REPORT" | python -c 'import sys,json; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); t=["en","es","ar","fa","zh","ru","pt"]; print(any(gf.get(l,{}).get("filled",0)>0 for l in t))')"
           if [ "$COUNT" = "0" ]; then
-            echo "::notice title=Translation sync::All translation CSVs in sync with notebooks. No drift."
+            if [ "$ANY_FILLED" = "True" ]; then
+              echo "::notice title=Translation sync::All translation CSVs in sync with notebooks. No drift. (fill rate: $FILL_SUMMARY)"
+            else
+              echo "::notice title=Translation sync (caveat)::Drift count is 0, BUT no translation is deposited in ANY target language ($FILL_SUMMARY). 'No drift' does NOT mean 'translated' here — the drift count is non-informative while the fill rate is 0%. Re-translation is gated on the T3 motor GO (#6949 point 2)."
+            fi
             echo "drift=none" >> "$GITHUB_OUTPUT"
           else
             SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; from collections import Counter; d=json.load(sys.stdin); print(", ".join(f"{v}={n}" for v,n in Counter(a["verdict"] for a in d["anomalies"]).items()))')"
-            echo "::notice title=Translation drift (informational)::$COUNT drift(s) detected ($SUMMARY). This does NOT block the PR. Re-translation is proposed here but executed manually by an agent (Argumentum motor, #4957 §3). See JSON report in the job log."
+            echo "::notice title=Translation drift (informational)::$COUNT drift(s) detected ($SUMMARY). Fill rate: $FILL_SUMMARY. This does NOT block the PR. Re-translation is proposed here but executed manually by an agent (Argumentum motor, #4957 §3). See JSON report in the job log."
             echo "$REPORT"
             echo "drift=detected" >> "$GITHUB_OUTPUT"
           fi
