@@ -342,7 +342,9 @@ def test_search_cpu_preserves_cells(tmp_path):
 
 def _make_rl_cpu(n_code: int = 10, gpu: bool = False) -> dict:
     """Un notebook RL CPU-pur minimal (gymnasium/stable-baselines3), n cellules code.
-    Si `gpu=True`, ajoute un vrai signal GPU (torch.cuda) pour tester le skip."""
+    Si `gpu=True`, ajoute un VRAI signal GPU (transfert explicite .cuda()) pour tester le skip.
+    (Uniquement `torch.cuda.is_available()` ne compte PAS — c'est une sonde bénigne,
+    cf test_is_rl_cpu_pure_true_for_cuda_availability_probe.)"""
     nb = {
         "cells": [
             {"cell_type": "markdown", "metadata": {},
@@ -352,7 +354,7 @@ def _make_rl_cpu(n_code: int = 10, gpu: bool = False) -> dict:
         "nbformat": 4, "nbformat_minor": 5,
     }
     first = ("import torch\n"
-             f"print(torch.cuda.is_available())  # info\n") if gpu else "import gymnasium as gym\n"
+             "model = Policy().cuda()  # real GPU transfer\n") if gpu else "import gymnasium as gym\n"
     nb["cells"].append({"cell_type": "code", "execution_count": 1, "metadata": {},
                         "outputs": [], "source": [first]})
     for _ in range(n_code - 1):
@@ -384,9 +386,25 @@ def test_is_rl_cpu_pure_false_for_quantbook():
 
 
 def test_is_rl_cpu_pure_false_for_real_gpu():
-    """Vrai signal GPU (`torch.cuda`, `.cuda(`) → skippé. Couvre rl_6e (GRPO, CUDA-hard)."""
+    """Vrai signal GPU (transfert explicite `.cuda()`, `torch.cuda.synchronize`) → skippé.
+    Le gate reste conservateur sur l'usage GPU réel : un notebook qui déplace tenseurs/modèles
+    vers le GPU n'est PAS CPU-pur."""
     assert not pcm.is_rl_cpu_pure(_make_rl_cpu(10, gpu=True))
     assert not pcm.is_rl_cpu_pure(_nb_with("device = torch.device('cuda')\nx = x.cuda()\n"))
+    assert not pcm.is_rl_cpu_pure(_nb_with("torch.cuda.synchronize()\n"))
+
+
+def test_is_rl_cpu_pure_true_for_cuda_availability_probe():
+    """Sonde CUDA ≠ exigence CUDA : un notebook qui affiche `torch.cuda.is_available()`
+    pour info puis tourne en CPU (`device="cpu"`) reste rl-cpu-pur. Couvre rl_6e (GRPO
+    from-scratch, CPU pédagogique — output committé « PyTorch 2.11.0+cpu, CUDA=False »,
+    entraînement multi-seed [0,7,42] complet sur CPU). La sonde seule ne doit PAS
+    skipper — c'était le faux-négatif qui laissait rl_6e sans cost metadata."""
+    src_probe = ("import torch\n"
+                 "print(f'CUDA={torch.cuda.is_available()}')\n"
+                 "def rollout(env, policy, device='cpu'):\n"
+                 "    return torch.FloatTensor(s).to(device)\n")
+    assert pcm.is_rl_cpu_pure(_nb_with(src_probe))
 
 
 def test_is_rl_cpu_pure_false_for_real_api_call():
