@@ -8,16 +8,28 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-07-16 post-#6792, standalone-tactic mode,
-# baseline=8): conway has 8 real tactic sorries, ALL in HashlifeCorrectness.lean.
+# Sorry profile (re-verified 2026-08-02 post-#9132, standalone-tactic mode,
+# baseline=9): conway has 9 real tactic sorries, ALL in HashlifeCorrectness.lean.
 # The standalone-tactic filter also counts the Lean case-bullet form `· sorry`
 # (fixed in lean-build.yml, See #2747). Prose mentions ("Each sorry is a
 # target", "Left as sorry", "remain sorry-gated") are excluded by the
-# sole-token check. Breakdown of the 8:
-#   - HashlifeCorrectness.lean: 8 = 5 sub-goals of the p4_succ_membership
-#     decomposition (#6792: 4 mp quadrant cases + 1 mpr routing case)
-#     + 3 downstream P4-gated (p5_large_n_jump, hashlife_correctN,
-#     p5_large_n_jumpN)
+# sole-token check. Breakdown of the 9 (post-#9132 NE+SW arm port):
+#   - HashlifeCorrectness.lean: 9 =
+#       p4_nw_overlap_wall (1)        -- tree-locked #6875 (ai-01 turf)
+#       p4_ne_supercell_agree (1)     -- NE mirror of the NW overlap wall (#9132)
+#       p4_sw_overlap_wall (1)        -- SW mirror of the NW overlap wall (#9132)
+#       p4_sw_supercell_agree (1)     -- SW supercell-agree scaffold (#9132)
+#       p4_sw_membership_arm (2)      -- SW membership-arm scaffolds (#9132;
+#                                       candidates for future reduction)
+#       p5_large_n_jump (1)           -- downstream P4-gated
+#       hashlife_correctN (1)         -- downstream P4-gated
+#       p5_large_n_jumpN (1)          -- downstream P4-gated
+#     The #9132 NE+SW arm port REMOVED 4 sorries from p4_se_shift_lemma
+#     (c.8123 convention unification) and ADDED 5 defensive-factorization
+#     scaffolds (NE/SW overlap-wall mirrors) -> net +1 (8 -> 9). Each new
+#     scaffold is a structural mirror of the tree-locked NW wall, not a
+#     replaced proof (anti-regression §D respected; the SE cleanup is a real
+#     improvement). See #9132 body + diagnostic comment.
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
 #   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
 # Raising this baseline requires a documented justification in the PR body.
@@ -28,8 +40,8 @@ name: Lean Conway CI
 # lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
 # that would destroy the "new native_decide = new red" property required to
 # triage any future introduction one-by-one). fail-on-sorry=true (the
-# 8 acknowledged tactic sorries in HashlifeCorrectness.lean are governed by
-# the lean-build.yml `sorry-baseline: "8"`, not by this gate — no double-cover).
+# 9 acknowledged tactic sorries in HashlifeCorrectness.lean are governed by
+# the lean-build.yml `sorry-baseline: "9"`, not by this gate — no double-cover).
 #
 # Reprise rationale (ai-01 DM HIGH msg-20260728T231209-43cuju, c.950):
 #   1. allow-axioms MUST list the 19 explicit names — wildcard forbidden
@@ -78,7 +90,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "8"
+      sorry-baseline: "9"
       sorry-filter-mode: standalone-tactic
 
   proof-integrity:
@@ -94,7 +106,7 @@ jobs:
   # assigned to po-2023, taken up by po-2026 after 4 days idle + no WIP). The
   # blocking `proof-integrity` job above targets Conway.KochenSpecker +
   # Conway.FreeWillTheorem (the sorry-free showcase modules): it is green BY
-  # CONSTRUCTION on the 8 acknowledged tactic sorries, because it never
+  # CONSTRUCTION on the 9 acknowledged tactic sorries, because it never
   # inspects the module that carries them (#8809: SUCCESS beside a file with 8
   # sorries). That is the "vert hors-cible" this issue opened on -- a gate
   # whose green teaches reviewers to trust it while it slept through the only
