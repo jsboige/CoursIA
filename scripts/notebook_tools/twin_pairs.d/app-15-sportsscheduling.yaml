@@ -3,12 +3,20 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2024:CoursIA-2
-    python_sha: f4a0ff10ad7ad37accc5b3133f0132679c735400
-    csharp_sha: 76a2f42fef8d7522c561d433516d9211b70bcef6
-    reason: "c.1133 #8052 Python c30 elem[13] Equite claim equilibre parfait / meme nombre D/E FALSE (5 rounds -> D+E=5 odd -> same count impossible) ; own c13 STATISTIQUES computed output shows variable D/E (Lille 4D/1E, Bordeaux 1D/4E, Paris 3D/2E...) ; own c14 sibling states it correctly (D/E non impose). Honest reframe aligning c30 on c13+c14. C# twin preserved (its Equilibre = consecutive-alternation constraint, different claim)."
+  audits:
+    - date: '2026-08-04'
+      by: myia-po-2024:CoursIA
+      python_sha: a7c58274670a247cb90b36ae75c136183170e21b
+      csharp_sha: f0235302f93669e3b1690dca55506c1ae0f9c485
+      reason: "#9395 (false-positive on main diagnosis, narrower defect fixed). Issue claimed C# twin's parity claim 'OPTIMAL=7390, identique au km pres avec Python' was unbacked/false. Firsthand re-exec PROVES the claim TRUE: both twins' CP-SAT solvers return OPTIMAL=7390 km on the identical schedule (same round-by-round pairings, same per-team travels 391/1632/1505/1734/1279/849), deterministic 3/3 runs. Root cause of the apparent 7390-vs-7398 gap: Python compute_schedule_stats summed FLOAT distances (7398) while the solver objective truncates int (7390) -- same optimal solution, two rounding metrics, NOT a divergence (C# uses long[,] everywhere = self-consistent 7390). Fix: (1) App-15 Python c8 now prints solver OPTIMAL+ObjectiveValue(7390), c13 stats made int-consistent with the objective (7390 everywhere); (2) App-15b C# c10 now prints solver.ObjectiveValue(7390), c15/c16/c39 narrative corrected (the prior 'committed Python was FEASIBLE sub-optimal' explanation was WRONG -- it was a float-display metric difference on the OPTIMAL solution). See #8052 D.5, #8364, #4956."
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA
+      python_sha: f4a0ff10ad7ad37accc5b3133f0132679c735400
+      csharp_sha: 76a2f42fef8d7522c561d433516d9211b70bcef6
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA
+      python_sha: ba69a99a83ae518b50764fd64196319cd08963be
+      csharp_sha: d808d9b68126496b2d9ffaad8b757454fbb31630
   known_differences:
     - "Socle pedagogique commun : Planning sportif / Sports scheduling (CSP : round-robin, contraintes equipes) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass ; C# = Google.OrTools.Sat NuGet + ScottPlot viz."
