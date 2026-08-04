@@ -1,8 +1,17 @@
 # Registre de parite des jumeaux Python/C# (#8057, parent #4208).
 #
 # Chaque entree decrit une paire de notebooks jumeaux : le chemin des deux
-# cotes, le niveau de parite, le dernier audit (date + auteur + git blob SHA de
-# chaque notebook au moment de l'audit) et les differences connues documentees.
+# cotes, le niveau de parite, l'enregistrement d'audit (date + auteur + git blob
+# SHA de chaque notebook au moment de l'audit) et les differences connues documentees.
+#
+# L'enregistrement d'audit a deux formes (#9399 volet a) :
+#   - `last_audit:` singleton (forme legacy, historique) ;
+#   - `audits:` liste append-only (forme cible) : chaque audit ajoute une entree
+#     distincte, rien n'ecrase plus rien. Le singleton etait un aimant a collision
+#     sous lanes paralleles (#9171 cle dupliquee, #9237/#9245 CONFLICT, ecrasement
+#     silencieux du plus recent). Le reader lit le dernier enregistrement
+#     (`audits[-1]` ou `last_audit`). La migration legacy -> audits: est paresseuse
+#     (a la volee, sur le 1er drift reel) -- pas de reecriture massive.
 #
 # Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
 # SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
@@ -11,8 +20,10 @@
 #       --pair "<nom exact de l'entree>" --by "<machine:workspace>"
 # `--update` refuse de tourner sans selecteur (--pair / --family / --yes-all-pairs) :
 # sans lui il rebaselinerait les 116 paires d'un coup et masquerait des DRIFTs
-# legitimes (#8508). L'ecriture est chirurgicale : seules les lignes `last_audit`
-# de la paire ciblee changent, ce fichier garde ses commentaires (#8570).
+# legitimes (#8508). L'ecriture est chirurgicale : seul le bloc d'audit de la
+# paire ciblee change (les autres cles top-level et les commentaires sont
+# preserves, #8570) ; depuis #9399 un rebaseline d'une paire legacy qui drift la
+# migre vers `audits:` en preservant l'ancien enregistrement (item[0]).
 #
 # parity_level :
 #   surface     = meme plan/sections, implimentations independantes

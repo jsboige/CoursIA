@@ -109,22 +109,33 @@ def test_comments_survive_surgical_rebaseline():
     """Le bug fondateur : `safe_dump` supprimait les commentaires.
 
     Raw craft pour que la garde soit deterministe -- elle ne doit pas dependre
-    de quel fichier d'entree porte, ce jour-la, un commentaire.
+    de quel fichier d'entree porte, ce jour-la, un commentaire. Depuis #9399,
+    un rebaseline d'une paire legacy qui drift migre vers la forme append-only
+    `audits:` ; la garantie porte toujours : aucun commentaire n'est supprime.
     """
     raw = (
         "# en-tete documentaire de l'entree\n"
         "- name: Paire-Temoin\n"
+        "  family: Test\n"
         "  python: a.ipynb\n"
         "  csharp: b.ipynb\n"
+        "  parity_level: full\n"
         "  # commentaire interne, au milieu du bloc\n"
         "  last_audit:\n"
         "    date: '2020-01-01'\n"
         "    by: auditeur-precedent\n"
+        "    python_sha: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n"
+        "    csharp_sha: 0f1e2d3c4b5a0f1e2d3c4b5a0f1e2d3c4b5a0f1e\n"
     )
     before = sum(1 for line in raw.splitlines() if line.lstrip().startswith("#"))
     assert before == 2
 
-    new_raw, touched = ctp.surgical_rebaseline(raw, {"Paire-Temoin": {"by": "test-lane"}})
+    # SHA python change -> declenche la migration legacy -> audits:.
+    new_raw, touched = ctp.surgical_rebaseline(raw, {"Paire-Temoin": {
+        "date": "2026-08-04", "by": "test-lane",
+        "python_sha": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+        "csharp_sha": "0f1e2d3c4b5a0f1e2d3c4b5a0f1e2d3c4b5a0f1e",
+    }})
     after = sum(1 for line in new_raw.splitlines() if line.lstrip().startswith("#"))
     assert touched == 1
     assert after == before, "un rebaseline ne doit supprimer aucun commentaire"
@@ -133,22 +144,42 @@ def test_comments_survive_surgical_rebaseline():
 
 
 def test_diff_limited_to_target_block(registry_backup):
-    """Seules les lignes changees de la paire ciblee bougent."""
+    """Seul le bloc d'audit de la paire ciblee bouge ; le reste est intact.
+
+    Depuis #9399, un rebaseline d'une paire legacy qui drift MIGRE le bloc
+    `last_audit:` vers la liste append-only `audits:` (ancien enregistrement +
+    nouveau). La garantie chirurgicale (#8570) est preservee : aucune cle
+    top-level hors audit (name/family/python/csharp/parity_level/known_differences)
+    ne change, et l'ancien enregistrement survit comme item[0] (anti-regression :
+    on ne jette pas l'historique d'audit).
+    """
+    import yaml
+
     pfile = registry_backup[0]
     raw = pfile.read_text(encoding="utf-8")
     name = _pair_name(pfile)
+    before = yaml.safe_load(raw)[0]
+    old_py = before["last_audit"]["python_sha"]
 
+    # SHA python change -> migration legacy -> audits:.
     new_raw, touched = ctp.surgical_rebaseline(
-        raw, {name: {"by": "sentinelle-c8570", "date": "1999-01-01"}}
+        raw, {name: {"date": "1999-01-01", "by": "sentinelle-c8570",
+                     "python_sha": "f" * 40, "csharp_sha": before["last_audit"]["csharp_sha"]}}
     )
     assert touched == 1
+    after = yaml.safe_load(new_raw)[0]
 
-    before, after = raw.splitlines(), new_raw.splitlines()
-    assert len(before) == len(after), "aucune ligne ajoutee ni supprimee"
-    changed = [i for i, (b, a) in enumerate(zip(before, after)) if b != a]
-    assert len(changed) == 2, f"attendu 2 lignes (date + by), obtenu {len(changed)}"
-    assert all("sentinelle-c8570" in after[i] or "1999-01-01" in after[i]
-               for i in changed)
+    # Aucune cle top-level hors audit n'a bouge.
+    for key in ("name", "family", "python", "csharp", "parity_level", "known_differences"):
+        assert before.get(key) == after.get(key), f"cle non-audit modifiee : {key}"
+
+    # Le bloc a migre vers la forme append-only, en preservant l'historique.
+    assert "last_audit" not in after, "le singleton legacy doit etre remplace"
+    audits = after["audits"]
+    assert isinstance(audits, list) and len(audits) >= 2
+    assert audits[0]["python_sha"] == old_py, "l'ancien enregistrement doit survivre"
+    assert audits[-1]["python_sha"] == "f" * 40, "le nouvel enregistrement doit etre dernier"
+    assert audits[-1]["by"] == "sentinelle-c8570"
 
 
 def test_noop_is_byte_identical(registry_backup):
@@ -203,8 +234,12 @@ def test_other_pair_files_untouched(registry_backup):
     name = _pair_name(target)
     others_before = {f: f.read_bytes() for f in files[1:]}
 
+    # Entree complete (SHA python change) -> migration legacy -> audits: bien formee.
     new_raw, _ = ctp.surgical_rebaseline(
-        target.read_text(encoding="utf-8"), {name: {"by": "sentinelle-c8570"}}
+        target.read_text(encoding="utf-8"), {name: {
+            "date": "1999-01-01", "by": "sentinelle-c8570",
+            "python_sha": "f" * 40, "csharp_sha": "e" * 40,
+        }}
     )
     target.write_text(new_raw, encoding="utf-8")
 
@@ -270,7 +305,10 @@ def test_write_preserves_lf_on_every_platform(tmp_path):
         "le registre doit rester en LF : un CRLF fait apparaitre chaque ligne "
         "inchangee comme modifiee et noie la ligne reellement auditee"
     )
-    assert written.decode("utf-8").count("\n") == original.count("\n")
+    # La garantie LF est relative au TEXTE CALCULE (la migration #9399 ajoute
+    # legitimement des lignes) : l'ecriture ne doit ni traduire les LF en CRLF,
+    # ni en ajouter/supprimer vs ce que surgical_rebaseline a calcule.
+    assert written.decode("utf-8").count("\n") == new_raw.count("\n")
 
 
 def test_registry_blobs_are_lf_only():
@@ -298,3 +336,105 @@ def test_registry_blobs_are_lf_only():
     crlf = [line.split("\t")[-1] for line in out.stdout.splitlines()
             if line.startswith("i/crlf")]
     assert not crlf, f"blobs de registre en CRLF : {', '.join(crlf)}"
+
+
+# --- Forme append-only `audits:` (#9399 volet a) ---
+#
+# Le singleton `last_audit:` etait un aimant a collision : deux audits
+# concurrents de la meme paire ecrivaient les memes lignes -> CONFLICT git, ou
+# pire, ecrasement silencieux du plus recent par le plus ancien (#9171, #9237,
+# #9245, + 4e manifestation invisible). La liste append-only `audits:` fait que
+# chaque audit ajoute une entree distincte : rien n'ecrase plus rien.
+
+
+def test_legacy_migration_preserves_reason_and_history():
+    """La migration legacy -> audits: preserve `reason` et l'enregistrement ancien.
+
+    `reason` est un texte libre long de justification d'audit. Le rejeter
+    reviendrait a jetter l'historique d'audit -> anti-regression (#9399 critere 4).
+    On preserve byte-faithful via re-indentation mecanique (pas de re-quoting).
+    """
+    raw = (
+        "- name: Paire-R\n"
+        "  last_audit:\n"
+        "    date: \"2026-08-01\"\n"
+        "    by: lane-prev:CoursIA\n"
+        "    python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "    csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+        "    reason: \"Markdown-only fix: cell 13 cited N=1000 but caps at 500.\"\n"
+    )
+    new_raw, touched = ctp.surgical_rebaseline(
+        raw, {"Paire-R": {"date": "2026-08-04", "by": "po-2023:CoursIA",
+                          "python_sha": "c" * 40, "csharp_sha": "b" * 40}}
+    )
+    assert touched == 1
+    import yaml
+    entry = yaml.safe_load(new_raw)[0]
+    assert "last_audit" not in entry and "audits" in entry
+    audits = entry["audits"]
+    assert len(audits) == 2
+    # L'ancien enregistrement (item[0]) garde son reason + ses SHAs.
+    assert audits[0]["reason"].startswith("Markdown-only fix"), "reason perdu !"
+    assert audits[0]["python_sha"].startswith("a" * 8)
+    # Le nouvel enregistrement (item[1]) porte le nouveau SHA.
+    assert audits[1]["python_sha"] == "c" * 40
+
+
+def test_concurrent_audits_never_silently_overwrite():
+    """LE garant central de #9399 : deux audits ne s'ecrasent jamais silencieusement.
+
+    Simule deux lanes auditant la meme paire depuis la meme base legacy :
+    chacune migre -> audits:[old, sienne]. Apres les deux, l'ETAT REGROUPE les
+    deux enregistrements -- aucun n'a ecrase l'autre. Avec le singleton, la 2e
+    aurait silencieusement remplace la 1ere (inversion chronologique, 4e
+    manifestation d'#9399). Ici les deux SHAs survivent.
+    """
+    base = (
+        "- name: Paire-C\n"
+        "  last_audit:\n"
+        "    python_sha: 0a1b2c3d4e5f0a1b2c3d4e5f0a1b2c3d4e5f0a1b\n"
+        "    csharp_sha: 1f2e3d4c5b6a1f2e3d4c5b6a1f2e3d4c5b6a1f2e\n"
+    )
+    audit_a = {"date": "2026-08-04", "by": "lane-a:CoursIA",
+               "python_sha": "a" * 40, "csharp_sha": "b" * 40}
+    audit_b = {"date": "2026-08-04", "by": "lane-b:CoursIA",
+               "python_sha": "c" * 40, "csharp_sha": "d" * 40}
+    # Chaque lane part de `base` (le scenario du merge 3-way concurrent).
+    out_a, _ = ctp.surgical_rebaseline(base, {"Paire-C": audit_a})
+    out_b, _ = ctp.surgical_rebaseline(base, {"Paire-C": audit_b})
+    # La resolution du merge concurrent = on regroupe les entrees des deux cotes
+    # (ce que fait un humain/agent en quelques secondes, sans perte de donnees).
+    import yaml
+    audits_a = yaml.safe_load(out_a)[0]["audits"]
+    audits_b = yaml.safe_load(out_b)[0]["audits"]
+    merged_entries = [audits_a[1], audits_b[1]]  # item[0] est le vieux, identique
+    shas = {e["python_sha"] for e in merged_entries}
+    assert shas == {"a" * 40, "c" * 40}, (
+        "les deux audits doivent survivre au merge ; un ecrasement silencieux "
+        "n'en laisserait qu'un"
+    )
+    # Preuve que rien n'a ete ecrase : chaque sortie contient encore le vieux
+    # enregistrement de base (item[0]) -- l'historique est intact des deux cotes.
+    assert audits_a[0]["python_sha"] == "0a1b2c3d4e5f0a1b2c3d4e5f0a1b2c3d4e5f0a1b"
+    assert audits_b[0]["python_sha"] == "0a1b2c3d4e5f0a1b2c3d4e5f0a1b2c3d4e5f0a1b"
+
+
+def test_append_only_noop_does_not_grow_list():
+    """Re-auditer une paire deja a jour n'ajoute pas de doublon (anti-inflation).
+
+    Sans cette garde, des `--update` successifs sans changement reel gonfleraient
+    la liste indefiniment. Le no-op (SHAs inchanges) est byte-identical.
+    """
+    raw = (
+        "- name: Paire-N\n"
+        "  audits:\n"
+        "    - date: \"2026-08-01\"\n"
+        "      by: lane:CoursIA\n"
+        "      python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "      csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+    )
+    same = {"date": "2026-08-04", "by": "lane:CoursIA",
+            "python_sha": "a" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(raw, {"Paire-N": same})
+    assert touched == 0
+    assert out == raw, "un no-op sur la forme append-only doit etre byte-identique"

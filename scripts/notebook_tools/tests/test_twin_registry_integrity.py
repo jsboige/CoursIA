@@ -33,16 +33,19 @@ yaml = pytest.importorskip("yaml")
 # Source unique de verite : le loader de check_twin_parity (evite de dupliquer
 # la logique d'agregation du repertoire file-per-entry).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_twin_parity import load_registry, _slug  # noqa: E402
+from check_twin_parity import load_registry, _slug, _latest_audit  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
 SCHEMA = REGISTRY_DIR / "_schema.yaml"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-# Cle minimale qu'une entree doit posseder (sous-ensemble).
-REQUIRED_KEYS = {"name", "family", "python", "csharp", "parity_level", "last_audit"}
+# Cles structurelles qu'une entree doit POSSEDER (sous-ensemble). L'enregistrement
+# d'audit n'est pas liste ici : depuis #9399 volet (a) il peut prendre deux formes
+# -- le singleton legacy `last_audit:` ou la liste append-only `audits:` -- et une
+# entree valide possede l'UN des deux (cf `_has_audit_record` / `test_has_audit_record`).
+REQUIRED_KEYS = {"name", "family", "python", "csharp", "parity_level"}
 ALLOWED_KEYS = {
     "name", "family", "python", "csharp", "parity_level",
-    "last_audit", "known_differences",
+    "last_audit", "audits", "known_differences",
 }
 # Plancher d'entrees (post-migration #8542 : 116 paires sur origin/main). En
 # mode file-per-entry, une entree perdue = un fichier supprime ; ce plancher le
@@ -53,6 +56,32 @@ MIN_ENTRIES = 116
 
 def _entries() -> list:
     return load_registry(REGISTRY_DIR)
+
+
+def _has_audit_record(entry: dict) -> bool:
+    """Une entree valide possede un enregistrement d'audit sous l'une des deux
+    formes (#9399) : le singleton legacy `last_audit:` ou la liste append-only
+    `audits:` (non vide, chaque element un dict)."""
+    if "last_audit" in entry and isinstance(entry["last_audit"], dict):
+        return True
+    audits = entry.get("audits")
+    return isinstance(audits, list) and len(audits) > 0 and all(
+        isinstance(a, dict) for a in audits
+    )
+
+
+def _all_audit_records(entry: dict) -> list:
+    """Tous les enregistrements d'audit d'une entree (last_audit + chaque
+    element de audits:). Sert a valider les SHAs PARTOUT, pas seulement le
+    dernier -- un ancien enregistrement migre doit garder des SHAs valides
+    (anti-regression : on ne jette pas l'historique, cf #9399 critere 4)."""
+    records = []
+    if isinstance(entry.get("last_audit"), dict):
+        records.append(entry["last_audit"])
+    for a in (entry.get("audits") or []):
+        if isinstance(a, dict):
+            records.append(a)
+    return records
 
 
 def _pair_files() -> list[Path]:
@@ -128,15 +157,33 @@ def test_required_keys_present():
     assert not missing, f"entrees incompletes : {missing}"
 
 
+def test_has_audit_record():
+    """Chaque entree porte un enregistrement d'audit (last_audit OU audits:, #9399).
+
+    Les deux formes coexistent pendant la migration paresseuse a la volee : une
+    entree n'en avoir AUCUNE est une corruption (paire enregistree sans jamais
+    etre auditee -> DRIFT permanent non trace).
+    """
+    no_record = [
+        e.get("name", "?") for e in _entries() if not _has_audit_record(e)
+    ]
+    assert not no_record, f"entrees sans enregistrement d'audit : {no_record}"
+
+
 def test_audit_shas_are_git_blob_shas():
-    """Les shas sont des blob SHA git (40 hex), pas des hashes de contenu."""
+    """Les shas sont des blob SHA git (40 hex), pas des hashes de contenu.
+
+    Valide les SHAs de TOUS les enregistrements (singleton last_audit + chaque
+    element de la liste audits:) : un ancien enregistrement migre doit conserver
+    des SHAs valides (#9399 critere 4 : on ne jette pas l'historique).
+    """
     bad = []
     for entry in _entries():
-        audit = entry.get("last_audit") or {}
-        for key in ("python_sha", "csharp_sha"):
-            sha = audit.get(key)
-            if not isinstance(sha, str) or not SHA_RE.match(sha):
-                bad.append(f"{entry.get('name', '?')}.{key} = {sha!r}")
+        for audit in _all_audit_records(entry):
+            for key in ("python_sha", "csharp_sha"):
+                sha = audit.get(key)
+                if not isinstance(sha, str) or not SHA_RE.match(sha):
+                    bad.append(f"{entry.get('name', '?')}.{key} = {sha!r}")
     assert not bad, f"shas invalides : {bad}"
 
 
@@ -174,6 +221,63 @@ def test_entry_count_floor():
         f"le registre a perdu des entrees : {n} < {MIN_ENTRIES} "
         f"(fichier d'entree supprime ou fusion accidentee ? cf #8542)"
     )
+
+
+# --- Forme append-only `audits:` (#9399 volet a) ---
+
+
+def test_audit_form_is_exclusive():
+    """Une entree ne porte pas BOTH `last_audit` ET `audits` (source de verite unique).
+
+    La migration (#9399) REMPLACE le singleton par la liste (l'ecrivain retire
+    `last_audit:` quand il migre). Coexistence = main-edit corrompue ou migration
+    a moitie faite -> le reader `_latest_audit` privilegierait `audits` et le
+    `last_audit` residuel mentirait (SHAs potentiellement perimes).
+    """
+    both = [
+        e.get("name", "?") for e in _entries()
+        if "last_audit" in e and "audits" in e
+    ]
+    assert not both, f"entrees avec les deux formes d'audit : {both}"
+
+
+def test_latest_audit_resolves_for_every_entry():
+    """`_latest_audit` resout en un enregistrement a SHAs pour CHAQUE entree.
+
+    Valide le reader polyvalent (#9399) sur le registre reel : quelle que soit la
+    forme (legacy `last_audit` ou append-only `audits`), le dernier enregistrement
+    porte des SHAs exploitables par le gate. Une entree dont le reader renvoie
+    `{}` ou des SHAs absents -> DRIFT silencieux si la paire n'est pas checkee.
+    """
+    unresolved = []
+    for entry in _entries():
+        latest = _latest_audit(entry)
+        if not isinstance(latest, dict) or not latest.get("python_sha") or not latest.get("csharp_sha"):
+            unresolved.append(entry.get("name", "?"))
+    assert not unresolved, f"entrees sans dernier audit resolu : {unresolved}"
+
+
+def test_append_only_entries_well_formed():
+    """Toute entree `audits:` est une liste non vide de dicts a SHAs valides.
+
+    Un enregistrement d'audit (ancien ou nouveau) sans python_sha/csharp_sha est
+    inutilisable par le gate (le reader renverrait None -> DRIFT bruyant, mais
+    silencieux si la paire n'est pas checkee). On valide a l'inscription.
+    """
+    bad = []
+    for entry in _entries():
+        audits = entry.get("audits")
+        if not isinstance(audits, list):
+            continue
+        for idx, rec in enumerate(audits):
+            if not isinstance(rec, dict):
+                bad.append(f"{entry.get('name', '?')}[{idx}] n'est pas un dict")
+                continue
+            for key in ("python_sha", "csharp_sha"):
+                sha = rec.get(key)
+                if not isinstance(sha, str) or not SHA_RE.match(sha):
+                    bad.append(f"{entry.get('name', '?')}[{idx}].{key} = {sha!r}")
+    assert not bad, f"entrees audits: mal formees : {bad}"
 
 
 # --- Nouveaux tests : validation de la structure file-per-entry (#8542) ---
