@@ -49,7 +49,7 @@ SmartGrid-Energy/
 └── README.md                     # Ce fichier
 ```
 
-Les deux notebooks partagent la même trame (20 cellules dont 8 de code) ; la version étudiante
+Les deux notebooks partagent la même trame ; la version étudiante
 remplace les corps de fonctions par des stubs guidés (`# TODO`, indices par étape), la version
 solution est committée exécutée de bout en bout.
 
