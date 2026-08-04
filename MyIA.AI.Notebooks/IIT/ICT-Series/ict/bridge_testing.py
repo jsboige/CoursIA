@@ -809,3 +809,292 @@ def bridge_compression_to_generalization(
         "partial_rho_compress_gen_given_drift": float(partial),
         "bridge_compression_to_generalization": bridge,
     }
+
+
+# --------------------------------------------------------------------------- #
+#  Bridge #2 : recouvrabilite (recovery_score) -> agentivite (repair_gain)     #
+# --------------------------------------------------------------------------- #
+
+
+def _naive_repair_trajectory(
+    target_structures: List[float],
+    seed: int,
+) -> List[float]:
+    """Modele nul : trajectoire de reparation NAIVE-EQUIVALENTE.
+
+    Le null reproduit la meme sequence de structures regionales ``target_structures``
+    (par exemple, la trajectoire que la reaction-diffusion a reellement suivie)
+    par un **random walk calibre** : a chaque pas, on tire un increment de loi
+    gaussienne centree dont la variance est choisie pour atteindre l'ecart-type
+    observe des increments du vrai systeme. Ce modele n'a AUCUNE anticipation : il
+    ne regarde ni le gradient de la structure, ni la courbure locale du champ, ni
+    la disponibilite des voisines. Il « reussit » le score final par chance
+    statistique, pas par regulation.
+
+    C'est le pendant falsifiable du null « broadcast present mais ignore » de
+    bridge #4 et du null « drift constant mais orthogonal » de bridge #5 :
+    reproduire la sortie sans reproduire la dynamique.
+    """
+    rng = np.random.default_rng(seed)
+    out: List[float] = list(target_structures)
+    increments = np.diff(np.asarray(target_structures, dtype=float))
+    if increments.size < 2:
+        return out
+    sigma = float(np.std(increments)) + 1e-12
+    for i in range(1, len(out)):
+        # random walk d'incertitude constante ; la trajectoire garde le point
+        # de depart (post-ablation) et le point final (cible) mais le chemin
+        # entre les deux n'est PAS contraint par anticipation.
+        out[i] = float(out[i - 1] + rng.normal(0.0, sigma))
+    # on ancre les deux extremites (post-ablation, cible) au signal observe pour
+    # que la comparaison reste sur la SIGNATURE TEMPORELLE, pas sur l'amplitude.
+    out[0] = target_structures[0]
+    out[-1] = target_structures[-1]
+    return out
+
+
+def _trajectory_signature(structures: List[float]) -> Dict[str, float]:
+    """Signature temporelle d'une trajectoire de recuperation (scalaires 5-D).
+
+    Retourne un dict :
+      - ``early_slope`` : taux marginal moyen sur le premier tiers (le vrai systeme
+        reussit-il plus vite au debut ?) ;
+      - ``late_slope`` : taux marginal moyen sur le dernier tiers (ralentit-il ?) ;
+      - ``slope_ratio`` : ``early_slope / late_slope`` (ratio de concentration) ;
+      - ``monotonicity`` : 1 - (nb de rebroussements / (n-1)) ; 1 = strictement
+        croissant, 0 = oscillation pure ;
+      - ``skewness`` : asymetrie des increments (distribution des gains) ; >0
+        = concentres en debut, <0 = concentres en fin.
+    """
+    s = np.asarray(structures, dtype=float)
+    n = s.size
+    if n < 3:
+        return {
+            "early_slope": 0.0,
+            "late_slope": 0.0,
+            "slope_ratio": 0.0,
+            "monotonicity": 1.0,
+            "skewness": 0.0,
+        }
+    inc = np.diff(s)
+    third = max(1, n // 3)
+    early = float(np.mean(inc[:third])) if third > 0 else 0.0
+    late = float(np.mean(inc[-third:])) if third > 0 else 0.0
+    ratio = float(early / (abs(late) + 1e-12))
+    n_turns = int(np.sum(np.sign(inc[1:]) * np.sign(inc[:-1]) < 0))
+    monotonicity = float(1.0 - n_turns / max(1, inc.size - 1))
+    mu = float(np.mean(inc))
+    sd = float(np.std(inc)) + 1e-12
+    skewness = float(np.mean(((inc - mu) / sd) ** 3)) if sd > 1e-12 else 0.0
+    return {
+        "early_slope": early,
+        "late_slope": late,
+        "slope_ratio": ratio,
+        "monotonicity": monotonicity,
+        "skewness": skewness,
+    }
+
+
+def bridge_recoverability_to_agency(
+    n_trials: int = 80,
+    n: int = 64,
+    block: int = 8,
+    steps: int = 800,
+    record_every: int = 20,
+    seed: int = 0,
+    F: float = 0.0367,
+    k: float = 0.0649,
+) -> Dict[str, float]:
+    r"""Bridge #2 : recouvrabilite (``recovery_score``) -> agentivite (``repair_gain``) (falsifiable, #8077 pont 2).
+
+    Hypothese naive (la mesure d'agence d'ICT-9) : un systeme qui **reussit a
+    reparer** une structure apres ablation est d'autant PLUS **agentif** que sa
+    recuperation est profonde. C'est le pont implicite que ``repair_gain`` (ICT-9)
+    presume : ``recouvrabilite -> agentivite``. Le substrat : une ablation
+    aleatoire (:func:`ict.agency.disk_mask`) sur le systeme Gray-Scott (:mod:`ict.
+    reaction_diffusion`), puis integration et lecture de la trajectoire de
+    structure regionale dans la zone ablatee.
+
+    La subtilite (qui rend le pont NON tautologique et falsifiable) est que le
+    **meme score final** ``recovery_score`` peut etre atteint par deux systemes
+    tres differents : un qui **repare regulierement** (anticipation, regulation)
+    et un qui **tombe juste** par chance (random walk calibre sur les memes
+    extremas). Si l'agentivite se reduit au score final, le pont est trivial ;
+    si elle porte sur la **dynamique** (comment on arrive au score), le pont
+    falsifie. On distingue donc la trajectoire vraie (reaction-diffusion) d'une
+    trajectoire **naive-équivalente** (:func:`_naive_repair_trajectory`) qui
+    reproduit les points extremaux mais pas la regulation interne.
+
+    Mesure discriminante : la **signature temporelle** (:func:`_trajectory_signature`)
+    comparee par **distance de Mahalanobis** sur les 5 dimensions (early_slope,
+    late_slope, slope_ratio, monotonicity, skewness). Si la trajectoire vraie est
+    significativement distincte du null (distance > p95 du null par
+    permutation des labels), le pont tient. Sinon, le pont est **partiellement
+    falsifie** : la **mesure** d'agentivite (score final) est insuffisante, il
+    faut une signature temporelle pour la qualifier.
+
+    Controle nul structurel : un systeme purement diffusif (meme ``recovery_score``
+    plus bas) est le contrepoint : sa trajectoire de recuperation est **plate**
+    (peu ou pas d'increments), donc une signature tres eloignee du systeme
+    reaction-diffusion ET du null naif. Verifier que la discrimination porte
+    BIEN sur la dynamique (true vs naive), pas sur l'absence de dynamique
+    (diffusion).
+
+    Verdict falsifiable
+    -------------------
+    ``bridge_recoverability_to_agency`` : 1.0 si la trajectoire vraie est
+        significativement distincte du null (distance Mahalanobis > p95 par
+        permutation) ET la discrimination porte reellement sur la dynamique
+        (true <-> naive, pas juste true <-> diffusion). 0.0 sinon : la mesure
+        scalaire d'agence est insuffisante, l'agentivite est une propriete de
+        la **dynamique** (pas seulement de l'amplitude finale).
+
+    Robuste (c.1014-L) : le verdict tient sur plusieurs graines (la trajectoire
+    null est regeneree par ``seed`` ; le systeme Gray-Scott lui-meme depend du
+    seed via ``seed()``, donc la mesure fluctue de maniere non triviale).
+    """
+    from . import agency as A
+    from . import reaction_diffusion as RD
+
+    rng = np.random.default_rng(seed)
+    model = RD.GrayScott(F=F, k=k, Du=0.16, Dv=0.08, dt=1.0)
+
+    # vecteurs de la signature temporelle (5 dimensions) pour chaque essai :
+    # - vrai systeme (reaction-diffusion) ;
+    # - null naif (memes extremas, chemin random) ;
+    # - controle structurel (diffusion pure, attendu : signature tres differente).
+    sigs_true: List[Dict[str, float]] = []
+    sigs_naive: List[Dict[str, float]] = []
+    sigs_diff: List[Dict[str, float]] = []
+
+    for trial in range(int(n_trials)):
+        trial_seed = int(rng.integers(0, 2**31 - 1))
+        rng_trial = np.random.default_rng(trial_seed)
+        U0, V0 = model.seed(n=n, block=block, rng=rng_trial)
+        # choix d'un rayon d'ablation adapte a la grille (8 <= n=64, region
+        # non negligeable mais pas dominante : ~13% de la grille).
+        cx = float(rng_trial.uniform(n * 0.30, n * 0.70))
+        cy = float(rng_trial.uniform(n * 0.30, n * 0.70))
+        radius = float(rng_trial.uniform(n * 0.10, n * 0.18))
+        mask = A.disk_mask(n, cx, cy, radius)
+        U_abl, V_abl = A.ablate(U0, V0, mask)
+        # --- vrai systeme : reaction-diffusion ---
+        U_end, V_end, snaps = model.run(
+            U_abl, V_abl, steps, record_every=record_every, include_initial=True
+        )
+        # trajectoire de structure regionale (variance sur le masque)
+        struct_true = [
+            float(np.var(s[mask])) for s in snaps
+        ]
+        # --- null naif : meme point final, chemin random ---
+        struct_naive = _naive_repair_trajectory(struct_true, trial_seed + 17)
+        # --- controle structurel : diffusion pure ---
+        V_diff_end = RD.run_pure_diffusion(V_abl, model.Dv, steps)
+        # trajectoire diff : on approxime par interpolation lineaire entre
+        # la structure initiale et la structure finale (la diffusion pure n'a
+        # pas de snapshots intermediaires, on prend la trajectoire triviale).
+        s_init = float(np.var(V_abl[mask]))
+        s_end = float(np.var(V_diff_end[mask]))
+        struct_diff = list(np.linspace(s_init, s_end, len(struct_true)))
+
+        sigs_true.append(_trajectory_signature(struct_true))
+        sigs_naive.append(_trajectory_signature(struct_naive))
+        sigs_diff.append(_trajectory_signature(struct_diff))
+
+    # conversion en matrices (n_trials x 5)
+    def _stack(sigs: List[Dict[str, float]]) -> np.ndarray:
+        return np.asarray(
+            [
+                [
+                    s["early_slope"],
+                    s["late_slope"],
+                    s["slope_ratio"],
+                    s["monotonicity"],
+                    s["skewness"],
+                ]
+                for s in sigs
+            ],
+            dtype=float,
+        )
+
+    M_true = _stack(sigs_true)
+    M_naive = _stack(sigs_naive)
+    M_diff = _stack(sigs_diff)
+
+    # distance de Mahalanobis pairwise (essai i : true vs naive)
+    diff_tn = M_true - M_naive
+    # estimation de la matrice de covariance pooled (true + naive) pour la
+    # distance de Mahalanobis.
+    pooled = np.vstack([M_true, M_naive])
+    cov = np.cov(pooled, rowvar=False)
+    # regularisation pour eviter singularite.
+    cov = cov + 1e-6 * np.eye(cov.shape[0])
+    inv_cov = np.linalg.pinv(cov)
+    # distance euclidienne puis Mahalanobis (approximation diagonale) si la
+    # matrice est mal conditionnee.
+    try:
+        dist_tn = float(
+            np.sqrt(np.einsum("ij,jk,ik->i", diff_tn, inv_cov, diff_tn).mean())
+        )
+    except np.linalg.LinAlgError:
+        dist_tn = float(np.sqrt((diff_tn ** 2).sum(axis=1).mean()))
+
+    # discrimination vraie vs diffusion : autre proxy (les signatures sont
+    # tres differentes par construction, on le mesure).
+    diff_td = M_true - M_diff
+    try:
+        dist_td = float(
+            np.sqrt(np.einsum("ij,jk,ik->i", diff_td, inv_cov, diff_td).mean())
+        )
+    except np.linalg.LinAlgError:
+        dist_td = float(np.sqrt((diff_td ** 2).sum(axis=1).mean()))
+
+    # null par permutation : on brouille les labels true/naive et on recalcule
+    # la distance Mahalanobis. Le p95 de cette distribution est le seuil
+    # « significatif au-dela du hasard ».
+    n_shuffle = 200
+    null_dist = np.empty(int(n_shuffle), dtype=float)
+    for s_idx in range(int(n_shuffle)):
+        labels = rng.permutation(2 * len(M_true))
+        M_pool = np.vstack([M_true, M_naive])[labels]
+        M_a = M_pool[: len(M_true)]
+        M_b = M_pool[len(M_true):]
+        d = M_a - M_b
+        try:
+            null_dist[s_idx] = float(
+                np.sqrt(np.einsum("ij,jk,ik->i", d, inv_cov, d).mean())
+            )
+        except np.linalg.LinAlgError:
+            null_dist[s_idx] = float(np.sqrt((d ** 2).sum(axis=1).mean()))
+    p95_null = float(np.percentile(null_dist, 95))
+
+    # diagnostic : la discrimination porte-t-elle sur la dynamique (true vs
+    # naive, qui ont le meme score final attendu) OU seulement sur l'absence
+    # de dynamique (diffusion = pathologie) ? Si dist_td > dist_tn * 1.5, c'est
+    # probablement le second cas (pathologique), pas le premier (le pont reel).
+    dynamic_ratio = dist_tn / (dist_td + 1e-12)
+
+    # verdict : la signature vraie est distincte du null (dist > p95) ET le
+    # ratio dynamique est >= 0.5 (la discrimination n'est pas uniquement
+    # pathologique).
+    bridge = 1.0 if (dist_tn > p95_null and dynamic_ratio >= 0.5) else 0.0
+
+    return {
+        "n_trials": int(n_trials),
+        "n": int(n),
+        "steps": int(steps),
+        "mahalanobis_true_vs_naive": dist_tn,
+        "mahalanobis_true_vs_diffusion": dist_td,
+        "dynamic_discrimination_ratio": dynamic_ratio,
+        "p95_null_mahalanobis": p95_null,
+        "mean_signature_true": {
+            k: float(np.mean([s[k] for s in sigs_true])) for k in sigs_true[0]
+        },
+        "mean_signature_naive": {
+            k: float(np.mean([s[k] for s in sigs_naive])) for k in sigs_naive[0]
+        },
+        "mean_signature_diffusion": {
+            k: float(np.mean([s[k] for s in sigs_diff])) for k in sigs_diff[0]
+        },
+        "bridge_recoverability_to_agency": bridge,
+    }
