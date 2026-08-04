@@ -592,7 +592,11 @@ def main(argv=None) -> int:
                    help="Exit 1 si DRIFT/MISSING detecte (CI-ready)")
     p.add_argument("--update", action="store_true",
                    help="Rebaseline : ecrit les SHAs courants comme nouveau last_audit "
-                        "(a lancer APRES une audit firsthand d'une paire)")
+                        "(a lancer APRES une audit firsthand d'une paire, ET EN DERNIER : "
+                        "toute normalisation outillee ulterieure -- strip_probe_banner.py, "
+                        "strip_machine_paths.py, scrub_papermill_paths.py -- deplace le "
+                        "blob SHA sans toucher le contenu calcule et invaliderait cette "
+                        "attestation, cf #8957)")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     p.add_argument("--coverage", action="store_true",
                    help="Recense les notebooks C# versionnes NON couverts par le "
@@ -843,6 +847,17 @@ def main(argv=None) -> int:
             )
         msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
         print(msg)
+        # Rappel d'ordre (#8957) : ce rebaseline est l'attestation des SHAs courants.
+        # Il va EN DERNIER -- si un strip outille (strip_probe_banner.py --apply,
+        # strip_machine_paths.py, scrub_papermill_paths.py) edite le notebook APRES
+        # ce point, le blob SHA deplace et le gate --per-pair sortira DRIFT-INTRO
+        # sur la prochaine PR (la parite est vraie, c'est son empreinte qui a bouge).
+        print(
+            "Rappel : cette attestation est celle du notebook TEL QU'IL EST MAINTENANT. "
+            "Tout strip outille ulterieur deplace le blob SHA -- si vous devez "
+            "normaliser (strip_probe_banner / strip_machine_paths / scrub_papermill), "
+            "refaites --update en dernier, apres (cf #8957)."
+        )
         return 0
 
     results = [check_pair(repo_root, pp) for pp in pairs]
