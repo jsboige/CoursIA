@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 8fa3516822bcc10cbc76d6cc77b2bc4d3881d945
-    csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 8fa3516822bcc10cbc76d6cc77b2bc4d3881d945
+      csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
   known_differences:
     - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."

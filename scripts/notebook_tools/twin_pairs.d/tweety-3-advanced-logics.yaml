@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-3-Advanced-Logics-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 26ba41f102395886cb452772ebd7a1df8bdcc584
-    csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 26ba41f102395886cb452772ebd7a1df8bdcc584
+      csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
   known_differences:
     - "Socle commun : logiques avancees (conditionnelle, modale, QBF) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-advanced-logics.dll\"` + `using org.tweetyproject.logics.cl.reasoner` etc.). Python via JPype (`from org.tweetyproject.logics.cl.reasoner import SimpleCReasoner`). Meme moteur Java TweetyProject, deux ponts (IKVM traduit vs JPype JVM)."

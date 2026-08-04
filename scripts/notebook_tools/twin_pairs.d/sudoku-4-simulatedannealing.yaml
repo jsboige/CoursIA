@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-07-29"
-    by: myia-po-2023:CoursIA-2
-    python_sha: 39980a85c8895cd5edb2443ba28a12d07ae4b8f2
-    csharp_sha: 1e982c6661c13ce0cb9f1ed1b40a81b85bd856ea
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 39980a85c8895cd5edb2443ba28a12d07ae4b8f2
+      csharp_sha: 1e982c6661c13ce0cb9f1ed1b40a81b85bd856ea
   known_differences:
     - "Socle pedagogique commun : recuit simule (Simulated Annealing) applique au Sudoku -- schema de refroidissement (cooling schedule), temperature T decroissante, acceptation de Metropolis (accepter une solution pire avec probabilite exp(-delta/T)), voisinage par mutation locale. Meme algorithme, meme cas d'application (optimisation stochastique d'une grille)."
     - "Implementation from scratch des deux cotes (ni lib dediee C# ni framework Python) : le C# est pur stdlib System.* (0 NuGet, 17 cellules code) ; le Python utilise numpy/math/random (19 cellules code). Les deux codent le schedule de temperature, la mutation et le critere d'acceptation de Metropolis manuellement -- c'est la paire la plus proche d'une traduction native, mais les 2 implementations restent independantes (idiomes langage, structures de donnees), d'ou parity_level semantic et non native-both."
