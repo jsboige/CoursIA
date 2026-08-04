@@ -66,6 +66,7 @@ from target_guard import (  # noqa: E402
 from prover.config import DEMOS  # noqa: E402
 from prover.provers import MultiAgentSorryProver  # noqa: E402
 from prover.trace import TraceLogger  # noqa: E402
+from prover.lean_utils import count_real_sorries  # noqa: E402  (#9402: real-token counter)
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
     find_lean_project_root,
@@ -79,8 +80,13 @@ def _bg(line: str) -> None:
 
 
 def _peek_sorry_count(filepath: str) -> int:
+    # #9402: count REAL sorry tokens (comment-stripped, word-bounded) so the
+    # pre/post DELTA forensic signal reflects discharged proofs, not prose
+    # mentions in docstrings/comments. The legacy raw substring counter
+    # over-counted x4-x13 on prose-dense files (HashlifeCorrectness: 52
+    # substring hits vs 9 real tokens on origin/main 2026-08-04).
     try:
-        return Path(filepath).read_text(encoding="utf-8").count("sorry")
+        return count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
     except OSError:
         return -1
 

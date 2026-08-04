@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-08-04"
     by: myia-po-2024:CoursIA-2
-    python_sha: c0bbf4a4714de6beb77fe46302772a40f46a2dad
+    python_sha: 07b46a9434ca9cc29a312c9727057d5d212f4183
     csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
   known_differences:
     - "Socle pedagogique commun : jeux a information imparfaite, Kuhn Poker (Kuhn 1950/1953) comme jeu de reference, regret matching (Hannan), CFR vanilla (Zinkevich et al. 2007) avec recursion contrefactuelle, variante CFR+ (Tammelin 2014), convergence de la strategie moyenne vers la valeur du jeu / equilibre de Nash."

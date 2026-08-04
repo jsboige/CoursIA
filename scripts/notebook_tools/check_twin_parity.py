@@ -14,17 +14,29 @@ personne ne re-audite la parite. Aujourd'hui la parite est **declarative**
 Le registre vit dans le repertoire `twin_pairs.d/` (a cote de ce script,
 #8542 Option C) : **un fichier YAML par paire** + `_schema.yaml` (documentation).
 Chaque entree decrit une paire : le chemin des deux notebooks, le `parity_level`
-(surface | semantic | native-both), le `last_audit` (date, auteur, et le **git
-blob SHA** de chaque notebook au moment de l'audit) et les `known_differences`
-documentees. Le file-per-entry supprime a la source la classe de conflit serie
-qui frappait l'ancien mono-fichier (recurrences #8415/#8476/#8499/#8505/#8526/#8499).
+(surface | semantic | native-both), l'**enregistrement d'audit** (date, auteur,
+et le **git blob SHA** de chaque notebook au moment de l'audit) et les
+`known_differences` documentees. Le file-per-entry supprime a la source la
+classe de conflit serie qui frappait l'ancien mono-fichier (recurrences
+#8415/#8476/#8499/#8505/#8526/#8499).
+
+L'enregistrement d'audit existe en deux formes (#9399 volet a) : le singleton
+legacy `last_audit:` ou la liste **append-only** `audits:`. Le singleton etait
+un aimant a collision (deux audits concurrents de la meme paire ecrivaient les
+memes lignes -> CONFLICT ou ecrasement silencieux du plus recent, #9171/#9237/
+#9245) ; la forme append-only fait que chaque audit ajoute une entree distincte
+-> rien n'ecrase plus rien. La migration legacy -> audits: est paresseuse (a la
+volee, sur le 1er drift reel) pour eviter qu'une reecriture massive des ~158
+fichiers ne soit elle-meme un aimant a collision. Le reader `_latest_audit`
+lit le dernier enregistrement quelle que soit la forme.
 
 Comment ca marche
 -----------------
 Pour chaque paire du registre, on :
   1. lit le **git blob SHA courant** de chaque notebook via `git ls-tree HEAD`
      (le contenu versionne, pas le working tree — reproductible) ;
-  2. compare le SHA courant au `last_audit.{python,csharp}_sha` enregistre ;
+  2. compare le SHA courant au `{python,csharp}_sha` du **dernier
+     enregistrement d'audit** (`last_audit` legacy ou `audits[-1]`, #9399) ;
   3. **DRIFT** si l'un des deux a change depuis le dernier audit -> la paire
      doit etre re-auditee (un cote a evolue, la parite n'est plus garantie) ;
   4. **MISSING** si le chemin n'existe pas dans git (typo, deplacement, jumeau
@@ -136,9 +148,6 @@ except ImportError:  # pragma: no cover
 # d'une entree -- triviale, mais meme code, memes garanties (seules les lignes
 # `last_audit` changent, commentaires du fichier preserves).
 DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.d"
-
-# Sentinelle : distingue « cle absente de l'update » de « valeur None ».
-_MISSING = object()
 
 
 def _slug(name: str) -> str:
@@ -392,7 +401,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
     name = pair.get("name", "?")
     py = pair["python"]
     cs = pair["csharp"]
-    audit = pair.get("last_audit", {}) or {}
+    audit = _latest_audit(pair)
     rec_py = audit.get("python_sha")
     rec_cs = audit.get("csharp_sha")
 
@@ -458,15 +467,45 @@ def update_pair(
     cur_cs = _git_blob_sha(repo_root, cs)
     audit = {
         "date": date or _dt.date.today().isoformat(),
-        "by": by or pair.get("last_audit", {}).get("by", "manual"),
+        "by": by or _latest_audit(pair).get("by", "manual"),
         "python_sha": cur_py,
         "csharp_sha": cur_cs,
     }
     return audit, cur_py
 
 
-# Cles scalaires du bloc `last_audit` reecrites par le rebaseline chirurgical.
+# Cles scalaires d'un enregistrement d'audit (forme append-only ET legacy).
+# Partagees par le singleton `last_audit:` (legacy) et chaque element de la
+# liste `audits:` (append-only, #9399).
 _AUDIT_KEYS = ("date", "by", "python_sha", "csharp_sha")
+
+
+def _latest_audit(pair: dict) -> dict:
+    """Retourne le dernier enregistrement d'audit d'une paire.
+
+    Supporte les deux formes du registre (#9399) :
+      - append-only : `audits:` est une liste d'enregistrements (date/by/shas) ;
+        le plus recent est le dernier element. Deux audits concurrents sur la
+        meme paire ecrivent alors des entrees distinctes -> git les fusionne
+        seul (fin de la collision mecanique du singleton legacy).
+      - legacy : `last_audit:` singleton (forme historique des ~158 fichiers).
+
+    Priorite a `audits:` (nouvelle forme) si present et non vide, sinon fallback
+    sur `last_audit:`. Renvoie `{}` si ni l'un ni l'autre (paire non encore
+    auditee -> DRIFT au prochain --check, comme avant).
+
+    Cette retro-compatibilite permet une migration **a la volee** (chaque
+    `--update` migre sa paire vers la forme append-only) plutot qu'une
+    reecriture massive des 158 fichiers en un coup, qui serait elle-meme un
+    aimant a collision (#9399 critere d'acceptation : preserve l'historique).
+    """
+    audits = pair.get("audits")
+    if isinstance(audits, list) and audits:
+        # Les enregistrements legacy peuvent omettre `by`/`date` ; tolerer.
+        last = audits[-1]
+        if isinstance(last, dict):
+            return last
+    return pair.get("last_audit") or {}
 
 
 def _fmt_audit_value(key: str, value) -> str:
@@ -501,20 +540,141 @@ def write_registry_text(path: Path, text: str) -> None:
         fh.write(text)
 
 
+def _parse_flat_audit(body_lines):
+    """Paires (cle, valeur_textuelle) d'un bloc `last_audit:` legacy (mapping plat).
+
+    Preserve l'ordre du fichier : `reason` est optionnel et libre (texte long de
+    justification d'audit), on ne PEUT PAS se restreindre a `_AUDIT_KEYS` sous
+    peine de jeter l'historique d'audit (#9399 critere 4, anti-regression).
+    """
+    items = []
+    for ln in body_lines:
+        m = re.match(r"^\s+(\w+):\s*(.*)$", ln)
+        if m:
+            items.append((m.group(1), m.group(2).strip().strip("\"'")))
+    return items
+
+
+def _parse_latest_audit_entry(body_lines):
+    """Dernier element de liste d'un bloc `audits:` -> dict des cles scalaires.
+
+    Sert au no-op check : si la derniere entree enregistre deja les SHAs
+    courants, on n'ajoute pas de doublon (evite la croissance infinie de la
+    liste sur des `--update` successifs sans changement reel).
+    """
+    latest = {}
+    for ln in body_lines:
+        m_item = re.match(r"^\s+-\s+(\w+):\s*(.*)$", ln)
+        m_kv = re.match(r"^\s{2,}(\w+):\s*(.*)$", ln)
+        if m_item:
+            latest = {m_item.group(1): m_item.group(2).strip().strip("\"'")}
+        elif m_kv:
+            latest[m_kv.group(1)] = m_kv.group(2).strip().strip("\"'")
+    return latest
+
+
+def _shas_match(record: dict, new_py, new_cs) -> bool:
+    """True ssi `record` enregistre deja exactement ces deux SHAs (no-op)."""
+    if new_py is None or new_cs is None:
+        return False
+    return (str(record.get("python_sha", "")) == str(new_py)
+            and str(record.get("csharp_sha", "")) == str(new_cs))
+
+
+def _legacy_body_as_list_item(body_lines):
+    """Convertit un body legacy (mapping plat indent 4) en 1er item de `audits:`.
+
+    Mecanique pure : la 1re ligne recoit `- ` apres son indentation, les
+    suivantes +2 espaces (alignement sous la 1re cle). La VALEUR (quotes
+    comprises) est preservee byte-faithful -- crucial pour `reason` (texte libre
+    long) : on ne re-quotationne pas, on deplace juste la marge.
+    """
+    out = []
+    for idx, ln in enumerate(body_lines):
+        m = re.match(r"^(\s+)(\S.*?)(\r?\n)?$", ln)
+        if not m:
+            out.append(ln)
+            continue
+        indent, content, eol = m.group(1), m.group(2), m.group(3) or "\n"
+        if idx == 0:
+            out.append(f"{indent}- {content}{eol}")
+        else:
+            out.append(f"  {indent}{content}{eol}")
+    return out
+
+
+def _render_new_audit_entry(entry: dict) -> list[str]:
+    """Rendre une NOUVELLE entree (sortie d'`update_pair`) en item de liste `audits:`."""
+    lines = []
+    keys = [k for k in _AUDIT_KEYS if entry.get(k) is not None]
+    for idx, key in enumerate(keys):
+        val = _fmt_audit_value(key, entry[key])
+        if idx == 0:
+            lines.append(f"    - {key}: {val}\n")
+        else:
+            lines.append(f"      {key}: {val}\n")
+    return lines
+
+
+def _transform_audit_block(form: str, block: list[str], new_entry: dict) -> tuple[list[str], bool]:
+    """Transforme un bloc d'audit (header + body) pour une paire ciblee.
+
+    form = "last_audit" (legacy singleton) ou "audits" (liste append-only).
+    Retourne (nouvelles_lignes_du_bloc, a_change).
+
+    Semantique append-only (#9399) :
+      - audits: + SHAs inchanges -> no-op (pas de doublon).
+      - audits: + SHAs changes   -> APPEND d'une nouvelle entree.
+      - last_audit: + SHAs inchanges -> no-op (on reste legacy ; migration
+        paresseuse a la volee, uniquement quand la paire drift reelement).
+      - last_audit: + SHAs changes   -> MIGRATION vers audits: [ancien, nouveau]
+        (l'ancien enregistrement, `reason` compris, devient item[0]).
+    """
+    body = block[1:]
+    new_py = new_entry.get("python_sha")
+    new_cs = new_entry.get("csharp_sha")
+
+    if form == "audits":
+        latest = _parse_latest_audit_entry(body)
+        if _shas_match(latest, new_py, new_cs):
+            return block, False
+        return block + _render_new_audit_entry(new_entry), True
+
+    # form == "last_audit" -> migration vers la forme append-only
+    old_pairs = _parse_flat_audit(body)
+    if _shas_match(dict(old_pairs), new_py, new_cs):
+        return block, False
+    new_block = ["  audits:\n"]
+    if old_pairs:
+        new_block += _legacy_body_as_list_item(body)
+    new_block += _render_new_audit_entry(new_entry)
+    return new_block, True
+
+
 def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
-    """Reecrit UNIQUEMENT les lignes `last_audit` des paires ciblees.
+    """Reecrit UNIQUEMENT le bloc d'audit des paires ciblees (forme append-only).
 
     Pourquoi ne pas re-serialiser via `yaml.safe_dump` (comportement d'avant
     #8570) : un dump complet detruit **tout** le fichier autour des donnees.
     Mesure firsthand sur le registre a 116 paires -- un rebaseline d'UNE paire
     produisait `1108 insertions(+), 658 deletions(-)` et supprimait les **67
     lignes de commentaire**, dont l'en-tete de 15 lignes qui documente le
-    schema et le vocabulaire `parity_level`. Le vrai changement (4 lignes)
-    devenait irreviewable, et la documentation du registre disparaissait sans
-    que personne ne l'ait demande.
+    schema et le vocabulaire `parity_level`. Le vrai changement devenait
+    irreviewable, et la documentation du registre disparaissait sans que
+    personne ne l'ait demande.
 
     L'edition ligne-a-ligne ci-dessous preserve commentaires, ordre, quoting et
     espacement : le diff d'un rebaseline vaut exactement les lignes changees.
+
+    Depuis #9399 (volet a), l'ecriture est **append-only** : le singleton
+    `last_audit:` est un aimant a collision (deux audits concurrents de la meme
+    paire visent les memes lignes -> CONFLICT ou ecrasement silencieux du plus
+    recent par le plus ancien, cf #9171/#9237/#9245). La forme cible est une
+    liste `audits:` ou chaque audit ajoute une entree distincte -> git fusionne
+    sans intervention, et rien n'ecrase plus un enregistrement plus recent.
+    La migration legacy -> audits: est **paresseuse** (a la volee, sur le 1er
+    drift reel) pour eviter qu'une reecriture massive des ~158 fichiers ne soit
+    elle-meme un aimant a collision.
 
     Args:
         raw: contenu texte du registre YAML.
@@ -523,37 +683,40 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
     Returns:
         (nouveau_texte, nombre_de_paires_effectivement_touchees)
     """
+    lines = raw.splitlines(keepends=True)
     out: list[str] = []
     current: str | None = None
-    in_audit = False
     touched: set[str] = set()
 
-    for line in raw.splitlines(keepends=True):
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
         m_entry = re.match(r"^-\s+name:\s*(.+?)\s*$", line)
         if m_entry:
             current = m_entry.group(1).strip().strip("\"'")
-            in_audit = False
-        elif re.match(r"^\s{2}last_audit:\s*$", line):
-            in_audit = current in updates
-        elif re.match(r"^\s{2}\S", line):
-            # toute autre cle de premier niveau de l'entree ferme le bloc
-            in_audit = False
+            out.append(line)
+            i += 1
+            continue
 
-        if in_audit:
-            m_kv = re.match(r"^(\s+)(\w+):\s*(.*)$", line)
-            if m_kv and m_kv.group(2) in _AUDIT_KEYS:
-                key = m_kv.group(2)
-                new = updates[current].get(key, _MISSING)
-                # On ne reecrit que si la VALEUR change : sinon un rebaseline
-                # sur une paire deja a jour normaliserait le quoting (le
-                # registre melange 'x' et "x") et polluerait le diff de lignes
-                # sans changement reel.
-                old = m_kv.group(3).strip().strip("\"'")
-                if new is not _MISSING and str(new) != old:
-                    line = f"{m_kv.group(1)}{key}: {_fmt_audit_value(key, new)}\n"
-                    touched.add(current)
+        m_hdr = re.match(r"^\s{2}(last_audit|audits):\s*$", line)
+        if m_hdr and current in updates:
+            form = m_hdr.group(1)
+            # Corps du bloc = lignes suivantes indentees a 4+ espaces.
+            block = [line]
+            j = i + 1
+            while j < n and re.match(r"^\s{4,}\S", lines[j]):
+                block.append(lines[j])
+                j += 1
+            new_block, did = _transform_audit_block(form, block, updates[current])
+            if did:
+                touched.add(current)
+            out.extend(new_block)
+            i = j
+            continue
 
         out.append(line)
+        i += 1
 
     return "".join(out), len(touched)
 

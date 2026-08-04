@@ -1,0 +1,71 @@
+name: ICT-Series Tests
+
+# Organe manquant (#9387) : aucun workflow ne surveillait les 119 tests de
+# ICT-Series/. Ce workflow declenche sur toute modif sous ICT-Series/** et
+# lance les DEUX suites depuis leur rootdir correct (piege d'import #9387) :
+#   - tests/      (34 strata tests)  -> rootdir = ICT-Series/  (pyproject.toml)
+#   - ict/tests/  (85 package tests) -> rootdir = ict/tests/   (pytest.ini, mode prepend)
+# Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
+# documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
+#
+# Python 3.9 requis : pyphi==1.2.0 (pin pyproject.toml) exige collections.Iterable
+# (retire en 3.10) + NumPy < 2.0 (compat pyemd). Cf. memoire pyphi-1-2-0-broken-python313.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
+      - '.github/workflows/ict-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
+      - '.github/workflows/ict-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ict-tests:
+    name: ICT ${{ matrix.suite-name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # tests/ : 34 tests strates (PyPhi, Cech, catastrophe...). Rootdir
+          # herite du pyproject.toml d'ICT-Series/ (pip install -e . rend le
+          # package ict/ importable depuis n'importe quel cwd).
+          - suite-name: "tests/ (34 strata)"
+            test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
+            test-args: tests
+          # ict/tests/ : 85 tests package. Rootdir = ict/tests/ pour que le
+          # pytest.ini local (mode prepend, neutralise --import-mode=importlib)
+          # s'applique -- sinon test_reversibility_budget / test_time_arrow
+          # n'executent jamais (sys.path.insert module-level ignore sous importlib).
+          - suite-name: "ict/tests/ (85 package)"
+            test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
+            test-args: .
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: pip
+          cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
+
+      - name: Install ict package + deps (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run ${{ matrix.suite-name }}
+        working-directory: ${{ matrix.test-cwd }}
+        run: pytest ${{ matrix.test-args }} --tb=short -v

@@ -161,11 +161,11 @@ Note : ceci requiert `LocallySmall.{w} C` pour faire correspondre les
 niveaux d'univers entre `shrinkYoneda` et `Φ.fiber`.
 -/
 
-/-- The fiber of the (shrunk) Yoneda embedding at a point recovers the
-    fiber functor value. This is `shrinkYonedaCompPresheafFiberIso` from Mathlib:
+/-- La fibre du plongement de Yoneda (réduit) en un point retrouve la
+    valeur du foncteur fibre. C'est `shrinkYonedaCompPresheafFiberIso` de Mathlib :
     `shrinkYoneda ⋙ Φ.presheafFiber ≅ Φ.fiber`.
-    It shows that the presheaf fiber functor extends the fiber functor
-    from objects to presheaves via the Yoneda embedding. -/
+    Cela montre que le foncteur fibre des préfaisceaux étend le foncteur fibre
+    des objets aux préfaisceaux via le plongement de Yoneda. -/
 noncomputable def fiber_yoneda_iso {C : Type u} [Category.{v} C]
     {J : GrothendieckTopology C} [LocallySmall.{w} C]
     (Φ : GrothendieckTopology.Point.{w} J) :
@@ -184,18 +184,18 @@ Ceci permet de construire des applications *depuis* la fibre en utilisant
 la propriété universelle des colimites.
 -/
 
-/-- The colimit cocone that defines the presheaf fiber.
-    Uses `presheafFiberCocone` from Mathlib. -/
+/-- Le cocône colimite qui définit la fibre du préfaisceau.
+    Utilise `presheafFiberCocone` de Mathlib. -/
 noncomputable def presheaf_fiber_cocone {C : Type u} [Category.{v} C]
     {J : GrothendieckTopology C}
     (Φ : GrothendieckTopology.Point.{w} J) (P : Cᵒᵖ ⥤ Type (max u w)) :
     Cocone ((CategoryOfElements.π Φ.fiber).op ⋙ P) :=
   Φ.presheafFiberCocone P
 
-/-- The presheaf fiber cocone is a colimit. This gives the universal
-    property: any compatible family of elements indexed by (X, x) extends
-    uniquely to a map from the fiber.
-    Uses `isColimitPresheafFiberCocone` from Mathlib. -/
+/-- Le cocône de fibre du préfaisceau est une colimite. Cela donne la
+    propriété universelle : toute famille compatible d'éléments indexée par
+    (X, x) se prolonge de manière unique en une application depuis la fibre.
+    Utilise `isColimitPresheafFiberCocone` de Mathlib. -/
 noncomputable def is_colimit_presheaf_fiber {C : Type u} [Category.{v} C]
     {J : GrothendieckTopology C}
     (Φ : GrothendieckTopology.Point.{w} J) (P : Cᵒᵖ ⥤ Type (max u w)) :
@@ -211,9 +211,10 @@ coïncident sur tous les « germes » (X, x) : pour tout X : C et x :
 l'inclusion canonique.
 -/
 
-/-- Extensionality for maps from the presheaf fiber: two maps f, g from
-    Φ.presheafFiber.obj P agree iff they agree on all toPresheafFiber inclusions.
-    Uses `presheafFiber_hom_ext` from Mathlib. -/
+/-- Extensionnalité pour les applications depuis la fibre du préfaisceau :
+    deux applications f, g depuis Φ.presheafFiber.obj P coïncident si et
+    seulement si elles coïncident sur toutes les inclusions `toPresheafFiber`.
+    Utilise `presheafFiber_hom_ext` de Mathlib. -/
 theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
     {J : GrothendieckTopology C}
     (Φ : GrothendieckTopology.Point.{w} J) {P : Cᵒᵖ ⥤ Type (max u w)}

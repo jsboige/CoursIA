@@ -2054,16 +2054,27 @@ def test_fx7_count_real_sorries_massively_undercounts_comment_prose():
 
 
 def test_fx7_no_legacy_substring_counter_in_prover_source():
-    """FX-7 regression guard: no prover source module may reintroduce the
-    legacy `.count("sorry")` substring counter on file content — every gate,
-    snapshot, and report must go through count_real_sorries so deltas stay
-    consistent. The only allowed mention is the historical docstring in
-    lean_utils.py describing the retired counter."""
+    """FX-7 regression guard (#9402 widened): no agent_tests PRODUCTION module
+    may reintroduce the legacy `.count("sorry")` substring counter on file
+    content — every gate, snapshot, and report must go through
+    count_real_sorries so deltas stay consistent. The original guard scanned
+    only `prover/*.py` (non-recursive), which let residual substring counters
+    survive in `prover/baselines/run_baselines.py`, the root `run_prover_bg.py`
+    `_peek_sorry_count`, and `multi_agent_proof.py` — the very blind spot #9402
+    documents. This scan covers the whole agent_tests tree EXCLUDING tests/
+    (fixtures legitimately cite the substring form to document the retired
+    counter). The only allowed production mention is the historical docstring
+    in lean_utils.py (marked # FX-7-ALLOW)."""
     from pathlib import Path
 
-    prover_dir = Path(__file__).resolve().parent.parent / "prover"
+    agent_tests = Path(__file__).resolve().parent.parent
     legacy = []
-    for py in sorted(prover_dir.glob("*.py")):
+    for py in sorted(agent_tests.rglob("*.py")):
+        # Skip the test suite — fixtures legitimately cite the legacy substring
+        # form to document/verify the retired counter.
+        rel_parts = py.relative_to(agent_tests).parts
+        if "tests" in rel_parts:
+            continue
         for ln, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
             if '.count("sorry")' in line:
                 # lean_utils.py keeps ONE historical mention in the
@@ -2072,11 +2083,57 @@ def test_fx7_no_legacy_substring_counter_in_prover_source():
                 # allow survives a docstring reformat (NanoClaw #4936 △ Mineur).
                 if py.name == "lean_utils.py" and "# FX-7-ALLOW" in line:
                     continue
-                legacy.append(f"{py.name}:{ln}: {line.strip()}")
+                legacy.append(f"{py.relative_to(agent_tests)}:{ln}: {line.strip()}")
     assert not legacy, (
         "FX-7 violated — legacy substring `.count(\"sorry\")` reintroduced:\n"
         + "\n".join(legacy)
     )
+
+
+def test_peek_sorry_count_counts_real_tokens_not_prose(tmp_path):
+    """#9402: the `_peek_sorry_count` function that feeds the pre/post DELTA
+    forensic signal in run_prover_bg must return the REAL (comment-stripped,
+    word-bounded) token count, not the raw substring count. A prose-dense file
+    where every 'sorry' mention lives in comments/docstrings must read 0, and a
+    file mixing prose + real tokens must read only the real ones. Reverting
+    `_peek_sorry_count` to the raw substring counter reds this test."""
+    import sys
+
+    agent_tests = Path(__file__).resolve().parent.parent
+    if str(agent_tests) not in sys.path:
+        sys.path.insert(0, str(agent_tests))
+    import run_prover_bg  # noqa: E402
+
+    # Prose only: header docstring + line comment mention 'sorry' repeatedly,
+    # but there is NO real sorry token. Substring would over-count; real = 0.
+    prose_only = tmp_path / "prose_only.lean"
+    prose_only.write_text(
+        "/-!\n"
+        "This file used to be sorry everywhere; we removed sorry after sorry\n"
+        "until only sorry mentions in this docstring remained (sorry, sorry).\n"
+        "-/\n"
+        "-- NB: the word sorry in this line comment is NOT an obligation.\n"
+        "theorem t : True := by trivial\n",
+        encoding="utf-8",
+    )
+    assert run_prover_bg._peek_sorry_count(str(prose_only)) == 0
+    # Sanity: the raw substring counter WOULD have over-counted here.
+    assert prose_only.read_text(encoding="utf-8").count("sorry") >= 5
+
+    # Mixed: 2 real sorry tokens buried under the same prose. Real = 2.
+    mixed = tmp_path / "mixed.lean"
+    mixed.write_text(
+        "/-! Header mentions sorry many times (sorry sorry sorry). -/\n"
+        "-- a line comment saying sorry too\n"
+        "theorem a : True := by sorry\n"
+        "theorem b : True := by\n"
+        "  exact sorry\n",
+        encoding="utf-8",
+    )
+    assert run_prover_bg._peek_sorry_count(str(mixed)) == 2
+
+    # Missing file: the OSError contract returns -1 (unchanged behavior).
+    assert run_prover_bg._peek_sorry_count(str(tmp_path / "absent.lean")) == -1
 
 
 # --- FX-6b (#1453): sorry_is_in_statement + in-statement entry refusal ------

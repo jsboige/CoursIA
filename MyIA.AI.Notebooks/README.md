@@ -85,8 +85,8 @@ Search
 └── search_lean/ - Lake d'optimalité A* (consistance + heuristique)
 
 Probas
-├── Infer/ - 19 notebooks Infer.NET (graphes de facteurs, C#)
-├── PyMC/ - 19 notebooks PyMC (MCMC, Python) — miroir Infer
+├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
+├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
 ├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
 └── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
 
@@ -96,7 +96,7 @@ Sudoku
     └── 10..19 spécialisations (Z3, OR-Tools, Choco, Lean, LLM, NN)
 
 GameTheory
-├── (à plat) - 17 notebooks : Nash, Minimax, Coopétition, MARL, Mechanism Design
+├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
 └── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters, lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
@@ -114,7 +114,7 @@ CaseStudies
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (4 substrats : tri, Gray-Scott, Axelrod, transformer+SAE)
-└── (à plat) - 3 notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
+└── (à plat) - notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
 ```
 
 ## Parité Python / .NET / Lean — différenciant structurant

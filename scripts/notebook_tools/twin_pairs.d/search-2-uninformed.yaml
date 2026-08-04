@@ -5,8 +5,8 @@
   parity_level: semantic
   last_audit:
     date: "2026-08-04"
-    by: myia-po-2024:CoursIA-2
-    python_sha: b55cbaaf5be458973645f1bd0070e33934a43338
+    by: myia-po-2023:CoursIA
+    python_sha: bd3d87d8d9a4e4dc00e53a306cbd1979dc8e4901
     csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
     reason: "c.1123 #8052 C# c19 IDDFS depth/iteration count (profondeur 3->2, 4->3 itérations); Python twin clean (generic d-table)"
   known_differences:

@@ -191,9 +191,9 @@ theorem valueNoInfo_le_valuePerfect (D : DecisionProblem) :
     (valueSignal_le_valuePerfect D _)
 
 /-
-  Concrete check: the umbrella problem. Two equally likely states
-  (rain, sun), two actions (take the umbrella, leave it). Payoffs:
-  umbrella = 2 in rain, 0 in sun; no umbrella = -3 in rain, 3 in sun.
+  Vérification concrète : le problème du parapluie. Deux états équiprobables
+  (pluie, soleil), deux actions (prendre le parapluie, le laisser). Paiements :
+  parapluie = 2 en pluie, 0 en soleil ; pas de parapluie = -3 en pluie, 3 en soleil.
 -/
 
 /-- Problème de décision pluie-ou-soleil utilisé comme exemple vérifié au noyau. -/
