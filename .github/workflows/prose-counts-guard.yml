@@ -1,0 +1,43 @@
+name: prose-counts-guard
+
+# Les donnees quantitatives sont tenues par le CI, pas par la prose manuelle
+# (mandat user 2026-08-04, registre #9377).
+#
+# Le catalogue genere a ete mis en place parce que les agents ouvraient des PR
+# sans fin pour resynchroniser des decomptes de notebooks. Le genre a survecu en
+# migrant vers la prose, ou aucun generateur ne l'atteint : 11 PR de resynchro
+# mergees en 3 semaines au 2026-08-04, dont une (#9153) dont le titre avoue
+# « re-drift post #6914 ».
+#
+# Le guard ne juge que les lignes AJOUTEES : le stock existant (#9377) ne fait
+# echouer personne. ADVISORY tant que le stock n'est pas resorbe -- il ne peut
+# donc pas rougir aujourd'hui, et c'est assume : son role immediat est de poser
+# le label sur les PR qui rouvrent la veine, pas de bloquer la flotte. Le
+# passage en `--strict` est conditionne au critere de sortie de #9377.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ipynb'
+      - '**/*.md'
+
+permissions:
+  contents: read
+
+jobs:
+  prose-counts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compteurs quantitatifs ajoutes en prose
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=0 -q
+          python scripts/notebook_tools/check_prose_quantitative_claims.py \
+            --diff "origin/${{ github.base_ref }}...HEAD"
