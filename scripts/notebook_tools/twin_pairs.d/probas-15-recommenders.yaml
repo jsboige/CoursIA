@@ -3,11 +3,15 @@
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-15-Recommenders.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 2139bf0a6063766923006eb2a30fa9791dd01e2d
-    csharp_sha: c841d0e3694526d1df2b901e3c2d170c91809703
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 2139bf0a6063766923006eb2a30fa9791dd01e2d
+      csharp_sha: c841d0e3694526d1df2b901e3c2d170c91809703
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 76f13063b0ad1748da0b2630fe50a2bfb69bcf0b
+      csharp_sha: c841d0e3694526d1df2b901e3c2d170c91809703
   known_differences:
   - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
