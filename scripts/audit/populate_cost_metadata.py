@@ -360,8 +360,10 @@ def build_search_cpu_cost(nb: dict, by: str, today: str) -> dict:
 # appel API cloud ne soit fait — gymnasium/SB3 sont des libs LOCALES. Le `_API_RE`
 # générique (mot isolé « openai ») FP-skipperait rl_1 (intro CartPole), rl_6c (PPO),
 # rl_6d (SAC) — les notebooks les plus pédagogiques. On matche donc un VRAI appel API
-# (import/instance), pas le mot isolé. Le signal GPU réel (`torch.cuda`,
-# `.cuda(`) est conservé → rl_6e (GRPO, CUDA-hard) reste correctement skippé.
+# (import/instance), pas le mot isolé. Le signal GPU réel (`.cuda(`,
+# `torch.cuda.synchronize`) est conservé ; la SONDE `torch.cuda.is_available()`
+# (bénigne, affichée pour info par les notebooks CPU pédagogiques) est neutralisée —
+# corrige le faux-négatif rl_6e (GRPO from-scratch = CPU pédagogique, CUDA=False).
 _RL_API_RE = re.compile(
     # Imports explicites des SDK cloud (jamais en prose) — couvre `import openai`,
     # `from openai import …`, `import anthropic`, `from anthropic import Anthropic`.
@@ -376,19 +378,30 @@ _RL_API_RE = re.compile(
 )
 
 
+_CUDA_AVAIL_PROBE_RE = re.compile(r"torch\.cuda\.is_available\s*\(\s*\)")
+
+
 def is_rl_cpu_pure(nb: dict) -> bool:
     """True si notebook RL CPU-pur : pas de QuantBook, pas de GPU réel, pas d'appel
     API cloud explicite.
 
     Plus précise que `is_cpu_pure` pour RL : ignore le FP prose « openai »
     (gym.openai.com, « jeux d'OpenAI ») qui n'est PAS un appel API. Gymnasium et
-    stable-baselines3 sont des libs locales CPU. Le signal GPU réel (`torch.cuda`,
-    `.cuda(`) est conservé (rl_6e GRPO = CUDA-hard → skippé).
+    stable-baselines3 sont des libs locales CPU.
+
+    Sonde CUDA ≠ exigence CUDA : beaucoup de notebooks PyTorch pédagogiques
+    affichent `torch.cuda.is_available()` pour information puis tournent en CPU
+    (`device="cpu"`). On neutralise cette SONDE avant `_GPU_RE` pour ne pas la
+    confondre avec un usage GPU réel. Le vrai signal GPU (`.cuda(`,
+    `torch.cuda.synchronize`, `.to('cuda')`) reste détecté. Corrige le
+    faux-négatif sur rl_6e (GRPO from-scratch, CPU pédagogique — output committé
+    « PyTorch 2.11.0+cpu, CUDA=False », entraînement multi-seed complet sur CPU).
     """
     if _uses_quantbook(nb):
         return False
     src = _source_text(nb)
-    if _GPU_RE.search(src):  # torch.cuda.is_available() etc. → GPU réel
+    src_no_probe = _CUDA_AVAIL_PROBE_RE.sub("", src)
+    if _GPU_RE.search(src_no_probe):  # .cuda(, torch.cuda.synchronize, ... → GPU réel
         return False
     if _ACCOUNT_RE.search(src):  # token / env-var secret
         return False
