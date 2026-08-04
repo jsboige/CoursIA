@@ -4,10 +4,10 @@
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-31"
-    by: po-2024
-    python_sha: 96c663d1b5cadf6ecacd8981ae0c9f603b9d7e6d
-    csharp_sha: 8d70f1020b83b60706f94aabb2e425b083b35a7d
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: 8efefd483570bca7815d101844863f71f9f3c436
+    csharp_sha: a502d4c462d6667187a8ec6d827bfe1027271e9f
   known_differences:
     - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
     - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
