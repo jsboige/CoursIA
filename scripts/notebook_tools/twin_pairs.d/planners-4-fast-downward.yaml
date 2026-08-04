@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-07-23"
-    by: po-2023
-    python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
-    csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
+  audits:
+    - date: "2026-07-23"
+      by: po-2023
+      python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
+      csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
   known_differences:
     - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
     - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward) + unified-planning. C# : from-scratch BCL .NET (reimplementation pedagogique, ne peut pas invoquer fast-downward)."

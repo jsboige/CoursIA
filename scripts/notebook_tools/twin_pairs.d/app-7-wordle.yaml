@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-7-Wordle.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: '2026-07-31'
-    by: po-2024
-    python_sha: 87a7299b929d77d103c6264c39e251e26544decf
-    csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+  audits:
+    - date: '2026-07-31'
+      by: po-2024
+      python_sha: 87a7299b929d77d103c6264c39e251e26544decf
+      csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
   known_differences:
     - "Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l'information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting."

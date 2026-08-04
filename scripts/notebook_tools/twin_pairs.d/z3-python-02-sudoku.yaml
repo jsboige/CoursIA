@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: 31ede72cdc3c4895792d29b26e360cb2d31b66da
-    csharp_sha: fedc5982513ac15be379f4b0ed0845032d2dc9a6
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 31ede72cdc3c4895792d29b26e360cb2d31b66da
+      csharp_sha: fedc5982513ac15be379f4b0ed0845032d2dc9a6
   known_differences:
     - "Python : pyz3. C# : Microsoft.Z3 .NET (idiomes API comme NB-01)."
     - "Cote Python : modelisation Sudoku (81 cellules Int 1-9, alldifferent lignes/colonnes/blocs). Doc-honesty cures c.19 (PR #8045 : compte indices ~35 -> 30 pour puzzle_facile). SHA rebaseline c.802 apres DRIFT detecte par check_twin_parity.py : 4dcb5921 -> 1d3b1932 (commit e8a3be3ae merge le 2026-07-23)."

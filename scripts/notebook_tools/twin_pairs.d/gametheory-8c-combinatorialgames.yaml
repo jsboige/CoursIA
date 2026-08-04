@@ -3,11 +3,11 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: c75a0237be52f739818b9e2df4ddece02a484d5d
-    csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c75a0237be52f739818b9e2df4ddece02a484d5d
+      csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires (Sprague-Grundy, nombres de Grundy, theoreme de Sprague-Grundy sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). Meme concept mathematique (fonction de Grundy/g(x), XOR nim-sum, jeux impartiaux a information complete), meme cas canonique (Nim). Les deux couvrent Nim, Sprague, Grundy."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 14 cellules code) implemente les nombres de Grundy et le XOR nim-sum avec visualisation (graphe de jeu, table de Grundy) ; le C# (pur System.* stdlib, 0 NuGet, 14 cellules code) implemente la meme logique combinatoire (Sprague-Grundy, nim-sum) sans dependance numerique. Meme theoreme, meme contenu algorithmique, sorties differentes (visualisation Python vs sorties texte/table C#)."

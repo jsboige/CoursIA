@@ -3,12 +3,12 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
   parity_level: semantic
-  last_audit:
-    date: "2026-08-04"
-    by: myia-po-2023:CoursIA
-    python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
-    csharp_sha: 45c01bd69738c1140eba9b6702718861db90c816
-    reason: "rebaseline python apres fix forward-ref cellule 37 resume (#8052) : la ligne disait 'Notebooks suivants : Serie Lean 4 pour les formalisations (Notebooks 16-19)' mais la serie compte 17 notebooks (pas de 18/19, cf #9149 GT-1), 'Serie Lean 4' est un faux label (Lean = notebooks b-suffixes 2b/4b/5b/8b/11b/15b), et 'suivants' est faux car GT-17 est le dernier (#17). Fix -> pointe vers la serie RL/ (README L136 'fait le pont avec l'apprentissage par renforcement') + liste les vrais notebooks Lean. Python-only, csharp_sha unchanged, parite semantique preservee."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+      csharp_sha: 45c01bd69738c1140eba9b6702718861db90c816
+      reason: "rebaseline python apres fix forward-ref cellule 37 resume (#8052) : la ligne disait 'Notebooks suivants : Serie Lean 4 pour les formalisations (Notebooks 16-19)' mais la serie compte 17 notebooks (pas de 18/19, cf #9149 GT-1), 'Serie Lean 4' est un faux label (Lean = notebooks b-suffixes 2b/4b/5b/8b/11b/15b), et 'suivants' est faux car GT-17 est le dernier (#17). Fix -> pointe vers la serie RL/ (README L136 'fait le pont avec l'apprentissage par renforcement') + liste les vrais notebooks Lean. Python-only, csharp_sha unchanged, parite semantique preservee."
   known_differences:
     - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."
