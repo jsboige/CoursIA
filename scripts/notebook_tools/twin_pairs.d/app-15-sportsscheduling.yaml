@@ -13,6 +13,10 @@
       by: myia-po-2024:CoursIA
       python_sha: f4a0ff10ad7ad37accc5b3133f0132679c735400
       csharp_sha: 76a2f42fef8d7522c561d433516d9211b70bcef6
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA
+      python_sha: ba69a99a83ae518b50764fd64196319cd08963be
+      csharp_sha: d808d9b68126496b2d9ffaad8b757454fbb31630
   known_differences:
     - "Socle pedagogique commun : Planning sportif / Sports scheduling (CSP : round-robin, contraintes equipes) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass ; C# = Google.OrTools.Sat NuGet + ScottPlot viz."
