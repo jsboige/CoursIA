@@ -32,8 +32,8 @@ MyIA.AI.Notebooks/
   GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design, social choice
   IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
   CaseStudies/     -> Études de cas interdisciplinaires
-  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Argument Analysis, Symbolic Learning) -- la plus vaste série du dépôt (224 notebooks)
-  GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- l'une des plus vastes séries (141 notebooks)
+  SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, SMT, Argument Analysis, Symbolic Learning) -- la plus vaste série du dépôt
+  GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- l'une des plus vastes séries
   QuantConnect/    -> Trading algorithmique (notebooks pédagogiques + stratégies backtestées + pipeline ML)
   cross-series/    -> Applications transverses (matching-cv : data science multi-domaines)
 ```

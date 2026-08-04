@@ -211,8 +211,11 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
     after = ctp.load_registry(REGISTRY_DIR)
 
     # 1) La cible a les SHAs courants (= ce que `git rev-parse HEAD:<path>` retourne).
+    # Depuis #9399, la cible drift est MIGREE vers la forme append-only `audits:` ;
+    # `_latest_audit` lit le dernier enregistrement quelle que soit la forme
+    # (legacy `last_audit:` ou liste `audits:`).
     target_after = next(p for p in after if p.get("name") == target_name)
-    a_audit = target_after.get("last_audit") or {}
+    a_audit = ctp._latest_audit(target_after)
     assert a_audit.get("python_sha") == expected_py_sha, (
         f"Cible {target_name!r}.python_sha = {a_audit.get('python_sha')!r}, "
         f"attendu {expected_py_sha!r} (git ls-tree HEAD)."
@@ -233,8 +236,8 @@ def test_update_with_pair_selector_succeeds_on_existing_pair(registry_backup):
         if before is None:
             drifted.append(f"{name}: disparu du registre")
             continue
-        b_audit = before.get("last_audit") or {}
-        a_audit_other = p.get("last_audit") or {}
+        b_audit = ctp._latest_audit(before)
+        a_audit_other = ctp._latest_audit(p)
         for sha_key in ("python_sha", "csharp_sha"):
             if b_audit.get(sha_key) != a_audit_other.get(sha_key):
                 drifted.append(

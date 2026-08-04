@@ -4,9 +4,9 @@
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-29"
-    by: po-2023:CoursIA
-    python_sha: eb91329e04c6173dbaa8904e2b7e9574bb4817fb
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
+    python_sha: aa49b097f61d8b7feb617d65304c7a327df489cc
     csharp_sha: b1cedb474514fc7a8afdf87594c5fc229b6f4c0c
   known_differences:
     - "Socle pedagogique commun : resolution de Sudoku par programmation par contraintes (CP) avec le solveur Choco -- modelisation (variables, domaines, contraintes), propagation, recherche. Meme solveur (Choco), meme cas d'application (Sudoku). Les deux couvrent Choco, choco, Solver."

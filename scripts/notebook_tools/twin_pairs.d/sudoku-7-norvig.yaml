@@ -6,7 +6,7 @@
   last_audit:
     date: "2026-08-04"
     by: myia-po-2023:CoursIA
-    python_sha: ce921ebb2f887ed7e353cfc7765fdbf56d2a87bc
+    python_sha: 953832780bf8b101e6fcba553c9deeb30cc4cef1
     csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
   known_differences:
     - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."
