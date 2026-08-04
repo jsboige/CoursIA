@@ -46,52 +46,55 @@ import Mathlib.Tactic
 namespace Conway
 namespace Life
 
-/-! ## Basic types
+/-! ## Types de base
 
-We model the live cells as a sorted, deduplicated list of integer
-coordinates. Dead cells are those not in the list.
+Nous modelisons les cellules vivantes par une liste triee et dedupliquee de
+coordonnees entieres. Les cellules mortes sont celles qui ne sont pas dans
+la liste.
 -/
 
-/-- Lexicographic ordering on `Int × Int` for sorting. -/
+/-- Ordre lexicographique sur `Int × Int` pour le tri. -/
 def lexLt (a b : Int × Int) : Bool :=
   if a.1 < b.1 then true
   else if a.1 > b.1 then false
   else a.2 < b.2
 
-/-- A grid of Conway's Game of Life: sorted, deduplicated list of live cells.
-    We use `List` rather than `Finset` because list equality is decided by
-    structural comparison (no `Quot.lift`), which `native_decide` handles. -/
+/-- Une grille du Jeu de la Vie de Conway : liste triee et dedupliquee de
+    cellules vivantes. Nous utilisons `List` plutot que `Finset` car
+    l'egalite de liste est decidee par comparaison structurelle (pas de
+    `Quot.lift`), ce que `native_decide` sait traiter. -/
 abbrev Grid := List (Int × Int)
 
-/-! ## Neighborhood
+/-! ## Voisinage
 
-The Moore (king-move) neighborhood: 8 cells surrounding a given cell.
-We return them as a plain list (order does not matter for counting).
+Le voisinage de Moore (coup du roi) : les 8 cellules entourant une
+cellule donnee. Nous les renvoyons sous forme de liste simple (l'ordre
+ne compte pas pour le denombrement).
 -/
 
-/-- The 8 Moore neighbors of a cell `p`. -/
+/-- Les 8 voisins de Moore d'une cellule `p`. -/
 def mooreNeighbors (p : Int × Int) : List (Int × Int) :=
   [(p.1 - 1, p.2 - 1), (p.1 - 1, p.2), (p.1 - 1, p.2 + 1),
    (p.1, p.2 - 1),                 (p.1, p.2 + 1),
    (p.1 + 1, p.2 - 1), (p.1 + 1, p.2), (p.1 + 1, p.2 + 1)]
 
-/-! ## The B3/S23 rule
+/-! ## La regle B3/S23
 
-For every cell, count its live Moore neighbors:
-- A dead cell with exactly 3 live neighbors becomes alive (Birth = B3)
-- A live cell with 2 or 3 live neighbors stays alive (Survival = S23)
-- Otherwise the cell is dead
+Pour chaque cellule, on compte ses voisins de Moore vivants :
+- Une cellule morte avec exactement 3 voisins vivants devient vivante (Naissance = B3)
+- Une cellule vivante avec 2 ou 3 voisins vivants reste vivante (Survie = S23)
+- Sinon la cellule est morte
 -/
 
-/-- Check if a cell is alive in a grid (membership test). -/
+/-- Verifie si une cellule est vivante dans une grille (test d'appartenance). -/
 def isAlive (g : Grid) (p : Int × Int) : Bool :=
   g.elem p
 
-/-- Count the live Moore neighbors of `p` in grid `g`. -/
+/-- Compte les voisins de Moore vivants de `p` dans la grille `g`. -/
 def liveNeighborCount (g : Grid) (p : Int × Int) : Nat :=
   (mooreNeighbors p).countP (isAlive g)
 
-/-- The B3/S23 rule: should `p` be alive at the next generation? -/
+/-- La regle B3/S23 : `p` doit-elle etre vivante a la generation suivante ? -/
 def aliveNext (g : Grid) (p : Int × Int) : Bool :=
   let n := liveNeighborCount g p
   if isAlive g p then
@@ -99,52 +102,56 @@ def aliveNext (g : Grid) (p : Int × Int) : Bool :=
   else
     n == 3             -- B3
 
-/-- Candidate cells for next-step: live cells and their neighbors. -/
+/-- Cellules candidates pour l'etape suivante : cellules vivantes et leurs voisins. -/
 def candidates (g : Grid) : List (Int × Int) :=
   g ++ g.flatMap mooreNeighbors
 
-/-- Reflexive closure of `lexLt`: a **total** comparator for `insertionSort`.
-    On distinct pairs it decides exactly like `lexLt`; on equal pairs it is
-    `true`. Totality is what `List.pairwise_insertionSort` needs to certify
-    that the output is sorted (see `Conway.Life.GridCanonical`). -/
+/-- Fermeture reflexive de `lexLt` : un comparateur **total** pour
+    `insertionSort`. Sur des paires distinctes il decide exactement comme
+    `lexLt` ; sur des paires egales il renvoie `true`. La totalite est ce
+    dont `List.pairwise_insertionSort` a besoin pour certifier que la
+    sortie est triee (voir `Conway.Life.GridCanonical`). -/
 def lexLe (a b : Int × Int) : Bool :=
   lexLt a b || a == b
 
-/-- Sort a list lexicographically and remove duplicates.
+/-- Trie une liste lexicographiquement et supprime les doublons.
 
-    The comparator is the total `lexLe` and deduplication uses Mathlib's
-    `List.dedup`, so the canonical-form lemmas (`sortedness`, `Nodup`,
-    membership, extensionality) are all derivable — see
+    Le comparateur est le `lexLe` total et la deduplication utilise
+    `List.dedup` de Mathlib, donc les lemmes de forme canonique (tri,
+    `Nodup`, appartenance, extensionalite) sont tous derivables — voir
     `Conway.Life.GridCanonical`.
 
-    We use `insertionSort` (rather than `mergeSort`) because the kernel
-    reducer — used by `decide` on the `Computation` theorems — can fully
-    evaluate `List.insertionSort`, whereas `List.mergeSort` stays *stuck*
-    (its nested `merge` is opaque to `decide`). Measured po-2026 c.786
-    (per-target isolated `decide` probe): `mergeSort` stuck for BOTH `Nat`
-    and `Int` element types — the blocker is the sort algorithm, not the
-    coordinate type. `insertionSort` reduces under `decide` (verified POC
-    on the `eater1` 7-cell pattern, #8749 INTRINSIC case). This swap keeps
-    `Int × Int` coordinates (no glider/origin statement altered) and yields
-    a byte-identical canonical list — the comparators agree on all distinct
-    pairs and ties are *equal values*. -/
+    Nous utilisons `insertionSort` (plutot que `mergeSort`) car le
+    reducteur du noyau — utilise par `decide` sur les theoremes de
+    `Computation` — peut evaluer completement `List.insertionSort`, alors
+    que `List.mergeSort` reste *bloque* (son `merge` imbrique est opaque
+    a `decide`). Mesure po-2026 c.786 (probe `decide` isole par cible) :
+    `mergeSort` bloque pour les types d'elements `Nat` ET `Int` — le
+    blocage vient de l'algorithme de tri, pas du type de coordonnees.
+    `insertionSort` reduit sous `decide` (POC verifie sur le pattern
+    `eater1` a 7 cellules, cas #8749 INTRINSIC). Ce swap preserve les
+    coordonnees `Int × Int` (aucun enonce de glider ou d'origine altere)
+    et produit une liste canonique byte-identique — les comparateurs
+    concordent sur toutes les paires distinctes et les egalites sont
+    des *valeurs egales*. -/
 def sortDedup (l : List (Int × Int)) : List (Int × Int) :=
-  -- `insertionSort` (Mathlib) takes a Prop comparator; Lean core `mergeSort`
-  -- takes a Bool comparator. We lift `lexLe : → Bool` to `→ Prop` via
-  -- `= true` so the two comparators decide identically.
+  -- `insertionSort` (Mathlib) prend un comparateur en `Prop` ; le
+  -- `mergeSort` du noyau Lean prend un comparateur en `Bool`. Nous
+  -- remontons `lexLe : → Bool` vers `→ Prop` via `= true` pour que les
+  -- deux comparateurs decidendent de maniere identique.
   (List.insertionSort (fun a b => lexLe a b = true) l).dedup
 
-/-- `sortDedup` preserves membership. -/
+/-- `sortDedup` preserve l'appartenance. -/
 theorem mem_sortDedup {p : Int × Int} {l : List (Int × Int)} :
     p ∈ sortDedup l ↔ p ∈ l := by
   unfold sortDedup
   rw [List.mem_dedup, List.mem_insertionSort]
 
-/-- One step of Conway's Game of Life (B3/S23 rule). -/
+/-- Une etape du Jeu de la Vie de Conway (regle B3/S23). -/
 def step (g : Grid) : Grid :=
   sortDedup ((candidates g).filter (fun p => aliveNext g p))
 
-/-- Iterated step: `evolve n g` applies `step` `n` times to `g`. -/
+/-- Etape iteree : `evolve n g` applique `step` `n` fois a `g`. -/
 def evolve (n : Nat) (g : Grid) : Grid :=
   step^[n] g
 
@@ -154,90 +161,91 @@ def evolve (n : Nat) (g : Grid) : Grid :=
     evolve (n + 1) g = step (evolve n g) := by
   simp [evolve, Function.iterate_succ_apply']
 
-/-! ## Pattern predicates
+/-! ## Predicats de patterns
 
-We define Boolean-valued predicates (returning `Bool`) so that `native_decide`
-can evaluate them by compiling to native code and comparing `Bool` equality.
-No `Decidable` synthesis or `Quot.lift` needed — just `Bool` reduction.
+Nous definissons des predicats a valeur booleenne (renvoyant `Bool`) pour
+que `native_decide` puisse les evaluer en compilant vers le code natif et
+en comparant l'egalite de `Bool`. Pas de synthese de `Decidable` ni de
+`Quot.lift` necessaire — juste une reduction de `Bool`.
 -/
 
-/-- A still life: a grid unchanged by one step of evolution. -/
+/-- Une vie immobile : une grille inchangee par une etape d'evolution. -/
 def isStillLife (g : Grid) : Bool := step g == g
 
-/-- A pure oscillator of period `n`: returns to itself in exactly `n` steps. -/
+/-- Un oscillateur pur de periode `n` : revient a lui-meme en exactement `n` etapes. -/
 def isOscillator (g : Grid) (n : Nat) : Bool := evolve n g == g
 
-/-- Translate every cell of a grid by a fixed displacement `v`. -/
+/-- Translate chaque cellule d'une grille d'un deplacement fixe `v`. -/
 def shift (v : Int × Int) (g : Grid) : Grid :=
   sortDedup (g.map (fun p => (p.1 + v.1, p.2 + v.2)))
 
-/-- A spaceship of period `n` and displacement `v`: after `n` steps the
-    pattern reappears, translated by `v`. -/
+/-- Un vaisseau de periode `n` et de deplacement `v` : apres `n` etapes, le
+    pattern reapparait, translate de `v`. -/
 def isSpaceship (g : Grid) (n : Nat) (v : Int × Int) : Bool :=
   evolve n g == shift v g
 
-/-! ## Canonical patterns
+/-! ## Patterns canoniques
 
-These are the most famous small patterns of Conway's Game of Life,
-discovered in the early 1970s by Conway's group at Cambridge and by
-players of the M.I.T. PDP-6/PDP-10 community.
+Voici les plus celebres petits patterns du Jeu de la Vie de Conway,
+decouverts au debut des annees 1970 par le groupe de Conway a Cambridge et
+par les joueurs de la communaute M.I.T. PDP-6/PDP-10.
 
-Each pattern is given in sorted lexicographic order so that `step`
-produces a list in the same order, enabling `native_decide` to verify
-equality by structural comparison.
+Chaque pattern est donne dans l'ordre lexicographique trie de sorte que
+`step` produise une liste dans le meme ordre, ce qui permet a
+`native_decide` de verifier l'egalite par comparaison structurelle.
 -/
 
-/-- The **Block**: a 2x2 square. The smallest still life. -/
+/-- Le **Block** : un carre 2x2. La plus petite vie immobile. -/
 def block : Grid := [(0, 0), (0, 1), (1, 0), (1, 1)]
 
-/-- The **Beehive**: a 6-cell hexagonal still life. -/
+/-- Le **Beehive** : une vie immobile hexagonale a 6 cellules. -/
 def beehive : Grid := [(0, 1), (1, 0), (1, 2), (2, 0), (2, 2), (3, 1)]
 
-/-- The **Blinker** (horizontal): three cells in a row. Period-2 oscillator. -/
+/-- Le **Blinker** (horizontal) : trois cellules en ligne. Oscillateur de periode 2. -/
 def blinker_h : Grid := [(0, 0), (1, 0), (2, 0)]
 
-/-- The **Blinker** (vertical): three cells in a column. -/
+/-- Le **Blinker** (vertical) : trois cellules en colonne. -/
 def blinker_v : Grid := [(1, -1), (1, 0), (1, 1)]
 
-/-- The **Toad** (phase 1): a period-2 oscillator. -/
+/-- Le **Toad** (phase 1) : un oscillateur de periode 2. -/
 def toad : Grid := [(0, 1), (1, 0), (1, 1), (2, 0), (2, 1), (3, 0)]
 
-/-- The **Beacon** (phase 1): two blocks touching diagonally. Period 2. -/
+/-- Le **Beacon** (phase 1) : deux blocks se touchant en diagonale. Periode 2. -/
 def beacon : Grid :=
   [(0, 0), (0, 1), (1, 0), (1, 1), (2, 2), (2, 3), (3, 2), (3, 3)]
 
-/-- The **Glider** (phase 1, south-east bound): the smallest spaceship.
-    After 4 generations it reappears, translated by (1, -1). -/
+/-- Le **Glider** (phase 1, direction sud-est) : le plus petit vaisseau.
+    Apres 4 generations il reapparait, translate de (1, -1). -/
 def glider : Grid := [(0, 0), (1, 0), (1, 2), (2, 0), (2, 1)]
 
-/-! ## Microproofs
+/-! ## Micro-preuves
 
-These are the first formal results of Phase 1: simple verifications of
-classic patterns by `native_decide`. The predicates return `Bool`, so
-`native_decide` compiles the step function to native code, evaluates the
-Boolean expression, and checks it equals `true`. No `Decidable` synthesis
-or `Quot.lift` involved.
+Voici les premiers resultats formels de la Phase 1 : verifications simples
+de patterns classiques par `native_decide`. Les predicats renvoient `Bool`,
+donc `native_decide` compile la fonction d'etape en code natif, evalue
+l'expression booleenne et verifie qu'elle egale `true`. Pas de synthese de
+`Decidable` ni de `Quot.lift` implique.
 -/
 
-/-- The Block is a still life: `isStillLife block = true`. -/
+/-- Le Block est une vie immobile : `isStillLife block = true`. -/
 theorem block_still_life : isStillLife block = true := by decide
 
-/-- The Beehive is a still life. -/
+/-- Le Beehive est une vie immobile. -/
 theorem beehive_still_life : isStillLife beehive = true := by decide
 
-/-- The horizontal Blinker oscillates with period 2. -/
+/-- Le Blinker horizontal oscille avec la periode 2. -/
 theorem blinker_period_two : isOscillator blinker_h 2 = true := by decide
 
-/-- One step turns the horizontal Blinker into the vertical Blinker. -/
+/-- Une etape transforme le Blinker horizontal en Blinker vertical. -/
 theorem blinker_step : (step blinker_h == blinker_v) = true := by decide
 
-/-- The Toad oscillates with period 2. -/
+/-- Le Toad oscille avec la periode 2. -/
 theorem toad_period_two : isOscillator toad 2 = true := by decide
 
-/-- The Beacon oscillates with period 2. -/
+/-- Le Beacon oscille avec la periode 2. -/
 theorem beacon_period_two : isOscillator beacon 2 = true := by decide
 
-/-- The Glider is a spaceship of period 4, displacement `(1, -1)`. -/
+/-- Le Glider est un vaisseau de periode 4, deplacement `(1, -1)`. -/
 theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by decide
 
 end Life
