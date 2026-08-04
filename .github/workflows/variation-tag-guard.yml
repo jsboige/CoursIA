@@ -18,7 +18,11 @@ name: Variation Tag Guard
 # coordination (c.61) :
 #
 #   1. GENRE hors-liste. `tooling` x3, `test-coverage`, `refs`, `ci` ont tous
-#      obtenu un `Check Grain tag conformity` SUCCESS. Or G-VAR-3 compare des
+#      obtenu un `Check Grain tag conformity` SUCCESS. (`tooling` a depuis ete
+#      canonise par la regle §1 sur la foi de ces 5 usages, avec `research-code` :
+#      un genre observe assez souvent est une lacune de l'enumeration, pas une
+#      faute du worker. Les trois autres restent des alias a replier.) Or
+#      G-VAR-3 compare des
 #      GENRES consecutifs : un genre absent de l'enumeration §1 rend cette
 #      comparaison arbitraire — deux tranches d'une meme vague peuvent porter
 #      deux etiquettes inventees et ne jamais declencher l'adjacence.
@@ -146,7 +150,7 @@ jobs:
             # famille de fichiers traversee (c'est la seconde voie de
             # contournement documentee en §1).
             case "$GENRE" in
-              lean|qc|training|genai|notebook-python|notebook-dotnet|docs|guard|refactor|ledger|readme|test)
+              lean|qc|training|genai|notebook-python|notebook-dotnet|docs|guard|refactor|ledger|readme|test|tooling|research-code)
                 echo "GENRE=$GENRE (dans la liste §1)"
                 ;;
               "")
@@ -154,7 +158,7 @@ jobs:
                 note_defect variation-tag-genre-offlist
                 ;;
               *)
-                echo "::warning::GENRE '$GENRE' hors de l'enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+                echo "::warning::GENRE '$GENRE' hors de l'enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
                 note_defect variation-tag-genre-offlist
                 ;;
             esac
