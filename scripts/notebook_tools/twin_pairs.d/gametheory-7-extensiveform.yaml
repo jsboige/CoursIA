@@ -4,11 +4,11 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-25"
-    by: po-2023
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
     python_sha: f8eeb850da37e7d2e6723d1250f98c3aa187f643
     reason: "Markdown-only hint fix (cell 25): Ultimatum backward-induction Indices 2/3 said x=0 / offre de 0 euro, but the discrete offer set is {2,4,5,6,8} (0 not admissible) and the notebook own stated SPE is spe_offer=2; aligned Indice 2/3 to x=2. No re-exec, no output change. C# twin untouched (different from-scratch engine)."
-    csharp_sha: 818b2295149aad115c286816c9ad242f964b400c
+    csharp_sha: c73ff346285a169f7f382044373ad1e72b533951
   known_differences:
     - "Socle pedagogique commun : jeux sous forme extensive (arbre de jeu sequentiel avec noeuds de decision/terminal/chance + infosets), backward induction (induction en arriere) pour calculer les SPE (Subgame Perfect Equilibria), exemple canonique du jeu d'entree sur le marche (entrant vs incumbente)."
     - "Idiomes framework : Python = `@dataclass` + `networkx` (graphe arborescent + rendu matplotlib des arbres de jeu) + implementation manuelle de `backward_induction` + `ConvertToNormal` (reduction extensive-vers-normal). C# = **BCL .NET pur 0 NuGet** (modele `GameNode` decision/terminal/chance + `ExtensiveFormGame` from-scratch) + **rendu ASCII de l'arbre** (pas de viz graphique, fidele a la contrainte 0-NuGet de la serie)."

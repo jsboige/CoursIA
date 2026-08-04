@@ -4,11 +4,11 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
   parity_level: semantic
   last_audit:
-    date: "2026-07-28"
-    by: myia-po-2024:CoursIA-2
+    date: "2026-08-04"
+    by: myia-po-2023:CoursIA
     python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
     reason: "Markdown-only cross-file count refresh (cell 33): the companion Lean notebook GT-4b-Lean-NashExistence grew from 38 to 44 cells since the cite was written (verified firsthand by parsing origin/main: ...GameTheory-4b-Lean-NashExistence.ipynb -> 44 cells). No re-exec, no output change. C# twin untouched (different from-scratch engine, no Lean refs)."
-    csharp_sha: fb4ff1f41cf14d9deb11ab755609cb3fb657d390
+    csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
   known_differences:
     - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
     - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
