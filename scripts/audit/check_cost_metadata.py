@@ -79,10 +79,18 @@ import yaml
 # « CUDA=False », tourne en CPU). On l'exonère via lookahead négatif ; les vrais
 # signaux GPU (`torch.cuda.synchronize`, `torch.cuda.empty_cache`, `.cuda()`,
 # `.to("cuda")`) restent détectés.
+# Note FP-c.1226 : `torch.cuda.get_device_name` et `torch.cuda.device_count` sont
+# aussi des sondes bénignes (affichage du nom/nombre de GPU pour info, typiquement
+# dans un `if cuda_available:`). Lean-11 TorchLean-Python : output committé
+# « CUDA disponible: False / PyTorch 2.12.0+cpu », run 100% CPU — la seule occurrence
+# `torch.cuda.get_device_name(0)` est dans une branche `if cuda_available:` jamais
+# exécutée. On étend le lookahead négatif c.831 à ces fonctions de requête pures ;
+# les signaux GPU réels (synchronize, empty_cache, set_device, .cuda(), .to("cuda"))
+# restent détectés.
 GPU_PATTERNS = [
     r'\.cuda\(\)',
     r'\.to\("cuda"\)',
-    r'torch\.cuda\.(?!is_available\b)',
+    r'torch\.cuda\.(?!is_available\b|get_device_name\b|device_count\b|current_device\b)',
     r'tensorflow\.gpu',
     r'with\s+tf\.device\(["\']/gpu',
 ]
@@ -94,7 +102,13 @@ GPU_PATTERNS = [
 # `anthropic.Anthropic(...)`, élimine le faux positif typographique).
 API_PATTERNS = {
     'openai': r'openai\.ChatCompletion|openai\.Image|openai\.Audio|from openai',
-    'anthropic': r'anthropic\.\w|from anthropic|claude',
+    # FP-c.1226 (suite c.912/c.1172) : le `claude` nu matchait l'entité ontologie
+    # `LLM("Claude")` du notebook SW-7b-Python-OWL (KR À PROPOS des LLM, qui n'en
+    # appelle aucun — owlready2/HermiT, CPU). On resserre au contexte API reel :
+    # import du SDK (`from anthropic`), appel qualifie (`anthropic.\w`), endpoint
+    # REST (`api.anthropic.com`), ou nom de modele versionne (`claude-<digit>`,
+    # `claude-opus/sonnet/haiku`). Le mot nu ne signale jamais un appel API.
+    'anthropic': r'anthropic\.\w|from anthropic|api\.anthropic\.com|claude-\d|claude-opus|claude-sonnet|claude-haiku',
     'mistral': r'mistralai|from mistral',
     # FP-c.1172 : le `gemini` nu matchait le pattern "Gemini" de Conway's
     # Game of Life (Andrew Wade, 2010, self-replicator) dans les notebooks

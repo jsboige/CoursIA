@@ -122,6 +122,27 @@ def test_litmus1_cuda_availability_probe_is_not_gpu_usage(tmp_path):
     assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
 
 
+def test_litmus1_cuda_get_device_name_probe_is_not_gpu_usage(tmp_path):
+    """Les sondes `torch.cuda.get_device_name` / `device_count` (affichage du nom/
+    nombre de GPU pour info, typiquement dans un `if cuda_available:`) ne doivent
+    PAS déclencher gpu_used_but_not_declared. Couvre Lean-11 TorchLean-Python :
+    output committé « CUDA disponible: False / PyTorch 2.12.0+cpu », run 100% CPU —
+    la seule occurrence `torch.cuda.get_device_name(0)` est dans une branche
+    `if cuda_available:` jamais exécutée. FP corrigé c.1226 (extension du lookahead
+    négatif c.831 aux fonctions de requête pures). Les signaux GPU réels
+    (synchronize, empty_cache, .cuda(), .to("cuda")) restent détectés."""
+    code = (
+        "import torch\n"
+        "cuda_available = torch.cuda.is_available()\n"
+        "if cuda_available:\n"
+        "    print(torch.cuda.get_device_name(0))\n"
+        "    print(torch.cuda.device_count())\n"
+        "x = torch.FloatTensor([1.0])"
+    )
+    res = _findings_for(tmp_path, code, cost_meta={"gpu_required": False})
+    assert "gpu_used_but_not_declared" not in _patterns(res["findings"])
+
+
 # ---------------------------------------------------------------------------
 # Litmus 2 — api_used_but_cost_zero (FP guard: local provider, #8589)
 # ---------------------------------------------------------------------------
@@ -181,6 +202,43 @@ def test_litmus2_gemini_real_api_call_still_detected(tmp_path):
         )
         assert "api_used_but_cost_zero" in _patterns(res["findings"]), (
             f"real Gemini API call should still fire; code=\n{code}"
+        )
+
+
+def test_litmus2_claude_bare_word_fp_suppressed(tmp_path):
+    """FP-c.1226 (suite c.912/c.1172) : bare `claude` matched the OWL ontology
+    entity `LLM("Claude")` in SW-7b-Python-OWL — a knowledge-representation
+    notebook ABOUT LLMs (owlready2/HermiT, CPU) that calls NONE. A bare word /
+    entity name is never an API call. Must NOT trigger api_used_but_cost_zero."""
+    code = (
+        'from owlready2 import Thing\n'
+        'class LLM(Thing): pass\n'
+        'claude = LLM("Claude")\n'
+        'humaneval = Benchmark("HumanEval")\n'
+    )
+    res = _findings_for(
+        tmp_path, code, cost_meta={"api_usd_est": 0.0, "api_provider": "none"}
+    )
+    assert "api_used_but_cost_zero" not in _patterns(res["findings"]), (
+        "bare 'claude' (OWL entity) must not be detected as an Anthropic API call"
+    )
+
+
+def test_litmus2_claude_real_api_call_still_detected(tmp_path):
+    """Real Claude/Anthropic API references (SDK import, qualified call, REST
+    endpoint, or versioned model name) are still detected after the c.1226
+    tightening."""
+    for code in (
+        "from anthropic import Anthropic\nclient = Anthropic()",
+        "resp = anthropic.Anthropic().messages.create(model='claude-3-5-sonnet')",
+        "requests.post('https://api.anthropic.com/v1/messages')",
+        "model = 'claude-opus-4'\nresp = client.invoke(model)",
+    ):
+        res = _findings_for(
+            tmp_path, code, cost_meta={"api_usd_est": 0.0, "api_provider": "none"}
+        )
+        assert "api_used_but_cost_zero" in _patterns(res["findings"]), (
+            f"real Anthropic/Claude API call should still fire; code=\n{code}"
         )
 
 
