@@ -8,6 +8,19 @@
       by: myia-po-2023:CoursIA
       python_sha: 0dea8c32c031cda45adcb6eff1d499f7a6dbdfa3
       csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: bf2d2a6596b0ddb379487359c10c0b870e4f642e
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+      content_python_sha: 007cf1b13fdbfb48eb1e7bc81b72b109b806488b81b545135d0ecfb04f18911d
+      content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 0b35a8ae8192938539bc1c9d00e53b36788d2fc3
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+      content_python_sha: 28ebe3e83f46a2122dbe3378365b4d9d0bfe7e1c3f930b72180e634b4a3f4290
+      content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
   known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par re-alignement du tableau de balayage cell[12] sur la sortie commitee cell[11] (arrondis ~0.58 -> ~0.60 etc.). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie. NOTE (verdict firsthand #9466 volet 1) : le reasoner ApproximateNaiveMlnReasoner est DETERMINISTE sur ce domaine (DefaultSubsetIterator, 2^N <= 200000 atomes, enumeration exhaustive) -- l hypothese MCMC-non-seede de #9466 volet(1) est INVALIDEE (delta=0 sur 2 runs cross-JVM). Les marginales sont reproductibles a 4 decimales : ce re-alignement est PERMANENT, non cyclique (pas de derive recurrente)."
     - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."
