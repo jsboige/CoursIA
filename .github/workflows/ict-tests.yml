@@ -1,10 +1,12 @@
 name: ICT-Series Tests
 
-# Organe manquant (#9387) : aucun workflow ne surveillait les 119 tests de
+# Organe manquant (#9387) : aucun workflow ne surveillait les tests de
 # ICT-Series/. Ce workflow declenche sur toute modif sous ICT-Series/** et
 # lance les DEUX suites depuis leur rootdir correct (piege d'import #9387) :
-#   - tests/      (34 strata tests)  -> rootdir = ICT-Series/  (pyproject.toml)
-#   - ict/tests/  (85 package tests) -> rootdir = ict/tests/   (pytest.ini, mode prepend)
+#   - tests/      (55 tests : 34 strata + 21 edge-cases package, consolides #9478)
+#                 -> rootdir = ICT-Series/  (pyproject.toml)
+#   - ict/tests/  (42 package tests, consolides #9478)
+#                 -> rootdir = ict/tests/   (pytest.ini, mode prepend)
 # Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
 # documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
 #
@@ -36,17 +38,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # tests/ : 34 tests strates (PyPhi, Cech, catastrophe...). Rootdir
-          # herite du pyproject.toml d'ICT-Series/ (pip install -e . rend le
-          # package ict/ importable depuis n'importe quel cwd).
-          - suite-name: "tests/ (34 strata)"
+          # tests/ : 55 tests (34 strata + 21 edge-cases spectral/bistable/
+          # sensitivity consolides depuis ict/tests/, #9478). Rootdir herite
+          # du pyproject.toml d'ICT-Series/ (pip install -e . rend le package
+          # ict/ importable depuis n'importe quel cwd).
+          - suite-name: "tests/ (55)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-          # ict/tests/ : 85 tests package. Rootdir = ict/tests/ pour que le
-          # pytest.ini local (mode prepend, neutralise --import-mode=importlib)
-          # s'applique -- sinon test_reversibility_budget / test_time_arrow
-          # n'executent jamais (sys.path.insert module-level ignore sous importlib).
-          - suite-name: "ict/tests/ (85 package)"
+          # ict/tests/ : 42 tests package (85 - 43 consolides dans tests/,
+          # #9478). Rootdir = ict/tests/ pour que le pytest.ini local (mode
+          # prepend, neutralise --import-mode=importlib) s'applique -- sinon
+          # test_reversibility_budget / test_time_arrow n'executent jamais
+          # (sys.path.insert module-level ignore sous importlib).
+          - suite-name: "ict/tests/ (42 package)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
             test-args: .
 
