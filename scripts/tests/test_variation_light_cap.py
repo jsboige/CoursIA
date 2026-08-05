@@ -283,7 +283,7 @@ def test_status_counts_the_open_candidate_in_denominator():
     assert st["cap_reached"] is True
 
 
-# --- unassessable vs assessed (#9464): the organ must not report a
+# --- unassessable vs assessed (#9465): the organ must not report a
 # --- measurement it could not take as a passing measurement.
 
 def _check_pr(tmp_path, merged, body, labels=None, capsys=None):

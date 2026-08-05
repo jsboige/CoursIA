@@ -194,7 +194,7 @@ def unattributed(merged_prs: list[dict]) -> list[dict]:
     would be worse -- but it must never be reported as a clean day. An audit
     that says `cap-reached: 0` over a set where most PRs landed here has
     measured nothing; the summary prints this count so the two cannot be
-    confused (#9464).
+    confused (#9465).
     """
     return [pr for pr in merged_prs if _lane_of(pr) is None]
 
@@ -372,7 +372,7 @@ def main(argv: list[str] | None = None) -> int:
         # one. Only an EFFECTIVE LIGHT is assessed against the cap.
         eff = effective_tier(body, cur_labels)
         g = parse_grain(body)
-        # UNASSESSABLE vs ASSESSED (#9464). `cap_reached: false` must mean one
+        # UNASSESSABLE vs ASSESSED (#9465). `cap_reached: false` must mean one
         # thing only: "assessed, and within budget". A body with no readable
         # tag, or a tag without a lane, is not an exemption -- it is a
         # measurement the organ could not take, and reporting it as `false`
@@ -416,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
           f" | unattributed: {len(blind)}/{len(merged)}")
     if blind:
         # Without this line a day whose PRs are all untagged prints exactly
-        # like a clean day (#9464): `replayed: 0 | cap-reached: 0`.
+        # like a clean day (#9465): `replayed: 0 | cap-reached: 0`.
         print(f"  WARNING: {len(blind)} of {len(merged)} merged PRs carry no "
               f"readable `Grain:` tag -- they are counted in NO lane, so the "
               f"figures above measure only the tagged remainder.")
