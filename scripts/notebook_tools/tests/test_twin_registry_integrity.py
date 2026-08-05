@@ -319,17 +319,23 @@ def _repo_root() -> Path:
 
 
 def _build_blob_history(repo_root: Path) -> dict:
-    """Map {rel_path: set(blob sha git)} pour tous les fichiers, toutes refs.
+    """Map {rel_path: set(blob sha git)} pour tous les fichiers, ancetres de HEAD.
 
-    Un seul appel `git log --all --raw --abbrev=40` (perf CI : ~1 appel pour
+    Un seul appel ``git log HEAD --raw --abbrev=40`` (perf CI : ~1 appel pour
     tout le repo, lookup O(1) ensuite). #9399 volet (b) : un sha atteste qui
     n'est JAMAIS apparu comme blob du fichier = fabrication/typo/cross-file ->
-    doit rougir, or `test_audit_shas_are_git_blob_shas` ne valide que le format.
+    doit rougir, or ``test_audit_shas_are_git_blob_shas`` ne valide que le format.
+
+    On parcourt l'historique des ancetres de HEAD (pas ``--all``) : ``--all`` est
+    non-deterministe entre un clone local (qui voit les branches distantes) et un
+    checkout CI (qui ne fetch que la branche de la PR), ce qui ferait varier le
+    verdit du test. Les audits se font sur la ligne principale, donc un sha
+    d'audit valide doit etre un blob apparu dans les ancetres de HEAD.
     """
     import subprocess
 
     proc = subprocess.run(
-        ["git", "log", "--all", "--raw", "--no-renames", "--abbrev=40", "--format="],
+        ["git", "log", "HEAD", "--raw", "--no-renames", "--abbrev=40", "--format="],
         cwd=repo_root, capture_output=True, text=True,
     )
     hist: dict[str, set[str]] = {}
