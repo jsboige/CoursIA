@@ -506,7 +506,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
 
 def update_pair(
     repo_root: Path, pair: dict, by: str | None = None, date: str | None = None
-) -> tuple[dict, str | None]:
+) -> tuple[dict, str | None, bool]:
     """Rebaseline une paire : enregistre les SHAs courants comme nouvelle ref.
 
     `by` / `date` horodatent l'audit. Ils sont OBLIGATOIREMENT rafraichis :
@@ -515,7 +515,21 @@ def update_pair(
     alors que les SHAs sont ceux d'aujourd'hui -- la tracabilite mentirait, ce
     que le registre existe precisement pour empecher (cf #8570).
 
-    Retourne (last_audit_dict mis a jour, sha_utilise_pour_python ou None si missing).
+    Retourne (audit_dict, sha_utilise_pour_python ou None si missing, is_noop).
+    Le 3e element `is_noop` est True ssi les SHAs de comparaison (content_sha si
+    disponible, sinon git blob SHA, cf `_shas_match`) du nouveau audit sont
+    identiques a ceux de `_latest_audit(pair)` -- c.-a-d. **rien n'a change
+    pedagogiquement** depuis le dernier audit. Le caller peut alors refuser
+    d'ecrire (faux audit = dater une attestation identique, design-gate #9399
+    critere 2) ou laisser `--force` outrepasser.
+
+    Pas de rebaseline silencieux sur metadata-only : un tampon `metadata.cost`
+    seul deplace le git blob SHA mais preserve le content_sha (_shas_match
+    compare via content_sha d'abord). C'est precisement la classe de drift
+    pre-existante Sudoku-8/14 BDD/9 GraphColoring que ai-01 design-gate a
+    designee comme devant etre ignoree par le rebaseline (cf commentaire
+    ai-01 2026-08-04T23:23Z sur #9399 : « ne les rebaselinez pas avec
+    --update ; deux disparaitront d'eux-memes avec volet (c) »).
     """
     py = pair["python"]
     cs = pair["csharp"]
@@ -532,7 +546,13 @@ def update_pair(
         "content_python_sha": cur_cpy,
         "content_csharp_sha": cur_ccs,
     }
-    return audit, cur_py
+    # No-op detection : si les SHAs de comparaison (content_sha d'abord, puis
+    # git blob SHA en fallback legacy) sont identiques au `_latest_audit`
+    # actuel, le rebaseline n'apporterait aucune information nouvelle -- c'est
+    # un faux audit au sens du design-gate #9399 critere 2.
+    latest = _latest_audit(pair)
+    is_noop = bool(latest) and _shas_match(latest, audit)
+    return audit, cur_py, is_noop
 
 
 def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
@@ -796,30 +816,35 @@ def _render_new_audit_entry(entry: dict) -> list[str]:
     return lines
 
 
-def _transform_audit_block(form: str, block: list[str], new_entry: dict) -> tuple[list[str], bool]:
+def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: bool = False) -> tuple[list[str], bool]:
     """Transforme un bloc d'audit (header + body) pour une paire ciblee.
 
     form = "last_audit" (legacy singleton) ou "audits" (liste append-only).
     Retourne (nouvelles_lignes_du_bloc, a_change).
 
     Semantique append-only (#9399) :
-      - audits: + SHAs inchanges -> no-op (pas de doublon).
+      - audits: + SHAs inchanges -> no-op (pas de doublon) SAUF si force=True
+        (opt-in explicite --force : ecriture malgre l'identite, design-gate
+        #9399 critere 2).
       - audits: + SHAs changes   -> APPEND d'une nouvelle entree.
       - last_audit: + SHAs inchanges -> no-op (on reste legacy ; migration
-        paresseuse a la volee, uniquement quand la paire drift reelement).
+        paresseuse a la volee, uniquement quand la paire drift reelement)
+        SAUF si force=True.
       - last_audit: + SHAs changes   -> MIGRATION vers audits: [ancien, nouveau]
         (l'ancien enregistrement, `reason` compris, devient item[0]).
     """
     body = block[1:]
     if form == "audits":
         latest = _parse_latest_audit_entry(body)
-        if _shas_match(latest, new_entry):
+        if _shas_match(latest, new_entry) and not force:
             return block, False
+        # force=True OU SHAs differents : APPEND une nouvelle entree
+        # (avec --force c'est le faux audit designe par ai-01 -- averti sur stderr).
         return block + _render_new_audit_entry(new_entry), True
 
     # form == "last_audit" -> migration vers la forme append-only
     old_pairs = _parse_flat_audit(body)
-    if _shas_match(dict(old_pairs), new_entry):
+    if _shas_match(dict(old_pairs), new_entry) and not force:
         return block, False
     new_block = ["  audits:\n"]
     if old_pairs:
@@ -828,7 +853,7 @@ def _transform_audit_block(form: str, block: list[str], new_entry: dict) -> tupl
     return new_block, True
 
 
-def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
+def surgical_rebaseline(raw: str, updates: dict[str, dict], force: bool = False) -> tuple[str, int]:
     """Reecrit UNIQUEMENT le bloc d'audit des paires ciblees (forme append-only).
 
     Pourquoi ne pas re-serialiser via `yaml.safe_dump` (comportement d'avant
@@ -856,6 +881,11 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
     Args:
         raw: contenu texte du registre YAML.
         updates: {nom_de_paire: {"date":.., "by":.., "python_sha":.., "csharp_sha":..}}
+        force: bool -- si True, outrepasse la detection no-op au niveau
+            `_transform_audit_block` (cf design-gate #9399 critere 2 ; permet
+            un rebaseline explicite d'un audit identique au precedent, designe
+            par ai-01 comme "faux audit" mais parfois legitime pour forcer une
+            nouvelle attestation datee).
 
     Returns:
         (nouveau_texte, nombre_de_paires_effectivement_touchees)
@@ -885,7 +915,7 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict]) -> tuple[str, int]:
             while j < n and re.match(r"^\s{4,}\S", lines[j]):
                 block.append(lines[j])
                 j += 1
-            new_block, did = _transform_audit_block(form, block, updates[current])
+            new_block, did = _transform_audit_block(form, block, updates[current], force=force)
             if did:
                 touched.add(current)
             out.extend(new_block)
@@ -936,7 +966,11 @@ def main(argv=None) -> int:
                         "toute normalisation outillee ulterieure -- strip_probe_banner.py, "
                         "strip_machine_paths.py, scrub_papermill_paths.py -- deplace le "
                         "blob SHA sans toucher le contenu calcule et invaliderait cette "
-                        "attestation, cf #8957)")
+                        "attestation, cf #8957). Depuis #9399 critere 2, --update "
+                        "REFUSE par defaut d'ecrire une nouvelle entree d'audit si "
+                        "les SHAs de comparaison sont identiques au `_latest_audit` "
+                        "(no-op = faux audit, --update devient facultatif). "
+                        "Utilisez --force pour outrepasser avec un avertissement.")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     p.add_argument("--coverage", action="store_true",
                    help="Recense les notebooks C# versionnes NON couverts par le "
@@ -958,6 +992,17 @@ def main(argv=None) -> int:
                         "'myia-po-2024:CoursIA-2'). Avec --update, la date est "
                         "TOUJOURS mise a aujourd'hui : sans --by, l'entree garderait "
                         "l'auteur de l'audit precedent alors que les SHAs sont neufs.")
+    p.add_argument("--force", action="store_true",
+                   help="Avec --update : outrepasser la detection no-op (cf #9399 "
+                        "critere 2). Par defaut, --update REFUSE d'ecrire une "
+                        "nouvelle entree d'audit si les SHAs de comparaison sont "
+                        "identiques au `_latest_audit` (--update devient "
+                        "facultatif : la CI derive elle-meme les SHAs depuis "
+                        "volet b, un rebaseline manuel identique n'apporte aucune "
+                        "information nouvelle et serait un faux audit). --force "
+                        "est l'opt-in explicite pour forcer la nouvelle entree "
+                        "malgre le no-op, avec un avertissement explicite sur "
+                        "stdout. Sans effet sur les modes non --update.")
     p.add_argument("--verify-recorded-sha", action="store_true",
                    help="Gate CI #9399 volet b : verifie que les SHA enregistres "
                         "dans le YAML (last_audit legacy OU audits[-1] append-only) "
@@ -1158,11 +1203,26 @@ def main(argv=None) -> int:
             target = all_pairs
         updates: dict[str, dict] = {}
         skipped: list[str] = []
+        # No-op detection (#9399 critere 2) : un rebaseline qui n'apporte
+        # aucune information nouvelle (SHAs de comparaison identiques au
+        # `_latest_audit`) est un "faux audit" -- dater une attestation
+        # identique. On les distingue pour les compter separement et (sans
+        # --force) refuser de les ecrire.
+        no_op: list[str] = []
+        forced_no_op: list[str] = []
         for pp in target:
-            audit, cur_py = update_pair(repo_root, pp, by=args.by)
+            audit, cur_py, is_noop = update_pair(repo_root, pp, by=args.by)
             if cur_py is None:
                 skipped.append(pp.get("name", "?"))
                 continue
+            if is_noop and not args.force:
+                # Refuse par defaut : message comprehensible + n'ecrit rien.
+                # Le worker peut relancer avec --force s'il a une raison
+                # explicite de re-attester (rare, mais legitime).
+                no_op.append(pp.get("name", "?"))
+                continue
+            if is_noop and args.force:
+                forced_no_op.append(pp.get("name", "?"))
             updates[pp["name"]] = audit
         # Rebaseline CHIRURGICAL (#8570) : seules les lignes `last_audit` des
         # paires ciblees changent. En mode file-per-entry (#8542), on applique
@@ -1179,7 +1239,7 @@ def main(argv=None) -> int:
                           f"(attendu : {pfile.name}).", file=sys.stderr)
                     continue
                 raw = pfile.read_text(encoding="utf-8")
-                new_raw, _ = surgical_rebaseline(raw, {name: audit})
+                new_raw, _ = surgical_rebaseline(raw, {name: audit}, force=args.force)
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)
                     written += 1
@@ -1187,11 +1247,32 @@ def main(argv=None) -> int:
         else:
             # mono-fichier legacy (--registry <file.yaml>)
             raw = reg_path.read_text(encoding="utf-8")
-            new_raw, updated = surgical_rebaseline(raw, updates)
+            new_raw, updated = surgical_rebaseline(raw, updates, force=args.force)
             write_registry_text(reg_path, new_raw)
         if skipped:
             print(
                 f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
+                file=sys.stderr,
+            )
+        # Bilan no-op vs reelles (#9399 critere 2) -- informe le worker de
+        # la portee reelle de sa commande. Sans --force, les paires no-op ne
+        # sont PAS ecrites ; le worker voit la liste et peut relancer --force
+        # s'il a une raison explicite de re-attester.
+        if no_op:
+            print(
+                f"Refusees (no-op, --update facultatif post-volet-b : les SHAs "
+                f"enregistres sont deja ceux du carnet a HEAD) : "
+                f"{', '.join(no_op)}",
+                file=sys.stderr,
+            )
+        if forced_no_op:
+            print(
+                f"ATTENTION --force : {len(forced_no_op)} paire(s) no-op "
+                f"ecrite(s) avec une nouvelle entree d'audit identique au "
+                f"_latest_audit precedent : {', '.join(forced_no_op)}. "
+                f"Cela produit un faux audit au sens du design-gate #9399 "
+                f"critere 2 (dater une attestation sans information nouvelle). "
+                f"Verifiez que c'est bien votre intention.",
                 file=sys.stderr,
             )
         msg = f"Registre rebaseline : {updated} paire(s) mise(s) a jour -> {reg_path}"
@@ -1207,6 +1288,12 @@ def main(argv=None) -> int:
             "normaliser (strip_probe_banner / strip_machine_paths / scrub_papermill), "
             "refaites --update en dernier, apres (cf #8957)."
         )
+        # Exit code : 0 si tout va bien (ecrit + no_op informatif). Mais si
+        # TOUTES les paires cibles sont en no-op refusees (donc 0 ecrit, 0
+        # skipped, >0 refusees), c'est un signal que --update etait inutile
+        # -- on retourne 0 quand meme (le worker a fait ce qu'il a demande,
+        # on l'a juste informe que c'etait un no-op). Exit code 1 reserve
+        # aux erreurs (cf path `Aucune paire nommee` au-dessus).
         return 0
 
     # --- Mode --verify-recorded-sha : gate CI (#9399 volet b) ---

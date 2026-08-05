@@ -217,7 +217,7 @@ def test_update_pair_stamps_fresh_provenance():
         "csharp": "does/not/exist-b.ipynb",
         "last_audit": {"date": "2020-01-01", "by": "auditeur-precedent"},
     }
-    audit, _ = ctp.update_pair(Path("."), pair, by="myia-ai-01:CoursIA")
+    audit, _, _ = ctp.update_pair(Path("."), pair, by="myia-ai-01:CoursIA")
     assert audit["by"] == "myia-ai-01:CoursIA", "--by doit primer sur l'ancien auteur"
     assert audit["date"] == dt.date.today().isoformat(), (
         "la date doit etre celle du rebaseline, pas celle de l'audit precedent"

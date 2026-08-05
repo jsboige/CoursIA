@@ -33,7 +33,9 @@ yaml = pytest.importorskip("yaml")
 # Source unique de verite : le loader de check_twin_parity (evite de dupliquer
 # la logique d'agregation du repertoire file-per-entry).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_twin_parity import load_registry, _slug, _latest_audit, verify_recorded_sha  # noqa: E402
+from check_twin_parity import (
+    load_registry, _slug, _latest_audit, verify_recorded_sha, update_pair,
+)  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
 SCHEMA = REGISTRY_DIR / "_schema.yaml"
@@ -690,3 +692,216 @@ def test_verify_recorded_sha_skips_none_content_sha(tmp_path, monkeypatch):
 
     r = verify_recorded_sha(tmp_path, fake_pair)
     assert r["status"] == "OK", f"unexpected mismatches: {r['mismatches']}"
+
+
+# --- tests update_pair no-op detection (#9399 critere 2) ---------------------
+#
+# Critere 2 du design-gate #9399 : « Le rebaseline manuel --update devient
+# facultatif (ou refuse d'ecrire un SHA que la CI recalculera) ». La CI derive
+# elle-meme les SHAs depuis le volet b (#9481) ; un rebaseline manuel qui
+# n'apporte aucune information nouvelle (SHAs de comparaison identiques au
+# `_latest_audit`) est un « faux audit » au sens du design-gate -- dater une
+# attestation identique.
+#
+# On unitarise `update_pair` (retourne (audit, cur_py, is_noop)) et la
+# discrimination no-op vs reel, en mockant _git_blob_sha et _content_sha pour
+# controler les valeurs calculees sans dependre de l'etat du repo.
+
+
+def test_update_pair_no_op_when_content_sha_matches(tmp_path, monkeypatch):
+    """Recorded content_python_sha == calculated content_python_sha
+    (et idem csharp) -> is_noop True, faux audit evite."""
+    sha_py = "a" * 40
+    sha_cs = "b" * 40
+    cpy = "c" * 64
+    ccs = "d" * 64
+    fake_pair = {
+        "name": "Test-NoOp-Content",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "audits": [{
+            "date": "2026-08-01",
+            "by": "previous-auditor",
+            "python_sha": sha_py,
+            "csharp_sha": sha_cs,
+            "content_python_sha": cpy,
+            "content_csharp_sha": ccs,
+        }],
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": sha_py if p == "X.ipynb" else sha_cs)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": cpy if p == "X.ipynb" else ccs)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert cur_py == sha_py, "cur_py should match the recorded git blob SHA"
+    assert is_noop is True, "content_sha equality should trigger no-op"
+    # L'audit retourne DOIT etre complet (memes SHAs, fresh date/by), c'est
+    # le caller qui decide de l'ecrire ou non (refus si is_noop et pas --force).
+    assert audit["python_sha"] == sha_py
+    assert audit["content_python_sha"] == cpy
+
+
+def test_update_pair_real_drift_when_content_sha_differs(tmp_path, monkeypatch):
+    """Recorded content_python_sha != calculated content_python_sha
+    -> is_noop False, vrai rebaseline legitime (pas un faux audit)."""
+    fake_pair = {
+        "name": "Test-Real-Drift",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "audits": [{
+            "date": "2026-08-01",
+            "by": "previous-auditor",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            "content_python_sha": "c" * 64,  # recorded content_sha stale
+            "content_csharp_sha": "d" * 64,
+        }],
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    # Calculated content_sha DIFFERENT du recorded -- vrai drift pedagogique.
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "e" * 64 if p == "X.ipynb" else "f" * 64)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert cur_py == "a" * 40
+    assert is_noop is False, "content_sha drift should NOT trigger no-op"
+    assert audit["content_python_sha"] == "e" * 64
+    assert audit["content_csharp_sha"] == "f" * 64
+
+
+def test_update_pair_metadata_only_drift_is_noop(tmp_path, monkeypatch):
+    """Le cas designe par ai-01 : un tampon `metadata.cost` seul deplace le
+    git blob SHA mais preserve le content_sha (_shas_match utilise content_sha
+    d'abord). -> is_noop True, NE PAS ecrire (sinon faux audit). C'est
+    precisement la classe de drift Sudoku-8/14 BDD/9 GraphColoring que le
+    design-gate a designee comme devant etre ignoree."""
+    fake_pair = {
+        "name": "Test-Metadata-Only",
+        "family": "Sudoku",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "deep",
+        "audits": [{
+            "date": "2026-08-01",
+            "by": "previous-auditor",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            "content_python_sha": "c" * 64,  # recorded content_sha preserved
+            "content_csharp_sha": "d" * 64,
+        }],
+    }
+    import check_twin_parity as ct
+    # Le carnet A BOUGE : git blob SHA different (metadata tampon), MAIS
+    # content_sha preserve (la structure pedagogique n'a pas change).
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "1" * 40 if p == "X.ipynb" else "2" * 40)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "c" * 64 if p == "X.ipynb" else "d" * 64)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert cur_py == "1" * 40, "git blob SHA moved (metadata-only change)"
+    assert audit["python_sha"] == "1" * 40
+    assert audit["content_python_sha"] == "c" * 64, "content_sha preserved"
+    assert is_noop is True, (
+        "metadata-only drift MUST be no-op (content_sha preserved) -- "
+        "c'est la classe de faux audit que critere 2 designe."
+    )
+
+
+def test_update_pair_no_audit_record_is_not_noop(tmp_path, monkeypatch):
+    """Sans `_latest_audit` (paire non encore auditee), is_noop est False meme
+    si les SHAs calcules sont triviaux -- le premier audit doit toujours
+    s'ecrire. (Sinon une paire neuve ne pourrait jamais etre auditee.)"""
+    fake_pair = {
+        "name": "Test-NoAudit",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        # pas de last_audit, pas de audits
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "c" * 64 if p == "X.ipynb" else "d" * 64)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert cur_py == "a" * 40
+    assert is_noop is False, (
+        "First audit of a never-audited pair must NOT be a no-op, sinon le "
+        "registre ne peut pas demarrer (cf. migration #9405)."
+    )
+
+
+def test_update_pair_no_op_via_git_blob_sha_fallback(tmp_path, monkeypatch):
+    """Fallback legacy : si le `_latest_audit` n'a pas de content_sha (paire
+    legacy pre-volet-(c), pas encore re-auditee post-c), ET que le nouveau
+    audit non plus (meme forme legacy), alors _shas_match retombe sur les
+    git blob SHA. Si git blob SHA egalite, no-op quand meme.
+
+    Note semantique : si l'ancien audit est legacy (no content_sha) et le
+    nouveau est content_sha-aware, _shas_match les considere INCOMPATIBLES
+    (compare content_sha recorded=None avec content_sha calculated="c"*64 :
+    divergent). Ce n'est PAS un cas faux-audit -- c'est une migration de
+    forme, et le nouvel audit DOIT s'ecrire (avec une nouvelle entree
+    content_sha) pour mettre la paire en conformite avec le schema cible.
+    """
+    fake_pair = {
+        "name": "Test-Legacy-NoOp",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {  # legacy singleton, pas de content_sha
+            "date": "2026-08-01",
+            "by": "previous-auditor",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            # content_python_sha / content_csharp_sha absents
+        },
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    # Calculated content_sha aussi None (legacy total) : _shas_match
+    # tombe en fallback git blob SHA, qui sont egaux -> no-op.
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": None)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert cur_py == "a" * 40
+    assert is_noop is True, (
+        "Legacy form (no content_sha recorded AND no content_sha calculated) "
+        "must fall back to git blob SHA equality for no-op detection."
+    )
+
+
+def test_update_pair_partial_drift_is_not_noop(tmp_path, monkeypatch):
+    """Une seule cote drift (Python content_sha differe, C# egal) -> is_noop
+    False. Une moitie de drift = vrai changement = vrai audit."""
+    fake_pair = {
+        "name": "Test-Partial-Drift",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "audits": [{
+            "date": "2026-08-01",
+            "by": "previous-auditor",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            "content_python_sha": "c" * 64,  # recorded
+            "content_csharp_sha": "d" * 64,  # recorded (same as calculated)
+        }],
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    # Seule la cote Python drift, C# preserved.
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "e" * 64 if p == "X.ipynb" else "d" * 64)
+
+    audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
+    assert audit["content_python_sha"] == "e" * 64
+    assert audit["content_csharp_sha"] == "d" * 64
+    assert is_noop is False, (
+        "Partial drift (one side content_sha differs) is a real change "
+        "and must NOT be flagged as no-op."
+    )
