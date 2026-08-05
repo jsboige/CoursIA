@@ -111,6 +111,16 @@ jobs:
       # 2026-08-04, suite deterministe). Quand des tests sont retires
       # INTENTIONNELLEMENT, abaisser matrix.test-floor dans la meme PR -- le
       # message d'erreur nomme la valeur a ajuster.
+      #
+      # Robustesse : on parse la ligne de resume CANONIQUE de pytest ("N tests
+      # collected"), pas les nodeids via `grep -c '::'`. Le premier essai
+      # comptait les nodeids : cassait sur ict/tests/ (mode prepend du pytest.ini
+      # local -> format nodeid differents sur stdout -> grep trouvait 0) ET sous
+      # le `set -e` par defaut de GHA (bash -eo pipefail) ou un grep a 0 match
+      # (exit 1) + pipefail tuait le script avant l'echo de diagnostic. Le resume
+      # "N tests collected" est le compte officiel de pytest, stable par
+      # rootdir/mode. Les `|| true` neutralisent set -e sur l'extraction pour
+      # qu'un compte 0 produise un message clair plutot qu'un exit muet.
       - name: Collection floor-guard (${{ matrix.suite-name }})
         if: always() && steps.install.outcome == 'success'
         working-directory: ${{ matrix.test-cwd }}
@@ -118,7 +128,9 @@ jobs:
           ICT_TEST_FLOOR: ${{ matrix.test-floor }}
         run: |
           set -uo pipefail
-          collected=$(python -m pytest ${{ matrix.test-args }} --co -q 2>/dev/null | grep -c '::')
+          summary=$(python -m pytest ${{ matrix.test-args }} --co -q 2>&1 || true)
+          collected=$(printf '%s\n' "$summary" | grep -oE '[0-9]+ tests? collected' | tail -1 | grep -oE '[0-9]+' | head -1 || true)
+          collected=${collected:-0}
           echo "Collected: $collected tests (floor: $ICT_TEST_FLOOR) for ${{ matrix.suite-name }}"
           if [ "$collected" -lt "$ICT_TEST_FLOOR" ]; then
             echo "::error title=ICT collection regression (${{ matrix.suite-name }})::Collected $collected < floor $ICT_TEST_FLOOR. Des tests ont disparu silencieusement (module en skip, parametrize casse, fichier hors-glob) sans faire echouer la suite. Si cette baisse est INTENTIONNELLE, abaissez matrix.test-floor ($ICT_TEST_FLOOR) dans .github/workflows/ict-tests.yml a la meme PR. Sinon, c'est une regression de collecte a corriger avant merge."
