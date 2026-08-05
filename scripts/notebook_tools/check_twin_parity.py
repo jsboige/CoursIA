@@ -535,6 +535,95 @@ def update_pair(
     return audit, cur_py
 
 
+def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
+    """Verifie que les SHA enregistres dans le YAML correspondent aux SHA
+    calcules a HEAD (#9399 volet b).
+
+    Cible l'acceptance verbatim du design-gate (#9399 c.1205) :
+    « La CI calcule python_sha / csharp_sha / content_*_sha et echoue si le
+    YAML committé diverge ». Detecte un SHA invente / stale / corrompu en
+    comparant ce que `last_audit:` (legacy) ou `audits[-1]` (append-only)
+    declare au SHA reel du carnet a HEAD.
+
+    Distinction avec `check_pair` (mode --per-pair) :
+      - check_pair compare HEAD vs base-ref, et tolere DRIFT_PRE_EXISTING
+        (un rebaseline historique peut dater d'un main anterieur) ;
+      - verify_recorded_sha compare YAML-enregistre vs HEAD-calcule -- une
+        valeur recorded egale a la valeur courante est legit, une valeur
+        recorded divergente = MISMATCH (le sha a ete ecrit a la main, pas via
+        --update, ou le carnet a bouge sans rebaseline).
+
+    Migration progressive : les paires non encore re-auditees post-volet-(c)
+    ont `content_*_sha: None` ; on les SAUTE (pas un mismatch, juste
+    « pas encore migre »). Meme politique que les tests rename-aware (#9473).
+
+    Sortie : dict avec `status` ("OK" / "MISMATCH" / "NO_AUDIT"), `mismatches`
+    (liste de chaines courtes), `name` (utile au mode --json).
+    """
+    py = pair["python"]
+    cs = pair["csharp"]
+    audit = _latest_audit(pair)
+    if not audit:
+        return {
+            "name": pair.get("name", "?"),
+            "status": "NO_AUDIT",
+            "mismatches": [],
+        }
+
+    # SHA calcules a HEAD (jamais lus a la main -- re-calcules systematiquement).
+    cur_py = _git_blob_sha(repo_root, py)
+    cur_cs = _git_blob_sha(repo_root, cs)
+    cur_cpy = _content_sha(repo_root, py)
+    cur_ccs = _content_sha(repo_root, cs)
+
+    # SHA enregistres dans le YAML (forme append-only ou legacy, _latest_audit
+    # normalise les deux).
+    rec_py = audit.get("python_sha")
+    rec_cs = audit.get("csharp_sha")
+    rec_cpy = audit.get("content_python_sha")
+    rec_ccs = audit.get("content_csharp_sha")
+
+    mismatches = []
+    # Comparaison sur les blob SHA : compares stricte.
+    if rec_py is not None and rec_py != cur_py:
+        mismatches.append(
+            f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
+        )
+    if rec_cs is not None and rec_cs != cur_cs:
+        mismatches.append(
+            f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
+        )
+    # Comparaison sur les content_sha : on SKIP si recorded=None (migration
+    # progressive post-volet-(c) ; les paires legacy n'ont pas encore ces
+    # champs). Une comparaison `None != cur_cpy` serait un faux positif de
+    # masse (cf doctrine rename-aware #9473 -- tolerer les absences
+    # transitoires sur les champs ajoutes apres coup).
+    if rec_cpy is not None and rec_cpy != cur_cpy:
+        mismatches.append(
+            f"content_python_sha: recorded={rec_cpy[:12]} calculated={cur_cpy[:12]}"
+        )
+    if rec_ccs is not None and rec_ccs != cur_ccs:
+        mismatches.append(
+            f"content_csharp_sha: recorded={rec_ccs[:12]} calculated={cur_ccs[:12]}"
+        )
+
+    return {
+        "name": pair.get("name", "?"),
+        "family": pair.get("family", "?"),
+        "parity_level": pair.get("parity_level", "?"),
+        "status": "MISMATCH" if mismatches else "OK",
+        "mismatches": mismatches,
+        "current_python_sha": cur_py,
+        "current_csharp_sha": cur_cs,
+        "current_content_python_sha": cur_cpy,
+        "current_content_csharp_sha": cur_ccs,
+        "recorded_python_sha": rec_py,
+        "recorded_csharp_sha": rec_cs,
+        "recorded_content_python_sha": rec_cpy,
+        "recorded_content_csharp_sha": rec_ccs,
+    }
+
+
 # Cles scalaires d'un enregistrement d'audit (forme append-only ET legacy).
 # Partagees par le singleton `last_audit:` (legacy) et chaque element de la
 # liste `audits:` (append-only, #9399).
@@ -869,18 +958,27 @@ def main(argv=None) -> int:
                         "'myia-po-2024:CoursIA-2'). Avec --update, la date est "
                         "TOUJOURS mise a aujourd'hui : sans --by, l'entree garderait "
                         "l'auteur de l'audit precedent alors que les SHAs sont neufs.")
+    p.add_argument("--verify-recorded-sha", action="store_true",
+                   help="Gate CI #9399 volet b : verifie que les SHA enregistres "
+                        "dans le YAML (last_audit legacy OU audits[-1] append-only) "
+                        "correspondent aux SHA recalcules a HEAD (git ls-tree + "
+                        "SHA-256 metadata-immune). Exit 1 si MISMATCH sur au moins "
+                        "une paire (avec --check). Mode read-only : n'ecrit rien.")
     args = p.parse_args(argv)
 
     # Cross-validation : --per-pair <-> --base
-    if args.coverage and (args.update or args.per_pair or args.base):
+    if args.coverage and (args.update or args.per_pair or args.base or args.verify_recorded_sha):
         p.error("--coverage est un mode de recensement seul : incompatible avec "
-                "--update / --per-pair / --base.")
+                "--update / --per-pair / --base / --verify-recorded-sha.")
     if args.per_pair and not args.base:
         p.error("--per-pair necessite --base <ref>")
     if args.base and not args.per_pair:
         p.error("--base necessite --per-pair")
-    if args.update and (args.per_pair or args.base):
-        p.error("--update est incompatible avec --per-pair/--base")
+    if args.update and (args.per_pair or args.base or args.verify_recorded_sha):
+        p.error("--update est incompatible avec --per-pair/--base/--verify-recorded-sha")
+    if args.verify_recorded_sha and (args.per_pair or args.base or args.update):
+        p.error("--verify-recorded-sha est read-only : incompatible avec "
+                "--update/--per-pair/--base.")
     # --update exige un selecteur (anti-corruption silencieuse du registre, cf #8508)
     if args.update and not (args.family or args.pair or args.yes_all_pairs):
         p.error("--update exige un selecteur explicite : --family <f>, --pair <name>, "
@@ -1109,6 +1207,72 @@ def main(argv=None) -> int:
             "normaliser (strip_probe_banner / strip_machine_paths / scrub_papermill), "
             "refaites --update en dernier, apres (cf #8957)."
         )
+        return 0
+
+    # --- Mode --verify-recorded-sha : gate CI (#9399 volet b) ---
+    if args.verify_recorded_sha:
+        # Accepte --family comme selecteur (replique la politique --update) :
+        # en CI on cible generalement tout le registre, mais un audit local peut
+        # vouloir borner a une famille.
+        target_pairs = pairs
+        if args.family:
+            target_pairs = [pp for pp in target_pairs if pp.get("family") == args.family]
+            if not target_pairs:
+                print(
+                    f"Aucune paire pour la famille '{args.family}'.",
+                    file=sys.stderr,
+                )
+                # En --check ce serait un gate casse ; ici on retourne 2
+                # (distinct de 1=MISMATCH, 0=clean) pour discriminer le cas.
+                return 2
+
+        results = [verify_recorded_sha(repo_root, pp) for pp in target_pairs]
+        n_ok = sum(1 for r in results if r["status"] == "OK")
+        n_mismatch = sum(1 for r in results if r["status"] == "MISMATCH")
+        n_no_audit = sum(1 for r in results if r["status"] == "NO_AUDIT")
+
+        if args.json:
+            out = {
+                "mode": "verify_recorded_sha",
+                "registry": str(reg_path),
+                "total": len(results),
+                "ok": n_ok,
+                "mismatch": n_mismatch,
+                "no_audit": n_no_audit,
+                "pairs": results,
+            }
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+        else:
+            tag_map = {"OK": "OK", "MISMATCH": "MISMATCH", "NO_AUDIT": "NO_AUDIT"}
+            for r in results:
+                if r["status"] == "OK":
+                    continue  # ne pas bruiter les OK en sortie humaine
+                tag = tag_map[r["status"]]
+                print(f"[{tag}] {r['name']} ({r.get('family','?')})")
+                for m in r.get("mismatches", []):
+                    print(f"       - {m}")
+            print(
+                f"\nTotal : {len(results)} paire(s) | "
+                f"OK={n_ok} MISMATCH={n_mismatch} NO_AUDIT={n_no_audit}"
+            )
+
+        if args.check and n_mismatch > 0:
+            # Gate CI : un seul mismatch = RED. Message d'erreur oriente
+            # l'auteur vers --update (le seul moyen legitime de resoudre :
+            # l'audit firsthand + rebaseline, cf #8508 selector policy).
+            print(
+                f"::error title=Twin parity SHA mismatch (#9399 volet b)::"
+                f"{n_mismatch} paire(s) ont un SHA enregistre dans le YAML qui ne "
+                f"correspond pas au SHA reel du carnet a HEAD. L'integrite du "
+                f"registre est corrompue (sha invente / stale / modifie a la "
+                f"main). Remediation : lancer "
+                f"`python scripts/notebook_tools/check_twin_parity.py --update "
+                f"--pair \"<nom>\" --by \"<machine:workspace>\"` APRES audit "
+                f"firsthand de la parite. Le selecteur --pair est obligatoire "
+                f"(cf #8508).",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     results = [check_pair(repo_root, pp) for pp in pairs]
