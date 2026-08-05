@@ -242,6 +242,114 @@ plicatures affectives** : qui a la banane inaccessible ? Le réactif en
 faisant persister la trajectoire, l'anticipateur en internalisant le point
 d'interception.
 
+## Socle transversal — la dynamique de prédation (Ch.4 §C) et l'origine du représentant interne `p̂`
+
+Le lacet de prédation n'est pas un schéma isolé : il est, dans la
+*Sémiophysique*, le lieu où Thom **invente le représentant interne `p̂`** —
+l'objet qui deviendra, dans la série ICT, le scalaire ponctuel dont toute
+la généalogie de la représentation interne
+([#7735](https://github.com/jsboige/CoursIA/issues/7735)) retrace
+l'insuffisance progressive (ICT-10 → ICT-17). Lire Ch.4 §C, c'est lire la
+**source** de `p̂` — et constater qu'elle est d'emblée plus riche (et plus
+exigeante) que le « scalaire » qu'en retient le notebook.
+
+### Le lacet « revisited » — deux cycles concaténés, pas un
+
+Le lacet de prédation de *SSM* (Thom 1972) était un seul cycle d'hystérésis
+dans le plan de contrôle $Ouv$ de la fronce : cercle $r$ ($u^2+v^2=1$),
+parabole semi-cubique $B$ ($4u^3+27v^2=0$), points $J$ (perception) et $K$
+(capture), deux actants $P$ (prédateur) et $p$ (proie). En 1991, Thom
+**revisite** ce schéma en le **dédoublant** :
+
+> On sera amené à faire précéder le cycle d'hystérésis $JjKk$ de capture
+> proprement dit d'un cycle préliminaire, noté $RrJ_1 j$.
+> — Thom 1991, Ch.4 §C.
+
+Les deux cycles sont **concaténés** selon la *règle de coïncidence des
+coplis* (Ch.3 §H) — règle qui exprime l'**asservissement finalisé** du
+premier cycle (reconnaissance) au second (capture). Le point $R$ désigne
+le **« réveil » du prédateur** :
+
+> Quand le prédateur se réveille (en $R$), il est affamé [...] cette
+> période de recherche est représentée par l'arc $RJ$ du cercle $r
+> [...] Ainsi se trouve représenté l'**état de privation** cher à
+> Aristote. Ce modèle a l'avantage de refléter le caractère essentiellement
+> **discontinu** du réveil, opposé à la transition relativement
+> **continue** de l'assoupissement (sur l'arc $K_1 s$).
+> — Thom 1991, Ch.4 §C.
+
+**Pour la série ICT.** Le dédoublement perception/capture en deux cycles
+aux caractères temporels opposés (réveil *discontinu* en $R$,
+assoupissement *continu* sur l'arc $K_1 s$) est la structure que mesure
+[ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) :
+périodicité du lacet, aire signée non nulle, verdict régime-dépendant
+(gagne en balistique, perd en erratique, perd sur source bruitée — 5/5 sur
+trajectoire lisse). La *discontinuité du réveil* est la signature
+catastrophique que le notebook détecte comme bascule entre les deux cycles.
+
+### Le représentant interne `p̂` — anticiper, c'est précéder
+
+C'est ici que Thom introduit explicitement le représentant interne :
+
+> La proie réelle $p$ a un représentant interne $\hat{p}$ dans l'état
+> métabolique du prédateur. En un certain sens, $\hat{p}$ **anticipe** le
+> mouvement de $p$ à l'extérieur de l'organisme [...] mais en principe,
+> $\hat{p}$ doit toujours se trouver **en avance** de $p$ dans le sens des
+> $v$ positifs : $v(\hat{p}) > v(p)$. En fait, $\hat{p}$ représente $p$
+> dans ses activités motrices et métaboliques.
+> — Thom 1991, Ch.4 §C.
+
+Le passage de la proie $p$ par les **instants catastrophiques**
+(reconnaissance, localisation, capture spatiale, digestion stomacale)
+agit comme un **« préprogramme d'ouverture »** sur le flux d'écoulement du
+prédateur, et l'évolution quasi synchrone de $p$ et $\hat{p}$ à travers la
+blastula physiologique (BP) constitue le « champ » global de
+l'alimentation — la **« chréode »** de la capture et de l'assimilation
+d'une proie. Anatomiquement, Thom situe cette commande dans le **système
+nerveux** : partie **centrale** pour le trajet externe de la proie
+(reconnaissance, poursuite, capture), partie **végétative** pour le trajet
+interne (digestion).
+
+> — Thom 1991, Ch.4 §C (cf. aussi Ch.3 §B sur le préprogramme morphogène).
+
+**Pour la série ICT — trois conséquences épistémiques** pour la généalogie
+[#7735](https://github.com/jsboige/CoursIA/issues/7735) :
+
+1. **`p̂` naît prédicatif, pas descriptif.** Thom ne définit pas $\hat{p}$
+   comme un « reflet » de $p$ : il le définit par la **condition d'avance**
+   $v(\hat{p}) > v(p)$. Un $\hat{p}$ qui n'anticipe pas n'est pas un
+   $\hat{p}$. La série ICT hérite de cette exigence : ICT-10 mesure la
+   capacité d'anticipation (balle balistique vs erratique), pas la simple
+   corrélation $\hat{p} \leftrightarrow p$.
+2. **`p̂` est métabolique ET moteur — pas un scalaire.** Thom inscrit
+   $\hat{p}$ dans l'état métabolique global de l'organisme prédateur, et
+   lui fait porter les activités motrices. La dissipation de $\hat{p}$ vers
+   l'état causal (Crutchfield, ICT-17) est déjà en germe : $\hat{p}$ chez
+   Thom est une **dynamique**, pas un scalaire. Le scalaire $\hat{p}$ de
+   ICT-10 est une **réduction** — à charge pour ICT-14/16/17 d'en mesurer
+   l'insuffisance (c'est exactement l'histoire que raconte
+   [#7735](https://github.com/jsboige/CoursIA/issues/7735)).
+3. **Les catastrophes sont des préprogrammes.** Les instants
+   catastrophiques de $p$ commandent les sauts de $\hat{p}$ : ce n'est pas
+   la trajectoire lisse de $p$ qui gouverne, mais ses **discontinuités**.
+   Pont naturel vers le préprogramme morphogène (Ch.3 §B) et, au-delà,
+   vers la lecture d'$\hat{p}$ comme **préfaisceau** — la dissociation
+   ICT-15b montre que le choix du proxy *est* un choix de préfaisceau (cf.
+   [synthese-invariants](../../../docs/ict/synthese-invariants-dissociations-obstructions.md)).
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **n'identifie jamais** $\hat{p}$ à un scalaire quantifiable, ni ne
+spécifie la métrique de l'« avance » $v(\hat{p}) > v(p)$ en dehors de la
+géométrie de la fronce. La transposition ICT — mesurer l'anticipation
+comme écart temporel ou informationnel sur trajectoire simulée — est
+**nôtre**, pas thomienne (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733) : ne pas confondre
+le grade A du cadre catastrophique avec le grade C d'une lecture
+candidate). Le lacet de prédation reste un **cadre morphologique** ; ce
+que la série en mesure est une **instanciation numérique** dont le lien au
+formalisme de Thom est d'analogie contrôlée, pas de dérivation.
+
 ## Ponts transverses (déjà opérationnels)
 
 Ces concepts Thom ne sont pas seulement un socle pour les strates à venir —
@@ -405,8 +513,10 @@ extension, pas une redite.
   (généralisation, invention de l'instrument) + usages
   [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb)
   (coplis, prolongement analytique).
-- **Ch.4 — Embryologie et dynamique** : cf. §Ponts transverses (lacet
-  de prédation, blastula BP).
+- **Ch.4 — Embryologie et dynamique** : cf. §Socle transversal
+  [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
+  (lacet de prédation revisited, représentant interne `p̂`, origine de la
+  généalogie #7735) et §Ponts transverses (blastula BP).
 - **Ch.5 — Plan Général d'Organisation** : cf. §Ponts transverses
   (Cuvier / Geoffroy, homéomère / anhoméomère).
 - **Ch.6 — Axiomatique aristotélicienne** : cf. §Ponts transverses
