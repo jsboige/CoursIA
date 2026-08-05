@@ -283,6 +283,83 @@ def test_status_counts_the_open_candidate_in_denominator():
     assert st["cap_reached"] is True
 
 
+# --- unassessable vs assessed (#9465): the organ must not report a
+# --- measurement it could not take as a passing measurement.
+
+def _check_pr(tmp_path, merged, body, labels=None, capsys=None):
+    """Drive main() in --check-pr mode and return its parsed JSON line."""
+    import json as _json
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(_json.dumps(merged), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(body, encoding="utf-8")
+    argv = ["--replay", str(mpath), "--check-pr", "1", "--body-file", str(bpath)]
+    if labels is not None:
+        lpath = tmp_path / "labels.json"
+        lpath.write_text(_json.dumps(labels), encoding="utf-8")
+        argv += ["--labels-file", str(lpath)]
+    rc = vlc.main(argv)
+    out = capsys.readouterr().out.strip().splitlines()[-1]
+    return rc, _json.loads(out)
+
+
+def test_untagged_body_is_unassessable_not_false(tmp_path, capsys):
+    # The defect that made the gate green while blind: an untagged body was
+    # reported `cap_reached: false`, i.e. indistinguishable from "assessed and
+    # within budget". It must be the third state.
+    rc, res = _check_pr(tmp_path, [], "no tag anywhere in this body", capsys=capsys)
+    assert rc == 0                       # advisory posture preserved
+    assert res["cap_reached"] is None    # NOT False
+    assert "unassessable" in res["reason"]
+
+
+def test_light_without_lane_is_unassessable(tmp_path, capsys):
+    # Tier known, but the budget is per-lane: no lane -> no denominator.
+    rc, res = _check_pr(tmp_path, [], "Grain: LIGHT/guard -- no lane here", capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is None
+    assert "no lane" in res["reason"]
+
+
+def test_known_non_light_without_lane_is_assessed_false(tmp_path, capsys):
+    # Symmetric guard against over-broadening: a KNOWN MED/DEEP never spends
+    # the LIGHT budget, so it is a genuine `false` even with no lane. Only the
+    # lane's denominator suffers, which is `unattributed`'s business.
+    rc, res = _check_pr(tmp_path, [], "Grain: DEEP/lean -- no lane here", capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is False
+    assert res["reason"] == "not LIGHT (effective DEEP)"
+
+
+def test_tagged_light_still_assessed_normally(tmp_path, capsys):
+    # Non-regression: a fully tagged LIGHT is still assessed, not deflected
+    # into the new unassessable branch.
+    merged = [{"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-05T03:00:00Z"}]
+    rc, res = _check_pr(tmp_path, merged, BODY_EMDASH, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is True
+    assert res["lane"] == "myia-po-2023:CoursIA"
+
+
+def test_unattributed_lists_untagged_prs():
+    prs = [
+        {"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-05T01:00:00Z"},
+        {"number": 2, "body": "ledger stamp, no tag", "mergedAt": "2026-08-05T02:00:00Z"},
+        {"number": 3, "body": "", "mergedAt": "2026-08-05T03:00:00Z"},
+    ]
+    assert [pr["number"] for pr in vlc.unattributed(prs)] == [2, 3]
+
+
+def test_untagged_day_replays_empty_but_is_not_clean():
+    # The c.85 measurement, pinned: 5 ledger stamps merged, zero tags. `replay`
+    # is legitimately empty -- the arithmetic is right -- but `unattributed`
+    # is what stops that emptiness reading as a clean day.
+    prs = [{"number": n, "body": "metadata.cost stamp", "mergedAt": f"2026-08-05T0{n}:00:00Z"}
+           for n in range(1, 6)]
+    assert vlc.replay(prs) == []
+    assert len(vlc.unattributed(prs)) == 5
+
+
 def test_budget_is_per_lane_not_global():
     # A busy lane's budget must not bleed into a quiet lane's.
     busy, quiet = "myia-po-2024:CoursIA-2", "myia-po-2025:CoursIA"

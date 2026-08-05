@@ -186,6 +186,19 @@ def _lane_of(pr: dict) -> str | None:
     return g["lane"] if g else None
 
 
+def unattributed(merged_prs: list[dict]) -> list[dict]:
+    """PRs the organ could NOT attribute to any lane (no readable `Grain:` tag).
+
+    These are invisible to every count above: absent from each lane's
+    numerator AND denominator. That is the right arithmetic -- guessing a lane
+    would be worse -- but it must never be reported as a clean day. An audit
+    that says `cap-reached: 0` over a set where most PRs landed here has
+    measured nothing; the summary prints this count so the two cannot be
+    confused (#9465).
+    """
+    return [pr for pr in merged_prs if _lane_of(pr) is None]
+
+
 def lane_grains(merged_prs: list[dict], target_lane: str) -> list[dict]:
     """Every merged PR attributed to `target_lane`, ANY tier.
 
@@ -358,12 +371,34 @@ def main(argv: list[str] | None = None) -> int:
         # Effective tier (#8970): a requalification label overrides the declared
         # one. Only an EFFECTIVE LIGHT is assessed against the cap.
         eff = effective_tier(body, cur_labels)
+        g = parse_grain(body)
+        # UNASSESSABLE vs ASSESSED (#9465). `cap_reached: false` must mean one
+        # thing only: "assessed, and within budget". A body with no readable
+        # tag, or a tag without a lane, is not an exemption -- it is a
+        # measurement the organ could not take, and reporting it as `false`
+        # made the gate green precisely where it was blind. `null` is the
+        # third state; the caller (variation-tag-guard.yml) compares against
+        # "True", so this stays advisory and no CI behaviour changes.
+        if eff is None or not g:
+            print(json.dumps({
+                "cap_reached": None,
+                "reason": "unassessable -- no Grain: tag in body",
+            }))
+            return 0
         if eff != "LIGHT":
+            # A KNOWN non-LIGHT tier is a genuine assessment, lane or not: a
+            # MED/DEEP grain never spends the LIGHT budget. Only the lane's
+            # denominator suffers, and that is `unattributed`'s business.
             print(json.dumps({"cap_reached": False, "reason": f"not LIGHT (effective {eff})"}))
             return 0
-        g = parse_grain(body)
-        if not g or not g["lane"]:
-            print(json.dumps({"cap_reached": False, "reason": "no lane in tag"}))
+        if not g["lane"]:
+            # An effective LIGHT with no lane is the one case where the tier is
+            # known and the answer still cannot be computed: the budget is
+            # per-lane, so without a lane there is no denominator to compare to.
+            print(json.dumps({
+                "cap_reached": None,
+                "reason": "unassessable -- effective LIGHT but no lane in tag",
+            }))
             return 0
         status = light_cap_status(merged, g["lane"])
         print(json.dumps({
@@ -376,13 +411,26 @@ def main(argv: list[str] | None = None) -> int:
     # replay mode: the acceptance test
     rows = replay(merged)
     flagged = [r for r in rows if r["cap_reached"]]
-    print(f"LIGHT PRs replayed: {len(rows)} | cap-reached: {len(flagged)}")
+    blind = unattributed(merged)
+    print(f"LIGHT PRs replayed: {len(rows)} | cap-reached: {len(flagged)}"
+          f" | unattributed: {len(blind)}/{len(merged)}")
+    if blind:
+        # Without this line a day whose PRs are all untagged prints exactly
+        # like a clean day (#9465): `replayed: 0 | cap-reached: 0`.
+        print(f"  WARNING: {len(blind)} of {len(merged)} merged PRs carry no "
+              f"readable `Grain:` tag -- they are counted in NO lane, so the "
+              f"figures above measure only the tagged remainder.")
+        print("  unattributed: "
+              + ", ".join(f"#{pr.get('number')}" for pr in blind))
     print(f"{'PR':>7}  {'lane':<28} {'mergedAt':<21} cap")
     for r in rows:
         mark = "CAP-REACHED" if r["cap_reached"] else "ok"
         print(f"  #{r['number']:<5} {r['lane']:<28} {r['mergedAt']:<21} {mark}"
               + (f"  (consumed by #{r['consumed_by']})" if r["cap_reached"] else ""))
-    print(json.dumps({"rows": rows}, ensure_ascii=False))
+    print(json.dumps({
+        "rows": rows,
+        "unattributed": [pr.get("number") for pr in blind],
+    }, ensure_ascii=False))
     return 0
 
 
