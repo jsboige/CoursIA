@@ -308,3 +308,99 @@ def test_schema_file_present_and_excluded_from_pairs():
         "_schema.yaml doit etre de la documentation (comments), pas une paire ; "
         "sinon le loader `_`-skip doit etre durci."
     )
+
+
+# --- Verification d'integrite des sha attestes (#9399 volet b) ---
+
+
+def _repo_root() -> Path:
+    # scripts/notebook_tools/tests/<file> -> repo root.
+    return Path(__file__).resolve().parents[3]
+
+
+def _build_blob_history(repo_root: Path) -> dict:
+    """Map {rel_path: set(blob sha git)} pour tous les fichiers, toutes refs.
+
+    Un seul appel `git log --all --raw --abbrev=40` (perf CI : ~1 appel pour
+    tout le repo, lookup O(1) ensuite). #9399 volet (b) : un sha atteste qui
+    n'est JAMAIS apparu comme blob du fichier = fabrication/typo/cross-file ->
+    doit rougir, or `test_audit_shas_are_git_blob_shas` ne valide que le format.
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        ["git", "log", "--all", "--raw", "--no-renames", "--abbrev=40", "--format="],
+        cwd=repo_root, capture_output=True, text=True,
+    )
+    hist: dict[str, set[str]] = {}
+    for line in proc.stdout.splitlines():
+        if not line.startswith(":"):
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        meta = parts[0].split()
+        path = parts[-1].strip()
+        if len(meta) < 5:
+            continue
+        for sha in (meta[2], meta[3]):  # old blob, new blob (40 hex ou zeros)
+            if len(sha) == 40 and not sha.startswith("0" * 7):
+                hist.setdefault(path, set()).add(sha)
+    return hist
+
+
+def test_audit_shas_exist_in_file_history():
+    """Ferme la faille #9399 (4e manifestation) : le sha du DERNIER audit d'une
+    paire doit etre un blob que le carnet a REELLEMENT eu dans son historique git
+    (sous son path declare).
+
+    `test_audit_shas_are_git_blob_shas` ne valide que le FORMAT (40 hex). Un sha
+    fabrique, typo, ou copie du carnet voisin -- 40 hex valides mais n'ayant
+    JAMAIS correspond au fichier -- passait silencieusement : « rien ne verifie
+    qu'elle est vraie » (#9399). Ce test verifie l'assertion reelle sur le
+    dernier enregistrement (celui qui atteste l'etat de parite courant) :
+    python_sha / csharp_sha existent dans l'historique des blobs du carnet declare.
+
+    Scope = dernier audit uniquement (pas les audits historiques migres) : un
+    audit ancien peut legitiment porter le sha d'un path ANTERIEUR (carnet
+    renomme/deplace, ex. restructuration Search/Applications), et ``--no-renames``
+    dissocie alors l'historique du path courant -> faux positif. Le FORMAT des
+    sha historiques reste couvert par ``test_audit_shas_are_git_blob_shas``.
+
+    Distinction avec le drift (sha != HEAD) : un sha qui fut vrai a un commit
+    passe ce test (il est dans l'historique) mais reste detecte comme drift par
+    ``check_twin_parity --check`` au moment d'une PR. Ce test cible exclusivement
+    les sha qui ne correspondent JAMAIS au carnet (fabrication), qui ne
+    rougiraient nulle part autrement. La reserve de drifts legittimes
+    (Sudoku-8/14-BDD/9, ai-01) reste donc verte ici.
+    """
+    import subprocess
+
+    repo_root = _repo_root()
+    # Skip defensif si git absent / hors work-tree (env degrade non-CI).
+    try:
+        subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=repo_root, capture_output=True, check=True,
+        )
+    except Exception:
+        pytest.skip("hors d'un work-tree git (git indisponible) -- test d'historique saute")
+
+    hist = _build_blob_history(repo_root)
+    bad = []
+    for entry in _entries():
+        latest = _latest_audit(entry)
+        if not isinstance(latest, dict):
+            continue
+        for sha_key, path_key in (("python_sha", "python"), ("csharp_sha", "csharp")):
+            rel = entry.get(path_key)
+            sha = latest.get(sha_key)
+            if not rel or not isinstance(sha, str) or not SHA_RE.match(sha):
+                continue
+            relf = str(rel).replace("\\", "/")
+            if sha not in hist.get(relf, set()):
+                bad.append(
+                    f"{entry.get('name', '?')}.{sha_key} = {sha[:12]} "
+                    f"(jamais blob de {relf})"
+                )
+    assert not bad, f"sha(s) du dernier audit jamais apparu(s) comme blob du carnet : {bad}"
