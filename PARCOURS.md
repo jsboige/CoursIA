@@ -3,13 +3,19 @@
 Cinq parcours de formation en intelligence artificielle, des fondamentaux aux sujets avances.
 Chaque parcours reference des notebooks tries par serie et maturite.
 
-| # | Parcours | Notebooks | Focus |
-|---|----------|-----------|-------|
-| 1 | [IA Classique](docs/curriculum/ia-classique.md) | 13 | Recherche, CSP, Sudoku |
-| 2 | [IA Symbolique](docs/curriculum/ia-symbolique.md) | 82 | Lean, Tweety, SemanticWeb, Planning |
-| 3 | [GenAI Multimodale](docs/curriculum/genai.md) | 68 | Image, Audio, Video, Texte |
-| 4 | [Trading Algorithmique](docs/curriculum/trading.md) | 56 | QuantConnect, ML, Probas |
-| 5 | [Recherche Avancee](docs/curriculum/recherche.md) | 51 | Infer.NET, Pyro, IIT, RL, GameTheory |
+| # | Parcours | Focus |
+|---|----------|-------|
+| 1 | [IA Classique](docs/curriculum/ia-classique.md) | Recherche, CSP, Sudoku |
+| 2 | [IA Symbolique](docs/curriculum/ia-symbolique.md) | Lean, Tweety, SemanticWeb, Planning |
+| 3 | [GenAI Multimodale](docs/curriculum/genai.md) | Image, Audio, Video, Texte |
+| 4 | [Trading Algorithmique](docs/curriculum/trading.md) | QuantConnect, ML, Probas |
+| 5 | [Recherche Avancee](docs/curriculum/recherche.md) | Infer.NET, Pyro, IIT, RL, GameTheory |
+
+> Les comptes de notebooks par parcours vivent dans les pages generees elles-memes
+> (regenerees chaque jour depuis le catalogue par `catalog-cron.yml`) -- ils ne sont
+> pas epingles ici, ou ils derivaient silencieusement (constat 2026-08-05 : la
+> colonne manuelle etait fausse d'un ordre de grandeur, 13/82/68/56/51 pour des
+> pages a 143/221/135/198/173).
 
 ## Legende maturite
 

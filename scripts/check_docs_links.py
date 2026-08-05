@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Check for broken relative markdown links and orphan docs across the repository.
 
-Scans CLAUDE.md, docs/, .claude/rules/, .claude/agents/, .claude/skills/,
-and all README.md files for relative links and verifies targets exist.
+Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
+.claude/skills/, and all README.md files for relative links and verifies targets
+exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -32,6 +33,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Directories and files to scan for links
 SCAN_SCOPES = [
     "CLAUDE.md",
+    # Root entry points (#7422 root slice): index.md rotted historically precisely
+    # because no organ watched it -- the portal and the parcours front page are
+    # now link-checked like everything else.
+    "index.md",
+    "PARCOURS.md",
     "docs/",
     ".claude/rules/",
     ".claude/agents/",
