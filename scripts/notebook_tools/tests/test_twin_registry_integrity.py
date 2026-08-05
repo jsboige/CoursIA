@@ -33,7 +33,7 @@ yaml = pytest.importorskip("yaml")
 # Source unique de verite : le loader de check_twin_parity (evite de dupliquer
 # la logique d'agregation du repertoire file-per-entry).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_twin_parity import load_registry, _slug, _latest_audit  # noqa: E402
+from check_twin_parity import load_registry, _slug, _latest_audit, verify_recorded_sha  # noqa: E402
 
 REGISTRY_DIR = Path(__file__).resolve().parents[1] / "twin_pairs.d"
 SCHEMA = REGISTRY_DIR / "_schema.yaml"
@@ -528,3 +528,165 @@ def test_classify_attested_sha_ok_fabricated_crossfile_renamed():
     v, d = _classify_attested_sha("shaX_renamed", "A/X.ipynb", path_blobs, blob_paths, declared)
     assert v == "renamed"
     assert "X_old" in d
+
+
+# --- tests verify_recorded_sha (#9399 volet b) ------------------------------
+#
+# Le mode CI --verify-recorded-sha detecte un SHA enregistre dans le YAML qui
+# ne correspond pas au SHA reel du carnet a HEAD. Cible l'acceptance verbatim
+# « la CI calcule python_sha/csharp_sha/content_*_sha et echoue si le YAML
+# committé diverge ». On unitarise les 4 branches (OK/PY-NOPE/CS-NOPE/BOTH-NOPE)
+# en mockant _git_blob_sha et _content_sha pour controler les valeurs
+# calculees, sans dependre de l'etat du repo.
+
+
+def test_verify_recorded_sha_ok_when_recorded_matches_calculated(tmp_path, monkeypatch):
+    """Recorded == calculated -> OK, pas de mismatch."""
+    fake_pair = {
+        "name": "Test-OK",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {
+            "date": "2026-08-05",
+            "by": "test",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            "content_python_sha": "c" * 64,
+            "content_csharp_sha": "d" * 64,
+        },
+    }
+    # Mock les helpers de hash pour retourner des valeurs connues.
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda *a, **kw: "a" * 40 if kw.get("git_ref") is None or "Y" not in str(a[1] if len(a) > 1 else "") else "b" * 40)
+    # Mock plus precis : return different sha based on path.
+    def _hash_blob(repo_root, path, git_ref="HEAD"):
+        return "a" * 40 if path == "X.ipynb" else "b" * 40
+    def _hash_content(repo_root, path, git_ref="HEAD"):
+        return "c" * 64 if path == "X.ipynb" else "d" * 64
+    monkeypatch.setattr(ct, "_git_blob_sha", _hash_blob)
+    monkeypatch.setattr(ct, "_content_sha", _hash_content)
+
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "OK"
+    assert r["mismatches"] == []
+    assert r["name"] == "Test-OK"
+
+
+def test_verify_recorded_sha_mismatch_on_python_sha(tmp_path, monkeypatch):
+    """Recorded python_sha diverge du SHA reel -> MISMATCH sur python_sha."""
+    fake_pair = {
+        "name": "Test-Mismatch-Py",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {
+            "date": "2026-08-05",
+            "by": "test",
+            "python_sha": "0" * 40,  # recorded = zeros
+            "csharp_sha": "b" * 40,
+        },
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": None)  # not used
+
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "MISMATCH"
+    assert len(r["mismatches"]) == 1
+    assert "python_sha" in r["mismatches"][0]
+    assert ("0" * 12) in r["mismatches"][0]
+    assert ("a" * 12) in r["mismatches"][0]
+
+
+def test_verify_recorded_sha_mismatch_on_both_sides(tmp_path, monkeypatch):
+    """Recorded python_sha ET csharp_sha divergent -> MISMATCH sur les 2."""
+    fake_pair = {
+        "name": "Test-Mismatch-Both",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {
+            "date": "2026-08-05",
+            "by": "test",
+            "python_sha": "0" * 40,
+            "csharp_sha": "0" * 40,
+        },
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": None)
+
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "MISMATCH"
+    assert len(r["mismatches"]) == 2
+    assert any("python_sha" in m for m in r["mismatches"])
+    assert any("csharp_sha" in m for m in r["mismatches"])
+
+
+def test_verify_recorded_sha_no_audit_record(tmp_path):
+    """Pas de last_audit ni audits -> NO_AUDIT, pas de MISMATCH."""
+    fake_pair = {
+        "name": "Test-NoAudit",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        # pas de last_audit, pas de audits
+    }
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "NO_AUDIT"
+    assert r["mismatches"] == []
+
+
+def test_verify_recorded_sha_legacy_vs_append_only_equivalent(tmp_path, monkeypatch):
+    """Memes SHA dans `last_audit` (legacy) et `audits[-1]` (append-only) -> OK dans les 2 formes."""
+    sha_py = "a" * 40
+    sha_cs = "b" * 40
+    base = {
+        "name": "Test-Equiv",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": sha_py if p == "X.ipynb" else sha_cs)
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": None)
+
+    legacy = dict(base, last_audit={"date": "2026-08-05", "by": "test", "python_sha": sha_py, "csharp_sha": sha_cs})
+    append_only = dict(base, audits=[{"date": "2026-08-05", "by": "test", "python_sha": sha_py, "csharp_sha": sha_cs}])
+
+    r_legacy = verify_recorded_sha(tmp_path, legacy)
+    r_append = verify_recorded_sha(tmp_path, append_only)
+    assert r_legacy["status"] == "OK"
+    assert r_append["status"] == "OK"
+
+
+def test_verify_recorded_sha_skips_none_content_sha(tmp_path, monkeypatch):
+    """Recorded content_*_sha = None (migration post-volet-(c) pas faite) -> SKIP, pas MISMATCH."""
+    fake_pair = {
+        "name": "Test-NoContentSha",
+        "family": "Test",
+        "python": "X.ipynb",
+        "csharp": "Y.ipynb",
+        "parity_level": "surface",
+        "last_audit": {
+            "date": "2026-08-05",
+            "by": "test",
+            "python_sha": "a" * 40,
+            "csharp_sha": "b" * 40,
+            # content_*_sha absents -> devraient etre ignores (migration progressive)
+        },
+    }
+    import check_twin_parity as ct
+    monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "a" * 40 if p == "X.ipynb" else "b" * 40)
+    # _content_sha retourne une valeur meme si recorded=None : c'est OK, on
+    # ne signale pas de mismatch tant que recorded est None.
+    monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "c" * 64 if p == "X.ipynb" else "d" * 64)
+
+    r = verify_recorded_sha(tmp_path, fake_pair)
+    assert r["status"] == "OK", f"unexpected mismatches: {r['mismatches']}"
