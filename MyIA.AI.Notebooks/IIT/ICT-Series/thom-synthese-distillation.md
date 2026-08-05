@@ -466,6 +466,155 @@ candidate). Le lacet de prédation reste un **cadre morphologique** ; ce
 que la série en mesure est une **instanciation numérique** dont le lien au
 formalisme de Thom est d'analogie contrôlée, pas de dérivation.
 
+## Socle transversal — Ch.7 §A-F : substance, logos, et le continu contre le discret
+
+Les Ponts transverses ci-après ne couvrent que Ch.7 §B (ABP/FBM) et §D
+(privation = métastabilité). Les §A, §E et §F — l'ontologie
+substantialiste, la hiérarchie des anhoméomères, le *logos* et
+l'incommunicabilité des genres — restent le socle philosophique non
+encore distillé, directement fécond pour la strate 7.
+
+### §A — Aristote topologue : le continu (συνεχές) contre le discret
+
+La thèse centrale de Thom sur l'aristotélisme : la révolte d'Aristote
+contre Platon est celle du **topologue contre l'arithméticien**,
+l'apôtre du qualitatif contre le quantitatif. Platon (vieillissant, ou
+ses épigones) voulait une générativité **discrète** (la suite des
+entiers) : le point étant un pur zéro, il fallait l'« épaissir » en
+**longueur insécable** (ἄτομος γραμμή), principe générateur de la
+droite. Aristote refuse — au nom de la **divisibilité du continu**
+(συνεχές), il rejette les « lignes insécables ».
+
+> « Aristote postule à la base la notion de continu (συνεχές), et c'est
+> au nom de la divisibilité du continu qu'il va refuser les "lignes
+> insécables". » — Thom 1991, Ch.7 §A (p. 174-175).
+
+Conséquence ontologique : Aristote **bannit l'espace** (au sens
+cartésien). L'étendue est un **prédicat de la substance** (le *topos*) ;
+jamais la substance/matière n'est un prédicat de l'étendue. Ce bannissement
+l'oblige à **multiplier les matières** : chaque type de changement
+(μεταβολή), chaque genre (γένος) nécessite une matière spécifique — mais
+toutes sont des continus. La matière première (πρώτη ὕλη) est définie
+comme **sujet de toute opposition de contraires**.
+
+### §A (bis) — Réponse à Parménide, origine de l'homéomère, et la « petite phrase »
+
+La proposition « X est — simultanément — à la fois A et non-A » n'est pas
+contradictoire : elle **impose le caractère étendu de X**. Un chat noir
+**et** blanc n'est pas booléen ; il se partage en parties (noire, blanche)
+chacune booléenne. Thom y voit l'**origine de la notion d'homéomère** :
+le substrat étendu qui admet une prédication localement booléenne. Pont
+vers Ch.5 §A-D (Cuvier/Geoffroy) : l'homéomère thomien s'enracine ici.
+
+La discussion sur l'infini (ἄπειρον, ΦIII 207b) conduit à la **« petite
+phrase »** — la clef, selon Thom, de quasi-tout le système aristotélicien :
+
+> « Car l'infini est entouré comme une matière interne ; c'est la forme
+> qui enveloppe. » — Physique ΦIII 7, 207a 35, cité par Thom 1991,
+> Ch.7 §A (p. 177).
+
+Une entité corporelle a un support $|X|$ en général **boule fermée** dont
+le bord est l'enveloppe $\partial|X|$ (une sphère). C'est l'origine
+catastrophiste de la dualité ABP/FBM (Acte-Bord-Puissance /
+Forme-Bord-Matière) traitée au Pont transverse §Ch.7 §B. Thom note
+qu'Aristote avait déjà perçu la distinction topologique **ouvert/fermé**
+(« un tout borné non en soi, mais par une borne extérieure à lui-même » =
+ouvert borné ; « les extrémités d'un corps et de son enveloppe sont les
+mêmes » = adhérence de l'adhérence = l'adhérence, Kuratowski).
+
+**Discret vs continu, formulation nette** : pour Aristote, tout ce qui
+relève du nombre a de la matière (ἔχει ὕλην, *Met* A 8, 1074a 34) —
+**« il n'y a pas de discret pur, tout être discret est réalisé par une
+figure continue »**. Pont ICT strate 7 : la série ICT traite des
+représentations (continus de champs) dont les **instantiations mesurées
+sont discrètes** (spikes, tokens, grilles) ; le principe thomien dit que
+le discret observé est toujours porté par un continu sous-jacent —
+l'inverse du réductionnisme « tout est discret ».
+
+### §F — Logos des homéomères, quiddité, et l'incommunicabilité des genres
+
+Les homéomères (qualités phénoménologiques locales, sans forme spatiale)
+portent un **logos** — défini par Aristote comme l'**ensemble des actes
+et réactions que peut présenter l'homéomère soumis à diverses
+perturbations**. Thom note la définition « peu operative » : on n'est
+jamais sûr de connaître toutes les perturbations, notamment celles
+définissant l'essence. La **quiddité** (τò τί ἧν εἶναι) de l'œuf, en
+lecture moderne, serait le patrimoine génétique qui forme l'adulte
+parfait (τέλειον) — « tout le mystère de l'Embryologie est dans le
+passage de la forme invisible de l'homéomère germinal à la forme visible
+(μορφή) de l'organisme achevé ».
+
+**L'incommunicabilité des genres** (Oὐκ ἔστιν εἰς ἄλλο γένος μετάβασις,
+*De Caelo* II 268b 1) : on ne peut aller **continûment** d'un genre à un
+autre (transformer une couleur en une odeur). Mais le **substrat est
+capturé par l'espace de genre** dans la prédication — envoyé au centre
+organisateur (point prototypique du genre), puis réparti conformément à
+l'εἶδος prédiquée. Les genres s'organisent donc comme **espèces d'un
+hypergenre** par partage d'un substrat commun (ex. l'hypergenre des
+qualités sensorielles : odeur/couleur/son), itérables deux à trois
+échelons.
+
+> « Le genre se comporte comme un "préprogramme", modifiable par
+> l'accident local. C'est un acte bord d'une puissance, mais qui crée
+> chez ses actants des dispositions privatives (στερητικὰς διαθέσεις),
+> lesquelles peuvent, en passant à l'état de puissance, se déployer en
+> actes secondaires. » — Thom 1991, Ch.7 §E-F (p. 193).
+
+### Usage ICT strate 7 — discret-porté-par-continu, logos comme spectre, genre comme préprogramme
+
+1. **Discret observé, continu sous-jacent.** Le principe thomien (« tout
+   être discret est réalisé par une figure continue ») offre un cadre de
+   lecture pour [ICT-17](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb)
+   (machine-ε : un automate discret extrait d'un processus continu) et
+   [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb)
+   (grokking = compression progressive) : la **mesure discrète** (tokens,
+   classes, états-ε) est toujours une section d'un **champ continu**
+   sous-jacent. Un verdict de dissociation peut se relire comme l'écart
+   entre la description discrète mesurée et le continu qui la porte.
+2. **Logos = spectre de réactions.** Le *logos* thomien (ensemble des
+   actes/réactions aux perturbations) est structurellement un
+   **spectre** — ce qu'on mesure en
+   [ICT-15b-SensitivityCanonicity](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+   (sensibilité locale $s(f)$) : un proxy n'est pas défini par une
+   valeur ponctuelle mais par son **comportement sous perturbation**.
+   Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734
+   ICT-15b).
+3. **Genre = préprogramme + dispositions privatives.** Thom confirme et
+   approfondit la lecture strate-7 « genre = préprogramme » (déjà au
+   §Ch.8 §B (bis)) : un genre est un **obstacle au flux génétique** qui
+   capture et oriente le substrat, **modifiable par accident local**, et
+   créant des **στερητικὰς διαθέσεις** (dispositions privatives) chez
+   ses actants. Pont
+   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb) :
+   les préprogrammes morphologiques du dilemme itéré sont des
+   **genres** au sens thomien — des obstacles-crible qui sélectionnent
+   quelles stratégies (substrat) peuvent s'exprimer, laissant des
+   **dispositions privatives** (stratégies inhibées) prêtes à se déployer.
+4. **Hypergenre = space-of-genera.** L'incommunicabilité des genres +
+   leur organisation en hypergenres par substrat commun fournit le
+   cadre pour les **espaces de possibles extensibles** de la strate 7
+   (§Ch.8 §C (bis) *Extension d'un concept = hypergenre*) : un
+   hypergenre n'est pas un genre de plus, c'est l'**espace de genre**
+   qui rend les genres incommunicables entre eux tout en les connectant
+   par un substrat partagé.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **ne formalise pas** le *logos* en un opérateur mesurable ni
+l'hypergenre en une structure catégorielle précise — ces notions restent
+**philosophiques** (grade C-documentaire). La « petite phrase » ΦIII 7
+207a 35 est une **interprétation thomienne** d'Aristote, débattue par les
+spécialistes (Hamelin y voit une « pure métaphore » ; Cherniss, cité par
+Thom, une « métaphore à signification fondamentale »). Les ponts ICT
+ci-dessus (logos = spectre, genre = préprogramme-obstacle) sont
+**candidats** (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733)) : ils proposent
+une lecture, ils ne dérivent pas la mesure du formalisme. L'ontologie
+substantialiste d'Aristote (bannissement de l'espace, multiplication des
+matières) est un **cadre conceptuel**, pas un modèle opérationnel — la
+série ICT l'emprunte pour son vocabulaire (substrat, saillance,
+prégnance, genre), non comme théorème.
+
 ## Ponts transverses (déjà opérationnels)
 
 Ces concepts Thom ne sont pas seulement un socle pour les strates à venir —
@@ -638,7 +787,9 @@ extension, pas une redite.
 - **Ch.6 — Axiomatique aristotélicienne** : cf. §Socle transversal
   [Ch.6 §B/§D-E] (téléologie, section $\sigma$) et §Ponts transverses
   (8 axiomes).
-- **Ch.7 — Continu et discret** : cf. §Ponts transverses (ABP/FBM,
+- **Ch.7 — Continu et discret** : cf. §Socle transversal [Ch.7 §A-F]
+  (substance, continu/discret, « petite phrase » ABP/FBM, logos,
+  genre = préprogramme) et §Ponts transverses (ABP/FBM opérationnel,
   privation = métastabilité).
 - **Ch.8 — Perspectives aristotéliciennes en théorie du langage** :
   cf. §Strate 6 + §Strate 7 (universalisme, genres, hypergenres,
@@ -710,9 +861,15 @@ exploiter :
 - **Ch.5 §E-G et §H** (régulation physiologique, sens, homéomères
   étendus) — non lus dans cette distillation ; à explorer si les
   notebooks de strate 7 réinvestissent la physiologie.
-- **Ch.7 §G-K** (substance / logos) et **Ch.8 §D-E** — non lus ici ;
-  pourraient alimenter une strate ultérieure si elle porte sur la
-  logique catégorielle ou les hiérarchies linguistiques.
+- **Ch.7 §G-K** (substance / logos) — **distillé en §Socle transversal
+  [Ch.7 §A-F] ci-dessus**. *Honnêteté G.9* : l'inventaire initial (issue
+  #7739) étiquetait cette tranche « §G-K (substance/logos) », mais la
+  lecture *firsthand* montre que Ch.7 ne contient que **§A-F** (pas de
+  §G-K distinct) ; le matériel substance/logos se trouve en §A, §E, §F,
+  désormais distillé. Aucune section §G-K fabriquée.
+- **Ch.8 §D-E** — non lu ici ; pourrait alimenter une strate ultérieure
+  si elle porte sur la logique catégorielle ou les hiérarchies
+  linguistiques.
 
 **Non-priorité assumée.** Cette distillation n'est pas un théorème ni une
 unification ; elle est un **socle de vocabulaire**. Les notebooks futurs
