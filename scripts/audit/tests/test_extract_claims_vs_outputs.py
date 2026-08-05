@@ -305,3 +305,135 @@ def test_fix_D_html_extraction_does_not_regress_text_plain(tmp_path):
     )
 
 
+
+# === Fix E (FP-c.909) : tolérance d'arrondi prose↔output ===
+
+
+def test_fix_E_rounded_claim_matches_full_precision_output(tmp_path):
+    """FP-c.909 : la prose pédagogique arrondit les outputs (« **9.79** ») alors
+    que la cellule affiche la pleine précision (« 9.785 »). Le substring échoue
+    sur la troncature -> faux MAJOR ``numeric_claim_not_in_outputs``. La famille
+    Probas (Infer-101) était FULLY CLEAN mais apparaissait sale à cause de ça.
+
+    Fix E : après l'échec du substring, si la claim a des décimales, on compare
+    en float à la précision de la claim (±0.005 pour 2 décimales). Ce test
+    vérifie qu'un markdown claim arrondi présent (en pleine précision) dans un
+    output n'est plus flaggé."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "rounding.ipynb",
+        cells=[
+            _md("# Évaluation\nLa MAE est **9.79** et le biais **-45.80**."),
+            _code(
+                "metrics",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "MAE=9.785, bias=-45.79730358385471"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"rounded claims (9.79 / -45.80) must match full-precision outputs "
+        f"(9.785 / -45.797...) via Fix E tolerance; "
+        f"matched={res['numeric_claims_matched']}, findings={res['findings']}"
+    )
+
+
+def test_fix_E_fr_comma_claim_matches_dot_output(tmp_path):
+    """La claim FR à virgule (« **9,79** ») doit matcher l'output à point
+    (« 9.785 ») via la même tolérance d'arrondi (la normalisation virgule→point
+    s'applique avant le calcul float)."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "fr-rounding.ipynb",
+        cells=[
+            _md("# Évaluation\nLa MAE est **9,79**."),
+            _code(
+                "metrics",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "9.785"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"FR comma claim (9,79) must match dot output (9.785) via Fix E; "
+        f"findings={res['findings']}"
+    )
+
+
+def test_fix_E_genuine_mismatch_still_flagged(tmp_path):
+    """Contrôle anti-complaisance : Fix E ne doit PAS absorber un VRAI écart.
+    Une claim « **0.95** » contre un output « 0.85 » = |0.85−0.95| = 0.10,
+    très supérieur au ±0.005 de tolérance (2 décimales) -> doit rester signalé
+    comme ``numeric_claim_not_in_outputs`` MAJOR. Sans ce garde-fou, Fix E
+    masquerait des claims exagérées (le vrai objectif du Litmus 1)."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "genuine-mismatch.ipynb",
+        cells=[
+            _md("# Évaluation\nLa précision est **0.95**."),
+            _code(
+                "metrics",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "0.85"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] >= 1, (
+        f"genuine mismatch (0.95 vs 0.85) must stay flagged; Fix E must not "
+        f"absorb real exaggerations; findings={res['findings']}"
+    )
+
+
+def test_fix_E_integer_claim_requires_exact_match(tmp_path):
+    """Contrôle : une claim entière (« **10** ») garde une tolérance nulle
+    (ndec=0 -> tol=None -> match exact substring requis uniquement). Une claim
+    « 10 » ne doit pas absorber un output « 12 » (|12−10|=2) — et ne doit pas
+    non plus matcher « 10 » au sein d'un grand nombre par tolérance float."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "integer.ipynb",
+        cells=[
+            _md("# Décompte\nIl y a **10** clusters."),
+            _code(
+                "count",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "12"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] >= 1, (
+        f"integer claim (10 vs 12) must stay flagged — Fix E tolerance is "
+        f"disabled for integer claims; findings={res['findings']}"
+    )
