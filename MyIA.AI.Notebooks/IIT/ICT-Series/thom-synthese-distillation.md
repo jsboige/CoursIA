@@ -466,6 +466,158 @@ candidate). Le lacet de prédation reste un **cadre morphologique** ; ce
 que la série en mesure est une **instanciation numérique** dont le lien au
 formalisme de Thom est d'analogie contrôlée, pas de dérivation.
 
+## Socle transversal — Ch.5 §E-G : régulation physiologique, préprogramme génétique et géométrie du système nerveux
+
+Le Plan Général d'Organisation ne s'arrête pas à la controverse
+Cuvier/Geoffroy (§A-D, cf. §Ponts transverses). Les §E-G étendent la
+blastula physiologique dans trois directions directement fécondes pour
+la strate 7 : la régulation physiologique comme concaténation de cycles,
+le génome comme **canalisateur d'attracteur** (non comme code), et la
+géométrie du système nerveux comme lecture locale du plan BP.
+
+### §E — La proie dans l'organisme : cycles concaténés et proie fictive anticipante
+
+Thom prolonge le lacet de prédation (Ch.4 §C) en une chaîne
+physiologique complète : (1) catastrophe de perception en arête $ST$
+(reconnaissance/localisation), (2) poursuite jusqu'à capture en bouche
+$O$, (3) mandication-digestion-assimilation, (4) excrétion. Cette
+commande successive des cycles se représente par un **segment
+diagonal** ($T \to (2)$, $O \to (3)$, etc.) : une **onde d'activité
+accompagne le trajet de la proie dans l'organisme**.
+
+> « Dans le cycle (2) […], il y a une proie "fictive" décrivant un cycle
+> parallèle à (2). Cette proie fictive anticipe en quelque sorte (dans
+> le SNC) le mouvement de la proie réelle. » — Thom 1991, Ch.5 §E
+> (p. 127).
+
+Le SNC, localisé en principe en $T$, a des **prolongements
+fonctionnels** dans les circuits (2)(3) — parasympathique pour (3).
+L'anticipation est donc *structurelle*, non accessoire : le
+représentant interne $\hat{p}$ du Ch.4 §C trouve ici sa généralisation —
+une **proie fictive centrale précède chaque cycle réel**. Certaines
+activités sont discontinues (prédation), d'autres **permanentes**
+(vasculaire : cœur gauche au centre du cycle (2), cœur droit au centre
+du cycle (3)).
+
+### §E (bis) — Le génome canalise l'attracteur, il ne code pas
+
+Thom est explicite : le rôle du génome se réduit à **« canaliser » le
+déploiement de l'attracteur du métabolisme**, en spécifiant les
+amplitudes relatives des oscillateurs — modulation **largement
+extra-génétique**, sans codage concret et précis. La Génétique
+traditionnelle joue vis-à-vis de l'embryologie « le même rôle néfaste
+que la pédagogie vis-à-vis de l'enseignement : [… elle] se borne en
+fait à déployer un catalogue d'erreurs que l'évolution normale
+évitera soigneusement » (Ch.5 §E, p. 128-129).
+
+Conséquence épistémologique : une **pathologie est souvent une
+simplification** du processus normal — un attracteur de faible
+dimension prenant la place d'un attracteur complexe (crise épileptique
+vis-à-vis de l'EEG, cf. A. Mandell cité par Thom). Le génome est un
+« dépôt culturel de modes de fabrication », guère plus nécessaire à
+l'embryogénèse « que les livres de cuisine ne le sont aux réalisations
+gastronomiques d'un grand chef ».
+
+### §F — Plans généraux d'organisation : métamérie, modulation, milieux
+
+La métamérie (segmentation périodique de période $T$ : $h(m{-}T)=h(m)$)
+est l'archétype de l'organisation répétée (Annélides). Thom insiste :
+les **mutations homéotiques** (aristopaedia de la Drosophile) ne
+démontrent **pas** un code ontogénétique discret — ce sont des **erreurs
+de la modulation** de la métamérie, à valeur céphalisante ou
+caudalisante, que l'on peut réaliser ou corriger par traitements de choc
+sur les disques imaginaux. Seul élément discret : la **ségrégation des
+cellules imaginales en disques disjoints** recevant un champ.
+
+Les milieux de la biosphère se ramènent aux interfaces des trois
+éléments aristotéliciens terre/eau/air (point triple = eaux peu
+profondes). Le PGO y est **imposé par les contraintes de locomotion** :
+l'aérien pur impose la symétrie bilatérale (lutte contre la pesanteur) ;
+le benthique (poussée d'Archimède) libère la plasticité (Mollusques,
+trois à quatre PGO distincts). La céphalisation et le « retournement »
+Invertébré→Vertébré (A. Serres) suivent : endosquelette (chorde) → tube
+nerveux dorsal induit → bipédie. L'origine des Vertébrés reste ouverte
+(S. Løvtrup : Mollusque benthique → enfouissement → axe continu/chorde
+→ sortie terrestre → céphalisation).
+
+### §G — Géométrie du système nerveux : le plan BP comme quotient de l'espace de contrôle
+
+Thom propose de lire les grandes structures du SNC sur le plan $R$ de la
+BP, interprété comme un **quotient de l'espace de contrôle $U$** d'un
+modèle catastrophique universel ($U$ = quotient fibré d'un espace
+$\Omega$ d'activités métaboliques locales). Pour les animaux à symétrie
+bilatérale, l'application $h = p \circ q \circ s$ (Ch.4 §G3) — qui
+associe à tout point de l'organisme son activité physiologique locale —
+admet le **plan de symétrie comme ensemble critique $Z$** ; l'image
+$h(Z)$ est une courbe du plan BP.
+
+- **Zone dorsale** : $h(Z)$ coïncide avec la diagonale $NTJ$ de la BP
+  complétée. En section de moelle, la contre-image donne les arcs $JS$
+  (dynamique lente) = **peau en attente d'un stimulus virtuel**, et les
+  arcs $S_gT$ / $ST$ (dynamique rapide) = **sensations**, trajets
+  neuraux. La dynamique en $S$ n'est pas un point-col mais un
+  **double cusp** (gradient de $x+y$) — d'où les communications en
+  chiasme à travers $T$ (évitement douloureux → contraction
+  controlatérale).
+- **Céphalisation** : la tête (cerveau-prédateur, *« Quis custodiet
+  ipsos custodes ? »*) doit revenir à un exosquelette (crâne).
+  L'archétype d'une vertèbre = périmètre du circuit concaténé pré-oral +
+  post-oral ; le passage à la boîte crânienne (sphère = bord d'une
+  boule) exige la **rétraction de l'arc ventral** sur le dorsal —
+  corrélativement, la décussation des pyramides (moteur) et le chiasme
+  des nerfs optiques (vision).
+
+### Usage ICT strate 7 — préprogramme, champ en attente, pathologie-attracteur
+
+1. **Génome = préprogramme, non code.** Thom confirme
+   opérationnellement la notion de **préprogramme** centrale en strate 7
+   (§Ch.8 §B (bis) *Genres = préprogramme*) : le génome « canalise
+   l'attracteur » du métabolisme sans codage précis. La lecture
+   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb)
+   (préprogrammes morphologiques du dilemme itéré) et l'opposition
+   discret/champ s'enracinent ici : un **préprogramme est un profil
+   d'amplitudes d'oscillateurs**, non une suite d'instructions.
+2. **Peau en attente = champ réceptif.** L'arc lent $JS$ = « peau en
+   attente d'un stimulus virtuel » est l'archétype thomien du
+   **couple saillance-prégnance** : la surface réceptive est un champ
+   *prêt à être investi* par une prégnance (stimulus saillant) qui s'y
+   propagera. Un substrat n'est pas passif, il est **pré-formé** par les
+   arcs lents qui l'attendent. Pont
+   [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb)
+   (représentation = capture d'un saillant par un champ réceptif).
+3. **Pathologie = collapsus d'attracteur.** « Une pathologie est une
+   simplification : un attracteur de faible dimension prenant la place
+   d'un attracteur complexe » offre une lecture thomienne des
+   **dissociations** : la dissociation comme **régime où la dynamique
+   réelle s'effondre sur un attracteur appauvri** (un proxy isolé mesuré
+   plutôt que le champ complet). Pont
+   [#7734](https://github.com/jsboige/CoursIA/issues/7734) : un verdict
+   « dissociation » peut se relire comme l'écart entre l'attracteur
+   complet attendu et l'attracteur faible observé.
+4. **SNS = espace de contrôle quotienté.** Lire le SNC comme un
+   quotient $h(Z)$ de l'espace de contrôle local fournit un cadre pour
+   [ICT-19b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb)
+   / [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb)
+   : un **workspace** $W$ est, morphologiquement, une projection-quotient
+   qui sélectionne quelles activités locales deviennent globalement
+   communicables (arcs rapides $S_gT$) et lesquelles restent locales
+   (arcs lents $JS$). L'ignition documentée d'ICT-24 est l'**activation
+   d'une communication transverse en chiasme** à travers un nœud $T$.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **ne quantifie jamais** $h = p \circ q \circ s$ ni la métrique du
+« double cusp » en $S$ ; la géométrie du SNC reste un **modèle
+topologique qualitatif** (grade A pour le cadre catastrophique, grade C
+pour son application au réel neural). La génétique moderne
+(épigénétique, réseaux de gènes) **dépasse** la formule thomienne du
+génome-« dépôt culturel » — nous en retenons l'intuition (le génome
+module un attracteur métabolique) sans en faire une thèse moléculaire.
+Les ponts ICT ci-dessus sont **candidats** (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733)) : un
+préprogramme comme « profil d'amplitudes » est une **hypothèse de
+lecture**, pas une définition mesurée.
+
 ## Ponts transverses (déjà opérationnels)
 
 Ces concepts Thom ne sont pas seulement un socle pour les strates à venir —
@@ -496,6 +648,11 @@ d'un cycle correspond à la scission d'une singularité.
 **Référence :** [ICT-9-AgencyRegeneration](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-9-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
 
 ### Plan Général d'Organisation (Ch.5) — controverse Cuvier / Geoffroy
+
+> Distillation étendue §E-G (régulation physiologique, préprogramme
+> génétique, géométrie du SNC) au §Socle transversal
+> [Ch.5 §E-G](#socle-transversal--ch5-e-g--régulation-physiologique-préprogramme-génétique-et-géométrie-du-système-nerveux)
+> ci-dessus. Le présent pont ne couvre que les §A-D (Cuvier/Geoffroy).
 
 La controverse 1830 entre Cuvier (conditions d'existence) et Geoffroy
 Saint-Hilaire (principe de connexion des parties) est relue par Thom :
@@ -633,7 +790,9 @@ extension, pas une redite.
   [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
   (lacet de prédation revisited, représentant interne `p̂`, origine de la
   généalogie #7735) et §Ponts transverses (blastula BP).
-- **Ch.5 — Plan Général d'Organisation** : cf. §Ponts transverses
+- **Ch.5 — Plan Général d'Organisation** : cf. §Socle transversal
+  [Ch.5 §E-G](#socle-transversal--ch5-e-g--régulation-physiologique-préprogramme-génétique-et-géométrie-du-système-nerveux)
+  (régulation physiologique, préprogramme, SNC) et §Ponts transverses
   (Cuvier / Geoffroy, homéomère / anhoméomère).
 - **Ch.6 — Axiomatique aristotélicienne** : cf. §Socle transversal
   [Ch.6 §B/§D-E] (téléologie, section $\sigma$) et §Ponts transverses
@@ -707,9 +866,12 @@ exploiter :
   [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb),
   Ch.2 (le langage) est exploité en strate 6 mais son contenu propre
   (formalisme des schémas linguistiques) reste à creuser.
-- **Ch.5 §E-G et §H** (régulation physiologique, sens, homéomères
-  étendus) — non lus dans cette distillation ; à explorer si les
-  notebooks de strate 7 réinvestissent la physiologie.
+- **Ch.5 §E-G** (régulation physiologique, préprogramme génétique,
+  géométrie du SNC) — **distillés** au §Socle transversal Ch.5 §E-G
+  ci-dessus. Le sous-titre « §H homéomères étendus » de l'inventaire
+  initial ne correspond pas à une section distincte de la source : les
+  homéomères y sont traités en §A-D (Cuvier/Geoffroy) et la physiologie
+  en §E-G, sans §H séparé (lecture honnête, G.9).
 - **Ch.7 §G-K** (substance / logos) et **Ch.8 §D-E** — non lus ici ;
   pourraient alimenter une strate ultérieure si elle porte sur la
   logique catégorielle ou les hiérarchies linguistiques.
