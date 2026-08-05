@@ -8,7 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: d1282426b7eea1e38e808669eace82467deb0567
       csharp_sha: ef5632ca0b72c78238ffff335fd612369c064a78
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: d4459bc5cf0ee8fbd8ded13038690e238300b8b0
+      csharp_sha: ef5632ca0b72c78238ffff335fd612369c064a78
   known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des versions JAX/NumPyro depuis la table de la cellule[3] (criterion 2 #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : resolution PROBABILISTE du Sudoku par inference bayesienne/probabiliste, meme concept (modeliser l'incertitude sur les cases, inferrer les valeurs les plus probables), meme angle (approche non-deterministe par contraste avec les solveurs exacts de la serie)."
     - "Divergence de framework probabiliste : Python = NumPyro (MCMC, inference variationnelle, stochastic) ; C# = Infer.NET (modelisation probabiliste .NET, message passing). Meme paradigme (inference probabiliste), deux frameworks stochastiques distincts -- les sorties numeriques different d'une execution a l'autre (MCMC sampling), parite au niveau du concept et de la demarche, pas des valeurs exactes."
     - "Asymetrie structurelle : Python 13 cellules code / 21 markdown ; C# 19 cellules code / 28 markdown. Arc pedagogique identique (modelisation probabiliste -> inférence -> comparaison aux solveurs exacts)."
