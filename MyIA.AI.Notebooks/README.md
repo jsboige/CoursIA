@@ -17,7 +17,7 @@ maturity: BETA=773, ALPHA=49, DRAFT=24, TEMPLATE=4
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
 
-Dernière mise à jour : 2026-07-28
+Dernière mise à jour : 2026-08-05
 
 ## Vue d'ensemble
 
@@ -43,6 +43,8 @@ Dernière mise à jour : 2026-07-28
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés du tri, de la réaction-diffusion (Gray-Scott) et de la morphodynamique stratégique (Axelrod) — et un axe *Global Workspace* (broadcast, ignition — module `ict/workspace.py`) confronte désormais empiriquement IIT et GWT sur ces mêmes traces, faisant du pont entre les deux grandes théories de la conscience une question **falsifiable** plutôt qu'un débat d'école. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
+**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des onze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
+
 ### Progression pédagogique
 
 ```text
@@ -63,7 +65,7 @@ GenAI
 QuantConnect
 ├── Python/ - Cours progressifs QC-Py (fondamentaux → stratégies)
 ├── projects/ - Stratégies backtestées et ML (GARCH, Kelly, ensemble)
-├── ML-Training-Pipeline/ - Pipeline training thermal-safe + Ladder 13 arch.
+├── ML-Training-Pipeline/ - Pipeline training thermal-safe + Ladder #1409 (6 niveaux)
 └── partner-course-quant-trading/ - Cours partenaire Hands-On AI Trading
 
 SymbolicAI
@@ -98,7 +100,7 @@ Sudoku
 GameTheory
 ├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters, lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
+└── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
@@ -115,6 +117,9 @@ CaseStudies
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (4 substrats : tri, Gray-Scott, Axelrod, transformer+SAE)
 └── (à plat) - notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
+
+cross-series/
+└── (capstones) - Projets transversaux multi-séries (ex. matching-cv : ML + GenAI + GameTheory)
 ```
 
 ## Parité Python / .NET / Lean — différenciant structurant
