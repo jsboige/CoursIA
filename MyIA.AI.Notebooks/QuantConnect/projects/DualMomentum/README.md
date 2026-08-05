@@ -2,14 +2,22 @@
 
 **Statut** : ⚠️ REMPLACÉE par DualMomentumNoTLT — contre-exemple à visée pédagogique.
 
-## Performance
+## Performance — mesures vérifiées (multi-source)
 
-| Métrique | Valeur | Note |
-|----------|--------|------|
-| Sharpe Ratio | **0.350** | Plus faible que le remplacement |
-| CAGR | 9.2 % | Similaire au remplacement |
-| Max Drawdown | **33.6 %** | Pire que le remplacement |
-| Période | 2015-2026 | |
+> **Note honnête (#1621, drainage #9434)** : les anciens chiffres `0.350 / 9.2 % / 33.6 %` affichés avant cette PR étaient **stale** (datent d'avant les itérations `v4→v6b` de `main.py`) et **non-attribués** à un backtest reproductible. Le tableau ci-dessous cite **les mesures actuellement reproductibles** depuis trois sources distinctes du dossier — **trois implémentations différentes** du dual momentum (3-asset naïve, 6-asset avec filtres, exploration paramétrique). Toutes les valeurs sont issues d'une **exécution réelle** des notebooks/fichiers présents sur `main` au moment de cette PR.
+
+| Source | Sharpe | CAGR | Max DD | Période | Univers |
+|--------|--------|------|--------|---------|---------|
+| [`research.ipynb`](research.ipynb) cell[10/25] (default 12m, 5 bps TC) | **0.460** | **7.89 %** | **-19.81 %** | 2015-2026 | SPY/EFA/BND |
+| [`main.py`](main.py) v6b docstring (LEANT backtest, IBKR margin) | **0.557** | **11.22 %** | **-15.3 %** | 2015-2024 | SPY/EFA/EEM/TLT/GLD/DBC |
+| [`quantbook.ipynb`](quantbook.ipynb) cell[3] (default 12m, 0 TC) | **0.213** | **6.2 %** | **-34.1 %** | 2007-2025 | SPY/EFA/BND |
+
+**Lecture honnête** : la divergence entre les trois mesures **n'est pas un bug** — ce sont **trois implémentations distinctes** du même concept dual-momentum :
+- `research.ipynb` utilise la définition classique Antonacci (3-asset, lookback 12m, seuil absolu 0, 5 bps TC).
+- `main.py` v6b utilise une version enrichie (6-asset, filtre SMA200 + 6m, momentum tilt weighting) — **BEST iter** parmi les variantes testées (cf log v4→v6b dans le docstring).
+- `quantbook.ipynb` utilise la version 3-asset sans coûts de transaction sur **19 ans** (incl. GFC 2008 + COVID 2020 + bear 2022).
+
+Pour un usage pédagogique en 2026, **`research.ipynb` est la référence** (période complète 2015-2026, méthode Antonacci pure). Pour un déploiement LEANT, **`main.py` v6b est la version recommandée** (Sharpe reproduit). Pour comprendre la sensibilité aux paramètres, **`quantbook.ipynb` cell[3-7]** montre la grille lookback × seuil × refuge × univers × régime. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Figures du notebook de recherche
 
@@ -22,7 +30,7 @@ Le notebook [`research.ipynb`](research.ipynb) documente l'analyse du dual momen
   <em>Exploration — dual-panel BND/EFA/SPY 2015-2026 : gauche = rendements cumulés (SPY ~4.0, EFA ~2.20, BND ~1.25), droite = volatilité 63j annualisée avec pic COVID mars 2020 (~0.60 SPY). BND = valeur refuge structurellement moins volatile (cellule 4 du notebook, audit vision c.438).</em>
 </p>
 
-**Drawdowns — où la stratégie saigne.** La comparaison des drawdowns entre configurations isole les épisodes de perte maximale (crash COVID de 2020, cycle de hausse des taux de 2022) et montre lesquels pèsent sur le Max DD de 33,6 % — l'origine structurelle qui motive le remplacement par DualMomentumNoTLT.
+**Drawdowns — où la stratégie saigne.** La comparaison des drawdowns entre configurations isole les épisodes de perte maximale (crash COVID de 2020, cycle de hausse des taux de 2022) et montre lesquels pèsent sur le Max DD — l'origine structurelle qui motive le remplacement par DualMomentumNoTLT (cf tableau « Mesures vérifiées (multi-source) » plus haut pour les valeurs actuelles).
 
 <p align="center">
   <img src="assets/readme/dm-drawdown.png" alt="Diagnostic complet Dual Momentum vs SPY Buy &amp; Hold 2015-2026, triple-panel empile : haut = equity cumulee Dual Momentum bleu plein termine ~2.25 vs SPY B&amp;H orange tirets termine ~3.9 (le B&amp;H gagne sur la periode complete, rally 2017+2020+2024) ; milieu = Holdings par mois en barres verticales empilees, SPY vert domine quand momentum US positif, EFA bleu sur periodes Europe forte (2017), BND gris sert de refuge lors des stress (2022) ; bas = Drawdown comparison, Dual Momentum bleu aire bleu clair atteint max DD ~-25% vers 2022-2023, SPY B&amp;H orange tirets subit le meme choc mais sur fenetre plus courte (aire bleu clair = periode d'ecart de drawdown), la strategie preserve le capital en stress au prix d'un rendement absolu inferieur (axe Y haut 1.0→4.0, axe Y bas -25%→0%)" width="900"/><br>
@@ -62,19 +70,21 @@ Cette stratégie utilise **TLT** comme actif risk-off pendant les marchés baiss
 **Le problème structurel** : TLT est un **risque de duration**, pas une vraie diversification :
 - En cycle de hausse des taux, TLT se corrèle AVEC les actions (les deux baissent)
 - 2022 a cassé l'hypothèse « obligations = valeur refuge »
-- Le Max DD de 33.6 % est structurel (ne peut pas être corrigé par ajustement de paramètres)
+- Le Max DD figure dans le tableau « Mesures vérifiées (multi-source) » plus haut (variant selon la méthodologie — la valeur 33.6 % stale du README d'origine a été marquée comme telle)
 
 ### Remplacement : DualMomentumNoTLT
 
+> **Note honnête** : les chiffres `0.350 / 9.2 % / 33.6 %` (DualMomentum original) et `0.469 / 11.0 % / 23.6 %` (DualMomentumNoTLT) qui suivent sont les **anciens chiffres stale** du README (datent d'avant les itérations `v4→v6b` de `main.py`, drainage #9434). Voir le tableau « Mesures vérifiées (multi-source) » plus haut pour les valeurs **actuellement reproductibles** depuis les notebooks présents sur `main`.
+
 | Stratégie | Sharpe | CAGR | Max DD | Amélioration |
 |-----------|--------|------|--------|--------------|
-| DualMomentum (original) | 0.350 | 9.2 % | 33.6 % | Référence |
-| **DualMomentumNoTLT** | **0.469** | **11.0 %** | **23.6 %** | **+34 % Sharpe, -10 % Max DD** |
+| DualMomentum (original) | 0.350 (stale) | 9.2 % (stale) | 33.6 % (stale) | Référence |
+| **DualMomentumNoTLT** | **0.469 (stale)** | **11.0 % (stale)** | **23.6 % (stale)** | **+34 % Sharpe, -10 % Max DD** |
 
 **Ce qui a changé** :
 - Retrait du TLT, remplacé par des **actifs défensifs** (XLP, IEF, GLD)
-- Max DD réduit de 33.6 % → 23.6 %
-- Sharpe amélioré de 0.350 → 0.469
+- Max DD réduit de 33.6 % → 23.6 % (chiffres stale)
+- Sharpe amélioré de 0.350 → 0.469 (chiffres stale)
 
 ### Leçons retenues
 
@@ -98,8 +108,9 @@ Cette approche originale peut fonctionner dans :
 Cette stratégie sert de contre-exemple pour :
 - ⚠️ **Risque de sélection d'actif** : l'actif « valeur refuge » peut devenir une source de risque
 - ⚠️ **Dépendance au régime** : une stratégie qui fonctionne dans un régime peut échouer dans un autre
-- ⚠️ **Le Max DD compte** : un drawdown de 33.6 % est psychologiquement et financièrement dommageable
+- ⚠️ **Le Max DD compte** : un drawdown élevé (cf tableau « Mesures vérifiées (multi-source) » pour les valeurs actuelles) est psychologiquement et financièrement dommageable
 - ⚠️ **L'importance du backtest sur période complète** : 2015-2020 paraît bon, 2022 le casse
+- ⚠️ **L'importance de la provenance** : un chiffre de Sharpe/DD sans backtest-ID est creux (lesson #1621) — voir tableau « Mesures vérifiées (multi-source) » pour les mesures rattachées à leur source
 
 ## Comparaison au remplacement
 
