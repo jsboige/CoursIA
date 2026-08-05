@@ -160,28 +160,35 @@ La construction est directe mais un peu fastidieuse :
 
 namespace MacroCell
 
-/-- Plus petit `n` tel que `2 ^ n >= k`. -/
+/-- Plus petit `n` tel que `2 ^ n >= k`.
+
+    Implementation note (#8869, c.847) : la recursion precedente
+    `| k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)` etait **WellFounded** (l'argument
+    `(k+2+1)/2` n'est pas structurellement plus petit), donc **opaque au reducteur
+    du noyau** — `decide` ne pouvait pas l'evaluer, bloquant `gridFrame lvl` puis
+    toute la chaine `buildFromGrid`/`toGrid`/`evolveHashlife` (les 14 theoremes de
+    coherence de `Computation.lean` etaient `native_decide` par symptome, pas par
+    necessite intrinseque). Reformulee via `Nat.log 2` (recursion structurelle de
+    Mathlib, noyau-reductible) : `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`.
+    Meme fonction (valeurs invariantes, cf `ceilLog2_spec`), mais desormais
+    decidable. Diagnostic firsthand : `ceilLog2 6 = 3` passe sous `decide` apres
+    rewrite (echouait avant, meme avec `maxRecDepth 1000000`, meme sur 1 pas). -/
 def ceilLog2 (k : Nat) : Nat :=
-  match k with
-  | 0     => 0
-  | 1     => 0
-  | k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)
+  if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 
 /-- `ceilLog2 k` est assez grand pour que `2 ^ ceilLog2 k >= k`. C'est le
     coeur arithmetique du lemme de containment de `gridFrame`. -/
 theorem ceilLog2_spec (k : Nat) : 2 ^ ceilLog2 k >= k := by
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-    match k with
-    | 0 => simp [ceilLog2]
-    | 1 => simp [ceilLog2]
-    | m + 2 =>
-      simp only [ceilLog2]
-      have h : 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= (m + 2 + 1) / 2 :=
-        ih ((m + 2 + 1) / 2) (by omega)
-      have h2 : 2 * 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= m + 2 := by omega
-      rw [Nat.pow_add, Nat.pow_one]
-      exact h2
+  by_cases hk : k ≤ 1
+  · -- k = 0 ou 1 : ceilLog2 k = 0, et 2^0 = 1 ≥ k
+    simp only [ceilLog2, hk, reduceIte]
+    omega
+  · -- k ≥ 2 : ceilLog2 k = Nat.log 2 (k-1) + 1, et k ≤ 2^((k-1).log+1) par la
+    -- borne superieure de Nat.log (Mathlib : n < b^(log b n + 1)).
+    simp only [ceilLog2, hk, reduceIte]
+    have h := Nat.lt_pow_succ_log_self Nat.one_lt_two (k - 1)
+    rw [Nat.succ_eq_add_one] at h
+    omega
 
 /-- Construit une `MacroCell` de niveau `n` couvrant le carre
     `[r0, r0 + 2^n) x [c0, c0 + 2^n)`, avec les cellules vivantes donnees par
