@@ -56,39 +56,33 @@ from pathlib import Path
 
 # --- parsing ---------------------------------------------------------------
 
-# Markdown noise to strip before matching: asterisks (bold) and backticks.
-# Mirrors the workflow's `tr -d '*\`'` so the two stay in lockstep.
-_NOISE = str.maketrans({"*": "", "`": ""})
+# SHARED extractor: see scripts/variation_tags.py. The cap organe and the
+# guard workflow MUST speak the same dialect of "what counts as a Grain: tag"
+# -- a guard and an organe that disagree silently is the worst failure mode
+# (issue #9485: 13/34 merges on the 2026-08-05 lot carried no readable tag
+# because the cap organe and the guard each had their own, narrower parser).
+# We delegate to the shared module and keep only the SHAPE this organe needs
+# ({tier, lane}), dropping the GENRE that the cap does not consume.
 
-# `Grain:` (case-insensitive) then TIER / GENRE. TIER is the word before `/`.
-_GRAIN_TIER_RE = re.compile(r"Grain:\s*([A-Za-z]+)\s*/", re.IGNORECASE)
-
-# `lane` (case-insensitive), optional colon, whitespace, then machine:workspace.
-# machine = myia-po-2024 (letters, digits, dot, underscore, hyphen); workspace
-# likewise (CoursIA-2). Captured as the single token "<machine>:<workspace>".
-_LANE_RE = re.compile(
-    r"lane:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
-)
+from variation_tags import extract_tag as _extract_tag
 
 
 def parse_grain(body: str) -> dict | None:
     """Extract {tier, lane} from a PR body, full-text + separator-agnostic.
 
-    Returns None when no `Grain:` line is found. `tier` is upper-cased
-    (LIGHT/MED/DEEP) or None if the TIER could not be read. `lane` is the
-    "<machine>:<workspace>" string or None.
+    Thin wrapper over the shared extractor `scripts/variation_tags.py`. The
+    cap organe consumes only TIER and LANE; the GENRE is computed by the
+    extractor and dropped here. Returns None when no Grain: tag is found
+    in any of the four recognized forms (inline / no-colon / header-form /
+    blockquote-or-list-form), and {tier, lane} otherwise. `lane` may be None
+    when the declared tag omits it (DEEP/MED known limitation: past month of
+    pull runs, every PR declared a lane -- a missing lane is a §3 defect,
+    not a parse failure).
     """
-    if not body:
+    tag = _extract_tag(body)
+    if tag is None:
         return None
-    flat = body.translate(_NOISE)
-    tier_m = _GRAIN_TIER_RE.search(flat)
-    if not tier_m:
-        return None
-    lane_m = _LANE_RE.search(flat)
-    return {
-        "tier": tier_m.group(1).upper(),
-        "lane": lane_m.group(1) if lane_m else None,
-    }
+    return {"tier": tag.get("tier"), "lane": tag.get("lane")}
 
 
 # --- requalification (coordinator override of the declared tag) ------------
