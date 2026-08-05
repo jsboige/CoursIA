@@ -12,6 +12,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 539c43fa6b5e50f99c065e8aa97bf8594863225f
       csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 084159134a3f4fe4b21ab04487b171c7af0562dd
+      csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+      content_python_sha: 41db3a285e9797839e6f821463c8f422ec2d6d26091e78cbf1960594cf02bfa9
+      content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
   known_differences:
     - "Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l'information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting."

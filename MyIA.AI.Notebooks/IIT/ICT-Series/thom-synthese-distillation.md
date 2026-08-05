@@ -158,6 +158,104 @@ factitif mesure une **fronce double** entre états ; l'aspect perfectif
 explique pourquoi la trajectoire d'une **dissociation** ne montre que le
 point de rupture (pas la transition continue sous-jacente).
 
+### Ch.8 §D-E — Ternarité peircéenne, phrase nucléaire et privation du verbe
+
+Le §D prolonge le socle strate 6 en décrivant **l'énonciation elle-même**
+comme un effet figuratif : « l'énonciation d'un message est l'effet
+figuratif dû à une prégnance investissant le sujet ». Thom emprunte à
+Peirce une **ternarité** qui décrit les trois stades de la levée d'une
+prégnance par le langage :
+
+| Stade peircéen | Description thomienne |
+|---|---|
+| **Primarité** | intrusion de la prégnance excitant le psychè (le choc initial) |
+| **Secondarité** | énonciation du *type* de prégnance investissante (identification sensorielle) |
+| **Ternarité** | reconnaissance de la *source* de la prégnance et sa conceptualisation |
+
+Exemple canonique de Thom : « Ça sent le brûlé » — *ça* = primarité,
+*ça sent* = secondarité, *le brûlé* = ternarité (conceptualisation de la
+source). La **phrase nucléaire** y est lue comme un **vecteur de
+prégnance** : l'esprit « plie » sous l'impact de la prégnance, puis se
+redresse en la renvoyant sur un *alter ego*, ce qui le libère de
+l'investissement et restaure son autonomie.
+
+**L'intellect comme préprogramme.** Thom modélise l'intellect comme un
+**préprogramme — un obstacle —** qui soumet un flux informatif (ayant sa
+source dans une catastrophe extérieure) à une **scission** le transformant
+en l'émission d'une phrase nucléaire. Métaphore des quilles : le flux est
+une boule lancée sur des quilles figurant les parties du discours (N, V) ;
+la quille atteinte la première est le **verbe V**, dont la chute
+ritualisée entraîne, en nombre égal à sa **valence**, les quilles N
+voisines — puis les déictiques / anaphoriques nécessaires à la
+localisation des actants (S, O). C'est la **même structure** que le
+préprogramme morphologique d'ICT-13 (Axelrod) : un obstacle qui scinde un
+flux en une forme typée.
+
+**La capture prédation, matrice de la transitivité.** Le §D referme le
+cercle ouvert au Ch.4 §C : la phrase transitive prototypique (« Le chat
+mange la souris ») mobilise la **catastrophe fronce** du lacet de
+prédation. Dans le plan de contrôle $Ouv$, la capture est l'arc orienté
+$\alpha K \omega$ où $K$ est le point de capture (Fig. 8.8) ; cette
+trajectoire canalisée symbolise le **téléos de l'acte** et
+l'**intentionnalité de l'agent**. Le verbe, excité, **sécrète ses deux
+actants** comme contre-images dans la surface critique : l'actant au
+minimum le plus bas est l'**agent**, celui au minimum métastable le
+**patient** (*objectum est supra subjectum*). La genèse de la phrase
+épouse donc la géométrie de la prédation — d'où le sous-titre du présent
+document : *phrase = embryogénèse* (la scission verbale est une scission
+de singularité, isomorphe à la duplication des cycles plans de la
+blastula, Ch.4 §D).
+
+**Privation du verbe.** Thom reprend à Aristote l'idée que l'acte crée
+chez ses actants des états de **privation** (στερητικὰς διαθέσεις) : le
+verbe excité est chroniquement
+en état de privation — il a besoin de substantifs pour réaliser sa
+signification (sauf à l'**impératif**, où l'on retrouve le caractère
+comminatoire du signal animal). Il sature cette privation en évoquant des
+actants, lesquels, excités, entrent eux-mêmes en privation. Le **nom
+propre** est autonome (il transporte la localisation de son réfèrent) ;
+le **nom commun** est en privation (il doit déterminer pour l'auditeur la
+localisation spatio-temporelle de son réfèrent). Cette cascade de
+privations rattache le verbe à la **privation = métastabilité** du Ch.7
+§D (cf. *Pont transverse* ci-dessous) : le verbe est le siège métastable
+qui ne se stabilise qu'en saturant sa valence.
+
+**Le continu de Seiler.** H. Seiler ordonne les universaux linguistiques
+sur un axe **prédicativité–indicativité**, que Thom identifie à l'axe
+**saillance–prégnance**. Le prédicat met en cause un genre aux *eidè*
+fixes (l'assertion suffit à le caractériser) ; les actants liés par
+valence — les noms — ne sont pas localisés a priori, d'où la nécessité
+des **déictiques** pour fixer cette localisation indéterminée. Les
+**techniques** de Seiler sont des sous-continus héritant de la même
+polarité (ex. le grand syntagme d'épithètes du Ch.2 §E : une marche de la
+prédicativité vers l'indicativité).
+
+**Usage ICT strate 6.** (i) L'intellect-préprogramme donne un cadre pour
+relire les **préprogrammes morphologiques** d'ICT-13 : un obstacle qui
+scinde un flux en une forme typée, isomorphe entre morphodynamique
+stratégique et génération syntaxique. (ii) La cascade de privations du
+verbe est l'analogue linguistique de la **triade moyen / fin / enjeu**
+d'ICT-18b : on ne mesure pas la fin directement, on mesure le coût de
+s'en approcher — de même, le verbe ne se réalise qu'en saturant sa
+privation par ses actants. (iii) Le continu prédicativité–indicativité
+est une projection 1D de l'espace $(s, q, \pi, W)$ : la prédicativité
+(prégnance, $\pi$) du côté du genre aux *eidè* fixes, l'indicativité
+(saillance, $s$) du côté de la localisation à fixer. (iv) L'acquisition
+du langage (espace de genre plastique creusé en bassins de potentiel par
+des représentants prototypiques — sang/rouge, lait/blanc, feuillage/vert
+— puis rigidifié après l'âge critique en préprogramme) fournit un
+**modèle ontogénétique** pour la formation des attracteurs dans
+l'hypergenre (cf. §C).
+
+> **Honnêteté grade C.** La correspondance *phrase transitive =
+> catastrophe de prédation* est un **modèle** thomien, pas une loi
+> linguistique : la transitivité est *prototypique* (il existe des
+> verbes intransitifs, des patients qui résistent). Le statut
+> VOS-émissif / SOV-réceptif est une typologie proposée par Thom,
+> contestée par la typologie dominante. Ces propositions sont
+> enregistrées comme **vocabulaire candidat** pour les notebooks strate
+> 6, soumises à leur mesure.
+
 ## Socle transversal — la dynamique aristotélicienne : téléologie et section σ (Ch.6 §B, §D-E)
 
 Le chapitre 6 (« La dynamique aristotélicienne comme sémiophysique »,
@@ -800,8 +898,10 @@ extension, pas une redite.
 - **Ch.7 — Continu et discret** : cf. §Ponts transverses (ABP/FBM,
   privation = métastabilité).
 - **Ch.8 — Perspectives aristotéliciennes en théorie du langage** :
-  cf. §Strate 6 + §Strate 7 (universalisme, genres, hypergenres,
-  opérations catégorielles).
+  cf. §Strate 6 (universalisme, genres, hypergenres, opérations
+  catégorielles ; §D-E ternarité peircéenne, phrase nucléaire comme
+  vecteur de prégnance, capture-prédation fronce, privation du verbe,
+  continu de Seiler) + §Strate 7 (extension d'un concept = hypergenre).
 
 ### Documents de la série ICT
 
@@ -872,9 +972,10 @@ exploiter :
   initial ne correspond pas à une section distincte de la source : les
   homéomères y sont traités en §A-D (Cuvier/Geoffroy) et la physiologie
   en §E-G, sans §H séparé (lecture honnête, G.9).
-- **Ch.7 §G-K** (substance / logos) et **Ch.8 §D-E** — non lus ici ;
-  pourraient alimenter une strate ultérieure si elle porte sur la
-  logique catégorielle ou les hiérarchies linguistiques.
+- **Ch.7 §G-K** (substance / logos) — non lu ici ; pourrait alimenter
+  une strate ultérieure si elle porte sur la logique catégorielle.
+- **Ch.8 §D-E** (ternarité peircéenne, phrase nucléaire, privation du
+  verbe, continu de Seiler) — **couvert** au §Strate 6.
 
 **Non-priorité assumée.** Cette distillation n'est pas un théorème ni une
 unification ; elle est un **socle de vocabulaire**. Les notebooks futurs
