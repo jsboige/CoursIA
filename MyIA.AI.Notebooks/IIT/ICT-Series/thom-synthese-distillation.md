@@ -158,6 +158,122 @@ factitif mesure une **fronce double** entre états ; l'aspect perfectif
 explique pourquoi la trajectoire d'une **dissociation** ne montre que le
 point de rupture (pas la transition continue sous-jacente).
 
+## Socle transversal — la dynamique aristotélicienne : téléologie et section σ (Ch.6 §B, §D-E)
+
+Le chapitre 6 (« La dynamique aristotélicienne comme sémiophysique »,
+p.153-164) est le cœur ontologique de la lecture thomienne : c'est là que
+Thom **formalise le pont entre Aristote et la théorie des catastrophes**.
+Jusqu'ici le document n'en retenait que la liste des **8 axiomes** et la
+mention finale de la « section $\sigma$ » (cf. §Ponts transverses). Cette
+section en distille la **dérivation** — comment Thom passe du vocabulaire
+aristotélicien (téléologie, homéomères) à l'objet géométrique mesurable
+(la section $\sigma$ et son ensemble de catastrophe $K$) — et ce que cela
+change pour la lecture ICT.
+
+### Le triptyque τέλoς / τέλειν / τελευτή — distinguer l'organisateur, l'accompli, la fin
+
+Toute entité « d'ici-bas » a une naissance (γένεσις) et une fin (ϕθoρά) ;
+son graphe temporel finit « en général en un sommet unique, la fin
+(τελευτή) » (Ch.6 §B, p.155). Thom insiste sur une **ambiguïté
+fondatrice** qu'Aristote « ne souffre guère, mais qui souvent fait
+problème » : le mot τέλoς oscille entre **trois** acceptions qu'il faut
+distinguer :
+
+- **τέλειον / τέλειν** — l'état « parfait », l'âge adulte, là où « la
+  fonction "temps" a son maximum » (p.155). C'est un **sommet
+  d'intensité**, pas une terminaison.
+- **τελευτή** — la **terminaison** effective, la mort de l'entité
+  (ϕθoρά). Le point final du graphe.
+- **τέλoς** — ni l'un ni l'autre : le **centre organisateur**.
+
+La citation fondatrice (Ch.6 §B, p.155), in extenso :
+
+> « La citation [1] semble indiquer que le τέλoς est en quelque sorte le
+> point central de l'existence d'une entité ou d'un acte : il en détermine
+> en effet l'antérieur (τò πρότερον) et le postérieur (τò ἕφεξῆς). Selon
+> le point de vue catastrophiste, le τέλoς pourrait être ainsi considéré
+> comme le **centre organisateur d'un champ morphogénétique** d'êtres et
+> d'événements se déployant selon la temporalité. En ce cas le τέλoς
+> devrait être toujours distinct de la terminaison (τελευτή). »
+
+**Conséquence épistémique pour ICT.** Le pont « recouvrabilité →
+agentivité » (ICT-9, #8077 pont 2) et la triade moyen / fin / enjeu
+(ICT-18b, cf. §Ponts transverses « Privation = métastabilité ») reposent
+sur une fin **mesurable**. Thom fournit la distinction qui évite
+l'erreur de catégorie : la « fin » qu'on mesure n'est **jamais** la
+τελευτή (terminaison — par définition non observable avant qu'elle
+n'arrive), c'est le **τέλoς** comme centre organisateur. On n'observe pas
+la fin, on observe le **coût de s'en approcher** (le moyen, σ de
+production d'entropie). C'est exactement la structure du verdict
+« privation structurée » : la τελευτή absente est une forme prégnante qui
+**plie** la trajectoire autour de son absence — un τέλoς, pas une
+terminaison.
+
+### Homéomère / anhoméomère, puis la section σ — la forme naît de la discontinuité
+
+Thom construit ensuite l'objet géométrique. Une entité $H$ est
+**homéomère** si « toute partie $c$ de $H$ est considérée comme étant
+sémantiquement […] équivalente à $H$ » (Ch.6 §D, p.157) — substrat
+d'apparence homogène, « intrinsèquement "informes" » : eau, huile, sang,
+graisse. Une entité **anhoméomère** présente des « discontinuités
+qualitatives : il a donc une forme, un *situs partium* ». Aristote
+distingue ici le **tout** (πᾶν, homéomère) de la **totalité** (ὅλον,
+corps vivant à « parties canoniques » séparées par des surfaces). Thom en
+tire la proposition qui boucle la controverse Cuvier / Geoffroy (cf.
+§Ponts transverses Ch.5) :
+
+> « L'ensemble catastrophique est un support indispensable de la forme
+> (μορφή). Les parties en acte de l'entité sont limitées par les
+> anhoméomères. » (Ch.6 §D, p.157-158)
+
+Vient alors **la définition formelle** (Ch.6 §E, p.158) — l'objet que le
+§Ponts transverses cite sans le dériver :
+
+> « Si l'on désigne par $Y$ l'espace des "états internes locaux" de la
+> matière, l'"état" d'une entité $A$, de support $|A|$ pourrait être
+> défini par une **section $\sigma : |A| \to Y$** du produit fibré
+> $|A| \times Y \to |A|$. Cette section est **continue pour un
+> homéomère** ; pour un anhoméomère, elle est **discontinue sur un
+> ensemble $K$ de "points de catastrophe"** ; cet ensemble $K$ définit
+> l'organisation morphologique de l'entité $A$ (toute partie en acte de
+> $A$ a sa frontière dans $K$). »
+
+Ainsi $\sigma$ est **continue** là où la matière est homogène (homéomère,
+informe, en puissance) et **se brise** sur $K$ là où apparaît la forme
+(anhoméomère, en acte). Les homéomères portent des *dunameis*
+(puissances) qui « se réalisen[t] en acte sur les anhoméomères sièges
+des travaux et des activités (ἔργα καὶ πράξεις) » (p.158) : l'**acte se
+localise sur une surface de contact** — l'articulation entre deux os (le
+« conflit entre les deux "lieux" »), ou le poumon comme interface
+air/sang.
+
+**Conséquence pour la strate 6 (factorisation 4-objets).** La distinction
+homéomère / anhoméomère est l'ancêtre ontologique de la dissociation
+**saillance / prégnance** d'ICT : l'homéomère est le substrat continu,
+sans singularité — la saillance $s_t$ « perceptiblement présente »; et
+l'anhoméomère ($K$) est là où se condensent les prégnances — les
+singularités qui donnent leur forme aux π et $q$. Les **5 dissociations
+canoniques** de la matrice #7734, relues comme des « endroits où
+$\sigma$ casse » (cf. §Ponts transverses « Axiomatique »), ne sont donc
+pas une métaphore : ce sont des **discontinuités de section** au sens
+formel de Thom. Et les ponts falsifiables de #8077 opèrent précisément
+sur ces anhoméomères — les surfaces de contact où l'acte (usage causal,
+diffusion, généralisation) se localise et devient mesurable.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **formalise** $\sigma : |A| \to Y$ géométriquement (produit fibré,
+section, ensemble de catastrophe $K$) mais ne la **quantifie** jamais
+numériquement — $Y$ et $K$ sont des objets de la géométrie
+différentielle, pas des vecteurs mesurables. La transposition ICT ($\sigma$
+→ dissociations scalaires mesurables, $K$ → singularités dans un espace
+de proxies $s, q, \pi, W$) est **nôtre**, pas thomienne (rectification A2
+#7733 : le grade A du cadre géométrique $\neq$ le grade C d'une lecture
+candidate). Le lien est une **analogie contrôlée**, pas une dérivation :
+Thom fournit le vocabulaire formel (section continue/discontinue,
+catastrophe-set comme support de la forme) qui légitime le *geste*
+mesurant — mais la mesure elle-même appartient au registre ICT.
+
 ## Socle strate 7 — genres comme espaces de possibles extensibles
 
 ### Ch.8 §B (bis) — Genres = préprogramme
@@ -241,6 +357,114 @@ d'horlogerie, cuspide duale) ne sont pas des métaphores — ce sont des
 plicatures affectives** : qui a la banane inaccessible ? Le réactif en
 faisant persister la trajectoire, l'anticipateur en internalisant le point
 d'interception.
+
+## Socle transversal — la dynamique de prédation (Ch.4 §C) et l'origine du représentant interne `p̂`
+
+Le lacet de prédation n'est pas un schéma isolé : il est, dans la
+*Sémiophysique*, le lieu où Thom **invente le représentant interne `p̂`** —
+l'objet qui deviendra, dans la série ICT, le scalaire ponctuel dont toute
+la généalogie de la représentation interne
+([#7735](https://github.com/jsboige/CoursIA/issues/7735)) retrace
+l'insuffisance progressive (ICT-10 → ICT-17). Lire Ch.4 §C, c'est lire la
+**source** de `p̂` — et constater qu'elle est d'emblée plus riche (et plus
+exigeante) que le « scalaire » qu'en retient le notebook.
+
+### Le lacet « revisited » — deux cycles concaténés, pas un
+
+Le lacet de prédation de *SSM* (Thom 1972) était un seul cycle d'hystérésis
+dans le plan de contrôle $Ouv$ de la fronce : cercle $r$ ($u^2+v^2=1$),
+parabole semi-cubique $B$ ($4u^3+27v^2=0$), points $J$ (perception) et $K$
+(capture), deux actants $P$ (prédateur) et $p$ (proie). En 1991, Thom
+**revisite** ce schéma en le **dédoublant** :
+
+> On sera amené à faire précéder le cycle d'hystérésis $JjKk$ de capture
+> proprement dit d'un cycle préliminaire, noté $RrJ_1 j$.
+> — Thom 1991, Ch.4 §C.
+
+Les deux cycles sont **concaténés** selon la *règle de coïncidence des
+coplis* (Ch.3 §H) — règle qui exprime l'**asservissement finalisé** du
+premier cycle (reconnaissance) au second (capture). Le point $R$ désigne
+le **« réveil » du prédateur** :
+
+> Quand le prédateur se réveille (en $R$), il est affamé [...] cette
+> période de recherche est représentée par l'arc $RJ$ du cercle $r
+> [...] Ainsi se trouve représenté l'**état de privation** cher à
+> Aristote. Ce modèle a l'avantage de refléter le caractère essentiellement
+> **discontinu** du réveil, opposé à la transition relativement
+> **continue** de l'assoupissement (sur l'arc $K_1 s$).
+> — Thom 1991, Ch.4 §C.
+
+**Pour la série ICT.** Le dédoublement perception/capture en deux cycles
+aux caractères temporels opposés (réveil *discontinu* en $R$,
+assoupissement *continu* sur l'arc $K_1 s$) est la structure que mesure
+[ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) :
+périodicité du lacet, aire signée non nulle, verdict régime-dépendant
+(gagne en balistique, perd en erratique, perd sur source bruitée — 5/5 sur
+trajectoire lisse). La *discontinuité du réveil* est la signature
+catastrophique que le notebook détecte comme bascule entre les deux cycles.
+
+### Le représentant interne `p̂` — anticiper, c'est précéder
+
+C'est ici que Thom introduit explicitement le représentant interne :
+
+> La proie réelle $p$ a un représentant interne $\hat{p}$ dans l'état
+> métabolique du prédateur. En un certain sens, $\hat{p}$ **anticipe** le
+> mouvement de $p$ à l'extérieur de l'organisme [...] mais en principe,
+> $\hat{p}$ doit toujours se trouver **en avance** de $p$ dans le sens des
+> $v$ positifs : $v(\hat{p}) > v(p)$. En fait, $\hat{p}$ représente $p$
+> dans ses activités motrices et métaboliques.
+> — Thom 1991, Ch.4 §C.
+
+Le passage de la proie $p$ par les **instants catastrophiques**
+(reconnaissance, localisation, capture spatiale, digestion stomacale)
+agit comme un **« préprogramme d'ouverture »** sur le flux d'écoulement du
+prédateur, et l'évolution quasi synchrone de $p$ et $\hat{p}$ à travers la
+blastula physiologique (BP) constitue le « champ » global de
+l'alimentation — la **« chréode »** de la capture et de l'assimilation
+d'une proie. Anatomiquement, Thom situe cette commande dans le **système
+nerveux** : partie **centrale** pour le trajet externe de la proie
+(reconnaissance, poursuite, capture), partie **végétative** pour le trajet
+interne (digestion).
+
+> — Thom 1991, Ch.4 §C (cf. aussi Ch.3 §B sur le préprogramme morphogène).
+
+**Pour la série ICT — trois conséquences épistémiques** pour la généalogie
+[#7735](https://github.com/jsboige/CoursIA/issues/7735) :
+
+1. **`p̂` naît prédicatif, pas descriptif.** Thom ne définit pas $\hat{p}$
+   comme un « reflet » de $p$ : il le définit par la **condition d'avance**
+   $v(\hat{p}) > v(p)$. Un $\hat{p}$ qui n'anticipe pas n'est pas un
+   $\hat{p}$. La série ICT hérite de cette exigence : ICT-10 mesure la
+   capacité d'anticipation (balle balistique vs erratique), pas la simple
+   corrélation $\hat{p} \leftrightarrow p$.
+2. **`p̂` est métabolique ET moteur — pas un scalaire.** Thom inscrit
+   $\hat{p}$ dans l'état métabolique global de l'organisme prédateur, et
+   lui fait porter les activités motrices. La dissipation de $\hat{p}$ vers
+   l'état causal (Crutchfield, ICT-17) est déjà en germe : $\hat{p}$ chez
+   Thom est une **dynamique**, pas un scalaire. Le scalaire $\hat{p}$ de
+   ICT-10 est une **réduction** — à charge pour ICT-14/16/17 d'en mesurer
+   l'insuffisance (c'est exactement l'histoire que raconte
+   [#7735](https://github.com/jsboige/CoursIA/issues/7735)).
+3. **Les catastrophes sont des préprogrammes.** Les instants
+   catastrophiques de $p$ commandent les sauts de $\hat{p}$ : ce n'est pas
+   la trajectoire lisse de $p$ qui gouverne, mais ses **discontinuités**.
+   Pont naturel vers le préprogramme morphogène (Ch.3 §B) et, au-delà,
+   vers la lecture d'$\hat{p}$ comme **préfaisceau** — la dissociation
+   ICT-15b montre que le choix du proxy *est* un choix de préfaisceau (cf.
+   [synthese-invariants](../../../docs/ict/synthese-invariants-dissociations-obstructions.md)).
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **n'identifie jamais** $\hat{p}$ à un scalaire quantifiable, ni ne
+spécifie la métrique de l'« avance » $v(\hat{p}) > v(p)$ en dehors de la
+géométrie de la fronce. La transposition ICT — mesurer l'anticipation
+comme écart temporel ou informationnel sur trajectoire simulée — est
+**nôtre**, pas thomienne (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733) : ne pas confondre
+le grade A du cadre catastrophique avec le grade C d'une lecture
+candidate). Le lacet de prédation reste un **cadre morphologique** ; ce
+que la série en mesure est une **instanciation numérique** dont le lien au
+formalisme de Thom est d'analogie contrôlée, pas de dérivation.
 
 ## Ponts transverses (déjà opérationnels)
 
@@ -405,12 +629,15 @@ extension, pas une redite.
   (généralisation, invention de l'instrument) + usages
   [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb)
   (coplis, prolongement analytique).
-- **Ch.4 — Embryologie et dynamique** : cf. §Ponts transverses (lacet
-  de prédation, blastula BP).
+- **Ch.4 — Embryologie et dynamique** : cf. §Socle transversal
+  [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
+  (lacet de prédation revisited, représentant interne `p̂`, origine de la
+  généalogie #7735) et §Ponts transverses (blastula BP).
 - **Ch.5 — Plan Général d'Organisation** : cf. §Ponts transverses
   (Cuvier / Geoffroy, homéomère / anhoméomère).
-- **Ch.6 — Axiomatique aristotélicienne** : cf. §Ponts transverses
-  (8 axiomes, section $\sigma$).
+- **Ch.6 — Axiomatique aristotélicienne** : cf. §Socle transversal
+  [Ch.6 §B/§D-E] (téléologie, section $\sigma$) et §Ponts transverses
+  (8 axiomes).
 - **Ch.7 — Continu et discret** : cf. §Ponts transverses (ABP/FBM,
   privation = métastabilité).
 - **Ch.8 — Perspectives aristotéliciennes en théorie du langage** :

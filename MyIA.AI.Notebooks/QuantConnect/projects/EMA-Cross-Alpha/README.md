@@ -23,10 +23,12 @@ lean backtest --project .
 
 | Métrique | Valeur |
 |----------|--------|
-| Sharpe Ratio | ~1,00 |
 | Benchmark | SPY |
 | Rebalance | Quotidien |
 | Univers | 5 actions tech |
+
+> **Sharpe Ratio** : non épinglé — métrique machine-dépendante qui dérive avec les
+> données et la période. L'obtenir via `lean backtest` ou le projet QC Cloud 28885488.
 
 ## Fichiers
 

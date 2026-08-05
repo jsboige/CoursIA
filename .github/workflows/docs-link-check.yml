@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'CLAUDE.md'
+      - 'index.md'
       - 'PARCOURS.md'
       - '.claude/rules/**'
       - 'docs/**'
