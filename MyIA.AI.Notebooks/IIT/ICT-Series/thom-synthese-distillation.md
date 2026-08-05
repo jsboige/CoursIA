@@ -158,6 +158,122 @@ factitif mesure une **fronce double** entre états ; l'aspect perfectif
 explique pourquoi la trajectoire d'une **dissociation** ne montre que le
 point de rupture (pas la transition continue sous-jacente).
 
+## Socle transversal — la dynamique aristotélicienne : téléologie et section σ (Ch.6 §B, §D-E)
+
+Le chapitre 6 (« La dynamique aristotélicienne comme sémiophysique »,
+p.153-164) est le cœur ontologique de la lecture thomienne : c'est là que
+Thom **formalise le pont entre Aristote et la théorie des catastrophes**.
+Jusqu'ici le document n'en retenait que la liste des **8 axiomes** et la
+mention finale de la « section $\sigma$ » (cf. §Ponts transverses). Cette
+section en distille la **dérivation** — comment Thom passe du vocabulaire
+aristotélicien (téléologie, homéomères) à l'objet géométrique mesurable
+(la section $\sigma$ et son ensemble de catastrophe $K$) — et ce que cela
+change pour la lecture ICT.
+
+### Le triptyque τέλoς / τέλειν / τελευτή — distinguer l'organisateur, l'accompli, la fin
+
+Toute entité « d'ici-bas » a une naissance (γένεσις) et une fin (ϕθoρά) ;
+son graphe temporel finit « en général en un sommet unique, la fin
+(τελευτή) » (Ch.6 §B, p.155). Thom insiste sur une **ambiguïté
+fondatrice** qu'Aristote « ne souffre guère, mais qui souvent fait
+problème » : le mot τέλoς oscille entre **trois** acceptions qu'il faut
+distinguer :
+
+- **τέλειον / τέλειν** — l'état « parfait », l'âge adulte, là où « la
+  fonction "temps" a son maximum » (p.155). C'est un **sommet
+  d'intensité**, pas une terminaison.
+- **τελευτή** — la **terminaison** effective, la mort de l'entité
+  (ϕθoρά). Le point final du graphe.
+- **τέλoς** — ni l'un ni l'autre : le **centre organisateur**.
+
+La citation fondatrice (Ch.6 §B, p.155), in extenso :
+
+> « La citation [1] semble indiquer que le τέλoς est en quelque sorte le
+> point central de l'existence d'une entité ou d'un acte : il en détermine
+> en effet l'antérieur (τò πρότερον) et le postérieur (τò ἕφεξῆς). Selon
+> le point de vue catastrophiste, le τέλoς pourrait être ainsi considéré
+> comme le **centre organisateur d'un champ morphogénétique** d'êtres et
+> d'événements se déployant selon la temporalité. En ce cas le τέλoς
+> devrait être toujours distinct de la terminaison (τελευτή). »
+
+**Conséquence épistémique pour ICT.** Le pont « recouvrabilité →
+agentivité » (ICT-9, #8077 pont 2) et la triade moyen / fin / enjeu
+(ICT-18b, cf. §Ponts transverses « Privation = métastabilité ») reposent
+sur une fin **mesurable**. Thom fournit la distinction qui évite
+l'erreur de catégorie : la « fin » qu'on mesure n'est **jamais** la
+τελευτή (terminaison — par définition non observable avant qu'elle
+n'arrive), c'est le **τέλoς** comme centre organisateur. On n'observe pas
+la fin, on observe le **coût de s'en approcher** (le moyen, σ de
+production d'entropie). C'est exactement la structure du verdict
+« privation structurée » : la τελευτή absente est une forme prégnante qui
+**plie** la trajectoire autour de son absence — un τέλoς, pas une
+terminaison.
+
+### Homéomère / anhoméomère, puis la section σ — la forme naît de la discontinuité
+
+Thom construit ensuite l'objet géométrique. Une entité $H$ est
+**homéomère** si « toute partie $c$ de $H$ est considérée comme étant
+sémantiquement […] équivalente à $H$ » (Ch.6 §D, p.157) — substrat
+d'apparence homogène, « intrinsèquement "informes" » : eau, huile, sang,
+graisse. Une entité **anhoméomère** présente des « discontinuités
+qualitatives : il a donc une forme, un *situs partium* ». Aristote
+distingue ici le **tout** (πᾶν, homéomère) de la **totalité** (ὅλον,
+corps vivant à « parties canoniques » séparées par des surfaces). Thom en
+tire la proposition qui boucle la controverse Cuvier / Geoffroy (cf.
+§Ponts transverses Ch.5) :
+
+> « L'ensemble catastrophique est un support indispensable de la forme
+> (μορφή). Les parties en acte de l'entité sont limitées par les
+> anhoméomères. » (Ch.6 §D, p.157-158)
+
+Vient alors **la définition formelle** (Ch.6 §E, p.158) — l'objet que le
+§Ponts transverses cite sans le dériver :
+
+> « Si l'on désigne par $Y$ l'espace des "états internes locaux" de la
+> matière, l'"état" d'une entité $A$, de support $|A|$ pourrait être
+> défini par une **section $\sigma : |A| \to Y$** du produit fibré
+> $|A| \times Y \to |A|$. Cette section est **continue pour un
+> homéomère** ; pour un anhoméomère, elle est **discontinue sur un
+> ensemble $K$ de "points de catastrophe"** ; cet ensemble $K$ définit
+> l'organisation morphologique de l'entité $A$ (toute partie en acte de
+> $A$ a sa frontière dans $K$). »
+
+Ainsi $\sigma$ est **continue** là où la matière est homogène (homéomère,
+informe, en puissance) et **se brise** sur $K$ là où apparaît la forme
+(anhoméomère, en acte). Les homéomères portent des *dunameis*
+(puissances) qui « se réalisen[t] en acte sur les anhoméomères sièges
+des travaux et des activités (ἔργα καὶ πράξεις) » (p.158) : l'**acte se
+localise sur une surface de contact** — l'articulation entre deux os (le
+« conflit entre les deux "lieux" »), ou le poumon comme interface
+air/sang.
+
+**Conséquence pour la strate 6 (factorisation 4-objets).** La distinction
+homéomère / anhoméomère est l'ancêtre ontologique de la dissociation
+**saillance / prégnance** d'ICT : l'homéomère est le substrat continu,
+sans singularité — la saillance $s_t$ « perceptiblement présente »; et
+l'anhoméomère ($K$) est là où se condensent les prégnances — les
+singularités qui donnent leur forme aux π et $q$. Les **5 dissociations
+canoniques** de la matrice #7734, relues comme des « endroits où
+$\sigma$ casse » (cf. §Ponts transverses « Axiomatique »), ne sont donc
+pas une métaphore : ce sont des **discontinuités de section** au sens
+formel de Thom. Et les ponts falsifiables de #8077 opèrent précisément
+sur ces anhoméomères — les surfaces de contact où l'acte (usage causal,
+diffusion, généralisation) se localise et devient mesurable.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **formalise** $\sigma : |A| \to Y$ géométriquement (produit fibré,
+section, ensemble de catastrophe $K$) mais ne la **quantifie** jamais
+numériquement — $Y$ et $K$ sont des objets de la géométrie
+différentielle, pas des vecteurs mesurables. La transposition ICT ($\sigma$
+→ dissociations scalaires mesurables, $K$ → singularités dans un espace
+de proxies $s, q, \pi, W$) est **nôtre**, pas thomienne (rectification A2
+#7733 : le grade A du cadre géométrique $\neq$ le grade C d'une lecture
+candidate). Le lien est une **analogie contrôlée**, pas une dérivation :
+Thom fournit le vocabulaire formel (section continue/discontinue,
+catastrophe-set comme support de la forme) qui légitime le *geste*
+mesurant — mais la mesure elle-même appartient au registre ICT.
+
 ## Socle strate 7 — genres comme espaces de possibles extensibles
 
 ### Ch.8 §B (bis) — Genres = préprogramme
@@ -409,8 +525,9 @@ extension, pas une redite.
   de prédation, blastula BP).
 - **Ch.5 — Plan Général d'Organisation** : cf. §Ponts transverses
   (Cuvier / Geoffroy, homéomère / anhoméomère).
-- **Ch.6 — Axiomatique aristotélicienne** : cf. §Ponts transverses
-  (8 axiomes, section $\sigma$).
+- **Ch.6 — Axiomatique aristotélicienne** : cf. §Socle transversal
+  [Ch.6 §B/§D-E] (téléologie, section $\sigma$) et §Ponts transverses
+  (8 axiomes).
 - **Ch.7 — Continu et discret** : cf. §Ponts transverses (ABP/FBM,
   privation = métastabilité).
 - **Ch.8 — Perspectives aristotéliciennes en théorie du langage** :
