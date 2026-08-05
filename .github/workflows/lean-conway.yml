@@ -157,7 +157,7 @@ jobs:
       # and could not tell which tolerates the 8 acknowledged sorries from which
       # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
       display-name: conway_lean (audit)
-      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.RLE"
+      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.RLE,Conway.Life.HashlifeMemo,Conway.Life.HashlifeMarginDemo"
       # allow-axioms: the 28 native_decide axioms that HashlifeCorrectness ACTUALLY
       # depends on (empirical footprint revealed by THIS audit job's first CI run).
       # These are DISTINCT from the blocking gate's 19-name list above: that list
