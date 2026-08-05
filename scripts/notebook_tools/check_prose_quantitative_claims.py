@@ -151,6 +151,27 @@ ENV_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Marqueur d'exigence contextuelle (steer ai-01 c.985, demande 1).
+# Quand le token ENV_RE est precede d'un de ces mots dans la meme ligne, on
+# l'exclut du signalement : une version dans une phrase « Prerequis : Python
+# 3.10+ » ou « Requires NumPy 2.4.2 » est le CONTRAT D'ENTREE du notebook, pas
+# une mesure observee a deriver. C'est exactement l'arbitrage exige vs observe
+# qu'ai-01 a pose sur la voie 2 #9476 : le contexte tranche.
+ENV_EXIGENCE_RE = re.compile(
+    r"(?:"
+    r"pr[eé]requis|requiert|necessite|requires|"
+    r"minimum|requis|requirement|needs|"
+    r">=|\d+\.\d+\+"
+    r")",
+    re.IGNORECASE,
+)
+
+# Contexte examine : 80 chars precedents le token ENV_RE dans la ligne. Une
+# phrase d'exigence tient en 80 chars (cf exemple direct :
+# `**Prerequis** : Notebook 10 (LocalLlama), Python 3.10+, GPU recommande` ->
+# `**Prerequis** : Notebook 10 (LocalLlama)` precede `Python 3.10+`).
+ENV_CONTEXT_WINDOW = 80
+
 # ----------------------------------------------------------------------------
 # Classe « stochastic » (#9434) -- valeurs non reproductibles sans seed
 # ----------------------------------------------------------------------------
@@ -290,11 +311,19 @@ def _notebook_is_seeded(nb_path: Path) -> bool:
     return False
 
 
-def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple[str, str, str]]:
+def _findings_in_text(text: str, location: str, classes: set[str], ambig_out: list | None = None) -> list[tuple[str, str, str]]:
     """Rend [(location, classe, snippet)] pour les classes demandees.
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
     la meme ligne) : evite les faux positifs d'un nombre et d'un mot-clef eloignes.
+
+    Pour la classe ``env``, un match precede d'un marqueur d'exigence
+    contextuelle (``prerequis``, ``minimum``, ``>=``, ``3.10+``, ...) est
+    classe en ``EXCLUDED`` et n'apparait PAS dans le retour. Si ``ambig_out``
+    est fourni, chaque cas d'exclusion y est appendu (tuple ``(location, ligne, token)``)
+    pour audit `--show-ambiguous` : la frontiere exige/observe se joue sur la
+    TOTALITE de la ligne (vs les 80 chars exammes), donc les cas d'exclusion
+    peuvent etre des faux negatifs que seul l'oeil humain tranche.
     """
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
@@ -308,7 +337,16 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
                 out.append((location, "machine", m.group(0).strip()))
         if "env" in classes:
             for m in ENV_RE.finditer(line):
-                out.append((location, "env", m.group(0).strip()))
+                token = m.group(0).strip()
+                ctx_window = line[: m.start()][-ENV_CONTEXT_WINDOW:]
+                if ENV_EXIGENCE_RE.search(ctx_window):
+                    # L'arbitrage exige vs observe tranche en faveur de
+                    # l'exigence (cf steer ai-01 c.985, demande 1) : ne PAS
+                    # remonter comme finding (anti-bruit structurel #8052).
+                    if ambig_out is not None:
+                        ambig_out.append((location, line, token))
+                    continue
+                out.append((location, "env", token))
         if "structural" in classes:
             for m in STRUCTURAL_RE.finditer(line):
                 out.append((location, "structural", m.group(0).strip()))
@@ -319,7 +357,16 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
 
 
 def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
+    """Scan complet : retourne les findings + (side-channel) la liste ambigu.
+
+    Convention de retour : tuple ``(findings, ambig_env)``. ``ambig_env`` est
+    la liste des tokens env EXCLUS par contexte d'exigence (cf steer ai-01
+    c.985 demande 1) ; il sert au calcul du TAUX D'AMBIGU via
+    ``--show-ambiguous`` (demande 2). Les appelants qui n'utilisent pas
+    ``--show-ambiguous`` peuvent ignorer le 2e element du tuple.
+    """
     findings: list[tuple[str, str, str]] = []
+    ambig: list[tuple[str, str, str]] = []
 
     for nb in root.rglob("*.ipynb"):
         if _skipped(nb):
@@ -331,7 +378,7 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
         if "stochastic" in eff_classes and _notebook_is_seeded(nb):
             eff_classes = eff_classes - {"stochastic"}
         for idx, src in _iter_markdown_sources(nb):
-            findings += _findings_in_text(src, f"{rel} MD[{idx}]", eff_classes)
+            findings += _findings_in_text(src, f"{rel} MD[{idx}]", eff_classes, ambig_out=ambig)
 
     for md in root.rglob("*.md"):
         if _skipped(md):
@@ -353,13 +400,16 @@ def scan_all(root: Path, classes: set[str]) -> list[tuple[str, str, str]]:
             )
         # Pour un .md isole, on n'a pas de cellule code amont a verifier : on
         # garde stochastic en advisory (incertitude documentee, pas de gate seed).
-        findings += _findings_in_text(text, rel, classes)
+        findings += _findings_in_text(text, rel, classes, ambig_out=ambig)
 
-    return findings
+    return findings, ambig
 
 
-def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
-    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer."""
+def scan_diff(diff_range: str, classes: set[str]) -> tuple[list[tuple[str, str, str]], list[tuple[str, str, str]]]:
+    """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer.
+
+    Retourne ``(findings, ambig_env)`` -- voir ``scan_all`` pour la convention.
+    """
     try:
         diff = subprocess.run(
             ["git", "diff", "--unified=0", diff_range],
@@ -368,9 +418,10 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
         ).stdout
     except (OSError, subprocess.SubprocessError) as exc:
         print(f"[ERREUR] git diff a echoue : {exc}", file=sys.stderr)
-        return []
+        return [], []
 
     findings: list[tuple[str, str, str]] = []
+    ambig: list[tuple[str, str, str]] = []
     generated_cache: dict[str, bool] = {}
 
     def _is_generated_file(rel: str) -> bool:
@@ -411,9 +462,9 @@ def scan_diff(diff_range: str, classes: set[str]) -> list[tuple[str, str, str]]:
                 continue
             if '"source"' not in line and not body.startswith('"'):
                 continue
-        findings += _findings_in_text(line[1:], current, classes)
+        findings += _findings_in_text(line[1:], current, classes, ambig_out=ambig)
 
-    return findings
+    return findings, ambig
 
 
 def _emit_grouped(findings: list[tuple[str, str, str]], strict: bool, structural_only: bool) -> int:
@@ -489,6 +540,38 @@ def _emit_legacy(findings: list[tuple[str, str, str]], strict: bool) -> int:
     return 1 if strict else 0
 
 
+def _emit_ambiguous(ambig: list[tuple[str, str, str]], findings_env: int) -> int:
+    """Imprime la liste des lignes ambiguës (env exclu par contexte d'exigence)
+    + le TAUX D'AMBIGU.
+
+    Convention du TAUX : ``ambig_env / (findings_env + ambig_env)`` -- la part
+    des matchs env qui sont passes par le filtre exige/observe. Au-dela de
+    ~15%, c'est le discriminant (ENV_EXIGENCE_RE) qui est faux, pas la ligne.
+    On le saura par la mesure, comme exige ai-01 (demande 2).
+    """
+    if not ambig:
+        print("[OK] aucun match env ambigu (tous les matchs observes/exiges ont un contexte tranché).")
+        return 0
+    total_env = findings_env + len(ambig)
+    rate = (len(ambig) / total_env) * 100 if total_env else 0.0
+    print(f"[AMBIGUOUS] {len(ambig)} match(s) env avec contexte d'exigence non tranché "
+          f"sur {total_env} match(s) env total -- TAUX D'AMBIGU = {rate:.1f}%")
+    if rate > 15.0:
+        print(
+            f"  ⚠ TAUX D'AMBIGU > 15% : le discriminant exige/observe est probablement trop "
+            f"large. Revoir ENV_EXIGENCE_RE."
+        )
+    by_loc: dict[str, list[tuple[str, str]]] = {}
+    for loc, line, token in ambig:
+        by_loc.setdefault(loc, []).append((token, line.strip()[:120]))
+    for loc in sorted(by_loc):
+        items = by_loc[loc]
+        print(f"  {loc}  ({len(items)})")
+        for token, snippet in items[:5]:
+            print(f"    [{token}]  {snippet}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
@@ -504,14 +587,24 @@ def main() -> int:
     )
     ap.add_argument("--strict", action="store_true", help="rc=1 sur finding (defaut : advisory, rc=0)")
     ap.add_argument("--root", default=".", help="racine du depot")
+    ap.add_argument(
+        "--show-ambiguous",
+        action="store_true",
+        help="imprime les lignes env ambiguës (contexte exige/observe non tranché) + TAUX D'AMBIGU",
+    )
     args = ap.parse_args()
 
     classes, structural_only = _resolve_classes(args.klass)
 
     if args.all:
-        findings = scan_all(Path(args.root).resolve(), classes)
+        findings, ambig = scan_all(Path(args.root).resolve(), classes)
     else:
-        findings = scan_diff(args.diff, classes)
+        findings, ambig = scan_diff(args.diff, classes)
+
+    # Si --show-ambiguous est demande, imprimer l'audit AMBIGUOUS et sortir.
+    if args.show_ambiguous:
+        findings_env = sum(1 for _loc, _k, _s in findings if _k == "env")
+        return _emit_ambiguous(ambig, findings_env)
 
     # Format legacy exact pour la classe artifact seule (contrat CI : --diff sans --class).
     if args.klass == "artifact":
