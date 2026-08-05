@@ -226,3 +226,137 @@ class TestSpectralSummary:
         assert isinstance(s["mean_degree"], float)
         assert isinstance(s["spectral_gap"], float)
         assert 0.0 <= s["density"] <= 1.0
+
+
+# --------------------------------------------------------------------------- #
+#  Edge-cases migrés depuis ict/tests/test_spectral.py (consolidation, MED/test) #
+#                                                                               #
+#  Propriétés comparatives et validations d'input non couvertes par les classes #
+#  ci-dessus. Le cycle unidirectionnel 0->1->2->0 et la chaîne réversible       #
+#  [0,1,2,0,2,1] sont les signaux synthétiques discriminants (le cycle est      #
+#  hors-équilibre, la chaîne réversible proche de l'équilibre détaillé).        #
+# --------------------------------------------------------------------------- #
+# Cycle unidirectionnel 0 -> 1 -> 2 -> 0 (fortement irréversible).
+_CYCLE3 = [0, 1, 2] * 40
+# Chaîne réversible : chaque paire (i,j) visitée autant que (j,i) => P symétrique
+# après normalisation par ligne => J ~= 0 (équilibre détaillé approximatif).
+_REVERSIBLE3 = [0, 1, 2, 0, 2, 1] * 40
+
+
+def _transition_matrix_from_states(states, n_symbols):
+    """Reconstruit P (comptage + normalisation par ligne) pour inspection."""
+    P = np.full((n_symbols, n_symbols), 1e-9, dtype=float)
+    for s, t in zip(states[:-1], states[1:]):
+        if 0 <= s < n_symbols and 0 <= t < n_symbols:
+            P[s, t] += 1.0
+    return P / P.sum(axis=1, keepdims=True)
+
+
+class TestTransitionGraphEdgeCases:
+    """Poids quantitatif des arêtes : la moyenne des flux préserve un cycle asymétrique
+    (le ``min`` s'effondrerait à 0 car le flux reverse est nul)."""
+
+    def test_cycle_edges_weight_half(self):
+        # Sur le cycle unidirectionnel 0->1->2->0, les arêtes pèsent ~0.5
+        # (moyenne des deux sens : un sens = 1.0 normalisé, l'autre ~0).
+        W = SP.transition_graph(_CYCLE3, n_symbols=3)
+        off_diag = W[W > 0]
+        assert off_diag.size == 6, f"6 entrées hors-diag non nulles attendues, {off_diag.size}"
+        assert np.all(off_diag > 0.4) and np.all(off_diag < 0.6), (
+            f"arêtes du cycle doivent peser ~0.5 (moyenne des flux), got {off_diag}"
+        )
+
+
+class TestCurrentMatrixEdgeCases:
+    """Propriété comparative : ||J||_réversible << ||J||_cycle irréversible."""
+
+    def test_reversible_current_much_smaller_than_cycle(self):
+        # La chaîne réversible visite chaque paire dans les deux sens => équilibre
+        # détaillé approximatif => flux nets J petits. La propriété est comparative.
+        pi = np.array([1 / 3, 1 / 3, 1 / 3])
+        J_rev = SP.current_matrix(_transition_matrix_from_states(_REVERSIBLE3, 3), pi)
+        J_cyc = SP.current_matrix(_transition_matrix_from_states(_CYCLE3, 3), pi)
+        norm_rev = float(np.linalg.norm(J_rev))
+        norm_cyc = float(np.linalg.norm(J_cyc))
+        assert norm_rev < 0.05, f"||J||_réversible petit (<0.05), got {norm_rev}"
+        assert norm_cyc > norm_rev * 10, (
+            f"||J||_cycle={norm_cyc} doit excéder ||J||_réversible={norm_rev} "
+            f"d'un facteur >>1 (le cycle est fortement hors-équilibre)"
+        )
+
+
+class TestSignedAdjacencyEdgeCases:
+    """La magnitude des courants J (pas S) discrimine cycle vs réversible.
+
+    ``signed_adjacency`` ne claim pas S=0 sur une chaîne réversible : ``np.sign``
+    reste sensible au bruit numérique sur les courants faibles (sign(1e-15)=1).
+    La propriété discriminante est portée par la magnitude de J.
+    """
+
+    def test_reversible_has_weaker_structure_than_cycle(self):
+        pi = np.array([1 / 3, 1 / 3, 1 / 3])
+        J_rev = SP.current_matrix(_transition_matrix_from_states(_REVERSIBLE3, 3), pi)
+        J_cyc = SP.current_matrix(_transition_matrix_from_states(_CYCLE3, 3), pi)
+        assert float(np.abs(J_cyc).max()) > float(np.abs(J_rev).max()), (
+            "le courant max du cycle irréversible doit excéder celui de la chaîne réversible"
+        )
+
+    def test_cycle_has_nonzero_signed_edges(self):
+        # Le cycle irréversible doit avoir au moins une arête signée (courant net réel).
+        S = SP.signed_adjacency(_CYCLE3, n_symbols=3)
+        assert np.any(S != 0.0), (
+            "le cycle irréversible doit avoir au moins une arête signée (courant net non nul)"
+        )
+
+
+class TestLaplacianSpectrumEdgeCases:
+    """Validation d'input : rejet des matrices non symétriques."""
+
+    def test_rejects_nonsymmetric(self):
+        # laplacian_spectrum doit lever ValueError si W n'est pas symétrique.
+        W_bad = np.array([[0.0, 1.0, 0.0], [0.5, 0.0, 0.5], [0.0, 1.0, 0.0]])
+        with pytest.raises(ValueError, match="symmetric"):
+            SP.laplacian_spectrum(W_bad)
+
+
+class TestSpectralGapEdgeCases:
+    """Edge-case singleton + propriété cheeger-like (complet > ligne)."""
+
+    def test_nan_for_singleton(self):
+        # Matrice 1x1 : moins de 2 valeurs propres => gap = nan.
+        W = np.array([[0.0]])
+        gap = SP.spectral_gap(W)
+        assert np.isnan(gap), f"gap doit être nan pour matrice 1x1, got {gap}"
+
+    def test_complete_graph_exceeds_path_graph(self):
+        # gap(K_4) > gap(P_4) : le graphe complet mélange plus vite vers la
+        # stationnaire (mémoire plus courte) que le graphe ligne.
+        complete_states = []
+        for a in range(4):
+            for b in range(4):
+                if a != b:
+                    complete_states.extend([a, b] * 20)
+        path_states = []
+        for _ in range(40):
+            path_states.extend([0, 1, 2, 3, 2, 1])
+        gap_complete = SP.spectral_gap(SP.transition_graph(complete_states, n_symbols=4))
+        gap_path = SP.spectral_gap(SP.transition_graph(path_states, n_symbols=4))
+        assert gap_complete > gap_path, (
+            f"gap(K_4)={gap_complete} doit excéder gap(P_4)={gap_path} "
+            "(le graphe complet mélange plus vite = mémoire plus courte)"
+        )
+
+
+class TestSpectralSummaryEdgeCases:
+    """Densité maximale atteinte par le graphe complet."""
+
+    def test_complete_graph_max_density(self):
+        complete_states = []
+        for a in range(4):
+            for b in range(4):
+                if a != b:
+                    complete_states.extend([a, b] * 20)
+        summary = SP.spectral_summary(complete_states, n_symbols=4)
+        assert summary["density"] == pytest.approx(1.0, abs=1e-9), (
+            f"graphe complet => density = 1.0, got {summary['density']}"
+        )
