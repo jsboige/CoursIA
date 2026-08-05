@@ -139,6 +139,14 @@ def extract_code_outputs(cell: dict) -> dict:
             if isinstance(text, list):
                 text = ''.join(text)
             text_chunks.append(text)
+            # Extract numbers from stream text too — FP-c.1228 : les notebooks dont
+            # les outputs sont majoritairement du stdout (PyPhi/IIT imprime TPM,
+            # matrices, Φ via print()) n'avaient AUCUN numeric_values_found (le
+            # finditer n'était fait que sur data['text/plain'] des display_data).
+            # Résultat : 0% de match -> 125+ faux MAJOR numeric_claim_not_in_outputs
+            # qui masquaient tout. On extrait ici, miroir de la branche display_data.
+            for match in CLAIM_NUMERIC_RE.finditer(text):
+                numeric_values_found.add(match.group(0).strip())
             if out.get('name') == 'stderr':
                 if 'error' in text.lower() or 'traceback' in text.lower():
                     has_error = True

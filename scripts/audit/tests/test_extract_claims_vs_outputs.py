@@ -153,3 +153,67 @@ def test_fix_B_python_kernel_still_flags_unimported_viz(tmp_path):
     assert "matplotlib" in res["sota_tools_mentioned_not_imported"], (
         "Regression guard: on Python, matplotlib-mentioned-not-imported must still fire"
     )
+
+
+# === Fix C (FP-c.1228) : stream outputs must contribute numbers ===
+
+
+def test_fix_C_stream_output_numbers_are_extracted(tmp_path):
+    """FP-c.1228 : les notebooks dont les outputs sont du stdout (output_type 'stream',
+    ex PyPhi/IIT imprime TPM/matrices/Φ via print()) n'avaient AUCUN numeric_values
+    extrait — le ``CLAIM_NUMERIC_RE.finditer`` n'était appliqué qu'à ``data['text/plain']``
+    des display_data. Résultat : 0% de match -> 125+ faux MAJOR
+    ``numeric_claim_not_in_outputs`` qui masquaient les vrais findings sur IIT-1/2/3.
+
+    Fix : on extrait aussi les nombres du texte des outputs stream (miroir display_data).
+    Ce test vérifie qu'un markdown claim présent dans un output STREAM n'est plus flaggé."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "stream.ipynb",
+        cells=[
+            _md("# Computation\n\nLa matrice résultat est **0.5** et le rang **3**."),
+            _code(
+                "print('result: 0.5')\nprint('rank:', 3)",
+                outputs=[{"output_type": "stream", "name": "stdout", "text": "result: 0.5\nrank: 3\n"}],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    # Before Fix C : stream numbers weren't extracted -> 0 matched -> 2 false MAJOR.
+    # After  Fix C : "0.5" and "3" are extracted from the stream output -> both match.
+    assert res["numeric_claims_matched"] >= 2, (
+        f"stream output numbers must be extracted; matched={res['numeric_claims_matched']}, "
+        f"unmatched={res['numeric_claims_unmatched']}"
+    )
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"markdown claims present in stream output must not be flagged; findings={res['findings']}"
+    )
+
+
+def test_fix_C_display_data_extraction_unchanged(tmp_path):
+    """Contrôle : Fix C ajoute l'extraction stream SANS régresser l'extraction
+    display_data (le chemin d'origine doit toujours extraire les nombres)."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "display.ipynb",
+        cells=[
+            _md("# Computation\nLa précision est **0.92**."),
+            _code(
+                "repr_res",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "0.92"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"display_data extraction regression; findings={res['findings']}"
+    )
