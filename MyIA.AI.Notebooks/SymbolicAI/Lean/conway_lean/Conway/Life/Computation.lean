@@ -48,49 +48,76 @@ Pour les entrees de niveau 2, `evolveHashlife` passe par `step4x4` (le cas
 de base du quadtree). Pour les entrees plus grandes, il retombe sur `step`.
 Dans les deux cas, le resultat doit coincider avec `evolve n g`.
 
-### Pourquoi `native_decide` (et non `decide`) — #8749
+### Pourquoi `native_decide` (et non `decide`) — #8749, refine #8869 c.8126
 
 Ces six theoremes d'equivalence utilisent `native_decide` par **necessite
 structurelle**, non par commodite. Le noyau Lean ne peut pas les prouver par
 `decide` : avec `set_option maxRecDepth 100000`, chacun echoue par
 `reduction got stuck at the Decidable instance` (compilation en erreur,
 en quelques secondes) — un echec *definitif*, pas un depassement de temps
-que davantage de profondeur de reduction leverait. La cause est que
-`Grid = List (Int × Int)` : le calcul de `evolveHashlife`/`evolve` (tri
-`sortDedup` sur des `Int × Int`, puis comparaison par les instances
-`instDecidableEqList` / `instDecidableEqNat` / `Bool.decEq`) ne se reduit
-pas en forme normale, le noyau reste bloque avant d'atteindre
-`isTrue`/`isFalse`. Les enonces sont VRAIS (temoins `#eval` natifs en
-section 5) : c'est exactement le role de `native_decide` — evaluer le calcul
-en code natif et ajouter le resultat a la base de confiance plutot que de
-le reverifier dans le noyau. Verifie par-theoreme pour les six declarations
-de cette section (sondage #8749, 2026-07-29). L'echappatoire serait un
-refactor `Grid = List (Nat × Nat)` (Nat est reductible, Int ne l'est pas) ;
-refonte profonde, hors scope de ce triage (voir #8749 caveat).
+que davantage de profondeur de reduction leverait.
+
+**Locus precis de l'obstruction (sondage c.8126, 2026-08-05, PR ouverte)**.
+Une investigation en trois sondes a localise la cause **non pas** dans la
+liste `Int × Int` (sortDedup, post-#8895) mais dans la **couche
+`MacroCell`** :
+
+| Sonde | Enonce | decide ? |
+|-------|--------|----------|
+| `step block = block` | list-level path | **OUI** (PASS, coherent avec `block_still_life` L231) |
+| `mc.toGrid (0,0) = block` | MacroCell → Grid | **NON** (stuck sur `instDecidableEqList` apres unfold) |
+| `hashlifeStep1 mc = mc` | MacroCell quadtree | **NON** (stuck sur `instDecidableEqMacroCell.decEq`, recursion 4-quadrants `node nw ne sw se`) |
+
+L'erreur littérale de la sonde `mc.toGrid (0,0) = block` :
+
+```
+instDecidableEqList (MacroCell.toGrid (0, 0) (gridToMacroCellWithOffset block).2) block
+did not reduce to `isTrue` or `isFalse`.
+After unfolding the instance `instDecidableEqList`, reduction got stuck at
+the `Decidable` instance
+  match MacroCell.toGrid (0, 0) (gridToMacroCellWithOffset block).2 with
+  | [] => ... | a :: as => match decEq a b with ...
+```
+
+Le reductor unfold `instDecidableEqList` jusqu'au `match` sur la liste,
+mais **`MacroCell.toGrid` est une definition recursive** (`sortDedup` ∘
+`toCellsAux`, lui-meme recursive sur les 4 quadrants) que le kernel ne
+deplie **pas** en squelette littéral. C'est une **limitation structurelle
+du reductor**, indépendante de la profondeur de recursion
+(`maxRecDepth 1000000` deja applique). La voie `Grid = Nat × Nat`
+(autrefois envisagee comme echappatoire a `Int` non-reductible) **ne
+resoudrait pas** ce goulot d'etranglement : l'opacite est dans la couche
+`MacroCell`, pas dans le type des coordonnees.
+
+Les enonces sont VRAIS (temoins `#eval` natifs en section 5) : c'est
+exactement le role de `native_decide` — evaluer le calcul en code natif et
+ajouter le resultat a la base de confiance plutot que de le reverifier dans
+le noyau. Verifie par-theoreme pour les six declarations de cette section
+(sondage #8749, 2026-07-29, puis affine c.8126, 2026-08-05).
 -/
 
 /-- Hashlife et reference sont d'accord sur `block` apres 1 generation.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
 
 /-- Hashlife et reference sont d'accord sur `block` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
 
 /-- Hashlife et reference sont d'accord sur `blinker_h` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
 
 /-- Hashlife et reference sont d'accord sur `glider` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
 
 /-- Hashlife et reference sont d'accord sur `beacon` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
 
 /-- Hashlife et reference sont d'accord sur `toad` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
 theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
 
 /-! ## Section 2 : Eater 1 (Fishhook) — le puits de calcul le plus simple
@@ -156,25 +183,29 @@ des fils de gliders.
 On verifie pour k = 1 (deja dans Life.lean), k = 2 et k = 3.
 Le cas k = 2 (8 generations) se verifie aussi via `evolveHashlife`.
 
-### Pourquoi `native_decide` — #8749
+### Pourquoi `native_decide` — #8749, refine #8869 c.8126
 
 Ces trois theoremes (periodicite du glider + coherence hashlife sur 8
 generations) ne se reduisent pas sous `decide` (`maxRecDepth 100000` :
-chacun stuck a l'instance `Decidable`, EXIT≠0, verifie par-theoreme). Cause
-structurelle `Grid = List (Int × Int)` (voir Section 1). Enonces VRAIS
-(`#eval` section 5) ; `native_decide` requis.
+chacun stuck a l'instance `Decidable`, EXIT≠0, verifie par-theoreme).
+Cause structurelle localisee en c.8126 (2026-08-05) : la couche
+`MacroCell` quadtree (`toGrid` recursive + `instDecidableEqMacroCell.decEq`
+sur 4-quadrants) est opaque au reductor, PAS la liste `Int × Int` (voir
+Section 1 docstring pour le detail des 3 sondes `step` / `toGrid` /
+`hashlifeStep1`). Enonces VRAIS (`#eval` section 5) ; `native_decide`
+requis.
 -/
 
 /-- Apres 8 generations (2 periodes), le glider s'est deplace de (2, -2).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
 theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by native_decide
 
 /-- Apres 12 generations (3 periodes), le glider s'est deplace de (3, -3).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
 theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by native_decide
 
 /-- Hashlife et reference sont d'accord sur le glider apres 8 generations (2 periodes).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
 theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by native_decide
 
 /-! ## Section 4 : verification de l'aller-retour MacroCell
@@ -184,30 +215,32 @@ preserve les cellules vivantes pour les patterns canoniques. Cela verifie
 l'encodage/decodage du quadtree a la couche MacroCell (independamment de
 step/evolve).
 
-### Pourquoi `native_decide` — #8749
+### Pourquoi `native_decide` — #8749, refine #8869 c.8126
 
 Ces trois theoremes d'aller-retour ne se reduisent pas sous `decide`
 (`maxRecDepth 100000` : chacun stuck a l'instance `Decidable`, EXIT≠0,
-verifie par-theoreme). Cause structurelle `Grid = List (Int × Int)` (voir
-Section 1). L'egalite `mc.toGrid off == block` mobilise la meme instance
-`instDecidableEqList` non-reductible. Enonces VRAIS (`#eval` section 5) ;
-`native_decide` requis.
+verifie par-theoreme). Cause structurelle localisee en c.8126 (2026-08-05) :
+`mc.toGrid` (recursive MacroCell → Grid) est opaque au reductor, comme la
+sonde `probe_macrocell_togrid_block_unfolds` l'a verifie (sortie
+verbatim dans Section 1 docstring). L'egalite `mc.toGrid off == block`
+mobilise la meme instance `instDecidableEqList` non-reductible. Enonces
+VRAIS (`#eval` section 5) ; `native_decide` requis.
 -/
 
 /-- Le block survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749). -/
+    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
 theorem block_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset block
      mc.toGrid off == block) = true := by native_decide
 
 /-- Le glider survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749). -/
+    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
 theorem glider_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset glider
      mc.toGrid off == glider) = true := by native_decide
 
 /-- L'eater 1 survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749). -/
+    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
 theorem eater1_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset eater1
      mc.toGrid off == eater1) = true := by native_decide
@@ -245,40 +278,42 @@ de `2^level` generations en une seule etape MacroCell. Ces theoremes
 verifient la correction du chemin rapide face a la reference `evolve` pour
 les patterns canoniques.
 
-### Pourquoi `native_decide` — #8749
+### Pourquoi `native_decide` — #8749, refine #8869 c.8126
 
 Ces six theoremes (chemin rapide `evolveHashlifeFast` vs reference) ne se
 reduisent pas sous `decide` (`maxRecDepth 100000` : chacun stuck aux
 instances `instDecidableEqBool`/`instDecidableEqList`/`instDecidableEqNat`/
-`Nat.decLe`, EXIT≠0, verifie par-theoreme). Cause structurelle
-`Grid = List (Int × Int)` (voir Section 1) ; le chemin rapide mobilise la
-meme arithmetique `Int`/liste non-reductible que `evolveHashlife`. Enonces
-VRAIS (`#eval` section 5) ; `native_decide` requis.
+`Nat.decLe`, EXIT≠0, verifie par-theoreme). Cause structurelle localisee
+en c.8126 (2026-08-05) : la couche `MacroCell` quadtree est opaque au
+reductor, comme les sondes l'ont verifie (voir Section 1 docstring) ; le
+chemin rapide mobilise la meme arithmetique `MacroCell` recursive que
+`evolveHashlife`. Enonces VRAIS (`#eval` section 5) ; `native_decide`
+requis.
 -/
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `block` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 8 generations
     (2 periodes completes, deplacement (2, -2)). `native_decide` requis : non-reductible
-    sous `decide` (voir Section 6, #8749). -/
+    sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `blinker` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `beacon` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `toad` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749). -/
+    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
 theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
 
 -- temoins #eval pour les sauts plus grands (valide le chemin recursif)
