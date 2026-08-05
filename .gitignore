@@ -897,3 +897,12 @@ _freeze/
 # L'ignore (ligne du dessus) reste large pour couvrir les autres fichiers du vestige stale.
 MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
 !MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/data/meals/mealplan_cache.json
+
+# PR body scratchpad (root-level) — #9535 item 2
+# A PR body is a scratchpad composed outside the worktree (gh pr create --body-file),
+# NEVER a repo artefact. PR_BODY.md was tracked at root and rewritten by >=3 PRs
+# (e5bfeb945, 55fcc23, 9c6f075) — a recurring accidental commit. Gitignoring the
+# root path stops the drift without affecting any --body-file usage (the file is
+# ephemeral, lives anywhere outside the repo). Scope is root-only (/PR_BODY.md)
+# so a same-named pedagogical file deeper in the tree is unaffected.
+/PR_BODY.md
