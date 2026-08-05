@@ -89,6 +89,25 @@ def _on_header_line(cell_source: str, start: int) -> bool:
     return cell_source[line_start:].lstrip().startswith('#')
 
 
+# Fix E — tolérance d'arrondi (FP-c.909, Infer-101 Probas).
+_NUM_FLOAT_RE = re.compile(r'\d+(?:\.\d+)?')
+
+
+def _to_float(s: str):
+    """Premier float d'une chaîne numérique normalisée (virgule→point déjà fait).
+    Renvoie None si aucun nombre parsable (ex. marqueur non numérique)."""
+    m = _NUM_FLOAT_RE.search(s)
+    return float(m.group()) if m else None
+
+
+def _decimal_places(s: str) -> int:
+    """Nombre de chiffres après le point décimal du premier nombre de `s` (FR déjà normalisé).
+    0 si le nombre est entier (ex. '10' → 0 → tolérance 0, match exact requis)."""
+    m = re.search(r'\d+\.(\d+)', s)
+    return len(m.group(1)) if m else 0
+
+
+
 def extract_markdown_claims(cell_source: str) -> dict:
     """Extrait les claims numériques/qualitatifs d'une cellule markdown."""
     claims = []
@@ -327,17 +346,36 @@ def audit_notebook(notebook_path: Path) -> dict:
         # milliers FR utilisent l'espace (« 8 000 »), pas la virgule — la virgule
         # est ici toujours un séparateur décimal.
         cv = claim['value'].replace(',', '.')
-        if any(cv in num.replace(',', '.') or num.replace(',', '.') in cv
-               for num in all_numeric_outputs):
+        outputs_norm = [num.replace(',', '.') for num in all_numeric_outputs]
+        if any(cv in num or num in cv for num in outputs_norm):
             matched += 1
         else:
-            unmatched += 1
-            findings.append({
-                'cell_idx': claim['cell_idx'],
-                'pattern': 'numeric_claim_not_in_outputs',
-                'claim_value': claim['value'],
-                'severity': 'MAJOR',  # MAJOR = claim exagéré possible
-            })
+            # Fix E — tolérance d'arrondi (FP-c.909, Infer-101 Probas). La prose
+            # pédagogique arrondit les outputs à moins de décimales (« 9.79 » vs
+            # output « 9.785 »). Le substring échoue sur cette troncature, d'où un
+            # FP MAJOR. Conservateur : la tolérance = demi-ulna de la PRÉCISION de
+            # la claim (±0.005 pour 2 décimales), et seulement APRÈS l'échec du
+            # substring — les matches exacts sont inchangés. Les claims entières
+            # (« 10 ») gardent une tolérance nulle (match exact requis) pour ne
+            # pas absorber des valeurs sans rapport. Un vrai écart (« 0.95 » vs
+            # « 0.85 ») reste signalé : |0.85−0.95| = 0.10 > ±0.005.
+            claim_f = _to_float(cv)
+            ndec = _decimal_places(cv)
+            tol = 0.5 * (10 ** (-ndec)) if ndec > 0 and claim_f is not None else None
+            if tol is not None and any(
+                _to_float(num) is not None
+                and abs(_to_float(num) - claim_f) <= tol
+                for num in outputs_norm
+            ):
+                matched += 1
+            else:
+                unmatched += 1
+                findings.append({
+                    'cell_idx': claim['cell_idx'],
+                    'pattern': 'numeric_claim_not_in_outputs',
+                    'claim_value': claim['value'],
+                    'severity': 'MAJOR',  # MAJOR = claim exagéré possible
+                })
 
     # Litmus 4 : SOTA tool mentionné mais pas importé (canonicalisé pour reporting)
     # On déduplique au niveau canonique AVANT la soustraction (sinon 4 tokens internes

@@ -93,13 +93,24 @@ jobs:
       sorry-baseline: "9"
       sorry-filter-mode: standalone-tactic
 
+  # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
+  # a fossil -- 18 ``Conway.Life.*`` names that the gate's target closure
+  # (Conway.KochenSpecker + Conway.FreeWillTheorem, import Mathlib basics only)
+  # could NEVER reach. The list was historical, inherited from the pre-#8782
+  # era when the same workflow carried the HashlifeCorrectness audit. The audit
+  # now lives in ``proof-integrity-audit`` below (option (b), 46-name list,
+  # fail-on-sorry: false). The blocking gate's scope is the sorry-free showcase
+  # modules, whose actual axiom footprint is the standard Mathlib defaults:
+  # propext / funext / Quot.sound / Classical.choice. Pinned by
+  # ``scripts/lean/tests/test_conway_blocking_gate_whitelist_aligned.py``
+  # (audit script: ``scripts/lean/audit_conway_blocking_gate_whitelist.py``).
   proof-integrity:
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
       target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
-      allow-axioms: "Conway.Life.hashlife_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_blinker_2._native.native_decide.ax_1_1,Conway.Life.block_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_block_4._native.native_decide.ax_1_1,Conway.Life.glider_3periods._native.native_decide.ax_1_1,Conway.Life.hashlife_block_4._native.native_decide.ax_1_1,Conway.Life.eater1_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_beacon_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_8._native.native_decide.ax_1_1,Conway.Life.hashlife_block_1._native.native_decide.ax_1_1,Conway.Life.glider_macrocell_roundtrip._native.native_decide.ax_1_1,Conway.Life.hashlife_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_glider_4._native.native_decide.ax_1_1,Conway.Life.hashlife_fast_blinker_2._native.native_decide.ax_1_1,Conway.Life.glider_2periods._native.native_decide.ax_1_1"
+      allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
       fail-on-sorry: true
 
   # Advisory proof-integrity AUDIT -- option (b) of #8782 (decision c.50,
@@ -157,7 +168,7 @@ jobs:
       # and could not tell which tolerates the 8 acknowledged sorries from which
       # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
       display-name: conway_lean (audit)
-      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.RLE"
+      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.RLE,Conway.Life.HashlifeMemo,Conway.Life.HashlifeMarginDemo"
       # allow-axioms: the 28 native_decide axioms that HashlifeCorrectness ACTUALLY
       # depends on (empirical footprint revealed by THIS audit job's first CI run).
       # These are DISTINCT from the blocking gate's 19-name list above: that list
