@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 052095be135bdafe9306007fcd57a2b6ec69af55
       csharp_sha: 16a4db36adb2eef7e579206ddb5d5161d434e99e
+    - date: "2026-08-05"
+      by: myia-ai-01:CoursIA
+      python_sha: 876c046c2c841c51f433ecefdd5bd5c09db65598
+      csharp_sha: 64a6263dfb86db848ecc161a0423b944855be9a3
+      content_python_sha: 1bfc5722a332acb62b38fc19af0f8a32cdddb604b0867e3949607b1897c9db07
+      content_csharp_sha: 7b5aa2de9dab1095e0eaa9c161ccc48c27bd42c0090b20e25c69c6eb75251d39
   known_differences:
     - "Socle pedagogique commun : resolution du Sudoku par automates a decision binaire (BDD / MDD, Binary/Multi-valued Decision Diagrams), meme concept (codage booleen des contraintes, reduction canonique du graphe de decision, satisfaction via parcours). Le notebook Python declare explicitement etre le jumeau du C# (« Jumeau Python du notebook Sudoku-14-BDD-Csharp.ipynb »)."
     - "Divergence d'implementation : les deux cotes hand-rollent les BDD/MDD from scratch (pas de lib BDD tierce) -- le Python via dataclasses/typing, le C# via System.Collections.Generic + System.Linq. Meme reconstruction pedagogique de l'automate, idiomes de langage differents."
