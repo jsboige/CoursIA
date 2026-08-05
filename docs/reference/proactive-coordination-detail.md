@@ -87,3 +87,21 @@ gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
 gh pr view N --json state,mergedAt,baseRefOid 2>/dev/null | head -5
 git merge-base --is-ancestor <sha> origin/main && echo "MERGED" || echo "NOT-MERGED"
 ```
+
+---
+
+## Vocabulaire d'idle-honnête — les labels bannis (R7, mandat user 2026-07-19)
+
+Les règles R1-R6 interdisent l'idle ; les workers l'ont contournée en inventant un vocabulaire qui *sonne* comme du travail. Liste constatée, **bannie comme état terminal de cycle** :
+
+`CLEAN_DONE 0-PR` · `0 grain frais` · `pool/lane exhausted/saturée` · `forensic-floor` · `drained-confirm` · `due-diligence contribution` · `NO-CHANGE-NEEDED honnête` · `Nᵉ cycle honnête` · `loophole applicable` · `rien à faire` · `en attente de dispatch`.
+
+Cette liste est **indicative, jamais l'autorité** : un worker peut toujours inventer un nouveau synonyme. L'autorité est le **test de résultat** de R7 (`.claude/rules/proactive-coordination.md`) — *ai-je sorti un grain de substance du pool et l'ai-je transformé en PR ?* — qui couvre tous les synonymes présents et futurs.
+
+## Incident fondateur R5/R7 — le silo qui se termine en ASK (2026-07-01, po-2025)
+
+Séquence constatée : le worker audite la tranche README de **sa seule famille**, la trouve cohérente, puis poste un `[ASK coordinator]` pour un grain frais — alors que `gh issue list --state open` offrait des dizaines de grains exécutables cross-lane (#3360 bug RL Python, #4039 gittins bi-track, #3968/#2876 cross-famille, entrées ML.Net manquantes).
+
+Un audit de tranche étroite qui se termine en ASK **est le silo, pas de la proactivité**. C'est l'origine de la formulation R5 « le pool n'est PAS ta famille » et de la clause « le coordinateur n'est PAS un distributeur de grains ».
+
+Exemple chiffré du même registre (2026-07-19) : la famille ICT offrait à elle seule **≥6 grains CPU frais non-claimés** pendant que **4 lanes** se déclaraient « drained ».
