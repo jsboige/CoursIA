@@ -102,3 +102,69 @@ def test_simulate_ramp_tips_over(model):
     assert cs[0] == pytest.approx(1.7)
     assert xs[0] > 5.0                          # part dans le puits haut
     assert xs[-1] < 1.0                         # a bascule vers l'etat nu
+
+
+# --------------------------------------------------------------------------- #
+#  Edge-cases migrés depuis ict/tests/test_bistable.py (consolidation, MED/test) #
+#                                                                               #
+#  Propriétés non couvertes ci-dessus : cohérence equilibria() <-> rate(),      #
+#  instabilite de l'etat nu via rate_prime, borne isfinite (pas d'explosion     #
+#  numerique), lien derivee-seconde <-> stabilite (stable ssi rate_prime < 0).  #
+# --------------------------------------------------------------------------- #
+def test_equilibria_are_roots_of_rate(model):
+    """Tout equilibre x* retourne par equilibria(c) verifie rate(x*, c) ~= 0.
+
+    Valide la coherence interne : equilibria() renvoie bien des points fixes
+    du flot (x=0 seul est testé par test_bare_state_always_equilibrium ci-dessus ;
+    ce gate itère sur tous les équilibres retournés, y compris le puits haut
+    et le col médian).
+    """
+    for c in [1.0, 2.0, 2.5, 3.0]:
+        for x_star, _stable in model.equilibria(c):
+            assert abs(model.rate(x_star, c)) < 1e-6, (
+                f"rate({x_star}, c={c}) ~= 0 attendu (équilibre), "
+                f"got {model.rate(x_star, c)}"
+            )
+
+
+def test_origin_is_unstable(model):
+    """rate_prime(0, c) > 0 : l'etat nu est instable (response type III en x^2).
+
+    La response de broutage type III s'annule en x^2 pres de zero, donc la
+    vegetation repart toujours du quasi-neant (point documente docstring).
+    """
+    for c in [1.0, 2.0, 3.0]:
+        rp0 = model.rate_prime(0.0, c)
+        assert rp0 > 0, f"x=0 instable (rate_prime(0,c)>0), got {rp0} pour c={c}"
+
+
+def test_stability_matches_rate_prime_sign(model):
+    """Un equilibre est stable ssi rate_prime(x*, c) < 0 (puits = min de V),
+    instable ssi >= 0 (col = max de V). La signature de la derivee seconde du
+    potentiel ``-rate_prime`` discrimine puits/col (lien direct à la théorie
+    des bifurcations, distinct de la caractérisation via le potentiel de
+    test_potential_minima_are_stable_equilibria).
+    """
+    for c in [1.5, 2.0, 2.5]:
+        for x_star, stable in model.equilibria(c):
+            rp = model.rate_prime(x_star, c)
+            if stable:
+                assert rp < 0, (
+                    f"équilibre stable {x_star} (c={c}) doit avoir rate_prime < 0, got {rp}"
+                )
+            else:
+                assert rp >= 0, (
+                    f"équilibre instable {x_star} (c={c}) doit avoir rate_prime >= 0, got {rp}"
+                )
+
+
+def test_simulate_sde_shape_and_finite(model):
+    """La trajectoire a la bonne taille et reste finie (pas d'explosion numerique).
+
+    test_simulate_sde_reproducible_and_bounded ci-dessus couvre la répétabilité
+    et la réflexion (x >= 0) ; ce gate vérifie explicitement l'absence
+    d'explosion numérique (isfinite) et la shape exacte.
+    """
+    traj = model.simulate_sde(c=2.0, x0=5.0, sigma=0.5, dt=0.05, T=1000, seed=7)
+    assert traj.shape == (1000,)
+    assert np.all(np.isfinite(traj)), "trajectoire doit rester finie"
