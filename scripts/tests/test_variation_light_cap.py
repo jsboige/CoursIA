@@ -22,18 +22,18 @@ BODY_MIDDOT_BOLD_LANE = (
 
 def test_parse_emdash_lowercase_lane():
     g = vlc.parse_grain(BODY_EMDASH)
-    assert g == {"tier": "LIGHT", "lane": "myia-po-2023:CoursIA"}
+    assert g == {"tier": "LIGHT", "genre": "guard", "lane": "myia-po-2023:CoursIA"}
 
 
 def test_parse_hyphen_bold():
     g = vlc.parse_grain(BODY_HYPHEN_BOLD)
-    assert g == {"tier": "LIGHT", "lane": "myia-ai-01:CoursIA"}
+    assert g == {"tier": "LIGHT", "genre": "guard", "lane": "myia-ai-01:CoursIA"}
 
 
 def test_parse_middot_bold_capital_lane():
     # bold + middot + capital **Lane:** + workspace with a hyphen (CoursIA-2)
     g = vlc.parse_grain(BODY_MIDDOT_BOLD_LANE)
-    assert g == {"tier": "LIGHT", "lane": "myia-po-2024:CoursIA-2"}
+    assert g == {"tier": "LIGHT", "genre": "refs", "lane": "myia-po-2024:CoursIA-2"}
 
 
 def test_parse_no_grain_returns_none():
@@ -51,9 +51,9 @@ def test_parse_non_light_tier():
 
 
 def test_parse_grain_without_lane():
-    # Tag present but lane missing -> tier read, lane None.
+    # Tag present but lane missing -> tier + genre read, lane None.
     g = vlc.parse_grain("Grain: LIGHT/guard -- no lane here")
-    assert g == {"tier": "LIGHT", "lane": None}
+    assert g == {"tier": "LIGHT", "genre": "guard", "lane": None}
 
 
 def test_second_light_same_lane_is_cap_reached():
@@ -368,3 +368,111 @@ def test_budget_is_per_lane_not_global():
             _pr(8, quiet, "LIGHT", "2026-07-31T08:00:00Z")]
     rows = vlc.replay(prs)
     assert {r["number"] for r in rows if r["cap_reached"]} == {8}  # quiet lane: budget 1
+
+
+# --- form tolerance (#9485): `## Grain` heading + `Grain :` space-colon -------
+#
+# The tag circulates as a section heading (`## Grain`, no colon, tier on the next
+# non-empty line) and with space-colon-space (`Grain :`), neither of which the
+# old `Grain:` (colon-required) reader matched -- 11/30 of a day's merges landed
+# unattributed (#9485). Tolerance is on FORM only: a heading with no real
+# TIER/GENRE still returns no tag (no substance tolerance).
+
+BODY_HEADING = (
+    "## Grain\n\n"
+    "MED/tooling (#8056 cost-honesty / under-declaration) -- lane "
+    "myia-po-2023:CoursIA -- prev: MED/tooling #9457\n\nSee #8056"
+)
+BODY_SPACE_COLON = "Grain : DEEP/research-code -- lane myia-po-2025:CoursIA"
+BODY_BOLD_LANE_SPACE_COLON = (
+    "**Grain:** MED/lean . **Lane** : myia-po-2026:CoursIA"
+)
+
+
+def test_parse_heading_form_no_colon():
+    # The main #9485 defect: `## Grain` section heading, tier on the next line.
+    g = vlc.parse_grain(BODY_HEADING)
+    assert g == {"tier": "MED", "genre": "tooling", "lane": "myia-po-2023:CoursIA"}
+
+
+def test_parse_space_colon_form():
+    # `Grain :` (space-colon-space) -- the colon is not flush against `Grain`.
+    g = vlc.parse_grain(BODY_SPACE_COLON)
+    assert g == {"tier": "DEEP", "genre": "research-code", "lane": "myia-po-2025:CoursIA"}
+
+
+def test_parse_bold_lane_space_colon():
+    # `**Lane** :` (bold + space-colon-space) -- the lane is not flush either.
+    g = vlc.parse_grain(BODY_BOLD_LANE_SPACE_COLON)
+    assert g == {"tier": "MED", "genre": "lean", "lane": "myia-po-2026:CoursIA"}
+
+
+def test_parse_prose_grain_word_no_match():
+    # The word "grain" in prose must NOT match: no `/` follows the next word.
+    assert vlc.parse_grain("a grain of truth in the MED analysis") is None
+
+
+def test_parse_heading_without_substance_returns_none():
+    # A `## Grain` heading carrying NO TIER/GENRE is still missing -- the heading
+    # form is READ, not excused (no substance tolerance, #9485 acceptance).
+    assert vlc.parse_grain("## Grain\n\nsome prose with no tier/genre token") is None
+
+
+def test_parse_heading_h3_also_works():
+    # `### Grain` (deeper heading) -- same tolerance.
+    g = vlc.parse_grain("### Grain\n\nLIGHT/docs -- lane myia-po-2024:CoursIA")
+    assert g == {"tier": "LIGHT", "genre": "docs", "lane": "myia-po-2024:CoursIA"}
+
+
+def test_check_tag_conformity_heading_is_conforming():
+    # The acceptance: a `## Grain` heading with valid TIER/GENRE + lane is
+    # CONFORMING (no defect), not missing.
+    assert vlc.check_tag_conformity(BODY_HEADING)["defects"] == []
+
+
+def test_check_tag_conformity_missing():
+    assert vlc.check_tag_conformity("no tag here")["defects"] == [vlc.DEFECT_MISSING]
+
+
+def test_check_tag_conformity_malformed_tier():
+    res = vlc.check_tag_conformity("Grain: HUH/lean -- lane x:y")
+    assert vlc.DEFECT_MALFORMED in res["defects"]
+
+
+def test_check_tag_conformity_genre_offlist():
+    # `refs` is a real off-list genre (the old bash guard flagged it too).
+    res = vlc.check_tag_conformity("Grain: LIGHT/refs -- lane x:y")
+    assert vlc.DEFECT_GENRE_OFFLIST in res["defects"]
+
+
+def test_check_tag_conformity_lane_missing():
+    # Heading form parsed, but no lane -> lane-missing defect (this is the
+    # legitimate residual on #9477, where a DEEP tag had no lane).
+    res = vlc.check_tag_conformity("## Grain\n\nDEEP/research-code -- no lane")
+    assert res["tier"] == "DEEP"
+    assert vlc.DEFECT_LANE_MISSING in res["defects"]
+
+
+def test_check_tag_cli_heading(tmp_path, capsys):
+    # Drive main() in --check-tag mode: the workflow's tag-conformity job calls
+    # this. A heading-form body must emit a clean (empty-defects) verdict.
+    import json as _json
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(BODY_HEADING, encoding="utf-8")
+    rc = vlc.main(["--check-tag", "--body-file", str(bpath)])
+    assert rc == 0
+    out = capsys.readouterr().out.strip().splitlines()[-1]
+    res = _json.loads(out)
+    assert res["defects"] == []
+    assert res == {"defects": [], "tier": "MED", "genre": "tooling",
+                   "lane": "myia-po-2023:CoursIA"}
+
+
+def test_check_tag_cli_requires_no_replay(tmp_path, capsys):
+    # --check-tag short-circuits before the --replay requirement: tag conformity
+    # is decidable from one body, no merged set needed.
+    import json as _json
+    bpath = tmp_path / "body.txt"
+    bpath.write_text("Grain: LIGHT/guard -- lane x:y", encoding="utf-8")
+    rc = vlc.main(["--check-tag", "--body-file", str(bpath)])
+    assert rc == 0  # did not error on missing --replay

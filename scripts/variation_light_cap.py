@@ -31,18 +31,37 @@ Modes
                        and comment: `cap_reached`, `lane`, `consumed_by` (the
                        earlier LIGHT that spent the budget, with its merge time).
 
+  --check-tag          Tag-conformity mode (#9485): read --body/--body-file and
+                       emit the defect classes (missing/malformed/genre-offlist/
+                       lane-missing) as JSON. Drives the workflow's `Check Grain
+                       tag conformity` job so it shares ONE extractor with the
+                       cap logic (no second implementation to diverge). No
+                       --replay set needed -- a body's tag conformity is decidable
+                       on its own.
+
 Parsing
 -------
 Bodies are read as FULL TEXT, never line-by-line. The line-by-line bug measured
 hand counted "18/38 untagged" when the true figure was "2/38": the tag is often
 on the 2nd+ line of a multi-line body, and a per-line scan misses it (#8964).
 
-Agnostic to separator and case (#8938): the three shapes observed in the wild
-all parse identically after markdown noise is stripped --
+Agnostic to separator and case (#8938): the shapes observed in the wild all
+parse identically after markdown noise (`*`, backticks, `#`, `>`) is stripped --
 
     Grain: LIGHT/guard -- lane myia-po-2023:CoursIA      (em-dash)
     **Grain:** LIGHT/guard - lane myia-ai-01:CoursIA     (bold, hyphen)
     `Grain: LIGHT/refs` . **Lane:** myia-po-2024:CoursIA-2  (backticks, middot)
+
+Form-tolerant (#9485): the tag also circulates as a section heading (no colon)
+and with space-colon-space, both of which the old `Grain:` (colon-required)
+reader missed -- leaving 11/30 of a day's merges unattributed. The heading form
+recollens to the next non-empty line; `lane` is read anywhere in the body,
+including the `**Lane** :` shape --
+
+    ## Grain\n\nMED/tooling (...) -- lane myia-po-2023:CoursIA   (section heading)
+    Grain : DEEP/lean -- lane myia-po-2025:CoursIA               (space-colon)
+
+Tolerance is on FORM only: a body with no real TIER/GENRE still returns no tag.
 
 Exit 0 always (advisory).
 """
@@ -56,39 +75,104 @@ from pathlib import Path
 
 # --- parsing ---------------------------------------------------------------
 
-# Markdown noise to strip before matching: asterisks (bold) and backticks.
-# Mirrors the workflow's `tr -d '*\`'` so the two stay in lockstep.
-_NOISE = str.maketrans({"*": "", "`": ""})
+# Markdown noise to strip before matching: asterisks (bold), backticks, and --
+# form-tolerance (#9485) -- `#` (section headings like `## Grain`) and `>` (block
+# quotes). Stripping the heading marker (rather than matching it) keeps the tag
+# regex agnostic to whether `Grain` is a line (`Grain:`) or a section (`## Grain`).
+_NOISE = str.maketrans({"*": "", "`": "", "#": "", ">": ""})
 
-# `Grain:` (case-insensitive) then TIER / GENRE. TIER is the word before `/`.
-_GRAIN_TIER_RE = re.compile(r"Grain:\s*([A-Za-z]+)\s*/", re.IGNORECASE)
+# `Grain` (case-insensitive) then TIER / GENRE. Form-tolerant (#9485): the tag
+# circulates as `Grain:` (line), `## Grain` (section heading, NO colon -- the
+# tier follows on the next non-empty line, so `\s*` swallows the newline(s)), and
+# `Grain :` (space-colon-space). The colon is OPTIONAL and tolerates whitespace
+# on both sides. TIER is the word before `/`; GENRE is the word after (letters,
+# digits, underscore, hyphen). The `/` after the tier word is what distinguishes
+# a real tag from the prose word "grain".
+_GRAIN_RE = re.compile(
+    r"Grain\s*:?\s*([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
+)
 
-# `lane` (case-insensitive), optional colon, whitespace, then machine:workspace.
-# machine = myia-po-2024 (letters, digits, dot, underscore, hyphen); workspace
-# likewise (CoursIA-2). Captured as the single token "<machine>:<workspace>".
+# `lane` (case-insensitive), form-tolerant (#9485): `lane X:Y`, `lane: X:Y`, and
+# `Lane : X:Y` (the `**Lane** :` form once bold is stripped -- whitespace around
+# an optional colon). `\b` stops the word "lane" matching inside e.g. "plane".
+# machine = myia-po-2024; workspace = CoursIA-2. Captured as "<machine>:<workspace>".
 _LANE_RE = re.compile(
-    r"lane:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
+    r"\blane\s*:?\s*([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
 )
 
 
 def parse_grain(body: str) -> dict | None:
-    """Extract {tier, lane} from a PR body, full-text + separator-agnostic.
+    """Extract {tier, genre, lane} from a PR body, full-text + form-agnostic.
 
-    Returns None when no `Grain:` line is found. `tier` is upper-cased
-    (LIGHT/MED/DEEP) or None if the TIER could not be read. `lane` is the
-    "<machine>:<workspace>" string or None.
+    Returns None when no `Grain` tag is found in ANY of the observed forms:
+    `Grain:` line, `## Grain` section heading (#9485), or `Grain :` space-colon.
+    `tier` is upper-cased (LIGHT/MED/DEEP). `genre` is the word after `<TIER>/`
+    (None if unreadable). `lane` is "<machine>:<workspace>" or None.
+
+    Form-tolerance is on PRESENTATION only (#9485): a body without a real
+    TIER/GENRE token still returns None -- the heading form is READ, not excused.
     """
     if not body:
         return None
     flat = body.translate(_NOISE)
-    tier_m = _GRAIN_TIER_RE.search(flat)
-    if not tier_m:
+    m = _GRAIN_RE.search(flat)
+    if not m:
         return None
     lane_m = _LANE_RE.search(flat)
     return {
-        "tier": tier_m.group(1).upper(),
+        "tier": m.group(1).upper(),
+        "genre": m.group(2),
         "lane": lane_m.group(1) if lane_m else None,
     }
+
+
+# --- tag conformity (variation-protocol §1, #9485) -------------------------
+
+# The §1 GENRE enumeration and the TIER set, reproduced verbatim from
+# .claude/rules/variation-protocol.md. The workflow's `Check Grain tag
+# conformity` job calls check_tag_conformity() below -- ONE extractor for both
+# the cap job and the tag job (#9485: the two must read the body identically,
+# not diverge into two implementations that drift).
+TIERS = ("DEEP", "MED", "LIGHT")
+GENRES = (
+    "lean", "qc", "training", "genai",
+    "notebook-python", "notebook-dotnet",
+    "docs", "guard", "refactor", "ledger", "readme", "test",
+    "tooling", "research-code",
+)
+
+# Defect label names (mirror the labels created by variation-tag-guard.yml so
+# the workflow can map verdict -> label with no translation table).
+DEFECT_MISSING = "variation-tag-missing"
+DEFECT_MALFORMED = "variation-tag-malformed"
+DEFECT_GENRE_OFFLIST = "variation-tag-genre-offlist"
+DEFECT_LANE_MISSING = "variation-tag-lane-missing"
+
+
+def check_tag_conformity(body: str | None) -> dict:
+    """Tag-conformity verdict for the workflow's `Check Grain tag conformity` job.
+
+    Single extractor (#9485): the same parse_grain that drives the cap logic also
+    drives tag conformity, so the cap job and the tag job can never diverge on
+    what a tag is. Returns {defects, tier, genre, lane} where `defects` is a list
+    drawn from the four DEFECT_* labels (empty list = conforming tag).
+
+    Tolerance is on FORM only (line / heading / space-colon-space): a body with
+    no real TIER/GENRE substance still raises variation-tag-missing -- the
+    heading form is read, not excused. Acceptance (#9485): a `## Grain` heading
+    carrying a valid TIER/GENRE + lane is CONFORMING (no defect), not missing.
+    """
+    g = parse_grain(body or "")
+    if g is None:
+        return {"defects": [DEFECT_MISSING], "tier": None, "genre": None, "lane": None}
+    defects = []
+    if g["tier"] not in TIERS:
+        defects.append(DEFECT_MALFORMED)
+    if g["genre"] is None or g["genre"] not in GENRES:
+        defects.append(DEFECT_GENRE_OFFLIST)
+    if not g["lane"]:
+        defects.append(DEFECT_LANE_MISSING)
+    return {"defects": defects, "tier": g["tier"], "genre": g["genre"], "lane": g["lane"]}
 
 
 # --- requalification (coordinator override of the declared tag) ------------
@@ -319,7 +403,10 @@ def _load(path: str) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--replay", metavar="FILE",
-                   help="JSON array of the day's merged PRs (the counting set)")
+                   help="JSON array of the day's merged PRs (the counting set). "
+                        "Required for --replay-mode and --check-pr; NOT used by "
+                        "--check-tag (a single body's tag conformity is decidable "
+                        "on its own).")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--replay-mode", action="store_true",
                    help="acceptance-test mode: report cap_reached for every "
@@ -327,17 +414,35 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--check-pr", metavar="N", type=int,
                    help="CI mode: assess PR <N> (the current open PR) against "
                         "the --replay merged set")
+    g.add_argument("--check-tag", action="store_true",
+                   help="tag-conformity mode (#9485): read --body/--body-file and "
+                        "emit the defect classes as JSON. Drives the workflow's "
+                        "`Check Grain tag conformity` job so it shares ONE "
+                        "extractor with the cap logic. No --replay set needed.")
     p.add_argument("--body", metavar="TEXT",
-                   help="--check-pr only: body of the current PR (the open PR "
-                        "is not in the merged set, so its tag is read here)")
+                   help="--check-pr / --check-tag: body of the PR whose tag is "
+                        "read (the open PR is not in the merged set; for "
+                        "--check-tag this is the only input).")
     p.add_argument("--body-file", metavar="FILE",
-                   help="--check-pr only: path to a file holding the current "
-                        "PR body (alternative to --body)")
+                   help="--check-pr / --check-tag: path to a file holding the PR "
+                        "body (alternative to --body).")
     p.add_argument("--labels-file", metavar="FILE",
                    help="--check-pr only: JSON array of the current PR's labels "
                         "(so a requalification label on the open PR is honored; "
                         "symmetric to the requalification read on merged PRs)")
     args = p.parse_args(argv)
+
+    if args.check_tag:
+        # Tag conformity is decidable from a single body -- no merged set needed
+        # (#9485). This branch short-circuits before the --replay requirement.
+        if args.body is not None:
+            body = args.body
+        elif args.body_file:
+            body = Path(args.body_file).read_text(encoding="utf-8")
+        else:
+            p.error("--check-tag requires --body or --body-file")
+        print(json.dumps(check_tag_conformity(body), ensure_ascii=False))
+        return 0
 
     if not args.replay:
         p.error("--replay FILE (the merged-PR set) is required")

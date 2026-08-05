@@ -54,6 +54,16 @@ jobs:
     name: Check Grain tag conformity
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the tag detector (sparse)
+        # #9485 : the tag-conformity verdict now comes from the SAME Python
+        # extractor (parse_grain) as the cap logic in the job below, so the two
+        # can no longer diverge on what a `Grain` tag is. Sparse-checkout of one
+        # file -- no full clone, the job stays cheap.
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/variation_light_cap.py
+
       - name: Inspect PR body for Grain tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,78 +116,29 @@ jobs:
             exit 0
           fi
 
-          # Le tag circule sous plusieurs habillages markdown observes en vrai :
-          # `**Grain: ...**`, `Grain: **DEEP/lean**`, et surtout `` `Grain: DEEP/lean` ``
-          # (backticks — la forme que le coordinateur lui-meme utilise). On neutralise
-          # asterisques et backticks avant de matcher, plutot que de multiplier les
-          # variantes de regex. Un tag rejete pour son habillage serait un faux
-          # negatif du guard, pas une non-conformite de l'auteur.
-          BODY_FLAT=$(printf '%s' "${PR_BODY:-}" | tr -d '*`')
+          # Extracteur unique (#9485) : le MEME parse_grain() qui porte la logique
+          # du cap (job check-light-cap ci-dessous) porte desormais la conformite
+          # du tag. Les deux jobs ne peuvent plus diverger sur ce qu'est un tag.
+          #
+          # L'outil est tolerant a la forme -- `## Grain` (titre de section, sans
+          # deux-points, le TIER suit sur la prochaine ligne non vide), `Grain :`
+          # (espace-deux-points-espace), `**Lane** :` -- la ou l'ancien grep bash
+          # (`Grain:` deux-points obligatoire) ratait le titre `## Grain` ENTIEREMENT
+          # et etiquettait des tags valides `variation-tag-missing` (11/30 merges
+          # d'une journee unattributed, budget G-VAR-2 sous-estime). La tolerance
+          # porte sur la FORME seulement : un body sans vrai TIER/GENRE reste
+          # `variation-tag-missing` (acceptance #9485 : pas de tolerance substance).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+          python3 scripts/variation_light_cap.py \
+            --check-tag --body-file /tmp/pr_body.txt > /tmp/tagcheck.json 2>/tmp/tag.err || true
+          echo "--- tag-conformity verdict ---"
+          cat /tmp/tagcheck.json 2>/dev/null || true
+          [ -s /tmp/tag.err ] && { echo "--- tag-conformity stderr ---"; cat /tmp/tag.err; } || true
 
-          # Puce de liste ou citation toleree devant le tag.
-          GRAIN_LINE=$(printf '%s\n' "$BODY_FLAT" | grep -m1 -E '^[[:space:]]*[->+]?[[:space:]]*Grain:' || true)
-
-          # Chaque defaut constate est accumule ici, puis traduit en labels a la
-          # fin. Un `exit 0` precoce au cas nominal (l'ancienne structure) rendait
-          # impossible de verifier GENRE et `lane` : un TIER valide suffisait a
-          # clore le job. Les trois controles sont desormais independants.
-          DEFECTS=""
-          note_defect() { DEFECTS="$DEFECTS $1"; }
-
-          if [ -z "$GRAIN_LINE" ]; then
-            echo "::warning::Aucune ligne 'Grain:' dans le body. variation-protocol.md exige 'Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>' (TIER = DEEP|MED|LIGHT)."
-            note_defect variation-tag-missing
-          else
-            echo "Ligne lue : $GRAIN_LINE"
-
-            TIER=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*([A-Za-z]+)/.*|\1|p')
-            GENRE=$(printf '%s' "$GRAIN_LINE" | sed -nE 's|^[[:space:]]*[->+]?[[:space:]]*Grain:[[:space:]]*[A-Za-z]+/([A-Za-z0-9_-]+).*|\1|p')
-
-            case "$TIER" in
-              DEEP|MED|LIGHT)
-                echo "TIER=$TIER"
-                ;;
-              *)
-                echo "::warning::TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT — le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
-                note_defect variation-tag-malformed
-                ;;
-            esac
-
-            # Enumeration §1, reproduite telle quelle. Un genre hors-liste n'est
-            # pas "invalide" : il est INCOMPARABLE, donc G-VAR-3 ne peut pas voir
-            # l'adjacence qu'il est cense fermer. Le remede est de le mapper sur
-            # le genre de la liste qui decrit le TYPE DE TRAVAIL — jamais la
-            # famille de fichiers traversee (c'est la seconde voie de
-            # contournement documentee en §1).
-            case "$GENRE" in
-              lean|qc|training|genai|notebook-python|notebook-dotnet|docs|guard|refactor|ledger|readme|test|tooling|research-code)
-                echo "GENRE=$GENRE (dans la liste §1)"
-                ;;
-              "")
-                echo "::warning::GENRE illisible sur la ligne Grain. Format attendu : 'Grain: <TIER>/<GENRE>'."
-                note_defect variation-tag-genre-offlist
-                ;;
-              *)
-                echo "::warning::GENRE '$GENRE' hors de l'enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
-                note_defect variation-tag-genre-offlist
-                ;;
-            esac
-
-            # `lane` : exigee par §3, cle d'agregation du cap G-VAR-2 (par lane,
-            # par jour). Cherchee d'abord sur la ligne du tag (sa place selon §1),
-            # puis dans le body — trouvee ailleurs, elle reste exploitable par un
-            # humain, donc simple note et pas de label. Un tag rejete pour son
-            # placement serait un faux negatif du guard.
-            LANE_RE='lane:?[[:space:]]+[A-Za-z0-9._-]+:[A-Za-z0-9._-]+'
-            if printf '%s' "$GRAIN_LINE" | grep -qiE "$LANE_RE"; then
-              echo "lane declaree sur la ligne du tag."
-            elif printf '%s\n' "$BODY_FLAT" | grep -qiE "$LANE_RE"; then
-              echo "::notice::lane declaree, mais hors de la ligne 'Grain:'. §1 la place sur la ligne du tag."
-            else
-              echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
-              note_defect variation-tag-lane-missing
-            fi
-          fi
+          # DEFECTS = liste de noms de labels (l'outil emet exactement les noms
+          # que la boucle de labeling ci-dessous attend -- single source, #9485).
+          DEFECTS=$(python3 -c "import json; print(' '.join(json.load(open('/tmp/tagcheck.json')).get('defects',[])))" 2>/dev/null || echo "")
+          echo "Defects: ${DEFECTS:-none (conforming)}"
 
           # Traduction en labels. Chaque classe de defaut a son propre label pour
           # que sa nature se lise dans `gh pr list --json labels`. Les labels
