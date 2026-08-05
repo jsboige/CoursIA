@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 8a1465a542c0f9ec6634036ffd993e934667cb0a
       csharp_sha: 37c65d0a912695c7b4387b8fc373d3a6458ea5f5
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 27da1032bed447700dd7919dbded8edbbc2015c5
+      csharp_sha: 37c65d0a912695c7b4387b8fc373d3a6458ea5f5
+      content_python_sha: 890c97e8f08fcfa1bb7980986b6ea9bc60b1e77a3c1559cc8b155934a447d48b
+      content_csharp_sha: 5abb299070bc87cfcd9aef9c23b4cc30fa63bdb4ed67c32a5401404ecf94c8a5
   known_differences:
     - "Socle pedagogique commun : algorithme de backtracking (retour sur trace) pour resoudre un mini-Sudoku, meme concept algorithmique (recursion + propagation de contraintes + retour-arriere sur conflit), meme cas d'application pedagogique (grille partiellement remplie, recherche systematique)."
     - "Divergence d'implementation : le Python implemente le backtracking from scratch (fonction recursive + suivi des conflits) avec une visualisation matplotlib/numpy du deroulement ; le C# implemente le backtracking pur en stdlib (System.*) sans visualisation. Meme algorithme, niveau d'abstraction et d'enrichissement visuel differents."
