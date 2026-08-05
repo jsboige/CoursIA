@@ -676,11 +676,15 @@ Sudoku/
 │   └── sudoku_rrn_v4_best.pt
 ├── sudoku_models/                         # Checkpoints d'entraînement comparatif
 │   └── checkpoints/
-├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules, 0 sorry)
-│   ├── Sudoku.lean                        # Umbrella
-│   ├── Sudoku/Basic.lean
-│   ├── Sudoku/Propagation.lean
-│   ├── Sudoku/ExactCover.lean
+├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules FR + siblings _en #4980, 0 sorry)
+│   ├── Sudoku.lean                        # Umbrella (FR canonique)
+│   ├── Sudoku_en.lean                     # Umbrella (sibling EN, i18n #4980)
+│   ├── Sudoku/Basic.lean                  # Module 1 : structures de base (FR)
+│   ├── Sudoku/Basic_en.lean               # Sibling EN
+│   ├── Sudoku/Propagation.lean            # Module 2 : propagation des contraintes (FR)
+│   ├── Sudoku/Propagation_en.lean         # Sibling EN
+│   ├── Sudoku/ExactCover.lean             # Module 3 : couverture exacte (FR)
+│   ├── Sudoku/ExactCover_en.lean          # Sibling EN
 │   ├── Sudoku.en.md
 │   ├── lakefile.lean
 │   ├── lake-manifest.json
