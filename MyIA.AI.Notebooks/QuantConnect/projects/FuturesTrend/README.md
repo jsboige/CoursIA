@@ -14,13 +14,11 @@ Stratégie de suivi de tendance sur les futures E-mini S&P 500 (ES).
 
 ## Backtest Results (2019-2023)
 
-| Métrique | Valeur |
-|----------|--------|
-| Total Return | ~40-60% |
-| CAGR | ~9-12% |
-| Sharpe Ratio | ~0.5-0.8 |
-| Max Drawdown | ~-25% à -35% |
-| Win Rate | ~35-45% |
+> Les métriques quantitatives (Total Return, CAGR, Sharpe, Max Drawdown, Win Rate) sont
+> machine-dépendantes : elles dérivent avec les données, la période et l'environnement
+> d'exécution. Elles ne sont pas attestées par un backtest figé ici. Les obtenir via
+> `lean backtest` (moteur Lean local) ou en poussant le projet sur QC Cloud. Seuls les
+> paramètres déterministes (instrument, signal, sizing) figurent dans le tableau ci-dessus.
 
 ## Fichiers
 
