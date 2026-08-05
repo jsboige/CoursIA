@@ -13,6 +13,16 @@
 #     (`audits[-1]` ou `last_audit`). La migration legacy -> audits: est paresseuse
 #     (a la volee, sur le 1er drift reel) -- pas de reecriture massive.
 #
+# Depuis #9399 volet (c), chaque enregistrement porte en plus
+# `content_python_sha` / `content_csharp_sha` (SHA-256 du notebook SANS
+# `nb["metadata"]` -- cost, papermill, kernelspec, language_info). Le verdict
+# DRIFT preferere ces content_sha (metadata-immunes) quand l'audit les enregistre
+# et retombe sur les git blob SHA (`python_sha`/`csharp_sha`) pour les paires
+# legacy. Un tampon `metadata.cost` seul ne fait plus rougir le gate ni declencher
+# de faux audit au --update ; les vrais changements (prose, re-exec) derives
+# toujours. Les content_sha sont ajoutés A COTE des blob SHA (anti-regression :
+# ces derniers restent enregistres pour inspection humaine).
+#
 # Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
 # SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
 # Apres une audit firsthand, rebaseline UNE paire avec :

@@ -129,6 +129,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import hashlib
 import json
 import re
 import subprocess
@@ -278,6 +279,33 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
+    """SHA-256 canonique du notebook SANS sa metadonnee de niveau carnet (#9399 volet c).
+
+    Hache le contenu pedagogique (cellules + leurs outputs) en excluant
+    `nb["metadata"]` (cost, papermill, kernelspec, language_info) : un tampon
+    `metadata.cost` seul ne porte aucune divergence pedagogique et ne doit PAS
+    faire rougir le gate (les 2 faux positifs Sudoku-8/14 BDD du 2026-08-04,
+    ou seul le bloc cost a bouge). Les cellules (et leur `metadata` cellulaire)
+    restent hachees : un fix de prose (cellule markdown) ou une re-exec (output
+    change) continuent de produire un DRIFT (vrais positifs, critere
+    d'acceptation ai-01 : la correction de prose de #9413 rougit toujours).
+
+    Canonique : `json.dumps(sort_keys=True, separators=(",",":"))` -- le SHA
+    est stable d'une machine a l'autre et independant du formatage du fichier.
+    """
+    content = _git_show_file(repo_root, git_ref, rel_path)
+    if content is None:
+        return None
+    try:
+        nb = json.loads(content)
+    except (ValueError, TypeError):
+        return None
+    stripped = {k: v for k, v in nb.items() if k != "metadata"}
+    canonical = json.dumps(stripped, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     """Contenu d'un fichier versionne a `git_ref` (None si absent).
 
@@ -418,14 +446,40 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         details.append(f"C# MANQUANT dans git : {cs}")
         status = "MISSING"
 
+    # content_*_sha (#9399 volet c) : metadata-immune. Calcules LAZILY -- UNIQUEMENT
+    # quand l'audit les a enregistrees. Les paires legacy (aucune content_*_sha
+    # enregistree) tombent sur les git blob SHA sans payer le surcout d'un git show
+    # + json.loads par carnet ; ainsi la flotte actuelle (entierement legacy) garde
+    # sa perf d'avant volet (c). Seules les paires --update'ees (rollout progressif)
+    # declenchent le calcul metadata-immune.
+    use_content = (audit.get("content_python_sha") is not None
+                   and audit.get("content_csharp_sha") is not None)
+    cur_cpy = _content_sha(repo_root, py, git_ref) if use_content else None
+    cur_ccs = _content_sha(repo_root, cs, git_ref) if use_content else None
+
     if status == "OK":
-        py_drift = (rec_py is not None and cur_py != rec_py)
-        cs_drift = (rec_cs is not None and cur_cs != rec_cs)
-        no_baseline = (rec_py is None or rec_cs is None)
-        if py_drift:
-            details.append(f"Python a drift : {rec_py[:8]} -> {cur_py[:8]}")
-        if cs_drift:
-            details.append(f"C# a drift : {rec_cs[:8]} -> {cur_cs[:8]}")
+        # Verdict DRIFT : preferer les content_*_sha (metadata-immunes) quand
+        # l'audit les enregistre ; sinon retomber sur les git blob SHA (legacy).
+        # Un tampon metadata.cost seul -> content inchange -> PAS de DRIFT
+        # (faux positif). Un fix de prose / re-exec -> content change -> DRIFT
+        # (vrai positif, critere d'acceptation ai-01 #9399).
+        rec_cpy, rec_ccs = _cmp_pair_shas(audit)
+        if use_content:
+            py_drift = (cur_cpy is not None and cur_cpy != rec_cpy)
+            cs_drift = (cur_ccs is not None and cur_ccs != rec_ccs)
+            no_baseline = (cur_cpy is None or cur_ccs is None)
+            if py_drift:
+                details.append(f"Python a drift (content) : {str(rec_cpy)[:8]} -> {cur_cpy[:8]}")
+            if cs_drift:
+                details.append(f"C# a drift (content) : {str(rec_ccs)[:8]} -> {cur_ccs[:8]}")
+        else:
+            py_drift = (rec_py is not None and cur_py != rec_py)
+            cs_drift = (rec_cs is not None and cur_cs != rec_cs)
+            no_baseline = (rec_py is None or rec_cs is None)
+            if py_drift:
+                details.append(f"Python a drift : {rec_py[:8]} -> {cur_py[:8]}")
+            if cs_drift:
+                details.append(f"C# a drift : {rec_cs[:8]} -> {cur_cs[:8]}")
         if no_baseline:
             details.append("Pas de last_audit_sha enregistre (--update requis)")
         if py_drift or cs_drift or no_baseline:
@@ -440,6 +494,8 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "status": status,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
+        "current_content_python_sha": cur_cpy,
+        "current_content_csharp_sha": cur_ccs,
         "recorded_python_sha": rec_py,
         "recorded_csharp_sha": rec_cs,
         "last_audit_date": audit.get("date"),
@@ -465,11 +521,16 @@ def update_pair(
     cs = pair["csharp"]
     cur_py = _git_blob_sha(repo_root, py)
     cur_cs = _git_blob_sha(repo_root, cs)
+    # content_*_sha (#9399 volet c) : SHA-256 du notebook sans nb["metadata"].
+    cur_cpy = _content_sha(repo_root, py)
+    cur_ccs = _content_sha(repo_root, cs)
     audit = {
         "date": date or _dt.date.today().isoformat(),
         "by": by or _latest_audit(pair).get("by", "manual"),
         "python_sha": cur_py,
         "csharp_sha": cur_cs,
+        "content_python_sha": cur_cpy,
+        "content_csharp_sha": cur_ccs,
     }
     return audit, cur_py
 
@@ -477,7 +538,14 @@ def update_pair(
 # Cles scalaires d'un enregistrement d'audit (forme append-only ET legacy).
 # Partagees par le singleton `last_audit:` (legacy) et chaque element de la
 # liste `audits:` (append-only, #9399).
-_AUDIT_KEYS = ("date", "by", "python_sha", "csharp_sha")
+_AUDIT_KEYS = (
+    "date", "by", "python_sha", "csharp_sha",
+    # content_*_sha (#9399 volet c) : SHA-256 du notebook sans nb["metadata"].
+    # metadata-immune : un tampon cost seul ne fait plus rougir le gate ni
+    # declencher un faux audit au --update. Ajoutes a cote (anti-regression :
+    # les blob SHA python_sha/csharp_sha restent enregistres pour inspection).
+    "content_python_sha", "content_csharp_sha",
+)
 
 
 def _latest_audit(pair: dict) -> dict:
@@ -573,12 +641,35 @@ def _parse_latest_audit_entry(body_lines):
     return latest
 
 
-def _shas_match(record: dict, new_py, new_cs) -> bool:
-    """True ssi `record` enregistre deja exactement ces deux SHAs (no-op)."""
+def _cmp_pair_shas(d: dict) -> tuple:
+    """SHAs de comparaison (no-op / drift) extraits d'un enregistrement d'audit.
+
+    Prefer les `content_*_sha` (metadata-immunes, #9399 volet c) quand l'audit
+    les porte ; sinon retombe sur les `python_sha`/`csharp_sha` (git blob SHA,
+    legacy pre-content_sha). Centralise la regle de preference afin que
+    `_shas_match` (no-op au --update) et `verify_pair` (DRIFT au --check)
+    appliquent la MEME definition de « rien n'a change ».
+    """
+    cp = d.get("content_python_sha")
+    cc = d.get("content_csharp_sha")
+    if cp is not None and cc is not None:
+        return cp, cc
+    return d.get("python_sha"), d.get("csharp_sha")
+
+
+def _shas_match(record: dict, new_entry: dict) -> bool:
+    """True ssi `record` et `new_entry` partagent les memes SHAs de comparaison (no-op).
+
+    Un changement **metadata-only** (ex: tampon `metadata.cost`) change les git
+    blob SHAs mais PAS les `content_*_sha` : via `_cmp_pair_shas` cela devient un
+    no-op, donc le `--update` n'APPEND PAS de nouvelle entree d'audit pour un
+    changement qui n'est pas pedagogique (faux audit, cf ai-01 design-gate #9399).
+    """
+    rec_py, rec_cs = _cmp_pair_shas(record)
+    new_py, new_cs = _cmp_pair_shas(new_entry)
     if new_py is None or new_cs is None:
         return False
-    return (str(record.get("python_sha", "")) == str(new_py)
-            and str(record.get("csharp_sha", "")) == str(new_cs))
+    return str(rec_py) == str(new_py) and str(rec_cs) == str(new_cs)
 
 
 def _legacy_body_as_list_item(body_lines):
@@ -631,18 +722,15 @@ def _transform_audit_block(form: str, block: list[str], new_entry: dict) -> tupl
         (l'ancien enregistrement, `reason` compris, devient item[0]).
     """
     body = block[1:]
-    new_py = new_entry.get("python_sha")
-    new_cs = new_entry.get("csharp_sha")
-
     if form == "audits":
         latest = _parse_latest_audit_entry(body)
-        if _shas_match(latest, new_py, new_cs):
+        if _shas_match(latest, new_entry):
             return block, False
         return block + _render_new_audit_entry(new_entry), True
 
     # form == "last_audit" -> migration vers la forme append-only
     old_pairs = _parse_flat_audit(body)
-    if _shas_match(dict(old_pairs), new_py, new_cs):
+    if _shas_match(dict(old_pairs), new_entry):
         return block, False
     new_block = ["  audits:\n"]
     if old_pairs:
