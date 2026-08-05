@@ -40,7 +40,7 @@ Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le bod
 
 **Whitelist = noms explicites, jamais de wildcard** — `allow-axioms` liste les axiomes un par un (cliquet : tout nouveau `native_decide` produit un nom absent → rouge). Un motif générique détruirait cette propriété ; un gate qui ne peut plus rougir n'est pas un gate.
 
-**Tant que le job n'est pas câblé sur le lake de la PR**, B.3 se lit **non applicable** (à écrire explicitement dans le body), jamais comme un gate silencieusement sauté (#8677). État du câblage : **2 lakes sur 23** → [docs/reference/lean-axiom-coverage.md](../../docs/reference/lean-axiom-coverage.md).
+**Tant que le job n'est pas câblé sur le lake de la PR**, B.3 se lit **non applicable** (à écrire explicitement dans le body), jamais comme un gate silencieusement sauté (#8677). État du câblage : les lakes câblés sont **exactement les workflows qui appellent** `lean-axiom.yml` (`grep -ln 'lean-axiom' .github/workflows/*.yml`, moins le fichier lui-même) — mesure mécanique, pas un compte recopié. Triage par lake : [docs/reference/lean-axiom-coverage.md](../../docs/reference/lean-axiom-coverage.md).
 
 ### C. ML : multi-seed obligatoire
 
