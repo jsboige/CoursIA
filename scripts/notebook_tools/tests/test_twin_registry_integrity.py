@@ -318,8 +318,8 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _build_blob_history(repo_root: Path) -> dict:
-    """Map {rel_path: set(blob sha git)} pour tous les fichiers, ancetres de HEAD.
+def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
+    """Map ``(path_blobs, blob_paths)`` pour tous les fichiers, ancetres de HEAD.
 
     Un seul appel ``git log HEAD --raw --abbrev=40`` (perf CI : ~1 appel pour
     tout le repo, lookup O(1) ensuite). #9399 volet (b) : un sha atteste qui
@@ -331,6 +331,15 @@ def _build_blob_history(repo_root: Path) -> dict:
     checkout CI (qui ne fetch que la branche de la PR), ce qui ferait varier le
     verdit du test. Les audits se font sur la ligne principale, donc un sha
     d'audit valide doit etre un blob apparu dans les ancetres de HEAD.
+
+    Deux index derives du MEME flux ``--raw`` (determinisme preserve, pas de
+    detection heuristique de renommage) :
+
+    - ``path_blobs`` : ``{rel_path: set(blob sha)}`` -- les blobs qu'un path a eus.
+    - ``blob_paths`` : ``{blob sha: set(rel_path)}`` -- les paths sous lesquels un
+      blob est apparu. Sert a distinguer un carnet RENOMME (sha apparu sous un
+      ancien path, legitime) d'une fabrication (sha apparu sous aucun path) -- cf
+      ``_classify_attested_sha`` et le residuel note par ai-01 sur #9471.
     """
     import subprocess
 
@@ -338,7 +347,8 @@ def _build_blob_history(repo_root: Path) -> dict:
         ["git", "log", "HEAD", "--raw", "--no-renames", "--abbrev=40", "--format="],
         cwd=repo_root, capture_output=True, text=True,
     )
-    hist: dict[str, set[str]] = {}
+    path_blobs: dict[str, set[str]] = {}
+    blob_paths: dict[str, set[str]] = {}
     for line in proc.stdout.splitlines():
         if not line.startswith(":"):
             continue
@@ -351,8 +361,60 @@ def _build_blob_history(repo_root: Path) -> dict:
             continue
         for sha in (meta[2], meta[3]):  # old blob, new blob (40 hex ou zeros)
             if len(sha) == 40 and not sha.startswith("0" * 7):
-                hist.setdefault(path, set()).add(sha)
-    return hist
+                path_blobs.setdefault(path, set()).add(sha)
+                blob_paths.setdefault(sha, set()).add(path)
+    return path_blobs, blob_paths
+
+
+def _declared_paths() -> set[str]:
+    """Ensemble des paths de carnets declares dans le registre (python + csharp),
+    normalises en ``/``. Sert a distinguer un cross-file (sha d'un AUTRE carnet
+    enregistre) d'un renommage (sha d'un ancien path non declare -- ex. carnet
+    renomme avant d'etre enregistre sous son nom courant)."""
+    out: set[str] = set()
+    for entry in _entries():
+        for side in ("python", "csharp"):
+            rel = entry.get(side)
+            if rel:
+                out.add(str(rel).replace("\\", "/"))
+    return out
+
+
+def _classify_attested_sha(
+    sha: str,
+    path: str,
+    path_blobs: dict,
+    blob_paths: dict,
+    declared: set,
+) -> tuple[str, str]:
+    """Classe un sha atteste sous ``path`` en exactement un verdict.
+
+    Retourne ``(verdict, detail)`` ou ``verdict`` est l'un de :
+
+    - ``"ok"`` : le sha est un blob du carnet sous son path declare -> conforme.
+    - ``"renamed"`` : le sha fut un blob sous un path ANTERIEUR non declare
+      (carnet renomme/deplace). Legitime : on ne faille pas, mais on le signale
+      pour diagnostic (residuel ai-01 #9471 : ``--no-renames`` dissocie
+      l'historique du path courant -> faux positif « fabrique » sans ceci).
+    - ``"fabricated"`` : le sha n'apparait sous AUCUN path -> fabrication/typo
+      (le seul vrai defaut que ce gate doit rougir, #9399 4e manifestation).
+    - ``"crossfile"`` : le sha apparait sous le path d'un AUTRE carnet enregistre
+      -> copie cross-file (on garde la detection que ai-01 a valide sur #9471).
+
+    ``detail`` est un message humain (path ancien / path voisin) pour l'assertion.
+    """
+    if sha in path_blobs.get(path, set()):
+        return "ok", ""
+    others = blob_paths.get(sha, set()) - {path}
+    if not others:
+        return "fabricated", f"jamais blob d'aucun fichier (ni {path})"
+    # Le sha fut un blob, mais sous d'autres paths. Cross-file si l'un de ces
+    # paths est un carnet declare d'une autre paire ; sinon c'est un ancien path
+    # du carnet (renomme) -- legitime.
+    cross = sorted(others & declared)
+    if cross:
+        return "crossfile", f"sha d'un autre carnet enregistre : {cross}"
+    return "renamed", f"sha apparu sous ancien(s) path(s) (renommage ?) : {sorted(others)}"
 
 
 def test_audit_shas_exist_in_file_history():
@@ -369,9 +431,12 @@ def test_audit_shas_exist_in_file_history():
 
     Scope = dernier audit uniquement (pas les audits historiques migres) : un
     audit ancien peut legitiment porter le sha d'un path ANTERIEUR (carnet
-    renomme/deplace, ex. restructuration Search/Applications), et ``--no-renames``
-    dissocie alors l'historique du path courant -> faux positif. Le FORMAT des
-    sha historiques reste couvert par ``test_audit_shas_are_git_blob_shas``.
+    renomme/deplace, ex. restructuration Search/Applications). ``--no-renames``
+    dissocie l'historique du path courant, donc la classification 3-branches
+    (``_classify_attested_sha``) distingue ce cas (``renamed``, legitime) d'une
+    fabrication (``fabricated``) ou d'une copie cross-file (``crossfile``) -- cf
+    residuel note par ai-01 sur #9471. Le FORMAT des sha historiques reste couvert
+    par ``test_audit_shas_are_git_blob_shas``.
 
     Distinction avec le drift (sha != HEAD) : un sha qui fut vrai a un commit
     passe ce test (il est dans l'historique) mais reste detecte comme drift par
@@ -392,8 +457,9 @@ def test_audit_shas_exist_in_file_history():
     except Exception:
         pytest.skip("hors d'un work-tree git (git indisponible) -- test d'historique saute")
 
-    hist = _build_blob_history(repo_root)
-    bad = []
+    path_blobs, blob_paths = _build_blob_history(repo_root)
+    declared = _declared_paths()
+    fabricated, crossfile, renamed = [], [], []
     for entry in _entries():
         latest = _latest_audit(entry)
         if not isinstance(latest, dict):
@@ -404,9 +470,61 @@ def test_audit_shas_exist_in_file_history():
             if not rel or not isinstance(sha, str) or not SHA_RE.match(sha):
                 continue
             relf = str(rel).replace("\\", "/")
-            if sha not in hist.get(relf, set()):
-                bad.append(
-                    f"{entry.get('name', '?')}.{sha_key} = {sha[:12]} "
-                    f"(jamais blob de {relf})"
-                )
-    assert not bad, f"sha(s) du dernier audit jamais apparu(s) comme blob du carnet : {bad}"
+            verdict, detail = _classify_attested_sha(
+                sha, relf, path_blobs, blob_paths, declared
+            )
+            label = f"{entry.get('name', '?')}.{sha_key} = {sha[:12]} ({detail})"
+            if verdict == "fabricated":
+                fabricated.append(label)
+            elif verdict == "crossfile":
+                crossfile.append(label)
+            elif verdict == "renamed":
+                renamed.append(label)
+    assert not fabricated, (
+        f"sha(s) du dernier audit jamais apparu(s) comme blob : {fabricated}"
+    )
+    assert not crossfile, (
+        f"sha(s) du dernier audit emprunte(s) a un autre carnet enregistre : {crossfile}"
+    )
+    # ``renamed`` est legitime (carnet renomme) -> on ne faille pas, mais on le
+    # rend visible (warning pytest) pour prevenir qu'un faux rename masque un
+    # futur cross-file. Vide sur le registre courant.
+    if renamed:
+        import warnings
+        warnings.warn(
+            "sha attestes sous un ancien path (carnet renomme ?) : " + "; ".join(renamed)
+        )
+
+
+def test_classify_attested_sha_ok_fabricated_crossfile_renamed():
+    """Unitarise la classification 3-branches (pas de git, dicts factices).
+
+    Couvre les 4 verdicts de ``_classify_attested_sha`` : ``ok`` (sha sous le
+    path declare), ``fabricated`` (sha absent de tout path), ``crossfile`` (sha
+    sous le path d'un autre carnet enregistre), ``renamed`` (sha sous un ancien
+    path non declare). Garantit que le durcissement rename-aware (residuel ai-01
+    #9471) ne regresse pas la detection de fabrication ni de cross-file.
+    """
+    declared = {"A/X.ipynb", "B/Y.ipynb"}
+    path_blobs = {
+        "A/X.ipynb": {"shaX_ok"},
+        "B/Y.ipynb": {"shaY_ok"},
+        "A/X_old.ipynb": {"shaX_renamed"},  # ancien path (renomme), non declare
+    }
+    blob_paths = {
+        "shaX_ok": {"A/X.ipynb"},
+        "shaY_ok": {"B/Y.ipynb"},
+        "shaX_renamed": {"A/X_old.ipynb"},
+        "sha_crossfile": {"B/Y.ipynb"},  # blob d'un autre carnet declare
+    }
+    v, _ = _classify_attested_sha("shaX_ok", "A/X.ipynb", path_blobs, blob_paths, declared)
+    assert v == "ok"
+    v, d = _classify_attested_sha("e" * 39 + "f", "A/X.ipynb", path_blobs, blob_paths, declared)
+    assert v == "fabricated"
+    assert "jamais blob" in d
+    v, d = _classify_attested_sha("sha_crossfile", "A/X.ipynb", path_blobs, blob_paths, declared)
+    assert v == "crossfile"
+    assert "B/Y.ipynb" in d
+    v, d = _classify_attested_sha("shaX_renamed", "A/X.ipynb", path_blobs, blob_paths, declared)
+    assert v == "renamed"
+    assert "X_old" in d
