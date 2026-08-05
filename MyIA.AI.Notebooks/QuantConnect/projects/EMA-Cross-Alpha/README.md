@@ -19,16 +19,28 @@ lean backtest --project .
 
 **QC Cloud :** Ouvrir le projet 28885488 dans l'IDE QuantConnect et cliquer sur « Backtest ».
 
-## Métriques de backtest (2015-2026)
+## Métriques de backtest (2015-2024)
 
 | Métrique | Valeur |
 |----------|--------|
+| Sharpe Ratio | -0.01 |
+| CAGR | 2.799% |
+| Max Drawdown | 14.000% |
+| Net Profit | 31.824% |
+| Total Orders | 314 |
 | Benchmark | SPY |
 | Rebalance | Quotidien |
 | Univers | 5 actions tech |
 
-> **Sharpe Ratio** : non épinglé — métrique machine-dépendante qui dérive avec les
-> données et la période. L'obtenir via `lean backtest` ou le projet QC Cloud 28885488.
+> **Provenance** : backtest QC Cloud `8119728de11270cec45b8db81ed30a0b` (2026-08-05),
+> projet 28885488, IBKR margin, 2516 jours tradeables (2015-2024). Re-exécuter via
+> QC Cloud pour recalculer.
+>
+> **Lecture honnête** : un Sharpe de -0,01 est un edge statistiquement nul (PSR 0,006%),
+> et un CAGR de 2,8 % est sous le risk-free — la stratégie **ne bat pas le benchmark**.
+> C'est un contre-exemple pédagogique : un croisement EMA naïf (fast=20, slow=50) sur
+> 5 grandes valeurs tech sous-performe le buy & hold de SPY sur 2015-2024. La valeur
+> aveugle « ~1,00 » auparavant inscrite ici était fausse (deux ordres de grandeur).
 
 ## Fichiers
 
