@@ -9,6 +9,12 @@
       python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
       csharp_sha: 23a665e9c31aa87889cbaf4630e4d87b3c32e8c2
       reason: "rebaseline python apres fix prose Exemple 2/AutoML (cellules 7/8/11, #8052) : la prose disait 'donnees quadratiques y=100x^2' et 'compare deux GradientBoosting' mais le code cellule 8 genere des SINUS (y=10sin(x)) et compare trois DecisionTreeRegressor (underfit/good/overfit) ; l'AutoML cellule 10 tourne sur ces memes donnees sinus (LinearRegression RMSE CV=7.01, RandomForest=3.06). Le comment cellule 8 'le RMSE test explose' contredisait l'output (overfit test=2.78, le plus bas). Fix aligne prose sur le code execute. Python-only, csharp_sha unchanged, parite semantique preservee."
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: cc944d052d3f64d4d72e0c0a833a0a637746a62b
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 2c593b51f0144ed0a7b21cbd230719916fca3744e9ef9cfba0b6ca2fadf9041b
   known_differences:
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
