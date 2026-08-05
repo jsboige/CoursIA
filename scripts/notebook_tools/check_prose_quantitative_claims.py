@@ -49,6 +49,36 @@ Usage
 
     # Bloquant (une fois le stock vide)
     python check_prose_quantitative_claims.py --diff origin/main...HEAD --strict
+
+Ligne de partage #9434 (4 classes de valeurs quantitatives)
+-----------------------------------------------------------
+Le mandat #9377 a ete applique aux README (cf PR #9384, #9425, #9432).
+La vague #8052/#9426-9429 l'a etendu a l'interieur des notebooks : les
+memes PR qui re-alignent la prose sur une sortie commisee re-epinglent
+des valeurs qui rebougeront au prochain passage kernel. Pour rendre la
+regle applicable plutot que dogmatique, le scanner distingue 4 classes :
+
+  - **structurel**   : ordre de grandeur stable cross-machine (autorise).
+                       Le scanner NE remonte PAS cette classe : elle est
+                       du contenu pedagogique reel, pas une mesure d'etat.
+  - **artifact**     : compteur d'artefact (lignes/cells/notebooks), le
+                       stock historique remonte depuis #9377.
+  - **machine_dep**  : temps absolu en unite de duree (`(28-364 ms)`,
+                       `~2.4s`, `12 min`) — derive a chaque re-execution.
+                       Re-epingler cette classe = fabriquer de la derive.
+  - **env_dep**      : version de librairie (`NumPy 2.4.2`, `Python 3.11+`,
+                       `PyTorch 2.4.1+cu121`) — derive a chaque bump.
+                       Cf PR #9429 GT-4c-NashExistence.
+  - **stochastique** : fitness/score d'un GA non-seeded, accuracy non-
+                       seedee — derive a chaque run. La detection de cette
+                       classe necessite un contexte semantique que le
+                       regex seul ne peut pas trancher ; le scanner s'en
+                       remet a l'oeil humain sur l'output `git diff`.
+
+    # Tri par classe (le plus utile : cibler une PR precise)
+    python check_prose_quantitative_claims.py --diff origin/main...HEAD --class=artifact
+    python check_prose_quantitative_claims.py --diff origin/main...HEAD --class=machine_dep
+    python check_prose_quantitative_claims.py --diff origin/main...HEAD --class=env_dep
 """
 
 from __future__ import annotations
@@ -71,6 +101,45 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 COUNT_RE = re.compile(
     r"(?<![\w.])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
+)
+
+# --- ligne de partage #9434 : 4 classes de valeurs quantitatives en prose -----
+# Le mandat #9377/#9434 distingue :
+#  - structurel     : ordre de grandeur stable cross-machine (autorise en prose)
+#  - machine_dep    : temps absolus en ms/s/... ; derive a chaque re-exec
+#  - env_dep        : versions de librairie ; derive a chaque bump
+#  - stochastique   : fitness/score non-seeded ; derive a chaque run
+# Les 3 dernieres re-epinglent une valeur qui rebougera, cf PR #9426-9429.
+# CATALOG-STATUS deja neutralise par GENERATED_MARKERS.
+
+# machine_dep : `(28-364 ms)`, `24.5ms`, `~2.4s`, `0.3 us`, `12 min`, `2 h`.
+# On accepte un nombre flottant precede ou non de `~`, suivi de l'unite.
+# Les plages `28-364 ms` / `24-127 ms` sont capturees integralement (un seul
+# finding par plage, pas un par borne) pour eviter le bruit de doublons.
+TIMING_RE = re.compile(
+    r"(?<![\w.])~?(?:\d+(?:\.\d+)?\s*-\s*)?\d+(?:\.\d+)?\s*"
+    r"(?:µs|us|ms|s|min|h|hr|hours?|minutes?|seconds?|milliseconds?|microseconds?)\b",
+    re.IGNORECASE,
+)
+
+# env_dep : `NumPy 2.4.2`, `Python 3.11`, `Python 3.10+`, `PyTorch 2.4.1+cu121`.
+# Liste fermee de packages : ajouter une entree = modifier le guard, c'est
+# voulu (cf regle anti-monoculture vocab). Le `+` final accepte `3.10+`.
+ENV_RE = re.compile(
+    r"\b(?:Python|CPython|NumPy|numpy|TensorFlow|PyTorch|torch|Java|dotnet|"
+    r"\.NET|scikit-learn|sklearn|Pandas|pandas|Matplotlib|matplotlib|"
+    r"SciPy|scipy|SymPy|sympy|Jupyter|IPython|papermill|"
+    r"transformers|datasets|huggingface_hub|"
+    r"ortools|OR-Tools|pulp|PuLP|z3|CPLEX|Gurobi)\s+"
+    r"\d+\.\d+(?:\.\d+)?\+?",
+    re.IGNORECASE,
+)
+
+# Patterns regroupes pour scan ; ordre = priorite (machine_dep avant env_dep
+# car un env peut etre precede d'un timing dans le meme bloc).
+CLASS_PATTERNS = (
+    ("machine_dep", TIMING_RE),
+    ("env_dep", ENV_RE),
 )
 
 # Une ligne de diff .ipynb qui ouvre un champ JSON autre que "source" est une
@@ -140,17 +209,37 @@ def _iter_markdown_sources(nb_path: Path):
         yield idx, src
 
 
-def _findings_in_text(text: str, location: str) -> list[tuple[str, str]]:
+def _findings_in_text(
+    text: str, location: str, klass_filter: str | None = None
+) -> list[tuple[str, str]]:
+    """Renvoie (location, snippet) pour chaque finding.
+
+    `klass_filter` ∈ {"artifact", "machine_dep", "env_dep", None}.
+    - "artifact"      : ne renvoie QUE les compteurs attaches a un artefact
+                        (le comportement historique, COUNT_RE).
+    - "machine_dep"   : ne renvoie QUE les temps en unite de duree.
+    - "env_dep"       : ne renvoie QUE les versions de librairie.
+    - None (defaut)   : renvoie TOUTES les classes (artifact + machine_dep + env_dep).
+    """
     out = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
             continue
-        for match in COUNT_RE.finditer(line):
-            out.append((location, match.group(0).strip()))
+        # Classe artifact : comportement historique inchange.
+        if klass_filter in (None, "artifact"):
+            for match in COUNT_RE.finditer(line):
+                out.append((location, match.group(0).strip()))
+        # Classes #9434 : machine_dep / env_dep.
+        if klass_filter in (None, "machine_dep", "env_dep"):
+            for klass_label, pattern in CLASS_PATTERNS:
+                if klass_filter is not None and klass_filter != klass_label:
+                    continue
+                for match in pattern.finditer(line):
+                    out.append((location, match.group(0).strip()))
     return out
 
 
-def scan_all(root: Path) -> list[tuple[str, str]]:
+def scan_all(root: Path, klass_filter: str | None = None) -> list[tuple[str, str]]:
     findings: list[tuple[str, str]] = []
 
     for nb in root.rglob("*.ipynb"):
@@ -158,7 +247,7 @@ def scan_all(root: Path) -> list[tuple[str, str]]:
             continue
         rel = nb.relative_to(root).as_posix()
         for idx, src in _iter_markdown_sources(nb):
-            findings += _findings_in_text(src, f"{rel} MD[{idx}]")
+            findings += _findings_in_text(src, f"{rel} MD[{idx}]", klass_filter)
 
     for md in root.rglob("*.md"):
         if _skipped(md):
@@ -178,12 +267,12 @@ def scan_all(root: Path) -> list[tuple[str, str]]:
                 text,
                 flags=re.DOTALL,
             )
-        findings += _findings_in_text(text, rel)
+        findings += _findings_in_text(text, rel, klass_filter)
 
     return findings
 
 
-def scan_diff(diff_range: str) -> list[tuple[str, str]]:
+def scan_diff(diff_range: str, klass_filter: str | None = None) -> list[tuple[str, str]]:
     """Ne juge que les lignes AJOUTEES : le stock existant ne fait pas echouer."""
     try:
         diff = subprocess.run(
@@ -232,7 +321,7 @@ def scan_diff(diff_range: str) -> list[tuple[str, str]]:
                 continue
             if '"source"' not in line and not body.startswith('"'):
                 continue
-        findings += _findings_in_text(line[1:], current)
+        findings += _findings_in_text(line[1:], current, klass_filter)
 
     return findings
 
@@ -244,9 +333,24 @@ def main() -> int:
     g.add_argument("--diff", metavar="RANGE", help="ne juge que les lignes ajoutees (ex: origin/main...HEAD)")
     ap.add_argument("--strict", action="store_true", help="rc=1 sur finding (defaut : advisory, rc=0)")
     ap.add_argument("--root", default=".", help="racine du depot")
+    ap.add_argument(
+        "--class", dest="klass", choices=("artifact", "machine_dep", "env_dep"),
+        default=None,
+        help=(
+            "filtre les findings par classe (ligne de partage #9434) : "
+            "'artifact' = compteurs d'artefact (lignes/cells/notebooks), "
+            "'machine_dep' = temps absolus (re-epingles a chaque re-exec), "
+            "'env_dep' = versions de librairie (re-epingles a chaque bump). "
+            "Sans --class, les 3 classes sont rapportees (comportement etendu)."
+        ),
+    )
     args = ap.parse_args()
 
-    findings = scan_all(Path(args.root).resolve()) if args.all else scan_diff(args.diff)
+    findings = (
+        scan_all(Path(args.root).resolve(), args.klass)
+        if args.all
+        else scan_diff(args.diff, args.klass)
+    )
 
     if not findings:
         print("[OK] aucun compteur quantitatif en prose.")
