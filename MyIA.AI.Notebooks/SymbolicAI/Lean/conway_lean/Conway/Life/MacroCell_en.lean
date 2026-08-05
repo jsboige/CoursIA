@@ -157,28 +157,33 @@ The construction is straightforward but a little tedious:
 
 namespace MacroCell
 
-/-- Smallest `n` such that `2 ^ n >= k`. -/
+/-- Smallest `n` such that `2 ^ n >= k`.
+
+    Previously defined by well-founded recursion on `(k + 2 + 1) / 2`, which the
+    kernel reducer cannot unfold: that opacity was the *sole* obstruction behind
+    the `native_decide` uses downstream (the `Int` coordinates of `Computation.lean`
+    were a symptom, not an intrinsic necessity). Reformulated via `Nat.log 2`
+    (Mathlib structural recursion, kernel-reducible):
+    `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`. Same function
+    (values unchanged, cf `ceilLog2_spec`), now decidable. Firsthand diagnosis:
+    `ceilLog2 6 = 3` goes through under `decide` after the rewrite (it failed
+    before, even with `maxRecDepth 1000000`, even on a single step). -/
 def ceilLog2 (k : Nat) : Nat :=
-  match k with
-  | 0     => 0
-  | 1     => 0
-  | k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)
+  if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 
 /-- `ceilLog2 k` is large enough that `2 ^ ceilLog2 k >= k`. This is the
     arithmetic heart of the `gridFrame` containment lemma. -/
 theorem ceilLog2_spec (k : Nat) : 2 ^ ceilLog2 k >= k := by
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-    match k with
-    | 0 => simp [ceilLog2]
-    | 1 => simp [ceilLog2]
-    | m + 2 =>
-      simp only [ceilLog2]
-      have h : 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= (m + 2 + 1) / 2 :=
-        ih ((m + 2 + 1) / 2) (by omega)
-      have h2 : 2 * 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= m + 2 := by omega
-      rw [Nat.pow_add, Nat.pow_one]
-      exact h2
+  by_cases hk : k ≤ 1
+  · -- k = 0 or 1: ceilLog2 k = 0, and 2^0 = 1 ≥ k
+    simp only [ceilLog2, hk, reduceIte]
+    omega
+  · -- k ≥ 2: ceilLog2 k = Nat.log 2 (k-1) + 1, and k ≤ 2^((k-1).log+1) by the
+    -- upper bound of Nat.log (Mathlib: n < b^(log b n + 1)).
+    simp only [ceilLog2, hk, reduceIte]
+    have h := Nat.lt_pow_succ_log_self Nat.one_lt_two (k - 1)
+    rw [Nat.succ_eq_add_one] at h
+    omega
 
 /-- Build a `MacroCell` of level `n` covering the square `[r0, r0 + 2^n) x
     [c0, c0 + 2^n)`, with live cells given by membership test in `g`. -/
