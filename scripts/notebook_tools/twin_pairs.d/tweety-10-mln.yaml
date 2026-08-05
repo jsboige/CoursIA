@@ -20,6 +20,12 @@
       csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
       content_python_sha: 28ebe3e83f46a2122dbe3378365b4d9d0bfe7e1c3f930b72180e634b4a3f4290
       content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 0b35a8ae8192938539bc1c9d00e53b36788d2fc3
+      csharp_sha: cfbb0578df2cf99d6f81afb28fed2eb491cc810f
+      content_python_sha: 28ebe3e83f46a2122dbe3378365b4d9d0bfe7e1c3f930b72180e634b4a3f4290
+      content_csharp_sha: ef670bb7bb3afda89ee38bd24540b03b07cc77a52d9175ae12416b69e647a251
   known_differences:
     - "Rebaseline 2026-08-05 : cote Python deplace par re-alignement du tableau de balayage cell[12] sur la sortie commitee cell[11] (arrondis ~0.58 -> ~0.60 etc.). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie. NOTE (verdict firsthand #9466 volet 1) : le reasoner ApproximateNaiveMlnReasoner est DETERMINISTE sur ce domaine (DefaultSubsetIterator, 2^N <= 200000 atomes, enumeration exhaustive) -- l hypothese MCMC-non-seede de #9466 volet(1) est INVALIDEE (delta=0 sur 2 runs cross-JVM). Les marginales sont reproductibles a 4 decimales : ce re-alignement est PERMANENT, non cyclique (pas de derive recurrente)."
     - "Rebaseline 2026-08-05 : cote C# deplace par remplacement des 4 WriteLine litteraux de cell[11] (effet du poids w sur P(a)) par le calcul EXACT en forme fermee sigma(w)=exp(w)/(1+exp(w)) via Math.Exp (decision Prong-A #9466/#3801 : le reasoner MCMC ApproximateNaiveMlnReasoner reste bloque par le bug IKVM 8.15, mais le MLN trivial {<P(a),w>} a 1 atome admet une factorisation analytique exacte -- pas de workaround degrade, pas de litteral faux w=0.5->0.5). Edition code cell[11] (re-executed, ec=4, outputs reels) + markdown cells[6]/[12] (correction formule, note forme fermee). Parite semantique inchangee (aucune autre cellule touchee) ; cote Python non modifie (python_sha 0b35a8ae herite de #9459)."
