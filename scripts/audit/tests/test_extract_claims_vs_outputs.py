@@ -217,3 +217,91 @@ def test_fix_C_display_data_extraction_unchanged(tmp_path):
     assert res["numeric_claims_unmatched"] == 0, (
         f"display_data extraction regression; findings={res['findings']}"
     )
+
+
+
+# === Fix D (FP-c.1229) : .NET Interactive text/html outputs must contribute numbers ===
+
+
+def test_fix_D_dotnet_html_output_numbers_are_extracted(tmp_path):
+    """FP-c.1229 : .NET Interactive emet les affichages riches d'objets (metriques
+    CV, contributions de features, matrices) en MIME ``text/html`` (tables
+    ``dni-treeview`` avec des cellules ``<pre>...</pre>``) SANS fallback
+    ``text/plain``. Le scanner n'extrait les nombres que de ``text/plain`` ->
+    ``numeric_values_found`` vide pour ces outputs -> faux
+    ``numeric_claim_not_in_outputs`` MAJOR sur chaque notebook .NET qui cite ses
+    propres resultats (ML-4, Sudoku-DLX, GameTheory, Probas/Infer, Search/CSP).
+
+    Ce test verifie qu'un markdown claim present dans un output ``text/html``
+    n'est plus flagge (avant Fix D : 1 faux MAJOR ; apres : 0)."""
+    mod = _load_extract()
+    # .NET treeview-style HTML: metric value lives inside <pre>0.8884</pre>
+    html_output = (
+        '<table><thead><tr><th><i>index</i></th><th>value</th></tr></thead>'
+        '<tbody><tr><td>0</td><td><details class="dni-treeview"><summary>'
+        '<span class="dni-code-hint"><code>RegressionMetrics</code></span></summary>'
+        '<div><table><tbody>'
+        '<tr><td>RSquared</td><td><div class="dni-plaintext"><pre>0.8884018879298109</pre></div></td></tr>'
+        '<tr><td>RootMeanSquaredError</td><td><div class="dni-plaintext"><pre>3.230644533283385</pre></div></td></tr>'
+        '</tbody></table></div></details></td></tr></tbody></table>'
+    )
+    nb = _write_nb(
+        tmp_path / "dotnet-html.ipynb",
+        cells=[
+            _md("# Evaluation\nLa validation croisée donne **R² ≈ 0,8884** et **RMSE ≈ 3,2306**."),
+            _code(
+                "cvResults.Select(x => x.Metrics)",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/html": html_output},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name=".net-csharp",
+    )
+    res = mod.audit_notebook(nb)
+    # Before Fix D : text/html ignored -> numbers not extracted -> false MAJOR.
+    # After  Fix D : "0.8884018879298109" and "3.230644533283385" extracted from
+    # the <pre> cells -> the markdown claims (0,8884 / 3,2306, locale-rounded
+    # prefixes) match via the Litmus-1 substring rule.
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"markdown claims present in text/html output must not be flagged; "
+        f"matched={res['numeric_claims_matched']}, findings={res['findings']}"
+    )
+
+
+def test_fix_D_html_extraction_does_not_regress_text_plain(tmp_path):
+    """Contrôle : Fix D ajoute l'extraction text/html SANS régresser text/plain
+    (le chemin d'origine doit toujours extraire les nombres d'un output text/plain,
+    et un output mixte text/plain + text/html ne doit pas doubler le compte des
+    matched — la règle Litmus-1 en substring + le set numeric_values gèrent la
+    dédup)."""
+    mod = _load_extract()
+    nb = _write_nb(
+        tmp_path / "plain.ipynb",
+        cells=[
+            _md("# Resultat\nLa précision est **0.92**."),
+            _code(
+                "metrics",
+                outputs=[
+                    {
+                        "output_type": "execute_result",
+                        "execution_count": 1,
+                        "data": {"text/plain": "0.92"},
+                        "metadata": {},
+                    }
+                ],
+            ),
+        ],
+        kernel_name="python3",
+    )
+    res = mod.audit_notebook(nb)
+    assert res["numeric_claims_unmatched"] == 0, (
+        f"text/plain extraction regression; findings={res['findings']}"
+    )
+
+
