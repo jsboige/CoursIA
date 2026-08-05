@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-08-04 06:14
+Generated: 2026-08-05 06:10
 Total notebooks: 850
 
 ## Status Summary
 
-- **READY**: 697
-- **DEMO**: 151
+- **READY**: 700
+- **DEMO**: 148
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 769
+- **BETA**: 773
 - **TEMPLATE**: 4
-- **ALPHA**: 53
+- **ALPHA**: 49
 - **DRAFT**: 24
 
 ## By Series
@@ -166,7 +166,7 @@ Total notebooks: 850
 | 140 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 141 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (115 notebooks) — READY:115 | ALPHA:6, BETA:106, DRAFT:3
+### Search (115 notebooks) — READY:115 | ALPHA:5, BETA:107, DRAFT:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -194,7 +194,7 @@ Total notebooks: 850
 | 22 | App-6 - Demineur : CSP, Probabilites et NP-complet | Python 3 | READY | BETA | 45min | po-2025 |
 | 23 | App-7 : Wordle Solver -- CSP et théorie de l'infor | Python 3 | READY | BETA | 45min | po-2025 |
 | 24 | App-7b : Solveur Wordle -- CSP et théorie de l'inf | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 25 | App-8 : Modelisation declarative par contraintes ( | .NET (C#) | READY | ALPHA | 45min | po-2025 |
+| 25 | App-8 : Modelisation declarative par contraintes ( | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 26 | App-8-MiniZinc : Modelisation declarative par cont | Python 3 | READY | BETA | 45min | po-2025 |
 | 27 | App-10 : Optimisation de portefeuille par algorith | Python 3 | READY | BETA | 45min | po-2025 |
 | 28 | App-10b : Optimisation de portefeuille par algorit | .NET (C#) | READY | BETA | 30min | po-2025 |
@@ -567,7 +567,7 @@ Total notebooks: 850
 | 223 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 224 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (105 notebooks) — DEMO:54, READY:51 | ALPHA:22, BETA:71, DRAFT:11, TEMPLATE:1
+### QuantConnect (105 notebooks) — DEMO:51, READY:54 | ALPHA:19, BETA:74, DRAFT:11, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -642,7 +642,7 @@ Total notebooks: 850
 | 69 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | READY | BETA | 45min | po-2026 |
 | 70 | Research QuantBook: ETF Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
 | 71 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | READY | BETA | 45min | po-2026 |
-| 72 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 72 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | READY | BETA | 45min | po-2026 |
 | 73 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | READY | BETA | 30min | po-2026 |
 | 74 | Research QuantBook: Framework Composite FamaFrench | Python 3 | READY | BETA | 30min | po-2026 |
 | 75 | Research QuantBook: Framework Composite Momentum + | Python 3 | READY | BETA | 30min | po-2026 |
@@ -659,7 +659,7 @@ Total notebooks: 850
 | 86 | ML Text Classification for Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
 | 87 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | READY | BETA | 45min | po-2026 |
 | 88 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | READY | BETA | 30min | po-2026 |
-| 89 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 89 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | BETA | 30min | po-2026 |
 | 90 | Research QuantBook: Equity Multi-Layer EMA + ML Fi | Python 3 | READY | BETA | 45min | po-2026 |
 | 91 | Research QuantBook: Option Wheel Strategy | Python 3 | READY | BETA | 45min | po-2026 |
 | 92 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | READY | BETA | 30min | po-2026 |
@@ -670,7 +670,7 @@ Total notebooks: 850
 | 97 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | READY | BETA | 45min | po-2026 |
 | 98 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
 | 99 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 100 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 100 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | BETA | 30min | po-2026 |
 | 101 | Research QuantBook: Trend Following Competition | Python 3 | READY | BETA | 30min | po-2026 |
 | 102 | Research QuantBook: TrendStocks Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
 | 103 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | BETA | 30min | po-2026 |

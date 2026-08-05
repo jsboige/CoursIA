@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 198 |
 | PRODUCTION | 0 |
-| BETA | 171 |
-| ALPHA | 27 |
+| BETA | 174 |
+| ALPHA | 24 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -240,7 +240,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 12 | Research QuantBook: Multi-Stock EMA Crossover | BETA | Non |
 | 13 | Research QuantBook: ETF Pairs Trading | BETA | Non |
 | 14 | Research QuantBook: Fama-French Factor ETF Rotation | BETA | Non |
-| 15 | Research QuantBook: ForexCarry (G10 FX Momentum) | ALPHA | Non |
+| 15 | Research QuantBook: ForexCarry (G10 FX Momentum) | BETA | Non |
 | 16 | Research QuantBook: Framework Composite EMA-Trend | BETA | Non |
 | 17 | Research QuantBook: Framework Composite FamaFrench + Al | BETA | Non |
 | 18 | Research QuantBook: Framework Composite Momentum + Regi | BETA | Non |
@@ -257,7 +257,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 29 | ML Text Classification for Trading | ALPHA | Non |
 | 30 | ML XGBoost - Gradient Boosting pour Trading | BETA | Non |
 | 31 | Research QuantBook: Mean Reversion (Sector ETFs) | BETA | Non |
-| 32 | Research QuantBook: MomentumStrategy (Sector ETF Rotati | ALPHA | Non |
+| 32 | Research QuantBook: MomentumStrategy (Sector ETF Rotati | BETA | Non |
 | 33 | Research QuantBook: Equity Multi-Layer EMA + ML Filters | BETA | Non |
 | 34 | Research QuantBook: Option Wheel Strategy | BETA | Non |
 | 35 | Research QuantBook: Options Wheel Tech Stocks | BETA | Non |
@@ -266,7 +266,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 38 | Research QuantBook: RL Portfolio Allocation | BETA | Non |
 | 39 | Research QuantBook: RegimeSwitching Alpha Model | BETA | Non |
 | 40 | Research QuantBook: RiskParity (Inverse-Volatility Weig | ALPHA | Non |
-| 41 | Research QuantBook: Sector-Momentum (Dual Momentum) | ALPHA | Non |
+| 41 | Research QuantBook: Sector-Momentum (Dual Momentum) | BETA | Non |
 | 42 | Research QuantBook: Trend Following Competition | BETA | Non |
 | 43 | Research QuantBook: TrendStocks Alpha Model | BETA | Non |
 | 44 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | BETA | Non |

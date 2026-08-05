@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 142 |
+| Notebooks | 143 |
 | PRODUCTION | 0 |
-| BETA | 142 |
+| BETA | 143 |
 | ALPHA | 0 |
 
-## Search/Applications (38 notebooks)
+## Search/Applications (39 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -52,21 +52,22 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 21 | App-6 - Demineur : CSP, Probabilites et NP-completude | BETA | Oui |
 | 22 | App-7 : Wordle Solver -- CSP et théorie de l'informatio | BETA | Oui |
 | 23 | App-7b : Solveur Wordle -- CSP et théorie de l'informat | BETA | Oui |
-| 24 | App-8-MiniZinc : Modelisation declarative par contraint | BETA | Oui |
-| 25 | App-10 : Optimisation de portefeuille par algorithme gé | BETA | Oui |
-| 26 | App-10b : Optimisation de portefeuille par algorithme g | BETA | Oui |
-| 27 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
-| 28 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
-| 29 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
-| 30 | App-17b : Vehicle Routing Problem (VRP) — Twin C# (méta | BETA | Oui |
-| 31 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
-| 32 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
-| 33 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 34 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
-| 35 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
-| 36 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
-| 37 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
-| 38 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 24 | App-8 : Modelisation declarative par contraintes (twin  | BETA | Oui |
+| 25 | App-8-MiniZinc : Modelisation declarative par contraint | BETA | Oui |
+| 26 | App-10 : Optimisation de portefeuille par algorithme gé | BETA | Oui |
+| 27 | App-10b : Optimisation de portefeuille par algorithme g | BETA | Oui |
+| 28 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
+| 29 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
+| 30 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
+| 31 | App-17b : Vehicle Routing Problem (VRP) — Twin C# (méta | BETA | Oui |
+| 32 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
+| 33 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
+| 34 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 35 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
+| 36 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
+| 37 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
+| 38 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
+| 39 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
 
 ## Search/Part1-Foundations (29 notebooks)
 
