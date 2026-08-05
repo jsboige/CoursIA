@@ -109,12 +109,19 @@ Usage
     # -- il releve d'une PR de rebaseline dediee (cf #8264 batch precedent).
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
+    # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
+    # Distinct du check historique : rouge sur N'IMPORTE QUEL drift (legacy ou content),
+    # pas seulement DRIFT_or_MISSING. Utilise par .github/workflows/twin-parity-cron.yml.
+    python check_twin_parity.py --ci-strict --check --json
+    python check_twin_parity.py --ci-strict --check          # sortie human-readable
 
 Exit codes
 ----------
     0 -- toutes les paires OK (ou mode non --check), ou zero nouveau drift en --per-pair
+         OU zero drift toutes categories (mode --ci-strict --check)
     1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
          OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
+         OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
     2 -- erreur (registre illisible, pas un depot git)
 
 Voir aussi
@@ -956,6 +963,10 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
                    help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
+    p.add_argument("--repo-root", default=None,
+                   help="Racine du depot git (defaut: detectee via `git rev-parse "
+                        "--show-toplevel`). Utile pour les tests (mini-depot tmp_path) "
+                        "et le cron CI qui pointe sur le checkout explicite.")
     p.add_argument("--family", default=None,
                    help="Restreindre a une famille (ex. SMT/Z3-API)")
     p.add_argument("--check", action="store_true",
@@ -981,6 +992,13 @@ def main(argv=None) -> int:
                         "le drift INTRODUIT par la PR, jamais le drift pre-existant.")
     p.add_argument("--base", default=None,
                    help="Ref git de base pour le mode --per-pair (ex. origin/main, HEAD~1).")
+    p.add_argument("--ci-strict", action="store_true",
+                   help="Mode CI cron (#9399 volet b) : check fleet-wide SANS base ref, "
+                        "avec breakdown 4 categories (ok_legacy / ok_content / drift_blob / "
+                        "drift_content / drift_legacy_after_content / missing_python / "
+                        "missing_csharp / no_audit). Combine avec --check pour FAIL sur N'IMPORTE "
+                        "QUEL drift (vs la semantique 'DRIFT_or_MISSING only' historique). "
+                        "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
     p.add_argument("--pair", default=None,
                    help="Restreindre --update a une paire nommee (ex. 'Search-9-LP'). "
                         "Impossible a combiner avec --family.")
@@ -1032,8 +1050,12 @@ def main(argv=None) -> int:
                 "(cf issue #8508 + lecons L963/L974).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
+    if args.ci_strict and args.per_pair:
+        p.error("--ci-strict est un mode fleet-wide SANS base ref : incompatible avec --per-pair.")
+    if args.ci_strict and args.update:
+        p.error("--ci-strict est un mode read-only : incompatible avec --update.")
 
-    repo_root = _repo_root()
+    repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
 
     # --- Mode --coverage : angle mort du registre (paires jamais declarees) ---
@@ -1366,6 +1388,124 @@ def main(argv=None) -> int:
     n_ok = sum(1 for r in results if r["status"] == "OK")
     n_drift = sum(1 for r in results if r["status"] == "DRIFT")
     n_missing = sum(1 for r in results if r["status"] == "MISSING")
+
+    # --- Mode --ci-strict (#9399 volet b) ---
+    # Verdict dur : pour chaque paire, on detaillé le verdict legacy vs content_sha.
+    # Une paire legacy (sans content_*_sha) a son blob SHA comme seule signature
+    # -> un strip outille deplace le blob et fait DRIFT (faux positif du gate per-PR,
+    # parce que le gate per-PR ignore le drift PRE-EXISTANT ; ici on est en fleet-wide
+    # sans base-ref, on voit TOUT).
+    # Une paire avec content_*_sha (volet c) -> tampon cost seul ne fait PAS DRIFT,
+    # mais fix de prose / re-exec font DRIFT (verdict sincere).
+    # Le cron fleet-wide survole les DEUX : utile pour detecter un worker qui a oublie
+    # --update apres un strip, ou un depot SHA declare a la main devenu faux.
+    if args.ci_strict:
+        # Breakdown par categorie : legacy vs content vs missing vs ok
+        cat = {
+            "n_ok_legacy": 0,             # blob SHA match, pas de content_sha enregistre
+            "n_ok_content": 0,            # content_sha match (volet c)
+            "n_drift_blob": 0,            # legacy blob SHA mismatch
+            "n_drift_content": 0,         # content_sha mismatch
+            "n_drift_legacy_after_content": 0,  # legacy blob drift mais content_sha OK
+                                             # = strip outille detecte
+            "n_missing_python": 0,
+            "n_missing_csharp": 0,
+            "n_no_audit": 0,              # paire sans audits ni last_audit
+        }
+        ci_results = []
+        for pp, r in zip(pairs, results):
+            audit = _latest_audit(pp)
+            rec_py = audit.get("python_sha")
+            rec_cs = audit.get("csharp_sha")
+            rec_cpy = audit.get("content_python_sha")
+            rec_ccs = audit.get("content_csharp_sha")
+            cur_py = r["current_python_sha"]
+            cur_cs = r["current_csharp_sha"]
+            cur_cpy = r["current_content_python_sha"]
+            cur_ccs = r["current_content_csharp_sha"]
+
+            entry_ci = {
+                "name": r["name"],
+                "family": r["family"],
+                "parity_level": r["parity_level"],
+                "status": r["status"],
+                "details": list(r["details"]),
+                "has_content_sha_audit": bool(rec_cpy and rec_ccs),
+            }
+
+            if not audit:
+                cat["n_no_audit"] += 1
+                ci_results.append(entry_ci)
+                continue
+
+            py_missing = (cur_py is None)
+            cs_missing = (cur_cs is None)
+            if py_missing:
+                cat["n_missing_python"] += 1
+            if cs_missing:
+                cat["n_missing_csharp"] += 1
+
+            blob_py_drift = (not py_missing and rec_py and cur_py != rec_py)
+            blob_cs_drift = (not cs_missing and rec_cs and cur_cs != rec_cs)
+            content_py_drift = (rec_cpy and cur_cpy and cur_cpy != rec_cpy)
+            content_cs_drift = (rec_ccs and cur_ccs and cur_ccs != rec_ccs)
+
+            if entry_ci["has_content_sha_audit"]:
+                if content_py_drift or content_cs_drift:
+                    cat["n_drift_content"] += 1
+                elif blob_py_drift or blob_cs_drift:
+                    # Strip outille probable (volet c detecte le strip)
+                    cat["n_drift_legacy_after_content"] += 1
+                    entry_ci["details"].append(
+                        "blob SHA drift MAIS content_sha OK : strip outille probable "
+                        "(strip_probe_banner / strip_machine_paths / scrub_papermill) "
+                        "sans --update ulterieur. Refaire --update en dernier, cf #8957."
+                    )
+                else:
+                    cat["n_ok_content"] += 1
+            else:
+                if blob_py_drift or blob_cs_drift:
+                    cat["n_drift_blob"] += 1
+                else:
+                    cat["n_ok_legacy"] += 1
+
+            ci_results.append(entry_ci)
+
+        n_total_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
+                         + cat["n_drift_legacy_after_content"]
+                         + cat["n_missing_python"] + cat["n_missing_csharp"]
+                         + cat["n_no_audit"])
+
+        if args.json:
+            out = {
+                "mode": "ci_strict",
+                "registry": str(reg_path),
+                "total": len(ci_results),
+                "ok_total": n_ok,
+                "drift_total": n_drift,
+                "missing_total": n_missing,
+                "ci_strict": cat,
+                "n_total_drift": n_total_drift,
+                "pairs": ci_results,
+            }
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+        else:
+            print(f"[CI-STRICT] {len(ci_results)} paire(s) | "
+                  f"ok_legacy={cat['n_ok_legacy']} ok_content={cat['n_ok_content']} "
+                  f"drift_blob={cat['n_drift_blob']} drift_content={cat['n_drift_content']} "
+                  f"drift_legacy_after_content={cat['n_drift_legacy_after_content']} "
+                  f"missing_py={cat['n_missing_python']} missing_cs={cat['n_missing_csharp']} "
+                  f"no_audit={cat['n_no_audit']}")
+            for r in ci_results:
+                if r["status"] != "OK":
+                    print(f"  [{r['status']}] {r['name']} ({r['family']}, {r['parity_level']})")
+                    for d in r["details"]:
+                        print(f"       - {d}")
+
+        # CI gate : rouge sur n'importe quel drift (le but du cron fleet-wide)
+        if args.check and n_total_drift > 0:
+            return 1
+        return 0
 
     if args.json:
         out = {
