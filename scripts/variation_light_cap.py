@@ -56,39 +56,31 @@ from pathlib import Path
 
 # --- parsing ---------------------------------------------------------------
 
-# Markdown noise to strip before matching: asterisks (bold) and backticks.
-# Mirrors the workflow's `tr -d '*\`'` so the two stay in lockstep.
-_NOISE = str.maketrans({"*": "", "`": ""})
-
-# `Grain:` (case-insensitive) then TIER / GENRE. TIER is the word before `/`.
-_GRAIN_TIER_RE = re.compile(r"Grain:\s*([A-Za-z]+)\s*/", re.IGNORECASE)
-
-# `lane` (case-insensitive), optional colon, whitespace, then machine:workspace.
-# machine = myia-po-2024 (letters, digits, dot, underscore, hyphen); workspace
-# likewise (CoursIA-2). Captured as the single token "<machine>:<workspace>".
-_LANE_RE = re.compile(
-    r"lane:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
-)
+# The Grain-tag reader lives in scripts/grain_tag.py -- a SHARED extractor so
+# the CI guard (variation-tag-guard.yml) and this organ read the tag the SAME
+# way (#9485). The historical divergence -- a bash `grep 'Grain:'` here, a
+# Python `Grain:\s*` there -- left 38% of a day's merges unattributed because
+# both required the colon and a `## Grain` title form matched neither. See
+# grain_tag.parse_grain_tag for the tolerated forms (title, no-colon, bold).
+#
+# `parse_grain` keeps the historical {tier, lane} return (no genre -- the organ
+# never needed it) so the 21 existing tests asserting that exact shape do not
+# break; the genre the extractor also reads is simply dropped here.
+from grain_tag import parse_grain_tag  # noqa: E402
 
 
 def parse_grain(body: str) -> dict | None:
-    """Extract {tier, lane} from a PR body, full-text + separator-agnostic.
+    """Extract {tier, lane} from a PR body, form-tolerant via the shared reader.
 
-    Returns None when no `Grain:` line is found. `tier` is upper-cased
-    (LIGHT/MED/DEEP) or None if the TIER could not be read. `lane` is the
-    "<machine>:<workspace>" string or None.
+    Returns None when no `<TIER>/<GENRE>` can be read anywhere (the guard then
+    flags `variation-tag-missing`). `tier` is upper-cased (LIGHT/MED/DEEP);
+    `lane` is the "<machine>:<workspace>" token or None (the guard then flags
+    `variation-tag-lane-missing`).
     """
-    if not body:
+    g = parse_grain_tag(body)
+    if g is None:
         return None
-    flat = body.translate(_NOISE)
-    tier_m = _GRAIN_TIER_RE.search(flat)
-    if not tier_m:
-        return None
-    lane_m = _LANE_RE.search(flat)
-    return {
-        "tier": tier_m.group(1).upper(),
-        "lane": lane_m.group(1) if lane_m else None,
-    }
+    return {"tier": g["tier"], "lane": g["lane"]}
 
 
 # --- requalification (coordinator override of the declared tag) ------------
