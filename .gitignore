@@ -543,6 +543,18 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
 # Claude Code agent memory - local scope only (project scope is versioned)
 .claude/agent-memory-local/
+# Per-machine ephemeral audit snapshots (point-in-time status) belong on the dashboard,
+# not in the repo. Cross-machine project memory under .claude/agent-memory/<agent>/
+# remains tracked (rationale: cross-worker coordination, e.g. #1708 forensic baseline).
+# See PR (item 7 of #9535) and harness-hygiene.md.
+.claude/agent-memory/*/project_*_audit.md
+.claude/agent-memory/*/enrichment-log-*.md
+.claude/agent-memory/*/enrichment_summary_*.md
+.claude/agent-memory/*/failing-strategies-*.md
+.claude/agent-memory/*/btc-ml-improvements-*.md
+.claude/agent-memory/*/cycle-*-findings.md
+.claude/agent-memory/*/forensic-p*-*.md
+.claude/agent-memory/*/ks-pilier-*.md
 
 # Windows artifact
 nul
