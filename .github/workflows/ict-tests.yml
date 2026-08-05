@@ -121,6 +121,17 @@ jobs:
       # "N tests collected" est le compte officiel de pytest, stable par
       # rootdir/mode. Les `|| true` neutralisent set -e sur l'extraction pour
       # qu'un compte 0 produise un message clair plutot qu'un exit muet.
+      #
+      # (a) INVOCATION IDENTIQUE au step Run ci-dessus : `pytest`, pas
+      # `python -m pytest` (qui prefixe le CWD sur sys.path et reintroduit le
+      # piege d'import #9387 que le pytest.ini local en mode prepend neutralise).
+      # (b) ACCEPTANCE #9387 : "une panne d'infra doit se distinguer d'un
+      # finding". Deux messages d'erreur DISTINCTS -- un echec de COLLECTE
+      # (import casse / dep manquante -> panne d'infra) n'est pas une baisse de
+      # COUVERTURE (tests disparus -> finding). Le premier arrete le guard avant
+      # le plancher (on ne peut pas mesurer une couverture quand la collecte
+      # meme plante) ; le second est le verdict de regression que ce guard existe
+      # pour signer. Pas de 2>/dev/null : l'erreur de collecte reste VISIBLE.
       - name: Collection floor-guard (${{ matrix.suite-name }})
         if: always() && steps.install.outcome == 'success'
         working-directory: ${{ matrix.test-cwd }}
@@ -128,12 +139,15 @@ jobs:
           ICT_TEST_FLOOR: ${{ matrix.test-floor }}
         run: |
           set -uo pipefail
-          summary=$(python -m pytest ${{ matrix.test-args }} --co -q 2>&1 || true)
-          collected=$(printf '%s\n' "$summary" | grep -oE '[0-9]+ tests? collected' | tail -1 | grep -oE '[0-9]+' | head -1 || true)
+          co_out=$(pytest ${{ matrix.test-args }} --co -q 2>&1) || {
+            echo "::error title=ICT collection FAILED (${{ matrix.suite-name }})::pytest --co a echoue (exit != 0) -- PANNE D'INFRA (import casse, dep manquante, erreur de syntaxe), PAS une baisse de couverture. La collecte elle-meme a plante ; le plancher n'est pas evalue. Sortie complete de pytest ci-dessus dans le log."
+            exit 1
+          }
+          collected=$(printf '%s\n' "$co_out" | grep -oE '[0-9]+ tests? collected' | tail -1 | grep -oE '[0-9]+' | head -1 || true)
           collected=${collected:-0}
           echo "Collected: $collected tests (floor: $ICT_TEST_FLOOR) for ${{ matrix.suite-name }}"
           if [ "$collected" -lt "$ICT_TEST_FLOOR" ]; then
-            echo "::error title=ICT collection regression (${{ matrix.suite-name }})::Collected $collected < floor $ICT_TEST_FLOOR. Des tests ont disparu silencieusement (module en skip, parametrize casse, fichier hors-glob) sans faire echouer la suite. Si cette baisse est INTENTIONNELLE, abaissez matrix.test-floor ($ICT_TEST_FLOOR) dans .github/workflows/ict-tests.yml a la meme PR. Sinon, c'est une regression de collecte a corriger avant merge."
+            echo "::error title=ICT coverage regression (${{ matrix.suite-name }})::Collected $collected < floor $ICT_TEST_FLOOR -- FINDING : des tests ont disparu silencieusement (module en skip, parametrize casse, fichier hors-glob) alors que la collecte a reussi. Si cette baisse est INTENTIONNELLE (ex. consolidation de doublons), abaissez matrix.test-floor ($ICT_TEST_FLOOR) dans .github/workflows/ict-tests.yml a la meme PR que la suppression qui la justifie. Sinon, c'est une regression de couverture a corriger avant merge."
             exit 1
           fi
           echo "Floor OK ($collected >= $ICT_TEST_FLOOR)."
