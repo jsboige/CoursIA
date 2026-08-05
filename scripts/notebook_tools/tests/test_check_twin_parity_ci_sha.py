@@ -332,3 +332,19 @@ def test_ci_strict_no_git_repo_exits_nonzero(tmp_path):
             "--ci-strict", "--check",
             "--registry", "/nonexistent/registre.yaml",
         ])
+
+
+# --- 4. cross-validation --ci-strict x --verify-recorded-sha ----------------
+
+def test_ci_strict_and_verify_recorded_sha_are_mutually_exclusive():
+    """Les deux modes fleet-wide read-only de #9399 volet b sont mutuellement
+    exclusifs (post-rebase c.984, steer ai-01) : leurs sorties JSON sont
+    disjointes (breakdown 4 categories vs recorded-vs-HEAD mismatch), et
+    coupler les deux dans une meme invocation melange deux verdicts pour le
+    mainteneur. Le cron les dispatch separement (twin-parity-cron.yml pour
+    --ci-strict, twin-parity-sha-mismatch du twin-parity.yml #9481 pour
+    --verify-recorded-sha). SystemExit est valide ici -- argparse.p.error
+    leve SystemExit(2) -- on documente la semantique, pas l'exit code numerique.
+    """
+    with pytest.raises(SystemExit):
+        ctp.main(["--ci-strict", "--verify-recorded-sha"])

@@ -1054,6 +1054,17 @@ def main(argv=None) -> int:
         p.error("--ci-strict est un mode fleet-wide SANS base ref : incompatible avec --per-pair.")
     if args.ci_strict and args.update:
         p.error("--ci-strict est un mode read-only : incompatible avec --update.")
+    # Cross-validation --ci-strict x --verify-recorded-sha (#9481, post-rebase c.984) :
+    # les deux sont des modes fleet-wide read-only avec des sorties JSON disjointes
+    # (breakdown 4 categories vs recorded-vs-HEAD mismatch). Les coupler en CLI
+    # melange deux verdicts dans la meme invocation, ce qui rend le choix du
+    # categoriel d'echec ambigu pour le mainteneur. Le cron les lance separement
+    # (twin-parity-cron.yml pour --ci-strict, twin-parity-sha-mismatch du
+    # twin-parity.yml #9481 pour --verify-recorded-sha). Mutuellement exclusifs.
+    if args.ci_strict and args.verify_recorded_sha:
+        p.error("--ci-strict et --verify-recorded-sha sont deux modes fleet-wide "
+                "read-only avec des sorties JSON disjointes : incompatibles. "
+                "Lancer l'un ou l'autre, pas les deux (le cron les dispatch separement).")
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
