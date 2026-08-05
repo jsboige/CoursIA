@@ -160,6 +160,8 @@ jobs:
 
         all_clean = True
         sorry_modules = []
+        zero_decl_design = []   # modules that legitimately declare nothing (root aggregators)
+        total_enumerated = 0    # lake-level non-vacuity (Gesture 2, ai-01 c.84)
         print(f"=== Proof integrity axiom check ({display_name}) ===")
         print(f"Project: {project_path}")
         print(f"Gate on sorry: {'yes' if fail_on_sorry else 'no (reported, not gated)'}")
@@ -187,6 +189,7 @@ jobs:
                 # via `fail-on-sorry: false` rather than staying permanently red.
             )
             n_decls = len(result["declarations"])
+            total_enumerated += n_decls
             print(f"  declarations: {n_decls} enumerated")
             # Criterion 1 (#8782): render WHICH declarations were audited, not
             # only the count. A bare count hides both directions of the blind
@@ -233,19 +236,34 @@ jobs:
 
             module_ok = result["success"]
 
-            # `fail_on_sorry` does double duty inside `check_axioms`: besides
-            # gating sorryAx, it also gates the "no declarations enumerated"
-            # guard (lean_server.py: `if fail_on_sorry: return success=False,
-            # error=no_declarations_enumerated`). So passing false to silence a
-            # known sorry would ALSO silence the guard that catches a module
-            # whose source could not be parsed -- and a check that enumerated
-            # zero declarations would report OK having verified nothing.
-            # That is the same defect this PR removes, merely mirrored: instead
-            # of a gate that can never go green, a gate that can never go red.
-            # Assert enumeration here, independently of the sorry policy.
-            if n_decls == 0:
+            # Discriminate the two causes of a zero enumeration (ai-01 c.84,
+            # #9446 CHANGES_REQUESTED). `lean_server.check_axioms` already
+            # classifies the empty case via `empty_reason`
+            # (`_classify_empty_enumeration`); only `declaration_free_module` is
+            # a pass -- every other reason (source_not_found,
+            # all_private_declarations, sorry_without_declaration,
+            # no_declarations_enumerated) is a gap where the gate inspected
+            # nothing and MUST fail loud, independently of the sorry policy
+            # (that is why we assert here and not only inside `check_axioms`:
+            # `fail_on_sorry` doubles as the "no declarations" guard there, so a
+            # false would otherwise silence a parse gap and yield a gate that
+            # can never go red). The previous `n_decls == 0 -> FAIL` conflated
+            # the two and red-flagged root aggregators (Grothendieck,
+            # .DirectImage, .MathlibMap, .SchemesTour) that the lake built and
+            # parsed clean but legitimately declare nothing. Vacuity moves to
+            # lake level (below) so a lake whose EVERY module is zero-decl is
+            # still caught without an exclusion list (ai-01: a list rots and
+            # does not scale to 20 lakes).
+            empty_reason = result.get("empty_reason")
+            if n_decls == 0 and empty_reason != "declaration_free_module":
                 module_ok = False
-                print(f"  FAIL: no declarations enumerated -- nothing was verified")
+                print(f"  FAIL: no declarations enumerated -- source gap "
+                      f"(empty_reason={empty_reason})")
+            elif n_decls == 0:
+                zero_decl_design.append(mod)
+                print(f"  NOTE: declaration-free by design "
+                      f"(empty_reason={empty_reason}) -- non-fatal; "
+                      f"vacuity guarded at lake level")
 
             if not module_ok:
                 all_clean = False
@@ -253,7 +271,22 @@ jobs:
             else:
                 print(f"  OK")
 
+        # Gesture 2 (ai-01 c.84): non-vacuity at LAKE level. A gate whose
+        # every module enumerated zero declarations inspected nothing. Asserting
+        # this once at lake level catches that without false-positiving on
+        # individual root aggregators (handled above via empty_reason). Neutre
+        # for lean-knot.yml / lean-conway.yml: none of their target modules
+        # enumerate zero.
+        if total_enumerated == 0:
+            all_clean = False
+            print(f"FAIL: lake-level non-vacuity -- all {len(modules)} "
+                  f"module(s) enumerated zero declarations (the gate inspected "
+                  f"nothing; check target-modules / module resolution).")
+
         print()
+        if zero_decl_design:
+            print(f"NOTE: {len(zero_decl_design)} module(s) declaration-free by "
+                  f"design (non-fatal): {', '.join(zero_decl_design)}")
         if sorry_modules and not fail_on_sorry:
             print(f"NOTE: sorry present in {', '.join(sorry_modules)} "
                   f"(reported, not gated -- fail-on-sorry is false for this lake).")
@@ -266,7 +299,8 @@ jobs:
             # gate that misreports its own cause is worse than no gate.
             print("FAIL: see per-module breakdown above "
                   "(`error:` for build/lookup failures, "
-                  "`declarations: 0` for a module whose source was not parsed, "
+                  "`empty_reason` != declaration_free_module for a source gap, "
+                  "lake-level non-vacuity if every module enumerated zero, "
                   "`forbidden:` for axiom violations"
                   + (", `has_sorry:` for sorryAx)." if fail_on_sorry else ")."))
             sys.exit(1)
