@@ -165,6 +165,25 @@ def extract_code_outputs(cell: dict) -> dict:
                     # Extract numbers from text
                     for match in CLAIM_NUMERIC_RE.finditer(content):
                         numeric_values_found.add(match.group(0).strip())
+                elif mime == 'text/html':
+                    # .NET Interactive émet les affichages riches d'objets (tables
+                    # dni-treeview, matrices de confusion) en text/html SANS fallback
+                    # text/plain — les valeurs calculées vivent dans des cellules
+                    # <pre>...</pre> (ex <pre>0.8884018879298109</pre>). Sans cette
+                    # extraction, le scanner est aveugle à TOUS les outputs .NET ->
+                    # faux numeric_claim_not_in_outputs MAJOR sur chaque notebook
+                    # .NET qui cite ses propres résultats (FP-c.1229).
+                    #
+                    # On extrait UNIQUEMENT depuis les <pre> (cellules de valeurs),
+                    # pas du HTML brut : les index structurels <td>0</td>, <td>1</td>
+                    # (numéros de fold, positions de table) pollueraient numeric_values
+                    # par des single-digits qui false-matchent toute claim contenant
+                    # ce chiffre via le Litmus-1 « num in claim ».
+                    if isinstance(content, list):
+                        content = ''.join(content)
+                    for pre_match in re.finditer(r'<pre>(.*?)</pre>', content, re.DOTALL):
+                        for match in CLAIM_NUMERIC_RE.finditer(pre_match.group(1)):
+                            numeric_values_found.add(match.group(0).strip())
 
     return {
         'text': '\n'.join(text_chunks),
@@ -299,8 +318,16 @@ def audit_notebook(notebook_path: Path) -> dict:
     # Litmus 1 : claim numérique markdown qui n'apparaît pas dans outputs
     matched = unmatched = 0
     for claim in all_numeric_claims:
-        # Substring match (claim peut être avec unités)
-        if any(claim['value'] in num or num in claim['value']
+        # Substring match (claim peut être avec unités). Les notebooks sont
+        # FR-first : la prose cite des décimales à virgule (« R² ≈ 0,888 ») alors
+        # que les outputs .NET/Python affichent souvent le point décimal
+        # (« 0.8884018879298109 »). On normalise la virgule décimale vers le point
+        # des deux côtés avant le substring, sinon aucune claim à virgule ne
+        # matcherait un output à point (FP-c.1229). NB : les séparateurs de
+        # milliers FR utilisent l'espace (« 8 000 »), pas la virgule — la virgule
+        # est ici toujours un séparateur décimal.
+        cv = claim['value'].replace(',', '.')
+        if any(cv in num.replace(',', '.') or num.replace(',', '.') in cv
                for num in all_numeric_outputs):
             matched += 1
         else:
