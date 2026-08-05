@@ -8,7 +8,14 @@
       by: myia-po-2024:CoursIA-2
       python_sha: 07b46a9434ca9cc29a312c9727057d5d212f4183
       csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: be209c4754713e955ba49176fba004bdd7fac4bb
+      csharp_sha: 1d6da069eae78cde4f5b345be9b1e04193e90ab8
+      content_python_sha: 453fe8cfdaf4107d707639555d5ca32122e3612d4fbc0b82c1734d68e862e728
+      content_csharp_sha: 1029ed07df0d1d47e21dbb9eb4edbba761c01b178fcfbe22fdfe24f379c26108
   known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des utilites de derniere iteration CFR (-0.033) et MCCFR (-0.055) depuis la prose (decision B #9434 : stochastic unseeded, la variabilite est la lecon -- pas de seed, reframe honnete type md#12/md#15 'Variable' + convergence de la moyenne vers Nash -1/18). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie."
     - "Socle pedagogique commun : jeux a information imparfaite, Kuhn Poker (Kuhn 1950/1953) comme jeu de reference, regret matching (Hannan), CFR vanilla (Zinkevich et al. 2007) avec recursion contrefactuelle, variante CFR+ (Tammelin 2014), convergence de la strategie moyenne vers la valeur du jeu / equilibre de Nash."
     - "Idiomes framework : Python = `numpy` + `matplotlib` (courbes de convergence) + OpenSpiel (cfr/CFR+/Linear CFR, benchmark Leduc Poker, comparaisons a l'echelle) + MCCFR external sampling. C# = pur `System.*` (Linq, Collections.Generic, `#nullable enable`), 0 NuGet, CFR/CFR+/RegretMatcher from-scratch, visualisation ASCII (valeur du jeu vs iterations)."
     - "Asymetrie de couverture : Python plus etendu (44 vs 22 cellules) -- couvre MCCFR, integration OpenSpiel, Leduc Poker, Deep CFR (apercu), distance de Nash ; le C# se concentre sur le socle CFR vanilla + CFR+ avec 3 exercices (Leduc, exploitabilite best-response, MCCFR). Meme theorie centrale (Zinkevich / Tammelin / Kuhn), leviers de demonstration differents (ecosysteme OpenSpiel cote Python vs implementation from-scratch minimaliste cote C#)."
