@@ -158,6 +158,104 @@ factitif mesure une **fronce double** entre états ; l'aspect perfectif
 explique pourquoi la trajectoire d'une **dissociation** ne montre que le
 point de rupture (pas la transition continue sous-jacente).
 
+### Ch.8 §D-E — Ternarité peircéenne, phrase nucléaire et privation du verbe
+
+Le §D prolonge le socle strate 6 en décrivant **l'énonciation elle-même**
+comme un effet figuratif : « l'énonciation d'un message est l'effet
+figuratif dû à une prégnance investissant le sujet ». Thom emprunte à
+Peirce une **ternarité** qui décrit les trois stades de la levée d'une
+prégnance par le langage :
+
+| Stade peircéen | Description thomienne |
+|---|---|
+| **Primarité** | intrusion de la prégnance excitant le psychè (le choc initial) |
+| **Secondarité** | énonciation du *type* de prégnance investissante (identification sensorielle) |
+| **Ternarité** | reconnaissance de la *source* de la prégnance et sa conceptualisation |
+
+Exemple canonique de Thom : « Ça sent le brûlé » — *ça* = primarité,
+*ça sent* = secondarité, *le brûlé* = ternarité (conceptualisation de la
+source). La **phrase nucléaire** y est lue comme un **vecteur de
+prégnance** : l'esprit « plie » sous l'impact de la prégnance, puis se
+redresse en la renvoyant sur un *alter ego*, ce qui le libère de
+l'investissement et restaure son autonomie.
+
+**L'intellect comme préprogramme.** Thom modélise l'intellect comme un
+**préprogramme — un obstacle —** qui soumet un flux informatif (ayant sa
+source dans une catastrophe extérieure) à une **scission** le transformant
+en l'émission d'une phrase nucléaire. Métaphore des quilles : le flux est
+une boule lancée sur des quilles figurant les parties du discours (N, V) ;
+la quille atteinte la première est le **verbe V**, dont la chute
+ritualisée entraîne, en nombre égal à sa **valence**, les quilles N
+voisines — puis les déictiques / anaphoriques nécessaires à la
+localisation des actants (S, O). C'est la **même structure** que le
+préprogramme morphologique d'ICT-13 (Axelrod) : un obstacle qui scinde un
+flux en une forme typée.
+
+**La capture prédation, matrice de la transitivité.** Le §D referme le
+cercle ouvert au Ch.4 §C : la phrase transitive prototypique (« Le chat
+mange la souris ») mobilise la **catastrophe fronce** du lacet de
+prédation. Dans le plan de contrôle $Ouv$, la capture est l'arc orienté
+$\alpha K \omega$ où $K$ est le point de capture (Fig. 8.8) ; cette
+trajectoire canalisée symbolise le **téléos de l'acte** et
+l'**intentionnalité de l'agent**. Le verbe, excité, **sécrète ses deux
+actants** comme contre-images dans la surface critique : l'actant au
+minimum le plus bas est l'**agent**, celui au minimum métastable le
+**patient** (*objectum est supra subjectum*). La genèse de la phrase
+épouse donc la géométrie de la prédation — d'où le sous-titre du présent
+document : *phrase = embryogénèse* (la scission verbale est une scission
+de singularité, isomorphe à la duplication des cycles plans de la
+blastula, Ch.4 §D).
+
+**Privation du verbe.** Thom reprend à Aristote l'idée que l'acte crée
+chez ses actants des états de **privation** (στερητικὰς διαθέσεις) : le
+verbe excité est chroniquement
+en état de privation — il a besoin de substantifs pour réaliser sa
+signification (sauf à l'**impératif**, où l'on retrouve le caractère
+comminatoire du signal animal). Il sature cette privation en évoquant des
+actants, lesquels, excités, entrent eux-mêmes en privation. Le **nom
+propre** est autonome (il transporte la localisation de son réfèrent) ;
+le **nom commun** est en privation (il doit déterminer pour l'auditeur la
+localisation spatio-temporelle de son réfèrent). Cette cascade de
+privations rattache le verbe à la **privation = métastabilité** du Ch.7
+§D (cf. *Pont transverse* ci-dessous) : le verbe est le siège métastable
+qui ne se stabilise qu'en saturant sa valence.
+
+**Le continu de Seiler.** H. Seiler ordonne les universaux linguistiques
+sur un axe **prédicativité–indicativité**, que Thom identifie à l'axe
+**saillance–prégnance**. Le prédicat met en cause un genre aux *eidè*
+fixes (l'assertion suffit à le caractériser) ; les actants liés par
+valence — les noms — ne sont pas localisés a priori, d'où la nécessité
+des **déictiques** pour fixer cette localisation indéterminée. Les
+**techniques** de Seiler sont des sous-continus héritant de la même
+polarité (ex. le grand syntagme d'épithètes du Ch.2 §E : une marche de la
+prédicativité vers l'indicativité).
+
+**Usage ICT strate 6.** (i) L'intellect-préprogramme donne un cadre pour
+relire les **préprogrammes morphologiques** d'ICT-13 : un obstacle qui
+scinde un flux en une forme typée, isomorphe entre morphodynamique
+stratégique et génération syntaxique. (ii) La cascade de privations du
+verbe est l'analogue linguistique de la **triade moyen / fin / enjeu**
+d'ICT-18b : on ne mesure pas la fin directement, on mesure le coût de
+s'en approcher — de même, le verbe ne se réalise qu'en saturant sa
+privation par ses actants. (iii) Le continu prédicativité–indicativité
+est une projection 1D de l'espace $(s, q, \pi, W)$ : la prédicativité
+(prégnance, $\pi$) du côté du genre aux *eidè* fixes, l'indicativité
+(saillance, $s$) du côté de la localisation à fixer. (iv) L'acquisition
+du langage (espace de genre plastique creusé en bassins de potentiel par
+des représentants prototypiques — sang/rouge, lait/blanc, feuillage/vert
+— puis rigidifié après l'âge critique en préprogramme) fournit un
+**modèle ontogénétique** pour la formation des attracteurs dans
+l'hypergenre (cf. §C).
+
+> **Honnêteté grade C.** La correspondance *phrase transitive =
+> catastrophe de prédation* est un **modèle** thomien, pas une loi
+> linguistique : la transitivité est *prototypique* (il existe des
+> verbes intransitifs, des patients qui résistent). Le statut
+> VOS-émissif / SOV-réceptif est une typologie proposée par Thom,
+> contestée par la typologie dominante. Ces propositions sont
+> enregistrées comme **vocabulaire candidat** pour les notebooks strate
+> 6, soumises à leur mesure.
+
 ## Socle transversal — la dynamique aristotélicienne : téléologie et section σ (Ch.6 §B, §D-E)
 
 Le chapitre 6 (« La dynamique aristotélicienne comme sémiophysique »,
@@ -466,6 +564,307 @@ candidate). Le lacet de prédation reste un **cadre morphologique** ; ce
 que la série en mesure est une **instanciation numérique** dont le lien au
 formalisme de Thom est d'analogie contrôlée, pas de dérivation.
 
+## Socle transversal — Ch.5 §E-G : régulation physiologique, préprogramme génétique et géométrie du système nerveux
+
+Le Plan Général d'Organisation ne s'arrête pas à la controverse
+Cuvier/Geoffroy (§A-D, cf. §Ponts transverses). Les §E-G étendent la
+blastula physiologique dans trois directions directement fécondes pour
+la strate 7 : la régulation physiologique comme concaténation de cycles,
+le génome comme **canalisateur d'attracteur** (non comme code), et la
+géométrie du système nerveux comme lecture locale du plan BP.
+
+### §E — La proie dans l'organisme : cycles concaténés et proie fictive anticipante
+
+Thom prolonge le lacet de prédation (Ch.4 §C) en une chaîne
+physiologique complète : (1) catastrophe de perception en arête $ST$
+(reconnaissance/localisation), (2) poursuite jusqu'à capture en bouche
+$O$, (3) mandication-digestion-assimilation, (4) excrétion. Cette
+commande successive des cycles se représente par un **segment
+diagonal** ($T \to (2)$, $O \to (3)$, etc.) : une **onde d'activité
+accompagne le trajet de la proie dans l'organisme**.
+
+> « Dans le cycle (2) […], il y a une proie "fictive" décrivant un cycle
+> parallèle à (2). Cette proie fictive anticipe en quelque sorte (dans
+> le SNC) le mouvement de la proie réelle. » — Thom 1991, Ch.5 §E
+> (p. 127).
+
+Le SNC, localisé en principe en $T$, a des **prolongements
+fonctionnels** dans les circuits (2)(3) — parasympathique pour (3).
+L'anticipation est donc *structurelle*, non accessoire : le
+représentant interne $\hat{p}$ du Ch.4 §C trouve ici sa généralisation —
+une **proie fictive centrale précède chaque cycle réel**. Certaines
+activités sont discontinues (prédation), d'autres **permanentes**
+(vasculaire : cœur gauche au centre du cycle (2), cœur droit au centre
+du cycle (3)).
+
+### §E (bis) — Le génome canalise l'attracteur, il ne code pas
+
+Thom est explicite : le rôle du génome se réduit à **« canaliser » le
+déploiement de l'attracteur du métabolisme**, en spécifiant les
+amplitudes relatives des oscillateurs — modulation **largement
+extra-génétique**, sans codage concret et précis. La Génétique
+traditionnelle joue vis-à-vis de l'embryologie « le même rôle néfaste
+que la pédagogie vis-à-vis de l'enseignement : [… elle] se borne en
+fait à déployer un catalogue d'erreurs que l'évolution normale
+évitera soigneusement » (Ch.5 §E, p. 128-129).
+
+Conséquence épistémologique : une **pathologie est souvent une
+simplification** du processus normal — un attracteur de faible
+dimension prenant la place d'un attracteur complexe (crise épileptique
+vis-à-vis de l'EEG, cf. A. Mandell cité par Thom). Le génome est un
+« dépôt culturel de modes de fabrication », guère plus nécessaire à
+l'embryogénèse « que les livres de cuisine ne le sont aux réalisations
+gastronomiques d'un grand chef ».
+
+### §F — Plans généraux d'organisation : métamérie, modulation, milieux
+
+La métamérie (segmentation périodique de période $T$ : $h(m{-}T)=h(m)$)
+est l'archétype de l'organisation répétée (Annélides). Thom insiste :
+les **mutations homéotiques** (aristopaedia de la Drosophile) ne
+démontrent **pas** un code ontogénétique discret — ce sont des **erreurs
+de la modulation** de la métamérie, à valeur céphalisante ou
+caudalisante, que l'on peut réaliser ou corriger par traitements de choc
+sur les disques imaginaux. Seul élément discret : la **ségrégation des
+cellules imaginales en disques disjoints** recevant un champ.
+
+Les milieux de la biosphère se ramènent aux interfaces des trois
+éléments aristotéliciens terre/eau/air (point triple = eaux peu
+profondes). Le PGO y est **imposé par les contraintes de locomotion** :
+l'aérien pur impose la symétrie bilatérale (lutte contre la pesanteur) ;
+le benthique (poussée d'Archimède) libère la plasticité (Mollusques,
+trois à quatre PGO distincts). La céphalisation et le « retournement »
+Invertébré→Vertébré (A. Serres) suivent : endosquelette (chorde) → tube
+nerveux dorsal induit → bipédie. L'origine des Vertébrés reste ouverte
+(S. Løvtrup : Mollusque benthique → enfouissement → axe continu/chorde
+→ sortie terrestre → céphalisation).
+
+### §G — Géométrie du système nerveux : le plan BP comme quotient de l'espace de contrôle
+
+Thom propose de lire les grandes structures du SNC sur le plan $R$ de la
+BP, interprété comme un **quotient de l'espace de contrôle $U$** d'un
+modèle catastrophique universel ($U$ = quotient fibré d'un espace
+$\Omega$ d'activités métaboliques locales). Pour les animaux à symétrie
+bilatérale, l'application $h = p \circ q \circ s$ (Ch.4 §G3) — qui
+associe à tout point de l'organisme son activité physiologique locale —
+admet le **plan de symétrie comme ensemble critique $Z$** ; l'image
+$h(Z)$ est une courbe du plan BP.
+
+- **Zone dorsale** : $h(Z)$ coïncide avec la diagonale $NTJ$ de la BP
+  complétée. En section de moelle, la contre-image donne les arcs $JS$
+  (dynamique lente) = **peau en attente d'un stimulus virtuel**, et les
+  arcs $S_gT$ / $ST$ (dynamique rapide) = **sensations**, trajets
+  neuraux. La dynamique en $S$ n'est pas un point-col mais un
+  **double cusp** (gradient de $x+y$) — d'où les communications en
+  chiasme à travers $T$ (évitement douloureux → contraction
+  controlatérale).
+- **Céphalisation** : la tête (cerveau-prédateur, *« Quis custodiet
+  ipsos custodes ? »*) doit revenir à un exosquelette (crâne).
+  L'archétype d'une vertèbre = périmètre du circuit concaténé pré-oral +
+  post-oral ; le passage à la boîte crânienne (sphère = bord d'une
+  boule) exige la **rétraction de l'arc ventral** sur le dorsal —
+  corrélativement, la décussation des pyramides (moteur) et le chiasme
+  des nerfs optiques (vision).
+
+### Usage ICT strate 7 — préprogramme, champ en attente, pathologie-attracteur
+
+1. **Génome = préprogramme, non code.** Thom confirme
+   opérationnellement la notion de **préprogramme** centrale en strate 7
+   (§Ch.8 §B (bis) *Genres = préprogramme*) : le génome « canalise
+   l'attracteur » du métabolisme sans codage précis. La lecture
+   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb)
+   (préprogrammes morphologiques du dilemme itéré) et l'opposition
+   discret/champ s'enracinent ici : un **préprogramme est un profil
+   d'amplitudes d'oscillateurs**, non une suite d'instructions.
+2. **Peau en attente = champ réceptif.** L'arc lent $JS$ = « peau en
+   attente d'un stimulus virtuel » est l'archétype thomien du
+   **couple saillance-prégnance** : la surface réceptive est un champ
+   *prêt à être investi* par une prégnance (stimulus saillant) qui s'y
+   propagera. Un substrat n'est pas passif, il est **pré-formé** par les
+   arcs lents qui l'attendent. Pont
+   [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb)
+   (représentation = capture d'un saillant par un champ réceptif).
+3. **Pathologie = collapsus d'attracteur.** « Une pathologie est une
+   simplification : un attracteur de faible dimension prenant la place
+   d'un attracteur complexe » offre une lecture thomienne des
+   **dissociations** : la dissociation comme **régime où la dynamique
+   réelle s'effondre sur un attracteur appauvri** (un proxy isolé mesuré
+   plutôt que le champ complet). Pont
+   [#7734](https://github.com/jsboige/CoursIA/issues/7734) : un verdict
+   « dissociation » peut se relire comme l'écart entre l'attracteur
+   complet attendu et l'attracteur faible observé.
+4. **SNS = espace de contrôle quotienté.** Lire le SNC comme un
+   quotient $h(Z)$ de l'espace de contrôle local fournit un cadre pour
+   [ICT-19b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb)
+   / [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb)
+   : un **workspace** $W$ est, morphologiquement, une projection-quotient
+   qui sélectionne quelles activités locales deviennent globalement
+   communicables (arcs rapides $S_gT$) et lesquelles restent locales
+   (arcs lents $JS$). L'ignition documentée d'ICT-24 est l'**activation
+   d'une communication transverse en chiasme** à travers un nœud $T$.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **ne quantifie jamais** $h = p \circ q \circ s$ ni la métrique du
+« double cusp » en $S$ ; la géométrie du SNC reste un **modèle
+topologique qualitatif** (grade A pour le cadre catastrophique, grade C
+pour son application au réel neural). La génétique moderne
+(épigénétique, réseaux de gènes) **dépasse** la formule thomienne du
+génome-« dépôt culturel » — nous en retenons l'intuition (le génome
+module un attracteur métabolique) sans en faire une thèse moléculaire.
+Les ponts ICT ci-dessus sont **candidats** (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733)) : un
+préprogramme comme « profil d'amplitudes » est une **hypothèse de
+lecture**, pas une définition mesurée.
+
+## Socle transversal — Ch.7 §A-F : substance, logos, et le continu contre le discret
+
+Les Ponts transverses ci-après ne couvrent que Ch.7 §B (ABP/FBM) et §D
+(privation = métastabilité). Les §A, §E et §F — l'ontologie
+substantialiste, la hiérarchie des anhoméomères, le *logos* et
+l'incommunicabilité des genres — restent le socle philosophique non
+encore distillé, directement fécond pour la strate 7.
+
+### §A — Aristote topologue : le continu (συνεχές) contre le discret
+
+La thèse centrale de Thom sur l'aristotélisme : la révolte d'Aristote
+contre Platon est celle du **topologue contre l'arithméticien**,
+l'apôtre du qualitatif contre le quantitatif. Platon (vieillissant, ou
+ses épigones) voulait une générativité **discrète** (la suite des
+entiers) : le point étant un pur zéro, il fallait l'« épaissir » en
+**longueur insécable** (ἄτομος γραμμή), principe générateur de la
+droite. Aristote refuse — au nom de la **divisibilité du continu**
+(συνεχές), il rejette les « lignes insécables ».
+
+> « Aristote postule à la base la notion de continu (συνεχές), et c'est
+> au nom de la divisibilité du continu qu'il va refuser les "lignes
+> insécables". » — Thom 1991, Ch.7 §A (p. 174-175).
+
+Conséquence ontologique : Aristote **bannit l'espace** (au sens
+cartésien). L'étendue est un **prédicat de la substance** (le *topos*) ;
+jamais la substance/matière n'est un prédicat de l'étendue. Ce bannissement
+l'oblige à **multiplier les matières** : chaque type de changement
+(μεταβολή), chaque genre (γένος) nécessite une matière spécifique — mais
+toutes sont des continus. La matière première (πρώτη ὕλη) est définie
+comme **sujet de toute opposition de contraires**.
+
+### §A (bis) — Réponse à Parménide, origine de l'homéomère, et la « petite phrase »
+
+La proposition « X est — simultanément — à la fois A et non-A » n'est pas
+contradictoire : elle **impose le caractère étendu de X**. Un chat noir
+**et** blanc n'est pas booléen ; il se partage en parties (noire, blanche)
+chacune booléenne. Thom y voit l'**origine de la notion d'homéomère** :
+le substrat étendu qui admet une prédication localement booléenne. Pont
+vers Ch.5 §A-D (Cuvier/Geoffroy) : l'homéomère thomien s'enracine ici.
+
+La discussion sur l'infini (ἄπειρον, ΦIII 207b) conduit à la **« petite
+phrase »** — la clef, selon Thom, de quasi-tout le système aristotélicien :
+
+> « Car l'infini est entouré comme une matière interne ; c'est la forme
+> qui enveloppe. » — Physique ΦIII 7, 207a 35, cité par Thom 1991,
+> Ch.7 §A (p. 177).
+
+Une entité corporelle a un support $|X|$ en général **boule fermée** dont
+le bord est l'enveloppe $\partial|X|$ (une sphère). C'est l'origine
+catastrophiste de la dualité ABP/FBM (Acte-Bord-Puissance /
+Forme-Bord-Matière) traitée au Pont transverse §Ch.7 §B. Thom note
+qu'Aristote avait déjà perçu la distinction topologique **ouvert/fermé**
+(« un tout borné non en soi, mais par une borne extérieure à lui-même » =
+ouvert borné ; « les extrémités d'un corps et de son enveloppe sont les
+mêmes » = adhérence de l'adhérence = l'adhérence, Kuratowski).
+
+**Discret vs continu, formulation nette** : pour Aristote, tout ce qui
+relève du nombre a de la matière (ἔχει ὕλην, *Met* A 8, 1074a 34) —
+**« il n'y a pas de discret pur, tout être discret est réalisé par une
+figure continue »**. Pont ICT strate 7 : la série ICT traite des
+représentations (continus de champs) dont les **instantiations mesurées
+sont discrètes** (spikes, tokens, grilles) ; le principe thomien dit que
+le discret observé est toujours porté par un continu sous-jacent —
+l'inverse du réductionnisme « tout est discret ».
+
+### §F — Logos des homéomères, quiddité, et l'incommunicabilité des genres
+
+Les homéomères (qualités phénoménologiques locales, sans forme spatiale)
+portent un **logos** — défini par Aristote comme l'**ensemble des actes
+et réactions que peut présenter l'homéomère soumis à diverses
+perturbations**. Thom note la définition « peu operative » : on n'est
+jamais sûr de connaître toutes les perturbations, notamment celles
+définissant l'essence. La **quiddité** (τò τί ἧν εἶναι) de l'œuf, en
+lecture moderne, serait le patrimoine génétique qui forme l'adulte
+parfait (τέλειον) — « tout le mystère de l'Embryologie est dans le
+passage de la forme invisible de l'homéomère germinal à la forme visible
+(μορφή) de l'organisme achevé ».
+
+**L'incommunicabilité des genres** (Oὐκ ἔστιν εἰς ἄλλο γένος μετάβασις,
+*De Caelo* II 268b 1) : on ne peut aller **continûment** d'un genre à un
+autre (transformer une couleur en une odeur). Mais le **substrat est
+capturé par l'espace de genre** dans la prédication — envoyé au centre
+organisateur (point prototypique du genre), puis réparti conformément à
+l'εἶδος prédiquée. Les genres s'organisent donc comme **espèces d'un
+hypergenre** par partage d'un substrat commun (ex. l'hypergenre des
+qualités sensorielles : odeur/couleur/son), itérables deux à trois
+échelons.
+
+> « Le genre se comporte comme un "préprogramme", modifiable par
+> l'accident local. C'est un acte bord d'une puissance, mais qui crée
+> chez ses actants des dispositions privatives (στερητικὰς διαθέσεις),
+> lesquelles peuvent, en passant à l'état de puissance, se déployer en
+> actes secondaires. » — Thom 1991, Ch.7 §E-F (p. 193).
+
+### Usage ICT strate 7 — discret-porté-par-continu, logos comme spectre, genre comme préprogramme
+
+1. **Discret observé, continu sous-jacent.** Le principe thomien (« tout
+   être discret est réalisé par une figure continue ») offre un cadre de
+   lecture pour [ICT-17](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb)
+   (machine-ε : un automate discret extrait d'un processus continu) et
+   [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb)
+   (grokking = compression progressive) : la **mesure discrète** (tokens,
+   classes, états-ε) est toujours une section d'un **champ continu**
+   sous-jacent. Un verdict de dissociation peut se relire comme l'écart
+   entre la description discrète mesurée et le continu qui la porte.
+2. **Logos = spectre de réactions.** Le *logos* thomien (ensemble des
+   actes/réactions aux perturbations) est structurellement un
+   **spectre** — ce qu'on mesure en
+   [ICT-15b-SensitivityCanonicity](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+   (sensibilité locale $s(f)$) : un proxy n'est pas défini par une
+   valeur ponctuelle mais par son **comportement sous perturbation**.
+   Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734
+   ICT-15b).
+3. **Genre = préprogramme + dispositions privatives.** Thom confirme et
+   approfondit la lecture strate-7 « genre = préprogramme » (déjà au
+   §Ch.8 §B (bis)) : un genre est un **obstacle au flux génétique** qui
+   capture et oriente le substrat, **modifiable par accident local**, et
+   créant des **στερητικὰς διαθέσεις** (dispositions privatives) chez
+   ses actants. Pont
+   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb) :
+   les préprogrammes morphologiques du dilemme itéré sont des
+   **genres** au sens thomien — des obstacles-crible qui sélectionnent
+   quelles stratégies (substrat) peuvent s'exprimer, laissant des
+   **dispositions privatives** (stratégies inhibées) prêtes à se déployer.
+4. **Hypergenre = space-of-genera.** L'incommunicabilité des genres +
+   leur organisation en hypergenres par substrat commun fournit le
+   cadre pour les **espaces de possibles extensibles** de la strate 7
+   (§Ch.8 §C (bis) *Extension d'un concept = hypergenre*) : un
+   hypergenre n'est pas un genre de plus, c'est l'**espace de genre**
+   qui rend les genres incommunicables entre eux tout en les connectant
+   par un substrat partagé.
+
+### Limite de la lecture (honnêteté grade C)
+
+Thom **ne formalise pas** le *logos* en un opérateur mesurable ni
+l'hypergenre en une structure catégorielle précise — ces notions restent
+**philosophiques** (grade C-documentaire). La « petite phrase » ΦIII 7
+207a 35 est une **interprétation thomienne** d'Aristote, débattue par les
+spécialistes (Hamelin y voit une « pure métaphore » ; Cherniss, cité par
+Thom, une « métaphore à signification fondamentale »). Les ponts ICT
+ci-dessus (logos = spectre, genre = préprogramme-obstacle) sont
+**candidats** (rectification A2
+[#7733](https://github.com/jsboige/CoursIA/issues/7733)) : ils proposent
+une lecture, ils ne dérivent pas la mesure du formalisme. L'ontologie
+substantialiste d'Aristote (bannissement de l'espace, multiplication des
+matières) est un **cadre conceptuel**, pas un modèle opérationnel — la
+série ICT l'emprunte pour son vocabulaire (substrat, saillance,
+prégnance, genre), non comme théorème.
+
 ## Ponts transverses (déjà opérationnels)
 
 Ces concepts Thom ne sont pas seulement un socle pour les strates à venir —
@@ -496,6 +895,11 @@ d'un cycle correspond à la scission d'une singularité.
 **Référence :** [ICT-9-AgencyRegeneration](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-9-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
 
 ### Plan Général d'Organisation (Ch.5) — controverse Cuvier / Geoffroy
+
+> Distillation étendue §E-G (régulation physiologique, préprogramme
+> génétique, géométrie du SNC) au §Socle transversal
+> [Ch.5 §E-G](#socle-transversal--ch5-e-g--régulation-physiologique-préprogramme-génétique-et-géométrie-du-système-nerveux)
+> ci-dessus. Le présent pont ne couvre que les §A-D (Cuvier/Geoffroy).
 
 La controverse 1830 entre Cuvier (conditions d'existence) et Geoffroy
 Saint-Hilaire (principe de connexion des parties) est relue par Thom :
@@ -633,16 +1037,22 @@ extension, pas une redite.
   [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
   (lacet de prédation revisited, représentant interne `p̂`, origine de la
   généalogie #7735) et §Ponts transverses (blastula BP).
-- **Ch.5 — Plan Général d'Organisation** : cf. §Ponts transverses
+- **Ch.5 — Plan Général d'Organisation** : cf. §Socle transversal
+  [Ch.5 §E-G](#socle-transversal--ch5-e-g--régulation-physiologique-préprogramme-génétique-et-géométrie-du-système-nerveux)
+  (régulation physiologique, préprogramme, SNC) et §Ponts transverses
   (Cuvier / Geoffroy, homéomère / anhoméomère).
 - **Ch.6 — Axiomatique aristotélicienne** : cf. §Socle transversal
   [Ch.6 §B/§D-E] (téléologie, section $\sigma$) et §Ponts transverses
   (8 axiomes).
-- **Ch.7 — Continu et discret** : cf. §Ponts transverses (ABP/FBM,
+- **Ch.7 — Continu et discret** : cf. §Socle transversal [Ch.7 §A-F]
+  (substance, continu/discret, « petite phrase » ABP/FBM, logos,
+  genre = préprogramme) et §Ponts transverses (ABP/FBM opérationnel,
   privation = métastabilité).
 - **Ch.8 — Perspectives aristotéliciennes en théorie du langage** :
-  cf. §Strate 6 + §Strate 7 (universalisme, genres, hypergenres,
-  opérations catégorielles).
+  cf. §Strate 6 (universalisme, genres, hypergenres, opérations
+  catégorielles ; §D-E ternarité peircéenne, phrase nucléaire comme
+  vecteur de prégnance, capture-prédation fronce, privation du verbe,
+  continu de Seiler) + §Strate 7 (extension d'un concept = hypergenre).
 
 ### Documents de la série ICT
 
@@ -707,12 +1117,20 @@ exploiter :
   [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb),
   Ch.2 (le langage) est exploité en strate 6 mais son contenu propre
   (formalisme des schémas linguistiques) reste à creuser.
-- **Ch.5 §E-G et §H** (régulation physiologique, sens, homéomères
-  étendus) — non lus dans cette distillation ; à explorer si les
-  notebooks de strate 7 réinvestissent la physiologie.
-- **Ch.7 §G-K** (substance / logos) et **Ch.8 §D-E** — non lus ici ;
-  pourraient alimenter une strate ultérieure si elle porte sur la
-  logique catégorielle ou les hiérarchies linguistiques.
+- **Ch.5 §E-G** (régulation physiologique, préprogramme génétique,
+  géométrie du SNC) — **distillés** au §Socle transversal Ch.5 §E-G
+  ci-dessus. Le sous-titre « §H homéomères étendus » de l'inventaire
+  initial ne correspond pas à une section distincte de la source : les
+  homéomères y sont traités en §A-D (Cuvier/Geoffroy) et la physiologie
+  en §E-G, sans §H séparé (lecture honnête, G.9).
+- **Ch.7 §G-K** (substance / logos) — **distillé en §Socle transversal
+  [Ch.7 §A-F] ci-dessus**. *Honnêteté G.9* : l'inventaire initial (issue
+  #7739) étiquetait cette tranche « §G-K (substance/logos) », mais la
+  lecture *firsthand* montre que Ch.7 ne contient que **§A-F** (pas de
+  §G-K distinct) ; le matériel substance/logos se trouve en §A, §E, §F,
+  désormais distillé. Aucune section §G-K fabriquée.
+- **Ch.8 §D-E** (ternarité peircéenne, phrase nucléaire, privation du
+  verbe, continu de Seiler) — **couvert** au §Strate 6.
 
 **Non-priorité assumée.** Cette distillation n'est pas un théorème ni une
 unification ; elle est un **socle de vocabulaire**. Les notebooks futurs
