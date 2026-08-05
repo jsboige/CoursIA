@@ -301,7 +301,7 @@ C'est ici que Thom introduit explicitement le représentant interne :
 
 Le passage de la proie $p$ par les **instants catastrophiques**
 (reconnaissance, localisation, capture spatiale, digestion stomacale)
-agît comme un **« préprogramme d'ouverture »** sur le flux d'écoulement du
+agit comme un **« préprogramme d'ouverture »** sur le flux d'écoulement du
 prédateur, et l'évolution quasi synchrone de $p$ et $\hat{p}$ à travers la
 blastula physiologique (BP) constitue le « champ » global de
 l'alimentation — la **« chréode »** de la capture et de l'assimilation
