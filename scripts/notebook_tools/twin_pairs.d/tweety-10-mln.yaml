@@ -8,6 +8,13 @@
       by: myia-po-2023:CoursIA
       python_sha: 0dea8c32c031cda45adcb6eff1d499f7a6dbdfa3
       csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: bf2d2a6596b0ddb379487359c10c0b870e4f642e
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+      content_python_sha: 007cf1b13fdbfb48eb1e7bc81b72b109b806488b81b545135d0ecfb04f18911d
+      content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
   known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par re-alignement du tableau de balayage cell[12] sur la sortie commitee cell[11] (§D.5 stochastic drift, #9459). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie. NOTE : la cause racine (raisonneur MCMC non-seede) reste ouverte -> #9466 ; ce re-alignement traite le symptome, pas la cause (la derive reppoussera a la prochaine re-exec)."
     - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."
