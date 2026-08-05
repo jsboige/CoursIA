@@ -3,7 +3,7 @@
 > **Statut.** Document de cadrage, grade **B-méthodologique** (template applicable). V0 = pilote cycle c.795 (issue #8055 tranche 2).
 > **Objet.** Répondre à l'acceptance d'[#8055](https://github.com/jsboige/CoursIA/issues/8055) (DATASET_CARD pour les cas sensibles) et préparer la **gate fuzzy-match RGPD** (#8054).
 > **Discipline.** NE REMPLACE PAS `DATASET_REGISTRY.md` (inventaire canonique) ; **AJOUTE** une couche descriptive **par dataset sensible** : finalité pédagogique, périmètre RGPD, procédure de re-validation en cas de fork.
-> **Lien.** Issue-source : [#8055](https://github.com/jsboige/CoursIA/issues/8055) (tranche 2). Privacy parent : [#8054](https://github.com/jsboige/CoursIA/issues/8054) (PRIVACY.md, PR #8063 OPEN MERGEABLE jsboige).
+> **Lien.** Issue-source : [#8055](https://github.com/jsboige/CoursIA/issues/8055) (tranche 2). Privacy parent : [#8054](https://github.com/jsboige/CoursIA/issues/8054) ([PRIVACY.md](../../GradeBookApp/PRIVACY.md), PR #8063 MERGED 2026-07-23).
 
 ## Pourquoi des Dataset Cards
 
@@ -150,5 +150,5 @@ Si le SHA256 change après fork :
 
 - [DATASET_REGISTRY.md](./DATASET_REGISTRY.md) — inventaire canonique avec SHA256
 - [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) — licences code/submodules/vendored
-- [PRIVACY.md (à venir, PR #8063)](../../GradeBookApp/PRIVACY.md) — politique RGPD GradeBookApp
+- [PRIVACY.md](../../GradeBookApp/PRIVACY.md) (PR #8063 MERGED 2026-07-23) — politique RGPD GradeBookApp
 - [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — pas de secrets inline
