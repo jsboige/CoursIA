@@ -51,7 +51,7 @@ Notebook compagnon Lean :
   fidèlement — d'où le total lake standalone-sorry = 4). `Utility` et `Coherence`
   disposent aussi de leurs siblings EN.
 - **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
-- **Dépendances** : Mathlib4 (`v4.30.0-rc2`) — analyse réelle pour les lemmes
+- **Dépendances** : Mathlib4 (`v4.31.0-rc1`) — analyse réelle pour les lemmes
   d'actualisation, structure ordonnée et affine de `ℝ` pour vNM, théorie des `Finset`
   / inclusion–exclusion pour la cohérence de de Finetti
 
@@ -71,7 +71,7 @@ La formalisation est scindée en une couche **prouvée** et une couche **énonc�
   `discount_monotone` (γ₁ ≤ γ₂ ⇒ ∑' γ₁^n ≤ ∑' γ₂^n). `discount_monotone` est prouvé
   **en forme close** via `geometric_series_converges` +
   `one_div_le_one_div_of_le`, en contournant l'absence de `tsum_le_tsum` sur le `ℝ`
-  nu dans Mathlib v4.30.0-rc2.
+  nu dans Mathlib v4.31.0-rc1.
 - **Énoncé, intractable** (`GittinsTheorem.lean`) : `gittinsIndex` (arrêt optimal),
   `gittins_optimality` (le théorème central — la politique à indice maximise la
   récompense actualisée espérée). Les **2 `sorry` résiduels** sont dans l'assemblage de
@@ -207,18 +207,18 @@ vNM, qui porte sur les *préférences* sous risque), mais purement *épistémiqu
 
 | Fichier | Lignes | sorry | Contenu |
 |---------|--------|-------|---------|
-| `Gittins/Basic.lean` | 37 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
-| `Gittins/Discount.lean` | 107 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Compagnon somme partielle finie** (PR #4252) : `geometricPartialSum γ n = ∑₀..n γ^k` avec `geometricPartialSum_zero`/`_succ` (récurrence télescopique) et `geometricPartialSum_closed` (forme close `(1−γ^n)/(1−γ)`). |
-| `Gittins/GittinsTheorem.lean` | 145 | 2 | Théorème phare **partiellement prouvé** : `gittinsIndex` (def prouvée = `trueMean` dans le modèle à moyenne connue), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**prouvé** `rfl`), `gittins_index_monotone_discount` (**prouvé** PR #5272 — port `Float→ℝ`, barrière B fermée), `gittins_optimality` (sorry — MDP-intrinsic). Voir « État honnête » ci-dessous. (`gittins_beats_greedy` = placeholder `: True := trivial`, pas un sorry.) |
-| `Gittins.lean` | 19 | 0 | Imports parapluie |
-| `Utility/Basic.lean` | 91 | 0 | Primitives vNM — `Lottery` (loterie sur `Fintype`), `expectation`, mélange convexe `mix` (preuve de validité), identités affine d'espérance (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
-| `Utility/Axioms.lean` | 65 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
-| `Utility/Representation.lean` | 236 | 0 | **Direction saine prouvée** (`rep_complete`, `rep_transitive`, `rep_independent`, `rep_continuous`, `expected_utility_rep_is_rational`) + **stabilité affine** (`affine_rep_is_rep`) + **caractérisation stricte/indifférence** (PR #4250 : `rep_strict_iff` `StrictPref ↔ E_p > E_q`, `rep_indifference_iff` `(P p q ∧ P q p) ↔ E_p = E_q`, `strict_irrefl`). Direction d'existence documentée comme jalon ouvert. |
-| `Utility.lean` | ~30 | 0 | Imports parapluie + doc de statut |
+| `Gittins/Basic.lean` | 41 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
+| `Gittins/Discount.lean` | 109 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Compagnon somme partielle finie** (PR #4252) : `geometricPartialSum γ n = ∑₀..n γ^k` avec `geometricPartialSum_zero`/`_succ` (récurrence télescopique) et `geometricPartialSum_closed` (forme close `(1−γ^n)/(1−γ)`). |
+| `Gittins/GittinsTheorem.lean` | 154 | 2 | Théorème phare **partiellement prouvé** : `gittinsIndex` (def prouvée = `trueMean` dans le modèle à moyenne connue), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**prouvé** `rfl`), `gittins_index_monotone_discount` (**prouvé** PR #5272 — port `Float→ℝ`, barrière B fermée), `gittins_optimality` (sorry — MDP-intrinsic). Voir « État honnête » ci-dessous. (`gittins_beats_greedy` = placeholder `: True := trivial`, pas un sorry.) |
+| `Gittins.lean` | 36 | 0 | Imports parapluie |
+| `Utility/Basic.lean` | 96 | 0 | Primitives vNM — `Lottery` (loterie sur `Fintype`), `expectation`, mélange convexe `mix` (preuve de validité), identités affine d'espérance (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
+| `Utility/Axioms.lean` | 77 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
+| `Utility/Representation.lean` | 348 | 0 | **Direction saine prouvée** (`rep_complete`, `rep_transitive`, `rep_independent`, `rep_continuous`, `expected_utility_rep_is_rational`) + **stabilité affine** (`affine_rep_is_rep`) + **caractérisation stricte/indifférence** (PR #4250 : `rep_strict_iff` `StrictPref ↔ E_p > E_q`, `rep_indifference_iff` `(P p q ∧ P q p) ↔ E_p = E_q`, `strict_irrefl`). Direction d'existence documentée comme jalon ouvert. |
+| `Utility.lean` | 45 | 0 | Imports parapluie + doc de statut |
 | `Coherence/Basic.lean` | 52 | 0 | Primitives de Finetti — `Event` (= `Finset Ω`), `Price` (= `Event Ω → ℝ`), indicatrice `ind`, et la clé de voûte `ind_inclusion_exclusion` (inclusion–exclusion des indicatrices). |
 | `Coherence/DutchBook.lean` | 101 | 0 | **Direction constructive prouvée** (`non_additive_implies_dutch_book`, mises explicites `(1,1,−1,−1)`/inverse) + contraposée `coherent_on_implies_additive`. Réciproque (dualité LP) documentée comme jalon ouvert. |
-| `Coherence/Probability.lean` | 255 | 0 | **Cohérence mono-ticket** (PR #4193 : `single_coherent_iff_prob_bounds` — *iff* entre cohérence d'un ticket unique et bornes de probabilité `0 ≤ q ≤ 1`, via trichotomie du signe de la mise + Dutch Books explicites pour chaque borne violée) + **des poids à la cohérence** (PR #4244 : `priceFromWeights_single_coherent` — des poids additifs normalisés on dérive une fonction de prix mono-cohérente). Le `coherent_iff_probability` complet (livrets de taille arbitraire) reste ouvert. |
-| `Coherence.lean` | 33 | 0 | Imports parapluie + doc de statut |
+| `Coherence/Probability.lean` | 367 | 0 | **Cohérence mono-ticket** (PR #4193 : `single_coherent_iff_prob_bounds` — *iff* entre cohérence d'un ticket unique et bornes de probabilité `0 ≤ q ≤ 1`, via trichotomie du signe de la mise + Dutch Books explicites pour chaque borne violée) + **des poids à la cohérence** (PR #4244 : `priceFromWeights_single_coherent` — des poids additifs normalisés on dérive une fonction de prix mono-cohérente). Le `coherent_iff_probability` complet (livrets de taille arbitraire) reste ouvert. |
+| `Coherence.lean` | 49 | 0 | Imports parapluie + doc de statut |
 
 ## État honnête du verrou Gittins (déc. 2026, #4039)
 
@@ -263,7 +263,7 @@ Une preuve complète de `gittins_optimality` requiert :
 3. Une **récurrence sur l'horizon de planification**, et
 4. Une **espérance formelle** sur la distribution de récompense.
 
-Mathlib (v4.30.0-rc2) n'a **aucune formalisation de MDP, de bandit ou d'équation de
+Mathlib (v4.31.0-rc1) n'a **aucune formalisation de MDP, de bandit ou d'équation de
 Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète est
 estimée à ~2000–5000 lignes de définitions support — de niveau recherche, au-delà
 d'une seule PR. Le théorème est donc **énoncé** (avec l'énoncé précis préservé dans
