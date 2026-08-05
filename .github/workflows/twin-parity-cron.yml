@@ -24,6 +24,12 @@ name: Twin Parity Cron (CI-derived SHA, #9399 volet b)
 #
 # Schedule: tous les jours a 06:17 UTC (decalage pour eviter la collision
 # avec catalog-cron 03:30 + lean-cron).
+#
+# Implementation note : la logique Python (extraction drift + rendu summary)
+# est externalisee dans scripts/notebook_tools/_cron_extract_drift.py et
+# _cron_render_summary.py. Cela elimine le YAML/Bash quoting croise (les
+# f-strings `f\"{r['name']}\"` casse yaml.safe_load quand elles sont
+# inline dans un `run: |` block). Tests : voir scripts/notebook_tools/tests/.
 
 on:
   schedule:
@@ -77,17 +83,9 @@ jobs:
             if [ $EXIT -eq 0 ]; then
               echo "ok=CI-STRICT_OK"
             else
-              # Extraire le nom des paires touchees pour le ::error actionnable
-              DRIFT_NAMES=$(python -c "
-import json
-d = json.load(open('twin_parity_cron.json'))
-ci = d.get('ci_strict', {})
-touched = []
-for r in d.get('pairs', []):
-    if r.get('status') != 'OK':
-        touched.append(f\"{r['name']} ({r['family']}, {r['parity_level']})\")
-print('\n'.join(touched) if touched else '<none>')
-")
+              # Extraire le nom des paires touchees pour le ::error actionnable.
+              # Logique externalisee dans _cron_extract_drift.py (tests : test_cron_extract_drift.py).
+              DRIFT_NAMES=$(python scripts/notebook_tools/_cron_extract_drift.py twin_parity_cron.json)
               echo "ok=CI-STRICT_DRIFT"
               echo "::error title=Twin parity CI-strict DRIFT DETECTED::$DRIFT_NAMES"
             fi
@@ -109,27 +107,8 @@ print('\n'.join(touched) if touched else '<none>')
         if: always()
         run: |
           if [ -f twin_parity_cron.json ]; then
-            python -c "
-import json
-d = json.load(open('twin_parity_cron.json'))
-ci = d.get('ci_strict', {})
-total = d.get('total', 0)
-print(f'## Twin parity CI-strict — {total} paires')
-print('')
-print('| Categorie | Count |')
-print('|---|---|')
-for k, v in ci.items():
-    print(f'| \`{k}\` | {v} |')
-print('')
-n_touched = sum(1 for r in d.get('pairs', []) if r.get('status') != 'OK')
-if n_touched:
-    print(f'### {n_touched} paire(s) touchee(s)')
-    for r in d.get('pairs', []):
-        if r.get('status') != 'OK':
-            print(f\"- **{r['name']}** ({r['family']}, {r['parity_level']}) — {r['status']}\")
-            for det in r.get('details', []):
-                print(f'    - {det}')
-"
+            # Logique externalisee dans _cron_render_summary.py (tests : test_cron_render_summary.py).
+            python scripts/notebook_tools/_cron_render_summary.py twin_parity_cron.json >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload artifacts
