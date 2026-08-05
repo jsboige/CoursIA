@@ -12,6 +12,12 @@
       by: myia-po-2023:CoursIA
       python_sha: b8a55a010f8bcfdaa4bb1c6141c6408decdf8348
       csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 7cefe1660ded04739df2d88043ece199dbdbba03
+      csharp_sha: 1d6c34998a7a2dea80e2b4362daae247d9bb3227
+      content_python_sha: 27551984fc79a82c6bd43760d48cf2e37a0a437819b98c2957bf5a98a1ac9a35
+      content_csharp_sha: 28562df3c1f0e4f3f168812c1860e8b75d85279a78ec9abefd69c48b6fef4969
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
     - "Le C# est HONNETE sur ce point : il contient une section dediee '§5 Verdict SOTA (EPIC #3801)' qui auto-declare que DPLL from-scratch n'est pas un substitut SOTA aux solveurs modernes, plus une 'Limite honnête (Prong B)' sous la conclusion. Ce point SOTA est un candidat d'enrichissement future (brancher un vrai solveur SAT NuGet), pas un verdict parity."
@@ -19,3 +25,4 @@
     - "Parite Z3 CONFIRMEE : les deux cotes utilisent Z3 pour la branche SMT (Python z3-py ; C# Microsoft.Z3 4.12.2). Le SMT est nativement twinned ; l'asymetrie porte uniquement sur le SAT (PySAT 3-solveurs vs C# DPLL from-scratch)."
     - "Axes de benchmark differents : Python §6 = benchmark de SOLVERS (Glucose3 vs Minisat22 vs Cadical103 sur l'encodage d'Arrow) ; C# §6 = benchmark STRUCTUREL Arrow vs Sen (compare les deux theoremes, pas les solveurs). Visualisation : Python §7 'Espace des Solutions' via matplotlib/numpy ; C# sans librairie de plotting."
     - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1054, EPIC #8052) : SHA Python avance 871a25d6 -> bd66b19d via §D.5 markdown-fix cote Python uniquement (table d'encodage + solver-bound alignes aux outputs committes ; drift parite-preserving, le C# n'est pas touche). Cote C# non modifie (csharp_sha 64e14757 inchange). Drift verifie surface-preserving : prose markdown seule sur l'axe de couverture Python, aucune cellule de code C# touchee."
+    - "Re-baseline 2026-08-05 (myia-po-2023:CoursIA, EPIC #9434) : drainage des mesures de temps machine-dependantes de la prose des DEUX jumeaux. Python cell 18 : colonne 'Temps d'encodage' retiree de la table de complexite (la cellule de code 17 la mesure deja live via time.time ; colonnes deterministes Profils/Variables = combinatoire math preservees). Python cell 28 : 'sous la milliseconde' / 'quinzaine de ms' de-pingues -> observation qualitative + pointeur vers benchmark code 27. C# cell 29 : '~0.1 ms' de-pingue -> 'quasi-instantanement' + pointeur vers benchmark code 24. Markdown-only sur les deux cotes : aucune cellule de code touchee, execution_count et outputs preserves (C.3, pas de re-exec). content_sha desormais enregistre -> les futures derives prose-only seront immunisees. Regle #9434 : 'calcule = legitime, prose = interdit'."
