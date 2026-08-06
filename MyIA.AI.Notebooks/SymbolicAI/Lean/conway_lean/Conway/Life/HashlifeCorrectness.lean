@@ -2869,6 +2869,98 @@ private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
     isAlive g p = true ↔ p ∈ g := by
   rw [isAlive]; exact List.elem_iff
 
+/-! ### Miroirs boîte-Chebyshev (LightCone, cycle d'import — #6724 c.92)
+
+Les trois lemmes suivants reprennent VERBATIM `chebDist_le_one_of_moore`,
+`step_box_local` et `evolve_box_agree` de `LightCone.lean` (livrés sorry-free
+par #9577). `LightCone` est EN AVAL de ce fichier (il importe
+`Conway.Life.HashlifeCorrectness`) : les importer ici serait un cycle — même
+schéma que `isAlive_true_iff_mem_local` ci-dessus. Tous leurs ingrédients sont
+EN AMONT : `chebDist`/`chebDist_self`/`chebDist_triangle` (`ConeGeometry`,
+importé L81), `mooreNeighbors`/`evolve_zero`/`evolve_succ` (`Conway.Life`),
+`aliveNext_local` (L851) et `isAlive_step_eq_aliveNext` (L873) (ce fichier).
+
+C'est la machinerie-clé du redesign borné du mur NW : la boîte Chebyshev
+ÉTROITE `[p-u, p+u]` remplace le cône Manhattan `2·u` de `evolve_cone_agree`,
+qui débordait la fenêtre du supercell (réfutation c.91, bloc après le mur). -/
+
+/-- Miroir de `LightCone.chebDist_le_one_of_moore` : un voisin de Moore de `p`
+    est à distance Chebyshev au plus 1 (le voisinage de Moore EST la boule
+    unité Chebyshev). -/
+private theorem chebDist_le_one_of_moore_local (p q : Int × Int)
+    (hq : q ∈ mooreNeighbors p) : chebDist p q ≤ 1 := by
+  unfold chebDist mooreNeighbors at *
+  simp only [List.mem_cons] at hq
+  rcases hq with h | h | h | h | h | h | h | h | h
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · simp at h
+
+/-- Miroir de `LightCone.step_box_local` : si `g₁ g₂` coïncident sur la boîte
+    Chebyshev de rayon 1 autour de `p` (la cellule et ses huit voisins de
+    Moore), un pas préserve l'accord en `p`. Analogue étroit de `step_local`
+    (L901, cône Manhattan-2 lâche). -/
+private theorem step_box_local_mirror (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ 1 → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (step g₁) p = isAlive (step g₂) p := by
+  have h_self : isAlive g₁ p = isAlive g₂ p := by
+    apply h_box p
+    have heq : chebDist p p = 0 := chebDist_self p
+    omega
+  have h_nbrs : ∀ q ∈ mooreNeighbors p, isAlive g₁ q = isAlive g₂ q := by
+    intro q hq
+    exact h_box q (chebDist_le_one_of_moore_local p q hq)
+  have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
+    aliveNext_local g₁ g₂ p h_self h_nbrs
+  rw [isAlive_step_eq_aliveNext, isAlive_step_eq_aliveNext, h_alive]
+
+/-- Miroir de `LightCone.evolve_box_agree` : si `g₁ g₂` coïncident sur la boîte
+    Chebyshev de rayon `u` autour de `p`, après `u` générations elles ont la
+    même vivacité en `p`. Analogue étroit de `step_light_cone` (L931, cône
+    Manhattan `2·u` — le facteur 2 perdu est exactement ce qui faisait déborder
+    le mur NW hors de la fenêtre du supercell). -/
+private theorem evolve_box_agree_local (u : Nat) (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ u → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (evolve u g₁) p = isAlive (evolve u g₂) p := by
+  induction u generalizing p with
+  | zero =>
+    simp only [evolve_zero]
+    have hpp : chebDist p p ≤ 0 := by
+      have heq : chebDist p p = 0 := chebDist_self p
+      omega
+    exact h_box p hpp
+  | succ n ih =>
+    simp only [evolve_succ]
+    apply step_box_local_mirror
+    intro q hpq
+    apply ih
+    intro r hqr
+    apply h_box r
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+
 /-- **crux (a) offset building block (sorry-free, #6724 c.749).** The
     `2^level`-pinned quadrant decomposition of a `node`'s `toGrid` membership.
     `mem_toGrid_node` (L1478) already decomposes `(node nw ne sw se).toGrid
@@ -2974,20 +3066,69 @@ is strong enough for the (b) reduction; it does NOT prove the wall holds). -/
     condition, but a clean proof would need a separate "inside `[0, 2^k)`" case
     analysis that interacts badly with the 4-disjunct decomposition.
 
-    **Verdict (RÉVISÉ c.91, #6724) — l'énoncé est FAUX, pas seulement difficile.**
-    Le verdict c.8124 antérieur (« the wall IS provable ») est RETIRÉ : le
-    quantificateur `p : Int × Int` est **libre** — rien ne contraint `r` à la
-    fenêtre centrale que le supercell représente — et l'obstruction (C)
-    ci-dessus (« off-centre, they bleed off the edge ») était le *symptôme* de
-    cette fausseté, pas une difficulté de preuve. Réfutation machine-checkée :
-    `p4_nw_overlap_wall_counterexample` (bloc de réfutation après le `sorry`) —
-    `k = 1`, bloc au coin absolu, `p = r = (0,0)`, LHS `true` / RHS `false`,
-    toutes les hypothèses satisfaites. Le `sorry` ci-dessous est donc
-    **indéchargeable tel quel** ; la réparation est un redesign borné (fenêtre
-    centrale + localité Chebyshev), voir la direction dans le bloc de
-    réfutation. La carte (A)/(B)/(C) reste une trace historique utile de
-    l'attaque membership — et le test `exact` du bridge ne prouvait que la
-    SUFFISANCE de cet énoncé, jamais sa satisfaisabilité. -/
+    **Verdict (RÉVISÉ c.91, #6724) — la forme LIBRE était FAUSSE, pas seulement
+    difficile.** Le verdict c.8124 antérieur (« the wall IS provable ») avait été
+    RETIRÉ : le quantificateur `p : Int × Int` était **libre** — rien ne
+    contraignait le point d'évaluation à la fenêtre centrale que le supercell
+    représente — et l'obstruction (C) ci-dessus (« off-centre, they bleed off
+    the edge ») était le *symptôme* de cette fausseté, pas une difficulté de
+    preuve. Réfutation machine-checkée : `p4_nw_overlap_wall_counterexample`
+    (bloc de réfutation après le `sorry`) — `k = 1`, bloc au coin absolu,
+    `p = r = (0,0)`, LHS `true` / RHS `false`, toutes les hypothèses
+    satisfaites. Le test `exact` du bridge ne prouvait que la SUFFISANCE de
+    l'énoncé, jamais sa satisfaisabilité.
+
+    **Redesign borné APPLIQUÉ (c.92, #6724) — puis renforcé structurellement
+    (c.93).** Trois changements par rapport à la forme libre réfutée (1-2 :
+    c.92 ; 3 : c.93) :
+
+    1. **Fenêtre centrale** : l'hypothèse `hp` borne `p` à la sous-fenêtre NW
+       de la région centrale du parent, `[2^k, 2^k + 2^((k-1)+1))²` =
+       `[2^k, 2^(k+1))²` — la forme EXACTE des bornes que
+       `p4_nw_shift_lemma` (L2841) produit au site d'appel (`hsup.2` dans
+       `p4_nw_membership_arm`), donc zéro friction de câblage. Le
+       contre-exemple c.91 (`p = (0,0)`) est hors fenêtre : il ne
+       s'instancie plus (cf. le crible kernel-checké
+       `cexBlockNWcorner2_cells_outside_central`, `AdversarialBattery`).
+    2. **Boîte Chebyshev étroite** : le quantificateur `∀ r ∈ lightCone p (2^k)`
+       (cône Manhattan, rayon 2·u — le facteur 2 de `evolve_cone_agree`)
+       est remplacé par `∀ q, chebDist p q ≤ 2^(k-1)` (miroir
+       `evolve_box_agree_local`, L2896-zone). Géométrie du fit exact : pour
+       `p ∈ [2^k, 2^(k+1))² = [2·2^(k-1), 4·2^(k-1))²`, la boîte
+       `[p - 2^(k-1), p + 2^(k-1)]` reste dans `[2^(k-1), 5·2^(k-1))²`,
+       qui est EXACTEMENT la fenêtre du supercell shifté
+       (`(node R1 R2 R4 R5).toGrid` occupe `[0, 2^(k+1))² = [0, 4·2^(k-1))²`,
+       shifté de `+2^(k-1)`) — là où le cône Manhattan `2^k` atteignait des
+       points (p.ex. colonne 0) hors fenêtre, où le RHS est mort mais le LHS
+       peut vivre (la géométrie même du contre-exemple).
+    3. **Hypothèses structurelles `hn*_l`/`hn*_w` (c.93, adjudication DEMO 63,
+       #6724)** : la forme bornée c.92 restait FAUSSE sur des MacroCells MAL
+       FORMÉES (niveaux mélangés) — contre-exemple découvert par le prover
+       multi-agent (BG run DEMO 63) et CONFIRMÉ par le noyau
+       (`p4_nw_overlap_wall_c92_counterexample`, bloc de réfutation) :
+       `toCellsAux` calcule `half = 2^nw.level` PAR NŒUD, donc un quadrant
+       parent de niveau k+1 logé dans un slot k+2 tasse ses cellules vivantes
+       DANS la boîte du mur, là où le supercell — construit sur des
+       recombinaisons mortes aux `hcc` vacuistes — est vide. Réparation : les
+       8 hypothèses `hn*_l` (niveau `k+1`) et `hn*_w` (`wf`) des QUATRE nœuds
+       de recombinaison — exactement les faits que `p4_nw_membership_arm`
+       tient déjà et passe désormais tels quels (signature de l'arm
+       inchangée). Suffisance géométrique : `wf` contraint les 9
+       petits-enfants de la région NW (niveau k, bien formés) ; les 7 restants
+       (ne_ne, ne_se, sw_sw, sw_se, se_ne, se_sw, se_se) ont des origines
+       `toCellsAux` à ligne OU colonne ≥ 6·2^(k-1) (les offsets de
+       `toCellsAux` ne font que croître), STRICTEMENT hors de la région de
+       dépendance de la boîte (`chebDist ≤ 2^(k-1)` autour de
+       `[2^(k-1), 5·2^(k-1))²` ⊂ `[0, 6·2^(k-1))²`) — fit exact au bord du
+       light cone, une fois de plus.
+
+    Le `sorry` résiduel est désormais l'obligation HONNÊTE et (conjecturalement)
+    satisfaisable : sur la boîte, chaque quadrant du supercell se replie via
+    `centralCorrect_mem_shift` (hcc_j) + `p4_nw_offset_decomp`, et l'accord
+    parent↔recombinaison se transporte par `evolve_box_agree_local` — la boîte
+    de rayon `2^(k-1)` autour d'un point de la fenêtre centrale d'une
+    recombinaison (côté `2^(k+1)`) tient EXACTEMENT dans son empreinte. La
+    carte (A)/(B)/(C) reste le guide de la route membership. -/
 private theorem p4_nw_overlap_wall
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -2997,30 +3138,58 @@ private theorem p4_nw_overlap_wall
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
     (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
     (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
     (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
-    (p : Int × Int) :
-    ∀ r ∈ lightCone p (2^k),
+    (p : Int × Int)
+    (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
+    ∀ q, chebDist p q ≤ 2^(k - 1) →
       isAlive (evolve (2^(k - 1))
           ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
                  (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
-            (0, 0))) r
+            (0, 0))) q
         = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
-            (r.1 - (2^(k - 1) : Int), r.2 - (2^(k - 1) : Int)) := by
+            (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int)) := by
   sorry
 
-/-! ### Réfutation : le mur et le bridge sont FAUX tels qu'énoncés (#6724, c.91)
+/-! ### Réfutation : la forme LIBRE (pré-c.92) du mur et du bridge était FAUSSE (#6724, c.91)
 
-Le quantificateur `p : Int × Int` est **libre** dans `p4_nw_overlap_wall` et
-`p4_nw_g3_bridge` : rien ne contraint `p` (ni `r`) à la fenêtre centrale que le
-supercell représente. C'est le piège c.19 **un niveau au-dessus** : l'énoncé
-passe le test de suffisance (`exact` au site d'appel) mais est insatisfiable.
-L'« obstruction C » de la carte c.8124 (« off-centre, they bleed off the edge »)
-était le symptôme de la fausseté, pas une difficulté de preuve.
+**Statut (c.92)** : les théorèmes nommés `p4_nw_overlap_wall`, `p4_nw_g3_bridge`
+et `p4_nw_supercell_agree` portent désormais l'hypothèse de fenêtre `hp` et (pour
+le mur) le quantificateur boîte-Chebyshev — le redesign borné prescrit ci-dessous
+est APPLIQUÉ. Les contre-exemples de ce bloc réfutent la **forme libre pré-c.92**
+(quantificateur `p : Int × Int` libre, cône Manhattan) ; ils sont conservés comme
+garde-fous : toute tentative de retirer la borne ou d'élargir la boîte re-tombe
+dessus. Énoncés en forme fermée `¬ (∀ …)`, ils compilent indépendamment des
+théorèmes nommés.
+
+**Statut (c.93)** : un QUATRIÈME garde-fou clôt le bloc
+(`p4_nw_overlap_wall_c92_counterexample`) : la forme bornée c.92 SANS hypothèses
+structurelles restait fausse sur des MacroCells mal formées (niveaux mélangés) —
+contre-exemple découvert par le prover multi-agent (BG run DEMO 63,
+`HASHLIFE_P4_NW_OVERLAP_WALL`) et confirmé par le noyau. Les théorèmes nommés
+portent depuis les 8 hypothèses `hn*_l`/`hn*_w` (niveau `k+1` + `wf` des quatre
+nœuds de recombinaison), qui bloquent l'instanciation (le nœud mixte
+`node E1 z E1 z` n'est pas `wf`).
+
+Le quantificateur `p : Int × Int` était **libre** dans la forme pré-c.92 : rien
+ne contraignait `p` (ni `r`) à la fenêtre centrale que le supercell représente.
+C'est le piège c.19 **un niveau au-dessus** : l'énoncé passe le test de
+suffisance (`exact` au site d'appel) mais est insatisfiable. L'« obstruction C »
+de la carte c.8124 (« off-centre, they bleed off the edge ») était le symptôme
+de la fausseté, pas une difficulté de preuve.
 
 **Contre-exemple (k = 1, bloc au coin absolu).** `nw_nw` = bloc plein niveau 1,
 les 15 autres petits-enfants vides. Le parent porte un bloc (nature morte) sur
@@ -3029,19 +3198,23 @@ les 15 autres petits-enfants vides. Le parent porte un bloc (nature morte) sur
 - RHS mur : `isAlive supercell.toGrid (-1,-1) = false` — `toGrid (0,0)` n'émet
   que des coordonnées non négatives, `(-1,-1)` est structurellement hors fenêtre.
 Toutes les hypothèses (`hR_j` par `rfl`, niveaux et `hcc_j` par `decide`) sont
-satisfaites : aucune preuve du mur ne peut exister. Même instanciation pour le
-bridge (`evolve 2` vs `evolve 1`, RHS à `(-1,-1)`).
+satisfaites : aucune preuve de la forme libre ne peut exister. Même
+instanciation pour le bridge (`evolve 2` vs `evolve 1`, RHS à `(-1,-1)`).
+Avec la borne c.92, `p = (0,0)` est hors fenêtre (`[2, 4)²` à `k = 1`) :
+l'instanciation est bloquée — cf. le crible `AdversarialBattery`
+(`cexBlockNWcorner2_cells_outside_central`, kernel-checké).
 
-**Direction de réparation** (pas dans ce commit — redesign borné) : borner `p`
-à la fenêtre centrale du parent (`2^k ≤ p.i < 2^(k+1)`) et transporter par un
-lemme de localité **Chebyshev** (`evolve_box_agree` : accord sur la boîte de
-rayon `u` ⇒ accord de `evolve u` au point), car le cône Manhattan `2·u` de
-`evolve_cone_agree` déborde la fenêtre du supercell même pour `p` central,
+**Réparation appliquée (c.92)** : borner `p` à la fenêtre centrale du parent
+(`2^k ≤ p.i < 2^(k+1)`, forme syntaxique `p4_nw_shift_lemma`) et transporter par
+le lemme de localité **Chebyshev** (`evolve_box_agree_local` : accord sur la
+boîte de rayon `u` ⇒ accord de `evolve u` au point), car le cône Manhattan `2·u`
+de `evolve_cone_agree` déborde la fenêtre du supercell même pour `p` central,
 alors que la boîte Chebyshev `[p - u, p + u]` y tient exactement
 (`[2^(k-1), 5·2^(k-1))` = fenêtre du supercell). Les bornes SONT disponibles au
-niveau de `p4_succ_membership` (le but est une appartenance `toGrid` qui porte
-intrinsèquement ses bornes de fenêtre). Précédent de réparation : c.19
-(énoncé renforcé, sorry count FLAT, anti-régression §D non applicable). -/
+niveau de `p4_succ_membership` : `p4_nw_membership_arm` les tient dans `hsup.2`
+(sortie de `p4_nw_shift_lemma`) et les passe telles quelles. Précédent de
+réparation : c.19 (énoncé renforcé, sorry count FLAT, anti-régression §D non
+applicable). -/
 
 /-- Cellule niveau 1 vide (témoin du contre-exemple #6724). -/
 private def p4CexEmpty1 : MacroCell :=
@@ -3052,13 +3225,15 @@ private def p4CexEmpty1 : MacroCell :=
 private def p4CexBlock1 : MacroCell :=
   node (leaf true) (leaf true) (leaf true) (leaf true)
 
-/-- **`p4_nw_overlap_wall` est FAUX tel qu'énoncé.** Instanciation : `k = 1`,
-    `nw_nw` = bloc plein, les 15 autres petits-enfants vides, `p = r = (0,0)`.
-    LHS `true` (bloc = nature morte), RHS `false` (`(-1,-1)` hors de la fenêtre
-    non-négative de `toGrid`). Certifié par le noyau (`decide`, zéro axiome —
-    réductible depuis la réécriture `ceilLog2` #9536). Le `sorry` du mur est
-    donc **indéchargeable tel quel** ; voir la direction de réparation dans le
-    bloc de section ci-dessus. Précédent in-file : `p4_unrestricted_counterexample`. -/
+/-- **La forme LIBRE (pré-c.92) de `p4_nw_overlap_wall` est fausse.**
+    Instanciation : `k = 1`, `nw_nw` = bloc plein, les 15 autres petits-enfants
+    vides, `p = r = (0,0)`. LHS `true` (bloc = nature morte), RHS `false`
+    (`(-1,-1)` hors de la fenêtre non-négative de `toGrid`). Certifié par le
+    noyau (`decide`, zéro axiome — réductible depuis la réécriture `ceilLog2`
+    #9536). C'est ce théorème qui a imposé le redesign borné c.92 : le mur nommé
+    porte désormais `hp` (fenêtre `[2^k, 2^(k+1))²`, qui exclut `p = (0,0)`) et
+    la boîte Chebyshev. Gardé comme garde-fou anti-régression d'énoncé.
+    Précédent in-file : `p4_unrestricted_counterexample`. -/
 theorem p4_nw_overlap_wall_counterexample :
     ¬ (∀ (k : Nat), 1 ≤ k →
        ∀ (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3097,11 +3272,12 @@ theorem p4_nw_overlap_wall_counterexample :
       (0, 0) (0, 0) (self_mem_lightCone (0, 0) (2^1))
   exact absurd hinst (by decide)
 
-/-- **`p4_nw_g3_bridge` est FAUX tel qu'énoncé** — même instanciation que
-    `p4_nw_overlap_wall_counterexample` (le bridge hérite la fausseté du mur par
-    sa forme, mais la réfutation directe ne dépend pas de la décomposition (a)/(b)).
-    LHS `evolve 2` du bloc à `(0,0)` = `true` ; RHS `evolve 1` de `[(0,0)]`
-    (la cellule isolée meurt) évalué à `(-1,-1)` = `false`. -/
+/-- **La forme LIBRE (pré-c.92) de `p4_nw_g3_bridge` est fausse** — même
+    instanciation que `p4_nw_overlap_wall_counterexample` (le bridge hérite la
+    fausseté du mur par sa forme, mais la réfutation directe ne dépend pas de la
+    décomposition (a)/(b)). LHS `evolve 2` du bloc à `(0,0)` = `true` ; RHS
+    `evolve 1` de `[(0,0)]` (la cellule isolée meurt) évalué à `(-1,-1)` =
+    `false`. Le bridge nommé porte désormais `hp` (c.92). -/
 theorem p4_nw_g3_bridge_counterexample :
     ¬ (∀ (k : Nat), 1 ≤ k →
        ∀ (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3186,6 +3362,73 @@ theorem p4_nw_supercell_agree_counterexample :
       (0, 0)
   exact absurd hinst (by decide)
 
+set_option maxHeartbeats 4000000 in
+/-- **La forme bornée c.92 SANS hypothèses structurelles était ENCORE fausse**
+    — sur des MacroCells MAL FORMÉES (niveaux mélangés). Contre-exemple découvert
+    par le prover multi-agent (BG run DEMO 63, `HASHLIFE_P4_NW_OVERLAP_WALL` :
+    le TacticAgent a refusé de soumettre une preuve et produit cette
+    instanciation), adjugé et certifié par le noyau (ai-01, `decide`).
+
+    Mécanisme : `toCellsAux` calcule `half = 2^nw.level` PAR NŒUD — un quadrant
+    parent de niveau 1 logé dans un slot de niveau 2 tasse ses cellules vivantes
+    près de l'origine de son slot, DANS la boîte du mur. Instanciation (`k = 1`) :
+    `nw_*` = `p4CexEmpty1` (vide, niveau 1) ; `ne_*`, `sw_*`, `se_nw` =
+    `leaf false` ; `se_ne = se_sw = se_se = leaf true`. Le quadrant SE parent
+    `node z o o o` (niveau 1, slot 2) place ses vivantes en (4,5),(5,4),(5,5) →
+    naissance Conway en (4,4). Les recombinaisons `n2/n4/n5` (mixtes niveau 1/0,
+    p.ex. `node E1 z E1 z`) sont MORTES : `hashlifeResultAux` retombe sur la
+    branche malformée (`emptyOfLevel`), les `hcc` sont vacuistes, le supercell
+    est vide. En `p = (3,3)` (fenêtre `[2,4)²`), `q = (4,4)`
+    (`chebDist = 1 ≤ 2^0`) : LHS `true` / RHS `false`.
+
+    C'est CE théorème qui a imposé le renforcement c.93 : les nœuds mixtes ne
+    sont pas `wf`, donc les 8 hypothèses `hn*_l`/`hn*_w` du mur bloquent
+    l'instanciation. Gardé comme garde-fou anti-régression d'énoncé : toute
+    tentative de retirer les hypothèses structurelles re-tombe dessus.
+    Précédents in-file : `p4_nw_overlap_wall_counterexample` (forme libre),
+    `p4_unrestricted_counterexample`. -/
+theorem p4_nw_overlap_wall_c92_counterexample :
+    ¬ (∀ (k : Nat), 1 ≤ k →
+       ∀ (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+          sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+          R1 R2 R4 R5 : MacroCell),
+       R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se) →
+       R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw) →
+       R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne) →
+       R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw) →
+       R1.level = k → R2.level = k → R4.level = k → R5.level = k →
+       centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) →
+       centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) →
+       centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) →
+       centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) →
+       ∀ (p : Int × Int),
+         ((2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) →
+       ∀ q, chebDist p q ≤ 2^(k - 1) →
+         isAlive (evolve (2^(k - 1))
+             ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                    (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+               (0, 0))) q
+           = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
+               (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int))) := by
+  intro h
+  have hinst := h 1 (by decide)
+      p4CexEmpty1 p4CexEmpty1 p4CexEmpty1 p4CexEmpty1
+      (leaf false) (leaf false) (leaf false) (leaf false)
+      (leaf false) (leaf false) (leaf false) (leaf false)
+      (leaf false) (leaf true) (leaf true) (leaf true)
+      (hashlifeResultAux 2 (node p4CexEmpty1 p4CexEmpty1 p4CexEmpty1 p4CexEmpty1))
+      (hashlifeResultAux 2 (node p4CexEmpty1 (leaf false) p4CexEmpty1 (leaf false)))
+      (hashlifeResultAux 2 (node p4CexEmpty1 p4CexEmpty1 (leaf false) (leaf false)))
+      (hashlifeResultAux 2 (node p4CexEmpty1 (leaf false) (leaf false) (leaf false)))
+      rfl rfl rfl rfl
+      (by decide) (by decide) (by decide) (by decide)
+      (by unfold centralCorrect; decide) (by unfold centralCorrect; decide)
+      (by unfold centralCorrect; decide) (by unfold centralCorrect; decide)
+      (3, 3) (by decide)
+      (4, 4) (by decide)
+  exact absurd hinst (by decide)
+
 /-- **G3 wave-assembly bridge (named extraction, #6724 c.745).** The research
     heart of `p4_nw_supercell_agree`, extracted as a NAMED lemma carrying ALL
     the call-site hypotheses — per the ai-01 extraction protocol (DM
@@ -3256,9 +3499,21 @@ theorem p4_nw_supercell_agree_counterexample :
     itself is sorry-free; its only sorry-dependency is `p4_nw_overlap_wall`. See #6724.
 
     **Correction (c.91, #6724)** : le test de spécialisation `exact` ci-dessus prouve
-    la SUFFISANCE de l'énoncé du mur, PAS sa satisfaisabilité — le mur ET ce bridge
-    sont faux tels qu'énoncés (`p` non borné) : voir `p4_nw_g3_bridge_counterexample`
-    (bloc de réfutation après le mur). -/
+    la SUFFISANCE de l'énoncé du mur, PAS sa satisfaisabilité — la forme LIBRE
+    (`p` non borné) du mur ET de ce bridge était fausse : voir
+    `p4_nw_g3_bridge_counterexample` (bloc de réfutation après le mur).
+
+    **Redesign borné APPLIQUÉ (c.92, #6724)** : ce bridge porte désormais `hp`
+    (`p` dans la fenêtre centrale NW `[2^k, 2^(k+1))²` — la forme syntaxique
+    exacte de `hsup.2` produite par `p4_nw_shift_lemma` dans l'arm), et le
+    transport (b) utilise `evolve_box_agree_local` (boîte Chebyshev, rayon
+    `2^(k-1)`) au lieu du cône Manhattan `evolve_cone_agree` (rayon `2^k`,
+    qui débordait de la fenêtre du supercell — géométrie du contre-exemple).
+
+    **Renforcement structurel (c.93, #6724)** : les 8 hypothèses `hn*_l`/`hn*_w`
+    (niveau + `wf` des quatre nœuds de recombinaison) sont transmises au mur —
+    sans elles la forme bornée restait fausse sur des cellules mal formées
+    (cf. `p4_nw_overlap_wall_c92_counterexample`, découverte DEMO 63). -/
 private theorem p4_nw_g3_bridge
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3268,13 +3523,23 @@ private theorem p4_nw_g3_bridge
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
     (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
     (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
     (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
-    (p : Int × Int) :
+    (p : Int × Int)
+    (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
     isAlive (evolve (2^k)
         ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
                (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
@@ -3319,12 +3584,15 @@ private theorem p4_nw_g3_bridge
   --   (offsets pinned to `2^k`); it is still UNPROVEN — the (a) overlap wall
   --   above is the obstruction, not a malformed statement.
   rw [evolve_half_step k hk1]
-  -- **(b) outer locality — proven sorry-free (c.764).** Both sides carry an outer
-  -- `evolve (2^(k-1))`. The RHS evaluates at `p' = p - 2^k + 2^(k-1)`, which
-  -- simplifies to `p - 2^(k-1)` (since `2^k = 2·2^(k-1)`). We shift the RHS grid
-  -- by `(2^(k-1), 2^(k-1))` so both sides eval at `p`, then transport agreement
-  -- through the outer evolve with `evolve_cone_agree`. The residual is exactly
-  -- the (a) inner-agreement `p4_nw_overlap_wall`.
+  -- **(b) outer locality — proven sorry-free (c.764, resserré c.92).** Both sides
+  -- carry an outer `evolve (2^(k-1))`. The RHS evaluates at `p' = p - 2^k + 2^(k-1)`,
+  -- which simplifies to `p - 2^(k-1)` (since `2^k = 2·2^(k-1)`). We shift the RHS
+  -- grid by `(2^(k-1), 2^(k-1))` so both sides eval at `p`, then transport agreement
+  -- through the outer evolve with `evolve_box_agree_local` (Chebyshev box, radius
+  -- `2^(k-1)` — the c.92 tightening: the Manhattan cone of `evolve_cone_agree` had
+  -- radius `2^k` and escaped the supercell window, which is why the free-form wall
+  -- was refutable). The residual is exactly the (a) inner-agreement
+  -- `p4_nw_overlap_wall` (bounded form).
   have h2k : (2^k : Int) = (2^(k - 1) : Int) + (2^(k - 1) : Int) := by
     have hn : 2^k = 2^(k - 1) + 2^(k - 1) := by
       set m := k - 1 with hm
@@ -3341,23 +3609,19 @@ private theorem p4_nw_g3_bridge
           (shift ((2^(k - 1) : Int), (2^(k - 1) : Int)) ((node R1 R2 R4 R5).toGrid (0, 0)))) p := by
     rw [← evolve_shift, isAlive_shift]
   rw [hR]
-  -- Both sides eval at `p`. Transport through the outer `evolve (2^(k-1))`.
-  apply evolve_cone_agree (t := 0) (u := 2^(k - 1))
-  · -- h_cone : ∀ r ∈ lightCone p (2 * (0 + 2^(k-1))), ...
-    intro r hr
-    rw [isAlive_shift]
-    have h2u : 2 * (0 + 2^(k - 1)) = 2^k := by
-      set m := k - 1 with hm
-      have hkm : k = m + 1 := by omega
-      rw [hkm, Nat.pow_succ]; ring
-    rw [h2u] at hr
-    exact p4_nw_overlap_wall k hk1
-      nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
-      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
-      R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l hR2_l hR4_l hR5_l
-      hcc1 hcc2 hcc4 hcc5 p r hr
-  · -- hq : p ∈ lightCone p (2 * 0)
-    exact self_mem_lightCone p 0
+  -- Both sides eval at `p`. Transport through the outer `evolve (2^(k-1))` via the
+  -- Chebyshev-box mirror: the box `[p ± 2^(k-1)]` fits exactly inside the shifted
+  -- supercell window `[2^(k-1), 5·2^(k-1))²` when `p` satisfies `hp`.
+  apply evolve_box_agree_local
+  intro q hq
+  rw [isAlive_shift]
+  exact p4_nw_overlap_wall k hk1
+    nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+    sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+    R1 R2 R4 R5 hR1 hR2 hR4 hR5
+    hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
+    hR1_l hR2_l hR4_l hR5_l
+    hcc1 hcc2 hcc4 hcc5 p hp q hq
 
 /-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
     The wave-1/wave-2 correspondence for the nw quadrant, stated at the
@@ -3409,7 +3673,18 @@ private theorem p4_nw_g3_bridge
     Les grains « porter supercell_agree aux quadrants NE/SW » (même forme non
     bornée, cf. `p4_se_overlap_wall` c.90) sont annulés ; la voie est le
     redesign borné (fenêtre centrale + localité Chebyshev, bloc de section
-    après le mur). -/
+    après le mur).
+
+    **Redesign borné APPLIQUÉ (c.92, #6724)** : ce théorème porte désormais `hp`
+    (fenêtre centrale NW `[2^k, 2^(k+1))²`), transmis tel quel au bridge. Le
+    site d'appel (`p4_nw_membership_arm`) fournit `hsup.2` — la forme
+    syntaxique EXACTE de `hp` issue de `p4_nw_shift_lemma` — sans conversion.
+
+    **Renforcement structurel (c.93, #6724)** : les 8 hypothèses `hn*_l`/`hn*_w`
+    (niveau + `wf` des quatre nœuds de recombinaison — les faits mêmes que l'arm
+    tient de son site d'appel, L3625-3632 pré-c.93) sont ajoutées ici et
+    transmises au bridge : sans elles la chaîne bornée c.92 restait fausse sur
+    des MacroCells mal formées (`p4_nw_overlap_wall_c92_counterexample`). -/
 private theorem p4_nw_supercell_agree
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3419,13 +3694,23 @@ private theorem p4_nw_supercell_agree
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
     (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
     (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
     (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
-    (p : Int × Int) :
+    (p : Int × Int)
+    (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
     isAlive (evolve (2^(k - 1)) (evolve (2^(k - 1))
         ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
                (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
@@ -3446,7 +3731,8 @@ private theorem p4_nw_supercell_agree
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
     R1 R2 R4 R5 hR1 hR2 hR4 hR5
-    hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p
+    hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
+    hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p hp
 
 /-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
     Discharges the nw quadrant of `p4_succ_membership` over OPAQUE wave-1
@@ -3521,7 +3807,8 @@ private theorem p4_nw_membership_arm
           nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
           sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
           R1 R2 R4 R5 hR1 hR2 hR4 hR5
-          hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p]
+          hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
+          hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p hsup.2]
     exact hsup.1
   · -- 2^k ≤ p.1
     exact hsup.2.1
