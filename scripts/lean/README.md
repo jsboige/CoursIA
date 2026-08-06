@@ -9,8 +9,79 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `setup_shared_mathlib.ps1` | Mutualisation des checkouts Mathlib via junctions NTFS (voir ci-dessous) |
 | `lean_kernel_check.py` | Diagnostic kernel Lean (toolchain, oleans, env Python) |
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
+| `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 
 Tests unitaires dans `tests/`.
+
+---
+
+## `check_public_anchor.py` — les `sorry` hors de portee du gate (issue #8782)
+
+### Problème
+
+Le gate `proof-integrity` (`lean-axiom.yml`) mesure les axiomes via `#print axioms`
+sur les declarations **publiques** d'un module. `_enumerate_module_declarations`
+(`agent_tests/lean_server.py`) saute les declarations `private`, a raison : Lean 4
+les mangle en `_private.<Module>.<hash>.<name>`, donc `#print axioms` repondrait
+`unknown constant` et ferait tomber le verdict du module entier (#8722). La
+justification ecrite dans ce code est que rien n'est perdu, *car un lemme prive
+n'atteint le kernel qu'a travers les theoremes publics qui l'utilisent, et ceux-la
+sont enumeres*.
+
+C'est vrai **quand un theoreme public consomme effectivement la chaine**. Quand ce
+n'est pas le cas — chaine privee sur toute sa longueur, ou lemme prive que personne
+ne cite — le `sorryAx` n'apparait dans la cloture d'**aucune** declaration enumeree.
+Le module est alors correctement cible, correctement enumere, et rapporte propre
+alors qu'il porte un `sorry`. Le garde `enumerated=0` ne couvre pas ce cas : il ne
+se declenche que si le module **entier** enumere vide, pas pour une declaration
+privee orpheline dans un module par ailleurs sain.
+
+Cet outil verifie mecaniquement cette hypothese, module par module.
+
+### Pourquoi une analyse statique suffit — et est complete
+
+En Lean 4, `private` est de portee **module** : une declaration privee n'est pas
+referencable depuis un autre module. La cloture arriere d'une declaration privee est
+donc entierement contenue dans son propre fichier, ce qui rend l'analyse mono-fichier
+*complete* pour cette question, pas approximative. Aucun kernel, aucun Mathlib
+construit : l'outil tourne sur n'importe quelle machine.
+
+### Biais assume : jamais de fausse alarme, silences possibles
+
+Le graphe de references est bati sur les noms — un token identique a un nom de
+declaration compte comme une reference. C'est une **sur**-approximation des aretes
+(une variable locale homonyme en cree une qui n'existe pas), et l'effet va toujours
+dans le meme sens : plus d'aretes = plus de chances de trouver un ancrage =
+**moins** de verdicts `unanchored`. L'outil peut donc taire un angle mort reel, il
+ne peut pas en inventer un. C'est le bon biais pour un advisory.
+
+Les commentaires sont retires avant l'analyse (via `strip_comments` de
+`check_i18n_siblings.py`), sans quoi une mention en prose compterait comme une
+citation : c'est exactement ce qui distingue ce detecteur d'un `grep -c`.
+
+### Usage
+
+```bash
+python scripts/lean/check_public_anchor.py <fichier.lean> [...]
+python scripts/lean/check_public_anchor.py --lake MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+python scripts/lean/check_public_anchor.py --lake <dir> --json
+python scripts/lean/check_public_anchor.py --lake <dir> --fail-on-unanchored
+```
+
+Advisory (exit 0) par defaut : l'outil rend visible, il ne decide pas.
+`--fail-on-unanchored` est opt-in. Une cible vide ou absente est une **erreur**, pas
+un rapport propre — un detecteur d'angle mort ne doit jamais se taire parce qu'il
+n'a rien regarde (meme raison d'etre que les classifications `EMPTY_*` de #8940).
+
+### Verdicts
+
+| Verdict | Sens |
+|---------|------|
+| `anchored_public` | le porteur du `sorry` est lui-meme public — le gate le voit |
+| `anchored_transitive` | porteur prive, mais une declaration publique le rejoint — vu transitivement |
+| `unanchored` | porteur prive qu'aucune declaration publique ne rejoint — **invisible du gate** |
+| `anonymous` | `example` : sans nom, jamais enumerable |
+| `orphan_sorry` | `sorry` hors de toute declaration |
 
 ---
 
