@@ -32,12 +32,16 @@ GOLDEN = HERE / "golden_quantitative_claims.json"
 
 
 # --- Angles-mort connus (scanner diverge de la ground truth) --------------- #
-# Ces cas DOIVENT matcher humainement mais le scanner actuel les rate.
+# Deux sens de divergence inventories :
+#  - FN (faux negatif) : le scanner RATE un cas qu'il devrait matcher (m7/s6/s8).
+#  - FP (faux positif) : le scanner SUR-FLAGGE un cas TN (m9/m10 unites-data).
 # Documentes pour prevenir qu'on les oublie ; xfail -> xpass signaling si fixe.
 XFAIL_KNOWN_GAPS: dict[str, str] = {
-    "m7": "ANGLE-MORT machine: '30s' sans \\ss (espace avant 's') n'est pas matche",
-    "s6": "ANGLE-MORT stochastic: 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2",
-    "s8": "ANGLE-MORT stochastic: 'tentatives' hors KW + 1 decimale (App-7-Wordle)",
+    "m7": "ANGLE-MORT machine (FN): '30s' sans \\ss (espace avant 's') n'est pas matche",
+    "s6": "ANGLE-MORT stochastic (FN): 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2",
+    "s8": "ANGLE-MORT stochastic (FN): 'tentatives' hors KW + 1 decimale (App-7-Wordle)",
+    "m9": "ANGLE-MORT machine (FP): '15.33 min' = posterieur Bayesian DETERMINISTE (Infer-101, moyenne de trajet-vélo), PAS runtime. L'unite 'min' est une UNITE-DE-DONNEE du domaine, indistinguable d'une latence a la regex. Arbitrage #9434 2026-08-06 : frontiere = machine-dependance, pas 'nombre+unite'. ADVISORY — le triage humain tranche.",
+    "m10": "ANGLE-MORT machine (FP): '30 sec' = duree du CONTENU audio (longueur de clip), PAS un runtime. Unite-de-donnee indistinguable d'une latence a la regex. ADVISORY — le triage humain tranche.",
     # "t1" (2.78e24x notation scientifique + x) retire : FIXE par #9564
     # (STRUCTURAL_RE etendu a e\d+x?) — les deux PRs #9560/#9564 etaient
     # in-flight simultanement, chacune verte isolement, rouges combinees.
