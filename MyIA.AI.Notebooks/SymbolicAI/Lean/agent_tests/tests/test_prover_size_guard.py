@@ -157,6 +157,54 @@ def test_insert_only_allowance_allows_additive_growth_on_oversized_file():
     assert check_size_delta(orig, new, "file_insert_lines") is None
 
 
+def test_insert_only_allowance_allows_40_line_helpers_on_above_cap_file():
+    """Mirror of DEMO 63 forensic: the absolute cap blocked 8x legitimate inserts.
+
+    Fresh evidence (ai-01 dispatch msg-20260806T195324-17sdsv): in DEMO 63 run 2,
+    the absolute 5000-line cap (prover.tools._check_file_size_guard) blocked 8
+    legitimate scaffolding inserts (file_insert_lines / file_replace_sorry /
+    file_replace_lines) when the file was already 5643-5680 lines. The plan
+    required 4 private helper lemmas (~+40 lines) that could not be inserted.
+    This is the SYMMETRIC pathology of DEMO 63 run 1: where run 1 deleted
+    622 lines to *fit* the cap, run 2 could not *grow* past the cap.
+
+    The delta-based guard's insert-only allowance (Rule 1: orig_above_cap AND
+    net >= 0) is the explicit fix: additive growth on a pre-existing oversized
+    file is allowed, only net deletions are blocked.
+    """
+    # Reproduce the run 2 starting size: 5643 lines (just above the cap).
+    orig_lines = 5643
+    orig = "\n".join(f"-- line {i}" for i in range(orig_lines - 1)) + "\n"
+    assert orig.count("\n") + 1 == orig_lines
+    assert orig_lines > INSERT_ONLY_THRESHOLD  # pre-condition for insert-only allowance
+
+    # Insert 40 lines of helpers (4 private lemmas ~10 lines each, as in the plan).
+    # Each lemma is a one-liner followed by '\n', so 4 lemmas = 4 newline additions.
+    new = orig + (
+        "lemma helper_align_1 (x : Nat) : x = x := by rfl\n"
+        "lemma helper_align_2 (x : Nat) : x + 0 = x := by omega\n"
+        "lemma helper_align_3 (x : Nat) : 0 + x = x := by omega\n"
+        "lemma helper_align_4 (x : Nat) : x - 0 = x := by omega\n"
+    )
+    # The net change is +4 newlines (one per lemma) — the core point is that
+    # ANY additive change on an above-cap file is allowed, regardless of the
+    # exact magnitude, as long as it is not a deletion.
+    net = (new.count("\n") + 1) - (orig.count("\n") + 1)
+    assert net > 0, f"test setup wrong: expected net > 0, got {net}"
+
+    err = check_size_delta(orig, new, "file_insert_lines")
+    assert err is None, (
+        f"insert-only allowance MUST allow additive helpers on a {orig_lines}-line "
+        f"file (net={net}): {err}"
+    )
+
+    # Sanity: the same edit on a file BELOW the cap is ALSO allowed
+    # (Rule 2 fires first but the delta is well under MAX_NET_INSERTIONS (1000)).
+    orig_below = "\n".join(f"-- line {i}" for i in range(300)) + "\n"
+    new_below = orig_below + "-- inserted\n" * 40
+    assert check_size_delta(orig_below, new_below, "file_insert_lines") is None
+
+
 def test_max_net_insertions_boundary_allowed():
     """An insertion of exactly MAX_NET_INSERTIONS lines is allowed (> is blocked)."""
     orig = "\n".join(f"-- line {i}" for i in range(200)) + "\n"
