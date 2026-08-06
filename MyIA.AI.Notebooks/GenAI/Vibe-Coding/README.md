@@ -111,6 +111,86 @@ Proxy/routeur qui rend les assistants (Claude Code, Roo Code) et les bots (Herme
 
 Le **backend de mémoire sémantique** qui donne aux agents de codage une mémoire long-terme et les ancre dans des faits vérifiables (grounding) a été promu en **section top-level** : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/). Là où les ateliers ci-dessus décrivent les front-ends agents, cette section documente l'infrastructure qui les alimente — base vectorielle Qdrant, embeddings, indexation, et un notebook pratique de grounding — avec les incidents d'ops réels (dérives de montage, pertes de données, durcissement des sauvegardes) comme matière pédagogique.
 
+## Notre harnais réel — la couche sous les front-ends
+
+Les sections précédentes ([Claude Code](#claude-code---ateliers), [Roo Code](#roo-code---ateliers), [Claw Systems](#claw-systems---agents-autonomes), [Claudish](#claudish---proxy-multi-provider)) décrivent les **front-ends agents** tels qu'un utilisateur final les voit. Cette section décrit la couche qui les fait *tenir à l'échelle d'une flotte* : un MCP maison d'orchestration, un écosystème de MCPs de domaine, et un pattern coordinateur/workers multi-machines. C'est le « vibe-coding » vu du côté opérationnel, pas du côté session unique.
+
+### roo-state-manager — le MCP d'orchestration
+
+[`roo-state-manager`](https://github.com/jsboige/roo-extensions) est un MCP maison qui regroupe **34 outils** d'orchestration inter-agents et de mémoire collective. La doc pérenne détaille le rôle de chacun : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
+
+| Catégorie | Rôle | Quelques outils représentatifs (sur 34) |
+|-----------|------|------------------------------------------|
+| **Dashboards** | Canal principal de coordination entre agents (3 types : `global`, `machine`, `workspace`). | `roosync_dashboard`, `roosync_dashboard_update` |
+| **Messagerie inter-agents** | DM point-à-point qui survit à la condensation du dashboard. | `roosync_messages`, `roosync_messages_inbox` |
+| **Conversation browser** | Navigation dans l'historique des sessions d'agents (liste d'abord, puis view/tree). | `conversation_browser`, `conversation_browser_view` |
+| **Indexation sémantique** | Qdrant — indexation du code, des décisions, des incidents, retrouvables par le sens. | `roosync_search`, `roosync_indexing` |
+| **Recherche codebase** | Recherche sémantique dans le code par concept (pas par mot-clé). | `codebase_search` |
+
+Ces outils sont le **câblage** sans lequel les agents travailleraient en silos : un dashboard workspace, c'est ce qui fait qu'un worker sur une machine sait ce que le coordinateur attend de lui, et inversement. Le détail de l'architecture (processus, cycle de vie, configuration `mcp_settings.json`, redémarrage Python avec nettoyage `.pyc`) est dans [architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
+
+### MCPs maison de domaine
+
+L'écosystème autour de `roo-state-manager` est composé de MCPs ciblés sur des domaines opérationnels. En voici trois :
+
+| MCP | Domaine | Quand il est utile |
+|-----|---------|--------------------|
+| **`jupyter-papermill`** | Exécution de notebooks Jupyter | Ré-exécuter un notebook bout-en-bout avec paramètres injectés (`execute_notebook`), inspecter les cellules (`read_cells`, `inspect_notebook`), gérer le cycle de vie d'un kernel Jupyter (`manage_kernel`). Indispensable pour valider qu'un notebook pédagogique tourne réellement. |
+| **`qc-mcp-lite`** | QuantConnect (backtests cloud) | Cycle `create_compile` → `create_backtest` → `read_backtest` pour valider une stratégie de trading sur la plateforme cloud. Renvoie Sharpe, CAGR, MaxDD — le trio à surveiller en QC. |
+| **`sk-agent`** | Vision / multi-agent local | Délégation à des agents locaux spécialisés (vision, OCR, analyse de slides), multi-agent conversation presets, ou simple appel LLM local avec attachment image/document. |
+
+D'autres MCPs complètent la palette (recherche web canonique, navigation web automatisée, conversion document→Markdown, etc.). Le catalogue est volontairement modulaire : un MCP = un domaine, jamais un fourre-tout.
+
+### Le pattern coordinateur / workers multi-machines
+
+Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent sans fusion. Le schéma est le suivant, anonymisé volontairement — pas de hostnames réels, pas de comptes sensibles, pas de clés.
+
+```text
+                 ┌──────────────────────────────────┐
+                 │         Coordinateur             │
+                 │  (merge, dispatch, dashboard)    │
+                 │  Un seul agent dans ce rôle.     │
+                 └──────────────────────────────────┘
+                    │              │            │
+                    │ DM RooSync   │ DM RooSync │ DM RooSync
+                    ▼              ▼            ▼
+            ┌──────────┐    ┌──────────┐    ┌──────────┐
+            │ Worker A │    │ Worker B │    │ Worker C │
+            │ (lane-1) │    │ (lane-2) │    │ (lane-N) │
+            └────┬─────┘    └────┬─────┘    └────┬─────┘
+                 │               │               │
+                 ▼               ▼               ▼
+            ┌─────────────────────────────────────┐
+            │  Dashboards workspace (3 niveaux)   │
+            │  global / par machine / par projet  │
+            │  + DM inbox point-à-point           │
+            └─────────────────────────────────────┘
+                 │               │
+                 ▼               ▼
+            ┌─────────┐    ┌──────────┐
+            │ Qdrant  │    │  GitHub  │
+            │ (mémoire│    │ (PR /    │
+            │  vector)│    │  issues) │
+            └─────────┘    └──────────┘
+```
+
+**Coordinateur** : un seul agent dans ce rôle. Il review et merge les PRs, dispatche le travail via DM + dashboard, lit les deux dashboards workspace co-égaux (jamais un seul), et garde la cohérence cross-machine. Il ne commite jamais dans une branche feature et ne ferme jamais une issue qui ne lui appartient pas.
+
+**Workers** : N agents, chacun portant typiquement une *lane* (machine × workspace). Un worker pioche dans le pool d'issues ouvertes (cross-lane, pas siloté par famille), livre une PR, et poste un rapport court sur son dashboard. Il peut aussi déléguer des side-tracks à des sous-agents spécialisés (exécution notebook, audit, prover Lean) en arrière-plan pendant qu'il tient une track principale. Chaque cycle vise **au moins une PR** ; le plancher est une substance DEEP ou MED, jamais un scan-générable.
+
+**Gouvernance** : les règles de coordination (dispatch DM-first, jamais d'idle sanctionné, deep-queue par lane, fallback perenne quand la queue s'épuise) vivent dans `.claude/rules/coordinator-discipline.md` et `.claude/rules/proactive-coordination.md`. Elles sont **auto-chargées** au début de chaque session — c'est ce qui fait que le comportement du cluster est stable même quand un worker change.
+
+**Côté pédagogique** : ce pattern montre qu'un « vibe-coding » professionnel n'est pas la délégation totale à un agent pendant une session : c'est l'orchestration de plusieurs agents, sur plusieurs machines, avec gouvernance explicite. C'est aussi une bonne introduction aux systèmes multi-agents (un coordinateur, N workers, une mémoire partagée).
+
+### Références croisées
+
+- Architecture des MCPs (processus, cycle de vie, redémarrage Python) : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md)
+- Spécialisations infrastructure (machines, GPUs, dispatch par mission) : [docs/reference/cluster-agents.md](../../../docs/reference/cluster-agents.md)
+- Mémoire sémantique (Qdrant, embeddings, indexation, notebook Hands-On) : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/)
+- Règles de coordination auto-chargées : [coordinator-discipline.md](../../../.claude/rules/coordinator-discipline.md), [proactive-coordination.md](../../../.claude/rules/proactive-coordination.md)
+
+Tous les exemples de cette section sont volontairement **anonymisés** : pas de hostname machine réel, pas de clé d'API, pas de token, pas de compte nominatif. La doc pérenne (`architecture_mcp_roo.md`, `cluster-agents.md`) liste les rôles fonctionnels ; les détails d'infra sensibles restent dans des fichiers gitignored.
+
 ## Documentation commune
 
 Le répertoire `docs/` contient :
