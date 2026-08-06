@@ -44,42 +44,38 @@ Ce module operationalise la question :
 Numpy uniquement. GPU-free (mandat user 2026-07-04). Toutes les
 fonctions sont deterministes (numpy seul, pas d'aléatoire cache).
 
-Domaine de validite (Issue #9764, c.9706)
------------------------------------------
+Issue #9764 -- historique du correctif (c.9706 -> #9770)
+-----------------------------------------------------
 
-**Degenerescence sous ``f`` injective et graphe dense.** Quand la fonction
-d'etat ``f`` est **injective** sur l'alphabet (ex. ``f(x) = x``,
-correctif ICT-15c) ET le graphe de transition est **effectivement
-(k-1)-regulier** (au sens ou tout voisin observe au moins une fois dans
-les deux directions : W = (P + P^T) / 2 avec Laplace smoothing 1e-9),
-l'identite arithmetique suivante s'applique :
+Le constat lateral rapporte par #7290 (PR #9740) -- ``mean == max ==
+k - 1`` sur 15/15 paires (graine, k) du substrat S1 ``SelfSortingArray``
+-- etait **reel**, mais **PAS** une degenerescence du wiring
+(f identite + W symmetrise). La cause mesuree par #9770 (po-2025) est
+**le plancher de lissage de Laplace** dans :func:`ict.spectral.transition_graph` :
+``laplace_smoothing=1e-9`` met un coefficient strictement positif sur
+**toutes** les entrees de la matrice de transition, donc
+``W[x].any()`` etait vrai pour tout couple ``(x, y)``, donc
+``local_sensitivity`` lisait le voisinage dans un graphe complet.
 
-    sensitivity_x(f) = degree_x(W)    pour tout x, si f injective
+Le contre-exemple minimal (cycle 0->1->2 sur alphabet 6, ``f(x)=x``)
+donnait la sensibilite ``[5, 5, 5, 5, 5, 5]`` alors que les etats
+3, 4 et 5 etaient **jamais visites** et le degre observe est 1 : aucun
+choix de ``f`` ne pouvait corriger cela -- c'etait un defaut, pas un
+domaine de validite a documenter.
 
-Donc ``sensitivity_mean == sensitivity_max == k - 1`` et ``std == 0``
-**par construction**, independamment de la trajectoire (monotone,
-aleatoire, cycle). Ces valeurs ne representent **pas** une mesure de
-sensibilite mais la taille de l'alphabet.
+La reparation (PR #9770, MERGED 2026-08-06T23:11Z) introduit la
+primitive :func:`ict.spectral.observed_adjacency` et fait lire a
+:func:`local_sensitivity` le voisinage **effectivement observe**
+(transitions reellement presentes dans la trajectoire) plutot que le
+graphe pondere lisse. Le lissage reste legitime pour les usages
+**spectraux** (Laplacien, gap), ou une ligne nulle casse la
+diagonalisation ; il est simplement inadapte a un **comptage de
+voisins**.
 
-**Recommandation.** Pour exploiter :func:`local_sensitivity` et
-:func:`sensitivity_distribution` comme proxy informatif :
-
-    1. Utiliser une fonction ``f`` **non injective** qui PARTITIONNE
-       l'alphabet (ex. ``f(x) = x % m`` pour ``m << k``).
-    2. Verifier que le graphe n'est PAS complet sur l'alphabet (au
-       moins une paire (i, j) absente du graphe de transition symmetrise).
-       Si W est complet, le resultat est trivial.
-
-Empiriquement (test discriminant ``test_sensitivity_h1h2_discriminant``
-c.9706) : sur marche aleatoire uniforme (120 ticks, k in {3,4,6},
-5 graines) avec ``f(x) = x`` -> saturation 15/15 ; avec ``f(x) = x % 2``
-sur cycle strict (k=4) -> ``max=2, mean=2`` (non trivial).
-
-Verdict : la saturation observee dans le constat lateral #7290 n'est
-**pas** un defaut de comptage, c'est une **degenerescence du wiring**
-(f identite + W symmetrise). Tout travail futur qui lit
-``sensitivity_mean`` ou ``sensitivity_max`` comme une mesure de
-sensibilite sans verifier le wiring tombera dans la meme trappe.
+Le present module documente cette trajectoire pour qu'un lecteur
+futur ne tente pas de reproduire la recommandation obsolete « employer
+une f non injective » -- elle ne corrigeait rien puisque le defaut
+frappait des noeuds que ``f`` n'atteignait jamais.
 """
 
 from __future__ import annotations

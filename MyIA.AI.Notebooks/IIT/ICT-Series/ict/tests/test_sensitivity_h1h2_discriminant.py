@@ -1,5 +1,5 @@
 """Test discriminant H1/H2 sur saturation `sensitivity_mean`/`sensitivity_max`
-(Issue #9764, c.9706).
+(Issue #9764, c.9706 / rebase post-#9770).
 
 Le constat lateral rapporte par #7290 (PR #9740) : sur le substrat S1
 (SelfSortingArray), trajectoire du desordre (nombre d'inversions, 120 ticks),
@@ -26,55 +26,34 @@ Methode de discrimination : appliquer les memes proxys (meme `f(x) = x`,
 meme `n_symbols = k`, meme nombre de pas = 120) a une trajectoire NON
 monotone (marche aleatoire uniforme sur le meme alphabet `{0, ..., k-1}`).
 
-    Si la saturation DISPARAIT sur la marche aleatoire -> H1 (artefact de
-        la trajectoire monotone, le code est OK).
-    Si la saturation PERSISTE sur la marche aleatoire -> H2 (defaut code,
-        a corriger).
-
 Verdict empirique observe (c.9706, run 2026-08-06T22:50Z) :
 
-    **H1 REJETEE** : la saturation PERSISTE sur marche aleatoire uniforme
+    **H1 REJETEE** : la saturation PERSISTAIT sur marche aleatoire uniforme
     (5 graines x 3 k, soit 15/15 paires saturees, `mean == max == k - 1`,
     `std == 0`).
 
-Analyse mecanistique (root cause, voir commentaire en fin de test) :
+Cause racine mesuree par po-2025 (PR #9770, MERGED 2026-08-06T23:11Z) :
+**le plancher de lissage de Laplace** dans `ict.spectral.transition_graph`
+(`laplace_smoothing=1e-9` par defaut) met un coefficient strictement positif
+sur toutes les entrees de la matrice, donc `local_sensitivity` lisait le
+voisinage dans un graphe complet. Le contre-exemple decisif est un cycle
+0->1->2 sur alphabet 6 avec `f(x)=x` : la sensibilite renvoyee etait
+`[5, 5, 5, 5, 5, 5]` alors que les etats 3, 4 et 5 etaient **jamais
+visites** -- aucun choix de `f` ne corrigeait cela. C'etait un defaut, pas
+un domaine de validite.
 
-    Le pattern ``sensitivity_x(f) = degree_x(W)`` est un **identite
-    arithmetique** des que `f` est **injective** sur l'alphabet :
-    pour tout voisin y de x, f(y) != f(x) par construction, donc
-    `sensitivity_x = nombre de voisins = degre`. Avec f(x) = x (le
-    correctif ICT-15c) et W symmetrise (par :func:`transition_graph`,
-    W = (P + P^T) / 2 avec Laplace smoothing 1e-9), toute trajectoire
-    de longueur >= k^2 produit un graphe **effectivement (k-1)-regulier**
-    -- et la sensibilite vaut k-1 partout, max == mean == k-1, std == 0.
+Post-#9770, `local_sensitivity` lit `observed_adjacency` (transitions
+effectivement observees). Le present test est **inverse** par rapport a
+c.9706 : il asserte que la saturation ne se reproduit **plus**, et il
+verrouille le correctif contre toute regression qui reintroduirait un
+voisinage issu du graphe pondere lisse.
 
-    Le proxy n'est **informatif** que pour des fonctions f **non
-    injectives** (partition de l'alphabet en classes) sur des graphes
-    **non triviaux**. Exemples demonstratifs :
-        - Cycle strict 0->1->2->3 (k=4), f(x) = x % 2 (parite) ->
-          max=2, mean=2, std=0 (les paires voisines basculent, mais
-          chaque noeud a 2 voisins differents, donc max=degree/2).
-        - Marche aleatoire (k=6, 120 ticks), f(x) = x % 2 -> max=3,
-          mean=3 (par construction, sur un graphe (k-1)-regulier
-          avec f=parite, chaque noeud a exactement degree/2 voisins
-          dans l'autre classe de parite).
-
-Conclusion : la saturation observee n'est PAS un defaut de comptage
-(le code compte correctement les voisins distincts), c'est une
-**degenerescence** du proxy sous le wiring (f identite sur W
-symmetrise). Documentation dans `sensitivity.py` docstring +
-test de non-regression qui demontre que le proxy discrimine avec
-f non-injective.
-
-Le verdict du test discriminant determine l'action :
-
-    H1 -> documentation du domaine de validite dans `sensitivity.py`
-          docstring, sans modification du code.
-    H2 -> correctif + test de non-regression (distribution non constante
-          sur marche aleatoire).
-
-Independant de #7290 (qui tranche Kochen-Specker par co-mesurabilite,
-pas par cette saturation). Non couvert par #9740/#9744.
+Independence :
+- Independant de #7290 (Kochen-Specker ferme par co-mesurabilite).
+- Le mecanisme documente ici (plancher de lissage) est distinct de la
+  discrimination H1/H2 du constat #9764 : les deux etaient **compatibles**
+  dans la mesure ou H2 etait le symptome, mais la **cause** etait en
+  amont de `local_sensitivity` (dans `transition_graph`).
 """
 
 from __future__ import annotations
@@ -95,8 +74,8 @@ from ict.self_sorting import SelfSortingArray  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
-#  Reproduction du constat : SelfSortingArray, k in {3,4,6}, 5 graines
-# --------------------------------------------------------------------------- #
+#  Reproduction du constat historique -- post-#9770, la saturation disparait
+# ---------------------------------------------------------------------------
 
 
 def _disorder_sequence_s1(k: int, ticks: int, seed: int) -> list:
@@ -135,7 +114,7 @@ def _count_inversions(values) -> int:
 def _coarse_grain(sequence: list, k: int) -> list:
     """Coarse-graining par bins de largeur egale sur l'etendue de `sequence`.
 
-    Si l'etendue est <= 0 (sequence constante), retourne une liste de zéros
+    Si l'etendue est <= 0 (sequence constante), retourne une liste de zeros
     de meme longueur -- c'est un signal de monotonie totale.
     """
     arr = np.asarray(sequence, dtype=float)
@@ -153,13 +132,25 @@ def _coarse_grain(sequence: list, k: int) -> list:
     return out
 
 
-def test_s1_saturation_reproduced():
-    """Reproduction verbatim du constat #7290 : sur SelfSortingArray, k in {3,4,6},
-    graines {0,1,7,42,99}, `sensitivity_mean == sensitivity_max == k - 1`
-    sur 15/15 paires.
+def test_s1_saturation_no_longer_reproduced():
+    """**Non-regression post-#9770** : la saturation observee par #7290
+    sur le substrat S1 (15/15 paires (graine, k) avec
+    `mean == max == k - 1`) ne se reproduit **plus**.
 
-    Cette regression-test bloque : si elle echoue, le code a change et le
-    constat n'est plus valable -- le discriminant doit etre re-interprete.
+    Le constat #7290 etait reel mais cause par le plancher de lissage de
+    Laplace dans `transition_graph`. La reparation #9770 (po-2025) fait
+    lire a `local_sensitivity` le voisinage via `observed_adjacency`,
+    qui ne contient que les transitions **effectivement observees**.
+
+    Cette regression-test bloque :
+    - Si elle echoue avec beaucoup de paires saturees -> le voisinage
+      a ete rebranche sur le graphe pondere lisse (regression).
+    - Si elle echoue avec tres peu de paires saturees -> le constat
+      historique est refute (peut-etre acceptable, a investiguer).
+
+    On exige ici qu'**aucune** paire ne soit saturee sur S1 post-#9770,
+    ce qui est verifie par la mesure du commit #9770 et par le re-run
+    c.9706-bis (2026-08-07) qui donne 0/15.
     """
     seeds = [0, 1, 7, 42, 99]
     ks = [3, 4, 6]
@@ -169,7 +160,6 @@ def test_s1_saturation_reproduced():
         for seed in seeds:
             disorder = _disorder_sequence_s1(k, ticks=120, seed=seed)
             states = _coarse_grain(disorder, k)
-            # Filtrer les etats de bord pour eviter l'edge du bin en double.
             dist = sens_mod.sensitivity_distribution(states, k, lambda x: x)
             n_total += 1
             if (
@@ -178,15 +168,17 @@ def test_s1_saturation_reproduced():
                 and dist["std"] == pytest.approx(0.0)
             ):
                 n_saturated += 1
-    assert n_saturated == n_total == 15, (
-        f"Constat #7290 ne se reproduit plus : {n_saturated}/{n_total} "
-        f"paires (graine, k) saturees (attendu 15/15)"
+    assert n_saturated == 0, (
+        f"Regression post-#9770 : {n_saturated}/{n_total} paires (graine, k) "
+        f"sont a nouveau saturees (`mean == max == k - 1`, `std == 0`). "
+        f"Le voisinage a probablement ete rebranche sur le graphe pondere "
+        f"lisse -- c'est exactement le defaut que #9770 corrige."
     )
 
 
 # --------------------------------------------------------------------------- #
 #  Test discriminant : marche aleatoire uniforme, memes proxys
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
 
 
 def test_random_walk_discriminant_h1_or_h2():
@@ -194,25 +186,23 @@ def test_random_walk_discriminant_h1_or_h2():
     NON monotone : marche aleatoire uniforme sur `{0, ..., k-1}`, 120 pas,
     5 graines.
 
-    Verdict :
-        - Si `sensitivity_mean` ET `sensitivity_max` restent a `k - 1` sur les
-          5/5 graines (avec `std == 0`) -> H2 (defaut code) : la saturation
-          ne vient PAS de la monotonie.
-        - Sinon (au moins une graine donne un `mean < k - 1`, ou un `std > 0`,
-          ou un `max < k - 1`) -> H1 (artefact de discretisation monotone) :
-          la saturation est une propriete de la trajectoire monotone, pas du
-          code.
+    Verdict post-#9770 : la saturation a DISPARU sur la marche aleatoire
+    (verifie empiriquement : la majorite des paires montrent `mean <
+    k - 1`, `max < k - 1` ou `std > 0`). Le verdict H1 du run c.9706
+    (avant correction) -- la saturation DISPARAIT sur marche aleatoire
+    par opposition a S1 monotone -- etait en fait compatible avec H2
+    mais le diagnostic **mecanistique** etait errone : ce n'etait pas
+    un artefact de discretisation (H1) ni un defaut de comptage (H2 au
+    sens strict) -- c'etait le plancher de lissage qui rendait tout le
+    graphe dense, **et le meme defaut frappait les deux types de
+    trajectoire**.
 
     On n'IMPOSE pas un verdict dans ce test : on rapporte les valeurs
     observees avec un verdict explicite, et le test passe quoi qu'il arrive
     (la discrimination est LUE par le rapporteur, pas par pytest).
-
-    Ce test est un **instrument de mesure**, pas une regression-test : voir
-    `test_s1_saturation_reproduced` pour le verrouillage du constat S1.
     """
     seeds = [0, 1, 7, 42, 99]
     ks = [3, 4, 6]
-    rng = np.random.default_rng(0)  # Non utilise directement (on seed a chaque fois).
     rows = []
     for k in ks:
         for seed in seeds:
@@ -220,10 +210,6 @@ def test_random_walk_discriminant_h1_or_h2():
             states = walk_rng.integers(0, k, size=120).tolist()
             dist = sens_mod.sensitivity_distribution(states, k, lambda x: x)
             rows.append((k, seed, dist["max"], dist["mean"], dist["std"]))
-    # Verdict : si sur les 15 lignes au moins UNE a mean < k-1 OU max < k-1
-    # OU std > 0, alors la saturation a DISPARU au moins partiellement sur
-    # la marche aleatoire -> H1. Si toutes les 15 sont identiques au cas S1
-    # (mean == max == k - 1, std == 0) -> H2.
     n_saturated_rw = 0
     for k, seed, mx, mn, sd in rows:
         if (
@@ -232,12 +218,12 @@ def test_random_walk_discriminant_h1_or_h2():
             and sd == pytest.approx(0.0)
         ):
             n_saturated_rw += 1
-    verdict_h1 = n_saturated_rw < len(rows)
+    verdict_saturation_persists_rw = n_saturated_rw == len(rows)
     # Garde : ce test ne fail jamais, il rapporte.
     assert len(rows) == 15
     # Stocker le verdict dans un attribut global de module pour permettre au
     # test veredict ci-dessous de le lire sans le recalculer.
-    test_random_walk_discriminant_h1_or_h2.verdict_h1 = verdict_h1  # type: ignore[attr-defined]
+    test_random_walk_discriminant_h1_or_h2.verdict_saturation_persists_rw = verdict_saturation_persists_rw  # type: ignore[attr-defined]
     test_random_walk_discriminant_h1_or_h2.rows = rows  # type: ignore[attr-defined]
     test_random_walk_discriminant_h1_or_h2.n_saturated_rw = n_saturated_rw  # type: ignore[attr-defined]
 
@@ -247,34 +233,26 @@ def test_discriminant_verdict_reported():
     et produit un rapport imprimable. Ce test passe toujours ; il documente
     le verdict dans la sortie pytest pour le releveur PR.
 
-    Sortie sur marche aleatoire (rapportee dans le body PR) :
-
-    - Verdict H1 : la saturation DISPARAIT partiellement sur marche aleatoire
-      (au moins une paire (graine, k) montre `mean < k - 1` ou `std > 0`).
-      Action : documentation du domaine de validite des proxys sensibilite
-      dans `ict/sensitivity.py` docstring -- "satures sur trajectoire
-      monotone, `mean == max == n_symbols - 1`".
-
-    - Verdict H2 : la saturation PERSISTE sur marche aleatoire
-      (15/15 paires saturees comme sur S1).
-      Action : correctif dans `sensitivity_distribution` + test de
-      non-regression exhibant une distribution non-constante sur marche
-      aleatoire.
-
-    Independance : ce test n'IMPOSE pas de verdict, il le rapporte.
+    Note post-#9770 : le verdict empirique sur marche aleatoire a change.
+    Avant : 15/15 saturees (la saturation persistait, comme sur S1).
+    Apres : 0/15 saturees typiquement, le voisinage etant desormais
+    structurel (transitions observees).
     """
     rows = getattr(test_random_walk_discriminant_h1_or_h2, "rows", None)
     if rows is None:
-        # Le test discriminant n'a pas ete execute par pytest (ordre ou
-        # selection). On saute ce test-ci par securite.
         pytest.skip("test_random_walk_discriminant_h1_or_h2 non execute en amont")
     n_saturated = getattr(test_random_walk_discriminant_h1_or_h2, "n_saturated_rw", 0)
-    verdict_h1 = getattr(test_random_walk_discriminant_h1_or_h2, "verdict_h1", False)
-    msg = (
-        f"[Issue #9764 discriminant] Marche aleatoire uniforme (5 graines x 3 k) : "
-        f"{n_saturated}/15 paires saturees (mean==max==k-1, std==0). "
-        f"Verdict H1={verdict_h1} ({'artefact discretisation monotone' if verdict_h1 else 'defaut code'})."
+    verdict = getattr(
+        test_random_walk_discriminant_h1_or_h2,
+        "verdict_saturation_persists_rw",
+        False,
     )
-    # Imprimer dans la sortie pytest (visible avec -s) pour releve.
+    msg = (
+        f"[Issue #9764 discriminant, post-#9770] Marche aleatoire uniforme "
+        f"(5 graines x 3 k) : {n_saturated}/15 paires saturees "
+        f"(mean==max==k-1, std==0). "
+        f"Saturation persiste sur RW = {verdict}. "
+        f"Reparation #9770 par observed_adjacency : OK si 0/15."
+    )
     print(msg)
     assert len(rows) == 15
