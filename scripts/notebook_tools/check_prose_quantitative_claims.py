@@ -123,13 +123,21 @@ COUNT_RE = re.compile(
 # avant elle pour eviter les collisions (suffixes, abreviations) ; les unites
 # multilettres (ms/sec/min/...) tolerent un espace optionnel. Advisory : un FP
 # residuel est acceptable, l'arbitrage est humain (cf angle-mort header).
+#
+# Note fix (#9434 angle-mort t3) : le lookahead final exclut aussi les
+# apostrophes (' et '). Sinon « s » (secondes) collidait avec le debut d'un
+# verbe reflechi francais : « les annees 80 s'ecoulent », « 3 s'appliquent »
+# etaient matches comme les durees « 80 s », « 3 s ». Une mesure reelle n'est
+# JAMAIS suivie immediatement d'une apostrophe (toujours espace/fin/ponctuation) ;
+# un « s' » est le debut de s'en/s'applique/s'etend, pas l'unite secondes. Les
+# vraies mesures (« ~50 s sur GPU », « 12 s ») restent capturees.
 MACHINE_RE = re.compile(
     r"(?<![\w.])~?\d{1,6}(?:[.,]\d{1,3})?"
     r"(?:"
     r"\s?(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?)"
     r"|\ss"
     r")"
-    r"(?![\w-])",
+    r"(?![\w\-'’-])",
     re.IGNORECASE,
 )
 
