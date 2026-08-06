@@ -151,3 +151,71 @@ def test_stationary_env_no_best_arm_change():
     before = env.true_best_arm(10)
     after = env.true_best_arm(90)
     assert before == after
+
+
+# --------------------------------------------------------------------------- #
+#  Dynamique non-stationnaire + métriques non couvertes                        #
+# --------------------------------------------------------------------------- #
+def test_bandit_regime_switches_optimal_arm_at_switch_t():
+    """La bascule de régime inverse le bras optimal exactement à switch_t.
+
+    Miroir non-stationnaire du test ci-dessus : par défaut probs_pre est
+    décroissante (bras 0 = 0.8 optimal) et probs_post l'inverse (dernier
+    bras = 0.8 optimal). Le bras vrai optimal bascule donc 0 -> K-1 à
+    switch_t — c'est le cœur de la non-stationnarité qui motive tout le banc."""
+    env = ai.NonStationaryBandit(n_arms=3, horizon=100, seed=0)
+    s = env.switch_t
+    assert env.true_best_arm(0) == 0               # début : bras 0 (p=0.8)
+    assert env.true_best_arm(s - 1) == 0           # juste avant bascule
+    assert env.true_best_arm(s) == 2               # à la bascule : dernier bras
+    assert env.true_best_arm(env.horizon - 1) == 2  # fin : dernier bras
+
+
+def test_optimal_reward_rate_equals_max_true_prob():
+    """optimal_reward_rate(t) = proba vraie maximale à l'instant t (borne de regret)."""
+    env = ai.NonStationaryBandit(n_arms=3, horizon=60, seed=0)
+    for t in (0, 5, env.switch_t, env.switch_t + 1, env.horizon - 1):
+        assert env.optimal_reward_rate(t) == pytest.approx(float(env._probs_t[t].max()))
+
+
+def test_cumulative_regret_equals_sum_and_nonneg():
+    """cumulative_regret(trace) = somme des regrets instantanés, et >= 0.
+
+    Le regret instantané = optimal_reward_rate(t) - p_vraie(arm choisi) =
+    max - p, donc toujours >= 0 ; la somme aussi. La fonction publique
+    cumulative_regret n'était pas exercée jusqu'ici."""
+    env = ai.NonStationaryBandit(n_arms=3, horizon=100, seed=0)
+    tr = ai.run_episode(env, lam=1.0)
+    assert ai.cumulative_regret(tr) == pytest.approx(float(tr["regret"].sum()))
+    assert ai.cumulative_regret(tr) >= 0.0
+    # Chaque pas est non négatif (max des probas - proba du bras tiré).
+    assert (tr["regret"] >= -1e-12).all()
+
+
+def test_recovery_rate_window_limit_and_empty_returns_nan():
+    """window limite la fenêtre post-bascule ; fenêtre vide (window=0) -> nan.
+
+    Exerce la branche ``end <= s`` (retour nan) du garde, non couverte par
+    test_recovery_rate_in_unit_interval qui n'utilise pas l'argument window."""
+    env = ai.NonStationaryBandit(n_arms=3, horizon=100, seed=3)
+    tr = ai.run_episode(env, lam=1.0)
+    # Fenêtre limitée : valeur dans [0, 1], évaluée sur moins de pas.
+    half = ai.recovery_rate(tr["actions"], env, window=10)
+    assert 0.0 <= half <= 1.0
+    # Fenêtre vide -> nan (branche de garde end <= s).
+    assert np.isnan(ai.recovery_rate(tr["actions"], env, window=0))
+
+
+def test_choose_greedy_lam_zero_picks_highest_mean():
+    """choose(lam=0) = politique gloutonne pure -> argmax(moyenne a posteriori).
+
+    Le terme pragmatique est strictement croissant en p_k pour c > 0.5,
+    donc lam=0 (epistémique ablaté) sélectionne le bras de moyenne la plus
+    haute. Vérifie la réduction greedy du choix indépendamment du tirage
+    aléatoire (l'écart net de moyenne l'emporte sur le bris d'égalité 1e-12)."""
+    b = ai.BetaBelief(n_arms=3)
+    for _ in range(20):
+        b.update(0, 1.0)  # bras 0 : que des succès -> moyenne ~0.95
+    rng = np.random.default_rng(0)
+    assert b.mean()[0] > b.mean()[1]  # prémisse : écart net
+    assert ai.choose(b, lam=0.0, rng=rng) == 0

@@ -148,10 +148,15 @@ def test_diff_limited_to_target_block(registry_backup):
 
     Depuis #9399 (volet a, migration at-rest), le registre est en forme
     append-only `audits:`. Un rebaseline qui drift APPEND une nouvelle entree ;
-    l'enregistrement precedent survit comme item[0]. La garantie chirurgicale
-    (#8570) est preservee : aucune cle top-level hors audit
+    TOUS les enregistrements precedents survivent verbatim. La garantie
+    chirurgicale (#8570) est preservee : aucune cle top-level hors audit
     (name/family/python/csharp/parity_level/known_differences) ne change
     (anti-regression : on ne jette pas l'historique d'audit).
+
+    Robuste au multi-enregistrement (#9581) : la fixture est le premier fichier
+    du registre reel, qui peut legitimement porter >= 2 audits (c'est le POINT
+    de l'append-only). L'ancienne assertion `audits[0] == ancien latest` ne
+    valait que pour un fichier mono-enregistrement.
     """
     import yaml
 
@@ -160,7 +165,7 @@ def test_diff_limited_to_target_block(registry_backup):
     name = _pair_name(pfile)
     before = yaml.safe_load(raw)[0]
     old_audit = ctp._latest_audit(before)
-    old_py = old_audit["python_sha"]
+    before_audits = before.get("audits") or [before["last_audit"]]
 
     # SHA python change -> append a new entry (registry is audits: since the
     # #9399 volet a at-rest migration). The lazy legacy->audits migration of a
@@ -176,11 +181,11 @@ def test_diff_limited_to_target_block(registry_backup):
     for key in ("name", "family", "python", "csharp", "parity_level", "known_differences"):
         assert before.get(key) == after.get(key), f"cle non-audit modifiee : {key}"
 
-    # Le bloc a migre vers la forme append-only, en preservant l'historique.
+    # Forme append-only ; tout l'historique survit, le sentinel est appende.
     assert "last_audit" not in after, "le singleton legacy doit etre remplace"
     audits = after["audits"]
-    assert isinstance(audits, list) and len(audits) >= 2
-    assert audits[0]["python_sha"] == old_py, "l'ancien enregistrement doit survivre"
+    assert isinstance(audits, list) and len(audits) == len(before_audits) + 1
+    assert audits[:-1] == before_audits, "les enregistrements precedents doivent survivre verbatim"
     assert audits[-1]["python_sha"] == "f" * 40, "le nouvel enregistrement doit etre dernier"
     assert audits[-1]["by"] == "sentinelle-c8570"
 
@@ -190,6 +195,12 @@ def test_noop_is_byte_identical(registry_backup):
 
     Sans cette garantie, un rebaseline sur une paire a jour normaliserait le
     quoting (le registre melange 'x' et "x") et polluerait le diff.
+
+    Le candidat noop doit porter les MEMES cles de comparaison que le dernier
+    audit (#9581) : si celui-ci a des `content_*_sha` (rebaseline outil récent)
+    et que le candidat ne les a pas, `_cmp_pair_shas` compare content-sha vs
+    blob-sha -> faux drift -> append parasite. Un vrai rebaseline recalcule
+    toujours les deux familles de SHAs ; le test doit faire pareil.
     """
     import yaml
 
@@ -201,11 +212,13 @@ def test_noop_is_byte_identical(registry_backup):
     entry = data[0] if isinstance(data, list) else data
     audit = ctp._latest_audit(entry)
 
-    new_raw, touched = ctp.surgical_rebaseline(
-        raw,
-        {name: {"date": str(audit["date"]), "by": audit["by"],
-                "python_sha": audit["python_sha"], "csharp_sha": audit["csharp_sha"]}},
-    )
+    noop = {"date": str(audit["date"]), "by": audit["by"],
+            "python_sha": audit["python_sha"], "csharp_sha": audit["csharp_sha"]}
+    for k in ("content_python_sha", "content_csharp_sha"):
+        if k in audit:
+            noop[k] = audit[k]
+
+    new_raw, touched = ctp.surgical_rebaseline(raw, {name: noop})
     assert touched == 0
     assert new_raw == raw, "un no-op doit etre byte-identique"
 

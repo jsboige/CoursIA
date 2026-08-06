@@ -83,7 +83,7 @@ def test_audit_targets_sorry_bearing_module():
 def test_audit_allowlists_native_decide_axioms():
     """The audit allow-lists the native_decide axioms its modules ACTUALLY depend
     on, so it reports only a FORBIDDEN axiom (beyond them) as red. The first CI
-    run of this audit (#8782) revealed HashlifeCorrectness depends on **28**
+    run of this audit (#8782) revealed HashlifeCorrectness depends on **38**
     native_decide axioms -- a footprint DISTINCT from the blocking gate's 19-name
     list (triaged from the showcase modules KochenSpecker/FreeWillTheorem, #8749,
     a different scope; the two sets have ZERO overlap). The audit audits
@@ -111,7 +111,16 @@ def test_audit_allowlists_native_decide_axioms():
     build-enumerated footprint. A shrink attributable to a native_decide ->
     decide flip is the virtuous ratchet direction (fewer trusted-kernel
     escapes), so the pin follows the footprint down. Same rule as widening:
-    any future shrink must name the flipped theorems."""
+    any future shrink must name the flipped theorems.
+
+    **Shrunk to 38 by #9595** (`feat(lean,#8869)`): the 3 period-4 spaceship
+    theorems (`lwss|mwss|hwss_spaceship`) in `Conway.Life.Spaceships` were
+    flipped from `native_decide` to kernel `decide` (the glider on main already
+    used kernel `decide`; the rewrite pattern matched). `#print axioms` =
+    'does not depend on any axioms' on all 3 (FR+EN byte-identity verified),
+    so their 3 axiom names genuinely left the build-enumerated footprint.
+    Same ratchet direction as #9571 (virtuous shrink, fewer trusted-kernel
+    escapes); the pin follows the footprint down by 3 to 38."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -121,10 +130,11 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 41, (
-        f"audit allow-list must carry the 41 native_decide axioms of the 7 "
+    assert len(names) == 38, (
+        f"audit allow-list must carry the 38 native_decide axioms of the 7 "
         f"covered Life modules (empirical footprint, #8782 + #9341, shrunk by "
-        f"the #9571 still-life decide flips); got {len(names)}")
+        f"the #9571 still-life decide flips + the #9595 spaceship decide flips); "
+        f"got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges).
     for sample in [
@@ -152,7 +162,7 @@ def test_audit_allowlist_is_distinct_from_blocking_gate():
                     if a.strip()}
     assert audit_set != blocking_set, (
         "audit and blocking gate audit different modules -> their native_decide "
-        "allow-lists must differ (28 HashlifeCorrectness vs 19 showcase)")
+        "allow-lists must differ (38 HashlifeCorrectness vs 19 showcase)")
     assert audit_set.isdisjoint(blocking_set) or len(audit_set & blocking_set) <= 2, (
         "the two native_decide footprints are empirically disjoint")
 
