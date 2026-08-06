@@ -384,6 +384,87 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
+/-! ## Localité étroite (forme boîte Chebyshev) — dual d'accord de `evolve_reach_chebyshev`
+
+Le théorème d'atteinte étroit (`evolve_reach_chebyshev` ci-dessus) dit : si `q`
+est vivante après `t` générations, alors une cellule initialement vivante se
+trouve dans la boîte Chebyshev-`t` de `q`. Le **dual d'accord** manquant —
+nommé par le greenlight N2 étape 2 (c.91, redesign borné #3846) — est la
+réciproque opérationnelle : si deux grilles coïncident sur une boîte
+Chebyshev, leurs évolutions coïncident au centre. C'est le lemme-clé du
+redesign : la marge *étroite* `2^(k-1)` de la fenêtre centrale du supercell
+suffit pour un saut de `2^(k-1)` générations, alors que le cône Manhattan
+*lâche* `2*(2^(k-1))` déborde la fenêtre (le verdict « obstruction C » de la
+carte c.8124 était le symptôme de cette sur-marge). EPIC #3846. Sans sorry.
+-/
+
+/-- **Localité étroite à pas unique (forme boîte Chebyshev-1).** Si deux grilles
+    `g₁ g₂` coïncident sur la boîte Chebyshev de rayon 1 autour de `p` (la
+    cellule et ses huit voisins de Moore), alors après une étape elles ont la
+    même vivacité en `p`.
+
+    C'est l'analogue étroit de `step_local` (`HashlifeCorrectness` L901), qui
+    demandait le cône Manhattan-`2` *lâche* (13 cellules en diamant). Ici la
+    boîte Chebyshev-`1` *étroite* (9 cellules en carré) suffit : le voisinage
+    de Moore EST exactement la boule unité Chebyshev. -/
+theorem step_box_local (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ 1 → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (step g₁) p = isAlive (step g₂) p := by
+  have h_self : isAlive g₁ p = isAlive g₂ p := by
+    apply h_box p
+    have heq : chebDist p p = 0 := chebDist_self p
+    omega
+  have h_nbrs : ∀ q ∈ mooreNeighbors p, isAlive g₁ q = isAlive g₂ q := by
+    intro q hq
+    exact h_box q (chebDist_le_one_of_moore p q hq)
+  have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
+    aliveNext_local g₁ g₂ p h_self h_nbrs
+  rw [isAlive_step_eq_aliveNext, isAlive_step_eq_aliveNext, h_alive]
+
+/-- **Localité étroite (forme boîte Chebyshev, multi-étapes).** Si deux grilles
+    `g₁ g₂` coïncident sur la boîte Chebyshev de rayon `u` autour de `p` — i.e.
+    sur toute cellule `q` avec `chebDist p q ≤ u` — alors après `u` générations
+    d'évolution elles ont la même vivacité en `p`.
+
+    C'est l'analogue étroit de `step_light_cone` (`HashlifeCorrectness` L931),
+    qui demandait le cône Manhattan *lâche* de rayon `2*u` (un facteur 2 perdu).
+    Ici la boîte Chebyshev *étroite* de rayon `u` suffit exactement : une
+    génération B3/S23 étend la portée d'une coque de Moore (= boule unité
+    Chebyshev), donc `u` générations atteignent exactement le rayon Chebyshev
+    `u`. C'est le lemme-clé du redesign borné (#3846, c.91) : la marge nulle
+    `2^(k-1)` de la fenêtre centrale du supercell suffit pour un saut de
+    `2^(k-1)` générations, là où le cône Manhattan débordait.
+
+    Preuve par récurrence sur `u` (généralisée en `p`), mirant `step_light_cone`
+    mais avec `chebDist` au lieu de `manhattan`/`lightCone` :
+    - Base `u = 0` : `evolve 0 g = g`, et `chebDist p p = 0 ≤ 0`.
+    - Pas `u = n + 1` : `evolve (n+1) g = step (evolve n g)`. Par
+      `step_box_local`, il suffit que `evolve n g₁` et `evolve n g₂`
+      coïncident sur la boîte Chebyshev-`1` de `p`. Pour chaque tel `q`
+      (`chebDist p q ≤ 1`), l'HR (en `q`, rayon `n`) donne l'accord sous
+      `∀ r, chebDist q r ≤ n → isAlive g₁ r = isAlive g₂ r`, qui découle de
+      l'hypothèse au rayon `n+1` par `chebDist_triangle` :
+      `chebDist p r ≤ chebDist p q + chebDist q r ≤ 1 + n`. -/
+theorem evolve_box_agree (u : Nat) (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ u → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (evolve u g₁) p = isAlive (evolve u g₂) p := by
+  induction u generalizing p with
+  | zero =>
+    simp only [evolve_zero]
+    have hpp : chebDist p p ≤ 0 := by
+      have heq : chebDist p p = 0 := chebDist_self p
+      omega
+    exact h_box p hpp
+  | succ n ih =>
+    simp only [evolve_succ]
+    apply step_box_local
+    intro q hpq
+    apply ih
+    intro r hqr
+    apply h_box r
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+
 /-! ## Couronnement N2 étape 3 : portée Chebyshev étroite ⊆ marge padCenter2
 
 La composition du théorème d'atteinte étroit (`evolve_reach_chebyshev`, une

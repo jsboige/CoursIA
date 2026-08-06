@@ -134,8 +134,9 @@ BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPER
 # Canonical home is game_theory_lean since the #6058 absorption merged
 # (SocialChoice/Arrow+Sen+Voting moved into game_theory_lean on
 # 2026-07-11). The legacy social_choice_lean dir survives as md-only
-# (FORMAL_STATUS/README/NOTICE) — its SocialChoice/*.lean are gone, so
-# deriving VOTING_FILE from it yields a non-existent path (#6248).
+# (README/STATUS/NOTICE/LEAN_PREREQUISITES; FORMAL_STATUS removed #9535
+# item 6) — its SocialChoice/*.lean are gone, so deriving VOTING_FILE
+# from it yields a non-existent path (#6248).
 _SOCIAL_CHOICE_CANDIDATES = [
     _workspace_relative("GameTheory/game_theory_lean"),
     _workspace_relative("GameTheory/social_choice_lean"),

@@ -71,6 +71,7 @@ Conventions :
 | **ICT-12** | `p̂` est régime-dépendant (capture x4 sur balistique rapide, perd sur erratique) | `s` ✓, `q` ✓, `π` ✓ | Taux de capture, évasion, irréversibilité, switching | Animat réactif (gradient instantané) vs anticipateur (`p̂`) ; marche aléatoire comme contrôle négatif | RNG multi-régimes | reproduced_in_toy_model | **Établi** | Le modèle interne paie son coût là où la source échappe au réactif **et** reste prévisible — *ni* universellement avantageux *ni* ruineux |
 | **ICT-12b** | La valence est **apprise** (Rescorla-Wagner), transférable et **distincte** de la prédiction `p̂` (banc désincarné) | `s` ○, `q` ✓, `π` ✓, `W` — | `LearnedValence` (π Rescorla-Wagner), 3 verdicts (transfert / distinctness / réversibilité) | Signal non-conditionné reste neutre ; prédicteur re-vêtu `p̂ = 1 - π` → non-distinct (contrôle négatif réfutable) | RNG-seeds (déterministe RW) | reproduced_in_toy_model | **Établi** | Banc désincarné (signal = index abstrait) ; `p̂ = prégnance` reste **spéculatif** (cf #7733 A1 : `p̂` est représentationnel prédictif, non prégnance thomienne) — c'est ICT-12c qui l'incarne |
 | **ICT-12c** | Incarné, `p̂` et `π` se **dissocient** : erratique détruit `p̂` mais le conditionnement tient | `s` ✓, `q` ✓, `π` ✓, `W` ○ | `PregnanceAnimat` (p̂ + `LearnedValence` + hunger), matrice de dissociation (4 mesures × 3 régimes) | Neutre non-conditionné non-approché ; sans acquisition → pas de réversibilité | 8 RNG-seeds | reproduced_in_toy_model | **Établi** | Ratio `err_p̂/pers` erratique 0.68–0.95 vs balistique 0.14–0.23 (p̂ détruit) MAIS transfert + engagement + réversibilité = 1 → **valence ≠ prédiction, même incarnée** ; mesures 4 (FE adaptive) et 5 (info prédictive) déférées |
+| **ICT-Dissociation-SaillancePregnance** | La dissociation `s ⟂ π` (case 1/4 #9533, matrice inversée) : saillance ≠ prégnance. Prédiction falsifiée au niveau engagement *total* (s gates la détection), mais confirmée au niveau **décision sachant détection** | `s` ✓, `π` ✓, `W` ○ | battery (s, λ indépendants), corr(engagement, π\|s) vs corr(engagement, s\|π) ; Spearman partiel | Animat réactif pur (`π ≡ s`, null adversarial) | RNG multi-seed | reproduced_in_toy_model + pre_enregistrement | **Établi (nuancé)** | Prédiction pré-enregistrée **falsifiée** sur engagement total (s prédit par transitivité) MAIS **confirmée** sur décision \| détection (|corr(decision, π \| s, det)| > 0.5, |corr(decision, s \| π, det)| < 0.2) ; null réactif renverse le motif. **La saillance pour VOIR, la prégnance pour AGIR.** See [#9533](https://github.com/jsboige/CoursIA/issues/9533) · [#9546](https://github.com/jsboige/CoursIA/issues/9546) (PR pré-enregistrement) |
 | **ICT-12d** | L'animat inhibé (Laborit) **rigidifie** son action sous perte de contrôle, et la dette d'irréversibilité `I(R)` **échappe à l'action** (dissociation moyen/fin, cf ICT-18b P2) | `s` ✓, `π` ✓, `W` ○ | `inhibited_action` (couverture d'états, entropie d'action, efficacité cible, dette `I(R)`) ; 4 verdicts (`detected` / `rigidified` / `lost_control` + pont dette) | Animat contrôlé (α=0, couverture 8/9) vs inhibé (α=1, couverture 3/9) ; sans détection (exercice 3) | déterministe (Markov, pas de RNG) | reproduced_in_toy_model | **Établi** | `detected`=1 (erreur max 0.028 < 0.1) ; `rigidified`=1 (entropy_drop 0.830, chat_mean 1.0→0.123) ; `lost_control`=1 (efficacité −0.706, target_fraction 1.0→0.294) ; **dette `I(R)` = 3.0 (inhibé) mesurée hors-action** — Laborit jambe C2 (#7741) |
 | **ICT-13** Gate 1 | TFT et Grim co-domident le tournoi Axelrod | `s` ✓, `π` ○ | Score de tournoi round-robin | 6 stratégies (AllC, AllD, TFT, gTFT, Pavlov, Grim) | RNG multi-tournois | reproduced_in_toy_model | **Établi** | Paiements canoniques T=5, R=3, P=1, S=0 |
 | **ICT-13** Gate 2 | Le seuil de coopération soutenable colle au Folk theorem | `s` ✓, `π` ○ | δ* analytique vs numérique | (T-R)/(T-P) = 0.500 | 1 mesure numérique | reproduced_in_toy_model | **Établi** | Écart ~10 % explicable par discrétisation et stochasticité du tournoi |
@@ -83,6 +84,7 @@ Conventions :
 | Notebook | Claim | Objet 4-tuple | Proxy | Contrôle | Réplicats (type) | Type | Verdict | Portée |
 |---|---|---|---|---|---|---|---|---|
 | **ICT-14** | La *free energy* articule anticipation (`p̂`) et trajectoire Φ | `s` ✓, `q` ✓, `π` ○ | Free energy + expected free energy | Persistance, AR(1) | RNG multi-seed | proxy_interpretation | **Fortement soutenu** | Banc sinusoidal bruité, 300 pas ; free energy formelle tracée seulement en partie (figure rendue = cas d'application de `p̂`, pas la F proprement dite — honnêteté disclosure dans README) |
+| **ICT-14b** | L'expected free energy (EFE) pilote l'action : composante épistémique (Bayesian surprise) + pragmatique (log-vraisemblance sous préférence C) | `s` ✓, `q` ✓, `π` ✓ | EFE = λ·épistémique + pragmatique (nats), ablation λ=0 (greedy) | λ=0 (glouton) + bras témoin (politique uniforme) | RNG multi-seed | reproduced_in_toy_model | **Fortement soutenu** | Strate 4 *passive → active* : EFE transforme la re-description en mécanisme (l'agent *sélectionne* la prochaine observation). Retirer λ détruit l'exploration dirigée. See [#9532](https://github.com/jsboige/CoursIA/issues/9532) |
 
 ### Strate 5 — réalisation de la théorie fondatrice
 
@@ -150,9 +152,9 @@ Conventions :
 
 | Case (dissociation) | Statut | Prédiction pré-enregistrée (falsifiable) | Null adversarial (tue la prédiction si…) | Substrat | Hook grade C (crédit témoin) |
 |---|---|---|---|---|---|
-| **s ⟂ π** (saillance sans prégnance, et réc.) | `PRÉDIT` | Un animat à canaux d'entrée *indépendants* pour `s` (saillance perceptuelle) et `π` (valence apprise Rescorla-Wagner) exhibe deux régimes — (A) haut-`s`/`π`≈0 (saillant-neutre), (B) bas-`s`/haut-`π` (discret-chargé) — tels que l'engagement (approche) est gouverné par `π` et non par `s` : \|corr(engagement, π \| s)\| > 0.5 **et** \|corr(engagement, s \| π)\| < 0.2 (prouvoir prédictif propre à `π`, nul à `s`). | Un animat **réactif pur** (π ≡ s, pas d'apprentissage de valence) voit les deux corrélations partielles converger vers ~0 / égales : la dissociation s'évanouit (c'est l'absence de `π` appris, non la saillance, qui portait le signal). | Animat lignée ICT-12c (`PregnanceAnimat`), **CPU-only** — candidate 1ʳᵉ case | Vervaeke — *relevance realization* (saillance et prégnance = deux réalisations de pertinence distinctes). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182) iceberg, mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
+| **s ⟂ π** (saillance sans prégnance, et réc.) | `TESTÉ (CONFIRMÉ décision, FALSIFIÉ total)` — [#9553](https://github.com/jsboige/CoursIA/pull/9553) MERGED (po-2023, 2026-08-05) | Un animat à canaux d'entrée *indépendants* pour `s` (saillance perceptuelle) et `π` (valence apprise Rescorla-Wagner) exhibe deux régimes — (A) haut-`s`/`π`≈0 (saillant-neutre), (B) bas-`s`/haut-`π` (discret-chargé) — tels que l'engagement (approche) est gouverné par `π` et non par `s` : \|corr(engagement, π \| s)\| > 0.5 **et** \|corr(engagement, s \| π)\| < 0.2 (prouvoir prédictif propre à `π`, nul à `s`). | Un animat **réactif pur** (π ≡ s, pas d'apprentissage de valence) voit les deux corrélations partielles converger vers ~0 / égales : la dissociation s'évanouit (c'est l'absence de `π` appris, non la saillance, qui portait le signal). | Animat lignée ICT-12c (`PregnanceAnimat`), **CPU-only** — candidate 1ʳᵉ case | Vervaeke — *relevance realization* (saillance et prégnance = deux réalisations de pertinence distinctes). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182) iceberg, mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 | **W diffuse un q erroné** (confabulation) | `PRÉDIT` | Une ignition workspace (`W_t` pic) déclenchée par une représentation **fausse** `q̂` propage `q̂` aux consommateurs en aval à un taux ≥ 80 % du taux d'une ignition vraie (la workspace **consacre** l'erreur presque aussi efficacement que le vrai). | Une ignition **aléatoire** (pas de `q` du tout) propage à un taux non-distinguable de l'ignition fausse : la « consécration » n'est alors que du broadcast non-discriminant, pas une propriété de l'erreur. Tue si \|propa(q̂ faux) − propa(aléatoire)\| < ε. | LLM via SAE-JLens ([#5681](https://github.com/jsboige/CoursIA/issues/5681), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | — (aucun hook grade C identifié dans #9533 pour cette case) |
-| **p̂ auto-référent** | `VIDE` → préciser | *(prédiction à pré-enregistrer)* Une boucle fermée `p̂ → action → p̂` (le représentant interne prédit ses propres états futurs) est stable sur un régime borné mais diverge (oscillation amplifiée) hors de ce régime. Seuil de stabilité pré-enregistré avant test. | Un délieur causal (la `p̂` prédit l'environnement, pas elle-même) supprime la divergence : la boucle auto-référentielle était bien la cause. | Animat / grokking (ICT-17b) | Hofstadter — *strange loops* (auto-référence comme boucle étrange). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
+| **p̂ auto-référent** | `TESTÉ (CONFIRMÉ)` — κ_c observé 0.080 (prédit ≈0.053, biais +0.027), 5/5 graines — [#9567](https://github.com/jsboige/CoursIA/pull/9567) OPEN (po-2025, 2026-08-06) | *(prédiction à pré-enregistrer)* Une boucle fermée `p̂ → action → p̂` (le représentant interne prédit ses propres états futurs) est stable sur un régime borné mais diverge (oscillation amplifiée) hors de ce régime. Seuil de stabilité pré-enregistré avant test. | Un délieur causal (la `p̂` prédit l'environnement, pas elle-même) supprime la divergence : la boucle auto-référentielle était bien la cause. | Animat / grokking (ICT-17b) | Hofstadter — *strange loops* (auto-référence comme boucle étrange). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 | **self-model minimal** | `PRÉDIT` (cf. chiffrage détaillé c.1245 ci-dessous) | *(prédiction chiffrée détaillée ci-dessous)* Le panel persona lu comme `W_t` appliqué à `q(soi)` (le workspace opère sur une représentation de l'agent lui-même) produit un signal de self-modélisation distinguable d'un modèle d'autrui sur les mêmes données, via le ratio `R_self = propa(q(soi)) / propa(q(autrui)) ∈ [0.50, 2.00]` (cible pré-enregistrée) avec null adversarial explicite (modèle d'autrui identique sauf cible d'attention). | Un modèle entraîné à prédire un *autre* agent de complexité équivalente produit un signal indistinguable (R_self ≈ 1.0, propa(q(soi)) ≈ propa(q(autrui))) : le « self » n'apporte rien au-delà de la modélisation générique d'autrui, OU R_self > 2.50 (self ≫ autrui = artefact, le workspace ne discrimine plus sur la complexité). | Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105) ; substrat J-Lens Track P ([#5681](https://github.com/jsboige/CoursIA/issues/5681) 4B-instruct persona) | Metzinger — *minimal phenomenal selfhood*. Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 
 ### Pré-enregistrements détaillés — case 4 (self-model minimal)
@@ -233,6 +235,67 @@ Le hook **Metzinger — *minimal phenomenal selfhood*** est **activé en lecture
 #### Réinjection #8182 (jalon 2)
 
 Cette case **active** le hook Metzinger comme aiguillon de lecture — commentaire de réactivation à poster sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) **après merge** (jalon 2 du tracker, livraison effective = « le chantier de veille a produit un protocole falsifiable sur le self-model workspace »). Crédit témoin Metzinger (auteur + source + date) à reporter selon la convention `#8182`.
+
+### Pré-enregistrements détaillés (cases 3 et 4)
+
+> **Statut-cible PR `c.1242`.** Version chiffrée, falsifiable, avec seuils et protocole explicite — transforme les phrases qualitatives ci-dessus en cibles mesurables. Le test de chaque case reste une PR séparée (chantier 4/3 = exécution substrat). Le présent doc aligne le **pré-enregistrement** sur la discipline de livraison (multi-seed ≥ 4, null adversarial, verdict honnête).
+
+#### Case 3 — `W diffuse un q erroné` (confabulation) — pré-enregistrement chiffré
+
+**Prédiction falsifiable (mesure primaire).** Sur le substrat LLM (ICT-21 SAETrajectoires strate 5, [#5101](https://github.com/jsboige/CoursIA/issues/5101)), pour un même agent `q̂` déclenchant une ignition workspace (`W_t` pic), on définit :
+
+- `propa(q̂_vrai)` = taux de propagation de `q̂` aux consommateurs en aval (définis par le panel J-Lens Track S, [#5681](https://github.com/jsboige/CoursIA/issues/5681)) **lorsque `q̂` est la représentation correcte** (la cible que l'agent vise).
+- `propa(q̂_faux)` = taux de propagation **lorsque `q̂` est une représentation fausse** (confabulation : la cible est connue, mais `q̂` ≠ cible).
+- `propa(aléatoire)` = taux de propagation **lorsque `q̂` est un stimulus contrôle sans rapport** (panel random baseline, pas de représentation d'aucun objet de la tâche).
+
+**Cible pré-enregistrée :**
+
+```
+R_confab = propa(q̂_faux) / propa(q̂_vrai)  ∈ [0.80, 1.00]
+```
+
+**Lectures :**
+- `R_confab ≥ 0.80` ET `propa(q̂_faux) − propa(aléatoire) ≥ ε_stable` → **CONFIRMED** (la workspace **consacre** l'erreur : la « consécration » est une propriété de l'erreur, pas un broadcast).
+- `R_confab < 0.80` → **FALSIFIED** (la workspace **distingue** le faux du vrai et pénalise l'erreur).
+- `R_confab ≥ 0.80` MAIS `|propa(q̂_faux) − propa(aléatoire)| < ε_stable` → **INCONCLUSIF** (la « consécration » n'est pas de la consécration : c'est du broadcast non-discriminant, le null adversarial annule la prédiction).
+
+**Null adversarial (explicite).** `ε_stable` = seuil de discrimination réel vs aléatoire, **pré-enregistré** par calibration résiduelle : sur le même substrat, on mesure `propa(q̂_vrai) − propa(aléatoire)` (l'écart maximal que la propagation peut porter) et l'on fixe `ε_stable = 0.5 × (propa(q̂_vrai) − propa(aléatoire))` — l'écart faux vs aléatoire doit valoir au moins la moitié de l'écart vrai vs aléatoire pour parler de consécration spécifique. Le null adversarial est exécuté **avant** le test principal (calibration), pas après (anti-HARKing).
+
+**Protocole de mesure (verrouillé avant test).**
+
+| Paramètre | Valeur | Note |
+|---|---|---|
+| Substrat | ICT-21 SAETrajectoires strate 5 (Qwen2.5-3B SAE features, top-k sparse) | Re-exécution CPU-only possible via `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` |
+| Agents | J-Lens Track S ([#5681](https://github.com/jsboige/CoursIA/issues/5681)) : 3 prompts cible (vrai) / 3 prompts à représentation erronée (faux) / 3 prompts contrôles (aléatoire) | 9 prompts par seed, panel verrouillé avant test |
+| Ignition `W_t` | Pic de workspace défini comme top-1 % activation SAE conjointe au-dessus du seuil SAE par feature | Définition opérationnelle, pas de seuil magique |
+| Consommateur en aval | Token suivant la fenêtre d'ignition (largeur 5 tokens) | Métrique computed via `mean_activation_by_set` + `differential_features` |
+| Taux de propagation | `propa(q̂) = (1/|panel_consumer|) × Σ_{c ∈ panel_consumer} 𝟙[argmax(SAE(c)) ∈ top-k_features(q̂)]` | Seuil top-k = 64 (cohérent avec SAETrajectoires) |
+| Horizon | T = 1 ignition / prompt (pas de chaîne, mesure snap-shot) | `W_t` est un pic, pas une trajectoire |
+| Graines | 5 (0, 1, 7, 42, 99) | Au-delà du plancher 4 |
+| Tolérance | R_confab ∈ [0.80, 1.00] = CONFIRMED ; R_confab ± 0.05 = bande de prudence | Verdict honnête, pas de seuil lax |
+| Scoreboard | médiane(R_confab) sur 5 graines, IC95 bootstrap n=200, `propa(q̂_faux) − propa(aléatoire)` médian | Sortie numérique falsifiable |
+
+**Verdict final (honnête, multi-niveau).**
+
+| Niveau | Critère | Verdict |
+|---|---|---|
+| **Agrégé** | median(R_confab) ∈ [0.80, 1.00] **ET** `propa(q̂_faux) − propa(aléatoire) ≥ ε_stable` (5/5 graines) | `CONFIRMED` |
+| **Partiel** | median(R_confab) ∈ [0.80, 1.00] MAIS `propa(q̂_faux) − propa(aléatoire) < ε_stable` sur ≥ 1 graine | `INCONCLUSIF` (null adversarial partiel) |
+| **Rejet** | median(R_confab) < 0.80 | `FALSIFIED` |
+
+**Substrat de pré-enregistrement (état c.1242).** Loaders Python CPU-only prêts : `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` (7276 octets, fonctions `load_traces`, `densify`, `mean_activation_by_set`, `differential_features`, `binarize_quantile`, `states_from_panel`) et `ict/jlens_traces.py` (compagnon, anti-mélange guard `lens == "sae"`). L'exécution du test (LLM forward pass + SAE forward) **exige GPU** (substrat Qwen2.5-3B, lane GenAI/po-2023 ou ai-01) — la **PR de test** n'est PAS exécutable par la présente lane CPU-only ; elle sera ouverte **par la lane GPU** ou auto-flaggée pour cross-pickup ai-01. Le présent PR ne touche que le **pré-enregistrement chiffré** (document), qui est substance à part entière (cf [#9546](https://github.com/jsboige/CoursIA/pull/9546) même logique : matrice fermée avant test).
+
+#### Case 4 — `self-model minimal` — pré-enregistrement à compléter
+
+**Statut pré-enregistrement.** Reste `VIDE` → préciser au tableau ci-dessus. Les substrats pressentis (Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105)) sont en attente de stabilisation du panel G.90 (jalon 3 de #5105, PR #5105 PR3). La présente PR **ne chiffre pas** la case 4 — elle l'**identifie explicitement comme prochaine cible** et fixe le **plan de chiffrage** :
+
+| Étape | Substrat | Cible chiffrée | Statut |
+|---|---|---|---|
+| 1. Attendre stabilisation panel persona | G.90 [#5105](https://github.com/jsboige/CoursIA/issues/5105) | Panel fixé, hash reproductible | BLOQUANT (PR #5105 PR3 à merger) |
+| 2. Chiffrer la prédiction | `propa(q(soi))` vs `propa(q(autre))` vs `propa(aléatoire)` | Même structure que case 3, adaptée au self-model | À pré-enregistrer APRÈS étape 1 |
+| 3. Test substrat | Panel persona + workspace SAE-JLens | `R_self = propa(q(soi)) / propa(q(autre))` | Lane GPU (GenAI/po-2023 ou ai-01) |
+
+**Note garde-fou.** Le hook grade C (Metzinger — *minimal phenomenal selfhood*) est **activé en lecture** (aiguillon d'interprétation, [#8182](https://github.com/jsboige/CoursIA/issues/8182) jalon 2), **jamais en claim** — la discrimination self/autrui mesurée ci-dessus est une **mesure de signal**, pas une réduction de la phénoménologie du « soi ». Cf [#8182](https://github.com/jsboige/CoursIA/issues/8182) traceur.
 
 ### Discipline de livraison (1 case = 1 notebook = 1 PR)
 
