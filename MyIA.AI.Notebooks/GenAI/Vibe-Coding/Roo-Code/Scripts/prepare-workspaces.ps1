@@ -55,7 +55,7 @@ if ($Workshop) {
 
 foreach ($demoRoot in $demoRootPaths) {
     # Ignorer les répertoires qui sont eux-mêmes des ressources
-    if ($demoRoot.Name -eq "ressources" -or $demoRoot.Name -like "ressourcesX") {
+    if ($demoRoot.Name -eq "ressources") {
         continue
     }
 
@@ -63,8 +63,7 @@ foreach ($demoRoot in $demoRootPaths) {
     $sourceItems = Get-ChildItem -Path $demoRoot.FullName -ErrorAction SilentlyContinue | Where-Object {
         ($_.Name -eq "README.md") -or
         ($_.Name -eq "docs") -or
-        ($_.Name -eq "ressources") -or
-        ($_.Name -like "ressources*")
+        ($_.Name -eq "ressources")
     }
 
     if ($sourceItems.Count -gt 0) {
