@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: c132ed57588fa697b3725533daeeb2d21816c7f5
       csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: c132ed57588fa697b3725533daeeb2d21816c7f5
+      csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
+      content_python_sha: 7973c4f23f7a473c5353f52da3a4645edf3f740427fedfb37611226108e2690a
+      content_csharp_sha: 54c71238739789b5c722067606554b231272a92b7f19e539a1215706aa332601
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog (moteur reel) pour la resolution et l'unification ; C# reimplemente LGG (Plotkin), theta-subsomption, clause bottom from-scratch."
     - "Socle commun : resolution inverse, LGG (Least General Generalization, Plotkin 1970), theta-subsomption (ordre du treillis), clause bottom (saturation), recherche a la Progol."

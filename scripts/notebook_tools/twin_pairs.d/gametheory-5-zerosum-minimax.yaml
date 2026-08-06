@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: db8ae4743bf4e902074bd3e65e27f38e46305d30
       csharp_sha: 94f0d6b6640128cda025b0988435209110697c9e
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 61e2a549d1ffd4b4b8d3e885cc97c57ea6db9ac8
+      csharp_sha: 94f0d6b6640128cda025b0988435209110697c9e
+      content_python_sha: cd0850e76cefc4306d69c9146dcb48482bb81f8e85b0497aa2d8447c85cff931
+      content_csharp_sha: 295b795c28ceda8216b7641e5cb868d8cba3ec2e373ab8f6d587a65f44e36c14
   known_differences:
     - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."
     - "Idiomes framework : Python = `scipy.optimize.linprog` (solveur LP mature pour le minimax). C# = **Simplexe from-scratch** `SimplexMax` (methode de Dantzig + regle de Bland anti-cyclage) + `SolveMatrixGame` qui reduit le jeu matriciel a un LP et lit sigma dans les variables duales."

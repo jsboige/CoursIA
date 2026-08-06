@@ -9,6 +9,12 @@
       python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
       csharp_sha: 111b1731ff6a189ae30eb3202fc4f6a2f9781d45
       reason: "rebaseline csharp apres fix Note CELL[5] (#8052) : la Note technique disait faussement que les cellules Partie 1-4 \"requierent [package] non resolu par le kernel .NET Interaction local\" (avec des trous de texte : nom de package et adjectif manquants) alors que TOUTES les cellules code ont tourne (execution_count + outputs : CELL[14] \"Modele entraine avec succes\", CELL[17] MAE/RMSE). Voie(B) : prose honnete alignee sur les sorties committées, aucun nombre fabrique. Csharp-only, python_sha unchanged, parite (surface) preservee."
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
+      csharp_sha: 111b1731ff6a189ae30eb3202fc4f6a2f9781d45
+      content_python_sha: 083c392f8d9070ae5b22b7bfcbb6b57c5a6a5f8365929cf45134c5a93f2ca3eb
+      content_csharp_sha: 8cdb493679cacef00a94cd654fb096246828512bb933418f41fa9e0a3c11d1be
   known_differences:
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."

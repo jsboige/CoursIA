@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 6a0f9876a9e7b2563a4a451da57f5722408b5245
       csharp_sha: 2b5ecf27a189d00765e6f80edf7c48eb10372cfe
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 6a0f9876a9e7b2563a4a451da57f5722408b5245
+      csharp_sha: 2b5ecf27a189d00765e6f80edf7c48eb10372cfe
+      content_python_sha: 8bd1ed4490b3b5024e317a331c57877338ec8bdf97192397dc93cd0a2d54ea76
+      content_csharp_sha: e51c9c8531ea016c263de00b7a5aaef5815002fa0306a825091399d04403cd35
   known_differences:
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable (TU) -- valeur de Shapley (formule axiomatique, calcul sur permutations), le core (stabilite, imputations), coalitions. Meme concept mathematique (Shapley value phi_i = somme sur permutations, core comme polytope des imputations stables), meme cas d'application (repartition de gains cooperatifs). Les deux couvrent Shapley, core, Coalition."
     - "Divergence d'implementation : le Python (numpy + scipy + matplotlib, 18 cellules code) calcule les valeurs de Shapley et visualise le core (polytope, extremites) ; le C# (pur System.* stdlib, 0 NuGet, 15 cellules code) implemente le calcul de Shapley (iteration sur permutations) et la verification d'appartenance au core sans libs numeriques. Meme theoreme, deux angles : numerique+visualisation cote Python vs implementation constructive cote C#."

@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: fdeaf01f01084c49f4a24079d8191092609312b8
       csharp_sha: 329bc61e49b55b0261a76bb80305f29d4556d67c
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: fdeaf01f01084c49f4a24079d8191092609312b8
+      csharp_sha: 329bc61e49b55b0261a76bb80305f29d4556d67c
+      content_python_sha: 6dd848320f7f5a997d1c7cb6644d49002ca30ac13e4c49ff0e3a375d1b13cb36
+      content_csharp_sha: 8a23824f4cb0a2256a120669c789f0d5f6197454c1a5565c49297f9aa6e26e6f
   known_differences:
     - "Socle commun : apprentissage actif d'automates -- algorithme L* d'Angluin, modele MAT (Minimally Adequate Teacher), table d'observation, oracle d'equivalence, pont vers Infer.NET (DFA exact a reconnaissance probabiliste)."
     - "Structure quasi-identique : 45 cellules les deux cotes (17 code, 28 markdown), memes 9 sections dans le meme ordre -- c'est le twin le plus proche cellule-a-cellule de la famille SL (parite native-both)."
