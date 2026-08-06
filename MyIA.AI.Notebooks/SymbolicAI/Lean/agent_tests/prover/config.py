@@ -1896,6 +1896,53 @@ DEMOS = {
         ),
         "difficulty": "hard",
     },
+    63: {
+        "name": "HASHLIFE_P4_NW_OVERLAP_WALL",
+        "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
+        "line": 3136,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "p4_nw_overlap_wall",
+        "theorem": "p4_nw_overlap_wall",
+        "imports": CONWAY_HASHLIFE_IMPORTS,
+        "description": (
+            "BG-prover target (#6724, c.92 bounded freeze, PR #9745): the NW\n"
+            "double-nine overlap wall, BOUNDED form. The free form (p\n"
+            "unconstrained) is FALSE — kernel counterexamples live right below\n"
+            "the theorem (cexBlock* refutation section, c.91). Any candidate\n"
+            "proof that never uses `hp` is therefore suspect: re-check axioms\n"
+            "and that the goal was not vacuously closed.\n"
+            "STATEMENT: under hp (p in the parent central window, written as\n"
+            "the four inequalities `2^k <= p.i < 2^k + 2^((k-1)+1)` — keep this\n"
+            "syntactic form, it matches `hsup.2` at the call site), prove\n"
+            "`forall q, chebDist p q <= 2^(k-1) ->\n"
+            " isAlive (evolve (2^(k-1)) (parent.toGrid (0,0))) q =\n"
+            " isAlive ((node R1 R2 R4 R5).toGrid (0,0)) (q - (2^(k-1), 2^(k-1)))`.\n"
+            "AVAILABLE MACHINERY (all sorry-free, same file): hcc_j =\n"
+            "centralCorrect facts for the four wave-1 recombinations;\n"
+            "centralCorrect_mem_shift (L2424, takes both offsets);\n"
+            "p4_nw_offset_decomp (L2979, pins quadrant offsets of\n"
+            "(node R1 R2 R4 R5).toGrid to 2^k via hR1_l); mem_toGrid_node;\n"
+            "toGrid_shift_between; the Chebyshev-box mirrors\n"
+            "(chebDist_le_one_of_moore_local, step_box_local_mirror,\n"
+            "evolve_box_agree_local); p4_wave2_ih_step.\n"
+            "ROUTE SKETCH (c.92 design): for q in the box, hp + the chebDist\n"
+            "bound put `q - (2^(k-1), 2^(k-1))` inside the R-node's footprint\n"
+            "(omega on the four inequalities). Decompose the RHS membership via\n"
+            "p4_nw_offset_decomp; route q to its quadrant; each R_j =\n"
+            "hashlifeResultAux (k+1) of a wave-1 node with hcc_j, so its cells\n"
+            "are the evolve 2^(k-1) of the wave-1 node's central window —\n"
+            "consume hcc_j through centralCorrect_mem_shift with the matching\n"
+            "offset pair, then close the LHS/RHS bridge cell-by-cell.\n"
+            "HARD LESSON (run-4 forensic, #6724): NEVER inline the wave2-ih +\n"
+            "shift chain in one declaration — 200000-heartbeat blowup. Factor\n"
+            "standalone private lemmas (budget resets per declaration);\n"
+            "fallback scoped `set_option maxHeartbeats 400000 in`.\n"
+            "Harness caution (#6790): file_replace_lines build_check can\n"
+            "false-positive; only an independent lake build is proof.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "very_hard",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
@@ -1903,4 +1950,10 @@ PROVED_DEMOS = {
     15,  # gale_shapley_stable (PR #1194)
     # 18-28: all Lemmas.lean entries (GSConsistent, menProposed, womenBest, etc.)
     18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+    # p4_succ_membership: all four quadrant arms + mpr wired sorry-free by the
+    # manual track (SE arm closed c.90, commit 5002f6d). The residual NW
+    # obligation moved into the named wall = DEMO 63. AutoFix forensic
+    # (2026-08-06): the old line hint now lands on a docstring `sorry` token
+    # (L2974) and FX-5 refuses with TRUE_PLACEHOLDER_GOAL — do not re-run 62.
+    62,
 }
