@@ -33,18 +33,18 @@ import quantbooks_stop_repair_pipeline as qsrp  # noqa: E402
 
 class TestCredentialsPresent:
     def test_all_present(self, monkeypatch):
-        for k in ("QC_API_USER_ID", "QC_API_ACCESS_TOKEN", "QC_API_ORGANIZATION_ID"):
+        for k in ("QUANTCONNECT_USER_ID", "QUANTCONNECT_API_TOKEN", "QUANTCONNECT_ORGANIZATION_ID"):
             monkeypatch.setenv(k, "x")
         assert qsrp._credentials_present() is True
 
     def test_one_missing(self, monkeypatch):
-        monkeypatch.setenv("QC_API_USER_ID", "x")
-        monkeypatch.setenv("QC_API_ACCESS_TOKEN", "x")
-        monkeypatch.delenv("QC_API_ORGANIZATION_ID", raising=False)
+        monkeypatch.setenv("QUANTCONNECT_USER_ID", "x")
+        monkeypatch.setenv("QUANTCONNECT_API_TOKEN", "x")
+        monkeypatch.delenv("QUANTCONNECT_ORGANIZATION_ID", raising=False)
         assert qsrp._credentials_present() is False
 
     def test_all_missing(self, monkeypatch):
-        for k in ("QC_API_USER_ID", "QC_API_ACCESS_TOKEN", "QC_API_ORGANIZATION_ID"):
+        for k in ("QUANTCONNECT_USER_ID", "QUANTCONNECT_API_TOKEN", "QUANTCONNECT_ORGANIZATION_ID"):
             monkeypatch.delenv(k, raising=False)
         assert qsrp._credentials_present() is False
 
