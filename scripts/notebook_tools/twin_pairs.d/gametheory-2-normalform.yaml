@@ -14,6 +14,12 @@
       csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
       content_python_sha: 8c3dda2e627c98d4fbeaed4085054ba37534670891bf9a17c2429d4a1f5af05f
       content_csharp_sha: 5f3321677f3c599e1b146b6f02b509579f7cb8bc5b7f19f8b16590da20c7f5e5
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 50561a3555dbf4a0faf3113206e7e10e21206c6e
+      csharp_sha: 1cfc92b61cf183f2740a2340707fdea4d06b64cd
+      content_python_sha: b37c5f251d1341c4d3b9309d03bc8d63932f3c4e4d4f40173592f8ba2c7308b9
+      content_csharp_sha: cebc6b7595bc0477b733235934812231b72b9c3bac964108ffbff3b1231eef0a
   known_differences:
     - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
     - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."

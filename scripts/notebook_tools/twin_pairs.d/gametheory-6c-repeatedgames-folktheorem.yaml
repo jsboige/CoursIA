@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: e693b35dc15d0fed5b60cfc83e1ffb3de0c20a0f
       csharp_sha: 510f61137fbcee6997eb12d0dc7bd28ceace25bd
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 3bf0e5af4ac572c2fc8e1962263b4716da03f1da
+      csharp_sha: 510f61137fbcee6997eb12d0dc7bd28ceace25bd
+      content_python_sha: 8e67f12be6c44e7142459089f14b9d6559ff300c61f6764478b92228cfe8022a
+      content_csharp_sha: 71a9b839faace3b9fb3dbada0beb4ef06572f1c41d9a945df7fd546928215d67
   known_differences:
     - "Socle commun : jeux repétés et théorème Folk -- jeu étape (Dilemme du Prisonnier), horizon fini, horizon infini avec facteur d'escompte, grim trigger, tit-for-tat vs grim, Folk Theorem (ensemble des paiements faisables et individuellement rationnels)."
     - "PARITE CELLULAIRE EXACTE : 22 cellules des deux cotes (9 code, 13 markdown) -- un des twins les plus proches cellule-a-cellule du registre. Memes 6 sections dans le meme ordre + Exercice 1/2/3 + Conclusion. Le C# ajoute une sous-section 'Parité avec le notebook Python' sous la conclusion (intention de parite declaree)."

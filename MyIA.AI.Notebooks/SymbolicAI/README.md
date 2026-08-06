@@ -242,22 +242,29 @@ Série de **25 notebooks** sur le Web Sémantique (12 Python + 12 C# + le notebo
 | 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
 | 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Équivalent Python avec rdflib | 5 |
 | 3 | [SW-3-CSharp-GraphOperations](SemanticWeb/SW-3-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
+| 3b | [SW-3b-Python-GraphOperations](SemanticWeb/SW-3b-Python-GraphOperations.ipynb) | Python | Twin Python (rdflib) — opérations sur graphes RDF | twin |
 | 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
 | 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Équivalent Python avec SPARQLWrapper | 5 |
 | **Partie 2 : Données Liees et Ontologies** |
 | 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
 | 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Équivalent Python | 5 |
 | 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
+| 6b | [SW-6b-Python-RDFS](SemanticWeb/SW-6b-Python-RDFS.ipynb) | Python | Sidetrack Python (rdflib + owlrl) — schéma et inférence RDFS | twin |
 | 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
 | 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Équivalent Python avec OWLReady2 | 5 |
-| **Partie 3 : Standards Modernes (Python)** |
+| **Partie 3 : Standards Modernes (Python + jumeaux C#)** |
 | 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
+| 8c | [SW-8-CSharp-SHACL](SemanticWeb/SW-8-CSharp-SHACL.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — validation SHACL | twin |
 | 9 | [SW-9-Python-JSONLD](SemanticWeb/SW-9-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
+| 9c | [SW-9-CSharp-JSONLD](SemanticWeb/SW-9-CSharp-JSONLD.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — JSON-LD | twin |
 | 10 | [SW-10-Python-RDFStar](SemanticWeb/SW-10-Python-RDFStar.ipynb) | Python | RDF 1.2, quoted triples, SPARQL-Star | 5 |
-| **Partie 4 : Graphes de Connaissances et IA** |
+| 10c | [SW-10-CSharp-RDFStar](SemanticWeb/SW-10-CSharp-RDFStar.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — réification/annotation de triplets | twin |
+| **Partie 4 : Graphes de Connaissances et IA (Python + jumeaux C#)** |
 | 11 | [SW-11-Python-KnowledgeGraphs](SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, visualisation NetworkX | 6 |
+| 11c | [SW-11-CSharp-KnowledgeGraphs](SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — construction/requête d'un KG | twin |
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
 | **Bonus** | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 3 (faible) |
+| **Bonus** | [SW-13-Reasoners-CSharp](SemanticWeb/SW-13-Reasoners-CSharp.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — raisonneurs RDF/OWL | twin |
 
 Documentation complète : [SemanticWeb/README.md](SemanticWeb/README.md)
 
