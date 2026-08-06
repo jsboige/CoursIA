@@ -702,3 +702,61 @@ class TestBlankRenderVerdict:
         ], kernelspec={"name": "lean4", "language": "lean4"})
         result = validate_notebook(nb)
         assert result["forensic_verdict"] == "ADVISORY_NON_EXEC"
+
+
+# ---------------------------------------------------------------------------
+# get_changed_notebooks — perimeter anchored on merge-base (#9672)
+# ---------------------------------------------------------------------------
+
+class TestGetChangedNotebooksPerimeter:
+    """A file that changed on *base* after the branch was cut must NOT enter
+    the validation perimeter (#9672 blast radius: pre-existing main-side
+    violations failed unrelated PRs #9650/#9656/#9671/#9673)."""
+
+    @staticmethod
+    def _git(repo: Path, *args: str) -> str:
+        import subprocess
+        return subprocess.run(
+            ["git", *args], capture_output=True, text=True, check=True,
+            cwd=str(repo),
+        ).stdout.strip()
+
+    def _make_repo(self, tmp_path: Path) -> Path:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        self._git(repo, "init", "-b", "main")
+        self._git(repo, "config", "user.email", "t@t")
+        self._git(repo, "config", "user.name", "t")
+        _write_nb(repo / "on_main.ipynb", [_code("x = 1")])
+        _write_nb(repo / "on_branch.ipynb", [_code("y = 2")])
+        self._git(repo, "add", "-A")
+        self._git(repo, "commit", "-m", "init")
+        # branch cut here, then main moves on: on_main.ipynb changes on main
+        self._git(repo, "branch", "feature")
+        _write_nb(repo / "on_main.ipynb", [_code("x = 111")])
+        self._git(repo, "add", "-A")
+        self._git(repo, "commit", "-m", "main-side change")
+        # the branch changes only its own file
+        self._git(repo, "checkout", "feature")
+        _write_nb(repo / "on_branch.ipynb", [_code("y = 222")])
+        self._git(repo, "add", "-A")
+        self._git(repo, "commit", "-m", "branch-side change")
+        return repo
+
+    def test_main_side_change_excluded(self, tmp_path, monkeypatch):
+        import validate_pr_notebooks as vpn
+        repo = self._make_repo(tmp_path)
+        monkeypatch.setattr(vpn, "REPO_ROOT", repo)
+        names = [p.name for p in vpn.get_changed_notebooks("main")]
+        assert names == ["on_branch.ipynb"]
+
+    def test_uncommitted_worktree_change_included(self, tmp_path, monkeypatch):
+        """Diffing against the merge-base commit (not base..HEAD) keeps the
+        local pre-commit use case: uncommitted edits still enter the perimeter."""
+        import validate_pr_notebooks as vpn
+        repo = self._make_repo(tmp_path)
+        _write_nb(repo / "uncommitted.ipynb", [_code("z = 3")])
+        self._git(repo, "add", "uncommitted.ipynb")
+        monkeypatch.setattr(vpn, "REPO_ROOT", repo)
+        names = sorted(p.name for p in vpn.get_changed_notebooks("main"))
+        assert names == ["on_branch.ipynb", "uncommitted.ipynb"]
