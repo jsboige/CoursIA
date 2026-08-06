@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: 9f45a455403482150ba47f98eb38746900ca057c
       csharp_sha: a1d30fc3fabf281b7f7297e79718c7a63c2c1de4
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: f6098bd30821f36a836297fc18cf931f6fe60c87
+      csharp_sha: a1d30fc3fabf281b7f7297e79718c7a63c2c1de4
+      content_python_sha: b58c19f3a58a465842be9ef7c2c68f06146edef0353a163966f3b63acdd8aefe
+      content_csharp_sha: 7a7860990ddbaea6bbe17c1d17c72526a8cfec74a74edfc124fd78451fc52ec4
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : jeux a somme nulle a information parfaite (Tic-Tac-Toe/Morpion), minimax, elagage alpha-beta, iterative deepening, tables de transposition."
