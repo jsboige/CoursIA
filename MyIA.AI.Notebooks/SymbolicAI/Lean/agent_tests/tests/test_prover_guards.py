@@ -3919,3 +3919,161 @@ def test_empty_response_guard_injects_fallback(monkeypatch):
     assert kwargs["role"] == "empty_response_guard"
     assert "injected fallback" in kwargs["content"]
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1453 forensic (cycle-98) — _build_check_or_revert feeds the fail streak
+# ──────────────────────────────────────────────────────────────────────────
+# compile() maintains _consecutive_compile_fail (inc on fail at tools.py:2067,
+# reset on success at 2021), but _build_check_or_revert() — the dominant
+# file_replace_* path (~75 vs ~5 compile() calls per forensic trace) — did NOT
+# touch it. Result: 14 invisible build_check fails burned 1352s in a single
+# TacticAgent turn on Voting L338, because the counter stayed at 0 and neither
+# the workflow yield-guard (FAIL_STREAK_HARDCAP=12, read between turns) nor any
+# intra-turn guard could see the streak. The fix: every build_check fail
+# (crash / veto / hard-revert) bumps the streak, every success resets it, and
+# an intra-turn BUILD_FAIL_STORM entry-guard stops editing once the cap is hit.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _fail_verifier_factory(raw_output=(
+        "Fake.lean:5:3: error: unknown identifier 'bar'\n"
+)):
+    """A verifier whose verify_project_file always reports a NON-sorry error.
+
+    The raw_output carries a real compile error (unknown identifier) so
+    _build_check_or_revert reaches the hard-revert branch (not the sorry-only
+    acceptance branch) — exercising the dominant forensic failure path.
+    """
+
+    class _FailVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": False, "errors": raw_output,
+                    "raw_output": raw_output}
+
+    return lambda *a, **k: _FailVerifier()
+
+
+def _success_verifier_factory():
+
+    class _OkVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": True, "errors": "", "raw_output": ""}
+
+    return lambda *a, **k: _OkVerifier()
+
+
+def _patch_verifier(monkeypatch, factory):
+    import prover.verifier as vmod
+    monkeypatch.setattr(vmod, "get_verifier", factory)
+
+
+def _pad(body, sorry_line_target):
+    """Pad a body with comments so the file-size guard (>50% delta) never fires.
+
+    Mirrors the tactic_tools fixture padding.
+    """
+    head = "\n".join(f"-- comment line {i}" for i in range(50))
+    tail = "\n".join(f"-- trailing line {i}" for i in range(50))
+    return head + "\n" + body + tail + "\n"
+
+
+def test_build_check_revert_increments_fail_streak(monkeypatch, tmp_path):
+    """A build_check fail (hard-revert branch) must bump _consecutive_compile_fail.
+
+    Regression fence for the #1453 cycle-98 forensic: before the fix, the
+    dominant file_replace path left the counter at 0 even after many reverts,
+    so the workflow/intra-turn guards were blind to the fail storm.
+    """
+    fake = tmp_path / "Fake.lean"
+    inner = "theorem t : True := by\n  sorry\n"
+    body = _pad(inner, 5)
+    fake.write_text(body, encoding="utf-8")
+    sorry_line = next(i + 1 for i, ln in enumerate(body.split("\n"))
+                      if "sorry" in ln)
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(filepath=str(fake), sorry_line=sorry_line,
+                        indentation=2, indent_str="  ", full_file=body)
+    tt = TacticTools(state, str(fake), sctx)
+
+    _patch_verifier(monkeypatch, _fail_verifier_factory())
+
+    # current on disk == original => sorry unchanged => NOT the veto branch =>
+    # the hard-revert branch (the one the forensic trace hit 14x).
+    result = tt._build_check_or_revert(original_content=body, operation="test")
+
+    assert result is not None and result.get("reverted") is True, result
+    assert tt._consecutive_compile_fail == 1, "revert must bump the fail streak"
+    assert state.consecutive_compile_fail == 1, "streak must mirror to shared state"
+    # File was reverted to the original.
+    assert fake.read_text(encoding="utf-8") == body
+
+
+def test_build_check_success_resets_fail_streak(monkeypatch, tmp_path):
+    """A successful build_check must reset _consecutive_compile_fail to 0.
+
+    Mirrors compile():2021. Without the reset, a single success after a long
+    storm would leave the streak high enough to trip the entry-guard on the
+    next (normal) edit.
+    """
+    fake = tmp_path / "Fake.lean"
+    body = "import Mathlib.Tactic\ntheorem t : True := by\n  trivial\n"
+    fake.write_text(body, encoding="utf-8")
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(filepath=str(fake), sorry_line=3,
+                        indentation=2, indent_str="  ", full_file=body)
+    tt = TacticTools(state, str(fake), sctx)
+
+    # Pre-arm a streak as if prior edits had failed.
+    tt._consecutive_compile_fail = 5
+    state.consecutive_compile_fail = 5
+
+    _patch_verifier(monkeypatch, _success_verifier_factory())
+
+    result = tt._build_check_or_revert(original_content=body, operation="test")
+
+    assert result is None, "successful build_check must return None"
+    assert tt._consecutive_compile_fail == 0, "success must reset the fail streak"
+    assert state.consecutive_compile_fail == 0, "reset must mirror to shared state"
+
+
+def test_build_fail_storm_guard_blocks_editing_at_cap(tactic_tools):
+    """Once the streak hits the cap, file_replace_sorry returns BUILD_FAIL_STORM.
+
+    This is the intra-turn guard the forensic asked for: the workflow guard
+    only reads the counter BETWEEN turns, so within one turn an agent could
+    churn many more fails. The entry-guard short-circuits before any edit.
+    """
+    import json
+    tt = tactic_tools
+    cap = tt._fail_streak_threshold
+    tt._consecutive_compile_fail = cap
+    before = Path(tt._filepath).read_text(encoding="utf-8")
+
+    out = json.loads(
+        tt.file_replace_sorry(tt._test_sorry_line, "trivial", build_check=False)
+    )
+
+    assert "error" in out
+    assert "BUILD_FAIL_STORM" in out["error"]
+    assert str(cap) in out["error"]
+    # No edit landed, no further fail counted: file + counter unchanged.
+    assert Path(tt._filepath).read_text(encoding="utf-8") == before
+    assert tt._consecutive_compile_fail == cap
+
+
+def test_build_fail_storm_guard_passes_below_cap(tactic_tools):
+    """Below the cap the guard must let the edit through (no false positive)."""
+    import json
+    tt = tactic_tools
+    tt._consecutive_compile_fail = tt._fail_streak_threshold - 1
+
+    out = json.loads(
+        tt.file_replace_sorry(tt._test_sorry_line, "trivial", build_check=False)
+    )
+
+    # No BUILD_FAIL_STORM error (the edit went through; build_check=False so it
+    # reports success without touching the verifier).
+    err = out.get("error", "")
+    assert "BUILD_FAIL_STORM" not in err
+
