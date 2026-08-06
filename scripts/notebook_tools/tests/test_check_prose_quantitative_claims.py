@@ -113,6 +113,32 @@ def test_issue_reference_not_flagged_as_measure():
     assert cqc.STOCHASTIC_NUM_RE.search("score fitness #41.71") is None
 
 
+def test_machine_re_reflexive_verb_not_flagged_as_seconds():
+    """L'unite monolettre « s » (secondes) collidait avec le debut d'un verbe
+    reflechi francais : « 80 s'ecoulent », « 3 s'appliquent » etaient matches
+    comme les durees « 80 s », « 3 s ». Une mesure reelle n'est JAMAIS suivie
+    immediatement d'une apostrophe ; un « s' » = debut de s'en/s'applique/
+    s'appuie/s'etend, pas l'unite secondes.
+
+    Incident fondateur (#9434 angle-mort t3) : 22 FP confirmes elimines sur
+    origin/main (DALL-E 3, ICT-21, Infer-1/13, RL/Search READMEs...). Fix :
+    lookahead final « (?![\\w-]) » -> « (?![\\w\\-'’-]) ». Les vraies mesures
+    (« ~50 s sur GPU », « 12 s », « 0.2 s ») restent capturees."""
+    for snippet in ["les annees 80 s'ecoulent",
+                    "3 s'appliquent",
+                    "les 5 s'enchainent",
+                    "DALL-E 3 s'appuie sur CLIP",
+                    "le notebook 6 s'attaque au reward sparse"]:
+        assert cqc.MACHINE_RE.search(snippet) is None, (
+            f"ne doit PAS flagger le verbe reflechi {snippet!r}"
+        )
+    # Les vraies durees (sans apostrophe apres) restent capturees.
+    for snippet in ["prend ~50 s sur GPU", "duree : 12 s", "latence 0.2 s"]:
+        assert cqc.MACHINE_RE.search(snippet) is not None, (
+            f"devrait capturer la vraie mesure {snippet!r}"
+        )
+
+
 # --------------------------------------------------------------------------- #
 #  Classe env (ENV_RE) : version de librairie figee en prose
 # --------------------------------------------------------------------------- #
