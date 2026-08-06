@@ -1899,24 +1899,39 @@ DEMOS = {
     63: {
         "name": "HASHLIFE_P4_NW_OVERLAP_WALL",
         "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
-        "line": 3136,
+        "line": 3165,
         "sorry_type": "sorry_replacement",
         "theorem_name": "p4_nw_overlap_wall",
         "theorem": "p4_nw_overlap_wall",
         "imports": CONWAY_HASHLIFE_IMPORTS,
         "description": (
-            "BG-prover target (#6724, c.92 bounded freeze, PR #9745): the NW\n"
-            "double-nine overlap wall, BOUNDED form. The free form (p\n"
-            "unconstrained) is FALSE — kernel counterexamples live right below\n"
-            "the theorem (cexBlock* refutation section, c.91). Any candidate\n"
-            "proof that never uses `hp` is therefore suspect: re-check axioms\n"
-            "and that the goal was not vacuously closed.\n"
+            "BG-prover target (#6724, c.93 structural freeze, PR #9745): the NW\n"
+            "double-nine overlap wall, BOUNDED + STRUCTURED form. The free form\n"
+            "(p unconstrained) is FALSE — kernel counterexamples live right\n"
+            "below the theorem (cexBlock* refutation section, c.91). The c.92\n"
+            "bounded-but-unstructured form was ALSO false on mal-formed\n"
+            "MacroCells (mixed levels): DEMO 63's own first run produced that\n"
+            "counterexample (TacticAgent refusal, 2026-08-06), kernel-confirmed\n"
+            "by ai-01 and frozen as the guard\n"
+            "`p4_nw_overlap_wall_c92_counterexample` (same refutation block).\n"
+            "The wall now carries hn1_l..hn5_l (the four wave-1 recombination\n"
+            "NODES have level k+1) and hn1_w..hn5_w (they are wf) — threaded\n"
+            "from the arm, whose signature is unchanged. Any candidate proof\n"
+            "that never uses `hp` OR never uses the hn*_w facts is suspect:\n"
+            "re-check axioms and that the goal was not vacuously closed.\n"
             "STATEMENT: under hp (p in the parent central window, written as\n"
             "the four inequalities `2^k <= p.i < 2^k + 2^((k-1)+1)` — keep this\n"
             "syntactic form, it matches `hsup.2` at the call site), prove\n"
             "`forall q, chebDist p q <= 2^(k-1) ->\n"
             " isAlive (evolve (2^(k-1)) (parent.toGrid (0,0))) q =\n"
             " isAlive ((node R1 R2 R4 R5).toGrid (0,0)) (q - (2^(k-1), 2^(k-1)))`.\n"
+            "GEOMETRY OF SUFFICIENCY (c.93 adjudication): wf of the four\n"
+            "recombination nodes constrains the 9 NW-region grandchildren\n"
+            "(wf, level k); the 7 unconstrained grandchildren (ne_ne, ne_se,\n"
+            "sw_sw, sw_se, se_ne, se_sw, se_se) have toCellsAux origins at row\n"
+            "OR col >= 6*2^(k-1) (offsets only grow), strictly outside the\n"
+            "box's dependency region [0, 6*2^(k-1))^2 — exact fit at the light\n"
+            "cone boundary.\n"
             "AVAILABLE MACHINERY (all sorry-free, same file): hcc_j =\n"
             "centralCorrect facts for the four wave-1 recombinations;\n"
             "centralCorrect_mem_shift (L2424, takes both offsets);\n"
