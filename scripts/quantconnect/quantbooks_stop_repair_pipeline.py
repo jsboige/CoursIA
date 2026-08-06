@@ -12,10 +12,10 @@ mais **6 des 8 quantbooks scope n'ont toujours pas de cloud-id** dans leur
 ``config.json`` -- blocant la voie ``lean cloud push`` pour la re-execution
 kernel research QC Cloud.
 
-Le user (Beausoleil, 2026-08-06) a confirme que les QC credentials
-(QUANTCONNECT_USER_ID / QUANTCONNECT_API_TOKEN / QUANTCONNECT_ORGANIZATION_ID)
-sont disponibles et que la voie est entierement ouverte. Ce pipeline orchestre
-les 4 phases du plan Stop&Repair en mode **idempotent** :
+Le user (Beausoleil, 2026-08-06) a confirme que les QC_API credentials
+(QC_API_USER_ID / QC_API_ACCESS_TOKEN / QC_API_ORGANIZATION_ID) sont
+disponibles et que la voie est entierement ouverte. Ce pipeline orchestre les
+4 phases du plan Stop&Repair en mode **idempotent** :
 
   Phase 1: ``push``     -- ``lean cloud push`` pour les 6 projets sans cloud-id
                            (DualMomentum 28692516 + EMA-Cross-Alpha 28885488
@@ -31,7 +31,7 @@ les 4 phases du plan Stop&Repair en mode **idempotent** :
 
 Mode dry-run (defaut si creds absentes)
 ---------------------------------------
-Si ``QUANTCONNECT_USER_ID`` n'est pas dans l'env, le pipeline bascule en ``--dry-run``
+Si ``QC_API_USER_ID`` n'est pas dans l'env, le pipeline bascule en ``--dry-run``
 automatique : il audite l'etat actuel (audit_quantbooks_unexec.py), dresse la
 liste des projets push-ready vs exec-only, et genere un rapport de phase 4
 sans toucher au kernel QC. **Le dry-run est lui-meme un livrable** : il documente
@@ -130,18 +130,13 @@ def _notebook_path(repo: Path, name: str) -> Path:
 
 
 def _credentials_present() -> bool:
-    """Verifie que QUANTCONNECT_USER_ID + QUANTCONNECT_API_TOKEN + QUANTCONNECT_ORGANIZATION_ID
-    sont dans l'env. Si non, le pipeline bascule en dry-run automatique.
-
-    Note naming : on suit la convention du MCP Docker ``.mcp.json`` ai-01
-    (QUANTCONNECT_*), pas l'ancien prefixe QC_API_* du draft initial. C'est
-    la source canonique cote MCP, et ``lean login`` + ``lean cloud push``
-    consomment aussi ces 3 variables directement."""
+    """Verifie que QC_API_USER_ID + QC_API_ACCESS_TOKEN + QC_API_ORGANIZATION_ID
+    sont dans l'env. Si non, le pipeline bascule en dry-run automatique."""
     return all(
         os.environ.get(k) for k in (
-            "QUANTCONNECT_USER_ID",
-            "QUANTCONNECT_API_TOKEN",
-            "QUANTCONNECT_ORGANIZATION_ID",
+            "QC_API_USER_ID",
+            "QC_API_ACCESS_TOKEN",
+            "QC_API_ORGANIZATION_ID",
         )
     )
 
