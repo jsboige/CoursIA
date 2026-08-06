@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 953832780bf8b101e6fcba553c9deeb30cc4cef1
       csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: c8977d56354726ca6349bb2b47fa67bd1f2b16e2
+      csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
+      content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
+      content_csharp_sha: 8ae8347f665729ac29554fd252aeb26e2b3d3195d4e45ef6e68680f80c23ba0e
   known_differences:
     - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."
     - "Implementation from scratch des deux cotes (NI lib dediee C# NI framework Python) : le C# est pur stdlib System.* (0 NuGet, 15 cellules code) ; le Python est aussi pur stdlib (0 numpy, 12 cellules code). C'est la paire la plus proche d'une traduction native : les deux codent assign/eliminate/search manuellement selon l'algorithme de Norvig. Mais les 2 implementations restent independantes (idiomes langage : dict/sets cote Python vs Dictionary/HashSet cote C#), d'ou parity_level semantic et non native-both."

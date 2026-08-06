@@ -14,8 +14,15 @@
       csharp_sha: 160675f58686100e1d03eecc047e34698ac4997a
       content_python_sha: 14bb193dd38e7c719d0f1e40a6a828ecbafcd656dce640964d79853312150f06
       content_csharp_sha: 091c0ab4021145d4833989af364028040a44e5bed31b9764e45a2333adb9d8c7
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: bee6f874b6115d3a114d4404a3af116e3a226364
+      csharp_sha: 160675f58686100e1d03eecc047e34698ac4997a
+      content_python_sha: 5f9df51386581fbed5946bb19c4ebf1d9ca72bbc37d27b6a0687540ccda6c593
+      content_csharp_sha: 091c0ab4021145d4833989af364028040a44e5bed31b9764e45a2333adb9d8c7
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8343 (doc-honesty prose (benchmark speedup claim aligned to committed output)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
     - "Re-baseline 2026-07-31 (myia-po-2024:CoursIA-2, cycle c.1066) : SHA C# avance dfd74f20 -> 2bf10756 (cell[8] G.1 self-correction note : la decomposition '5 inferez = propagation des types + reflexivite des proprietes (enseigne ⊂ enseigne, suit ⊂ suit)' etait fausse -- cell[9] affiche 'Sous-proprietes inferez : 0', donc AUCUNE reflexivite de propriete n'est materialisee ; reformule en 'inferences de type/domain-range, 3 verifiees, 0 subPropertyOf'). Drift verifie parite-preserving : prose markdown seule, aucune cellule de code touchee (n'affecte pas l'axe de parite semantic)."
+    - "Re-baseline 2026-08-06 (myia-po-2024:CoursIA-2, cycle c.1305 + #9670 rebaseline par ai-01 11:00Z) : SHA Python avance a5ef2be10 -> bee6f874b (c.1305 drainage arch. 6ᵉ machine-dep timing : 15 claims drainés via préfixe canonique `runtime *machine-dep*` sur 5 cellules denses cell[3]+cell[18]+cell[25]+cell[35]+cell[42] ; 1 CAS AUTEUR-CONSCIENT cell[50] disclaimer §D.5 verbatim préservé). C# SHA inchangee 160675f58 (jumeau C# pas drainé dans cette PR). Drift parite-preserving : prose pedagogique machine-dep marquee, aucune cellule de code touchée, parite semantic intacte."

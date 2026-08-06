@@ -1,109 +1,92 @@
-# ML-XGBoost
+# ML-XGBoost — Gradient Boosting sur grandes capitalisations US (régresseur de rendement)
 
-**Asset class:** US Equities (Large-cap liquid)
-**Cloud project ID:** 29434753
+**Classe d'actifs :** Actions US grandes capitalisations (15 titres)
+**Cloud project ID :** 29434753
+**Période backtestée :** 2015-01-01 → 2024-12-31
 
 ## Description
 
-Gradient Boosting (sklearn `GradientBoostingRegressor`) strategy on 15 liquid US stocks.
-Uses 22 comprehensive features including RSI, Bollinger Bands, MACD, Stochastic oscillator, ATR, momentum, volatility, volume ratios, and price/SMAs.
+Stratégie de **régression par Gradient Boosting** (sklearn `GradientBoostingRegressor`) sur 15 grandes capitalisations US liquides. **Différence majeure vs ML-RandomForest et ML-SVM** : le modèle prédit le **rendement futur à 10 jours** (valeur continue, régression), pas le **signe** du rendement (classification). Utilise 22 features techniques (RSI, bandes de Bollinger, MACD, stochastique, ATR, momentum, volatilité, volume, ratios prix/SMA).
 
-Alternating Monday pattern: odd Mondays for training, even Mondays for rebalance. 90% allocation across up to 9 positions with prediction threshold 0.001.
+Entraînement bimensuel (un lundi sur deux, alterné avec le rebalancement). Le modèle est **pooled** (un seul régresseur entraîné sur les 15 tickers réunis), 9 positions max, allocation 90 %.
 
-## Figures du notebook de recherche
+**Note d'honnêteté sur le nom** : malgré le nom du répertoire « ML-XGBoost », le code déployé utilise `sklearn.ensemble.GradientBoostingRegressor` (J. Friedman, 2001), **pas** la bibliothèque `xgboost` (Chen & Guestrin, 2016). Les deux implémentent le gradient boosting mais diffèrent (gestion des valeurs manquantes, objectif régularisé, vitesse). La référence Friedman 2001 citée plus bas correspond bien à l'implémentation réelle.
 
-Le notebook [`research.ipynb`](research.ipynb) teste cinq hypothèses sur les hyperparamètres du gradient boosting — learning rate, nombre d'estimateurs, seuil de prédiction, nombre maximum de positions et subsample ratio — puis synthétise l'importance des features. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+**Version anglaise préservée** : [README.en.md](README.en.md).
 
-Plutôt qu'une mosaïque-bloc en tête de README, chaque figure est présentée **dans le contexte narratif de l'hypothèse qu'elle teste** — une figure par sweep, le paragraphe qui interprète le résultat adjacent. Doctrine **#5780** : pas de galerie générique, l'image **accompagne** la prose.
+## Configuration déployée (v2, `main.py` Cloud 29434753)
 
-### H1 — Learning rate (`xgb-h1-learningrate.png`)
+| Composant | Paramètre | Rôle |
+|-----------|-----------|------|
+| Univers | AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, WMT, DIS, NFLX, PYPL, ADBE, CRM | 15 large-caps (7 Mag7 + 8 tech/média) |
+| Features | 22 (RSI, BB, MACD, stoch, ATR, mom, vol, volume, prix/SMA) | Signal technique |
+| Modèle | `GradientBoostingRegressor` (sklearn, **pas** lib xgboost) | Régression du rendement 10j |
+| Cible | rendement futur 10 jours (continu) | Régression (vs classification RF/SVM) |
+| `n_estimators` | 100 | Nombre d'arbres |
+| `max_depth` | 5 | Profondeur |
+| `learning_rate` | 0.03 | Pas de boosting (conservatif vs v1 0.05) |
+| `subsample` | 0.8 | Stochastic gradient boosting |
+| `min_samples_leaf` | 10 | Régularisation |
+| Lookback | 90 jours | Fenêtre d'entraînement (vs 120 RF/SVM) |
+| Seuil | **0.001** | Rendement prédit min (0,1 %) pour ouvrir |
+| Positions max | 9 @ 10 % | 90 % alloué, équipondéré |
+| Rebalance | Bimensuel | Lundis pairs (trade) / impairs (train) |
+| Graine | `random_state=42` | **Single seed** (cf. lecture honnête) |
 
-Le notebook teste 3 valeurs de `learning_rate` (0.01 / 0.03 / 0.1) sur l'ensemble du ré-entraînement bihebdomadaire. C'est l'hyperparamètre de shrinkage qui pondère la contribution de chaque arbre séquentiel dans le gradient boosting : trop bas, le modèle sous-apprend ; trop haut, il sur-apprend et diverge.
+## Backtest réel (QC Cloud, frais IBKR inclus)
 
-<p align="center"><img src="assets/readme/xgb-h1-learningrate.png" alt="H1 learning rate — sweep 3 lr (0.01/0.03/0.1) 2018-2026, courbes superposées, S=0.538/0.564/0.57, écart max 0.03 ; SPY B&H S=0.778 capital 2.9× nettement au-dessus" width="840"/><br/><em>H1 — sweep learning_rate QUASI-NUL : 3 lr convergent (S=0.538/0.564/0.57, écart max 0.03), courbes superposées sur la majeure partie de la période ; SPY B&H (rouge, S=0.778) termine à 2.9× vs ~2.1× pour XGBoost — underperformance systématique de -25% en capital.</em></p>
+| Métrique | Valeur |
+|----------|--------|
+| Sharpe ratio | **0.787** |
+| CAGR | **19.49 %** |
+| Drawdown max | **35.90 %** |
+| Rendement total net | 494.3 % (+497 083 $ sur 100 k $) |
+| PSR (Probabilistic Sharpe Ratio) | **15.40 %** |
+| Ordres exécutés | 1994 |
+| Jours tradés | 2516 |
 
-**Verdict — sweep QUASI-NUL**. L'écart Sharpe max entre les 3 configurations n'est que de 0.03, et les courbes sont visuellement superposées sur la majeure partie de 2018-2026. Le `learning_rate` n'a **aucun effet discriminant** sur la performance long-terme de XGBoost dans cette configuration. **Mais** les trois configs sont nettement sous SPY Buy-Hold : capital final ~2.1× vs 2.9× pour le benchmark, soit -25% en capital. Le sweep confirme que le learning_rate n'est pas le levier à actionner ; le problème est plus structurel.
+*Backtest frais via QC Cloud project 29434753 (compile `BuildSuccess`, 2026-08-06). Le README anglais documentait Sharpe 0.566 / CAGR 14.8 % / MaxDD 38.6 % (v2 docstring) ; une passe intermédiaire (PR #8049) mesurait Sharpe 0.787 / CAGR 19.5 % / MaxDD 35.9 %. Le backtest frais ci-dessus **confirme #8049 au dixième près** (0.787 / 19.49 % / 35.90 %) : la valeur docstring 0.566 était périmée, #8049 est la vérité reproductible.*
 
-### H2 — Nombre d'estimateurs (`xgb-h2-nestimators.png`)
+### Lecture honnête — régresseur déguisé en classifieur, beta Mag7+tech, nom trompeur
 
-Le notebook teste 3 valeurs de `n_estimators` (50 / 100 / 200), c'est-à-dire le nombre d'arbres séquentiels entraînés par le gradient boosting. Plus d'arbres = plus de capacité d'apprentissage, mais aussi plus de risque de sur-apprentissage si le shrinkage n'est pas adapté.
+1. **Nom vs implémentation** : le projet s'appelle « ML-XGBoost » mais utilise `sklearn.ensemble.GradientBoostingRegressor` (Friedman 2001), **pas** la lib `xgboost` (Chen & Guestrin 2016). La référence Friedman citée est correcte pour le code réel, mais le nom induit en erreur sur le moteur employé. À lire comme un **cas d'école de doc-honesty** : le nom d'un artefact peut diverger de son implémentation.
 
-<p align="center"><img src="assets/readme/xgb-h2-nestimators.png" alt="H2 n_estimators — sweep 3 n_est (50/100/200) 2018-2026, courbes superposées à 2-3 px près, S=0.568/0.564/0.6, écart max 0.04 ; n_est=200 marginal winner fin 2025-26 ; SPY B&H au-dessus" width="840"/><br/><em>H2 — sweep n_estimators QUASI-NUL : 3 n_est (50/100/200) → S=0.568/0.564/0.6, écart max 0.04, courbes superposées à 2-3 pixels près sur 2018-2026. Le verdict n_est=200 winner (S=0.6) n'apparaît qu'en zoom fin 2025-26.</em></p>
+2. **Régresseur utilisé comme classifieur (le point le plus important)** : le modèle prédit un **rendement continu** à 10 jours, mais le code de rebalancement fait `set_holdings(symbol, position_size)` avec une `position_size` **fixe** (~10 %). Autrement dit, la **magnitude** prédite est ignorée — seul le **rang** compte (top-9 dont le rendement prédit > seuil). Un régresseur utilisé pour **trier puis équipondérer** est, en effet, un **classifieur déguisé** : la sophistication de la régression continue est largement gaspillée par un sizing indifférent à la prédiction.
 
-**Verdict — sweep QUASI-NUL**. L'écart Sharpe max est de 0.04 entre les 3 configurations, et les courbes sont **superposées à 2-3 pixels près** sur la quasi-totalité de la période. Le verdict marginal « n_est=200 winner » (S=0.6) n'émerge qu'en toute fin 2025-26, un boost tardif qui pourrait être du bruit. **SPY B&H reste toujours au-dessus** (~2.1× vs 2.9×). Le `n_estimators` est aussi inopérant sur la performance long-terme. Comme H1, ce n'est pas le levier pertinent.
+3. **Seuil 0.001 = quasi full-exposure** : un seuil de 0,1 % sur un rendement prédit à 10 jours est **extrêmement bas** (les actions US ont une dérive annuelle de ~10 %, soit ~0,4 % par 10 jours en moyenne). Conséquence : le portefeuille est **presque toujours pleinement investi** dans les 9 meilleures prédictions dès qu'au moins 9 tickers ont une prédiction positive. Ce n'est pas de la sélectivité, c'est du **timing de l'exposition** — la stratégie est structurellement **long market**.
 
-### H3 — Seuil de prédiction (`xgb-h3-threshold.png`)
+4. **Univers Mag7 + tech-heavy (§C point 5)** : 7 des 15 tickers (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA) sont des Mag7, et les 8 autres (JPM, V, WMT, DIS, NFLX, PYPL, ADBE, CRM) sont majoritairement tech/média. La règle `pr-review-discipline.md` §C interdit les Mag7 en training set pour les claims d'alpha. Comme ML-RandomForest, l'essentiel du CAGR est du **beta Mag7+tech** sur le bull run 2015-2024, pas de la capacité prédictive du gradient boosting.
 
-Le notebook teste 3 valeurs de `threshold` (0.0 / 0.001 / 0.01), c'est-à-dire le seuil minimal en dessous duquel une prédiction de retour est ignorée (position = cash). C'est un filtre de confiance sur le signal ML.
+5. **Single seed (`random_state=42`)** : aucune robustesse multi-seed. §C exige ≥4 seeds (0/1/7/42/99) avec edge ≥ 2σ cross-seed pour tout claim « BEATS ». **PSR 15.40 %** < 50 % : le Sharpe observé n'est pas statistiquement supérieur à zéro au seuil conventionnel — le rendement est compatible avec du bruit de chance sur une seule réalisation.
 
-<p align="center"><img src="assets/readme/xgb-h3-threshold.png" alt="H3 threshold — sweep 3 threshold (0.0/0.001/0.01) 2018-2026, threshold=0.0 winner S=0.591 DD=-36.93% ; threshold=0.001 default S=0.564 ; threshold=0.01 perdant S=0.534 DD=-32.35% ; range 0.06 sweep DISCRIMINANT MODESTE ; SPY B&H au-dessus" width="840"/><br/><em>H3 — sweep prediction_threshold DISCRIMINANT MODESTE : 3 threshold (0.0/0.001/0.01) → S=0.591/0.564/0.534, range 0.06. threshold=0.0 winner (sweet spot à zéro — pas de filtre = MIEUX). threshold=0.01 perdant (S=0.534, DD=-32.35% le moins creux).</em></p>
+6. **Triptyque ML pédagogique** : ML-XGBoost complète le triptyque avec [ML-RandomForest](../ML-RandomForest/README.md) (classifieur, sur-ajustement, Mag7) et [ML-SVM](../ML-SVM/README.md) (classifieur linéaire, sous-ajustement, ETF). Trois familles ML, trois modes d'échec différents : RF mémorise la tendance (over-fit), SVM ne la capture pas (under-fit), GBoost prédit bien mais n'utilise que le rang et reste long market. **Aucun des trois n'est de l'alpha** — la valeur est dans la **comparaison des architectures** (classification vs régression, bagging vs boosting vs marge) et de leurs **pièges respectifs**.
 
-**Verdict — sweep DISCRIMINANT MODESTE**. Range Sharpe 0.534-0.591 (écart 0.06), le verdict contre-intuitif émerge : **threshold=0.0 winner**. Supprimer le filtre de seuil — c'est-à-dire prendre position dès que la prédiction existe, sans condition de magnitude minimale — **améliore** légèrement la performance. Cela suggère que le signal XGBoost est bruité mais pas biaisé, et qu'un seuil positif filtre plus de bonnes prédictions que de mauvaises. **Mais toutes les configs restent sous SPY B&H** (~2.2× vs 2.9×). Pour le live, retenir `threshold=0.0` ; pour les configs futures, explorer un seuil négatif (autoriser le « anti-signal »).
+**Conclusion honnête** : ne PAS présenter ML-XGBoost comme une stratégie « boosting qui bat le marché ». C'est un **régresseur de rendement utilisé en classement**, sur un **univers Mag7+tech** en **bull market**, avec un **seuil qui maintient une exposition quasi totale**. Sa valeur pédagogique est triple : (a) la **doc-honesty** (nom XGBoost vs sklearn GBR), (b) la **régression-vs-classification** et le gaspillage du signal continu par un sizing fixe, (c) le **capstone du triptyque ML** qui isole l'effet du choix d'architecture (bagging/boosting/marge) à univers et pipeline constants.
 
-### H4 — Nombre maximum de positions (`xgb-h4-maxpositions.png`)
+## Comment exécuter
 
-Le notebook teste 3 valeurs de `max_pos` (3 / 7 / 12), c'est-à-dire le nombre maximum de positions simultanées dans le portefeuille à chaque rebalance. Plus de positions = plus de diversification, mais aussi plus de dilution du signal.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost"`
+**QC Cloud :** Déployé comme project 29434753.
 
-<p align="center"><img src="assets/readme/xgb-h4-maxpositions.png" alt="H4 max positions — sweep 3 max_pos (3/7/12) 2018-2026, max_pos=12 winner S=0.585 DD=-30.62% (le moins creux) ; max_pos=7 default S=0.568 DD=-41.29% ; max_pos=3 perdant S=0.508 DD=-48.84% ; range 0.08 sweep DISCRIMINANT MODESTE le plus grand des sweeps XGBoost" width="840"/><br/><em>H4 — sweep max_positions DISCRIMINANT MODESTE (le plus grand des sweeps XGBoost) : 3 max_pos (3/7/12) → S=0.508/0.568/0.585, range 0.08. max_pos=12 winner en capital + DD=-30.62% (le moins creux des 3). max_pos=3 perdant avec DD=-48.84% mi-2022.</em></p>
+## Fichiers
 
-**Verdict — sweep DISCRIMINANT MODESTE** (range 0.08, le plus grand des sweeps XGBoost). Le verdict attendu se confirme : **max_pos=12 winner** en capital final ET en drawdown (-30.62%, le moins creux des 3 configs). Plus de diversification améliore à la fois le rendement et la résilience. Le perdant est `max_pos=3` (S=0.508, DD=-48.84%) avec un creux sévère mi-2022. **Mais toutes les configs restent sous SPY B&H** (~2.3× vs 2.9×). Pour le live, retenir `max_pos=12` (ou plus, à tester hors-scope) ; le coût opérationnel d'une diversification plus large est à mettre en balance avec le gain marginal.
+- `main.py` — Stratégie `MLXGBoostAlgorithm` v2 (`GradientBoostingRegressor`).
+- `research.ipynb` — Recherche (sweep H1-H5 sur les hyperparamètres + importance des features).
+- `assets/readme/*.png` — Figures du sweep (H1 learning rate, H2 n_estimators, H3 threshold, H4 max positions, H5 subsample, synthèse importance).
 
-### H5 — Subsample ratio (`xgb-h5-subsample.png`)
+## Concepts enseignés
 
-Le notebook teste 3 valeurs de `subsample` (0.6 / 0.8 / 1.0), c'est-à-dire la fraction d'échantillons tirés aléatoirement pour entraîner chaque arbre séquentiel. C'est l'analogue du bagging pour le gradient boosting : introduire du bruit dans les données pour réduire la variance.
+- **Régression vs classification** : prédire le rendement (continu) vs le signe (binaire). ML-XGBoost est le seul régresseur du triptyque ML — mais n'utilise que le rang de la prédiction, neutralisant l'avantage du signal continu.
+- **Gradient boosting (Friedman 2001)** : additive modelling par stages, chaque arbre corrige les résidus du précédent. `subsample=0.8` = stochastic gradient boosting (introduit du hasard pour la robustesse). Distinct du **bagging** de Random Forest (arbres indépendants).
+- **Doc-honesty (nom vs implémentation)** : « XGBoost » le nom ≠ `xgboost` la lib. Le code utilise `sklearn.GradientBoostingRegressor`. Toujours vérifier l'implémentation réelle, pas le label.
+- **Seuil et exposition** : un seuil de décision très bas (0.001) sur une prédiction à dérive positive = exposition quasi totale = stratégie long market, pas de la sélectivité.
+- **Probabilistic Sharpe Ratio (PSR)** : un Sharpe de 0.787 sur single-seed et univers Mag7 n'est pas statistiquement significatif (PSR 15.4 %).
+- **Single seed vs multi-seed** : `random_state=42` seul ne prouve pas la robustesse — §C exige ≥4 seeds + edge 2σ.
+- **Triptyque ML** : RF (bagging, over-fit) / SVM (marge, under-fit) / GBoost (boosting, régresseur-en-classement) — comparer isole l'effet de l'architecture à pipeline constant.
 
-<p align="center"><img src="assets/readme/xgb-h5-subsample.png" alt="H5 subsample — sweep 3 subsample (0.6/0.8/1.0) 2018-2026, subsample=1.0 winner S=0.593 DD=-39.58% (pas de subsampling = MIEUX) ; subsample=0.8 default S=0.564 DD=-37.29% ; subsample=0.6 perdant S=0.527 DD=-35.55% ; range 0.07 sweep DISCRIMINANT MODESTE" width="840"/><br/><em>H5 — sweep subsample DISCRIMINANT MODESTE : 3 subsample (0.6/0.8/1.0) → S=0.527/0.564/0.593, range 0.07. subsample=1.0 winner (pas de subsampling = MIEUX). subsample=0.6 perdant. Verdict contre-intuitif : pour XGBoost sur 15 tickers, le bagging n'apporte rien.</em></p>
+## Références
 
-**Verdict — sweep DISCRIMINANT MODESTE** (range 0.07). Le verdict contre-intuitif émerge : **subsample=1.0 winner** (pas de subsampling = MIEUX). Pour XGBoost sur ces 15 tickers, le bagging (sous-échantillonnage stochastique) **n'apporte rien** — supprimer le bruit stochastique améliore la performance. Hypothèse : avec un univers restreint (15 tickers) et un signal déjà peu discriminant (cf H1+H2 sweeps nuls), le sous-échantillonnage retire des informations utiles sans réduire la variance de manière significative. **Mais toutes les configs restent sous SPY B&H** (~2.2× vs 2.9×). Pour le live, retenir `subsample=1.0` ; le subsampling est une technique conçue pour des univers plus larges.
-
-### Synthèse — Importance des features (`xgb-synthese.png`)
-
-Le notebook entraîne le modèle GradientBoosting final sur l'ensemble de la période et extrait l'importance moyenne de chacune des 22 features sur tous les entraînements. C'est la **cartographie de ce que XGBoost a appris à utiliser** — pas ce qu'il aurait dû utiliser (overlap partiel).
-
-<p align="center"><img src="assets/readme/xgb-synthese.png" alt="Feature Importance XGBoost — bar chart horizontal 22 features triées desc, vol_20 winner ~0.122 (inversion vs RandomForest où vol_20 perdant) ; atr ~0.095 / macd_signal ~0.088 / atr_ratio ~0.085 (cluster volatilité+momentum top-4) ; bb_position perdant ~0.018 (2ᵉ inversion vs RandomForest où winner)" width="840"/><br/><em>Synthèse — Feature Importance GradientBoosting (moyenne sur tous les entraînements, 22 features). vol_20 winner (~0.122, inversion spectaculaire vs ML-RandomForest où vol_20 perdant). bb_position perdant (~0.018, 2ᵉ inversion). Cluster volatilité+momentum en top-4 (atr ~0.095, macd_signal ~0.088, atr_ratio ~0.085). volume_ratio+volume_change quasi-nuls.</em></p>
-
-**Verdict — INVERSION SPECTACULAIRE vs ML-RandomForest** :
-- **vol_20** passe de **perdant** dans RandomForest (mrf 0.076) à **winner** dans XGBoost (~0.122) — XGBoost exploite fortement la volatilité 20j, alors que RandomForest la sous-utilisait.
-- **bb_position** passe de **winner** dans RandomForest (~0.103) à **perdant** dans XGBoost (~0.018) — momentum/position Bollinger est marginal pour XGBoost, alors que c'était le signal dominant pour RandomForest.
-- **volume_ratio + volume_change** quasi-nuls dans les deux cas — l'information de volume n'est pas exploitable par ces deux modèles sur cet univers.
-
-**Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume plus uniformément. Pour XGBoost, **les features de VOLATILITÉ dominent**, momentum marginal.
-
-**Découverte majeure — XGBoost sous-performe SPY B&H systématiquement** : contrairement à ML-RandomForest où 4 winners sur 5 battent SPY (S=0.778), **ML-XGBoost sous-performe SPY Buy-Hold sur TOUS les sweeps** (S range 0.508-0.593, capital final ~2.1-2.3× vs 2.9× pour SPY). La stratégie XGBoost ML est **négativement valorisée** par rapport au benchmark sur 2018-2026. **L'algo ML XGBoost ne bat pas le simple buy-and-hold** sur la période.
-
-## How to Run
-
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost"`
-```bash
-lean backtest --project .
-```
-
-**QC Cloud:** Open project 29434753 in the QuantConnect IDE and click "Backtest".
-
-## Backtest Metrics (2015-2024)
-
-| Metric | v1 (2020-2026) | v2 prior (2015-2026) | **v2 c.799 (2015-2024 strict)** |
-|--------|----------------|----------------------|-----------------------------------|
-| Sharpe Ratio | 0.195 | 0.566 | **0.787** |
-| CAGR | n/a | 14.8% | **19.493%** |
-| Max Drawdown | n/a | 38.6% | **35.9%** |
-| Total Net Profit | n/a | 371.678% | **494.293%** |
-| Net Profit ($) | n/a | $380,301 | **$497,083** |
-| Rebalance | Biweekly | Biweekly | Biweekly |
-| Max Positions | 9 | 9 | 9 |
-| Total Orders | n/a | 2260 | **1994** |
-| Tradeable Dates | n/a | 2825 | **2516** |
-
-**Note c.799** : la fenêtre stricte 2015-2024 (10 ans, sans la queue 2025-2026 partielle du précédent run) produit Sharpe **+39%**, CAGR **+4.7pp**, MaxDD **-2.7pp**, TotalNetProfit **+122.6pp** vs le run v2 du 2026-03-28 (qui incluait la queue 2025-2026). La queue 2025-2026 partielle tirait les chiffres vers le bas (deeper drawdown). Preuves d'exécution : `c799-cloud-id-29434753.json` (compile_id + backtest_id + claimed_values_from_prior_backtest).
-
-QC Cloud backtest id c.799 : `9cc2bcb4809c514efb84e3cdaf89d610` (Completed 2026-07-22T22:42:00Z, ~25 min runtime).
-
-## Files
-
-- `main.py` - Strategy (v2, GradientBoostingRegressor)
-- `research.ipynb` - Feature importance and hyperparameter tuning
-
-## References
-
-- Friedman (2001), "Greedy Function Approximation: A Gradient Boosting Machine"
-- Hands-On AI Trading, Section 06
+- Friedman (2001), *Greedy Function Approximation: A Gradient Boosting Machine* — **implémentation réelle** (sklearn GBR).
+- Chen & Guestrin (2016), *XGBoost: A Scalable Tree Boosting System* — la lib dont le projet porte le nom sans l'utiliser.
+- *Hands-On AI Trading* (Jared Broad), Section 06.
+- Triptyque : [ML-RandomForest](../ML-RandomForest/README.md) (bagging, sur-ajustement, Mag7) · [ML-SVM](../ML-SVM/README.md) (marge linéaire, sous-ajustement, ETF).
