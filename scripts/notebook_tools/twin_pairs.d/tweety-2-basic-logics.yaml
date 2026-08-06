@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: d9bd33ad8b9e97f30827123edbfece15a1d630a8
       csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: db6e66674e180e9146b7698a17549da121b99df1
+      csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+      content_python_sha: 9ea706f03d4f0eb8408bda6760ace8de24c999a3bdc75019d713633ad2031ad1
+      content_csharp_sha: 28db117646b3940d869d29bccaa6ad4fda169c22af3d0443a17876c36a8ac998
   known_differences:
     - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
     - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."
