@@ -41,3 +41,37 @@ Les 2 scripts `fix_sudoku_hierarchy.py` et `fix_texte_hierarchy.py` ont chacun u
 - **Préservation historique** : `git log --follow` doit pouvoir retrouver le source d'un commit de 2026-07 (anti-régression). Archive = retirer-de-la-racine-mais-préserver-trace.
 - **Référence future** : un audit peut comparer la version pré-fix d'un notebook avec le post-fix (le script archive contient la transformation exacte appliquée).
 - **Convention disciple** : `Consolider ≠ Archiver` (CLAUDE.md global) — on archive l'outillage mort, on ne le `rm` pas.
+
+---
+
+# item 4-quater — 2 dead scripts racine (c.9689 / 2026-08-06)
+
+**Décision** : `chore(repo,#9535): archive 2 dead scripts from scripts/ racine (item 4-quater)`
+**PR** : [#9731](https://github.com/jsboige/CoursIA/pull/9731) (myia-po-2023:CoursIA-2)
+
+## Fichiers archivés
+
+| Fichier | LOC | Type de mort | Justification |
+|---|---:|---|---|
+| `fix_string_cells.py` (racine) | 108 | DUPLICATE superseded | Remplacé par `scripts/notebook_tools/fix_string_cells.py` (canonical, argparse + `--genai-only`). Le test `test_fix_string_cells.py` importe depuis le path canonical via `sys.path.insert(0, …/notebook_tools)`, **pas** depuis le root. Le fichier root = 0 call-site en code (4 mentions : self + 2 docs + 1 docstring test). |
+| `mcp_buffering_smoke_test.py` | 231 | ONE-SHOT mission remplie | Verify du fix MCP buffering #835 (smoke test `create_stress_notebook` + `run_smoke_test`). Mission prouvée remplie (le fix MCP est en place depuis #835, instrument validé une fois pour toutes). Test pair archivé ensemble (le test importe par `importlib.util.spec_from_file_location`, le path est mis à jour pour pointer le fichier co-localisé dans `_archive/one_shot_fixes/`). |
+| **Total** | **339** | | |
+
+## Pourquoi pas suppression
+
+Mêmes invariants que item 4-ter ci-dessus. `git log --follow` doit pouvoir remonter au source pour audit anti-régression ; le pattern « un outil canonique a absorbé la fonctionnalité » est lui-même une leçon de discipline (#9140 : un fix canonique DOIT supprimer ses précurseurs — ici fait via `git mv` archive, jamais `git rm`).
+
+## Note sur `fix_string_cells.py` : la canonicalisation était déjà la bonne décision
+
+`scripts/notebook_tools/fix_string_cells.py` (canonical) :
+- API argparse + `--genai-only` + `--apply` + `--dry-run`
+- 113 LOC, type hints
+- Couvert par `scripts/notebook_tools/tests/test_fix_string_cells.py` (48 tests PASS)
+
+`scripts/fix_string_cells.py` (root, archived) :
+- API legacy `fix_notebook_sources` + alias `fix_string_cells = fix_notebook_sources`
+- 108 LOC, pas d'argparse
+- Pas de test (le seul test importe la version canonical, pas la root)
+
+La migration est **implicite** : la version `notebook_tools/` a supplanté la root sans formaliser le retrait. Item 4-quater formalise l'archivage de la précurseure.
+
