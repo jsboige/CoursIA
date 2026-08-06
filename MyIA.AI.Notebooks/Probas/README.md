@@ -159,7 +159,7 @@ Si vous préférez Python au C#, commencez par **PyMC-1-Setup** (introduction st
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
-Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, processus gaussien épars 15, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, analyse de survie) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
+Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau C# Infer** (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14 et recommandation 15 ; frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
 
@@ -272,18 +272,18 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 2 | Gaussian Mixtures | Mélanges gaussiens MCMC, trace plots, convergence diagnostics |
 | 3 | Factor Graphs | Inférence discrète avec PyMC, comparaison Infer.NET vs PyMC |
 | 4 | Bayesian Networks | Réseaux bayésiens MCMC, CPT, explaining away |
-| 5 | Skills (IRT) | IRT en Python, estimation de compétences par MCMC |
-| 6 | TrueSkill | TrueSkill avec NUTS, online learning bayésien |
-| 7 | Classification | Classification bayésienne, régression logistique |
-| 8 | Model Sélection | Model comparison MCMC, LOO, WAIC, Bayes Factors empiriques |
-| 9 | Topic Models | LDA avec NUTS, gestion variables latentes, inférence approximation |
-| 10 | Crowdsourcing | Agrégation de labels crowdsourcing, worker communities |
-| 11 | Séquences | HMM MCMC, forward-backward avec échantillonnage |
-| 12 | Recommenders | Factorisation matricielle bayésienne MCMC |
-| 13 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
-| 14 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
-| 15 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
-| 16 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-12 EP) |
+| 5 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
+| 6 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
+| 7 | Skills (IRT) | IRT en Python, estimation de compétences par MCMC |
+| 8 | TrueSkill | TrueSkill avec NUTS, online learning bayésien |
+| 9 | Classification | Classification bayésienne, régression logistique |
+| 10 | Model Sélection | Model comparison MCMC, LOO, WAIC, Bayes Factors empiriques |
+| 11 | Topic Models | LDA avec NUTS, gestion variables latentes, inférence approximation |
+| 12 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-12 EP) |
+| 13 | Crowdsourcing | Agrégation de labels crowdsourcing, worker communities |
+| 14 | Séquences | HMM MCMC, forward-backward avec échantillonnage |
+| 15 | Recommenders | Factorisation matricielle bayésienne MCMC |
+| 16 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
 | 17 | Kalman Filter | Value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
