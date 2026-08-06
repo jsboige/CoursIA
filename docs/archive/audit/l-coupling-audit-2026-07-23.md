@@ -2,7 +2,8 @@
      Doctrine promoted to .claude/rules/ (c.8087-c.8092): L721/L740/L898 → proactive-coordination.md, L576/L677-L4 → git-workflow.md, L750 → lean-merge-discipline.md.
      INDEX-only (no external inbound refs on origin/main @ c.8104e).
      Migrated from docs/audit/l-coupling-audit-2026-07-23.md (PR #8210, c.821, 2026-07-23).
-     cf CLAUDE.md global « Consolider != Archiver » : preservation + supersession cite. See #7422. -->
+     Migrated 2026-08-06 from docs/_archives/audit/l-coupling-audit-2026-07-23.md (c.9698 final tranche #9535 item 10, plenary rename to docs/archive/audit/).
+     cf CLAUDE.md global « Consolider != Archiver » : preservation + supersession cite. See #7422. See #9535. -->
 
 # Audit couplage MEMORY ↔ `.claude/rules/` (L-coupling) — refresh c.821
 
