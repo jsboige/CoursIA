@@ -160,7 +160,7 @@ def gross_returns(positions: np.ndarray, test_returns: np.ndarray) -> np.ndarray
 def run_one_seed(seed: int, epochs: int, n_splits: int, window: int,
                  context_length: int, batch_size: int, lr: float,
                  d_model: int, nhead: int, num_layers: int, device: str,
-                 dry_run: bool) -> dict:
+                 commission_bps: int, dry_run: bool) -> dict:
     """Walk-forward 5-fold XRP pour une seed. Retourne series OOS + sharpe (gross/net/mom/BH)."""
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -179,7 +179,7 @@ def run_one_seed(seed: int, epochs: int, n_splits: int, window: int,
     features_df = engineer.transform(raw, add_target=False)
     features_arr = features_df.values.astype(np.float32)
     prices = raw.loc[features_df.index, "Close"].values.astype(np.float32)
-    commission = COMMISSION_BPS / 10000.0
+    commission = commission_bps / 10000.0  # bps -> fraction (cf --commission-bps)
 
     splitter = WalkForwardSplitter(
         n_splits=n_splits,
@@ -363,6 +363,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--commission-bps", type=int, default=COMMISSION_BPS,
+                        help=f"Crypto transaction cost in bps (default {COMMISSION_BPS}, "
+                             "stress test = 50). Enables a TC sweep.")
     args = parser.parse_args()
 
     if args.smoke:
@@ -382,7 +385,7 @@ def main():
     print(f"Date: {datetime.now().isoformat()}")
     print(f"Coin: {COIN} | device: {device} | smoke: {args.smoke}")
     print(f"WF: {args.n_splits} folds (gap=10) | seeds: {args.seeds} | epochs: {args.epochs}")
-    print(f"TC: {COMMISSION_BPS} bps crypto | Question: edge XRP survit TC + OOS WF + DM ?")
+    print(f"TC: {args.commission_bps} bps crypto | Question: edge XRP survit TC + OOS WF + DM ?")
     print(f"Output: {out_dir}")
     print()
 
@@ -395,7 +398,8 @@ def main():
                              window=args.window, context_length=args.context_length,
                              batch_size=args.batch_size, lr=args.lr,
                              d_model=args.d_model, nhead=args.nhead,
-                             num_layers=args.num_layers, device=device, dry_run=args.smoke)
+                             num_layers=args.num_layers, device=device,
+                             commission_bps=args.commission_bps, dry_run=args.smoke)
             print(f"  net_sharpe={r['dt_net_sharpe_oos']}  gross={r['dt_gross_sharpe_oos']}  "
                   f"mom_naked={r['momentum_naked_sharpe_oos']}  bh={r['bh_sharpe_oos']}  "
                   f"dm_p={r['dm_dt_vs_bh'].get('p_value') if r.get('dm_dt_vs_bh') else None}  "
@@ -427,7 +431,7 @@ def main():
     summary = {
         "timestamp": ts, "coin": COIN, "device": device, "smoke": args.smoke,
         "config": {"epochs": args.epochs, "n_splits": args.n_splits,
-                   "seeds": args.seeds, "commission_bps": COMMISSION_BPS,
+                   "seeds": args.seeds, "commission_bps": args.commission_bps,
                    "d_model": args.d_model, "window": args.window,
                    "context_length": args.context_length},
         "seed_results": seed_results,
