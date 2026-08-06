@@ -3078,8 +3078,9 @@ is strong enough for the (b) reduction; it does NOT prove the wall holds). -/
     satisfaites. Le test `exact` du bridge ne prouvait que la SUFFISANCE de
     l'énoncé, jamais sa satisfaisabilité.
 
-    **Redesign borné APPLIQUÉ (c.92, #6724) — l'énoncé ci-dessous est la forme
-    canonique gelée.** Deux changements par rapport à la forme libre réfutée :
+    **Redesign borné APPLIQUÉ (c.92, #6724) — puis renforcé structurellement
+    (c.93).** Trois changements par rapport à la forme libre réfutée (1-2 :
+    c.92 ; 3 : c.93) :
 
     1. **Fenêtre centrale** : l'hypothèse `hp` borne `p` à la sous-fenêtre NW
        de la région centrale du parent, `[2^k, 2^k + 2^((k-1)+1))²` =
@@ -3100,6 +3101,26 @@ is strong enough for the (b) reduction; it does NOT prove the wall holds). -/
        shifté de `+2^(k-1)`) — là où le cône Manhattan `2^k` atteignait des
        points (p.ex. colonne 0) hors fenêtre, où le RHS est mort mais le LHS
        peut vivre (la géométrie même du contre-exemple).
+    3. **Hypothèses structurelles `hn*_l`/`hn*_w` (c.93, adjudication DEMO 63,
+       #6724)** : la forme bornée c.92 restait FAUSSE sur des MacroCells MAL
+       FORMÉES (niveaux mélangés) — contre-exemple découvert par le prover
+       multi-agent (BG run DEMO 63) et CONFIRMÉ par le noyau
+       (`p4_nw_overlap_wall_c92_counterexample`, bloc de réfutation) :
+       `toCellsAux` calcule `half = 2^nw.level` PAR NŒUD, donc un quadrant
+       parent de niveau k+1 logé dans un slot k+2 tasse ses cellules vivantes
+       DANS la boîte du mur, là où le supercell — construit sur des
+       recombinaisons mortes aux `hcc` vacuistes — est vide. Réparation : les
+       8 hypothèses `hn*_l` (niveau `k+1`) et `hn*_w` (`wf`) des QUATRE nœuds
+       de recombinaison — exactement les faits que `p4_nw_membership_arm`
+       tient déjà et passe désormais tels quels (signature de l'arm
+       inchangée). Suffisance géométrique : `wf` contraint les 9
+       petits-enfants de la région NW (niveau k, bien formés) ; les 7 restants
+       (ne_ne, ne_se, sw_sw, sw_se, se_ne, se_sw, se_se) ont des origines
+       `toCellsAux` à ligne OU colonne ≥ 6·2^(k-1) (les offsets de
+       `toCellsAux` ne font que croître), STRICTEMENT hors de la région de
+       dépendance de la boîte (`chebDist ≤ 2^(k-1)` autour de
+       `[2^(k-1), 5·2^(k-1))²` ⊂ `[0, 6·2^(k-1))²`) — fit exact au bord du
+       light cone, une fois de plus.
 
     Le `sorry` résiduel est désormais l'obligation HONNÊTE et (conjecturalement)
     satisfaisable : sur la boîte, chaque quadrant du supercell se replie via
@@ -3117,6 +3138,14 @@ private theorem p4_nw_overlap_wall
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
@@ -3145,6 +3174,15 @@ est APPLIQUÉ. Les contre-exemples de ce bloc réfutent la **forme libre pré-c.
 garde-fous : toute tentative de retirer la borne ou d'élargir la boîte re-tombe
 dessus. Énoncés en forme fermée `¬ (∀ …)`, ils compilent indépendamment des
 théorèmes nommés.
+
+**Statut (c.93)** : un QUATRIÈME garde-fou clôt le bloc
+(`p4_nw_overlap_wall_c92_counterexample`) : la forme bornée c.92 SANS hypothèses
+structurelles restait fausse sur des MacroCells mal formées (niveaux mélangés) —
+contre-exemple découvert par le prover multi-agent (BG run DEMO 63,
+`HASHLIFE_P4_NW_OVERLAP_WALL`) et confirmé par le noyau. Les théorèmes nommés
+portent depuis les 8 hypothèses `hn*_l`/`hn*_w` (niveau `k+1` + `wf` des quatre
+nœuds de recombinaison), qui bloquent l'instanciation (le nœud mixte
+`node E1 z E1 z` n'est pas `wf`).
 
 Le quantificateur `p : Int × Int` était **libre** dans la forme pré-c.92 : rien
 ne contraignait `p` (ni `r`) à la fenêtre centrale que le supercell représente.
@@ -3324,6 +3362,73 @@ theorem p4_nw_supercell_agree_counterexample :
       (0, 0)
   exact absurd hinst (by decide)
 
+set_option maxHeartbeats 4000000 in
+/-- **La forme bornée c.92 SANS hypothèses structurelles était ENCORE fausse**
+    — sur des MacroCells MAL FORMÉES (niveaux mélangés). Contre-exemple découvert
+    par le prover multi-agent (BG run DEMO 63, `HASHLIFE_P4_NW_OVERLAP_WALL` :
+    le TacticAgent a refusé de soumettre une preuve et produit cette
+    instanciation), adjugé et certifié par le noyau (ai-01, `decide`).
+
+    Mécanisme : `toCellsAux` calcule `half = 2^nw.level` PAR NŒUD — un quadrant
+    parent de niveau 1 logé dans un slot de niveau 2 tasse ses cellules vivantes
+    près de l'origine de son slot, DANS la boîte du mur. Instanciation (`k = 1`) :
+    `nw_*` = `p4CexEmpty1` (vide, niveau 1) ; `ne_*`, `sw_*`, `se_nw` =
+    `leaf false` ; `se_ne = se_sw = se_se = leaf true`. Le quadrant SE parent
+    `node z o o o` (niveau 1, slot 2) place ses vivantes en (4,5),(5,4),(5,5) →
+    naissance Conway en (4,4). Les recombinaisons `n2/n4/n5` (mixtes niveau 1/0,
+    p.ex. `node E1 z E1 z`) sont MORTES : `hashlifeResultAux` retombe sur la
+    branche malformée (`emptyOfLevel`), les `hcc` sont vacuistes, le supercell
+    est vide. En `p = (3,3)` (fenêtre `[2,4)²`), `q = (4,4)`
+    (`chebDist = 1 ≤ 2^0`) : LHS `true` / RHS `false`.
+
+    C'est CE théorème qui a imposé le renforcement c.93 : les nœuds mixtes ne
+    sont pas `wf`, donc les 8 hypothèses `hn*_l`/`hn*_w` du mur bloquent
+    l'instanciation. Gardé comme garde-fou anti-régression d'énoncé : toute
+    tentative de retirer les hypothèses structurelles re-tombe dessus.
+    Précédents in-file : `p4_nw_overlap_wall_counterexample` (forme libre),
+    `p4_unrestricted_counterexample`. -/
+theorem p4_nw_overlap_wall_c92_counterexample :
+    ¬ (∀ (k : Nat), 1 ≤ k →
+       ∀ (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+          sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+          R1 R2 R4 R5 : MacroCell),
+       R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se) →
+       R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw) →
+       R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne) →
+       R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw) →
+       R1.level = k → R2.level = k → R4.level = k → R5.level = k →
+       centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) →
+       centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) →
+       centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) →
+       centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) →
+       ∀ (p : Int × Int),
+         ((2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+          (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) →
+       ∀ q, chebDist p q ≤ 2^(k - 1) →
+         isAlive (evolve (2^(k - 1))
+             ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                    (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+               (0, 0))) q
+           = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
+               (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int))) := by
+  intro h
+  have hinst := h 1 (by decide)
+      p4CexEmpty1 p4CexEmpty1 p4CexEmpty1 p4CexEmpty1
+      (leaf false) (leaf false) (leaf false) (leaf false)
+      (leaf false) (leaf false) (leaf false) (leaf false)
+      (leaf false) (leaf true) (leaf true) (leaf true)
+      (hashlifeResultAux 2 (node p4CexEmpty1 p4CexEmpty1 p4CexEmpty1 p4CexEmpty1))
+      (hashlifeResultAux 2 (node p4CexEmpty1 (leaf false) p4CexEmpty1 (leaf false)))
+      (hashlifeResultAux 2 (node p4CexEmpty1 p4CexEmpty1 (leaf false) (leaf false)))
+      (hashlifeResultAux 2 (node p4CexEmpty1 (leaf false) (leaf false) (leaf false)))
+      rfl rfl rfl rfl
+      (by decide) (by decide) (by decide) (by decide)
+      (by unfold centralCorrect; decide) (by unfold centralCorrect; decide)
+      (by unfold centralCorrect; decide) (by unfold centralCorrect; decide)
+      (3, 3) (by decide)
+      (4, 4) (by decide)
+  exact absurd hinst (by decide)
+
 /-- **G3 wave-assembly bridge (named extraction, #6724 c.745).** The research
     heart of `p4_nw_supercell_agree`, extracted as a NAMED lemma carrying ALL
     the call-site hypotheses — per the ai-01 extraction protocol (DM
@@ -3403,7 +3508,12 @@ theorem p4_nw_supercell_agree_counterexample :
     exacte de `hsup.2` produite par `p4_nw_shift_lemma` dans l'arm), et le
     transport (b) utilise `evolve_box_agree_local` (boîte Chebyshev, rayon
     `2^(k-1)`) au lieu du cône Manhattan `evolve_cone_agree` (rayon `2^k`,
-    qui débordait de la fenêtre du supercell — géométrie du contre-exemple). -/
+    qui débordait de la fenêtre du supercell — géométrie du contre-exemple).
+
+    **Renforcement structurel (c.93, #6724)** : les 8 hypothèses `hn*_l`/`hn*_w`
+    (niveau + `wf` des quatre nœuds de recombinaison) sont transmises au mur —
+    sans elles la forme bornée restait fausse sur des cellules mal formées
+    (cf. `p4_nw_overlap_wall_c92_counterexample`, découverte DEMO 63). -/
 private theorem p4_nw_g3_bridge
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3413,6 +3523,14 @@ private theorem p4_nw_g3_bridge
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
@@ -3500,7 +3618,9 @@ private theorem p4_nw_g3_bridge
   exact p4_nw_overlap_wall k hk1
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
-    R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l hR2_l hR4_l hR5_l
+    R1 R2 R4 R5 hR1 hR2 hR4 hR5
+    hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
+    hR1_l hR2_l hR4_l hR5_l
     hcc1 hcc2 hcc4 hcc5 p hp q hq
 
 /-- **S4 nw supercell agreement (the residual `sorry`, ai-01's proof target).**
@@ -3558,7 +3678,13 @@ private theorem p4_nw_g3_bridge
     **Redesign borné APPLIQUÉ (c.92, #6724)** : ce théorème porte désormais `hp`
     (fenêtre centrale NW `[2^k, 2^(k+1))²`), transmis tel quel au bridge. Le
     site d'appel (`p4_nw_membership_arm`) fournit `hsup.2` — la forme
-    syntaxique EXACTE de `hp` issue de `p4_nw_shift_lemma` — sans conversion. -/
+    syntaxique EXACTE de `hp` issue de `p4_nw_shift_lemma` — sans conversion.
+
+    **Renforcement structurel (c.93, #6724)** : les 8 hypothèses `hn*_l`/`hn*_w`
+    (niveau + `wf` des quatre nœuds de recombinaison — les faits mêmes que l'arm
+    tient de son site d'appel, L3625-3632 pré-c.93) sont ajoutées ici et
+    transmises au bridge : sans elles la chaîne bornée c.92 restait fausse sur
+    des MacroCells mal formées (`p4_nw_overlap_wall_c92_counterexample`). -/
 private theorem p4_nw_supercell_agree
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3568,6 +3694,14 @@ private theorem p4_nw_supercell_agree
     (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
     (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
     (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
     (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
@@ -3597,6 +3731,7 @@ private theorem p4_nw_supercell_agree
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
     R1 R2 R4 R5 hR1 hR2 hR4 hR5
+    hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
     hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p hp
 
 /-- **nw membership arm (opaque-binder, sorry-free wiring — ai-01 option-a).**
@@ -3672,6 +3807,7 @@ private theorem p4_nw_membership_arm
           nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
           sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
           R1 R2 R4 R5 hR1 hR2 hR4 hR5
+          hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
           hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p hsup.2]
     exact hsup.1
   · -- 2^k ≤ p.1
