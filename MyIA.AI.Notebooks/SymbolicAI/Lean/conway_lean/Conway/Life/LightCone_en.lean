@@ -237,6 +237,86 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
+/-! ## Tight locality (Chebyshev-box form) — agreement dual of `evolve_reach_chebyshev`
+
+The tight reach theorem (`evolve_reach_chebyshev` above) says: if `q` is alive
+after `t` generations, then an initially-live cell lies in the Chebyshev-`t` box
+of `q`. The missing **agreement dual** — named by the N2 step-2 greenlight
+(c.91, bounded redesign #3846) — is the operational converse: if two grids
+coincide on a Chebyshev box, their evolutions coincide at the center. This is
+the redesign's key lemma: the *tight* margin `2^(k-1)` of the supercell's
+central window suffices for a `2^(k-1)`-generation jump, whereas the *loose*
+Manhattan cone `2*(2^(k-1))` spills outside the window (the "obstruction C"
+verdict of the c.8124 map was the symptom of that over-margin). EPIC #3846.
+Sorry-free.
+-/
+
+/-- **Tight single-step locality (Chebyshev-box-1 form).** If two grids `g₁ g₂`
+    coincide on the Chebyshev-1 box around `p` (the cell and its eight Moore
+    neighbors), then after one step they have the same liveness at `p`.
+
+    This is the tight analogue of `step_local` (`HashlifeCorrectness` L901),
+    which required the *loose* Manhattan-`2` cone (13 diamond cells). Here the
+    *tight* Chebyshev-`1` box (9 square cells) suffices: the Moore neighborhood
+    IS exactly the Chebyshev unit ball. -/
+theorem step_box_local (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ 1 → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (step g₁) p = isAlive (step g₂) p := by
+  have h_self : isAlive g₁ p = isAlive g₂ p := by
+    apply h_box p
+    have heq : chebDist p p = 0 := chebDist_self p
+    omega
+  have h_nbrs : ∀ q ∈ mooreNeighbors p, isAlive g₁ q = isAlive g₂ q := by
+    intro q hq
+    exact h_box q (chebDist_le_one_of_moore p q hq)
+  have h_alive : aliveNext g₁ p = aliveNext g₂ p :=
+    aliveNext_local g₁ g₂ p h_self h_nbrs
+  rw [isAlive_step_eq_aliveNext, isAlive_step_eq_aliveNext, h_alive]
+
+/-- **Tight locality (Chebyshev-box form, multi-step).** If two grids `g₁ g₂`
+    coincide on the Chebyshev box of radius `u` around `p` — i.e. on every cell
+    `q` with `chebDist p q ≤ u` — then after `u` generations of evolution they
+    have the same liveness at `p`.
+
+    This is the tight analogue of `step_light_cone` (`HashlifeCorrectness` L931),
+    which required the *loose* Manhattan cone of radius `2*u` (a factor of 2
+    lost). Here the *tight* Chebyshev box of radius `u` suffices exactly: one
+    B3/S23 generation extends the reach by one Moore shell (= Chebyshev unit
+    ball), so `u` generations reach exactly Chebyshev radius `u`. This is the
+    key lemma of the bounded redesign (#3846, c.91): the zero-margin `2^(k-1)`
+    of the supercell's central window suffices for a `2^(k-1)`-generation jump,
+    where the Manhattan cone would spill over.
+
+    Proof by induction on `u` (generalized over `p`), mirroring `step_light_cone`
+    but with `chebDist` instead of `manhattan`/`lightCone`:
+    - Base `u = 0`: `evolve 0 g = g`, and `chebDist p p = 0 ≤ 0`.
+    - Step `u = n + 1`: `evolve (n+1) g = step (evolve n g)`. By
+      `step_box_local`, it suffices that `evolve n g₁` and `evolve n g₂`
+      coincide on the Chebyshev-`1` box of `p`. For each such `q`
+      (`chebDist p q ≤ 1`), the IH (at `q`, radius `n`) gives agreement under
+      `∀ r, chebDist q r ≤ n → isAlive g₁ r = isAlive g₂ r`, which follows from
+      the radius-`n+1` hypothesis via `chebDist_triangle`:
+      `chebDist p r ≤ chebDist p q + chebDist q r ≤ 1 + n`. -/
+theorem evolve_box_agree (u : Nat) (g₁ g₂ : Grid) (p : Int × Int)
+    (h_box : ∀ q, chebDist p q ≤ u → isAlive g₁ q = isAlive g₂ q) :
+    isAlive (evolve u g₁) p = isAlive (evolve u g₂) p := by
+  induction u generalizing p with
+  | zero =>
+    simp only [evolve_zero]
+    have hpp : chebDist p p ≤ 0 := by
+      have heq : chebDist p p = 0 := chebDist_self p
+      omega
+    exact h_box p hpp
+  | succ n ih =>
+    simp only [evolve_succ]
+    apply step_box_local
+    intro q hpq
+    apply ih
+    intro r hqr
+    apply h_box r
+    have htri : chebDist p r ≤ chebDist p q + chebDist q r := chebDist_triangle p r q
+    omega
+
 /-! ## N2 step 3 capstone: tight Chebyshev reach ⊆ padCenter2 margin
 
 Composing the tight reach theorem (`evolve_reach_chebyshev`, one Moore shell
