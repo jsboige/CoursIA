@@ -9,12 +9,6 @@
       python_sha: 2043be1e638157cf01189d44cfa70f5c4ae061d0
       csharp_sha: e184307cf2a6180399e776bf200058e283fb9bf2
       reason: "Identity/phantom fix (Python cell 58 footer Navigation): the display labels were off-by-one vs the notebook OWN header (cell 0). Header says « 9-JSONLD » and « 11-KnowledgeGraphs », but the footer said « 10-JSONLD » and « 12-KnowledgeGraphs ». The link URLs were already correct in both (SW-9-Python-JSONLD.ipynb, SW-11-Python-KnowledgeGraphs.ipynb) -- only the human-readable labels were wrong. Fixed the 2 footer labels to match the header. Markdown-only, 0 re-exec, no output change. No §D.5 (identity/phantom class, not a measure/value drift). C# twin SW-10-CSharp-RDFStar nav uses a different structure (points to the Python jumeau, no KnowledgeGraphs forward link) and is correct -> csharp unchanged."
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 2043be1e638157cf01189d44cfa70f5c4ae061d0
-      csharp_sha: e184307cf2a6180399e776bf200058e283fb9bf2
-      content_python_sha: f1ca10c93c42c0497dddaa675fad9928e46036aa6f1ebd5bf6b1821839cb9536
-      content_csharp_sha: 3838b11ac074fbc5ab81e9cba575f6b3bf3891c1c0a3eb1743994cd449184107
   known_differences:
     - "Socle commun : meta-modelisation RDF-star (triplets sur des triplets, quotes nestees)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` support RDF-star). Python = `rdflib` (`rdflib.term` triplets-nommes). RDF-star est une extension communautaire (pas encore W3C standardise) ; support experimental des deux cotes."

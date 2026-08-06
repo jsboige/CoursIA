@@ -9,12 +9,6 @@
       python_sha: db8c36c20afafe5918b1dec884d406597700e6f7
       csharp_sha: 6acd159baa6ba26452ad2397b1c6a8a92395da92
       reason: "rebaseline python apres 1 fix structurel (#8052) : section 4 (VRP) sautait ### 4.1 -> ### 4.3 (pas de ### 4.2) ; 'Donnees du probleme VRP' (cellule 24) est une Interpretation non-numerotee (convention de la section 3 Job Shop), donc renumerotation cellule 25 ### 4.3 -> ### 4.2 (section 4 maintenant contigue 4.1/4.2). Fix content-neutral (edition de texte de titre, aucun changement de corps, aucune perte de contenu), 0 re-exec. Python-only, csharp_sha unchanged, parite semantique preservee."
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: db8c36c20afafe5918b1dec884d406597700e6f7
-      csharp_sha: 6acd159baa6ba26452ad2397b1c6a8a92395da92
-      content_python_sha: f3311858207c2ad2952dedd8e98af9d711fbd0f1bd8d7763b38809b951cb225a
-      content_csharp_sha: c06759525ba885e17b26574e1d8d300e2466293832bc153f6230dc495a8d014c
   known_differences:
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : from-scratch BCL .NET (0 NuGet, Job-Shop modelise main, instance canonique Fisher & Thompson ft3 reprise cote Python)."

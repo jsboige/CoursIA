@@ -8,12 +8,6 @@
       by: myia-po-2026:CoursIA 2026-08-01
       python_sha: 97ba9b763f12116f3ffcf85b8e71ffb1bce6082a
       csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
-    - date: "2026-08-06"
-      by: myia-po-2026:CoursIA 2026-08-01
-      python_sha: 97ba9b763f12116f3ffcf85b8e71ffb1bce6082a
-      csharp_sha: a9306fbf5a3c02555bf3f63b03a35db099da423f
-      content_python_sha: 9769dbc9c6aa32fb19fedd0cc572b1c206175fe3098b21d89b9159941c9115a9
-      content_csharp_sha: 5aa5c0cdf2b8412527f93346c7acf69c457ba98b0e82ca331023c68787352dbe
   known_differences:
     - "Concept : recherche dans l'espace d'etats (BFS/DFS/A* sur le graphe des etats reachables)."
     - "Python : BFS/DFS/Greedy/A* via networkx + matplotlib heatmap terrain. C# : from-scratch BFS/DFS/Greedy/A* BCL .NET 9 + PriorityQueue (meme algorithme, implementation idiomatic)."

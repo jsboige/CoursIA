@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 5aa7d42e6e941a86dfcedbb3c9aded569d32d2b4
       csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 5aa7d42e6e941a86dfcedbb3c9aded569d32d2b4
-      csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
-      content_python_sha: 0f8224499eaa682e0121e81b8efac3dc368930207e5bdb545d1a5e0fd068fa66
-      content_csharp_sha: 95c8832f379c55fde58990536acc162774564ef0e98470f174cd7fc84d6178ac
   known_differences:
     - "Socle pedagogique commun : Detection de contours / Edge detection (metaheuristique DEAP + scipy sobel) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = DEAP metaheuristique + scipy.signal/sobel + matplotlib ; C# = System.Net.Http + SkiaSharp (traitement bitmap)."

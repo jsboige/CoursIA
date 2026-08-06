@@ -12,12 +12,6 @@
       by: myia-po-2023:CoursIA
       python_sha: d7f6c2180b23d7ba10cbf84c317130a14bad28e5
       csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: d7f6c2180b23d7ba10cbf84c317130a14bad28e5
-      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
-      content_python_sha: 330a23da75988773677778a1ba4a88797bf44afd6fb7eb447a0fd27b5557dc9e
-      content_csharp_sha: c0cfff158c8768a38630883982a0ca2ff97acd1dc3c5a1e51dba982ec3c4ec91
   known_differences:
   - "Premier modele partage : les deux notebooks demarrent par le modele classique des deux pieces (Two Coins) -- prior Beta, vraisemblance Bernoulli, inference du biais de la piece. Socle pedagogique commun au-dela de la dimension setup (installation Infer.NET cote C# vs PyMC cote Python). Note : #8183 avait initialement exclu cette paire comme 'env-config mecanique, pas de demonstration de concept' (analogue ML-6 ONNX) ; relecture firsthand (ai-01 c.36, po-2023 c.941) confirme la presence substantive du modele Two Coins dans les DEUX notebooks (Infer-1-Setup : piece x15 / Bernoulli x10 / Beta x8 ; PyMC-1-Setup : coin x6 / piece x13 / Beta x12) -> la rationale d'exclusion initiale etait incomplete, paire re-enregistree."
   - "Moteurs d'inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation, modele compile en code d'inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC) + ADVI sur backend PyTensor. Memes concepts (Beta-Bernoulli two-coins), paradigmes d'inference differents -- les ecarts numeriques attendus (point estimate EP vs posterior samples NUTS) ne sont pas des defauts."

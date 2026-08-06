@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 5987b939ee2725614feb3a08a51b54b20be6018e
       csharp_sha: b2861f9b3f92d79a57666890cfab01846d60805d
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 5987b939ee2725614feb3a08a51b54b20be6018e
-      csharp_sha: b2861f9b3f92d79a57666890cfab01846d60805d
-      content_python_sha: 923d7f0b21293365ab51fee91e357bac0c2b60e7b808cb0c5592b6ed35ed6520
-      content_csharp_sha: 686e06ab1864749334f358c1c6e3360d15f76fddde2c4f8752a5e0ff64026882
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog et documente les 4 moteurs ILP modernes (Aleph, Metagol/MIL, Popper/LFF, dILP/Lernd) en prose ; C# reimplémente FOIL (Quinlan 1990) from-scratch comme demonstration pedagogique unique."
     - "Socle commun : moteurs ILP modernes -- la tache commune est 'apprendre ancestor' (programme recursif)."

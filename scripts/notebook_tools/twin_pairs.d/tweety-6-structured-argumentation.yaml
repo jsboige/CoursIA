@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: ed308f9e16da32919d2cebbe1e760f2f61d59d89
       csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: ed308f9e16da32919d2cebbe1e760f2f61d59d89
-      csharp_sha: bbc10e74936be928073378a65393fb513fd6884a
-      content_python_sha: e378481d3ed19eeb0c5e9e25ec78253680172fa26e26666e850ea614afa4b05b
-      content_csharp_sha: 2a4d8b9115e4e43ab345bebca968acf3db4e8777447e93972b83879dc58219b5
   known_differences:
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
     - "Asymetrie de profondeur (surface) : le Python invoque la vraie bibliotheque Java TweetyProject (ASPIC+) via JPype ; le C# REIMPLEMENTE le moteur ASPIC+ **from-scratch** (cellule de setup : 'aucune dependance externe -- moteur ASPIC+ from-scratch'), sans la bibliotheque. Le C# est un pendant pedagogique reimplante, pas une parite de librairie -> `surface`."

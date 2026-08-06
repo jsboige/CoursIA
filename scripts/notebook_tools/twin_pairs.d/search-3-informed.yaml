@@ -9,12 +9,6 @@
       python_sha: 2ead147f031bb101e5db38c15bf0223628626fce
       csharp_sha: bf8c96dd9e8698d84e62e40933356e8394d4fe58
       reason: "rebase c.1241: Python Ex4 phantom-label fix (c63, markdown-only); C# heuristic drift c.1123 (c5/c8/c12/c19) unchanged"
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 2ead147f031bb101e5db38c15bf0223628626fce
-      csharp_sha: bf8c96dd9e8698d84e62e40933356e8394d4fe58
-      content_python_sha: ca089884ef6cc47d75f1b4f513478b4c252a1bc5d84ccd840e22004585b57a0d
-      content_csharp_sha: 30d655cb2dcbe5fd014323304aa5338f74a4ac08bcbca08637f9630db1791455
   known_differences:
     - "Socle pedagogique commun : A* et Greedy Best-First avec differentes heuristiques (distance Manhattan, euclidienne, h=0=degenere en UCS). Arrive en Roumanie + 8-puzzle."
     - "Idiomes framework : Python = `import heapq` (priority queue avec (f, tie_breaker, noeud)). C# = `PriorityQueue<AStarNode, double>` (f-cost = g + h)."
