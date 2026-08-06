@@ -102,7 +102,16 @@ def test_audit_allowlists_native_decide_axioms():
     without review and turned `main` red until the widening was justified in
     writing. Raising it is only ever legitimate alongside that justification --
     a new name that is NOT attributable to a newly covered module means an
-    unproven `native_decide` slipped in, and the pin must stay put instead."""
+    unproven `native_decide` slipped in, and the pin must stay put instead.
+
+    **Shrunk to 41 by #9571** (`feat(lean,#8869)`): the ceilLog2 rewrite (#9536)
+    made kernel `decide` tractable for the 5 Oscillators still-life theorems
+    (`loaf|boat|tub|pond|ship_still_life`), which were flipped from
+    `native_decide` to `decide` — their 5 axiom names genuinely left the
+    build-enumerated footprint. A shrink attributable to a native_decide ->
+    decide flip is the virtuous ratchet direction (fewer trusted-kernel
+    escapes), so the pin follows the footprint down. Same rule as widening:
+    any future shrink must name the flipped theorems."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -112,10 +121,10 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 46, (
-        f"audit allow-list must carry the 46 native_decide axioms of the 7 "
-        f"covered Life modules (empirical footprint, #8782 + #9341); got "
-        f"{len(names)}")
+    assert len(names) == 41, (
+        f"audit allow-list must carry the 41 native_decide axioms of the 7 "
+        f"covered Life modules (empirical footprint, #8782 + #9341, shrunk by "
+        f"the #9571 still-life decide flips); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges).
     for sample in [

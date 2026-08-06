@@ -415,6 +415,298 @@ causale. Quand le score est élevé, l'hypergenre « macro-échelle »
 contient la même prégnance causale que le micro ; quand il est bas, le
 micro est un préprogramme et le macro est un **hypergenre divergent**.
 
+### Ch.3 §A-§B — Les quatre interactions et la notion de préprogramme
+
+Ch.3 ouvre la **théorie générale des interactions dans une ontologie
+intelligible** (§A) en classifiant les quatre modes d'action possibles
+entre saillances (s) et prégnances (π) :
+
+| # | Interaction | Sens | Exemple thomien |
+|---|-------------|------|-----------------|
+| 1 | s ⇄ s | Collision : compétition pour l'espace de deux formes saillantes | Deux boules sur l'axe Ox (Fig. 3.1) |
+| 2 | s → π | **Préprogramme** : action d'une prégnance sur une autre via une forme saillante | Robinet (canalisation d'un flux) |
+| 3 | π → s | Effets figuratifs : investissement d'une forme par une prégnance | Contagion microbienne, lumière diffusée |
+| 4 | π ⇄ π | Interaction entre prégnances de même espace substrat | Quantification d'un champ, conflit d'espèces |
+
+Le **préprogramme** (§B) est l'objet conceptuel central de Ch.3. C'est une
+**forme saillante plongée dans un écoulement** dont la position peut
+provoquer dans cet écoulement une ou plusieurs **morphologies
+archétypes** — les quatre singularités élémentaires de la fig. 3.3 :
+**naissance** (1, indice 0), **scission dichotomique** (2, indice 1),
+**confluence dichotomique** (3, indice n−1), **disparition** (4, indice n).
+Thom en déduit un **métathéorème** : « pour presque tout chemin joignant
+deux points de l'espace Q des paramètres, le graphe associé ne comporte
+que ces quatre types de singularités » — conséquence de l'hypothèse de
+continuité pour les variétés de niveau d'une fonction réelle lisse F à n
+variables traversant un point critique générique (quadratique non
+dégénéré).
+
+> « Si l'on s'intéresse uniquement au "nombre" des courants issus de
+> l'obstacle, c'est-à-dire au nombre cardinal des composantes connexes
+> de l'ensemble où la densité est strictement positive, alors à tout
+> chemin dans l'espace Q va correspondre un graphe, associant [...] un
+> ensemble discret de points sur un axe. »
+> — Thom 1991, Ch.3 §B.
+
+**L'importance "philosophique" de ce métathéorème** est qu'il permet un
+contrôle de la **génération et de la corruption des entités** (selon la
+terminologie aristotélicienne) en réduisant l'individualité à la seule
+**connexité topologique du substrat**. La forme presque effaçable (une
+forme F de ℝⁿ effaçable par homéomorphisme h + δh) devient le
+**carrefour morphogénétique** : cylindre (canalisation), bouteille
+(stockage sphérique après singularité de type 2), crible (scission
+qualitative), culotte (confluence).
+
+**Usage ICT strate 7.** Le **préprogramme** est le concept qui **réconcilie
+matière et technique** dans l'ontologie thomienne : un préprogramme est à
+la fois une forme saillante (substrat biologique) et un geste technique
+(le geste qui exploite le flux). Pour la série ICT, les **modèles internes**
+(`p̂` d'ICT-10/12, $\epsilon$-machine d'ICT-17) peuvent être lus comme des
+**préprogrammes** au sens large : ils opèrent sur le flux de perception
+pour en extraire une morphologie archétypale (naissance/scission/
+confluence/disparition des entités perçues). Le **métathéorème** rappelle
+qu'on n'a pas besoin d'inventer un formalisme par régime : les quatre
+catastrophes élémentaires suffisent à indexer la grammaire des
+transitions — d'où la **catastrophe fronce** (ICT-10) et la **cuspide
+duale** (ICT-12c) déjà mesurées.
+
+### Ch.3 §C — Singularités archétypes : naissance, scission, confluence, disparition
+
+§C exemplifie chaque singularité par un **morphisme technique** :
+
+- **Naissance** (1) : source, eau qui sourd d'un réseau souterrain
+  convergent ; entonnoir = dispositif qui crée une source à partir d'un
+  flux diffus.
+- **Scission** (2) : crible — sépare particules fines / grosses selon la
+  taille de la maille.
+- **Confluence** (3) : « culotte » — jonction de deux écoulements
+  qualitativement différents, entropiquement favorable (couper le vin
+  d'eau).
+- **Disparition** (4) : Oued Draa descendant vers le sud de l'Atlas
+  marocain, annihilé par absorption du sable et évaporation.
+
+§C explicite aussi la **réversibilité** : « si on peut provoquer une
+singularité, on peut aussi provoquer la singularité opposée (obtenue en
+renversant la flèche du temps). » Le **robinet** est l'exemple canonique :
+ouvert → naissance d'un flux, fermé → mort d'un flux. « Le caractère
+réversible de l'opération se voit dans la nature hamiltonienne du
+mouvement (une rotation du corps transformée en translation par le fil
+de la vis). »
+
+**Usage ICT strate 6.** Le **verbe transitif** SVO est structurellement
+une singularité archétype : l'agent fait **naître** ou **disparaître** un
+patient (causativité), ou le **scinde** (distributivité), ou le **confond**
+avec un autre (conjugaison). Tesnière (Ch.6 §F) range ces opérations
+dans la valence verbale ; Thom les range dans les quatre singularités.
+L'**isomorphie** des deux taxonomies est ce qui rend la strate 6 mesurable
+depuis la strate 7 : un verbe à 4 actants est une catastrophe d'ordre
+supérieur (papillon, ombilic hyperbolique) qui se déploie selon les
+quatre mêmes singularités archétypes.
+
+### Ch.3 §E-§F — Roue de moulin et cycle de Van der Pol-Liénard
+
+§E et §F établissent le **cycle d'hystérésis** (cf. lacet de prédation)
+comme **moteur universel** de la technique. Le cas paradigmatique est la
+**roue de moulin à une pale** :
+
+- Pale immergée : phase d'**entraînement** (le courant fournit de
+  l'énergie).
+- Pale émergée : phase de **dissipation** (frottements, travaux sur l'axe).
+
+Le schéma est celui de la **corde de violon vibrant sous l'archet** :
+lorsque la vitesse transversale u est de même sens que la vitesse v de
+l'archet, fort coefficient de frottement → la corde reçoit de l'énergie ;
+lorsqu'elle revient en sens inverse, faible coefficient → la corde perd
+relativement moins. Le gain net entretient la vibration.
+
+> « Le même schéma est valable pour l'échappement d'horlogerie (dispositif
+> inventé par l'Homme au Moyen Âge, bien avant toute théorie mécanique). »
+> — Thom 1991, Ch.3 §F.
+
+§F reformule la **théorie de Van der Pol-Liénard** : on part d'une
+dynamique gradient g rapide qui, lorsque 4u + 27v < 0, donne naissance à
+une **bimodalité** à l'intérieur de la parabole semi-cubique. La
+dynamique lente est Yλ, gradient du polynôme par rapport à la **métrique
+hyperbolique** dx − λ dv. La **bifurcation de Hopf** classique apparaît
+à λ = 1 (attracteur → cycle attracteur), et le cycle se déforme
+continûment dans le **cycle d'hystérésis** associé à la fronce pour
+λ ∈ [1−ε, 0]. F. et M. Diener (note 5) ont observé que pour 1 > λ > 0,
+le champ présente, outre le cycle attractif issu de la bifurcation de
+Hopf, des « **rivières** qui préfigurent les **variétés stables** du cycle
+d'hystérésis » — image topologique d'une anticipation structurelle.
+
+**Usage ICT strate 5-7.** Le **cycle d'hystérésis** est l'objet mesuré par
+[ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+(lacet de prédation = cycle à 2 catastrophes J/K) et
+[ICT-12c-PregnanceAnimat](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat.ipynb)
+(prégnance = potentiel gradient). Les **« rivières »** de Diener sont une
+**anticipation visuelle** du cycle d'hystérésis : même quand l'attracteur
+ponctuel est encore stable, les courbes stables du futur cycle
+d'hystérésis sont déjà présentes dans le flot. C'est l'image la plus
+précise que Thom donne du **représentant interne `p̂`** : le prédateur
+qui perçoit sa proie ne calcule pas sa trajectoire future, il **voit déjà**
+les rivières qui y mènent. Cette lecture thomienne de `p̂` complète
+l'ICT-14 (énergie libre = bilan computationnel) sans la contredire.
+
+### Ch.3 §H — Coïncidence des coplis et activité finalisée
+
+§H introduit la **règle des coplis** (notion due à José Argémi, note 6) :
+pour que deux processus (antérieur et postérieur) soient concaténés en un
+seul dispositif finalisé, il faut que les **points coplis** (projections
+verticales des points plis) coïncident sur une même horizontale. Le
+**canal de dérivation** (§G-I) en est l'exemple technique : le barrage
+rétroflux CH + HB ferme partiellement le cours normal, la chute GC est la
+catastrophe, et la pale FC est entraînée par la chute. La coïncidence
+des coplis G et F en C **exprime la finalité** du processus antérieur
+(rectangle CHBG) par rapport au processus postérieur (FCDE, partie
+efficiente).
+
+> « Si l'on dit que "la fin justifie les moyens", on devra ici préciser
+> que, selon une optique "phylo et ontogénétique", "la fin sécrète ses
+> moyens". »
+> — Thom 1991, Ch.3 §H.
+
+§H donne ensuite le **scénario de duplication du cycle** : comme tout
+champ de vecteurs du plan ℝ² admettant une trajectoire fermée admet au
+moins un point singulier intérieur (Poincaré), la scission du cycle Γ de
+foyer O exige la scission préalable de la singularité 0. Deux scénarios :
+
+1. **Scénario dégénéré** : O s'annule au premier ordre, puis scission
+   en deux attracteurs + un répulseur. « Peu satisfaisant » en raison du
+   caractère dégénéré.
+2. **Scénario élégant** : la singularité O va sur le **cycle-bord**
+   lui-même, flot déformé en **pinceau** (équation x² + y² − 2λx = 0,
+   λ > 0, pinceau linéaire de cercles tangents à Oy en O). Le
+   **prolongement analytique par réflexion** donne le nouveau cycle
+   symétrique. Le gradient du potentiel méromorphe 1/z a des courbes
+   W = cste qui sont le pinceau orthogonal. Le **ménage à quatre**
+   (a, a')(b, b') permet deux scissions : (a, b)(a', b') ou (a, a')(b, b') —
+   Thom propose ce schéma comme **modèle de la scission de la double
+   hélice de l'ADN**.
+
+**Usage ICT strate 7.** La **coïncidence des coplis** est le **substrat
+morphologique de la finalisation** : un dispositif est finalisé quand
+ses points plis coïncident. C'est l'image la plus opératoire que Thom
+donne de la **téléologie aristotélicienne** (Ch.6 §B). Pour la série
+ICT, cette structure est mesurable : un système dont les deux
+catastrophes (perception J, capture K) ont leurs coplis confondus en un
+même point de l'espace de contrôle est un **système finalisé** — un
+**prédateur** au sens plein. ICT-10 mesure déjà l'**aire signée du lacet**
+(qui s'annule pour un système dégénéré non-finalisé et devient non-nulle
+dès que les deux catastrophes sont distinctes) ; la coïncidence des
+coplis ajoute un **critère projectif** — les deux catastrophes doivent
+non seulement être distinctes, mais **alignées verticalement** dans
+l'espace de contrôle.
+
+### Ch.3 §I — Modèles algébriques de la duplication : scission du cycle par le cylindre parabolique
+
+§I formalise la coïncidence des coplis par une **construction
+géométrique** : on ajoute une dimension z et on forme le **cylindre
+parabolique** Z d'équation z − x² = 0 ; la projection π : Z → ℝ²
+induite par (x, y, z) → (x, y) envoie la **contre-image** π⁻¹ d'un
+cercle Γ du pinceau en une **figure en huit** qui réalise le double
+cycle concaténé. (Sur Z < 0, il faut renverser le sens du flot induit.)
+
+Le **double cycle d'hystérésis** de la fig. 3.11 provient, en Théorie
+des Catastrophes élémentaires, de la **singularité papillon** (potentiel
+x⁶ + ...). Pour réaliser la coïncidence des coplis, il faut donner une
+**section rectiligne** dans le plan (u, v, w) qui contient la courbe
+« papillon » et qui passe par le **point double axial**.
+
+§I conclut en évoquant la **scission en dimension ≥ 3** : dans un espace
+de dimension ≥ 3, la scission d'un cycle devient beaucoup plus facile,
+car elle ne nécessite plus la scission préliminaire des singularités
+ponctuelles (Coullet-Gambaudo-Tresser, note 7). « Cette scission
+préliminaire, nous le verrons au chapitre 5, est en liaison avec
+l'existence du génome. »
+
+**Usage ICT strate 7.** Le **passage en dimension supérieure** explique
+pourquoi la **scission cellulaire** (mitose) est plus facile à modéliser
+en 3D qu'en 2D — mais Thom prévient que la scission 2D est ce qui
+**ancre** la structure (le génome comme « scission préliminaire »).
+Pour ICT, c'est un argument **anti-réductionniste** : réduire
+l'embryologie à un automate 2D perdrait la profondeur où la scission
+devient générique. Les **modèles internes** ICT qui s'expriment dans un
+espace de croyances de dimension finie (p̂ ∈ ℝ pour ICT-10/12, K
+multi-proxy pour ICT-17) doivent se demander à quelle **dimension
+critique** la scission cesse d'exiger un mécanisme dédié — et c'est une
+**mesure falsifiable** (transition de phase du nombre de cycles
+concaténés en fonction de la dimension de croyance).
+
+### Ch.3 §J — Contraintes génétiques et théorie des catastrophes
+
+§J revient sur l'objection de Pontecorvo (Institut Wistar, 1968) : dans
+la théorie des morphogénèses de la Théorie des Catastrophes
+élémentaires, la mémoire (l'effet du passé) ne joue aucun rôle, ces
+morphologies étant « indépendantes du substrat ». Or toute la
+morphologie en Biologie est fondée sur un effet de mémoire (génétique) —
+comme le prouve l'impossibilité de la génération spontanée.
+
+La réponse de Thom distingue deux régimes :
+
+- **Morphologies génériques** : ne nécessitent qu'un concours « naturel »
+  de circonstances pour se réaliser. Existent en Embryologie. « Pas
+  canalisées », donc explicables par un schéma catastrophiste standard.
+- **Coïncidence des coplis** : exige une **contrainte non générique** sur
+  le substrat, dont un effet du passé très strict, peut-être (mais pas
+  nécessairement) attribuable à des structures moléculaires spécifiques.
+  L'exemple du fleuve qui, par érosion, se canalise lui-même entre ses
+  rives, montre que des effets de canalisation peuvent apparaître
+  « naturellement », après un temps assez long d'activité fonctionnelle.
+  Thom cite S. Butler, *Life as a Habit* (note 9).
+
+> « On peut voir l'effet d'une suite de transformations [...] chaque
+> cycle se subdivisant dichotomiquement. »
+> — Thom 1991, Ch.3 §J.
+
+**Usage ICT strate 7.** La distinction **morphologie générique vs
+morphologie canalisée** est ce qui permet à Thom de **récupérer** la
+biologie sans abandonner la Théorie des Catastrophes : les **phénotypes
+fréquents** sont génériques (4 singularités archétypes), les **phénotypes
+rare-assujettis-à-une-filiation** sont canalisés (coïncidence des
+coplis). C'est l'image la plus claire que Thom donne de l'**hérédité** :
+non pas un « code » au sens informatique, mais une **histoire**
+d'habitudes morphologiques qui se sont stabilisées par canalisation.
+L'**usage pour ICT** est de distinguer, dans la mesure d'émergence
+(ICT-5, Hoel 2025), ce qui est **générique** (le macro préserve le micro
+par construction) de ce qui est **canalisé** (le macro exige une
+mémoire accumulée). Le score d'émergence devient alors un **estimateur
+du degré de canalisation** : un score élevé sur un système sans mémoire
+= généricité ; un score élevé sur un système avec mémoire = canalisation
+par coïncidence des coplis.
+
+### Limite de la lecture (honnêteté grade C)
+
+Cette section distille les §A à §J du chapitre 3 (à l'exception de §G
+*« L'art imite la nature »* et §K *« Invention de l'instrument »*, déjà
+couverts dans la section strate 7 précédente, lignes 418 et 441). Comme
+pour les autres strates, ce qui est exposé est le **socle théorique** —
+à charge pour les futurs notebooks ICT de **mesurer** les concepts
+nommés :
+
+- Le **préprogramme** (§B) n'est pas mesuré tel quel dans la série ICT.
+  Le notebook candidat pourrait tester la **connexité topologique du
+  substrat** (composantes connexes de l'ensemble de sortie en fonction
+  de la position de l'obstacle) sur un flux de données réelles.
+- Les **quatre singularités archétypes** (§C) sont un **index de grammaire**
+  — aucun notebook ICT ne les a encore explicitement testées comme telles
+  (le lacet de prédation Ch.4 §C est une application du fronce, pas une
+  grammaire des 4 singularités).
+- Le **cycle de Van der Pol-Liénard** (§F) et les **« rivières »** de
+  Diener sont une **anticipation visuelle** du cycle d'hystérésis :
+  aucun notebook ICT ne mesure cette propriété (présence de courbes
+  stables préfiguratrices d'un futur cycle attractif).
+- La **règle des coplis** (§H) n'est pas exploitée en ICT — le critère
+  projectif (coplis confondus) ajoute une **dimension mesurable** au
+  verdict « aire signée non nulle » d'ICT-10.
+- Le **scénario de scission 2D vs 3D** (§I) appelle une **mesure
+  falsifiable** de la dimension critique de scission — transition de
+  phase du nombre de cycles concaténés en fonction de la dimension de
+  croyance.
+
+Les notebooks futurs qui s'en saisiront devront **mesurer** (cf. règle F :
+*vrai outil SOTA, jamais workaround dégradé*), pas seulement nommer.
+
 ### Ch.3 §K — Invention de l'instrument
 
 Le cas paradigmatique est celui du chimpanzé face à la banane inaccessible
