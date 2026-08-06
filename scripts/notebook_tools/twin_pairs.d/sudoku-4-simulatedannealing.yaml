@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: 39980a85c8895cd5edb2443ba28a12d07ae4b8f2
       csharp_sha: 1e982c6661c13ce0cb9f1ed1b40a81b85bd856ea
+    - date: "2026-08-06"
+      by: myia-po-2025:CoursIA
+      python_sha: 89a574cf97744436510574f6b05388406d69e945
+      csharp_sha: 1493ad7d5939e637e45fdc97942f372cc9305a08
+      content_python_sha: 64d5a9cc3ac6be2bfb084166ad9b8a68d033540da338965beb6e94e8fe588764
+      content_csharp_sha: b66c6a0d04744cd17437122672c82a2081fcc0b22590ee5d8990758ef3555343
   known_differences:
     - "Socle pedagogique commun : recuit simule (Simulated Annealing) applique au Sudoku -- schema de refroidissement (cooling schedule), temperature T decroissante, acceptation de Metropolis (accepter une solution pire avec probabilite exp(-delta/T)), voisinage par mutation locale. Meme algorithme, meme cas d'application (optimisation stochastique d'une grille)."
     - "Implementation from scratch des deux cotes (ni lib dediee C# ni framework Python) : le C# est pur stdlib System.* (0 NuGet, 17 cellules code) ; le Python utilise numpy/math/random (19 cellules code). Les deux codent le schedule de temperature, la mutation et le critere d'acceptation de Metropolis manuellement -- c'est la paire la plus proche d'une traduction native, mais les 2 implementations restent independantes (idiomes langage, structures de donnees), d'ou parity_level semantic et non native-both."

@@ -30,8 +30,8 @@ Le script exécute les tâches suivantes :
 ## 4. Données d'Entrée
 
 Les fichiers de données se trouvent dans le répertoire `data_metier_csv/` :
--   [`Marché (scraping).csv`](../../../../Ateliers%20avancés/data_metier_csv/March%C3%A9%20(scraping).csv): Données sur les offres d'emploi du marché IT.
--   [`Indicateurs internes.csv`](../../../../Ateliers%20avancés/data_metier_csv/Indicateurs%20internes.csv): Données sur les missions ouvertes et les consultants disponibles.
+-   [`Marché (scraping).csv`](../../../../ateliers-avances/data_metier_csv/March%C3%A9%20(scraping).csv): Données sur les offres d'emploi du marché IT.
+-   [`Indicateurs internes.csv`](../../../../ateliers-avances/data_metier_csv/Indicateurs%20internes.csv): Données sur les missions ouvertes et les consultants disponibles.
 
 ## 5. Livrables Attendus
 

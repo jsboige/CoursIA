@@ -10,7 +10,7 @@ gliders multi-periodes). Ce module fait partie de l'Epic #1647
 (Life-as-Computation).
 
 Choix de conception :
-- Tous les predicats renvoient `Bool` pour la compatibilite avec `native_decide`.
+- Tous les predicats renvoient `Bool` pour la decidabilite par calcul (`decide`).
 - Le `eater1` (fishhook / hamecon) est le primitif d'absorption de signal le
   plus simple, la premiere brique des portes logiques spartiates.
 - Les theoremes de coherence `evolveHashlife n g = evolve n g` verifient
@@ -48,77 +48,45 @@ Pour les entrees de niveau 2, `evolveHashlife` passe par `step4x4` (le cas
 de base du quadtree). Pour les entrees plus grandes, il retombe sur `step`.
 Dans les deux cas, le resultat doit coincider avec `evolve n g`.
 
-### Pourquoi `native_decide` (et non `decide`) — #8749, refine #8869 c.8126
+### Decidabilite par calcul (`decide`, zero axiome) — #8869 resolu par #9536
 
-Ces six theoremes d'equivalence utilisent `native_decide` par **necessite
-structurelle**, non par commodite. Le noyau Lean ne peut pas les prouver par
-`decide` : avec `set_option maxRecDepth 100000`, chacun echoue par
-`reduction got stuck at the Decidable instance` (compilation en erreur,
-en quelques secondes) — un echec *definitif*, pas un depassement de temps
-que davantage de profondeur de reduction leverait.
-
-**Locus precis de l'obstruction (sondage c.8126, 2026-08-05, PR ouverte)**.
-Une investigation en trois sondes a localise la cause **non pas** dans la
-liste `Int × Int` (sortDedup, post-#8895) mais dans la **couche
-`MacroCell`** :
-
-| Sonde | Enonce | decide ? |
-|-------|--------|----------|
-| `step block = block` | list-level path | **OUI** (PASS, coherent avec `block_still_life` L231) |
-| `mc.toGrid (0,0) = block` | MacroCell → Grid | **NON** (stuck sur `instDecidableEqList` apres unfold) |
-| `hashlifeStep1 mc = mc` | MacroCell quadtree | **NON** (stuck sur `instDecidableEqMacroCell.decEq`, recursion 4-quadrants `node nw ne sw se`) |
-
-L'erreur littérale de la sonde `mc.toGrid (0,0) = block` :
-
-```
-instDecidableEqList (MacroCell.toGrid (0, 0) (gridToMacroCellWithOffset block).2) block
-did not reduce to `isTrue` or `isFalse`.
-After unfolding the instance `instDecidableEqList`, reduction got stuck at
-the `Decidable` instance
-  match MacroCell.toGrid (0, 0) (gridToMacroCellWithOffset block).2 with
-  | [] => ... | a :: as => match decEq a b with ...
-```
-
-Le reductor unfold `instDecidableEqList` jusqu'au `match` sur la liste,
-mais **`MacroCell.toGrid` est une definition recursive** (`sortDedup` ∘
-`toCellsAux`, lui-meme recursive sur les 4 quadrants) que le kernel ne
-deplie **pas** en squelette littéral. C'est une **limitation structurelle
-du reductor**, indépendante de la profondeur de recursion
-(`maxRecDepth 1000000` deja applique). La voie `Grid = Nat × Nat`
-(autrefois envisagee comme echappatoire a `Int` non-reductible) **ne
-resoudrait pas** ce goulot d'etranglement : l'opacite est dans la couche
-`MacroCell`, pas dans le type des coordonnees.
-
-Les enonces sont VRAIS (temoins `#eval` natifs en section 5) : c'est
-exactement le role de `native_decide` — evaluer le calcul en code natif et
-ajouter le resultat a la base de confiance plutot que de le reverifier dans
-le noyau. Verifie par-theoreme pour les six declarations de cette section
-(sondage #8749, 2026-07-29, puis affine c.8126, 2026-08-05).
+Ces theoremes se prouvent par `decide` dans le noyau (zero axiome ajoute).
+Le diagnostic anterieur (c.8126, #8749) concluait a une opacite **intrinseque**
+de la couche `MacroCell` (et a la non-reductibilite de l'arithmetique `Int`) ;
+il a ete **refute** par bisect de sous-expressions (c.847, 2026-08-05). Le seul
+point bloquant etait `MacroCell.ceilLog2` (recursion `WellFounded` sur
+`(k+2+1)/2`, non structurellement plus petit → opaque au reducteur du noyau),
+un niveau plus profond que la couche `MacroCell` / `Int` incriminee. La PR #9536
+(mergee) reecrit `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`
+(recursion structurelle kernel-reductible de Mathlib, memes valeurs, spec
+re-prouvee via `Nat.lt_pow_succ_log_self` + `omega`). Apres ce fix, ces
+theoremes passent `decide` (noyau, zero axiome), supprimant les axiomes
+`native_decide` de la base de confiance. Temoins `#eval` natifs en section 5.
 -/
 
 /-- Hashlife et reference sont d'accord sur `block` apres 1 generation.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by decide
 
 /-- Hashlife et reference sont d'accord sur `block` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by decide
 
 /-- Hashlife et reference sont d'accord sur `blinker_h` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by decide
 
 /-- Hashlife et reference sont d'accord sur `glider` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by decide
 
 /-- Hashlife et reference sont d'accord sur `beacon` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by decide
 
 /-- Hashlife et reference sont d'accord sur `toad` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 1, #8749 / refine #8869 c.8126). -/
-theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by decide
 
 /-! ## Section 2 : Eater 1 (Fishhook) — le puits de calcul le plus simple
 
@@ -152,9 +120,13 @@ purement calculatoire dans le noyau. (Le sondage #8749 du 2026-07-29, anterieur 
 #8895, avait correctement constate l'obstruction sous `mergeSort` ; celle-ci est
 levee depuis.)
 
-Contraste avec les equivalences `evolveHashlife n g = evolve n g` de la Section 1 :
-celles-ci exercent la machinerie quadtree complete sur `Grid = List (Int × Int)` et
-restent non-reductibles sous `decide` (`native_decide` requis, voir Section 1).
+Comme les equivalences `evolveHashlife n g = evolve n g` de la Section 1, le
+present theoreme se prouve par `decide` dans le noyau (zero axiome). Historiquement,
+`eater1_still_life` est devenu `decide`-reductible des le swap
+`mergeSort -> insertionSort` (#8895), tandis que les equivalences de la Section 1
+ont necessite en sus la reecriture de `ceilLog2` via `Nat.log 2` (#9536) : tant que
+celle-ci etait une recursion `WellFounded` opaque au reducteur, elles restaient
+`native_decide`. Le contraste historique pre-#9536 est documente en Section 1.
 -/
 
 /-- L'**eater 1** (fishhook), une vie stable de 7 cellules. -/
@@ -183,30 +155,33 @@ des fils de gliders.
 On verifie pour k = 1 (deja dans Life.lean), k = 2 et k = 3.
 Le cas k = 2 (8 generations) se verifie aussi via `evolveHashlife`.
 
-### Pourquoi `native_decide` — #8749, refine #8869 c.8126
+### Decidabilite par calcul (`decide`, zero axiome) — #8869 resolu par #9536
 
-Ces trois theoremes (periodicite du glider + coherence hashlife sur 8
-generations) ne se reduisent pas sous `decide` (`maxRecDepth 100000` :
-chacun stuck a l'instance `Decidable`, EXIT≠0, verifie par-theoreme).
-Cause structurelle localisee en c.8126 (2026-08-05) : la couche
-`MacroCell` quadtree (`toGrid` recursive + `instDecidableEqMacroCell.decEq`
-sur 4-quadrants) est opaque au reductor, PAS la liste `Int × Int` (voir
-Section 1 docstring pour le detail des 3 sondes `step` / `toGrid` /
-`hashlifeStep1`). Enonces VRAIS (`#eval` section 5) ; `native_decide`
-requis.
+Ces theoremes se prouvent par `decide` dans le noyau (zero axiome ajoute).
+Le diagnostic anterieur (c.8126, #8749) concluait a une opacite **intrinseque**
+de la couche `MacroCell` (et a la non-reductibilite de l'arithmetique `Int`) ;
+il a ete **refute** par bisect de sous-expressions (c.847, 2026-08-05). Le seul
+point bloquant etait `MacroCell.ceilLog2` (recursion `WellFounded` sur
+`(k+2+1)/2`, non structurellement plus petit → opaque au reducteur du noyau),
+un niveau plus profond que la couche `MacroCell` / `Int` incriminee. La PR #9536
+(mergee) reecrit `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`
+(recursion structurelle kernel-reductible de Mathlib, memes valeurs, spec
+re-prouvee via `Nat.lt_pow_succ_log_self` + `omega`). Apres ce fix, ces
+theoremes passent `decide` (noyau, zero axiome), supprimant les axiomes
+`native_decide` de la base de confiance. Temoins `#eval` natifs en section 5.
 -/
 
 /-- Apres 8 generations (2 periodes), le glider s'est deplace de (2, -2).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
-theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by decide
 
 /-- Apres 12 generations (3 periodes), le glider s'est deplace de (3, -3).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
-theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by decide
 
 /-- Hashlife et reference sont d'accord sur le glider apres 8 generations (2 periodes).
-    `native_decide` requis : non-reductible sous `decide` (voir Section 3, #8749 / refine #8869 c.8126). -/
-theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by decide
 
 /-! ## Section 4 : verification de l'aller-retour MacroCell
 
@@ -215,35 +190,39 @@ preserve les cellules vivantes pour les patterns canoniques. Cela verifie
 l'encodage/decodage du quadtree a la couche MacroCell (independamment de
 step/evolve).
 
-### Pourquoi `native_decide` — #8749, refine #8869 c.8126
+### Decidabilite par calcul (`decide`, zero axiome) — #8869 resolu par #9536
 
-Ces trois theoremes d'aller-retour ne se reduisent pas sous `decide`
-(`maxRecDepth 100000` : chacun stuck a l'instance `Decidable`, EXIT≠0,
-verifie par-theoreme). Cause structurelle localisee en c.8126 (2026-08-05) :
-`mc.toGrid` (recursive MacroCell → Grid) est opaque au reductor, comme la
-sonde `probe_macrocell_togrid_block_unfolds` l'a verifie (sortie
-verbatim dans Section 1 docstring). L'egalite `mc.toGrid off == block`
-mobilise la meme instance `instDecidableEqList` non-reductible. Enonces
-VRAIS (`#eval` section 5) ; `native_decide` requis.
+Ces theoremes se prouvent par `decide` dans le noyau (zero axiome ajoute).
+Le diagnostic anterieur (c.8126, #8749) concluait a une opacite **intrinseque**
+de la couche `MacroCell` (et a la non-reductibilite de l'arithmetique `Int`) ;
+il a ete **refute** par bisect de sous-expressions (c.847, 2026-08-05). Le seul
+point bloquant etait `MacroCell.ceilLog2` (recursion `WellFounded` sur
+`(k+2+1)/2`, non structurellement plus petit → opaque au reducteur du noyau),
+un niveau plus profond que la couche `MacroCell` / `Int` incriminee. La PR #9536
+(mergee) reecrit `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`
+(recursion structurelle kernel-reductible de Mathlib, memes valeurs, spec
+re-prouvee via `Nat.lt_pow_succ_log_self` + `omega`). Apres ce fix, ces
+theoremes passent `decide` (noyau, zero axiome), supprimant les axiomes
+`native_decide` de la base de confiance. Temoins `#eval` natifs en section 5.
 -/
 
-/-- Le block survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
+/-- Le block survive a l'aller-retour MacroCell. `decide` dans le noyau, zero axiome
+    — reductible apres le fix `ceilLog2` (#9536, #8869). -/
 theorem block_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset block
-     mc.toGrid off == block) = true := by native_decide
+     mc.toGrid off == block) = true := by decide
 
-/-- Le glider survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
+/-- Le glider survive a l'aller-retour MacroCell. `decide` dans le noyau, zero axiome
+    — reductible apres le fix `ceilLog2` (#9536, #8869). -/
 theorem glider_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset glider
-     mc.toGrid off == glider) = true := by native_decide
+     mc.toGrid off == glider) = true := by decide
 
-/-- L'eater 1 survive a l'aller-retour MacroCell. `native_decide` requis :
-    non-reductible sous `decide` (voir Section 4, #8749 / refine #8869 c.8126). -/
+/-- L'eater 1 survive a l'aller-retour MacroCell. `decide` dans le noyau, zero axiome
+    — reductible apres le fix `ceilLog2` (#9536, #8869). -/
 theorem eater1_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset eater1
-     mc.toGrid off == eater1) = true := by native_decide
+     mc.toGrid off == eater1) = true := by decide
 
 /-! ## Section 5 : temoins diagnostiques #eval
 
@@ -278,43 +257,46 @@ de `2^level` generations en une seule etape MacroCell. Ces theoremes
 verifient la correction du chemin rapide face a la reference `evolve` pour
 les patterns canoniques.
 
-### Pourquoi `native_decide` — #8749, refine #8869 c.8126
+### Decidabilite par calcul (`decide`, zero axiome) — #8869 resolu par #9536
 
-Ces six theoremes (chemin rapide `evolveHashlifeFast` vs reference) ne se
-reduisent pas sous `decide` (`maxRecDepth 100000` : chacun stuck aux
-instances `instDecidableEqBool`/`instDecidableEqList`/`instDecidableEqNat`/
-`Nat.decLe`, EXIT≠0, verifie par-theoreme). Cause structurelle localisee
-en c.8126 (2026-08-05) : la couche `MacroCell` quadtree est opaque au
-reductor, comme les sondes l'ont verifie (voir Section 1 docstring) ; le
-chemin rapide mobilise la meme arithmetique `MacroCell` recursive que
-`evolveHashlife`. Enonces VRAIS (`#eval` section 5) ; `native_decide`
-requis.
+Ces theoremes se prouvent par `decide` dans le noyau (zero axiome ajoute).
+Le diagnostic anterieur (c.8126, #8749) concluait a une opacite **intrinseque**
+de la couche `MacroCell` (et a la non-reductibilite de l'arithmetique `Int`) ;
+il a ete **refute** par bisect de sous-expressions (c.847, 2026-08-05). Le seul
+point bloquant etait `MacroCell.ceilLog2` (recursion `WellFounded` sur
+`(k+2+1)/2`, non structurellement plus petit → opaque au reducteur du noyau),
+un niveau plus profond que la couche `MacroCell` / `Int` incriminee. La PR #9536
+(mergee) reecrit `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`
+(recursion structurelle kernel-reductible de Mathlib, memes valeurs, spec
+re-prouvee via `Nat.lt_pow_succ_log_self` + `omega`). Apres ce fix, ces
+theoremes passent `decide` (noyau, zero axiome), supprimant les axiomes
+`native_decide` de la base de confiance. Temoins `#eval` natifs en section 5.
 -/
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `block` apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 4 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 8 generations
-    (2 periodes completes, deplacement (2, -2)). `native_decide` requis : non-reductible
-    sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
+    (2 periodes completes, deplacement (2, -2)). `decide` dans le noyau, zero axiome — reductible
+    apres le fix `ceilLog2` (#9536, #8869). -/
+theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `blinker` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `beacon` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by decide
 
 /-- `evolveHashlifeFast` coincide avec la reference sur `toad` apres 2 generations.
-    `native_decide` requis : non-reductible sous `decide` (voir Section 6, #8749 / refine #8869 c.8126). -/
-theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
+    (`decide` dans le noyau, zero axiome — reductible apres le fix `ceilLog2` #9536, #8869.) -/
+theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by decide
 
 -- temoins #eval pour les sauts plus grands (valide le chemin recursif)
 #eval evolveHashlifeFast 16 block == evolve 16 block
