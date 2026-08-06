@@ -9,12 +9,6 @@
       python_sha: bd3d87d8d9a4e4dc00e53a306cbd1979dc8e4901
       csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
       reason: "c.1123 #8052 C# c19 IDDFS depth/iteration count (profondeur 3->2, 4->3 itérations); Python twin clean (generic d-table)"
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: bd3d87d8d9a4e4dc00e53a306cbd1979dc8e4901
-      csharp_sha: b2370d89b77a1eca64d780900798e9b02ba8a06f
-      content_python_sha: 99155a9d2b0236e768b86f641f35a9c5b80e954bd3d4e58cf61af6327dd6f2b5
-      content_csharp_sha: 610e64a16359def7cf210c41eda9bc01baa0307195056ff64b688b27678f2310
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."

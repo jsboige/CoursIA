@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 8efefd483570bca7815d101844863f71f9f3c436
       csharp_sha: a502d4c462d6667187a8ec6d827bfe1027271e9f
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 8efefd483570bca7815d101844863f71f9f3c436
-      csharp_sha: a502d4c462d6667187a8ec6d827bfe1027271e9f
-      content_python_sha: 59dcee70be648c27c6fad2525bcb30f99e31e8174a748353ef0df86dce0461ad
-      content_csharp_sha: 4e0aecd3c9ed7d742a6113c92aef6a0acbff3befb1d373361c03d50641f4cf15
   known_differences:
     - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
     - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."

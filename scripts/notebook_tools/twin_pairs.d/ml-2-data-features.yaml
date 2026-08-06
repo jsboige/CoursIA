@@ -9,12 +9,6 @@
       python_sha: 101ab5a0f5a70557bcddc84c4ebfebadbb8ecc64
       csharp_sha: 843d8d2493cb938e8c381706369a380ac24d6cfa
       reason: "rebaseline csharp apres fix citation-title (#8052) : reference Hastie/Tibshirani/Friedman (2009) -- le titre anglais The Elements of Statistical Learning etait corrupt par francisation (le mot Elements remplace par le mot francais equivalent a capitale accentuee) -> restore titre canonique EN. Springer 2009 2e ed. Python twin unchanged, python_sha preserve. Parite semantique preservee (citation bibliographique, pas de valeur calculee)."
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 101ab5a0f5a70557bcddc84c4ebfebadbb8ecc64
-      csharp_sha: 843d8d2493cb938e8c381706369a380ac24d6cfa
-      content_python_sha: 2366808236680e11b4ddc99b5289ecf54a7b448f0e72fec11d890ad92ec9581b
-      content_csharp_sha: de9ae2944a7ead61c2a5476143c03c9daf337eea11ab960700a7bcc002c0d914
   known_differences:
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."

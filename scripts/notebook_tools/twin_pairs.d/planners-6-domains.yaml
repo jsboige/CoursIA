@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: ff148663a6bc7f6aa902861ac81c210ac343c22f
       csharp_sha: a2cea4c4062bedc965149e009e8d5e1533194a53
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: ff148663a6bc7f6aa902861ac81c210ac343c22f
-      csharp_sha: a2cea4c4062bedc965149e009e8d5e1533194a53
-      content_python_sha: 32b715f6db2f8abef377c844346093e4101346c4a5c2055659255c671a7678f3
-      content_csharp_sha: 08224b2172924f6834029fd0ec845aae22a44fc662145213c42c0c4b685b3981
   known_differences:
     - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
     - "Python : modelisation unified-planning des domaines canoniques. C# : from-scratch BCL .NET (meme domaines de reference)."

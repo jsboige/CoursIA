@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 9e82048c4ad2393af7e012c036ce714b590380e8
       csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 9e82048c4ad2393af7e012c036ce714b590380e8
-      csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
-      content_python_sha: 451d871f181b39ef35e1d221db0f5b2c1292bad4afd460c6e15eca216fa1da5b
-      content_csharp_sha: beb9eb6d1f081e52a33cbe880ae0659ac31a65ef2468a4439f4113f0c77a65cd
   known_differences:
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable, fonction caracteristique et coalitions, valeur de Shapley (Shapley 1953) et ses axiomes (efficacite, symetrie, joueur nul, additivite), glove game (jeu des gants) comme exemple canonique."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + module local `cooperative_games` + `itertools` (enumeration des coalitions/permutations). C# = BCL .NET 9 pur (`System.Linq`, `System.Collections.Generic`, 0 NuGet), calcul de Shapley from-scratch via permutations Linq."

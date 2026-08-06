@@ -8,12 +8,6 @@
       by: po-2024
       python_sha: 0b7a8f8777f3e2fdcff5540f0da1647af51f1e7d
       csharp_sha: 2f13a4af6c57fcef3a4121a9b9ca7dd11aba3bc6
-    - date: "2026-08-06"
-      by: po-2024
-      python_sha: 0b7a8f8777f3e2fdcff5540f0da1647af51f1e7d
-      csharp_sha: 2f13a4af6c57fcef3a4121a9b9ca7dd11aba3bc6
-      content_python_sha: d0790f61021156f9b4ffde8b39157383dfb6bf86e98354497b13eb86a6c64306
-      content_csharp_sha: 0d5c14be69169a8b1cb4388717d88e060220cdc8eaedd02b3368ec2c782808f2
   known_differences:
     - "Socle pedagogique commun : taquin 4x4 (15-puzzle), heuristique Manhattan, puis construction d'une Pattern Database (PDB) pour un sous-ensemble de tuiles afin d'estimer h* plus precisement que Manhattan."
     - "Idiomes framework : Python = `collections.deque` (BFS sur l'espace des patterns) + `numpy`/`matplotlib` (matrices + visualisation du plateau). C# = pur BCL `System.Collections.Generic` + `System.Linq` (`Dictionary`, `Queue`, `Array.IndexOf`), sans dependance externe."

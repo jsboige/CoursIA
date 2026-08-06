@@ -8,12 +8,6 @@
       by: po-2024
       python_sha: c83be596acfef24a0d6b22bab6405f2e68074374
       csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
-    - date: "2026-08-06"
-      by: po-2024
-      python_sha: c83be596acfef24a0d6b22bab6405f2e68074374
-      csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
-      content_python_sha: 5d4135096b98c027a43c2e93f1efb883c1857fe80bfd2b47cbeebe20c3dafdd1
-      content_csharp_sha: 8691a49d1a3cb3a2cdd9638a0f01931f52e84642e811e52a8796531999346c8c
   known_differences:
     - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
     - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."

@@ -8,12 +8,6 @@
       by: myia-po-2026:CoursIA
       python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
       csharp_sha: 38fbe3dd8890dae8c1e0772807baed5762eb1eda
-    - date: "2026-08-06"
-      by: myia-po-2026:CoursIA
-      python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
-      csharp_sha: 38fbe3dd8890dae8c1e0772807baed5762eb1eda
-      content_python_sha: 40e6734bbbcd63ec85e40dd52c720ac5df8b7e23c2a25cd0904322d4128bc2d9
-      content_csharp_sha: 558139687f383481a34ac4ed88ee397ae80a6573d31a0a55657c62b4f950dfea
   known_differences:
     - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
     - "Python : unified-planning + fast-downward heuristics. C# : from-scratch delete-relaxation BCL."

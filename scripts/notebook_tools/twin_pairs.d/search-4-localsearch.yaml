@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 952bcfdc76d9081394fc63e46f999c1d826c54a4
       csharp_sha: d82c3b21f1f515ae25ec06eb1dc733ace1d39b05
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 952bcfdc76d9081394fc63e46f999c1d826c54a4
-      csharp_sha: d82c3b21f1f515ae25ec06eb1dc733ace1d39b05
-      content_python_sha: 1301bc7de51c7465e8a4829328aaeffb13bc3e47b0cd99b1360d53469f715fb9
-      content_csharp_sha: 5fcbdc9db4155ba261a19301c3f57d5f0193d2e3c2f3393b0ff322d2e521360a
   known_differences:
     - "Socle pedagogique commun : metaheuristiques de recherche locale — Hill Climbing (variations steepest/first-improvement + diagnosis plateau/ridge), Simulated Annealing (schema de refroidissement, critere de Metropolis), Tabu Search (liste tabou, memoire a court terme). Comparaison empirique sur N-Reines. Les deux twins implementent les 3 algorithmes from-scratch (parite algorithmique, pas seulement narratif)."
     - "Citations canoniques presentes des deux cotes (audit #8081 po-2023 c.909) : Kirkpatrick/Gelatt/Vecchi 1983 (Simulated Annealing, Science), Glover 1986/1989 (Tabu Search), Russell & Norvig AIMA (cadre local search)."

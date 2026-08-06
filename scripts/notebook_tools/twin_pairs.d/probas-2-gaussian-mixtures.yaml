@@ -12,12 +12,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 643d15d579b04ba4d571684b542ae01c7afb60a9
       csharp_sha: 867bbbe2edafbb195c954d5da93ca79dc3d297b8
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 643d15d579b04ba4d571684b542ae01c7afb60a9
-      csharp_sha: 867bbbe2edafbb195c954d5da93ca79dc3d297b8
-      content_python_sha: d963d95cc128364ba85738ea83ace5cc2d90691c690376e1d4426dd3437782d5
-      content_csharp_sha: c81c571e6bd23d1630c4c17ce7d54a5457ac952a23ccb1a2fee0aea3a17edf0f
   known_differences:
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
