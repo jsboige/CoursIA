@@ -13,12 +13,17 @@ Oscillators are verified via `isOscillator g n = true`.
 
 All coordinates are listed in sorted lexicographic order (by row, then
 column) so that the `step` function returns a list in the same order
-and `native_decide` can verify equality by structural comparison.
+and the kernel can verify equality by structural comparison (`decide`
+for still-lifes, `native_decide` for oscillators — see Oscillators
+section).
 
 The pulsar (48 cells, period 3) and pentadecathlon (12 cells, period 15)
-are **borderline** for `native_decide`: they require many step
-computations on non-trivial cell lists. Their theorems are kept
-commented out pending an explicit local `lake build` verification. The
+exceed the recursion-depth limit of the kernel reducer (`maximum
+recursion depth reached` under `decide` for the pulsar); they require
+native compilation (`native_decide`) to be verified. Their theorems are
+kept uncommented (proven by `native_decide`, one native axiom per
+theorem). The five still-lifes (loaf, boat, tub, pond, ship), being
+simpler, are proven by `decide` in the kernel (zero axiom). The
 definitions themselves are unconditionally exported.
 
 This module is fully proven (no gaps in the uncommented theorems).
@@ -100,8 +105,12 @@ def ship : Grid :=
 
 /-! ## Still-life verifications
 
-Each predicate is reduced to a `Bool` by the kernel and decided by
-`native_decide` after compilation. -/
+Each predicate is reduced to a `Bool` by the kernel. The five still-lifes
+below are proven by `decide` in the kernel (zero native axiom: the proof is
+verified by the reducer, not delegated to the native compiler). The pulsar
+and pentadecathlon, whose kernel reduction exceeds the recursion-depth
+limit (`maximum recursion depth reached` under `decide` for the pulsar),
+remain proven by `native_decide` (Oscillators section below). -/
 
 -- Sanity-check evaluations (re-evaluated by `#eval` at elaboration time)
 #eval isStillLife loaf
@@ -111,28 +120,31 @@ Each predicate is reduced to a `Bool` by the kernel and decided by
 #eval isStillLife ship
 
 /-- The Loaf is a still life. -/
-theorem loaf_still_life : isStillLife loaf = true := by native_decide
+theorem loaf_still_life : isStillLife loaf = true := by decide
 
 /-- The Boat is a still life. -/
-theorem boat_still_life : isStillLife boat = true := by native_decide
+theorem boat_still_life : isStillLife boat = true := by decide
 
 /-- The Tub is a still life. -/
-theorem tub_still_life : isStillLife tub = true := by native_decide
+theorem tub_still_life : isStillLife tub = true := by decide
 
 /-- The Pond is a still life. -/
-theorem pond_still_life : isStillLife pond = true := by native_decide
+theorem pond_still_life : isStillLife pond = true := by decide
 
 /-- The Ship is a still life. -/
-theorem ship_still_life : isStillLife ship = true := by native_decide
+theorem ship_still_life : isStillLife ship = true := by decide
 
 /-! ## Oscillators (borderline patterns)
 
 These two patterns are the smallest "large" oscillators in classical
-Conway's Life. They sit at the limit of what `native_decide` can
-verify in a reasonable kernel budget; the witnesses below are kept as
-definitions, and the theorems are commented out pending a local
-`lake build` check on the target machine. If `lake build` succeeds
-within the kernel reduction limit, the theorems may be uncommented.
+Conway's Life. Unlike the still-lifes above (proven by `decide` in the
+kernel, zero axiom), their kernel reduction hits the recursion-depth
+limit (`maximum recursion depth reached` under `decide` for the pulsar).
+Their theorems are therefore proven by `native_decide` (native
+compilation), which is not subject to the reducer's `maxRecDepth` limit
+— at the cost of one `_native.native_decide.ax_1_1` axiom added to the
+TCB per theorem. The witnesses (`pulsar`, `pentadecathlon`) are
+unconditionally exported as definitions.
 
 The 13x13 layout for the pulsar follows the standard literature
 positioning. The pentadecathlon is given in its minimal phase (12
