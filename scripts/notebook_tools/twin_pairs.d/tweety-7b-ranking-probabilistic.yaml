@@ -12,6 +12,12 @@
       by: myia-po-2024:CoursIA
       python_sha: fb7670e9ebe474a93db4534f4f76ded9f8c0e581
       csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9eadc1d5dc9cdfac984f66e237b12a5e5f3411a9
+      csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+      content_python_sha: 0e928b855251fb1000000a10263656fb028f0a9856cc461b125216700f52d416
+      content_csharp_sha: 054003552b11b663d7de0056c2e460a6c75ae0cff647ad8b03ca24e2d477a9b4
   known_differences:
     - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."

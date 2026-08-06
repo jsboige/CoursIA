@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
       csharp_sha: 62f6921da965958ab0277d2cee822d284a47e568
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 571fb5522184a56d44ca58933bf2d9769566462c
+      csharp_sha: 62f6921da965958ab0277d2cee822d284a47e568
+      content_python_sha: 150e80df025ca300738badd598574ceca88fbe68845f371e5b2b0a291dc04271
+      content_csharp_sha: e7dfaf7034a015a09fdcc9ae4a6d84cedb20767490952e2c44077e208627a960
   known_differences:
     - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."

@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 26ba41f102395886cb452772ebd7a1df8bdcc584
       csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 4313e782b8fc833728e198cd98066ec4e1b19760
+      csharp_sha: 52fd778d91449e795a6abe56218dda183b008190
+      content_python_sha: a23e4ba551c1a2d06936aa1c8cb95e9c896bec0615477c503e3fce3a4f86a473
+      content_csharp_sha: 9c3920e259aa31d326dd9ef4c43290314d715449eccc02629d140e497c7efd3b
   known_differences:
     - "Socle commun : logiques avancees (conditionnelle, modale, QBF) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-advanced-logics.dll\"` + `using org.tweetyproject.logics.cl.reasoner` etc.). Python via JPype (`from org.tweetyproject.logics.cl.reasoner import SimpleCReasoner`). Meme moteur Java TweetyProject, deux ponts (IKVM traduit vs JPype JVM)."

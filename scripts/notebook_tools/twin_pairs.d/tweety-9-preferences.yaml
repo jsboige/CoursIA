@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: c2f0fd49cc676439ac5d626abd51f39dca5680a0
       csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: bdb23a4625ee1067abf83bdc2c26008839743ded
+      csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
+      content_python_sha: 04992cb08b573b3b45eff55df52bf7b9425432f3af9ec5836eb1bcf118ff4ce7
+      content_csharp_sha: 5a7dfff560e3dc513ce623f8ccc6c4f91962cc442f38c0abcec33afe3a73257b
   known_differences:
     - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"`). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
