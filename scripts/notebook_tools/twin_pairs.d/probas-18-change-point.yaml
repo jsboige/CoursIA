@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: f295cceb90dc134cb19ebda5860bb121a77e2174
       csharp_sha: 95033cfe1c4ee9b1562c17faaddbe482f92d5e38
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: f295cceb90dc134cb19ebda5860bb121a77e2174
+      csharp_sha: 95033cfe1c4ee9b1562c17faaddbe482f92d5e38
+      content_python_sha: 700b55cf16a4aed9bf6813cb4af4944eff764dac4a491cfd702f48d2f2b01a0b
+      content_csharp_sha: 1117887b8ddd0208f7ab980dd37989bb7d8d303fcd9448a646101c32c478c05c
   known_differences:
   - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

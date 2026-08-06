@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 20f639cb0363ff592acc1c04a735f71f2eebaa63
       csharp_sha: 6d9767a24d2c2d78165b68cd9dab09872c1a143e
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 20f639cb0363ff592acc1c04a735f71f2eebaa63
+      csharp_sha: 6d9767a24d2c2d78165b68cd9dab09872c1a143e
+      content_python_sha: 4d1190d632cd31f22c497e6634783cb95a68661d0c63377376c6f2ccae9f0889
+      content_csharp_sha: f63bac5b834880979b658f067591a4d4ebf87c2a87ffa3085de0b5fc7f9d2d52
   known_differences:
     - "Socle pedagogique commun : coloration de graphes comme CSP canonique -- formulation (variable couleur par sommet, domaines 1..k, contraintes != sur les aretes), heuristiques (Greedy, DSATUR, Welsh-Powell) + calcul exact du nombre chromatique chi. Cas d'etude partagees : graphe de Petersen, dodecaedre, graphes aleatoires G(n,p) (benchmark Erdos-Renyi)."
     - "Divergence sur la methode EXACTE (chi) : Python utilise OR-Tools CP-SAT (ortools.sat.python.cp_model.CpModel + solver, solveur industriel SAT-based, SOTA) pour le chi optimal ; le C# implemente un backtracking from-scratch (CanColor / k-coloriable, 0 dependance externe, 0 NuGet). Meme resultat (chi exact), deux paradigmes : solveur SOTA cote Python vs implementation pedagogique a la main cote C#."

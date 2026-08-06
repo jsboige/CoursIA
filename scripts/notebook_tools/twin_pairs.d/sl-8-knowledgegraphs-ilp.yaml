@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
       csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: c7e229126c670dac3e3d119b56b8f727003bce8a
+      csharp_sha: 376249822ecee95d86a8d1f806a99b7595486bc7
+      content_python_sha: 3596b145acdef0fa282f92a35e8f63b010b67011d0dd6dfa338dd35660b7d0c5
+      content_csharp_sha: ff9ccf6409955dd1f32569ef2e80375696a70c4951075ca7b2c289de3c915fef
   known_differences:
     - "Socle commun : ILP moderne sur Knowledge Graphs -- construction du KG familial, extraction des relations, rule mining (decouverte de regles de Horn), enumeration des candidats, passage des regles d'association aux regles logiques, completion du KG."
     - "Librairies SOTA distinctes mais equivalents : Python = rdflib (construction/manipulation RDF) + AMIE (rule mining) ; C# = dotNetRDF (equivalent .NET de rdflib) + AMIE. parity_level=semantic car les deux cotes invoquent de vraies librairies KG (pas from-scratch) -- c'est le twin le plus proche lib-vs-lib de la famille SL."

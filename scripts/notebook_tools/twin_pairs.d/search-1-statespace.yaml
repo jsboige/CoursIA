@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055
       csharp_sha: 1b1fc49cdd3b82a9d6af5c15829256ab5a183c17
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055
+      csharp_sha: 1b1fc49cdd3b82a9d6af5c15829256ab5a183c17
+      content_python_sha: 9343e056e8d143cf6c527273ac8af7ea4f23c7d598234a35c69676dca1e3b8fa
+      content_csharp_sha: ad125496ea19d07ab767a751a8deb80b916a5b08adee443c6c4af6f69e599d28
   known_differences:
     - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
     - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."

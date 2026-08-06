@@ -12,6 +12,12 @@
       by: myia-po-2024:CoursIA
       python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
       csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA
+      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
+      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+      content_python_sha: 3397c3499d41f331f9917039d1b006be638d069490079ec8567b04cd826c64c4
+      content_csharp_sha: 56beaf6154fcb031066bc2c38ade50dc672fd7a8ff2d70e419c6b78d2f56a20b
   known_differences:
     - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."
