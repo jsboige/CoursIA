@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 5989c12479280ccd887129b7fd6bd98ae98c0734
       csharp_sha: ea011ad638e69c982deb3f508e45841b3d71a75a
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 5989c12479280ccd887129b7fd6bd98ae98c0734
-      csharp_sha: ea011ad638e69c982deb3f508e45841b3d71a75a
-      content_python_sha: a950f947d8e39f0e27fca54fbee8a7d85cd0cd4e7832fca62e2380726e8c082f
-      content_csharp_sha: 60d47e6878beae9cfb7cc04ee58023026833530169810a13213a8e8c41774682
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface car le jumeau Python INVOQUE un vrai moteur ILP SOTA (SWI-Prolog via pyswip + reference a Popper 'Learning From Failures') tandis que le C# reimplémente FOIL from-scratch (pas de moteur Prolog). Meme concept pedagogique, machineries differentes."
     - "Asymetrie de couverture : Python (48 cellules, 19 code) couvre clauses Horn + unification, FOIL top-down, resolution inverse bottom-up, application FOIL pas-a-pas, ILP et Knowledge Graphs, + section dediee au vrai moteur Popper (LFF) ; C# (25 cellules, 10 code) couvre clauses Horn + unification, briques FOIL, probleme des ancetres, evaluation de clauses candidates, resolution inverse, FOIL pas-a-pas, mini KG."

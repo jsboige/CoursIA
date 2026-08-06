@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA-2
       python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
       csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA-2
-      python_sha: 9c569a28a0d7395d0211dfc26a9d0a00cd03f4d2
-      csharp_sha: 85bc41d76098400b0727d7ea7b6184d021704f4c
-      content_python_sha: 730cc4378d205e1f6398be80bad0dc905845084a14359814bcbea5903a40c57a
-      content_csharp_sha: a0f227fe94560563b68715671c05d1add944a7620260f56b850caa97b58464b6
   known_differences:
   - 'Socle pedagogique commun : inference causale (do-calculus, ajustement) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

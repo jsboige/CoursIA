@@ -12,12 +12,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 76f13063b0ad1748da0b2630fe50a2bfb69bcf0b
       csharp_sha: c841d0e3694526d1df2b901e3c2d170c91809703
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 76f13063b0ad1748da0b2630fe50a2bfb69bcf0b
-      csharp_sha: c841d0e3694526d1df2b901e3c2d170c91809703
-      content_python_sha: eef8919a59510533c8234fe22ed28494f76ba298a3b692bce3774c61e375235a
-      content_csharp_sha: cbceee9b54329bfc94b2cb428a517e2ec9a2fd2a563e0bf98a03760b36f96dc9
   known_differences:
   - 'Socle pedagogique commun : systemes de recommandation (filtrage collaboratif) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

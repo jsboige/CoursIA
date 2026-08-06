@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
       csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
-      csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
-      content_python_sha: f9c0451a32a8ca918b8a29c77f1b11fa619edfb703b1d1cf3f9d9f8b595c2fe2
-      content_csharp_sha: c827d60dbec7329c60a8fe3d40deb650b3be384767a07d26dfbe3b253e13ab87
   known_differences:
     - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
     - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."

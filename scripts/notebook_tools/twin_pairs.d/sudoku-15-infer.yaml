@@ -12,12 +12,6 @@
       by: myia-po-2023:CoursIA
       python_sha: d4459bc5cf0ee8fbd8ded13038690e238300b8b0
       csharp_sha: ef5632ca0b72c78238ffff335fd612369c064a78
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: d4459bc5cf0ee8fbd8ded13038690e238300b8b0
-      csharp_sha: ef5632ca0b72c78238ffff335fd612369c064a78
-      content_python_sha: c8339f080e60f972febbb421d14aaf4f0846ef5e8cae4b3c936ca439a5bbf4bd
-      content_csharp_sha: 3f30f4248ed93c96eaef8624d47203ecd4fbea45bc11b67c6bde751b14ffeba7
   known_differences:
     - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des versions JAX/NumPyro depuis la table de la cellule[3] (criterion 2 #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : resolution PROBABILISTE du Sudoku par inference bayesienne/probabiliste, meme concept (modeliser l'incertitude sur les cases, inferrer les valeurs les plus probables), meme angle (approche non-deterministe par contraste avec les solveurs exacts de la serie)."

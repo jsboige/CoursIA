@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: d4ab43338f4c2f7ace1f3377830af97bed5acf4b
       csharp_sha: 8f48b984561f4a441c9b3f68fb0cb6c301c71323
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: d4ab43338f4c2f7ace1f3377830af97bed5acf4b
-      csharp_sha: 8f48b984561f4a441c9b3f68fb0cb6c301c71323
-      content_python_sha: 15e761a847cde85b7224d523e70c520d6cc1280b78fb184fb8b76dca762f8cf0
-      content_csharp_sha: bf1d5f7d6bda29a162c688ce9993185155126721f38b0afe3e121032a7efd6e3
   known_differences:
   - 'Socle pedagogique commun : analyse de survie (modelisation de durees / censure) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

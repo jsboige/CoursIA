@@ -18,12 +18,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 113460a7b7b9b61fc0c0c25e397ced56bd35aac7
       csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 113460a7b7b9b61fc0c0c25e397ced56bd35aac7
-      csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
-      content_python_sha: ec5b9159fd5f9279afcc1e8efdc53696432b525f949c4bd6ef90191397f6904e
-      content_csharp_sha: 5baef6163f1899fc9a73b0f8c86e1a3c89f04bf9c6c686e48b50ed1f494dacaf
   known_differences:
     - "Socle pedagogique commun : jeux bayesiens (information incomplete / types et croyances), equilibre bayesien de Nash (BNE), applications canoniques : Bataille des Sexes avec incertitude, Cournot avec couts incertains, encheres a valeurs privees (first-price/second-price), introduction aux jeux de signalisation (signaling). Distinct des GT precedents (jeux a information complete) : le GT-11 introduit la « typologie des joueurs » et le calcul d'equilibre sous croyances."
     - "Idiomes framework : Python = `scipy` (`integrate` pour les integrales d'esperance sur les types continus, `optimize.fsolve`/`minimize` pour resoudre les conditions du BNE) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** (le `#r \"Microsoft.DotNet.Interactive\"` est le kernel lui-meme, pas une dependance ; resolution analytique from-scratch via System.Math)."

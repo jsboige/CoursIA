@@ -9,12 +9,6 @@
       python_sha: adee0d476742b82cc2efb931e778f4fba271be35
       reason: "c.1125 #8052 Python c44 stale pre-rename self-label Search-18->CSP-9-Distributed (C# twin already correct); print-literal src+out atomic"
       csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: adee0d476742b82cc2efb931e778f4fba271be35
-      csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70
-      content_python_sha: 8875c36b493aa80600dda58e11d9742d0fcdcb60328924cc7cd2b8eb992126a3
-      content_csharp_sha: 21c2c1ab3f8e9746c794fea4928539ed442182bec886fccc0f42612a1b61815a
   known_differences:
     - "Socle commun : CSP distribue (DisCSP) -- formalisation, ABT (Asynchronous Backtracking, Yokoo 1992), AWC (Asynchronous Weak-Commitment, Yokoo 1995), Privacy-Preserving CSP, application multi-hopital, benchmark synthetique ABT vs AWC. Le C# se declare explicitement 'binome .NET du CSP-9-Distributed.ipynb' (H1) et cite Yokoo 1992."
     - "PARITE CELLULAIRE EXACTE : 47 cellules des deux cotes (19 code, 28 markdown) -- le twin le plus proche cellule-a-cellule des 5 residuels. Sections logiques 1-7 identiques ; le C# concentre parfois plusieurs H2 logiques dans une meme cellule markdown (surcomptage brut d'en-tetes a 34) mais la couverture structurelle reelle matche le Python."

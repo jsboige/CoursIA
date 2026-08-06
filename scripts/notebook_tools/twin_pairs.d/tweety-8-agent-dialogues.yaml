@@ -12,12 +12,6 @@
       by: myia-po-2024:CoursIA
       python_sha: bd8d4f31633533a4c3be678645693dbce61f1091
       csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA
-      python_sha: bd8d4f31633533a4c3be678645693dbce61f1091
-      csharp_sha: f5d641c0f4a0dba162b5596f27d9e10d739dc67e
-      content_python_sha: aeb9e64deb61d1e0a61536b0280baed8a8256260e873129e758e61528d79b31e
-      content_csharp_sha: 08366e22dc81efd27c99582d5e091fc5ef71a2d08171e0fa7a07bf12716d6e47
   known_differences:
     - "Socle commun : dialogues multi-agents argumentatifs (protocols, ExecutableExtension) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers chargeant les DLL TweetyProject). Python via JPype (`from org.tweetyproject.agents.dialogues import ExecutableExtension`). Meme moteur Java."
