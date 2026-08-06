@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: a5ef2be10882b29368b2d0ec680ecf828ab59213
       csharp_sha: 2bf1075659212ac6ca9f5e5ce46206791d3a9933
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: a5ef2be10882b29368b2d0ec680ecf828ab59213
+      csharp_sha: 160675f58686100e1d03eecc047e34698ac4997a
+      content_python_sha: 14bb193dd38e7c719d0f1e40a6a828ecbafcd656dce640964d79853312150f06
+      content_csharp_sha: 091c0ab4021145d4833989af364028040a44e5bed31b9764e45a2333adb9d8c7
   known_differences:
     - "Socle commun : raisonnement automatique sur ontologies (forward-chaining, inference RDFS/OWL)."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query.Inference` : IInferenceEngine, OwlReasoner integre). Python = `rdflib` + `owlrl` (moteur de closure OWL-RL/RDFS). Deux approches du raisonnement : moteur natif cote C# vs closure deductive cote Python."
