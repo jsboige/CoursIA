@@ -14,6 +14,12 @@
       csharp_sha: 6e23876720519849d48a72d95365cc0cc95384bd
       content_python_sha: 788279cb59ac803935c5f773cc78f5ae11f7b835d85ed00b98a08c976b8afd0b
       content_csharp_sha: 29d18d7333c963eb28db859345c80d2780575821951bb9949b61a9b29115bc5d
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c3d705c2d272864a8f0ebf1d9b0edd9e58c8ae29
+      csharp_sha: 78c200e9d75e256b06e9c219771fcb7961ca1154
+      content_python_sha: 788279cb59ac803935c5f773cc78f5ae11f7b835d85ed00b98a08c976b8afd0b
+      content_csharp_sha: 59dc37d1322cdad9c7d8e9165667f0d1fa7bbda0809eecfee8f97184ed76f5a7
   known_differences:
     - "Socle pedagogique commun : resolution du Sudoku par programmation par contraintes avec OR-Tools CP-SAT (Google.OrTools), meme solveur sous-jacent, meme modelisation (variables IntVar par case, contraintes AllDifferent sur lignes/colonnes/blocs, objectif de satisfaction)."
     - "Idiomes framework symetriques : Python = `from ortools.sat.python import cp_model` (binding Python natif), C# = NuGet `#r \"nuget: Google.OrTools\"` + `using IntVar / SimpleCPSolver / SimpleConstraint` (binding .NET). Les deux cotes deleguent au meme moteur CP-SAT de Google, seules les API de binding different."

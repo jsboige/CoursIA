@@ -14,6 +14,12 @@
       csharp_sha: 156c7c4e68a21a5348a91ca49c279ffa92a79593
       content_python_sha: 2df12ef9f26880b4153f71bbaeb0095b16ca9a73da5f76b328ac7645ea641c94
       content_csharp_sha: 5f55607cc83719023b4ff9ae13ba7376af1791c721ff902943831e19977df756
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: d41c65dbebdbe43271ca635c1dfee84dffe24ae5
+      csharp_sha: b806c6327a19bb20b36b6c9197e047c04658ef66
+      content_python_sha: 2df12ef9f26880b4153f71bbaeb0095b16ca9a73da5f76b328ac7645ea641c94
+      content_csharp_sha: 7210d228fca3dbb5709306e8f68d57251e7167f5fb4bf5eddf8160549b4bca6a
   known_differences:
     - "Socle pedagogique commun : algorithme Dancing Links (DLX) de Knuth / Algorithm X pour la couverture exacte (exact cover), applique a un mini-Sudoku 4x4. Meme concept mathematique (matrice binaire de couverture, selection de colonnes a cardinalite minimale, unlinking/relinking des noeuds), meme cas d'application (mini-Sudoku 4x4), meme exercice pedagogique (construire la matrice de couverture, stub TODO)."
     - "Divergence d'implementation : le C# delegue a la lib DlxLib (NuGet `#r \"nuget: DlxLib\"`, classe `DancingLinkSolver : ISudokuSolver` qui wrappe le solveur de la lib, importe le socle `Sudoku-0-Environment-Csharp.ipynb`) ; le Python implemente Dancing Links ENTIEREMENT from scratch (`class DancingLinksNode` a 4 voisins gauche/droite/haut/bas + `class DancingLinks` construisant la matrice creuse et executant l'Algorithm X de Knuth manuellement). Meme algorithme, deux niveaux d'abstraction : lib industrielle cote C# vs reconstruction pedagogique a la main cote Python."

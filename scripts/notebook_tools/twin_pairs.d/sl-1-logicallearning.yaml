@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 54e32cb14b4791558f1017d16974ea0ee19d62af
       csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 54e32cb14b4791558f1017d16974ea0ee19d62af
+      csharp_sha: 0d006df8578d40d1fc32bd641dd73abf3c108213
+      content_python_sha: 5adc3d0e02e6b533f0483ed14b783fb00e869e60d88c1e01e8b9fb3b135258dd
+      content_csharp_sha: f9b7ae87deb4fca2e0c5b5fa794ca2294b6e7d5bde1c513123934dffcbf86f4a
   known_differences:
     - "Socle commun : apprentissage logique symbolique -- Current-Best-Hypothesis (CBH) et Version Space / Candidate Elimination, sur le domaine restaurant (AIMA)."
     - "Asymetrie de couverture : le jumeau Python (58 cellules, 18 code) couvre 9 sections incluant visualisation de l'evolution du Version Space et une section 'implementation de reference : aima-python' ; le jumeau C# (21 cellules, 9 code) est plus compact (10 sections, pas de visualisation graphique)."

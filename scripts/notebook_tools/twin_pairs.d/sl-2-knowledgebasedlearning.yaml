@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
       csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
+      csharp_sha: ab52ba61e0a3639b2d2e83679f788a81e7d02dd9
+      content_python_sha: 0538c719cb764643d9f2a7ec0b038103c0d79f965fbd90ee73987155e104d6ca
+      content_csharp_sha: 5a72747166c66ca653bd4fc119cb3596140321b68ff584390e0ab4398bd50db2
   known_differences:
     - "Socle commun : Explanation-Based Learning (EBL) et Relevance-Based Learning (RBL) -- variabilisation, extraction de regle, speedup, determinations."
     - "Asymetrie de couverture : Python (44 cellules, 15 code) couvre EBL (simplification arithmetique, variabilisation, implementation complete, efficacite) + RBL (introduction aux determinations) ; C# (18 cellules, 9 code) couvre EBL (chainage avant avec unification, speedup) + RBL (verification de determination) -- structure plus serree."
