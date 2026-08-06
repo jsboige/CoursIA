@@ -36,7 +36,7 @@ For an infinitely repeated game, discount factor δ ∈ [0,1), real parameters `
 |-----------|-------|-----------|
 | Toolchain | `leanprover/lean4:v4.31.0-rc1` | 18-lake mutualised cohort |
 | Mathlib rev | `d568c8c0` | `#4363` junction shared cache |
-| Total sorry (production) | See [FORMAL_STATUS.md](FORMAL_STATUS.md) | Headline theorem 0 sorry required |
+| Total sorry (production) | See [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/) | Headline theorem 0 sorry required |
 | Total sorry (stretch) | Folk.lean — tolerated | `#4880` § "Critères de fermeture" §1 |
 
 ## Modules
