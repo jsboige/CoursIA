@@ -139,6 +139,72 @@ def test_machine_re_reflexive_verb_not_flagged_as_seconds():
         )
 
 
+def test_student_pacing_re_matches_pedagogical_durations():
+    """Le mot-cle « (Duree|Durée) (estimee|estimée) » est le signal TN pour le
+    pacing pedagogique. Qu'il soit en H3, H2, bold ou isole, c'est l'unique
+    cle d'exemption ligne-complet (arbitrage jsboige 14:05:37Z #9434)."""
+    for snippet in ["### Duree estimee : 45 minutes",
+                    "### Durée estimée : 60 minutes",
+                    "## Duree estimee : 50 minutes",
+                    "**Duree estimee** : 90 minutes",
+                    "**Durée estimée** : 90 minutes",
+                    "Duree estimee 25 minutes",
+                    "Durée estimée 25 minutes"]:
+        assert cqc.STUDENT_PACING_RE.search(snippet) is not None, (
+            f"devrait reconnaitre le pacing {snippet!r}"
+        )
+    # Pas de faux positif sur texte sans le mot-cle.
+    for snippet in ["la duree d'execution est ~50 s",
+                    "notre estimateur converge en 100 iterations",
+                    "estimate (quand le notebook re-tourne)"]:
+        assert cqc.STUDENT_PACING_RE.search(snippet) is None, (
+            f"ne doit PAS matcher hors mot-cle pacing {snippet!r}"
+        )
+
+
+def test_findings_in_text_exempts_student_pacing_lines():
+    """End-to-end : une ligne portant « Duree estimee : X minutes » (TN
+    pedagogique) ne contribue AUCUN finding machine, alors qu'une vraie
+    wall-clock (sans le mot-cle) reste capturee. Les autres classes
+    (artifact, env, stochastic) ne sont pas affectees par l'exemption.
+
+    Incident fondateur (#9434 angle-mort t4, arbitrage 14:05:37Z) : 200
+    findings FP sur origin/main (c.9687 drain list), fermes en vague
+    14:05-14:06Z suite a l'arbitrage user. La ligne entiere est exoneree
+    de la classe machine uniquement."""
+    # Ligne TN pacing : 0 finding machine.
+    out = cqc._findings_in_text(
+        "### Duree estimee : 45 minutes",
+        "loc",
+        {"machine"},
+    )
+    assert out == [], f"pacing TN ne doit pas flagger : {out!r}"
+    # Vraie wall-clock sur la ligne d'a cote : capturee.
+    out = cqc._findings_in_text(
+        "duree execution : ~144 ms",
+        "loc",
+        {"machine"},
+    )
+    assert out == [("loc", "machine", "~144 ms")]
+    # Mix : la ligne pacing est TN, les autres classes inchangees.
+    text = "\n".join([
+        "### Duree estimee : 45 minutes",
+        "duree execution : ~144 ms",
+        "### **Duree estimee** : 90 minutes",
+        "latence 12 s",
+    ])
+    out = cqc._findings_in_text(text, "loc", {"machine"})
+    assert out == [("loc", "machine", "~144 ms"), ("loc", "machine", "12 s")]
+    # Les autres classes (artifact, env, stochastic) ne sont pas affectees
+    # par l'exemption : un « 140 lignes » colle a un artefact reste flague.
+    out = cqc._findings_in_text(
+        "### Duree estimee : 45 minutes sur 140 lignes",
+        "loc",
+        {"machine", "artifact"},
+    )
+    assert out == [("loc", "artifact", "140 lignes")]
+
+
 # --------------------------------------------------------------------------- #
 #  Classe env (ENV_RE) : version de librairie figee en prose
 # --------------------------------------------------------------------------- #

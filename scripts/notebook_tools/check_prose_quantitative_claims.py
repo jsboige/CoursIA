@@ -64,6 +64,14 @@ ne se recalculent pas a l'execution) :
                     (``--class structural``) pour le voir inventorier, et il
                     ne fait jamais echouer.
 
+Exemption ligne-complet (arbitrage jsboige 14:05:37Z sur #9434) : un
+« (Durée|Duree) (estimée|estimee) : X minutes » dans une cellule markdown
+reflete l'effort demande a l'etudiant (pacing pedagogique), pas une mesure
+machine. Le mot-cle bascule la ligne entiere en TN pour la classe ``machine``
+(cf STUDENT_PACING_RE). Les autres classes (artifact/env/stochastic) restent
+actives : un « ~50 minutes » colle a un autre artefact reste flague. Les
+vraies wall-clock measures (sans le mot-cle pacing) restent capturees.
+
 La classe par defaut reste ``artifact`` : le contrat CI
 (``prose-counts-guard.yml`` appelle ``--diff`` sans ``--class``) est preserve
 exact. Les classes #9434 s'auditent en opt-in, pour poser le before/after d'un
@@ -235,6 +243,26 @@ JSON_KEY_RE = re.compile(r'"(?!source")[A-Za-z_][A-Za-z0-9_]*"\s*:')
 # Blocs generes : le catalogue a le droit de porter des chiffres, c'est son role.
 GENERATED_MARKERS = ("CATALOG-STATUS", "COURSE_CATALOG.generated")
 
+# Pacing pedagogique : un « ### Durée estimée : X minutes » (ou son pendant ASCII
+# « Duree estimee : X minutes ») dans une cellule markdown reflete l'effort
+# demande a l'etudiant, pas une mesure machine. Le scanner FP sur l'unite
+# « minutes » des qu'elle apparait dans ce contexte. Arbitrage jsboige 14:05:37Z
+# sur #9434 : TN structurel/pédagogique, HORS scope drainage, à GARDER. Ligne
+# entiere exoneree de la classe ``machine`` : la presence du motif (avec ou sans
+# « : » final, entre « ** ** » ou en tete H2/H3 suivant le prefixe) bascule la
+# ligne en TN. Les vraies wall-clock measures (sans le mot-cle pacing) restent
+# capturees.
+#
+# Note fix (#9434 angle-mort t4) : la cle d'exemption est le mot-cle
+# « (?:Durée|Duree) + estimée? » (avec ou sans accent, en ASCII ou UTF-8). Le
+# suffixe (:, **, espace) est optionnel, le mot-cle seul suffit. L'exemption
+# est ligne-complet : un « env. 5 min » isole (sans le mot-cle) reste flague.
+# Cf test_machine_re_exempts_student_pacing_lines.
+STUDENT_PACING_RE = re.compile(
+    r"(?:Dur[ée])e\s+estim[ée]e?",
+    re.IGNORECASE,
+)
+
 # Hors perimetre. `.claude` est le harnais (regles, memoires d'agents, plans,
 # worktrees d'autres sessions) : ce n'est pas de la prose livree a un etudiant,
 # et il y cite legitimement des seuils chiffres (« > 3000 lignes »).
@@ -321,15 +349,23 @@ def _findings_in_text(text: str, location: str, classes: set[str]) -> list[tuple
 
     La ligne est l'unite de co-occurrence pour stochastic (mot-clef + nombre sur
     la meme ligne) : evite les faux positifs d'un nombre et d'un mot-clef eloignes.
+    La ligne est aussi l'unite d'exemption pacing (cf STUDENT_PACING_RE) : un
+    « (Duree) (estimée) : X minutes » est TN pedagogique, jamais un compteur
+    machine ; la ligne entiere est exoneree de la classe ``machine``.
     """
     out: list[tuple[str, str, str]] = []
     for line in text.splitlines():
         if any(m in line for m in GENERATED_MARKERS):
             continue
+        # Student-pacing exemption (arbitrage jsboige 14:05:37Z #9434) :
+        # la ligne est TN pedagogique, on ne rapporte pas la duree machine.
+        # Les autres classes (artifact, env, structural, stochastic) restent
+        # actives : un « ~50 minutes » colle a un artefact (lignes) reste flag.
+        is_pacing = STUDENT_PACING_RE.search(line) is not None
         if "artifact" in classes:
             for m in COUNT_RE.finditer(line):
                 out.append((location, "artifact", m.group(0).strip()))
-        if "machine" in classes:
+        if "machine" in classes and not is_pacing:
             for m in MACHINE_RE.finditer(line):
                 out.append((location, "machine", m.group(0).strip()))
         if "env" in classes:
