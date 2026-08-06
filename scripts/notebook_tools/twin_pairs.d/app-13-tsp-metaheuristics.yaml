@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
       csharp_sha: c1aa93b3ef1995aad5abe0f24e07b8fa3efff577
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 9b312c4b7666b477baa6bdb620194ad1d862b37b
+      csharp_sha: c1aa93b3ef1995aad5abe0f24e07b8fa3efff577
+      content_python_sha: aae53d11e5d1de51e10fd7c4e699e9c844a44976628360a4472015e4a40b0b13
+      content_csharp_sha: d5f135124bb7a23a19ef6ae7a31798d569c57189d05147b8eef46a8b6a7a3aa1
   known_differences:
     - "Socle pedagogique commun : TSP / Voyageur de commerce (metaheuristiques + OR-Tools routing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools constraint_solver routing + permutations ; C# = BCL pure (System.*), 0 NuGet."

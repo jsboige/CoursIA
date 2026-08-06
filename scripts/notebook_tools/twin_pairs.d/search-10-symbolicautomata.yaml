@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 5542ba3e5ac011dbb7e9af495067833f0f75e28c
       csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 5542ba3e5ac011dbb7e9af495067833f0f75e28c
+      csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
+      content_python_sha: a13cf5d02cecfb89560ca35b34b6fddee798847cb96b7df9bc5b9fa1c6e66ae7
+      content_csharp_sha: 8f166b1cf589204f6537ad628c8ac9be581b9d18522316f60b2c192fa69f6c68
   known_differences:
     - "AVERTISSEMENT DE PERIMETRE : le jumeau C# est explicitement un twin PARTIEL -- son titre porte '(tranche 1)' et sa conclusion s'intitule 'Bilan (tranches 1 + 2)'. parity_level=surface (pas semantic) car la couverture C# est incomplete vs Python."
     - "Asymetrie de couverture forte : Python (91 cellules, 24 code) couvre §1-9 (automates finis avec automata-lib, automates symboliques avec Z3, verification de proprietes, lien Sudoku, Automata.Net) ; C# (39 cellules, 14 code) couvre §1-4 uniquement (automates finis a la main, automates symboliques avec Microsoft.Z3). Les sections 'verification de proprietes', 'lien Sudoku', 'Automata.Net' sont absentes du C#."

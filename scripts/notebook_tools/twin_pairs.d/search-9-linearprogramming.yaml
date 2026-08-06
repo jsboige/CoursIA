@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: d1d4f36599e49147f58195e85a475476d269680c
       csharp_sha: a6d7a7a59ded4ba7732054d17a66c5e40bb80c9f
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA-2
+      python_sha: d1d4f36599e49147f58195e85a475476d269680c
+      csharp_sha: a6d7a7a59ded4ba7732054d17a66c5e40bb80c9f
+      content_python_sha: c0150bdf9ca0e84485549218ed97a99a23256aa76842b83536da2608ab29a3b1
+      content_csharp_sha: cf104467fb33aad3434ff2b8b53128f2e0f106f01a8efb2fe30c4bda6205fab4
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Solveur SOTA distinct : Python = PuLP (interface declarative, solveur CBC par defaut) ; C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE). Les deux invoquent un vrai solveur industriel -- parite SOTA, pas reimplementation."

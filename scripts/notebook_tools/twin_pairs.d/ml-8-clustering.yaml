@@ -9,6 +9,12 @@
       python_sha: 98249788bd0a3541acd82d2f47e1dd645ac154b1
       csharp_sha: 9406692311322fed00c51c257131dfe204399768
       reason: "rebaseline apres add metadata.cost (#8445) aux DEUX jumeaux (vrais CPU-only identiques) ; parite semantique preservee (metadata-only, 0 code churn)"
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 98249788bd0a3541acd82d2f47e1dd645ac154b1
+      csharp_sha: 9406692311322fed00c51c257131dfe204399768
+      content_python_sha: bffcc0b69bbbc971375bbb72c3bb6e671d463ea982b365b4ba6dc21d330f2732
+      content_csharp_sha: 21dd6e85ea38b58fd74d3059bf3d362aa4ec17227f51e2dc13ff031aa273d501
   known_differences:
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
     - "Socle pedagogique commun : K-Means (K=3) avec normalisation MinMax preprocess ; evaluation par metriques de cohesion de clusters."

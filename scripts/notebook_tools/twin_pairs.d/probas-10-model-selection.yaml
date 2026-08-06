@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 4aef3828fcb8976eabcfbc56000d50487dc619e2
       csharp_sha: 00c3d935ea7b4573c2a3dd6950bf955a39fe793c
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 4aef3828fcb8976eabcfbc56000d50487dc619e2
+      csharp_sha: 00c3d935ea7b4573c2a3dd6950bf955a39fe793c
+      content_python_sha: 0ecbac4ebf10311e2395a67d27ad06d9bf782e224f2b948268484a6f646d8d05
+      content_csharp_sha: 89f8103ac972f8f1b95b8695fe4d55710ce339f9cb5adaf7e24c045219da4b82
   known_differences:
   - 'Socle pedagogique commun : selection de modele (WAIC/LOO, evidence) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

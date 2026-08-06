@@ -6,6 +6,12 @@
   audits:
     - python_sha: 1a0e83fca696c8c9b301b8c387d4ea5e8383a80e
       csharp_sha: 48fa33f84a0b73e3afd33cf0055a87363befb084
+    - date: "2026-08-06"
+      by: manual
+      python_sha: 1a0e83fca696c8c9b301b8c387d4ea5e8383a80e
+      csharp_sha: 48fa33f84a0b73e3afd33cf0055a87363befb084
+      content_python_sha: 47ed5db915e577b2dd2cc2127da5179b7682018866c3459e9f32a352e55e2cb5
+      content_csharp_sha: 20f0f5959c7bbdcd9b0d203929fdd7f61e551d76b2185b9f7cbee2d8a27706dc
   known_differences:
     - "AVERTISSEMENT DE PERIMETRE : le jumeau C# est un twin PARTIEL. parity_level=surface (pas semantic) car le C# (24 cellules, 11 code) couvre UNIQUEMENT le Weighted CSP (min cout de violation), alors que le Python (53 cellules, 20 code) couvre 4 paradigmes : Semiring-based CSP (cadre algebrique), Fuzzy CSP, Weighted CSP, plus integration OR-Tools CP-SAT. Les sections Python Semiring et Fuzzy sont entierement absentes du C#."
     - "Solver SOTA distinct : Python = OR-Tools CP-SAT (moteur SAT-based, ortools.sat.python.cp_model) ; C# = Choco-solver 4.10.17 via IKVM 8.15.0 (moteur Java, dll vendoree org.chocosolver.solver). Deux moteurs SOTA reels, idiomes et contraintes natives differentes."

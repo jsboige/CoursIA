@@ -9,6 +9,12 @@
       python_sha: e18d331835a9dea4aeb55447bd0b4c2c3c210925
       reason: "c.1124 rebase c.1241: Python c7 Allen composition-table 270->169 (13x13=169); C# twin clean"
       csharp_sha: 3859f46c9ec9b09dbbc50e7fc344d8844f82796b
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: e18d331835a9dea4aeb55447bd0b4c2c3c210925
+      csharp_sha: 3859f46c9ec9b09dbbc50e7fc344d8844f82796b
+      content_python_sha: f4e2f7ae8de60863f7507e18d185a9fb8aa5cb4da74f44c7db7e1219ae9bed2f
+      content_csharp_sha: 2aa8cecab9c6d7fe31513e4c65dc9511a9a1d521d86c84d45852204b1175126a
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."
