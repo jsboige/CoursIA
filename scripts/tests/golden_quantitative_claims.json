@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "name": "Golden set — classification des claims quantitatifs en prose (#9434)",
+    "purpose": "Valider la precision du scanner check_prose_quantitative_claims.py sur les 4 classes (machine/env/stochastic/structural). Chaque cas = un snippet de prose + la ground-truth humaine (cls, expect). Le test compare la ground truth au comportement reel du scanner ; les ecarts connus sont marques xfail avec rationale (angle-mort documente, pas un bug du test).",
+    "classes": {
+      "machine": "duree absolue machine-dependante (ms/sec/min). Derive avec la charge.",
+      "env": "version de librairie figee en prose. Derive a chaque bump.",
+      "stochastic": "valeur a virgule (>=2 dec) + mot-clef metrique, non reproductible sans seed.",
+      "structural": "speedup deterministe par taille (LEGITIME en prose)."
+    },
+    "note_stochastic": "Au niveau texte, on teste la cooccurrence KW+NUM (regex). La logique seed du notebook (un carnet seme = legitime) est testee separement via fixtures mini-notebooks dans le test pytest.",
+    "sources": {
+      "issue-9434": "cas reel documente dans le tableau de l'issue #9434",
+      "real-<family>": "cas reel pioche dans un notebook du depot",
+      "synthetic-boundary": "cas synthetique testant une frontiere de regex"
+    },
+    "counts": { "total": 32, "machine": 8, "env": 7, "stochastic": 9, "structural": 8 }
+  },
+  "cases": [
+    {"id": "m1", "text": "Le tri prend 24-127 ms selon la taille.", "cls": "machine", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross. Scanner matche '127 ms' (la 2eme valeur) — la 1ere '24-' n'a pas d'unite accolée."},
+    {"id": "m2", "text": " temps de ~144 ms en moyenne", "cls": "machine", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Forme canonique avec tilde."},
+    {"id": "m3", "text": "latence de 0.006 ms", "cls": "machine", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Sous-milliseconde (3 decimales)."},
+    {"id": "m4", "text": "generation en ~1.9 sec", "cls": "machine", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Unite 'sec' (multiletire)."},
+    {"id": "m5", "text": "la convergence prend 2 min", "cls": "machine", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Minutes."},
+    {"id": "m6", "text": "L'inference dure 0.2 s par batch.", "cls": "machine", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Unite monolettre 's' avec espace (exige par le scanner)."},
+    {"id": "m7", "text": "execution en 30s", "cls": "machine", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "ANGLE-MORT: '30s' sans espace AVANT 's' n'est pas matche (le scanner exige \\ss). Humainement c'est machine-dependant — devrait matcher. xfail documente (le scanner le rate)."},
+    {"id": "m8", "text": "Le port USB-C est connecte.", "cls": "machine", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: 'USB-C' ne contient pas d'unite de temps."},
+
+    {"id": "e1", "text": "Tourne sous NumPy 2.4.2", "cls": "env", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9429 GT-4c. Version de librairie figee en prose (la cellule imprime deja la version dynamiquement)."},
+    {"id": "e2", "text": "PyTorch 2.1.0 requis", "cls": "env", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Forme canonique."},
+    {"id": "e3", "text": "depend de Mathlib v4.31.0", "cls": "env", "expect": "match", "kind": "TP", "source": "real-lean", "note": "'v' optionnel devant la version."},
+    {"id": "e4", "text": "compile avec JAX 0.4", "cls": "env", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "1 seul chiffre de version apres le point."},
+    {"id": "e5", "text": "numpy 2.4.2 inclus", "cls": "env", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Minuscule: le scanner est IGNORECASE."},
+    {"id": "e6", "text": "Nous utilisons NumPy pour le calcul vectoriel.", "cls": "env", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: lib citee sans numero de version."},
+    {"id": "e7", "text": "Pandas 1.5", "cls": "env", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Version majeure.mineure courte."},
+
+    {"id": "s1", "text": "fitness moyen de 41.71", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9428 Search-5-GeneticAlgorithms. GA non-seede: valeur qui derive a chaque run."},
+    {"id": "s2", "text": "accuracy de 0.95 sur le jeu de test", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "real-ml", "note": "Metrique ML classique."},
+    {"id": "s3", "text": "WER de 12.34%", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "real-genai", "note": "Word Error Rate (audio)."},
+    {"id": "s4", "text": "perte (loss) egale a 0.456", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "3 decimales, KW 'perte'/'loss'."},
+    {"id": "s5", "text": "F1-score atteint 0.88", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'f1' borne."},
+    {"id": "s6", "text": "moyenne de 42.5 sur 10 runs", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'moyenne'. GROUND TRUTH: stochastique (derive sur 10 runs). ANGLE-MORT: 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2 -> le scanner le rate. xfail documente."},
+    {"id": "s7", "text": "score de 3 etoiles", "cls": "stochastic", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN: entier (pas de decimale) — ne derive pas comme un flottant stochastique."},
+    {"id": "s8", "text": "3.3 tentatives en moyenne", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9426 App-7-Wordle. GROUND TRUTH: stochastique (moyenne qui derive). ANGLE-MORT double: 'tentatives' n'est pas un KW, et 1 seule decimale -> le scanner le rate. xfail documente."},
+    {"id": "s9", "text": "l'entropie de Shannon vaut 2.31 bits", "cls": "stochastic", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "KW 'entropie' + 2 decimales."},
+
+    {"id": "t1", "text": "soit un speedup de 2.78e24x", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross. ANGLE-MORT MAJEUR: '2.78e24x' (notation scientifique + x) N'EST PAS matche par le scanner — xfail documente. La regex bute sur le '\\b' apres 'e24' avant le 'x'."},
+    {"id": "t2", "text": "acceleration de 4x", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Forme canonique simple."},
+    {"id": "t3", "text": "gain de 1,5x", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Virgule decimale francaise."},
+    {"id": "t4", "text": "ratio de plus de 300x", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "Issue #9434 mentionne '300x' comme structurel legitime."},
+    {"id": "t5", "text": "ordre de grandeur 2.78e24", "cls": "structural", "expect": "match", "kind": "TP", "source": "synthetic-boundary", "note": "Notation scientifique SANS le 'x' — celle-la matche (frontiere revelant que c'est le 'x' apres 'e24' qui coince)."},
+    {"id": "t6", "text": "la variable x vaut 5", "cls": "structural", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: 'x' comme variable, pas un facteur."},
+    {"id": "t7", "text": "grille de 100x100 pixels", "cls": "structural", "expect": "nomatch", "kind": "TN", "source": "synthetic-boundary", "note": "TN propre: dimensions (WxH), pas un speedup. Le scanner ne matche PAS '100x100' car le \\b apres 'x' echoue (suivi du chiffre '1'). TN convergent — frontiere revelant que STRUCTURAL_RE est robuste aux dimensions."},
+    {"id": "t8", "text": "soit 16x plus rapide", "cls": "structural", "expect": "match", "kind": "TP", "source": "issue-9434", "note": "PR #9427 App-11-Picross ('~68x -> ~16x')."}
+  ]
+}
