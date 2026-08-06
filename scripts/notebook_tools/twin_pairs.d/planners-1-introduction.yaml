@@ -9,12 +9,6 @@
       python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
       csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
       reason: "rebaseline python apres 1 fix structurel (#8052) : le titre ### 4.2 Implementation avec unified-planning apparaissait DEUX FOIS -- cellule 7 (intro) et cellule 9 (re-ouvert, byte-identique), avec seulement le code de verification de version (cellule 8) entre les deux ; la section 4 avait donc 4.1, 4.2, 4.2 (dup), 4.3. Fix = suppression du titre duplique de la cellule 9 (cellule 7 l'avait deja), la phrase d'introduction distincte de la cellule 9 est conservee (elle devient un pont entre la verification de version cellule 8 et le code de modelisation cellule 10, tous sous ### 4.2 ouvert a la cellule 7). Python-only (le jumeau C# from-scratch BCL n'a pas d'unified-planning, 0 titre ### 4.2), csharp_sha unchanged, parite semantique preservee (0 re-exec, 0 output/code modifie)."
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
-      csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
-      content_python_sha: 53fe5088b0ee89543ae4f92fa27f69ce20e31c9313ed91e71b2a9739509aa3bb
-      content_csharp_sha: a05e05cca431ff08f2a798289d03d5a77871ab8f9d5c094c5882c72c1c6f5b79
   known_differences:
     - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
     - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet)."

@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 42ffe90e4fb6c1d688dc6bb5c8e5258fb805246f
       csharp_sha: a76af28befd0e36fe0209bbb401852bcbc9c2c41
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 42ffe90e4fb6c1d688dc6bb5c8e5258fb805246f
-      csharp_sha: a76af28befd0e36fe0209bbb401852bcbc9c2c41
-      content_python_sha: d86cdc416849127311518d7f5c420c4dc2cab72d9d5d96c1f82b1f81d63538ce
-      content_csharp_sha: c4c4463c7d242163f86a654493f6c2c1df74ee27ad5c6182ef12d3e39ff73967
   known_differences:
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."
     - "Idiomes framework : Python = `networkx` (arbre de jeu) + `numpy` + `matplotlib` (rendu graphique des arbres et des trajectoires d'induction) + `@dataclass` + implementation manuelle de l'induction arriere. C# = **BCL .NET pur 0 NuGet** (modele d'arbre de jeu from-scratch + section dediee « Visualisation ASCII de l'arbre de jeu » en sortie console)."

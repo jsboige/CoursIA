@@ -8,12 +8,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 4c04fe94faf2b0e2aea04dead81f1f46edf60b11
       csharp_sha: c8f8372242c5da1bdecbc1e03be05e2d28ce2154
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 4c04fe94faf2b0e2aea04dead81f1f46edf60b11
-      csharp_sha: c8f8372242c5da1bdecbc1e03be05e2d28ce2154
-      content_python_sha: 8ba920d8f6f6b0c18eb0653165aa21db2dc9486f4d856048055cc45da1ae6bdc
-      content_csharp_sha: 6131244f30d1b5684033401391623326b94a89c16630b37614f8c3b444031d60
   known_differences:
     - "Python : pyz3 (Range, Concat, Plus, Re, InRe, Length sur Seq). C# : Microsoft.Z3 .NET (ctx.MkRange, MkConcat, MkRe...)."
     - "Cote Python : fix code-correctness c.17 (PR #8040) — date AAAA-MM-JJ sous-contrainte (Plus(Range)=[0-9]+ variable) resverree en groupes longueur-fixe [0-9]{n} via helper chiffres(n). Le concept (string regex Z3) est commun aux deux cotes ; le detail du fix date est specifique au notebook Python."

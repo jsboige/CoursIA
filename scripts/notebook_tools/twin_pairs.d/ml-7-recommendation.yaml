@@ -9,12 +9,6 @@
       python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
       csharp_sha: 10759ec1e2d7f09f47e811dcb7c6c81173aeccc5
       reason: "c.1130 #8052 csharp c11 comment 'Film 3 (qu il n a pas note)' FALSE (User1 rated Film3=1: c3 data literal MovieRating UserId=1 MovieId=3 Rating=1 + c11 own output 'vraie note = 1'; matrix full 15/15 so NO unrated movies -> demo predicts a KNOWN rating, parenthetical removed) + c19 md/c20 print-literal cellule 17->18 off-by-one (c17=markdown metrics table computes nothing; c18=eval cell output RMSE 2,955 / R2 -33,939). Python twin preserved (a3279c17 sparsite rebaseline prior). Structural/identity + comment -> 0 output change, 0 re-exec."
-    - date: "2026-08-06"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
-      csharp_sha: 10759ec1e2d7f09f47e811dcb7c6c81173aeccc5
-      content_python_sha: e49f24a57c52ec6ff167091f332a28ddc61c663f1a49c0b10bda9101a23c06ca
-      content_csharp_sha: ceaf09f5e8c8b5c2733f9df4ecadeb39919e73147c520be638a69b2e9f7a9853
   known_differences:
     - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
     - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."

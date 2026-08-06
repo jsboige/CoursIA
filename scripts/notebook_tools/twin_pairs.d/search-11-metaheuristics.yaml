@@ -13,12 +13,6 @@
       by: myia-po-2023:CoursIA
       python_sha: 029307e5c05c6b5bfaa05d2c668c1116952a4a73
       csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 029307e5c05c6b5bfaa05d2c668c1116952a4a73
-      csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
-      content_python_sha: ca2d1d7f7bdb5558c9b10b81f5b9d1ad24d7f0885c9315e097a76f058aaadc30
-      content_csharp_sha: 5edf42f85757cb6fc2c0fa6d9617f8c2ec66c86e1103d1f56f01caeec9b0d047
   known_differences:
     - "Socle commun : metaheuristiques d'optimisation (PSO Particle Swarm, SA Simulated Annealing), fonctions de benchmark, benchmark comparatif, analyse de parametres, exemple guide."
     - "Bibliotheque vs from-scratch : Python invoque MEALPy (librairie metaheuristique, 40+ algorithmes) pour PSO/ABC/SA/BRO ; C# implemente PSO/SA/GA from-scratch (System.Random, pas de NuGet metaheuristique)."
