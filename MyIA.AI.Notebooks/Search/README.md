@@ -351,7 +351,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | **3 jumeaux C#** (Search-12/13/14-Csharp) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + trilogie MGS-7b/7c/7d) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 20 cas réels (App-1 à App-20) | Python + .NET | **20 binômes complets** (40 notebooks) |
-| Racine | 0 | — | (aucun — voir [archive/](archive/) pour les anciens notebooks racine) |
+| Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
 La série a atteint la **parité `Python ⇄ C#` complète** en juillet 2026 : le marathon [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) a livré les jumeaux des trois parties curriculaires et des 20 applications, tous mergés sur `main`. Seule la [Partie 4](Part4-Metaheuristics/) reste mono-langage — par conception, puisqu'elle démontre l'ingénierie .NET native au-dessus de GeneticSharp.
 
