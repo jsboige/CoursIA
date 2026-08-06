@@ -747,7 +747,6 @@ GameTheory/
 │   ├── 04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
 │   └── README.md
 ├── README.md
-├── INVENTORY.md                            # Inventaire notebooks
 ├── LEAN_INVENTORY.md                       # Inventaire Lean (toolchains + sorry)
 ├── install_wsl_kernel.md                   # Install kernel WSL
 ├── requirements.txt                        # 16 deps Python (nashpy/scipy/z3/etc.)
