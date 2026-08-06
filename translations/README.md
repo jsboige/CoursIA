@@ -24,7 +24,7 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 
 ## Familles couvertes (T1 baseline)
 
-**33 CSV, 24 254 cellules** au total (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête). Regroupement par domaine pédagogique :
+**33 CSV, 24 470 cellules** au total (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête, audit Python `csv.DictReader` c.1252 2026-08-06). Regroupement par domaine pédagogique :
 
 | Domaine | CSV | Cellules | Série source |
 |---------|-----|---------:|--------------|
@@ -80,8 +80,22 @@ python scripts/translation/extract_cells_to_csv.py --src-lang fr --repo-root . \
 python scripts/translation/check_translation_sync.py   # 0 anomalie attendue
 ```
 
+## Doctrine c.31 — pas de PR *resync-only* tant que le moteur T3 est gated
+
+Érigée par po-2023 (c.31, 2026-07-22) sur [#6949](https://github.com/jsboige/CoursIA/issues/6949), entérinée par décision coordinateur (myia-ai-01, même thread) :
+
+> Tant que `scripts/translation/translate_csv.py` reste `ENABLED = False` (ligne 53), une PR de type *resync CSV* qui zerote un compteur `SRC_DRIFT` sans livrer de cellule traduite est **indiscernable d'un travail fait** — c'est une falsification du signal de dérive (cf. incidents fondateurs #8678 et #8680). Elle **doit rester visible** : `N cellules modifiées depuis la dernière traduction` est un signal vrai et utile au moment du GO.
+
+**Règle, effective immédiatement (c.31 → c.1252)** : plus de PR *resync-only* sur `translations/**/*.csv` jusqu'au GO moteur T3. `check_translation_sync.py` continue de **détecter** la dérive ; on cesse de la **zeroter**. Un resync reste légitime **couplé** à une livraison qui le consomme (extraction d'un notebook neuf, ou première traduction réelle).
+
+**Application post-clôture textuelle #6949** : PR [#8431](https://github.com/jsboige/CoursIA/pull/8431) (2026-07-25) a zeroté 100 SRC_DRIFT sur Planners **après** la clôture textuelle (#7967, 2026-07-22). **Violation documentée** : le compteur `100 → 0` a été publié sans livraison de traduction. Cet incident **renforce** la doctrine (ne la renverse pas) et reste **ouvert** comme exemple pour les futurs agents qui évalueraient un resync.
+
+Voir le diagnostic de référence : [docs/translation/translations-root-diagnostic.md](../docs/translation/translations-root-diagnostic.md) (c.1252, 2026-08-06).
+
 ## Voir aussi
 
 - Issue #4957 — design infrastructure
 - Epic #1650 — traduction multilingue du dépôt
+- Issue #6949 — T3 moteur fork Argumentum (OUVERTE par décision coord)
 - `scripts/translation/README.md`
+- `docs/translation/translations-root-diagnostic.md` — diagnostic de l'état + options de disposition
