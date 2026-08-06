@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 0c683cf6e0555230549c7fc0cea61995c876eb3e
       csharp_sha: eb47af5f9ac0e8a1dab26989671bfd0b6baad2c4
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 0c683cf6e0555230549c7fc0cea61995c876eb3e
+      csharp_sha: eb47af5f9ac0e8a1dab26989671bfd0b6baad2c4
+      content_python_sha: ff03990fbdaf89c8f11d99934bc3b8b58e1d31f1e61283b2cb5eafdeff1e690c
+      content_csharp_sha: 2cbbb56683a8d47fb5ced20b221651eefca4c5ce04d2b6ee7ea77f6b4eeffc80
   known_differences:
     - "Bibliotheque vs from-scratch : Python invoque NetworkX (librairie mature, algorithmes de graphes prets a l'emploi : plus courts chemins, centralites, flot max, Louvain, matching) ; C# implemente les algorithmes from-scratch sur une adjacency list maison (BFS, DFS, Dijkstra, Ford-Fulkerson). parity_level=surface (meme plan pedagogique, implementations independantes)."
     - "Asymetrie de couverture : Python (42 cellules, 21 code) couvre §1-10 (construction, visualisation matplotlib, plus courts chemins, centralites, flot maximum, detection de communautes Louvain, matching pondere, Prong-B #3801) ; C# (20 cellules, 9 code) couvre §1-6 (graphe pondere, BFS/DFS, Dijkstra, centralites, flot maximum Ford-Fulkerson, visualisation ASCII). Louvain, matching pondere et Prong-B sont absents du C#."

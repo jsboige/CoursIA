@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 78a207157e912197358a83086ab8428e3847ca0e
       csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 78a207157e912197358a83086ab8428e3847ca0e
+      csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
+      content_python_sha: 2beb1168661559d6a1c3e1dbd65f86bb227eba88418ef725d0e317baa1fbf8fb
+      content_csharp_sha: f8b3b0a37bb7a016c8ed08bdfeafc4bbef299cabdff72eaeadfd0ba58a676279
   known_differences:
     - "Socle pedagogique commun : sac a dos 0/1, Limited Discrepancy Search (LDS) borne le nombre d'ecarts a l'heuristique gloutonne (ratio valeur/poids decroissant) pour trouver l'optimum sans explorer tout l'arbre."
     - "Idiomes framework : Python = tuples nommes `(name, weight, value)` + fonctions pures (`greedy_knapsack`, `lds`). C# = `record Item(string Name, int Weight, int Value)` (immuable) + methodes retournant un tuple `(Value, Selection, Nodes)`."

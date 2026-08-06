@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
       csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
+      csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
+      content_python_sha: c34685cbb1e3a95506ad1bf8d1ec07b43670b205a5facafedf1fc8879be3217c
+      content_csharp_sha: 9bc6bfe54cc264485d49f730ebcd6152da0f3c1d5038e1d28d296937c2ae11a6
   known_differences:
     - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
     - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."

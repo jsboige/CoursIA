@@ -9,6 +9,12 @@
       python_sha: f076193833b42af315e24fa5c0c599582d348d2d
       csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
       reason: "rebaseline python apres fix cross-reference cellule 2 (#8052) : la section 1.2 disait 'Le paradoxe de la chaine de magasins (Notebook 8)' mais le paradoxe est couvert dans le Notebook 9 (BackwardInduction section 4 + code create_chain_store_game + ancres Selten 1978 / Rosenthal 1981), pas le Notebook 8 (Combinatorial Games). Fix (Notebook 8)->(Notebook 9). Python-only, csharp_sha unchanged, parite semantique preservee."
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: f076193833b42af315e24fa5c0c599582d348d2d
+      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
+      content_python_sha: c2ddea196ff10b47a322101b679c750010012729ac02e145ba068e97309a5d8a
+      content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
   known_differences:
     - "Socle pedagogique commun : jeux de reputation dans les interactions repetees sous information incomplete -- pourquoi la reputation change tout, cheap talk (communication non couteuse), modele de Kreps-Wilson (reputation du « tough incumbent » dans la chaine de magasins), Gang of Four / KMRW (cooperation emergente dans le dilemme du prisonnier fini), equilibre bayesien parfait (PBE). Suit naturellement le GT-11 (jeux bayesiens) en appliquant le BNE aux dynamiques de reputation."
     - "Idiomes framework : Python = `scipy.optimize.fsolve` (resolution des conditions d'equilibre Kreps-Wilson) + `matplotlib` (courbes de gain / trajectoires de reputation) + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** avec une **simulation numerique Monte-Carlo from-scratch** (Random + System.Math, etude de l'impact du parametre epsilon sur les gains)."

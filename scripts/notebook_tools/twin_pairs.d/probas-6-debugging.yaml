@@ -12,6 +12,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
       csharp_sha: 7a620e4f99806eb368c890e2ada2e9f8c83a0b2e
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
+      csharp_sha: 7a620e4f99806eb368c890e2ada2e9f8c83a0b2e
+      content_python_sha: 21f29a64615e41bc883e1da7219b15b0c528d759372a463ad3f33bbf4628ddc3
+      content_csharp_sha: adcfbaacdc960af3d68454b59d768b8a91ccbdf57b141e3a4f572adbc998cf16
   known_differences:
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

@@ -8,6 +8,12 @@
       by: po-2026
       python_sha: e24fce0a7a9e69057a9ceab84319f5f933a0f238
       csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
+    - date: "2026-08-06"
+      by: po-2026
+      python_sha: e24fce0a7a9e69057a9ceab84319f5f933a0f238
+      csharp_sha: 210ee14839bb9260ab115cabbc6cb5de4b897c23
+      content_python_sha: a704ada4e839ed0d263cffa38cacd6f9ed3022a8e93f514085cf6f5a7f34b1bb
+      content_csharp_sha: b57636a07d68026dcd260db1164a30460e88be46866622960a36ed4001b677d9
   known_differences:
     - "Socle pedagogique commun : Generateur de mots croises (CSP : slots, intersections, dictionnaire) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT + dataclass + viz grille + stats ; C# = BCL pure (System.Linq/Text), 0 NuGet, 24 cellules."

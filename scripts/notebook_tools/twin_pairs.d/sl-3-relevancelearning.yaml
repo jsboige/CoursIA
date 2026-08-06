@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 40f2cd7c36fcbb293ad79aae55109190e0272458
       csharp_sha: 7b065b84b9a88aa7f1986fda628aa70d2127e4ba
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 40f2cd7c36fcbb293ad79aae55109190e0272458
+      csharp_sha: 7b065b84b9a88aa7f1986fda628aa70d2127e4ba
+      content_python_sha: 03ca5467db08c4f61f43ce084551a032cb04c0c1e842bc231597519d07d54317
+      content_csharp_sha: f6b63ff0f3e14c9256cf27eddd88b207722a2d0dbfc2be652baf672e68929706
   known_differences:
     - "Socle commun : Relevance-Based Learning (RBL) approfondi -- determinations fonctionnelles, treillis des determinations, algorithme MINIMAL-CONSISTENT-DET, selection d'attributs guidee."
     - "Asymetrie de couverture : Python (42 cellules, 17 code) couvre determinations + treillis + MINIMAL-CONSISTENT-DET + lien Web Semantique + defi presentation ; C# (23 cellules, 11 code) couvre determinations + treillis (powerset) + determination minimale + application activite biologique + borne PAC + information mutuelle. Les deux cotes apportent des enrichissements distincts (Web Semantique cote Python, borne PAC + information mutuelle cote C#)."
