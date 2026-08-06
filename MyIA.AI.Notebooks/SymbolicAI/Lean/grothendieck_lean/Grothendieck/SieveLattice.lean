@@ -16,6 +16,7 @@ identités fondamentales du **pullback le long de morphismes** :
   - `pullback_monotone` : pullback monotone dans le crible
   - `pullback_inf` (Partie 8, `SieveOps.lean`) : pullback préserve ⊓
   - `pullback_union` : pullback préserve ⋃ (joins finis)
+  - `pullback_imap` : pullback préserve les bornes supérieures indexées (iSup)
   - `pullback_ofObjects` : pullback distribue `Sieve.ofObjects` selon la cible
   - `mem_iff_pullback_eq_top` : `f ∈ S` ssi `Sieve.pullback f S = ⊤`
 
@@ -125,6 +126,27 @@ extension Phase 2 (Issue #2159, Epic #1646).
 theorem pullback_union {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
     (S R : Sieve X) :
     Sieve.pullback f (S ⊔ R) = Sieve.pullback f S ⊔ Sieve.pullback f R := by
+  ext Z g
+  simp [Sieve.pullback]
+
+/-!
+## Pullback distribue sur la borne supérieure indexée
+
+Généralisation de `pullback_union` (join binaire) à une famille indexée
+quelconque : tirer en arrière la borne supérieure d'une famille de cribles
+égale la borne supérieure de leurs pullbacks. C'est la propriété
+d'adjoint gauche du pullback — il préserve **toutes** les bornes
+supérieures, pas seulement les joins binaires, ce qui en fait un
+morphisme de treillis complet (frame homomorphism) sur les cribles.
+
+`pullback_union` en est le cas particulier à deux éléments.
+-/
+
+/-- CALIBRATION (ext + simp) : pullback distribue sur le iSup d'une
+    famille indexée. Généralisation de `pullback_union` (join binaire). -/
+theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
   ext Z g
   simp [Sieve.pullback]
 

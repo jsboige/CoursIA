@@ -14,6 +14,7 @@ identities of pullback along morphisms:
   - Pullback is monotone in the sieve (pullback_monotone).
   - Pullback preserves ⊓ (pullback_inf, in Part 8 SieveOps.lean).
   - Pullback preserves ⋃, the finite join (pullback_union).
+  - Pullback preserves indexed suprema, iSup (pullback_imap).
   - Pullback distributes `Sieve.ofObjects` across the target (pullback_ofObjects).
   - `f ∈ S` iff `Sieve.pullback f S = ⊤` (mem_iff_pullback_eq_top).
 
@@ -109,6 +110,26 @@ Phase 2 extension (Issue #2159, Epic #1646).
 theorem pullback_union {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
     (S R : Sieve X) :
     Sieve.pullback f (S ⊔ R) = Sieve.pullback f S ⊔ Sieve.pullback f R := by
+  ext Z g
+  simp [Sieve.pullback]
+
+/-!
+## Pullback distributes over the indexed supremum
+
+Generalization of `pullback_union` (binary join) to an arbitrary indexed
+family: pulling back the supremum of a family of sieves equals the
+supremum of their pullbacks. This is the left-adjoint property of
+pullback — it preserves **all** suprema, not just binary joins, making
+it a complete-lattice morphism (frame homomorphism) on sieves.
+
+`pullback_union` is the two-element special case.
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the iSup of an
+    indexed family. Generalization of `pullback_union` (binary join). -/
+theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
   ext Z g
   simp [Sieve.pullback]
 
