@@ -3650,7 +3650,20 @@ private theorem p4_se_shift_lemma
     completion of `p4_nw_overlap_wall` via parametric generalization
     will simultaneously close this + the corresponding `p4_ne_overlap_wall`
     + `p4_se_overlap_wall` mirrors, leaving the 4-corner ceremony fully
-    wired. Sorry count FLAT (no proof deleted). -/
+    wired. Sorry count FLAT (no proof deleted).
+
+    STATEMENT CORRECTION (c.19 piège, option a per ai-01 msg-233116): the
+    conclusion offset was previously `(r.1 - 2^(k-1), r.2 - 2^(k-1))` — a
+    copy of the NW mirror. But the SW quadrant is the BOTTOM-LEFT corner
+    (row-shifted by `2^k` relative to NW, same column), so the correct
+    offset is `(r.1 - (2^k + 2^(k-1)), r.2 - 2^(k-1))`. This matches the
+    4-corner symmetry now consistent across all three existing walls:
+    NW (top-left) = `(2^(k-1), 2^(k-1))`; SW (bottom-left, THIS) =
+    `(2^k+2^(k-1), 2^(k-1))`; SE (bottom-right, ai-01 #9539) =
+    `(2^k+2^(k-1), 2^k+2^(k-1))` — SOUTH ⇒ r.1 gains `2^k`, EAST ⇒ r.2
+    gains `2^k`. No `exact` consumer (verified firsthand), so the
+    correction is scaffold-only. The proof remains research-level (#3846);
+    `sorry` is retained. -/
 private theorem p4_sw_overlap_wall
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
@@ -3673,7 +3686,8 @@ private theorem p4_sw_overlap_wall
                  (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
             (0, 0))) r
         = isAlive ((node R4 R5 R7 R8).toGrid (0, 0))
-            (r.1 - (2^(k - 1) : Int), r.2 - (2^(k - 1) : Int)) := by
+            (r.1 - ((2^k : Int) + (2^(k - 1) : Int)),
+             r.2 - (2^(k - 1) : Int)) := by
   sorry
 
 /-- **c.NNNN §2 — SW-quadrant supercell agreement (mirror of `p4_ne_supercell_agree`
