@@ -13,14 +13,19 @@ Les oscillateurs sont verifies via `isOscillator g n = true`.
 
 Toutes les coordonnees sont listees dans l'ordre lexicographique
 trie (ligne d'abord, puis colonne) pour que `step` produise une
-liste dans le meme ordre et que `native_decide` puisse verifier
-l'egalite par comparaison structurelle.
+liste dans le meme ordre et que le noyau puisse verifier l'egalite
+par comparaison structurelle (`decide` pour les structures stables,
+`native_decide` pour les oscillateurs — cf Section Oscillateurs).
 
 Le pulsar (48 cellules, periode 3) et le pentadecathlon (12 cellules,
-periode 15) sont **a la limite** de `native_decide` : ils necessitent
-plusieurs calculs de `step` sur des listes de cellules non triviales.
-Leurs theoremes sont conserves non-commentes apres verification locale
-de `lake build`. Les definitions elles-memes sont exportees inconditionnellement.
+periode 15) depassent la limite de profondeur de recursion du reducteur
+kernel (`maximum recursion depth reached` en `decide` pour le pulsar) ;
+ils necessitent la compilation native (`native_decide`) pour etre
+verifies. Leurs theoremes sont conserves non-commentes (prouves par
+`native_decide`, un axiome natif par theoreme). Les cinq structures
+stables (loaf, boat, tub, pond, ship), plus simples, sont prouvees par
+`decide` dans le noyau (zero axiome). Les definitions elles-memes sont
+exportees inconditionnellement.
 
 Ce module est entierement prouve (aucun gap dans les theoremes non-commentes).
 -/
@@ -100,8 +105,13 @@ def ship : Grid :=
 
 /-! ## Verifications des structures stables
 
-Chaque predicat est reduit a un `Bool` par le noyau et decide par
-`native_decide` apres compilation. -/
+Chaque predicat est reduit a un `Bool` par le noyau. Les cinq structures
+stables ci-dessous sont prouvees par `decide` dans le noyau (zero axiome
+natif : la preuve est verifiee par le reducteur, pas deleguee au compilateur
+natif). Le pulsar et le pentadecathlon, dont la reduction kernel depasse la
+limite de profondeur de recursion (`maximum recursion depth reached` en
+`decide` pour le pulsar), restent prouves par `native_decide` (Section
+Oscillateurs ci-dessous). -/
 
 -- Evaluations de verification (re-evaluees par `#eval` au moment de l'elaboration)
 #eval isStillLife loaf
@@ -111,30 +121,32 @@ Chaque predicat est reduit a un `Bool` par le noyau et decide par
 #eval isStillLife ship
 
 /-- Le Loaf est une structure stable. -/
-theorem loaf_still_life : isStillLife loaf = true := by native_decide
+theorem loaf_still_life : isStillLife loaf = true := by decide
 
 /-- Le Boat est une structure stable. -/
-theorem boat_still_life : isStillLife boat = true := by native_decide
+theorem boat_still_life : isStillLife boat = true := by decide
 
 /-- Le Tub est une structure stable. -/
-theorem tub_still_life : isStillLife tub = true := by native_decide
+theorem tub_still_life : isStillLife tub = true := by decide
 
 /-- Le Pond est une structure stable. -/
-theorem pond_still_life : isStillLife pond = true := by native_decide
+theorem pond_still_life : isStillLife pond = true := by decide
 
 /-- Le Ship est une structure stable. -/
-theorem ship_still_life : isStillLife ship = true := by native_decide
+theorem ship_still_life : isStillLife ship = true := by decide
 
 /-! ## Oscillateurs (motifs a la limite)
 
 Ces deux motifs sont les plus petits des « grands » oscillateurs du
-Jeu de la Vie classique de Conway. Ils se situent a la limite de ce
-que `native_decide` peut verifier dans un budget noyau raisonnable ;
-les temoins ci-dessous sont conserves comme definitions, et les
-theoremes sont mis en commentaire en attente d'une verification
-`lake build` locale sur la machine cible. Si `lake build` reussit
-dans la limite de reduction du noyau, les theoremes peuvent etre
-decommentes.
+Jeu de la Vie classique de Conway. Contrairement aux structures stables
+ci-dessus (prouvees par `decide` dans le noyau, zero axiome), leur
+reduction par le noyau atteint la limite de profondeur de recursion
+(`maximum recursion depth reached` en `decide` pour le pulsar). Leurs
+theoremes sont donc prouves par `native_decide` (compilation native),
+qui n'est pas soumis a la limite `maxRecDepth` du reducteur kernel —
+au prix d'un axiome `_native.native_decide.ax_1_1` ajoute a la TCB
+pour chacun. Les temoins (`pulsar`, `pentadecathlon`) sont exportes
+inconditionnellement comme definitions.
 
 La disposition 13x13 du pulsar suit le positionnement standard de la
 litterature. Le pentadecathlon est donne dans sa phase minimale
