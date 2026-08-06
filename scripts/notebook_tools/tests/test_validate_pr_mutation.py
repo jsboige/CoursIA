@@ -326,7 +326,7 @@ class TestGetChangedNotebooks:
         assert result == []
 
     def test_git_diff_called_when_no_paths(self):
-        """Without explicit paths, git diff is invoked."""
+        """Without explicit paths, merge-base then git diff are invoked (#9672)."""
         with patch("validate_pr_notebooks.subprocess.run") as mock_run:
             # Return a path that exists on disk so the filter passes
             nb_path = Path(__file__).resolve().parent.parent.parent / "MyIA.AI.Notebooks" / "Search" / "Part1-Foundations" / "Search-1-Introduction.ipynb"
@@ -334,7 +334,9 @@ class TestGetChangedNotebooks:
                 stdout=str(nb_path) + "\n", stderr=""
             )
             result = get_changed_notebooks("origin/main")
-            mock_run.assert_called_once()
+            assert mock_run.call_count == 2
+            assert "merge-base" in mock_run.call_args_list[0].args[0]
+            assert "diff" in mock_run.call_args_list[1].args[0]
             if nb_path.exists():
                 assert len(result) >= 1
             else:

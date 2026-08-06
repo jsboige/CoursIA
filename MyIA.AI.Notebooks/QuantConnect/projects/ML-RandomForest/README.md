@@ -1,85 +1,115 @@
-# ML-RandomForest
+# ML-RandomForest — Random Forest sur grandes capitalisations US
 
-**Asset class:** US Equities (Large-cap)
-**Cloud project ID:** 29434751
+**Classe d'actifs :** Actions US grandes capitalisations (10 titres)
+**Cloud project ID :** 29434751
+**Période backtestée :** 2015-01-01 → 2024-12-31
 
 ## Description
 
-Random Forest (sklearn `RandomForestClassifier`) strategy on 10 large-cap US stocks.
-Uses 12 technical features (RSI, Bollinger Bands, MACD, momentum, volatility, volume, price ratios) to predict 10-day forward returns.
+Stratégie de classification par **Random Forest** (sklearn `RandomForestClassifier`) sur 10 grandes capitalisations US. Utilise 12 features techniques (RSI, bandes de Bollinger, MACD, momentum, volatilité, volume, ratios de prix) pour prédire le signe du rendement à 10 jours.
 
-Monthly model training with biweekly rebalance (every other Monday). Prediction threshold of 0.54 with max 5 concurrent positions at 18% weight each.
+Entraînement mensuel du modèle, rebalancement bimensuel (un lundi sur deux). Seuil de prédiction 0.54, 5 positions concurrentes max à 18 % chacune.
+
+**Version anglaise préservée** : [README.en.md](README.en.md).
+
+## Configuration déployée (v3, `main.py` Cloud 29434751)
+
+| Composant | Paramètre | Rôle |
+|-----------|-----------|------|
+| Univers | AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, WMT | 10 large-caps |
+| Features | 12 (RSI, BB, MACD, mom 5/10/20, vol 20, volume, prix/SMA) | Signal technique |
+| `n_estimators` | 100 | Taille de la forêt |
+| `max_depth` | 5 | Profondeur ( conservative — *pas* le « 10 optimal » de H2) |
+| `min_samples_split` | 10 | Régularisation |
+| Lookback | 120 jours | Fenêtre d'entraînement |
+| Seuil | 0.54 | Probabilité min pour ouvrir |
+| Positions max | 5 @ 18 % | Concentration |
+| Rebalance | Bimensuel | Tous les 2 lundis |
+| Entraînement | Mensuel | recalibrage |
+| Graine | `random_state=42` | **Single seed** (cf. lecture honnête) |
+
+## Backtest réel (QC Cloud, frais IBKR inclus)
+
+| Métrique | Valeur |
+|----------|--------|
+| Sharpe ratio | **0.819** |
+| CAGR | **24.25 %** |
+| Drawdown max | **40.50 %** |
+| Rendement total net | 1141.6 % (+1 119 957 $ sur 100 k $) |
+| PSR (Probabilistic Sharpe Ratio) | **14.52 %** |
+| Ordres exécutés | 1250 |
+| Jours tradés | 2914 |
+
+*Backtest frais via QC Cloud project 29434751 (compile `BuildSuccess`, 2026-08-06). Métriques vérifiées firsthand.*
+
+### Lecture honnête — Mag7-beta avec vernis ML, pas d'alpha statistique
+
+Le CAGR de 24.25 % semble élevé, mais **trois caveats §C** l'attenent sévèrement :
+
+1. **Biais Mag7/FAANG dans l'univers (§C point 5)** : 7 des 10 tickers (AAPL, MSFT, GOOGL, AMZN, **NVDA**, META, **TSLA**) sont des Mag7/FAANG. La règle `pr-review-discipline.md` §C interdit explicitement les FAANG/Mag7 en training set pour éviter ce biais. Sur 2015-2024, NVDA a fait ~100×, TSLA ~20× — l'essentiel du CAGR 24 % est **l'exposition beta au bull run Mag7**, pas la capacité prédictive du Random Forest. Un `buy-and-hold` équipondéré des 7 Mag7 donne un CAGR similaire sur la période.
+
+2. **Single seed (`random_state=42`)** : aucune robustesse multi-seed. §C exige ≥4 seeds (0/1/7/42/99) avec edge ≥ 2σ cross-seed pour tout claim « BEATS ». **PSR 14.52 %** < 50 % : le Sharpe observé n'est **pas** statistiquement supérieur à zéro au seuil conventionnel. Le rendement observé est compatible avec du bruit de chance sur une seule réalisation.
+
+3. **Signaux d'overfitting dans le sweep de recherche** : les figures H2 et H4 célèbrent « depth=10 S=1.064 BAT TOUTES LES STRATÉGIES » et « Universe=5 S=1.118 OPTIMAL MASSIF ». Ce sont des **signatures classiques d'overfitting in-sample** sur le Mag7 : arbres plus profonds = mémorisation de la tendance haussière ; univers plus petit = concentration sur NVDA (le top performer). Notamment, **la config déployée (v3) utilise `max_depth=5` et `universe=10` — le choix CONSERVATEUR, pas les « optimaux » du sweep**. L'auteur a reconnu (implicitement, via le choix de production) que depth=10 et universe=5 étaient du surajustement. Le README de recherche devrait présenter ces « optimaux » comme **warnings d'overfitting**, pas comme des victoires.
+
+**Conclusion honnête** : ne PAS présenter le CAGR 24 % comme de l'alpha ML. C'est du **beta Mag7 filtré par un classifieur entraîné sur la même période** — la valeur pédagogique réside dans le **diagnostic d'overfitting** (sweep H1-H5) et la démonstration d'un pipeline ML complet (features → train → predict → rebalance), pas dans la performance. Le MaxDD 40.5 % (concentration Mag7, bear 2022) confirme le risque non diversifié.
+
+## Comment exécuter
+
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest"`
+**QC Cloud :** Déployé comme project 29434751.
+
+## Fichiers
+
+- `main.py` — Stratégie `MLRandomForestAlgorithm` v3.
+- `research.ipynb` — Recherche (sweep H1-H5 sur les hyperparamètres).
+- `assets/readme/*.png` — Figures du sweep (H1 n_estimators, H2 max_depth, H3 threshold, H4 universe, H5 train freq).
+
+## Concepts enseignés
+
+- **Pipeline ML complet** : features techniques → `RandomForestClassifier` → `predict_proba` → rebalancement seuillé.
+- **Sweep d'hyperparamètres** : la méthodologie H1-H5 (varier un paramètre, tracer equity + drawdown) est pédagogiquement saine — **à condition de lire les optima comme des signaux d'overfitting in-sample, pas comme des recettes de production** (cf. la sagesse du choix v3 conservative).
+- **Biais de look-ahead / entraînement** : entraîner et tester sur le même univers Mag7 en période de bull market gonfle artificiellement les métriques — la §C l'interdit pour les claims d'alpha.
+- **Probabilistic Sharpe Ratio (PSR)** : un Sharpe de 0.819 sur single-seed n'est pas statistiquement significatif (PSR 14.5 %).
+- **Single seed vs multi-seed** : `random_state=42` seul ne prouve pas la robustesse — la §C exige ≥4 seeds + edge 2σ.
 
 ## Figures du notebook de recherche
 
 Le notebook [`research.ipynb`](research.ipynb) teste cinq hypothèses sur les hyperparamètres du Random Forest — nombre d'estimateurs, profondeur maximale, seuil de prédiction, taille de l'univers et fréquence d'entraînement — puis synthétise l'importance des features. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
+> **Lecture critique** : les « optimaux » identifiés par ce sweep (depth=10, Universe=5) sont des **artefacts d'overfitting sur le bull run Mag7**, comme l'atteste le choix de production v3 (depth=5, Universe=10). Les lire comme des victoires serait se tromper soi-même ; les lire comme des **warnings** (« ici le modèle mémorise le bruit ») est la bonne interprétation pédagogique.
+
 **H1 — Nombre d'estimateurs.** Combien d'arbres (*n_estimators*) suffit-il d'agréger pour stabiliser la prédiction ? Trop peu d'arbres, la forêt reste bruitée ; au-delà d'un certain seuil, le gain marginal s'amenuise et l'on paie un coût de calcul croissant pour un plateau de performance.
 
 <p align="center">
-  <img src="assets/readme/mrf-h1-nestimators.png" alt="Dual-panel « H1: Number of Estimators » sur 2018-2026 base 1 : panel haut equity cumulée (n_est=50 S=0,841 DD=-35,29% bleu fin ~3,8× plus noisy ; n_est=100 S=0,794 DD=-36,13% orange fin ~3,4× — production baseline sweet-spot rendement/stabilité ; n_est=200 S=0,656 DD=-41,07% vert fin ~2,7× surperforme 2022-2023 puis sous-performe post-2024 ; SPY B&H S=0,778 DD=-33,72% rouge pointillé fin ~2,9×). Panel bas drawdowns superposés -35% min 2022-2023 bear market (toutes stratégies corrélées bear 2022). H1 verdict : n_est=100 = sweet-spot opérationnel (n_est=50 winner numérique 0,841 vs 0,794 mais plus volatile)." width="460"/><br>
-  <em>H1 — performance et stabilité vs nombre d'estimateurs.</em>
+  <img src="assets/readme/mrf-h1-nestimators.png" alt="H1: Number of Estimators — n_est=50/100/200 vs SPY B&H (2018-2026)" width="460"/><br>
+  <em>H1 — performance et stabilité vs nombre d'estimateurs. Production utilise n_est=100 (sweet-spot rendement/stabilité).</em>
 </p>
 
-**H2 — Profondeur maximale.** Jusqu'où laisser chaque arbre croître (*max_depth*) : une profondeur faible sous-ajuste (arbres trop simples pour capturer la structure), une profondeur élevée sur-ajuste (mémorisation du bruit d'entraînement). Le bon régime sépare le signal du bruit.
+**H2 — Profondeur maximale.** Jusqu'où laisser chaque arbre croître (*max_depth*) : une profondeur faible sous-ajuste, une profondeur élevée sur-ajuste (mémorisation du bruit). Le bon régime sépare le signal du bruit.
 
 <p align="center">
-  <img src="assets/readme/mrf-h2-maxdepth.png" alt="Dual-panel « H2: Max Depth » sur 2018-2026 base 1 : panel haut equity cumulée (depth=10 S=1,064 DD=-36,03% vert fin ~6,1× — OPTIMAL, BAT TOUTES LES STRATÉGIES y compris SPY B&H de +40% cumulés ; depth=5 S=0,794 DD=-36,13% orange fin ~3,5× baseline production ; SPY B&H S=0,778 DD=-33,72% rouge pointillé fin ~2,9× ; depth=3 S=0,645 DD=-42,8% bleu fin ~2,7× sous-ajuste). Panel bas drawdowns -42% depth=3 plus profond (sur-ajuste inverse). H2 verdict INFIRMÉ sur sous-ajustement : depth=10 surperforme B&H = effet rare." width="460"/><br>
-  <em>H2 — compromis biais/variance vs profondeur des arbres.</em>
+  <img src="assets/readme/mrf-h2-maxdepth.png" alt="H2: Max Depth — depth=3/5/10 vs SPY B&H (2018-2026)" width="460"/><br>
+  <em>H2 — depth=10 « bat B&H » = signature d'overfitting (mémorisation du trend Mag7). La production choisit depth=5 (conservatif), pas 10.</em>
 </p>
 
-**H3 — Seuil de prédiction.** Une position ne s'ouvre que si la probabilité prédite de rendement 10 jours dépasse un seuil (calibré à 0.54 en production). Un seuil bas multiplie les trades (bruit, coûts), un seuil haut restreint l'univers (concentration) — la courbe trace ce compromis sélectivité/fréquence.
+**H3 — Seuil de prédiction.** Une position ne s'ouvre que si la probabilité prédite dépasse le seuil (0.54 en production). Un seuil bas multiplie les trades (bruit, coûts), un seuil haut restreint l'univers (concentration).
 
 <p align="center">
-  <img src="assets/readme/mrf-h3-threshold.png" alt="Dual-panel « H3: Prediction Threshold » sur 2018-2026 base 1 : panel haut equity cumulée (threshold=0.5 S=0,83 DD=-41,51% bleu fin ~3,6× ; threshold=0.54 S=0,794 DD=-36,13% orange fin ~4,1× — production sweet-spot optimal ; threshold=0.58 S=0,69 DD=-26,28% vert fin ~2,6× trop sélectif limite upside ; SPY B&H S=0,778 DD=-33,72% rouge pointillé fin ~2,9×). Panel bas drawdowns -41% threshold=0.5 plus profond (trop de trades). H3 verdict : threshold=0.54 sweet-spot sélectivité/couverture (threshold=0.58 réduit DD -36→-26 % mais limite upside)." width="460"/><br>
-  <em>H3 — performance et nombre de trades vs seuil de décision.</em>
+  <img src="assets/readme/mrf-h3-threshold.png" alt="H3: Prediction Threshold — 0.50/0.54/0.58 vs SPY B&H" width="460"/><br>
+  <em>H3 — threshold=0.54 = sweet-spot sélectivité/couverture. Production l'utilise.</em>
 </p>
 
-**H4 — Taille de l'univers.** Élargir l'univers au-delà des 10 large-caps de référence : plus de candidats diversifie et multiplie les opportunités, mais peut aussi diluer le signal sous un bruit croissant. La courbe montre où s'arrête le bénéfice de la diversification.
+**H4 — Taille de l'univers.** Élargir l'univers au-delà des 10 large-caps de référence : plus de candidats diversifie, mais peut diluer le signal. La courbe montre où s'arrête le bénéfice de la diversification.
 
 <p align="center">
-  <img src="assets/readme/mrf-h4-universe.png" alt="Dual-panel « H4: Universe Size » sur 2018-2026 base 1 : panel haut equity cumulée (Universe 5 S=1,118 DD=-35,0% bleu fin ~6,7× — OPTIMAL MASSIF post-2024 winner absolu upside +60% vs B&H ; Universe 10 S=0,794 DD=-36,13% orange baseline production ; Universe 15 S=0,84 DD=-29,21% vert fin ~3,8× sweet-spot downside DD -29% meilleur que baseline ; SPY B&H S=0,778 DD=-33,72% rouge pointillé fin ~2,9×). Panel bas drawdowns superposés. H4 INVERSION anti-sur-vente : Universe=5 winner upside (signal concentré sur 5 titres), Universe=15 sweet-spot downside — l'intuition diversification ne s'applique PAS ici." width="460"/><br>
-  <em>H4 — performance vs taille de l'univers d'actifs.</em>
+  <img src="assets/readme/mrf-h4-universe.png" alt="H4: Universe Size — 5/10/15 vs SPY B&H" width="460"/><br>
+  <em>H4 — « Universe=5 OPTIMAL MASSIF » = concentration sur NVDA/TSLA (overfitting). Production garde Universe=10, pas 5.</em>
 </p>
 
-**H5 — Fréquence d'entraînement.** Le modèle est ré-entraîné mensuellement par défaut. Une cadence plus courte capite un régime changeant mais sur des fenêtres plus bruitées ; plus longue, elle lisse le signal au risque de rater les ruptures de marché.
+**H5 — Fréquence d'entraînement.** Le modèle est ré-entraîné mensuellement par défaut. Une cadence plus courte capte un régime changeant mais sur des fenêtres plus bruitées ; plus longue, elle lisse le signal au risque de rater les ruptures de marché.
 
 <p align="center">
-  <img src="assets/readme/mrf-h5-trainfreq.png" alt="Dual-panel « H5: Rebalancing Frequency » sur 2018-2026 base 1 : panel haut equity cumulée (Weekly rebal S=0,495 DD=-40,74% bleu fin ~2,0× sur-ajuste bruit ; Biweekly rebal S=0,794 DD=-36,13% orange fin ~3,5× baseline production ; Monthly rebal S=0,919 DD=-30,35% vert fin ~4,7× — OPTIMAL +15% Sharpe vs biweekly, DD meilleur ; SPY B&H S=0,778 DD=-33,72% rouge pointillé fin ~2,9×). Panel bas drawdowns -40% Weekly plus profond. H5 verdict : mensuel sweet-spot (réduit sur-ajustement sans lisser les ruptures)." width="460"/><br>
-  <em>H5 — performance vs fréquence de ré-entraînement.</em>
+  <img src="assets/readme/mrf-h5-trainfreq.png" alt="H5: Rebalancing Frequency — weekly/biweekly/monthly vs SPY B&H" width="460"/><br>
+  <em>H5 — monthly sweet-spot. Production utilise biweekly (compromis).</em>
 </p>
-
-**Synthèse — importance des features.** Parmi les 12 *features* techniques (RSI, Bollinger, MACD, momentum, volatilité, volume, ratios de prix), lesquelles pilotent réellement la prédiction ? Le classement par importance (*impurity-based*) révèle la hiérarchie effective — un diagnostic de parcimonie : peut-on dropper les features peu contributives sans dégrader le modèle ?
-
-<p align="center">
-  <img src="assets/readme/mrf-synthese.png" alt="Horizontal barplot « Feature Importance (RandomForest, moyenne sur tous les entraînements) » : 12 features classées par ordre décroissant — bb_position 0,103 (top 1 Bollinger band position) / mom_10 0,099 (momentum 10j top 2) / macd_hist 0,095 (MACD histogram top 3) / mom_5 0,092 / rsi 0,088 / mom_20 0,083 / price_sma20 0,081 / sma_ratio_5_20 0,076 / vol_20 0,075 / price_sma50 0,074 / sma_ratio_20_50 0,068 / volume_ratio 0,003 (BOTTOM marginal quasi-nul). Hiérarchie : momentum court terme (5/10/20j) + Bollinger + MACD dominent ; volume_ratio candidat drop parcimonie (réduit overfitting + accélère training sans dégrader)." width="460"/><br>
-  <em>Synthèse — classement des features par importance.</em>
-</p>
-
-## How to Run
-
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest"`
-```bash
-lean backtest --project .
-```
-
-**QC Cloud:** Open project 29434751 in the QuantConnect IDE and click "Backtest".
-
-## Backtest Metrics (2015-2026)
-
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | 0.68 |
-| CAGR | 20.1% |
-| Max Drawdown | 36.4% |
-| Rebalance | Biweekly |
-
-## Files
-
-- `main.py` - Strategy (v3, RandomForestClassifier)
-- `research.ipynb` - Feature engineering and hyperparameter research
-
-## References
-
-- Breiman (2001), "Random Forests"
-- Hands-On AI Trading, Section 06 Example

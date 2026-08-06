@@ -133,13 +133,21 @@ COUNT_RE = re.compile(
 # comme la duree « 5101 s ». Idem pour toute reference « #NNNN » suivie d'un mot
 # en s-/m-/ms/sec/min (144 occurrences repertoriees : issues, couleurs hex).
 # Une vraie mesure « ~50 s » (precedee de ~, pas de #) reste capturee.
+#
+# Note fix (#9434 angle-mort t3) : le lookahead final exclut aussi les
+# apostrophes (' et '). Sinon « s » (secondes) collidait avec le debut d'un
+# verbe reflechi francais : « les annees 80 s'ecoulent », « 3 s'appliquent »
+# etaient matches comme les durees « 80 s », « 3 s ». Une mesure reelle n'est
+# JAMAIS suivie immediatement d'une apostrophe (toujours espace/fin/ponctuation) ;
+# un « s' » est le debut de s'en/s'applique/s'etend, pas l'unite secondes. Les
+# vraies mesures (« ~50 s sur GPU », « 12 s ») restent capturees.
 MACHINE_RE = re.compile(
     r"(?<![\w.#])~?\d{1,6}(?:[.,]\d{1,3})?"
     r"(?:"
     r"\s?(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?)"
     r"|\ss"
     r")"
-    r"(?![\w-])",
+    r"(?![\w\-'’-])",
     re.IGNORECASE,
 )
 
