@@ -82,6 +82,37 @@ def test_machine_re_monoletter_s_requires_space():
     assert cqc.MACHINE_RE.search("0.2s") is None
 
 
+def test_issue_reference_not_flagged_as_measure():
+    """Une reference d'issue/PR GitHub « #NNNN » suivie d'un mot commencant par
+    s/m/ms/sec/min ne doit JAMAIS etre matchee comme une duree -- un nombre
+    precedent immediatement un diese est une reference (issue/PR, couleur hex,
+    ancre/titre markdown), pas une mesure.
+
+    Incident fondateur (#9434 angle-mort t2) : ICT-21 portait « Issue : #5101. »
+    et « amendé de #5101 s'en dérive » -> le scanner classait « 5101 s » en duree
+    machine (2 FP confirmes sur origin/main). Idem un ledger « #015 Argument... »
+    flagge comme « 015 s ». Fix : lookbehind « (?<![\\w.#]) » sur les 4 regex de
+    mesure. La vraie mesure « ~50 s sur GPU » (precedee de ~, pas de #) reste
+    capturee -- c'est le contrat du fix (corriger le FP sans perdre la mesure)."""
+    # Issue/PR refs + mot en s/m/ms/sec/min : JAMAIS une duree machine.
+    for snippet in ["amendé de #5101 s'en dérive",
+                    "Issue : #5101.",
+                    "ce notebook = #5101 ;",
+                    "merge #866 sur claim non-verifie",
+                    "couleur #333333 sur fond clair"]:
+        assert cqc.MACHINE_RE.search(snippet) is None, (
+            f"ne doit PAS flagger la reference #NNNN {snippet!r}"
+        )
+    # La vraie mesure (sans # precedent) reste capturee : contrat du fix.
+    assert cqc.MACHINE_RE.search("prend ~50 s sur GPU") is not None
+    assert cqc.MACHINE_RE.search("duree : 12 ms") is not None
+    # Le guard « # » couvre les 4 classes de mesure : un numero reference n'est
+    # ni un artefact, ni un speedup, ni une valeur stochastique.
+    assert cqc.COUNT_RE.search("voir PR #140 lignes supprimees") is None
+    assert cqc.STRUCTURAL_RE.search("ref issue #4x") is None
+    assert cqc.STOCHASTIC_NUM_RE.search("score fitness #41.71") is None
+
+
 # --------------------------------------------------------------------------- #
 #  Classe env (ENV_RE) : version de librairie figee en prose
 # --------------------------------------------------------------------------- #
