@@ -96,6 +96,7 @@ from . import collective_adoption
 from . import inhibited_invention
 from . import concept_inoculation
 from . import bridge_testing
+from . import salience_valence_dissociation
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -119,4 +120,5 @@ __all__ = [
     "inhibited_invention",
     "concept_inoculation",
     "bridge_testing",
+    "salience_valence_dissociation",
 ]
