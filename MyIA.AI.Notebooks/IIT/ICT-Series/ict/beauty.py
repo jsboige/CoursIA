@@ -71,8 +71,9 @@ MDL explicite, cf ICT-16). La fenêtre ``W`` doit etre assez large (>= ~40
 elements pour un alphabet de 4 symboles) pour que la variance de
 quantification zlib soit negligeable devant le signal de découverte ; sur des
 fenêtres trop courtes le détecteur est bruité (documenté, non maquillé). Le
-notebook ICT-26 (a venir) testera la robustesse au compresseur (LZMA, PPM) et la
-convergence avec les Gates Phi/F/K sur des trajectoires reelles.
+notebook ICT-26 (SignalingConvention, livré via PR #8881 MERGED, EPIC #7746)
+teste la robustesse au compresseur (LZMA, PPM) et la convergence avec les
+Gates Phi/F/K sur des trajectoires reelles.
 
 Dependances : ``compression`` (``compressed_length``, ``canonical_int_sequence``)
 + ``numpy``. Aucune dependance a ``catastrophe`` a l'import.
@@ -305,7 +306,8 @@ def fold_in_compressibility_curve(
     **Exploratoire** : ce diagnostic ne prouve pas une vraie fronce (il
     faudrait un ajustement de cusp parametrique). Il fournit un *candidat* de
     pli -- le pas de courbure maximale -- a confronter aux evenements de beaute
-    dans le notebook ICT-26.
+    dans le notebook ICT-26 (SignalingConvention, livré via PR #8881
+    MERGED, EPIC #7746).
 
     Retourne ``dict(fold_step | None, fold_curvature, curvature, smooth)``.
     """
@@ -359,7 +361,8 @@ def diagnose(
     ``fold_in_compressibility_curve`` calcule sur la meme courbe ``local_K``
     lissee). Une découverte co-localisee avec un candidat pli est la signature
     Thom<->Schmidhuber que ce module cherche a mettre en evidence ; le notebook
-    ICT-26 quantifiera la co-localisation sur des trajectoires de reference.
+    ICT-26 (SignalingConvention, livré via PR #8881 MERGED, EPIC #7746)
+    quantifie la co-localisation sur des trajectoires de reference.
     """
     rep = beauty_events(states, window=window, horizon=horizon, smooth=smooth,
                         level=level, **kw)
