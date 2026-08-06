@@ -89,6 +89,25 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# REST-only push via qc-mcp-lite's auth helpers (DRY : single source of truth
+# pour SHA256(token:timestamp) + Basic + Timestamp). c.1331+7 : on remplace
+# ``subprocess.run(["lean", "cloud", "push", ...])`` (qui echoue sur les
+# machines ou ``lean`` = Lean4 theorem prover, pas QC CLI) par les memes REST
+# calls que MCP expose en MCP-tools. Aucune installation de QC CLI requise.
+_QC_MCP_LITE_DIR = Path(__file__).resolve().parents[1] / "qc-mcp-lite"
+if str(_QC_MCP_LITE_DIR) not in sys.path:
+    sys.path.insert(0, str(_QC_MCP_LITE_DIR))
+
+# Importer server.py importe aussi mcp.server.fastmcp (dep existante du repo,
+# utilise par le daemon MCP). Le bloc try/except protege les tests en isolation
+# (mcp SDK absent => on retombe sur requests direct avec auth inline).
+try:
+    from server import _api_post as _qc_api_post  # type: ignore
+    from server import _get_credentials as _qc_get_credentials  # type: ignore
+    _HAS_QC_MCP_HELPERS = True
+except ImportError:
+    _HAS_QC_MCP_HELPERS = False
+
 # Scope #6891 first batch (8 quantbooks declares par body issue original)
 DEFAULT_QUANTBOOKS = [
     "AllWeather",
@@ -214,8 +233,153 @@ def phase_audit(repo: Path, quantbooks: list[str], results: dict) -> dict:
     return results
 
 
+def _push_one_via_rest(name: str, proj_dir: Path) -> dict:
+    """Push ``<proj_dir>`` to QC Cloud via REST (no QC CLI needed).
+
+    Flow :
+      1. POST /projects/create  {name, language="Py"}       -> projectId
+      2. Si le nom existe deja (duplicate) : fallback
+         POST /projects/read   puis filtre name_contains=name -> projectId
+      3. POST /files/create    {projectId, name="main.py", content=...}
+      4. Ecrit ``config.json`` avec cloud-id + organization-id retournes.
+
+    Retourne un dict compatible ``phase_push`` : quantbook, cloud_id, action,
+    et eventuellement stderr_tail (ici : details / error_tail).
+    Idempotent : re-run sur un quantbook dont config.json a perdu cloud-id
+    retrouve le projectId existant via ``list_projects`` au lieu de creer
+    un doublon (incident fondateur : script ``lean cloud push`` cree 6
+    projets fantomes sur origin/main si relance sans garde).
+    """
+    if not _HAS_QC_MCP_HELPERS:
+        return {
+            "quantbook": name,
+            "cloud_id": None,
+            "action": "REST_PUSH_NO_HELPERS",
+            "error_tail": ["qc-mcp-lite.server helpers not importable (mcp SDK missing)"],
+        }
+    try:
+        user_id, _token = _qc_get_credentials()
+    except Exception as exc:
+        return {
+            "quantbook": name,
+            "cloud_id": None,
+            "action": "REST_PUSH_NO_CREDS",
+            "error_tail": [str(exc)],
+        }
+
+    main_py = proj_dir / "main.py"
+    if not main_py.exists():
+        return {
+            "quantbook": name,
+            "cloud_id": None,
+            "action": "REST_PUSH_NO_MAIN_PY",
+            "error_tail": [f"main.py absent in {proj_dir}"],
+        }
+
+    main_content = main_py.read_text(encoding="utf-8")
+
+    # Etape 1+2 : create_project (avec fallback list_projects si duplicate).
+    try:
+        created = _qc_api_post("/projects/create", {"name": name, "language": "Py"})
+        projects = created.get("projects") or []
+        project = projects[0] if projects else {}
+        project_id = int(project.get("projectId") or 0)
+        organization_id = str(project.get("organizationId") or "")
+        create_via = "create"
+    except RuntimeError as exc:
+        msg = str(exc).lower()
+        # Duplicate name : fallback list_projects pour retrouver le projectId
+        # existant et continuer en mode "update existing". Le script
+        # ``lean cloud push`` cree des doublons silencieux -- on s'en protege.
+        if "already" in msg or "duplicate" in msg or "exists" in msg:
+            listed = _qc_api_post("/projects/read", {})
+            existing = [
+                p for p in (listed.get("projects") or [])
+                if (p.get("name") or "").lower() == name.lower()
+            ]
+            if not existing:
+                return {
+                    "quantbook": name,
+                    "cloud_id": None,
+                    "action": "REST_PUSH_DUP_LOOKUP_FAIL",
+                    "error_tail": [str(exc)],
+                }
+            project = existing[0]
+            project_id = int(project.get("projectId") or 0)
+            organization_id = str(project.get("organizationId") or "")
+            create_via = "lookup_existing"
+        else:
+            return {
+                "quantbook": name,
+                "cloud_id": None,
+                "action": "REST_PUSH_CREATE_FAIL",
+                "error_tail": [str(exc)],
+            }
+
+    if not project_id:
+        return {
+            "quantbook": name,
+            "cloud_id": None,
+            "action": "REST_PUSH_NO_PROJECT_ID",
+            "error_tail": [f"create returned no projectId: {created!r}"[:200]],
+        }
+
+    # Etape 3 : create_file main.py. update_file_contents serait preferable si
+    # on sait qu'il existe deja, mais create_file est idempotent (QC remplace
+    # si le nom existe dans le projet, retourne success=true). C'est le pattern
+    # qu'utilise deja qc-mcp-lite.create_file.
+    try:
+        file_resp = _qc_api_post(
+            "/files/create",
+            {"projectId": project_id, "name": "main.py", "content": main_content},
+        )
+    except RuntimeError as exc:
+        return {
+            "quantbook": name,
+            "cloud_id": None,
+            "action": "REST_PUSH_FILE_FAIL",
+            "cloud_id_attempted": project_id,
+            "error_tail": [str(exc)],
+        }
+
+    # Etape 4 : persister config.json avec cloud-id + organization-id pour
+    # que les phases suivantes (exec/verify) trouvent le projet.
+    config_path = proj_dir / "config.json"
+    existing_cfg: dict = {}
+    if config_path.exists():
+        try:
+            existing_cfg = json.loads(config_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            existing_cfg = {}
+    existing_cfg["cloud-id"] = project_id
+    if organization_id:
+        existing_cfg["organization-id"] = organization_id
+    existing_cfg["language"] = "Py"
+    config_path.write_text(
+        json.dumps(existing_cfg, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    return {
+        "quantbook": name,
+        "cloud_id": project_id,
+        "action": f"REST_PUSH_OK_{create_via.upper()}",
+        "organization_id": organization_id,
+        "file_resp_success": bool(file_resp.get("success", True)),
+    }
+
+
 def phase_push(repo: Path, quantbooks: list[str], results: dict, dry_run: bool) -> dict:
-    """Phase 2 : lean cloud push pour les quantbooks sans cloud-id."""
+    """Phase 2 : push QC Cloud via REST pour les quantbooks sans cloud-id.
+
+    Avant c.1331+7 : ``subprocess.run(["lean", "cloud", "push", ...])`` -- mais
+    ``lean`` sur cette machine est le theorem prover Lean4 (elan), pas QC CLI.
+    Blocant pour les 6 quantbooks scope #6891 sans cloud-id.
+
+    Apres c.1331+7 : REST-only via qc-mcp-lite.server._api_post (memes appels
+    que MCP expose en MCP-tools, sans wrapper subprocess). Self-contained :
+    aucune installation de QC CLI requise.
+    """
     push_data = []
     for name in quantbooks:
         cloud_id = _read_cloud_id(repo, name)
@@ -235,18 +399,16 @@ def phase_push(repo: Path, quantbooks: list[str], results: dict, dry_run: bool) 
             })
             continue
 
-        # lean cloud push <project> --name <name>
         proj_dir = _project_dir(repo, name)
-        proc = subprocess.run(
-            ["lean", "cloud", "push", "--project", str(proj_dir), "--name", name],
-            capture_output=True, text=True, cwd=repo,
-        )
-        push_data.append({
-            "quantbook": name,
-            "cloud_id": None,
-            "action": f"PUSH_RC_{proc.returncode}",
-            "stderr_tail": proc.stderr.strip().splitlines()[-3:] if proc.stderr else [],
-        })
+        if not proj_dir.exists():
+            push_data.append({
+                "quantbook": name,
+                "cloud_id": None,
+                "action": "SKIP_NO_PROJECT_DIR",
+            })
+            continue
+
+        push_data.append(_push_one_via_rest(name, proj_dir))
 
     results["push"] = push_data
     return results
