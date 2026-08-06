@@ -144,177 +144,20 @@ class TestPhasePush:
         qsrp.phase_push(tmp_path, ["Ghost"], results, dry_run=True)
         assert results["push"][0]["action"] == "DRY_RUN_PUSH_PENDING"
 
-    def test_skip_no_project_dir(self, tmp_path):
-        # Pas de projet Ghost/ -> SKIP_NO_PROJECT_DIR avant tout appel REST.
+    def test_real_push_records_returncode(self, tmp_path, monkeypatch):
+        _make_project(tmp_path, "Ghost", config={"language": "Py"})
+        # On stub `subprocess.run` pour eviter un vrai lean cloud push.
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(qsrp.subprocess, "run", fake_run)
         results: dict = {}
         qsrp.phase_push(tmp_path, ["Ghost"], results, dry_run=False)
-        assert results["push"][0]["action"] == "SKIP_NO_PROJECT_DIR"
-
-    def test_rest_push_ok_create(self, tmp_path, monkeypatch):
-        """Phase push via REST : create_project + create_file + config.json ecrit."""
-        _make_project(tmp_path, "Foo", config={"language": "Py"})
-        (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Foo" / "main.py").write_text(
-            "print('foo strategy')\n", encoding="utf-8"
-        )
-
-        # Stub qc-mcp-lite helpers : _qc_get_credentials + _qc_api_post
-        def fake_get_creds():
-            return ("user-id", "token-1234")
-
-        def fake_api_post(path, data):
-            if path == "/projects/create":
-                return {
-                    "success": True,
-                    "projects": [
-                        {"projectId": 999, "organizationId": "org-xyz", "name": data["name"]}
-                    ],
-                }
-            if path == "/files/create":
-                return {"success": True, "name": data["name"]}
-            raise AssertionError(f"unexpected REST call: {path}")
-
-        monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
-        monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
-
-        results: dict = {}
-        qsrp.phase_push(tmp_path, ["Foo"], results, dry_run=False)
-        entry = results["push"][0]
-        assert entry["action"] == "REST_PUSH_OK_CREATE"
-        assert entry["cloud_id"] == 999
-        assert entry["organization_id"] == "org-xyz"
-
-        # config.json ecrit avec cloud-id + organization-id.
-        cfg = json.loads(
-            (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Foo" / "config.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        assert cfg["cloud-id"] == 999
-        assert cfg["organization-id"] == "org-xyz"
-
-    def test_rest_push_falls_back_to_existing_on_duplicate(self, tmp_path, monkeypatch):
-        """Duplicate name -> fallback list_projects pour retrouver le projectId."""
-        _make_project(tmp_path, "Bar", config={"language": "Py"})
-        (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Bar" / "main.py").write_text(
-            "print('bar')\n", encoding="utf-8"
-        )
-
-        def fake_get_creds():
-            return ("u", "t")
-
-        def fake_api_post(path, data):
-            if path == "/projects/create":
-                # Simule la rejection QC : success=false avec message 'already exists'.
-                raise RuntimeError("QC API /projects/create rejected the request: project name already exists")
-            if path == "/projects/read":
-                return {
-                    "success": True,
-                    "projects": [
-                        {"projectId": 777, "organizationId": "org-existing", "name": "Bar"},
-                        {"projectId": 0, "organizationId": "", "name": "Other"},
-                    ],
-                }
-            if path == "/files/create":
-                return {"success": True, "name": data["name"]}
-            raise AssertionError(f"unexpected REST call: {path}")
-
-        monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
-        monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
-
-        results: dict = {}
-        qsrp.phase_push(tmp_path, ["Bar"], results, dry_run=False)
-        entry = results["push"][0]
-        assert entry["action"] == "REST_PUSH_OK_LOOKUP_EXISTING"
-        assert entry["cloud_id"] == 777
-        assert entry["organization_id"] == "org-existing"
-
-    def test_rest_push_no_main_py(self, tmp_path, monkeypatch):
-        """Pas de main.py dans le projet -> REST_PUSH_NO_MAIN_PY, pas d'appel REST."""
-        _make_project(tmp_path, "NoMain", config={"language": "Py"})
-        # Pas de main.py cree.
-
-        api_called = []
-
-        def fake_api_post(path, data):
-            api_called.append(path)
-            return {"success": True}
-
-        monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
-        monkeypatch.setattr(qsrp, "_qc_get_credentials", lambda: ("u", "t"))
-
-        results: dict = {}
-        qsrp.phase_push(tmp_path, ["NoMain"], results, dry_run=False)
-        assert results["push"][0]["action"] == "REST_PUSH_NO_MAIN_PY"
-        assert api_called == []  # aucun appel REST = zero side-effect.
-
-    def test_rest_push_create_error_surfaced(self, tmp_path, monkeypatch):
-        """Erreur non-duplicate sur /projects/create -> REST_PUSH_CREATE_FAIL avec error_tail."""
-        _make_project(tmp_path, "Boom", config={"language": "Py"})
-        (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Boom" / "main.py").write_text(
-            "x = 1\n", encoding="utf-8"
-        )
-
-        def fake_get_creds():
-            return ("u", "t")
-
-        def fake_api_post(path, data):
-            if path == "/projects/create":
-                raise RuntimeError("QC API /projects/create rejected the request: invalid name")
-            raise AssertionError(f"unexpected REST call: {path}")
-
-        monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
-        monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
-
-        results: dict = {}
-        qsrp.phase_push(tmp_path, ["Boom"], results, dry_run=False)
-        entry = results["push"][0]
-        assert entry["action"] == "REST_PUSH_CREATE_FAIL"
-        assert "invalid name" in entry["error_tail"][0]
-        # config.json pas touche (pas de cloud-id ecrit si echec).
-        cfg = json.loads(
-            (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Boom" / "config.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        assert "cloud-id" not in cfg
-
-    def test_rest_push_is_idempotent_via_second_run(self, tmp_path, monkeypatch):
-        """Re-run apres un push reussi -> SKIP_ALREADY_PUSHED (cloud-id lu du config.json)."""
-        _make_project(tmp_path, "Twice", config={"language": "Py"})
-        (tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Twice" / "main.py").write_text(
-            "x = 1\n", encoding="utf-8"
-        )
-
-        api_calls = []
-
-        def fake_get_creds():
-            return ("u", "t")
-
-        def fake_api_post(path, data):
-            api_calls.append(path)
-            if path == "/projects/create":
-                return {
-                    "success": True,
-                    "projects": [{"projectId": 555, "organizationId": "org-once", "name": data["name"]}],
-                }
-            if path == "/files/create":
-                return {"success": True, "name": data["name"]}
-            raise AssertionError(f"unexpected REST call: {path}")
-
-        monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
-        monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
-
-        # Run 1 : push effectif.
-        results: dict = {}
-        qsrp.phase_push(tmp_path, ["Twice"], results, dry_run=False)
-        assert results["push"][0]["action"] == "REST_PUSH_OK_CREATE"
-        assert len(api_calls) == 2  # create + files/create
-
-        # Run 2 : config.json a cloud-id -> SKIP_ALREADY_PUSHED, AUCUN appel REST.
-        results2: dict = {}
-        qsrp.phase_push(tmp_path, ["Twice"], results2, dry_run=False)
-        assert results2["push"][0]["action"] == "SKIP_ALREADY_PUSHED"
-        assert len(api_calls) == 2  # pas d'appel supplementaire.
+        assert results["push"][0]["action"] == "PUSH_RC_0"
+        assert "cloud" in captured["cmd"]
 
 
 # -- phase_exec --
