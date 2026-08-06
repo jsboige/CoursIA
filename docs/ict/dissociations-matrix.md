@@ -153,7 +153,86 @@ Conventions :
 | **s ⟂ π** (saillance sans prégnance, et réc.) | `PRÉDIT` | Un animat à canaux d'entrée *indépendants* pour `s` (saillance perceptuelle) et `π` (valence apprise Rescorla-Wagner) exhibe deux régimes — (A) haut-`s`/`π`≈0 (saillant-neutre), (B) bas-`s`/haut-`π` (discret-chargé) — tels que l'engagement (approche) est gouverné par `π` et non par `s` : \|corr(engagement, π \| s)\| > 0.5 **et** \|corr(engagement, s \| π)\| < 0.2 (prouvoir prédictif propre à `π`, nul à `s`). | Un animat **réactif pur** (π ≡ s, pas d'apprentissage de valence) voit les deux corrélations partielles converger vers ~0 / égales : la dissociation s'évanouit (c'est l'absence de `π` appris, non la saillance, qui portait le signal). | Animat lignée ICT-12c (`PregnanceAnimat`), **CPU-only** — candidate 1ʳᵉ case | Vervaeke — *relevance realization* (saillance et prégnance = deux réalisations de pertinence distinctes). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182) iceberg, mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 | **W diffuse un q erroné** (confabulation) | `PRÉDIT` | Une ignition workspace (`W_t` pic) déclenchée par une représentation **fausse** `q̂` propage `q̂` aux consommateurs en aval à un taux ≥ 80 % du taux d'une ignition vraie (la workspace **consacre** l'erreur presque aussi efficacement que le vrai). | Une ignition **aléatoire** (pas de `q` du tout) propage à un taux non-distinguable de l'ignition fausse : la « consécration » n'est alors que du broadcast non-discriminant, pas une propriété de l'erreur. Tue si \|propa(q̂ faux) − propa(aléatoire)\| < ε. | LLM via SAE-JLens ([#5681](https://github.com/jsboige/CoursIA/issues/5681), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | — (aucun hook grade C identifié dans #9533 pour cette case) |
 | **p̂ auto-référent** | `VIDE` → préciser | *(prédiction à pré-enregistrer)* Une boucle fermée `p̂ → action → p̂` (le représentant interne prédit ses propres états futurs) est stable sur un régime borné mais diverge (oscillation amplifiée) hors de ce régime. Seuil de stabilité pré-enregistré avant test. | Un délieur causal (la `p̂` prédit l'environnement, pas elle-même) supprime la divergence : la boucle auto-référentielle était bien la cause. | Animat / grokking (ICT-17b) | Hofstadter — *strange loops* (auto-référence comme boucle étrange). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
-| **self-model minimal** | `VIDE` → préciser | *(prédiction à pré-enregistrer)* Le panel persona lu comme `W_t` appliqué à `q(soi)` (le workspace opère sur une représentation de l'agent lui-même) produit un signal de self-modélisation distinguable d'un modèle d'autrui sur les mêmes données. | Un modèle entraîné à prédire un *autre* agent de complexité équivalente produit un signal indistinguable : le « self » n'apporte rien au-delà de la modélisation générique d'autrui. | Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105) | Metzinger — *minimal phenomenal selfhood*. Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
+| **self-model minimal** | `PRÉDIT` (cf. chiffrage détaillé c.1245 ci-dessous) | *(prédiction chiffrée détaillée ci-dessous)* Le panel persona lu comme `W_t` appliqué à `q(soi)` (le workspace opère sur une représentation de l'agent lui-même) produit un signal de self-modélisation distinguable d'un modèle d'autrui sur les mêmes données, via le ratio `R_self = propa(q(soi)) / propa(q(autrui)) ∈ [0.50, 2.00]` (cible pré-enregistrée) avec null adversarial explicite (modèle d'autrui identique sauf cible d'attention). | Un modèle entraîné à prédire un *autre* agent de complexité équivalente produit un signal indistinguable (R_self ≈ 1.0, propa(q(soi)) ≈ propa(q(autrui))) : le « self » n'apporte rien au-delà de la modélisation générique d'autrui, OU R_self > 2.50 (self ≫ autrui = artefact, le workspace ne discrimine plus sur la complexité). | Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105) ; substrat J-Lens Track P ([#5681](https://github.com/jsboige/CoursIA/issues/5681) 4B-instruct persona) | Metzinger — *minimal phenomenal selfhood*. Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
+
+### Pré-enregistrements détaillés — case 4 (self-model minimal)
+
+> **Statut-cible PR `c.1245`.** Case 4 (`self-model minimal`) passe de `VIDE → préciser` à `PRÉDIT` chiffré — version falsifiable avec seuils explicites, protocole de mesure verrouillé, null adversarial pré-enregistré. Le test substrat (panel persona G.90 [#5105](https://github.com/jsboige/CoursIA/issues/5105) + J-Lens Track P [#5681](https://github.com/jsboige/CoursIA/issues/5681)) reste une PR séparée (chantier 4/4 = exécution). Le présent doc aligne le **pré-enregistrement** sur la discipline de livraison (multi-seed ≥ 4, null adversarial, verdict honnête, substrat honnête GPU/CPU) — **complète** la 3-étape ouverte par c.1242 ([PR #9572](https://github.com/jsboige/CoursIA/pull/9572), §« Case 4 — pré-enregistrement à compléter »).
+
+#### Prédiction falsifiable (mesure primaire)
+
+Sur le substrat LLM (J-Lens Track P, [#5681](https://github.com/jsboige/CoursIA/issues/5681), 4B-instruct persona) augmenté du **panel persona G.90** ([#5105](https://github.com/jsboige/CoursIA/issues/5105), socle CPU livré [PR #6742](https://github.com/jsboige/CoursIA/pull/6742)), pour un même agent `q̂` déclenchant une ignition workspace (`W_t` pic), on définit :
+
+- `propa(q(soi))` = taux de propagation workspace d'une représentation `q̂` dont la cible d'attention est **le modèle lui-même** (l'agent qui produit la séquence — la SAE features de la couche cible reçoit la trace « self-attention sur sa propre sortie »).
+- `propa(q(autrui))` = taux de propagation workspace d'une représentation `q̂` dont la cible d'attention est **un autre agent** (même complexité architecturale, mêmes longueurs de prompts, mais la SAE features reçoit une trace « attention sur la sortie d'un autre modèle » — c'est l'**exact contre-factuel**).
+- `propa(aléatoire)` = taux de propagation workspace d'un stimulus contrôle **sans cible identitaire** (prompt neutre sans mention self/autrui ; **distinct** de `propa(aléatoire)` de la case 3 qui mesurait du bruit de fond sur une cible d'objet erronée).
+
+**Cible pré-enregistrée :**
+
+```
+R_self = propa(q(soi)) / propa(q(autrui))  ∈ [0.50, 2.00]
+discrimination_self = |propa(q(soi)) − propa(autrui)| ≥ ε_self
+```
+
+**Lectures :**
+
+- `R_self ∈ [0.50, 2.00]` **ET** `|propa(q(soi)) − propa(q(autrui))| ≥ ε_self` → **CONFIRMED** : le workspace **discrimine** self/autrui (la self-représentation n'est ni trivialement identique à autrui, ni trivialement hors-norme). Le « self » **apporte** quelque chose au-delà de la modélisation générique d'autrui — c'est la **lecture minimale** d'un self-model.
+- `R_self < 0.50` (self ≪ autrui) → **FALSIFIED** : le workspace **réprime** la self-représentation (l'attention sur soi-même est sous-employée par rapport à un autre agent ; c'est une forme de dissolution identitaire au sens workspace, à confronter à la lecture #8182 « pas-de-soi minimal »).
+- `R_self > 2.50` (self ≫ autrui) → **FALSIFIED** par un autre canal : artefact (le workspace se **bloque** sur la cible self, plus aucune discrimination contextuelle — c'est une persona figée, à confronter à la lecture Anthropic [arXiv 2511.18397](https://arxiv.org/abs/2511.18397)).
+- `R_self ∈ [0.50, 2.00]` MAIS `|propa(q(soi)) − propa(q(autrui))| < ε_self` → **INCONCLUSIF** : le ratio passe dans la bande, mais les deux propa absolus sont indistinguables — la discrimination de self/autrui n'est pas **mesurable** au seuil ε_self (le verdict sera documenté honnêtement comme « la cible est peut-être juste, l'instrument n'est pas assez discriminant à cette échelle »).
+
+#### Null adversarial (explicite, verrouillé avant test)
+
+`ε_self` = seuil de discrimination réel entre soi et autrui, **pré-enregistré** par calibration résiduelle sur le panel persona livré (PR #6742) :
+
+1. On mesure sur le même substrat (Track P + panel persona) le rapport de `propa(q_obj1) / propa(q_obj2)` pour deux objets **non-impliqués identitairement** (par exemple : deux entités publiques connues, sans relation self/autrui). L'écart-type de ce rapport (sur 5 graines) définit le **bruit de fond de discrimination workspace** σ_self.
+2. `ε_self = 0.5 × σ_self × propa(q(autrui))_médian` — l'écart absolu entre self et autrui doit valoir au moins la moitié du bruit de fond typique pour qu'on parle de discrimination réelle.
+3. **Le null adversarial est exécuté AVANT le test principal** (calibration des objets neutres), pas après (anti-HARKing) — la PR de test ouvrira par la cellule calibration, puis le test.
+
+**Tue la prédiction si** (deux nulls adversariaux explicites) :
+
+- `R_self ∈ [0.85, 1.15]` (= self ≈ autrui, indistinguable du ratio neutre) **OU**
+- `R_self > 2.50` (= auto-blocage, artefact persona figée) **OU**
+- `|propa(q(soi)) − propa(q(autrui))| < ε_self` (= pas de discrimination au-delà du bruit)
+
+#### Protocole de mesure (verrouillé avant test)
+
+| Paramètre | Valeur | Note |
+|---|---|---|
+| Substrat LLM | J-Lens Track P ([#5681](https://github.com/jsboige/CoursIA/issues/5681)) : Qwen2.5-4B-Instruct, SAE top-k features Qwen-Scope, couche 16 | Lane GenAI/po-2023 ou ai-01 (GPU) pour extraction forward-pass |
+| Panel persona | Panel G.90 [#5105](https://github.com/jsboige/CoursIA/issues/5105) livré PR #6742 (CPU socle) + extension 3 bras (N/I/P) PR #7301 MERGED | Réutilisation directe du panel — pas de ré-extraction GPU pour le panel persona |
+| Jeu de prompts | **3 × self-prompts** (« Décris ton propre état interne après la tâche » sur 4 contextes de tâche) + **3 × autrui-prompts** (« Décris l'état interne d'un autre agent Y de même architecture » sur 4 contextes miroir) + **3 × neutre-prompts** (« Décris un objet public connu Z ») | 9 prompts par seed, contre-factuels exacts (mêmes longueurs, mêmes contextes, seule la cible d'attention diffère) |
+| Ignition `W_t` | Pic de workspace défini comme top-1 % activation SAE conjointe au-dessus du seuil SAE par feature | Identique à la case 3 (cohérence cross-case) |
+| Consommateur en aval | Token suivant la fenêtre d'ignition (largeur 5 tokens) | Métrique via `mean_activation_by_set` + `differential_features` |
+| Taux de propagation | `propa(q(·)) = (1/|panel_consumer|) × Σ_{c ∈ panel_consumer} 𝟙[argmax(SAE(c)) ∈ top-k_features(q(·))]` | top-k = 64 (cohérent avec case 3, sae_traces.py) |
+| Horizon | T = 1 ignition / prompt (mesure snap-shot, pas de chaîne) | `W_t` est un pic, pas une trajectoire |
+| Calibration null | `R_neutre = propa(obj1) / propa(obj2)` sur 5 graines, σ_self = std sur 5 graines | PR de test ouvre par calibration AVANT test principal |
+| Graines | 5 (0, 1, 7, 42, 99) | Au-delà du plancher 4 |
+| Tolérance | `R_self ∈ [0.50, 2.00]` **ET** `discrimination_self ≥ ε_self` = CONFIRMED ; R_self ± 0.15 = bande de prudence ; `R_self ∈ [0.85, 1.15]` OU `R_self > 2.50` = FALSIFIED | Verdict honnête multi-niveau, pas de seuil lax |
+| Scoreboard | médiane(R_self) sur 5 graines, IC95 bootstrap n=200, `discrimination_self` médian, calibration σ_self médian | Sortie numérique falsifiable, comparable à case 3 |
+
+#### Verdict final (honnête, multi-niveau)
+
+| Niveau | Critère | Verdict |
+|---|---|---|
+| **CONFIRMED** | median(R_self) ∈ [0.50, 2.00] **ET** discrimination_self ≥ ε_self **ET** R_self ∉ [0.85, 1.15] **ET** R_self ≤ 2.50 (5/5 graines) | Le workspace porte un self-model minimal distinguable mais non-pathologique |
+| **INCONCLUSIF** | median(R_self) ∈ [0.50, 2.00] MAIS discrimination_self < ε_self sur ≥ 1 graine, OU R_self ∈ [0.85, 1.15] sur ≥ 1 graine | L'instrument ne tranche pas — verdict honnête = cible peut-être juste, mesure pas assez discriminante à cette échelle |
+| **FALSIFIED** | median(R_self) < 0.50 (workspace réprime le self) OU median(R_self) > 2.50 (artefact persona figée) sur ≥ 3 graines | Le self-model n'est **pas** workspace-distinguable : soit dissolution, soit artefact bloquant |
+
+#### Hook grade C — discipline
+
+Le hook **Metzinger — *minimal phenomenal selfhood*** est **activé en lecture** (aiguillon d'interprétation, [#8182](https://github.com/jsboige/CoursIA/issues/8182) jalon 2), **jamais en claim**. La discrimination self/autrui mesurée par `R_self` est une **mesure de signal workspace**, **pas** une réduction de la phénoménologie du « soi » (ni une preuve d'absence de selfhood). La **note garde-fou** de c.1242 ([PR #9572](https://github.com/jsboige/CoursIA/pull/9572) §« Note garde-fou ») s'applique verbatim : aucun hook grade C n'est présenté au-dessus de son grade, la conjecture « le self est un signal workspace » reste une **direction de falsification** ([#8182](https://github.com/jsboige/CoursIA/issues/8182) traceur), pas un résultat. Voir aussi [#9533](https://github.com/jsboige/CoursIA/issues/9533) §« Réinjection #8182 ».
+
+#### Substrat de pré-enregistrement (état c.1245)
+
+- **Loaders Python CPU-only prêts** : `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` (167 lignes, fonctions `load_traces`, `densify`, `mean_activation_by_set`, `differential_features`, `binarize_quantile`, `states_from_panel`) et `ict/jlens_trackP_traces.py` (compagnon Track P) — réutilisés verbatim de la case 3 (cohérence cross-case). Le pipeline `scripts/extract_sae_traces.py` (GPU requis pour forward-pass Qwen2.5-4B + SAE Qwen-Scope) **n'est pas CPU-only** ; l'extraction initiale est planifiée sur lane GenAI/po-2023 ou ai-01.
+- **Panel persona socle CPU** livré [PR #6742](https://github.com/jsboige/CoursIA/pull/6742) (MERGED 2026-06-23) + extension 3 bras N/I/P [PR #7301](https://github.com/jsboige/CoursIA/pull/7301) (MERGED 2026-07-23). Le **panel persona G.90 fix** (jalon 3 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) est **en cours** (PR #5105 PR3 à ouvrir) — c'est le **bloqueur formel** pour l'exécution substrat.
+- **Verdict honnête CPU vs GPU.** Le **pré-enregistrement chiffré** (le présent doc) est substance à part entière — il peut être commité et audité sans extraction GPU. Le **test substrat** (PR de chantier 4/4) ne peut être exécuté que par une lane GPU et après stabilisation G.90. La PR de test sera ouverte **par la lane GPU** ou auto-flaggée pour cross-pickup ai-01.
+- **Anti-régression cross-case.** Le ratio `R_self` réemploie la même forme que `R_confab` (case 3, [PR #9572](https://github.com/jsboige/CoursIA/pull/9572)) : `R_X = propa(q_X) / propa(q_comparateur)` ∈ [bande pré-enregistrée], avec null adversarial explicite (calibration résiduelle) et verdict multi-niveau (CONFIRMED / INCONCLUSIF / FALSIFIED). La **cohérence formelle** entre cases est délibérée : le générateur #9533 produit des protocoles falsifiables de **même structure**, ce qui rend la matrice inversée comparable case-à-case.
+
+#### Réinjection #8182 (jalon 2)
+
+Cette case **active** le hook Metzinger comme aiguillon de lecture — commentaire de réactivation à poster sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) **après merge** (jalon 2 du tracker, livraison effective = « le chantier de veille a produit un protocole falsifiable sur le self-model workspace »). Crédit témoin Metzinger (auteur + source + date) à reporter selon la convention `#8182`.
 
 ### Discipline de livraison (1 case = 1 notebook = 1 PR)
 
