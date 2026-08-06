@@ -155,6 +155,67 @@ Conventions :
 | **p̂ auto-référent** | `VIDE` → préciser | *(prédiction à pré-enregistrer)* Une boucle fermée `p̂ → action → p̂` (le représentant interne prédit ses propres états futurs) est stable sur un régime borné mais diverge (oscillation amplifiée) hors de ce régime. Seuil de stabilité pré-enregistré avant test. | Un délieur causal (la `p̂` prédit l'environnement, pas elle-même) supprime la divergence : la boucle auto-référentielle était bien la cause. | Animat / grokking (ICT-17b) | Hofstadter — *strange loops* (auto-référence comme boucle étrange). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 | **self-model minimal** | `VIDE` → préciser | *(prédiction à pré-enregistrer)* Le panel persona lu comme `W_t` appliqué à `q(soi)` (le workspace opère sur une représentation de l'agent lui-même) produit un signal de self-modélisation distinguable d'un modèle d'autrui sur les mêmes données. | Un modèle entraîné à prédire un *autre* agent de complexité équivalente produit un signal indistinguable : le « self » n'apporte rien au-delà de la modélisation générique d'autrui. | Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105) | Metzinger — *minimal phenomenal selfhood*. Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 
+### Pré-enregistrements détaillés (cases 3 et 4)
+
+> **Statut-cible PR `c.1242`.** Version chiffrée, falsifiable, avec seuils et protocole explicite — transforme les phrases qualitatives ci-dessus en cibles mesurables. Le test de chaque case reste une PR séparée (chantier 4/3 = exécution substrat). Le présent doc aligne le **pré-enregistrement** sur la discipline de livraison (multi-seed ≥ 4, null adversarial, verdict honnête).
+
+#### Case 3 — `W diffuse un q erroné` (confabulation) — pré-enregistrement chiffré
+
+**Prédiction falsifiable (mesure primaire).** Sur le substrat LLM (ICT-21 SAETrajectoires strate 5, [#5101](https://github.com/jsboige/CoursIA/issues/5101)), pour un même agent `q̂` déclenchant une ignition workspace (`W_t` pic), on définit :
+
+- `propa(q̂_vrai)` = taux de propagation de `q̂` aux consommateurs en aval (définis par le panel J-Lens Track S, [#5681](https://github.com/jsboige/CoursIA/issues/5681)) **lorsque `q̂` est la représentation correcte** (la cible que l'agent vise).
+- `propa(q̂_faux)` = taux de propagation **lorsque `q̂` est une représentation fausse** (confabulation : la cible est connue, mais `q̂` ≠ cible).
+- `propa(aléatoire)` = taux de propagation **lorsque `q̂` est un stimulus contrôle sans rapport** (panel random baseline, pas de représentation d'aucun objet de la tâche).
+
+**Cible pré-enregistrée :**
+
+```
+R_confab = propa(q̂_faux) / propa(q̂_vrai)  ∈ [0.80, 1.00]
+```
+
+**Lectures :**
+- `R_confab ≥ 0.80` ET `propa(q̂_faux) − propa(aléatoire) ≥ ε_stable` → **CONFIRMED** (la workspace **consacre** l'erreur : la « consécration » est une propriété de l'erreur, pas un broadcast).
+- `R_confab < 0.80` → **FALSIFIED** (la workspace **distingue** le faux du vrai et pénalise l'erreur).
+- `R_confab ≥ 0.80` MAIS `|propa(q̂_faux) − propa(aléatoire)| < ε_stable` → **INCONCLUSIF** (la « consécration » n'est pas de la consécration : c'est du broadcast non-discriminant, le null adversarial annule la prédiction).
+
+**Null adversarial (explicite).** `ε_stable` = seuil de discrimination réel vs aléatoire, **pré-enregistré** par calibration résiduelle : sur le même substrat, on mesure `propa(q̂_vrai) − propa(aléatoire)` (l'écart maximal que la propagation peut porter) et l'on fixe `ε_stable = 0.5 × (propa(q̂_vrai) − propa(aléatoire))` — l'écart faux vs aléatoire doit valoir au moins la moitié de l'écart vrai vs aléatoire pour parler de consécration spécifique. Le null adversarial est exécuté **avant** le test principal (calibration), pas après (anti-HARKing).
+
+**Protocole de mesure (verrouillé avant test).**
+
+| Paramètre | Valeur | Note |
+|---|---|---|
+| Substrat | ICT-21 SAETrajectoires strate 5 (Qwen2.5-3B SAE features, top-k sparse) | Re-exécution CPU-only possible via `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` |
+| Agents | J-Lens Track S ([#5681](https://github.com/jsboige/CoursIA/issues/5681)) : 3 prompts cible (vrai) / 3 prompts à représentation erronée (faux) / 3 prompts contrôles (aléatoire) | 9 prompts par seed, panel verrouillé avant test |
+| Ignition `W_t` | Pic de workspace défini comme top-1 % activation SAE conjointe au-dessus du seuil SAE par feature | Définition opérationnelle, pas de seuil magique |
+| Consommateur en aval | Token suivant la fenêtre d'ignition (largeur 5 tokens) | Métrique computed via `mean_activation_by_set` + `differential_features` |
+| Taux de propagation | `propa(q̂) = (1/|panel_consumer|) × Σ_{c ∈ panel_consumer} 𝟙[argmax(SAE(c)) ∈ top-k_features(q̂)]` | Seuil top-k = 64 (cohérent avec SAETrajectoires) |
+| Horizon | T = 1 ignition / prompt (pas de chaîne, mesure snap-shot) | `W_t` est un pic, pas une trajectoire |
+| Graines | 5 (0, 1, 7, 42, 99) | Au-delà du plancher 4 |
+| Tolérance | R_confab ∈ [0.80, 1.00] = CONFIRMED ; R_confab ± 0.05 = bande de prudence | Verdict honnête, pas de seuil lax |
+| Scoreboard | médiane(R_confab) sur 5 graines, IC95 bootstrap n=200, `propa(q̂_faux) − propa(aléatoire)` médian | Sortie numérique falsifiable |
+
+**Verdict final (honnête, multi-niveau).**
+
+| Niveau | Critère | Verdict |
+|---|---|---|
+| **Agrégé** | median(R_confab) ∈ [0.80, 1.00] **ET** `propa(q̂_faux) − propa(aléatoire) ≥ ε_stable` (5/5 graines) | `CONFIRMED` |
+| **Partiel** | median(R_confab) ∈ [0.80, 1.00] MAIS `propa(q̂_faux) − propa(aléatoire) < ε_stable` sur ≥ 1 graine | `INCONCLUSIF` (null adversarial partiel) |
+| **Rejet** | median(R_confab) < 0.80 | `FALSIFIED` |
+
+**Substrat de pré-enregistrement (état c.1242).** Loaders Python CPU-only prêts : `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` (7276 octets, fonctions `load_traces`, `densify`, `mean_activation_by_set`, `differential_features`, `binarize_quantile`, `states_from_panel`) et `ict/jlens_traces.py` (compagnon, anti-mélange guard `lens == "sae"`). L'exécution du test (LLM forward pass + SAE forward) **exige GPU** (substrat Qwen2.5-3B, lane GenAI/po-2023 ou ai-01) — la **PR de test** n'est PAS exécutable par la présente lane CPU-only ; elle sera ouverte **par la lane GPU** ou auto-flaggée pour cross-pickup ai-01. Le présent PR ne touche que le **pré-enregistrement chiffré** (document), qui est substance à part entière (cf [#9546](https://github.com/jsboige/CoursIA/pull/9546) même logique : matrice fermée avant test).
+
+#### Case 4 — `self-model minimal` — pré-enregistrement à compléter
+
+**Statut pré-enregistrement.** Reste `VIDE` → préciser au tableau ci-dessus. Les substrats pressentis (Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105)) sont en attente de stabilisation du panel G.90 (jalon 3 de #5105, PR #5105 PR3). La présente PR **ne chiffre pas** la case 4 — elle l'**identifie explicitement comme prochaine cible** et fixe le **plan de chiffrage** :
+
+| Étape | Substrat | Cible chiffrée | Statut |
+|---|---|---|---|
+| 1. Attendre stabilisation panel persona | G.90 [#5105](https://github.com/jsboige/CoursIA/issues/5105) | Panel fixé, hash reproductible | BLOQUANT (PR #5105 PR3 à merger) |
+| 2. Chiffrer la prédiction | `propa(q(soi))` vs `propa(q(autre))` vs `propa(aléatoire)` | Même structure que case 3, adaptée au self-model | À pré-enregistrer APRÈS étape 1 |
+| 3. Test substrat | Panel persona + workspace SAE-JLens | `R_self = propa(q(soi)) / propa(q(autre))` | Lane GPU (GenAI/po-2023 ou ai-01) |
+
+**Note garde-fou.** Le hook grade C (Metzinger — *minimal phenomenal selfhood*) est **activé en lecture** (aiguillon d'interprétation, [#8182](https://github.com/jsboige/CoursIA/issues/8182) jalon 2), **jamais en claim** — la discrimination self/autrui mesurée ci-dessus est une **mesure de signal**, pas une réduction de la phénoménologie du « soi ». Cf [#8182](https://github.com/jsboige/CoursIA/issues/8182) traceur.
+
 ### Discipline de livraison (1 case = 1 notebook = 1 PR)
 
 - **Jamais une vague.** Chaque case passe `PRÉDIT → TESTÉ(verdict)` par un notebook dédié, sa propre PR, son propre verdict — pas de bundle multi-cases.
