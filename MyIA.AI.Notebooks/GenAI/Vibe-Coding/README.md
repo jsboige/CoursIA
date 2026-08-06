@@ -117,6 +117,7 @@ Le répertoire `docs/` contient :
 
 | Document | Description |
 |----------|-------------|
+| [NOTRE-STACK.md](docs/NOTRE-STACK.md) | Le harnais réel derrière les ateliers : roo-extensions, MCPs maison, coordination cluster |
 | [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique à l'IA générative |
 | [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
