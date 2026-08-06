@@ -54,7 +54,7 @@ flowchart TD
 |-----------|--------|-----------|
 | Toolchain | `leanprover/lean4:v4.31.0-rc1` | Cohorte 18 lakes mutualisés |
 | Mathlib rev | `d568c8c0` | `#4363` junction shared cache |
-| Total sorry (production) | Voir [FORMAL_STATUS.md](FORMAL_STATUS.md) | Théorème-phare 0 sorry requis |
+| Total sorry (production) | Voir [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/) | Théorème-phare 0 sorry requis |
 | Total sorry (stretch) | Folk.lean — tolérés | `#4880` § "Critères de fermeture" §1 |
 
 ## Modules

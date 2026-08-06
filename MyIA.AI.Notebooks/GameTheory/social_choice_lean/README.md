@@ -29,7 +29,7 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 
 **Statut formel** : les **sept** modules (Basic, Framework, Arrow, Sen, Voting,
 MechanismDesign, SortedListCounting) sont **FORMAL-CERTIFIED** (0 sorry). Voir
-[`FORMAL_STATUS.md`](FORMAL_STATUS.md) pour le détail par fichier.
+le home canonique [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) — `FORMAL_STATUS.md` archive-shell a été retiré (#9535 item 6, absorption post-#4365 documentée PR #7018).
 
 ## Théorèmes formalisés
 
@@ -155,8 +155,7 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 > `SocialChoice.lean`, `SocialChoice/*.lean` et `examples/*.lean` ne sont **plus présents
 > ici** : ils vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
 > Seuls `README.md`, `lakefile.lean` (lib neutralisée), `lean-toolchain`, `lake-manifest.json`,
-> `FORMAL_STATUS.md`, `STATUS.md`, `NOTICE.md` et `LEAN_PREREQUISITES.md` subsistent comme
-> coquille archive.
+> `STATUS.md`, `NOTICE.md` et `LEAN_PREREQUISITES.md` subsistent comme coquille archive.
 
 ```text
 social_choice_lean/                     (archive — coquille)
@@ -164,7 +163,6 @@ social_choice_lean/                     (archive — coquille)
 ├── lakefile.lean                      # package + require mathlib ; lean_lib NEUTRALISÉE
 ├── lake-manifest.json                 # Manifest préservé
 ├── lean-toolchain                     # Version de Lean (v4.31.0-rc1)
-├── FORMAL_STATUS.md                   # Statut formel (historique, voir game_theory_lean)
 ├── STATUS.md                          # Statut (historique)
 ├── NOTICE.md                          # Licence MIT (DominikPeters)
 ├── LEAN_PREREQUISITES.md              # Prérequis Lean
