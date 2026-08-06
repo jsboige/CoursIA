@@ -110,8 +110,12 @@ ARTIFACT_NOUNS = r"(?:lignes?|lines?|cellules?|cells?|notebooks?|modules?|fichie
 
 # Formes attrapees : « (140 lignes) », « ~525 lignes », « **224** notebooks »,
 # « 87 cellules ». Le nombre doit preceder immediatement le nom d'artefact.
+#
+# Note fix (#9434 angle-mort t2) : le lookbehind exclut aussi « # » -- un nombre
+# precedent immediatement un diese est une reference (issue/PR GitHub « #5101 »,
+# couleur hex « #333333 », ancre/titre markdown), jamais une mesure d'artefact.
 COUNT_RE = re.compile(
-    r"(?<![\w.])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
+    r"(?<![\w.#])~?\*{0,2}\d{1,6}\*{0,2}\s+" + ARTIFACT_NOUNS + r"(?![\w-])",
     re.IGNORECASE,
 )
 
@@ -123,8 +127,14 @@ COUNT_RE = re.compile(
 # avant elle pour eviter les collisions (suffixes, abreviations) ; les unites
 # multilettres (ms/sec/min/...) tolerent un espace optionnel. Advisory : un FP
 # residuel est acceptable, l'arbitrage est humain (cf angle-mort header).
+#
+# Note fix (#9434 angle-mort t2, incident ICT-21) : le lookbehind exclut « # »
+# -- sinon un numero d'issue « #5101 s'en dérive » (cell26 ICT-21) etait matche
+# comme la duree « 5101 s ». Idem pour toute reference « #NNNN » suivie d'un mot
+# en s-/m-/ms/sec/min (144 occurrences repertoriees : issues, couleurs hex).
+# Une vraie mesure « ~50 s » (precedee de ~, pas de #) reste capturee.
 MACHINE_RE = re.compile(
-    r"(?<![\w.])~?\d{1,6}(?:[.,]\d{1,3})?"
+    r"(?<![\w.#])~?\d{1,6}(?:[.,]\d{1,3})?"
     r"(?:"
     r"\s?(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?)"
     r"|\ss"
@@ -167,7 +177,7 @@ STOCHASTIC_KW_RE = re.compile(
     r"auc|roc|moyenne|moyen)\b",
     re.IGNORECASE,
 )
-STOCHASTIC_NUM_RE = re.compile(r"(?<![\w.])~?\*{0,2}\d{1,6}\.\d{2,}\*{0,2}(?![\w])")
+STOCHASTIC_NUM_RE = re.compile(r"(?<![\w.#])~?\*{0,2}\d{1,6}\.\d{2,}\*{0,2}(?![\w])")
 SEED_RE = re.compile(
     r"(?:np\.random\.seed|numpy\.random\.seed|random\.seed|"
     r"torch\.manual_seed|tf\.random\.set_seed|jax\.random\.PRNGKey|"
@@ -191,7 +201,7 @@ SEED_RE = re.compile(
 # 'x' optionnel. Les dimensions WxH (ex. « 100x100 », « 1280x720 ») restent
 # exclues : le ``\b`` apres le premier 'x' echoue (suivi d'un chiffre).
 STRUCTURAL_RE = re.compile(
-    r"(?<![\w.])~?\d+(?:[.,]\d+)?(?:e\d+x?|x)\b",
+    r"(?<![\w.#])~?\d+(?:[.,]\d+)?(?:e\d+x?|x)\b",
     re.IGNORECASE,
 )
 
