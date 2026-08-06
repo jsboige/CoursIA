@@ -131,7 +131,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Build**: `lake build RepeatedGames` — SUCCESS (2953 jobs, post-#5362) | **COMPLETE: 0 sorry on the theorem-phare; Folk stretch OPEN**
 
-**Status**: `grim_trigger_sustains_iff` (sustains a subgame-perfect Nash iff δ ≥ threshold) is fully proved 0 sorry. The Folk theorem (`folk_theorem_discounted`) carries 1 stretch sorry, tolerated per #4880 (grim already covers the closure criterion). See [`repeated_games_lean/FORMAL_STATUS.md`](repeated_games_lean/FORMAL_STATUS.md).
+**Status**: `grim_trigger_sustains_iff` (sustains a subgame-perfect Nash iff δ ≥ threshold) is fully proved 0 sorry. The Folk theorem (`folk_theorem_discounted`) carries 1 stretch sorry, tolerated per #4880 (grim already covers the closure criterion). Voir home canonique [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — `FORMAL_STATUS.md` archive-shell a été retiré (#9535 item 6, absorption post-#4365 documentée PR #7018 / #7021).
 
 ---
 

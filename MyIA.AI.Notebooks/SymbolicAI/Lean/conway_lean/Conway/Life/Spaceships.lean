@@ -17,8 +17,8 @@ Convention de coordonnees (heritee de `Conway.Life`) :
 - Chaque cellule est une paire `(row, col) : Int × Int`.
 - Les motifs sont stockes en `List (Int × Int)` dans l'ordre
   lexicographique trie (row d'abord, puis col) pour que `step`
-  produise une liste dans le meme ordre, permettant a
-  `native_decide` de verifier l'egalite par comparaison structurelle.
+  produise une liste dans le meme ordre, permettant au `decide` du
+  noyau de verifier l'egalite par comparaison structurelle.
 - Un deplacement `(dr, dc)` translate chaque cellule de `dr` lignes
   et `dc` colonnes. Les vaisseaux ci-dessous vont vers l'est :
   `dr = 0`, `dc = 2`.
@@ -69,7 +69,7 @@ def lwss : Grid :=
 #eval isSpaceship lwss 4 (0, 2)
 
 /-- The LWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem lwss_spaceship : isSpaceship lwss 4 (0, 2) = true := by native_decide
+theorem lwss_spaceship : isSpaceship lwss 4 (0, 2) = true := by decide
 
 /-! ## Vaisseau moyen (MWSS)
 
@@ -101,7 +101,7 @@ def mwss : Grid :=
 #eval isSpaceship mwss 4 (0, 2)
 
 /-- The MWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by native_decide
+theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by decide
 
 /-! ## Vaisseau lourd (HWSS)
 
@@ -133,7 +133,7 @@ def hwss : Grid :=
 #eval isSpaceship hwss 4 (0, 2)
 
 /-- The HWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by native_decide
+theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by decide
 
 end Life
 end Conway

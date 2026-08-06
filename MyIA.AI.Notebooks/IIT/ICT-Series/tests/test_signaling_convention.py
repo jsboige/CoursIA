@@ -101,6 +101,57 @@ def test_invalid_state_dist_raises():
         SignalingGame(n_states=4, n_signals=4, state_dist=[-0.1, 0.4, 0.4, 0.3])  # negatif
 
 
+def test_reset_restores_fresh_state():
+    """reset() ramene le jeu a l'etat initial : propensites uniformes, historique vide,
+    MI nulle, succes nul. Le contrat « reinitialise » doit tenir apres apprentissage."""
+    game = SignalingGame(n_states=3, n_signals=3, temperature=0.3, rng=np.random.default_rng(7))
+    game.train(n_rounds=200, anneal_to=0.05)
+    # Apres apprentissage : historique non vide, propensites non uniformes.
+    assert len(game.success_history) == 200
+    assert not np.allclose(game.Q_s, game.initial_q)
+    # reset() : on revient a l'etat frais.
+    game.reset()
+    assert len(game.success_history) == 0
+    assert game.success_rate() == 0.0
+    assert game.state_signal_mi() == 0.0
+    assert np.allclose(game.Q_s, game.initial_q)
+    assert np.allclose(game.Q_r, game.initial_q)
+    assert np.allclose(game.joint_state_signal, 0.0)
+
+
+def test_train_negative_rounds_raises():
+    """train(n_rounds < 0) leve ValueError (garde ligne 200-201)."""
+    game = SignalingGame(n_states=2, n_signals=2, rng=np.random.default_rng(0))
+    with pytest.raises(ValueError):
+        game.train(n_rounds=-1)
+
+
+def test_train_zero_rounds_is_noop():
+    """train(n_rounds=0) est valide (boucle vide) : aucun tour joue, historique vide."""
+    game = SignalingGame(n_states=2, n_signals=2, rng=np.random.default_rng(0))
+    game.train(n_rounds=0)
+    assert len(game.success_history) == 0
+
+
+def test_train_anneal_restores_temperature():
+    """Apres train(anneal_to=t_bas), la temperature revient a sa valeur initiale
+    (restoration ligne 208) — l'annealing est transitoire, pas persistant."""
+    game = SignalingGame(n_states=3, n_signals=3, temperature=0.5, rng=np.random.default_rng(0))
+    t0 = game.temperature
+    game.train(n_rounds=100, anneal_to=0.02)
+    assert game.temperature == pytest.approx(t0)
+
+
+def test_success_rate_window_larger_than_history():
+    """success_rate(window > len(history)) renvoie la moyenne sur TOUT l'historique,
+    sans crash (le slicing Python [-window:] couvre toute la liste)."""
+    game = SignalingGame(n_states=2, n_signals=2, rng=np.random.default_rng(0))
+    game.train(n_rounds=10)
+    full = game.success_rate(window=10)
+    oversize = game.success_rate(window=10_000)
+    assert oversize == pytest.approx(full)
+
+
 # --- Les quatre verdicts falsifiables (#7746 D2 experience A) ---
 
 
