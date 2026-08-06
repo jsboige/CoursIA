@@ -64,7 +64,7 @@
 | Notebook | Series | n_err/n_code | Last commit |
 |----------|--------|--------------|-------------|
 | `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb` | QuantConnect | 13/33 | 2026-07-16 |
-| `MyIA.AI.Notebooks/SymbolicAI/archive/Tweety.ipynb` | SymbolicAI | 1/34 | 2026-06-22 |
+| `MyIA.AI.Notebooks/SymbolicAI/_archive/Tweety.ipynb` | SymbolicAI | 1/34 | 2026-06-22 |
 
 ---
 

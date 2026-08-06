@@ -7,7 +7,7 @@ GenAIAuthManager, main() standalone entry point.
 All tests mock GenAIAuthManager to avoid filesystem/network side effects.
 
 LIVE: 5 callers (docker-configs/services auth_middleware.py,
-genai-stack/archive/core/*, genai-stack commands).
+genai-stack/_archive/core/*, genai-stack commands).
 """
 
 import argparse

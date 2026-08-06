@@ -31,7 +31,7 @@ Ce répertoire contient les anciennes versions des notebooks Python qui se trouv
 
 - **Audit déclencheur** : #5081 (audit narratif des séries du dépôt, slice Search)
 - **PR d'archivage** : C209 tranche 8/8 du plan C201
-- **Précédents archivages dans le dépôt** : `SymbolicAI/archive/` (Tweety monolithique remplacé par 7 notebooks thématiques, 2026-01-23)
+- **Précédents archivages dans le dépôt** : `SymbolicAI/_archive/` (Tweety monolithique remplacé par 7 notebooks thématiques, 2026-01-23)
 - **Documentation connexe** : le label "legacy à archiver" était explicite dans `Search/README.md` lignes 327 + 500-501 avant cette PR
 
 ## Note de préservation
