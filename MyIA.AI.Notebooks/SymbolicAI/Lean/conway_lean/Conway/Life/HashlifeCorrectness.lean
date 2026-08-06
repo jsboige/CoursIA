@@ -2985,6 +2985,507 @@ private theorem p4_nw_offset_decomp (k : Nat)
   rw [mem_toGrid_node, hR1_l]
   simp only [Int.zero_add, Int.add_zero]
 
+/-! ### Bornes d'empreinte de `toCellsAux` + navette booléenne (mur (a), c.94)
+
+Les quatre lemmes d'accord de grille de l'étape 2 du plan DEMO 63 exigent
+d'exclure des sous-cellules par leur seule POSITION : borne inférieure (les
+origines des quadrants ne font que croître — aucun `wf` requis) et borne
+supérieure (empreinte de côté `2^level` — `wf` requis pour aligner l'empreinte
+réelle sur celle annoncée). Aucun lemme d'empreinte n'existe dans
+`MacroCell.lean` (vérifié par grep) : les voici, privés à ce fichier. -/
+
+/-- Navette booléenne : une équivalence des `= true` donne l'égalité `Bool`. -/
+private theorem p4_bool_eq_of_iff : ∀ (a b : Bool), (a = true ↔ b = true) → a = b := by
+  decide
+
+/-- Borne inférieure d'empreinte (sans `wf`) : tout point énuméré par
+    `toCellsAux r0 c0` est au sud-est (au sens large) de l'origine `(r0, c0)`. -/
+private theorem p4_toCellsAux_origin_le (c : MacroCell) :
+    ∀ (r0 c0 : Int) (x : Int × Int), x ∈ c.toCellsAux r0 c0 → r0 ≤ x.1 ∧ c0 ≤ x.2 := by
+  induction c with
+  | leaf b =>
+    intro r0 c0 x hx
+    cases b with
+    | false => simp only [toCellsAux] at hx; cases hx
+    | true =>
+      simp only [toCellsAux, List.mem_singleton] at hx
+      subst hx
+      exact ⟨le_refl r0, le_refl c0⟩
+  | node nw ne sw se ihnw ihne ihsw ihse =>
+    intro r0 c0 x hx
+    simp only [toCellsAux, List.mem_append, or_assoc] at hx
+    have hpos : (0 : Int) < 2 ^ nw.level := pow_pos (by norm_num) nw.level
+    have hcast : ((2 ^ nw.level : Nat) : Int) = 2 ^ nw.level := by
+      norm_cast
+    rcases hx with hx | hx | hx | hx
+    · exact ihnw _ _ x hx
+    · obtain ⟨h1, h2⟩ := ihne _ _ x hx
+      omega
+    · obtain ⟨h1, h2⟩ := ihsw _ _ x hx
+      omega
+    · obtain ⟨h1, h2⟩ := ihse _ _ x hx
+      omega
+
+/-- Borne supérieure d'empreinte (avec `wf`) : tout point énuméré par
+    `toCellsAux r0 c0` d'une cellule bien formée reste dans le carré de côté
+    `2^level` ancré en `(r0, c0)`. Le `wf` est indispensable : il aligne les
+    niveaux des quatre quadrants, donc l'empreinte réelle sur celle annoncée. -/
+private theorem p4_toCellsAux_lt (c : MacroCell) :
+    ∀ (r0 c0 : Int) (x : Int × Int), c.wf = true → x ∈ c.toCellsAux r0 c0 →
+      x.1 < r0 + (2 ^ c.level : Int) ∧ x.2 < c0 + (2 ^ c.level : Int) := by
+  induction c with
+  | leaf b =>
+    intro r0 c0 x _ hx
+    cases b with
+    | false => simp only [toCellsAux] at hx; cases hx
+    | true =>
+      simp only [toCellsAux, List.mem_singleton] at hx
+      subst hx
+      simp only [MacroCell.level, pow_zero]
+      show r0 < r0 + 1 ∧ c0 < c0 + 1
+      omega
+  | node nw ne sw se ihnw ihne ihsw ihse =>
+    intro r0 c0 x hwf hx
+    obtain ⟨hwnw, hwne, hwsw, hwse, hlne, hlsw, hlse⟩ := wf_node_elim hwf
+    simp only [toCellsAux, List.mem_append, or_assoc] at hx
+    have hpos : (0 : Int) < 2 ^ nw.level := pow_pos (by norm_num) nw.level
+    have hsplit : (2 ^ (node nw ne sw se).level : Int) = 2 ^ nw.level + 2 ^ nw.level := by
+      show (2 ^ (1 + nw.level) : Int) = 2 ^ nw.level + 2 ^ nw.level
+      rw [pow_add, pow_one]
+      ring
+    have hcast : ((2 ^ nw.level : Nat) : Int) = 2 ^ nw.level := by
+      norm_cast
+    rcases hx with hx | hx | hx | hx
+    · obtain ⟨h1, h2⟩ := ihnw _ _ x hwnw hx
+      omega
+    · obtain ⟨h1, h2⟩ := ihne _ _ x hwne hx
+      rw [hlne] at h1 h2
+      omega
+    · obtain ⟨h1, h2⟩ := ihsw _ _ x hwsw hx
+      rw [hlsw] at h1 h2
+      omega
+    · obtain ⟨h1, h2⟩ := ihse _ _ x hwse hx
+      rw [hlse] at h1 h2
+      omega
+
+/-- Corollaire `toGrid` de la borne inférieure (sans `wf`). -/
+private theorem p4_mem_toGrid_origin_le (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
+    (hx : x ∈ c.toGrid (r0, c0)) : r0 ≤ x.1 ∧ c0 ≤ x.2 := by
+  rw [mem_toGrid] at hx
+  exact p4_toCellsAux_origin_le c r0 c0 x hx
+
+/-- Corollaire `toGrid` de la borne supérieure (avec `wf`). -/
+private theorem p4_mem_toGrid_lt (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
+    (hwf : c.wf = true) (hx : x ∈ c.toGrid (r0, c0)) :
+    x.1 < r0 + (2 ^ c.level : Int) ∧ x.2 < c0 + (2 ^ c.level : Int) := by
+  rw [mem_toGrid] at hx
+  exact p4_toCellsAux_lt c r0 c0 x hwf hx
+
+/-- Ré-ancrage ponctuel : évaluer la grille d'une cellule posée en `(a, b)`
+    revient à évaluer la grille posée à l'origine au point translaté.
+    Version booléenne de `mem_toGrid_shift`. -/
+private theorem p4_isAlive_toGrid_shift (c : MacroCell) (a b : Int) (r : Int × Int) :
+    isAlive (c.toGrid (a, b)) r = isAlive (c.toGrid (0, 0)) (r.1 - a, r.2 - b) := by
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  exact mem_toGrid_shift
+
+/-! ### Étape 2 — les quatre lemmes d'accord de grille parent/recombinaison
+
+Le parent (niveau `k+2`) et chaque nœud de recombinaison de la première vague
+coïncident sur le rectangle d'agrément du quadrant correspondant : chaque
+sous-cellule du parent y survivant est l'un des quatre petits-enfants du nœud
+de recombinaison, aux mêmes offsets absolus ; les autres sont exclues par pure
+position (bornes d'empreinte ci-dessus). Les sept petits-enfants NON contraints
+par `hn1..hn5` (`ne_ne, ne_se, sw_sw, sw_se, se_ne, se_sw, se_se`) ne sont
+exclus QUE par borne inférieure — aucun `wf` du parent n'est requis. -/
+
+/-- Accord parent / `n1` (non translaté) sur `[0, 2·2^k)²`. -/
+private theorem p4_nw_parent_agree_n1 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (x : Int × Int)
+    (hx : 0 ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) ∧
+          0 ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node nw_nw nw_ne nw_sw nw_se).toGrid (0, 0)) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro (h | h | h | h)
+    · exact h
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+  · intro h
+    exact Or.inl h
+
+/-- Accord parent / `n2` translaté de `(0, 2^k)` sur `[0, 2·2^k) × [2^k, 3·2^k)`. -/
+private theorem p4_nw_parent_agree_n2 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (x : Int × Int)
+    (hx : 0 ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) ∧
+          (2 ^ k : Int) ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node nw_ne ne_nw nw_se ne_sw).toGrid (0, (2 ^ k : Int))) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  obtain ⟨hl_nwnw, hl_nwne, hl_nwsw, hl_nwse, hw_nwnw, hw_nwne, hw_nwsw, hw_nwse⟩ :=
+    wf_node_quad_level hn1_l hn1_w
+  obtain ⟨-, hl_nenw, -, hl_nesw, -, hw_nenw, -, hw_nesw⟩ :=
+    wf_node_quad_level hn2_l hn2_w
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := nw_ne) (ne := ne_nw) (sw := nw_se) (se := ne_sw), hl_nwne]
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  rw [mem_toGrid_node (nw := nw_nw) (ne := nw_ne) (sw := nw_sw) (se := nw_se), hl_nwnw]
+  rw [mem_toGrid_node (nw := ne_nw) (ne := ne_ne) (sw := ne_sw) (se := ne_se), hl_nenw]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro ((h | h | h | h) | (h | h | h | h) | h | h)
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwnw h
+      rw [hl_nwnw] at hc
+      exfalso; omega
+    · exact Or.inl h
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwsw h
+      rw [hl_nwsw] at hc
+      exfalso; omega
+    · exact Or.inr (Or.inr (Or.inl h))
+    · exact Or.inr (Or.inl h)
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · exact Or.inr (Or.inr (Or.inr h))
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+  · rintro (h | h | h | h)
+    · exact Or.inl (Or.inr (Or.inl h))
+    · exact Or.inr (Or.inl (Or.inl h))
+    · exact Or.inl (Or.inr (Or.inr (Or.inr h)))
+    · exact Or.inr (Or.inl (Or.inr (Or.inr (Or.inl h))))
+
+/-- Accord parent / `n4` translaté de `(2^k, 0)` sur `[2^k, 3·2^k) × [0, 2·2^k)`. -/
+private theorem p4_nw_parent_agree_n4 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) ∧
+          0 ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node nw_sw nw_se sw_nw sw_ne).toGrid ((2 ^ k : Int), 0)) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  obtain ⟨hl_nwnw, hl_nwne, hl_nwsw, hl_nwse, hw_nwnw, hw_nwne, hw_nwsw, hw_nwse⟩ :=
+    wf_node_quad_level hn1_l hn1_w
+  obtain ⟨-, -, hl_swnw, hl_swne, -, -, hw_swnw, hw_swne⟩ :=
+    wf_node_quad_level hn4_l hn4_w
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := nw_sw) (ne := nw_se) (sw := sw_nw) (se := sw_ne), hl_nwsw]
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  rw [mem_toGrid_node (nw := nw_nw) (ne := nw_ne) (sw := nw_sw) (se := nw_se), hl_nwnw]
+  rw [mem_toGrid_node (nw := sw_nw) (ne := sw_ne) (sw := sw_sw) (se := sw_se), hl_swnw]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro ((h | h | h | h) | h | (h | h | h | h) | h)
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwnw h
+      rw [hl_nwnw] at hr
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwne h
+      rw [hl_nwne] at hr
+      exfalso; omega
+    · exact Or.inl h
+    · exact Or.inr (Or.inl h)
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · exact Or.inr (Or.inr (Or.inl h))
+    · exact Or.inr (Or.inr (Or.inr h))
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+  · rintro (h | h | h | h)
+    · exact Or.inl (Or.inr (Or.inr (Or.inl h)))
+    · exact Or.inl (Or.inr (Or.inr (Or.inr h)))
+    · exact Or.inr (Or.inr (Or.inl (Or.inl h)))
+    · exact Or.inr (Or.inr (Or.inl (Or.inr (Or.inl h))))
+
+/-- Accord parent / `n5` translaté de `(2^k, 2^k)` sur `[2^k, 3·2^k)²`. -/
+private theorem p4_nw_parent_agree_n5 (k : Nat)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int) ∧
+          (2 ^ k : Int) ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+        (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) x
+      = isAlive ((node nw_se ne_sw sw_ne se_nw).toGrid ((2 ^ k : Int), (2 ^ k : Int))) x := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  obtain ⟨hl_nwnw, hl_nwne, hl_nwsw, hl_nwse, hw_nwnw, hw_nwne, hw_nwsw, hw_nwse⟩ :=
+    wf_node_quad_level hn1_l hn1_w
+  obtain ⟨-, hl_nenw, -, -, -, hw_nenw, -, -⟩ :=
+    wf_node_quad_level hn2_l hn2_w
+  obtain ⟨-, -, hl_swnw, -, -, -, hw_swnw, -⟩ :=
+    wf_node_quad_level hn4_l hn4_w
+  obtain ⟨-, -, -, hl_senw, -, -, -, hw_senw⟩ :=
+    wf_node_quad_level hn5_l hn5_w
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
+  have hBB : (2 ^ (k + 1) : Int) = (2 ^ k : Int) + (2 ^ k : Int) := by
+    rw [pow_succ]; ring
+  rw [mem_toGrid_node (nw := nw_se) (ne := ne_sw) (sw := sw_ne) (se := se_nw), hl_nwse]
+  rw [mem_toGrid_node (nw := node nw_nw nw_ne nw_sw nw_se), hn1_l, hBB]
+  rw [mem_toGrid_node (nw := nw_nw) (ne := nw_ne) (sw := nw_sw) (se := nw_se), hl_nwnw]
+  rw [mem_toGrid_node (nw := ne_nw) (ne := ne_ne) (sw := ne_sw) (se := ne_se), hl_nenw]
+  rw [mem_toGrid_node (nw := sw_nw) (ne := sw_ne) (sw := sw_sw) (se := sw_se), hl_swnw]
+  rw [mem_toGrid_node (nw := se_nw) (ne := se_ne) (sw := se_sw) (se := se_se), hl_senw]
+  simp only [Int.zero_add, Int.add_zero]
+  constructor
+  · rintro ((h | h | h | h) | (h | h | h | h) | (h | h | h | h) | (h | h | h | h))
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwnw h
+      rw [hl_nwnw] at hr
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwne h
+      rw [hl_nwne] at hr
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_lt _ _ _ x hw_nwsw h
+      rw [hl_nwsw] at hc
+      exfalso; omega
+    · exact Or.inl h
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_lt _ _ _ x hw_nenw h
+      rw [hl_nenw] at hr
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · exact Or.inr (Or.inl h)
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_lt _ _ _ x hw_swnw h
+      rw [hl_swnw] at hc
+      exfalso; omega
+    · exact Or.inr (Or.inr (Or.inl h))
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · exact Or.inr (Or.inr (Or.inr h))
+    · obtain ⟨-, hc⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+    · obtain ⟨hr, -⟩ := p4_mem_toGrid_origin_le _ _ _ x h
+      exfalso; omega
+  · rintro (h | h | h | h)
+    · exact Or.inl (Or.inr (Or.inr (Or.inr h)))
+    · exact Or.inr (Or.inl (Or.inr (Or.inr (Or.inl h))))
+    · exact Or.inr (Or.inr (Or.inl (Or.inr (Or.inl h))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
+
+/-! ### Étape 4 (préparation) — caractérisation par quadrant du supernœud résultat
+
+Le supernœud `node R1 R2 R4 R5` (niveau `k+1`) est caractérisé quadrant par
+quadrant : sur chaque quadrant de `[0, 2·2^k)²`, sa grille vaut l'évolution
+`2^(k-1)` du nœud de recombinaison correspondant, au point re-translaté que
+produit `centralCorrect_mem_shift`. Les trois autres quadrants sont exclus par
+leurs propres bornes (les conjonctions de `centralCorrect_mem_shift`), via
+`hA : 2^(k-1+1) = 2^k` (qui exige `1 ≤ k`). -/
+
+/-- Quadrant NW du supernœud : `R1` seul survit sur `[0, 2^k)²`. -/
+private theorem p4_nw_rside_char_nw (k : Nat) (hk1 : 1 ≤ k)
+    (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) c1)
+    (hR2 : R2 = hashlifeResultAux (k + 1) c2)
+    (hR4 : R4 = hashlifeResultAux (k + 1) c4)
+    (hR5 : R5 = hashlifeResultAux (k + 1) c5)
+    (hR1_l : R1.level = k)
+    (hcc1 : centralCorrect c1 (k - 1)) (hcc2 : centralCorrect c2 (k - 1))
+    (hcc4 : centralCorrect c4 (k - 1)) (hcc5 : centralCorrect c5 (k - 1))
+    (x : Int × Int)
+    (hx : 0 ≤ x.1 ∧ x.1 < (2 ^ k : Int) ∧ 0 ≤ x.2 ∧ x.2 < (2 ^ k : Int)) :
+    isAlive ((node R1 R2 R4 R5).toGrid (0, 0)) x
+      = isAlive (evolve (2 ^ (k - 1)) (c1.toGrid (0, 0)))
+          (x.1 - 0 + (2 ^ (k - 1) : Int), x.2 - 0 + (2 ^ (k - 1) : Int)) := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hfuel : k + 1 = k - 1 + 2 := by omega
+  rw [hfuel] at hR1 hR2 hR4 hR5
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local]
+  rw [p4_nw_offset_decomp k R1 R2 R4 R5 hR1_l x]
+  rw [hR1, hR2, hR4, hR5]
+  rw [centralCorrect_mem_shift c1 (k - 1) 0 0 x hcc1,
+      centralCorrect_mem_shift c2 (k - 1) 0 (2 ^ k : Int) x hcc2,
+      centralCorrect_mem_shift c4 (k - 1) (2 ^ k : Int) 0 x hcc4,
+      centralCorrect_mem_shift c5 (k - 1) (2 ^ k : Int) (2 ^ k : Int) x hcc5]
+  constructor
+  · rintro (⟨H, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩ |
+      ⟨-, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩)
+    · exact H
+    · exfalso; omega
+    · exfalso; omega
+    · exfalso; omega
+  · intro H
+    refine Or.inl ⟨H, ?_, ?_, ?_, ?_⟩ <;> omega
+
+/-- Quadrant NE du supernœud : `R2` seul survit sur `[0, 2^k) × [2^k, 2·2^k)`. -/
+private theorem p4_nw_rside_char_ne (k : Nat) (hk1 : 1 ≤ k)
+    (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) c1)
+    (hR2 : R2 = hashlifeResultAux (k + 1) c2)
+    (hR4 : R4 = hashlifeResultAux (k + 1) c4)
+    (hR5 : R5 = hashlifeResultAux (k + 1) c5)
+    (hR1_l : R1.level = k)
+    (hcc1 : centralCorrect c1 (k - 1)) (hcc2 : centralCorrect c2 (k - 1))
+    (hcc4 : centralCorrect c4 (k - 1)) (hcc5 : centralCorrect c5 (k - 1))
+    (x : Int × Int)
+    (hx : 0 ≤ x.1 ∧ x.1 < (2 ^ k : Int) ∧
+          (2 ^ k : Int) ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node R1 R2 R4 R5).toGrid (0, 0)) x
+      = isAlive (evolve (2 ^ (k - 1)) (c2.toGrid (0, 0)))
+          (x.1 - 0 + (2 ^ (k - 1) : Int), x.2 - (2 ^ k : Int) + (2 ^ (k - 1) : Int)) := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hfuel : k + 1 = k - 1 + 2 := by omega
+  rw [hfuel] at hR1 hR2 hR4 hR5
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local]
+  rw [p4_nw_offset_decomp k R1 R2 R4 R5 hR1_l x]
+  rw [hR1, hR2, hR4, hR5]
+  rw [centralCorrect_mem_shift c1 (k - 1) 0 0 x hcc1,
+      centralCorrect_mem_shift c2 (k - 1) 0 (2 ^ k : Int) x hcc2,
+      centralCorrect_mem_shift c4 (k - 1) (2 ^ k : Int) 0 x hcc4,
+      centralCorrect_mem_shift c5 (k - 1) (2 ^ k : Int) (2 ^ k : Int) x hcc5]
+  constructor
+  · rintro (⟨-, hb1, hb2, hb3, hb4⟩ | ⟨H, hb1, hb2, hb3, hb4⟩ |
+      ⟨-, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩)
+    · exfalso; omega
+    · exact H
+    · exfalso; omega
+    · exfalso; omega
+  · intro H
+    refine Or.inr (Or.inl ⟨H, ?_, ?_, ?_, ?_⟩) <;> omega
+
+/-- Quadrant SW du supernœud : `R4` seul survit sur `[2^k, 2·2^k) × [0, 2^k)`. -/
+private theorem p4_nw_rside_char_sw (k : Nat) (hk1 : 1 ≤ k)
+    (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) c1)
+    (hR2 : R2 = hashlifeResultAux (k + 1) c2)
+    (hR4 : R4 = hashlifeResultAux (k + 1) c4)
+    (hR5 : R5 = hashlifeResultAux (k + 1) c5)
+    (hR1_l : R1.level = k)
+    (hcc1 : centralCorrect c1 (k - 1)) (hcc2 : centralCorrect c2 (k - 1))
+    (hcc4 : centralCorrect c4 (k - 1)) (hcc5 : centralCorrect c5 (k - 1))
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) ∧
+          0 ≤ x.2 ∧ x.2 < (2 ^ k : Int)) :
+    isAlive ((node R1 R2 R4 R5).toGrid (0, 0)) x
+      = isAlive (evolve (2 ^ (k - 1)) (c4.toGrid (0, 0)))
+          (x.1 - (2 ^ k : Int) + (2 ^ (k - 1) : Int), x.2 - 0 + (2 ^ (k - 1) : Int)) := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hfuel : k + 1 = k - 1 + 2 := by omega
+  rw [hfuel] at hR1 hR2 hR4 hR5
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local]
+  rw [p4_nw_offset_decomp k R1 R2 R4 R5 hR1_l x]
+  rw [hR1, hR2, hR4, hR5]
+  rw [centralCorrect_mem_shift c1 (k - 1) 0 0 x hcc1,
+      centralCorrect_mem_shift c2 (k - 1) 0 (2 ^ k : Int) x hcc2,
+      centralCorrect_mem_shift c4 (k - 1) (2 ^ k : Int) 0 x hcc4,
+      centralCorrect_mem_shift c5 (k - 1) (2 ^ k : Int) (2 ^ k : Int) x hcc5]
+  constructor
+  · rintro (⟨-, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩ |
+      ⟨H, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩)
+    · exfalso; omega
+    · exfalso; omega
+    · exact H
+    · exfalso; omega
+  · intro H
+    refine Or.inr (Or.inr (Or.inl ⟨H, ?_, ?_, ?_, ?_⟩)) <;> omega
+
+/-- Quadrant SE du supernœud : `R5` seul survit sur `[2^k, 2·2^k)²`. -/
+private theorem p4_nw_rside_char_se (k : Nat) (hk1 : 1 ≤ k)
+    (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) c1)
+    (hR2 : R2 = hashlifeResultAux (k + 1) c2)
+    (hR4 : R4 = hashlifeResultAux (k + 1) c4)
+    (hR5 : R5 = hashlifeResultAux (k + 1) c5)
+    (hR1_l : R1.level = k)
+    (hcc1 : centralCorrect c1 (k - 1)) (hcc2 : centralCorrect c2 (k - 1))
+    (hcc4 : centralCorrect c4 (k - 1)) (hcc5 : centralCorrect c5 (k - 1))
+    (x : Int × Int)
+    (hx : (2 ^ k : Int) ≤ x.1 ∧ x.1 < (2 ^ k : Int) + (2 ^ k : Int) ∧
+          (2 ^ k : Int) ≤ x.2 ∧ x.2 < (2 ^ k : Int) + (2 ^ k : Int)) :
+    isAlive ((node R1 R2 R4 R5).toGrid (0, 0)) x
+      = isAlive (evolve (2 ^ (k - 1)) (c5.toGrid (0, 0)))
+          (x.1 - (2 ^ k : Int) + (2 ^ (k - 1) : Int),
+           x.2 - (2 ^ k : Int) + (2 ^ (k - 1) : Int)) := by
+  obtain ⟨hx1, hx2, hx3, hx4⟩ := hx
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hfuel : k + 1 = k - 1 + 2 := by omega
+  rw [hfuel] at hR1 hR2 hR4 hR5
+  apply p4_bool_eq_of_iff
+  rw [isAlive_true_iff_mem_local]
+  rw [p4_nw_offset_decomp k R1 R2 R4 R5 hR1_l x]
+  rw [hR1, hR2, hR4, hR5]
+  rw [centralCorrect_mem_shift c1 (k - 1) 0 0 x hcc1,
+      centralCorrect_mem_shift c2 (k - 1) 0 (2 ^ k : Int) x hcc2,
+      centralCorrect_mem_shift c4 (k - 1) (2 ^ k : Int) 0 x hcc4,
+      centralCorrect_mem_shift c5 (k - 1) (2 ^ k : Int) (2 ^ k : Int) x hcc5]
+  constructor
+  · rintro (⟨-, hb1, hb2, hb3, hb4⟩ | ⟨-, hb1, hb2, hb3, hb4⟩ |
+      ⟨-, hb1, hb2, hb3, hb4⟩ | ⟨H, hb1, hb2, hb3, hb4⟩)
+    · exfalso; omega
+    · exfalso; omega
+    · exfalso; omega
+    · exact H
+  · intro H
+    refine Or.inr (Or.inr (Or.inr ⟨H, ?_, ?_, ?_, ?_⟩)) <;> omega
+
 /-! ## P4 (a) — the named overlap wall
 
 The bridge `p4_nw_g3_bridge` decomposes (c.764) into a sorry-free **(b) outer-
@@ -3162,7 +3663,108 @@ private theorem p4_nw_overlap_wall
             (0, 0))) q
         = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
             (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int)) := by
-  sorry
+  -- Assemblage (étapes 3-5 du plan c.94) : fenêtre → quadrant → localité
+  -- Chebyshev (`evolve_box_agree_local`) sur le nœud de recombinaison du
+  -- quadrant → caractérisation `p4_nw_rside_char_*` du supernœud résultat.
+  intro q hq
+  obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
+  have hA : (2 ^ (k - 1 + 1) : Int) = (2 ^ k : Int) := by
+    have hk : k - 1 + 1 = k := by omega
+    rw [hk]
+  have hu2 : (2 ^ k : Int) = (2 ^ (k - 1) : Int) + (2 ^ (k - 1) : Int) := by
+    rw [← hA, pow_succ]; ring
+  have hcastu : ((2 ^ (k - 1) : Nat) : Int) = (2 ^ (k - 1) : Int) := by norm_cast
+  rw [hA] at hp2 hp4
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q _ hq
+  by_cases hcx1 : q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) <;>
+    by_cases hcx2 : q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int)
+  · -- Quadrant NW : `n1`, non translaté.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive ((node nw_nw nw_ne nw_sw nw_se).toGrid (0, 0)) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      exact p4_nw_parent_agree_n1 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_nw k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant NE : `n2`, translaté `(0, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((0 : Int), (2 ^ k : Int))
+              ((node nw_ne ne_nw nw_se ne_sw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n2 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : 0 ≤ q.1 - (2 ^ (k - 1) : Int) ∧ q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_ne k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant SW : `n4`, translaté `(2^k, 0)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (0 : Int))
+              ((node nw_sw nw_se sw_nw sw_ne).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n4 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn4_l hn4_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        0 ≤ q.2 - (2 ^ (k - 1) : Int) ∧ q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_sw k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
+  · -- Quadrant SE : `n5`, translaté `(2^k, 2^k)`.
+    have hbox : ∀ r, chebDist q r ≤ 2 ^ (k - 1) →
+        isAlive ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+            (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid (0, 0)) r
+          = isAlive (shift ((2 ^ k : Int), (2 ^ k : Int))
+              ((node nw_se ne_sw sw_ne se_nw).toGrid (0, 0))) r := by
+      intro r hr
+      obtain ⟨hr1, hr2⟩ := coord_bound_of_chebDist_le q r _ hr
+      rw [isAlive_shift, ← p4_isAlive_toGrid_shift]
+      exact p4_nw_parent_agree_n5 k nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hn1_l hn1_w hn2_l hn2_w
+        hn4_l hn4_w hn5_l hn5_w r
+        ⟨by omega, by omega, by omega, by omega⟩
+    have hL := evolve_box_agree_local (2 ^ (k - 1)) _ _ q hbox
+    rw [hL, ← evolve_shift, isAlive_shift]
+    have hx' : (2 ^ k : Int) ≤ q.1 - (2 ^ (k - 1) : Int) ∧
+        q.1 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) ∧
+        (2 ^ k : Int) ≤ q.2 - (2 ^ (k - 1) : Int) ∧
+        q.2 - (2 ^ (k - 1) : Int) < (2 ^ k : Int) + (2 ^ k : Int) :=
+      ⟨by omega, by omega, by omega, by omega⟩
+    rw [p4_nw_rside_char_se k hk1 _ _ _ _ R1 R2 R4 R5 hR1 hR2 hR4 hR5 hR1_l
+        hcc1 hcc2 hcc4 hcc5 (q.1 - (2 ^ (k - 1) : Int), q.2 - (2 ^ (k - 1) : Int)) hx']
+    congr 1
+    ext <;> (try dsimp only) <;> omega
 
 /-! ### Réfutation : la forme LIBRE (pré-c.92) du mur et du bridge était FAUSSE (#6724, c.91)
 
