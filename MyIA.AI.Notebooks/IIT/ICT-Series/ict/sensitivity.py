@@ -43,6 +43,43 @@ Ce module operationalise la question :
 
 Numpy uniquement. GPU-free (mandat user 2026-07-04). Toutes les
 fonctions sont deterministes (numpy seul, pas d'aléatoire cache).
+
+Domaine de validite (Issue #9764, c.9706)
+-----------------------------------------
+
+**Degenerescence sous ``f`` injective et graphe dense.** Quand la fonction
+d'etat ``f`` est **injective** sur l'alphabet (ex. ``f(x) = x``,
+correctif ICT-15c) ET le graphe de transition est **effectivement
+(k-1)-regulier** (au sens ou tout voisin observe au moins une fois dans
+les deux directions : W = (P + P^T) / 2 avec Laplace smoothing 1e-9),
+l'identite arithmetique suivante s'applique :
+
+    sensitivity_x(f) = degree_x(W)    pour tout x, si f injective
+
+Donc ``sensitivity_mean == sensitivity_max == k - 1`` et ``std == 0``
+**par construction**, independamment de la trajectoire (monotone,
+aleatoire, cycle). Ces valeurs ne representent **pas** une mesure de
+sensibilite mais la taille de l'alphabet.
+
+**Recommandation.** Pour exploiter :func:`local_sensitivity` et
+:func:`sensitivity_distribution` comme proxy informatif :
+
+    1. Utiliser une fonction ``f`` **non injective** qui PARTITIONNE
+       l'alphabet (ex. ``f(x) = x % m`` pour ``m << k``).
+    2. Verifier que le graphe n'est PAS complet sur l'alphabet (au
+       moins une paire (i, j) absente du graphe de transition symmetrise).
+       Si W est complet, le resultat est trivial.
+
+Empiriquement (test discriminant ``test_sensitivity_h1h2_discriminant``
+c.9706) : sur marche aleatoire uniforme (120 ticks, k in {3,4,6},
+5 graines) avec ``f(x) = x`` -> saturation 15/15 ; avec ``f(x) = x % 2``
+sur cycle strict (k=4) -> ``max=2, mean=2`` (non trivial).
+
+Verdict : la saturation observee dans le constat lateral #7290 n'est
+**pas** un defaut de comptage, c'est une **degenerescence du wiring**
+(f identite + W symmetrise). Tout travail futur qui lit
+``sensitivity_mean`` ou ``sensitivity_max`` comme une mesure de
+sensibilite sans verifier le wiring tombera dans la meme trappe.
 """
 
 from __future__ import annotations
