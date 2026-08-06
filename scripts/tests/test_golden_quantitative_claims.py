@@ -38,8 +38,9 @@ XFAIL_KNOWN_GAPS: dict[str, str] = {
     "m7": "ANGLE-MORT machine: '30s' sans \\ss (espace avant 's') n'est pas matche",
     "s6": "ANGLE-MORT stochastic: 42.5 a 1 decimale, STOCHASTIC_NUM exige >=2",
     "s8": "ANGLE-MORT stochastic: 'tentatives' hors KW + 1 decimale (App-7-Wordle)",
-    "t1": "ANGLE-MORT MAJEUR structural: '2.78e24x' (notation scientifique + x) "
-          "non matche — le \\b apres 'e24' coince avant le 'x' (App-11-Picross)",
+    # "t1" (2.78e24x notation scientifique + x) retire : FIXE par #9564
+    # (STRUCTURAL_RE etendu a e\d+x?) — les deux PRs #9560/#9564 etaient
+    # in-flight simultanement, chacune verte isolement, rouges combinees.
 }
 
 
