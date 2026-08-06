@@ -101,6 +101,8 @@ if str(_QC_MCP_LITE_DIR) not in sys.path:
 # Importer server.py importe aussi mcp.server.fastmcp (dep existante du repo,
 # utilise par le daemon MCP). Le bloc try/except protege les tests en isolation
 # (mcp SDK absent => on retombe sur requests direct avec auth inline).
+_qc_api_post = None  # type: ignore  # placeholder AVANT try/except : monkeypatch tests
+_qc_get_credentials = None  # type: ignore  # placeholder AVANT try/except : monkeypatch tests
 try:
     from server import _api_post as _qc_api_post  # type: ignore
     from server import _get_credentials as _qc_get_credentials  # type: ignore

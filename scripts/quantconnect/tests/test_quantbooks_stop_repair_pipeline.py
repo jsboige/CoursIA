@@ -175,6 +175,7 @@ class TestPhasePush:
 
         monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
         monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
+        monkeypatch.setattr(qsrp, "_HAS_QC_MCP_HELPERS", True)
 
         results: dict = {}
         qsrp.phase_push(tmp_path, ["Foo"], results, dry_run=False)
@@ -220,6 +221,7 @@ class TestPhasePush:
 
         monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
         monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
+        monkeypatch.setattr(qsrp, "_HAS_QC_MCP_HELPERS", True)
 
         results: dict = {}
         qsrp.phase_push(tmp_path, ["Bar"], results, dry_run=False)
@@ -241,6 +243,7 @@ class TestPhasePush:
 
         monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
         monkeypatch.setattr(qsrp, "_qc_get_credentials", lambda: ("u", "t"))
+        monkeypatch.setattr(qsrp, "_HAS_QC_MCP_HELPERS", True)
 
         results: dict = {}
         qsrp.phase_push(tmp_path, ["NoMain"], results, dry_run=False)
@@ -264,6 +267,7 @@ class TestPhasePush:
 
         monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
         monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
+        monkeypatch.setattr(qsrp, "_HAS_QC_MCP_HELPERS", True)
 
         results: dict = {}
         qsrp.phase_push(tmp_path, ["Boom"], results, dry_run=False)
@@ -303,6 +307,7 @@ class TestPhasePush:
 
         monkeypatch.setattr(qsrp, "_qc_get_credentials", fake_get_creds)
         monkeypatch.setattr(qsrp, "_qc_api_post", fake_api_post)
+        monkeypatch.setattr(qsrp, "_HAS_QC_MCP_HELPERS", True)
 
         # Run 1 : push effectif.
         results: dict = {}
