@@ -16,8 +16,8 @@ Coordinate convention (inherited from `Conway.Life`):
 - Each cell is a pair `(row, col) : Int × Int`.
 - Patterns are stored as `List (Int × Int)` in sorted lexicographic order
   (row first, then column) so that `step` produces a list in the same
-  order, enabling `native_decide` to verify equality by structural
-  comparison.
+  order, enabling `decide` (kernel reduction) to verify equality by
+  structural comparison.
 - A displacement `(dr, dc)` shifts every cell by `dr` rows and `dc`
   columns. The spaceships below are east-bound: `dr = 0`, `dc = 2`.
 
@@ -68,7 +68,7 @@ def lwss : Grid :=
 #eval isSpaceship lwss 4 (0, 2)
 
 /-- The LWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem lwss_spaceship : isSpaceship lwss 4 (0, 2) = true := by native_decide
+theorem lwss_spaceship : isSpaceship lwss 4 (0, 2) = true := by decide
 
 /-! ## Middleweight Spaceship (MWSS)
 
@@ -100,7 +100,7 @@ def mwss : Grid :=
 #eval isSpaceship mwss 4 (0, 2)
 
 /-- The MWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by native_decide
+theorem mwss_spaceship : isSpaceship mwss 4 (0, 2) = true := by decide
 
 /-! ## Heavyweight Spaceship (HWSS)
 
@@ -132,7 +132,7 @@ def hwss : Grid :=
 #eval isSpaceship hwss 4 (0, 2)
 
 /-- The HWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
-theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by native_decide
+theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by decide
 
 end Life_en
 end Conway_en
