@@ -76,7 +76,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 
 **Ancrage dépôt.**
 - [ICT-14-FreeEnergySurprise.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb) — la jambe énergie-libre attachée au représentant interne `p̂` d'ICT-10. Thèse cell-anchored : « la jambe énergie-libre restait non attachée, alors que le banc expérimental la préparait sans le dire ». Trois *gates* falsifiables (précision fixe → MSE habillage ? précision adaptative → divergence du classement MSE ? bistable → marquage du franchissement du pli ?).
-- [ICT-14b-ActiveInferenceEFEBanc.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFEBanc.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) OPEN, [#9532](https://github.com/jsboige/CoursIA/issues/9532) — banc d'inférence active : l'expected free energy pilote l'action.
+- [ICT-14b-ActiveInferenceEFE.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE.ipynb) — livré par PR [#9545](https://github.com/jsboige/CoursIA/pull/9545) OPEN, [#9532](https://github.com/jsboige/CoursIA/issues/9532) — banc d'inférence active : l'expected free energy pilote l'action.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La **décomposition** *accuracy + complexity* est mesurée directement sur banc gaussien : c'est l'énergie libre variationnelle en famille fermée, sans approximation.
@@ -152,7 +152,7 @@ Le terme « Conway » recouvre ici **deux** ponts distincts, de natures très di
 
 **Statut honnête.**
 - Le module Lean [`hashlife_correct`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/) est **parké** — c'est-à-dire : tracker **ouvert** mais *gated* sur la complétude de la preuve.
-- Tracker de la preuve : **#6724** — *4 sorries* en cours de résolution. Tant que ces 4 sorries ne sont pas refermées, la certification Hashlife est **partielle** (le recollement est prouvé sous hypothèses). Les 4 sorries sont les points exacts où le recollement pourrait, en principe, faillir — cf. [`anti-regression.md`](../rules/anti-regression.md) pour la discipline de suivi des sorries.
+- Tracker de la preuve : **#6724** — *4 sorries* en cours de résolution. Tant que ces 4 sorries ne sont pas refermées, la certification Hashlife est **partielle** (le recollement est prouvé sous hypothèses). Les 4 sorries sont les points exacts où le recollement pourrait, en principe, faillir — cf. [`anti-regression.md`](../../.claude/rules/anti-regression.md) pour la discipline de suivi des sorries.
 - Intégration ICT = **#5726** — *parkée*, dépendante de `#6724`. Le *rattachement* ICT de la borne Hashlife attend la fermeture des 4 sorries pour basculer de `parké` à `certifié`.
 
 **Conséquence pour la prose ICT.** Toute affirmation de recollement dans la série doit **citer** la borne Hashlife comme **seule instance prouvée**, et marquer ses propres recollements comme **candidats à certification** tant que `#5726` n'est pas résolu. C'est cette discipline qui empêche la série de glisser d'« opérationnellement valide » à « formellement certifié » sans passer par les 4 sorries.
@@ -188,7 +188,7 @@ Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formell
 - **Ce n'est pas une théorie unifiée des quatre fils rouges.** Le présent document **cartographie** les opérations distinctes, marque les ponts partiels et les frontières franches, et **ne réalise** aucune identité formelle qui n'existe pas. La conversation 2026-07-20 (tours 247-267) a explicitement rejeté l'unification prématurée ; le présent document en tire les conséquences.
 - **Ce n'est pas une validation du statut « prouvable » des ponts Conway.** Le pont (a) est *partiellement* prouvé (4 sorries en cours) ; le pont (b) est *spéculatif basse priorité*. Le document cite ces statuts sans les masquer.
 - **Ce n'est pas une promotion de la hiérarchie de sobriété en règle projet.** La hiérarchie est **appliquée** au présent document et **suggérée** aux futurs, mais son passage en règle auto-loaded requiert une PR + sign-off user (cf. CLAUDE.md §A). Ce n'est *pas* une telle PR.
-- **Ce n'est pas un audit des notebooks ICT.** Les notebooks sont cités comme ancres ; leurs verdicts internes (gates, sorry count, etc.) restent *leur* affaire. La discipline anti-régression ([anti-regression.md](../rules/anti-regression.md)) s'applique à chaque notebook, pas à ce document.
+- **Ce n'est pas un audit des notebooks ICT.** Les notebooks sont cités comme ancres ; leurs verdicts internes (gates, sorry count, etc.) restent *leur* affaire. La discipline anti-régression ([anti-regression.md](../../.claude/rules/anti-regression.md)) s'applique à chaque notebook, pas à ce document.
 
 ---
 
@@ -217,7 +217,7 @@ Sans (a), la prose ICT risque de glisser d'opérationnellement valide à formell
 - [#7290](https://github.com/jsboige/CoursIA/issues/7290) — intégration ICT Kochen-Specker (spéculatif basse priorité).
 
 **Règles et discipline** :
-- [`.claude/rules/anti-regression.md`](../rules/anti-regression.md) — discipline `sorry` Lean, ne pas substituer une preuve par un stub vide.
-- [`.claude/rules/catalog-pr-hygiene.md`](../rules/catalog-pr-hygiene.md) — catalogue byte-identique à `main`, marqueurs `CATALOG-STATUS` inchangés sur la branche.
-- [`.claude/rules/readme-french-first.md`](../rules/readme-french-first.md) — nouveau contenu doc = français.
-- [`.claude/rules/pr-review-discipline.md`](../rules/pr-review-discipline.md) §D.5 — diagnostic dérive obligatoire pour ré-alignement doc/output.
+- [`.claude/rules/anti-regression.md`](../../.claude/rules/anti-regression.md) — discipline `sorry` Lean, ne pas substituer une preuve par un stub vide.
+- [`.claude/rules/catalog-pr-hygiene.md`](../../.claude/rules/catalog-pr-hygiene.md) — catalogue byte-identique à `main`, marqueurs `CATALOG-STATUS` inchangés sur la branche.
+- [`.claude/rules/readme-french-first.md`](../../.claude/rules/readme-french-first.md) — nouveau contenu doc = français.
+- [`.claude/rules/pr-review-discipline.md`](../../.claude/rules/pr-review-discipline.md) §D.5 — diagnostic dérive obligatoire pour ré-alignement doc/output.
