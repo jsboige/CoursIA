@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: f0a4de716cc4796c74319bdee52f7cbec093fa37
       csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 49aeadb7ca4e19417b562e50a495a7ea55f7413f
+      csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
+      content_python_sha: 4f011a2bf5a16d2106e22829186d206782cee507c9aef6e0879026abb61de5d1
+      content_csharp_sha: 8ea2f1d19f52fe1e6313e8f8ef858ed072d086e6cb05e45a2ac6570590da7710
   known_differences:
     - "Socle pedagogique commun : Hyperparameter tuning (scipy.optimize + Gaussian Process / Bayes opt) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = scipy.optimize + scipy.stats norm + sklearn ; C# = BCL pure (System.*), 0 NuGet."
