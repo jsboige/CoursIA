@@ -126,13 +126,33 @@ TEXT_RENDERED_ERROR_SIGNATURES = ('"severity": "error"', '"severity":"error"')
 
 
 def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Path]:
-    """Get list of .ipynb files changed relative to base branch."""
+    """Get list of .ipynb files changed relative to base branch.
+
+    The diff anchor is merge-base(base, HEAD), not base itself: diffing
+    against base directly also lists every file that changed on *base*
+    since the branch was cut, so a violation landing on main (e.g. the
+    pre-existing GT-4b cell 28 error, #9672) failed unrelated PRs whose
+    diff never touched the file (#9650/#9656/#9671/#9673). Falls back to
+    base when merge-base is unavailable (shallow clone, detached ref).
+    """
     if paths:
         return [Path(p) for p in paths if p.endswith(".ipynb") and Path(p).exists()]
 
+    anchor = base
+    try:
+        mb = subprocess.run(
+            ["git", "merge-base", base, "HEAD"],
+            capture_output=True, text=True, check=True,
+            cwd=str(REPO_ROOT),
+        ).stdout.strip()
+        if mb:
+            anchor = mb
+    except subprocess.CalledProcessError:
+        pass
+
     try:
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--diff-filter=ACM", base],
+            ["git", "diff", "--name-only", "--diff-filter=ACM", anchor],
             capture_output=True, text=True, check=True,
             cwd=str(REPO_ROOT),
         )
