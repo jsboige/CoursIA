@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 198 |
 | PRODUCTION | 0 |
-| BETA | 174 |
-| ALPHA | 24 |
+| BETA | 177 |
+| ALPHA | 21 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -227,7 +227,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Research QuantBook: Adaptive Asset Allocation | BETA | Non |
-| 2 | Research QuantBook: All-Weather Portfolio | ALPHA | Non |
+| 2 | Research QuantBook: All-Weather Portfolio | BETA | Non |
 | 3 | Alpha Correlation Analysis | BETA | Non |
 | 4 | Research QuantBook: BTC ML Enhanced | BETA | Non |
 | 5 | Research QuantBook: Multi-Channel ZigZag Crypto | BETA | Non |
@@ -245,7 +245,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 17 | Research QuantBook: Framework Composite FamaFrench + Al | BETA | Non |
 | 18 | Research QuantBook: Framework Composite Momentum + Regi | BETA | Non |
 | 19 | Framework Composite TrendWeather - Research | BETA | Non |
-| 20 | Research QuantBook: FuturesTrend (Donchian Breakout) | ALPHA | Non |
+| 20 | Research QuantBook: FuturesTrend (Donchian Breakout) | BETA | Non |
 | 21 | Research QuantBook: ML Classification (RandomForest) | BETA | Non |
 | 22 | ML Deep Learning - LSTM/GRU pour Trading | ALPHA | Non |
 | 23 | Research QuantBook: ML-Enhanced Pairs Trading | BETA | Non |
@@ -265,7 +265,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 37 | Research QuantBook: PairsTrading (Statistical Arbitrage | BETA | Non |
 | 38 | Research QuantBook: RL Portfolio Allocation | BETA | Non |
 | 39 | Research QuantBook: RegimeSwitching Alpha Model | BETA | Non |
-| 40 | Research QuantBook: RiskParity (Inverse-Volatility Weig | ALPHA | Non |
+| 40 | Research QuantBook: RiskParity (Inverse-Volatility Weig | BETA | Non |
 | 41 | Research QuantBook: Sector-Momentum (Dual Momentum) | BETA | Non |
 | 42 | Research QuantBook: Trend Following Competition | BETA | Non |
 | 43 | Research QuantBook: TrendStocks Alpha Model | BETA | Non |
