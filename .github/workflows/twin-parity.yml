@@ -1,0 +1,237 @@
+name: Twin Parity Check
+
+# Purpose: FAIL any PR that introduces DRIFT or MISSING in the twin parity
+# register (#8057, parent #4208). The register lists every Python/C# twin
+# pair and the git blob SHA of each notebook at the time of the last audit;
+# this workflow re-runs the check against the PR's merge ref and fails if a
+# notebook has moved without a re-audit (parite silently broke) or if a path
+# is now missing (typo, deletion, twin never created).
+#
+# Why BLOCKING (unlike catalog-drift.yml): the twin parity check is the
+# safety net for the structural parity of bilingual notebooks (Search/CSP,
+# ML.NET, Z3/SMT, SemanticWeb, Probas/InferNET, GameTheory/.NET). A silent
+# drift means the two implementations diverge without anyone re-auditing;
+# this directly contradicts #4956 ("parity Python/C# marathon") and #8057
+# ("metadonnee de parite auditable, pas declarative"). Blocking is the only
+# way to make the auditable promise real.
+#
+# Per-pair semantics (#8264): the workflow runs in `--per-pair --base
+# origin/main` mode, comparing the registry + blob SHAs at the PR's HEAD vs
+# at origin/main (the base ref). The gate FAILS only on pairs that the PR
+# itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
+# without rebaseline. Drift already present at origin/main is reported as
+# `drift_pre_existing` but does NOT fail the gate -- it belongs to a
+# dedicated rebaseline PR (cf #8264 batch precedent: #8282, #8289, #8322,
+# #8372). This keeps the gate green for legitimate single-side edits while
+# still surfacing fleet-wide stale SHAs through the report.
+#
+# Pattern: the worker who edits a twin must either re-audit and rebaseline the
+# SHAs in the registry -- `python scripts/notebook_tools/check_twin_parity.py
+# --update --pair "<entry name>" --by "<machine:workspace>"` (the selector is
+# mandatory, cf #8508; the write is surgical, cf #8570) -- OR split the edit so
+# the twin moves in lockstep on the same PR. The workflow tells them which side
+# has drifted.
+#
+# Paths watched:
+#   - scripts/notebook_tools/twin_pairs.d/** (registry file-per-entry, #8542)
+#   - scripts/notebook_tools/check_twin_parity.py (the tool itself)
+#   - All jumeau notebooks: MyIA.AI.Notebooks/**/*.ipynb (broad pattern;
+#     the tool itself filters down to the pairs in the registry).
+#
+# Reuses the proven structure of catalog-drift.yml (read-only checkout of
+# the PR merge ref, run tool, surface result) but FAILS on DRIFT_INTRODUCED.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/notebook_tools/twin_pairs.d/**'
+      - 'scripts/notebook_tools/check_twin_parity.py'
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  twin-parity:
+    name: "Twin parity audit (#8057)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run twin parity check
+        id: check
+        run: |
+          set +e
+          # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
+          # Previously `OUTPUT=$(... 2>&1)` merged tool warnings (missing-notebook notices etc.,
+          # check_twin_parity.py emits 6 `print(..., file=sys.stderr)` sites) INTO the JSON file,
+          # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
+          # any PR where a warning fired -- masking the real drift verdict. Direct redirection
+          # captures python's exit code correctly AND keeps the report pure JSON.
+          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main > twin_parity_report.json 2>twin_parity_stderr.log
+          EXIT=$?
+          set -e
+          if [ -s twin_parity_stderr.log ]; then
+            echo "Twin-parity tool diagnostics (stderr, non-fatal):"
+            cat twin_parity_stderr.log
+          fi
+          # Guard: fail with a CLEAR ::error if the report is unparseable, instead of a raw
+          # json.load traceback. The report must be stdout-only JSON (stream separation above).
+          if ! python -c "import json; json.load(open('twin_parity_report.json'))" 2>/dev/null; then
+            echo "::error title=Twin parity report unparseable::The JSON report (twin_parity_report.json) could not be parsed. Tool exit was $EXIT. Report tail + stderr are shown below and uploaded as artifacts. This indicates the report stream was corrupted or the tool crashed before emitting JSON (see #8957 stream-separation fix)."
+            echo "--- report tail (last 400 chars) ---"
+            tail -c 400 twin_parity_report.json || true
+            echo "--- stderr ---"
+            cat twin_parity_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+          if [ $EXIT -eq 0 ]; then
+            INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
+            PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
+            echo "drift_introduced=$INTRO" >> "$GITHUB_OUTPUT"
+            echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
+            echo "Twin parity OK : $PRE paire(s) en DRIFT pre-existant (base=origin/main) ne fail pas le gate (rellevent d'une PR de rebaseline dediee, cf #8264)."
+          elif [ $EXIT -eq 1 ]; then
+            INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
+            PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
+            echo "drift_introduced=$INTRO" >> "$GITHUB_OUTPUT"
+            echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
+            echo ""
+            echo "--------------------------------------------------------------"
+            echo "  Twin parity : $INTRO paire(s) mise(s) en DRIFT par cette PR."
+            echo "  Le registre stocke le git blob SHA de chaque jumeau : TOUTE"
+            echo "  edition le deplace, y compris markdown-only. Tu rebaselines"
+            echo "  pour ATTESTER la parite, pas pour la reparer."
+            echo ""
+            echo "  Re-audite la paire firsthand, puis lance exactement :"
+            echo ""
+            python -c "import json; d=json.load(open('twin_parity_report.json')); ns=[p['name'] for p in d.get('pairs',[]) if p.get('verdict')=='DRIFT_INTRODUCED'] or ['<nom exact de l entree>']; [print('    python scripts/notebook_tools/check_twin_parity.py --update --pair \"%s\" --by \"<machine:workspace>\"' % n) for n in ns]"
+            echo "  L'ecriture est chirurgicale (#8570) : seules les lignes"
+            echo "  last_audit de cette paire changent. Ajoute une ligne en tete"
+            echo "  de known_differences expliquant l'edition, puis commit."
+            echo "--------------------------------------------------------------"
+            echo ""
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref origin/main. La commande de rebaseline exacte (avec le nom de la paire) est imprimee juste au-dessus dans ce log. Le selecteur --pair est obligatoire (#8508, lecons L963/L974) ; l'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            exit 1
+          else
+            echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
+            exit $EXIT
+          fi
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twin-parity-report
+          path: |
+            twin_parity_report.json
+            twin_parity_stderr.log
+          if-no-files-found: ignore
+
+  twin-parity-sha-mismatch:
+    # Advisory gate (#9399 volet b) : verifie que les SHA enregistres dans
+    # le registre (last_audit.python_sha/csharp_sha, content_*_sha) sont
+    # identiques aux SHA calcules au HEAD du PR.
+    #
+    # Pourquoi ADVISORY d'abord : 3 paires en mismatch pre-existant sur main
+    # (Sudoku-8 / Sudoku-14 BDD / Sudoku-9 GraphColoring) -- detail cf
+    # c.1267 smoke test + rapport design-gate c.1205. Un gate bloquant
+    # rendrait main permanent red ; un gate advisory surface la regression
+    # sans bloquer le merge, et fournit une baseline quantifiee pour la
+    # promotion (B)->(A) post-rebaseline des 3 drifts.
+    #
+    # Promotion (B)->(A) : quand les 3 pre-existing Sudoku sont rebaselines
+    # (PR dediee cf #8264 batch precedent), basculer le if final en
+    # `exit 1` au lieu de `echo "::warning..."`. Cf twin-parity-drift-audit
+    # pour le precedent advisory-then-blocking.
+    name: "Twin parity SHA mismatch (#9399 volet b, advisory)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run recorded-SHA verification
+        id: verify
+        run: |
+          set +e
+          python scripts/notebook_tools/check_twin_parity.py --json --check --verify-recorded-sha > twin_sha_report.json 2>twin_sha_stderr.log
+          EXIT=$?
+          set -e
+          if [ -s twin_sha_stderr.log ]; then
+            echo "Twin-SHA tool diagnostics (stderr, non-fatal):"
+            cat twin_sha_stderr.log
+          fi
+          if ! python -c "import json; json.load(open('twin_sha_report.json'))" 2>/dev/null; then
+            echo "::error title=Twin SHA report unparseable::The JSON report (twin_sha_report.json) could not be parsed. Tool exit was $EXIT. Likely a tool crash before JSON emission."
+            tail -c 400 twin_sha_report.json || true
+            cat twin_sha_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+          # Status dispatch (parity with twin-parity-drift-audit.yml pattern):
+          #   exit 0 = OK; exit 1 = mismatch found; exit !=0,1 = tool failure (RED).
+          python -c "import json; d=json.load(open('twin_sha_report.json')); [print(f'{k}={v}') for k,v in (('total',d.get('total',0)),('ok',d.get('ok',0)),('mismatch',d.get('mismatch',0)),('no_audit',d.get('no_audit',0)))]" | tee -a "$GITHUB_OUTPUT"
+          if [ "$EXIT" != "0" ] && [ "$EXIT" != "1" ]; then
+            echo "::error title=Twin SHA tool crashed::Tool exit code was $EXIT (neither 0=clean nor 1=mismatch). Tool failure, not a mismatch."
+            exit 1
+          fi
+
+      - name: Advisory SHA mismatch summary
+        if: always() && steps.verify.outcome == 'success'
+        run: |
+          MISMATCH="${{ steps.verify.outputs.mismatch }}"
+          NO_AUDIT="${{ steps.verify.outputs.no_audit }}"
+          TOTAL="${{ steps.verify.outputs.total }}"
+          OK="${{ steps.verify.outputs.ok }}"
+          {
+            echo "## Twin parity recorded-SHA verification"
+            echo ""
+            echo "Recorded pairs: **${TOTAL:-?}**. Recorded-SHA matches HEAD: **${OK:-?}**. Mismatch: **${MISMATCH:-?}**. No audit record: **${NO_AUDIT:-?}**."
+            echo ""
+            echo "**Advisory** (#9399 volet b, design-gate posture B): a non-zero mismatch count is a warning, not a red. Mismatch means the YAML's recorded `python_sha` / `csharp_sha` (or `content_*_sha` post-#9447) differs from the SHA computed at HEAD -- fix with \`python scripts/notebook_tools/check_twin_parity.py --update --pair \"<name>\" --by \"<machine:workspace>\"\`."
+            echo ""
+            if [ "${MISMATCH:-0}" != "0" ] || [ "${NO_AUDIT:-0}" != "0" ]; then
+              echo "Mismatched / un-audited pairs:"
+              python -c "import json; d=json.load(open('twin_sha_report.json')); [print(f\"- **{p['name']}** ({p.get('family','?')}): {p.get('status')}\") for p in d.get('pairs',[]) if p.get('status') != 'OK']" || true
+            else
+              echo "All recorded SHAs match HEAD. Promotion criterion (B)->(A) is met : this gate can flip to blocking."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Advisory: non-zero mismatch -> ::warning, exit 0. Tool failures above red.
+          if [ "${MISMATCH:-0}" != "0" ]; then
+            echo "::warning title=Twin parity recorded-SHA mismatch (advisory)::${MISMATCH:-?} pair(s) have a recorded python_sha/csharp_sha (or content_*_sha) that differs from the SHA computed at HEAD. Advisory per design-gate #9399 posture (B). See job summary. Run \`check_twin_parity.py --update --pair <name>\` to rebaseline. Volet (c) (#9447) added content_*_sha to make this gate metadata-immune."
+          fi
+
+      - name: Upload SHA report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twin-sha-mismatch-report
+          path: |
+            twin_sha_report.json
+            twin_sha_stderr.log
+          if-no-files-found: ignore

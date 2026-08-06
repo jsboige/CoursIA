@@ -107,5 +107,5 @@ Forcer le bon Python : `& "<path-complet>/python.exe" -m pip install ...` au lie
 ## References connexes
 
 - [.claude/rules/genai-config.md](../../.claude/rules/genai-config.md) — Env GenAI Docker
-- [docs/kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
+- [kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
 - [docs/regles-validation-detail.md](regles-validation-detail.md) — Regle H.2 (tous agents installent l'env complet)

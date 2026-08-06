@@ -57,8 +57,10 @@ porte le premier. Aucun des deux ne remplace l'autre :
   compression cherchent à capturer) ;
 - la **méthode** construit les cas calculables qui instancient ce langage et permettent de le
   mesurer *sans complaisance* ;
-- le **virage représentationnel de la strate 4** (ICT-14 #5089, ICT-15 #5090) puis la
-  **strate 5** (ICT-16 → ICT-25) ferment la boucle : sur le banc cross-substrat (ICT-15),
+- le **virage représentationnel** — la **strate 4** (scalaires fondateurs $\Phi/F/K$ sur substrats
+  non-LLM, ICT-14 → ICT-20) puis la **strate 5** (représentations internes des LLMs, ICT-21 → ICT-25),
+  la charnière **grokking** (ICT-17b) entre les deux (cf. § *Deux axes*) — ferme la boucle : sur le
+  banc cross-substrat (ICT-15),
   les trois scalaires fondateurs $\Phi / F / K$ se rencontrent ; l'identité MDL (ICT-16 #5099),
   l'$\epsilon$-machine (ICT-17 #5100) et le LLM comme quatrième substrat (ICT-22 #5102) réalisent
   littéralement la théorie fondatrice, sur des substrats où le tri ne suffit plus.
@@ -337,20 +339,14 @@ IIT/
 Le cadrage stratégique de 2026-07 (Epic #4588, section « Jambes 2026-07 ») étend la série sur
 quatre fronts, chacun ancré dans un résultat déjà livré :
 
-1. **La « fin » de la réversibilisation, mesurée** (#7287, slot ICT-18b). ICT-18 a outillé le
-   *moyen* (la production d'entropie $\sigma$ comme instrument) et ICT-19 l'*enjeu* (la batterie
-   $I_\text{stake}$). Il manquait la troisième jambe de la triade moyen / fin / enjeu (#5352) : la
-   réversibilisation comme **ressource** — un budget $B(t)$ qui s'épuise et se régénère.
-   **Livré** (module `ict/reversibility_budget.py` + notebook
-   [ICT-18b](ICT-18b-ReversibilityBudget.ipynb)) : deux définitions honnêtement comparées
-   ($B_\text{state}$ Monte-Carlo sur la dynamique = primaire robuste, $B_\text{work}$ distance à
-   $P_\text{rev}$ = témoin secondaire). Prédictions pré-enregistrées puis testées — verdicts bruts :
-   **P1 PASS** (budget ↓ au pli, $\tau_\text{Kendall}=-0.917$, co-varie avec les EWS ; un signal
-   précurseur *est* un épuisement de budget), **P2 DISSOCIATION** (sur S4, dissiper plus ne
-   régénère pas plus — la lecture ressource s'affaiblit sur le substrat continu, résultat honnête),
-   **P3 PASS** (monoculture d'Axelrod = état absorbant, $B_\text{post} \ll B_\text{pre}$ : dette
-   d'irréversibilité culturelle mesurée). La triade moyen / fin / enjeu a désormais sa jambe
-   mesurée.
+1. **La « fin » de la réversibilisation, mesurée** (#7287, slot ICT-18b) — **livré**. La troisième
+   jambe de la triade moyen / fin / enjeu (#5352) : la réversibilisation comme **ressource** (un
+   budget $B(t)$ qui s'épuise et se régénère), au-delà du *moyen* (production d'entropie $\sigma$,
+   ICT-18) et de l'*enjeu* (batterie $I_\text{stake}$, ICT-19). Module
+   `ict/reversibility_budget.py` + notebook [ICT-18b](ICT-18b-ReversibilityBudget.ipynb) — deux
+   définitions comparées ($B_\text{state}$ Monte-Carlo primaire, $B_\text{work}$ témoin) et verdicts
+   pré-enregistrés **P1 PASS / P2 DISSOCIATION / P3 PASS** (détail : feuille de route + notebook).
+   La triade a désormais sa jambe mesurée.
 
 2. **La canonicité des scalaires du zoo** (#7288, slot ICT-15b). La synthèse cross-substrat a
    falsifié le « scalaire universel » ($\Phi/F$ covarient, $K$ diverge) ; la question méta devient :
@@ -383,7 +379,69 @@ Lean-12b) ; la grande renumérotation linéaire (#5081) les absorbera en une PR 
 déclenchée par la livraison d'ICT-24b + ICT-24c + les verdicts de #7287/#7288. Décision complète :
 [#7260](https://github.com/jsboige/CoursIA/issues/7260).
 
+## Deux axes de lecture : strates verticales × tresse transverse
+
+Passé la strate 3, la numérotation linéaire `ICT-N` a cessé d'être un ordre total : le programme
+s'est déployé sur **deux axes** qu'il faut lire ensemble. Les rendre explicites lève le flou de « la
+strate d'un notebook » — deux structures différentes étaient projetées sur une seule échelle.
+
+### Axe vertical — les substrats (strates)
+
+L'échelle des substrats sur lesquels on mesure $\Phi$ / $F$ / $K$ et la flèche du temps, du plus
+transparent au plus opaque :
+
+| Strate | Substrat | Notebooks | Traceur |
+|--------|----------|-----------|---------|
+| **S1** | tri auto-organisé | ICT-1 → ICT-7 | — |
+| **S2** | morphogenèse dynamique (attracteurs engendrés) | ICT-8 / ICT-9, charnière ICT-10 | — |
+| **S3** | agents : réactifs → inhibés → stratégiques | ICT-11 / ICT-12 / ICT-13 + Synthèse | — |
+| **S4** | scalaires fondateurs $\Phi/F/K$ sur substrats **non-LLM** | ICT-14 → ICT-20 | — |
+| *charnière S4→S5* | **grokking** — le représentant interne cesse d'anticiper un comportement (`p̂` d'ICT-10) pour devenir un état de représentation apprise | ICT-17b | #7735 |
+| **S5** | représentations internes des LLMs | ICT-21 → ICT-25 | — |
+| **S6** | argumentation (+ jambe explicabilité LLM) | graine #7289 | #7289 · #7291 |
+| **S7** | freebits d'ordre 2 & réversibilité agentique | cadrage D1 | #7745 |
+
+Correction de bord la plus importante : les substrats **non-LLM** (identité MDL, $\epsilon$-machine,
+flèche du temps, budget, enjeu, calibration feature-space = ICT-16 → ICT-20) relèvent de **S4** — les
+trois scalaires fondateurs s'y rencontrent hors LLM. La **strate 5 commence à ICT-21** (SAE), là où
+le substrat *est* un transformer entraîné. Le **grokking (ICT-17b)** est la **charnière**, pas une
+strate pleine : c'est l'instant où un représentant interne cesse d'anticiper un comportement pour
+devenir un état de représentation apprise — terminus du fil généalogique de `p̂` (#7735 : ICT-10 →
+ICT-12 → ICT-14 → ICT-17b). **Zéro renumérotation** : seule l'étiquette de strate change, les numéros
+`ICT-N` sont intacts (#7260). *(À ne pas confondre avec les « S1-S5 » de la batterie ICT-19/19b, qui
+désignent des **substrats** — tri, May, Axelrod, Gray-Scott, dissipateur — et non des strates.)*
+
+### Axe transverse — la tresse (jambes & dimensions)
+
+Orthogonalement aux strates, une famille d'expériences (planifiée dans #7734 → #7747) éclaire un même
+substrat sous plusieurs angles. Elles ne s'insèrent **pas** dans l'échelle des strates — ce sont des
+**pattes, pas des barreaux**, ce qui résout le décalage : ajouter une jambe ne renumérote aucune
+strate.
+
+- **Jambe C1** — animat prégnance / valence à transfert : opérationnaliser l'investissement thomien
+  (#7740). Patte de S3.
+- **Jambe C2** — **animat inhibé (Laborit)** : contrôlabilité de l'environnement, inhibition de
+  l'action (#7741). Patte de S3, parallèle à C1 — *pas* un barreau « ICT-12b ». C'est la réponse au
+  « si Laborit atterrit après Animat, les strates supérieures seront décalées » : Laborit est une
+  **jambe**, elle ne décale rien.
+- **Jambe C3** — morphogenèse rhétorique de la transition (#7742). Patte de S6.
+- **Jambe C4** — grammaire de propagation & seuil de bascule ($\pi$, $W$) (#7743). Patte de S6.
+- **Jambe C5** — méta-proxy → cochaîne de Čech pondérée (#7744).
+- **Dimension D1** — cadrage **strate 7** : *free coordinates* / freebits de 2e ordre, jeu évolutif
+  $G_t$ + mécanisme $M$, six proxys (#7745).
+- **Dimension D2** — cinq expériences du jeu évolutif (vocabulaire fixe / invention de symboles /
+  seuil $\rho_c$ / inoculation / inhibition de l'innovation) (#7746).
+- **Dimension D3** — mythe fondateur / boussole : auto-référence performative (#7747).
+
+Une **jambe** (C1-C5) est une expérience *sur* une strate ; une **dimension** (D1-D3) cadre l'horizon
+des strates hautes (S6/S7). La **matrice de dissociations** (#7734) lit chaque *claim* à
+l'intersection des deux axes.
+
 ## Feuille de route des notebooks
+
+*Le substrat (strate) de chaque notebook est indiqué en gras dans la colonne « Sujet », selon l'axe
+vertical du § Deux axes ci-dessus ; les numéros `ICT-N` sont l'ordre pédagogique de livraison, pas
+l'ordre des strates.*
 
 | Notebook | Sujet | État |
 |----------|-------|------|
@@ -400,24 +458,24 @@ déclenchée par la livraison d'ICT-24b + ICT-24c + les verdicts de #7287/#7288.
 | **ICT-10** | [Grammaire des catastrophes](ICT-10-CatastropheGrammar.ipynb) — **charnière strate 2→3**, prélude sémiophysique de R. Thom. Le squelette catastrophique (fronce, pli, fourche, hystérésis) **mesuré** : le métathéorème (le comptage d'équilibres ne change qu'aux plis, clôt la strate 2) et le **lacet de prédation** (cycle d'hystérésis à 2 catastrophes + représentant interne `p̂` qui anticipe, ouvre la strate 3). La correspondance linguistique du Ch.2 de Thom (pivots ↔ transitions de comptage ; verbe transitif SVO ↔ lacet ; anticipation ↔ `p̂`) **nommée**, avec le caveat de non-prédictivité et les barreaux du pont basse-dim → haute-dim (neurosymbolique, Lean, veille EML #4653). *Sans complaisance* : hors régime non dégénéré ($a<0$), zéro saut — fantôme | ✅ |
 | **ICT-11** | [Profils d'agence causale](ICT-11-CausalAgencyProfiles.ipynb) — **strate 3**. L'agence de réaction-diffusion mesurée à plusieurs résolutions (micro/méso/macro) puis raccordée à l'émergence causale (Hoel, info effective, TPM à macro-variable scalaire = structure/variance du champ moyenné). *Sans complaisance* : les deux mesures d'agence se contredisent — `repair_gain` pic méso mais artefact-contaminé (score > 1, plancher de résolution), `basin_return_probability` strictement décroissante. Le raccord Hoel suit la mesure inflatée (`r≈+0.50` avec `repair_gain`) et ignore la mesure honnête (`r≈−0.14` avec `basin_return`) — suggestif mais non robuste. Verdict honnête : pas d'échelle privilégiée, l'hypothèse méso-émergente n'est pas confirmée | ✅ |
 | **ICT-12** | [Champs de valence et animats](ICT-12-ValenceFieldsAndAnimats.ipynb) — **strate 3**. Premier toy model **actantiel spatial** : des animats évoluent dans un champ de valence (source attractive + obstacles repulsifs) ; la scène actantielle de Thom cesse d'être une correspondance nommée — les **rôles deviennent des grandeurs mesurées** (capture, évasion, irréversibilité, switching). Animat **réactif** (gradient instantané) vs **anticipateur `p̂`** (extrapolation). *Sans complaisance* : `p̂` **gagne** en balistique rapide (capture x4) mais **perd** en erratique (prédictions trompées par les demi-tours) et perd sur source bruitée. Le modèle interne paie son coût là où la source échappe au réactif **et** reste prévisible — régime-dépendant, ni universellement avantageux ni ruineux | ✅ |
-| **ICT-13** | [Morphodynamique stratégique](ICT-13-AxelrodStrategicMorphodynamics.ipynb) — **strate 3**. Le dilemme du prisonnier itéré d'Axelrod (T=5, R=3, P=1, S=0) sert de morphospace stratégique : six stratégies (AllC, AllD, TFT, TFT généreuse, Pavlov, Grim) en tournoi round-robin, dynamique de réplication, bassins d'invasion. Quatre gates falsifiables mesurent la « stabilité de forme ». *Sans complaisance* : **Gate 1** TFT/Grim co-dominent (2.635) ; **Gate 2** Folk theorem analytique δ* = 0.500 vs numérique 0.550 ; **Gate 3** sous bruit d'exécution la réciprocité active (TFT) est le point de rupture (chute +0.40), Grim paradoxalement le plus robuste (+0.29) — contredit la prédiction Nowak-Sigmund ; **Gate 4** bassins d'invasion : TFT/Grim dès 2%, TFT généreuse à 34%, Pavlov/AllC jamais. Verdict honnête : la robustesse stratégique est **fonction du régime**, pas une propriété intrinsèque | ✅ |
+| **ICT-13** | [Morphodynamique stratégique](ICT-13-AxelrodStrategicMorphodynamics.ipynb) — **strate 3**. Le dilemme du prisonnier itéré d'Axelrod (T=5, R=3, P=1, S=0) sert de morphospace stratégique : six stratégies (AllC, AllD, TFT, TFT généreuse, Pavlov, Grim) en tournoi round-robin, dynamique de réplication, bassins d'invasion. Quatre gates falsifiables mesurent la « stabilité de forme ». *Sans complaisance* : **Gate 1** TFT/Grim co-dominent (2.635) ; **Gate 2** Folk theorem analytique δ* = 0.500 vs numérique 0.550 ; **Gate 3** sous bruit d'exécution la réciprocité active (TFT) est le point de rupture (chute +0.40), Grim paradoxalement le plus robuste (+0.29) — contredit la prédiction Nowak-Sigmund ; **Gate 4** bassins d'invasion : TFT/Grim dès 2%, TFT généreuse à 34%, Pavlov/AllC jamais. Verdict honnête : la robustesse stratégique est **fonction du régime**, pas une propriété intrinsèque. **Pont pédagogique** (cf. [#7733](https://github.com/jsboige/CoursIA/issues/7733) rectification A5) : la **dépendance** pédagogique, et non le gradient d'organicité, est le critère de numérotation — les **stratégies** d'Axelrod (ICT-13, strate 3) cèdent la place aux **représentations internes** qui les motivent (ICT-21 SAE + ICT-22 LLM substrat, strate 5), puis à leur mise en confrontation explicite dans la jambe argumentation ([#7289](https://github.com/jsboige/CoursIA/issues/7289), strate 6) | ✅ |
 | **ICT-14** | [Surprise & énergie libre](ICT-14-FreeEnergySurprise.ipynb) — **strate 4**. La jambe énergie-libre du représentationnel : *free energy* et *expected free energy* comme substrat computationnel de l'anticipation, articulation avec la trajectoire $\Phi_\text{dyn}$ et le représentant interne `p̂` d'ICT-10. Voir issue #5089 | ✅ |
 | **ICT-Synthèse** | [Synthèse cross-substrat](ICT-Synthese-CrossSubstrat.ipynb) — **capstone strate 3**. Un seul appareil (la trajectoire causale intégrée) sur trois substrats (tri, Gray-Scott, Axelrod), trois échelles, trois régimes. *Sans complaisance* : chaque substrat pousse ses mesures à sa frontière et c'est précisément là que la méthode s'éprouve. Boucle de la strate 3 vers la **strate 5** : cross-substrat ouvre la possibilité de bancs partagés | ✅ |
-| **ICT-15** | [IntegratedComplexity](ICT-15-IntegratedComplexity.ipynb) — convergence Φ/F/K sur le banc cross-substrat. Le gate de convergence des trois scalaires fondateurs (information intégrée, énergie libre, complexité de Kolmogorov) sur le squelette de Thom. *Strate 4 / charnière vers strate 5*. Voir issue #5090 | ✅ |
-| **ICT-16** | [MDLTwoPartCode](ICT-16-MDLTwoPartCode.ipynb) — le pont MDL : F (énergie libre) est la partie résiduelle du code K (Kolmogorov) + la bosse complexité-entropie. Identité MDL ↔ énergie libre. *Strate 5*. Voir issue #5099 | ✅ |
-| **ICT-17** | [EpsilonMachine](ICT-17-EpsilonMachine.ipynb) — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 5*. Voir issue #5100 | ✅ |
-| **ICT-17b** | [Grokking & compression-progress](ICT-17b-Grokking-CompressionProgress.ipynb) — la dérivée temporelle $dK/dt$ : le grokking comme transition de compression, entre la structure minimale (ICT-17) et la flèche du temps (ICT-18). Verdict honnête (#7268) : **3/5 proxys co-localisent** avec la généralisation ($\lVert w\rVert^2$, Fisher-MDL, $1-\text{test\_acc}$), **2/5 dissocient** (trace de Fisher, pred-zlib). Renommé `ICT-17b` (#7260). *Strate 5, GPU-free* | ✅ |
-| **ICT-18** | [Flèche du temps & réversibilisation](ICT-18-ArrowOfTimeReversibilization.ipynb) — l'**idée fondatrice** enfin outillée. Instrument rétrospectif GPU-free (`ict/time_arrow.py`) appliqué aux trajectoires déjà construites (tri, May, Axelrod, Gray-Scott) : distribution stationnaire, inversion temporelle, réversibilisation, production d'entropie. Question centrale : *que perd-on quand on force une trajectoire ICT à devenir réversible ?* Ancré ICT-3 (compétence *for free*) + entretien Fridman/Levin. *Strate 5, GPU-free*. Voir issue #5279 | ✅ |
-| **ICT-18b** | [Budget de réversibilité — la jambe « fin »](ICT-18b-ReversibilityBudget.ipynb) — la troisième jambe de la triade moyen / fin / enjeu enfin **mesurée** : la réversibilisation lue comme une *ressource* (un budget $B(t)$). Instrument `ict/reversibility_budget.py` : $B_\text{state}$ Monte-Carlo sur la dynamique (primaire, robuste aux substrats continus) + $B_\text{work}$ distance à $P_\text{rev}$ (témoin secondaire). Trois prédictions pré-enregistrées testées sur S2/S4/S3 : **P1 PASS** (épuisement de budget au pli, co-varie avec les EWS), **P2 DISSOCIATION** (honnête : sur S4, dissiper plus ne régénère pas plus), **P3 PASS** (dette d'irréversibilité culturelle d'une monoculture d'Axelrod). *Strate 5, GPU-free*. See #7287 | ✅ |
-| **ICT-19** | [Batterie de l'ENJEU](ICT-19-EnjeuBattery.ipynb) — la seconde batterie (auto-maintien / retour-au-bassin après `do(·)`) que ICT-18 nomme *hors de sa portée*, fusionnée à la batterie MOYEN d'ICT-18 sur les substrats S1-S5 (Gray-Scott S4 = agent, S5 = pur dissipateur = contrôle négatif obligatoire). Cadrage B verrouillé (user 2026-07-06). Ancré sur la triade **moyen / fin / enjeu** du reframe #5352. Spec cadrage : #5483 — livrable : #5489, raffiné par [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728 : mesure S4 en espace de champ). *Strate 5, GPU-free*. → Epic #4588 | ✅ |
-| **ICT-20** | [FeatureCatastrophes](ICT-20-FeatureCatastrophes.ipynb) — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 5*. Voir issue #5103 | ✅ |
-| **ICT-21** | [SAETrajectoires](ICT-21-SAETrajectoires.ipynb) — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | ✅ |
-| **ICT-22** | [LLMSubstrat](ICT-22-LLMSubstrat.ipynb) — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102 | ✅ |
+| **ICT-15** | [IntegratedComplexity](ICT-15-IntegratedComplexity.ipynb) — convergence Φ/F/K sur le banc cross-substrat. Le gate de convergence des trois scalaires fondateurs (information intégrée, énergie libre, complexité de Kolmogorov) sur le squelette de Thom. *Strate 4* — banc cross-substrat où $\Phi/F/K$ se rencontrent. Voir issue #5090 | ✅ |
+| **ICT-16** | [MDLTwoPartCode](ICT-16-MDLTwoPartCode.ipynb) — le pont MDL : F (énergie libre) est la partie résiduelle du code K (Kolmogorov) + la bosse complexité-entropie. Identité MDL ↔ énergie libre. *Strate 4*. Voir issue #5099 | ✅ |
+| **ICT-17** | [EpsilonMachine](ICT-17-EpsilonMachine.ipynb) — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 4*. Voir issue #5100 | ✅ |
+| **ICT-17b** | [Grokking & compression-progress](ICT-17b-Grokking-CompressionProgress.ipynb) — la dérivée temporelle $dK/dt$ : le grokking comme transition de compression, entre la structure minimale (ICT-17) et la flèche du temps (ICT-18). Verdict honnête (#7268) : **3/5 proxys co-localisent** avec la généralisation ($\lVert w\rVert^2$, Fisher-MDL, $1-\text{test\_acc}$), **2/5 dissocient** (trace de Fisher, pred-zlib). Renommé `ICT-17b` (#7260). *Charnière strate 4→5, GPU-free* | ✅ |
+| **ICT-18** | [Flèche du temps & réversibilisation](ICT-18-ArrowOfTimeReversibilization.ipynb) — l'**idée fondatrice** enfin outillée. Instrument rétrospectif GPU-free (`ict/time_arrow.py`) appliqué aux trajectoires déjà construites (tri, May, Axelrod, Gray-Scott) : distribution stationnaire, inversion temporelle, réversibilisation, production d'entropie. Question centrale : *que perd-on quand on force une trajectoire ICT à devenir réversible ?* Ancré ICT-3 (compétence *for free*) + entretien Fridman/Levin. *Strate 4, GPU-free*. Voir issue #5279 | ✅ |
+| **ICT-18b** | [Budget de réversibilité — la jambe « fin »](ICT-18b-ReversibilityBudget.ipynb) — la troisième jambe de la triade moyen / fin / enjeu enfin **mesurée** : la réversibilisation lue comme une *ressource* (un budget $B(t)$). Instrument `ict/reversibility_budget.py` : $B_\text{state}$ Monte-Carlo sur la dynamique (primaire, robuste aux substrats continus) + $B_\text{work}$ distance à $P_\text{rev}$ (témoin secondaire). Trois prédictions pré-enregistrées testées sur S2/S4/S3 : **P1 PASS** (épuisement de budget au pli, co-varie avec les EWS), **P2 DISSOCIATION** (honnête : sur S4, dissiper plus ne régénère pas plus), **P3 PASS** (dette d'irréversibilité culturelle d'une monoculture d'Axelrod). *Strate 4, GPU-free*. See #7287 | ✅ |
+| **ICT-19** | [Batterie de l'ENJEU](ICT-19-EnjeuBattery.ipynb) — la seconde batterie (auto-maintien / retour-au-bassin après `do(·)`) que ICT-18 nomme *hors de sa portée*, fusionnée à la batterie MOYEN d'ICT-18 sur les substrats S1-S5 (Gray-Scott S4 = agent, S5 = pur dissipateur = contrôle négatif obligatoire). Cadrage B verrouillé (user 2026-07-06). Ancré sur la triade **moyen / fin / enjeu** du reframe #5352. Spec cadrage : #5483 — livrable : #5489, raffiné par [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728 : mesure S4 en espace de champ). *Strate 4, GPU-free*. → Epic #4588 | ✅ |
+| **ICT-20** | [FeatureCatastrophes](ICT-20-FeatureCatastrophes.ipynb) — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 4*. Voir issue #5103 | ✅ |
+| **ICT-21** | [SAETrajectoires](ICT-21-SAETrajectoires.ipynb) — Qwen + Qwen-Scope (gamme Qwen3/Qwen3.5, 700M → 120B ; **jalon 9B ici**, invariant cross-échelle ouvert par #5105 / #7396) : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | ✅ |
+| **ICT-22** | [LLMSubstrat](ICT-22-LLMSubstrat.ipynb) — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102. **Pont pédagogique** : on passe des **stratégies** d'Axelrod (ICT-13, strate 3) aux **représentations internes** qui les motivent (ICT-21 SAE + ICT-22 LLM substrat, strate 5), puis à leur mise en confrontation explicite dans la jambe argumentation (#7289, strate 6) — la **dépendance pédagogique**, et non le gradient d'organicité, est le critère de numérotation (cf. [#7733](https://github.com/jsboige/CoursIA/issues/7733) rectification A5) | ✅ |
 | **ICT-23** | [PersonaCatastrophe](ICT-23-PersonaCatastrophe.ipynb) — expliquer le désalignement émergent par fronce, énergie libre et MDL : jouet + mesure in-context (capstone strate 5). Le pli $V(p;a,b)$ avec $a = -(\text{transgression cumulée}) \times (\text{charge sémantique})$ : l'inoculation **aplatit** le potentiel (P0). Voir issue #5104 | ✅ |
 | **ICT-SAE-JLens** | [Tête-à-tête SAE ↔ J-Lens](ICT-SAE-JLens-TeteATete.ipynb) — spécial non-numéroté : les deux lentilles interprétatives confrontées sur le substrat S4 ; l'approfondissement (3e lentille raw-logit) est réservé au slot **ICT-24b** (#5681, #7260) | ✅ |
-| **ICT-24** | [WorkspaceIgnition](ICT-24-WorkspaceIgnition.ipynb) — l'axe *Global Workspace* (Dehaene, Baars) comme cinquième jambe et le gate de réconciliation IIT ↔ GWT sur le substrat S4. Module [`ict/workspace.py`](ict/workspace.py) (#5641) et notebook livrés (9/9 cellules exécutées). *Strate 5, GPU-free*. Voir issue #5635 | ✅ |
+| **ICT-24** | [WorkspaceIgnition](ICT-24-WorkspaceIgnition.ipynb) — l'axe *Global Workspace* (Dehaene, Baars) comme cinquième jambe et le gate de réconciliation IIT ↔ GWT sur le substrat S4. Module [`ict/workspace.py`](ict/workspace.py) (#5641) et notebook livrés (toutes cellules exécutées). *Strate 5, GPU-free*. Voir issue #5635 | ✅ |
 | **ICT-25** | [InoculationRL](ICT-25-InoculationRL.ipynb) — réplication poids : GRPO à récompense hackable × inoculation, rewardspy, panel persona (capstone final, pont PostTraining). PR1 CPU livrée, mais **drift protocolaire constaté** : le bras livré réprime le hack (pénalité + interdit) au lieu de le **permettre** (protocole Anthropic arXiv:2511.18397) → réalignement en **3 bras N/I/P** décidé, cf. [#5105](https://github.com/jsboige/CoursIA/issues/5105#issuecomment-5013186646). *Strate 5, GPU-required (phase 2)* | 🚧 PR1 livrée, réalignement 3 bras avant phase GPU |
-| *Réservés* | **ICT-15b** SensitivityCanonicity (#7288) · **ICT-24b** approfondissement SAE ↔ J-Lens (#5681) · **ICT-24c** capstone dérivée temporelle (#7259) · substrat argumentation, graine strate 6 (#7289) · annexe Kochen-Specker (#7290) · horizon altérité (#7291, GATED). Décision de numérotation : [#7260](https://github.com/jsboige/CoursIA/issues/7260) | 🚧 slots réservés |
+| *Réservés* | **ICT-15b** SensitivityCanonicity (#7288) · **ICT-24b** approfondissement SAE ↔ J-Lens (#5681) · **ICT-24c** capstone dérivée temporelle (#7259) · substrat argumentation, graine strate 6 (#7289) · annexe Kochen-Specker (#7290) · horizon altérité (#7291, GATED). **Tresse transverse** (jambes / dimensions, hors échelle des strates, cf. § Deux axes) : C1 prégnance/valence (#7740) · **C2 animat inhibé — Laborit** (#7741) · C3 morphogenèse rhétorique (#7742) · C4 grammaire de propagation (#7743) · C5 méta-proxy → Čech (#7744) · **D1 freebits d'ordre 2 / strate 7** (#7745) · D2 jeu évolutif (#7746) · D3 mythe fondateur (#7747). Décision de numérotation : [#7260](https://github.com/jsboige/CoursIA/issues/7260) | 🚧 slots réservés |
 
 ## Strate 2 — du tri transparent à la morphogenèse dynamique
 
@@ -462,6 +520,8 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   sémiophysique** de R. Thom, tenu *sans complaisance* — chaque image (saillance, prégnance, actant) attachée
   à une grandeur calculée sur la fronce canonique, le caveat de non-prédictivité (Thom lui-même) explicite.
 
+  > **Note de rigueur (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733)).** Le **représentant interne `p̂`** mesuré dans ICT-10/12/14 est un **anticipateur** (extrapolation à partir du signal observé) ; il n'est **PAS** la **prégnance thomienne**, qui est chez R. Thom « un fluide invasif qui se propage de forme saillante en forme saillante » — une *section locale* au sens de Grothendieck, pas une grandeur interne à l'agent. L'identification `p̂ ≡ prégnance` relèverait d'une lecture spéculative des deux côtés : chez Thom, la prégnance est biologique et transférable ; ici, `p̂` est représentationnel et contraint. La correspondance `p̂ ↔ anticipation` du Ch.2 « Le Langage » de Thom est **nommée** (cf. ligne 394 ci-dessus), pas démontrée — le grade C documentaire est explicitement reconnu (`docs/grothendieckian-lens.md` §3, ligne 41-43, en fait le cadrage canonique). Cf. note de rigueur dédiée en fin de document.
+
 Les notebooks suivants (**ICT-11/12** profils d'agence causale et renormalisation causale,
 **ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts à la fois* — une métaphore
 n'entre dans ICT que lorsqu'elle est **attachée à une mesure**.
@@ -484,72 +544,29 @@ laquelle *les revendications cognitives sont des revendications de protocole* (c
 **« Pourquoi parler de compétences ? »** ci-dessus) : une compétence n'est créditée à un modèle
 qu'au vu de ce qu'une expérience explicite en mesure.
 
-## ICT-19 — squelette de spec (cadrage B, voir #5483)
+## ICT-19 / ICT-19b — batterie de l'ENJEU (livré)
 
-> **Statut 2026-07** : livré (#5489), puis raffiné par
-> [`ICT-19b-EnjeuBattery-Raffinement.ipynb`](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure
-> S4 en espace de champ ; renommé **ICT-19b**, #7260). La spec ci-dessous est conservée telle quelle
-> pour trace.
-
-ICT-19 construit la **seconde batterie** (celle de l'**ENJEU**) qu'ICT-18 nomme *hors de sa portée*
-dans son reframe #5352 (triade **moyen / fin / enjeu**), puis la **fusionne** à la batterie MOYEN
-d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse.
-
-### Périmètre (cadrage B, auto-maintien seul)
-
-- **Batterie MOYEN** (empruntée ICT-18) — production d'entropie / réversibilisation thermodynamique
-  (`ict/time_arrow.py`) : la *seule* grandeur `I_thermo` mesure.
-- **Batterie ENJEU** (à construire) — mesure opérationnelle d'**auto-maintien** : retour au bassin
-  attracteur `B` après une perturbation contrefactuelle `do(x ← x + δ)` (Pearl, fil rouge
-  causalité ICT-5). `I_stake` = distance normalisée parcourue vers `B` (gain de réparation).
-- **Livrable = PAIRE** `{I_thermo, I_stake}`, **pas indice agrégé**.
-
-### Substrats (réutilisés de l'ICT-Synthèse, zéro nouveau substrat)
-
-- **S1** (ICT-2 tri) — auto-organisé, point de consigne faible.
-- **S2** (ICT-8 bistable) — deux bassins, pas de défense d'un point de consigne.
-- **S3** (ICT-13 Axelrod) — réplicateur stratégique, équilibre de population.
-- **S4** (ICT-9 Gray-Scott) — *l'agent* : dissipe *et* défend un point de consigne via la
-  compétition Tu/Snell-Scott.
-- **S5** — *pur dissipateur*, contrôle négatif **obligatoire** : système qui dissipe sans enjeu
-  (réaction-diffusion hors-régime, ou chaîne markovienne stationnaire sans maintenance).
-
-### Gates falsifiables
-
-- **Gate ENJEU-1** : `I_stake(S4) > I_stake(S5) + marge`, avec `I_thermo(S4) ≈ I_thermo(S5)`
-  (l'ICT-18 Gate 7 montre déjà que le MOYEN seul allume S4 et S5 à égalité). La PAIRE doit donc
-  *séparer* l'agent du pur dissipateur là où le MOYEN seul ne le peut pas.
-- **Gate ENJEU-2** (graduation) : `I_stake(S4) > {S3, S1} > S2 > S5`.
-
-### Distinction sémantique (critique)
-
-- **Réversibilité thermodynamique** (detailed balance, `σ=0`) = le **MOYEN** que `I_thermo` mesure.
-- **Réversibilité comportementale** (récupérabilité cinématique de l'espace d'états,
-  ICT-2/3/9, Levin *competency for free*) = la **FIN** que la lutte thermodynamique poursuit —
-  *pas* un second axe à mesurer. Le retour au bassin `B` après `do(·)` est précisément **la
-  manifestation opérationnelle de cette récupérabilité**, là où la production d'entropie en est
-  le coût.
-
-### Contraintes
-
-- **GPU-free** (chaînes de Markov + ODE + reaction-diffusion 2D petit champ, kernel CPU).
-- **Contrôle négatif obligatoire** (S5) : sans lui, la batterie ne prouve rien ; c'est
-  l'ingrédient nommément manqué d'ICT-18, désormais comblé.
-- **Résultat nul honnête** : si ENJEU-1 échoue, le verdict est *négatif* — pas maquillé en succès.
-- Notebook exécuté CPU, outputs C.2 réels, 0 `raise NotImplementedError` (C.1), ≥3 exercices
-  (return-to-basin / repair-gain / extension substrat), prose FR.
-
-### Liens cadrage ICT-19
-
-- Issue de cadrage : **#5483** — décision user 2026-07-06 (cadrage B verrouillé).
-- Issue d'implémentation : **#5489** — acceptance criteria + livrables.
-- Reframe parent : **#5352** — triade moyen / fin / enjeu (ICT-18 v2).
-- Epic : **#4588** — registre des livrables ICT.
+La batterie de l'**ENJEU** — auto-maintien / retour au bassin attracteur `B` après une
+perturbation contrefactuelle `do(·)` (Pearl, fil rouge causalité ICT-5), fusionnée à la batterie
+MOYEN d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse (S5 = *pur dissipateur* = contrôle
+négatif **obligatoire**) — est **livrée** : [ICT-19](ICT-19-EnjeuBattery.ipynb) (#5489, cadrage B
+verrouillé user 2026-07-06) puis raffinée par
+[ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb) (#5728, mesure S4 en espace de champ ; renommée
+**ICT-19b**, #7260). Le livrable est la **paire** `{I_thermo, I_stake}` (jamais un indice agrégé),
+séparée par les gates falsifiables ENJEU-1 / ENJEU-2, sur la **distinction sémantique** :
+réversibilité *thermodynamique* (detailed balance, `σ=0` — le MOYEN que `I_thermo` mesure) ↔
+récupérabilité *comportementale* (Levin *competency for free* — la FIN que la lutte thermodynamique
+poursuit). Spec de cadrage complète : **#5483** ; reframe parent triade moyen / fin / enjeu :
+**#5352** ; registre des livrables : **#4588**.
 
 ## Voir aussi
 
 - [README de la série IIT](README.md) — fondations PyPhi (TPM, $\Phi$, CES, coarse-graining).
+- [Distillation Thom 1991 Sémiophysique](thom-synthese-distillation.md) — socle théorique pour strates 6/7 (universalisme linguistique, valence Tesnière, opérations catastrophistes, prototype / hypergenre).
 - Epic **#4588** — registre des livrables ICT.
+- **Matrice de dissociations** (notebook × claim × proxy × contrôle × seeds × verdict × portée, ossaturée par la factorisation 4-objets `s, q, π, W`) : [`docs/ict/dissociations-matrix.md`](../../../docs/ict/dissociations-matrix.md) ([#7734](https://github.com/jsboige/CoursIA/issues/7734)). Lit chaque claim de la série dans l'espace `s_t` (saillance) / `q_t(z)` (représentation prédictive) / `π_t(z)` (prégnance-valence) / `W_t` (workspace), avec verdict sobre et portée explicite. **Complémentaire** de la grille 3-régimes ([`docs/ict/synthese-invariants-dissociations-obstructions.md`](../../../docs/ict/synthese-invariants-dissociations-obstructions.md), #7399) — la grille est conceptuelle et transversale ; la matrice est opérationnelle et par-claim.
+- **Dette de rigueur audit #4** ([#7733](https://github.com/jsboige/CoursIA/issues/7733)) — 5 corrections A1-A5 propagées (PR #7889) : `p̂` ≠ prégnance thomienne, `H¹ ≠ 0` *candidat* (pas érigé en impossibilité sauf Kochen-Specker / Arrow), MGS = banc collectif Fil-A en aval strate 6, SAE = gamme Qwen complète (jalon 9B), pont pédagogique Axelrod → LLM → argumentation explicité.
+- **Quatrième fil de lecture — généalogie de `p̂`** (ICT-10 → ICT-17, [#7735](https://github.com/jsboige/CoursIA/issues/7735)) : [`docs/ict/genealogy-representation-interne.md`](../../../docs/ict/genealogy-representation-interne.md). Diachronique, **orthogonal à la grille 3-régimes** : raconte comment un représentant interne ponctuel (`p̂` scalaire, ICT-10) devient, par insuffisances successives, un *état causal prédictif* (ε-machine Crutchfield, ICT-17). **Le descendant formel le plus naturel de `p̂` n'est ni le SAE, ni la J-lens, c'est l'état causal prédictif.** Deux garde-fous honnêteté (audit #4) : continuité conceptuelle, pas expérimentale (pas de transport formel `p̂` → SAE/J-lens observé) ; le global workspace ICT-24 (`W_t`) n'est **pas** une version structurée de `p̂`. Raccroche le parapluie [#7396](https://github.com/jsboige/CoursIA/issues/7396) (pivot états → représentations).
 
 ### Pour aller plus loin — l'intelligence diverse (Levin)
 
@@ -577,3 +594,24 @@ d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse.
 - *Causal Emergence 2.0* — [arXiv:2503.13395](https://arxiv.org/abs/2503.13395) — l'arrière-plan
   conceptuel : lever l'axiome d'exclusion de la formulation d'origine (Hoel, Albantakis & Tononi,
   PNAS 2013), pour que l'émergence puisse s'exprimer à *plusieurs* échelles à la fois.
+
+---
+
+## Note de rigueur — prégnance thomienne vs représentant interne `p̂` (audit #4, [#7733](https://github.com/jsboige/CoursIA/issues/7733))
+
+> Cette note consolide et explicite le caveat introduit inline à la description d'ICT-10 plus haut.
+
+| | `p̂` (représentant interne ICT) | Prégnance (R. Thom, *Sémiophysique*) |
+|---|---|---|
+| **Nature** | Anticipateur représentationnel — extrapolation du signal observé (persistance, moyenne mobile, AR(1) testées en baseline) | « Fluide invasif qui se propage de forme saillante en forme saillante » |
+| **Localisation mathématique** | Grandeur interne à l'agent (`ICT-10`, mesure sur 3 familles de trajectoires × 3 baselines adverses) | *Section locale* d'un site au sens de Grothendieck (cf. `docs/grothendieckian-lens.md` § 3) |
+| **Statut épistémique** | **Mesurée** : banc durci, verdict régime-dépendant (réel sur trajectoire lisse 5/5 graines, illusoire sur dérive et créneau) | **Nommée / spéculative** : pas de mesure correspondante dans le dépôt |
+| **Transférabilité** | Non-transférable — apprentissage spécifique par agent | Transférable — passe de forme saillante en forme saillante (propriété biologique thomienne) |
+| **Référence canonique** | ICT-10 charnière strate 2→3 | `docs/grothendieckian-lens.md:41` (cadrage Grothendieck + Thom explicite) |
+
+La correspondance **`p̂ ↔ anticipation`** du Ch.2 « Le Langage » de Thom (cf. ligne 394) est *nommée* dans le dépôt — pas démontrée. L'identification **`p̂ ≡ prégnance`** relèverait d'une lecture **spéculative des deux côtés**, à éviter :
+
+- chez Thom, la *prégnance* est **biologique** et **transférable** (analogue sémiotique d'une substance invasive) ;
+- ici, `p̂` est **représentationnel** et **contraint** (sortie d'un algorithme d'extrapolation).
+
+Le grade C documentaire est **explicitement reconnu** dans `docs/grothendieckian-lens.md` § 3 (« une direction et non un théorème livré ») ; cette note de rigueur rend la même prudence lisible côté ICT. Pré-enregistré : [#7733](https://github.com/jsboige/CoursIA/issues/7733) (mandat user 2026-07-20, audit #4).

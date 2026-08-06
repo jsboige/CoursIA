@@ -1,0 +1,20 @@
+- name: "Sudoku-8 HumanStrategies"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-03"
+      by: myia-po-2023:CoursIA
+      python_sha: 7ce5db8ee3bb05faa0f72508bf26390e3ff70f87
+      csharp_sha: 533b34ff9fb08626f3a41b3c8ce2acb0ffd6d239
+    - date: "2026-08-05"
+      by: myia-ai-01:CoursIA
+      python_sha: 2e2639b51ab554265538eae8d215395bc3e64f0a
+      csharp_sha: 44d99632663a0971a1d68599e6770b18208fb8c5
+      content_python_sha: 9a5f81431b6e705d090bdca3ea300badac8682763fe0587e7a32e7b39d67b120
+      content_csharp_sha: 7b206a8b33673102be8e83a36c7ec79a40ebc9d528994d45e6c94564cf9585a2
+  known_differences:
+    - "Socle pedagogique commun : strategies de resolution humaines (techniques d'inference -- naked/hidden singles, pointing pairs, box-line) appliquees au Sudoku, meme concept (simuler le raisonnement humain par couches d'inference successives plutot qu'un backtracking brut), meme arc pedagogique (theorie -> implementation -> benchmark)."
+    - "Divergence d'implementation : le Python implemente les techniques d'inference from scratch + visualisation networkx du graphe de contraintes ; le C# implemente les memes strategies d'inference en stdlib avec un benchmark comparatif. Idiomes de visualisation differents (networkx cote Python)."
+    - "Asymetrie structurelle : Python 22 cellules code / 30 markdown ; C# 19 cellules code / 30 markdown. Arc identique (techniques d'inference + mesure de performance)."

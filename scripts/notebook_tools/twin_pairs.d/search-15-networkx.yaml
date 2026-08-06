@@ -1,0 +1,15 @@
+- name: "Search-15 NetworkX"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-15-NetworkX-Csharp.ipynb
+  parity_level: surface
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 0c683cf6e0555230549c7fc0cea61995c876eb3e
+      csharp_sha: eb47af5f9ac0e8a1dab26989671bfd0b6baad2c4
+  known_differences:
+    - "Bibliotheque vs from-scratch : Python invoque NetworkX (librairie mature, algorithmes de graphes prets a l'emploi : plus courts chemins, centralites, flot max, Louvain, matching) ; C# implemente les algorithmes from-scratch sur une adjacency list maison (BFS, DFS, Dijkstra, Ford-Fulkerson). parity_level=surface (meme plan pedagogique, implementations independantes)."
+    - "Asymetrie de couverture : Python (42 cellules, 21 code) couvre §1-10 (construction, visualisation matplotlib, plus courts chemins, centralites, flot maximum, detection de communautes Louvain, matching pondere, Prong-B #3801) ; C# (20 cellules, 9 code) couvre §1-6 (graphe pondere, BFS/DFS, Dijkstra, centralites, flot maximum Ford-Fulkerson, visualisation ASCII). Louvain, matching pondere et Prong-B sont absents du C#."
+    - "Visualisation : Python = matplotlib (rendu graphique du reseau) ; C# = visualisation ASCII du graphe (sortie textuelle)."
+    - "Parite réelle : memes concepts fondamentaux (parcours, plus courts chemins, centralites, flot max) ; C# valorise la reimplementation pedagogique la ou Python valorise l'invocation de la lib SOTA."

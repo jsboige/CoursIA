@@ -52,6 +52,23 @@ missing), or on an *unbuilt* ``_en`` file (a ``*_en.lean`` whose module is
 neither an explicit lake root nor covered by a parent glob, so ``lake build``
 never compiles it and a green ``Lean CI`` is a false pass for it — the #6749
 orphan-trap, which the body comparison alone cannot catch).
+
+A fourth class of finding is reported as **advisory** (does NOT flip the exit
+code): a ``HALF-DONE`` pair whose FR-canonical file and its EN mirror still
+share one or more verbatim block-comment / docstring bodies ≥100 chars after
+trimming (#7763, surfaced during the i18n rollout for ``conway_lean`` /
+``knot_lean`` / ``game_theory_lean.Folk`` / ``lean_game_defs_ext.Bayesian`` /
+``grothendieck_lean.Conservative``). Two failure modes it catches:
+
+1. The FR-canonical file was never FR-localized — it still carries the EN
+   verbatim copy (the common case for the half-baked migrations seen so far).
+2. The EN mirror was never written *from* the canonical — it is a verbatim
+   copy of the original EN skeleton the FR file was supposed to diverge from.
+
+Advisory by design because legitimate identical bodies exist (a shared
+licence header, a verbatim bibliographic citation); a human must triage the
+list before any flip. The summary line carries the ``| N half-done (advisory)``
+counter regardless of exit code.
 """
 from __future__ import annotations
 
@@ -104,6 +121,90 @@ _DECL_START = re.compile(
     r"|variable|universe|#eval|#check|#print|set_option)\b"
 )
 _ATTR_ONLY = re.compile(r"^@\[[^\]]*\]\s*$")
+
+
+def extract_block_comment_bodies(src: str) -> list[str]:
+    """Return the list of block-comment / docstring BODIES (delimiters
+    ``/-`` / ``/--`` / ``-/`` stripped) in source order, nesting-aware — the
+    complement of :func:`strip_comments` (which discards them). Lines,
+    indentation, and trailing-newline structure are preserved inside each
+    body so byte-equality of large prose paragraphs can be detected
+    verbatim between siblings.
+
+    Used by the ``HALF-DONE`` advisory (#7763): when an FR/EN sibling pair
+    shares one or more verbatim block-comment bodies (longer than
+    ``_MIN_HALF_DONE_BODY`` chars after stripping whitespace), the canonical
+    FR file has not actually been FR-localized — the EN copy is sitting
+    verbatim inside it, which is the migration failure mode this checker
+    was extended to surface.
+    """
+    out: list[str] = []
+    i, n = 0, len(src)
+    depth = 0
+    body_start: int | None = None
+    while i < n:
+        pair = src[i:i + 2]
+        if depth > 0:                          # inside a (possibly nested) block comment
+            if pair == "/-":
+                depth += 1
+                i += 2
+            elif pair == "-/":
+                depth -= 1
+                if depth == 0 and body_start is not None:
+                    out.append(src[body_start:i])
+                    body_start = None
+                i += 2
+            else:
+                i += 1
+            continue
+        # Normal code / string-literal territory
+        if pair == "/-":
+            depth = 1
+            # `/--` is a docstring (single-token); `/-` is a regular block comment.
+            # Either way, the body starts AFTER the second hyphen — so the opening
+            # marker is consistently stripped (the canonical sibling mirror's doc
+            # style may differ from its canonical's).
+            j = i + 2
+            if j < n and src[j] == "-":
+                j += 1
+            body_start = j
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def is_half_done(fr_path: Path, en_path: Path,
+                 min_body_chars: int = 100) -> tuple[bool, int]:
+    """Detect the ``HALF-DONE`` migration failure mode of the i18n rollout
+    (#7763): the FR-canonical sibling pair contains at least one block-comment
+    body (longer than ``min_body_chars`` after trimming) that is **byte-identical
+    verbatim** to a block-comment body in the EN sibling. Two equally plausible
+    explanations:
+
+    1. The FR file was never FR-localized — it still carries the EN copy (the
+       common case in the conway_lean / folk_theorem / knot_lean cohort).
+    2. The EN file was never written from the canonical — it is a verbatim
+       copy of the EN skeleton the FR file was meant to diverge from.
+
+    Both indicate a missing human translation step; the checker surfaces them
+    as **advisory** (does NOT fail CI) because some legitimate use cases
+    produce identical bodies (a licence header, a verbatim citation, a shared
+    bibliographic reference) and must remain a human triage.
+
+    Returns ``(flagged, n_identical)`` where ``n_identical`` counts distinct
+    bodies in ``en_path`` that have a byte-identical match in ``fr_path``.
+    """
+    fr_bodies = [b.strip() for b in extract_block_comment_bodies(
+        fr_path.read_text(encoding="utf-8", errors="replace"))]
+    en_bodies = [b.strip() for b in extract_block_comment_bodies(
+        en_path.read_text(encoding="utf-8", errors="replace"))]
+    if not fr_bodies or not en_bodies:
+        return False, 0
+    fr_set = {b for b in fr_bodies if len(b) >= min_body_chars}
+    n_identical = sum(1 for b in en_bodies
+                      if len(b) >= min_body_chars and b in fr_set)
+    return n_identical > 0, n_identical
 
 
 def strip_comments(src: str) -> str:
@@ -436,7 +537,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = unbuilt = 0
+    passed = consumer = failed = orphan = unbuilt = half_done = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -462,10 +563,25 @@ def main(argv: list[str] | None = None) -> int:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
+        # HALF-DONE advisory (#7763): detect FR-canonical files that still
+        # carry verbatim EN prose (the migration was started but never landed
+        # on the FR side). Non-gating by design — some identical bodies are
+        # legitimate (shared licence header, citation), so a human triages.
+        hd, n_id = is_half_done(fr, en)
+        if hd:
+            half_done += 1
+            print(f"HALF-DONE  {en}  ({n_id} identical block-comment body(s) "
+                  f"≥100 chars shared between FR and EN "
+                  f"— FR was probably never localized)")
     total = passed + consumer + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
           f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
-          f" | {unbuilt} unbuilt")
+          f" | {unbuilt} unbuilt"
+          f" | {half_done} half-done (advisory)")
+    # NB: half_done is ADVISORY — it does NOT flip the exit code. Some
+    # legitimate scenarios produce identical bodies (shared licence header,
+    # verbatim bibliographic citation, etc.) and a human must triage. The
+    # exit code remains a hard fail on real drift / orphan / unbuilt.
     return 0 if (failed == 0 and orphan == 0 and unbuilt == 0) else 1
 
 

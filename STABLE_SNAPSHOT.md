@@ -28,6 +28,8 @@
 | **CaseStudies** | 6 | 6 | 0 | 0 | 0 | 0 | 100.0% |
 | **GameTheory** | 55 | 55 | 0 | 0 | 0 | 0 | 100.0% |
 | **GenAI** | 144 | 144 | 0 | 0 | 0 | 0 | 100.0% |
+
+> **Note (issue #8050)** : GenAI = 144 inclut 3 notebooks `examples/` (`history-geography`, `literature-visual`, `science-diagrams`) présents dans le forensic scan mais **exclus du catalogue curé par design** (`EXCLUDE_PEDAGOGICAL = {..., "examples", ...}`, cf `scripts/notebook_tools/generate_catalog.py` ligne 39). Catalogue GenAI curé = 141 ; écart 144−141 = 3 = exclusions catalogue par design, **pas du drift**. Détail : `docs/reference/notebook-counts-reconciliation.md`.
 | **IIT** | 31 | 31 | 0 | 0 | 0 | 0 | 100.0% |
 | **ML** | 46 | 46 | 0 | 0 | 0 | 0 | 100.0% |
 | **Probas** | 58 | 58 | 0 | 0 | 0 | 0 | 100.0% |

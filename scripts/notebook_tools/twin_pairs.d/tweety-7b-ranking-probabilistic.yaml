@@ -1,0 +1,18 @@
+- name: "Tweety-7b Ranking-Probabilistic"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 8fa3516822bcc10cbc76d6cc77b2bc4d3881d945
+      csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA
+      python_sha: fb7670e9ebe474a93db4534f4f76ded9f8c0e581
+      csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+  known_differences:
+    - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

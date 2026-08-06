@@ -1,0 +1,13 @@
+- name: "SW-5 Linked-Data"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5b-Python-LinkedData.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-5-CSharp-LinkedData.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 607ce735712708a08ebc37db2f5a7d19a0d16dfc
+      csharp_sha: 9cfb80bc05aa73594102d90d93276e52356a4977
+  known_differences:
+    - "Socle commun : consommation de Linked Data distante (dereferencement d'URI, endpoints SPARQL)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Query` remote endpoint). Python = `SPARQLWrapper` (client dedie endpoints SPARQL) + `rdflib`. Asymetrie leger : Python ajoute `SPARQLWrapper` specialise pour le reseau distant, le C# unifie dans dotNetRDF."

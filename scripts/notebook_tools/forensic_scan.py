@@ -95,6 +95,25 @@ def get_last_commit_date(path: Path, repo_root: Path) -> str | None:
         return None
 
 
+def get_last_commit_sha(path: Path, repo_root: Path) -> str | None:
+    """Short SHA (7 chars hex) of the last commit touching `path`.
+
+    Companion of get_last_commit_date. Used by generate_catalog.py to feed
+    `last_success_sha` and `executed_at` (cf docs/PARCOURS.md axe reproductibilite).
+    """
+    rel = path.relative_to(repo_root).as_posix()
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_root), "log", "-1", "--format=%h", "--", rel],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return out.stdout.strip() or None
+    except subprocess.CalledProcessError:
+        return None
+
+
 def is_excluded(path: Path) -> bool:
     if any(part in EXCLUDE_DIRS for part in path.parts):
         return True
@@ -113,12 +132,34 @@ def get_series(path: Path, root: Path) -> str:
     return rel[0] if len(rel) > 1 else "TOP"
 
 
+def collect_notebooks(root: Path) -> list[Path]:
+    """All non-excluded ``*.ipynb`` under ``root``, sorted.
+
+    Extracted from ``main`` so the discovery logic (and its SKIP_DIRS
+    filtering) is unit-testable without invoking the full CLI.
+
+    #8858-class guard: ``is_excluded`` receives the path RELATIVE to
+    ``root`` (matching its relative-path semantics), not the absolute
+    rglob path — otherwise a skip-name component in the repo's ABSOLUTE
+    parent (e.g. a checkout cloned under ``_archives/``) would silence the
+    whole forensic scan.
+    """
+    return sorted(
+        p for p in root.rglob("*.ipynb")
+        if not is_excluded(p.relative_to(root))
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default="MyIA.AI.Notebooks", help="Notebook root")
     parser.add_argument("--repo-root", default=".", help="Git repo root")
     parser.add_argument("--json-out", default=None, help="JSON output file")
-    parser.add_argument("--with-git", action="store_true", help="Include git last-commit (slow)")
+    parser.add_argument(
+        "--with-git",
+        action="store_true",
+        help="Include git last-commit (slow) + short SHA (cf docs/PARCOURS.md axe reproductibilite)",
+    )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -128,7 +169,7 @@ def main() -> int:
         print(f"ERROR: root {root} does not exist", file=sys.stderr)
         return 1
 
-    notebooks = sorted(p for p in root.rglob("*.ipynb") if not is_excluded(p))
+    notebooks = collect_notebooks(root)
     print(f"Scanning {len(notebooks)} notebooks under {root}", file=sys.stderr)
 
     results = []
@@ -140,6 +181,8 @@ def main() -> int:
         if args.with_git:
             commit_date = get_last_commit_date(nb_path, repo_root)
             info["last_commit"] = commit_date
+            info["executed_at"] = commit_date  # alias for PARCOURS.md axe reproductibilite
+            info["last_commit_sha"] = get_last_commit_sha(nb_path, repo_root)
             if commit_date:
                 try:
                     dt = datetime.fromisoformat(commit_date.replace("Z", "+00:00"))

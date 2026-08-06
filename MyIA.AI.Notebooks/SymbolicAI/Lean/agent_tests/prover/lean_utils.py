@@ -1256,3 +1256,47 @@ def suggest_decomposition(goal: str) -> list:
         })
 
     return suggestions
+
+
+# ─── #9402: reusable CLI for PR-body sorry counts ─────────────────────────
+# Replaces the raw `grep -c sorry` prescribed in anti-regression.md and
+# pr-review-discipline.md §B.1, which over-counts prose mentions in Lean
+# comments/docstrings. Usage:
+#   python -m prover.lean_utils path/to/File.lean        # "9<TAB>File.lean"
+#   python prover/lean_utils.py File.lean --quiet        # just the grand total
+# Returns 0 on a file whose every "sorry" sits in a comment/docstring.
+
+
+def _main_cli() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="lean_utils",
+        description=(
+            "Count REAL sorry tokens (comment-stripped, word-bounded) in one or "
+            "more Lean files. Use this instead of the raw substring grep in PR "
+            "bodies (#9402): substring counts over-count prose mentions."
+        ),
+    )
+    parser.add_argument("files", nargs="+", help="one or more .lean files")
+    parser.add_argument(
+        "-q", "--quiet", action="store_true",
+        help="print only the grand total (a single number), no per-file lines",
+    )
+    args = parser.parse_args()
+
+    grand = 0
+    for filepath in args.files:
+        n = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
+        grand += n
+        if not args.quiet:
+            print(f"{n}\t{filepath}")
+    if args.quiet:
+        print(grand)
+    elif len(args.files) > 1:
+        print(f"{grand}\t(total)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main_cli())

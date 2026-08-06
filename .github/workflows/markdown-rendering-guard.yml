@@ -1,0 +1,92 @@
+name: markdown-rendering-guard
+
+# Durable guard for the class of markdown *rendering* regressions that slip past
+# agent review because an agent cannot render markdown in its head (the same blind
+# spot that let oversized exercise "hints" and, more recently, the cost-frontmatter
+# blocks ship to main). The defects render as ugly, title-sized text blocks on the
+# very first open of a notebook, yet are invisible in a source diff.
+#
+# Two complementary scanners run here:
+#
+#  1. detect_markdown_rendering.py  -- the HARD gate. Catches YAML frontmatter dumped
+#     into a rendered markdown cell (`---\ntitle:...\ncost:\n  ...\n---`), which
+#     markdown-it promotes to one oversized setext-H2 block, plus accidental
+#     setext-oversized prose. Baselined: the corpus already carries ~480 pre-existing
+#     violations, so `--check --baseline` FAILS the PR only on NEW error-level ones
+#     (hashes are content-stable across cell reordering). Burn the baseline down with
+#     `--update-baseline` after a remediation batch. See #8056 / the cost-frontmatter
+#     exemplar #8323.
+#
+#  2. scan_md_hierarchy.py  -- informational. Surfaces hint-as-heading (Indice /
+#     Astuce / Conseil / Piste written as an H1..H3 -> renders larger than body text),
+#     collapsed-markdown tables, and multi-H1 hierarchy defects. Report-only for now
+#     (no baseline yet, ~120 pre-existing notebooks); it prints the honest count so a
+#     remediation batch can drive it down. Its plural-blind regex was the root cause
+#     of the vacuous #3968 closure (it reported 0 hints while ~200 plural-form hint
+#     headings survived) -- fixed in the same PR that adds this guard. Promoting it to
+#     a baselined hard gate is a tracked follow-up on #3966.
+#
+# Scope: main-repo notebooks only. Submodules are separate repos with their own CI.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_markdown_rendering.py'
+      - 'scripts/notebook_tools/scan_md_hierarchy.py'
+      - 'scripts/notebook_tools/markdown_rendering_baseline.json'
+      - '.github/workflows/markdown-rendering-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/detect_markdown_rendering.py'
+      - 'scripts/notebook_tools/scan_md_hierarchy.py'
+      - 'scripts/notebook_tools/markdown_rendering_baseline.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: markdown-rendering-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render-scan:
+    name: "markdown-rendering guard (main-repo notebooks)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "HARD gate -- fail on any NEW frontmatter / setext oversize"
+        run: |
+          if ! python scripts/notebook_tools/detect_markdown_rendering.py \
+                 --check \
+                 --baseline scripts/notebook_tools/markdown_rendering_baseline.json; then
+            echo ""
+            echo "::error::A markdown cell was added/changed that renders as an oversized, unformatted text block (YAML frontmatter dumped into a rendered cell, or prose accidentally underlined by '---'/'==='). It looks fine in the source diff but ugly on first open."
+            echo "Fix options (per-family editorial choice):"
+            echo "  * move the metadata into the notebook 'metadata' (invisible, machine-readable), OR"
+            echo "  * render it inside a fenced \`\`\`yaml block, OR"
+            echo "  * format it as a small markdown table."
+            echo "Then re-run:  python scripts/notebook_tools/detect_markdown_rendering.py --report <notebook>"
+            echo "If the change is an intentional, already-known violation, burn it into the baseline with --update-baseline (reviewer sign-off)."
+            exit 1
+          fi
+
+      - name: "Informational -- hint-as-heading / collapsed-markdown / multi-H1 census"
+        if: always()
+        run: |
+          echo "Typographic-hierarchy census (report-only, not gating this PR):"
+          python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks | tail -1
+          echo ""
+          echo "Hint-as-heading lines (Indice/Astuce/Conseil/Piste as an H1..H3 -> oversized):"
+          python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks | grep -c 'HINT-AS-HEADING' || true

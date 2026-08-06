@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-partner-course-quant-trading
+pedagogical_count: 0
+breakdown: 
+maturity: 
+-->
+
 # Trading Quantitatif avec QuantConnect — Template de Cours Partenaire
 
 Espace de travail pour les cours de trading quantitatif des écoles partenaires.

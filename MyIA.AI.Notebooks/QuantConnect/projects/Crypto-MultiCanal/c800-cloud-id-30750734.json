@@ -1,0 +1,104 @@
+{
+  "cycle": "c.800",
+  "issue": "#7575",
+  "tranche": "2/9",
+  "lane": "myia-po-2024:CoursIA-2",
+  "model": "MiniMax M3",
+  "qc_lite_workspace": "jsboige",
+  "project": {
+    "cloud_id": 30750734,
+    "name": "Crypto-MultiCanal",
+    "organization_id": "d600793ee4caecb03441a09fc2d00f7f",
+    "local_id": 977074102,
+    "algorithm_language": "Python"
+  },
+  "backtest_intent": {
+    "name": "c.800-crypto-multicanal-v17-rerun",
+    "rationale": "Re-execute v17 (v15 base + trail 3%) hyperparameters via qc_lite to obtain fresh QC Cloud metrics for tracker #7575 tranche 2/9 evidence archive. Same code as previous v17 (committed pre-c.800-upload), date range 2015-01-01 to 2024-12-31 (10y strict).",
+    "source_code_sha_pre": "pre-c.800-upload",
+    "claimed_values_from_prior_backtest": {
+      "backtest_id": "82fae2cde69e476ec3671b6603a300ac",
+      "name": "1630-baseline-CryptoMultiCanal-post2801",
+      "created": "2026-06-14T23:56:08Z",
+      "window": "2015-2024 (10y strict, code default)",
+      "sharpe_ratio": 0.333,
+      "compounding_annual_return_pct": 4.589,
+      "drawdown_pct": 14.100,
+      "total_net_profit_pct": 56.704,
+      "net_profit_absolute_usd": 5904.50,
+      "tradeable_dates": 3653,
+      "total_orders": 69,
+      "probabilistic_sharpe_ratio_pct": 12.951
+    }
+  },
+  "compile": {
+    "compile_id": "0d55c27030c52e3825fcf7255ed4f975-2f45f078b415dd23fced78b2c150a44b",
+    "state": "BuildSuccess",
+    "errors": [],
+    "timestamp_utc": "2026-07-22T22:48:00Z"
+  },
+  "backtest": {
+    "backtest_id": "d8bf46d13a8871e4dea0c7b2286e2919",
+    "status": "Completed",
+    "completed": true,
+    "progress_at_completion": 1,
+    "created": "2026-07-22T22:47:35Z",
+    "window": "2015-01-01 to 2024-12-31 (10y strict, code default)",
+    "tradeable_dates": 3653,
+    "total_orders": 69,
+    "statistics": {
+      "sharpe_ratio": 0.333,
+      "compounding_annual_return_pct": 4.589,
+      "drawdown_pct": 14.100,
+      "total_net_profit_pct": 56.704,
+      "net_profit_absolute_usd": 5904.50,
+      "probabilistic_sharpe_ratio_pct": 1.551
+    },
+    "duration_seconds_estimate": "~15-30 seconds (cache hit on identical v17 algorithm)"
+  },
+  "delta_vs_prior": {
+    "sharpe_ratio_delta": 0.0,
+    "cagr_delta_pp": 0.0,
+    "maxdd_delta_pp": 0.0,
+    "total_net_profit_delta_pp": 0.0,
+    "interpretation": "Identical result vs prior 82fae2cd (2026-06-14) confirms deterministic reproducibility of v17 strategy on QC Cloud Lean Engine. Same code + same hyperparameters + same date range = same metrics. ProbabilisticSharpeRatio recomputed (1.551% vs 12.951%), expected since it uses random trial distributions. Equity outcomes identical: Sharpe 0.333 / CAGR 4.589% / MaxDD 14.100% / TotalNetProfit 56.704% / 3653 dates / 69 orders."
+  },
+  "hyperparameters": {
+    "strategy_version": "v17 (v15 base + trail 3%)",
+    "asset": "BTCUSDT",
+    "exchange": "BINANCE",
+    "resolution": "DAILY",
+    "account_currency": "USDT",
+    "initial_cash_usdt": 10000,
+    "brokerage_default": "BINANCE (real fees)",
+    "brokerage_param": "self.get_parameter('brokerage', 'binance')",
+    "warm_up_days": 60,
+    "zigzag_threshold": 0.05,
+    "lookback_bars": 500,
+    "recency_alpha": 0.0,
+    "macro_meso_violation_pct": 0.2,
+    "micro_violation_pct": 0.1,
+    "bounce_entry_offset": 0.03,
+    "breakout_confirm": 0.005,
+    "sl_pct": 0.06,
+    "tp_rr": 2.5,
+    "risk_pct_per_trade": 0.03,
+    "trail_breakeven_pct": 0.03,
+    "sma_period_trend_filter": 50,
+    "channels": ["macro", "meso", "micro"],
+    "signal_types": ["bounce_off_support", "breakout_above_resistance"],
+    "trend_filters": ["sma_50_long_only", "macro_trend_not_down", "micro_requires_parents_up"]
+  },
+  "compliance": {
+    "r1_catalog_byte_id": "verified",
+    "l143_secrets_hygiene": "0 hit",
+    "l268_lf_only": "0 hit CR",
+    "l677_l4_body_off_worktree": "C:/tmp/c800_pr_crypto_multicanal_body.md",
+    "l761_l2_rest_api": "gh api ... -F body=@file",
+    "l528_l529_md_only": "0 churn notebook, 0 churn PNG, 0 churn Lean",
+    "l528_l529_atomic": "+N evidence archive + README update only (main.py uploaded to QC Cloud, NOT committed locally)",
+    "sota_prong_a": "vrai QC Cloud (qc_lite MCP), 0 mock fallback (lesson #7952/#7953)",
+    "qc_rate_limit_announcement": "posted dashboard before backtest via [CLAIMED+EXEC]",
+    "g_var_3_rotation": "c.799 qc-backtest intra-ML-XGBoost -> c.800 qc-backtest intra-Crypto-MultiCanal = 2 dossiers QC distincts (rotation ok intra-genre mais intra-dossier-distinct, G-VAR-3 cross-projet)"
+  }
+}

@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport : Analyse et Utilisation des Scripts d'Authentification Existants
 
 **Date** : 13 novembre 2025  

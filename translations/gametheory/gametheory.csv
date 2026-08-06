@@ -28468,13 +28468,13 @@ Nous avons établi le pilier théorique que GT-6 illustrait empiriquement :
 - Fudenberg, D. & Maskin, E. (1986). *The Folk Theorem in Repeated Games with Discounting or with Incomplete Information*.
 - Axelrod, R. (1984). *The Evolution of Cooperation* (base empirique de GT-6).
 ",,,,,,,,10dc1e336ab603d4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,fadf3471,markdown,fr,3ab5fb243dd4f1ab,"# GameTheory-7-ExtensiveForm (Twin C#)
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,fadf3471,markdown,fr,a8b8ae7ed57966d7,"# GameTheory-7-ExtensiveForm (Twin C#)
 
 > **Jumeau C# (.NET Interactive)** de [GameTheory-7-ExtensiveForm.ipynb](GameTheory-7-ExtensiveForm.ipynb) — marathon **#4956** (parite .NET <-> Python), axe-2 SOTA **#3801** Prong B.
 
-Le notebook Python modelise les jeux sous forme extensive (arbre de jeu) avec `networkx` (graphe), affiche les arbres avec `matplotlib`, et invoque `OpenSpiel` (`pyspiel`) pour Kuhn Poker. **Ce twin deroule tout a la main** (BCL .NET 9, 0 NuGet) : on construit la structure de donnees de l'arbre de jeu, on modelise les **ensembles d'information** (infosets) et les **noeuds de nature** (chance), et on code la **conversion forme extensive -> forme normale**. La visualisation de l'arbre se fait en **ASCII** (equivalent du plot matplotlib).
+Le notebook Python modelise les jeux sous forme extensive (arbre de jeu) avec `networkx` (graphe), affiche les arbres avec `matplotlib`, et invoque `OpenSpiel` (`pyspiel`) pour Kuhn Poker. **Ce twin deroule tout a la main** (BCL .NET 9, 0 NuGet) : on construit la structure de données de l'arbre de jeu, on modelise les **ensembles d'information** (infosets) et les **noeuds de nature** (chance), et on code la **conversion forme extensive -> forme normale**. La visualisation de l'arbre se fait en **ASCII** (equivalent du plot matplotlib).
 
-> **Distinct du twin GT-9-C#** : GT-9 resout les jeux extensifs par **induction arriere** (un algorithme de resolution). Ce notebook GT-7 est sur la **representation et la modelisation** (comment encoder un arbre de jeu, des infosets, des noeuds de hasard, et convertir vers la forme normale). Les deux sont complementaires : modeliser (GT-7) puis resoudre (GT-9).",,,,,,,,3ab5fb243dd4f1ab,,,,,,,
+> **Distinct du twin GT-9-C#** : GT-9 resout les jeux extensifs par **induction arriere** (un algorithme de resolution). Ce notebook GT-7 est sur la **representation et la modelisation** (comment encoder un arbre de jeu, des infosets, des noeuds de hasard, et convertir vers la forme normale). Les deux sont complementaires : modeliser (GT-7) puis resoudre (GT-9).",,,,,,,,a8b8ae7ed57966d7,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,12fec236,markdown,fr,8b59371ede4ea0b1,"## 1. De la forme normale a la forme extensive
 
 La **forme normale** (GT-2) represente un jeu par sa matrice de gains. La **forme extensive** represente le **deroulement temporel** : qui joue quand, quelles actions sont disponibles, et ce que chaque joueur sait a chaque decision (les **ensembles d'information**). C'est la structure naturelle pour les jeux dynamiques (chacun joue a son tour) et les jeux a information incomplete (chance, informations cachees).
@@ -28534,9 +28534,9 @@ entry.AddChild(incumbent, ""Fight"", new GameNode { Id = ""fight"", Player = -1,
 entry.AddChild(incumbent, ""Accommodate"", new GameNode { Id = ""accommodate"", Player = -1, Payoffs = new[] { 1.0, 1.0 } });
 
 Show(entry.Name + "" : "" + entry.Nodes.Count + "" noeuds, information parfaite (1 infoset par decision)."");",,,,,,,,b8a26cabd9e19081,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,00bbca3b,markdown,fr,02a2669f2374e4f3,"### Rendu ASCII de l'arbre
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,00bbca3b,markdown,fr,59159e4915606667,"### Rendu ASCII de l'arbre
 
-Le Python utilise `matplotlib` + `networkx` pour dessiner l'arbre. Nous le rendons en **ASCII** : un parcours recursif avec indentation par profondeur, qui marque les noeuds de nature (N), les infosets (~), et les payoffs terminaux.",,,,,,,,02a2669f2374e4f3,,,,,,,
+Le Python utilise `matplotlib` + `networkx` pour dessiner l'arbre. Nous le rendons en **ASCII** : un parcours récursif avec indentation par profondeur, qui marque les noeuds de nature (N), les infosets (~), et les payoffs terminaux.",,,,,,,,59159e4915606667,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,13fdbcdb,code,fr,e4222ace9e911bc9,"// Rendu ASCII de l'arbre de jeu (equivalent du plot matplotlib)
 static string RenderTree(ExtensiveFormGame g)
 {
@@ -28560,12 +28560,12 @@ static string RenderTree(ExtensiveFormGame g)
     return sb.ToString();
 }
 Show(RenderTree(entry));",,,,,,,,e4222ace9e911bc9,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,dd561e38,markdown,fr,ef8cd76720c9fe31,"### Interpretation : structure du jeu d'entree
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,dd561e38,markdown,fr,839261afca0bb4b6,"### Interpretation : structure du jeu d'entree
 
-L'arbre montre la chronologie : J1 (entrant) choisit `In`/`Out` ; s'il entre, J2 (incumbent) choisit `Fight`/`Accommodate`. Les payoffs terminaux revelent la structure : `Fight` (-1,-1) est un <b>equilibre non-credible</b> (la menace de guerre n'est pas credible une fois l'entree effective), `Accommodate` (1,1) est l'issue rationnelle. C'est precisement ce que l'<b>induction arriere</b> (GT-9) formalise.",,,,,,,,ef8cd76720c9fe31,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,041ae031,markdown,fr,6c0cd1abd8c676d0,"## 3. Strategies dans les jeux extensifs
+L'arbre montre la chronologie : J1 (entrant) choisit `In`/`Out` ; s'il entre, J2 (incumbent) choisit `Fight`/`Accommodate`. Les payoffs terminaux revelent la structure : `Fight` (-1,-1) est un <b>equilibre non-credible</b> (la menace de guerre n'est pas credible une fois l'entree effective), `Accommodate` (1,1) est l'issue rationnelle. C'est précisément ce que l'<b>induction arriere</b> (GT-9) formalise.",,,,,,,,839261afca0bb4b6,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,041ae031,markdown,fr,42ce2b233766e77c,"## 3. Stratégies dans les jeux extensifs
 
-Une **strategie pure** en forme extensive est un **plan d'action complet** : pour chaque ensemble d'information du joueur, quelle action jouer. Ce n'est pas ""une action"", c'est un plan contingents (une action PAR infoset). Le nombre de strategies pures d'un joueur = produit du nombre d'actions sur chacun de ses infosets.",,,,,,,,6c0cd1abd8c676d0,,,,,,,
+Une **stratégie pure** en forme extensive est un **plan d'action complet** : pour chaque ensemble d'information du joueur, quelle action jouer. Ce n'est pas ""une action"", c'est un plan contingents (une action PAR infoset). Le nombre de stratégies pures d'un joueur = produit du nombre d'actions sur chacun de ses infosets.",,,,,,,,42ce2b233766e77c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,86fbe1f3,code,fr,cc9cd3192cb0a172,"// Enumeration des strategies pures d'un joueur = plans contingents (produit cartesien sur ses infosets)
 static List<Dictionary<string, string>> PureStrategies(ExtensiveFormGame g, int player)
 {
@@ -28590,11 +28590,11 @@ var s1 = PureStrategies(entry, 1);
 var s2 = PureStrategies(entry, 2);
 Show(""J1 strategies ("" + s1.Count + "") : "" + string.Join(""  "", s1.Select(p => ""{"" + string.Join("","", p.Values) + ""}"")));
 Show(""J2 strategies ("" + s2.Count + "") : "" + string.Join(""  "", s2.Select(p => ""{"" + string.Join("","", p.Values) + ""}"")));",,,,,,,,cc9cd3192cb0a172,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,70d7dc38,markdown,fr,fe086acdcacedea7,"## 4. Information parfaite vs imparfaite
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,70d7dc38,markdown,fr,021719138a203d9e,"## 4. Information parfaite vs imparfaite
 
-La difference cruciale : en **information parfaite**, chaque infoset est un singleton (le joueur sait exactement ou il est). En **information imparfaite**, un infoset regroupe plusieurs noeuds : le joueur sait qu'il est a l'un d'entre eux mais ne sait pas lequel.
+La différence cruciale : en **information parfaite**, chaque infoset est un singleton (le joueur sait exactement ou il est). En **information imparfaite**, un infoset regroupe plusieurs noeuds : le joueur sait qu'il est a l'un d'entre eux mais ne sait pas lequel.
 
-Le jeu **mouvement simultane** (Matching Pennies en forme extensive) : J1 joue Pile/Face, puis J2 joue Pile/Face **sans voir** le coup de J1. Les deux noeuds de decision de J2 sont dans le **meme infoset** `j2_choice`.",,,,,,,,fe086acdcacedea7,,,,,,,
+Le jeu **mouvement simultane** (Matching Pennies en forme extensive) : J1 joue Pile/Face, puis J2 joue Pile/Face **sans voir** le coup de J1. Les deux noeuds de decision de J2 sont dans le **même infoset** `j2_choice`.",,,,,,,,021719138a203d9e,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,6f8e2052,code,fr,0eb89db03f292974,"// Mouvement simultane = Matching Pennies en forme extensive (information imparfaite)
 var sim = new ExtensiveFormGame(""Simultaneous Move (Matching Pennies)"", 2);
 var r = new GameNode { Id = ""j1"", Player = 1, Actions = new() { ""Pile"", ""Face"" } };
@@ -28640,16 +28640,16 @@ card.AddChild(j2lb, ""Fold"", new GameNode { Id = ""l_fold"", Player = -1, Payof
 
 Show(RenderTree(card));
 Show(""Infosets : "" + string.Join("", "", card.Infosets.Keys) + "" | j2_bet regroupe J2_h_bet + J2_l_bet (J2 ignore la carte)."");",,,,,,,,fab206e58960f42b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,00edfca3,markdown,fr,9acadb82f195a36b,"## 6. OpenSpiel : jeux extensifs avances (section conceptuelle)
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,00edfca3,markdown,fr,6b51cbdc4f4cc83f,"## 6. OpenSpiel : jeux extensifs avances (section conceptuelle)
 
-Le notebook Python invoque **OpenSpiel** (`pyspiel`) pour charger Kuhn Poker, un jeu classique a information incomplete. **OpenSpiel n'a pas d'equivalent .NET** (pas de binding .NET officiel) — c'est un verdict **INTRINSIC** pour cette section specifique (#3801) : on ne peut pas re-invoquer OpenSpiel en C#.
+Le notebook Python invoque **OpenSpiel** (`pyspiel`) pour charger Kuhn Poker, un jeu classique a information incomplete. **OpenSpiel n'a pas d'equivalent .NET** (pas de binding .NET officiel) — c'est un verdict **INTRINSIC** pour cette section spécifique (#3801) : on ne peut pas re-invoquer OpenSpiel en C#.
 
-Ce twin documente donc la **structure de Kuhn Poker** (3 cartes, infosets par carte + historique d'encheres) et renvoie au twin Python pour l'execution OpenSpiel. Le coeur du notebook (modelisation + conversion, sections 1-5+7) est **from-scratch SOTA-OK** : ce que networkx/OpenSpiel cachent (l'arbre, les infosets, le hasard), ce twin le rend explicite.
+Ce twin documente donc la **structure de Kuhn Poker** (3 cartes, infosets par carte + historique d'encheres) et renvoie au twin Python pour l'exécution OpenSpiel. Le coeur du notebook (modelisation + conversion, sections 1-5+7) est **from-scratch SOTA-OK** : ce que networkx/OpenSpiel cachent (l'arbre, les infosets, le hasard), ce twin le rend explicite.
 
-**Kuhn Poker (structure)** : 2 joueurs, 3 cartes (J,Q,K) distribuees par la Nature, chaque joueur voit sa carte (infoset par carte), mises `Pass`/`Bet`. Information incomplete (la carte de l'adversaire est cachee). C'est le banc d'essai canonique du **CFR** (GT-13) et des solveurs de poker modernes.",,,,,,,,9acadb82f195a36b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,5097aa60,markdown,fr,eee13077397409b9,"## 7. Conversion forme extensive -> forme normale
+**Kuhn Poker (structure)** : 2 joueurs, 3 cartes (J,Q,K) distribuees par la Nature, chaque joueur voit sa carte (infoset par carte), mises `Pass`/`Bet`. Information incomplete (la carte de l'adversaire est cachee). C'est le banc d'essai canonique du **CFR** (GT-13) et des solveurs de poker modernes.",,,,,,,,6b51cbdc4f4cc83f,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,5097aa60,markdown,fr,ab44567763db6239,"## 7. Conversion forme extensive -> forme normale
 
-Tout jeu extensif peut etre converti en jeu **normal** (matrice de gains) : on enumere les strategies pures de chaque joueur (plans contingents, section 3), puis pour chaque couple (s1, s2) on calcule le payoff espere en traversant l'arbre (les noeuds de nature etant ponderes par leurs probabilites). La matrice resultat est exactement le jeu normal equivalent.",,,,,,,,eee13077397409b9,,,,,,,
+Tout jeu extensif peut etre converti en jeu **normal** (matrice de gains) : on enumere les stratégies pures de chaque joueur (plans contingents, section 3), puis pour chaque couple (s1, s2) on calcule le payoff espere en traversant l'arbre (les noeuds de nature etant ponderes par leurs probabilites). La matrice résultat est exactement le jeu normal equivalent.",,,,,,,,ab44567763db6239,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,bc7e90c9,code,fr,4611e7acf3f7691d,"// Conversion extensive -> normale : matrice de gains sur les strategies pures
 static double[] ExpectedPayoff(ExtensiveFormGame g, Dictionary<int, Dictionary<string, string>> stratByPlayer)
 {
@@ -28701,26 +28701,26 @@ Show(""=== Entry Game -> forme normale ==="");
 Show(ConvertToNormal(entry));
 Show(""=== Simultaneous Move -> forme normale (= Matching Pennies) ==="");
 Show(ConvertToNormal(sim));",,,,,,,,4611e7acf3f7691d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,97bcbf08,markdown,fr,5c968c669f91763d,"### Interpretation : equivalence des formes
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,97bcbf08,markdown,fr,e4b54ff4b9f4eccf,"### Interpretation : equivalence des formes
 
-La conversion de l'**Entry Game** donne une matrice 2x2 dont l'equilibre est `(In, Accommodate)` — la meme conclusion que l'induction arriere (GT-9), mais obtenue par la theorie normale. La conversion du **Simultaneous Move** redonne exactement la matrice de **Matching Pennies** (pas de point-selle, strategies mixtes uniformes). C'est la preuve que les deux formes sont **equivalentes** en information complete : tout jeu extensif se reduit a une matrice de gains.",,,,,,,,5c968c669f91763d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,ed1fba67,markdown,fr,cfec1407f959aa54,"## 8. Resume
+La conversion de l'**Entry Game** donne une matrice 2x2 dont l'equilibre est `(In, Accommodate)` — la même conclusion que l'induction arriere (GT-9), mais obtenue par la théorie normale. La conversion du **Simultaneous Move** redonne exactement la matrice de **Matching Pennies** (pas de point-selle, stratégies mixtes uniformes). C'est la preuve que les deux formes sont **equivalentes** en information complete : tout jeu extensif se reduit a une matrice de gains.",,,,,,,,e4b54ff4b9f4eccf,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,ed1fba67,markdown,fr,f1931a9f0f075b1d,"## 8. Resume
 
 | Concept | Python (twin) | Twin C# (ici) |
 |---------|---------------|----------------|
-| Arbre de jeu | `networkx` (graphe) | **structure `GameNode` recursive from-scratch** |
+| Arbre de jeu | `networkx` (graphe) | **structure `GameNode` récursive from-scratch** |
 | Visualisation | `matplotlib` | **rendu ASCII** (parcours + indentation) |
-| OpenSpiel / Kuhn Poker | `pyspiel` (execution) | **section conceptuelle** (INTRINSIC, pas de binding .NET) |
-| Conversion -> normale | `itertools.product` | **enumeration recursive des plans contingents** |
+| OpenSpiel / Kuhn Poker | `pyspiel` (exécution) | **section conceptuelle** (INTRINSIC, pas de binding .NET) |
+| Conversion -> normale | `itertools.product` | **enumeration récursive des plans contingents** |
 
-**Ce que la lib cache et que ce twin rend explicite** : la structure recursive du noeud (decision/terminal/chance + infoset), le **codage de l'information imparfaite par infoset partage** (le coeur conceptuel), le **ponderation des noeuds de nature** dans le calcul de payoff espere, et le **produit cartesien des plans contingents** qui definit une strategie pure en forme extensive.
+**Ce que la lib cache et que ce twin rend explicite** : la structure récursive du noeud (decision/terminal/chance + infoset), le **codage de l'information imparfaite par infoset partage** (le coeur conceptuel), le **ponderation des noeuds de nature** dans le calcul de payoff espere, et le **produit cartesien des plans contingents** qui définit une stratégie pure en forme extensive.
 
 > **Lien avec GT-9** : ce notebook modelise la forme extensive (representation). GT-9-C# la **resout** par induction arriere. Les deux se completent : modeliser puis resoudre.
 
-> **Lien avec la formalisation Lean** : les jeux extensifs et les equilibres (SPE) sont formalises dans `game_theory_lean`. Ce notebook en est le versant **computationnel**.",,,,,,,,cfec1407f959aa54,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,d860d074,markdown,fr,50f72092a4845841,"## 9. Exercices
+> **Lien avec la formalisation Lean** : les jeux extensifs et les equilibres (SPE) sont formalises dans `game_theory_lean`. Ce notebook en est le versant **computationnel**.",,,,,,,,f1931a9f0f075b1d,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,d860d074,markdown,fr,090ac8240d2a7bda,"## 9. Exercices
 
-> **Convention** : stubs a completer (`null` + `// TODO etudiant`), jamais d'erreur volontaire — le notebook s'execute de bout en bout meme non complete.",,,,,,,,50f72092a4845841,,,,,,,
+> **Convention** : stubs a completer (`null` + `// TODO etudiant`), jamais d'erreur volontaire — le notebook s'execute de bout en bout même non complete.",,,,,,,,090ac8240d2a7bda,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,ae1e3b27,code,fr,ad49109ae03c932b,"// Exercice 1 : Construire un arbre de jeu (Chain-Store paradox simplifie)
 // Etape 1 : 1 entrant, incumbent Fight/Accommodate. Etape 2 : ajouter un 2e entrant qui observe l'issue du 1er.
 // Indice : reutiliser AddChild + infosets. Le 2e entrant a-t-il un infoset distinct apres Fight vs Accommodate ?
@@ -28736,33 +28736,33 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,090740cd,co
 // Question : comment l'incumbent doit-il raisonner sans connaitre le cout (nouvel infoset) ?
 var ex3 = (ExtensiveFormGame)null;  // entry game avec cout aleatoire
 Show(""Exercice 3 a completer : ajoutez un noeud de nature cout, discutez l'infoset de l'incumbent."");",,,,,,,,d21d5acbd00056e3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,5f187aca,markdown,fr,5611ea0ab579a182,"---
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb,5f187aca,markdown,fr,8bf4af0638a9fcdb,"---
 
 ## Conclusion
 
 Ce twin a deroule les **cinq couches** de la forme extensive :
-1. **Modele** : `GameNode` (decision/terminal/chance + infoset) et `ExtensiveFormGame`.
-2. **Arbre** : construction recursive + **rendu ASCII** (equivalent matplotlib).
-3. **Strategies** : enumeration des **plans contingents** (produit cartesien sur les infosets).
+1. **Modèle** : `GameNode` (decision/terminal/chance + infoset) et `ExtensiveFormGame`.
+2. **Arbre** : construction récursive + **rendu ASCII** (equivalent matplotlib).
+3. **Stratégies** : enumeration des **plans contingents** (produit cartesien sur les infosets).
 4. **Information imparfaite** : encodage par **infoset partage** (Matching Pennies, Card Game).
-5. **Conversion -> normale** : traversee recursive avec **ponderation des noeuds de nature**.
+5. **Conversion -> normale** : traversee récursive avec **ponderation des noeuds de nature**.
 
-La ou `networkx`/`OpenSpiel` fournissent des structures opaques, ce notebook montre **le noeud recursif**, **le codage de l'information imparfaite**, **le hasard equilibre** et **le produit cartesien des plans**. C'est toute la mecanique de modelisation, rendue explicite — l'objectif du marathon #4956.
+La ou `networkx`/`OpenSpiel` fournissent des structures opaques, ce notebook montre **le noeud récursif**, **le codage de l'information imparfaite**, **le hasard equilibre** et **le produit cartesien des plans**. C'est toute la mecanique de modelisation, rendue explicite — l'objectif du marathon #4956.
 
-**Prochaines etapes** : une fois le jeu modelise (ce notebook), on le **resout** par induction arriere ([GameTheory-9-BackwardInduction-Csharp](GameTheory-9-BackwardInduction-Csharp.ipynb)) ou par CFR pour l'information incomplete ([GameTheory-13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR.ipynb)).
+**Prochaines étapes** : une fois le jeu modelise (ce notebook), on le **resout** par induction arriere ([GameTheory-9-BackwardInduction-Csharp](GameTheory-9-BackwardInduction-Csharp.ipynb)) ou par CFR pour l'information incomplete ([GameTheory-13-ImperfectInfo-CFR](GameTheory-13-ImperfectInfo-CFR.ipynb)).
 
 *See #4956 (marathon parite .NET/Python). Refs #3801 (axe-2 SOTA).*
 
 ---
 
-*Genere par myia-po-2023, cycle 57, marathon #4956.*",,,,,,,,5611ea0ab579a182,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,4a2cc1e7,markdown,fr,d673dd010f796904,"# GameTheory-7-ExtensiveForm
+*Genere par myia-po-2023, cycle 57, marathon #4956.*",,,,,,,,8bf4af0638a9fcdb,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,4a2cc1e7,markdown,fr,2e5cab31d7b951e4,"# GameTheory-7-ExtensiveForm
 
 **Navigation** : [<< 6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | [Index](README.md) | [8-CombinatorialGames >>](GameTheory-8-CombinatorialGames.ipynb)
 
 ## Jeux sous Forme Extensive : Arbres de Jeu et Ensembles d'Information
 
-Ce notebook introduit les **jeux sous forme extensive**, qui modelisent les situations strategiques dynamiques ou les joueurs agissent sequentiellement.
+Ce notebook introduit les **jeux sous forme extensive**, qui modelisent les situations stratégiques dynamiques ou les joueurs agissent sequentiellement.
 
 ### Objectifs d'apprentissage
 
@@ -28778,7 +28778,7 @@ Ce notebook introduit les **jeux sous forme extensive**, qui modelisent les situ
 - Notions de base sur les arbres et graphes
 - Familiarite avec les jeux en forme normale (matrices de gains)
 
-### Duree estimee : 60 minutes",,,,,,,,d673dd010f796904,,,,,,,
+### Duree estimee : 60 minutes",,,,,,,,2e5cab31d7b951e4,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30bf07f0,code,fr,43399d50e34ee356,"# Configuration et imports
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28799,27 +28799,27 @@ except ImportError:
 # Style matplotlib
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (10, 6)",,,,,,,,43399d50e34ee356,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,a7a53f4d,markdown,fr,aa3c81578204f73c,"## 1. De la Forme Normale a la Forme Extensive
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,a7a53f4d,markdown,fr,dcd65a28016f9654,"## 1. De la Forme Normale a la Forme Extensive
 
 ### 1.1 Limitations de la forme normale
 
 La forme normale (matrice de gains) ne capture pas :
 - **L'ordre des coups** : qui joue quand ?
 - **L'information disponible** : que sait chaque joueur au moment de jouer ?
-- **L'historique du jeu** : les actions precedentes
+- **L'historique du jeu** : les actions précédentes
 
-### 1.2 Elements d'un jeu extensif
+### 1.2 Éléments d'un jeu extensif
 
 Un jeu sous forme extensive comprend :
 
-| Element | Description |
+| Élément | Description |
 |---------|-------------|
 | **Noeuds** | Points de decision ou le jeu peut se trouver |
 | **Racine** | Noeud de depart du jeu |
 | **Terminaux** | Noeuds finaux avec gains |
 | **Actions** | Transitions entre noeuds |
 | **Joueurs** | Incluant potentiellement ""Nature"" (hasard) |
-| **Information sets** | Ensembles de noeuds indistinguables pour un joueur |",,,,,,,,aa3c81578204f73c,,,,,,,
+| **Information sets** | Ensembles de noeuds indistinguables pour un joueur |",,,,,,,,dcd65a28016f9654,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,33ad8a49,code,fr,6265ef77f92f3ec6,"# Classes de base pour les jeux extensifs
 
 @dataclass
@@ -28870,9 +28870,9 @@ class ExtensiveFormGame:
         return [self.nodes[nid] for nid in self.infosets[infoset_id]]
 print(""Classe definie : ExtensiveFormGame (jeu sous forme extensive)"")
 ",,,,,,,,6265ef77f92f3ec6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,a2ef2204,markdown,fr,e3b9e96fdb79b002,"## 2. Exemple : Jeu d'Entree sur le Marche
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,a2ef2204,markdown,fr,a96d58ace6242617,"## 2. Exemple : Jeu d'Entree sur le Marche
 
-Un exemple classique de jeu sequentiel :
+Un exemple classique de jeu séquentiel :
 
 1. **Entrant** decide : Entrer (E) ou Rester dehors (O)
 2. Si Entrer, **Incumbant** decide : Combattre (F) ou Accommoder (A)
@@ -28889,7 +28889,7 @@ Un exemple classique de jeu sequentiel :
       (-1, -1)     (1, 1)
 ```
 
-Gains : (Entrant, Incumbant)",,,,,,,,e3b9e96fdb79b002,,,,,,,
+Gains : (Entrant, Incumbant)",,,,,,,,a96d58ace6242617,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,ed49d0b3,code,fr,7cf17d8444324c45,"def create_entry_game() -> ExtensiveFormGame:
     """"""Cree le jeu d'entree sur le marche.""""""
     game = ExtensiveFormGame(""Entry Game"", num_players=2)
@@ -28934,11 +28934,11 @@ entry_game = create_entry_game()
 print(f""Jeu: {entry_game.name}"")
 print(f""Nombre de joueurs: {entry_game.num_players}"")
 print(f""Noeuds terminaux: {len(entry_game.get_terminal_nodes())}"")",,,,,,,,7cf17d8444324c45,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,f8b1ef6d,markdown,fr,f1009c4f16e7ae72,"### Interpretation : Structure du jeu d'entree
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,f8b1ef6d,markdown,fr,f4837670631ad503,"### Interpretation : Structure du jeu d'entree
 
-Le code ci-dessus construit l'arbre de jeu avec ses differents composants.
+Le code ci-dessus construit l'arbre de jeu avec ses différents composants.
 
-**Anatomie de l'arbre cree** :
+**Anatomie de l'arbre créé** :
 
 | Noeud | Joueur | Infoset | Actions | Description |
 |-------|--------|---------|---------|-------------|
@@ -28951,7 +28951,7 @@ Le code ci-dessus construit l'arbre de jeu avec ses differents composants.
 - **Enter + Fight** : (-1, -1) - Guerre de prix destructrice pour les deux
 - **Enter + Accommodate** : (1, 1) - Partage du marche, tous gagnent
 
-> **Observation** : Ce jeu illustre une **menace non credible** - l'incumbant menace de combattre, mais s'il est rationnel, il devrait toujours accommoder (1 > -1). Nous verrons dans le notebook sur l'induction arriere comment formaliser cette intuition.",,,,,,,,f1009c4f16e7ae72,,,,,,,
+> **Observation** : Ce jeu illustre une **menace non credible** - l'incumbant menace de combattre, mais s'il est rationnel, il devrait toujours accommoder (1 > -1). Nous verrons dans le notebook sur l'induction arriere comment formaliser cette intuition.",,,,,,,,f4837670631ad503,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,1aa35386,code,fr,fc030f24e0934559,"def visualize_game_tree(game: ExtensiveFormGame, figsize=(12, 8)):
     """"""Visualise l'arbre de jeu avec NetworkX.""""""
     G = nx.DiGraph()
@@ -28999,22 +28999,22 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,1aa35386,code,fr,f
     plt.show()
 
 visualize_game_tree(entry_game)",,,,,,,,fc030f24e0934559,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,b37851f4,markdown,fr,32572f2613d4350d,"## 3. Strategies dans les Jeux Extensifs
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,b37851f4,markdown,fr,76e91105872f771c,"## 3. Stratégies dans les Jeux Extensifs
 
-### 3.1 Strategie Pure
+### 3.1 Stratégie Pure
 
-Une **strategie pure** est un plan d'action complet : elle specifie une action pour **chaque ensemble d'information** du joueur.
+Une **stratégie pure** est un plan d'action complet : elle specifie une action pour **chaque ensemble d'information** du joueur.
 
-Pour l'Entrant : 2 strategies (Enter ou Out)  
-Pour l'Incumbant : 2 strategies (Fight ou Accommodate)
+Pour l'Entrant : 2 stratégies (Enter ou Out)  
+Pour l'Incumbant : 2 stratégies (Fight ou Accommodate)
 
-### 3.2 Strategie Comportementale
+### 3.2 Stratégie Comportementale
 
-Une **strategie comportementale** associe une distribution de probabilite sur les actions a chaque ensemble d'information.
+Une **stratégie comportementale** associe une distribution de probabilite sur les actions a chaque ensemble d'information.
 
 ### 3.3 Equivalence (Theoreme de Kuhn)
 
-Dans les jeux avec **rappel parfait** (chaque joueur se souvient de toutes ses actions passees), strategies mixtes et comportementales sont equivalentes.",,,,,,,,32572f2613d4350d,,,,,,,
+Dans les jeux avec **rappel parfait** (chaque joueur se souvient de toutes ses actions passees), stratégies mixtes et comportementales sont equivalentes.",,,,,,,,76e91105872f771c,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,504d8e40,code,fr,91bf707f14d2cf09,"@dataclass
 class PureStrategy:
     """"""Strategie pure pour un joueur.""""""
@@ -29056,27 +29056,27 @@ incumbent_fight = PureStrategy(2, {""I2_1"": ""Fight""})
 incumbent_acc = PureStrategy(2, {""I2_1"": ""Accommodate""})
 print(f""  - S1: {incumbent_fight.actions}"")
 print(f""  - S2: {incumbent_acc.actions}"")",,,,,,,,91bf707f14d2cf09,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,8c15668a,markdown,fr,fda8f0ce8a315b8c,"### Interpretation : Strategies et ensembles d'information
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,8c15668a,markdown,fr,598a8dd8ef9ac269,"### Interpretation : Stratégies et ensembles d'information
 
-Ce code definit les deux types fondamentaux de strategies dans les jeux extensifs.
+Ce code définit les deux types fondamentaux de stratégies dans les jeux extensifs.
 
-**Strategie pure vs comportementale** :
+**Stratégie pure vs comportementale** :
 
 | Type | Specification | Exemple (Entrant) |
 |------|---------------|-------------------|
-| **Pure** | Une action deterministe par infoset | I1_1 -> ""Enter"" |
+| **Pure** | Une action déterministe par infoset | I1_1 -> ""Enter"" |
 | **Comportementale** | Distribution de probabilite par infoset | I1_1 -> {Enter: 0.7, Out: 0.3} |
 
-**Observation sur les strategies de l'Entrant** :
+**Observation sur les stratégies de l'Entrant** :
 - L'Entrant n'a qu'un seul infoset (I1_1) = un seul point de decision
-- Ses 2 strategies pures correspondent a ses 2 actions possibles
+- Ses 2 stratégies pures correspondent a ses 2 actions possibles
 
-**Observation sur les strategies de l'Incumbant** :
+**Observation sur les stratégies de l'Incumbant** :
 - L'Incumbant a aussi un seul infoset (I2_1)
-- Ses strategies sont Fight ou Accommodate
-- **Important** : Ces strategies sont des **plans complets**, pas des actions conditionnelles
+- Ses stratégies sont Fight ou Accommodate
+- **Important** : Ces stratégies sont des **plans complets**, pas des actions conditionnelles
 
-> **Point cle** : Dans un jeu a information parfaite, le nombre de strategies pures d'un joueur est le produit du nombre d'actions a chaque noeud de decision. Ici : 2 x 2 = 4 profils de strategies pures au total.",,,,,,,,fda8f0ce8a315b8c,,,,,,,
+> **Point cle** : Dans un jeu a information parfaite, le nombre de stratégies pures d'un joueur est le produit du nombre d'actions a chaque noeud de decision. Ici : 2 x 2 = 4 profils de stratégies pures au total.",,,,,,,,598a8dd8ef9ac269,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,1279842b,code,fr,653428e3ff794db4,"def evaluate_strategy_profile(game: ExtensiveFormGame, 
                                strategies: Dict[int, PureStrategy]) -> Tuple[float, ...]:
     """"""
@@ -29118,12 +29118,12 @@ for e_strat, e_name in [(entrant_enter, ""Enter""), (entrant_out, ""Out"")]:
         payoffs = evaluate_strategy_profile(entry_game, {1: e_strat, 2: i_strat})
         row += f""  {payoffs}    ""
     print(row)",,,,,,,,653428e3ff794db4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,7f90ad26,markdown,fr,b2ec51d7c40c1ebf,"### Forme normale du jeu d'entree : analyse
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,7f90ad26,markdown,fr,4d6399ea5f011c4b,"### Forme normale du jeu d'entree : analyse
 
-La matrice ci-dessus revele la structure strategique du jeu :
+La matrice ci-dessus revele la structure stratégique du jeu :
 
 **Observations cles** :
-- La strategie ""Out"" de l'entrant donne **(0, 2)** quelle que soit la strategie de l'incumbant
+- La stratégie ""Out"" de l'entrant donne **(0, 2)** quelle que soit la stratégie de l'incumbant
 - Cela signifie que la ""menace"" de Fight n'affecte pas le gain si l'entrant reste dehors
 - Pourtant, cette menace peut influencer la decision d'entrer !
 
@@ -29131,9 +29131,9 @@ La matrice ci-dessus revele la structure strategique du jeu :
 1. **(Enter, Accommodate)** : Gains (1, 1)
 2. **(Out, Fight)** : Gains (0, 2)
 
-**Le probleme** : Le deuxieme equilibre repose sur une menace **non credible**. L'incumbant ne combattrait jamais reellement (car -1 < 1).
+**Le problème** : Le deuxieme equilibre repose sur une menace **non credible**. L'incumbant ne combattrait jamais reellement (car -1 < 1).
 
-C'est exactement pourquoi la forme extensive est importante : elle nous permet de detecter ces menaces vides en analysant les sous-jeux (voir notebook 9).",,,,,,,,b2ec51d7c40c1ebf,,,,,,,
+C'est exactement pourquoi la forme extensive est importante : elle nous permet de detecter ces menaces vides en analysant les sous-jeux (voir notebook 9).",,,,,,,,4d6399ea5f011c4b,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,d80fe483,markdown,fr,defb52fac54b2299,"## 4. Information Parfaite vs Imparfaite
 
 ### 4.1 Information Parfaite
@@ -29198,25 +29198,25 @@ def has_perfect_information(game: ExtensiveFormGame) -> bool:
 
 print(f""\nJeu d'entree - Information parfaite: {has_perfect_information(entry_game)}"")
 print(f""Matching Pennies - Information parfaite: {has_perfect_information(mp_game)}"")",,,,,,,,3e49636d008ce18c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,e65444ac,markdown,fr,2b00b6725c43b941,"### L'importance des infosets
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,e65444ac,markdown,fr,757619f73c67b097,"### L'importance des infosets
 
-La visualisation ci-dessus montre pourquoi les **ensembles d'information** sont centraux en theorie des jeux :
+La visualisation ci-dessus montre pourquoi les **ensembles d'information** sont centraux en théorie des jeux :
 
 **Matching Pennies comme jeu simultane** :
-- Meme si J1 ""joue en premier"" dans l'arbre, J2 ne sait pas ce que J1 a joue
-- Les deux noeuds de J2 sont dans le **meme infoset** (ellipse rouge)
+- Même si J1 ""joue en premier"" dans l'arbre, J2 ne sait pas ce que J1 a joue
+- Les deux noeuds de J2 sont dans le **même infoset** (ellipse rouge)
 - Cela rend le jeu **strategiquement equivalent** a un jeu simultane
 
 **Consequences pratiques** :
-1. J2 ne peut pas conditionner sa strategie sur l'action de J1
-2. La seule strategie possible pour J2 est ""jouer H"" ou ""jouer T"" (pas ""si J1 joue H alors..."")
-3. C'est exactement comme si les deux joueurs choisissaient en meme temps
+1. J2 ne peut pas conditionner sa stratégie sur l'action de J1
+2. La seule stratégie possible pour J2 est ""jouer H"" ou ""jouer T"" (pas ""si J1 joue H alors..."")
+3. C'est exactement comme si les deux joueurs choisissaient en même temps
 
 **Le lien avec le poker** :
 - Au poker, vous ne voyez pas les cartes des autres
 - Vous ne savez pas s'ils ont une bonne ou mauvaise main
-- Tous les etats ou ils ont une bonne main sont dans le meme infoset depuis votre perspective
-- Votre strategie doit etre la meme pour tous ces etats !",,,,,,,,2b00b6725c43b941,,,,,,,
+- Tous les etats ou ils ont une bonne main sont dans le même infoset depuis votre perspective
+- Votre stratégie doit etre la même pour tous ces etats !",,,,,,,,757619f73c67b097,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,6f0b7d76,code,fr,e5d08fd51fa5586d,"def visualize_with_infosets(game: ExtensiveFormGame, figsize=(14, 8)):
     """"""Visualise l'arbre avec les infosets en surbrillance.""""""
     G = nx.DiGraph()
@@ -29288,11 +29288,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,6f0b7d76,code,fr,e
     plt.show()
 
 visualize_with_infosets(mp_game)",,,,,,,,e5d08fd51fa5586d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,52ac53cd,markdown,fr,924db627a5912362,"## 5. Jeux avec Hasard : Noeuds de Nature
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,52ac53cd,markdown,fr,d74abc7174591ca7,"## 5. Jeux avec Hasard : Noeuds de Nature
 
-Certains jeux incluent des elements aleatoires : tirage de cartes, lancers de des, etc.
+Certains jeux incluent des éléments aleatoires : tirage de cartes, lancers de des, etc.
 
-On modelise cela par un joueur special appele **Nature** (joueur 0) qui ""choisit"" selon des probabilites connues.",,,,,,,,924db627a5912362,,,,,,,
+On modelise cela par un joueur special appele **Nature** (joueur 0) qui ""choisit"" selon des probabilites connues.",,,,,,,,d74abc7174591ca7,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,7c0175ba,code,fr,57534e984f640e86,"def create_simple_card_game() -> ExtensiveFormGame:
     """"""
     Jeu de carte simple:
@@ -29349,9 +29349,9 @@ print(""Jeu de cartes simple"")
 print(""=""*50)
 print(f""Infosets de J1: I1_H (carte haute), I1_L (carte basse)"")
 print(f""Infosets de J2: {card_game.infosets['I2_bet']} (ne connait pas la carte)"")",,,,,,,,57534e984f640e86,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,c5aab6b8,markdown,fr,c2eefb51eac78c22,"## 6. OpenSpiel : Jeux Extensifs Avances
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,c5aab6b8,markdown,fr,e12b3b994ceb28f9,"## 6. OpenSpiel : Jeux Extensifs Avances
 
-OpenSpiel fournit de nombreux jeux deja implementes avec une API standardisee.",,,,,,,,c2eefb51eac78c22,,,,,,,
+OpenSpiel fournit de nombreux jeux déjà implementes avec une API standardisee.",,,,,,,,e12b3b994ceb28f9,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,8fcead35,code,fr,bad5ba3d82d0adb0,"if HAS_OPENSPIEL:
     # Kuhn Poker - jeu classique a information imparfaite
     kuhn = pyspiel.load_game(""kuhn_poker"")
@@ -29386,14 +29386,14 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,8fcead35,code,fr,b
 else:
     print(""OpenSpiel non disponible"")
     print(""Pour installer: pip install open_spiel"")",,,,,,,,bad5ba3d82d0adb0,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,2fe67bdd,markdown,fr,59da04b50f96991c,"### Interpretation : Kuhn Poker et structure d'information
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,2fe67bdd,markdown,fr,6e455bd4a7d07810,"### Interpretation : Kuhn Poker et structure d'information
 
 L'exemple du **Kuhn Poker** illustre parfaitement les concepts cles des jeux extensifs a information imparfaite.
 
 **Structure du jeu observee** :
-- **Joueurs sequentiels** : Nature distribue d'abord (3 cartes possibles), puis J0 joue, puis J1 repond
+- **Joueurs séquentiels** : Nature distribue d'abord (3 cartes possibles), puis J0 joue, puis J1 repond
 - **Information asymetrique** : Chaque joueur voit sa propre carte mais pas celle de l'adversaire
-- **Infosets distincts** : Les chaines comme `""0""`, `""0pb""` encodent l'historique observable par J0
+- **Infosets distincts** : Les chaînes comme `""0""`, `""0pb""` encodent l'historique observable par J0
 
 **Analyse de la partie simulee** :
 | Action | Interpretation |
@@ -29404,10 +29404,10 @@ L'exemple du **Kuhn Poker** illustre parfaitement les concepts cles des jeux ext
 
 **Pourquoi ce jeu est fondamental** :
 - C'est le plus petit jeu de poker non trivial
-- Il admet une solution analytique connue (equilibre de Nash en strategies mixtes)
-- Il demontre le **bluff** comme strategie optimale : miser avec une mauvaise carte peut etre profitable
+- Il admet une solution analytique connue (equilibre de Nash en stratégies mixtes)
+- Il demontre le **bluff** comme stratégie optimale : miser avec une mauvaise carte peut etre profitable
 
-> **Note technique** : Les infosets comme `""1p""` signifient ""J1 avec carte 1 apres Pass de J0"" - le joueur connait sa carte mais pas celle de l'adversaire.",,,,,,,,59da04b50f96991c,,,,,,,
+> **Note technique** : Les infosets comme `""1p""` signifient ""J1 avec carte 1 après Pass de J0"" - le joueur connait sa carte mais pas celle de l'adversaire.",,,,,,,,6e455bd4a7d07810,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,5174cbd9,code,fr,7722941abe1a9c62,"if HAS_OPENSPIEL:
     def explore_game_tree(game, max_nodes=20):
         """"""Explore l'arbre de jeu d'OpenSpiel.""""""
@@ -29446,11 +29446,11 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,5174cbd9,code,fr,7
         dfs(state)
     
     explore_game_tree(kuhn)",,,,,,,,7722941abe1a9c62,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,94e11c6e,markdown,fr,50c0cb22068427f4,"## 7. Conversion Forme Extensive -> Forme Normale
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,94e11c6e,markdown,fr,425231107e3b6066,"## 7. Conversion Forme Extensive -> Forme Normale
 
-Tout jeu extensif peut etre converti en forme normale en enumerant toutes les strategies pures.
+Tout jeu extensif peut etre converti en forme normale en enumerant toutes les stratégies pures.
 
-**Attention** : La taille de la matrice peut exploser exponentiellement!",,,,,,,,50c0cb22068427f4,,,,,,,
+**Attention** : La taille de la matrice peut exploser exponentiellement!",,,,,,,,425231107e3b6066,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,59f970b4,code,fr,000cae9f97a1713f,"from itertools import product
 
 def extensive_to_normal(game: ExtensiveFormGame):
@@ -29524,11 +29524,11 @@ print(f""\nMatrice des gains (Joueur 1):"")
 print(normal_form['A'])
 print(f""\nMatrice des gains (Joueur 2):"")
 print(normal_form['B'])",,,,,,,,000cae9f97a1713f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,14bd3e84,markdown,fr,bba02d82d6b7d546,"## 8. Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,14bd3e84,markdown,fr,ca7544d6cd859f89,"## 8. Exercices
 
-Les exercices suivants mettent en pratique les concepts cles des jeux sous forme extensive etudies dans les sections precedentes : **arbres de jeu**, **strategies comportementales**, **equilibres de Nash**, **ensembles d'information**, et **equilibres parfaits en sous-jeux (SPE)**. Chaque exercice mobilise le moteur de representation arborescente et les algorithmes d'induction arriere definis dans ce notebook (sections 1-7).
+Les exercices suivants mettent en pratique les concepts cles des jeux sous forme extensive etudies dans les sections précédentes : **arbres de jeu**, **stratégies comportementales**, **equilibres de Nash**, **ensembles d'information**, et **equilibres parfaits en sous-jeux (SPE)**. Chaque exercice mobilise le moteur de representation arborescente et les algorithmes d'induction arriere définis dans ce notebook (sections 1-7).
 
-L'objectif pedagogique est de transformer la comprehension conceptuelle en capacite operationnelle : construire un arbre, calculer un SPE, verifier la stabilite d'un profil de strategies.
+L'objectif pedagogique est de transformer la comprehension conceptuelle en capacite operationnelle : construire un arbre, calculer un SPE, verifier la stabilite d'un profil de stratégies.
 
 ### 8.1. Exercice 1 : Solveur du jeu de l'Ultimatum
 
@@ -29542,7 +29542,7 @@ Implementer un solveur backward-induction pour le jeu de l'ultimatum avec x dans
 
 - **Indice 1** : Pour chaque offre x, J2 rationnel accepte si et seulement si son gain `x >= 0` (refuser rapporte toujours 0). Le seuil d'acceptation minimal de J2 est donc 0 euro.
 - **Indice 2** : Par anticipation backward-induction, J1 sait que J2 acceptera toute offre positive. J1 maximise donc son propre gain `10 - x` en choisissant le plus petit x acceptable, c'est-a-dire x = 0.
-- **Indice 3** : En consequence, le SPE predit une offre de 0 euro (ou l'offre minimale proche de 0). Le resultat `solve_ultimatum([2,4,5,6,8])` doit retourner `{'spe_offer': 2, 'j1_payoff': 8, 'j2_payoff': 2, 'j2_accepts': [2,4,5,6,8]}` (J2 rationnel accepte tout, J1 choisit le minimum de la liste).
+- **Indice 3** : En consequence, le SPE predit une offre de 0 euro (ou l'offre minimale proche de 0). Le résultat `solve_ultimatum([2,4,5,6,8])` doit retourner `{'spe_offer': 2, 'j1_payoff': 8, 'j2_payoff': 2, 'j2_accepts': [2,4,5,6,8]}` (J2 rationnel accepte tout, J1 choisit le minimum de la liste).
 
 ### 8.2. Exercice 2 : Construction d'un arbre de jeu a 3 firmes
 
@@ -29552,7 +29552,7 @@ Implementer un solveur backward-induction pour le jeu de l'ultimatum avec x dans
 
 1. Construire l'arbre de jeu complet avec gains specifies pour chaque firme
 2. Identifier les ensembles d'information (combien B en a-t-il ? combien C en a-t-il ?)
-3. Trouver l'equilibre de Nash en strategies comportementales par induction arriere
+3. Trouver l'equilibre de Nash en stratégies comportementales par induction arriere
 
 **Indices gradues** :
 
@@ -29562,22 +29562,22 @@ Implementer un solveur backward-induction pour le jeu de l'ultimatum avec x dans
 
 ### 8.3. Exercice 3 : Verification de SPE (Subgame Perfect Equilibrium)
 
-**Contexte** : Etant donne un jeu extensif a information parfaite et un profil de strategies pures pour chaque firme, verifier que ce profil constitue bien un equilibre PARFAIT en sous-jeux (SPE), pas seulement un equilibre de Nash du jeu global.
+**Contexte** : Etant donne un jeu extensif a information parfaite et un profil de stratégies pures pour chaque firme, verifier que ce profil constitue bien un equilibre PARFAIT en sous-jeux (SPE), pas seulement un equilibre de Nash du jeu global.
 
 **Questions** :
 
-1. Enumerer tous les sous-jeux du jeu extensif (chaque noeud de decision et ses descendants definit un sous-jeu)
-2. Pour chaque sous-jeu, verifier que le profil de strategies restreint a ce sous-jeu constitue un equilibre de Nash
+1. Enumerer tous les sous-jeux du jeu extensif (chaque noeud de decision et ses descendants définit un sous-jeu)
+2. Pour chaque sous-jeu, verifier que le profil de stratégies restreint a ce sous-jeu constitue un equilibre de Nash
 3. Conclure sur le statut SPE : le profil est-il un SPE, ou identifie-t-on des violations ?
 
 **Indices gradues** :
 
-- **Indice 1** : Un sous-jeu est identifie par sa racine (un noeud de decision) ; il inclut tous les descendants de cette racine. Le jeu entier est lui-meme un sous-jeu (racine = noeud racine du jeu). Pour le jeu a 3 firmes de l'exercice 8.2, il y a donc 1 + 2 + 4 = 7 sous-jeux (le jeu global + 2 sous-jeux de B + 4 sous-jeux de C).
-- **Indice 2** : Pour verifier le SPE dans un sous-jeu, restreindre les strategies au sous-jeu et calculer les gains de chaque firme sous ces strategies restreintes. Verifier ensuite qu'aucune firme n'a de deviation unilaterale profitable DANS CE SOUS-JEU (pas seulement dans le jeu global).
-- **Indice 3** : La difference avec un Nash equilibrium global : un NE peut etre un SPE-violating profile si une firme menace de jouer une action non-credible dans un sous-jeu plus profond. Le SPE elimine ces menaces non-credibles en exigeant la Nash property a chaque sous-jeu.
+- **Indice 1** : Un sous-jeu est identifie par sa racine (un noeud de decision) ; il inclut tous les descendants de cette racine. Le jeu entier est lui-même un sous-jeu (racine = noeud racine du jeu). Pour le jeu a 3 firmes de l'exercice 8.2, il y a donc 1 + 2 + 4 = 7 sous-jeux (le jeu global + 2 sous-jeux de B + 4 sous-jeux de C).
+- **Indice 2** : Pour verifier le SPE dans un sous-jeu, restreindre les stratégies au sous-jeu et calculer les gains de chaque firme sous ces stratégies restreintes. Verifier ensuite qu'aucune firme n'a de deviation unilaterale profitable DANS CE SOUS-JEU (pas seulement dans le jeu global).
+- **Indice 3** : La différence avec un Nash equilibrium global : un NE peut etre un SPE-violating profile si une firme menace de jouer une action non-credible dans un sous-jeu plus profond. Le SPE elimine ces menaces non-credibles en exigeant la Nash property a chaque sous-jeu.
 
-**Note C.1** : Conformement aux conventions du notebook (regle C.1), les cellules code ci-dessous contiennent des **stubs** (`pass`, `return ...`, `# TODO etudiant`) sans `raise NotImplementedError` ni `assert False`. Le notebook doit s'executer de bout en bout meme si les solutions ne sont pas completees.
-",,,,,,,,bba02d82d6b7d546,,,,,,,
+**Note C.1** : Conformement aux conventions du notebook (règle C.1), les cellules code ci-dessous contiennent des **stubs** (`pass`, `return ...`, `# TODO etudiant`) sans `raise NotImplementedError` ni `assert False`. Le notebook doit s'executer de bout en bout même si les solutions ne sont pas completees.
+",,,,,,,,ca7544d6cd859f89,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,17510cae,code,fr,572e52ae27c8cec1,"# === Exercices : Jeux extensifs et SPE ===
 # Stubs pour les 3 exos definis en section 8 (8.1, 8.2, 8.3).
 # Conformement a la regle C.1 du depot (pas d'erreur volontaire en cellule notebook),
@@ -29703,7 +29703,7 @@ print(f""  solve_ultimatum([2,4,5,6,8]) -> {solve_ultimatum([2,4,5,6,8])}"")
 print(f""  build_three_player_entry_game() -> {build_three_player_entry_game().name}"")
 print(f""  verify_spe(entry_game, ...) -> {verify_spe(entry_game, {1: entrant_enter, 2: incumbent_acc})['is_spe']}"")
 ",,,,,,,,572e52ae27c8cec1,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30fc7f9e,markdown,fr,441bd8ae4e6275ce,"## 9. Resume
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30fc7f9e,markdown,fr,accb84a879971f8d,"## 9. Resume
 
 | Concept | Description |
 |---------|-------------|
@@ -29712,27 +29712,27 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,30fc7f9e,markdown,
 | **Information set** | Ensemble de noeuds indistinguables pour un joueur |
 | **Information parfaite** | Chaque infoset contient un seul noeud |
 | **Information imparfaite** | Des infosets avec plusieurs noeuds |
-| **Strategie pure** | Plan complet (une action par infoset) |
-| **Strategie comportementale** | Distribution de probabilite par infoset |
+| **Stratégie pure** | Plan complet (une action par infoset) |
+| **Stratégie comportementale** | Distribution de probabilite par infoset |
 
 ### Points cles
 
 - La forme extensive capture la **dynamique** du jeu
-- Les infosets modelisent l'**incertitude strategique**
+- Les infosets modelisent l'**incertitude stratégique**
 - La conversion extensive -> normale est **exponentielle**
 - OpenSpiel fournit de nombreux jeux pre-implementes
 
-### Prochaine etape
+### Prochaine étape
 
-**Notebook 8 : Jeux Combinatoires** - Theorie de Conway, jeux de Nim et theoreme de Sprague-Grundy.",,,,,,,,441bd8ae4e6275ce,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,9c667a32,markdown,fr,a686a6878547d23e,"> **Lien avec la formalisation Lean** : La conversion entre forme extensive et forme normale (section 7) s'appuie sur les structures de jeux definies dans [`lean_game_defs/Basic.lean`](lean_game_defs/Basic.lean), qui formalise `NormalFormGame` et `Game2x2`. Les equilibres de Nash en strategies pures et mixtes, calcules ici sur la matrice issue de la conversion, correspondent aux definitions formelles de [`lean_game_defs/Nash.lean`](lean_game_defs/Nash.lean) (`isPureNashEquilibrium`, `isNashEquilibrium`). La theorie des ensembles d'information et de l'equilibre parfait en sous-jeux (SPE) sera approfondie dans les notebooks 9 et 10 avec l'induction arriere.",,,,,,,,a686a6878547d23e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,225fe7df,markdown,fr,8638ca075289b409,"## Resume et perspectives
+**Notebook 8 : Jeux Combinatoires** - Théorie de Conway, jeux de Nim et theoreme de Sprague-Grundy.",,,,,,,,accb84a879971f8d,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,9c667a32,markdown,fr,8c05f82bb54dca6e,"> **Lien avec la formalisation Lean** : La conversion entre forme extensive et forme normale (section 7) s'appuie sur les structures de jeux définies dans [`lean_game_defs/Basic.lean`](lean_game_defs/Basic.lean), qui formalise `NormalFormGame` et `Game2x2`. Les equilibres de Nash en stratégies pures et mixtes, calcules ici sur la matrice issue de la conversion, correspondent aux definitions formelles de [`lean_game_defs/Nash.lean`](lean_game_defs/Nash.lean) (`isPureNashEquilibrium`, `isNashEquilibrium`). La théorie des ensembles d'information et de l'equilibre parfait en sous-jeux (SPE) sera approfondie dans les notebooks 9 et 10 avec l'induction arriere.",,,,,,,,8c05f82bb54dca6e,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,225fe7df,markdown,fr,554a45c1c04ec653,"## Resume et perspectives
 
-Ce notebook a permis de construire les fondements de la representation extensive des jeux, en passant de la matrice de gains statique a l'arbre de jeu dynamique. Les concepts centraux exploites -- noeuds de decision, ensembles d'information (infosets), strategies pures et comportementales -- constituent le vocabulaire de base pour analyser toute interaction strategique sequentielle. La distinction entre information parfaite (chaque joueur connait l'historique complet) et information imparfaite (certains etats sont indistinguables) s'est revelee fondamentale : elle determine les strategies disponibles pour chaque joueur et la complexite de l'analyse. L'integration avec OpenSpiel a illustre comment ces concepts s'appliquent a des jeux reels comme le Kuhn Poker, ou le bluff emerge naturellement de la structure d'information asymetrique.
+Ce notebook a permis de construire les fondements de la representation extensive des jeux, en passant de la matrice de gains statique a l'arbre de jeu dynamique. Les concepts centraux exploites -- noeuds de decision, ensembles d'information (infosets), stratégies pures et comportementales -- constituent le vocabulaire de base pour analyser toute interaction stratégique séquentielle. La distinction entre information parfaite (chaque joueur connait l'historique complet) et information imparfaite (certains etats sont indistinguables) s'est revelee fondamentale : elle determine les stratégies disponibles pour chaque joueur et la complexite de l'analyse. L'integration avec OpenSpiel a illustre comment ces concepts s'appliquent a des jeux reels comme le Kuhn Poker, ou le bluff emerge naturellement de la structure d'information asymetrique.
 
-La conversion entre forme extensive et forme normale a mis en evidence un phenomene important : la representation extensive est plus parcimonieuse, car la forme normale peut exploser exponentiellement en fonction du nombre de noeuds de decision. Le jeu d'entree sur le marche a egalement souleve la question des menaces non credibles, que la forme extensive detecte mais ne resout pas formellement.
+La conversion entre forme extensive et forme normale a mis en evidence un phenomene important : la representation extensive est plus parcimonieuse, car la forme normale peut exploser exponentiellement en fonction du nombre de noeuds de decision. Le jeu d'entree sur le marche a également souleve la question des menaces non credibles, que la forme extensive detecte mais ne resout pas formellement.
 
-Le notebook suivant plonge dans la theorie des jeux combinatoires avec le celebre theoreme de Sprague-Grundy : [GameTheory-8-CombinatorialGames](GameTheory-8-CombinatorialGames.ipynb).",,,,,,,,8638ca075289b409,,,,,,,
+Le notebook suivant plonge dans la théorie des jeux combinatoires avec le celebre theoreme de Sprague-Grundy : [GameTheory-8-CombinatorialGames](GameTheory-8-CombinatorialGames.ipynb).",,,,,,,,554a45c1c04ec653,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8-CombinatorialGames-Csharp.ipynb,539356e5-01db-43aa-ab76-a30b850ea351,markdown,fr,a9c3a33cc636ab0e,"# GameTheory-8-CombinatorialGames (C#)
 
 **Navigation** : [<< 7-ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | [Index](README.md) | [9-BackwardInduction >>](GameTheory-9-BackwardInduction-Csharp.ipynb)

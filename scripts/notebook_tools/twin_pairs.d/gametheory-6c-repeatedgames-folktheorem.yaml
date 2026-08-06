@@ -1,0 +1,16 @@
+- name: "GameTheory-6c RepeatedGames-FolkTheorem"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: e693b35dc15d0fed5b60cfc83e1ffb3de0c20a0f
+      csharp_sha: 510f61137fbcee6997eb12d0dc7bd28ceace25bd
+  known_differences:
+    - "Socle commun : jeux repétés et théorème Folk -- jeu étape (Dilemme du Prisonnier), horizon fini, horizon infini avec facteur d'escompte, grim trigger, tit-for-tat vs grim, Folk Theorem (ensemble des paiements faisables et individuellement rationnels)."
+    - "PARITE CELLULAIRE EXACTE : 22 cellules des deux cotes (9 code, 13 markdown) -- un des twins les plus proches cellule-a-cellule du registre. Memes 6 sections dans le meme ordre + Exercice 1/2/3 + Conclusion. Le C# ajoute une sous-section 'Parité avec le notebook Python' sous la conclusion (intention de parite declaree)."
+    - "Numerique pur des deux cotes : ni nashpy, ni scipy, ni aucune librairie de theorie des jeux. Python = matplotlib + matplotlib.patches.Polygon + numpy ; C# = zero #r/using, top-level C# pur avec Console.WriteLine + helpers statiques (VC/VD/VDgrim/VDtft). Mathematiques equivalentes (VC(delta,r)=r/(1-delta) etc.)."
+    - "Asymetrie de medium de visualisation : Python trace le quadrilatere des paiements faisables/IR avec matplotlib.patches.Polygon (vraie figure) ; C# rend l'ensemble en ASCII art ('Illustration ASCII : ensemble des paiements faisables'). ScottPlot est disponible dans ce repo (cf CSP-8/9 C#) -- l'ASCII est un choix pedagogique, pas une contrainte technique."
+    - "Exercices identiques : memes 3 exercices des deux cotes. Les stubs C# utilisent '// TODO etudiant' + placeholder 'deltaStarE = 0.0' (conforme C.1, pas d'erreur volontaire). Cosmetique : le titre C# strippe les accents francais ('Jeux Repetes et Theoreme Folk' vs 'Jeux Répétés et Théorème Folk')."

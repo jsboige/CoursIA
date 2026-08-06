@@ -1,0 +1,129 @@
+name: CJK Residue Advisory
+
+# Issue #8826. The detector scripts/notebook_tools/detect_cjk_residue.py existed
+# to close #8428 (LLM-translation residue: Chinese words soldered into French/
+# English prose -- 均匀ément, de重建, 可能性が高い), but it was wired to NOTHING and
+# saw only .ipynb. So the reservoir refilled silently: #8823 introduced
+# `«经验 manquante»` in a .py, invisible to the ipynb-only scope and never run.
+#
+# This workflow makes the organ alive. It runs the #8826 discriminating guard
+# (CJK mixed into Latin = leak; pure-CJK = legit) over notebooks AND tracked
+# .py/.md/.cs, and signals residue by a LABEL -- never by the job conclusion.
+#
+# ADVISORY, never blocking (issue #8826 deliverable 3 / #8814 acceptance 5): the
+# job ALWAYS exits 0. The actionable payload is the `cjk-residue` LABEL, NEVER the
+# green conclusion (green by construction). Contrast the BLOCKING label-paths-guard
+# (#8822) which targets a file invariant; this targets a content judgement (is this
+# CJK a corrupted Latin word or a deliberate term?) -- a human/arbiter call, so it
+# signals rather than gates.
+#
+# Self-cover (#8822): a paths-filtered label-poser MUST list its own file under
+# paths:, else it cannot re-run (so cannot remove its label) once the matching
+# paths leave the PR diff. Proven firsthand on exercises-advisory (PR #8820).
+# Enforced structurally by scripts/check_workflow_label_paths.py.
+#
+# Fork PRs are skipped (student-pr-reviews.md): benevolent review, no internal
+# content criterion runs against student submissions.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      # Leak-bearing content -- run whenever any prose/code/notebook changes.
+      - '**/*.ipynb'
+      - '**/*.md'
+      - '**/*.py'
+      - '**/*.cs'
+      # Self-cover (#8822): so this job re-runs on its own modification and can
+      # clean up its label. Without this, a leak-fix commit that touches only
+      # this workflow/script would leave the label stuck.
+      - '.github/workflows/cjk-residue-advisory.yml'
+      - 'scripts/notebook_tools/detect_cjk_residue.py'
+      - 'scripts/notebook_tools/tests/test_detect_cjk_residue.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  cjk-residue-advisory:
+    name: "CJK residue advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions under
+    # student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory CJK residue scan (notebooks + tracked .py/.md/.cs)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without GH_REPO, gh pr edit/label create cannot infer the target repo.
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL: cjk-residue
+        run: |
+          set -uo pipefail
+
+          # The label is decided on what THIS PR changes (#8829 review), not on
+          # the state of main. A whole-fleet scan would pose `cjk-residue` on
+          # every PR while main carries pre-existing residue in files the PR
+          # never touched -- a label nobody can drop without fixing foreign
+          # files, which is learned-to-be-ignored even faster than #8822's
+          # "label survives its cause". The fleet scan stays (informational
+          # notice below); only the PR's own apport can trigger its label.
+          git diff --name-only --diff-filter=d "$BASE" "$HEAD" > changed.txt || true
+
+          python scripts/notebook_tools/detect_cjk_residue.py --json --check --stdin \
+            < changed.txt > pr_payload.json 2> pr_scan.log || true
+          cat pr_payload.json
+
+          PR_LEAKS=$(python -c "import json; d=json.load(open('pr_payload.json')); print(d['total_hits'])")
+          echo "CJK leak lines introduced/modified by THIS PR: $PR_LEAKS"
+
+          # Fleet scan -- INFORMATIONAL ONLY. Surfaces pre-existing residue
+          # elsewhere so a maintainer sees it, but NEVER decides the label: a PR
+          # is not blamed for files it did not touch.
+          python scripts/notebook_tools/detect_cjk_residue.py --json \
+            > fleet_payload.json 2> fleet_scan.log || true
+          FLEET_LEAKS=$(python -c "import json; d=json.load(open('fleet_payload.json')); print(d['total_hits'])" 2>/dev/null || echo "")
+          if [ "${FLEET_LEAKS:-}" -gt 0 ] 2>/dev/null; then
+            echo "::notice::Pre-existing CJK residue elsewhere in the repo ($FLEET_LEAKS leak line(s)) -- informational, NOT attributed to this PR. See #8826."
+          fi
+
+          # Integer-guard (#8820 Blocage 3 family): if pr_payload.json is
+          # illisible (check_pr_exercises-style death), the gate measured NOTHING.
+          # Do not claim clean AND do not falsely accuse -- surface ::error::
+          # and leave the label for a human. Never a green claim on a non-measure.
+          if ! [ "${PR_LEAKS:-}" -eq "${PR_LEAKS:-}" ] 2>/dev/null; then
+            echo "::error::CJK PR-diff payload illisible -- the gate measured NOTHING; conformity neither claimed nor denied."
+            exit 0
+          fi
+
+          if [ "$PR_LEAKS" -gt 0 ]; then
+            FILES=$(python -c \
+              "import json; d=json.load(open('pr_payload.json')); \
+               print('\n'.join('- '+r['path'] for r in d['results'] if r['allowed'] is None and r['hits']))")
+            echo "::notice::CJK residue in THIS PR ($PR_LEAKS leak line(s)): $FILES -- see the '$LABEL' label (#8826/#8428)."
+            gh label create "$LABEL" \
+              --description "CJK residue: a Chinese/Japanese word soldered into Latin prose (#8428/#8826)" \
+              --color "D93F0B" --force 2>/dev/null || true
+            gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+          else
+            echo "No CJK residue introduced by this PR."
+            # A label from an earlier push is now stale -- remove it so the signal
+            # stays trustworthy (self-cover lets this branch run on the fix commit).
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+          fi
+          exit 0

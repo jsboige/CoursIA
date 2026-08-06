@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 38 : Mise à Jour Test Authentification - Credentials Dynamiques
 
 **Date** : 2025-11-02 18:24:43 UTC+1  

@@ -67,7 +67,7 @@ Le notebook entraîne le modèle GradientBoosting final sur l'ensemble de la pé
 - **bb_position** passe de **winner** dans RandomForest (~0.103) à **perdant** dans XGBoost (~0.018) — momentum/position Bollinger est marginal pour XGBoost, alors que c'était le signal dominant pour RandomForest.
 - **volume_ratio + volume_change** quasi-nuls dans les deux cas — l'information de volume n'est pas exploitable par ces deux modèles sur cet univers.
 
-**Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume plus均匀ément. Pour XGBoost, **les features de VOLATILITÉ dominent**, momentum marginal.
+**Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume plus uniformément. Pour XGBoost, **les features de VOLATILITÉ dominent**, momentum marginal.
 
 **Découverte majeure — XGBoost sous-performe SPY B&H systématiquement** : contrairement à ML-RandomForest où 4 winners sur 5 battent SPY (S=0.778), **ML-XGBoost sous-performe SPY Buy-Hold sur TOUS les sweeps** (S range 0.508-0.593, capital final ~2.1-2.3× vs 2.9× pour SPY). La stratégie XGBoost ML est **négativement valorisée** par rapport au benchmark sur 2018-2026. **L'algo ML XGBoost ne bat pas le simple buy-and-hold** sur la période.
 
@@ -80,15 +80,23 @@ lean backtest --project .
 
 **QC Cloud:** Open project 29434753 in the QuantConnect IDE and click "Backtest".
 
-## Backtest Metrics (2015-2026)
+## Backtest Metrics (2015-2024)
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | 0.566 |
-| CAGR | 14.8% |
-| Max Drawdown | 38.6% |
-| Rebalance | Biweekly |
-| Max Positions | 9 |
+| Metric | v1 (2020-2026) | v2 prior (2015-2026) | **v2 c.799 (2015-2024 strict)** |
+|--------|----------------|----------------------|-----------------------------------|
+| Sharpe Ratio | 0.195 | 0.566 | **0.787** |
+| CAGR | n/a | 14.8% | **19.493%** |
+| Max Drawdown | n/a | 38.6% | **35.9%** |
+| Total Net Profit | n/a | 371.678% | **494.293%** |
+| Net Profit ($) | n/a | $380,301 | **$497,083** |
+| Rebalance | Biweekly | Biweekly | Biweekly |
+| Max Positions | 9 | 9 | 9 |
+| Total Orders | n/a | 2260 | **1994** |
+| Tradeable Dates | n/a | 2825 | **2516** |
+
+**Note c.799** : la fenêtre stricte 2015-2024 (10 ans, sans la queue 2025-2026 partielle du précédent run) produit Sharpe **+39%**, CAGR **+4.7pp**, MaxDD **-2.7pp**, TotalNetProfit **+122.6pp** vs le run v2 du 2026-03-28 (qui incluait la queue 2025-2026). La queue 2025-2026 partielle tirait les chiffres vers le bas (deeper drawdown). Preuves d'exécution : `c799-cloud-id-29434753.json` (compile_id + backtest_id + claimed_values_from_prior_backtest).
+
+QC Cloud backtest id c.799 : `9cc2bcb4809c514efb84e3cdaf89d610` (Completed 2026-07-22T22:42:00Z, ~25 min runtime).
 
 ## Files
 

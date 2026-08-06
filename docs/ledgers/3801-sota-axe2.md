@@ -1372,7 +1372,7 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/` (27 .ipynb : 01-PythonForDataScience 2 + 02-ML-Cours 8 + PythonAgentsForDataScience 7 + AgenticDataScience 10) |
+| Famille | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/` (27 .ipynb : 01-PythonForDataScience 2 + 02-ML-Cours 8 + Track1-LangChain 7 + Track2-GoogleADK 10) |
 | Kernels | 1 : `python3` (27 — homogène) |
 | Owner-lane | **po-2025 strict** (lane Python native, partition ML/Probas/Sudoku) |
 | Date audit | 2026-07-11 (c.421) |
@@ -1385,8 +1385,8 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 |--------|-----------|-------|------|------|-----|-----------|-----------------------------------|
 | 01-PythonForDataScience | 2 | — | — | 100% | 0 | 0 | **numpy** (1.2), **pandas** (1.3) — fondamentaux Python data science |
 | 02-ML-Cours | 8 | — | — | 100% | 0 | 0 | **scikit-learn** (8/8) + **matplotlib** (8/8) + **numpy** (8/8) + **pandas** (5/8) — cours ML canonique scikit-learn |
-| PythonAgentsForDataScience | 7 | — | — | 100% | 0 | 0 | **langchain** (4) + **langchain-openai** (4) + **langchain-experimental** (1) + pandas/sklearn/matplotlib/seaborn — agents LLM Day 1-3 |
-| AgenticDataScience | 10 | — | — | 100% | 0 | 0 | pandas (8) + numpy (7) + sklearn (3) + matplotlib (1) + requests (1) — Day 8-17 (Lab8-ADK-Introduction à Lab17-Final-Project) |
+| Track1-LangChain | 7 | — | — | 100% | 0 | 0 | **langchain** (4) + **langchain-openai** (4) + **langchain-experimental** (1) + pandas/sklearn/matplotlib/seaborn — agents LLM Day 1-3 |
+| Track2-GoogleADK | 10 | — | — | 100% | 0 | 0 | pandas (8) + numpy (7) + sklearn (3) + matplotlib (1) + requests (1) — Day 8-17 (Lab8-ADK-Introduction à Lab17-Final-Project) |
 | **TOTAL** | **27** | **708** | **294** | **294/294** | **0** | **0** | — |
 
 - **EXEC_PROVED global** : 27/27 (100%) — `execution_count != null` sur 294/294 cellules code. **0 flagged** (aucun not-full-exec / erreur / C.1).
@@ -1397,17 +1397,17 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 
 - **01-PythonForDataScience** (2 nb) : fondamentaux NumPy/Pandas — fondations indispensables au ML, kernelspec python3, ancêtres pédagogiques.
 - **02-ML-Cours** (8 nb) : workflow ML sklearn canonique (Workflow-ML, Descente-de-gradient, Régression linéaire/logistique, Arbres-Forêts-Ensembles, Biais-Variance-CV-ROC, Clustering-KMeans-PCA, Modèles-Non-Paramétriques, Théorie-PAC). scikit-learn invoqué 8/8 + matplotlib 8/8 + numpy 8/8 = cœur de la formation ML scikit-learn.
-- **PythonAgentsForDataScience** (7 nb, Lab1-Lab7) : `LangChain` Day 1-3 (RFP Analysis, CV Screening, First Agent, Data Analysis Agent) — 4 notebooks sur 7 invoquent réellement `langchain` + `langchain_openai` (ChatOpenAI), 1 notebook (Lab7) ajoute `langchain_experimental`. Pandas/sklearn/matplotlib/seaborn complémentent l'env Python. Pas de ML.NET (pure Python).
-- **AgenticDataScience** (10 nb, Lab8-Lab17) : couche agentique LiteLLM-multi-provider (Lab8 ADK Introduction, Lab9 First ADK Agent, Lab10-12 workflows, Lab13 Web Search SOTA, Lab14 Ablation Refinement, Lab15 Kaggle Challenge, Lab16 Data Science Agent, Lab17 Final Project). Stack Pandas + sklearn + numpy + requests (Lab13 web search). Framework agentique via LiteLLM/Multi-provider défini dans `config/providers.py` + `utils/llm_client.py` (helpers), notebooks consomment via helpers (Lab8-17 = env models/data science, frameworks agentiques structurants documentés hors cellules .ipynb mais dans la stack pédagogique des Labs).
+- **Track1-LangChain** (7 nb, Lab1-Lab7) : `LangChain` Day 1-3 (RFP Analysis, CV Screening, First Agent, Data Analysis Agent) — 4 notebooks sur 7 invoquent réellement `langchain` + `langchain_openai` (ChatOpenAI), 1 notebook (Lab7) ajoute `langchain_experimental`. Pandas/sklearn/matplotlib/seaborn complémentent l'env Python. Pas de ML.NET (pure Python).
+- **Track2-GoogleADK** (10 nb, Lab8-Lab17) : couche agentique LiteLLM-multi-provider (Lab8 ADK Introduction, Lab9 First ADK Agent, Lab10-12 workflows, Lab13 Web Search SOTA, Lab14 Ablation Refinement, Lab15 Kaggle Challenge, Lab16 Data Science Agent, Lab17 Final Project). Stack Pandas + sklearn + numpy + requests (Lab13 web search). Framework agentique via LiteLLM/Multi-provider défini dans `config/providers.py` + `utils/llm_client.py` (helpers), notebooks consomment via helpers (Lab8-17 = env models/data science, frameworks agentiques structurants documentés hors cellules .ipynb mais dans la stack pédagogique des Labs).
 
 ### Vrais outils SOTA invoqués (vérifiés G.1 imports réels, grep ground truth)
 
 Outils ground-truth (imports réels parsés dans les 27 notebooks) :
 
-- **scikit-learn** (sklearn) — 13 notebooks (8/8 en 02-ML-Cours + 5/7 en PythonAgentsForDataScience = Lab1/Lab5 Pandas/Lab7 Data Analysis Agent + 3/10 en AgenticDataScience = Lab13/Lab14/Lab15). Moteur ML canonique scikit-learn pour la classification/régression/clustering/CV/PCA/KMeans.
-- **pandas** — 18 notebooks (1/2 en 01 + 5/8 en 02 + 5/7 en PythonAgents + 8/10 en AgenticDataScience). DataFrame canonique pour le feature engineering et la manipulation tabulaire.
-- **numpy** — 17 notebooks (1/2 en 01 + 8/8 en 02 + 1/7 en PythonAgents + 7/10 en AgenticDataScience). NDArray canonique.
-- **matplotlib** — 11 notebooks (8/8 en 02 + 2/7 en PythonAgents + 1/10 en AgenticDataScience). Visualisation canonique.
+- **scikit-learn** (sklearn) — 13 notebooks (8/8 en 02-ML-Cours + 5/7 en Track1-LangChain = Lab1/Lab5 Pandas/Lab7 Data Analysis Agent + 3/10 en Track2-GoogleADK = Lab13/Lab14/Lab15). Moteur ML canonique scikit-learn pour la classification/régression/clustering/CV/PCA/KMeans.
+- **pandas** — 18 notebooks (1/2 en 01 + 5/8 en 02 + 5/7 en PythonAgents + 8/10 en Track2-GoogleADK). DataFrame canonique pour le feature engineering et la manipulation tabulaire.
+- **numpy** — 17 notebooks (1/2 en 01 + 8/8 en 02 + 1/7 en PythonAgents + 7/10 en Track2-GoogleADK). NDArray canonique.
+- **matplotlib** — 11 notebooks (8/8 en 02 + 2/7 en PythonAgents + 1/10 en Track2-GoogleADK). Visualisation canonique.
 - **LangChain** + **LangChain-OpenAI** — 4 notebooks (PythonAgents Lab2/3/6/7). Framework agentique LLM canonique.
 - **LangChain-Experimental** — 1 notebook (Lab7).
 - **seaborn** — 1 notebook (Lab5 PythonAgents).
@@ -1427,8 +1427,8 @@ Stack structurante hors-notebooks (documentation pédagogique des Labs) :
 La série ML/DataScienceWithAgents est **anti-dégénérée** :
 
 - **02-ML-Cours** : Théorie-PAC + Biais-Variance-CV-ROC + Clustering-KMeans-PCA — problèmes d'apprentissage statistique réels où scikit-learn exercise sa capacité distinctive (cross-validation, métriques ROC/AUC, réduction de dimensionnalité, partitionnement non-supervisé), pas un cas trivial où une régression linéaire suffit.
-- **PythonAgentsForDataScience** : CV Screening + RFP Analysis = problèmes réels d'extraction LLM structurée + Data Analysis Agent = orchestration agentique pour requêtes data — la capacité LangChain (Agents, Chains, Tools) est exercée, pas un wrapper trivial.
-- **AgenticDataScience** : Lab15 Kaggle Challenge (compétition Kaggle réelle) + Lab14 Ablation Refinement (étude d'ablation méthodique) + Lab17 Final Project (projet final de bout-en-bout) + Lab13 Web Search SOTA (recherche web agentique) — la stack agentique (LiteLLM multi-provider + tools) est mise en valeur sur des problèmes riches, ≠ toy problem.
+- **Track1-LangChain** : CV Screening + RFP Analysis = problèmes réels d'extraction LLM structurée + Data Analysis Agent = orchestration agentique pour requêtes data — la capacité LangChain (Agents, Chains, Tools) est exercée, pas un wrapper trivial.
+- **Track2-GoogleADK** : Lab15 Kaggle Challenge (compétition Kaggle réelle) + Lab14 Ablation Refinement (étude d'ablation méthodique) + Lab17 Final Project (projet final de bout-en-bout) + Lab13 Web Search SOTA (recherche web agentique) — la stack agentique (LiteLLM multi-provider + tools) est mise en valeur sur des problèmes riches, ≠ toy problem.
 
 Pas de cas dégénéré où un SOTA équivaut à une baseline triviale.
 
@@ -2671,7 +2671,7 @@ Part of #3801, #4956
 
 **DISCLOSURE nb05 (VectorStores)** — 2 points honnêtes :
 1. **Qdrant service DOWN** (`[WinError 10061] connexion refusée` sur `qdrant.myia.io`) → le notebook **dégrade honnêtement vers `InMemoryStore`** (connecteur SK réel, pas une réimplémentation jouet) avec output explicite « Les exemples utilisent InMemoryStore ». C'est une **dégradation légitime et transparente**, pas un workaround maquillé. Verdict : **RECOVERABLE-MACHINE** (Qdrant remonté → re-exec pour la branche Qdrant), InMemoryStore path = SOTA-OK.
-2. 🚩 **Violation secrets-hygiene (HARD)** : nb05 cell21 `QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "4f89edd5-90f7-4ee0-ac25-9185e9835c44")` = **littéral clé API en fallback inline** — pattern **interdit** ([secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 2, incident fondateur 2026-05-14 `b34e3a05`). La clé (UUID Qdrant) est committée en clair dans la source. **Fix requis** (séparé, sécurité cluster-wide) : retirer le défaut littéral → `os.getenv("QDRANT_API_KEY")`. Scan All-SK : **1 seule occurrence** (nb05 cell21 uniquement, 0 autre). Fix first-hand livré cycle 412 (PR séparée).
+2. 🚩 **Violation secrets-hygiene (HARD)** : nb05 cell21 `QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "<UUID-clé-redacted>")` = **littéral clé API en fallback inline** — pattern **interdit** ([secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 2, incident fondateur 2026-05-14 `b34e3a05`). La clé (UUID Qdrant) est committée en clair dans la source. **Fix requis** (séparé, sécurité cluster-wide) : retirer le défaut littéral → `os.getenv("QDRANT_API_KEY")`. Scan All-SK : **1 seule occurrence** (nb05 cell21 uniquement, 0 autre). Fix first-hand livré cycle 412 (PR séparée).
 
 ### Prong B — problème non-trivial (12/12 DISCRIMINATING)
 
@@ -2780,5 +2780,3 @@ Le do-calculus **est la capacité distinctive** de la causalité — il n'existe
 - **Continuité c.538** : greenlight ai-01 (DM `msg-20260716T045341-edgoyo`) pour série PyMC SOTA audit — mais dispatch pointait PyMC-12/18 (déjà #028/#018 SOTA-OK, 4e dispatch stale ce motif) ; **G.1 firsthand** a identifié PyMC-5 comme le **vrai gap non-audité**. R6 anti-monotony : famille probabiliste PyMC (substance) après forensic-docs GameTheory c.537.
 - **Collision-avoidance** : `gh pr list --state all --search` = 0 PR PyMC-5 SOTA en vol ; entry #030 stacked à la suite de #029.
 - **Cumulatif** : entry #030 = **PyMC-5 standalone** (1 nb) → **famille Probas/PyMC COMPLÈTE 15/15** dans le registre (entry #028 14 + entry #018 PyMC-16..19 + entry #030 PyMC-5 = 19 notebooks PyMC couverts). PyMC/ArviZ déjà comptés ; cette entry clôture le gap PyMC-5.
-
-Part of #3801, #4956

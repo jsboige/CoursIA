@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # RAPPORT PHASE 29 - ÉTAPE 30 : Remplacement Modèle FP8 Non-Standard par Version Officielle
 **Date**: 2025-11-02 12:17:00  
 **Phase**: 29 - Corrections Qwen ComfyUI  

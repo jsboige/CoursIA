@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport de Validation Tests End-to-End ComfyUI Qwen
 **Date** : 2025-11-02 01:20:00 UTC+1  
 **Phase** : 29 - Corrections Qwen  

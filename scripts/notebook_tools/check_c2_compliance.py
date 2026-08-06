@@ -24,6 +24,14 @@ import json
 import sys
 from pathlib import Path
 
+# Same declared PII carve-out as the PR gate — imported, never re-spelled, so
+# the two scanners cannot drift apart on the key name. A notebook whose outputs
+# would embed student rosters/e-mails/marks is COMPLIANT while empty; honouring
+# the flag in only one of the two scanners would leave the other still telling
+# an agent to go and execute it. See validate_pr_notebooks.PII_NO_OUTPUT_KEY.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from validate_pr_notebooks import PII_NO_OUTPUT_KEY
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
@@ -49,6 +57,11 @@ def check_notebook(nb_path: Path) -> dict:
 
     violations = []
     code_idx = 0
+    # Declared PII notebook: emptiness IS the compliant state, and conversely a
+    # committed output is the violation to report (symmetric, like the PR gate).
+    pii_no_output = (
+        notebook.get("metadata", {}).get(PII_NO_OUTPUT_KEY) is True
+    )
 
     for i, cell in enumerate(notebook.get("cells", [])):
         if cell.get("cell_type") != "code":
@@ -74,6 +87,19 @@ def check_notebook(nb_path: Path) -> dict:
         # Check execution_count
         exec_count = cell.get("execution_count")
         outputs = cell.get("outputs", [])
+
+        if pii_no_output:
+            if outputs:
+                violations.append({
+                    "cell_index": i,
+                    "code_cell": code_idx,
+                    "reason": (
+                        f"metadata.{PII_NO_OUTPUT_KEY} declared but output "
+                        f"committed — personal data may be in git history"
+                    ),
+                    "source_preview": source[:80].replace("\n", " "),
+                })
+            continue
 
         if exec_count is None:
             violations.append({

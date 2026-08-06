@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # H.7 P2 Docker Error Catalog
 
 **Date**: 2026-05-13

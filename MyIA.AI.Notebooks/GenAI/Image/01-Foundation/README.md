@@ -49,8 +49,8 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 <p align="center">
   <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit.png" alt="Chat tigré domestique sur appui de fenêtre en bois — première génération hello-world du workflow ComfyUI Qwen Image Edit 2509 (~277 s, ~29 GB VRAM)" width="320"/></a>
-  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Panneau avant/après Qwen Image Edit Phase 29 — limitation illustrée : deux blocs bleus plats identiques (sortie de cellule sans image source fournie au pipeline)" width="320"/></a><br>
-  <em>Qwen Image Edit : hello-world chat tigré (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~170 s) — limitation disclosed : le rendu de droite illustre un cas de pipeline sans image source (deux blocs bleus plats identiques, voir MANIFEST).</em>
+  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Panneau avant/après Qwen Image Edit Phase 29 : à gauche le chat tigré original, à droite son édition watercolor (denoise=0.5, seed=42) — l'input pédagogique est maintenant une vraie photo, l'édition Qwen est visible" width="320"/></a><br>
+  <em>Qwen Image Edit : hello-world chat tigré (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~277 s) — édition watercolor sur photo naturelle (denoise=0.5). L'input pédagogique a été enrichi : une vraie photo remplace l'ancien aplat bleu de test (cf. MANIFEST, issue #9344).</em>
 </p>
 
 ## Prérequis

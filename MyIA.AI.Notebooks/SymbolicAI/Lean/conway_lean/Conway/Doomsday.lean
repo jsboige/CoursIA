@@ -66,14 +66,14 @@ import Mathlib.Data.Int.ModEq
 
 namespace Conway
 
-/-- Days of the week, starting from Sunday = 0 -/
+/-- Jours de la semaine, en partant de dimanche = 0 -/
 inductive DayOfWeek where
   | sunday | monday | tuesday | wednesday | thursday | friday | saturday
   deriving Repr, BEq, DecidableEq, Inhabited
 
 namespace DayOfWeek
 
-/-- Convert DayOfWeek to a Fin 7 -/
+/-- Convertit DayOfWeek en un Fin 7 -/
 def toFin : DayOfWeek → Fin 7
   | sunday => 0 | monday => 1 | tuesday => 2 | wednesday => 3
   | thursday => 4 | friday => 5 | saturday => 6
@@ -82,7 +82,7 @@ instance : Repr DayOfWeek := ⟨fun d _ => match d with
   | sunday => "Sun" | monday => "Mon" | tuesday => "Tue"
   | wednesday => "Wed" | thursday => "Thu" | friday => "Fri" | saturday => "Sat"⟩
 
-/-- Convert a Fin 7 to DayOfWeek -/
+/-- Convertit un Fin 7 en DayOfWeek -/
 def ofFin : Fin 7 → DayOfWeek
   | 0 => sunday | 1 => monday | 2 => tuesday | 3 => wednesday
   | 4 => thursday | 5 => friday | 6 => saturday
@@ -91,30 +91,30 @@ def ofFin : Fin 7 → DayOfWeek
 @[simp] theorem ofFin_toFin (d : DayOfWeek) : ofFin (toFin d) = d := by
   cases d <;> rfl
 
-/-- Add n days (modulo 7) -/
+/-- Ajoute n jours (modulo 7) -/
 def add (d : DayOfWeek) (n : Nat) : DayOfWeek :=
   ofFin ⟨(d.toFin + n) % 7, by omega⟩
 
-/-- Subtract n days (modulo 7) -/
+/-- Soustrait n jours (modulo 7) -/
 def sub (d : DayOfWeek) (n : Nat) : DayOfWeek :=
   ofFin ⟨(d.toFin + 7 - n % 7) % 7, by omega⟩
 
 end DayOfWeek
 
-/-- Check if a year is a leap year in the Gregorian calendar -/
+/-- Vérifie si une année est bissextile dans le calendrier grégorien -/
 def isLeapYear (year : Nat) : Bool :=
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 
-/-- Century anchor day computation.
-  1700: Sunday, 1800: Friday, 1900: Wednesday, 2000: Tuesday, 2100: Sunday.
-  Formula: (5 * (c % 4) + 2) % 7 where c = year / 100 -/
+/-- Calcul du jour d'ancrage du siècle.
+  1700 : dimanche, 1800 : vendredi, 1900 : mercredi, 2000 : mardi, 2100 : dimanche.
+  Formule : (5 * (c % 4) + 2) % 7 où c = année / 100 -/
 def centuryAnchor (year : Nat) : DayOfWeek :=
   let c := year / 100
   DayOfWeek.ofFin ⟨(5 * (c % 4) + 2) % 7, by omega⟩
 
-/-- Conway's doomsday for a given year.
+/-- Doomsday de Conway pour une année donnée.
   doomsday = centuryAnchor + (yy / 12) + (yy % 12) + ((yy % 12) / 4)
-  where yy = year % 100 -/
+  où yy = année % 100 -/
 def doomsday (year : Nat) : DayOfWeek :=
   let yy := year % 100
   let a := yy / 12
@@ -122,11 +122,11 @@ def doomsday (year : Nat) : DayOfWeek :=
   let c := b / 4
   DayOfWeek.add (centuryAnchor year) (a + b + c)
 
-/-- The doomsday date (day of month) for each month.
-  January: 3 (non-leap) or 4 (leap)
-  February: 28 (non-leap) or 29 (leap)
-  March: 7, April: 4, May: 9, June: 6, July: 11, August: 8
-  September: 5, October: 10, November: 7, December: 12 -/
+/-- La date doomsday (jour du mois) pour chaque mois.
+  Janvier : 3 (non bissextile) ou 4 (bissextile)
+  Février : 28 (non bissextile) ou 29 (bissextile)
+  Mars : 7, Avril : 4, Mai : 9, Juin : 6, Juillet : 11, Août : 8
+  Septembre : 5, Octobre : 10, Novembre : 7, Décembre : 12 -/
 def doomsdayDate (month year : Nat) : Nat :=
   match month with
   | 1 => if isLeapYear year then 4 else 3
@@ -135,10 +135,11 @@ def doomsdayDate (month year : Nat) : Nat :=
   | 7 => 11 | 8 => 8 | 9 => 5 | 10 => 10
   | 11 => 7 | _ => 12
 
-/-- Compute the day of the week for any Gregorian date using Conway's Doomsday algorithm.
-  1. Find the doomsday for the year
-  2. Find the nearest doomsday date in the same month
-  3. Count the offset (positive or negative) to the target date -/
+/-- Calcule le jour de la semaine pour toute date grégorienne en utilisant
+  l'algorithme Doomsday de Conway.
+  1. Trouver le doomsday pour l'année
+  2. Trouver la date doomsday la plus proche dans le même mois
+  3. Compter le décalage (positif ou négatif) jusqu'à la date cible -/
 def dayOfWeek (year month day : Nat) : DayOfWeek :=
   let dd := doomsdayDate month year
   let d := doomsday year
@@ -147,16 +148,16 @@ def dayOfWeek (year month day : Nat) : DayOfWeek :=
   else
     DayOfWeek.sub d (dd - day)
 
--- Conway passed away on Saturday, April 11, 2020
+-- Conway est mort un samedi 11 avril 2020
 #eval dayOfWeek 2020 4 11 -- Saturday
 
--- September 11, 2001 was a Tuesday
+-- Le 11 septembre 2001 était un mardi
 #eval dayOfWeek 2001 9 11 -- Tuesday
 
--- Moon landing: July 20, 1969 was a Sunday
+-- Alunissage : le 20 juillet 1969 était un dimanche
 #eval dayOfWeek 1969 7 20 -- Sunday
 
--- D-Day: June 6, 1944 was a Tuesday
+-- Jour J : le 6 juin 1944 était un mardi
 #eval dayOfWeek 1944 6 6 -- Tuesday
 
 end Conway

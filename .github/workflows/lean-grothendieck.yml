@@ -31,6 +31,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      - '.github/workflows/lean-grothendieck.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722). Without these, an edit
+      # to the enumerator reaches main unverified the same way the broken `cd` did.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
     paths:
@@ -38,7 +46,21 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it, else a defect
+      # in the gate ships unverified (cf #8712: a gate whose first run is
+      # post-merge is no gate). These three lines make the workflow a gate input.
+      - '.github/workflows/lean-grothendieck.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722). Without these, an edit
+      # to the enumerator reaches main unverified the same way the broken `cd` did.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   ci:
@@ -48,3 +70,37 @@ jobs:
       display-name: grothendieck_lean
       sorry-baseline: "0"
       sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`) the
+  # textual sorry counter cannot see. Mirrors the câblage in lean-knot.yml /
+  # lean-conway.yml, per ai-01 c.83 GO decision on #8782 (3rd lake cabling:
+  # 2/23 lakes -> 3 on a gate that is structurally blind everywhere else).
+  #
+  # Why this lake is the easy one (firsthand re-verified 2026-08-05, correct
+  # Lean-aware count_real_sorries: strip nested /- -/ blocks + -- lines +
+  # string/backtick literals, then word-bound \bsorry\b): 0 real tactic
+  # `sorry`, 0 `native_decide` across all 34 own modules. The 24 raw prose
+  # mentions are the bilingual i18n boilerplate "All `sorry`s eliminated at
+  # creation" / "Tous les `sorry`s éliminés" inside /- ... -/ docstrings --
+  # backtick-quoted, never compiled. So:
+  #   - allow-axioms: "" -- ONLY the reusable-workflow defaults
+  #     (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound),
+  #     which lean-axiom.yml grants for free. `Classical.choice` comes in via
+  #     Mathlib transitively and needs no enumeration here (lean-axiom.yml
+  #     L49 documents the defaults). Contrast lean-conway.yml, which must
+  #     enumerate 19 native_decide allow-axiom names -- grothendieck has none.
+  #   - fail-on-sorry: true -- the lake is fully proven (sorry-baseline 0
+  #     above); a transitive sorryAx must hard-fail, not be tolerated.
+  #   - target-modules: the COMPLETE module set (all 34 own Grothendieck.*
+  #     modules), so the gate is not "vert hors-cible" (cf #8782): no module
+  #     compiles out of the gate's view.
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
+      display-name: grothendieck_lean
+      target-modules: "Grothendieck,Grothendieck.Adjunction,Grothendieck.Calibration,Grothendieck.CanonicalProps,Grothendieck.CategoryAndSites,Grothendieck.Comma,Grothendieck.Conservative,Grothendieck.ConstantSheaf,Grothendieck.Construction,Grothendieck.CoverageGen,Grothendieck.DenseTopology,Grothendieck.DirectImage,Grothendieck.Equivalences,Grothendieck.KanExtensions,Grothendieck.LeftExact,Grothendieck.Limits,Grothendieck.MathlibMap,Grothendieck.MayerVietorisSquare,Grothendieck.Monads,Grothendieck.MonoidalCategories,Grothendieck.SchemesTour,Grothendieck.SheafBasics,Grothendieck.SheafCohomology.Basic,Grothendieck.SheafCohomology.Cech,Grothendieck.SheafCohomology.MayerVietoris,Grothendieck.SheafHom,Grothendieck.Sheafification,Grothendieck.SieveGenerate,Grothendieck.SieveLattice,Grothendieck.SieveOps,Grothendieck.SitePoints,Grothendieck.Subcanonical,Grothendieck.YonedaLemma,Grothendieck.ZariskiSite"
+      allow-axioms: ""
+      fail-on-sorry: true
+

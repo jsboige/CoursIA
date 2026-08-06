@@ -89,10 +89,33 @@ def reset_verifier(project_dir: Optional[str] = None) -> None:
         _verifiers.pop(project_dir, None)
 
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Boundary guard: reject None / non-str degenerate inputs (#7596-pattern, G.9).
+
+    Converts OPAQUE TypeErrors (``None[:60]`` -> "NoneType is not subscriptable",
+    reached at the ``trace.log`` slicing of a None ``theorem``) and the SILENT
+    construction of bogus Lean code (``f"{None} := by {None}"`` ->
+    ``"None := by None"``) into a clear ValueError naming the offending argument.
+    Without this guard, a misconfigured demo (``theorem: null`` / ``proof: null``,
+    or an LLM/extraction step returning None) forwards None into ``verify_with_lean``,
+    which then wastes a full Lake build on ``"None := by None"`` before an opaque
+    crash. By default empty strings are rejected too (an empty theorem/tactic is
+    never a valid Lean program); pass ``allow_empty=True`` for parameters where
+    ``''`` is a legitimate input (an empty Lean file has 0 sorries).
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 def verify_with_lean(theorem: str, tactic: str, imports: Optional[str],
                      project_dir: Optional[str], trace: TraceLogger,
                      agent_name: str = "LeanVerifier") -> dict:
     """Verify a Lean proof using LeanVerifier."""
+    theorem = _require_str("theorem", theorem)
+    tactic = _require_str("tactic", tactic)
     if imports:
         code = f"{imports}\n{theorem} := by {tactic}"
     else:

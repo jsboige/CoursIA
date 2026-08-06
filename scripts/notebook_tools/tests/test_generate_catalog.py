@@ -18,12 +18,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from generate_catalog import (
     CURATED_GIT_FIELDS,
     NOTEBOOKS_DIR,
+    PROMOTING_REVIEW_SCOPES,
+    _apply_editorial_review_promotion,
     _effective_code_cells,
     _is_exercise_stub,
+    _load_editorial_registry,
     _merge_curated_fields,
+    aggregate_maturity,
     analyze_notebook,
     check_errors,
     classify_maturity,
+    classify_scientific_review,
     count_todos,
     detect_kernel,
     detect_requirements,
@@ -601,6 +606,58 @@ class TestClassifyMaturity:
         code_cells = [executed] + todo_cells
         nb = self._full_nb([_md("# Title")] + code_cells)
         assert classify_maturity(nb, code_cells, "Python 3") == "DRAFT"
+
+
+# --- classify_scientific_review (axe 3, #8051) ---
+
+class TestClassifyScientificReview:
+    """Axe 3 — revue scientifique. FORMALLY_VERIFIED exige une PREUVE sorry-free,
+    pas une simple presence de compagnon (cf #8051, #8351)."""
+
+    def test_default_is_unreviewed(self):
+        # Sans aucun signal -> UNREVIEWED (jamais de claim auto).
+        assert classify_scientific_review({}) == "UNREVIEWED"
+
+    def test_author_reviewed_self_validates(self):
+        # reviewed_by == last_validator = auteur se valide lui-meme.
+        assert classify_scientific_review(
+            {}, scientific_reviewed_by="a@b.c", last_validator="a@b.c"
+        ) == "AUTHOR_REVIEWED"
+
+    def test_peer_reviewed_distinct_validator(self):
+        # reviewed_by != last_validator = peer review effective.
+        assert classify_scientific_review(
+            {}, scientific_reviewed_by="a@b.c", last_validator="c@d.e"
+        ) == "PEER_REVIEWED"
+
+    def test_sorry_free_yields_formally_verified(self):
+        # Le SEUL chemin honnete vers FORMALLY_VERIFIED = preuve sorry-free.
+        assert classify_scientific_review({}, sorry_free=True) == "FORMALLY_VERIFIED"
+
+    def test_sorry_free_dominates_peer(self):
+        # sorry_free (preuve formelle) > peer review.
+        assert classify_scientific_review(
+            {}, sorry_free=True,
+            scientific_reviewed_by="a@b.c", last_validator="c@d.e",
+        ) == "FORMALLY_VERIFIED"
+
+    def test_companion_presence_alone_does_not_verify(self):
+        # REGRESSION GUARD (#8051): l'ancien code emettait FORMALLY_VERIFIED des
+        # qu un compagnon .lean existait (signal mort, mais piege si active).
+        # Un lake compagnon peut porter sa sorry-debt -> presence != preuve.
+        # On verifie que rien dans l'API ne permet de claim FORMALLY_VERIFIED
+        # sans sorry_free=True (pas de param has_lean_companion).
+        import inspect
+        sig = inspect.signature(classify_scientific_review)
+        assert "sorry_free" in sig.parameters
+        assert "has_lean_companion" not in sig.parameters, (
+            "has_lean_companion retiré : presence de compagnon != preuve sorry-free (#8051)"
+        )
+        assert "has_multi_seed_benchmark" not in sig.parameters, (
+            "has_multi_seed_benchmark retiré : rigueur empirique != preuve formelle"
+        )
+        # Et sans sorry_free, on retombe sur UNREVIEWED meme si on essaye.
+        assert classify_scientific_review({}) == "UNREVIEWED"
 
 
 # --- _is_exercise_stub ---
@@ -1344,11 +1401,199 @@ class TestMergeCuratedFields:
         assert result[0]["issue_pr_associee"] == "#2161"
 
     def test_curated_fields_constant_contains_expected_fields(self):
-        """CURATED_GIT_FIELDS must contain the 3 git-derived fields."""
-        assert "last_validation" in CURATED_GIT_FIELDS
-        assert "last_validator" in CURATED_GIT_FIELDS
-        assert "issue_pr_associee" in CURATED_GIT_FIELDS
-        assert len(CURATED_GIT_FIELDS) == 3
+        """CURATED_GIT_FIELDS must contain the 8 git-derived fields curated by c.763.
+
+        c.763 (PR #8086) extended CURATED_GIT_FIELDS from 3 to 8 fields to support
+        the 3-axes maturity schema (editorial x reproducibility x scientific_review)
+        plus forensic provenance. The 8 fields are:
+        - 3 baseline (pre-c.763): last_validation, last_validator, issue_pr_associee
+        - 3 forensic (c.763): last_success_sha, executed_at, forensic_category
+        - 2 review/lifecycle (c.763): scientific_reviewed_by, head_sha
+        """
+        expected_fields = (
+            "last_validation", "last_validator", "issue_pr_associee",
+            "last_success_sha", "executed_at", "forensic_category",
+            "scientific_reviewed_by", "head_sha",
+        )
+        for field in expected_fields:
+            assert field in CURATED_GIT_FIELDS, f"missing curated field: {field}"
+        assert len(CURATED_GIT_FIELDS) == len(expected_fields), (
+            f"CURATED_GIT_FIELDS length drift: expected {len(expected_fields)}, "
+            f"got {len(CURATED_GIT_FIELDS)} (extra fields: "
+            f"{set(CURATED_GIT_FIELDS) - set(expected_fields)})"
+        )
+
+
+class TestEditorialReviewPromotion:
+    """Tests for the editorial-review whitelist promotion (issue #8051).
+
+    classify_editorial() never emits FINAL by design; the registry is the human
+    signal that promotes BETA -> FINAL. _apply_editorial_review_promotion applies
+    that signal and recomputes the retro-compat `maturity` aggregate.
+    """
+
+    def _entry(self, path, owner="po-2023", editorial="BETA",
+               reproducibility="EXECUTED", scientific_review="UNREVIEWED",
+               maturity="BETA", **kw):
+        return {
+            "path": path,
+            "title": kw.get("title", "Test"),
+            "serie": kw.get("serie", "Test"),
+            "kernel": kw.get("kernel", "Python 3"),
+            "status": kw.get("status", "READY"),
+            "owner_logique": owner,
+            "editorial": editorial,
+            "reproducibility": reproducibility,
+            "scientific_review": scientific_review,
+            "maturity": maturity,
+        }
+
+    def test_promotes_whitelisted_beta_to_final(self):
+        """A third-party factual review promotes editorial BETA -> FINAL."""
+        entries = [self._entry("Sudoku/Sudoku-18-Comparison-Python.ipynb")]
+        registry = {
+            "Sudoku/Sudoku-18-Comparison-Python.ipynb": {
+                "reviewer": "jsboigeEpita",  # != owner po-2023
+                "review_date": "2026-07-22",
+                "evidence_pr": "#7904",
+                "review_scope": "factual",
+                "notes": "honesty fix",
+            },
+        }
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "FINAL"
+        assert result[0]["editorial_reviewed_by"] == "jsboigeEpita"
+        assert result[0]["editorial_review_evidence_pr"] == "#7904"
+        assert result[0]["editorial_review_date"] == "2026-07-22"
+        # maturity recomputed from FINAL (BETA -> PRODUCTION needs peer review,
+        # so with scientific_review=UNREVIEWED it stays BETA — aggregate logic)
+        assert result[0]["maturity"] == aggregate_maturity(
+            "FINAL", "EXECUTED", "UNREVIEWED")
+
+    def test_maturity_propagates_to_production_when_peer_reviewed(self):
+        """FINAL + EXECUTED + PEER_REVIEWED -> maturity PRODUCTION."""
+        entries = [self._entry(
+            "S/nb.ipynb", scientific_review="PEER_REVIEWED")]
+        registry = {"S/nb.ipynb": {
+            "reviewer": "reviewer-x", "review_scope": "full"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "FINAL"
+        assert result[0]["maturity"] == "PRODUCTION"
+
+    def test_skips_self_review(self):
+        """reviewer == owner_logique must NOT promote (auto-review, §3.1 #4)."""
+        entries = [self._entry("S/nb.ipynb", owner="po-2023")]
+        registry = {"S/nb.ipynb": {
+            "reviewer": "po-2023", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "BETA"  # unchanged
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_skips_non_promoting_scope(self):
+        """typo/pedagogie scopes do not warrant FINAL (§3.2)."""
+        for scope in ("typo", "pedagogie"):
+            entries = [self._entry("S/nb.ipynb")]
+            registry = {"S/nb.ipynb": {
+                "reviewer": "other", "review_scope": scope}}
+            result = _apply_editorial_review_promotion(entries, registry=registry)
+            assert result[0]["editorial"] == "BETA", f"scope {scope} promoted"
+
+    def test_all_promoting_scopes_promote(self):
+        """factual/substance/full all promote (PARAMETRIZED contract)."""
+        for scope in PROMOTING_REVIEW_SCOPES:
+            entries = [self._entry("S/nb.ipynb")]
+            registry = {"S/nb.ipynb": {
+                "reviewer": "other", "review_scope": scope}}
+            result = _apply_editorial_review_promotion(entries, registry=registry)
+            assert result[0]["editorial"] == "FINAL", f"scope {scope} did not promote"
+
+    def test_skips_non_whitelisted(self):
+        """Entries not in the registry are left untouched."""
+        entries = [self._entry("S/other.ipynb")]
+        registry = {"S/different.ipynb": {
+            "reviewer": "other", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["editorial"] == "BETA"
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_skips_template(self):
+        """TEMPLATE entries keep their axis (no FINAL promotion)."""
+        entries = [self._entry("S/tpl.ipynb", maturity="TEMPLATE", status="TEMPLATE")]
+        registry = {"S/tpl.ipynb": {
+            "reviewer": "other", "review_scope": "factual"}}
+        result = _apply_editorial_review_promotion(entries, registry=registry)
+        assert result[0]["maturity"] == "TEMPLATE"
+        assert "editorial_reviewed_by" not in result[0]
+
+    def test_empty_registry_noop(self):
+        """Empty registry = no entry touched, no crash."""
+        entries = [self._entry("S/nb.ipynb")]
+        result = _apply_editorial_review_promotion(entries, registry={})
+        assert result[0]["editorial"] == "BETA"
+
+    def test_load_registry_filters_schema_placeholder(self):
+        """_load_editorial_registry parses YAML blocks but drops §2 placeholders."""
+        fence = "`" * 3
+        content = (
+            "# Registre\n\n## §2 schema example\n"
+            + fence + "yaml\n"
+            "- notebook_path: <chemin relatif depuis MyIA.AI.Notebooks/>\n"
+            "  reviewer: <login>\n"
+            "  review_scope: factual\n"
+            + fence + "\n\n## §4 pilot\n"
+            + fence + "yaml\n"
+            "# curation header comment\n"
+            "- notebook_path: Sudoku/Sudoku-18-Comparison-Python.ipynb\n"
+            "  reviewer: jsboigeEpita\n"
+            "  review_date: 2026-07-22\n"
+            "  evidence_pr: \"#7904\"\n"
+            "  review_scope: factual\n"
+            "  notes: \"honesty fix\"\n"
+            + fence + "\n"
+        )
+        with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(content)
+            tmp = Path(f.name)
+        try:
+            reg = _load_editorial_registry(tmp)
+            assert len(reg) == 1, f"expected 1 real entry, got {reg}"
+            assert "Sudoku/Sudoku-18-Comparison-Python.ipynb" in reg
+            assert reg["Sudoku/Sudoku-18-Comparison-Python.ipynb"]["reviewer"] == "jsboigeEpita"
+        finally:
+            tmp.unlink()
+
+    def test_load_registry_missing_file_returns_empty(self):
+        """Missing registry file = empty dict (registry is optional)."""
+        reg = _load_editorial_registry(Path("/nonexistent/registry.md"))
+        assert reg == {}
+
+    def test_load_registry_coerces_bare_iso_date_to_str(self):
+        """Bare YAML dates (2026-07-22) parse to datetime.date; must coerce
+        to str so the promoted field is JSON-serializable in the catalog."""
+        import datetime
+        fence = "`" * 3
+        content = (
+            fence + "yaml\n"
+            "- notebook_path: S/nb.ipynb\n"
+            "  reviewer: other\n"
+            "  review_date: 2026-07-22\n"  # bare date -> datetime.date via PyYAML
+            "  review_scope: factual\n"
+            + fence + "\n"
+        )
+        with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(content)
+            tmp = Path(f.name)
+        try:
+            reg = _load_editorial_registry(tmp)
+            rd = reg["S/nb.ipynb"]["review_date"]
+            assert not isinstance(rd, datetime.date), "date not coerced"
+            assert rd == "2026-07-22"
+            # and it must be JSON-serializable (the catalog output requirement)
+            json.dumps({"d": rd})
+        finally:
+            tmp.unlink()
 
 
 if __name__ == "__main__":

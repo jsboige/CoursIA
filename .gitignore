@@ -313,6 +313,8 @@ venv/
 **/.venv/
 pyvenv.cfg
 lib64
+# Venv cree par erreur a la racine du repo (python -m venv /mnt/d/CoursIA depuis WSL) — anti-noise site-packages
+/lib/
 
 # Cake - Uncomment if you are using it
 # tools/**
@@ -541,6 +543,18 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
 # Claude Code agent memory - local scope only (project scope is versioned)
 .claude/agent-memory-local/
+# Per-machine ephemeral audit snapshots (point-in-time status) belong on the dashboard,
+# not in the repo. Cross-machine project memory under .claude/agent-memory/<agent>/
+# remains tracked (rationale: cross-worker coordination, e.g. #1708 forensic baseline).
+# See PR (item 7 of #9535) and harness-hygiene.md.
+.claude/agent-memory/*/project_*_audit.md
+.claude/agent-memory/*/enrichment-log-*.md
+.claude/agent-memory/*/enrichment_summary_*.md
+.claude/agent-memory/*/failing-strategies-*.md
+.claude/agent-memory/*/btc-ml-improvements-*.md
+.claude/agent-memory/*/cycle-*-findings.md
+.claude/agent-memory/*/forensic-p*-*.md
+.claude/agent-memory/*/ks-pilier-*.md
 
 # Windows artifact
 nul
@@ -609,6 +623,16 @@ $null
 
 # FineTuning series training outputs (checkpoints too large for git)
 MyIA.AI.Notebooks/GenAI/FineTuning/results_*/
+
+# ICT grokking capstone (#7258) — GPU-2 run traces (transient, regenerable via
+# scripts/train_grok_transformer.py). Per-seed traces ~296KB each; the verdict
+# is documented in the consuming notebook, so the raw traces are not committed.
+MyIA.AI.Notebooks/IIT/ICT-Series/results/grok_transformer/
+
+# Stray venv / pip --target artifacts at repo root (never tracked). A local
+# `pip install --target lib` or a venv creating lib/python3.x/site-packages
+# leaks ~1000 files here and inflates the SCM change count.
+/lib/
 
 # Docker bind-mount data: model weights and TTS references (runtime only)
 docker-configurations/services/tts-fishaudio/checkpoints/
@@ -876,4 +900,21 @@ _freeze/
 # covers both the canonical target (Z3-Linq2Z3/data/meals/) and the stale wrong-CWD
 # location (Z3/data/meals/, from the old Z3/ series name before the Z3-API/Z3-Linq2Z3
 # split). Delete the stale Z3/data/ copy locally; it is orphaned (no notebook reads it there).
-MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/
+# EXCEPTION (#8901) : le cache derive data/meals/mealplan_cache.json (~205 Ko) est EPIINGLE
+# (derive stable consommee par 07/08/09 + port Python 16b/16c/16d) pour stopper la derive de
+# millesime. Le brut volumineux reste ignore ; seul le cache est tracke (cf Z3-Linq2Z3/.gitignore).
+# La negation est scopee au chemin CANONIQUE Z3-Linq2Z3/ (pas de glob **) : un ** ferait remonter
+# le vestige SMT/Z3/data/meals/ (ancien nom de serie, vintage 270 Ko 2026-07-02) en ?? sur les
+# machines qui le portent -> risque de committer le mauvais millesime que #8905 a deplace (#8901).
+# L'ignore (ligne du dessus) reste large pour couvrir les autres fichiers du vestige stale.
+MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
+!MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/data/meals/mealplan_cache.json
+
+# PR body scratchpad (root-level) — #9535 item 2
+# A PR body is a scratchpad composed outside the worktree (gh pr create --body-file),
+# NEVER a repo artefact. PR_BODY.md was tracked at root and rewritten by >=3 PRs
+# (e5bfeb945, 55fcc23, 9c6f075) — a recurring accidental commit. Gitignoring the
+# root path stops the drift without affecting any --body-file usage (the file is
+# ephemeral, lives anywhere outside the repo). Scope is root-only (/PR_BODY.md)
+# so a same-named pedagogical file deeper in the tree is unaffected.
+/PR_BODY.md

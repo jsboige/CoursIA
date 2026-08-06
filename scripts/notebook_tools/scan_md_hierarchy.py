@@ -17,28 +17,45 @@ Detects (source-level, render-agnostic):
     (multiple competing H1s / H1 used mid-notebook -> title hierarchy muddled).
   - MULTI-H1: more than one H1 across the whole notebook.
 
-Usage: python scan_md_hierarchy.py <notebook-or-dir> [more...]
+Usage: python scan_md_hierarchy.py <notebook-or-dir> [more...] [--fail-on-findings]
 Outputs a per-notebook report + a machine-readable summary line per finding.
+
+An EMPTY scan is never reported as a clean scan: no argument, a mistyped path,
+or a directory holding no notebook exits 2 with a message on stderr instead of
+printing `0/0 notebooks flagged`. This scanner has already been fooled once by
+a vacuous zero (the #3968 acceptance criterion, see HINT_RE below); `0/0` was
+the second mouth of the same trap.
 """
-import json, re, sys, pathlib
+import argparse, json, re, sys, pathlib
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
 # Fenced code block delimiter (```... or ~~~...), possibly indented. Lines inside
 # a fence are code, not markdown: a `# comment` there is a shell/python comment,
 # NOT a heading, and must not be counted as H1 / HINT-AS-HEADING.
 FENCE_RE = re.compile(r'^\s*(`{3,}|~{3,})')
-# Text that should NOT be a heading (it's an aside / hint / step / inline label)
+# Text that should NOT be a heading (it's an aside / hint / step / inline label).
+# Every stem is optionally-plural (`indices?`, `astuces?`, ...): the bare `\b`
+# after a singular stem FAILS to match the plural form (`indice\b` does not match
+# `Indices` — the `s` is inside the word, no boundary before it). That gap made
+# `### Indices` / `### Astuces` / `### Conseils` invisible to this scanner, which
+# is why it reported 0 hint-headings while ~194 plural-form hint-headings across
+# ~102 notebooks survived the #3968 remediation uncaught (the "scanner reports 0"
+# acceptance criterion of #3968 was vacuously satisfied). See #3966 follow-up.
 HINT_RE = re.compile(
-    r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
-    r'etape|étape|step|rappel|warning|important|aide|piste|nb)\b',
+    r'^(indices?|astuces?|hints?|tips?|conseils?|notes?|remarques?|attention|todo|'
+    r'etapes?|étapes?|steps?|rappels?|warnings?|important|aides?|pistes?|nb)\b',
     re.IGNORECASE)
-# A numbered step WITH a descriptive title (`Step 1: Load Data`, `Étape 3 :
-# Installation`) is a real titled SECTION header, not a bare aside. Without
-# this exclusion the level-agnostic HINT_RE flags the tutorial's backbone H2s
-# as hint-asides (false positives). Bare asides (`## Note`, `## Étape 3`,
-# `### Note pédagogique`) carry no colon+title, so they stay flagged. See #3968.
+# A numbered step WITH a descriptive title (`Step 1: Load Data`, `Step 1
+# Import configuration`, `Étape 3 : Installation`) is a real titled SECTION
+# header, not a bare aside. Without this exclusion the level-agnostic HINT_RE
+# flags the tutorial's backbone H2s/H3s as hint-asides (false positives). Bare
+# asides (`## Note`, `## Étape 3`, `### Note pédagogique`) carry no title
+# after the number, so they stay flagged. See #3968 + #3966 c.754 follow-up
+# (G.1 firsthand on GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb
+# cells 1/3/5/7 — `### Step 1 Import configuration...` is a real section
+# header with prose body, same pattern as `### Step 4: Save Configuration`).
 TITLED_STEP_RE = re.compile(
-    r'^(step|etape|étape)\s+\d+\s*:\s*\S',
+    r'^(step|etape|étape)\s+\d+(?:\s*:\s*|\s+)\S',
     re.IGNORECASE)
 # A hint word that is the FIRST PART of a hyphenated compound noun
 # (`Aide-mémoire des commandes`) is a real titled section, not a bare aside:
@@ -48,8 +65,8 @@ TITLED_STEP_RE = re.compile(
 # `### Points clés à retenir` stays H3 would create an asymmetric hierarchy.
 # See #3968.
 COMPOUND_HINT_RE = re.compile(
-    r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
-    r'etape|étape|step|rappel|warning|important|aide|piste|nb)-',
+    r'^(indices?|astuces?|hints?|tips?|conseils?|notes?|remarques?|attention|todo|'
+    r'etapes?|étapes?|steps?|rappels?|warnings?|important|aides?|pistes?|nb)-',
     re.IGNORECASE)
 # `Step`/`Étape` followed by a NON-numeric word forms a technical compound
 # noun (`Step recursif` = the recursive step of an algorithm, `Step function`,
@@ -66,7 +83,7 @@ STEP_COMPOUND_RE = re.compile(
 # back at prior named content, not a bare aside (`## Rappel`). A bare
 # `## Rappel` has no digit reference, so it stays flagged. See #3968.
 RAPPEL_REFERENCE_RE = re.compile(
-    r'^rappel\s+.*\d',
+    r'^rappels?\s+.*\d',
     re.IGNORECASE)
 # --- COLLAPSED-MARKDOWN detection (#3966) ---
 # A GFM table separator fragment: a pipe followed (after optional spaces) by a
@@ -177,18 +194,42 @@ def scan_notebook(path):
     return findings
 
 def iter_notebooks(args):
+    """Yield the notebooks designated by `args` (dirs are walked recursively).
+
+    Raises ValueError if a target designates nothing, so that a typo can never
+    be mistaken for a clean scan (see `main`).
+    """
+    unresolved = []
     for a in args:
         p = pathlib.Path(a)
         if p.is_dir():
             yield from sorted(p.rglob('*.ipynb'))
-        elif p.suffix == '.ipynb':
+        elif p.suffix == '.ipynb' and p.is_file():
             yield p
+        else:
+            unresolved.append(a)
+    if unresolved:
+        raise ValueError('not a notebook nor a directory: ' + ', '.join(unresolved))
 
-def main():
-    targets = sys.argv[1:]
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('paths', nargs='+', metavar='NOTEBOOK-OR-DIR',
+                        help='notebooks and/or directories to scan (recursive)')
+    parser.add_argument('--fail-on-findings', action='store_true',
+                        help='exit 1 when at least one notebook is flagged '
+                             '(default: always exit 0, census mode)')
+    args = parser.parse_args(argv)
+
+    try:
+        notebooks = list(iter_notebooks(args.paths))
+    except ValueError as exc:
+        parser.error(str(exc))
+
     total = 0
     flagged = 0
-    for nb in iter_notebooks(targets):
+    for nb in notebooks:
         if '_output' in nb.name or '.ipynb_checkpoints' in str(nb):
             continue
         total += 1
@@ -198,7 +239,15 @@ def main():
             print(f'\n## {nb.as_posix()}')
             for f in fs:
                 print(f"  [{f['kind']}] cell {f['cell']}  L{f.get('level','?')}  {f['text']}")
+    if total == 0:
+        # An empty scan is NOT a clean scan: say so, and fail. `0/0 flagged`
+        # otherwise reads as an all-clear while nothing has been looked at.
+        print('ERROR: no notebook found under the given paths -- nothing was '
+              'scanned, this is NOT an all-clear.', file=sys.stderr)
+        return 2
+    # Keep this the LAST stdout line: the CI census reads it with `tail -1`.
     print(f'\n=== {flagged}/{total} notebooks flagged ===')
+    return 1 if (flagged and args.fail_on_findings) else 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

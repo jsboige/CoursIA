@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-24** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Guide APIs Génération Images - Étudiants CoursIA
 
 **Version**: 1.0  

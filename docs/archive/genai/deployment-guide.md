@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-24** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # ComfyUI + Qwen Image-Edit - Guide de Déploiement Production
 
 **Phase**: 30 - Validation et Sanctuarisation  

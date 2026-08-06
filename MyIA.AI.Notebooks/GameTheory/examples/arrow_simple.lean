@@ -1,15 +1,15 @@
 /-
-  Arrow's Impossibility Theorem - Simple Example
-  ==============================================
+  Théorème d'impossibilité d'Arrow — Exemple simple
+  =================================================
 
-  A simplified demonstration of Arrow's theorem concepts.
-  Related to GameTheory-19-Lean-SocialChoice.ipynb
+  Une démonstration simplifiée des concepts du théorème d'Arrow.
+  En lien avec GameTheory-19-Lean-SocialChoice.ipynb
 
-  This file shows the basic structure without full proofs.
-  For complete formalization, see lean_game_defs/SocialChoice.lean
+  Ce fichier présente la structure de base sans les preuves complètes.
+  Pour la formalisation complète, voir lean_game_defs/SocialChoice.lean
 -/
 
--- Basic definitions for a 3-alternative, 2-voter setting
+-- Définitions de base pour un cadre à 3 alternatives et 2 électeurs
 
 -- Alternatives
 inductive Alt where
@@ -18,19 +18,19 @@ inductive Alt where
   | c : Alt
 deriving DecidableEq, Repr
 
--- Voters
+-- Électeurs
 inductive Voter where
   | v1 : Voter
   | v2 : Voter
 deriving DecidableEq, Repr
 
--- A strict preference ordering (simplified as a function)
--- pref v x y means "voter v strictly prefers x to y"
+-- Un ordre de préférence stricte (simplifié sous forme de fonction)
+-- pref v x y signifie « l'électeur v préfère strictement x à y »
 def StrictPref := Voter → Alt → Alt → Bool
 
--- Example: Condorcet paradox profile
--- Voter 1: a > b > c
--- Voter 2: b > c > a
+-- Exemple : profil du paradoxe de Condorcet
+-- Électeur 1 : a > b > c
+-- Électeur 2 : b > c > a
 def condorcetProfile : StrictPref := fun v x y =>
   match v, x, y with
   | Voter.v1, Alt.a, Alt.b => true
@@ -41,52 +41,52 @@ def condorcetProfile : StrictPref := fun v x y =>
   | Voter.v2, Alt.b, Alt.a => true
   | _, _, _ => false
 
--- Majority rule (pairwise)
+-- Règle de majorité (par paires)
 def majorityPrefers (prefs : StrictPref) (x y : Alt) : Bool :=
   let v1_prefers := prefs Voter.v1 x y
   let v2_prefers := prefs Voter.v2 x y
-  v1_prefers || v2_prefers  -- At least one prefers (tie-breaking simplified)
+  v1_prefers || v2_prefers  -- Au moins un préfère (départage simplifié)
 
--- Check for cycles in majority preferences
+-- Vérifier la présence de cycles dans les préférences de majorité
 def hasCycle (prefs : StrictPref) : Bool :=
   majorityPrefers prefs Alt.a Alt.b &&
   majorityPrefers prefs Alt.b Alt.c &&
   majorityPrefers prefs Alt.c Alt.a
 
--- Verify Condorcet paradox
-#eval hasCycle condorcetProfile  -- Should be true!
+-- Vérifier le paradoxe de Condorcet
+#eval hasCycle condorcetProfile  -- Doit valoir true !
 
--- This demonstrates why Arrow's theorem matters:
--- Even with just 2 voters and 3 alternatives,
--- majority rule can produce cycles (intransitive social preference)
+-- Ceci illustre pourquoi le théorème d'Arrow importe :
+-- même avec seulement 2 électeurs et 3 alternatives,
+-- la règle de majorité peut produire des cycles (préférence sociale intransitive)
 
--- A social welfare function
+-- Une fonction de bien-être social (SWF)
 structure SWF where
-  -- Maps individual preferences to social preference
+  -- Associe les préférences individuelles à une préférence sociale
   aggregate : StrictPref → (Alt → Alt → Bool)
 
--- Dictatorship: Voter 1's preference becomes social preference
+-- Dictature : la préférence de l'électeur 1 devient la préférence sociale
 def dictatorshipV1 : SWF := {
   aggregate := fun prefs x y => prefs Voter.v1 x y
 }
 
--- Check if a SWF satisfies Pareto criterion
+-- Vérifier si une SWF satisfait le critère de Pareto
 def satisfiesPareto (swf : SWF) (prefs : StrictPref) : Prop :=
   ∀ x y, (prefs Voter.v1 x y ∧ prefs Voter.v2 x y) →
          swf.aggregate prefs x y = true
 
--- A dictatorship trivially satisfies Pareto when dictator agrees
--- but violates non-dictatorship by definition
+-- Une dictature satisfait trivialement Pareto lorsque le dictateur est d'accord,
+-- mais viole la non-dictature par définition
 
--- Arrow's theorem (informal statement):
--- There is no SWF with ≥3 alternatives that satisfies:
--- 1. Unrestricted domain (works for all preference profiles)
--- 2. Pareto efficiency
--- 3. Independence of Irrelevant Alternatives (IIA)
--- 4. Non-dictatorship
+-- Théorème d'Arrow (énoncé informel) :
+-- il n'existe pas de SWF avec ≥3 alternatives qui satisfait à la fois :
+-- 1. Domaine non restreint (fonctionne pour tous les profils de préférence)
+-- 2. Efficacité au sens de Pareto
+-- 3. Indépendance des alternatives non pertinentes (IANP)
+-- 4. Non-dictature
 
--- The proof is complex and requires careful handling of all cases.
--- See SocialChoice.lean for the formal framework.
+-- La preuve est complexe et exige un traitement soigneux de tous les cas.
+-- Voir SocialChoice.lean pour le cadre formel.
 
 #check dictatorshipV1
 #check condorcetProfile

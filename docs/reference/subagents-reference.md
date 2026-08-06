@@ -40,7 +40,7 @@ Distinction : `series-improver` = grain **série** (batch + resume) ; `notebook-
 ### Cross-cutting maintenance (toutes machines, alignement env)
 - `readme-hierarchy-auditor` (audit/maj hiérarchie README bottom-up), `readme-updater` (maj README d'une série après ajout/modif notebooks).
 - `slide-analyzer` / `slide-improver` (decks PPTX/Marp, vision sk-agent) pour les tracks slides EPITA/ECE.
-- `code-explorer` (read-only), `general-purpose` (catch-all) pour exploration/analyse async non couverte par un specialist.
+- `general-purpose` (catch-all, exploration/analyse async non couverte par un specialist).
 
 ## Usage async (pattern)
 
@@ -57,7 +57,7 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 
 ## Skills `.claude/skills/` — slash-commands mandatés
 
-17 skills (13 slash-commands actives + 4 modules de référence auto-chargés). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
+17 skills (16 slash-commands actives + 1 module de référence : `qc-helpers.md`). Là où un skill couvre une tâche récurrente, **l'utiliser plutôt que de réimproviser le workflow** (mandat user 2026-05-23 : catalogue clair pour encourager l'usage).
 
 ### Workflows actionnables (slash-commands)
 

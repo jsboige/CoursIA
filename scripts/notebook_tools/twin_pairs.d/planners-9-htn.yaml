@@ -1,0 +1,16 @@
+- name: "Planners-9 HTN"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 8efefd483570bca7815d101844863f71f9f3c436
+      csharp_sha: a502d4c462d6667187a8ec6d827bfe1027271e9f
+  known_differences:
+    - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
+    - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."
+    - "po-2025 a enrichi firsthand (c.678, PR #8173) le cote Python (instance discriminante m_deliver_direct vs m_deliver_via_intermediate)."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8173 (enrichissement method-selection demonstration (backtracking) cote Python) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only claim correction cote Python (cell[41] methode expresso : `!grinder` -> `!grind_beans`, l'action commise etant grind_beans(grinder1) per cell[42] output, grinder etant l'objet). Paraphite-preservant : aucun output/code modifie, axe de parite semantic intact."

@@ -136,6 +136,83 @@ def build_git_metadata() -> dict[str, dict]:
     return metadata
 
 
+def get_head_sha() -> str:
+    """Return the current HEAD short SHA (7 chars hex) or '' if unavailable.
+
+    Used by classify_reproducibility() to decide whether a notebook is REPRODUCED
+    (its last_success_sha == HEAD) or merely EXECUTED. See docs/PARCOURS.md.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, cwd=str(REPO_ROOT), timeout=10,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return ""
+
+
+def build_forensic_metadata() -> dict[str, dict]:
+    """Run the forensic scan and return per-notebook execution metadata.
+
+    Returns dict keyed by relative path (forward slashes, no 'MyIA.AI.Notebooks/'
+    prefix) with:
+        forensic_category : 'A_ALL_EXEC_OK' / 'B_PARTIAL_EXEC' / 'C_NEVER_EXECUTED' / ...
+        last_success_sha  : 7-char short SHA of the last commit touching the file
+        executed_at       : ISO date of the last commit touching the file
+
+    Empty dict if forensic scan is unavailable (e.g. CLI not on PATH). Caller must
+    handle the absence gracefully — `forensic_category == ''` is a legitimate state
+    (we still emit a catalog entry, just without reproducibility promotion).
+    """
+    try:
+        # Local import to avoid circulars at module load
+        import importlib.util as _ilu
+        here = Path(__file__).resolve().parent
+        spec = _ilu.spec_from_file_location("forensic_scan", here / "forensic_scan.py")
+        if spec is None or spec.loader is None:
+            return {}
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception as e:  # noqa: BLE001
+        print(f"Warning: forensic_scan import failed ({e!r}); "
+              f"reproducibility will fall back to UNTESTED", file=sys.stderr)
+        return {}
+
+    notebooks_root = Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks"
+    if not notebooks_root.exists():
+        return {}
+
+    try:
+        meta: dict[str, dict] = {}
+        # Path('MyIA.AI.Notebooks') + .rglob('*.ipynb') = all notebooks
+        for nb_path in sorted(notebooks_root.rglob("*.ipynb")):
+            if mod.is_excluded(nb_path):
+                continue
+            info = mod.categorize_notebook(nb_path)
+            cat = info.get("category", "")
+            rel = str(nb_path.relative_to(notebooks_root)).replace("\\", "/")
+            entry: dict[str, str] = {"forensic_category": cat}
+
+            # Only attach SHA + date for files git knows about. The forensic
+            # scan itself is git-agnostic for the category classification, but
+            # last_success_sha / executed_at require a git-tracked file.
+            if cat in ("A_ALL_EXEC_OK", "B_PARTIAL_EXEC"):
+                repo_root = Path(__file__).resolve().parents[2]
+                sha = mod.get_last_commit_sha(nb_path, repo_root)
+                date = mod.get_last_commit_date(nb_path, repo_root)
+                entry["last_success_sha"] = sha or ""
+                entry["executed_at"] = date or ""
+            meta[rel] = entry
+        return meta
+    except Exception as e:  # noqa: BLE001
+        print(f"Warning: forensic_scan execution failed ({e!r}); "
+              f"reproducibility will fall back to UNTESTED", file=sys.stderr)
+        return {}
+
+
 def detect_kernel(notebook: dict) -> str:
     """Extract kernel display name from notebook metadata."""
     ks = notebook.get("metadata", {}).get("kernelspec", {})
@@ -532,6 +609,168 @@ def classify_maturity(
     return "ALPHA"
 
 
+def classify_editorial(
+    notebook: dict,
+    code_cells: list,
+    *,
+    is_template: bool = False,
+) -> str:
+    """Axe 1 — maturite editoriale (DRAFT/ALPHA/BETA/FINAL).
+
+    Cf docs/PARCOURS.md. Orthogonale a la reproductibilite et a la revue scientifique.
+    Heuristique :
+
+        TEMPLATE  — is_template (filenames contenant 'template')
+        DRAFT     — cells_markdown / cells_total < 0.20 OU titre placeholder OU premiere cellule
+                    markdown = # TODO
+        ALPHA     — DRAFT non verifie ET >=1 cellule markdown d'introduction ET >=1 exemple
+        BETA      — cells_markdown >= 0.40 ET conclusion presente ET >=3 cellules code
+                    (proxy structure pedagogique, cf three-exercises-per-notebook)
+        FINAL     — BETA + signal 'editorial_reviewed_by' dans le catalogue (filtre catalogue,
+                    pas le notebook — par defaut on retombe sur BETA)
+
+    Le passage BETA -> FINAL necessite une intervention explicite (PR de revue editorial),
+    pas une heuristique purement structurelle. Cette fonction n'emet donc jamais 'FINAL'
+    depuis le notebook seul — un patch catalogue ou un signal PR fait passer la valeur.
+    """
+    if is_template:
+        return "TEMPLATE"
+
+    cells = notebook.get("cells", [])
+    md_cells = [c for c in cells if c["cell_type"] == "markdown"]
+    code_cells_n = sum(1 for c in cells if c["cell_type"] == "code")
+    total_cells = len(cells)
+    if total_cells == 0:
+        return "DRAFT"
+
+    md_ratio = len(md_cells) / total_cells
+
+    # Premiere cellule markdown : placeholder -> DRAFT
+    first_md = next((c for c in cells if c["cell_type"] == "markdown"), None)
+    first_md_text = "".join(first_md.get("source", [])) if first_md else ""
+    if "TODO" in first_md_text[:200] or "placeholder" in first_md_text[:200].lower():
+        return "DRAFT"
+    if not first_md_text.strip():
+        return "DRAFT"
+
+    # Pas assez de markdown -> DRAFT
+    if md_ratio < 0.20:
+        return "DRAFT"
+
+    has_intro, has_conclusion = has_markdown_intro_conclusion(cells)
+    # >=3 cellules code et >=0.40 markdown et conclusion presente -> BETA
+    if md_ratio >= 0.40 and has_conclusion and code_cells_n >= 3:
+        return "BETA"
+
+    # >=1 markdown d'introduction et >=1 exemple (cellule code avec outputs)
+    effective = _effective_code_cells(code_cells)
+    has_example = any(c.get("outputs") for c in effective)
+    if has_intro and has_example:
+        return "ALPHA"
+
+    return "DRAFT"
+
+
+# Axe 2 — reproductibilite : depend de la categorie forensic (A/B/C/D) et de la
+# coherence last_success_sha / executed_at. Ces deux dernieres infos proviennent du
+# forensic scan (cf scripts/notebook_tools/forensic_scan.py --with-git).
+_FORENSIC_CATEGORY_REPRO = {
+    "A_ALL_EXEC_OK": "EXECUTED",
+    "B_PARTIAL_EXEC": "STATIC_OK",
+    "C_NEVER_EXECUTED": "UNTESTED",
+    "D_HAS_ERRORS": "UNTESTED",
+    "NO_CODE": "STATIC_OK",
+    "PARSE_ERROR": "UNTESTED",
+    "REFERENCE": "REPRODUCED",  # notebook de reference, jamais execute par design
+}
+
+
+def classify_reproducibility(
+    forensic_category: str | None,
+    *,
+    last_success_sha: str | None = None,
+    executed_at: str | None = None,
+    head_sha: str | None = None,
+) -> str:
+    """Axe 2 — reproductibilite (UNTESTED/STATIC_OK/EXECUTED/REPRODUCED).
+
+    Cf docs/PARCOURS.md. La categorie de base vient du forensic scan ; REPRODUCED
+    n'est emis que si `last_success_sha` correspond au SHA HEAD (coherence).
+    """
+    if not forensic_category:
+        return "UNTESTED"
+    base = _FORENSIC_CATEGORY_REPRO.get(forensic_category, "UNTESTED")
+    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA
+    if base == "EXECUTED" and last_success_sha and head_sha and last_success_sha == head_sha and executed_at:
+        return "REPRODUCED"
+    return base
+
+
+# Axe 3 — revue scientifique. Heuristique pauvre par defaut (UNREVIEWED) :
+# la promotion necessite un signal catalogue (PR label, peer-review attache, etc.)
+# Cette fonction est un placeholder stable qui ne pretend pas deviner la revue.
+def classify_scientific_review(
+    notebook: dict,
+    *,
+    scientific_reviewed_by: str | None = None,
+    last_validator: str | None = None,
+    sorry_free: bool = False,
+) -> str:
+    """Axe 3 — revue scientifique (UNREVIEWED/AUTHOR_REVIEWED/PEER_REVIEWED/FORMALLY_VERIFIED).
+
+    Cf docs/PARCOURS.md. Sans signal explicite, on retombe sur UNREVIEWED.
+
+    **Contrat honnete pour FORMALLY_VERIFIED** (issue #8051). La promotion vers
+    FORMALLY_VERIFIED exige une PREUVE, pas une simple presence :
+      - un compagnon `.lean` EXISTANT n'est PAS une preuve — un lake compagnon
+        peut porter sa propre sorry-debt (9/18 notebooks lean4-wsl ont du sorry
+        cell-level, cf scripts/audit/check_lean_notebook_sorry.py #8351).
+        Detecter le compagnon et emettre FORMALLY_VERIFIED = faux claim.
+      - un benchmark multi-seed est une rigueur EMPIRIQUE, pas une preuve
+        formelle (formelle = mathematique, sans axiome admis).
+    Le seul signal honnete est ``sorry_free`` : un lake Lean dont le build
+    reussit SANS aucun ``sorry`` (artifact Lean-CI a brancher ; absent pour
+    l'instant, donc ``sorry_free`` default False -> FORMALLY_VERIFIED reste
+    inatteignable tant que l'artifact n'est pas cable). Le catalog-gen ne peut
+    PAS deviner la sorry-freedom ; il consomme un artifact produit en amont.
+    """
+    if sorry_free:
+        return "FORMALLY_VERIFIED"
+    if scientific_reviewed_by and last_validator and scientific_reviewed_by != last_validator:
+        return "PEER_REVIEWED"
+    if scientific_reviewed_by and scientific_reviewed_by == last_validator:
+        return "AUTHOR_REVIEWED"
+    return "UNREVIEWED"
+
+
+# Agregat retro-compatible : ancien label monolithique `maturity` derive des 3 axes.
+# Cf docs/PARCOURS.md section "Migration / retro-compatibilite".
+def aggregate_maturity(
+    editorial: str,
+    reproducibility: str,
+    scientific_review: str,
+    *,
+    is_template: bool = False,
+) -> str:
+    """Calcule l'ancien label `maturity` (TEMPLATE/PRODUCTION/BETA/ALPHA/DRAFT)
+    a partir des 3 nouveaux axes. Permet de preserver la retro-compatibilite avec
+    tous les consommateurs qui lisent `maturity` directement.
+    """
+    if is_template:
+        return "TEMPLATE"
+    if (
+        editorial == "FINAL"
+        and reproducibility in ("EXECUTED", "REPRODUCED")
+        and scientific_review in ("PEER_REVIEWED", "FORMALLY_VERIFIED")
+    ):
+        return "PRODUCTION"
+    if editorial in ("BETA", "FINAL") and reproducibility in ("EXECUTED", "REPRODUCED"):
+        return "BETA"
+    if editorial in ("ALPHA", "BETA") and reproducibility in ("STATIC_OK", "EXECUTED"):
+        return "ALPHA"
+    return "DRAFT"
+
+
 def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = None) -> dict | None:
     """Analyze a single notebook and return its catalog entry."""
     try:
@@ -560,11 +799,7 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         requirements["requires_wsl"] = True
 
     status = determine_status(nb_path, notebook, code_cells, requirements, pedagogical)
-    maturity = classify_maturity(
-        notebook, effective, kernel,
-        is_template="template" in nb_path.stem.lower(),
-        requires_cloud=requirements.get("requires_cloud", False),
-    )
+    is_template = "template" in nb_path.stem.lower()
 
     code_with_outputs = sum(1 for c in effective if c.get("outputs"))
     code_without_outputs = len(effective) - code_with_outputs
@@ -572,6 +807,36 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
 
     rel_str = str(rel).replace("\\", "/")
     gm = (git_meta or {}).get(rel_str, {})
+
+    # Maturity 3-axes (cf docs/PARCOURS.md, issue #8051) :
+    #   1. editorial    = prose pedagogique (DRAFT/ALPHA/BETA/FINAL)
+    #   2. reproducibility = forensic scan (UNTESTED/STATIC_OK/EXECUTED/REPRODUCED)
+    #   3. scientific_review = revue (UNREVIEWED/AUTHOR_REVIEWED/PEER_REVIEWED/FORMALLY_VERIFIED)
+    # + retro-compat `maturity` = agregat des 3 axes (cf aggregate_maturity).
+    editorial = classify_editorial(
+        notebook, effective,
+        is_template=is_template,
+    )
+    reproducibility = classify_reproducibility(
+        forensic_category=gm.get("forensic_category"),
+        last_success_sha=gm.get("last_success_sha"),
+        executed_at=gm.get("executed_at"),
+        head_sha=gm.get("head_sha"),
+    )
+    scientific_review = classify_scientific_review(
+        notebook,
+        scientific_reviewed_by=gm.get("scientific_reviewed_by"),
+        last_validator=gm.get("last_validator"),
+        # FORMALLY_VERIFIED exige un lake Lean sorry-free PROUVE (artifact Lean-CI),
+        # pas une simple presence de compagnon (cf #8051, #8351). Le champ
+        # git_meta 'sorry_free' n'est pas encore cable -> default False honnete :
+        # aucun notebook ne peut etre faussement claim FORMALLY_VERIFIED.
+        sorry_free=gm.get("sorry_free", False),
+    )
+    maturity = aggregate_maturity(
+        editorial, reproducibility, scientific_review,
+        is_template=is_template,
+    )
 
     return {
         "path": rel_str,
@@ -581,6 +846,12 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "kernel": kernel,
         "status": status,
         "maturity": maturity,
+        "editorial": editorial,
+        "reproducibility": reproducibility,
+        "scientific_review": scientific_review,
+        "last_success_sha": gm.get("last_success_sha", ""),
+        "executed_at": gm.get("executed_at", ""),
+        "forensic_category": gm.get("forensic_category", ""),
         "duree_estimee": estimate_duration(len(code_cells), kernel, requirements),
         "owner_logique": OWNER_MAP.get(serie, ""),
         "last_validation": gm.get("last_validation", ""),
@@ -607,7 +878,11 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
 # Fields derived from git history that may be more up-to-date on origin/main
 # than on the current branch. These should be preserved from origin/main
 # for entries that were NOT modified on the current branch.
-CURATED_GIT_FIELDS = ("last_validation", "last_validator", "issue_pr_associee")
+CURATED_GIT_FIELDS = (
+    "last_validation", "last_validator", "issue_pr_associee",
+    "last_success_sha", "executed_at", "forensic_category",
+    "scientific_reviewed_by", "head_sha",
+)
 
 
 def _load_main_catalog() -> dict[str, dict]:
@@ -681,6 +956,133 @@ def _merge_curated_fields(
     return entries
 
 
+# --- Editorial-review registry promotion (issue #8051, c.763/c.764) -----------
+#
+# classify_editorial() never emits FINAL by design: a structural heuristic cannot
+# assert editorial maturity. A merged third-party review recorded in the curated
+# whitelist `docs/notebook-metadata/editorial-review-registry.md` is the human
+# signal that promotes FINAL. The validator `scripts/audit/check_editorial_review.py`
+# checks the registry's coherence; THIS function is the downstream "catalogue
+# patch" the classify_editorial() docstring refers to — it consumes the registry
+# and applies the promotion so whitelisted notebooks reach editorial=FINAL in the
+# generated catalogue (and propagate to the retro-compat `maturity` aggregate).
+
+EDITORIAL_REGISTRY_PATH = REPO_ROOT / "docs" / "notebook-metadata" / "editorial-review-registry.md"
+
+# review_scope values that warrant an editorial promotion to FINAL. Per registry
+# §3.2, typo/pedagogie alone do not guarantee technical truthfulness.
+PROMOTING_REVIEW_SCOPES = ("factual", "substance", "full")
+
+
+def _load_editorial_registry(registry_path=None):
+    """Parse the editorial-review whitelist YAML embedded in the registry markdown.
+
+    Returns a dict keyed by notebook_path -> {reviewer, review_date, evidence_pr,
+    review_scope, notes}. Returns {} if the file is missing or unparseable: the
+    registry is optional, and its absence leaves every entry at the structural
+    editorial classification emitted by classify_editorial().
+
+    The registry markdown embeds one or more fenced YAML blocks (schema example
+    in §2 + the curated pilot entries in §4). Only entries whose notebook_path
+    looks like a real relative path (ends with ``.ipynb`` and contains no ``<``)
+    are kept, so the §2 placeholder schema block is filtered out.
+    """
+    path = registry_path or EDITORIAL_REGISTRY_PATH
+    if not Path(path).exists():
+        return {}
+    import re
+    import yaml  # PyYAML — part of repo tooling (cf check_twin_parity.py, #8057)
+    text = Path(path).read_text(encoding="utf-8")
+    fence = "`" * 3
+    blocks = re.findall(fence + r"yaml\n(.*?)" + fence, text, re.DOTALL)
+    registry = {}
+    for block in blocks:
+        # Drop full-line comments (the pilot block carries a curation header).
+        lines = [ln for ln in block.split("\n") if not ln.lstrip().startswith("#")]
+        cleaned = "\n".join(lines).strip()
+        if not cleaned:
+            continue
+        try:
+            parsed = yaml.safe_load(cleaned)
+        except yaml.YAMLError:
+            continue
+        if not isinstance(parsed, list):
+            continue
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+            nb_path = entry.get("notebook_path")
+            if (not isinstance(nb_path, str)
+                    or not nb_path.endswith(".ipynb")
+                    or "<" in nb_path):
+                continue
+            review_date = entry.get("review_date")
+            # PyYAML parses bare ISO dates (2026-07-22) as datetime.date, which
+            # json.dumps cannot serialize — coerce to its ISO string form.
+            if hasattr(review_date, "isoformat"):
+                review_date = review_date.isoformat()
+            registry[nb_path] = {
+                "reviewer": entry.get("reviewer"),
+                "review_date": review_date,
+                "evidence_pr": entry.get("evidence_pr"),
+                "review_scope": entry.get("review_scope"),
+                "notes": entry.get("notes"),
+            }
+    return registry
+
+
+def _apply_editorial_review_promotion(entries, registry=None):
+    """Promote whitelisted notebooks' editorial axis BETA -> FINAL (issue #8051).
+
+    Eligibility mirrors `editorial-review-registry.md` §3.1/§3.2:
+      - notebook_path is present in the registry;
+      - reviewer != owner_logique (no self-review promotion, §3.1 #4);
+      - review_scope in (factual, substance, full) (§3.2);
+      - the entry is not a TEMPLATE (templates keep their own axis).
+
+    On promotion: set ``editorial = FINAL``, populate ``editorial_reviewed_by``
+    (+ review_date / evidence_pr for traceability), and recompute the retro-compat
+    ``maturity`` aggregate so FINAL propagates (BETA -> PRODUCTION when repro and
+    review axes are sufficient).
+    """
+    if registry is None:
+        registry = _load_editorial_registry()
+    if not registry:
+        return entries
+
+    promoted = 0
+    for entry in entries:
+        if entry.get("maturity") == "TEMPLATE":
+            continue
+        review = registry.get(entry.get("path", ""))
+        if not review:
+            continue
+        reviewer = review.get("reviewer")
+        scope = review.get("review_scope")
+        if not reviewer or reviewer == entry.get("owner_logique"):
+            continue  # §3.1 #4 auto-review guard
+        if scope not in PROMOTING_REVIEW_SCOPES:
+            continue  # §3.2 scope guard
+        entry["editorial"] = "FINAL"
+        entry["editorial_reviewed_by"] = reviewer
+        if review.get("review_date"):
+            entry["editorial_review_date"] = review["review_date"]
+        if review.get("evidence_pr"):
+            entry["editorial_review_evidence_pr"] = review["evidence_pr"]
+        # Recompute retro-compat maturity so FINAL propagates downstream.
+        entry["maturity"] = aggregate_maturity(
+            entry["editorial"],
+            entry.get("reproducibility", "UNTESTED"),
+            entry.get("scientific_review", "UNREVIEWED"),
+            is_template=False,
+        )
+        promoted += 1
+
+    if promoted:
+        print(f"Applied editorial-review promotion (BETA->FINAL) for {promoted} entries")
+    return entries
+
+
 def _git_tracked_files() -> set[str] | None:
     """Return set of git-tracked relative paths, or None if not in a git repo."""
     try:
@@ -721,7 +1123,7 @@ def scan_all_notebooks(
             if pedagogical and nb_path.stem.endswith("_executed"):
                 continue
             parts = nb_path.relative_to(series_dir).parts
-            if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
+            if any(part in EXCLUDE_ALWAYS for part in parts):
                 continue
             if pedagogical and any(
                 exc in str(nb_path.relative_to(series_dir))
@@ -861,6 +1263,18 @@ def main():
 
     pedagogical = not args.all
     git_meta = build_git_metadata()
+    forensic_meta = build_forensic_metadata()
+    head_sha = get_head_sha()
+    # Merge forensic metadata into git_meta (forensic wins on overlap for forensic-only keys)
+    for rel, fmeta in forensic_meta.items():
+        gm = git_meta.setdefault(rel, {})
+        for k, v in fmeta.items():
+            if k not in gm or not gm.get(k):
+                gm[k] = v
+        gm["head_sha"] = head_sha
+    # HEAD SHA is shared across all entries (same git checkout)
+    for rel in git_meta:
+        git_meta[rel]["head_sha"] = head_sha
     entries = scan_all_notebooks(
         pedagogical=pedagogical, series_filter=args.series,
         git_meta=git_meta, git_tracked_only=args.git_tracked_only,
@@ -870,6 +1284,11 @@ def main():
     # touched on the current branch (prevents stale-branch blanching)
     main_catalog = _load_main_catalog()
     entries = _merge_curated_fields(entries, main_catalog)
+
+    # Apply the editorial-review whitelist promotion (issue #8051): whitelisted
+    # notebooks reviewed by a third party get editorial BETA -> FINAL — the
+    # downstream "catalogue patch" classify_editorial() deliberately never emits.
+    entries = _apply_editorial_review_promotion(entries)
 
     # Deterministic ordering by path. Filesystem iteration order (iterdir/rglob)
     # differs between the Linux CI runner that owns main's catalog and the Windows

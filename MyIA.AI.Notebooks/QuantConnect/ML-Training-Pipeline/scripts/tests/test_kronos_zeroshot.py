@@ -92,42 +92,64 @@ class TestTransactionCost:
 
 
 class TestEvaluationWindows:
+    @staticmethod
+    def _ohlcv(n=500, seed=0):
+        rng = np.random.default_rng(seed)
+        dates = pd.date_range("2020-01-01", periods=n, freq="B")
+        close = np.cumsum(rng.standard_normal(n) * 0.01 + 100)
+        return pd.DataFrame(
+            {
+                "open": close, "high": close + 0.5, "low": close - 0.5,
+                "close": close, "volume": 0.0,
+            },
+            index=dates,
+        )
+
     def test_window_count(self):
-        dates = pd.date_range("2020-01-01", periods=500, freq="B")
-        prices = pd.Series(np.cumsum(np.random.randn(500) * 0.01 + 100), index=dates)
-        windows = build_evaluation_windows(prices, seq_len=96, pred_len=24, n_windows=5)
-        assert len(windows) > 0
-        assert len(windows) <= 5
+        ohlcv = self._ohlcv()
+        windows = build_evaluation_windows(ohlcv, seq_len=96, pred_len=24, n_windows=5)
+        assert 0 < len(windows) <= 5
 
     def test_window_shapes(self):
-        dates = pd.date_range("2020-01-01", periods=500, freq="B")
-        prices = pd.Series(np.cumsum(np.random.randn(500) * 0.01 + 100), index=dates)
-        windows = build_evaluation_windows(prices, seq_len=96, pred_len=24, n_windows=3)
+        ohlcv = self._ohlcv()
+        windows = build_evaluation_windows(ohlcv, seq_len=96, pred_len=24, n_windows=3)
         for w in windows:
-            assert w["context"].shape == (96,)
-            assert w["actual_prices"].shape == (24,)
-            assert w["actual_returns"].shape == (24,)
+            assert w["context_ohlcv"].shape == (96, 5)  # OHLCV
+            assert w["actual_close"].shape == (24,)
+            assert w["x_timestamp"].shape == (96,)
 
     def test_temporal_ordering(self):
-        dates = pd.date_range("2020-01-01", periods=500, freq="B")
-        prices = pd.Series(np.arange(500, dtype=float), index=dates)
-        windows = build_evaluation_windows(prices, seq_len=10, pred_len=5, n_windows=3)
+        ohlcv = self._ohlcv()
+        windows = build_evaluation_windows(ohlcv, seq_len=10, pred_len=5, n_windows=3)
         for i in range(1, len(windows)):
             assert windows[i]["start_date"] >= windows[i - 1]["start_date"]
 
 
 class TestNaiveKronosWrapper:
+    @staticmethod
+    def _context(n=96):
+        dates = pd.date_range("2020-01-01", periods=n, freq="B")
+        close = np.arange(n, dtype=float) + 100
+        return pd.DataFrame(
+            {"open": close, "high": close, "low": close, "close": close, "volume": 0.0},
+            index=dates,
+        )
+
     def test_predict_shape(self):
         wrapper = NaiveKronosWrapper()
-        context = np.random.randn(96)
-        forecast = wrapper.predict(context, pred_len=24)
+        ctx = self._context()
+        x_ts = pd.Series(ctx.index)
+        y_ts = pd.Series(pd.date_range("2020-05-01", periods=24, freq="B"))
+        forecast = wrapper.predict(ctx, x_timestamp=x_ts, y_timestamp=y_ts, pred_len=24)
         assert forecast.shape == (24,)
 
     def test_predict_persistence(self):
         wrapper = NaiveKronosWrapper()
-        context = np.arange(96, dtype=float)
-        forecast = wrapper.predict(context, pred_len=10)
-        assert np.all(forecast == context[-1])
+        ctx = self._context()
+        x_ts = pd.Series(ctx.index)
+        y_ts = pd.Series(pd.date_range("2020-05-01", periods=10, freq="B"))
+        forecast = wrapper.predict(ctx, x_timestamp=x_ts, y_timestamp=y_ts, pred_len=10)
+        assert np.all(forecast == ctx["close"].iloc[-1])
 
     def test_is_mock(self):
         wrapper = NaiveKronosWrapper()
@@ -147,8 +169,17 @@ class TestNaiveChronosWrapper:
 
 
 class TestModelLoading:
-    def test_kronos_loads_mock_without_package(self):
-        model = load_kronos_model("small", device="cpu")
+    def test_kronos_loads_mock_without_package(self, monkeypatch):
+        # Force the repo-clone step to fail so load_kronos_model exercises its
+        # mock fallback (deterministic, no network). Real-load (is_mock=False)
+        # is proven by the committed sweep results, not by this CPU unit test.
+        import eval_kronos_zeroshot as ekz
+
+        def _boom(_path):
+            raise OSError("simulated: kronos repo unavailable (CI)")
+
+        monkeypatch.setattr(ekz, "ensure_kronos_repo", _boom)
+        model = ekz.load_kronos_model("small", device="cpu")
         assert model.is_mock is True
 
     def test_chronos_loads_mock_without_package(self):
@@ -158,10 +189,12 @@ class TestModelLoading:
     def test_kronos_model_ids(self):
         from eval_kronos_zeroshot import KRONOS_MODEL_IDS
 
+        # Kronos-large (~499M) is NOT open-source -> intentionally absent.
+        assert "mini" in KRONOS_MODEL_IDS
         assert "small" in KRONOS_MODEL_IDS
         assert "base" in KRONOS_MODEL_IDS
-        assert "large" in KRONOS_MODEL_IDS
-        assert "xl" in KRONOS_MODEL_IDS
+        assert "large" not in KRONOS_MODEL_IDS
+        assert "xl" not in KRONOS_MODEL_IDS
 
     def test_chronos_model_ids(self):
         from eval_chronos_bolt import CHRONOS_MODEL_IDS
@@ -174,10 +207,19 @@ class TestModelLoading:
 class TestEvaluateWindow:
     def test_evaluate_with_mock(self):
         model = NaiveKronosWrapper()
+        dates = pd.date_range("2020-01-01", periods=120, freq="B")
+        rng = np.random.default_rng(0)
+        close = np.cumsum(rng.standard_normal(120) * 0.5 + 100)
+        ctx = pd.DataFrame(
+            {"open": close, "high": close, "low": close, "close": close, "volume": 0.0},
+            index=dates,
+        ).iloc[:96]
         window = {
-            "context": np.random.randn(96),
-            "actual_prices": np.random.randn(24) + 100,
-            "actual_returns": np.random.randn(24) * 0.01,
+            "context_ohlcv": ctx,
+            "x_timestamp": pd.Series(ctx.index),
+            "y_timestamp": pd.Series(dates[96:120]),
+            "actual_close": close[96:120],
+            "actual_returns": np.diff(close[96:120]),
         }
         result = evaluate_window(model, window, pred_len=24)
         assert "direction_accuracy" in result

@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## `Grothendieck.MathlibMap` — Mathlib Map
+## Part 4 — `Grothendieck.MathlibMap` : Mathlib Map
 
 A living index of what Mathlib 4 provides from Grothendieck's mathematical
 language. Each `#check` verifies that the definition exists and is accessible
@@ -84,12 +84,15 @@ Mathlib 4 has a rich category theory library built on these ideas.
 #check Scheme.forgetToLocallyRingedSpace  -- Scheme ⥤ LocallyRingedSpace
 
 /-!
-## What Mathlib does NOT have yet (as of 2026-05)
+## What Mathlib does NOT have yet (as of 2026-07)
 
 The following are foundational Grothendieck concepts NOT yet in Mathlib:
   - Etale cohomology (site etale, l-adic cohomology)
   - Motives (pure motives, Voevodsky's DM category)
-  - Six operations (Grothendieck's formalism)
+  - Six operations (Grothendieck's full formalism) — Mathlib provides the base
+    instance `f^* ⊣ f_*` on module sheaves (`AlgebraicGeometry.Modules.Sheaf`,
+    indexed by `DirectImage_en.lean`); `f_!` / `f^!` and the full formalism
+    remain absent
   - Grothendieck-Riemann-Roch
   - Grothendieck duality
   - Crystalline cohomology

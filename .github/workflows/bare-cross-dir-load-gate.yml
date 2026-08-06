@@ -126,8 +126,11 @@ jobs:
             # Skip notebooks deleted by the PR.
             [ -f "$nb" ] || continue
             checked=$((checked + 1))
-            out=$(python scripts/notebook_tools/detect_bare_cross_dir_load.py "$nb" --check 2>&1)
-            rc=$?
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/detect_bare_cross_dir_load.py "$nb" --check 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
               echo "::error title=Bare cross-dir #load::$nb carries a bare \`#load \"X.cs\"\` whose source is not in the notebook's directory (breaks headless re-exec, CS1504; renders BLANK)."
               echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"

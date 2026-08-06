@@ -65,12 +65,22 @@ from . import catastrophe as cat
 # Plancher numerique pour la precision : eviter log(0) et division par zero.
 # Un estimateur trop confiant (sigma -> 0) ferait exploser la surprise ; on
 # borne la precision par en bas pour garder les quantites finies et comparables.
+#
+# ATTENTION (condition d'emploi) : ce plancher est ABSOLU et calibre pour une
+# erreur d'echelle O(1) (cas du representant nu ICT-10/14, erreurs moderees).
+# Tout appelant dont l'echelle d'erreur est petite devant ``1e-6`` (par ex. un
+# predicteur quasi-parfait : variance EMA s'effondre sous le plancher absolu)
+# verra la surprise DIVERGER pour la mauvaise raison. Passer alors un plancher
+# RELATIF ``floor_frac`` (fraction de la variance d'echelle ``var0``) aux
+# primitives ci-dessous -- defaut ``None`` = plancher absolu ``_SIGMA2_FLOOR``
+# (inchange, les resultats existants ne bougent pas). Cf #8936, decouvert par
+# mesure dans #8931 (M4 embodied free-energy profile).
 _SIGMA2_FLOOR = 1e-6
 _TWO_PI = 2.0 * np.pi
 
 
 def gaussian_surprise(
-    obs: np.ndarray, pred: np.ndarray, sigma
+    obs: np.ndarray, pred: np.ndarray, sigma, floor_frac=None, scale=None
 ) -> np.ndarray:
     """Surprise (negative log-vraisemblance gaussienne) pas-a-pas.
 
@@ -89,7 +99,18 @@ def gaussian_surprise(
     sigma : float ou array
         Ecart-type du modele generatif. Scalaire (precision fixe) ou tableau
         (precision adaptive, aligne sur ``obs``). La **variance** ``sigma^2``
-        est bornee par ``_SIGMA2_FLOOR``.
+        est bornee par le plancher (voir ci-dessous).
+    floor_frac : float ou None
+        Si ``None`` (defaut) : plancher absolu ``_SIGMA2_FLOOR`` (= ``1e-6``) --
+        calibre pour une erreur d'echelle O(1) (ICT-10/14). Aucun resultat
+        existant ne change. Si un ``float`` est donne : plancher **relatif**
+        ``floor_frac * scale`` -- pour les appelants dont l'echelle d'erreur est
+        petite (predictor quasi-parfait) ou le plancher absolu fait diverger la
+        surprise (#8936). ``scale`` doit alors etre fourni (l'echelle de
+        reference, typiquement la variance globale des erreurs).
+    scale : float ou None
+        Echelle de reference (variance) utilisee par le plancher relatif. Obligatoire
+        si ``floor_frac`` est non-``None`` ; ignore sinon.
 
     Renvoie
     -------
@@ -99,12 +120,22 @@ def gaussian_surprise(
     o = np.asarray(obs, dtype=float)
     p = np.asarray(pred, dtype=float)
     s = np.asarray(sigma, dtype=float)
-    var = np.maximum(s * s, _SIGMA2_FLOOR)
+    if floor_frac is None:
+        floor = _SIGMA2_FLOOR
+    else:
+        if scale is None:
+            raise ValueError(
+                "floor_frac relatif requiert scale (la variance d'echelle de "
+                "reference) ; cf #8936. Laisser floor_frac=None pour le plancher absolu."
+            )
+        floor = max(float(floor_frac) * float(scale), _SIGMA2_FLOOR)
+    var = np.maximum(s * s, floor)
     return 0.5 * ((o - p) ** 2 / var + np.log(_TWO_PI * var))
 
 
 def adaptive_precision(
-    errors: np.ndarray, alpha: float = 0.3, var0: Optional[float] = None
+    errors: np.ndarray, alpha: float = 0.3, var0: Optional[float] = None,
+    floor_frac: Optional[float] = None,
 ) -> np.ndarray:
     """Variance adaptive ``sigma^2_t`` par EMA **causale** des erreurs passees.
 
@@ -128,11 +159,19 @@ def adaptive_precision(
         Facteur de lissage EMA dans ``]0, 1]``.
     var0 : float ou None
         Variance initiale. Si None, ``var(errors)`` (amorce non causale).
+    floor_frac : float ou None
+        Si ``None`` (defaut) : plancher absolu ``_SIGMA2_FLOOR`` (= ``1e-6``) --
+        calibre pour une erreur d'echelle O(1). Aucun resultat existant ne
+        change. Si un ``float`` est donne : plancher **relatif**
+        ``floor_frac * var0`` (``var0`` = echelle de reference) -- pour les
+        appelants dont l'echelle d'erreur est petite devant ``1e-6`` (predictor
+        quasi-parfait) ou le plancher absolu fait diverger la surprise (#8936).
 
     Renvoie
     -------
     array
-        ``sigma^2_t`` aligne sur ``errors``, borde par ``_SIGMA2_FLOOR``.
+        ``sigma^2_t`` aligne sur ``errors``, borde par le plancher (absolu par
+        defaut, relatif si ``floor_frac`` est donne ; jamais sous ``_SIGMA2_FLOOR``).
     """
     e = np.asarray(errors, dtype=float)
     a = float(alpha)
@@ -141,6 +180,7 @@ def adaptive_precision(
     if var0 is None:
         var0 = float(np.var(e)) if e.size else 1.0
     var0 = max(float(var0), _SIGMA2_FLOOR)
+    floor = _SIGMA2_FLOOR if floor_frac is None else max(floor_frac * var0, _SIGMA2_FLOOR)
     var = np.empty_like(e)
     prev = var0
     sq = e * e
@@ -148,7 +188,7 @@ def adaptive_precision(
     for t in range(e.shape[0]):
         var[t] = prev
         prev = a * sq[t] + (1.0 - a) * prev
-    return np.maximum(var, _SIGMA2_FLOOR)
+    return np.maximum(var, floor)
 
 
 def free_energy_trajectory(
@@ -158,6 +198,7 @@ def free_energy_trajectory(
     mode: str = "fixed",
     alpha: float = 0.3,
     var0: Optional[float] = None,
+    floor_frac: Optional[float] = None,
 ) -> Dict[str, np.ndarray]:
     """Trajectoire d'energie libre ``F_t`` + decomposition accuracy/complexity.
 
@@ -165,6 +206,14 @@ def free_energy_trajectory(
     alors une transformation monotone du MSE (gate 1 : habillage du MSE).
     Si ``mode="adaptive"`` : ``sigma^2_t`` calcule par ``adaptive_precision`` sur
     les erreurs (gate 2 : la ponderation varie, F peut diverger du MSE).
+
+    Parametres
+    ----------
+    floor_frac : float ou None
+        Passe a ``adaptive_precision`` en mode ``adaptive`` (plancher relatif
+        ``floor_frac * var0`` pour les appelants a petite echelle d'erreur,
+        #8936). Defaut ``None`` = plancher absolu ``_SIGMA2_FLOOR`` (inchange).
+        Ignore en mode ``fixed`` (sigma constant).
 
     Renvoie un dict ``{"F", "accuracy", "complexity", "sigma2"}`` aligne sur
     ``obs``. ``F_t = accuracy_t + complexity_t``.
@@ -175,7 +224,7 @@ def free_energy_trajectory(
         s = 1.0 if sigma is None else float(sigma)
         var = np.full(o.shape, max(s * s, _SIGMA2_FLOOR))
     elif mode == "adaptive":
-        var = adaptive_precision(o - p, alpha=alpha, var0=var0)
+        var = adaptive_precision(o - p, alpha=alpha, var0=var0, floor_frac=floor_frac)
     else:
         raise ValueError(f"mode inconnu : {mode!r} ('fixed' ou 'adaptive')")
     accuracy = 0.5 * (o - p) ** 2 / var

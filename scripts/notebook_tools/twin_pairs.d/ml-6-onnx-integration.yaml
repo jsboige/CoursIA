@@ -1,0 +1,16 @@
+- name: "ML-6 ONNX Integration"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 40517222f60d7acaacb6beeefdc225798309315e
+      csharp_sha: e8b19d04356dab090cb82f001db007990261ac73
+      reason: "rebaseline csharp apres fix prose CELL[2] (#8052) : la Note disait faussement \"nous allons creer un modele ONNX simple\" alors que le C# CHARGE un modele pre-exporte (iris_model.onnx, sklearn, scripts/ml/generate_iris_onnx.py) -- verifie par header \"Charger un modele ONNX externe\", CELL[7] (code de chargement), et known_differences ci-dessous. Aligne la Note sur le code. Csharp-only, python_sha unchanged, parite semantique preservee."
+  known_differences:
+    - "Socle pedagogique commun : integration de modeles ONNX (chargement, inference, inspection du graph, exercices). C# = ML.NET OnnxTransformer + OnnxRuntime ; Python = skl2onnx (export sklearn->ONNX) + onnxruntime (inference) + onnx (inspection structurelle). Cree comme twin de parite explicite en #5607 (EPIC #4956 .NET<->Python)."
+    - "Asymetrie export-vs-load (pont Python->.NET) : le C# charge un modele ONNX pre-exporte (iris_model.onnx genere par scripts/ml/generate_iris_onnx.py, RandomForest sklearn) car l'export ML.NET->ONNX est experimental (documente en commentaire, c13/c15) ; le Python effectue l'export sklearn->ONNX lui-meme via skl2onnx (opset 15, zipmap=False). Le twin Python est le cote 'producteur' du pont ONNX, le C# le cote 'consommateur'."
+    - "Idiomes framework : C# = `mlContext.Transforms.ApplyOnnxModel` + classes d'entree/sortie typoes (IrisOnnxInput) ; Python = `ort.InferenceSession(onnx_path)` + `onnx.load` (validation structurelle du graph) + `convert_sklearn` (export)."
+    - "Contenu pedagogique complementaire : C# couvre 6 exercices stub (TODO : classes entree/sortie immobilier, variation FastTree, comparaison formats natif-vs-ONNX, inspection metadonnees, prediction par lot, integration Iris) + section conceptuelle BERT ONNX ; Python couvre 3 exercices (export LogisticRegression, impact n_estimators sur speedup, export Pipeline StandardScaler+classifieur) + benchmark sklearn.predict vs onnxruntime. Meme concept (ONNX interchange), angles d'approche differents."

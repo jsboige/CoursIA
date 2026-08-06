@@ -1,0 +1,13 @@
+- name: "SW-9 JSON-LD"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-Python-JSONLD.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
+      csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
+  known_differences:
+    - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Writing` JsonLdWriter). Python = `rdflib` (plugin JSON-LD via `rdflib-jsonld` integre, `graph.serialize(format='json-ld')`)."

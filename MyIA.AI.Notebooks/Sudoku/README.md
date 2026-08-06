@@ -4,7 +4,7 @@
 series: Sudoku
 pedagogical_count: 36
 breakdown: root=36
-maturity: PRODUCTION=30, BETA=5, ALPHA=1
+maturity: BETA=36
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (36 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
@@ -328,7 +328,7 @@ Les solveurs CP et SMT modernes ne se limitent pas à **trouver une solution fai
 - **[#7589](https://github.com/jsboige/CoursIA/issues/7589) `feat(sudoku,#3801): demonstrate Z3 SMT optimization (Optimize/maximize)` — `Sudoku-12-Z3-Python.ipynb`** : ajoute la contrepartie SMT avec `Optimize()` + `maximize(...)` (MaxSMT). Cohérence cross-moteur vérifiée : la même instance de carré latin 5×5 pondéré donne une récompense optimale identique (178) entre CP-SAT et Z3, ce qui valide la transcription entre paradigmes.
 - **[#7622](https://github.com/jsboige/CoursIA/pull/7622) `feat(sudoku,#7589): Z3 SMT optimization (Optimize/MkMaximize) port to C# twin — `Sudoku-12-Z3-Csharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source C# identique au twin Python modulo API binding). Reviewer structural (`NanoClaw`) : LGTM, 19/19 cellules exécutées, latin-square vérifié à la main colonne par colonne.
 
-**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que les 19 notebooks Sudoku présentaient les solveurs CP/SMT uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
+**Pourquoi cette section manquait avant** : EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») a diagnostiqué que — **sur l'ensemble de la série (36 notebooks canoniques : 17 C# + 18 Python + 1 Lean, cf CATALOG-STATUS) [G.1 vérifié 2026-07-22]** — les solveurs CP/SMT étaient présentés uniquement en mode satisfaction (`Solver.check()` / `cp_model.Add(...)`), sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation). Les trois PRs ci-dessus rééquilibrent ce curseur pour le Sudoku.
 
 **À retenir** :
 - Un solveur CP/SMT qui répond `FEASIBLE` / `SAT` ne donne qu'un point dans l'espace des solutions ; `OPTIMAL` / `SATISFIABLE (optimum)` prouve qu'aucune meilleure solution n'existe pour le critère.
@@ -676,11 +676,15 @@ Sudoku/
 │   └── sudoku_rrn_v4_best.pt
 ├── sudoku_models/                         # Checkpoints d'entraînement comparatif
 │   └── checkpoints/
-├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules, 0 sorry)
-│   ├── Sudoku.lean                        # Umbrella
-│   ├── Sudoku/Basic.lean
-│   ├── Sudoku/Propagation.lean
-│   ├── Sudoku/ExactCover.lean
+├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules FR + siblings _en #4980, 0 sorry)
+│   ├── Sudoku.lean                        # Umbrella (FR canonique)
+│   ├── Sudoku_en.lean                     # Umbrella (sibling EN, i18n #4980)
+│   ├── Sudoku/Basic.lean                  # Module 1 : structures de base (FR)
+│   ├── Sudoku/Basic_en.lean               # Sibling EN
+│   ├── Sudoku/Propagation.lean            # Module 2 : propagation des contraintes (FR)
+│   ├── Sudoku/Propagation_en.lean         # Sibling EN
+│   ├── Sudoku/ExactCover.lean             # Module 3 : couverture exacte (FR)
+│   ├── Sudoku/ExactCover_en.lean          # Sibling EN
 │   ├── Sudoku.en.md
 │   ├── lakefile.lean
 │   ├── lake-manifest.json

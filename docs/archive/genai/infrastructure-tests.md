@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-24** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # 🧪 Tests Infrastructure GenAI - CoursIA
 
 **Date :** 8 octobre 2025  

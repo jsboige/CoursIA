@@ -1,0 +1,12 @@
+- name: "GameTheory-10 ForwardInduction-SPE"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
+      csharp_sha: 111bf7e843ba260a52ff4bb8abb585e1b34067d6
+  known_differences:
+    - "Socle pedagogique commun : les raffinements d'equilibre au-dela du SPE (Selten 1965) -- sous-jeux et equilibre parfait, menaces et promesses credibles, induction avant (forward induction), perfection en mains tremblantes (trembling-hand perfection, Selten 1975), application canonique du jeu du « Burn Money » (signal costly), comparaison des raffinements. Distinct du GT-9 (induction arriere + paradoxes) : le GT-10 porte sur les RAFFINEMENTS de la notion d'equilibre (forward induction, trembling-hand), pas sur l'algorithme de resolution."
+    - "Idiomes framework : Python = `matplotlib` (patches `Ellipse` pour rendre les ensembles d'information / infosets sur l'arbre de jeu) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet** (modele d'arbre + sous-jeux + raffinements from-scratch, sortie console)."
+    - "Couverture tres parallele (twins proches) : les deux cotes suivent les 8 memes sections (SPE, menaces/promesses credibles, forward induction, trembling-hand, Burn Money, comparaison des raffinements, exercices, resume) -- un des twins les plus structurellement alignes de la serie. Le Python (37 cellules : 15 code + 22 markdown) ajoute la viz graphique matplotlib des infosets (Ellipse) ; le C# (34 cellules : 13 code + 21 markdown) reste en console. Meme theorie (Selten 1965/1975), idiomes de visualisation differents."

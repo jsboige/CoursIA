@@ -1,15 +1,15 @@
 /-
-  Mechanism Design — Auction Formalization
-  =========================================
+  Théorie des mécanismes — Formalisation d'enchères
+  =================================================
 
-  Decidability results for auction-based mechanism design on finite domains.
+  Résultats de décidabilité pour la théorie des mécanismes d'enchères sur domaines finis.
 
-  - Vickrey (second-price) auction truthfulness: proved by omega + case split
-  - First-price auction non-truthfulness: concrete counter-example via decide
-  - 3-bidder Vickrey truthfulness: proved by omega + case split
+  - Véracité de l'enchère de Vickrey (second prix) : prouvée par omega + disjonction de cas
+  - Non-véracité de l'enchère au premier prix : contre-exemple concret via decide
+  - Véracité de l'enchère de Vickrey à 3 enchérisseurs : prouvée par omega + disjonction de cas
 
-  Reference: Vickrey (1961), "Counterspeculation, Auctions, and Competitive Sealed Tenders"
-  Reference: #1469 — Mechanism Design kickstart
+  Référence : Vickrey (1961), « Counterspeculation, Auctions, and Competitive Sealed Tenders »
+  Référence : #1469 — Amorçage de la théorie des mécanismes
 -/
 
 import Mathlib.Data.Fintype.Basic

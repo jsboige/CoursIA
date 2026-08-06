@@ -11,14 +11,34 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
 | .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
-| dotnet-interactive | >= 1.0.700 (PIN 1.0.552801 sur ai-01) | `dotnet interactive --version` |
+| dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install`.
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui casse `#!import` (cf tableau ci-dessous).
 
-**Execution** : toujours cell-by-cell via MCP Jupyter (Papermill ne supporte pas .NET Interactive). Le kernel `.net-csharp` preserve l'etat entre cellules.
+**Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
-**Versions a EVITER** : 1.0.522904 (Roslyn bug), 1.0.712001 (`#!import` bug). PIN sur 1.0.552801 si possible.
+Ce document affirmait « Papermill ne supporte pas .NET Interactive » et renvoyait vers l'execution cell-by-cell par MCP Jupyter. **C'est faux**, et la consequence etait couteuse : le chemin MCP hang (#835), donc des notebooks .NET etaient committes sans re-execution (violation C.2/H.3, cf l'anti-pattern PR #1591 cite en CLAUDE.md regle F). Verifie firsthand sur ai-01 le 2026-07-25 (dni 1.0.617701) — Papermill execute bien un notebook `.net-csharp` de bout en bout, `execution_count` et sorties reelles a l'appui, y compris a travers un `#!import`.
+
+La **seule** limite reelle est l'**injection de parametres** : Papermill n'a pas de traducteur C#, donc une cellule taguee `parameters` avec `-p` produit `Translator for 'C#' language does not support parameter introspection.` — l'avertissement est emis, l'injection est ignoree, **et le notebook s'execute quand meme**. Les notebooks .NET du depot ne prennent pas de parametres Papermill ; `BATCH_MODE` passe par variable d'environnement, pas par `-p`, et reste donc disponible.
+
+Deux limites voisines, **distinctes** de celle-ci, restent vraies : le restore `#r "nuget:"` est bloque cluster-wide en Papermill headless (cf [dotnet-plotly-zero-restore.md](dotnet-plotly-zero-restore.md)), et la **CI** ne peut pas re-executer ces notebooks faute de kernel installe sur le runner — d'ou l'exigence d'execution **locale** avant commit ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D).
+
+### Version : 1.0.617701, pas « >= 1.0.700 »
+
+| Version | Etat | Preuve |
+|---------|------|--------|
+| 1.0.522904 | a eviter | bug Roslyn |
+| 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
+| **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
+| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369 |
+
+Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
+
+```bash
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet interactive jupyter install
+```
 
 ## Python 3.10+ (notebooks Python)
 
@@ -99,7 +119,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 #### .NET
 
 - SDKs : 8.0.x, 9.0.x, 10.0.x
-- dotnet-interactive : **1.0.552801** (PINNED)
+- dotnet-interactive : **1.0.617701** (installe, verifie 2026-07-25 — cf [tableau des versions](#version--10617701-pas--100700))
 - Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
 #### Jupyter kernels (10 registered)
@@ -246,51 +266,68 @@ Mapping avec `prover/config.py PROVIDERS` :
 3. Vérifier le nom exact du modèle côté endpoint (changements silencieux possibles).
 4. Ports vLLM locaux 5001/5002 sur ai-01 = surveiller dispo (escalations Cycle 20). Preferer endpoint stable si flaky.
 
-## Training wrapper checkpoints (ai-01)
+## Training checkpoints & thermal backoff (ai-01)
 
-Wrapper outer-supervisor reutilisable pour training BG long-running avec checkpoints + reprise + thermal backoff. **Reutiliser systematiquement pour toute training BG sur ai-01** (pas creer de wrapper concurrent).
+Librairie canonique de training BG long-running avec checkpoints + reprise + thermal backoff. **Reutiliser systematiquement pour toute training BG sur ai-01** (pas creer de wrapper concurrent).
 
-**Path canonique** : `scripts/training/train_with_checkpoints.py`
+**Path canonique** : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (lib Python, import direct).
 
-### Pattern d'usage
+> **Note** : la documentation précedemment citait un wrapper outer-supervisor `scripts/training/train_with_checkpoints.py` qui n'a jamais ete cree (`ls scripts/training/` = `No such file or directory`, `git log --grep "train_with_checkpoints"` = 0 commit). Le pattern reel est l'import direct de `gpu_training.py` ci-dessous.
 
-```bash
-python scripts/training/train_with_checkpoints.py \
-  --script <path_to_train_xxx.py> \
-  --config <yaml_or_args> \
-  --output-dir results/<run_name>_<TIMESTAMP> \
-  --gpu-index 2 \
-  --max-temp 80 \
-  --cool-sleep 60 \
-  --heartbeat 30 \
-  --max-restarts 5
+### Pattern d'usage (import direct)
+
+```python
+from shared.gpu_training import TrainingCheckpoint
+
+ckpt = TrainingCheckpoint(
+    checkpoint_path='results/run_<TS>/checkpoint.pt',
+    model_save_path='results/run_<TS>/final_model.pt',
+    max_temp=80,    # defaut
+    cool_sleep=60,  # defaut training BG long
+)
+
+start_epoch, history = ckpt.resume(model, optimizer, scheduler, grad_scaler)
+
+for epoch in range(start_epoch, EPOCHS):
+    ckpt.thermal_check()                       # watchdog inter-epoch
+    train_metrics = train_epoch(model, ...)    # batch_thermal_check intra-epoch
+    val_metrics = evaluate(model, ...)
+    ckpt.update(epoch, val_metrics['loss'], history, model, optimizer, scheduler, grad_scaler)
+
+ckpt.finalize(model)
 ```
 
 ### Sortie ecrite dans `<output_dir>/`
 
-- `train.log` : stdout+stderr unbuffered du subprocess
-- `wrapper_status.json` : etat actualise chaque heartbeat
-- `train.pid` (child) + `wrapper.pid` (outer)
-- `checkpoint.jsonl` : combos completes (monitor growth pour detecter "fake success")
+- `checkpoint.pt` : state dict complet model + optimizer + scheduler + grad_scaler + epoch + history (reprenable via `ckpt.resume`)
+- `final_model.pt` : modele final after `ckpt.finalize()`
+- `train.log` : stdout+stderr unbuffered du notebook appelant
 
 ### Thermal backoff
 
-Source reutilisee : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (`get_gpu_temp`, `thermal_check`, `batch_thermal_check`, `TrainingCheckpoint`). Defauts : `max_temp=80`, `cool_sleep=15`.
+Librairie source : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (`get_gpu_temp`, `thermal_check`, `batch_thermal_check`, `TrainingCheckpoint`). 18 tests PR #7454, fixes GPU-thermal #7335/#7454/#7456. Defauts : `max_temp=80`, `cool_sleep=15` ; surclasser en `cool_sleep=60` pour training BG long-running sur ai-01 (defaut kernel).
 
 ### Contraintes hard
 
-- **GPU 2 only** sur ai-01. Le wrapper refuse `--gpu-index 0|1` (protection vLLM tournant sur GPU 0/1).
-- Pre-flight check : GPU 2 mem < 1GB ET temp < `max_temp` avant lancement.
-- Auto-restart jusqu'a 5 sur non-zero exit. Risque "fake success" (code 0 sans atteindre la fin) : surveiller via `checkpoint.jsonl` growth.
+- **GPU 2 only** sur ai-01 (protection vLLM tournant sur GPU 0/1). Le notebook appelant doit cibler explicitement `cuda:2` (`model.to('cuda:2')`).
+- Pre-flight check : GPU 2 mem < 1GB ET temp < `max_temp` via `thermal_check()` avant lancement.
+- Reprise : `ckpt.resume(...)` recharge automatiquement `checkpoint.pt` si present, sinon demarre depuis le debut. Le monitoring de la croissance `history` (loss/val_loss par epoch) detecte le pattern "fake success" (entrainement termine sans progression).
 
 ### Monitoring
 
 ```bash
-tail -f <output_dir>/train.log
-cat <output_dir>/wrapper_status.json
-wc -l <output_dir>/checkpoint.jsonl
-nvidia-smi -i 2 --query-gpu=temperature.gpu,memory.used,utilization.gpu --format=csv,noheader
-grep -E "VERDICT|SKIPPED|exited with code" <output_dir>/train.log
+# Temperature GPU live (defaut kernel)
+watch -n 5 'nvidia-smi -i 2 --query-gpu=temperature.gpu,memory.used,utilization.gpu --format=csv,noheader'
+
+# Suivi progression entrainement (dans le notebook)
+ckpt.update(epoch, val_metrics['loss'], history, ...)  # ajoute une entree history
+print(history.tail(10))                                # log rapide cross-epoch
+
+# Detection "fake success"
+python -c "import json; h=json.load(open('<output_dir>/history.json')); \
+  losses=[e['val_loss'] for e in h['epochs']]; \
+  print('val_loss progression:', losses[-10:]); \
+  print('FAKE_SUCCESS' if abs(losses[-1]-losses[0]) < 1e-6 else 'OK')"
 ```
 
 ## Verification rapide (toute machine)

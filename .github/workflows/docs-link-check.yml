@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - 'CLAUDE.md'
+      - 'index.md'
       - 'PARCOURS.md'
       - '.claude/rules/**'
       - 'docs/**'
       - '**/README.md'
       - 'scripts/check_docs_links.py'
+
+permissions:
+  contents: read
 
 jobs:
   check-links:

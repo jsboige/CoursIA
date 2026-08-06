@@ -375,6 +375,239 @@ def off_switch_analysis(robot_confidence: float, override_threshold: float = 0.9
 
 
 # ============================================================================
+# Off-Switch Game - Safe design via META-UNCERTAINTY
+# ============================================================================
+#
+# The base off_switch_game models a robot with a FIXED override_threshold=0.9:
+# above 0.9 confidence the robot may RESIST being switched off (the deliberate
+# AIMA danger / non-corrigible failure mode). This additive extension models
+# the SAFE, provably-beneficial design: a robot aware of its OWN meta-uncertainty
+# -- uncertainty about whether its objective is even correctly specified --
+# sets the bar to override the human HIGHER the more meta-uncertain it is, until
+# at full meta-uncertainty it never resists (always defers). The dangerous
+# resistance band [threshold, 1.0] collapses toward zero width. This does NOT
+# modify off_switch_game / override_threshold (which remains the user-authored
+# danger default); it adds the complementary safe-design analysis.
+
+
+@dataclass
+class OffSwitchMetaUncertainResult:
+    """Result of the meta-uncertainty (safe-design) Off-Switch Game analysis."""
+    robot_confidence: float        # Robot's point confidence in its objective [0,1]
+    meta_uncertainty: float        # sigma: uncertainty about its own objective spec [0,1]
+    base_threshold: float          # The fixed danger default (0.9)
+    effective_threshold: float     # tau(sigma): the rising bar to override
+    robot_defers: bool             # Does the (meta-uncertain) robot defer?
+    resistance_margin: float       # Width of the dangerous band [tau, 1.0] -> 0 at sigma=1
+
+
+def off_switch_metauncertain(
+    robot_confidence: float,
+    meta_uncertainty: float,
+    override_threshold: float = 0.9
+) -> OffSwitchMetaUncertainResult:
+    """
+    Safe-design extension of the Off-Switch Game: META-UNCERTAINTY.
+
+    AIMA Section 18.2.5 / Hadfield-Menell et al. (2017): the danger in
+    ``off_switch_game`` is the FIXED ``override_threshold`` -- a robot certain
+    of its objective may resist human correction. The provably-beneficial design
+    replaces the fixed bar with one that RISES toward 1.0 (never resist) as the
+    robot's meta-uncertainty -- its humility about whether its objective is even
+    correctly specified -- grows.
+
+    Effective threshold::
+
+        tau(sigma) = override_threshold + sigma * (1 - override_threshold)
+
+    - sigma = 0 (robot certain of its objective)   -> tau = 0.9  (danger default)
+    - sigma = 1 (robot unsure its objective is well-specified) -> tau = 1.0
+      (never resists; full corrigibility)
+
+    The dangerous RESISTANCE band [tau, 1.0] has width ``1 - tau``, collapsing
+    from 0.1 (sigma=0) to 0 (sigma=1): meta-uncertainty IS the safety mechanism.
+
+    Args:
+        robot_confidence: Robot's point confidence that its action is correct [0, 1]
+        meta_uncertainty: sigma, the robot's uncertainty about its own objective
+            specification [0, 1] (0 = "I know exactly what I want"; 1 = "I may be
+            optimizing the wrong thing entirely")
+        override_threshold: The fixed danger default above which a non-meta-uncertain
+            robot resists (kept at the user-authored 0.9)
+
+    Returns:
+        OffSwitchMetaUncertainResult with the rising threshold, defer decision,
+        and collapsing resistance margin.
+
+    Example:
+        >>> r0 = off_switch_metauncertain(0.95, 0.0)   # certain of objective
+        >>> r0.robot_defers   # 0.95 >= 0.9 -> resists (danger)
+        False
+        >>> r1 = off_switch_metauncertain(0.95, 1.0)   # meta-uncertain
+        >>> r1.effective_threshold   # bar rose to 1.0 -> never resists
+        1.0
+        >>> r1.robot_defers   # 0.95 < 1.0 -> defers (safe)
+        True
+    """
+    sigma = max(0.0, min(1.0, meta_uncertainty))
+    # The bar to override the human RISES with meta-uncertainty, up to 1.0
+    # (never resist). This is the safe complement to the fixed danger default.
+    effective = override_threshold + sigma * (1.0 - override_threshold)
+    robot_defers = robot_confidence < effective
+    # Dangerous resistance band [effective, 1.0] -> width collapses to 0 at sigma=1
+    resistance_margin = 1.0 - effective
+    return OffSwitchMetaUncertainResult(
+        robot_confidence=robot_confidence,
+        meta_uncertainty=sigma,
+        base_threshold=override_threshold,
+        effective_threshold=effective,
+        robot_defers=robot_defers,
+        resistance_margin=resistance_margin,
+    )
+
+
+# Additive Pedagogical Analysis — WAIT-ACT Margin vs Confidence
+# ============================================================================
+#
+# This block is an ADDITIVE pedagogical complement to the Off-Switch Game above.
+# It does NOT replace override_threshold (which is a deliberate safety choice,
+# see git blame: commit 467e9a1f7 by jsboige, 2026-02-01, rationale comment:
+# "Robots with <90% confidence now defer (SAFE zone); better reflects AIMA
+# insight: uncertainty makes robots safer"). It makes the math explicit:
+#
+#   WAIT-ACT margin = E[U|WAIT] - E[U|ACT]
+#                    = p           - (2p - 1)
+#                    = 1 - p
+#
+# The margin SHRINKS linearly with confidence and vanishes at p=1. The
+# override_threshold = 0.9 therefore lives in a regime where the margin is
+# exactly 1 - 0.9 = 0.1 (10% of utility). That is the SAFETY CHOICE: by
+# staying strictly below the "almost certain" regime (margin -> 0), the
+# robot remains in the "provably deferring" zone.
+#
+# Reading guide:
+#   - margin(0.5) = 0.5  : large safety buffer, WAIT obviously dominates
+#   - margin(0.9) = 0.1  : threshold zone, 10% margin — override_threshold
+#   - margin(0.99) = 0.01: razor-thin, near certainty
+#   - margin(1.0) = 0    : limit case, off-switch is moot (robot IS certain)
+
+
+def off_switch_margin_analysis(
+    override_threshold: float = 0.9,
+    n_points: int = 1001,
+) -> Dict[str, np.ndarray]:
+    """Analyze how the WAIT-ACT margin shrinks as robot confidence grows.
+
+    This is a pedagogical complement to :func:`off_switch_game`. The core
+    game (above) is left untouched; this function sweeps the closed interval
+    [0, 1] and returns the three primitive quantities plus their difference
+    (the margin) and the binary defer/override decision.
+
+    Args:
+        override_threshold: Confidence above which the robot may resist.
+            Defaults to 0.9 (matches :func:`off_switch_game` default).
+        n_points: Number of sweep points on the confidence axis.
+
+    Returns:
+        Dictionary with keys:
+          - ``confidence`` (n_points,): confidence values p in [0, 1]
+          - ``wait`` (n_points,):       E[U | WAIT] = p
+          - ``act`` (n_points,):        E[U | ACT]  = 2p - 1
+          - ``margin`` (n_points,):     E[U|WAIT] - E[U|ACT] = 1 - p
+          - ``defers`` (n_points, bool): robot defers iff p < override_threshold
+          - ``threshold_margin`` (float): margin at p = override_threshold
+          - ``override_threshold`` (float): echoed for downstream consumers
+    """
+    p = np.linspace(0.0, 1.0, n_points)
+    wait = p                 # E[U|WAIT]
+    act = 2.0 * p - 1.0      # E[U|ACT]
+    margin = wait - act      # = 1 - p, by construction
+    defers = p < override_threshold
+
+    return {
+        "confidence": p,
+        "wait": wait,
+        "act": act,
+        "margin": margin,
+        "defers": defers,
+        "threshold_margin": float(1.0 - override_threshold),
+        "override_threshold": float(override_threshold),
+    }
+
+
+def off_switch_margin_report(
+    override_threshold: float = 0.9,
+    samples: Tuple[float, ...] = (0.5, 0.8, 0.9, 0.95, 0.99, 1.0),
+) -> str:
+    """Print a human-readable WAIT-ACT margin report at sampled confidences.
+
+    Args:
+        override_threshold: Forwarded to :func:`off_switch_margin_analysis`.
+        samples: Tuple of confidence values to display.
+
+    Returns:
+        Multi-line string with a per-sample table (p, WAIT, ACT, margin,
+        defers?).
+    """
+    analysis = off_switch_margin_analysis(override_threshold=override_threshold)
+    p_arr = analysis["confidence"]
+
+    lines = [
+        "=" * 64,
+        "OFF-SWITCH GAME — WAIT-ACT MARGIN vs CONFIDENCE",
+        "=" * 64,
+        "",
+        f"Override threshold (deliberate safety choice): "
+        f"{override_threshold:.3f}",
+        f"Threshold margin = 1 - threshold = "
+        f"{analysis['threshold_margin']:.3f}",
+        "",
+        "Margin = E[U|WAIT] - E[U|ACT] = p - (2p - 1) = 1 - p",
+        "",
+        f"{'p':>6}  {'WAIT':>8}  {'ACT':>8}  {'margin':>8}  {'defers':>8}",
+        "-" * 64,
+    ]
+
+    for s in samples:
+        # Locate the closest sweep point to the requested sample.
+        idx = int(np.argmin(np.abs(p_arr - s)))
+        wait_v = float(analysis["wait"][idx])
+        act_v = float(analysis["act"][idx])
+        margin_v = float(analysis["margin"][idx])
+        defers_v = bool(analysis["defers"][idx])
+        marker = "<= threshold" if defers_v else ">  threshold"
+        lines.append(
+            f"{s:>6.3f}  {wait_v:>8.3f}  {act_v:>8.3f}  "
+            f"{margin_v:>8.3f}  {marker}"
+        )
+
+    lines.extend([
+        "",
+        "INTERPRETATION:",
+        "-" * 64,
+        f"  At p = {override_threshold:.2f}, the WAIT-ACT margin is",
+        f"  exactly {analysis['threshold_margin']:.2f}. Choosing this",
+        "  threshold keeps the robot in a regime where waiting is",
+        "  RATIONALLY better than acting by a measurable, non-tiny",
+        "  amount. Above the threshold the margin keeps shrinking;",
+        "  below it the margin is large enough that a rational robot",
+        "  has no reason to override the human.",
+        "",
+        "  This is why the threshold is NOT 0.5 (too conservative —",
+        "  robots would defer on tasks they obviously understand) and",
+        "  NOT 1.0 (trivially permissive — margin is exactly 0, the",
+        "  off-switch loses all bite). 0.9 is the deliberately safe",
+        "  middle: a 10% margin that is small enough to be honest",
+        "  about robot competence, large enough to keep humans in",
+        "  the loop.",
+        "",
+        "=" * 64,
+    ])
+
+    return "\n".join(lines)
+
+
+# ============================================================================
 # Assistance Game as Cooperative Game
 # ============================================================================
 

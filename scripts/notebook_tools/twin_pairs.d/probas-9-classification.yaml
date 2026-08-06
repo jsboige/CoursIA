@@ -1,0 +1,15 @@
+- name: Probas-9 Classification
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 5171f5eac673b08f03930ad3cf8ba67516cea121
+      csharp_sha: 536e512f086a44306ebfb1bf241536c5055a8123
+  known_differences:
+  - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

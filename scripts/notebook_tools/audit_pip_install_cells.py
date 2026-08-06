@@ -57,6 +57,15 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
+# Marcheur canonique centralise dans notebook_walk (#8650) : SKIP_DIRS canonique
+# (sur-ensemble strict de l'ancien filtre local -- ajoute ``.lake``, ``archive``,
+# ``_archive``, ``foundry-lib``, ``.ipynb_checkpoints``, etc., donc les
+# arborescences vendored/archivees ne sont plus auditees), filtre git
+# tracked_only, et filtre sur le chemin RELATIF a la racine (immunise contre la
+# classe #8858 -- un filtre abs-parts reduit le scan au silence sous un parent
+# nomme ``_archives/`` / ``archive/``).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
+
 # A line that runs pip in a cell. Captures:
 #   !pip install pandas
 #   !{sys.executable} -m pip install pandas
@@ -113,15 +122,16 @@ def _classify_cell(source: str) -> str:
 def _iter_notebooks(root: Path) -> Iterable[Path]:
     """Yield notebooks under ``root``, excluding papermill output artifacts.
 
-    The ``iter_notebooks`` convention (cf #6312) excludes
-    ``_output.ipynb`` and ``_executed.ipynb`` paths (papermill artifacts,
-    never source). This keeps the audit focused on what's actually
-    committed and reviewed.
+    Directory walk delegated to ``notebook_walk.iter_notebooks`` (#8650):
+    canonical SKIP_DIRS (excludes .lake/foundry-lib/archive/_archives/etc.),
+    git-tracked filter, RELATIVE-path filtering (#8858-immune). The
+    ``_output.ipynb`` papermill artifact is handled by the walker's
+    ``skip_papermill_output``; ``_executed.ipynb`` (a second papermill
+    artifact convention) is preserved here as a thin post-filter because the
+    canonical walker does not know that suffix.
     """
-    for path in sorted(root.rglob("*.ipynb")):
-        parts = path.parts
-        if any(part.endswith("_output.ipynb") or part.endswith("_executed.ipynb")
-               for part in parts):
+    for path in _walk_notebooks(root):
+        if path.name.endswith("_executed.ipynb"):
             continue
         yield path
 

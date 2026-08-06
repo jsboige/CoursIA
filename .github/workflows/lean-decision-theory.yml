@@ -4,16 +4,24 @@ name: Lean CI (decision_theory_lean)
 # at the Probas series root, lifted from Probas/Infer/gittins_lean in PR #4058
 # (lake content unchanged by the lift). First module: Gittins index. Research scaffolding.
 #
-# sorry-filter-mode=standalone-tactic, baseline=4: a CONSERVATIVE regression floor
-# counting only standalone `sorry` tokens (never false-positives on prose; catches
-# any NEW standalone sorry; UNDERCOUNTS inline-commented ones). Authoritative sorry
-# profile: GittinsTheorem.lean = 2 (INTRINSIC gittins_optimality, #4039 MDP barrier),
-# mirrored 1:1 in the EN sibling GittinsTheorem_en.lean = 2 (i18n #4980 mandates
-# byte-identical proofs FR↔EN, including INTRINSIC sorries), lake total = 4.
-# Discount.lean / Discount_en.lean = 0 since PR #2911. Raised 3→4 in the i18n PR
-# adding the Gittins_en siblings (documented justification: faithful EN mirror of
-# an existing INTRINSIC sorry, NOT a regression). Consolidated per ai-01 DRY
-# decision (matrix). See lean-build.yml.
+# sorry-filter-mode=standalone-tactic, baseline=2: regression floor matching what
+# the CI counter actually reports. lean-build.yml counts FR files only
+# (`find ! -name '*_en.lean'`), so the EN siblings are OUT of the gate's scope.
+# GittinsTheorem.lean (FR) carries 2 standalone `sorry` (gittins_optimality, the
+# value V := sorry and the inequality proof sorry, both INTRINSIC #4039 MDP
+# barrier) — and 2 is ALSO the `real`-mode count (no inline `exact sorry` forms),
+# so standalone-tactic does not undercount here. The EN sibling
+# GittinsTheorem_en.lean mirrors them 1:1 (i18n #4980 byte-identical proofs) but,
+# being `_en`, is never scanned — its parity with FR is enforced by the i18n
+# convention, not by this gate.
+#
+# Was baseline=4: that value counted FR(2)+EN(2), but the counter excludes `_en`,
+# so the EN half was never seen — a scope mismatch that left the floor 2 above
+# the real count (Discount.lean, also 0 since #2911, compounded it). A floor 2
+# above real defeats the §D anti-regression gate: a 2-sorry regression (2->4)
+# would pass undetected (CI run 29857938621 already reports "Real sorry
+# (standalone-tactic): 2 / Known baseline: 4"). Corrected to 2 so the gate is
+# sensitive again. Consolidated per ai-01 DRY decision (matrix). See lean-build.yml.
 
 on:
   push:
@@ -32,11 +40,14 @@ on:
       - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
     with:
       project-path: MyIA.AI.Notebooks/Probas/decision_theory_lean
       display-name: decision_theory_lean
-      sorry-baseline: "4"
+      sorry-baseline: "2"
       sorry-filter-mode: standalone-tactic

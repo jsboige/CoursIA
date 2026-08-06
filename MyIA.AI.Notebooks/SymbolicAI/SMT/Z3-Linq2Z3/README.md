@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: SymbolicAI-SMT-Z3Linq2Z3
+pedagogical_count: 0
+breakdown: 
+maturity: 
+-->
+
 # Série Z3 - Programmation Déclarative avec Z3.Linq
 
 [← SMT](../README.md) | [Z3-API (série sœur) →](../Z3-API/README.md)
@@ -254,6 +261,7 @@ La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard 
 | **Support `int[][]` (tableaux 2D) absent** | Le support des tableaux imbriqués provient de la branche [EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) du fork, absent du NuGet public. Le notebook 05 le nécessite. |
 | **Le notebook 10 échoue (`Microsoft.Automata.dll` manquant)** | Le notebook 10 consomme un fork **distinct** (Automata, pas Z3.Linq). Exécuter [`automata-build-deploy.ps1`](../../../../scripts/environment/automata-build-deploy.ps1) une fois pour peupler son propre `.deploy/`. |
 | **`Theorem<T>` vs écriture Z3 bas niveau** | Z3.Linq masque volontairement l'API Z3 : on décrit le modèle et les contraintes LINQ, le binding traduit. Pour la théorie des **bit-vectors**, le notebook [15 (BitVectors Overflow)](15_BitVectors_Overflow.ipynb) de *cette* série montre l'API Z3 .NET brute (`MkBV`/`MkBVAdd`/`MkBVULT`) en C#. Pour les tactiques, la théorie des chaînes ou les quantificateurs, la [série sœur Z3-API](../Z3-API/README.md) expose l'API complète côté Python. |
+| **Le cache `mealplan_cache.json` est épinglé (pourquoi les compteurs ne bougent plus)** | Le corpus brut (RecipeML archive.org + Ciqual ANSES 2025) **bouge dans le temps** — les sources rajoutent/retirent des lots, les connexions réussissent ou échouent, et le compte de recettes dérive d'une exécution à l'autre. Pour stopper cette dérive, le **cache dérivé `data/meals/mealplan_cache.json` est committé** (~418 Ko) : les notebooks 07 (producteur), 08 et 09 le **lisent sans le régénérer**. `download_meal_data.py` sert à **régénérer** le brut si l'on veut un nouveau millésime, **pas** à rafraîchir le cache à chaque exécution — l'épinglage garantit qu'un étudiant qui clone voit les mêmes compteurs que le notebook (#8901). |
 
 ## Conclusion / Prochaines étapes
 

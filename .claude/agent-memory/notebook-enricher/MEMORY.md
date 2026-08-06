@@ -68,7 +68,7 @@
   - All stubs use `None` / `pass` pattern with `# Etape N` and `# Indice` comments
   - Each exercise preceded by markdown cell with objective + indices
   - No `raise NotImplementedError` / `assert False` / `1/0` used
-  - Path correction: NumPy/Pandas notebooks are under `01-PythonForDataScience/` not `PythonAgentsForDataScience/`
+  - Path correction: NumPy/Pandas notebooks are under `01-PythonForDataScience/` not `Track1-LangChain/`
 
 - **2026-03-03**: Lean-11-TorchLean Pedagogical Enhancement (4 cells added, SQUELETTE → COMPLET)
   - TorchLean: réseaux de neurones formellement vérifiés avec Lean 4

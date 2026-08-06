@@ -5572,71 +5572,162 @@ else:
 MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb,66ee855e,markdown,fr,352942e01b85877b,"## 5. Amelioration: Propagation de Contraintes
 
 L'ajout de propagation de contraintes (forward checking) reduit l'espace de recherche.",,,,,,,,352942e01b85877b,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb,165f5705,code,fr,d8b1181d4dfb8753,"class CrosswordForwardChecking(CrosswordBacktracking):
-    """"""Solveur avec forward checking.""""""
-    
+MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb,165f5705,code,fr,bfe7f24d252e245f,"class CrosswordForwardChecking(CrosswordBacktracking):
+    """"""Solveur avec forward checking et heuristique MRV (Minimum Remaining Values).
+
+    Contrairement au backtracking pur, on maintient pour chaque slot non encore
+    assigne un *domaine* : l'ensemble des mots encore possibles. Des qu'on assigne
+    un mot a un slot, on *propage* la contrainte vers les slots voisins (ceux qui
+    le croisent) en retirant de leur domaine tout mot incompatible avec la lettre
+    imposee a l'intersection. Si la propagation vide le domaine d'un voisin, on
+    detecte immediatement le cul-de-sac (fail-fast) sans explorer toute la branche :
+    c'est tout l'interet du forward checking face a un backtracking qui s'essouffle.
+    """"""
+
     def __init__(self, grid: CrosswordGrid, dictionary: Dict[int, List[str]]):
         super().__init__(grid, dictionary)
-        # Domaines pour chaque slot
+        # Domaine courant de chaque slot (epure au fur et a mesure de la recherche)
         self.domains = {
             slot.id: set(dictionary.get(slot.length, []))
             for slot in grid.slots
         }
-    
-    def _is_compatible(self, slot: Slot, word: str) -> bool:
-        """"""Verifie compatibilite avec propagation.""""""
-        if not super()._is_compatible(slot, word):
-            return False
-        
-        # Verifier que l'assignation ne vide pas les domaines des autres slots
-        # (simplification: on verifie juste la compatibilite directe)
-        return True
-    
+        # Voisinages precalcules : slot_id -> [(slot_voisin, pos_dans_self, pos_dans_voisin)]
+        self._neighbors = self._build_neighbors()
+
+    def _build_neighbors(self) -> Dict[int, List[Tuple[int, int, int]]]:
+        """"""Calcule, pour chaque slot, la liste des slots qui le croisent.""""""
+        neighbors = {slot.id: [] for slot in self.grid.slots}
+        for h_id, v_id, (pos_h, pos_v) in self.grid.get_intersections():
+            neighbors[h_id].append((v_id, pos_h, pos_v))
+            neighbors[v_id].append((h_id, pos_v, pos_h))
+        return neighbors
+
+    def _forward_check(self, slot_id: int, word: str):
+        """"""
+        Propage l'assignation de ``word`` a ``slot_id`` : pour chaque voisin non
+        assigne, retire de son domaine les mots incompatibles avec la lettre
+        imposee a l'intersection.
+        Retourne la liste des (voisin, mots_retires) modifies, ou ``None`` si la
+        propagation vide le domaine d'un voisin (cul-de-sac).
+        """"""
+        modified = []
+        for other_id, pos_self, pos_other in self._neighbors[slot_id]:
+            if other_id in self.assignment:
+                continue  # deja assigne : contrainte deja verifiee
+            letter = word[pos_self].upper()
+            domain = self.domains[other_id]
+            incompatibles = {w for w in domain if w[pos_other].upper() != letter}
+            if incompatibles:
+                if len(domain) == len(incompatibles):
+                    # Le domaine deviendrait vide : on restaure ce qui a deja ete
+                    # retire dans CET appel, puis on signale l'echec (fail-fast).
+                    for oid, removed in modified:
+                        self.domains[oid] |= removed
+                    return None
+                domain -= incompatibles
+                modified.append((other_id, incompatibles))
+        return modified
+
+    def _restore(self, modified):
+        """"""Restaure les domaines apres un backtrack.""""""
+        for other_id, removed in modified:
+            self.domains[other_id] |= removed
+
     def _get_mrv_slot(self) -> int:
         """"""
-        Heuristique MRV: choisir le slot avec le plus petit domaine.
+        Heuristique MRV (Minimum Remaining Values) : choisir le slot non assigne
+        au plus petit domaine. On s'attaque d'abord aux variables les plus
+        contraintes, ce qui provoque une detection d'echec (et donc une coupe)
+        le plus tot possible dans l'arbre de recherche.
         """"""
         unassigned = [
             (slot.id, len(self.domains[slot.id]))
             for slot in self.grid.slots
             if slot.id not in self.assignment
         ]
-        
         if not unassigned:
             return -1
-        
-        # Retourner le slot avec le plus petit domaine
         return min(unassigned, key=lambda x: x[1])[0]
 
+    def solve(self, max_nodes: int = 100_000) -> bool:
+        """"""Forward checking + MRV avec limite de noeuds.""""""
+        self.nodes_explored = 0
+        self._max_nodes = max_nodes
+        self._cutoff = False
+        self.assignment = {}
+        self.letter_grid = {}
+        # Reinitialiser les domaines (solve() peut etre rappele)
+        self.domains = {
+            slot.id: set(self.dictionary.get(slot.length, []))
+            for slot in self.grid.slots
+        }
+        return self._fc_backtrack()
 
-# Comparaison des performances (avec limite pour eviter un blocage)
+    def _fc_backtrack(self) -> bool:
+        """"""Backtracking guidee par MRV avec propagation des domaines.""""""
+        self.nodes_explored += 1
+
+        if self.nodes_explored > self._max_nodes:
+            self._cutoff = True
+            return False
+
+        slot_id = self._get_mrv_slot()
+        if slot_id == -1:
+            return True  # Tous les slots sont assignes
+
+        slot = self.grid.slots[slot_id]
+        # Le domaine ne contient PLUS QUE des mots coherents avec les assignations
+        # courantes (la propagation l'a deja epure) : inutile de re-verifier.
+        for word in sorted(self.domains[slot_id]):
+            self.assignment[slot_id] = word
+            self._assign_letters(slot, word)
+
+            modified = self._forward_check(slot_id, word)
+            if modified is not None:
+                if self._fc_backtrack():
+                    return True
+                self._restore(modified)
+
+            # Backtrack
+            self._unassign_letters(slot)
+            del self.assignment[slot_id]
+
+        return False
+
+
+# Comparaison des performances (avec limite de noeuds pour rester raisonnable)
 def compare_solvers(grid, dictionary, n_trials=3):
-    """"""Compare les solveurs.""""""
+    """"""Compare le backtracking pur et le forward checking sur la meme grille.""""""
     import time
-    
+
     results = {
         'Backtracking': {'times': [], 'nodes': []},
         'ForwardChecking': {'times': [], 'nodes': []}
     }
-    
-    for trial in range(n_trials):
-        # Backtracking simple (limite de noeuds pour rester raisonnable)
-        bt = CrosswordBacktracking(grid, dictionary)
-        start = time.time()
-        bt.solve(max_nodes=50_000)
-        elapsed = time.time() - start
-        results['Backtracking']['times'].append(elapsed)
-        results['Backtracking']['nodes'].append(bt.nodes_explored)
-    
-    status = ""coupe"" if bt._cutoff else ""termine""
-    print(f""Backtracking ({status}): {np.mean(results['Backtracking']['times']):.3f}s ""
-          f""(moyenne {np.mean(results['Backtracking']['nodes']):.0f} noeuds)"")
-    
+
+    solvers = [
+        ('Backtracking', CrosswordBacktracking),
+        ('ForwardChecking', CrosswordForwardChecking),
+    ]
+
+    for name, Solver in solvers:
+        for _ in range(n_trials):
+            solver = Solver(grid, dictionary)
+            start = time.time()
+            solver.solve(max_nodes=50_000)
+            elapsed = time.time() - start
+            results[name]['times'].append(elapsed)
+            results[name]['nodes'].append(solver.nodes_explored)
+        status = ""coupe"" if solver._cutoff else ""termine""
+        print(f""{name:16} ({status}): {np.mean(results[name]['times']):.4f}s ""
+              f""(moyenne {np.mean(results[name]['nodes']):.0f} noeuds)"")
+
     return results
 
 
 print(""Comparaison des solveurs..."")
-results = compare_solvers(grid, DICTIONARY, n_trials=3)",,,,,,,,d8b1181d4dfb8753,,,,,,,
+results = compare_solvers(grid, DICTIONARY, n_trials=3)
+",,,,,,,,bfe7f24d252e245f,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-16-Crossword-CSP.ipynb,cbe03f21,markdown,fr,e52cfdc4c7eecb40,"## 6. Generation de Grille Aleatoire
 
 Créer une grille de mots croises a partir de rien.",,,,,,,,e52cfdc4c7eecb40,,,,,,,

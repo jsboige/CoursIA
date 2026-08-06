@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: SymbolicAI-SMT
+pedagogical_count: 46
+breakdown: SMT=46
+maturity: BETA=45, DRAFT=1
+-->
+
 # SMT - Satisfiability Modulo Theories
 
 [← Intelligence Symbolique](../README.md) | [Z3 (C# .NET) →](Z3-Linq2Z3/README.md) | [Z3-Python →](Z3-API/README.md)

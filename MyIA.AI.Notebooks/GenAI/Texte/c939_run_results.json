@@ -1,0 +1,135 @@
+{
+  "cell44_benchmark": [
+    {
+      "endpoint": "cloud-gpt5.2",
+      "status": "ok",
+      "elapsed_s": 2.404,
+      "completion_tokens": 90,
+      "content": "L’inférence bayésienne est une méthode statistique qui met à jour la probabilité d’une hypothèse à partir de nouvelles données, en combinant une croyance initiale (le *prior*) et la vraisemblance des "
+    },
+    {
+      "endpoint": "local-mini-v2",
+      "status": "ok",
+      "elapsed_s": 19.993,
+      "completion_tokens": 358,
+      "content": "L' inference bayesian est un processus statistique utilisé pour déterminer des estimations et des prédictions sur une variété de données qui ne sont pas directement observées. Cela se fait par le biai"
+    },
+    {
+      "endpoint": "vllm-qwen3.6",
+      "status": "ok",
+      "elapsed_s": 5.168,
+      "completion_tokens": 492,
+      "content": "\n\nL'inférence bayésienne est une méthode statistique qui met à jour la probabilité d'une hypothèse au fur et à mesure que de nouvelles données sont observées, en combinant une connaissance initiale (a"
+    }
+  ],
+  "cell51_batching": [
+    {
+      "endpoint": "cloud-gpt5.2",
+      "n_req": 25,
+      "n_ok": 25,
+      "total_time_s": 2.862,
+      "sum_tokens": 2160,
+      "throughput_tok_per_s": 754.59
+    },
+    {
+      "endpoint": "local-mini-v2",
+      "n_req": 25,
+      "n_ok": 12,
+      "total_time_s": 150.047,
+      "sum_tokens": 2619,
+      "throughput_tok_per_s": 17.45
+    },
+    {
+      "endpoint": "vllm-qwen3.6",
+      "n_req": 25,
+      "n_ok": 25,
+      "total_time_s": 16.677,
+      "sum_tokens": 12800,
+      "throughput_tok_per_s": 767.51
+    }
+  ],
+  "cell54_global_parallel": [
+    {
+      "endpoint": "cloud-gpt5.2",
+      "ok": true,
+      "elapsed_s": 2.434,
+      "completion_tokens": 84,
+      "finish_order": 1,
+      "total_time_s": 150.017
+    },
+    {
+      "endpoint": "vllm-qwen3.6",
+      "ok": true,
+      "elapsed_s": 5.36,
+      "completion_tokens": 512,
+      "finish_order": 2,
+      "total_time_s": 150.017
+    },
+    {
+      "endpoint": "local-mini-v2",
+      "ok": false,
+      "elapsed_s": 150.015,
+      "completion_tokens": 0,
+      "finish_order": 3,
+      "total_time_s": 150.017
+    }
+  ],
+  "cell34_tool_calling": [
+    {
+      "endpoint": "cloud-gpt5.2",
+      "status": "tool_call OK",
+      "finish_reason": "tool_calls",
+      "tool_calls": 1,
+      "tool_name": "get_weather",
+      "tool_args": "{\"location\":\"Marseille\",\"unit\":\"celsius\"}",
+      "content": "",
+      "elapsed_s": 4.016
+    },
+    {
+      "endpoint": "local-mini-v2",
+      "status": "no tool_call",
+      "finish_reason": "stop",
+      "tool_calls": 0,
+      "tool_name": null,
+      "tool_args": null,
+      "content": "En tant que modèle de langage naturel et intelligent créé par Alibaba Cloud, je ne peux pas avoir accès à l'information actuelle sur les conditions météorologiq",
+      "elapsed_s": 6.823
+    },
+    {
+      "endpoint": "vllm-qwen3.6",
+      "status": "tool_call OK",
+      "finish_reason": "tool_calls",
+      "tool_calls": 1,
+      "tool_name": "get_weather",
+      "tool_args": "{\"location\": \"Marseille\"}",
+      "content": "",
+      "elapsed_s": 2.409
+    }
+  ],
+  "cell41_reasoning": [
+    {
+      "endpoint": "cloud-gpt5.2",
+      "answer": 18182,
+      "answer_raw": "18182",
+      "correct": true,
+      "completion_tokens": 5,
+      "elapsed_s": 3.732
+    },
+    {
+      "endpoint": "local-mini-v2",
+      "answer": 19460,
+      "answer_raw": "19460",
+      "correct": false,
+      "completion_tokens": 6,
+      "elapsed_s": 0.949
+    },
+    {
+      "endpoint": "vllm-qwen3.6",
+      "answer": 18182,
+      "answer_raw": "\n\n18182",
+      "correct": true,
+      "completion_tokens": 1020,
+      "elapsed_s": 11.323
+    }
+  ]
+}

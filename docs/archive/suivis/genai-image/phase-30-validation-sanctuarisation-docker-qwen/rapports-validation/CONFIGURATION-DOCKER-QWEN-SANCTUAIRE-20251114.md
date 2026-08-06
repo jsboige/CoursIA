@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Document de Sanctuarisation - Système ComfyUI Qwen Docker
 
 **Date de sanctuarisation** : 14 novembre 2025  

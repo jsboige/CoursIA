@@ -1,0 +1,18 @@
+- name: "Tweety-4 Belief-Revision"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: a4518639c3bc575395b112d7cf3d57f4518ec09d
+      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA
+      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
+      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+  known_differences:
+    - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

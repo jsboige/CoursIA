@@ -1,0 +1,168 @@
+# Registre de parite des jumeaux Python/C# (#8057, parent #4208).
+#
+# Chaque entree decrit une paire de notebooks jumeaux : le chemin des deux
+# cotes, le niveau de parite, l'enregistrement d'audit (date + auteur + git blob
+# SHA de chaque notebook au moment de l'audit) et les differences connues documentees.
+#
+# L'enregistrement d'audit a deux formes (#9399 volet a) :
+#   - `last_audit:` singleton (forme legacy, historique) ;
+#   - `audits:` liste append-only (forme cible) : chaque audit ajoute une entree
+#     distincte, rien n'ecrase plus rien. Le singleton etait un aimant a collision
+#     sous lanes paralleles (#9171 cle dupliquee, #9237/#9245 CONFLICT, ecrasement
+#     silencieux du plus recent). Le reader lit le dernier enregistrement
+#     (`audits[-1]` ou `last_audit`). La migration legacy -> audits: est paresseuse
+#     (a la volee, sur le 1er drift reel) -- pas de reecriture massive.
+#
+# Depuis #9399 volet (c), chaque enregistrement porte en plus
+# `content_python_sha` / `content_csharp_sha` (SHA-256 du notebook SANS
+# `nb["metadata"]` -- cost, papermill, kernelspec, language_info). Le verdict
+# DRIFT preferere ces content_sha (metadata-immunes) quand l'audit les enregistre
+# et retombe sur les git blob SHA (`python_sha`/`csharp_sha`) pour les paires
+# legacy. Un tampon `metadata.cost` seul ne fait plus rougir le gate ni declencher
+# de faux audit au --update ; les vrais changements (prose, re-exec) derives
+# toujours. Les content_sha sont ajoutés A COTE des blob SHA (anti-regression :
+# ces derniers restent enregistres pour inspection humaine).
+#
+# Le check `check_twin_parity.py` compare le SHA courant (git ls-tree HEAD) au
+# SHA audite : DRIFT = un cote a evolue sans re-audit -> parite a reverifier.
+# Apres une audit firsthand, rebaseline UNE paire avec :
+#   python scripts/notebook_tools/check_twin_parity.py --update \
+#       --pair "<nom exact de l'entree>" --by "<machine:workspace>"
+# `--update` refuse de tourner sans selecteur (--pair / --family / --yes-all-pairs) :
+# sans lui il rebaselinerait les 116 paires d'un coup et masquerait des DRIFTs
+# legitimes (#8508). L'ecriture est chirurgicale : seul le bloc d'audit de la
+# paire ciblee change (les autres cles top-level et les commentaires sont
+# preserves, #8570) ; depuis #9399 un rebaseline d'une paire legacy qui drift la
+# migre vers `audits:` en preservant l'ancien enregistrement (item[0]).
+#
+# parity_level :
+#   surface     = meme plan/sections, implimentations independantes
+#   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
+#   native-both = traduction fidele cellule-par-cellule (rare)
+#
+# PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
+# Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
+# + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)
+# + Probas/Infer.NET-PyMC (c.812, 11 paires ; C# Infer.NET EP/VMP compile vs Python PyMC NUTS/HMC + ADVI)
+# + GameTheory/.NET-Parity (c.804, 3 paires) + SemanticWeb/dotNetRDF-rdflib (c.809, 11 paires)
+# + Search/Part3-Advanced (c.833, 3 paires) + Tweety/IKVM-JPype (c.810, 11 paires) + SymbolicAI/Planners (c.836, 9 paires).
+#   Consolidation c.867/#8264 (po-2024, 2026-07-25) : ces 5 dernieres familles (37 paires) etaient
+#   initialement 5 tranches PR serial-conflictuelles (#8124/#8165/#8169/#8172/#8192, toutes editant
+#   ce fichier -> au plus 1 pouvait merger). Fold en une seule PR rebaselinee sur le format post-#8372,
+#   SHA courant recalcule par `git ls-tree HEAD` (requis par le gate CI --per-pair). Voir #8057.
+
+
+# ---------------------------------------------------------------------------
+# Historique des tranches / provenance (commentaires inter-entrees du registre
+# mono-fichier d'origine, preserves verbatim lors de la migration file-per-entry).
+# ---------------------------------------------------------------------------
+
+
+
+
+
+
+# --- Tranche 2 (c.802, po-2024, 2026-07-23) : extensions Search/Part2-CSP (CSP-1..4) + Search/Part1-Foundations (Search-1..3) ---
+# Meme mecanisme (registre curated YAML + check_twin_parity.py), substance
+# distincte : idiomes framework Python (collections.deque, heapq, typing) vs
+# C# (.NET collections generiques Queue<T>/PriorityQueue/Dictionary), Choco-
+# solver 4.10.17 via IKVM 8.15.0 cote C# sur CSP-1..4 uniquement (pas sur
+# Search-1..3 qui restent from-scratch des deux cotes). Verifie firsthand via
+# `git ls-tree HEAD` 2026-07-23, DRIFT detecte sur Z3-Python-02 (post-fix
+# #8045 doc-honesty) = le mecanisme de detection marche (voir c.802 body PR).
+
+
+
+
+
+
+
+
+
+# === Tranche ML.NET/Python (c.803, po-2024 2026-07-23) — acceptance #8057 checkbox 3 ===
+# 8 paires ML.NET(C#) <-> sklearn/statsmodels(Python). SHAs verifies firsthand `git ls-tree HEAD`.
+# ML-6 ONNX exclu : format d'echange (pas un algo ML), SKIP per campaign #4956 (CLOSED).
+
+
+
+
+
+
+
+
+
+
+# -- Tranche 7 (c.812, po-2024) : Probas/Infer.NET-PyMC (11 paires, 2..12).
+# Familles de programmation probabiliste : C# Infer.NET (EP/VMP, modele compile)
+# vs Python PyMC (MCMC NUTS/HMC + ADVI, backend PyTensor). Topics identiques.
+
+
+
+
+
+
+
+
+
+
+
+
+# -- Tranche 7 (suite, c.812, po-2024) : Probas/Infer.NET-PyMC paires 13-19.
+# Complete la famille (2-19). Memes moteurs : Infer.NET EP/VMP vs PyMC NUTS/ADVI.
+
+
+
+
+
+
+
+
+
+# ======================================================================
+# CONSOLIDATION c.867 (po-2024, 2026-07-25, #8264) : fold des 5 tranches serial-conflictuelles
+# #8124 (GameTheory 3) + #8165 (SemanticWeb 11) + #8169 (Search-P3 3) + #8172 (Tweety 11) + #8192 (Planners 9) = 37 paires.
+# Rebaseline sur le format post-#8372. Pour CHAQUE paire : test -f des 2 twins (37/37 existent),
+# SHA courant recalcule (git ls-tree HEAD) — requis par le gate CI --per-pair (register-SHA != tree-SHA
+# sur paire nouvelle = DRIFT_INTRODUCED -> FAIL). 9 paires ont drift depuis l'audit 2026-07-23
+# (enrichissement/prose/output paraphite-preservant, verifie via git log) -> re-baseline 2026-07-25.
+
+# === Tranche 4 GameTheory/.NET-Parity (c.804, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+# Python = nashpy + scipy.optimize.linprog (libs matures) ; C# = from-scratch (SimplexMax Dantzig+Bland, BestResponseRow).
+# Les twins C# reimplementent les solveurs a la main (valeur pedagogique vs invoquer une lib). SHAs `git ls-tree HEAD`.
+
+
+# === Tranche 5 SemanticWeb/dotNetRDF-rdflib (c.809, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+
+
+# === Tranche 6 Search/Part3-Advanced (c.833, po-2023, 2026-07-23) — famille supplementaire #8057 ===
+
+
+# === Tranche 7 Tweety/IKVM-JPype (c.810, po-2024, 2026-07-23) — famille supplementaire #8057 ===
+# Python = JPype (pont vers JVM) ; C# = IKVM (bytecode Java traduit en .NET). 9 semantic lib-vs-lib + 2 surface (Tweety-6 ASPIC+ from-scratch, Tweety-11 causal from-scratch).
+
+
+# + SymbolicAI/Planners (po-2023 c.836, 9 paires Python<->C# : Intro/PDDL/State-Space/Fast-Downward/
+#   Heuristics/Domains/OR-Tools/Temporal/HTN). Voir #8057. Planners-5b-Lean-Relaxation = Python-only
+#   (relaxation Lean, pas de jumeau C#) -> exclu. Planners-10/11/12 = Python-only (neuro-symbolique)
+#   -> exclus. Asymetrie engine : Python invoque des solveurs SOTA externes (unified-planning,
+#   fast-downward Docker, OR-Tools CP-SAT) ; C# = reimplementation from-scratch BCL .NET (0 NuGet),
+#   demonstration pedagogique du MEME concept (parite conceptuelle, pas invocation du meme solver).
+
+
+# === Tranche 7 Search/Part1-Foundations completeness (c.735, po-2026) — famille supplementaire #8057 ===
+
+
+
+
+# === Tranche GT-14..17 fin-de-veine (c.914, po-2023) — cloture famille GameTheory/.NET-Parity 16/16 #8057 ===
+
+
+
+
+
+# === Tranche 9 Search/Applications completeness (c.737, po-2026) — famille supplementaire #8057 ===
+
+
+# === Tranche 8 GameTheory/SocialChoice completeness (c.736, po-2026) — famille supplementaire #8057 ===
+
+# === Tranche 10 GameTheory/SocialChoice completeness (c.738, po-2026) — famille supplementaire #8057 ===

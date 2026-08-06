@@ -1,0 +1,14 @@
+- name: "SW-7 OWL"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7b-Python-OWL.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 95f6fb513c53bb133e9f47966e26e812ba86ad11
+      csharp_sha: 25c773f11a9fcdf9c6d03d88a3c3a39102399095
+      reason: "Identity/phantom fix (C# cell 4 ASCII stack-diagram « OWL 2 dans la pile du Web Semantique »): the SHACL layer was labelled « SHACL (SW-9) » but SHACL is notebook SW-8 (SW-8-CSharp-SHACL.ipynb / SW-8-Python-SHACL.ipynb on origin/main). The Python twin SW-7b already correctly says SW-8 (cell 28). Fixed SW-9 -> SW-8 (same char length, ASCII box alignment preserved). Other layers (OWL2 SW-7, RDFS SW-6, RDF SW-1/2/3) were already correct; SPARQL (SW-5) left untouched (debatable: dedicated SPARQL is SW-4, but SW-5 LinkedData uses SPARQL -- not an unambiguous error). Markdown-only, 0 re-exec, no output change. No §D.5 (identity/phantom class, not a measure/value drift). Python twin unchanged."
+  known_differences:
+    - "Socle commun : modelisation OWL (classes, proprietes, restrictions, axiomes)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` : OntologyGraph, OwlReasoner). Python = `owlready2` (API OWL orientee-objet dediee, world/Thing/Property). Deux librairies OWL matures mais aux philosophies differentes : dotNetRDF traite OWL comme une couche sur RDF ; owlready2 est nativement orientee OWL."

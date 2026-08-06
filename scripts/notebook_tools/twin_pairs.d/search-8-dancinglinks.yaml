@@ -1,0 +1,23 @@
+- name: "Search-8 DancingLinks"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-8-DancingLinks-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 16f7e7cdb38e559dcebf1ca3480c056d0690eec8
+      csharp_sha: 6f8406e999d2e74ff5e615e32efb8c7342396c73
+      reason: "Markdown-only identity fix (Python cells 53+54): the worked-example enonce (cell 53) and the code comment (cell 54) of the 5-element Exemple 1 instance both wrote S2 = {1, 4}, but the actual matrix row [0,1,0,1,0], the sets dict {1:{2,4}}, and the committed output (S2 couvre {2, 4}, Couverture exacte True) all use {2, 4} -- with {1,4} the cover would miss element 2 and double-cover 1, making an exact cover impossible. Aligned the enonce + comment to {2, 4}. NOTE: the early visualization cell 5 uses a SEPARATE 7-element instance where S2 = {1, 4} is correct (same instance as the C# twin) -- left untouched. C# twin is a different 7-element instance, no parallel defect. No re-exec, no output change."
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: ce86217dba6f48a422de5dbd297e7f269aba7b95
+      csharp_sha: 6f8406e999d2e74ff5e615e32efb8c7342396c73
+      content_python_sha: 19acda85a22ee8187103dcc9e082067b84ce4f2e5af95b9a20e89777024d243d
+      content_csharp_sha: 67f0e2537692300f2ef1e246f3f8a06b368d2d11c60758541778cc210f147959
+  known_differences:
+    - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
+    - "Socle commun : probleme de couverture exacte, algorithme X de Knuth, structure de donnees Dancing Links (DLX), implementation DLX, application polyominos, comparaison de performances DLX vs backtracking."
+    - "Asymetrie de couverture : le jumeau Python (60 cellules, 21 code) couvre 3 applications (Sudoku solver, Pavage de polyominos, Pentominoes) + visualisation matplotlib ; le jumeau C# (22 cellules, 10 code) couvre uniquement le pavage de polyominos (Sudoku et Pentominoes absents), pas de matplotlib."
+    - "Implementation DLX : les deux cotes codent la structure de listes doublement chainees a la main (noeud avec L/R/U/D/C) -- c'est le coeur pedagogique, identique conceptuellement. Aucun solveur tiers."
+    - "Le jumeau C# est explicitement plus compact (tranche pedagogique focalisee sur DLX + polyominos) ; le jumeau Python est la version de reference complete."

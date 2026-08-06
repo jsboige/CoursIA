@@ -19,9 +19,9 @@ layout: cover
 - Cogs, Brighton UK
 - Aricie - DNN - PKP
 
-![w:250](images/img_001.png)
-![w:250](images/img_002.png)
-![w:250](images/img_003.png)
+![w:250](./images/img_001.png)
+![w:250](./images/img_002.png)
+![w:250](./images/img_003.png)
 
 
 ---
@@ -89,7 +89,7 @@ layout: two-cols
 ::right::
 
 
-![w:380](images/img_005.png)
+![w:380](./images/img_005.png)
 
 
 
@@ -116,7 +116,8 @@ layout: two-cols
 - 1990s : L'IA devient une science
 
 <div style="text-align: center; margin-top: 8px;">
-![h:100](images/img_006.png)
+![h:100](./images/img_006.png)
+</div>
 
 
 ::right::
@@ -133,10 +134,9 @@ layout: two-cols
 - NLP : Transformers, LLMs
 
 <div style="display: flex; gap: 10px; margin-top: 8px;">
-![h:45](images/img_007.jpg)
-![h:45](images/img_008.jpg)
+![h:45](./images/img_007.jpg)
+![h:45](./images/img_008.jpg)
 
-</div>
 </div>
 
 
@@ -202,7 +202,7 @@ layout: two-cols
 ::right::
 
 
-![w:350](images/img_009.png)
+![w:350](./images/img_009.png)
 
 
 
@@ -225,13 +225,13 @@ layout: two-cols
 - Pas de mémoire, reagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-![w:300](images/img_010.png)
+![w:300](./images/img_010.png)
 
 
 ::right::
 
 
-![w:380](images/img_011.png)
+![w:380](./images/img_011.png)
 
 
 
@@ -272,7 +272,7 @@ layout: two-cols
 ::right::
 
 
-![w:380](images/img_012.png)
+![w:380](./images/img_012.png)
 
 
 
@@ -288,7 +288,7 @@ layout: two-cols
 - **Probabiliste** : gestion de l'incertitude, réseaux bayesiens, decision
 - **Apprentissage** : amelioration par l'expérience (supervise, renforcement, deep learning)
 
-![w:200](images/img_013.jpg) ![w:200](images/img_014.png) ![w:200](images/img_015.jpg)
+![w:200](./images/img_013.jpg) ![w:200](./images/img_014.png) ![w:200](./images/img_015.jpg)
 
 
 ---
@@ -327,7 +327,7 @@ layout: two-cols
 - Passe du reactif au deliberatif
 - Planifie ses actions par exploration
 
-![w:300](images/img_016.png)
+![w:300](./images/img_016.png)
 
 
 ::right::
@@ -339,7 +339,7 @@ layout: two-cols
 - Actions ?
 - Représentation ?
 
-![w:300](images/img_017.png)
+![w:300](./images/img_017.png)
 
 
 
@@ -355,7 +355,7 @@ layout: two-cols
 
 **Itinéraire**
 
-![w:300](images/img_018.png)
+![w:300](./images/img_018.png)
 
 - Etat initial, test de but
 - Transitions
@@ -372,9 +372,9 @@ layout: two-cols
 - Assemblage robotique
 - Problèmes jouets
 
-![w:200](images/img_019.png)
-![w:200](images/img_020.png)
-![w:200](images/img_021.png)
+![w:200](./images/img_019.png)
+![w:200](./images/img_020.png)
+![w:200](./images/img_021.png)
 
 
 
@@ -393,7 +393,7 @@ layout: two-cols
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-![w:320](images/img_022.jpg)
+![w:320](./images/img_022.jpg)
 
 
 ::right::
@@ -405,8 +405,8 @@ layout: two-cols
   - Barque de 2 places
   - Jamais + de cannibales
 
-![w:280](images/img_023.png)
-![w:100](images/img_024.png)
+![w:280](./images/img_023.png)
+![w:100](./images/img_024.png)
 
 
 
@@ -438,9 +438,9 @@ layout: two-cols
 - Ex: Où sont mes clefs ?
 - Bidirectionnelle
 
-![w:220](images/img_025.png)
-![w:220](images/img_026.png)
-![w:220](images/img_027.png)
+![w:220](./images/img_025.png)
+![w:220](./images/img_026.png)
+![w:220](./images/img_027.png)
 
 
 ::right::
@@ -457,8 +457,8 @@ layout: two-cols
   - Algorithme A*
   - Demo Pathfinding.js
 
-![w:220](images/img_028.png)
-![w:220](images/img_029.png)
+![w:220](./images/img_028.png)
+![w:220](./images/img_029.png)
 
 
 
@@ -478,8 +478,8 @@ layout: two-cols
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-![w:220](images/img_030.png)
-![w:220](images/img_031.png)
+![w:220](./images/img_030.png)
+![w:220](./images/img_031.png)
 
 
 ::right::
@@ -495,8 +495,8 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-![w:220](images/img_032.png)
-![w:220](images/img_033.png)
+![w:220](./images/img_032.png)
+![w:220](./images/img_033.png)
 
 
 
@@ -541,7 +541,7 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-![w:350](images/img_031.png)
+![w:350](./images/img_031.png)
 
 
 
@@ -583,10 +583,10 @@ layout: two-cols
   - Symétrie (rupture de)
 
 <div class="img-grid-2x2">
-![w:150](images/img_034.jpg)
-![w:150](images/img_035.png)
-![w:150](images/img_036.png)
-![w:150](images/img_037.png)
+![w:150](./images/img_034.jpg)
+![w:150](./images/img_035.png)
+![w:150](./images/img_036.png)
+![w:150](./images/img_037.png)
 
 </div>
 
@@ -645,8 +645,8 @@ layout: two-cols
 
 **Raisonnement**
 
-![w:300](images/img_035.png)
-![w:300](images/img_036.png)
+![w:300](./images/img_035.png)
+![w:300](./images/img_036.png)
 
 
 
@@ -678,9 +678,9 @@ layout: two-cols
 
 
 <div class="img-grid">
-![w:200](images/img_038.png)
-![w:200](images/img_039.png)
-![w:200](images/img_040.png)
+![w:200](./images/img_038.png)
+![w:200](./images/img_039.png)
+![w:200](./images/img_040.png)
 
 </div>
 
@@ -714,7 +714,7 @@ layout: two-cols
 - Enemy(x,America) => Hostile(x)
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
-![w:300](images/img_040.png)
+![w:300](./images/img_040.png)
 
 
 
@@ -800,8 +800,8 @@ layout: two-cols
   - Fair-play
 
 <div class="img-grid">
-![w:220](images/img_042.jpg)
-![w:220](images/img_041.jpg)
+![w:220](./images/img_042.jpg)
+![w:220](./images/img_041.jpg)
 
 </div>
 
@@ -838,11 +838,11 @@ layout: two-cols
 
 <div class="img-grid">
 
-![](images/img_043.png)
-![](images/img_044.png)
-![](images/img_045.png)
-![](images/img_046.png)
-![](images/img_047.jpg)
+![](./images/img_043.png)
+![](./images/img_044.png)
+![](./images/img_045.png)
+![](./images/img_046.png)
+![](./images/img_047.jpg)
 
 
 </div>
@@ -872,8 +872,8 @@ layout: two-cols
 ::right::
 
 
-![w:300](images/img_048.png)
-![w:300](images/img_049.png)
+![w:300](./images/img_048.png)
+![w:300](./images/img_049.png)
 
 
 
@@ -954,7 +954,7 @@ layout: two-cols
 - Alternatives
 - Niveau de succès espéré
 
-![w:350](images/img_051.png)
+![w:350](./images/img_051.png)
 
 
 
@@ -992,9 +992,9 @@ layout: two-cols
   - Facteurs de distributions continues
 
 <div class="img-grid">
-![w:180](images/img_052.png)
-![w:180](images/img_053.png)
-![w:180](images/img_054.png)
+![w:180](./images/img_052.png)
+![w:180](./images/img_053.png)
+![w:180](./images/img_054.png)
 
 </div>
 
@@ -1020,9 +1020,10 @@ layout: two-cols
   - Observations bruitées
 
 <div class="img-grid">
-![w:150](images/img_055.png)
-![w:150](images/img_056.png)
-![w:150](images/img_057.png)
+![w:150](./images/img_055.png)
+![w:150](./images/img_056.png)
+![w:150](./images/img_057.png)
+</div>
 
 
 ::right::
@@ -1040,11 +1041,10 @@ layout: two-cols
 - Apprentissage
 
 <div class="img-grid">
-![w:150](images/img_058.png)
-![w:150](images/img_059.png)
-![w:150](images/img_060.jpg)
+![w:150](./images/img_058.png)
+![w:150](./images/img_059.png)
+![w:150](./images/img_060.jpg)
 
-</div>
 </div>
 
 
@@ -1081,12 +1081,12 @@ layout: two-cols
 
 <div class="img-grid">
 
-![w:150](images/img_061.png)
-![w:150](images/img_062.png)
-![w:150](images/img_063.png)
-![w:150](images/img_064.png)
-![w:150](images/img_065.jpg)
-![w:150](images/img_066.jpg)
+![w:150](./images/img_061.png)
+![w:150](./images/img_062.png)
+![w:150](./images/img_063.png)
+![w:150](./images/img_064.png)
+![w:150](./images/img_065.jpg)
+![w:150](./images/img_066.jpg)
 
 
 </div>
@@ -1123,9 +1123,9 @@ layout: two-cols
 - Utilité espérée
 
 <div class="img-grid">
-![w:180](images/img_067.png)
-![w:180](images/img_068.png)
-![w:180](images/img_069.png)
+![w:180](./images/img_067.png)
+![w:180](./images/img_068.png)
+![w:180](./images/img_069.png)
 
 </div>
 
@@ -1148,7 +1148,7 @@ layout: two-cols
 - Purs et mixtes (2n+1)
 - Topologie
 
-![w:300](images/img_070.png)
+![w:300](./images/img_070.png)
 
 
 ::right::
@@ -1163,7 +1163,7 @@ layout: two-cols
 - Induction
   - avant/arrière
 
-![w:300](images/img_071.jpg)
+![w:300](./images/img_071.jpg)
 
 
 <!-- Forme extensive : arbre ou chaque noeud = decision, feuilles = gains -->
@@ -1200,9 +1200,9 @@ layout: two-cols
 - Deepstack
 
 <div class="img-grid">
-![w:180](images/img_072.png)
-![w:180](images/img_073.png)
-![w:180](images/img_074.png)
+![w:180](./images/img_072.png)
+![w:180](./images/img_073.png)
+![w:180](./images/img_074.png)
 
 </div>
 
@@ -1241,9 +1241,9 @@ layout: two-cols
   - Évolution de la confiance
 
 <div class="img-grid">
-![w:180](images/img_075.png)
-![w:180](images/img_076.png)
-![w:180](images/img_077.jpg)
+![w:180](./images/img_075.png)
+![w:180](./images/img_076.png)
+![w:180](./images/img_077.jpg)
 
 </div>
 
@@ -1277,8 +1277,8 @@ layout: two-cols
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-![w:280](images/img_078.png)
-![w:280](images/img_079.jpg)
+![w:280](./images/img_078.png)
+![w:280](./images/img_079.jpg)
 
 
 
@@ -1347,7 +1347,7 @@ layout: two-cols
   - Critique
   - Générateur de problème
 
-![w:350](images/img_080.png)
+![w:350](./images/img_080.png)
 
 
 
@@ -1382,8 +1382,8 @@ layout: two-cols
   - Connaissance a priori / modèles
   - Feedback pour apprendre
 
-![w:280](images/img_081.png)
-![w:280](images/img_082.png)
+![w:280](./images/img_081.png)
+![w:280](./images/img_082.png)
 
 
 
@@ -1414,8 +1414,8 @@ layout: two-cols
 ::right::
 
 
-![w:300](images/img_083.png)
-![w:300](images/img_084.png)
+![w:300](./images/img_083.png)
+![w:300](./images/img_084.png)
 
 
 
@@ -1450,10 +1450,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_085.png)
-![](images/img_086.png)
-![](images/img_087.png)
-![](images/img_088.png)
+![](./images/img_085.png)
+![](./images/img_086.png)
+![](./images/img_087.png)
+![](./images/img_088.png)
 
 
 </div>
@@ -1491,10 +1491,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_090.png)
-![](images/img_091.png)
-![](images/img_092.png)
-![](images/img_093.png)
+![](./images/img_090.png)
+![](./images/img_091.png)
+![](./images/img_092.png)
+![](./images/img_093.png)
 
 
 </div>
@@ -1526,10 +1526,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_094.png)
-![](images/img_095.png)
-![](images/img_096.png)
-![](images/img_097.png)
+![](./images/img_094.png)
+![](./images/img_095.png)
+![](./images/img_096.png)
+![](./images/img_097.png)
 
 
 </div>
@@ -1559,12 +1559,12 @@ layout: two-cols
 
 <div class="img-grid">
 
-![w:150](images/img_098.png)
-![w:150](images/img_099.png)
-![w:150](images/img_100.png)
-![w:150](images/img_101.png)
-![w:150](images/img_102.png)
-![w:150](images/img_103.png)
+![w:150](./images/img_098.png)
+![w:150](./images/img_099.png)
+![w:150](./images/img_100.png)
+![w:150](./images/img_101.png)
+![w:150](./images/img_102.png)
+![w:150](./images/img_103.png)
 
 
 </div>
@@ -1600,12 +1600,12 @@ layout: two-cols
 
 <div class="img-grid">
 
-![w:150](images/img_104.png)
-![w:150](images/img_105.jpg)
-![w:150](images/img_106.png)
-![w:150](images/img_107.png)
-![w:150](images/img_108.png)
-![w:150](images/img_109.png)
+![w:150](./images/img_104.png)
+![w:150](./images/img_105.jpg)
+![w:150](./images/img_106.png)
+![w:150](./images/img_107.png)
+![w:150](./images/img_108.png)
+![w:150](./images/img_109.png)
 
 
 </div>
@@ -1642,10 +1642,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_110.png)
-![](images/img_111.png)
-![](images/img_112.png)
-![](images/img_113.png)
+![](./images/img_110.png)
+![](./images/img_111.png)
+![](./images/img_112.png)
+![](./images/img_113.png)
 
 
 </div>
@@ -1682,10 +1682,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_114.png)
-![](images/img_115.png)
-![](images/img_116.png)
-![](images/img_117.png)
+![](./images/img_114.png)
+![](./images/img_115.png)
+![](./images/img_116.png)
+![](./images/img_117.png)
 
 
 </div>
@@ -1719,8 +1719,8 @@ layout: two-cols
 ::right::
 
 
-![w:350](images/img_118.png)
-![w:350](images/img_119.png)
+![w:350](./images/img_118.png)
+![w:350](./images/img_119.png)
 
 
 
@@ -1753,8 +1753,8 @@ layout: two-cols
 ::right::
 
 
-![w:350](images/img_120.png)
-![w:350](images/img_121.png)
+![w:350](./images/img_120.png)
+![w:350](./images/img_121.png)
 
 
 
@@ -1814,9 +1814,9 @@ layout: two-cols
   - Machine reading
 
 <div class="img-grid">
-![w:180](images/img_122.png)
-![w:180](images/img_123.png)
-![w:180](images/img_124.png)
+![w:180](./images/img_122.png)
+![w:180](./images/img_123.png)
+![w:180](./images/img_124.png)
 
 </div>
 
@@ -1856,8 +1856,8 @@ layout: two-cols
   - Ambiguités, Modèles imbriqués
 
 <div class="img-grid">
-![w:220](images/img_125.png)
-![w:220](images/img_126.png)
+![w:220](./images/img_125.png)
+![w:220](./images/img_126.png)
 
 </div>
 
@@ -1886,10 +1886,10 @@ layout: two-cols
 
 <div class="img-grid-2x2">
 
-![](images/img_127.png)
-![](images/img_128.png)
-![](images/img_129.png)
-![](images/img_130.png)
+![](./images/img_127.png)
+![](./images/img_128.png)
+![](./images/img_129.png)
+![](./images/img_130.png)
 
 
 </div>
@@ -1923,9 +1923,9 @@ layout: two-cols
 ::right::
 
 
-![w:280](images/img_131.png)
-![w:250](images/img_132.png)
-![w:250](images/img_133.png)
+![w:280](./images/img_131.png)
+![w:250](./images/img_132.png)
+![w:250](./images/img_133.png)
 
 
 

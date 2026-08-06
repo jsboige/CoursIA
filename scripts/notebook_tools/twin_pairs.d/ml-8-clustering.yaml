@@ -1,0 +1,16 @@
+- name: "ML-8 Clustering"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-31"
+      by: myia-po-2023:CoursIA
+      python_sha: 98249788bd0a3541acd82d2f47e1dd645ac154b1
+      csharp_sha: 9406692311322fed00c51c257131dfe204399768
+      reason: "rebaseline apres add metadata.cost (#8445) aux DEUX jumeaux (vrais CPU-only identiques) ; parite semantique preservee (metadata-only, 0 code churn)"
+  known_differences:
+    - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
+    - "Socle pedagogique commun : K-Means (K=3) avec normalisation MinMax preprocess ; evaluation par metriques de cohesion de clusters."
+    - "Parite conceptuelle proche du natif : C# = `mlContext.Clustering.Trainers.KMeans(\"Features\", numberOfClusters: 3)` + `NormalizeMinMax`, prediction via `PredictedClusterId` (uint). Python = `sklearn.cluster.KMeans(n_clusters=3, n_init=10)` + `MinMaxScaler` via Pipeline."
+    - "Asymetrie de metriques : Python expose `davies_bouldin_score` + `silhouette_score` (comparaison de qualite de clustering) ; le C# se concentre sur l'affectation PredictedClusterId. n_init=10 explicite cote Python (ML.NET gere les restarts en interne)."

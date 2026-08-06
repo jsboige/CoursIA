@@ -233,6 +233,26 @@ REGLES:
 - NE JAMAIS repondre par un seul mot comme LEAVERN, ABORT, SKIP, GIVE_UP ou tout autre
   signal de controle. Ta reponse DOIT contenir des tactiques Lean concretes."""
 
+def _require_str(name: str, value, *, allow_empty: bool = False) -> str:
+    """Boundary guard: reject None / non-str degenerate inputs (#7596-pattern, G.9).
+
+    Converts the OPAQUE TypeErrors that ``load_reference_docs(project=None)``
+    (``os.path.join``: "argument must be str, not NoneType") and
+    ``augment_instructions(base=None)`` (``"\n\n---\n\n".join([..., None])``:
+    "expected str instance, NoneType found") previously raised into clear
+    ValueErrors naming the offending argument, so a workflow that forwards an
+    agent-generated None project/base fails fast with a diagnosable message.
+    Empty strings are rejected by default (invalid for a project identifier);
+    pass ``allow_empty=True`` for ``base`` where ``''`` is a legitimate input.
+    Mirrors ``lean_utils._require_str`` (entry #001 of the #7596 sequence).
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{name}: expected str, got {type(value).__name__}")
+    if not allow_empty and not value:
+        raise ValueError(f"{name}: expected non-empty str, got empty string")
+    return value
+
+
 def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000) -> str:
     """Load a compact summary of the committed reference docs for `project`.
 
@@ -246,6 +266,8 @@ def load_reference_docs(project: str = "stable_marriage", max_chars: int = 6000)
     keep the total under `max_chars`. Returns "" if the directory is absent.
     """
     import os
+
+    project = _require_str("project", project)
 
     ref_dir = os.path.join(
         os.path.dirname(__file__), "session_state", "reference_docs", project
@@ -404,6 +426,7 @@ def augment_instructions(
     `project` (issue #1081 Part 2). If `target_file` is given, inject proved lemmas
     from the target file so the Director can reference them.
     """
+    base = _require_str("base", base, allow_empty=True)
     from .knowledge import ProofKnowledgeBase
     kb = ProofKnowledgeBase()
     context = kb.generate_prover_context(goal=goal, max_chars=max_chars)

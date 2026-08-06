@@ -1,0 +1,14 @@
+- name: "Sudoku-7 Norvig"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 953832780bf8b101e6fcba553c9deeb30cc4cef1
+      csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
+  known_differences:
+    - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."
+    - "Implementation from scratch des deux cotes (NI lib dediee C# NI framework Python) : le C# est pur stdlib System.* (0 NuGet, 15 cellules code) ; le Python est aussi pur stdlib (0 numpy, 12 cellules code). C'est la paire la plus proche d'une traduction native : les deux codent assign/eliminate/search manuellement selon l'algorithme de Norvig. Mais les 2 implementations restent independantes (idiomes langage : dict/sets cote Python vs Dictionary/HashSet cote C#), d'ou parity_level semantic et non native-both."
+    - "Idiomes framework : C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 15 cellules code ; Python = pur stdlib (0 dependance numerique), 12 cellules code. Meme algorithme de Norvig, implementations didactiques independantes des deux cotes."

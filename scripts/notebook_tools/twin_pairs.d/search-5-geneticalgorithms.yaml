@@ -1,0 +1,25 @@
+- name: "Search-5 GeneticAlgorithms"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-01"
+      by: myia-po-2026:CoursIA
+      python_sha: 302e714c9920f536e87ce2d89bff63125d45d0a4
+      csharp_sha: e250e1fc294bd7be5cac4a85ca5a25d25e989ef2
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 3200b27e66e012b484e1eef9f3d72138e983def2
+      csharp_sha: e250e1fc294bd7be5cac4a85ca5a25d25e989ef2
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 04695e4127aabd49abcb348c4ceed2fb5bed3997
+      csharp_sha: e250e1fc294bd7be5cac4a85ca5a25d25e989ef2
+      content_python_sha: e8b81a43e5da425cf9a8c39a4a84c7c126c6c47e074b8497ed514530d5d27678
+      content_csharp_sha: 4ce8f6b040e40c2d8db614673d9ebe33449e52011421c6da6abd294f85c9bafb
+  known_differences:
+    - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
+    - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."
+    - "Idiomes framework : Python = demos riches multi-frameworks (76 cellules) : AG from-scratch (OneMax) + framework **DEAP** + framework **PyGAD** (optimisation continue) + concepts avances + comparaison quantitative GA-vs-solveurs-exacts. C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 25 cellules (AG from-scratch compact, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python couvre 3 frameworks (from-scratch + DEAP + PyGAD) + comparaison vs solveurs exacts (large spectre d'outils) ; le C# demontre le cycle AG canonique en BCL pure sans dependance externe. Meme socle theorique (algorithmes evolutionnaires, Holland 1975 / Goldberg 1989), leviers de demonstration differents."

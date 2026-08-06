@@ -190,28 +190,27 @@ def _read_notebook(nb_path: Path) -> dict | None:
 # Directories skipped during recursive scans. Mirrors the conventions in
 # ``scrub_papermill_paths.py``, ``detect_papermill_path_leak.py`` and
 # ``detect_papermill_failed_state.py``.
-_SKIP_DIR_NAMES = frozenset({
-    ".git",
-    "_archives",
-    "__pycache__",
-    "node_modules",
-    ".venv",
-    "venv",
-})
+# Marcheur canonique centralise dans notebook_walk (#8650) : SKIP_DIRS canonique
+# (sur-ensemble strict de l'ancien ``_SKIP_DIR_NAMES`` local -- ajoute ``.lake``,
+# ``archive``, ``_archive``, ``foundry-lib``, ``.ipynb_checkpoints``, etc., donc
+# les arborescences vendored/archivees ne sont plus auditees), filtre git
+# tracked_only, et filtre sur le chemin RELATIF a la racine (immunise contre la
+# classe #8858 -- un filtre abs-parts reduit le scan au silence sous un parent
+# nomme ``_archives/`` / ``archive/``).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
 
 
 def iter_notebooks(root: Path) -> list[Path]:
-    """Yield every ``*.ipynb`` under ``root`` recursively, skipping noise dirs."""
+    """Yield every ``*.ipynb`` under ``root`` recursively (single-file passthrough).
+
+    Directory walk delegated to ``notebook_walk.iter_notebooks`` (#8650): canonical
+    SKIP_DIRS + git-tracked filter + RELATIVE-path filtering (#8858-immune).
+    """
     if root.is_file():
         return [root] if root.suffix == ".ipynb" else []
     if not root.is_dir():
         return []
-    out: list[Path] = []
-    for p in root.rglob("*.ipynb"):
-        if any(part in _SKIP_DIR_NAMES for part in p.parts):
-            continue
-        out.append(p)
-    return sorted(out)
+    return list(_walk_notebooks(root))
 
 
 def scan_notebook(nb_path: Path) -> list[dict]:

@@ -1,0 +1,14 @@
+- name: "Search-14 Weighted A*"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: b97a441e1192d137bf999626a8685d071fc2056f
+      csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+  known_differences:
+    - "Socle pedagogique commun : Weighted A* (best-first sur f(n)=g(n)+W*h(n), W>=1) sur un terrain pondere, balayage de W, garantie de sous-optimalite bornee cout <= W*C* (Pohl 1970)."
+    - "Idiomes framework : Python = `heapq` (min-heap, re-push sur meilleur g) + `itertools.product` + `random.Random(seed)` (Mersenne Twister). C# = `PriorityQueue<T, double>` (.NET 6+, min-heap natif) + `Random(seed)` (.NET PRNG, distinct du Mersenne Twister Python)."
+    - "Asymetrie RNG (verifiee firsthand) : les deux cotes generent une grille aleatoire 25x25 avec `seed=42`, mais `random.Random(42)` (Python) et `new Random(42)` (.NET) produisent des terrains DIFFERENTS -> les couts/nombres de nœuds exacts ne coincident pas entre C# et Python. Le concept (regime W, interpolation bornee, garantie W*C*) et la structure de demo (balayage W, Greedy vs A* vs Weighted) sont identiques ; seules les valeurs numeriques le sont pas (cause RNG). Parite conceptuelle, pas numerique."

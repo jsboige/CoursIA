@@ -29,53 +29,60 @@ import Mathlib.Logic.Embedding.Basic
 
 namespace Knots
 
-/-! ## 1. The three Reidemeister moves
+/-! ## 1. Les trois mouvements de Reidemeister
 
-Each move is a local transformation on a knot diagram that preserves
-the knot type. They are applied in a small disk, leaving the rest unchanged.
+Chaque mouvement est une transformation locale d'un diagramme de nœud qui
+préserve le type de nœud. Ils sont appliqués dans un petit disque, en laissant
+le reste inchangé.
 
-**Phase 5 model (concrete constructors with edge-renaming).** Each move is
-stated as a `Prop`-valued existential conjunction carrying:
-  (1) the surgery equation relating `d₁` and `d₂`,
-  (2) well-formedness `wf` on *both* diagrams (`KnotDiagram.wf`), and
-  (3) an explicit edge-renaming `ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges`
-      identifying how the edges of `d₁` map to edges of `d₂`.
+**Modèle Phase 5 (constructeurs concrets avec renommage d'arêtes).** Chaque
+mouvement est énoncé comme une conjonction existentielle à valeur dans `Prop`
+portant :
+  (1) l'équation de chirurgie reliant `d₁` et `d₂`,
+  (2) la bonne formation `wf` sur les *deux* diagrammes (`KnotDiagram.wf`), et
+  (3) un renommage d'arêtes explicite `ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges`
+      identifiant comment les arêtes de `d₁` correspondent à celles de `d₂`.
 
-The `wf` hypothesis on both sides is the key strengthening over the Phase 3
-symmetric-existential model: it excludes the malformed witnesses (a crossing
-whose PD labels fall outside `[1, numEdges]`) that refuted
-`tricolorable_invariant` — see the certified counter-example diagnosis on
-`tricolorable_invariant` in `Invariant.lean`. The edge-renaming `ρ` is what
-the transfer lemma (PR2) will use to push a coloring across a move.
+L'hypothèse `wf` des deux côtés est le renforcement clé par rapport au modèle
+Phase 3 à existentiel symétrique : elle exclut les témoins mal formés (un
+croisement dont les labels PD tombent hors de `[1, numEdges]`) qui réfutaient
+`tricolorable_invariant` — voir le diagnostic certifié par contre-exemple de
+`tricolorable_invariant` dans `Invariant.lean`. Le renommage d'arêtes `ρ` est
+ce que le lemme de transfert (PR2) utilisera pour pousser un coloriage au
+travers d'un mouvement.
 
-The moves are stated with `∃` (not as `structure : Prop`) because a
-`Prop`-valued structure cannot project on data fields such as `ρ : Fin _ ↪ Fin _`
-or `c : PDCrossing`. Symmetry (`*.symm`) holds for each move: R3 has a purely
-structural proof (the surgery disjunction is symmetric); R1/R2 symmetry is
-asserted here and discharged by the transfer-lemma machinery in PR2 (the
-inverse move exists because a twist/poke followed by its inverse is the
-identity).
+Les mouvements sont énoncés avec `∃` (et non comme une `structure : Prop`) car
+une `structure` à valeur dans `Prop` ne peut pas se projeter sur des champs de
+données tels que `ρ : Fin _ ↪ Fin _` ou `c : PDCrossing`. La symétrie
+(`*.symm`) vaut pour chaque mouvement : R3 a une preuve purement structurelle
+(la disjonction de chirurgie est symétrique) ; la symétrie de R1/R2 est
+affirmée ici et déchargée par la machinerie du lemme de transfert en PR2 (le
+mouvement inverse existe parce qu'une torsion/pique suivie de son inverse est
+l'identité).
 -/
 
-/-- R1 (Twist/Untwist): add or remove a curl in a strand.
+/-- R1 (Torsion/Détorsion) : ajout ou suppression d'une boucle dans un brin.
 
-Diagrammatically:
+Diagrammatiquement :
   |         /\_    |
   |    ↔   /   \   |
   |        \___/   |
 
-A curl creates one extra crossing and two extra edges. The move is **bipolar**:
-the surgery is stated as a disjunction — either `d₂` is `d₁` with `c` appended
-(a twist, `d₂.numEdges = d₁.numEdges + 2`) or `d₁` is `d₂` with `c` appended
-(an untwist). The edge-renaming `ρ` points from the smaller diagram's edges to
-the larger diagram's edges, identifying the preserved arcs; under a swap of
-`d₁`/`d₂` this direction is preserved (the smaller diagram is still the
-smaller), which is what makes R1 symmetric by construction.
+Une boucle crée un croisement supplémentaire et deux arêtes supplémentaires.
+Le mouvement est **bipolaire** : la chirurgie est énoncée comme une disjonction
+— soit `d₂` est `d₁` avec `c` ajouté en fin (une torsion,
+`d₂.numEdges = d₁.numEdges + 2`), soit `d₁` est `d₂` avec `c` ajouté en fin
+(une détorsion). Le renommage d'arêtes `ρ` pointe des arêtes du diagramme le
+plus petit vers celles du diagramme le plus grand, identifiant les arcs
+préservés ; sous un échange de `d₁`/`d₂` cette direction est préservée (le
+diagramme le plus petit reste le plus petit), ce qui rend R1 symétrique par
+construction.
 
-Well-formedness `wf` on both diagrams forces `c`'s four PD labels to lie in
-`[1, (larger).numEdges]` — excluding the malformed witnesses of the Phase 3
-model that refuted `tricolorable_invariant`. The renaming `ρ` is the data the
-transfer lemma (PR2) pushes a coloring along.
+La bonne formation `wf` sur les deux diagrammes force les quatre labels PD de
+`c` à appartenir à `[1, (le plus grand).numEdges]` — excluant les témoins mal
+formés du modèle Phase 3 qui réfutaient `tricolorable_invariant`. Le renommage
+`ρ` est la donnée le long de laquelle le lemme de transfert (PR2) pousse un
+coloriage.
 -/
 def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
@@ -84,9 +91,9 @@ def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
        d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
        d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 })
 
-/-- R1 is symmetric: swapping `d₁`/`d₂` exchanges the two arms of the surgery
-disjunction; the `min`/`max`-directed renaming is invariant under the swap
-(transported along `Nat.min_comm`/`Nat.max_comm`). -/
+/-- R1 est symétrique : échanger `d₁`/`d₂` permute les deux bras de la
+disjonction de chirurgie ; le renommage dirigé par `min`/`max` est invariant
+sous l'échange (transporté le long de `Nat.min_comm`/`Nat.max_comm`). -/
 theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d₂) :
     Reidemeister1 d₂ d₁ := by
   obtain ⟨hwf₁, hwf₂, c, ρ, hsurg | hsurg⟩ := h
@@ -97,35 +104,37 @@ theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d�
     exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
            Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
-/-! ## R1 (ρ-determined refinement) — Phase 5 PR1.5
+/-! ## R1 (raffinement ρ-déterminé) — Phase 5 PR1.5
 
-The Phase 5 PR1 move `Reidemeister1` carries the edge-renaming `ρ` and the
-new crossing `c` as **two independent existentials**: `∃ c, ∃ ρ, surgery`.
-This leaves `ρ` free w.r.t. `c`'s PD labels, so a single R1 "twist" can
-introduce a curl whose two fresh edges `{n+1, n+2}` are completely
-disconnected from the arc being curled — the certified counter-example
-`tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`) exploits
-exactly this. The transfer lemma (PR2) cannot hold under that model.
+Le mouvement `Reidemeister1` de la Phase 5 PR1 porte le renommage d'arêtes `ρ`
+et le nouveau croisement `c` comme **deux existentiels indépendants** :
+`∃ c, ∃ ρ, chirurgie`. Cela laisse `ρ` libre vis-à-vis des labels PD de `c`,
+si bien qu'une seule « torsion » R1 peut introduire une boucle dont les deux
+arêtes fraîches `{n+1, n+2}` sont complètement déconnectées de l'arc bouclé —
+le contre-exemple certifié `tricolorable_invariant_fails_under_pr1_model`
+(`Invariant.lean`) exploite exactement cela. Le lemme de transfert (PR2) ne
+peut pas valoir sous ce modèle.
 
-`Reidemeister1'` is the **strengthening**: the renaming `ρ` must
-*geometrically determine* the new crossing's labels. A genuine R1 curl on
-arc `a` introduces a crossing where one strand is the arc `a` itself and
-the two fresh edges are the curl's other two strands, giving the new
-crossing the shape `⟨a, a, n+1, n+2⟩`. This ties the fresh edges to
-`color(a)` via the Fox condition, preserving ≥2 colours across the move.
+`Reidemeister1'` est le **renforcement** : le renommage `ρ` doit
+*géométriquement déterminer* les labels du nouveau croisement. Une véritable
+boucle R1 sur l'arc `a` introduit un croisement où un brin est l'arc `a`
+lui-même et les deux arêtes fraîches sont les deux autres brins de la boucle,
+donnant au nouveau croisement la forme `⟨a, a, n+1, n+2⟩`. Ceci relie les
+arêtes fraîches à `color(a)` via la condition de Fox, préservant ≥2 couleurs
+au travers du mouvement.
 
-This is an **additive refinement** (does not modify `Reidemeister1`):
-`Reidemeister1'.implies_reidemeister1` proves the conservative embedding.
-The re-modeled equivalence and transfer lemma (PR2) will be built on
-`Reidemeister1'` in a subsequent PR once the construction is validated.
+Ceci est un **raffinement additif** (ne modifie pas `Reidemeister1`) :
+`Reidemeister1'.implies_reidemeister1` prouve l'inclusion conservative.
+L'équivalence remodelée et le lemme de transfert (PR2) seront construits sur
+`Reidemeister1'` dans une PR ultérieure une fois la construction validée.
 -/
 
-/-- **R1 (ρ-determined)**: an R1 move where the new crossing's labels are
-    geometrically determined by the arc being curled. In the twist arm, the
-    new crossing has shape `⟨a, a, n+1, n+2⟩`: the strand formerly labelled
-    `a` is the strand being curled, and `{n+1, n+2}` are the two fresh
-    edges of the curl. The arc `a` lives in `[1, numEdges]` of the smaller
-    diagram (1-indexed PD labels, matching `KnotDiagram.wf`). -/
+/-- **R1 (ρ-déterminé)** : un mouvement R1 où les labels du nouveau croisement
+    sont géométriquement déterminés par l'arc bouclé. Dans le bras torsion, le
+    nouveau croisement a la forme `⟨a, a, n+1, n+2⟩` : le brin anciennement
+    labelisé `a` est le brin bouclé, et `{n+1, n+2}` sont les deux arêtes
+    fraîches de la boucle. L'arc `a` vit dans `[1, numEdges]` du diagramme le
+    plus petit (labels PD 1-indexés, cohérents avec `KnotDiagram.wf`). -/
 def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ a : Nat,
@@ -136,10 +145,10 @@ def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
         d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩],
                             numEdges := d₂.numEdges + 2 })))
 
-/-- `Reidemeister1'` is a strengthening of `Reidemeister1`: any ρ-determined
-    curl is, in particular, a (free) R1 move with `wf` on both sides. The
-    new crossing `⟨a, a, n+1, n+2⟩` is the witness for the independent
-    existential `∃ c` in `Reidemeister1`. -/
+/-- `Reidemeister1'` est un renforcement de `Reidemeister1` : toute boucle
+    ρ-déterminée est, en particulier, un mouvement R1 (libre) avec `wf` des deux
+    côtés. Le nouveau croisement `⟨a, a, n+1, n+2⟩` est le témoin de
+    l'existentiel indépendant `∃ c` dans `Reidemeister1`. -/
 theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
   -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
@@ -147,89 +156,96 @@ theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
 
-/-! ## R1 (option C, connected surgery) — Phase 5 PR1.5c
+/-! ## R1 (option C, chirurgie connectée) — Phase 5 PR1.5c
 
-`Reidemeister1'` (PR1.5 #2956) is **vacuous**: its `d₂.wf = true` premise is
-unsatisfiable for non-degenerate twists, because the append-only surgery
-`d₂ = d₁ ++ [⟨a, a, n+1, n+2⟩]` introduces two fresh singleton labels `n+1`,
-`n+2` that violate the `wf` parity condition (each label must appear exactly
-twice). A parity argument shows that ANY append-only R1/R2 surgery with `wf`
-on both sides forces the new crossing to be a **disjoint kink**
-`⟨n+1, n+1, n+2, n+2⟩` — a separate unknot component sharing no edge with
-`d₁`. Only R3 (which preserves `numEdges` and relabels a single crossing) is
-genuinely connected under the append+`wf` model. See the certified
-counter-example `tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`)
-and the structural diagnosis posted to the coordinator (2026-06-14).
+`Reidemeister1'` (PR1.5 #2956) est **vide** : sa prémisse `d₂.wf = true` est
+insatisfiable pour les torsions non dégénérées, parce que la chirurgie par
+ajout seul `d₂ = d₁ ++ [⟨a, a, n+1, n+2⟩]` introduit deux labels singleton
+fraîches `n+1`, `n+2` qui violent la condition de parité `wf` (chaque label
+doit apparaître exactement deux fois). Un argument de parité montre que TOUTE
+chirurgie R1/R2 par ajout seul avec `wf` des deux côtés force le nouveau
+croisement à être un **kink disjoint** `⟨n+1, n+1, n+2, n+2⟩` — un composant
+nœud non trivial séparé ne partageant aucune arête avec `d₁`. Seul R3 (qui
+préserve `numEdges` et renumérote un seul croisement) est véritablement
+connecté sous le modèle ajout+`wf`. Voir le contre-exemple certifié
+`tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`) et le
+diagnostic structurel posté au coordinateur (2026-06-14).
 
-`Reidemeister1Connected` is the **option-C fix**: a NON-append surgery that
-splices into an existing arc `a` of `d₁`. It modifies one endpoint crossing
-`Y = d₁.crossings[i]` (renaming one occurrence of `a` to a fresh label
-`b = d₁.numEdges + 1`) and appends a new crossing
-`C = ⟨a, b, d₁.numEdges + 2, d₁.numEdges + 2⟩`. Parity is preserved:
-- `a`: loses one occurrence (renamed in `Y`) and gains one (in `C.e1`) → 2×;
-- `b = n+1`: one in `Y` (renamed slot) + one in `C.e2` → 2×;
-- `c = n+2`: two in `C` (`e3`, `e4`) → 2×;
-- all other labels unchanged.
-This is ADDITIVE (does not modify `Reidemeister1` / `Reidemeister1'`); it is
-the concrete, `wf`-satisfiable artifact de-risking option C for the
-coordinator's C/X modeling decision (See #2874). It does NOT replace the
-merged moves (#2956) — both coexist so prior results stay valid.
+`Reidemeister1Connected` est le **correctif option C** : une chirurgie NON par
+ajout qui vient s'insérer dans un arc existant `a` de `d₁`. Elle modifie un
+croisement d'extrémité `Y = d₁.crossings[i]` (renommant une occurrence de `a`
+en un label frais `b = d₁.numEdges + 1`) et ajoute un nouveau croisement
+`C = ⟨a, b, d₁.numEdges + 2, d₁.numEdges + 2⟩`. La parité est préservée :
+- `a` : perd une occurrence (renommée dans `Y`) et en gagne une (dans `C.e1`) → 2× ;
+- `b = n+1` : une dans `Y` (slot renommé) + une dans `C.e2` → 2× ;
+- `c = n+2` : deux dans `C` (`e3`, `e4`) → 2× ;
+- tous les autres labels inchangés.
+Ceci est ADDITIF (ne modifie ni `Reidemeister1` ni `Reidemeister1'`) ; c'est
+l'artefact concret, satisfiable pour `wf`, réduisant le risque de l'option C
+pour la décision de modélisation C/X du coordinateur (Voir #2874). Il ne
+remplace PAS les mouvements mergés (#2956) — les deux coexistent si bien que
+les résultats antérieurs restent valides.
 -/
 
-/-- `Y'` is obtained from `c` by renaming occurrences of `a` to `b`: each field of
-    `Y'` is either unchanged from `c`, or is `b` where `c` had `a`. This is the
-    constraint that makes the tricolorability transfer lemma (PR2) provable: under
-    a coloring extension with `col₂ b = col₁ a` and `col₂ = col₁` on the preserved
-    edges, every strand of `Y'` reads the same colour as the corresponding strand
-    of `c` under `col₁`, so the Fox condition at the modified crossing is preserved.
+/-- `Y'` est obtenu à partir de `c` en renommant les occurrences de `a` en `b` :
+    chaque champ de `Y'` est soit inchangé par rapport à `c`, soit égal à `b`
+    là où `c` avait `a`. C'est la contrainte qui rend le lemme de transfert de
+    tricolorabilité (PR2) prouvable : sous une extension de coloriage avec
+    `col₂ b = col₁ a` et `col₂ = col₁` sur les arêtes préservées, chaque brin
+    de `Y'` lit la même couleur que le brin correspondant de `c` sous `col₁`,
+    si bien que la condition de Fox au croisement modifié est préservée.
 
-    Without this constraint (the merged #2980 model) `Y'` is a free existential, so
-    the Fox condition at the modified crossing is decoupled from `d₁`'s coloring —
-    the transfer lemma cannot hold. This strengthening (option C, scoped step (a)) is
-    non-breaking: the #2980 witness `⟨5,2,3,4⟩ = rename(⟨1,2,3,4⟩, 1→5)` still
-    satisfies it (see `reidemeister1Connected_satisfiable`). -/
+    Sans cette contrainte (le modèle #2980 mergé), `Y'` est un existentiel
+    libre, donc la condition de Fox au croisement modifié est découplée du
+    coloriage de `d₁` — le lemme de transfert ne peut pas valoir. Ce
+    renforcement (option C, étape « scoped » (a)) est non-cassant : le témoin
+    #2980 `⟨5,2,3,4⟩ = rename(⟨1,2,3,4⟩, 1→5)` le satisfait encore (voir
+    `reidemeister1Connected_satisfiable`). -/
 def PDCrossing.isRenameOf (Y' c : PDCrossing) (a b : Nat) : Prop :=
   (Y'.e1 = c.e1 ∨ (Y'.e1 = b ∧ c.e1 = a)) ∧
   (Y'.e2 = c.e2 ∨ (Y'.e2 = b ∧ c.e2 = a)) ∧
   (Y'.e3 = c.e3 ∨ (Y'.e3 = b ∧ c.e3 = a)) ∧
   (Y'.e4 = c.e4 ∨ (Y'.e4 = b ∧ c.e4 = a))
 
-/-- A crossing `c` "has edge `a`" if `a` occurs in one of its four PD slots.
-    Used to state that the arc `a` receiving a connected R1 twist is a PROPER
-    arc — one that is shared between two distinct crossings of `d₁` (not a
-    degenerate monogon-loop confined to a single crossing). The fields are `Nat`
-    with decidable equality, so this Prop is decidable and discharges by
-    `decide` after `unfold`. -/
+/-- Un croisement `c` « possède l'arête `a` » si `a` apparaît dans l'un de ses
+    quatre slots PD. Sert à énoncer que l'arc `a` recevant une torsion R1
+    connectée est un arc PROPRE — un arc partagé entre deux croisements
+    distincts de `d₁` (et non une boucle monogone dégénérée confinée à un seul
+    croisement). Les champs sont des `Nat` à égalité décidable, donc ce `Prop`
+    est décidable et se décharge par `decide` après `unfold`. -/
 def PDCrossing.hasEdge (c : PDCrossing) (a : Nat) : Prop :=
   c.e1 = a ∨ c.e2 = a ∨ c.e3 = a ∨ c.e4 = a
 
-/-- **Reidemeister1Connected (option C)**: a CONNECTED R1 twist on arc `a`.
-    The surgery modifies endpoint crossing `Y = d₁.crossings[i]` (one slot `a`
-    renamed to `b = d₁.numEdges + 1`, materialised as the supplied `Y'`) and
-    appends `⟨a, b, c, c⟩` with `c = d₁.numEdges + 2`. Unlike `Reidemeister1'`,
-    the `d₂.wf = true` premise is **satisfiable** — see
-    `reidemeister1Connected_satisfiable`. The hypothesis `a ∈ d₁.edges` forces
-    the move to be genuinely connected (arc `a` is a real edge of `d₁`), so the
-    new crossing shares an edge with `d₁` rather than being a disjoint kink.
+/-- **Reidemeister1Connected (option C)** : une torsion R1 CONNECTÉE sur l'arc
+    `a`. La chirurgie modifie le croisement d'extrémité
+    `Y = d₁.crossings[i]` (un slot `a` renommé en `b = d₁.numEdges + 1`,
+    matérialisé comme le `Y'` fourni) et ajoute `⟨a, b, c, c⟩` avec
+    `c = d₁.numEdges + 2`. Contrairement à `Reidemeister1'`, la prémisse
+    `d₂.wf = true` est **satisfiable** — voir
+    `reidemeister1Connected_satisfiable`. L'hypothèse `a ∈ d₁.edges` force le
+    mouvement à être véritablement connecté (l'arc `a` est une vraie arête de
+    `d₁`), si bien que le nouveau croisement partage une arête avec `d₁` plutôt
+    que d'être un kink disjoint.
 
-    The hypothesis `Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1)`
-    (strengthened in scoped step (a)) ties `Y'` to the endpoint crossing it
-    replaces — it is that crossing with `a`-occurrences renamed to `b`, nothing
-    else. This is what the PR2 transfer lemma needs to push a tricoloring across
-    the move (the modified crossing's Fox condition is preserved under
-    `col₂ b = col₁ a`).
+    L'hypothèse `Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1)`
+    (renforcée à l'étape « scoped » (a)) relie `Y'` au croisement d'extrémité
+    qu'il remplace — c'est ce croisement avec les occurrences de `a` renommées
+    en `b`, rien d'autre. C'est ce dont le lemme de transfert PR2 a besoin pour
+    pousser une tricoloration au travers du mouvement (la condition de Fox du
+    croisement modifié est préservée sous `col₂ b = col₁ a`).
 
-    **Proper-arc hypothesis (this PR, fix for the backward-transfer defect
-    certified by the brute-force search behind #3002):** arc `a` is shared with
-    another crossing `j ≠ i` of `d₁`. Without this, the def admits a twist on a
-    degenerate monogon-loop arc (`a` appearing twice at the single endpoint
-    crossing `i`), under which the BACKWARD tricolorability transfer is FALSE —
-    a connected kink can CREATE tricolorability from a non-tricolorable
-    double-monogon `d₁`. Requiring `a` to be a proper arc (spanning two distinct
-    crossings) eliminates all such counter-examples (validated by exhaustive
-    brute-force over 2526 well-formed diagrams, 20184 valid twists: 24 backward
-    failures, all monogon-loops, all excluded by this hypothesis). The FORWARD
-    direction (#3000) is unaffected — it is unconditional. -/
+    **Hypothèse d'arc propre (cette PR, correctif du défaut de transfert
+    arrière certifié par la recherche exhaustive derrière #3002) :** l'arc `a`
+    est partagé avec un autre croisement `j ≠ i` de `d₁`. Sans cela, la def
+    admet une torsion sur un arc monogone dégénéré (`a` apparaissant deux fois
+    au seul croisement d'extrémité `i`), sous laquelle le transfert ARRIÈRE de
+    tricolorabilité est FAUX — un kink connecté peut CRÉER de la
+    tricolorabilité à partir d'un double-monogone `d₁` non tricolorable.
+    Exiger que `a` soit un arc propre (joignant deux croisements distincts)
+    élimine tous ces contre-exemples (validé par recherche exhaustive
+    « brute-force » sur 2526 diagrammes bien formés, 20184 torsions valides :
+    24 échecs arrière, tous des monogones, tous exclus par cette hypothèse). La
+    direction AVANT (#3000) n'est pas affectée — elle est inconditionnelle. -/
 def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
@@ -242,20 +258,22 @@ def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
                        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
                     numEdges := d₁.numEdges + 2 })
 
-/-- `Reidemeister1Connected` is NOT vacuous (contrast with `Reidemeister1'`):
-    a concrete connected twist `d₁ → d₂` with `wf = true` on both sides.
+/-- `Reidemeister1Connected` n'est PAS vide (contrairement à
+    `Reidemeister1'`) : une torsion connectée concrète `d₁ → d₂` avec
+    `wf = true` des deux côtés.
 
-    Witness: `d₁ = {[⟨1,2,3,4⟩, ⟨1,2,3,4⟩], 4}` (arc `a = 1` appears at `e1` of
-    both crossings). The twist modifies crossing 1 (`⟨1,2,3,4⟩ → ⟨5,2,3,4⟩`,
-    slot `e1`: `1 → 5 = b`) and appends `C = ⟨1,5,6,6⟩`. The result
-    `d₂ = {[⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], 6}` is well-formed
-    (`wf = true`, verified empirically by `#eval` during de-risking and here by
-    `decide`). This is the headline property distinguishing option C from the
-    vacuous PR1.5 model. -/
+    Témoin : `d₁ = {[⟨1,2,3,4⟩, ⟨1,2,3,4⟩], 4}` (l'arc `a = 1` apparaît en
+    `e1` des deux croisements). La torsion modifie le croisement 1
+    (`⟨1,2,3,4⟩ → ⟨5,2,3,4⟩`, slot `e1` : `1 → 5 = b`) et ajoute
+    `C = ⟨1,5,6,6⟩`. Le résultat
+    `d₂ = {[⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], 6}` est bien formé
+    (`wf = true`, vérifié empiriquement par `#eval` lors de la réduction de
+    risque et ici par `decide`). C'est la propriété phare distinguant
+    l'option C du modèle vide PR1.5. -/
 theorem reidemeister1Connected_satisfiable :
     Reidemeister1Connected
-      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
-      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial } := by
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 } := by
   refine ⟨by decide, by decide, ⟨1, by decide⟩, 1, ⟨5,2,3,4⟩, ?_, ?_⟩
   · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
     exact { toFun := fun j => ⟨j.val, by omega⟩,
@@ -273,51 +291,51 @@ theorem reidemeister1Connected_satisfiable :
            ⟨⟨0, by decide⟩, by decide, by unfold PDCrossing.hasEdge; decide⟩,
            by unfold PDCrossing.isRenameOf; decide, rfl⟩
 
-/-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
+/-! ### Lemmes d'API pour `Reidemeister1Connected` (infrastructure option C pour PR2)
 
-These projection-style lemmas expose the surgery's combinatorial shape, which the
-transfer lemma (PR2) consumes when pushing a tricoloring across a connected R1
-twist: the edge count grows by exactly 2 (same magnitude as the disjoint-kink
-append model, but reached by a connected splice), and the crossing count grows
-by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
-`Basic.lean`.
+Ces lemmes de projection exposent la forme combinatoire de la chirurgie, que le
+lemme de transfert (PR2) consomme lorsqu'il pousse une tricoloration au travers
+d'une torsion R1 connectée : le nombre d'arêtes croît d'exactement 2 (même
+amplitude que le modèle de kink disjoint par ajout, mais atteinte par une
+insertion connectée), et le nombre de croisements croît d'exactement 1. Ils
+mitent le style d'API de projection `trefoil_wf` / `unknot_wf` de `Basic.lean`.
 -/
 
-/-- A connected R1 twist adds exactly two edges (the kink monogon `c` and the
-    renamed arc endpoint `b`), same magnitude as the disjoint-kink model but via
-    a connected splice. -/
+/-- Une torsion R1 connectée ajoute exactement deux arêtes (le monogone kink
+    `c` et l'extrémité d'arc renommée `b`), même amplitude que le modèle de kink
+    disjoint mais via une insertion connectée. -/
 theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
   obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
   have hne := congrArg (·.numEdges) hsurg
   simpa using hne
 
-/-- A connected R1 twist adds exactly one crossing (the curl `C`); the existing
-    endpoint crossing `Y` is relabelled in place (`List.set` preserves length),
-    not duplicated. -/
+/-- Une torsion R1 connectée ajoute exactement un croisement (la boucle `C`) ;
+    le croisement d'extrémité existant `Y` est renuméroté sur place (`List.set`
+    préserve la longueur), non dupliqué. -/
 theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
   obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
   have hcl := congrArg (fun d => d.crossings.length) hsurg
   simpa [List.length_set, List.length_append] using hcl
 
-/-- The arc `a` receiving the twist is a genuine edge of `d₁` (connectivity
-    hypothesis): the new crossing `C = ⟨a, b, c, c⟩` shares edge `a` with `d₁`,
-    which is what distinguishes a connected twist from a disjoint kink
-    `⟨n+1,n+1,n+2,n+2⟩` (which shares no edge with `d₁`). -/
+/-- L'arc `a` recevant la torsion est une arête authentique de `d₁` (hypothèse
+    de connectivité) : le nouveau croisement `C = ⟨a, b, c, c⟩` partage l'arête
+    `a` avec `d₁`, ce qui distingue une torsion connectée d'un kink disjoint
+    `⟨n+1,n+1,n+2,n+2⟩` (qui ne partage aucune arête avec `d₁`). -/
 theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : ∃ a : Nat, a ∈ d₁.edges ∧ 1 ≤ a ∧ a ≤ d₁.numEdges := by
   obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hproper, _hrename, _hsurg⟩ := h
   exact ⟨a, hmem, hr1, hr2⟩
 
-/-- The surgery equation on crossings in directly-usable form: `d₂.crossings`
-    is `d₁.crossings` with the endpoint crossing at index `i` rewritten to `Y'`
-    (via `List.set`), then the monogon kink
-    `⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩` appended. The PR2
-    transfer lemma rewrites with this equation to analyse the Fox condition at
-    exactly the two crossings touched by the move (the relabelled `Y'` at
-    index `i`, and the appended kink `C` whose `e3 = e4 = c` self-loop means
-    arc `c` is a closed strand). -/
+/-- L'équation de chirurgie sur les croisements sous forme directement
+    utilisable : `d₂.crossings` est `d₁.crossings` avec le croisement
+    d'extrémité à l'index `i` réécrit en `Y'` (via `List.set`), puis le kink
+    monogone `⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩` ajouté en
+    fin. Le lemme de transfert PR2 réécrit avec cette équation pour analyser la
+    condition de Fox exactement aux deux croisements touchés par le mouvement
+    (le `Y'` renuméroté à l'index `i`, et le kink ajouté `C` dont la
+    auto-boucle `e3 = e4 = c` signifie que l'arc `c` est un brin fermé). -/
 theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) :
     ∃ (i : ℕ) (Y' : PDCrossing) (a : Nat),
@@ -328,9 +346,10 @@ theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
   refine ⟨i.val, Y', a, i.isLt, ?_⟩
   simpa using congrArg (·.crossings) hsurg
 
-/-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
+/-- R2 (Pique/Dépiqué) : ajout ou suppression de deux croisements consécutifs
+de signe opposé.
 
-Two parallel strands can pass through each other:
+Deux brins parallèles peuvent se traverser l'un l'autre :
   |   |        /\    |   |
   |   |   ↔   /  \   |   |
   |   |      /    \  |   |
@@ -338,8 +357,9 @@ Two parallel strands can pass through each other:
   |   |       \  /   |   |
   |   |        \/    |   |
 
-Bipolar like R1: one diagram has four more edges than the other. The renaming
-`ρ : Fin (min) ↪ Fin (max)` points from the smaller diagram to the larger.
+Bipolaire comme R1 : un diagramme a quatre arêtes de plus que l'autre. Le
+renommage `ρ : Fin (min) ↪ Fin (max)` pointe du diagramme le plus petit vers le
+plus grand.
 -/
 def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
@@ -348,8 +368,8 @@ def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
        d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
        d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 })
 
-/-- R2 is symmetric: same construction as R1 (transport along `Nat.min_comm`/
-`Nat.max_comm`). -/
+/-- R2 est symétrique : même construction que R1 (transport le long de
+`Nat.min_comm`/`Nat.max_comm`). -/
 theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d₂) :
     Reidemeister2 d₂ d₁ := by
   obtain ⟨hwf₁, hwf₂, c₁, c₂, ρ, hsurg | hsurg⟩ := h
@@ -360,18 +380,19 @@ theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d�
     exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
            Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
-/-- R3 (Slide): move a strand over a crossing.
+/-- R3 (Glissement) : déplacer un brin par-dessus un croisement.
 
-A strand can slide past a crossing without changing the knot:
+Un brin peut glisser par-delà un croisement sans changer le nœud :
   \  |  /      \  |  /
    \ | /        \ | /
     \|/    ↔    / | \
      |          /  |  \
      |         /   |   \
 
-R3 preserves the number of crossings and edges; it only relabels the edges at
-one crossing. The renaming `ρ` is therefore a bijection, expressed here as an
-injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (with equal dimensions).
+R3 préserve le nombre de croisements et d'arêtes ; il ne fait que renuméroter
+les arêtes à un croisement. Le renommage `ρ` est donc une bijection, exprimée
+ici comme une injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (avec dimensions
+égales).
 -/
 def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
@@ -380,9 +401,10 @@ def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
      d₁ = { d₂ with crossings := d₂.crossings.set i c }) ∧
     d₁.wf = true ∧ d₂.wf = true
 
-/-- R3 is symmetric by construction: the surgery disjunction is symmetric, the
-well-formedness hypotheses swap, and since R3 preserves the edge count
-(`d₁.numEdges = d₂.numEdges`) the edge-renaming is transportable across. -/
+/-- R3 est symétrique par construction : la disjonction de chirurgie est
+symétrique, les hypothèses de bonne formation s'échangent, et puisque R3
+préserve le nombre d'arêtes (`d₁.numEdges = d₂.numEdges`) le renommage
+d'arêtes est transportable dans les deux sens. -/
 theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d₂) :
     Reidemeister3 d₂ d₁ := by
   obtain ⟨hl, he, i, c, ρ, h | h, hwf₁, hwf₂⟩ := h
@@ -394,48 +416,53 @@ theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d�
     · exact he ▸ ρ
     · exact Or.inl h
 
-/-! ## R3 (slot-determined refinement) — Phase 5 PR1.5d
+/-! ## R3 (raffinement slot-déterminé) — Phase 5 PR1.5d
 
-`Reidemeister3` (Phase 5 PR1) carries the relabeled crossing `c` as a FREE
-existential (`∃ i c, ∃ ρ, surgery`). This leaves `c` unconstrained: the single
-relabeled crossing can take arbitrary PD labels. Unlike the append-only R1'/R2
-models (which are vacuous under `wf`), R3's `numEdges`-preserving surgery keeps
-`d₂.wf` satisfiable — but the free `c` is too loose for the transfer lemma
-(PR2) to push a tricoloring across the move: the Fox condition at the relabeled
-crossing is decoupled from `d₁`'s coloring.
+`Reidemeister3` (Phase 5 PR1) porte le croisement renuméroté `c` comme un
+existentiel LIBRE (`∃ i c, ∃ ρ, chirurgie`). Cela laisse `c` non contraint :
+le seul croisement renuméroté peut prendre des labels PD arbitraires.
+Contrairement aux modèles R1'/R2 par ajout seul (qui sont vides sous `wf`), la
+chirurgie de R3 préservant `numEdges` maintient `d₂.wf` satisfiable — mais le
+`c` libre est trop lâche pour que le lemme de transfert (PR2) pousse une
+tricoloration au travers du mouvement : la condition de Fox au croisement
+renuméroté est découplée du coloriage de `d₁`.
 
-`Reidemeister3Determined` is the **strengthening**: the relabeled crossing `c`
-is constrained to be a **slot-permutation** of the crossing it replaces
-(`c.isSlotPermOf (d₁.crossings.get i)`) — its four PD labels are a permutation
-of the original crossing's four labels. This preserves the global edge
-multiset (hence `wf` on both sides is automatic from `d₁.wf`), and ties the
-relabeled crossing's strand structure to the original: the four strands meeting
-at crossing `i` are the same four strands, assigned to slots in a possibly
-different order (the combinatorial essence of an R3 slide, which rearranges
-strands past a crossing without changing which strands meet there).
+`Reidemeister3Determined` est le **renforcement** : le croisement renuméroté
+`c` est contraint à être une **permutation de slots** du croisement qu'il
+remplace (`c.isSlotPermOf (d₁.crossings.get i)`) — ses quatre labels PD sont
+une permutation des quatre labels du croisement d'origine. Ceci préserve le
+multi-ensemble global d'arêtes (donc `wf` des deux côtés est automatique à
+partir de `d₁.wf`), et relie la structure de brins du croisement renuméroté à
+celle de l'original : les quatre brins se rencontrant au croisement `i` sont
+les quatre mêmes brins, assignés aux slots dans un ordre possiblement
+différent (l'essence combinatoire d'un glissement R3, qui réarrange les brins
+par-delà un croisement sans changer quels brins s'y rencontrent).
 
-This is an **additive refinement** (does not modify `Reidemeister3`):
-`Reidemeister3Determined.implies_reidemeister3` proves the conservative
-embedding. The transfer lemma (PR2) and the question of which slot-permutations
-correspond to genuine R3 slides (vs. arbitrary relabelings) are explicitly
-future work — this is the de-risking scaffold establishing a non-vacuous,
-`wf`-satisfiable, refinement-strong model, parallel to `Reidemeister1Connected`
-for R1 (See #2874).
+Ceci est un **raffinement additif** (ne modifie pas `Reidemeister3`) :
+`Reidemeister3Determined.implies_reidemeister3` prouve l'inclusion
+conservative. Le lemme de transfert (PR2) et la question de savoir quelles
+permutations de slots correspondent à de véritables glissements R3 (vs des
+renumérotations arbitraires) sont explicitement un travail futur — ceci est
+l'échafaudage de réduction de risque établissant un modèle non vide,
+satisfiable pour `wf`, à renforcement fort, parallèle à
+`Reidemeister1Connected` pour R1 (Voir #2874).
 -/
 
-/-- `c` "is a slot-permutation of `Y`" iff `c`'s four PD labels are a permutation
-    of `Y`'s four labels (the same multiset of four strands, possibly assigned to
-    different slots). The fields are `Nat` with decidable equality, so this Prop
-    is decidable (`List.Perm` on `List Nat`) and discharges by `decide`. -/
+/-- `c` « est une permutation de slots de `Y` » ssi les quatre labels PD de `c`
+    sont une permutation des quatre labels de `Y` (le même multi-ensemble de
+    quatre brins, assignés possiblement à des slots différents). Les champs
+    sont des `Nat` à égalité décidable, donc ce `Prop` est décidable
+    (`List.Perm` sur `List Nat`) et se décharge par `decide`. -/
 def PDCrossing.isSlotPermOf (c Y : PDCrossing) : Prop :=
   List.Perm [c.e1, c.e2, c.e3, c.e4] [Y.e1, Y.e2, Y.e3, Y.e4]
 
-/-- **Reidemeister3Determined**: an R3 slide where the relabeled crossing `c`
-    is a slot-permutation of the original crossing at index `i` (same four
-    strands, possibly reordered). `numEdges` and crossing count are preserved
-    (as in `Reidemeister3`); `wf` holds on both sides. The edge-renaming `ρ`
-    is carried to match `Reidemeister3`'s shape (the refinement provides it
-    directly). Non-vacuous — see `reidemeister3Determined_satisfiable`. -/
+/-- **Reidemeister3Determined** : un glissement R3 où le croisement renuméroté
+    `c` est une permutation de slots du croisement d'origine à l'index `i`
+    (mêmes quatre brins, possiblement réordonnés). `numEdges` et le nombre de
+    croisements sont préservés (comme dans `Reidemeister3`) ; `wf` vaut des deux
+    côtés. Le renommage d'arêtes `ρ` est porté pour correspondre à la forme de
+    `Reidemeister3` (le raffinement le fournit directement). Non vide — voir
+    `reidemeister3Determined_satisfiable`. -/
 def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
   (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
@@ -445,25 +472,27 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
       d₁ = { d₂ with crossings := d₂.crossings.set i.val c }) ∧
      d₁.wf = true ∧ d₂.wf = true)
 
-/-- `Reidemeister3Determined` is a strengthening of `Reidemeister3`: a
-    slot-determined slide is, in particular, a (free-`c`) R3 move. The witness
-    crossing `c` and renaming `ρ` are provided directly; the surgery equation is
-    unchanged (`set i.val c` with `i.val` the underlying `Nat`). -/
+/-- `Reidemeister3Determined` est un renforcement de `Reidemeister3` : un
+    glissement slot-déterminé est, en particulier, un mouvement R3 (à `c`
+    libre). Le croisement témoin `c` et le renommage `ρ` sont fournis
+    directement ; l'équation de chirurgie est inchangée (`set i.val c` avec
+    `i.val` le `Nat` sous-jacent). -/
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
   · exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
   · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
 
-/-- `Reidemeister3Determined` is NOT vacuous: a concrete slot-determined slide
-    `d₁ → d₂` with `wf = true` on both sides. Witness: `d₁` has two identical
-    crossings `⟨1,2,3,4⟩`; `d₂` relabels crossing 0 to `⟨1,3,2,4⟩` (slots e2/e3
-    swapped — a slot-permutation of `⟨1,2,3,4⟩`). The global label multiset
-    `{1,2,3,4}` is unchanged, so `wf` holds on both sides. -/
+/-- `Reidemeister3Determined` n'est PAS vide : un glissement slot-déterminé
+    concret `d₁ → d₂` avec `wf = true` des deux côtés. Témoin : `d₁` a deux
+    croisements identiques `⟨1,2,3,4⟩` ; `d₂` renumérote le croisement 0 en
+    `⟨1,3,2,4⟩` (slots e2/e3 échangés — une permutation de slots de
+    `⟨1,2,3,4⟩`). Le multi-ensemble global de labels `{1,2,3,4}` est inchangé,
+    donc `wf` vaut des deux côtés. -/
 theorem reidemeister3Determined_satisfiable :
     Reidemeister3Determined
-      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
-      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial } := by
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
   refine ⟨by decide, by decide, ?_⟩
   refine ⟨⟨0, by decide⟩, ⟨1,3,2,4⟩, ?_, ?_, ?_, ?_, ?_⟩
   · -- ρ : Fin 4 ↪ Fin 4 (identity; numEdges equal on both sides)
@@ -479,9 +508,9 @@ theorem reidemeister3Determined_satisfiable :
   · -- d₂.wf = true (multiset unchanged by the slot swap)
     exact by decide
 
-/-! ## 2. Single Reidemeister step
+/-! ## 2. Pas de Reidemeister unique
 
-A single step is any of R1, R2, or R3.
+Un pas unique est n'importe lequel de R1, R2 ou R3.
 -/
 
 inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
@@ -491,13 +520,13 @@ inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
   | r2 {d'} : Reidemeister2 d d' → ReidemeisterStep d d'
   | r3 {d'} : Reidemeister3 d d' → ReidemeisterStep d d'
 
-/-! ## 3. Reidemeister equivalence (reflexive transitive closure)
+/-! ## 3. Équivalence de Reidemeister (fermeture réflexive transitive)
 
-Two diagrams are Reidemeister-equivalent if connected by a finite
-sequence of moves (in either direction).
+Deux diagrammes sont équivalents au sens de Reidemeister s'ils sont reliés par
+une suite finie de mouvements (dans les deux sens).
 -/
 
-/-- Reflexive transitive closure of Reidemeister steps. -/
+/-- Fermeture réflexive transitive des pas de Reidemeister. -/
 inductive ReidemeisterEquiv : KnotDiagram → KnotDiagram → Prop where
   | refl (d : KnotDiagram) : ReidemeisterEquiv d d
   | step {d₁ d₂ : KnotDiagram} :
@@ -505,11 +534,11 @@ inductive ReidemeisterEquiv : KnotDiagram → KnotDiagram → Prop where
   | trans {d₁ d₂ d₃ : KnotDiagram} :
       ReidemeisterEquiv d₁ d₂ → ReidemeisterEquiv d₂ d₃ → ReidemeisterEquiv d₁ d₃
 
-/-- Symmetry: if d₁ →* d₂ then d₂ →* d₁ (each move has an inverse).
+/-- Symétrie : si d₁ →* d₂ alors d₂ →* d₁ (chaque mouvement a un inverse).
 
-Proof: induction on the RTC. Each base move (R1/R2/R3) is symmetric by the
-explicit `*.symm` lemmas above; reflexivity is trivial; transitivity inverts
-the two halves and composes.
+Preuve : récurrence sur la RTC. Chaque mouvement de base (R1/R2/R3) est
+symétrique par les lemmes `*.symm` explicites ci-dessus ; la réflexivité est
+triviale ; la transitivité inverse les deux moitiés et les compose.
 -/
 theorem reidemeister_equiv_symm {d₁ d₂ : KnotDiagram}
     (h : ReidemeisterEquiv d₁ d₂) : ReidemeisterEquiv d₂ d₁ := by
@@ -522,31 +551,34 @@ theorem reidemeister_equiv_symm {d₁ d₂ : KnotDiagram}
       | r3 h => exact ReidemeisterStep.r3 h.symm)
   | trans _ _ ih₁ ih₂ => exact ReidemeisterEquiv.trans ih₂ ih₁
 
-/-- Equivalence relation. -/
+/-- Relation d'équivalence. -/
 theorem reidemeister_equiv_equivalence : Equivalence (@ReidemeisterEquiv) where
   refl := ReidemeisterEquiv.refl
   symm := reidemeister_equiv_symm
   trans := ReidemeisterEquiv.trans
 
-/-! ## 4. Knot equivalence
+/-! ## 4. Équivalence des nœuds
 
-Two knots are equivalent if their diagrams are Reidemeister-equivalent.
+Deux nœuds sont équivalents si leurs diagrammes sont équivalents au sens de
+Reidemeister.
 -/
 
 def KnotEquiv (k₁ k₂ : Knot) : Prop :=
   ReidemeisterEquiv k₁.diagram k₂.diagram
 
-/-! ## 5. Reidemeister's theorem (statement only)
+/-! ## 5. Théorème de Reidemeister (énoncé seul)
 
-This is the fundamental theorem of knot theory: ambient isotopy of knots
-corresponds exactly to Reidemeister moves on diagrams.
+Ceci est le théorème fondamental de la théorie des nœuds : l'isotopie ambiante
+des nœuds correspond exactement aux mouvements de Reidemeister sur les
+diagrammes.
 
-**This is a very deep theorem** whose proof requires:
-- Piecewise-linear (PL) topology of 3-manifolds
-- General position arguments for curves in 3-space
-- Alexander's theorem (every knot has a diagram)
-- Reference: Reidemeister (1927), Alexander (1928)
-- Modern proof: Kauffman (cf. "Knots and Physics")
+**Ceci est un théorème très profond** dont la preuve requiert :
+- La topologie linéaire par morceaux (PL) des variétés de dimension 3
+- Des arguments de position générale pour les courbes dans l'espace à 3
+  dimensions
+- Le théorème d'Alexander (tout nœud a un diagramme)
+- Référence : Reidemeister (1927), Alexander (1928)
+- Preuve moderne : Kauffman (cf. « Knots and Physics »)
 -/
 theorem reidemeister_theorem :
     ∀ (k₁ k₂ : Knot),

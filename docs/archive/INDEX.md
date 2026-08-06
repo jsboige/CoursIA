@@ -25,6 +25,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | genai-stack-audit-2026-05-10.md | Audit stack GenAI (mai 2026) |
 | handson-book-mapping.md | Cartographie du livre Hands-On AI Trading (Jared Broad) |
 | integration-roadmap.md | Roadmap integration |
+| ml-trading-state.md | Lecons ML/trading consolidees post-ladder #1409 (129 lignes, 2026-05-14 Mission ML-Training-Pipeline, **10+ inbound refs actifs** = highest density root archive : `docs/qc/quantconnect.md` L22/L25/L283/L285 + `ML-Training-Pipeline/README.md:67` + `CURRICULUM.md:17` FINAL VERDICT + `M12_HF_PROPOSAL.md:13/200` + `.claude/agents/training-specialist.md:88` + `.claude/skills/train-model/SKILL.md:69` + `STABLE_SNAPSHOT.md:108`). Verdict canonique maintenu pour audit PR ML futures (`pr-review-discipline.md` §C "7 disciplines") : pattern empirique M5-M17 (direction imprévisible, vol prévisible HAR-RV-J p=7.9e-7, parcimonie HAR, transaction costs tuent edges) + politique datasets anti-FAANG/Mag7 + ladder #1409 (L4 DT = seul BEATS 24/26). **2 cross-refs internes obsolètes** vers `docs/quantconnect.md` + `docs/kernels-runtime.md` (root, déplacés) — sub-grain `c.728y+43 ref-quality` à dispatcher |
 | qc-broken-strategies-audit.md | Audit strategies QuantConnect broken |
 | qc-comparative-backtests.md | Backtests comparatifs cohorte 1630-*-aligned (archivé 2026-07-20, superseded by docs/qc/qc-comparative-backtests.md, #7422) |
 | qc-league-ece.md | League ECE QuantConnect |

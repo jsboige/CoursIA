@@ -4,7 +4,7 @@
 series: Probas
 pedagogical_count: 58
 breakdown: Infer=19, PyMC=19, DecisionTheory=18, root=2
-maturity: PRODUCTION=54, BETA=4
+maturity: BETA=58
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Pour les **décomptes par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — c'est-à-dire la répartition **technique** par interpréteur —, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé ; cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks (`28 C# + 28 Python + 2 Lean 4 = 58 ✓` au 10/07/2026). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
@@ -155,7 +155,7 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modèles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA).
+Si vous préférez Python au C#, commencez par **PyMC-1-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
@@ -214,7 +214,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Infer-101.ipynb              # Introduction Python/C# (standalone)
+├── Infer-101.ipynb              # Introduction C#/.NET (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco/GP (14-16) + frontières (17-19)
@@ -467,7 +467,7 @@ cd MyIA.AI.Notebooks/Probas/Infer/scripts
 .\setup_environment.ps1
 ```
 
-### Notebooks Python (Infer-101, Pyro_RSA)
+### Notebooks Python (Pyro_RSA)
 
 ```bash
 pip install pyro-ppl torch matplotlib numpy
@@ -549,9 +549,9 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 - Vous pouvez les visualiser sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
 - Installation Graphviz Windows : télécharger depuis https://graphviz.org/download/, puis ajouter `C:\Program Files\Graphviz\bin` au PATH.
 
-### Switcher entre kernels C# et Python dans un même notebook
+### Kernels : un par sous-série, jamais mélangés
 
-Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il utilise le mode **polyglot** de .NET Interactive, où chaque cellule spécifie son kernel via le tag `#kernel name`. Pour la série standard, chaque sous-série (Infer/ ou PyMC/) utilise un seul kernel.
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour `Infer/` et `Infer-101`, `Python 3` pour `PyMC/` et `Pyro_RSA`. Aucun notebook ne mélange les deux kernels. (Historiquement, `Infer-101` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET autonome.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
@@ -655,6 +655,23 @@ La thèse pratique est honnête : un modèle probabiliste est plus lourd à bât
 ### Le fil rouge
 
 La programmation probabiliste propose un changement de posture : ne plus demander « quelle est la bonne réponse ? » mais **« à quel point suis-je sûr de cette réponse, et que dois-je faire compte tenu de cette incertitude ? »**. Cette série vous a donné les trois couches — modéliser (facteurs, distributions), inférer (message passing ou échantillonnage), décider (utilité espérée, valeur de l'information) — pour transformer une question qualitative en un calcul, en gardant à l'esprit qu'une distribution honnête vaut mieux qu'une certitude illusoire.
+
+## Références canoniques (audit distillation #8081)
+
+La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) (c.803, 2026-07-23). Références canoniques principales :
+
+- **[*Model-Based Machine Learning Book*](https://mbmlbook.com/)** (Herbrich / Bishop / Winn / Diethe) — couvre la majorité des notebooks probas appliqués (Murder Mystery Ch.1, Skills IRT Ch.2, TrueSkill Ch.3, BPM Ch.4, WetGrass Ch.5, LDA Ch.10, Crowdsourcing Ch.7/9c, Recommenders, Sequences Ch.12, GP Ch.16, Survival Ch.17).
+- **[*TrueSkill: A Bayesian Skill Rating System*](https://research.microsoft.com/~minka/papers/trueskill.pdf)** (Herbrich, Minka & Graepel, NeurIPS 2007) — fondement algorithmique de Infer-8 et PyMC-8, dont les formules fermées V(t)/W(t)/τ² (section 7 bis PyMC-8).
+- **[*Pattern Recognition and Machine Learning*](https://www.microsoft.com/en-us/research/people/cmbishop/prml-book/)** (Bishop, Springer 2006) — référence générale pour les modèles gaussiens, mixtures, EM, et la théorie de l'inférence bayésienne.
+- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (#8702).
+- **Lauritzen & Spiegelhalter (1988), Jensen, Lauritzen & Olesen (1990)** — fondement des réseaux bayésiens WetGrass/Sprinkler (Infer-4, PyMC-4).
+- **Blei, Ng & Jordan (2003)** — Latent Dirichlet Allocation, cité dans Infer-11 et PyMC-11 comme « Source primaire ».
+- **Salakhutdinov & Mnih (2008)** — Probabilistic Matrix Factorization, cité dans PyMC-15.
+- **Pearl (2000)** — do-calculus, fondement causal d'Infer-5 / PyMC-5 / DecInfer Do-Calculus-Bridge.
+- **Rabiner (1989)** — HMM tutorial, base conceptuelle d'Infer-14 / PyMC-14.
+- **Minka, T., Winn, J., et al. (2018)** — *Infer.NET 2.4*, Microsoft Research Cambridge (cité PyMC-1).
+
+Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 37, Infer-15 cell 76) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
 
 ## Licence
 

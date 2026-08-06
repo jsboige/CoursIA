@@ -51,6 +51,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   scripts-tests:
     name: Scripts Tests (CPU)
@@ -59,6 +62,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history required by test_twin_registry_integrity.py::
+          # test_audit_shas_exist_in_file_history (#9399 volet b), which asserts
+          # each attested audit sha really existed as a file blob. A shallow
+          # clone exposes only the HEAD blob, so legitimate drifts (e.g. the
+          # ai-01 Sudoku-8/14-BDD/9 reserve) whose attested sha predates HEAD
+          # would false-fail. Consistent with the other git-aware gates
+          # (catalog-cron/catalog-drift/cell-order-gate/exercise-leak-ci).
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:

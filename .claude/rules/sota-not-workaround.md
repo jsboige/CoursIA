@@ -34,6 +34,14 @@ Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS,
 
 Action : **complexifier le probleme existant** OU **ajouter un probleme additionnel plus riche**, de sorte que la capacite annoncee soit **visible dans la sortie**. **Modulo un temps de traitement raisonnable** : viser un probleme **discriminant mais borne**, pas un benchmark de plusieurs minutes dans un notebook pedagogique.
 
+### Verification anti-fabrication — mesurer la discrimination AVANT de clamer « heuristique X echoue »
+
+Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** (« les heuristiques gloutonnes rattrapent le nombre chromatique sur les graphes de Mycielski, donc CP-SAT est essentiel ») : on **mesure** d'abord la discrimination firsthand (installer le solveur, regle F, comparer resultat-heuristique vs χ exact sur le graphe candidat). Un pitch non mesure = violation G.9 en attente d'etre livree.
+
+**Anti-exemple verifie firsthand (c.598, ortools 9.15 + networkx 3.4.2)** : sur les graphes de Mycielski standard M_3 (C5), M_4 (Grotzsch), M_5, la coloration gloutonne **et** DSATUR **avec l'ordre networkx par defaut** trouvent **le** χ (3/4/5) — le folklore « greedy rattrape sur Mycielski » **ne reproduit pas** ici (il exige des ordres de sommets adversariaux). S'en servir comme cas Prong-B de coloration = fabriquer un enrichissement faux. Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aleatoire dense Erdos-Renyi G(n, p>=0.3)** (greedy utilise strictement plus de couleurs que χ) — et App-2-GraphColoring le demontre deja (cell benchmark : n=200, greedy=22 / DSATUR=19 / CP-SAT=18).
+
+**Faux signal technique** : un notebook MiniZinc couvre l'optimisation via la syntaxe `solve minimize obj;` (chaine dans le modele), **pas** via `.minimize(` Python — un `grep '.minimize('` renvoie `opt=0` sur des notebooks qui traitent bel et bien l'optimisation. Pour MiniZinc, grepper `solve (min|max)imize` dans les chaines de modele.
+
 ## Comportement des bots reviewers (signaler + enforce)
 
 Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/contributeur) :

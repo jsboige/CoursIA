@@ -47,7 +47,7 @@ interlacing theorem forces a high-degree vertex in any large induced subgraph.
 | `Sensitivity/Hypercube.lean` | `Hypercube_en.lean` | 124 | 0 | Boolean hypercube `Q n`, vertices, adjacency |
 | `Sensitivity/VectorSpace.lean` | `VectorSpace_en.lean` | 132 | 0 | Real vector space of Boolean functions, `ℝ^{2^n}` basis |
 | `Sensitivity/Operator.lean` | `Operator_en.lean` | 100 | 0 | Sensitivity and block-sensitivity operators |
-| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
+| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 135 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
 
 ## Key results
 

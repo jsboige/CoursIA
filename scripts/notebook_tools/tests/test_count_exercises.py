@@ -17,15 +17,21 @@ _tools_dir = str(Path(__file__).resolve().parent.parent)
 if _tools_dir not in sys.path:
     sys.path.insert(0, _tools_dir)
 
+import count_exercises
 from count_exercises import (
+    OUT_OF_CORPUS_KINDS,
+    _classify,
+    corpus_scope,
     _is_stub_code,
     count_exercises_in_notebook,
     iter_pedagogical_notebooks,
+    run,
 )
 
 
 def _write_nb(path: Path, cells: list[dict]) -> Path:
     """Write a minimal notebook with the given cells to path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     nb = {
         "cells": cells,
         "metadata": {},
@@ -723,8 +729,8 @@ class TestExclusions:
         """`Name_output.ipynb` execution artifacts are excluded to avoid
         double-counting the lab + its papermill output.
         """
-        (tmp_path / "Lab1-Real.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "Lab1-Real_output.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "Lab1-Real.ipynb", [])
+        _write_nb(tmp_path / "Course" / "Lab1-Real_output.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         names = sorted(p.name for p in result)
         assert names == ["Lab1-Real.ipynb"]
@@ -733,7 +739,7 @@ class TestExclusions:
         cp = tmp_path / ".ipynb_checkpoints"
         cp.mkdir()
         (cp / "x-checkpoint.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "y.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "y.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["y.ipynb"]
 
@@ -742,7 +748,7 @@ class TestExclusions:
             sub = tmp_path / d
             sub.mkdir()
             (sub / "skip.ipynb").write_text("{}", encoding="utf-8")
-        (tmp_path / "keep.ipynb").write_text("{}", encoding="utf-8")
+        _write_nb(tmp_path / "Course" / "keep.ipynb", [])
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["keep.ipynb"]
 
@@ -766,6 +772,43 @@ class TestExclusions:
         (tmp_path / "ESGF-Workspace" / "ESGF-Real.ipynb").write_text("{}", encoding="utf-8")
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["ESGF-Real.ipynb"]
+
+    @pytest.mark.parametrize("skip_named_ancestor", [
+        "archive",   # the canonical #8858 case (clone under .../archive/CoursIA)
+        "research",  # the historical twin case
+        "bin",       # a common build-output / checkout-parent name
+    ])
+    def test_clone_under_skip_named_ancestor_is_not_silenced(
+        self, tmp_path, skip_named_ancestor
+    ):
+        """#8858-class guard: a checkout's ABSOLUTE path is not signal.
+
+        ``corpus_scope`` filters ``root.rglob`` results against ``EXCLUDE_DIRS``.
+        The bug: it tested ``nb_path.parts`` -- the ABSOLUTE components -- so a
+        clone living under a skip-named ancestor (e.g.
+        ``/home/u/archive/CoursIA/MyIA.AI.Notebooks``) matched ``archive`` in
+        its absolute path and was excluded wholesale. The corpus emptied, an
+        empty corpus counts zero below-threshold notebooks, and ``--check``
+        passes trivially -- a false-clean fleet scan with no signal that
+        anything was inspected.
+
+        The sibling ``test_excludes_research_archive`` does NOT catch this: it
+        makes ``research`` a SUBDIR of the scan root (a real relative
+        exclusion), not an ANCESTOR of the scan root (the false absolute one).
+        This test anchors the filter at ``relative_to(root)`` -- the same fix
+        as ``detect_papermill_path_leak.py``'s ``#8858-class guard``.
+        """
+        # The scan root lives UNDER a skip-named ancestor (real-world: a
+        # second clone, a CI checkout, a worktree under .../archive/...).
+        root = tmp_path / skip_named_ancestor / "clone" / "MyIA.AI.Notebooks"
+        nb_path = root / "ML" / "Lesson-1.ipynb"
+        _write_nb(nb_path, [_md("## Exercice 1"), _code("pass")])
+
+        corpus, removed = corpus_scope(root)
+        assert [p.name for p in corpus] == ["Lesson-1.ipynb"], (
+            f"clone under .../{skip_named_ancestor}/... was silenced: "
+            f"corpus={corpus!r} removed={removed!r}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -910,3 +953,250 @@ class TestGroupedAndPluralHeaders:
         result = count_exercises_in_notebook(nb)
         assert result.count == 2
 
+
+
+class TestCorpusScope:
+    """Corpus scope and the #2161 exception table (`classify_notebook`).
+
+    The convention has two parts the counter historically collapsed into one
+    `count < 3` test: WHICH notebooks are course material, and WHAT minimum
+    applies to those that are. Collapsing them reported 168 sub-threshold
+    notebooks repo-wide, of which 133 were QuantConnect research artifacts and
+    nearly all the rest were rule-exempt setup/Lean/archive notebooks.
+    """
+
+    @pytest.mark.parametrize(
+        "stem",
+        [
+            "research",            # QC projects/*/research.ipynb
+            "Research",            # CSharp-BTC-MACD-ADX/Research.ipynb (capital)
+            "quantbook",           # QC projects/*/quantbook.ipynb
+            "output_v2",           # Sector-Momentum-Researcher/output_v2.ipynb
+            "research_robustness",
+            "m12_har_rv_j_research",
+            "sector_momentum_research_v2",
+            "CrossSubmissionCaptureRepro",
+        ],
+    )
+    def test_execution_artifacts_are_out_of_corpus(self, tmp_path, stem):
+        kind, threshold = _classify(tmp_path / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
+        assert threshold is None, f"{stem} should carry no exercise budget"
+        assert kind in OUT_OF_CORPUS_KINDS
+
+    def test_templates_and_internal_notebooks_are_out_of_corpus(self, tmp_path):
+        for stem, expect in [
+            ("Workbook-Template", "template"),
+            ("Notebook-Template", "template"),
+            ("_e2e_quant_validation", "tooling"),
+        ]:
+            kind, threshold = _classify(tmp_path / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
+            assert (kind, threshold) == (expect, None), stem
+
+    def test_underscore_directory_is_out_of_corpus(self, tmp_path):
+        for parent in ("_archives", "_probes", "_docs"):
+            nb = tmp_path / parent / "Serie-2-Concepts.ipynb"
+            kind, threshold = _classify(nb, standard_threshold=3, root=tmp_path)
+            assert (kind, threshold) == ("archive", None), parent
+
+    def test_legacy_directory_excluded_but_legacy_filename_kept(self, tmp_path):
+        """The precision case that a naive `legacy` match gets wrong.
+
+        `SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb` sits in a legacy FOLDER and
+        is not maintained. `GenAI/Image/04-Applications/04-4-Cross-Stitch-
+        Pattern-Maker-Legacy.ipynb` is a maintained lesson in a numbered series
+        whose SUBJECT happens to be a legacy pattern-maker -- it carries 4
+        exercises. Dropping it would remove a conforming course notebook from
+        the denominator, which is the same defect as leaving artifacts in it and
+        considerably harder to notice.
+        """
+        in_legacy_dir = tmp_path / "RDF.Net-Legacy" / "RDF.Net.ipynb"
+        assert _classify(in_legacy_dir, standard_threshold=3, root=tmp_path) == ("legacy", None)
+
+        legacy_named = tmp_path / "GenAI-Image" / "04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb"
+        kind, threshold = _classify(legacy_named, standard_threshold=3, root=tmp_path)
+        assert kind == "standard"
+        assert threshold == 3
+
+    def test_setup_and_lean_are_in_corpus_but_exempt(self, tmp_path):
+        """Rule table: Setup/Environment `0-1`, purely-Lean `0-2`.
+
+        The column is *Minimum exercices* and both rows include zero, so these
+        kinds are never sub-threshold. Encoding 1 and 2 as FLOORS would invent a
+        stricter policy than the rule states.
+        """
+        for stem, expect in [
+            ("Lean-1-Setup", "setup"),
+            ("Sudoku-0-Environment-Csharp", "setup"),
+            ("SC-1-Setup-Foundry", "setup"),
+            ("Argument_Analysis_Agentic-0-init_agent", "setup"),
+            ("Lean-3-Propositions-Proofs", "lean"),
+            ("GameTheory-11b-Lean-BayesianGamesExt", "lean"),
+            ("DecInfer-9-Lean-Gittins", "lean"),
+        ]:
+            kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
+            assert kind == expect, stem
+            assert threshold == 0, f"{stem}: rule exempts this kind, floor must be 0"
+
+    def test_environment_directory_scopes_its_notebooks_as_setup(self, tmp_path):
+        """`GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb`
+        carries no setup marker in its own stem -- the directory supplies it."""
+        nb = tmp_path / "00-GenAI-Environment" / "00-2-Docker-Services-Management.ipynb"
+        assert _classify(nb, standard_threshold=3, root=tmp_path) == ("setup", 0)
+
+    def test_ordinary_course_notebook_keeps_the_full_budget(self, tmp_path):
+        nb = tmp_path / "Serie" / "SW-4-Ontologies.ipynb"
+        assert _classify(nb, standard_threshold=3, root=tmp_path) == ("standard", 3)
+
+    def test_raising_threshold_does_not_raise_exempt_kinds(self, tmp_path):
+        """`--threshold 5` must not invent an exercise budget for setup/Lean."""
+        assert _classify(tmp_path / "Course" / "Lean-1-Setup.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "X-Lean-Y.ipynb", standard_threshold=5, root=tmp_path)[1] == 0
+        assert _classify(tmp_path / "Course" / "X-Concepts.ipynb", standard_threshold=5, root=tmp_path)[1] == 5
+
+    def test_iter_pedagogical_notebooks_drops_out_of_corpus(self, tmp_path):
+        cells = [_md("## Exercice 1"), _code("pass")]
+        _write_nb(tmp_path / "Course" / "SW-4-Ontologies.ipynb", cells)
+        _write_nb(tmp_path / "research.ipynb", cells)
+        _write_nb(tmp_path / "quantbook.ipynb", cells)
+        _write_nb(tmp_path / "Workbook-Template.ipynb", cells)
+        found = {p.name for p in iter_pedagogical_notebooks(tmp_path)}
+        assert found == {"SW-4-Ontologies.ipynb"}
+
+    def test_gate_can_still_fail_positive_control(self, tmp_path):
+        """The control that matters for any scope-NARROWING change.
+
+        Restricting what a checker looks at can quietly produce a checker that
+        cannot fail at all -- green because it inspects nothing, indistinguish-
+        able from green because everything is clean. A standard course notebook
+        below the floor must still be reported, and `--check` must still exit 1.
+        """
+        _write_nb(
+            tmp_path / "Course" / "SW-4-Ontologies.ipynb",
+            [_md("## Exercice 1 : une seule"), _code("# TODO etudiant\npass")],
+        )
+        targets = iter_pedagogical_notebooks(tmp_path)
+        assert len(targets) == 1
+        assert count_exercises_in_notebook(targets[0]).count == 1
+        assert run(targets, threshold=3, json_out=False, check=True) == 1
+        # ... and conversely stays silent once the notebook conforms.
+        assert run(targets, threshold=1, json_out=False, check=True) == 0
+
+    def test_corpus_scope_reports_what_it_removed(self, tmp_path):
+        """The denominator must be reported, not merely applied.
+
+        A scope filter that silently drops material leaves the reader unable to
+        distinguish a tool that inspected everything from one that narrowed its
+        own scope -- which is the defect this change fixes, so the fix must not
+        reintroduce it one level up.
+        """
+        cells = [_md("## Exercice 1"), _code("pass")]
+        _write_nb(tmp_path / "Course" / "SW-4-Ontologies.ipynb", cells)
+        _write_nb(tmp_path / "research.ipynb", cells)
+        _write_nb(tmp_path / "quantbook.ipynb", cells)
+        _write_nb(tmp_path / "Workbook-Template.ipynb", cells)
+        (tmp_path / "_archives").mkdir()
+        _write_nb(tmp_path / "_archives" / "Old-Serie-1.ipynb", cells)
+
+        corpus, removed = corpus_scope(tmp_path)
+        assert [p.name for p in corpus] == ["SW-4-Ontologies.ipynb"]
+        assert removed == {"artifact": 2, "template": 1, "archive": 1}
+        assert sum(removed.values()) + len(corpus) == 5, "every notebook accounted for"
+
+    def test_root_prefix_carries_no_classification_signal(self, tmp_path):
+        """A checkout path is not signal.
+
+        `_classify` scans path components for `_`-prefixed and legacy folders.
+        Anchoring at the scan root keeps a clone living under e.g.
+        `.../_worktrees/` or `.../legacy-box/` from classifying the entire
+        repository as archive -- which would empty the corpus, and an empty
+        corpus passes `--check` silently.
+        """
+        hostile = tmp_path / "_worktrees" / "RDF-Legacy-box"
+        hostile.mkdir(parents=True)
+        nb = _write_nb(hostile / "Course" / "SW-4-Ontologies.ipynb", [_md("## Exercice 1"), _code("pass")])
+
+        assert _classify(nb, standard_threshold=3, root=hostile) == ("standard", 3)
+        corpus, removed = corpus_scope(hostile)
+        assert corpus == [nb]
+        assert removed == {}
+
+
+# ---------------------------------------------------------------------------
+# #8835 -- path-form invariance: relative vs absolute must classify identically
+# ---------------------------------------------------------------------------
+class TestPathFormInvariance:
+    """#8835: ``classify_notebook`` must return the SAME verdict for a file
+    whether the path is relative (as ``check_pr_exercises.py --stdin`` receives
+    from ``git diff --name-only``) or absolute (as the ``count_exercises.py``
+    fleet scan passes it). The bug: the top-of-tree rule gated on
+    ``path.is_absolute()`` instead of the normalized ``parts``, so a RELATIVE
+    top-of-tree notebook silently skipped the rule and fell through to
+    ``standard`` -- the PR gate and the fleet scan then disagreed on the same
+    file, and the liar (the PR gate, which poses labels) wrongly flagged the
+    notebook ``exercises-below-threshold``. The fix gates on ``len(parts) == 1``
+    (form-invariant by construction, like every other directory rule).
+
+    What is fixed is the FORM-INVARIANCE, not one corpus line -- hence the
+    parametrization over ``tooling`` / ``setup`` / ``standard`` (acceptance
+    criterion 2). The ``tooling`` case is the discriminating one: on the buggy
+    code it returned ``standard`` for both forms (the relative form skipped the
+    rule, the absolute form failed ``relative_to(NOTEBOOKS_DIR)`` on a tmp file),
+    so the ``assert ... == "tooling"`` failed; on the fix it returns
+    ``tooling`` for both.
+    """
+
+    @pytest.mark.parametrize("rel_inside,expected_kind", [
+        ("GradeBook.ipynb", "tooling"),    # top-of-tree (the #8835 case)
+        ("ML/00-Setup.ipynb", "setup"),    # setup-stem in a family dir
+        ("ML/Lesson.ipynb", "standard"),   # standard in a family dir
+    ])
+    def test_relative_and_absolute_paths_agree(
+        self, tmp_path, monkeypatch, rel_inside, expected_kind
+    ):
+        # A minimal notebooks tree: one file at the root (top-of-tree), one
+        # setup-stem and one standard file inside a family dir.
+        root = tmp_path / "nb_root"
+        (root / "ML").mkdir(parents=True)
+        _write_nb(root / "GradeBook.ipynb", [])
+        _write_nb(root / "ML" / "00-Setup.ipynb", [])
+        _write_nb(root / "ML" / "Lesson.ipynb", [])
+        # chdir so the RELATIVE path resolves under tmp_path (mirrors a worker
+        # whose cwd is the repo root passing ``git diff --name-only`` output).
+        monkeypatch.chdir(tmp_path)
+        # Anchor NOTEBOOKS_DIR at the synthetic root so the OLD top-of-tree
+        # rule (which bypassed `parts` and read NOTEBOOKS_DIR directly) treats
+        # the absolute path as "under NOTEBOOKS_DIR" -- reproducing the reported
+        # divergence (relative -> standard, absolute -> tooling) on buggy code,
+        # so the equality assertion below FAILS there. The fixed rule consumes
+        # `parts` (= _scope_parts with root=), so it is unaffected by this patch.
+        monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
+
+        rel = Path("nb_root") / rel_inside
+        absolute = (root / rel_inside).resolve()
+
+        verdict_rel = _classify(rel, standard_threshold=3, root=root)
+        verdict_abs = _classify(absolute, standard_threshold=3, root=root)
+
+        # The invariant the bug broke: same verdict under either form.
+        assert verdict_rel == verdict_abs, (
+            f"form divergence for {rel_inside!r}: "
+            f"relative={verdict_rel} absolute={verdict_abs}"
+        )
+        # And the expected kind (top-of-tree -> tooling is the #8835 fix).
+        assert verdict_rel[0] == expected_kind, (
+            f"{rel_inside!r}: expected {expected_kind!r}, got {verdict_rel[0]!r}"
+        )
+
+    def test_top_of_tree_is_tooling_under_both_forms(self, tmp_path, monkeypatch):
+        """The exact #8835 reproduction: a top-of-tree notebook classifies as
+        ``tooling`` whether passed relative or absolute -- so neither consumer
+        (fleet scan nor PR gate) can disagree."""
+        root = tmp_path / "nb_root"
+        root.mkdir()
+        _write_nb(root / "GradeBook.ipynb", [])
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
+        rel = Path("nb_root/GradeBook.ipynb")
+        absolute = (root / "GradeBook.ipynb").resolve()
+        assert _classify(rel, standard_threshold=3, root=root) == ("tooling", None)
+        assert _classify(absolute, standard_threshold=3, root=root) == ("tooling", None)

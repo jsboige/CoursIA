@@ -1,0 +1,17 @@
+- name: "CSP-9 Distributed"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-01"
+      by: myia-po-2024:CoursIA-2
+      python_sha: adee0d476742b82cc2efb931e778f4fba271be35
+      reason: "c.1125 #8052 Python c44 stale pre-rename self-label Search-18->CSP-9-Distributed (C# twin already correct); print-literal src+out atomic"
+      csharp_sha: 8324939a7b714bb232440bac11de6c84c0981a70
+  known_differences:
+    - "Socle commun : CSP distribue (DisCSP) -- formalisation, ABT (Asynchronous Backtracking, Yokoo 1992), AWC (Asynchronous Weak-Commitment, Yokoo 1995), Privacy-Preserving CSP, application multi-hopital, benchmark synthetique ABT vs AWC. Le C# se declare explicitement 'binome .NET du CSP-9-Distributed.ipynb' (H1) et cite Yokoo 1992."
+    - "PARITE CELLULAIRE EXACTE : 47 cellules des deux cotes (19 code, 28 markdown) -- le twin le plus proche cellule-a-cellule des 5 residuels. Sections logiques 1-7 identiques ; le C# concentre parfois plusieurs H2 logiques dans une meme cellule markdown (surcomptage brut d'en-tetes a 34) mais la couverture structurelle reelle matche le Python."
+    - "Solver-free by design DES DEUX COTES : ABT/AWC/PrivacyPreserving implementes from-scratch (ni OR-Tools, ni Z3, ni Choco des deux cotes -- verifie par grep des imports/#r). Le H1 C# le dit explicitement : 'l'ABT n'a pas de moteur SOTA centralise, c'est l'algorithme qui est le sujet'. Aucune asymetrie de machinerie."
+    - "Asymetrie d'idiome de concurrence : Python = asyncio (async/await, simulation de messages asynchrones) ; C# = file de messages synchrone via System.Collections.Generic (pas d'async). Meme algorithme ABT/AWC, primitive de concurrence differente (idiomatique a chaque langage)."
+    - "Set d'exercices identique : memes 4 exemples guidés (N-reines distribue, ABT vs AWC, negociation multi-agent, fuite d'information) + memes 4 stubs (1b/2b/3b/4b). Visualisation : Python matplotlib vs C# ScottPlot 5.0.55."

@@ -1,0 +1,15 @@
+- name: "SW-2 RDF-Basics"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 1ec640b95feee7021d0f7df93e598101b878dd13
+      csharp_sha: fcea9bfbc914f113a7448e2511941ec09908d787
+      reason: "Measure/value fix (C# cell 46 « Comparaison des tailles de serialisation » table): 2 rows contradicted the committed cell 45 measured output (17-triplet graphe social). c45 measures RDF/XML 1567 car = 95 % and JSON-LD 2069 car = 126 %, but c46 claimed RDF/XML « ~70-90 % » (95 % outside) and JSON-LD « ~60-80 % » (126 % wrong direction -- JSON-LD is MORE verbose than NTriples here, not more compact). Realigned both rows to the measured output (RDF/XML ~95 %, JSON-LD ~126 %, format le plus lourd), keeping the « valeurs exactes varient » caveat. Turtle 49 % (in 40-60 OK) and NTriples 100 % ref left unchanged. Markdown-only, 0 re-exec, no output change. Python twin SW-2b uses rdflib with different serializer sizes (separate analysis), python unchanged."
+  known_differences:
+    - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
+    - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
+    - "API idiomatique differente : C# via `Graph` + `IGraph` + `IUriNode`/`ILiteralNode` fortement types ; Python via `Graph()` + `URIRef`/`Literal` plus dynamiques. Meme fondement W3C RDF 1.1."

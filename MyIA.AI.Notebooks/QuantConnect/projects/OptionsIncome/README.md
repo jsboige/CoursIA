@@ -24,12 +24,10 @@ Stratégies de génération de revenus via la vente d'options.
 
 ## Backtest Results - Covered Call (2020-2023)
 
-| Métrique | Valeur |
-|----------|--------|
-| Total Return | ~25-35% |
-| Premium Collected | ~$8,000-12,000 |
-| Max Drawdown | ~-25% à -30% |
-| Sharpe Ratio | ~0.5-0.8 |
+> Les métriques quantitatives (Total Return, Premium, Max Drawdown, Sharpe) sont
+> machine-dépendantes : elles dérivent avec les données, la période et l'environnement
+> d'exécution. Elles ne sont pas attestées par un backtest figé ici. Les obtenir via
+> `lean backtest` (moteur Lean local) ou en poussant le projet sur QC Cloud.
 
 ## Fichiers
 

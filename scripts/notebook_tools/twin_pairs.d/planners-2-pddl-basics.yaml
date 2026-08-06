@@ -1,0 +1,14 @@
+- name: "Planners-2 PDDL-Basics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-31"
+      by: po-2024
+      python_sha: c83be596acfef24a0d6b22bab6405f2e68074374
+      csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
+  known_differences:
+    - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
+    - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."
+    - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only correction cote Python (cell[59] downstream next-notebook list : nb4/nb5 titres transposes -> Planners-4-Fast-Downward / Planners-5-Heuristics, conformes aux fichiers sur disque). Paraphite-preservant : aucun output/code modifie, axe de parite semantic intact."

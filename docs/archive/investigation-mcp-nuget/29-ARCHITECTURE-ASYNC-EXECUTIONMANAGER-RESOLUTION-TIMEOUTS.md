@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-30** — PM transiente (investigation MCP Jupyter / NuGet / .NET Interactive, Sept-Oct 2025). L'etat courant vit dans le serveur `mcp-jupyter` (roo-extensions) et `docs/reference/kernels-runtime.md`. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # 🚀 ARCHITECTURE ASYNC EXECUTIONMANAGER : RÉSOLUTION DÉFINITIVE DES TIMEOUTS MCP
 
 **Date :** 28 septembre 2025  

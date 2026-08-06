@@ -215,17 +215,17 @@ namespace MyIA.Trading.Converter
         }
 
 
-        private sealed class CustomDynamicTypeProvider : IDynamicLinkCustomTypeProvider
+        private sealed class CustomDynamicTypeProvider : IDynamicLinqCustomTypeProvider
         {
             private readonly Dictionary<string, object> _context;
 
-            public CustomDynamicTypeProvider(Dictionary<string, object> context, IDynamicLinkCustomTypeProvider dynamicLinkCustomTypeProvider)
+            public CustomDynamicTypeProvider(Dictionary<string, object> context, IDynamicLinqCustomTypeProvider dynamicLinqCustomTypeProvider)
             {
                 this._context = context;
-                this.DefaultProvider = dynamicLinkCustomTypeProvider;
+                this.DefaultProvider = dynamicLinqCustomTypeProvider;
             }
 
-            public IDynamicLinkCustomTypeProvider DefaultProvider { get; set; }
+            public IDynamicLinqCustomTypeProvider DefaultProvider { get; set; }
 
             public HashSet<Type> GetCustomTypes()
             {

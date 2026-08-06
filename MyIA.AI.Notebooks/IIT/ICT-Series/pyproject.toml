@@ -1,0 +1,67 @@
+# pyproject.toml -- packaging de la serie ICT (Epic #4588, issue #8076)
+#
+# Rend le package `ict/` installable (`pip install -e .`) pour que
+# `from ict import ...` resolve depuis n'importe quel cwd, sans dependre
+# du repertoire ICT-Series/ (l'ancien contrat documente au README).
+#
+# Epingle PyPhi (IMPORTANT) :
+#   pyphi==1.2.0 exige Python <= 3.9 (collections.Iterable est retire en 3.10)
+#   et NumPy < 2.0 (compat pyemd). C'est ASSUMÉ pour la serie IIT/ICT cœur
+#   (les strates Φ-trajectoires sont le propos meme de la serie). Une migration
+#   vers Py3.11+/NumPy2 exigerait soit un port de PyPhi, soit d'isoler PyPhi
+#   dans un extra decorype (cf. issue de migration a ouvrir si besoin).
+#   Le package `ict/` lui-meme (simulations numpy/matplotlib) n'a pas besoin
+#   de PyPhi (cf. docstring ict/__init__.py) ; c'est le stricte calcul IIT
+#   (IIT-1/2/3, quelques cellules ICT) qui l'impose a tout l'env.
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ict-series"
+version = "0.1.0"
+description = "ICT (Integrated Causal Trajectories) -- simulations, Φ-trajectoires, emergence causale, mesures scale-free (serie pedagogique IIT)"
+readme = "README.md"
+requires-python = ">=3.9,<3.10"   # pyphi==1.2.0 -> collections.Iterable (retire en 3.10)
+license = { text = "MIT" }
+authors = [{ name = "CoursIA" }]
+keywords = ["IIT", "integrated-information", "causal-emergence", "pyphi", "morphogenesis"]
+
+# Dependances cœur : strates PyPhi + numpy/scipy + visualisation matplotlib.
+# (matplotlib est massivement utilise par les notebooks : Φ-trajectoires,
+#  heatmaps, early-warning signals, cartes d'obstruction -- 47 imports.)
+dependencies = [
+    "pyphi==1.2.0",          # IIT computation -- epinglera l'env sur Py3.9 + NumPy<2
+    "numpy>=1.21,<2.0",      # numpy<2.0 (compat pyemd / pyphi)
+    "scipy>=0.13.3",         # calcul scientifique
+    "matplotlib",            # visualisation (notebooks)
+]
+
+[project.optional-dependencies]
+# Strates LLM/SAE (ICT-21/22/24, ICT-SAE-JLens) -- GPU requis, optionnelles.
+# Note : `sae_traces` et `jlens_traces` sont des modules INTERNES du package
+# `ict/` (ict/sae_traces.py, ict/jlens_traces.py), pas des deps pip.
+llm = [
+    "torch",
+    "transformers",
+]
+# Dependances utilitaires ponctuelles (1-2 usages a travers la serie).
+extras = [
+    "pandas",
+    "sympy",
+]
+# Suite de tests : `python -m pytest tests/` depuis ICT-Series/.
+dev = [
+    "pytest",
+]
+
+[project.urls]
+"Epic" = "https://github.com/jsboige/CoursIA/issues/4588"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ict*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

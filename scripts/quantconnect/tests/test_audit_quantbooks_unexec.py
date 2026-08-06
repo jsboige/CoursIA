@@ -65,7 +65,7 @@ def _write_project(root: Path, name: str, cells, config: dict | None = None,
 
 class TestIsUnexecutedCode:
     def test_code_cell_without_exec_count(self):
-        c = _cell("code", execution_count=None, outputs=[])
+        c = _cell("code", "qb = QuantBook()", execution_count=None, outputs=[])
         assert aqm._is_unexecuted_code(c) is True
 
     def test_code_cell_with_exec_count(self):
@@ -82,8 +82,21 @@ class TestIsUnexecutedCode:
 
     def test_outputs_none_treated_as_empty(self):
         # Cell where outputs key is missing entirely
-        c = {"cell_type": "code", "execution_count": None}
+        c = {"cell_type": "code", "source": "qb = QuantBook()", "execution_count": None}
         assert aqm._is_unexecuted_code(c) is True
+
+    def test_empty_code_cell_is_not_unexecuted(self):
+        # Une cellule vide satisfait ``ec is None and outputs == []`` par
+        # construction : il n'y a rien a executer, donc rien a signaler.
+        # Sans ce garde-fou, --check echoue en CI sur un notebook sain et la
+        # seule remediation serait de supprimer les cellules vides.
+        assert aqm._is_unexecuted_code(_cell("code", "")) is False
+
+    def test_whitespace_only_code_cell_is_not_unexecuted(self):
+        assert aqm._is_unexecuted_code(_cell("code", "  \n\t\n")) is False
+
+    def test_empty_source_as_list_is_not_unexecuted(self):
+        assert aqm._is_unexecuted_code(_cell("code", ["", "\n"])) is False
 
 
 # -- _has_strip_marker --
@@ -200,6 +213,25 @@ class TestScanNotebook:
         assert r["unexecuted_indexes"] == [1, 2]
         assert r["strip_marker"] is False
 
+    def test_def_only_cell_is_still_caught(self, tmp_path):
+        """Le verdict est conservatif : un ``def`` unexec est signale comme le reste.
+
+        La docstring du module a longtemps promis l'inverse ("un notebook avec
+        un seul ``def`` unexec et pas d'autre cellule = HEALTHY", "pas de faux
+        positif ... parce qu'on regarde aussi le markdown contextuel"). Aucune
+        de ces deux clauses n'a jamais ete implementee : le markdown contextuel
+        ne fait que ROUTER entre les classes STOP_REPAIR_*, il ne produit
+        jamais HEALTHY. Ce test epingle le contrat reel.
+        """
+        proj = _write_project(tmp_path, "DefOnly", [
+            _cell("markdown", "## Fonctions utilitaires"),
+            _cell("code", "def helper(x):\n    return x * 2",
+                  execution_count=None, outputs=[]),
+        ])
+        r = aqm.scan_notebook(proj / "quantbook.ipynb")
+        assert r["classification"] == "PREEXISTING_UNEXEC"
+        assert r["code_unexecuted"] == 1
+
     def test_error_unreadable(self, tmp_path):
         proj = tmp_path / "BadProj"
         proj.mkdir()
@@ -260,8 +292,8 @@ class TestMain:
         assert out["results"][0]["classification"] == "HEALTHY"
 
     def test_project_filter(self, tmp_path, capsys):
-        _write_project(tmp_path, "Good", [_cell("code", execution_count=1)])
-        _write_project(tmp_path, "Bad", [_cell("code", execution_count=None)])
+        _write_project(tmp_path, "Good", [_cell("code", "x = 1", execution_count=1)])
+        _write_project(tmp_path, "Bad", [_cell("code", "x = 1", execution_count=None)])
         rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".",
                        "--project", "Bad", "--json"])
         assert rc == 0
@@ -279,9 +311,23 @@ class TestMain:
         assert rc == 2
 
     def test_check_exits_1_when_preexisting(self, tmp_path):
-        _write_project(tmp_path, "Bad", [_cell("code", execution_count=None)])
+        _write_project(tmp_path, "Bad", [_cell("code", "x = 1", execution_count=None)])
         rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".", "--check"])
         assert rc == 1
+
+    def test_check_ignores_empty_cells(self, tmp_path):
+        """Un notebook dont les seules cellules 'unexec' sont vides est sain.
+
+        Le gate CI ne doit pas exiger une remediation dont la seule forme
+        possible serait de supprimer des cellules vides.
+        """
+        _write_project(tmp_path, "EmptyOnly", [
+            _cell("code", "x = 1", execution_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout", "text": "ok"}]),
+            _cell("code", "", execution_count=None, outputs=[]),
+        ])
+        rc = aqm.main(["--root", str(tmp_path), "--quant-root", ".", "--check"])
+        assert rc == 0
 
     def test_check_exits_0_when_clean(self, tmp_path):
         _write_project(tmp_path, "Good", [_cell("code", execution_count=1)])
@@ -336,3 +382,131 @@ class TestIntegration6891:
         assert by_name["Stripped"]["config"]["status"] == "ALIVE"
         assert by_name["DeadCloud"]["config"]["status"] == "DEAD"
         assert by_name["Preexisting"]["config"]["status"] == "DEAD"
+
+
+# -- _uses_quantbook (fenetre par CONTENU, #7575 / #8598) --
+
+class TestUsesQuantbook:
+    def test_code_cell_instantiating_quantbook(self):
+        nb = _nb([_cell("code", "qb = QuantBook()")])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_self_quantbook_attribute(self):
+        nb = _nb([_cell("code", "history = self.QuantBook.History(spy, 10)")])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_source_as_list_of_lines(self):
+        nb = _nb([_cell("code", ["import x\n", "qb = QuantBook()\n"])])
+        assert aqm._uses_quantbook(nb) is True
+
+    def test_markdown_mention_only_is_not_a_quantbook(self):
+        # Un tutoriel qui PARLE de QuantBook n'a pas besoin du runtime QC Cloud.
+        nb = _nb([_cell("markdown", "On utilise `QuantBook()` pour la recherche.")])
+        assert aqm._uses_quantbook(nb) is False
+
+    def test_no_mention_at_all(self):
+        nb = _nb([_cell("code", "import pandas as pd")])
+        assert aqm._uses_quantbook(nb) is False
+
+
+# -- scan_repo : sur-ensemble strict de scan_projects --
+
+def _write_nb(path: Path, cells, kernel="python3") -> Path:
+    """Write an arbitrary notebook at ``path`` (parents created)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(_nb(cells, kernel=kernel), ensure_ascii=False),
+                    encoding="utf-8")
+    return path
+
+
+class TestScanRepo:
+    """La fenetre est le CONTENU (``QuantBook()``), pas le chemin ni le basename."""
+
+    @staticmethod
+    def _tree(tmp_path):
+        nb_root = tmp_path / "MyIA.AI.Notebooks"
+        quant_root = nb_root / "QuantConnect" / "projects"
+        # Canonique : dans la fenetre d'origine, avec config.json.
+        _write_project(quant_root, "Canonical", [
+            _cell("code", "qb = QuantBook()", execution_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout", "text": "ok"}]),
+        ], config={"cloud-id": 12345})
+        # Hors fenetre d'origine (ni le dossier, ni le basename) mais VRAI quantbook.
+        _write_nb(nb_root / "QuantConnect" / "research" / "research.ipynb", [
+            _cell("code", "qb = QuantBook()", execution_count=None, outputs=[]),
+        ])
+        # Meme dossier canonique, autre basename -- la seconde moitie du proxy.
+        _write_nb(quant_root / "Canonical" / "research.ipynb", [
+            _cell("code", "qb = QuantBook()", execution_count=None, outputs=[]),
+        ])
+        # Bruit : ne doit PAS entrer dans la fenetre.
+        _write_nb(nb_root / "Search" / "tutorial.ipynb",
+                  [_cell("markdown", "`QuantBook()` sert a la recherche.")])
+        _write_nb(nb_root / "ML" / "plain.ipynb",
+                  [_cell("code", "import pandas", execution_count=None, outputs=[])])
+        _write_nb(nb_root / "Foo" / ".ipynb_checkpoints" / "x.ipynb",
+                  [_cell("code", "qb = QuantBook()", execution_count=None, outputs=[])])
+        (nb_root / "Bad").mkdir(parents=True, exist_ok=True)
+        (nb_root / "Bad" / "broken.ipynb").write_text("{not json", encoding="utf-8")
+        return nb_root, quant_root
+
+    def _paths(self, results, nb_root):
+        return {Path(r["path"]).relative_to(nb_root).as_posix() for r in results}
+
+    def test_catches_quantbooks_outside_the_path_window(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        got = self._paths(aqm.scan_repo(nb_root, quant_root), nb_root)
+        assert "QuantConnect/research/research.ipynb" in got
+        assert "QuantConnect/projects/Canonical/research.ipynb" in got
+
+    def test_ignores_non_quantbooks_checkpoints_and_unreadable(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        got = self._paths(aqm.scan_repo(nb_root, quant_root), nb_root)
+        assert "Search/tutorial.ipynb" not in got   # markdown-only mention
+        assert "ML/plain.ipynb" not in got          # aucune mention
+        assert "Foo/.ipynb_checkpoints/x.ipynb" not in got
+        assert "Bad/broken.ipynb" not in got        # JSON invalide : pas de crash
+
+    def test_is_a_strict_superset_that_reclassifies_nothing(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        old = {r["path"]: r for r in aqm.scan_projects(quant_root)}
+        new = {r["path"]: r for r in aqm.scan_repo(nb_root, quant_root)}
+        assert set(old) <= set(new)
+        for path, before in old.items():
+            assert new[path]["classification"] == before["classification"]
+
+    def test_canonical_entries_keep_their_config_cross_reference(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        new = {Path(r["path"]).as_posix(): r for r in aqm.scan_repo(nb_root, quant_root)}
+        canonical = next(v for k, v in new.items() if k.endswith("Canonical/quantbook.ipynb"))
+        assert canonical["config"]["status"] == "ALIVE"
+
+    def test_no_duplicate_entries(self, tmp_path):
+        nb_root, quant_root = self._tree(tmp_path)
+        results = aqm.scan_repo(nb_root, quant_root)
+        paths = [r["path"] for r in results]
+        assert len(paths) == len(set(paths))
+
+    def test_missing_notebooks_root_yields_canonical_only(self, tmp_path):
+        """Rien a elargir n'est pas une erreur -- main() garde l'exit 2 explicite."""
+        _, quant_root = self._tree(tmp_path)
+        results = aqm.scan_repo(tmp_path / "nope", quant_root)
+        assert [r["path"] for r in results] == [r["path"] for r in aqm.scan_projects(quant_root)]
+
+
+class TestMainScope:
+    def test_default_scope_is_wider_than_projects(self, tmp_path, capsys):
+        nb_root, quant_root = TestScanRepo._tree(tmp_path)
+        rc = aqm.main(["--root", str(tmp_path), "--json"])
+        assert rc == 0
+        wide = json.loads(capsys.readouterr().out)["scanned"]
+        rc = aqm.main(["--root", str(tmp_path), "--scope", "projects", "--json"])
+        assert rc == 0
+        narrow = json.loads(capsys.readouterr().out)["scanned"]
+        assert wide > narrow
+
+    def test_explicit_missing_notebooks_root_exits_2(self, tmp_path):
+        self_tree = TestScanRepo._tree(tmp_path)
+        assert self_tree  # fixture built
+        rc = aqm.main(["--root", str(tmp_path), "--notebooks-root", "nope"])
+        assert rc == 2

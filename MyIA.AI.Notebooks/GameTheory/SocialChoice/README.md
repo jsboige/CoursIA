@@ -4,7 +4,7 @@
 series: GameTheory-SocialChoice
 pedagogical_count: 7
 breakdown: SocialChoice=7
-maturity: PRODUCTION=4, BETA=3
+maturity: BETA=6, ALPHA=1
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -27,7 +27,7 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 
 **Durée totale** : ~3h25
 
-> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série (7 notebooks au total, tous formats confondus) mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des quatre notebooks Python d'origine dont ils sont les retranscriptions .NET.
+> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des quatre notebooks Python d'origine dont ils sont les retranscriptions .NET.
 
 ## Parcours d'apprentissage
 
@@ -120,8 +120,8 @@ Les notebooks SC-01 et SC-02 renvoient au projet Lake `game_theory_lean/SocialCh
 
 | Résultat | Fichier | sorry | Statut |
 |----------|---------|-------|--------|
-| Théorème d'Arrow | `Arrow.lean` | 0 | Prouvé (~950 lignes) |
-| Théorème de Sen | `Sen.lean` | 0 | Prouvé (~300 lignes) |
+| Théorème d'Arrow | `Arrow.lean` | 0 | Prouvé |
+| Théorème de Sen | `Sen.lean` | 0 | Prouvé |
 | Modèles de vote | `Voting.lean` | 0 | Banks, STV, Median Voter |
 
 Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formalise 12 règles de vote et 4 théorèmes d'impossibilité supplémentaires (Gibbard-Satterthwaite, Condorcet Participation, Condorcet Reinforcement, Duggan-Schwartz). Inventaire détaillé : [LEAN_INVENTORY.md](../LEAN_INVENTORY.md).

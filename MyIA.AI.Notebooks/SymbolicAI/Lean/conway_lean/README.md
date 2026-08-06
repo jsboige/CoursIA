@@ -19,7 +19,7 @@ flowchart LR
 ## Statut
 
 - **Toolchain** : v4.31.0-rc1
-- **Compte de sorry** : 2 (tous dans `HashlifeCorrectness.lean` — wave-glue P4 `p4_succ_membership` [1] + grand-n P5 `p5_large_n_jump` [1], Epic #2162). Plusieurs sous-lemmes P4 et ingrédients additifs sont prouvés sorry-free (voir § « Jeu de la Vie » ci-dessous). `p5_inductive_step` (colle P5.3) a été close par c.310 PR #5998 via vacuous-arm split (design gate #3846) : sur grilles non vides, la branche `¬ hsmall` est conjointement insatisfaisable avec `BoxAssezGrand`, donc vide par construction. Le placeholder `p4_half_steps_compose` (P4.4) a été supprimé : sa composition pure-evolve est déjà close (`evolve_add` + `evolve_half_step`), son contenu wave-glue porté par le résiduel `p4_succ_membership`. **Audit N1 (PR #5853, ai-01 2026-07-09)** : le frame sub-claim initial (`BoxAssezGrand` ∩ `n ≥ jumpSize`) est **vacuous sur grilles non vides** (`p5_large_n_hyps_unsat` : padding 2 de `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)** : redesigner `gridFrame` pour padding dépendant de `n`, porter l'état `(off, mc)` à travers la boucle de `evolveHashlifeFastAux` sans re-framing intermédiaire, restater l'invariant « marge ≥ n restant, préservé par jump ». La dette de preuve (#3846) reste la cible du BG-prover et du redesign architectural coordonné.
+- **Compte de sorry** : **8** (tous dans `HashlifeCorrectness.lean`, Epic #2162 — **P4 : 5** + **P5 grand-n : 3** ; décompte canonique code-level via `strip_comments` de `scripts/lean/check_i18n_siblings.py`, le `grep` brut sur-compte ~68 via la prose des docstrings). Croissance 2→8 depuis l'audit N1 (#5853) = **forward progress** : décomposition structurelle du pas inductif P4 (membership iff éclatée en sous-cas quadrant, le quadrant **nw PROUVÉ** via `p4_nw_membership_arm` L2926) + énoncé de 2 nouveaux théorèmes top-level N-correctness (`hashlife_correctN` L3678, `p5_large_n_jumpN` L3706, `BoxAssezGrandN`, gated P4) — **pas une régression**. Voir § « État honnête du verrou HashlifeCorrectness » pour la déclaration-par-déclaration. Plusieurs sous-lemmes P4 et ingrédients additifs sont prouvés sorry-free (voir § « Jeu de la Vie » ci-dessous). `p5_inductive_step` (colle P5.3) a été close par c.310 PR #5998 via vacuous-arm split (design gate #3846) : sur grilles non vides, la branche `¬ hsmall` est conjointement insatisfaisable avec `BoxAssezGrand`, donc vide par construction. Le placeholder `p4_half_steps_compose` (P4.4) a été supprimé : sa composition pure-evolve est déjà close (`evolve_add` + `evolve_half_step`), son contenu wave-glue porté par le résiduel `p4_succ_membership`. **Audit N1 (PR #5853, ai-01 2026-07-09)** : le frame sub-claim initial (`BoxAssezGrand` ∩ `n ≥ jumpSize`) est **vacuous sur grilles non vides** (`p5_large_n_hyps_unsat` : padding 2 de `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)** : redesigner `gridFrame` pour padding dépendant de `n`, porter l'état `(off, mc)` à travers la boucle de `evolveHashlifeFastAux` sans re-framing intermédiaire, restater l'invariant « marge ≥ n restant, préservé par jump ». La dette de preuve (#3846) reste la cible du BG-prover et du redesign architectural coordonné.
 - **Build** : `lake build Conway` — SUCCESS
 - **Dépendances** : Mathlib4
 - **Couverture i18n (EPIC #4980)** : **25 modules** conway_lean livrés en FR-canonique + sibling `_en` sur `main` (tous sauf `HashlifeCorrectness.lean`, la cible P4/P5 du prouveur qui reste EN-only) — Phase 1 : **10/10** ; Phase 2 : **13/14** (`ConeGeometry` inclus) ; Phase 3 : **2/2**. Rollout complet (c.290-#6439 + cycles c.421-c.423 merged).
@@ -58,7 +58,7 @@ flowchart LR
 | `Conway/Life/HashlifeMemo.lean` | `HashlifeMemo_en.lean` | 0 | Hashlife mémoïsé pour témoins des piliers communautaires (OTCA 35K, UnitCell 4096, Gemini 33M) |
 | `Conway/Life/HashlifeMarginDemo.lean` | `HashlifeMarginDemo_en.lean` | 0 | Démo exécutable P5 redesign (#3846) — n-aware framing margin autour de `MacroCell`/`HashlifeCorrectness` |
 | `Conway/Life/Pillars.lean` | `Pillars_en.lean` (c.417) | 0 | Scaffolding du théorème community-witness (4 piliers) |
-| `Conway/Life/HashlifeCorrectness.lean` | — | 2 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | — | 8 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162). 8 = P4 (5 : `p4_nw_supercell_agree` L2910 + `p4_succ_membership` L3193/3195/3197/3202) + P5 grand-n (3 : `p5_large_n_jump` L3531 + `hashlife_correctN` L3680 + `p5_large_n_jumpN` L3709) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -99,7 +99,7 @@ flowchart LR
 - **Hashlife mémoïsé** : témoins des piliers communautaires (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
 - **HashlifeCorrectness** : correction bornée `hashlife_correct`, décomposée en P1-P5
   - **P1-P3 prouvés** (cas de base `k=0` via `2^16 native_decide`, PR #2810)
-  - **Pas inductif P4** (1 sorry résiduel sur `p4_succ_membership`) : le scaffolding #2975
+  - **Pas inductif P4** (5 sorry : `p4_nw_supercell_agree` L2910 [1, isolation NET-FLAT du call-site nw monolithique, ai-01 #6875] + `p4_succ_membership` L3193/3195/3197/3202 [4, quadrants ne/sw/se + direction mpr — le quadrant **nw est PROUVÉ** via `p4_nw_membership_arm` L2926 sur `p4_nw_shift_lemma`]) : le scaffolding #2975
     décompose le pas inductif en sous-lemmes. Sont **prouvés sorry-free** —
     `p4_double_nine_shape` (existence structurelle des neuf quadrants d'une cellule
     double-nine), `p4_wave1_ih` et `p4_wave2_ih` (propagation du `centralCorrect` par
@@ -109,19 +109,23 @@ flowchart LR
     offset-généralisé, #4812) et `evolve_cone_agree` (gate de composition de localité
     radius-doubling, #4892). Le placeholder P4.4 `p4_half_steps_compose` (`: True`) a été
     **supprimé** (N2-bis) : sa composition pure-evolve est exactement `evolve_add` +
-    `evolve_half_step` (clos), son contenu wave-glue étant porté par le **1 sorry
-    résiduel** sur `p4_succ_membership` (noncomputable def L2697, sorry L2734) — le cœur
+    `evolve_half_step` (clos), son contenu wave-glue étant désormais éclaté en
+    sous-cas quadrant sur `p4_succ_membership` (noncomputable def L3103, sorries
+    L3193/3195/3197/3202) + le call-site nw isolé en `p4_nw_supercell_agree`
+    (L2893, sorry L2910) — le cœur
     d'assemblage offset-matching G3 : caractériser l'appartenance des super-cellules
     `q_*` aux quatre offsets de quadrant via `centralCorrect_mem` (G2) + le pontage
     `evolve_half_step`/`step_light_cone` (G3). Composition light-cone double-nine whnf-dure
     de niveau recherche — cible du BG-prover multi-cycle.
-  - **Grand-n P5** (1 sorry résiduel) : `p5_small_n_fallback` **PROUVÉ** (PR #2984) ;
+  - **Grand-n P5** (3 sorry résiduels, tous gated P4) : `p5_small_n_fallback` **PROUVÉ** (PR #2984) ;
     `evolve_dead_of_cone_dead` (contrapositive P5.2, #4574) **prouvé sorry-free** ;
     `p5_inductive_step` (colle P5.3) **PROUVÉ** par c.310 PR #5998 via vacuous-arm split
     (branche non-vide close par `p5_large_n_hyps_unsat`, branche vide par unfold direct).
-    Reste `p5_large_n_jump` (P5.2, `evolveHashlifeFast n g = evolve n g`, corps `sorry`,
-    bloqué sur P4). Cas de base `n=0` prouvé (`hashlife_correct_base_zero` #2898,
-    `evolveHashlifeFastAux_zero_n` #2901).
+    Restent 3 théorèmes top-level `sorry`, tous gated P4 : `p5_large_n_jump` (P5.2,
+    `evolveHashlifeFast n g = evolve n g`, L3528 sorry L3531), et les 2 théorèmes
+    N-steps `BoxAssezGrandN` nouvellement énoncés `hashlife_correctN` (L3678 sorry
+    L3680) + `p5_large_n_jumpN` (L3706 sorry L3709). Cas de base `n=0` prouvé
+    (`hashlife_correct_base_zero` #2898, `evolveHashlifeFastAux_zero_n` #2901).
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROUVÉ)
 
@@ -152,7 +156,13 @@ Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des 
 
 ### État honnête du verrou HashlifeCorrectness
 
-Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **2 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, `p5_inductive_step` (colle P5.3) prouvé par c.310 PR #5998 via vacuous-arm split, les sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge`) prouvés sorry-free, ainsi que les ingrédients additifs clos cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) et la contrapositive P5.2 (`evolve_dead_of_cone_dead`) — mais le pas inductif P4 (assemblage offset-matching G3, 1 sorry résiduel sur `p4_succ_membership` — noncomputable def L2697 (sorry L2734), le placeholder `p4_half_steps_compose` a été supprimé, sa composition pure-evolve étant déjà close via `evolve_add`+`evolve_half_step`) et le grand-n P5 (`p5_large_n_jump`, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 énoncent précisément chaque sous-but dans leurs docstrings.
+Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **8 `sorry`** (code-level, décompte canonique via `strip_comments` — le `grep` brut sur-compte via la prose des docstrings) dans `HashlifeCorrectness.lean`, tous concentrés sur le verrou P4/P5 research-level. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, `p5_inductive_step` (colle P5.3) prouvé par c.310 PR #5998 via vacuous-arm split, les sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge`) prouvés sorry-free, ainsi que les ingrédients additifs clos cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) et la contrapositive P5.2 (`evolve_dead_of_cone_dead`) — mais le pas inductif P4 (assemblage offset-matching G3) et le grand-n P5 sont **research-level**. **Déclaration-par-déclaration des 8 sorry** (post-décomposition P4.4 #7012 + énoncé des théorèmes N-correctness) :
+
+- **P4 — `p4_nw_supercell_agree`** (private theorem L2893, sorry L2910, 1) : isolation NET-FLAT du call-site nw monolithique (ai-01 tree-lock #6875 ; anti-régression §D N/A — remplace nommément un sorry préexistant, n'ajoute pas de dette).
+- **P4 — `p4_succ_membership`** (noncomputable def L3103, 4 sorry L3193/3195/3197/3202) : la membership iff du pas inductif, **décomposée en sous-cas quadrant**. Le quadrant **nw est PROUVÉ** via `p4_nw_membership_arm` (L2926, sorry-free wiring sur `p4_nw_shift_lemma`) ; restent les quadrants ne/sw/se (L3193/3195/3197) + la direction mpr (L3202). Le placeholder `p4_half_steps_compose` a été supprimé (composition pure-evolve déjà close via `evolve_add`+`evolve_half_step`).
+- **P5 grand-n** (3 sorry, tous gated P4) : `p5_large_n_jump` (L3528 sorry L3531, P5.2) + `hashlife_correctN` (L3678 sorry L3680) + `p5_large_n_jumpN` (L3706 sorry L3709) — ces 2 derniers sont des théorèmes top-level N-steps `BoxAssezGrandN` nouvellement énoncés.
+
+**Infrastructure en place** : les 4 shift-lemmas `p4_nw/ne/sw/se_shift_lemma` (L2846/2999/3025/3051, #7012) sont sorry-free. **Prochaine étape concrète** : écrire les bras membership ne/sw/se par analogie à `p4_nw_membership_arm` (L2926), ce qui close 3 des 4 sorry de `p4_succ_membership`. Ce sont les cibles du BG-prover (`agent_tests/prover/`) ; la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 énoncent précisément chaque sous-but dans leurs docstrings.
 
 *La pyramide de correction `hashlife_correct` : le socle prouvé (cas de base, P1-P3,
 `p5_small_n_fallback`) porte le théorème ; au sommet, le verrou research-level P4
@@ -166,8 +176,8 @@ flowchart TD
     P2["P2 — Light-cone<br/>step_light_cone  <b>✓</b>"]
     P3["P3 — Localité<br/>aliveNext_local · step_local  <b>✓</b>"]
     P5S["P5 petit-n<br/>p5_small_n_fallback  <b>✓</b> (#2984)"]
-    P4["P4 — Pas inductif double-nine  <b>⚠ research-level</b><br/>1 sorry · p4_succ_membership (assemblage offset-matching G3)<br/><i>sous-lemmes + ingrédients additifs prouvés (shape, wave1, wave2, ext_bridge, evolve_cone_agree, centralCorrect_mem_shift, evolve_half_step) ; p4_half_steps_compose supprimé (subsumé evolve_add/evolve_half_step) ; reste le cœur G3 whnf-dur ; <b>audit N1 PR #5853 VACUOUS — design gate #3846 en cours</b></i>"]
-    P5["P5 — Grand-n jump  <b>⚠ bloqué sur P4</b><br/>1 sorry · p5_large_n_jump<br/><i>p5_small_n_fallback + evolve_dead_of_cone_dead + p5_inductive_step (c.310 #5998) prouvés</i>"]
+    P4["P4 — Pas inductif double-nine  <b>⚠ research-level</b><br/>5 sorry · p4_nw_supercell_agree [1, L2910] + p4_succ_membership [4, L3193/3195/3197/3202]<br/><i>quadrant nw PROUVÉ via p4_nw_membership_arm L2926 ; shift-lemmas nw/ne/sw/se sorry-free (#7012) ; sous-lemmes + ingrédients additifs prouvés (shape, wave1, wave2, ext_bridge, evolve_cone_agree, centralCorrect_mem_shift, evolve_half_step) ; p4_half_steps_compose supprimé (subsumé evolve_add/evolve_half_step) ; reste le cœur G3 whnf-dur (bras ne/sw/se à écrire) ; <b>audit N1 PR #5853 VACUOUS — design gate #3846 en cours</b></i>"]
+    P5["P5 — Grand-n jump  <b>⚠ bloqué sur P4</b><br/>3 sorry · p5_large_n_jump L3531 + hashlife_correctN L3680 + p5_large_n_jumpN L3709 (BoxAssezGrandN)<br/><i>p5_small_n_fallback + evolve_dead_of_cone_dead + p5_inductive_step (c.310 #5998) prouvés</i>"]
     GOAL["hashlife_correct  <b>non prouvé en pleine généralité</b>"]
 
     BASE --> P1 --> P2 --> P3 --> GOAL

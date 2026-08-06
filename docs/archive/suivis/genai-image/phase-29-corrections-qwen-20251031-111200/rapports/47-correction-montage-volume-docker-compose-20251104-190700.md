@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 47 : Correction du montage de volume dans docker-compose.yml
 
 - **Date :** 2025-11-04

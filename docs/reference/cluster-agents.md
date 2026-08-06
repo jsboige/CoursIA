@@ -81,7 +81,7 @@ A chaque reveil de session ai-01 :
 Hardware : MSI GE76 12UHS, RTX 3080 Ti laptop. Pas de persistence mode (non supporte laptop). Throttle deja a 50W sous charge a 89C, malgre power limit 150W. Lid ouvert ameliore mais ne suffit pas.
 
 **Règle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
-- Pattern reuse `scripts/training/train_with_checkpoints.py` (outer supervisor checkpoint + thermal backoff `max_temp=80`, `cool_sleep=60`, `heartbeat=30`)
+- Pattern reuse `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` + `thermal_check` import direct ; outer supervisor subprocess documenté dans `scripts/training/train_with_checkpoints.py` n'existe pas — librairie canonique = `gpu_training.py`, defauts `max_temp=80`, `cool_sleep=15`)
 - Watchdog `nvidia-smi` polling avec auto-stop a 87C
 - Batch size réduit + mixed precision FP16
 
@@ -183,6 +183,6 @@ Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues n
 - Architecture RooSync (34 outils MCP roo-state-manager) : [docs/architecture_mcp_roo.md](architecture_mcp_roo.md)
 - Règles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
-- Wrapper training BG avec checkpoints : `scripts/training/train_with_checkpoints.py`
+- Training BG avec checkpoints : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` ; 18 tests PR #7454, fixes GPU-thermal #7335/#7454/#7456 ; le wrapper outer-supervisor subprocess `scripts/training/train_with_checkpoints.py` documenté n'a jamais été créé — utiliser `gpu_training.py` directement)
 - QC backtest + MCP Docker : [docs/qc/quantconnect.md](../qc/quantconnect.md)
 - Lean prover BG forensic protocol : [docs/lean/prover_iteration_history.md](../lean/prover_iteration_history.md)

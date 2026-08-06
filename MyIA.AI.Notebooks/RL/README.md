@@ -6,7 +6,7 @@
 series: RL
 pedagogical_count: 17
 breakdown: root=17
-maturity: PRODUCTION=15, BETA=2
+maturity: BETA=17
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
@@ -449,7 +449,7 @@ Non. Les notebooks 1-5 (SB3, wrappers, goal-conditioned, bandits, tabulaire) tou
 
 ### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
 
-Un **MDP** (Markov Decision Process) est le modèle mathématique du RL : un ensemble d'états S, d'actions A, de transitions T(s'|s,a), de récompenses R(s,a), et d'un facteur d'actualisation gamma. Tout problème de RL se formalise comme un MDP. L'équation de Bellman (notebook 3) définit récursivement la valeur optimale. Si vous avez fait la série Probas, les MDP généralisent les chaînes de Markov avec des décisions.
+Un **MDP** (Markov Decision Process) est le modèle mathématique du RL : un ensemble d'états S, d'actions A, de transitions T(s'|s,a), de récompenses R(s,a), et d'un facteur d'actualisation gamma. Tout problème de RL se formalise comme un MDP. L'équation de Bellman (notebook 5) définit récursivement la valeur optimale. Si vous avez fait la série Probas, les MDP généralisent les chaînes de Markov avec des décisions.
 
 ### Quelle est la différence entre on-policy et off-policy ?
 

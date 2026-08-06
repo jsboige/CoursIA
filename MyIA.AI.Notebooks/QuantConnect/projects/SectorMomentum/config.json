@@ -1,0 +1,6 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Dual momentum over SPY/TLT/GLD using a multi-lookback composite (1/3/6/12m) with daily SMA200 exit protection.",
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

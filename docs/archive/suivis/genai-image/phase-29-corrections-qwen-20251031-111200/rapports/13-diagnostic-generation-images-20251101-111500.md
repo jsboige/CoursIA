@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport de Diagnostic - Test de Génération d'Images Qwen
 ## Date: 2025-11-01 11:15:00
 

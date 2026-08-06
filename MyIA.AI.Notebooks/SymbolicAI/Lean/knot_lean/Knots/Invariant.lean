@@ -1,17 +1,17 @@
 /-
-  Knots.Invariant — Knot invariants (3-colorability, crossing number)
-  ====================================================================
+  Knots.Invariant — invariants de nœud (tricolorabilite, nombre de croisements)
+  ==============================================================================
 
-  Knot invariants distinguish knots. This file scaffolds:
-  1. Tricolorability (Fox 1962) — the most accessible invariant
-  2. Crossing number bounds
-  3. Unknotting number (definition only, sorry)
+  Les invariants de nœud distinguent les nœuds. Ce fichier scaffolde :
+  1. Tricolorabilite (Fox 1962) — l'invariant non trivial le plus accessible
+  2. Bornes sur le nombre de croisements
+  3. Nombre de denouement (definition seule, sorry)
 
   Epic #2874, Phase 1–2.
 
-  Mathlib prerequisites needed:
-  - Finite colorings of graphs (Fintype, Fin n coloring)
-  - Minimization over equivalence classes
+  Prerequis Mathlib :
+  - Coloriages finis de graphes (Fintype, Fin n coloring)
+  - Minimisation sur les classes d'equivalence
 -/
 /-
   `Knots.Invariant` — invariants des nœuds (3-colorabilité, nombre de croisements)
@@ -65,17 +65,17 @@ import Mathlib.Data.Fintype.Pi
 
 namespace Knots
 
-/-! ## 1. Tricolorability (Fox 1962)
+/-! ## 1. Tricolorabilite (Fox 1962)
 
-A knot diagram is tricolorable if each strand can be colored with one
-of 3 colors such that:
-  (a) At each crossing, either all three strands have the same color,
-      or all three have different colors.
-  (b) At least two colors are used.
+Un diagramme de nœud est tricolorable si chaque arc peut etre colorie avec
+une des 3 couleurs telles que :
+  (a) a chaque croisement, soit les trois arcs portent la meme couleur,
+      soit les trois ont des couleurs differentes.
+  (b) Au moins deux couleurs sont utilisees.
 
-This is the simplest non-trivial knot invariant.
+C'est le plus simple des invariants de nœud non triviaux.
 
-Reference: Fox (1962), A quick trip through knot theory.
+Reference : Fox (1962), A quick trip through knot theory.
 -/
 
 /-- Three colors for tricolorability. -/
@@ -86,7 +86,7 @@ inductive TriColor where
   deriving BEq, DecidableEq, Repr
 
 /-- `TriColor` est un type à trois éléments, donc un `Fintype` : nécessaire pour
-décider par énumération finie (`native_decide`) l'existentiel
+décider par énumération finie (`decide`) l'existentiel
 `∃ coloring : Fin n → TriColor, …` dans `figureEight_not_tricolorable`. Sans cette
 instance, `Fintype (Fin n → TriColor)` (via `Pi.fintype`) ne se synthétise pas et
 `decide`/`native_decide` échouent en amont de toute réduction. -/
@@ -97,51 +97,54 @@ instance : Fintype TriColor where
 /-- A tricoloring assigns a color to each edge in a knot diagram. -/
 def TriColoring (d : KnotDiagram) := Fin d.numEdges → TriColor
 
-/-- The three local strands of a crossing relevant for tricolorability:
-the incoming under-strand (`e1`), the over-strand (`e2`), and the outgoing
-under-strand (`e3`). In PD notation these are the three arcs meeting at the
-crossing. -/
+/-- Les trois strands locaux d'un croisement pertinents pour la tricolorabilite :
+le strand under entrant (`e1`), le strand over (`e2`), et le strand under
+sortant (`e3`). En notation PD ce sont les trois arcs se rencontrant au
+croisement. -/
 def PDCrossing.localStrands (c : PDCrossing) : Nat × Nat × Nat :=
   (c.e1, c.e2, c.e3)
 
-/-- Total coloring lookup on a raw `Nat` label, clamped to a valid index.
+/-- Recherche totale de coloriage sur une etiquette `Nat` brute, clampee a un indice valide.
 
-PD edge labels are 1-indexed in range `[1, numEdges]` for well-formed diagrams.
-This total wrapper returns the color at index `(l - 1) mod numEdges` (or `red`
-when `numEdges = 0`), so the Fox condition below can be stated without threading
-bound proofs through the term. The well-formedness hypothesis
-(`1 ≤ l ≤ numEdges`) is recorded separately as part of `triColorConditionAt`,
-making the total-vs-partial gap explicit and auditable. -/
+Les etiquettes d'arete PD sont indexees a partir de 1 dans `[1, numEdges]` pour
+les diagrammes bien formes. Ce wrapper total renvoie la couleur a l'indice
+`(l - 1) mod numEdges` (ou `red` quand `numEdges = 0`), de sorte que la condition
+de Fox ci-dessous peut etre enoncee sans filer les preuves de borne a travers le
+terme. L'hypothese de bonne formation (`1 ≤ l ≤ numEdges`) est enregistree
+separement comme partie de `triColorConditionAt`, rendant explicite et auditable
+l'ecart total-vs-partiel. -/
 def KnotDiagram.colorAtNat (d : KnotDiagram)
     (coloring : Fin d.numEdges → TriColor) (l : Nat) : TriColor :=
   if h : d.numEdges = 0 then TriColor.red
   else coloring ⟨(l - 1) % d.numEdges, Nat.mod_lt _ (by omega)⟩
 
-/-- Check the Fox tricolorability condition at a single crossing (Path B model).
+/-- Verifie la condition de tricolorabilite de Fox a un seul croisement (Path B).
 
-At a crossing with PD edges `e1` (incoming under), `e2` (incoming over), `e3`
-(outgoing under), `e4` (outgoing over): the **over-strand** is the single arc
-passing straight through the crossing, so its two endpoints `e2` and `e4` must
-carry the SAME colour (`c2 = c4`, over-strand continuity), AND the three meeting
-strands `(e1, e2, e3)` satisfy Fox's (1962) rule — either all equal or all
-pairwise distinct. This conjunction IS the classical Fox invariant: a colouring
-that is constant on arcs, with the all-equal-or-all-distinct rule at each
-crossing.
+A un croisement d'aretes PD `e1` (under entrant), `e2` (over entrant), `e3`
+(under sortant), `e4` (over sortant) : le **strand over** est l'unique arc
+passant tout droit a travers le croisement, donc ses deux extremites `e2` et
+`e4` doivent porter la MEME couleur (`c2 = c4`, continuite du strand over), ET
+les trois strands se rencontrant `(e1, e2, e3)` satisfont la regle de Fox
+(1962) — soit tous egaux, soit tous deux a deux distincts. Cette conjonction
+EST l'invariant classique de Fox : un coloriage constant sur les arcs, avec la
+regle tous-egaux-ou-tous-distincts a chaque croisement.
 
-**Path B (recovering the classical invariant, mandated 2026-06-23).** The
-earlier permissive model coloured EDGES independently with no over-strand
-continuity, so the over-arc of a crossing was not forced to share a colour; that
-admitted spurious tricolorings (notably the figure-eight, classically NOT
-3-colourable) and made a "universal two-crossing colourability" lemma TRUE for
-the model but FALSE classically — which would have rendered `tricolorable_invariant`
-trivial (separating only the unknot). Adding the `c2 = c4` conjunct restores the
-arc-respecting classical model under which the figure-eight is correctly rejected
-and the trefoil correctly accepted (witness `(0,1,1,2,2,0)`).
+**Path B (recuperation de l'invariant classique, mandate 2026-06-23).** Le
+modèle permissif anterieur coloriait les ARETES independamment sans continuite
+du strand over, donc l'arc over d'un croisement n'etait pas force de partager
+une couleur ; cela admettait des tricolorations parasites (notamment la
+figure-eight, classiquement PAS 3-coloriable) et rendait vraie un lemme
+« colorabilite universelle a deux croisements » pour le modèle mais FAUX
+classiquement — ce qui aurait rendu `tricolorable_invariant` trivial (ne
+separant que l'unknot). Ajouter la conjonction `c2 = c4` restaure le modèle
+classique respectant les arcs, sous lequel la figure-eight est correctement
+rejetee et le trefoil correctement accepte (temoin `(0,1,1,2,2,0)`).
 
-For well-formed crossings (labels in `[1, numEdges]`, the first conjunct),
-`colorAtNat` reads the genuine coloring. For malformed labels the conjunct fails
-and the crossing is not tricolorable-satisfying — the condition is sound even
-before the diagram well-formedness predicate lands.
+Pour les croisements bien formes (etiquettes dans `[1, numEdges]`, la premiere
+conjonction), `colorAtNat` lit le coloriage veritable. Pour les etiquettes
+mal formees la conjonction echoue et le croisement n'est pas tricolorable-
+satisfaisant — la condition est saine meme avant que le predicat de bonne
+formation du diagramme n'arrive.
 -/
 def triColorConditionAt (d : KnotDiagram) (coloring : Fin d.numEdges → TriColor)
     (c : PDCrossing) : Prop :=
@@ -160,35 +163,37 @@ def triColorConditionAt (d : KnotDiagram) (coloring : Fin d.numEdges → TriColo
   ((c1 = c2 ∧ c2 = c3) ∨
    (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3))
 
-/-! ### Colour-permutation invariance — enabler for the #3003 backward transfer
+/-! ### Invariance par permutation des couleurs — activateur pour le transfer arriere #3003
 
-The Fox tricolorability condition is invariant under any injective relabelling
-of the three colours: equalities and inequalities of strand colours are both
-preserved by injectivity, and the well-formedness bounds `1 ≤ e_k ≤ numEdges`
-do not mention the colouring at all. This is the foundational fact behind the
-§9 colour-symmetry construction (`tricolorable_backward`, Epic #2874 PR3):
-given a valid `d₂` colouring whose fresh-edge colours sit outside the `d₁`
-range (the all-distinct kink mode), one permutes it to align those colours with
-a `d₁`-range colour before restricting, and Fox-validity is retained. These two
-lemmas are pure infrastructure (definition unfolding + `Function.Injective`);
-the backward construction itself (#3003, all-distinct kink) stays research.
+La condition de tricolorabilite de Fox est invariante par tout reetiquetage
+injectif des trois couleurs : les egalites et inegalites de couleurs des strands
+sont toutes deux preservees par injectivite, et les bornes de bonne formation
+`1 ≤ e_k ≤ numEdges` ne mentionnent pas du tout le coloriage. C'est le fait
+fondateur derriere la construction de symetrie-couleur du §9
+(`tricolorable_backward`, Epic #2874 PR3) : etant donne un coloriage valide de
+`d₂` dont les couleurs des aretes fraiches sont hors de la plage `d₁` (le mode
+kink tous-distincts), on le permute pour aligner ces couleurs avec une couleur
+dans la plage `d₁` avant de restreindre, et la validite de Fox est conservee.
+Ces deux lemmes sont une pure infrastructure (deploiement de definition +
+`Function.Injective`) ; la construction arriere elle-meme (#3003, kink
+tous-distincts) reste de la recherche.
 -/
 
-/-- Reading a strand colour commutes with post-composition by `σ`, provided the
-    diagram is non-degenerate (`numEdges ≠ 0`, so the `colorAtNat` default
-    branch is never taken). -/
+/-- La lecture d'une couleur de strand commute avec la post-composition par `σ`,
+    pourvu que le diagramme soit non degenere (`numEdges ≠ 0`, de sorte que la
+    branche par defaut de `colorAtNat` n'est jamais prise). -/
 theorem KnotDiagram.colorAtNat_comp (d : KnotDiagram)
     (coloring : Fin d.numEdges → TriColor) (σ : TriColor → TriColor) (l : Nat)
     (hn : d.numEdges ≠ 0) :
     d.colorAtNat (σ ∘ coloring) l = σ (d.colorAtNat coloring l) := by
   simp only [KnotDiagram.colorAtNat, dif_neg hn, Function.comp]
 
-/-- **Fox condition is invariant under injective colour relabelling.** For an
-    injective `σ` and non-degenerate `d`, `triColorConditionAt d (σ ∘ coloring)
-    c ↔ triColorConditionAt d coloring c`. The well-formedness conjunct is
-    colour-independent; the over-strand continuity `c2 = c4` and the
-    `(c1=c2 ∧ c2=c3) ∨ (c1≠c2 ∧ c2≠c3 ∧ c1≠c3)` Fox disjunction are both
-    preserved both ways by injectivity. -/
+/-- **La condition de Fox est invariante par reetiquetage injectif des couleurs.**
+    Pour un `σ` injectif et un `d` non degenere, `triColorConditionAt d (σ ∘ coloring)
+    c ↔ triColorConditionAt d coloring c`. La conjonction de bonne formation est
+    independante de la couleur ; la continuite du strand over `c2 = c4` et la
+    disjonction de Fox `(c1=c2 ∧ c2=c3) ∨ (c1≠c2 ∧ c2≠c3 ∧ c1≠c3)` sont toutes
+    deux preservees dans les deux sens par injectivite. -/
 theorem triColorConditionAt_invariant_perm (d : KnotDiagram)
     (coloring : Fin d.numEdges → TriColor) (σ : TriColor → TriColor)
     (hσ : Function.Injective σ) (hn : d.numEdges ≠ 0) (c : PDCrossing) :
@@ -236,7 +241,7 @@ def Knot.isTricolorable (k : Knot) : Prop :=
 
 La tricolorabilité d'un diagramme fini est décidable : chaque couche prédicative
 reçoit une instance `Decidable` nommée, de sorte que la synthèse au point d'usage
-(`native_decide` dans `figureEight_not_tricolorable`) reste peu profonde. Sans cette
+(`decide` dans `figureEight_not_tricolorable`) reste peu profonde. Sans cette
 décomposition, une seule synthèse monolithique doit enchaîner `List.decidableBAll`,
 plusieurs `And.decidable`, les `DecidableEq TriColor` des `dite` de coloriage, et
 l'énumération `Fintype (Fin n → TriColor)` — ce qui épuise le budget de synthèse
@@ -273,68 +278,75 @@ instance IsTricolorable.decidable (d : KnotDiagram) :
   unfold IsTricolorable
   infer_instance
 
-/-! ### GF(3) linearity of the per-crossing Fox condition (cycle-3, #4022)
+/-! ### Linearite GF(3) de la condition de Fox par croisement (cycle-3, #4022)
 
-The Fox tricolour rule on three colours — "all equal OR all distinct" — is
-equivalent, for a 3-element palette, to the colours summing to `0 (mod 3)`. This
-is a purely computational fact about the per-crossing Fox disjunction on three
-explicit `TriColor` values, independent of the over-strand-continuity conjunct of
-`triColorConditionAt` (Path B). It is retained as scaffolding: a linear reading of
-the per-crossing condition, useful for brute-force enumeration and as a
-`decide`-friendly bridge. Verified empirically over 7.5M well-formed diagrams
-(cycle-3, #4022). -/
+La regle tricolore de Fox sur trois couleurs — « tous egaux OU tous distincts »
+— est equivalente, pour une palette a 3 elements, a la somme des couleurs
+valant `0 (mod 3)`. C'est un fait purement calculatoire sur la disjonction de
+Fox par croisement sur trois valeurs explicites de `TriColor`, independant de
+la conjonction de continuite du strand over de `triColorConditionAt` (Path B).
+Elle est conservee comme scaffolding : une lecture lineaire de la condition par
+croisement, utile pour l'enumeration force-brute et comme pont adapte a
+`decide`. Verifie empiriquement sur 7,5M de diagrammes bien formes (cycle-3,
+#4022). -/
 
-/-- Embed `TriColor` into `ℕ` (red ↦ 0, blue ↦ 1, green ↦ 2) so the Fox
-3-colour condition reads linearly over `ℤ/3ℤ`. -/
+/-- Plonge `TriColor` dans `ℕ` (red ↦ 0, blue ↦ 1, green ↦ 2) de sorte que la
+condition 3-couleur de Fox se lise lineairement sur `ℤ/3ℤ`. -/
 def TriColor.toNat : TriColor → Nat
   | red => 0
   | blue => 1
   | green => 2
 
-/-- The Fox 3-colour rule on three colours ⟺ their `toNat`-sum is `0 mod 3`.
-Finite (3³ = 27 cases), PROVED by constructor enumeration + `decide` (cycle-6,
-#3003). Because the arguments are *explicit* (not universally quantified over an
-opaque `TriColor`), `decide` needs no `Fintype` instance — `cases` on each
-constructor leaves 27 closed goals that `simp only [TriColor.toNat]` + `decide`
-dispatch. This is the GF(3) linearity of the per-crossing Fox disjunction — a
-linear reading retained as computational scaffolding (Path B keeps it even though
-the over-strand-continuity conjunct of `triColorConditionAt` is not itself linear
-over `(ℤ/3)^(numEdges)`). -/
+/-- La regle 3-couleur de Fox sur trois couleurs ⟺ leur somme en `toNat` vaut
+`0 mod 3`. Fini (3³ = 27 cas), PROUVE par enumeration des constructeurs +
+`decide` (cycle-6, #3003). Comme les arguments sont *explicites* (pas universellement
+quantifies sur un `TriColor` opaque), `decide` n'a besoin d'aucune instance
+`Fintype` — `cases` sur chaque constructeur laisse 27 buts fermes que
+`simp only [TriColor.toNat]` + `decide` reglent. C'est la linearite GF(3) de la
+disjonction de Fox par croisement — une lecture lineaire conservee comme
+scaffolding calculatoire (Path B la garde meme si la conjonction de continuite
+du strand over de `triColorConditionAt` n'est pas elle-meme lineaire sur
+`(ℤ/3)^(numEdges)`). -/
 theorem triColorFoxCondition_iff_sum_mod_three (c1 c2 c3 : TriColor) :
     ((c1 = c2 ∧ c2 = c3) ∨ (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)) ↔
       (c1.toNat + c2.toNat + c3.toNat) % 3 = 0 := by
   -- 3³ = 27 closed cases; explicit arguments ⇒ no `Fintype` needed for `decide`.
   cases c1 <;> cases c2 <;> cases c3 <;> simp only [TriColor.toNat] <;> decide
 
-/-! ### Withdrawn: universal two-crossing colourability (Path B, 2026-06-23)
+/-! ### Retire : colorabilite universelle a deux croisements (Path B, 2026-06-23)
 
-A "universal two-crossing colourability" lemma — every well-formed diagram with
-≥ 2 crossings admits a non-constant Fox-valid colouring — was explored in
-cycles 3–6 via a GF(3) rank-nullity route. **It is withdrawn under Path B.** The
-lemma was only ever plausible for the permissive EDGE-colouring model (colours
-assigned to `Fin numEdges` independently, no over-strand continuity); under that
-model even the figure-eight (4 crossings, determinant 5, classically NOT
-3-colourable) IS tricolorable, so the lemma would have rendered
-`tricolorable_invariant` trivial (separating only the unknot). Path B adds the
-`c2 = c4` over-strand-continuity conjunct to `triColorConditionAt`, recovering
-the classical arc-respecting Fox invariant; under that model the lemma is simply
-FALSE (the figure-eight is the explicit counter-example). The GF(3) linearity
-scaffolding above is retained as a per-crossing computational fact; the
-rank-nullity universal route is not. Reference: Fox (1962); Adams, "The Knot
-Book". -/
+Un lemme de « colorabilite universelle a deux croisements » — tout diagramme
+bien forme avec ≥ 2 croisements admet un coloriage non constant valide par Fox
+— a ete explore aux cycles 3–6 via une voie rang-nullite GF(3). **Il est retire
+sous Path B.** Le lemme n'etait plausible que pour le modèle permissif de
+coloriage d'ARETES (couleurs assignees a `Fin numEdges` independamment, pas de
+continuite du strand over) ; sous Path B meme la figure-eight (4
+croisements, determinant 5, classiquement PAS 3-coloriable) EST tricolorable,
+donc le lemme aurait rendu `tricolorable_invariant` trivial (ne separant que
+l'unknot). Path B ajoute la conjonction de continuite du strand over `c2 = c4`
+a `triColorConditionAt`, restaurant l'invariant classique de Fox respectant les
+arcs ; sous Path B le lemme est simplement FAUX (la figure-eight est le
+contre-exemple explicite). Le scaffolding de linearite GF(3) ci-dessus est
+conserve comme fait calculatoire par croisement ; la voie universelle
+rank-nullite, non. Reference : Fox (1962) ; Adams, "The Knot Book". -/
 
-/-! ## 2. Tricolorability is an invariant
+/-! ## 2. La tricolorabilite est un invariant
 
-Tricolorability is preserved by all three Reidemeister moves.
-This is the key theorem that makes it a knot invariant.
+La tricolorabilite est preservee par les trois mouvements de Reidemeister.
+C'est le theoreme-cle qui en fait un invariant de nœud.
 
-**Phase 2 target**: prove this!
+**Cible Phase 2** : prouver ceci !
 -/
 
 theorem tricolorable_invariant :
     ∀ (d₁ d₂ : KnotDiagram),
       ReidemeisterEquiv d₁ d₂ →
-      IsTricolorable d₁ ↔ IsTricolorable d₂ := by
+        (IsTricolorable d₁ ↔ IsTricolorable d₂) := by
+  -- NB: the inner `↔` MUST be parenthesised. Lean parses `A → B ↔ C` as
+  -- `(A → B) ↔ C` (→ binds tighter than ↔), which would make this an `Iff`
+  -- between a *function type* and a Prop — not the transfer function intended
+  -- here and described in the docstring. The parens restore the intended shape
+  -- `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot` applies below.
   exact sorry
   -- BLOCKED (forward transfer, Phase 5 PR2). `ReidemeisterStep.r1` was rewired
   -- (Stage 2, #2874) to the GEOMETRICALLY CONNECTED move `Reidemeister1Connected`,
@@ -354,10 +366,10 @@ theorem tricolorable_invariant :
   -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
   -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
 
-/-! ## 3. The trefoil is tricolorable
+/-! ## 3. Le trefoil est tricolorable
 
-The trefoil (3_1) can be colored with 3 colors, each crossing seeing
-all three colors. This proves the trefoil is NOT the unknot.
+Le trefoil (3_1) peut etre colorie avec 3 couleurs, chaque croisement voyant
+les trois couleurs. Cela prouve que le trefoil n'est PAS l'unknot.
 -/
 
 theorem trefoil_tricolorable : Knot.isTricolorable trefoil := by
@@ -390,50 +402,53 @@ theorem trefoil_tricolorable : Knot.isTricolorable trefoil := by
   -- At least 2 colors: edge 0 = red, edge 2 = blue, red ≠ blue
   · exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
-/-! ## 3b. Certified counter-example: the free-ρ R1 move does NOT preserve
-tricolorability.
+/-! ## 3b. Contre-exemple certifie : le mouvement R1 a ρ libre ne preserve PAS
+la tricolorabilite.
 
-This is a *positive* diagnostic result (not a gap in the invariant). It certifies
-that the free-ρ `Reidemeister1` move (Phase 5 PR1, #2929) — which carries the
-new crossing `c` and the edge-renaming `ρ` as TWO INDEPENDENT existentials —
-does NOT preserve tricolorability: a single such twist connects a
-non-tricolorable diagram to a tricolorable one. After the Stage-2 rewire
-(#2874), `ReidemeisterStep.r1` uses the GEOMETRICALLY CONNECTED refinement
-`Reidemeister1Connected` instead, and this witness pair is provably excluded
-from that move (§3c-bis, PR #3997); so this counter-example refutes the raw
-free-ρ move `Reidemeister1`, NOT the connected equivalence on which
-`tricolorable_invariant` now stands.
+C'est un resultat diagnostique *positif* (pas un vide de l'invariant). Il
+certifie que le mouvement `Reidemeister1` a ρ libre (Phase 5 PR1, #2929) — qui
+porte le nouveau croisement `c` et le renommage d'aretes `ρ` comme DEUX
+EXISTENTIELS INDEPENDANTS — ne preserve PAS la tricolorabilite : un seul tel
+twist connecte un diagramme non tricolorable a un diagramme tricolorable. Apres
+le re-cablage de Stage-2 (#2874), `ReidemeisterStep.r1` utilise le raffinement
+GEOMETRIQUEMENT CONNECTE `Reidemeister1Connected` a la place, et cette paire de
+temoins est exclue de maniere prouvee de ce mouvement (§3c-bis, PR #3997) ; donc
+ce contre-exemple refute le mouvement brut a ρ libre `Reidemeister1`, PAS
+l'equivalence connectee sur laquelle `tricolorable_invariant` repose desormais.
 
-Why. The `wf` "every label appears exactly twice" condition forces an R1-twist's
-new crossing `c` to use ONLY the two fresh edges `{n+1, n+2}` — labels `1..n`
-already appear twice in `d₁`, so `c` cannot reuse any of them without breaking
-parity. Moreover the edge-renaming `ρ : Fin (min) ↪ Fin (max)` introduced by
-PR1 is a FREE injection, NOT tied to `c`'s labels. The new crossing's Fox
-condition therefore involves only the two fresh (freely-colorable) edges and is
-DECOUPLED from `d₁`'s coloring — so a twist can CREATE tricolorability out of
-nothing, or symmetrically hide the ≥2-colours entirely in the fresh edges while
-`d₁` is forced monochrome.
+Pourquoi. La condition `wf` « chaque etiquette apparait exactement deux fois »
+force le nouveau croisement `c` d'un twist R1 a utiliser UNIQUEMENT les deux
+aretes fraiches `{n+1, n+2}` — les etiquettes `1..n` apparaissent deja deux fois
+dans `d₁`, donc `c` ne peut reutiliser aucune d'elles sans casser la parite.
+De plus le renommage d'aretes `ρ : Fin (min) ↪ Fin (max)` introduit par PR1 est
+une injection LIBRE, NON liee aux etiquettes de `c`. La condition de Fox du
+nouveau croisement implique donc seulement les deux aretes fraiches
+(librement coloriables) et est DECOUPLEE du coloriage de `d₁` — si bien qu'un
+twist peut CREER la tricolorabilite de rien, ou symetriquement cacher les
+≥2-couleurs entierement dans les aretes fraiches tandis que `d₁` est force
+monochrome.
 
-Witness (refutes the universal biconditional):
-  d₁ = { crossings := [⟨1,2,1,2⟩], numEdges := 2 }    — NOT tricolorable.
-       Fox at ⟨1,2,1,2⟩ reads (coloring⟨0⟩, coloring⟨1⟩, coloring⟨0⟩), which is
-       all-equal ONLY if coloring⟨0⟩ = coloring⟨1⟩ — contradicting the ≥2-colours
-       requirement. So no valid tricoloring exists.
+Temoin (refute la biconditionnelle universelle) :
+  d₁ = { crossings := [⟨1,2,1,2⟩], numEdges := 2 }    — PAS tricolorable.
+       Fox a ⟨1,2,1,2⟩ lit (coloring⟨0⟩, coloring⟨1⟩, coloring⟨0⟩), ce qui est
+       tout-egal SEULEMENT si coloring⟨0⟩ = coloring⟨1⟩ — contredisant
+       l'exigence ≥2-couleurs. Donc aucun tricolorage valide n'existe.
   d₂ = { crossings := [⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges := 4 }  — tricolorable.
-       Color edges 1,2 = red and 3,4 = blue: Fox holds at both crossings
-       (all-equal within each), and ≥2 colours are used.
-  A single free-ρ R1 twist `Reidemeister1 d₁ d₂` connects them, so the
-  biconditional `IsTricolorable d₁ ↔ IsTricolorable d₂` is `(false ↔ true)`
-  for a pair linked by the raw free-ρ move (which is no longer a
-  `ReidemeisterStep` after the Stage-2 rewire).
+       Colorier les aretes 1,2 = red et 3,4 = blue : Fox tient aux deux
+       croisements (tout-egal dans chacun), et ≥2 couleurs sont utilisees.
+  Un seul twist R1 a ρ libre `Reidemeister1 d₁ d₂` les connecte, donc la
+  biconditionnelle `IsTricolorable d₁ ↔ IsTricolorable d₂` est `(false ↔ true)`
+  pour une paire lieee par le mouvement brut a ρ libre (qui n'est plus un
+  `ReidemeisterStep` apres le re-cablage de Stage-2).
 
-**Implemented (Stage 2 of #2874).** The fix is wired into `ReidemeisterStep.r1`:
-the constructor carries the geometric splicing via `Reidemeister1Connected`, so
-that `ρ` DETERMINES `c`'s labels — a genuine R1 curl on arc `a` splices into the
-EXISTING arc `a`, whose Fox condition constrains the new edges to inherit
-`color a`, which is what makes tricolorability transfer along the move. The
-forward transfer (§3e, #3003) remains the open proof obligation.
-Reference: Fox (1962); Adams, "The Knot Book". -/
+**Implemente (Stage 2 de #2874).** Le correctif est cable dans
+`ReidemeisterStep.r1` : le constructeur porte le splicing geometrique via
+`Reidemeister1Connected`, de sorte que `ρ` DETERMINE les etiquettes de `c` —
+une boucle R1 veritable sur l'arc `a` s'insere dans l'arc `a` EXISTANT, dont la
+condition de Fox contraint les nouvelles aretes a heriter de `color a`, ce qui
+est ce qui fait transferer la tricolorabilite le long du mouvement. Le transfer
+avant (§3e, #3003) reste l'obligation de preuve ouverte.
+Reference : Fox (1962) ; Adams, "The Knot Book". -/
 
 theorem tricolorable_invariant_fails_under_pr1_model :
     ∃ (d₁ d₂ : KnotDiagram),
@@ -441,8 +456,8 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       ¬ IsTricolorable d₁ ∧
       IsTricolorable d₂ := by
   -- Witness pair.
-  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial },
-           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial },
+  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 },
+           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 },
            ?_, ?_, ?_⟩
   -- (a) Reidemeister1 d₁ d₂: a single free-ρ R1 twist, witness c = ⟨3,4,3,4⟩.
   --     d₁ = {[⟨1,2,1,2⟩], numEdges = 2}; d₂ = {[⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges = 4}.
@@ -467,7 +482,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       rfl
   -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
   --     edges to the same colour, contradicting the ≥2-colours requirement.
-  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
     rintro ⟨coloring, hcond, hedges, htwo⟩
     -- The sole crossing ⟨1,2,1,2⟩ is in d₁.crossings; apply the Fox condition to it.
     have hfox := hcond (⟨1, 2, 1, 2⟩ : PDCrossing)
@@ -494,7 +509,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     exact hne (by rw [hAll i, hAll j])
   -- (c) d₂ IS tricolorable: edges 1,2 (Fin index 0,1) = red, edges 3,4 (index 2,3) = blue;
   --     Fox is all-equal within each crossing, ≥2 colours used.
-  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
     refine' ⟨fun i : Fin 4 => if i.val ≤ 1 then TriColor.red else TriColor.blue, ?_, ?_, ?_⟩
     · -- Fox at every crossing of d₂.
       intro c hc
@@ -510,41 +525,45 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     · -- ≥2 colours: edge index 0 = red ≠ blue = edge index 2.
       exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
-/-! ## 3c. Non-regression gate (PR1.5): the #2938 witness is EXCLUDED under `Reidemeister1'`
+/-! ## 3c. Porte de non-regression (PR1.5) : le temoin #2938 est EXCLU sous `Reidemeister1'`
 
-`Reidemeister1'` (Reidemeister.lean, PR1.5 #2956) is the ρ-determined strengthening
-of the R1 move: the new crossing is forced to the shape `⟨a, a, n+1, n+2⟩` — one
-strand is the existing arc `a`. This couples the two fresh edges to `color(a)` via
-the Fox condition, which is what the PR1 free-`ρ` model lacked.
+`Reidemeister1'` (Reidemeister.lean, PR1.5 #2956) est le renforcement determine
+par ρ du mouvement R1 : le nouveau croisement est force a la forme
+`⟨a, a, n+1, n+2⟩` — un strand est l'arc existant `a`. Cela couple les deux
+aretes fraiches a `color(a)` via la condition de Fox, ce qui manquait au modèle
+PR1 a `ρ` libre.
 
-The certified counter-example `tricolorable_invariant_fails_under_pr1_model`
-above (§3b) refutes the biconditional *under the PR1 model* by exhibiting a
-specific witness pair `(d₁, d₂)` connected by a PR1 R1-step. **This theorem proves
-that very witness pair is NOT connected by a `Reidemeister1'` step** — i.e. the
-ρ-determined refinement excludes the counter-example by construction. This is the
-non-regression test ai-01 required (PR1.5 gate 1, dashboard 11:35Z): the re-model
-must EXCLUDE #2938, and here we prove it explicitly.
+Le contre-exemple certifie `tricolorable_invariant_fails_under_pr1_model`
+ci-dessus (§3b) refute la biconditionnelle *sous le modèle PR1* en exhibant une
+paire de temois specifique `(d₁, d₂)` connectee par un R1-step PR1. **Ce theoreme
+prouve que cette meme paire de temoins n'est PAS connectee par un step
+`Reidemeister1'`** — i.e. le raffinement determine par ρ exclut le contre-exemple
+par construction. C'est le test de non-regression qu'a exige ai-01 (PR1.5 porte
+1, dashboard 11:35Z) : le re-modele doit EXCLURE #2938, et ici nous le prouvons
+explicitement.
 
-Witness pair (same as §3b):
+Paire de temoins (meme qu'au §3b) :
   d₁ = { crossings := [⟨1,2,1,2⟩], numEdges := 2 }
   d₂ = { crossings := [⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges := 4 }
 
-Why `Reidemeister1' d₁ d₂` fails:
-  - Twist arm forces `d₂.crossings = [⟨1,2,1,2⟩] ++ [⟨a, a, 3, 4⟩]`, i.e. the
-    second crossing must be `⟨a, a, 3, 4⟩`. But `d₂`'s second crossing is
-    `⟨3, 4, 3, 4⟩`, so list equality forces `⟨3,4,3,4⟩ = ⟨a,a,3,4⟩`, giving
-    `a = 3` (from e1) and `a = 4` (from e2) — contradiction.
-  - Untwist arm forces `d₁.crossings` to equal `d₂.crossings ++ [⟨a,a,_,_⟩]`,
-    a 3-element list, but `d₁.crossings` has 1 element — length contradiction.
+Pourquoi `Reidemeister1' d₁ d₂` echoue :
+  - Le bras twist force `d₂.crossings = [⟨1,2,1,2⟩] ++ [⟨a, a, 3, 4⟩]`, i.e. le
+    second croisement doit etre `⟨a, a, 3, 4⟩`. Mais le second croisement de
+    `d₂` est `⟨3, 4, 3, 4⟩`, donc l'egalite de liste force
+    `⟨3,4,3,4⟩ = ⟨a,a,3,4⟩`, donnant `a = 3` (depuis e1) et `a = 4` (depuis e2)
+    — contradiction.
+  - Le bras untwist force `d₁.crossings` a egaliser `d₂.crossings ++ [⟨a,a,_,_⟩]`,
+    une liste a 3 elements, mais `d₁.crossings` a 1 element — contradiction de
+    longueur.
 -/
 
-/-- The #2938 witness pair is NOT connected by a ρ-determined R1 move
-(`Reidemeister1'`). This is the PR1.5 non-regression gate: the re-model excludes
-the counter-example by construction. -/
+/-- La paire de temoins #2938 n'est PAS connectee par un mouvement R1 determine
+par ρ (`Reidemeister1'`). C'est la porte de non-regression PR1.5 : le re-modele
+exclut le contre-exemple par construction. -/
 theorem pr1_counterexample_excluded_under_rho_determined :
     ¬ Reidemeister1'
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Unfold Reidemeister1': wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery ∨ surgery)).
   rintro ⟨_hwf₁, _hwf₂, a, _hrange₁, _hrange₂, _ρ, hsurg⟩
   rcases hsurg with ht | ht
@@ -553,9 +572,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality ht by congruence, then the RHS
     -- ({ d₁ with crossings := X }).crossings reduces to X = d₁.crossings ++ [⟨a,a,3,4⟩].
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings ++ [⟨a, a, 3, 4⟩] :=
       congrArg (·.crossings) ht
     -- The RHS reduces to [⟨1,2,1,2⟩] ++ [⟨a,a,3,4⟩]; second elements: ⟨3,4,3,4⟩ = ⟨a,a,3,4⟩.
@@ -569,9 +588,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality by congruence (term-mode, robust
     -- against literal-form mismatch that blocks `subst`/`rw`).
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings ++ [⟨a, a, 5, 6⟩] :=
       congrArg (·.crossings) ht
     -- Length contradiction: LHS has length 1, RHS has length 3.
@@ -580,31 +599,34 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     have h := congrArg List.length hfield
     simp at h
 
-/-! ## 3c-bis. The #2938 witness is ALSO excluded under `Reidemeister1Connected` (option C)
+/-! ## 3c-bis. Le temoin #2938 est AUSSI exclu sous `Reidemeister1Connected` (option C)
 
-`pr1_counterexample_excluded_under_rho_determined` (§3c above) proves the certified
-counter-example witness pair is NOT connected by a `Reidemeister1'` (ρ-determined)
-move. Here we prove the analogous statement for `Reidemeister1Connected` (option C):
-the refuting witness pair is unreachable under a connected R1 twist too. This is the
-second non-regression gate certifying that option C — the (C) wiring mandated for
-#2874 — excludes the disjoint-kink counter-example by construction.
+`pr1_counterexample_excluded_under_rho_determined` (§3c ci-dessus) prouve que la
+paire de temoins contre-exemple certifiee n'est PAS connectee par un mouvement
+`Reidemeister1'` (determine par ρ). Ici nous prouvons l'enonce analogue pour
+`Reidemeister1Connected` (option C) : la paire de temoins refutante est
+inaccessible sous un twist R1 connecte aussi. C'est la seconde porte de
+non-regression certifiant que l'option C — le cablage (C) mandate pour #2874 —
+exclut le contre-exemple de kink disjoint par construction.
 
-Why it fails. `Reidemeister1Connected` requires the appended kink crossing to have
-shape `⟨a, n+1, n+2, n+2⟩` where `1 ≤ a ≤ d₁.numEdges` is an existing arc of `d₁`.
-For the witness (`d₁` = {[⟨1,2,1,2⟩], numEdges = 2}), the surgery forces `d₂`'s last
-crossing `⟨3,4,3,4⟩` to equal `⟨a, 3, 4, 4⟩`, giving `a = 3` — contradicting
-`a ≤ d₁.numEdges = 2`. The disjoint-kink counter-example is thus structural: under
-any connected R1 model, the twist must splice a REAL arc of `d₁` (the witness's sole
-crossing has no arc labelled `3` to splice), so the pair is unreachable. This is what
-makes option C the honest SOTA fix rather than the (X) reframe: the refuting witness
-vanishes under the correct equivalence. (Wiring `Reidemeister1Connected` into
-`ReidemeisterStep`/`ReidemeisterEquiv` is a multi-cycle stage — `Reidemeister1Connected`
-is currently twist-only and needs an untwist arm + `.symm` before the equivalence's
-`reidemeister_equiv_symm` can carry it. See #2874.) -/
+Pourquoi il echoue. `Reidemeister1Connected` requiert que le croisement kink
+ajoute ait la forme `⟨a, n+1, n+2, n+2⟩` ou `1 ≤ a ≤ d₁.numEdges` est un arc
+existant de `d₁`. Pour le temoin (`d₁` = {[⟨1,2,1,2⟩], numEdges = 2), la
+chirurgie force le dernier croisement `⟨3,4,3,4⟩` de `d₂` a egaliser
+`⟨a, 3, 4, 4⟩`, donnant `a = 3` — contredisant `a ≤ d₁.numEdges = 2`. Le
+contre-exemple de kink disjoint est donc structurel : sous tout modèle R1
+connecte, le twist doit splicer un VRAI arc de `d₁` (le croisement unique du
+temoin n'a pas d'arc etiquete `3` a splicer), donc la paire est inaccessible.
+C'est ce qui fait de l'option C le correctif SOTA honnete plutot que le
+reframe (X) : le temoin refutant s'evanouit sous l'equivalence correcte.
+(Cabler `Reidemeister1Connected` dans `ReidemeisterStep`/`ReidemeisterEquiv`
+est un stage multi-cycle — `Reidemeister1Connected` est actuellement
+twist-seul et a besoin d'un bras untwist + `.symm` avant que le
+`reidemeister_equiv_symm` de l'equivalence puisse le porter. Voir #2874.) -/
 theorem pr1_counterexample_excluded_under_connected :
     ¬ Reidemeister1Connected
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Reidemeister1Connected unfolds as wf₁ ∧ wf₂ ∧ (∃ i a Y' ρ, bounds ∧ edges ∧
   -- proper-arc ∧ isRenameOf ∧ surgery). The surgery is single-arm (twist only):
   -- d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++ [⟨a,3,4,4⟩], numEdges := 4 }.
@@ -615,14 +637,14 @@ theorem pr1_counterexample_excluded_under_connected :
   -- let omega combine `hbnd : i.val < e` with `hlen : e = 1` directly.
   have hi : i.val = 0 := by
     have hlen :
-        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings).length = 1 := by rfl
     have hbnd := i.isLt
     omega
   have hfield :
-      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
         : KnotDiagram).crossings =
-      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
         : KnotDiagram).crossings.set i.val Y') ++ [⟨a, 3, 4, 4⟩] :=
     congrArg (·.crossings) hsurg
   rw [hi] at hfield
@@ -636,47 +658,49 @@ theorem pr1_counterexample_excluded_under_connected :
   have h_e2 : (4 : Nat) = 3 := congrArg PDCrossing.e2 hkink
   omega
 
-/-! ## 3d. The connected R1 move (option C) PRESERVES tricolorability on the witness
+/-! ## 3d. Le mouvement R1 connecte (option C) PRESERVE la tricolorabilite sur le temoin
 
-This is the positive complement to the PR1 counter-example (§3b). Under the
-STRENGTHENED `Reidemeister1Connected` (option C, carrying the `Y'.isRenameOf`
-hypothesis), the connected R1 twist does NOT create or destroy tricolorability
-the way the disjoint-kink append model did (#2938). We verify this on the concrete
-witness pair of `reidemeister1Connected_satisfiable` (Reidemeister.lean): the
-connected move maps a tricolorable `d₁` to a tricolorable `d₂`, and conversely.
+C'est le complement positif au contre-exemple PR1 (§3b). Sous le
+`Reidemeister1Connected` RENFORCE (option C, portant l'hypothese
+`Y'.isRenameOf`), le twist R1 connecte ne cree ni ne detruit la tricolorabilite
+comme le faisait le modèle d'ajout de kink disjoint (#2938). Nous le verifions
+sur la paire de temois concrete de `reidemeister1Connected_satisfiable`
+(Reidemeister.lean) : le mouvement connecte envoie un `d₁` tricolorable sur un
+`d₂` tricolorable, et reciproquement.
 
-Why both directions hold on the witness. The connected twist on arc `a = 1`
-renames the `e1` slot of crossing 1 (`1 → 5 = b`) and appends `C = ⟨1,5,6,6⟩`.
-A tricoloring of `d₁` extends to `d₂` by giving the two new edges `b = 5` and
-`c = 6` the colour of the arc `a = 1`: then the new crossing `C` reads
-`(col a, col a, col a)` — all-equal, Fox-trivial — and the modified crossing
-reads the same three colours as before (the renamed slot `b` carries `col a`).
-Conversely a tricoloring of `d₂` projects back to `d₁`. This is the
-*computational* verification that option C preserves the invariant; the general
-transfer lemma (`Reidemeister1Connected.tricolorable_invariant`, the PR2 target)
-makes this argument for arbitrary diagrams — gated on the strengthened def
-merging (PR #2990).
+Pourquoi les deux sens tiennent sur le temoin. Le twist connecte sur l'arc
+`a = 1` renomme le slot `e1` du croisement 1 (`1 → 5 = b`) et ajoute
+`C = ⟨1,5,6,6⟩`. Un tricolorage de `d₁` s'etend a `d₂` en donnant aux deux
+nouvelles aretes `b = 5` et `c = 6` la couleur de l'arc `a = 1` : alors le
+nouveau croisement `C` lit `(col a, col a, col a)` — tout-egal, Fox-trivial —
+et le croisement modifie lit les memes trois couleurs qu'avant (le slot renomme
+`b` porte `col a`). Reciproquement un tricolorage de `d₂` se projette sur `d₁`.
+C'est la verification *calculatoire* que l'option C preserve l'invariant ; le
+lemme de transfer general (`Reidemeister1Connected.tricolorable_invariant`, la
+cible PR2) fait cet argument pour des diagrammes arbitraires — gate sur la
+fusion du def renforce (PR #2990).
 
-Certified constructively: we exhibit an explicit 3-colouring of each diagram
-(mirroring the `trefoil_tricolorable` pattern), so each side is inhabited and the
-biconditional reduces to `(true ↔ true)`. `IsTricolorable` is an existential over
-`Fin n → TriColor`, so no `Decidable` instance auto-derives — the colourings are
-supplied by hand, with each crossing's Fox condition discharged by `decide`.
+Certifie constructivement : nous exhibons un 3-coloriage explicite de chaque
+diagramme (mirant le pattern `trefoil_tricolorable`), de sorte que chaque cote
+est habite et la biconditionnelle se reduit a `(true ↔ true)`. `IsTricolorable`
+est un existentiel sur `Fin n → TriColor`, donc aucune instance `Decidable` ne
+se derive automatiquement — les coloriages sont fournis a la main, chaque
+condition de Fox du croisement etant dischargee par `decide`.
 -/
 
 /-- The witness `d₁` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD1Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
 
 /-- The witness `d₂` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD2Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
 
-/-- `witnessD1Connected` is tricolorable (Path B): both crossings are
-    `⟨1,2,3,4⟩`, each reading `(red, blue, green)` on the Fox strands
-    `(e1, e2, e3) = (1, 2, 3)` (all pairwise distinct), with over-strand continuity
-    `c(e2) = c(e4)` (edges 2 and 4 both blue). Constructive, mirroring
-    `trefoil_tricolorable`. -/
+/-- `witnessD1Connected` est tricolorable (Path B) : les deux croisements sont
+    `⟨1,2,3,4⟩`, chacun lisant `(red, blue, green)` sur les strands de Fox
+    `(e1, e2, e3) = (1, 2, 3)` (tous deux a deux distincts), avec continuite du
+    strand over `c(e2) = c(e4)` (aretes 2 et 4 toutes deux blue). Constructif,
+    mirant `trefoil_tricolorable`. -/
 theorem witnessD1Connected_tricolorable : IsTricolorable witnessD1Connected := by
   unfold IsTricolorable IsTriColoring witnessD1Connected
   simp only [triColorConditionAt, KnotDiagram.colorAtNat]
@@ -694,12 +718,13 @@ theorem witnessD1Connected_tricolorable : IsTricolorable witnessD1Connected := b
   · decide
   · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
 
-/-- `witnessD2Connected` is tricolorable (Path B): the original crossings
-    `⟨1,2,3,4⟩` and `⟨5,2,3,4⟩` read all-distinct colours with over-strand
-    continuity `c(e2) = c(e4)` (edges 2,4 both blue), and the new kink `⟨1,5,6,6⟩`
-    reads `(red, red, red)` (all-equal, Fox-trivial) with `c(e2) = c(e4)` on edges
-    5,6 (both red). The two new edges `b = 5` and `c = 6` carry the colour of arc
-    `a = 1` (red), so the twist does not create or destroy tricolorability. -/
+/-- `witnessD2Connected` est tricolorable (Path B) : les croisements originaux
+    `⟨1,2,3,4⟩` et `⟨5,2,3,4⟩` lisent des couleurs toutes distinctes avec
+    continuite du strand over `c(e2) = c(e4)` (aretes 2,4 toutes deux blue), et
+    le nouveau kink `⟨1,5,6,6⟩` lit `(red, red, red)` (tout-egal, Fox-trivial)
+    avec `c(e2) = c(e4)` sur les aretes 5,6 (toutes deux red). Les deux nouvelles
+    aretes `b = 5` et `c = 6` portent la couleur de l'arc `a = 1` (red), donc le
+    twist ne cree ni ne detruit la tricolorabilite. -/
 theorem witnessD2Connected_tricolorable : IsTricolorable witnessD2Connected := by
   unfold IsTricolorable IsTriColoring witnessD2Connected
   simp only [triColorConditionAt, KnotDiagram.colorAtNat]
@@ -716,33 +741,35 @@ theorem witnessD2Connected_tricolorable : IsTricolorable witnessD2Connected := b
   · decide
   · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
 
-/-- The connected R1 move (option C, strengthened `Reidemeister1Connected`)
-    preserves tricolorability on the concrete witness pair of
-    `reidemeister1Connected_satisfiable`: both `witnessD1Connected` and
-    `witnessD2Connected` are tricolorable, so the biconditional is
-    `(true ↔ true)`. This is the positive complement to the PR1 counter-example
-    `tricolorable_invariant_fails_under_pr1_model` (§3b), confirming the
-    connected-surgery model does not share the disjoint-kink defect. Proved
-    constructively (explicit 3-colourings, mirroring `trefoil_tricolorable`). -/
+/-- Le mouvement R1 connecte (option C, `Reidemeister1Connected` renforce)
+    preserve la tricolorabilite sur la paire de temois concrete de
+    `reidemeister1Connected_satisfiable` : `witnessD1Connected` et
+    `witnessD2Connected` sont tous deux tricolorables, donc la biconditionnelle
+    est `(true ↔ true)`. C'est le complement positif au contre-exemple PR1
+    `tricolorable_invariant_fails_under_pr1_model` (§3b), confirmant que le
+    modèle de chirurgie connectee ne partage pas le defaut de kink disjoint.
+    Prouve constructivement (3-coloriages explicites, mirant
+    `trefoil_tricolorable`). -/
 theorem reidemeister1Connected_witness_preserves_tricolorable :
     IsTricolorable witnessD1Connected ↔ IsTricolorable witnessD2Connected :=
   ⟨fun _ => witnessD2Connected_tricolorable, fun _ => witnessD1Connected_tricolorable⟩
 
-/-! ## 3e. PR2 forward transfer: a connected R1 move PRESERVES tricolorability
+/-! ## 3e. Transfer avant PR2 : un mouvement R1 connecte PRESERVE la tricolorabilite
 
-Under the strengthened `Reidemeister1Connected` (carrying the `Y'.isRenameOf`
-hypothesis, merged #2990), a tricoloring of `d₁` extends to a tricoloring of
-`d₂`: the two fresh edges `b = numEdges+1` and `c = numEdges+2` both carry the
-colour of arc `a`. This makes the new kink crossing `⟨a, b, c, c⟩` Fox-trivial
-(`(col a)³`, all-equal) and the `a → b` rename Fox-invisible (`col₂ b = col₁ a`).
-This is the forward half of `tricolorable_invariant` specialised to the
-connected R1 move (option C).
+Sous le `Reidemeister1Connected` renforce (portant l'hypothese `Y'.isRenameOf`,
+merge #2990), un tricolorage de `d₁` s'etend en un tricolorage de `d₂` : les
+deux aretes fraiches `b = numEdges+1` et `c = numEdges+2` portent toutes deux la
+couleur de l'arc `a`. Cela rend le nouveau croisement kink `⟨a, b, c, c⟩`
+Fox-trivial (`(col a)³`, tout-egal) et le renommage `a → b` Fox-invisible
+(`col₂ b = col₁ a`). C'est la moitie avant de `tricolorable_invariant`
+specialisee au mouvement R1 connecte (option C).
 -/
 
-/-- Forward membership for `List.set`: an element of `l.set n v` is either the
-    inserted value `v` (at the modified position) or already an element of `l`.
-    Pure list-combinatorics helper (no knot content), used by the transfer lemma
-    to split `d₂.crossings = d₁.crossings.set i Y' ++ [C]`. -/
+/-- Appartenance avant pour `List.set` : un element de `l.set n v` est soit la
+    valeur inseree `v` (a la position modifiee) soit deja un element de `l`.
+    Aide pure de combinatoire de listes (pas de contenu de nœud), utilisee par
+    le lemme de transfer pour decomposer `d₂.crossings = d₁.crossings.set i
+    Y' ++ [C]`. -/
 private theorem mem_set_fwd {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α),
     c ∈ l.set n v → c = v ∨ c ∈ l
   | 0, [], _, _, h => by simp at h
@@ -763,10 +790,11 @@ private theorem mem_set_fwd {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α
       · exact Or.inl rfl
       · exact Or.inr (Or.inr hmem)
 
-/-- Backward membership for `List.set`: if `c ∈ l` but `c ∉ l.set n v`, then `c`
-    is exactly the element `l.get n` that got replaced, and `c ≠ v`. Pure
-    list-combinatorics helper, converse-in-spirit of `mem_set_fwd`, used by the
-    backward transfer lemma to identify the modified crossing `Y`. -/
+/-- Appartenance arriere pour `List.set` : si `c ∈ l` mais `c ∉ l.set n v`,
+    alors `c` est exactement l'element `l.get n` qui a ete remplace, et
+    `c ≠ v`. Aide pure de combinatoire de listes, converse-en-esprit de
+    `mem_set_fwd`, utilisee par le lemme de transfer arriere pour identifier
+    le croisement modifie `Y`. -/
 private theorem mem_drop_out {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α)
     (hn : n < l.length) (hc : c ∈ l) (hnmem : c ∉ l.set n v),
     l.get ⟨n, hn⟩ = c ∧ c ≠ v
@@ -792,9 +820,10 @@ private theorem mem_drop_out {α : Type*} : ∀ (n : Nat) (l : List α) (v c : �
       exact ih.1
   | _, [], _, _, hn, _, _ => (Nat.not_lt_zero _ hn).elim
 
-/-- Membership of the inserted value in `List.set`: `v ∈ l.set n v` whenever
-    `n < l.length`. Pure list-combinatorics helper, used by the backward transfer
-    lemma to witness that the replacement crossing `Y'` sits in `d₂.crossings`. -/
+/-- Appartenance de la valeur inseree dans `List.set` : `v ∈ l.set n v` quand
+    `n < l.length`. Aide pure de combinatoire de listes, utilisee par le lemme
+    de transfer arriere pour temoigner que le croisement de remplacement `Y'`
+    figure dans `d₂.crossings`. -/
 private theorem mem_set_self {α : Type*} : ∀ (n : Nat) (l : List α) (v : α) (hn : n < l.length),
     v ∈ l.set n v
   | 0, hd :: tl, v, _ => by
@@ -1008,10 +1037,10 @@ theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
       · exact h_inherit c hcorig
     · exact hC
 
-/-! ## 4. The unknot is NOT tricolorable
+/-! ## 4. L'unknot n'est PAS tricolorable
 
-The unknot has a diagram with no crossings. Any coloring uses only
-one strand, so the "at least 2 colors" condition fails.
+L'unknot a un diagramme sans croisement. Tout coloriage n'utilise qu'un
+seul strand, donc la condition « au moins 2 couleurs » echoue.
 -/
 
 theorem unknot_not_tricolorable : ¬ Knot.isTricolorable unknot := by
@@ -1039,41 +1068,58 @@ d'arc-égalité `c₂ = c₄`), c'est le témoin de distinction canonique : le m
 permissif antérieur laissait passer une tricoloration parasite `(0,0,0,1,0,0,1,2)`
 (README §Path B), que la contrainte d'arc exclut désormais.
 
-Preuve par énumération finie (`native_decide`) : l'espace des coloriages
+Preuve par énumération finie (`decide` noyau) : l'espace des coloriages
 `Fin 8 → TriColor` (3⁸ = 6561) est parcouru, et pour chacun la conjonction
 d'arc-égalité + Fox aux 4 croisements est réfutée — soit l'arc-continuité casse,
-soit Fox force le monochrome (contredisant « ≥ 2 couleurs »). On emploie
-`native_decide` (et non `decide`) : l'existentiel porte sur le type-fonction
-`Fin 8 → TriColor`, dont l'instance `Decidable` repose sur `Fintype.piFinset` ; le
-noyau ne réduit pas cette énumération (`decide` échoue avec « did not reduce to
-'isTrue' or 'isFalse' »), là où l'évaluateur natif la traite en quelques ms —
-même outil que les lemmes de calibration finie de `conway_lean/Angel.lean`.
-Témoin de non-régression Path B (#2874). -/
+soit Fox force le monochrome (contredisant « ≥ 2 couleurs »). On emploie `decide`
+(et non `native_decide`) : l'existentiel porte sur le type-fonction
+`Fin 8 → TriColor`, dont l'instance `Decidable` repose sur `Fintype.piFinset`. La
+réduction noyau de cette énumération dépasse la profondeur de récursion par
+défaut (échec `maximum recursion depth has been reached`), on lève donc la
+limite via `set_option maxRecDepth 100000` — le `decide` termine alors en ~33s.
+C'est strictement préférable à `native_decide` : le **noyau vérifie** le
+résultat plutôt que de déléguer au compilateur C / runtime (le TCB reste Lean,
+pas `native_decide.ax`), et `#print axioms` ne relève plus que
+`[propext, Classical.choice, Quot.sound]`. Voir #8723. Témoin de
+non-régression Path B (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
-  native_decide
+  set_option maxRecDepth 100000 in
+  decide
 
-/-! ## 5. Corollary: the trefoil is not the unknot
+/-! ## 5. Corollaire : le trefoil n'est pas l'unknot
 
-Since tricolorability is an invariant, and the trefoil has it
-but the unknot doesn't, they are different knots.
+Puisque la tricolorabilite est un invariant, et que le trefoil l'a mais
+pas l'unknot, ce sont deux nœuds differents.
 -/
 
 theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   intro h
-  -- If trefoil ≈ unknot, then trefoil tricolorable ↔ unknot tricolorable
-  -- But trefoil IS tricolorable and unknot IS NOT → contradiction
-  -- Sketch: have := (tricolorable_invariant trefoilDiagram unknotDiagram h).mp
-  --            trefoil_tricolorable
-  --         exact unknot_not_tricolorable this
-  exact sorry
-  -- BLOCKED (Phase 4 update): the natural route (tricolorable_invariant +
-  -- trefoil_tricolorable + unknot_not_tricolorable) is gated by
-  -- tricolorable_invariant (this file), whose remaining blocker is the transfer
-  -- lemma across Reidemeister moves (see the diagnostic there). The two pieces
-  -- it composes — `trefoil_tricolorable` and `unknot_not_tricolorable` — are
-  -- now both proven under the real Fox condition, so once the invariant lands
-  -- this corollary follows by the sketch above.
+  -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
+  -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
+  -- The sketch that was left as `sorry` now type-checks: `tricolorable_invariant`
+  -- exists (sorry-bearing, L334) and the two pieces are proven, so the corollary
+  -- composes them — its soundness rests SOLELY on the invariant's transfer sorry,
+  -- with no independent sorry of its own (standalone-tactic sorry 5 → 4). When
+  -- the Reidemeister transfer lands (L334), this closes with zero rewiring.
+  --
+  -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
+  -- `def`s that delta-reduce on demand to the `KnotDiagram` level
+  -- (`ReidemeisterEquiv`, `IsTricolorable`); the `have` annotations force that
+  -- reduction, re-anchoring `h`/`trefoil_tricolorable`/`unknot_not_tricolorable`
+  -- at the diagram level the invariant speaks of.
+  have hreid : ReidemeisterEquiv trefoilDiagram unknotDiagram := h
+  have htc : IsTricolorable trefoilDiagram := trefoil_tricolorable
+  have hnunk : ¬ IsTricolorable unknotDiagram := unknot_not_tricolorable
+  exact hnunk ((tricolorable_invariant trefoilDiagram unknotDiagram hreid).mp htc)
+  -- DISCHARGED (this corollary no longer carries its own `sorry`): the natural
+  -- route (tricolorable_invariant + trefoil_tricolorable + unknot_not_tricolorable)
+  -- now type-checks, because `tricolorable_invariant` exists as a declaration
+  -- (sorry-bearing, L334). The corollary's soundness therefore reduces to — and
+  -- rests solely on — the invariant's transfer sorry. The two pieces it composes
+  -- (`trefoil_tricolorable`, `unknot_not_tricolorable`) are both proven under the
+  -- real Fox condition; when the Reidemeister transfer lands (L334) the corollary
+  -- closes with zero rewiring.
   -- Alternative route attempted: prove ¬KnotEquiv directly by showing the diagrams
   -- cannot be Reidemeister-equivalent. Reidemeister1/2/3 are concrete, but
   -- ReidemeisterEquiv is the RTC of those steps; to show two diagrams are NOT
@@ -1082,19 +1128,19 @@ theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   -- monotonicity under the moves, itself needing the true minimal crossing number).
   -- Dependency: tricolorable_invariant (→ transfer lemma across moves).
 
-/-! ## 6. Crossing number bounds
+/-! ## 6. Bornes sur le nombre de croisements
 
-The crossing number of a diagram gives an upper bound on the
-minimal crossing number of the knot.
+Le nombre de croisements d'un diagramme donne une borne superieure sur le
+nombre de croisements minimal du nœud.
 -/
 
-/-- The trefoil has crossing number exactly 3.
+/-- Le trefoil a un nombre de croisements egal exactement a 3.
 
-This requires showing both:
-  (a) there exists a diagram with 3 crossings (obvious)
-  (b) no diagram with fewer crossings represents the trefoil
+Cela requiert de montrer les deux :
+  (a) il existe un diagramme a 3 croisements (evident)
+  (b) aucun diagramme avec moins de croisements ne represente le trefoil
 
-Part (b) requires the classification of knots by crossing number.
+La partie (b) requiert la classification des nœuds par nombre de croisements.
 -/
 theorem trefoil_crossing_number :
     Knot.crossingNumber trefoil = 3 := by
@@ -1105,12 +1151,13 @@ theorem trefoil_crossing_number :
   unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
   decide
 
-/-! ## 7. Unknotting number (definition only)
+/-! ## 7. Nombre de denouement (definition seule)
 
-The unknotting number u(K) is the minimum number of crossing changes
-needed to turn K into the unknot. This is a much harder invariant.
+Le nombre de denouement u(K) est le nombre minimum de changements de
+croisement necessaires pour ramener K a l'unknot. C'est un invariant
+beaucoup plus difficile.
 
-Reference: unknotting number is NP-hard to compute in general.
+Reference : le nombre de denouement est NP-difficile a calculer en general.
 -/
 
 /-- Change a crossing from positive to negative or vice versa. -/
@@ -1130,167 +1177,176 @@ def Knot.unknottingNumber (k : Knot) : Nat := by
   --   3. Reachability in a graph of diagrams
   -- Phase 4+ target — out of scope for Phase 2
 
-/-! ## 8. Backward transfer (research scaffolding — Epic #2874, Phase 5 PR3)
+/-! ## 8. Transfer arriere (scaffolding de recherche — Epic #2874, Phase 5 PR3)
 
-This section is **research scaffolding only**: it records the proof obligation
-for the backward direction of `Reidemeister1Connected.tricolorable_*` (the
-mate of the forward lemma in PR #3000, awaiting merge at the time of writing),
-together with empirical evidence pinning down the proof shape and a small
-non-empty structural lemma about `Reidemeister1Connected` that is reusable in
-both directions.
+Cette section est **scaffolding de recherche uniquement** : elle enregistre
+l'obligation de preuve pour la direction arriere de
+`Reidemeister1Connected.tricolorable_*` (le compagnon du lemme avant du PR
+#3000, en attente de merge au moment de l'ecriture), avec les preuves
+empiriques cernant la forme de la preuve et un petit lemme structurel non vide
+sur `Reidemeister1Connected` reutilisable dans les deux directions.
 
-**No new sorries are introduced.** The backward theorem is intentionally not
-stated here as a tactic-stub placeholder because the Knots-CI prose-header
-sorries baseline is locked at 25 (see `lean-knot.yml`) and a research stub
-would push it to 26. The proof obligation is therefore documented as a
-comment-only contract and the next BG-prover / dedicated cycle will state the
-theorem at the same time it proves it (the lemma + body land in one commit,
-keeping the sorries baseline at 25 throughout).
+**Aucun nouveau sorry n'est introduit.** Le theoreme arriere n'est
+intentionnellement pas enonce ici comme un placeholder tactic-stub parce que la
+baseline des sorries du Knots-CI est verrouillee a 17 (voir `lean-knot.yml`,
+mode `real`) et qu'un stub de recherche la pousserait a 18. L'obligation de
+preuve est donc documentee comme un contrat en commentaire uniquement et le
+prochain BG-prover / cycle dedie enoncera le theoreme en meme temps qu'il le
+prouvera (le lemme + le corps arrivent en un commit, gardant la baseline des
+sorries a 17 tout du long).
 
-### 8.1. Proof obligation (informal contract)
+### 8.1. Obligation de preuve (contrat informel)
 
-Under the fix-(a) (proper-arc) strengthening of `Reidemeister1Connected`
-landed in PR #3003 (`133f7031`), the backward direction
+Sous le renforcement fix-(a) (proper-arc) de `Reidemeister1Connected` arrive
+au PR #3003 (`133f7031`), la direction arriere
 ```
 ∀ {d₁ d₂ : KnotDiagram},
   Reidemeister1Connected d₁ d₂ →
   IsTricolorable d₂ →
   IsTricolorable d₁
 ```
-is conjectured TRUE. Together with `Reidemeister1Connected.tricolorable_forward`
-(PR #3000), this gives the R1 bi-implication needed to unblock
-`tricolorable_invariant` (§2, the long-standing tactic placeholder on
-line 116) — modulo analogous statements for R2 and R3 (separate PRs).
+est conjecturee VRAIE. Avec `Reidemeister1Connected.tricolorable_forward`
+(PR #3000), cela donne la bi-implication R1 necessaire pour debloquer
+`tricolorable_invariant` (§2, le placeholder tactic de longue date a la
+ligne 116) — modulo des enonces analogues pour R2 et R3 (PR separes).
 
-### 8.2. Empirical evidence (brute-force, exhaustive on small diagrams)
+### 8.2. Preuves empiriques (force-brute, exhaustif sur petits diagrammes)
 
-A brute-force `3^n` colour search on all well-formed diagrams with
-`numCrossings ∈ {1, 2}` and `numEdges ∈ {2, 4}` (2526 distinct wf diagrams,
-generating 20184 valid connected R1 twists under proper-arc) reports
-**0 backward failures**: for every `(d₁, d₂)` with
-`Reidemeister1Connected d₁ d₂` and proper-arc, every tricoloring of `d₂`
-admits a tricoloring of `d₁`. This is the same brute-force methodology that
-de-risked fix (a) itself before PR #3003 was opened (see the body of #3003
-for the analogous "24 monogon-loop failures → 0" empirical table).
+Une recherche force-brute de couleur en `3^n` sur tous les diagrammes bien
+formes avec `numCrossings ∈ {1, 2}` et `numEdges ∈ {2, 4}` (2526 diagrammes wf
+distincts, generant 20184 twists R1 connectes valides sous proper-arc) reporte
+**0 echecs arriere** : pour chaque `(d₁, d₂)` avec
+`Reidemeister1Connected d₁ d₂` et proper-arc, tout tricolorage de `d₂` admet
+un tricolorage de `d₁`. C'est la meme methodologie force-brute qui a reduit
+le risque de fix (a) lui-meme avant que le PR #3003 ne soit ouvert (voir le
+corps de #3003 pour la table empirique analogue « 24 echecs monogon-loop → 0 »).
 
-A *finer* version of the search reports a non-trivial fact: in **48% of those
-cases (139968 / 292032 (pair, col₂) probes)**, the *naïve* candidate
-`col₁ := col₂|_{Fin d₁.numEdges}` (restrict to the first `d₁.numEdges`
-indices) is NOT a valid tricoloring of `d₁` — the witness exists but it is
-NOT this naïve restriction. The construction of `col₁` from `col₂` must
-therefore be more nuanced.
+Une version *plus fine* de la recherche reporte un fait non trivial : dans
+**48% de ces cas (139968 / 292032 sondes (paire, col₂))**, le candidat *naïve*
+`col₁ := col₂|_{Fin d₁.numEdges}` (restreint aux premiers `d₁.numEdges`
+indices) n'est PAS un tricolorage valide de `d₁` — le temoin existe mais ce
+n'est PAS cette restriction naïve. La construction de `col₁` depuis `col₂`
+doit donc etre plus nuancee.
 
-### 8.3. Why the naïve restriction can fail
+### 8.3. Pourquoi la restriction naïve peut echouer
 
-Recall (`Reidemeister.lean`) that `Reidemeister1Connected d₁ d₂` carries an
-endpoint index `i`, an arc label `a` shared by two crossings of `d₁`, and a
-renamed crossing `Y'` with `PDCrossing.isRenameOf Y' (d₁.crossings[i]) a b`
-where `b = d₁.numEdges + 1`. The surgery is:
+Rappel (`Reidemeister.lean`) : `Reidemeister1Connected d₁ d₂` porte un indice
+d'extremite `i`, une etiquette d'arc `a` partagee par deux croisements de
+`d₁`, et un croisement renomme `Y'` avec
+`PDCrossing.isRenameOf Y' (d₁.crossings[i]) a b` ou `b = d₁.numEdges + 1`. La
+chirurgie est :
 ```
 d₂.crossings = (d₁.crossings.set i Y') ++ [⟨a, b, c, c⟩]   (c = d₁.numEdges + 2)
 d₂.numEdges   = d₁.numEdges + 2.
 ```
-Fix any tricoloring `col₂` of `d₂`. The Fox condition at `Y'` reads on the
-slots of `Y'`, where one occurrence of `a` was renamed to `b`. Setting
-`col₁ := col₂|_{Fin d₁.numEdges}` evaluates the slot in `d₁`'s `Y` at
-`col₂(a-1)`, while `col₂` evaluated the same slot of `Y'` at `col₂(b-1)`.
-When the Fox condition forces `col₂(a-1) ≠ col₂(b-1)` (the all-distinct
-branch at `Y'`), the naïve restriction violates Fox at `Y` in `d₁`.
+Fixons un tricolorage `col₂` de `d₂`. La condition de Fox en `Y'` lit sur les
+slots de `Y'`, ou une occurrence de `a` a ete renommee en `b`. Poser
+`col₁ := col₂|_{Fin d₁.numEdges}` evalue le slot dans le `Y` de `d₁` a
+`col₂(a-1)`, tandis que `col₂` evaluait le meme slot de `Y'` a `col₂(b-1)`.
+Quand la condition de Fox force `col₂(a-1) ≠ col₂(b-1)` (la branche
+tous-distincts en `Y'`), la restriction naïve viole Fox en `Y` dans `d₁`.
 
-The proper-arc hypothesis (`a` shared by another crossing `j ≠ i` of `d₁`)
-is what prevents this failure mode from refuting the lemma globally: it forces
-`a` to play a role in a *different* crossing, constraining the Fox structure
-of `d₁` enough that a valid `col₁` always exists — but the construction is
-NOT simply restriction. It must reconcile the colour of `a` between the
-renamed slot of `Y'` (which `col₂` set freely as `col₂(b-1)`) and the other
-occurrence of `a` at crossing `j` (which `col₁` inherits from `col₂(a-1)`).
+L'hypothese proper-arc (`a` partagee par un autre croisement `j ≠ i` de `d₁`)
+est ce qui empeche ce mode d'echec de refuter le lemme globalement : elle
+force `a` a jouer un role dans un croisement *different*, contraignant la
+structure de Fox de `d₁` assez pour qu'un `col₁` valide existe toujours — mais
+la construction n'est PAS simplement la restriction. Elle doit reconcilier la
+couleur de `a` entre le slot renomme de `Y'` (que `col₂` a fixe librement comme
+`col₂(b-1)`) et l'autre occurrence de `a` au croisement `j` (que `col₁`
+herite de `col₂(a-1)`).
 
-### 8.4. Suggested proof strategies (for BG-prover / dedicated cycle)
+### 8.4. Strategies de preuve suggerees (pour BG-prover / cycle dedie)
 
-1. **Direct case-analysis on the Fox mode of `Y` in `d₁`**: each PD slot
-   matches one of four `isRenameOf` clauses (preserved or renamed). In each
-   case, derive a colour-equality/inequality constraint on `col₂` at
-   `{a-1, b-1}` and exhibit a `col₁` (built from `col₂` with a controlled
-   override at `a-1` or at the other occurrence of `a`).
-2. **Use the proper-arc witness directly**: from `∃ j ≠ i, a ∈ d₁.crossings[j]`,
-   recover the secondary crossing of `a` in `d₁` and use its Fox condition
-   under `col₂` to fix the colour of `a` in `col₁`.
-3. **Reduce to forward**: build a *bijective* candidate `col₁` and check
-   Fox at every crossing of `d₁`, exploiting the surgery equation and the
-   fact that all crossings of `d₁` except `Y` are present *verbatim* (same
-   labels, same indices) in `d₂.crossings`.
+1. **Analyse de cas directe sur le mode de Fox de `Y` dans `d₁`** : chaque
+   slot PD correspond a l'une des quatre clauses `isRenameOf` (preserve ou
+   renomme). Dans chaque cas, deriver une contrainte d'egalite/inegalite de
+   couleur sur `col₂` a `{a-1, b-1}` et exhiber un `col₁` (construit depuis
+   `col₂` avec un override controle en `a-1` ou a l'autre occurrence de `a`).
+2. **Utiliser le temoin proper-arc directement** : depuis
+   `∃ j ≠ i, a ∈ d₁.crossings[j]`, retouver le croisement secondaire de `a`
+   dans `d₁` et utiliser sa condition de Fox sous `col₂` pour fixer la couleur
+   de `a` dans `col₁`.
+3. **Reduire au forward** : construire un candidat *bijectif* `col₁` et
+   verifier Fox a chaque croisement de `d₁`, exploitant l'equation de
+   chirurgie et le fait que tous les croisements de `d₁` sauf `Y` sont
+   presents *verbatim* (memes etiquettes, memes indices) dans `d₂.crossings`.
 
-Empirically, strategy (1) suffices in 100% of the brute-forced cases. The
-case analysis is mechanical but ~4-way; a small custom tactic could discharge
-it uniformly.
+Empiriquement, la strategie (1) suffit dans 100% des cas force-brute.
+L'analyse de cas est mecanique mais ~4-voies ; une petite tactique dediee
+pourrait la decharger uniformement.
 
-### 8.5. Structural lemma: `Reidemeister1Connected.numEdges_eq`
+### 8.5. Lemme structurel : `Reidemeister1Connected.numEdges_eq`
 
-A small, immediate consequence of the surgery equation: under
-`Reidemeister1Connected d₁ d₂`, `d₂.numEdges = d₁.numEdges + 2`. The forward
-proof (PR #3000) discharges this inline as a `have hd₂num` from
-`congrArg (·.numEdges) hsurg`. Extracting it as a named lemma keeps it
-available for both directions and any follow-up R1 lemma without duplication.
+Une petite consequence immediate de l'equation de chirurgie : sous
+`Reidemeister1Connected d₁ d₂`, `d₂.numEdges = d₁.numEdges + 2`. La preuve
+forward (PR #3000) decharge cela inline comme un `have hd₂num` depuis
+`congrArg (·.numEdges) hsurg`. L'extraire comme lemme nomme le garde
+disponible pour les deux directions et tout lemme R1 de suite sans
+duplication.
 -/
 
-/-- `Reidemeister1Connected` strictly grows the edge count by 2: the surgery
-appends one new crossing with two fresh PD labels `b = d₁.numEdges + 1` and
-`c = d₁.numEdges + 2`. Used by both `tricolorable_forward` (#3000) and the
-forthcoming `tricolorable_backward` to bound colour-index arithmetic. -/
+/-- `Reidemeister1Connected` fait croitre strictement le nombre d'aretes de 2 :
+la chirurgie ajoute un nouveau croisement avec deux etiquettes PD fraiches
+`b = d₁.numEdges + 1` et `c = d₁.numEdges + 2`. Utilise a la fois par
+`tricolorable_forward` (#3000) et le `tricolorable_backward` a venir pour
+borner l'arithmetique des indices de couleur. -/
 theorem Reidemeister1Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) :
     d₂.numEdges = d₁.numEdges + 2 := by
   obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg⟩ := h
   simpa using congrArg (·.numEdges) hsurg
 
-/-! ## 9. Backward transfer — decomposition analysis (Epic #2874, Phase 5)
+/-! ## 9. Transfer arriere — analyse de decomposition (Epic #2874, Phase 5)
 
-Backward direction of `Reidemeister1Connected.tricolorable_*`: a tricoloring
-of `d₂` restricts to one of `d₁`. Together with the forward lemma (PR #3000),
-this gives the R1 bi-implication needed to unblock the §2 placeholder
+Direction arriere de `Reidemeister1Connected.tricolorable_*` : un tricolorage
+de `d₂` se restreint en un de `d₁`. Avec le lemme forward (PR #3000), cela
+donne la bi-implication R1 necessaire pour debloquer le placeholder §2
 `tricolorable_invariant`.
 
-This section is a **documentation-only** analysis: it records the decomposition
-the future proof will follow, identifies which sub-cases are easy vs.
-research-level, and pins the empirical evidence. **No new Lean declaration
-is added in this section** — the formal theorem will land in a dedicated PR
-once the all-distinct sub-case is constructed. CI baseline remains unchanged.
+Cette section est une analyse **documentation-uniquement** : elle enregistre
+la decomposition que la preuve future suivra, identifie quels sous-cas sont
+faciles vs. niveau-recherche, et cernent les preuves empiriques. **Aucune
+nouvelle declaration Lean n'est ajoutee dans cette section** — le theoreme
+formel atterrira dans un PR dedie une fois le sous-cas tous-distincts construit.
+La baseline CI reste inchangee.
 
-### 9.1. Sub-case decomposition
+### 9.1. Decomposition en sous-cas
 
-Decompose by Fox mode at the new kink crossing
-`C = ⟨a, b, c, c⟩` with `b = d₁.numEdges + 1`, `c = d₁.numEdges + 2`.
+Decomposer par mode de Fox au nouveau croisement kink
+`C = ⟨a, b, c, c⟩` avec `b = d₁.numEdges + 1`, `c = d₁.numEdges + 2`.
 
-Fox at `C` under `col₂` reads on slots `(a, b, c)`. The two modes:
-* **all-equal mode:** `col₂(a-1) = col₂(b-1) = col₂(c-1)`. The naïve
-  restriction `col₁ := col₂|_{Fin d₁.numEdges}` then works directly: at the
-  modified endpoint `Y` in `d₁`, the (renamed) `b` slot in `Y'` is replaced
-  by an `a` slot in `Y` whose colour under `col₁` equals `col₂(a-1) = col₂(b-1)`
-  by the all-equal condition. Fox is therefore preserved at `Y` in `d₁`.
-* **all-distinct mode:** `col₂(a-1) ≠ col₂(b-1)`. Naïve restriction casts
-  the wrong colour at the renamed slot of `Y` in `d₁` (reads `col₂(a-1)` where
-  `Y'` read `col₂(b-1)`). Fox at `Y` in `d₁` may then break — this is the
-  source of the empirical 48% naïve-fail rate documented in §8.2.
+Fox en `C` sous `col₂` lit sur les slots `(a, b, c)`. Les deux modes :
+* **mode tout-egal :** `col₂(a-1) = col₂(b-1) = col₂(c-1)`. La restriction
+  naïve `col₁ := col₂|_{Fin d₁.numEdges}` fonctionne alors directement : au
+  point d'extremite modifie `Y` dans `d₁`, le slot `b` (renomme) dans `Y'` est
+  remplace par un slot `a` dans `Y` dont la couleur sous `col₁` egale
+  `col₂(a-1) = col₂(b-1)` par la condition tout-egal. Fox est donc preserve
+  en `Y` dans `d₁`.
+* **mode tous-distincts :** `col₂(a-1) ≠ col₂(b-1)`. La restriction naïve
+  attribue la mauvaise couleur au slot renomme de `Y` dans `d₁` (lit
+  `col₂(a-1)` la ou `Y'` lisait `col₂(b-1)`). Fox en `Y` dans `d₁` peut alors
+  casser — c'est la source du taux empirique d'echec-naïve de 48% documente au
+  §8.2.
 
-Furthermore, the "obvious" repair `col₁(a-1) := col₂(b-1)` does NOT work
-either: under it, Fox at the proper-arc partner crossing `j ≠ i` (which
-still contains `a` in `d₁`) reads the wrong colour at slot `a` (reads
-`col₂(b-1)` instead of `col₂(a-1)`), so Fox at `j` breaks symmetrically.
-The all-distinct case requires a globally-consistent multi-position
-adjustment — likely via the colour-symmetry argument (permute TriColor
-across the arc-path connecting `Y` to the proper-arc partner via `a`)
-suggested by ai-01's deep-queue brief.
+De plus, la reparation « evidente » `col₁(a-1) := col₂(b-1)` ne fonctionne PAS
+non plus : sous celle-ci, Fox au croisement partenaire proper-arc `j ≠ i`
+(qui contient encore `a` dans `d₁`) lit la mauvaise couleur au slot `a` (lit
+`col₂(b-1)` au lieu de `col₂(a-1)`), donc Fox en `j` casse symetriquement. Le
+cas tous-distincts requiert un ajustement multi-position globalement
+coherent — vraisemblablement via l'argument de symetrie-couleur (permuter
+TriColor a travers le chemin d'arc connectant `Y` au partenaire proper-arc via
+`a`) suggere par le brief deep-queue d'ai-01.
 
-### 9.2. Empirical status
+### 9.2. Statut empirique
 
-The brute-force search of §8.2 (292032 `(pair, col₂)` probes on 20184 valid
-proper-arc twists with `numCrossings ≤ 2`) reports **0 backward failures**.
-The conjecture is therefore strongly supported empirically; the obstruction
-is purely the formal proof of the all-distinct mode.
+La recherche force-brute du §8.2 (292032 sondes `(pair, col₂)` sur 20184
+twists proper-arc valides avec `numCrossings ≤ 2`) reporte **0 echecs
+arriere**. La conjecture est donc fortement soutenue empiriquement ;
+l'obstruction est uniquement la preuve formelle du mode tous-distincts.
 
-### 9.3. Roadmap to the formal theorem
+### 9.3. Feuille de route vers le theoreme formel
 
-When the all-distinct construction is in hand, the theorem statement is:
+Quand la construction tous-distincts sera en main, l'enonce du theoreme est :
 
 ```
 theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂}
@@ -1298,196 +1354,209 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂}
     IsTricolorable d₁
 ```
 
-The proof body will (i) extract the surgery shape via `numEdges_eq` (§8.5)
-and `hsurg`, (ii) case-split on the Fox mode at `C`, (iii) close all-equal
-by naïve restriction, (iv) close all-distinct by the colour-symmetry
-construction. Reserved for a dedicated cycle; no strategic-placeholder
-declaration is committed here to keep the CI baseline honest.
+Le corps de la preuve (i) extraiera la forme de chirurgie via `numEdges_eq`
+(§8.5) et `hsurg`, (ii) fera un case-split sur le mode de Fox en `C`,
+(iii) fermera tout-egal par restriction naïve, (iv) fermera tous-distincts par
+la construction de symetrie-couleur. Reserve a un cycle dedie ; aucune
+declaration placeholder strategique n'est committee ici pour garder la
+baseline CI honnete.
 
-### 9.4. Empirical structural bounds (probe v2)
+### 9.4. Bornes structurelles empiriques (sonde v2)
 
-A finer enumeration on the same scope (`numCrossings = 2`, `numEdges = 4`,
-292032 `(pair, col₂)` probes) characterises **the shape of the working `col₁`**
-when the naïve restriction fails. Source: `scripts/tmp_backward_probe_v2.py`.
+Une enumeration plus fine sur le meme champ (`numCrossings = 2`, `numEdges =
+4`, 292032 sondes `(pair, col₂)`) caracterise **la forme du `col₁`**
+fonctionnel quand la restriction naïve echoue. Source :
+`scripts/tmp_backward_probe_v2.py`.
 
-Naïve-fail rate, refined:
-* Fox condition only on `col₁_naive`: **139968 / 292032 = 47.93%** (the figure
-  reported in §8.2).
-* Full Lean `IsTriColoring` (Fox **and** `≥ 2` colours used): **157248 / 292032
-  = 53.85%**. The 17280 extra cases have a Fox-valid but monochrome
-  `col₁_naive` — the surviving 4-edge restriction collapses to a single colour,
-  which `IsTriColoring` rejects but Fox alone does not.
+Taux d'echec-naïve, raffine :
+* Condition de Fox seulement sur `col₁_naive` : **139968 / 292032 = 47.93%**
+  (le chiffre reporte au §8.2).
+* `IsTriColoring` Lean complet (Fox **et** `≥ 2` couleurs utilisees) :
+  **157248 / 292032 = 53.85%**. Les 17280 cas supplementaires ont un
+  `col₁_naive` Fox-valide mais monochrome — la restriction 4-aretes survivante
+  s'effondre en une seule couleur, que `IsTriColoring` rejette mais Fox seul
+  non.
 
-Structure of the working `col₁` (minimum-Hamming-distance extension from
-`col₁_naive` to a valid Lean tricoloring of `d₁`):
-* **Always exists** (0 / 157248 missing), matching the §8.2 "0 backward
-  failures" claim under the stricter Lean criterion.
-* **Bounded by 2 slot changes**: 110592 cases (70.3% of naïve-fails) are
-  closed by a *single*-slot override; 46656 cases (29.7%) require *two*-slot
-  override; no case needs three or more.
-* **Single-slot override is not concentrated at slot `a-1`**: the four edge
-  positions of `d₁` each receive 27648 single-slot overrides (uniformly
-  distributed). Only 26352 of the 110592 single-slot overrides (≈ 24%) act
-  at slot `a-1`; the remaining 76% act at a different edge of `d₁`. This
-  refutes a tempting "override-at-`a` only" formulation.
-* **The "obvious" closed form `col₁(a-1) := col₂(b-1)`** (the §9.1 candidate
-  ruled out informally) covers **24192 / 157248 = 15.4%** of naïve-fails
-  overall. Restricted to the subset where the override does act at slot `a-1`,
-  it succeeds in **24192 / 26352 = 91.8%** of cases — confirming the
-  qualitative §9.1 argument that even within its target slice it is incomplete
-  (2160 single-slot-at-`a-1` cases need a different colour). The
-  `(col₂(a-1), col₂(b-1))` distribution on naïve-fails is perfectly uniform
-  across the 6 ordered colour pairs (26208 each), so the construction cannot
-  be biased by a particular colour configuration.
+Structure du `col₁` fonctionnel (extension a distance de Hamming minimale
+depuis `col₁_naive` vers un tricolorage Lean valide de `d₁`) :
+* **Existe toujours** (0 / 157248 manquants), corroborant l'affirmation du
+  §8.2 « 0 echecs arriere » sous le critere Lean plus strict.
+* **Borne de 2 changements de slot** : 110592 cas (70.3% des echecs-naïve)
+  sont fermes par un override a *un seul* slot ; 46656 cas (29.7%) requierent
+  un override a *deux* slots ; aucun cas n'en necessite trois ou plus.
+* **L'override a un slot n'est pas concentre au slot `a-1`** : les quatre
+  positions d'arete de `d₁` recoivent chacune 27648 overrides a un slot
+  (distribues uniformement). Seulement 26352 des 110592 overrides a un slot
+  (≈ 24%) agissent au slot `a-1` ; les 76% restants agissent a une autre arete
+  de `d₁`. Cela refute une formulation seduisante « override-a-`a` uniquement ».
+* **La forme fermee « evidente » `col₁(a-1) := col₂(b-1)`** (le candidat §9.1
+  ecarte informellement) couvre **24192 / 157248 = 15.4%** des echecs-naïve au
+  global. Restreint au sous-ensemble ou l'override agit effectivement au slot
+  `a-1`, il reussit dans **24192 / 26352 = 91.8%** des cas — confirmant
+  l'argument qualitatif du §9.1 que meme dans sa tranche cible il est incomplet
+  (2160 cas single-slot-a-`a-1` ont besoin d'une couleur differente). La
+  distribution `(col₂(a-1), col₂(b-1))` sur les echecs-naïve est parfaitement
+  uniforme sur les 6 paires de couleurs ordonnees (26208 chacune), donc la
+  construction ne peut pas etre biaisee par une configuration de couleur
+  particuliere.
 
-Implications for the formal construction:
-* The Hamming-bound (≤ 2 slot changes per `col₁`) is a **finite case bound**:
-  any constructive proof can enumerate "single-slot at edge `k`" for
-  `k ∈ Fin d₁.numEdges` and "two-slot at `(k, ℓ)`" for ordered pairs, then
-  discharge each by a local Fox argument.
-* The single-slot-at-non-`a` overrides (76% of single-slot, ≈ 53% of all
-  naïve-fails) involve a slot whose Fox role is determined by the *proper-arc
-  partner crossing* `j` and the rest of `d₁` — not by the kink. This is the
-  geometric content the colour-symmetry argument captures.
-* The 17280 monochrome-`col₁_naive` cases are a trivially-fixable sub-family:
-  any other colour at any slot recovers `≥ 2` colours, and Fox is already
-  preserved (it held on `col₁_naive` before the colour-count check). They
-  collapse into the single-slot bucket above.
+Implications pour la construction formelle :
+* La borne de Hamming (≤ 2 changements de slot par `col₁`) est une **borne de
+  cas finie** : toute preuve constructive peut enumerer « single-slot a
+  l'arete `k` » pour `k ∈ Fin d₁.numEdges` et « two-slot a `(k, ℓ)` » pour les
+  paires ordonnees, puis decharger chacun par un argument de Fox local.
+* Les overrides single-slot-a-non-`a` (76% de single-slot, ≈ 53% de tous les
+  echecs-naïve) impliquent un slot dont le role Fox est determine par le
+  *croisement partenaire proper-arc* `j` et le reste de `d₁` — pas par le
+  kink. C'est le contenu geometrique que l'argument de symetrie-couleur
+  capture.
+* Les 17280 cas monochromes-`col₁_naive` sont une sous-famille trivialement
+  reparable : toute autre couleur a tout slot recupere `≥ 2` couleurs, et Fox
+  est deja preserve (il tenait sur `col₁_naive` avant le controle de nombre de
+  couleurs). Ils s'effondrent dans le bucket single-slot ci-dessus.
 
-These bounds reduce the construction problem from "globally consistent
-multi-position adjustment" (the §9.1 qualitative claim) to "a finite,
-structured family of local overrides" — the formal proof can proceed
-case-by-case once the local Fox-rebalancing lemma is stated. Reserved for
-a dedicated cycle; CI baseline remains unchanged.
+Ces bornes reduisent le probleme de construction depuis « ajustement
+multi-position globalement coherent » (l'affirmation qualitative du §9.1) vers
+« une famille finie et structuree d'overrides locaux » — la preuve formelle
+peut proceder cas par cas une fois le lemme local de re-equilibrage Fox enonce.
+Reserve a un cycle dedie ; la baseline CI reste inchangee.
 
-### 9.5. Fox-decoupling at the proper-arc partner crossing
+### 9.5. Decouplage-Fox au croisement partenaire proper-arc
 
-Probe v3 (`scripts/tmp_backward_probe_v3.py`, same 292032-case scope)
-characterises, for the 84240 single-slot-at-non-`a-1` overrides (≈ 53.6% of
-all naïve-fails), the **geometric relation** between the override edge label
-`ℓ := k + 1` and the proper-arc partner crossing `j`.
+La sonde v3 (`scripts/tmp_backward_probe_v3.py`, meme champ de 292032 cas)
+caracterise, pour les 84240 overrides single-slot-a-non-`a-1` (≈ 53.6% de tous
+les echecs-naïve), la **relation geometrique** entre l'etiquette d'arete
+d'override `ℓ := k + 1` et le croisement partenaire proper-arc `j`.
 
-Findings:
-* **66.15% (55728 / 84240) of overrides have `ℓ ∉ d₁.crossings[j]`** — the
-  override edge does not appear in the partner crossing at all. Under the
-  `wf` constraint at `numCrossings = 2, numEdges = 4`, that means `ℓ` appears
-  twice in the *kink crossing* `i`, and the override propagates entirely
-  through Fox at `i`.
-* **33.85% (28512 / 84240) of overrides have `ℓ ∈ d₁.crossings[j]`** — and
-  in **100%** of those cases, `ℓ` sits at **slot 3 of `j`** (the slot that
-  `triColorConditionAt` ignores; see §3 / Lean Invariant.lean L82-87 where
-  Fox reads only `(e1, e2, e3)`). Crucially, this means **0% of overrides
-  touch a Fox-sensitive slot of `j`**.
-* The `(a-slot in j, override-slot in j)` joint distribution is balanced:
-  `a` at slots 0/1/2 of `j` each appears with `ℓ` at slot 3 of `j` in 9504
-  cases (uniform across the 3 Fox positions of `a`). No bias toward a
-  particular `a` slot.
+Constats :
+* **66.15% (55728 / 84240) des overrides ont `ℓ ∉ d₁.crossings[j]`** —
+  l'arete d'override n'apparait pas du tout dans le croisement partenaire. Sous
+  la contrainte `wf` a `numCrossings = 2, numEdges = 4`, cela signifie que `ℓ`
+  apparait deux fois dans le *croisement kink* `i`, et l'override se propage
+  entierement via Fox en `i`.
+* **33.85% (28512 / 84240) des overrides ont `ℓ ∈ d₁.crossings[j]`** — et dans
+  **100%** de ces cas, `ℓ` se trouve au **slot 3 de `j`** (le slot que
+  `triColorConditionAt` ignore ; voir §3 / Lean Invariant.lean L82-87 ou Fox
+  ne lit que `(e1, e2, e3)`). De maniere cruciale, cela signifie que **0% des
+  overrides touchent un slot Fox-sensible de `j`**.
+* La distribution jointe `(slot-a dans j, slot-override dans j)` est equilibree
+  : `a` aux slots 0/1/2 de `j` apparait chacun avec `ℓ` au slot 3 de `j` dans
+  9504 cas (uniforme sur les 3 positions Fox de `a`). Pas de biais vers un
+  slot `a` particulier.
 
-Mechanism. The kink surgery at `Y` modifies a Fox slot of `i`. The naïve
-restriction breaks Fox at `Y`. To repair, change the colour at some edge `ℓ`.
-The probe shows that the chosen `ℓ` is *always* Fox-irrelevant at `j`:
-either because `ℓ` does not appear in `j` (66% case), or because `ℓ` appears
-only at the Fox-blind slot 3 of `j` (34% case). In both sub-cases, **the
-override is invisible to Fox at `j`**, and the Fox-repair flows entirely
-through Fox at `i` (where `ℓ` sits at a Fox slot by the same accounting).
+Mecanisme. La chirurgie kink en `Y` modifie un slot Fox de `i`. La restriction
+naïve casse Fox en `Y`. Pour reparer, changer la couleur a une arete `ℓ`. La
+sonde montre que le `ℓ` choisi est *toujours* Fox-irrelevant en `j` : soit
+parce que `ℓ` n'apparait pas en `j` (cas 66%), soit parce que `ℓ` apparait
+seulement au slot 3 Fox-aveugle de `j` (cas 34%). Dans les deux sous-cas,
+**l'override est invisible a Fox en `j`**, et la reparation Fox s'ecoule
+entierement via Fox en `i` (ou `ℓ` se trouve a un slot Fox par le meme
+comptage).
 
-This is the colour-symmetry argument of §9.1 made concrete: the override
-"swaps" a colour at an edge whose only Fox role is at the kink crossing
-itself, so changing it cannot break the partner's Fox condition. The
-formal proof can therefore localise the rebalancing entirely at `i` once
-the override edge is identified by its Fox-blindness at `j`.
+C'est l'argument de symetrie-couleur du §9.1 rendu concret : l'override
+« echange » une couleur a une arete dont le seul role Fox est au croisement
+kink lui-meme, donc le changer ne peut pas casser la condition Fox du
+partenaire. La preuve formelle peut donc localiser le re-equilibrage
+entierement en `i` une fois l'arete d'override identifiee par sa Fox-aveuglete
+en `j`.
 
-The 29.7% two-slot bucket (§9.4) is the residue where this single-slot
-Fox-blind move is unavailable; v3 does not characterise it yet (deferred
-to §9.6 below). CI baseline remains unchanged.
+Le bucket two-slot a 29.7% (§9.4) est le residu ou ce mouvement single-slot
+Fox-aveugle n'est pas disponible ; v3 ne le caracterise pas encore (reporte au
+§9.6 ci-dessous). La baseline CI reste inchangee.
 
-### 9.6. Two-slot bucket Fox-coupling at the proper-arc partner crossing
+### 9.6. Couplage-Fox du bucket two-slot au croisement partenaire proper-arc
 
-Probe v4 (`scripts/tmp_backward_probe_v4.py`, same 292032-case scope)
-characterises the 46656 two-slot overrides (29.7% of all naïve-fails) and
-contrasts them with §9.5's single-slot Fox-decoupling.
+La sonde v4 (`scripts/tmp_backward_probe_v4.py`, meme champ de 292032 cas)
+caracterise les 46656 overrides two-slot (29.7% de tous les echecs-naïve) et
+les contraste avec le decouplage-Fox single-slot du §9.5.
 
-Findings:
-* **Q1 partner-presence.** **94.21% (43956 / 46656) of two-slot overrides
-  have both override edges in `d₁.crossings[j]`**; the remaining 5.79%
-  (2700) have exactly one in `j`; **none** have neither. So in the two-slot
-  bucket, at least one override edge is always present at the partner
-  crossing — a stark contrast with the 66.15% none-in-`j` rate of §9.5.
-* **Q2 slot distribution in `j`.** Among the override edges that do appear
-  in `j`, the slots split as **slot 0: 33.25%, slot 1: 32.34%, slot 2:
-  31.43%, slot 3: 2.98%**. The Fox-sensitive slots (0, 1, 2) carry the
-  overwhelming mass, opposite to §9.5's 100% concentration at slot 3.
-* **Q3 edge pair distribution.** The six unordered pairs `(1,2), (1,3),
-  (1,4), (2,3), (2,4), (3,4)` of override edge labels occur near-uniformly
-  (7596–7956 each), with no pair forbidden — every pair of distinct
-  `d₁`-edges can serve as a two-slot override under some `(d₁, surg, col₂)`.
-* **Q4 Fox-visibility.** **94.21% (43956 / 46656) of two-slot overrides
-  have at least one override edge sitting in a Fox slot (0, 1, 2) of `j`**;
-  only 5.79% are entirely Fox-blind. The two-slot bucket is *Fox-coupled*
-  at `j`, not Fox-decoupled.
+Constats :
+* **Q1 presence-partenaire.** **94.21% (43956 / 46656) des overrides two-slot
+  ont leurs deux aretes d'override dans `d₁.crossings[j]`** ; les 5.79%
+  restants (2700) en ont exactement une dans `j` ; **aucun** n'a ni l'une ni
+  l'autre. Donc dans le bucket two-slot, au moins une arete d'override est
+  toujours presente au croisement partenaire — un contraste net avec le taux
+  de 66.15% aucun-dans-`j` du §9.5.
+* **Q2 distribution des slots dans `j`.** Parmi les aretes d'override qui
+  apparaissent dans `j`, les slots se divisent en **slot 0 : 33.25%, slot 1 :
+  32.34%, slot 2 : 31.43%, slot 3 : 2.98%**. Les slots Fox-sensibles (0, 1, 2)
+  portent la masse ecrasante, a l'oppose de la concentration a 100% au slot 3
+  du §9.5.
+* **Q3 distribution des paires d'aretes.** Les six paires non ordonnees
+  `(1,2), (1,3), (1,4), (2,3), (2,4), (3,4)` d'etiquettes d'arete d'override
+  surviennent quasi-uniformement (7596–7956 chacune), sans paire interdite —
+  toute paire d'aretes distinctes de `d₁` peut servir d'override two-slot sous
+  un certain `(d₁, surg, col₂)`.
+* **Q4 visibilite-Fox.** **94.21% (43956 / 46656) des overrides two-slot ont
+  au moins une arete d'override assise dans un slot Fox (0, 1, 2) de `j`** ;
+  seulement 5.79% sont entierement Fox-aveugles. Le bucket two-slot est
+  *Fox-couple* en `j`, pas Fox-decouple.
 
-Mechanism. The two-slot rebalancing changes colours at two edges, and the
-probe shows that — almost always — at least one of those two edges is
-Fox-relevant at the partner crossing `j`. A naïve local move at `i` would
-therefore disturb the Fox condition at `j`; the rebalancing must propagate
-across the proper arc, choosing colours at both override slots that
-simultaneously restore Fox at `i` (via the surgery edge `a`) and preserve
-Fox at `j` (via the cross-position constraint at the shared edge).
+Mecanisme. Le re-equilibrage two-slot change les couleurs a deux aretes, et la
+sonde montre que — presque toujours — au moins une de ces deux aretes est
+Fox-pertinente au croisement partenaire `j`. Un mouvement local naïve en `i`
+derangerait donc la condition Fox en `j` ; le re-equilibrage doit se propager
+a travers l'arc proper, en choisissant des couleurs aux deux slots d'override
+qui restaurent Fox en `i` (via l'arete de chirurgie `a`) et preservent Fox en
+`j` (via la contrainte de position croisee a l'arete partagee) simultanement.
 
-This is the missing half of the §9.1 colour-symmetry argument: §9.5 shows
-the 70.3% single-slot bucket is *locally* repairable at `i` because the
-override is Fox-decoupled at `j`; §9.6 shows the 29.7% two-slot bucket is
-*not* locally repairable because the override is Fox-coupled at `j` —
-exactly the regime that requires the §9.3 multi-position colour-symmetry
-construction. The characterisation series §9.4 → §9.6 thus closes
-empirically: every naïve failure falls into one of two buckets with
-explicit, contrasting Fox-structure at the partner crossing.
+C'est la moitie manquante de l'argument de symetrie-couleur du §9.1 : §9.5
+montre que le bucket single-slot a 70.3% est *localement* reparable en `i`
+parce que l'override est Fox-decouple en `j` ; §9.6 montre que le bucket
+two-slot a 29.7% n'est *pas* localement reparable parce que l'override est
+Fox-couple en `j` — exactement le regime qui requiert la construction de
+symetrie-couleur multi-position du §9.3. La serie de caracterisation §9.4 →
+§9.6 se ferme donc empiriquement : chaque echec naïve tombe dans un de deux
+buckets avec une structure Fox explicite et contrastee au croisement
+partenaire.
 
-The formal `tricolorable_backward` lemma therefore admits two clean
-sub-cases — the locally repairable single-slot family (with the override
-edge identified by Fox-blindness at `j`) and the cross-position two-slot
-family (with both override slots constrained by Fox at `j` and at `i`).
-Both still require formal proof at a future cycle; the present probe
-quantifies *why* the two-slot bucket cannot be reduced to the single-slot
-construction. CI baseline remains unchanged.
+Le lemme formel `tricolorable_backward` admet donc deux sous-cas propres — la
+famille single-slot reparable localement (avec l'arete d'override identifiee
+par Fox-aveuglete en `j`) et la famille two-slot a position croisee (avec les
+deux slots d'override contraints par Fox en `j` et en `i`). Les deux
+requierent encore une preuve formelle a un cycle futur ; la presente sonde
+quantifie *pourquoi* le bucket two-slot ne peut pas etre reduit a la
+construction single-slot. La baseline CI reste inchangee.
 -/
 
-/-! ## 10. Backward transfer — formal declaration (partial, Epic #2874 PR3)
+/-! ## 10. Transfer arriere — declaration formelle (partiel, Epic #2874 PR3)
 
-The mate of `Reidemeister1Connected.tricolorable_forward` (PR #3000): a
-tricoloring of `d₂` restricts to one of `d₁` under the strengthened connected-R1
-model. The §9 decomposition analysis splits the proof by the Fox mode at the
-appended kink `C = ⟨a, b, c, c⟩` (with `b = d₁.numEdges + 1`, `c = d₁.numEdges + 2`):
+Le compagnon de `Reidemeister1Connected.tricolorable_forward` (PR #3000) : un
+tricolorage de `d₂` se restreint en un de `d₁` sous le R1-connecte
+renforce. L'analyse de decomposition du §9 scinde la preuve par le mode de Fox
+au kink ajoute `C = ⟨a, b, c, c⟩` (avec `b = d₁.numEdges + 1`,
+`c = d₁.numEdges + 2`) :
 
-* **all-equal mode** (`col₂(a-1) = col₂(b-1) = col₂(c-1)`): the naïve
-  restriction `col₁ := col₂|_{Fin d₁.numEdges}` is Fox-preserving — the
-  `a → b` rename at the modified endpoint crossing is colour-invisible. The
-  sub-lemma `tricolorable_backward` below proves the **colour-preservation**
-  half constructively (a preserved label reads the same colour under `col₁` in
-  `d₁` as under `col₂` in `d₂`; mirrors `tricolorable_forward`'s `hcolF1`).
-* **all-distinct mode** (`col₂(a-1) ≠ col₂(b-1)`): needs the colour-symmetry /
-  multi-position rebalancing characterised empirically in §9.4–§9.6 (the 47.9%
-  naïve-fail regime). Research-level.
+* **mode tout-egal** (`col₂(a-1) = col₂(b-1) = col₂(c-1)`) : la restriction
+  naïve `col₁ := col₂|_{Fin d₁.numEdges}` preserve Fox — le renommage `a → b`
+  au croisement d'extremite modifie est couleur-invisible. Le sous-lemme
+  `tricolorable_backward` ci-dessous prouve la moitie **preservation-couleur**
+  constructivement (une etiquette preservee lit la meme couleur sous `col₁`
+  dans `d₁` que sous `col₂` dans `d₂` ; mire `hcolF1` de `tricolorable_forward`).
+* **mode tous-distincts** (`col₂(a-1) ≠ col₂(b-1)`) : a besoin du
+  re-equilibrage de symetrie-couleur / multi-position caracterise
+  empiriquement au §9.4–§9.6 (le regime echec-naïve a 47.9%). Niveau recherche.
 
-The remaining assembly — Fox-transfer at every `d₁` crossing (the unchanged
-ones inherit via the colour-preservation fact, mirroring `h_inherit`; the
-modified crossing `Y` and the all-distinct kink mode need the §9.1
-construction), the `d₁.numEdges ≥ 2` lift (derivable from `d₁.wf` + the
-proper-arc hypothesis, but a separate wf-parity argument), and the `≥ 2`-colour
-lift — is left as three residual tactic `sorries` for ai-01 to advise on. This
-raises the Knots-CI prose-header baseline from 25 to 28 (three residual tactic
-`sorries`, one per sub-goal). User-authorised partial delivery (2026-06-15):
-ship with residual sub-proof obligations that ai-01 will advise on. Together
-with `tricolorable_forward` (#3000) this yields the R1 bi-implication needed
-to unblock the §2 placeholder `tricolorable_invariant`. See #2874.
+L'assemblage restant — transfer-Fox a chaque croisement de `d₁` (les
+inchanges heritent via le fait de preservation-couleur, mirant `h_inherit` ;
+le croisement modifie `Y` et le mode kink tous-distincts requierent la
+construction §9.1), le relift `d₁.numEdges ≥ 2` (derivable depuis `d₁.wf` +
+l'hypothese proper-arc, mais un argument separate de parite-wf), et le relift
+`≥ 2`-couleur — est laisse comme trois `sorries` tactic residuels pour qu'ai-01
+les conseille. Cela fait passer la baseline prose-header du Knots-CI de 25 a 28
+(trois `sorries` tactic residuels, un par sous-but). Livraison partielle
+autorisee par l'utilisateur (2026-06-15) : livrer avec des obligations de
+sous-preuve residuelles qu'ai-01 conseillera. Avec `tricolorable_forward`
+(#3000) cela donne la bi-implication R1 necessaire pour debloquer le
+placeholder §2 `tricolorable_invariant`. Voir #2874.
 -/
 
-/-- BACKWARD tricolorability transfer (PARTIAL): under the strengthened
-    connected-R1 model `Reidemeister1Connected d₁ d₂`, a tricoloring of `d₂`
-    restricts to a tricoloring of `d₁`. The colour-preservation sub-lemma is
-    discharged constructively (mirrors `tricolorable_forward`'s `hcolF1`); the
-    Fox-transfer assembly and the all-distinct kink mode remain as residual
-    tactic `sorries` (see §9.1, §9.4–§9.6). -/
+/-- Transfer arriere de tricolorabilite (PARTIEL) : sous le R1-connecte
+    renforce `Reidemeister1Connected d₁ d₂`, un tricolorage de `d₂` se
+    restreint en un tricolorage de `d₁`. Le sous-lemme de preservation-couleur
+    est decharge constructivement (mire `hcolF1` de `tricolorable_forward`) ;
+    l'assemblage transfer-Fox et le mode kink tous-distincts restent comme
+    `sorries` tactic residuels (voir §9.1, §9.4–§9.6). -/
 theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htri₂ : IsTricolorable d₂) :
     IsTricolorable d₁ := by

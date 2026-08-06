@@ -153,6 +153,25 @@ class TestValidateNotebookH3:
         assert result["passed"] is True
         assert result["forensic_verdict"] == "EXEC_PROVED"
 
+    def test_csharp_comment_only_cell_skipped(self, tmp_path):
+        """A .NET C# cell that is purely '//'-comments is a transition note,
+        not executable code — it is skipped (not counted in total_code, not
+        flagged for a null execution_count), consistent with Lean '--' (#5151)
+        and the '//' awareness of scan_c1_source (#5261). Previously the gate
+        used 'comment_prefix = # if not lean', so a '//'-only cell with
+        execution_count null was a false H.3/C.2 hit."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("// Exercice : le solveur est introduit ci-dessous.\n"
+                  "// (cellule de transition, aucun enonce executable)",
+                  exec_count=None),
+            _code('Console.WriteLine("ok");', exec_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout",
+                            "text": ["ok"]}]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1  # comment-only cell skipped, real cell counted
+        assert result["passed"] is True
+
     def test_skip_exec_for_lean_kernel(self, tmp_path):
         """Lean notebooks tolerate a null execution_count (kept advisory — own
         rendering subtleties via lean4_jupyter/alectryon, out of #5214 scope)."""
@@ -203,6 +222,131 @@ class TestValidateNotebookH3:
         result = validate_notebook(nb)
         assert result["passed"] is False
         assert any("execution_count is null" in e for e in result["errors"])
+
+    def test_skip_exec_for_quantbook_content_outside_qc_paths(self, tmp_path):
+        """A notebook that instantiates QuantBook() can only run on QC Cloud,
+        wherever it lives. The carve-out follows the RUNTIME REQUIREMENT, not
+        the directory: anchoring on the path alone left 16 QuantBook notebooks
+        outside it (ESGF-2026/lean-workspace, QuantConnect/research,
+        kit-transitoire), 8 with null execution_count — a landmine firing on
+        whoever next touched one of those files. See #8056."""
+        # Neither under QC_CLOUD_PATHS nor flagged qc_reference.
+        odd_path = tmp_path / "ESGF-2026" / "lean-workspace" / "research.ipynb"
+        nb = _write_nb(odd_path, [
+            _code("from QuantConnect.Research import *\nqb = QuantBook()",
+                  exec_count=None),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+
+    def test_skip_exec_for_self_quantbook_attribute(self, tmp_path):
+        """`self.QuantBook` is the other spelling of the same requirement
+        (kept in sync with check_cost_metadata.detect_quantbook_usage)."""
+        odd_path = tmp_path / "elsewhere" / "research.ipynb"
+        nb = _write_nb(odd_path, [
+            _code("qb = self.QuantBook", exec_count=None),
+        ])
+        assert validate_notebook(nb)["passed"] is True
+
+    def test_no_skip_when_quantbook_only_mentioned_in_markdown(self, tmp_path):
+        """Narrowness guard: prose ABOUT QuantBook is not a runtime
+        requirement. Only a code cell instantiating it opts out of H.3 —
+        otherwise any tutorial mentioning QC would silently gain the right to
+        ship empty outputs."""
+        odd_path = tmp_path / "elsewhere" / "tutorial.ipynb"
+        nb = _write_nb(odd_path, [
+            _md("On instancie ensuite `QuantBook()` sur QC Cloud."),
+            _code("print('local, executable here')", exec_count=None),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+
+
+# ---------------------------------------------------------------------------
+# validate_notebook — PII carve-out (metadata.pii_no_output)
+# ---------------------------------------------------------------------------
+
+class TestValidateNotebookPiiNoOutput:
+    """A grading notebook renders student logins, e-mails and marks. For it an
+    EMPTY output is the compliant state (CLAUDE.md §E), yet the gate used to
+    answer `.net-csharp executes locally; commit execution proof, See #5214` —
+    an instruction that, obeyed together with rule F, commits student PII to a
+    public repo. The carve-out is DECLARED (PII is undetectable from source)
+    and, crucially, symmetric: it excuses emptiness and forbids non-emptiness.
+
+    Both directions are exercised here on purpose. A guard nobody has seen fail
+    is not yet a guard (#8681/#8820)."""
+
+    def test_declared_pii_notebook_with_empty_outputs_passes(self, tmp_path):
+        """The trap that was armed on MyIA.AI.Notebooks/GradeBook.ipynb:
+        12/12 code cells null, 0 outputs, .net-csharp — FAIL before, PASS once
+        the notebook declares why it is empty."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+            _code("evaluations.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["errors"] == []
+
+    def test_declared_pii_notebook_gets_its_own_verdict(self, tmp_path):
+        """Not ADVISORY_NON_EXEC: 'we could not execute here' and 'empty ON
+        PURPOSE, any output is a data-protection incident' must not read alike
+        to a reviewer."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        assert validate_notebook(nb)["forensic_verdict"] == "PII_NO_OUTPUT"
+
+    def test_declared_pii_notebook_with_committed_output_fails(self, tmp_path):
+        """The self-tripping half. An output on a notebook that renders student
+        rosters is the signature of personal data already in git history — so
+        the declaration makes it a HARD failure instead of hiding it."""
+        roster = {"output_type": "stream", "name": "stdout",
+                  "text": ["login  prenom  nom  email\n"]}
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None,
+                  outputs=[roster]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"},
+            extra_metadata={"pii_no_output": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("pii_no_output" in e and "git history" in e
+                   for e in result["errors"])
+
+    def test_flag_cannot_smuggle_a_half_executed_notebook(self, tmp_path):
+        """The abuse the carve-out must not enable: bolting the flag onto an
+        ordinary notebook to buy silence on #5214. Execution_count present, so
+        H.3 alone would pass — the committed output still fails it."""
+        nb = _write_nb(tmp_path / "ordinary.ipynb", [
+            _code("print('hello')", exec_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout",
+                            "text": ["hello\n"]}]),
+        ], extra_metadata={"pii_no_output": True})
+        assert validate_notebook(nb)["passed"] is False
+
+    def test_without_the_flag_the_same_notebook_still_fails_h3(self, tmp_path):
+        """Control: the exemption is opt-in, never inferred. Same cells, no
+        declaration — the #5214 instruction fires exactly as before."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable()", exec_count=None),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
+
+    def test_flag_must_be_true_not_merely_present(self, tmp_path):
+        """`is True`, not truthiness: a stray "false"/"" string must not open
+        the carve-out by accident."""
+        for value in (False, "true", 1, None):
+            nb = _write_nb(tmp_path / f"g{value}.ipynb", [
+                _code("studentRecords.DisplayTable()", exec_count=None),
+            ], kernelspec={"name": ".net-csharp", "language": "C#"},
+                extra_metadata={"pii_no_output": value})
+            assert validate_notebook(nb)["passed"] is False, value
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,15 @@
+- name: "SL-5 InverseResolution"
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb
+  parity_level: surface
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c132ed57588fa697b3725533daeeb2d21816c7f5
+      csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
+  known_differences:
+    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog (moteur reel) pour la resolution et l'unification ; C# reimplemente LGG (Plotkin), theta-subsomption, clause bottom from-scratch."
+    - "Socle commun : resolution inverse, LGG (Least General Generalization, Plotkin 1970), theta-subsomption (ordre du treillis), clause bottom (saturation), recherche a la Progol."
+    - "Asymetrie de couverture : Python (40 cellules, 14 code) couvre inverser la deduction + representation/couverture + LGG + theta-subsomption + clause bottom + recherche Progol + section dediee au vrai moteur Aleph ; C# (19 cellules, 9 code) couvre representation + LGG + theta-subsomption + clause bottom (saturation bornee) + recherche Progol + exemple guide grandmother/2."
+    - "Engine idiom : Python = SWI-Prolog ; C# = from-scratch. Aleph presente en prose Python, pas implante C#."

@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 e g# Rapport 44 : Confirmation Tests Consolidés Après Corrections
 
 **Date** : 2025-11-03 23:18:00 UTC+1

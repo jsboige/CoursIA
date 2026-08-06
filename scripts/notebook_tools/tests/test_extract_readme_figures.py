@@ -628,53 +628,68 @@ class TestAppendManifest:
         }
 
     def test_creates_manifest_with_header_on_first_call(self, tmp_path: Path):
-        _append_manifest(tmp_path, self._entry(), "Alt-text FR test")
+        _append_manifest(tmp_path, self._entry(),
+                         "Alt-text FR test",
+                         "Description visuelle test")
         manifest = tmp_path / "MANIFEST.md"
         assert manifest.exists()
         body = manifest.read_text(encoding="utf-8")
         assert "# MANIFEST des figures README" in body
         assert "## fig.png" in body
         assert "Alt-text FR test" in body
+        assert "Description visuelle test" in body
+        assert "**Description visuelle**" in body
 
     def test_appends_new_entry_to_existing_manifest(self, tmp_path: Path):
-        _append_manifest(tmp_path, self._entry(fname="a.png"), "Alt A")
-        _append_manifest(tmp_path, self._entry(fname="b.png"), "Alt B")
+        _append_manifest(tmp_path, self._entry(fname="a.png"),
+                         "Alt A", "Description A")
+        _append_manifest(tmp_path, self._entry(fname="b.png"),
+                         "Alt B", "Description B")
         body = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert "## a.png" in body
         assert "## b.png" in body
         assert "Alt A" in body
         assert "Alt B" in body
+        assert "Description A" in body
+        assert "Description B" in body
 
     def test_replaces_existing_entry_idempotently(self, tmp_path: Path):
         # First append -> creates entry
-        _append_manifest(tmp_path, self._entry(), "Old alt-text")
+        _append_manifest(tmp_path, self._entry(),
+                         "Old alt-text", "Old description visuelle")
         body1 = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert body1.count("## fig.png") == 1
         assert "Old alt-text" in body1
         # Second append with same fname -> REPLACES the block, no duplicate
-        _append_manifest(tmp_path, self._entry(), "New alt-text FR")
+        _append_manifest(tmp_path, self._entry(),
+                         "New alt-text FR", "New description visuelle")
         body2 = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert body2.count("## fig.png") == 1
         assert "New alt-text FR" in body2
+        assert "New description visuelle" in body2
         assert "Old alt-text" not in body2
+        assert "Old description visuelle" not in body2
 
     def test_serie_root_relative_path_in_source(self, tmp_path: Path):
         nb_abs = tmp_path / "MyIA.AI.Notebooks" / "RL" / "demo.ipynb"
         nb_abs.parent.mkdir(parents=True, exist_ok=True)
         nb_abs.write_text("{}")
         _append_manifest(tmp_path, self._entry(nb=str(nb_abs)),
-                         "Alt", serie_root=tmp_path / "MyIA.AI.Notebooks" / "RL")
+                         "Alt", "Description",
+                         serie_root=tmp_path / "MyIA.AI.Notebooks" / "RL")
         body = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert "demo.ipynb" in body
         # Path should be displayed with POSIX separator and relative prefix
         assert "MyIA.AI.Notebooks" not in body or "RL/demo.ipynb" in body
 
     def test_used_pil_tag_in_weight_line(self, tmp_path: Path):
-        _append_manifest(tmp_path, self._entry(used_pil=True), "Alt")
+        _append_manifest(tmp_path, self._entry(used_pil=True),
+                         "Alt", "Description")
         body = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert "PIL optimise" in body
         # Second pass with PIL absent
-        _append_manifest(tmp_path, self._entry(used_pil=False), "Alt")
+        _append_manifest(tmp_path, self._entry(used_pil=False),
+                         "Alt", "Description")
         body2 = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         assert "raw (PIL absent)" in body2
 
@@ -692,11 +707,13 @@ class TestAppendManifest:
         _append_manifest(
             tmp_path, self._entry(),
             "First alt-text (no backslash)",
+            "First description (no backslash)",
         )
         # Now replace with an alt-text containing a backslash — must NOT crash
         _append_manifest(
             tmp_path, self._entry(),
             r"Alt avec backslash : C:\Users\demo\nb.ipynb",
+            r"Description avec backslash : C:\Users\demo\nb.ipynb",
         )
         body = (tmp_path / "MANIFEST.md").read_text(encoding="utf-8")
         # Exactly one entry for this file (idempotent replace)
@@ -726,15 +743,21 @@ class TestExtractFigure:
             nb_path=nb, cell_index=0, output_index=0,
             output_path=out_path,
             alt_text_fr="Figure d'exemple pour README",
+            description_visuelle="2 panneaux matplotlib : gauche scatter "
+                                "training set, droite courbes loss/accuracy.",
         )
         assert out_path.exists()
         assert out_path.read_bytes()[:8] == _PNG_MAGIC
         assert entry["bytes"] > 0
         assert entry["used_pil"] is True or entry["used_pil"] is False  # depends on PIL
-        # Source 1 provenance is recorded
+        # Source 1 provenance is recorded, alt-text FR + description visuelle
         manifest = out_path.parent / "MANIFEST.md"
         assert manifest.exists()
-        assert "demo.png" in manifest.read_text(encoding="utf-8")
+        body = manifest.read_text(encoding="utf-8")
+        assert "demo.png" in body
+        assert "Figure d'exemple pour README" in body
+        assert "2 panneaux matplotlib" in body
+        assert "**Description visuelle**" in body
 
     def test_alt_text_fr_empty_raises_value_error(self, tmp_path: Path):
         nb = self._setup_nb(tmp_path)
@@ -744,6 +767,7 @@ class TestExtractFigure:
                 nb_path=nb, cell_index=0, output_index=0,
                 output_path=out_path,
                 alt_text_fr="",  # HARD rule violation
+                description_visuelle="Description valide",
             )
 
     def test_alt_text_fr_whitespace_raises_value_error(self, tmp_path: Path):
@@ -753,7 +777,58 @@ class TestExtractFigure:
                 nb_path=nb, cell_index=0, output_index=0,
                 output_path=tmp_path / "out.png",
                 alt_text_fr="   \t\n  ",
+                description_visuelle="Description valide",
             )
+
+    def test_description_visuelle_empty_raises_value_error(self, tmp_path: Path):
+        """Doctine #5780 amendee : description_visuelle est obligatoire
+        (champ distinct de alt_text_fr). HARD."""
+        nb = self._setup_nb(tmp_path)
+        out_path = tmp_path / "out.png"
+        with pytest.raises(ValueError, match="description_visuelle"):
+            extract_figure(
+                nb_path=nb, cell_index=0, output_index=0,
+                output_path=out_path,
+                alt_text_fr="Alt valide",
+                description_visuelle="",  # HARD rule violation
+            )
+
+    def test_description_visuelle_whitespace_raises_value_error(self, tmp_path: Path):
+        nb = self._setup_nb(tmp_path)
+        out_path = tmp_path / "out.png"
+        with pytest.raises(ValueError, match="description_visuelle"):
+            extract_figure(
+                nb_path=nb, cell_index=0, output_index=0,
+                output_path=tmp_path,
+                alt_text_fr="Alt valide",
+                description_visuelle="   \t\n  ",
+            )
+
+    def test_description_visuelle_separate_from_alt_text(self, tmp_path: Path):
+        """Verifie que les deux champs sont PERSISTES distinctement dans le
+        MANIFEST (doctrine #5780 : separation caption / description visuelle).
+        Meme si l'un est tres court et l'autre tres long, ils ne fusionnent pas.
+        """
+        nb = self._setup_nb(tmp_path)
+        out_path = tmp_path / "assets" / "readme" / "fig.png"
+        extract_figure(
+            nb_path=nb, cell_index=0, output_index=0,
+            output_path=out_path,
+            alt_text_fr="Courbe ROC",
+            description_visuelle=(
+                "1 panneau ROC sklearn : axe x 'False Positive Rate' 0-1, "
+                "axe y 'True Positive Rate' 0-1, courbe bleue (AUC=0.788) "
+                "+ diagonale pointillee noire 'Aleatoire'. Title "
+                "'Courbe ROC - Modele IRT'."
+            ),
+        )
+        body = (out_path.parent / "MANIFEST.md").read_text(encoding="utf-8")
+        # Les DEUX champs distincts sont presents, separes
+        assert "- **Alt-text (FR)** : Courbe ROC\n" in body
+        assert "**Description visuelle** : 1 panneau ROC sklearn" in body
+        # Et ils ne sont PAS colles (la description visuelle demarre sur sa ligne)
+        assert body.count("**Description visuelle**") == 1
+        assert body.count("**Alt-text (FR)**") == 1
 
     def test_cell_index_out_of_range_raises(self, tmp_path: Path):
         nb = self._setup_nb(tmp_path)
@@ -762,6 +837,7 @@ class TestExtractFigure:
                 nb_path=nb, cell_index=99, output_index=0,
                 output_path=tmp_path / "out.png",
                 alt_text_fr="alt",
+                description_visuelle="desc",
             )
 
     def test_output_index_out_of_range_raises(self, tmp_path: Path):
@@ -771,6 +847,7 @@ class TestExtractFigure:
                 nb_path=nb, cell_index=0, output_index=99,
                 output_path=tmp_path / "out.png",
                 alt_text_fr="alt",
+                description_visuelle="desc",
             )
 
     def test_cell_without_png_raises(self, tmp_path: Path):
@@ -795,6 +872,7 @@ class TestExtractFigure:
                 nb_path=nb, cell_index=0, output_index=0,
                 output_path=tmp_path / "out.png",
                 alt_text_fr="alt",
+                description_visuelle="desc",
             )
 
     def test_over_weight_flag_for_heavy_figure(self, tmp_path: Path):
@@ -805,6 +883,7 @@ class TestExtractFigure:
             nb_path=nb, cell_index=0, output_index=0,
             output_path=out_path,
             alt_text_fr="Figure lourde",
+            description_visuelle="PNG bruite 512x512 depassant le plafond",
         )
         # Even if PIL downscales, the post-optimize size should still be tracked
         assert "over_weight" in entry
@@ -817,6 +896,7 @@ class TestExtractFigure:
             nb_path=nb, cell_index=0, output_index=0,
             output_path=deep_path,
             alt_text_fr="alt",
+            description_visuelle="desc",
         )
         assert deep_path.exists()
 

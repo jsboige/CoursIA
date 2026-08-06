@@ -1,0 +1,14 @@
+- name: "Z3-Python-01 Introduction"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
+      csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+  known_differences:
+    - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
+    - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
+    - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."

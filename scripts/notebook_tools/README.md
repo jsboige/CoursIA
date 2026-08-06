@@ -15,9 +15,9 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
-| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) |
+| **Detecteurs anti-regression** | `detect_blank_figures.py`, `detect_fabricated_outputs.py`, `detect_svg_decimal_commas.py`, `detect_svg_empty_display.py`, `detect_ascii_workaround.py`, `detect_accent_stripping.py`, `detect_link_target_regression.py`, `detect_solution_leaks.py`, `detect_cjk_residue.py` | Flags deterministes par regle C.1 / H.1 / SOTA / #2876 (axe-1 texte + **axe-3 link-targets** triade) / #3801 / #4970 / **#6927** (SVG inline rollout) / **#6891 axe-2 fabrication textuelle** (sibling detector) / **#8428** (CJK LLM-translation residue, regression-guard post-fleet-sweep) |
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
-| **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py` | Audit hierarchie markdown + ordre cellules pedagogiques |
+| **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
@@ -232,6 +232,27 @@ solution complete. Complementaire a
 [.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md) :
 labeling PAR CONTENU, pas par titre.
 
+### `detect_cjk_residue.py` (#8428)
+
+Regression-guard du defect fleet-wide **#8428** : residus de glyphes CJK
+(mots chinois inseres mid-prose FR/EN pendant la generation/enrichissement LLM —
+`风险管理`, `胜利=1`, `分布式约束优化`, `dataset支撑`). Apres le sweep manuel
+(8 PRs 2026-07-25), ce detecteur veille a ce que le reservoir ne se re-remplisse
+pas silencieusement. Scanne markdown ET code, allowlist documentee pour le CJK
+legitime (demo TTS japonaise multilingue) + le residu gated connu
+(QC-Py-Cloud-03, fix = re-exec QC-Cloud). Conservative : signale tout glyphe CJK
+non explicitement allowliste.
+
+```bash
+python scripts/notebook_tools/detect_cjk_residue.py                    # toute la flotte
+python scripts/notebook_tools/detect_cjk_residue.py NB.ipynb --check   # exit 1 si residu (CI-ready)
+python scripts/notebook_tools/detect_cjk_residue.py --family Probas    # une famille
+```
+
+Baseline c.884 : 937 notebooks, **0 residu inattendu**, 2 allowed (fleet clean
+post-sweep). Le guard n'empeche que la recidive ; la correction d'un nouveau
+residu reste byte-surgical par notebook (cf #8428 fix pattern).
+
 ---
 
 ## Triade accent #2876 — défense outillée (3 axes complémentaires)
@@ -333,6 +354,87 @@ aval. Reference canon : `svg-6927-canon` (memoire ai-01).
 
 ---
 
+## Twin parity register (#8057)
+
+Le registre `twin_pairs.yaml` (a cote de `check_twin_parity.py`) decrit chaque
+paire de notebooks jumeaux Python/C# (Search/CSP, ML.NET/Python, Z3/SMT,
+SemanticWeb, Probas/InferNET-PyMC, GameTheory/.NET-Parity). Pour chaque paire
+il enregistre :
+
+- les chemins Python et C# des deux jumeaux,
+- le `parity_level` (`surface` | `semantic` | `native-both`),
+- le `last_audit` (date + auteur + git blob SHA de chaque notebook au moment
+  du dernier audit),
+- les `known_differences` documentees (idiomes framework, bibliotheques
+  differentes, fix specifiques a un seul cote, etc.).
+
+### `check_twin_parity.py` (#8057, c.801/c.802)
+
+Detecte la **derive silencieuse des jumeaux** : pour chaque paire, compare
+le git blob SHA courant (via `git ls-tree HEAD`) au SHA audite. Verdict par
+paire :
+
+- **OK** : les deux cotes sont au SHA audite, parite tenue.
+- **DRIFT** : un cote a evolue (SHA different) sans re-audit -> la parite
+  n'est plus garantie, **re-audit obligatoire**.
+- **MISSING** : un chemin est absent de git (typo, deplacement, jumeau
+  jamais cree).
+
+```bash
+# verifier toutes les paires vs le registre
+python scripts/notebook_tools/check_twin_parity.py
+# exit 1 si DRIFT/MISSING (CI-ready via --check)
+python scripts/notebook_tools/check_twin_parity.py --check
+# restreindre a une famille
+python scripts/notebook_tools/check_twin_parity.py --family SMT/Z3-API
+# rebaseline apres audit firsthand (ecrit les SHAs courants)
+python scripts/notebook_tools/check_twin_parity.py --update
+# sortie machine (json)
+python scripts/notebook_tools/check_twin_parity.py --json
+```
+
+> **Ordre des outils** (#8957) : `--update` ecrit le **git blob SHA** courant des
+> jumeaux. Toute edition du notebook deplace ce blob -- y compris une
+> normalisation outillee qui ne touche aucun contenu calcule
+> (`strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`).
+> Le rebaseline va donc **en dernier**, apres toute mutation du notebook, sinon
+> l'attestation est invalidee par le strip qui suit et le gate `--per-pair` sort
+> DRIFT-INTRO :
+>
+>     1. re-exec locale (.net-csharp / papermill)
+>     2. normalisations outillees (strip_probe_banner.py --apply, ...)
+>     3. check_twin_parity.py --update   <-- TOUJOURS en dernier
+>
+> Inverser les etapes 2 et 3 (attester la parite PUIS stripper le banner) est le
+> reflexe naturel et le piege exact : la parite est vraie, mais son empreinte a
+> bouge, et le worker comme le coordinateur ne peuvent le deviner sans relire
+> cette sequence.
+
+### CI integration (`.github/workflows/twin-parity.yml`, c.818)
+
+Le workflow `.github/workflows/twin-parity.yml` **fail** toute PR qui
+introduit DRIFT/MISSING dans le registre. Pour deriver legitimement (par
+exemple un fix doc-honesty sur un seul cote), le worker doit :
+
+1. **Re-auditer la paire firsthand** (lecture cellule-par-cellule des deux
+   jumeaux, verdict ecrit dans `known_differences` du registre).
+2. **Rebaseline les SHAs** : `python scripts/notebook_tools/check_twin_parity.py --update [--family ...]`. **En dernier** -- apres toute normalisation outillee du notebook (`strip_probe_banner.py --apply` deplace le blob SHA ; cf. *Ordre des outils* ci-dessus, #8957).
+3. Committer le registre rebaseline **dans la meme PR** que l'edit du cote
+   modifie (le PR porte a la fois le diff du notebook et le diff du
+   registre).
+
+**Anti-pattern** : editer un cote sans toucher au registre = la CI fail
+avec un message explicite pointant vers la paire et le cote qui a drift.
+Le check est **bloquant** (contrairement a `catalog-drift.yml` qui est
+read-only) parce que la derive silencieuse casse la promesse de parite
+bilingue (#4956).
+
+**Owner** : po-2024 (registre + check) + po-2025 (re-audit + rebaseline sur
+les paires Search/CSP, SMT/Z3, SemanticWeb, Probas/InferNET). Voir
+`docs/reference/twin-parity.md` pour la procedure complete.
+
+---
+
 ## Scanners structurels (l'axe **PEDAGOGIE**)
 
 ### `scan_cell_ordering.py`
@@ -345,6 +447,13 @@ markdown interpretation -> code exercice -> ...) selon la convention
 
 Audit hierarchie markdown : pas de saut H1->H3, titres uniques, structure
 progressive pedagogique.
+
+- Cible **obligatoire** : sans argument / chemin errone / repertoire sans
+  notebook -> **exit 2**, jamais `0/0 notebooks flagged` (un scan vide n'est
+  pas un scan propre).
+- `--fail-on-findings` : exit 1 des qu'un notebook est flague. Par defaut mode
+  recensement (exit 0), ce qu'attend le job informationnel de
+  `.github/workflows/markdown-rendering-guard.yml`.
 
 ---
 
@@ -364,7 +473,11 @@ les outputs.
 - Hook CI : `.github/workflows/banner-guard.yml`
 
 **Hook executant** : la re-execution d'un notebook .NET re-injecte le
-banner. Toujours `--apply` apres chaque re-exec .NET avant commit.
+banner. Toujours `--apply` apres chaque re-exec .NET avant commit. Si le
+notebook a un jumeau (registre `twin_pairs.d/`), `--apply` deplace son git
+blob SHA : rebaselinez la parite (`check_twin_parity.py --update`) **apres**
+le strip, jamais avant -- sinon le strip invalide l'attestation et le gate
+sort DRIFT-INTRO (#8957).
 
 ### `strip_machine_paths.py`, `scrub_papermill_paths.py`
 

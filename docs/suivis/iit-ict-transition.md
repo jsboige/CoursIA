@@ -1,7 +1,6 @@
 # IIT → ICT — note de transition
 
-> Suivi de cycle **c.478** (po-2025 : `myia-po-2025:CoursIA-2`).
-> Pivot narratif et architectural de la série [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) (Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588), plan de partition [#5081](https://github.com/jsboige/CoursIA/issues/5081)).
+> Note de transition durable de la série [`MyIA.AI.Notebooks/IIT/ICT-Series/`](../../MyIA.AI.Notebooks/IIT/ICT-Series/) (Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588), plan de partition [#5081](https://github.com/jsboige/CoursIA/issues/5081)) — pivot narratif et architectural IIT → ICT. Posée initialement au cycle c.478 (po-2025 : `myia-po-2025:CoursIA-2`), tenue à jour au fil des livraisons.
 
 Cette note **n'est pas** un substitut des documents fondateurs de la série — qui sont
 déjà posés, conservés verbatim, et font foi :
@@ -67,7 +66,7 @@ La réconciliation tient en **une phrase** (citée du cadrage, [ICT-0-Framing §
 
 ## 3. Partition du travail — couche `ict/` à côté de PyPhi
 
-L'inventaire à jour de la couche `ict/` est dans [ICT-0-Framing § « Architecture »](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md#architecture-une-couche-ict-à-côté-de-pyphi). Au cycle c.478, la livraison inclut :
+L'inventaire à jour de la couche `ict/` est dans [ICT-0-Framing § « Architecture »](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md#architecture-une-couche-ict-à-côté-de-pyphi). Les modules livrés incluent :
 
 | Module | Rôle | Première livraison |
 |---|---|---|
@@ -99,7 +98,7 @@ thermodynamiques).
 | **Strate 2** — morphogenèse dynamique | ICT-8 à ICT-10 | Paysage d'attracteurs (May bistable), régénération (Gray-Scott), grammaire des catastrophes (Thom) | Le système **génère** son propre paysage de buts (et ne le reçoit plus) |
 | **Strate 3** — agents | ICT-11 à ICT-13 | Profils d'agence causale, animats valence, Axelrod IPD | Trois « jouets » actantiels sur trois substrats différents |
 | **Strate 4** — représentationnel | ICT-14 | Free energy / Friston | La jambe énergie-libre du représentationnel (substrat computationnel de l'anticipation) |
-| **Strate 5** — convergence & capstone | ICT-15 à ICT-24 | Banc cross-substrat (tri, Gray-Scott, Axelrod, LLM) : convergence $\Phi / F / K$, MDL, $\epsilon$-machine, flèche du temps, batterie ENJEU, feature catastrophes, SAE, persona, Global Workspace | L'appareil unique sur plusieurs substrats, qui pousse ses mesures à leur frontière |
+| **Strate 5** — convergence & capstone | ICT-15 à ICT-25 | Banc cross-substrat (tri, Gray-Scott, Axelrod, LLM) : convergence $\Phi / F / K$, MDL, $\epsilon$-machine, flèche du temps, batterie ENJEU, feature catastrophes, SAE, persona, Global Workspace | L'appareil unique sur plusieurs substrats, qui pousse ses mesures à leur frontière |
 
 Le détail notebook par notebook est maintenu dans [ICT-0-Framing § « Feuille de route des notebooks »](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md#feuille-de-route-des-notebooks) — la table de cette section est un index réduit.
 
@@ -114,12 +113,12 @@ Le détail notebook par notebook est maintenu dans [ICT-0-Framing § « Feuille 
 | Bifurcation pli + EWS | May 1977, Scheffer 2009, Dakos 2012 | `ict/bistable.py` + `ict/early_warning.py` | ICT-8 |
 | Agence régénérative | Gray-Scott (Pearson 1993), Levin *competency for free* | `ict/reaction_diffusion.py`, `ict/agency.py` | ICT-9, ICT-11 |
 | Grammaire des catastrophes | Thom 1972 (sémiophysique), *sans complaisance* | `ict/catastrophe.py` | ICT-10 |
-| Free energy principle | Friston 2010 | (prévu ICT-14 [#5089](https://github.com/jsboige/CoursIA/issues/5089)) | ICT-14 |
+| Free energy principle | Friston 2010 | ICT-14 livré ([#5089](https://github.com/jsboige/CoursIA/issues/5089)) | ICT-14 |
 | $\Phi_\text{dyn}$ | Discussion ChatGPT, ICT-0-Annexe | (instrument thermodynamique `ict/time_arrow.py`, mesure le **MOYEN** de la triade) | ICT-18, ICT-19 |
-| MDL / deux-parts code | Grünwald 2007 | (prévu ICT-16 [#5099](https://github.com/jsboige/CoursIA/issues/5099)) | ICT-16 |
-| $\epsilon$-machine | Crutchfield 1994 | (prévu ICT-17 [#5100](https://github.com/jsboige/CoursIA/issues/5100)) | ICT-17 |
+| MDL / deux-parts code | Grünwald 2007 | ICT-16 livré ([#5099](https://github.com/jsboige/CoursIA/issues/5099)) | ICT-16 |
+| $\epsilon$-machine | Crutchfield 1994 | ICT-17 livré ([#5100](https://github.com/jsboige/CoursIA/issues/5100)) | ICT-17 |
 | SAE features | Anthropic 2024 | `ict/sae.py` (à venir) | ICT-21 [#5101](https://github.com/jsboige/CoursIA/issues/5101), ICT-22 [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
-| Global Workspace | Dehaene, Baars | `ict/workspace.py` (livré #5641) | ICT-24 (notebook à construire, [#5635](https://github.com/jsboige/CoursIA/issues/5635)) |
+| Global Workspace | Dehaene, Baars | `ict/workspace.py` (livré #5641) | ICT-24 livré ([#5635](https://github.com/jsboige/CoursIA/issues/5635)) |
 
 ## 6. Triade *moyen / fin / enjeu* — l'enseignement propre à ICT-18
 
@@ -142,22 +141,19 @@ ICT-18 (Flèche du temps & réversibilisation, [#5279](https://github.com/jsboig
 - **ICT-14** (free energy / Friston) pour l'**ENJEU** (le *stake* de l'auto-maintien) ;
 - **ICT-15 / 17** (complexité intégrée, $\epsilon$-machine) pour la **structure** sous-jacente.
 
-ICT-19 a démarré (cadrage B verrouillé par user 2026-07-06, [#5483](https://github.com/jsboige/CoursIA/issues/5483), implémentation [#5489](https://github.com/jsboige/CoursIA/issues/5489), raffinement [#5728](https://github.com/jsboige/CoursIA/issues/5728)) pour **fusionner** la batterie MOYEN d'ICT-18 (`I_thermo`) avec la batterie ENJEU (`I_stake` = gain de réparation après `do(·)`) sur le banc cross-substrat S1-S5, avec contrôle négatif obligatoire (S5 = pur dissipateur).
+ICT-19 / ICT-19b (cadrage B verrouillé par user 2026-07-06, [#5483](https://github.com/jsboige/CoursIA/issues/5483), implémentation [#5489](https://github.com/jsboige/CoursIA/issues/5489), raffinement [#5728](https://github.com/jsboige/CoursIA/issues/5728)) **fusionne** la batterie MOYEN d'ICT-18 (`I_thermo`) avec la batterie ENJEU (`I_stake` = gain de réparation après `do(·)`) sur le banc cross-substrat S1-S5, avec contrôle négatif obligatoire (S5 = pur dissipateur).
 
-## 7. Lacunes restantes au cycle c.478
+## 7. Lacunes restantes
 
-Lacunaire = connu, planifié, à faire dans un cycle ultérieur :
+Connu, planifié, à faire dans un cycle ultérieur :
 
 | Lacune | Cycle attendu | Raison |
 |---|---|---|
 | **ICT-21 / ICT-22** (LLM comme substrat S4) | GPU-required (Qwen local, RTX 3090) | Non exécutable sur cette machine CPU/.NET |
-| **ICT-24** (Global Workspace, notebook) | Module `ict/workspace.py` livré #5641, **notebook à construire** | Planifié [#5635](https://github.com/jsboige/CoursIA/issues/5635), standalone CPU-free |
-| **ICT-25** (InoculationRL, capstone pont PostTraining) | GPU-required | Planifié [#5105](https://github.com/jsboige/CoursIA/issues/5105) |
-| **ICT-14** (Free energy / Friston) | Implémentation ouverte | [#5089](https://github.com/jsboige/CoursIA/issues/5089), CPU-feasible |
-| **Doublons de nommage** ICT-18 / ICT-19 (versions `_Raffinement`) | Documentation de la transition | À clarifier dans un commit ultérieur (ne pas renommer en c.478 — risque de churn doc ↔ notebook) |
+| **ICT-25** (InoculationRL, capstone pont PostTraining ; phase GPU) | GPU-required | Planifié [#5105](https://github.com/jsboige/CoursIA/issues/5105) — réalignement 3 bras N/I/P avant phase GPU |
 | **Catalogue** (`COURSE_CATALOG.generated.json`) | Régén par `catalog-cron.yml` sur `main` | **NE PAS** régénérer sur branche (cf `catalog-pr-hygiene` R1) — laisser le cron faire |
 
-## 8. Cycle c.478 — ce que cette note livre
+## 8. Ce que cette note livre (PR de transition fondatrice, c.478)
 
 - **Un suivi de transition** (ce fichier) : fil conducteur IIT → ICT, double lecture du sigle, partition `ict/` ↔ PyPhi, strates, ancres théoriques, triade *moyen/fin/enjeu*, lacunes restantes.
 - **Aucun notebook modifié** (ICT-18 et ICT-19 restent *tels quels*, dans la lignée « sans complaisance »).

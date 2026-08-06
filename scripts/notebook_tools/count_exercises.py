@@ -42,6 +42,13 @@ Excludes (same convention as count_notebooks_by_series.py): .ipynb_checkpoints,
 research, archive, _output, partner-course, examples, obj, bin, .git, plus
 `.QuantConnect`/`TrashBin` (QuantConnect CLI app-data + recycle bin of deleted
 project notebooks -- not pedagogical content).
+
+Beyond those directory exclusions, each remaining notebook is classified into
+the pedagogical corpus or out of it (see "Corpus scope" below), because the
+convention answers two questions and not one: which notebooks are course
+material, and what minimum applies to those that are. The count of what scope
+removed is reported as `Out of corpus`, so a narrowed run stays distinguishable
+from a clean one.
 """
 
 from __future__ import annotations
@@ -56,6 +63,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
+#: Standard exercise budget for an ordinary course notebook (#2161).
+DEFAULT_THRESHOLD = 3
+
 EXCLUDE_DIRS = {
     ".ipynb_checkpoints", ".git", "__pycache__", "obj", "bin",
     "_output", "research", "archive", "partner-course", "examples",
@@ -66,6 +76,185 @@ EXCLUDE_DIRS = {
     # tally (false sub-3) -- same class of artifact gap as `_output.ipynb`.
     ".QuantConnect", "TrashBin",
 }
+
+# ---------------------------------------------------------------------------
+# Corpus scope and per-kind thresholds (#2161 exception table)
+#
+# `.claude/rules/three-exercises-per-notebook.md` states the convention in two
+# parts that this script historically collapsed into a single "count < 3 =
+# violation" test:
+#
+#   (a) WHICH notebooks belong to the pedagogical corpus at all. Research
+#       artifacts, quantbooks, templates, probes, vendored sub-repos and
+#       archives are not course material, so they have no exercise budget.
+#   (b) WHAT threshold applies to a notebook that IS course material. The rule
+#       publishes an exception table: Setup/Environment 0-1, purely-Lean 0-2,
+#       Archive/Legacy 0 ("pas maintenir"), everything else 3.
+#
+# Collapsing (a) into (b) makes the output unreadable rather than merely
+# imprecise: a run over the whole repo reported 168 "sub-threshold" notebooks,
+# of which 133 were QuantConnect research/quantbook artifacts and nearly all the
+# rest were setup, Lean or archive notebooks that the rule explicitly exempts.
+# A tally that mixes "should never have been counted" with "counted, and
+# legitimately below 3" cannot be acted on and cannot be gated -- the same
+# defect class as a bare counter published without its denominator (#8678).
+# Classifying first makes the denominator visible and leaves a residue that is
+# actually actionable.
+#
+# Every pattern below is derived from a path observed in this repo; none is
+# speculative. Filename rules are preferred over directory lists because the
+# historical directory list drifted into near-misses that silently matched
+# nothing: `archive` never matched `_archives/`, and `partner-course` never
+# matched `partner-course-quant-trading/`.
+# ---------------------------------------------------------------------------
+
+#: Directories whose notebooks are not course material.
+#: Underscore-prefixed directories are handled generically below: every one of
+#: them under MyIA.AI.Notebooks/ today is internal (`_archives/`, `_probes/`,
+#: `_docs/`, `_legacy/`, `__pycache__/`), and no taught series uses that form.
+NON_PEDAGOGICAL_DIRS = {
+    "semantic-fleet",  # vendored sub-repo under GenAI/SemanticKernel/
+    "ML-Training-Pipeline",  # QC model-training research, not a taught series
+    "Research-Executor",  # QC batch-run harness (`runner.ipynb`)
+}
+
+#: Minimum exercise count per notebook kind, transcribed from the rule's
+#: "Exceptions" table. Note the column is *Minimum exercices* and the exempt
+#: rows read "0-1" (setup) and "0-2" (Lean): the acceptable count INCLUDES zero,
+#: with the upper figure describing the expected ceiling, not a floor. So a
+#: setup or Lean notebook is never sub-threshold. Encoding 1 and 2 as floors
+#: here would invent a stricter policy than the rule states and would re-create,
+#: at small scale, exactly the noise this change removes -- eight GenAI
+#: `00-*-Environment` notebooks flagged for a requirement the rule exempts them
+#: from. Only `standard` carries the real budget.
+KIND_MINIMUM: dict[str, int | None] = {
+    "setup": 0,
+    "lean": 0,
+}
+
+#: Execution / research artifacts, matched on the notebook stem.
+#: Covers `research.ipynb`, `Research.ipynb`, `quantbook.ipynb`, `output_v2.ipynb`,
+#: `research_robustness.ipynb`, `m12_har_rv_j_research.ipynb`,
+#: `sector_momentum_research_v2.ipynb`, `CrossSubmissionCaptureRepro.ipynb`.
+ARTIFACT_STEM_RE = re.compile(
+    r"^(?:research|quantbook|output)(?:[_-]v?\d+)?$"
+    r"|^research[_-]"
+    r"|[_-]research(?:[_-]v?\d+)?$"
+    r"|[_-]output(?:[_-]v?\d+)?$"
+    r"|repro$",
+    re.IGNORECASE,
+)
+
+#: Setup / environment notebooks -- rule threshold 0-1.
+#: `Lean-1-Setup`, `Sudoku-0-Environment-Csharp`, `SC-1-Setup-Foundry`,
+#: `QC-Py-01-Setup`, `Argument_Analysis_Agentic-0-init`, `..-0-init_agent`.
+SETUP_STEM_RE = re.compile(
+    r"(?:^|[-_])(?:setup|environment|init)(?:$|[-_])", re.IGNORECASE
+)
+
+#: A directory that scopes a whole environment sub-series, e.g.
+#: `GenAI/00-GenAI-Environment/` (whose 00-2..00-6 stems carry no setup marker)
+#: and `Planners/00-Environment/`.
+SETUP_DIR_RE = re.compile(r"environment", re.IGNORECASE)
+
+#: Purely-Lean notebooks -- rule threshold 0-2.
+#: `Lean-3-Propositions-Proofs`, `GameTheory-11b-Lean-BayesianGamesExt`,
+#: `DecInfer-9-Lean-Gittins`.
+LEAN_STEM_RE = re.compile(r"(?:^|[-_])lean(?:$|[-_])", re.IGNORECASE)
+
+#: Legacy material -- rule "Archive / Legacy" row. Matched on DIRECTORY parts
+#: only (`SemanticWeb/RDF.Net-Legacy/`), never on the notebook stem: a filename
+#: match would drop `GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker
+#: -Legacy.ipynb`, where "Legacy" names the notebook's SUBJECT (a legacy
+#: pattern-maker) and not its status -- it is a maintained lesson in a numbered
+#: series (04-1..04-4) and it already carries 4 exercises. A scope rule that
+#: silently removes a conforming course notebook from the denominator is the
+#: same failure as one that leaves artifacts in it, just harder to notice.
+LEGACY_RE = re.compile(r"legacy", re.IGNORECASE)
+
+#: Kinds that carry no exercise budget: they are outside the corpus entirely.
+OUT_OF_CORPUS_KINDS = frozenset(
+    {"artifact", "template", "vendored", "archive", "legacy", "tooling", "student"}
+)
+
+
+def classify_notebook(path: Path) -> tuple[str, int | None]:
+    """Return ``(kind, threshold)`` for a notebook path.
+
+    ``threshold`` is ``None`` when the notebook is outside the pedagogical
+    corpus (kind in :data:`OUT_OF_CORPUS_KINDS`); such notebooks are never
+    sub-threshold because the convention does not apply to them.
+
+    ``standard_threshold`` applies to ordinary course notebooks. Setup and Lean
+    notebooks stay in the corpus -- they ARE course material -- but carry a
+    minimum of 0 per :data:`KIND_MINIMUM`, so raising ``--threshold`` never
+    invents an exercise budget for a notebook the rule exempts.
+    """
+    return _classify(path, standard_threshold=DEFAULT_THRESHOLD)
+
+
+def _scope_parts(path: Path, root: Path | None = None) -> tuple[str, ...]:
+    """Path components that may carry classification signal.
+
+    The directory rules below (underscore, legacy, `groupe-`) must only see the
+    part of the path INSIDE the scanned tree. The absolute prefix above it
+    belongs to whoever cloned the repo, and it is not signal: a checkout under
+    `.../_worktrees/` or `.../legacy-box/` would otherwise classify every
+    notebook in the repository as archive -- silently, and with a green
+    `--check`, since an empty corpus cannot fail. Caught by a unit test whose
+    own `tmp_path` happened to contain the substring `legacy`.
+    """
+    for anchor in (root, NOTEBOOKS_DIR, REPO_ROOT):
+        if anchor is None:
+            continue
+        try:
+            return path.resolve().relative_to(anchor.resolve()).parts
+        except (ValueError, OSError):
+            continue
+    return path.parts
+
+
+def _classify(
+    path: Path, standard_threshold: int, root: Path | None = None
+) -> tuple[str, int | None]:
+    parts = _scope_parts(path, root)
+    stem = path.stem
+
+    if any(part in NON_PEDAGOGICAL_DIRS for part in parts):
+        return ("archive", None)
+    if any(part.startswith("_") for part in parts[:-1]):
+        return ("archive", None)
+    if any(LEGACY_RE.search(part) for part in parts[:-1]):
+        return ("legacy", None)
+    if any(part.casefold().startswith("groupe-") for part in parts):
+        # Student group deliverables (`groupe-I2-contre-arguments-aspic/`) are
+        # submissions, not course material we author.
+        return ("student", None)
+    if "template" in stem.casefold():
+        return ("template", None)
+    if ARTIFACT_STEM_RE.search(stem):
+        return ("artifact", None)
+    if stem.startswith("_"):
+        # `_e2e_quant_validation.ipynb` -- internal harness notebook.
+        return ("tooling", None)
+
+    # A notebook sitting directly at the top of MyIA.AI.Notebooks/ belongs to no
+    # series; every taught series lives in a family directory. `GradeBook.ipynb`
+    # (the grading engine) is the only such file today. Gate on the NORMALIZED
+    # `parts` (form-invariant), NOT on `path.is_absolute()`: a relative path --
+    # exactly what `check_pr_exercises.py --stdin` receives from
+    # `git diff --name-only` -- silently skipped the rule, so the PR gate and the
+    # fleet scan returned different verdicts for the same file, and the liar was
+    # the one posing labels (#8835). `parts` (= `_scope_parts`) already resolves
+    # both forms to the identical tuple, so every directory rule must consume it.
+    if len(parts) == 1:
+        return ("tooling", None)
+
+    if SETUP_STEM_RE.search(stem) or any(SETUP_DIR_RE.search(p) for p in parts[:-1]):
+        return ("setup", KIND_MINIMUM["setup"])
+    if LEAN_STEM_RE.search(stem):
+        return ("lean", KIND_MINIMUM["lean"])
+    return ("standard", standard_threshold)
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
 # Matches `### Exercice 1`, `## 8. Exercice`, `### Exercice - ...`, `### Exercise`.
@@ -468,18 +657,48 @@ def iter_pedagogical_notebooks(root: Path) -> list[Path]:
     Excludes execution-artifact notebooks whose filename ends in `_output.ipynb`
     (the papermill convention used in this repo: each lab has both
     `LabN-Name.ipynb` and `LabN-Name_output.ipynb`; counting both double-counts).
+
+    Also excludes notebooks that :func:`classify_notebook` places outside the
+    pedagogical corpus (research artifacts, quantbooks, templates, probes,
+    vendored sub-repos, archives). Without that filter the default target list
+    is not the corpus, and every aggregate computed from it -- conforming count,
+    sub-threshold tally, ``--check`` exit code -- carries a denominator that
+    silently includes material the convention never applied to.
+    """
+    return corpus_scope(root)[0]
+
+
+def corpus_scope(root: Path) -> tuple[list[Path], dict[str, int]]:
+    """Return ``(corpus, removed_by_kind)`` for a tree.
+
+    The second element is the part a plain filter throws away. Reporting the
+    corpus size alone would leave the reader unable to tell a tool that
+    inspected everything from one that quietly narrowed its own scope -- the
+    failure this change exists to fix, so it must not be reintroduced by the
+    fix itself. `--check` prints it as `Out of corpus`.
     """
     out: list[Path] = []
+    removed: dict[str, int] = {}
     if not root.exists():
-        return out
+        return out, removed
     for nb_path in sorted(root.rglob("*.ipynb")):
-        parts = nb_path.parts
-        if any(exc in parts for exc in EXCLUDE_DIRS):
+        # #8858-class guard: root.rglob yields ABSOLUTE paths, so filtering
+        # on nb_path.parts (absolute components) matches the repo's ABSOLUTE
+        # path whenever the clone lives under a skip-named ancestor (e.g.
+        # .../archive/CoursIA/... or .../research/...) and silently empties
+        # the entire corpus -- a false-empty corpus then passes --check
+        # trivially. Filter on the path RELATIVE to the scan root instead.
+        rel_parts = nb_path.relative_to(root).parts
+        if any(exc in rel_parts for exc in EXCLUDE_DIRS):
             continue
         if nb_path.stem.endswith("_output"):
             continue
+        kind, _ = _classify(nb_path, standard_threshold=DEFAULT_THRESHOLD, root=root)
+        if kind in OUT_OF_CORPUS_KINDS:
+            removed[kind] = removed.get(kind, 0) + 1
+            continue
         out.append(nb_path)
-    return out
+    return out, removed
 
 
 def _family_of(path: Path, notebooks_dir: Path) -> str:
@@ -490,47 +709,94 @@ def _family_of(path: Path, notebooks_dir: Path) -> str:
         return "_root"
 
 
+def _display_path(path: Path) -> Path:
+    """Repo-relative form for reporting, falling back to the path itself.
+
+    `relative_to` raises for an absolute path outside the repo, so reporting a
+    target collected from elsewhere would crash the run rather than print it.
+    """
+    if not path.is_absolute():
+        return path
+    try:
+        return path.relative_to(REPO_ROOT)
+    except ValueError:
+        return path
+
+
 def run(
     targets: list[Path],
     threshold: int,
     json_out: bool,
     check: bool,
+    root: Path | None = None,
+    removed_by_kind: dict[str, int] | None = None,
 ) -> int:
-    """Execute the count over the given targets. Returns exit code for --check."""
+    """Execute the count over the given targets. Returns exit code for --check.
+
+    ``root`` is the tree the targets were collected from; it anchors path-based
+    classification so the prefix above it never carries signal (:func:`_scope_parts`).
+    """
     if json_out:
-        return _run_json(targets, threshold)
-    return _run_text(targets, threshold, check)
+        return _run_json(targets, threshold, root, removed_by_kind)
+    return _run_text(targets, threshold, check, root, removed_by_kind)
 
 
-def _run_text(targets: list[Path], threshold: int, check: bool) -> int:
-    sub_threshold: list[tuple[Path, NotebookCount]] = []
+def _run_text(
+    targets: list[Path],
+    threshold: int,
+    check: bool,
+    root: Path | None = None,
+    removed_by_kind: dict[str, int] | None = None,
+) -> int:
+    sub_threshold: list[tuple[Path, NotebookCount, str, int]] = []
     parse_errors: list[tuple[Path, str]] = []
+    exempt: list[tuple[Path, str]] = []
+    by_kind: dict[str, int] = {}
     total_notebooks = 0
     total_exercises = 0
 
     for nb_path in targets:
+        kind, effective = _classify(nb_path, standard_threshold=threshold, root=root)
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+        if effective is None:
+            exempt.append((nb_path, kind))
+            continue
         total_notebooks += 1
         cnt = count_exercises_in_notebook(nb_path)
         if cnt.parse_error:
             parse_errors.append((nb_path, cnt.parse_error))
             continue
         total_exercises += cnt.count
-        if cnt.count < threshold:
-            sub_threshold.append((nb_path, cnt))
+        if cnt.count < effective:
+            sub_threshold.append((nb_path, cnt, kind, effective))
 
-    print(f"Notebooks scanned : {total_notebooks}")
-    print(f"Total exercises   : {total_exercises}")
-    print(f"Threshold         : >= {threshold} per notebook")
-    print(f"Conforming        : {total_notebooks - len(sub_threshold) - len(parse_errors)}")
-    print(f"Sub-threshold     : {len(sub_threshold)}")
+    print(f"Notebooks in corpus : {total_notebooks}")
+    print(f"Total exercises     : {total_exercises}")
+    print(
+        f"Threshold           : >= {threshold} for course notebooks "
+        f"(setup / Lean exempt -- #2161 table)"
+    )
+    print(
+        f"Conforming          : "
+        f"{total_notebooks - len(sub_threshold) - len(parse_errors)}"
+    )
+    print(f"Sub-threshold       : {len(sub_threshold)}")
     if parse_errors:
-        print(f"Parse errors      : {len(parse_errors)}")
+        print(f"Parse errors        : {len(parse_errors)}")
+    # The denominator, spelled out: without it, "N sub-threshold" is not
+    # actionable because it silently mixes exempt material into the tally.
+    removed = dict(removed_by_kind or {})
+    for _, kind in exempt:  # explicitly-passed paths the scan never saw
+        removed[kind] = removed.get(kind, 0) + 1
+    if removed:
+        detail = ", ".join(f"{k}={v}" for k, v in sorted(removed.items()))
+        print(f"Out of corpus       : {sum(removed.values())} ({detail})")
 
     if sub_threshold:
         print("\n--- Sub-threshold notebooks (with evidence) ---")
-        for nb_path, cnt in sub_threshold:
-            rel = nb_path.relative_to(REPO_ROOT) if nb_path.is_absolute() else nb_path
-            print(f"\n[{cnt.count}/{threshold}] {rel}")
+        for nb_path, cnt, kind, effective in sub_threshold:
+            rel = _display_path(nb_path)
+            print(f"\n[{cnt.count}/{effective}] ({kind}) {rel}")
             for hit in cnt.exercises:
                 print(f"    cell {hit.cell_index:>3} ({hit.cell_type:<8} {hit.detected_by}): {hit.preview}")
     else:
@@ -546,16 +812,29 @@ def _run_text(targets: list[Path], threshold: int, check: bool) -> int:
     return 0
 
 
-def _run_json(targets: list[Path], threshold: int) -> int:
-    payload = {"threshold": threshold, "notebooks": []}
+def _run_json(
+    targets: list[Path],
+    threshold: int,
+    root: Path | None = None,
+    removed_by_kind: dict[str, int] | None = None,
+) -> int:
+    payload = {
+        "threshold": threshold,
+        "out_of_corpus": dict(sorted((removed_by_kind or {}).items())),
+        "notebooks": [],
+    }
     for nb_path in targets:
+        kind, effective = _classify(nb_path, standard_threshold=threshold, root=root)
         cnt = count_exercises_in_notebook(nb_path)
         entry = {
-            "path": str(nb_path.relative_to(REPO_ROOT))
-            if nb_path.is_absolute()
-            else str(nb_path),
+            "path": str(_display_path(nb_path)),
             "count": cnt.count,
-            "conforming": cnt.count >= threshold and cnt.parse_error is None,
+            "kind": kind,
+            # None => outside the pedagogical corpus, so never sub-threshold.
+            "effective_threshold": effective,
+            "in_corpus": effective is not None,
+            "conforming": effective is None
+            or (cnt.count >= effective and cnt.parse_error is None),
             "parse_error": cnt.parse_error,
             "evidence": [
                 {
@@ -588,8 +867,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--threshold",
         type=int,
-        default=3,
-        help="Minimum exercises per notebook (default: 3, per #2161).",
+        default=DEFAULT_THRESHOLD,
+        help=(
+            f"Minimum exercises for an ordinary course notebook "
+            f"(default: {DEFAULT_THRESHOLD}, per #2161). Setup and Lean "
+            f"notebooks are exempt by the rule's exception table and are never "
+            f"flagged, whatever value is passed here."
+        ),
     )
     parser.add_argument(
         "--json",
@@ -606,6 +890,15 @@ def main(argv: list[str] | None = None) -> int:
 
     # Resolve targets.
     targets: list[Path] = []
+    removed_by_kind: dict[str, int] = {}
+    scan_root: Path | None = None
+
+    def _absorb(root: Path) -> None:
+        found, removed = corpus_scope(root)
+        targets.extend(found)
+        for kind, n in removed.items():
+            removed_by_kind[kind] = removed_by_kind.get(kind, 0) + n
+
     if args.paths:
         for raw in args.paths:
             p = Path(raw)
@@ -613,13 +906,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"warning: {raw} does not exist, skipping", file=sys.stderr)
                 continue
             if p.is_dir():
-                targets.extend(iter_pedagogical_notebooks(p))
+                _absorb(p)
             elif p.suffix == ".ipynb":
                 targets.append(p)
     elif args.family:
-        targets = iter_pedagogical_notebooks(NOTEBOOKS_DIR / args.family)
+        scan_root = NOTEBOOKS_DIR / args.family
+        _absorb(scan_root)
     else:
-        targets = iter_pedagogical_notebooks(NOTEBOOKS_DIR)
+        scan_root = NOTEBOOKS_DIR
+        _absorb(scan_root)
 
     if not targets:
         print("No notebooks matched the given targets.", file=sys.stderr)
@@ -630,6 +925,8 @@ def main(argv: list[str] | None = None) -> int:
         threshold=args.threshold,
         json_out=args.json_out,
         check=args.check,
+        root=scan_root,
+        removed_by_kind=removed_by_kind,
     )
 
 

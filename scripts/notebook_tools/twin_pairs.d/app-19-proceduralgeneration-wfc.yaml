@@ -1,0 +1,20 @@
+- name: App-19 ProceduralGeneration WFC
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: bda7564c053e78077d109fd86f2aac543ddfe883
+      csharp_sha: 7422b47e09f277958bd16c05b60e45fbda93fdd1
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 17944dbddcc302f58db527d8ccd6f2e1b0545a57
+      csharp_sha: 7422b47e09f277958bd16c05b60e45fbda93fdd1
+      content_python_sha: 5eeb0ebe92fc1fe92e8161cf6a7526462e4f66401fd38191124dff03dee5916b
+      content_csharp_sha: 3d72f7773bde856485ee8846c75bb4bb5d17538e886a3f4afd1bfc078111875a
+  known_differences:
+    - "Socle pedagogique commun : Generation procedurale WFC / Wave Function Collapse (CSP + ipywidgets interactif) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = WFC + ipywidgets interactif + matplotlib GridSpec ; C# = BCL pure (System.Text), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

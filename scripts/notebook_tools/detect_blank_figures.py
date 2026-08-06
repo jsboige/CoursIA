@@ -89,6 +89,14 @@ from pathlib import Path
 # La separation est de plusieurs ordres de grandeur -> aucun chevauchement.
 MIN_DIM = 8         # px : une figure < 8px de cote n'est pas une viz reelle
 MIN_BYTES = 1024    # o  : un PNG decode < 1 Ko ne porte pas de vraie figure
+# Porte de sortie par contenu (#8634) : un petit PNG peut etre legitime s'il est
+# riche en couleurs (pixel-art, grille de broderie, sprite, heatmap miniature). La
+# taille du payload mesure la resolution, pas le contenu -- ce sont deux axes
+# independants. On ne declenche tiny_payload QUE si l'image porte aussi trop peu
+# de couleurs distinctes (ou si elle est indecodable, auquel cas on retombe sur la
+# taille pour ne pas regresser la couverture de #6891).
+MIN_DISTINCT_COLORS = 4  # nb de couleurs RGB distinctes en dessous duquel une
+                         # petite image est consideree sans contenu reel
 
 _IMAGE_MIMES = ("image/png", "image/jpeg")
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -125,6 +133,47 @@ def _png_dimensions(raw: bytes) -> tuple[int, int] | None:
     return (width, height)
 
 
+def _flattened_pixels(im):
+    """Return the flat pixel sequence of a PIL image, across Pillow versions.
+
+    `Image.getdata()` is deprecated since Pillow 12 and REMOVED in Pillow 14
+    (2027-10-15) in favour of `get_flattened_data()`. Both return the same
+    sequence for an RGB image (verified). Calling the deprecated name is not a
+    cosmetic warning here: see `_has_real_content` below for why it would
+    silently disable the content gate.
+    """
+    getter = getattr(im, "get_flattened_data", None) or im.getdata
+    return getter()
+
+
+def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool | None:
+    """Return True if the image carries enough distinct colors to be a real figure.
+
+    Returns False if it decodes but is monochrome / near-monochrome (canvas blanc,
+    placeholder uni). Returns None if PIL is unavailable or the image cannot be
+    decoded -- in which case the caller keeps the size-based behaviour (no
+    coverage regression, #6891). PIL is a repo dependency (Image notebooks) but
+    the detector must remain functional without it.
+
+    The `None` fallback is deliberate but load-bearing, and that makes the Pillow
+    API surface a correctness concern rather than a lint one: anything raising in
+    here degrades to `None`, i.e. back to the size-only rule that #8634 was filed
+    to fix. Under `python -W error::DeprecationWarning` -- how a CI run pins
+    warnings -- a deprecated call raises, is swallowed, and the pixel-art of
+    #8634 is flagged again with no error and no failing test. Hence
+    `_flattened_pixels`: the supported API is called on the nominal path, so the
+    gate cannot revert by warning.
+    """
+    try:
+        from PIL import Image
+        import io
+
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+        return len(set(_flattened_pixels(im))) >= min_colors
+    except Exception:
+        return None
+
+
 def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict | None:
     """Return a finding dict if the image is degenerate, else None."""
     reasons = []
@@ -137,7 +186,12 @@ def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict
             reasons.append(f"degenerate_dimensions({w}x{h})")
 
     if size < min_bytes:
-        reasons.append(f"tiny_payload({size}B)")
+        # Porte de sortie par contenu (#8634) : une petite image riche en couleurs
+        # (pixel-art, grille de broderie 24x16 a 17 couleurs) n'est pas degeneree.
+        # On ne flagge tiny_payload que si l'image n'a PAS assez de contenu, ou si
+        # elle est indecodable (None -> fallback taille, pas de regression #6891).
+        if _has_real_content(raw) is not True:
+            reasons.append(f"tiny_payload({size}B)")
 
     if not reasons:
         return None
@@ -187,16 +241,11 @@ def _kernel(nb: dict) -> str:
     return nb.get("metadata", {}).get("kernelspec", {}).get("name", "?")
 
 
-# Dossiers a ignorer (alignes sur detect_ascii_workaround.py:SKIP_DIRS).
-SKIP_DIRS = {
-    ".lake", ".git", "__pycache__", "_archives", "archive", "_archive",
-    ".ipynb_checkpoints", ".pytest_cache", "worktrees",
-    "foundry-lib",  # lib vendored tierce, pas a nous a fixer
-}
-
+# Marcheur + SKIP_DIRS canonique centralises dans notebook_walk (#8650) :
+# source unique pour le perimetre des scanners (ferme la derive detectee).
 # Artefacts papermill (*_output.ipynb) : la source canonique est le livrable, le
 # _output re-genere peut porter une figure stale -- on scanne la source.
-_OUTPUT_SUFFIX = "_output.ipynb"
+from notebook_walk import SKIP_DIRS, _OUTPUT_SUFFIX, iter_notebooks  # noqa: E402
 
 
 def _should_skip(rel: Path) -> bool:
@@ -206,15 +255,9 @@ def _should_skip(rel: Path) -> bool:
 
 
 def _iter_notebooks(root: Path, family: str | None):
-    base = root / "MyIA.AI.Notebooks"
-    if family:
-        base = base / family
-    if not base.exists():
-        return
-    for nb in sorted(base.rglob("*.ipynb")):
-        if _should_skip(nb.relative_to(base)):
-            continue
-        yield nb
+    # Delegue au marcheur partage : SKIP_DIRS canonique + filtre git tracked_only
+    # (exclut deterministement les arbres gitignores - lean-workspace, _output).
+    yield from iter_notebooks(root / "MyIA.AI.Notebooks", family=family)
 
 
 def _human_report(results: list[dict]) -> str:

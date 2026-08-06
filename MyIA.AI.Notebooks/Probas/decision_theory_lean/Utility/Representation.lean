@@ -3,53 +3,61 @@ import Utility.Basic
 import Utility.Axioms
 
 /-!
-# Expected-Utility Representation
+# Représentation en utilité espérée
 
-The von Neumann–Morgenstern (vNM) representation theorem relates axiomatic
-preferences over lotteries to expected-utility maximisation:
+Le théorème de représentation de von Neumann–Morgenstern (vNM) relie les
+préférences axiomatiques sur les loteries à la maximisation de l'utilité
+espérée :
 
-> A preference `P` over lotteries satisfies (completeness, transitivity,
-> independence, continuity) **if and only if** there exists a utility function
-> `u : α → ℝ` such that `P p q ↔ E_p[u] ≥ E_q[u]`, unique up to positive affine
-> transformation.
+> Une préférence `P` sur les loteries satisfait (complétude, transitivité,
+> indépendance, continuité) **si et seulement si** il existe une fonction
+> d'utilité `u : α → ℝ` telle que `P p q ↔ E_p[u] ≥ E_q[u]`, unique à
+> transformation affine positive près.
 
-This file proves the **sound direction** (representation ⟹ rationality) and the
-**affine-stability** (cardinality / uniqueness-up-to-positive-affine-transform)
-lemmas in full, with zero `sorry`. The **existence direction** (rationality ⟹
-existence of a representing utility) is the substantive half of the theorem
-(Herstein–Milnor 1953); it is documented as an open milestone below and not
-stated as a `sorry`-backed claim.
+Ce fichier prouve le **sens direct** (représentation ⟹ rationalité) et les
+lemmes de **stabilité affine** (cardinalité / unicité à transformation affine
+positive près) intégralement, sans aucun `sorry`. Le **sens d'existence**
+(rationalité ⟹ existence d'une utilité représentante) est la moitié
+substantielle du théorème (Herstein–Milnor 1953) ; il est documenté plus bas
+comme un jalon ouvert et n'est pas énoncé comme un résultat adossé à `sorry`.
 
-Cross-references:
-- Infer-14 (Infer.NET): the posterior-mean utilities computed there are an
-  instance of `expectation` over a Bayesian posterior; the representation here
-  is the decision-theoretic justification for ranking by expected utility.
-- PyMC-1 (PyMC): posterior expected-utility estimates by sampling approximate
-  the same `expectation` operator; affine uniqueness justifies why only utility
-  *differences* (not levels) are identified by choice data.
+Références croisées :
+- Infer-14 (Infer.NET) : les utilités d'espérance postérieure calculées là sont
+  une instance de `expectation` sur une postérieure bayésienne ; la
+  représentation ici est la justification en théorie de la décision du
+  classement par utilité espérée.
+- PyMC-1 (PyMC) : les estimations d'utilité espérée postérieure par
+  échantillonnage approchent le même opérateur `expectation` ; l'unicité
+  affine justifie pourquoi seules les *différences* d'utilité (et non les
+  niveaux) sont identifiées par les données de choix.
+
+Convention i18n (EPIC #4980) : FR-first appliqué sur les en-têtes et docstrings
+publics. Le code tactique et les commentaires intra-preuve restent en anglais
+(références Mathlib, notation formelle).
 -/
 
 namespace Utility
 
 variable {α : Type*} [Fintype α]
 
-/-- `IsExpectedUtilityRep u P` asserts that the utility function `u` represents
-the preference `P`: `p` is weakly preferred to `q` exactly when the expected
-utility under `p` is at least that under `q`. -/
+/-- `IsExpectedUtilityRep u P` affirme que la fonction d'utilité `u` représente
+la préférence `P` : `p` est faiblement préférée à `q` exactement quand
+l'utilité espérée sous `p` est au moins celle sous `q`. -/
 def IsExpectedUtilityRep (u : α → ℝ) (P : Pref α) : Prop :=
   ∀ p q : Lottery α, P p q ↔ expectation p u ≥ expectation q u
 
 section EasyDirection
 
 /-!
-## Representation ⟹ Rationality (sound, sorry-free)
+## Représentation ⟹ Rationalité (sens direct, sans sorry)
 
-If a utility function represents `P`, then `P` satisfies all four vNM axioms.
-The axioms reduce to elementary facts about the order and affine structure of `ℝ`.
+Si une fonction d'utilité représente `P`, alors `P` satisfait les quatre
+axiomes vNM. Les axiomes se ramènent à des faits élémentaires sur l'ordre et
+la structure affine de `ℝ`.
 -/
 
-/-- A represented preference is complete: any two expectations are real numbers
-and hence comparable. -/
+/-- Une préférence représentée est complète : deux espérances quelconques sont
+des nombres réels et donc comparables. -/
 theorem rep_complete (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P) :
     IsComplete P := by
   intro p q
@@ -58,7 +66,7 @@ theorem rep_complete (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u 
   · simp only [not_le] at he
     exact Or.inr ((h q p).mpr (le_of_lt he))
 
-/-- A represented preference is transitive: weak inequality on `ℝ` is
+/-- Une préférence représentée est transitive : l'inégalité large sur `ℝ` est
 transitive. -/
 theorem rep_transitive (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P) :
     IsTransitive P := by
@@ -68,8 +76,9 @@ theorem rep_transitive (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep 
   have h2 := (h q r).mp hqr
   linarith
 
-/-- A represented preference satisfies independence: mixing with a common
-lottery preserves the expected-utility ordering, because expectation is affine. -/
+/-- Une préférence représentée satisfait l'indépendance : mélanger avec une
+loterie commune préserve l'ordre des utilités espérées, car l'espérance est
+affine. -/
 theorem rep_independent (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P) :
     IsIndependent P := by
   intro p q r t ht0 ht1 hpq
@@ -78,10 +87,10 @@ theorem rep_independent (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep
   have hpq' : expectation p u ≥ expectation q u := (h p q).mp hpq
   nlinarith [hpq', ht0, ht1, sub_nonneg.mpr ht1]
 
-/-- A represented preference satisfies continuity: given `p ≽ q ≽ r`, the
-expected utilities satisfy `E_p ≥ E_q ≥ E_r`, so the affine interpolation
-`g(t) = t·E_p + (1-t)·E_r` over `t ∈ [0,1]` crosses `E_q`, making the
-corresponding mixture indifferent to `q`. -/
+/-- Une préférence représentée satisfait la continuité : étant donné
+`p ≽ q ≽ r`, les utilités espérées vérifient `E_p ≥ E_q ≥ E_r`, donc
+l'interpolation affine `g(t) = t·E_p + (1-t)·E_r` sur `t ∈ [0,1]` croise
+`E_q`, rendant le mélange correspondant indifférent à `q`. -/
 theorem rep_continuous (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P) :
     IsContinuous P := by
   intro p q r hpq hqr
@@ -120,9 +129,9 @@ theorem rep_continuous (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep 
         ring
       exact (h _ _).mpr (by linarith [he])
 
-/-- **Sound direction of the vNM theorem**: if a utility function represents a
-preference, then that preference is rational (satisfies all four axioms). This
-is the sorry-free half of the representation theorem. -/
+/-- **Sens direct du théorème vNM** : si une fonction d'utilité représente une
+préférence, alors cette préférence est rationnelle (satisfait les quatre
+axiomes). C'est la moitié sans sorry du théorème de représentation. -/
 theorem expected_utility_rep_is_rational (u : α → ℝ) (P : Pref α)
     (h : IsExpectedUtilityRep u P) : IsRational P where
   complete := rep_complete u P h
@@ -135,17 +144,18 @@ end EasyDirection
 section AffineStability
 
 /-!
-## Affine stability (uniqueness up to positive affine transformation)
+## Stabilité affine (unicité à transformation affine positive près)
 
-If `u` represents `P`, so does any positive affine transform `a • u + b` with
-`a > 0`. This is the easy half of the vNM cardinality result: only the affine
-shape of the utility is pinned down by choice data.
+Si `u` représente `P`, toute transformation affine positive `a • u + b` avec
+`a > 0` représente aussi `P`. C'est la moitié facile du résultat de
+cardinalité vNM : seule la forme affine de l'utilité est fixée par les données
+de choix.
 -/
 
-/-- A positive affine transform of a representing utility is again a
-representing utility: expected utility transforms as `E_p[a·u + b] =
-a·E_p[u] + b`, so the ordering is preserved by the positive scaling `a` and is
-invariant under the common shift `b`. -/
+/-- Une transformation affine positive d'une utilité représentante est à
+nouveau une utilité représentante : l'utilité espérée se transforme comme
+`E_p[a·u + b] = a·E_p[u] + b`, donc l'ordre est préservé par la mise à
+l'échelle positive `a` et est invariant sous le décalage commun `b`. -/
 theorem affine_rep_is_rep (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (a : ℝ) (ha : 0 < a) (b : ℝ) :
     IsExpectedUtilityRep (fun x => a * u x + b) P := by
@@ -162,17 +172,19 @@ end AffineStability
 section StrictAndIndifference
 
 /-!
-## Strict preference and indifference under a representation
+## Préférence stricte et indifférence sous une représentation
 
-The weak representation `IsExpectedUtilityRep u P` pins down `p ≽ q ↔ E_p[u] ≥ E_q[u]`.
-Two companion characterisations follow by elementary reasoning on the order of `ℝ`,
-completing the trichotomy weak / strict / indifferent of a represented preference —
-the vNM analogue of the mono-book / probability-weights dichotomy of `Coherence`.
+La représentation faible `IsExpectedUtilityRep u P` fixe
+`p ≽ q ↔ E_p[u] ≥ E_q[u]`. Deux caractérisations compagnons suivent par
+raisonnement élémentaire sur l'ordre de `ℝ`, complétant la trichotomie
+faible / stricte / indifférente d'une préférence représentée — l'analogue vNM
+de la dichotomie mono-livre / poids-probabilités de `Coherence`.
 -/
 
-/-- Under a representation, **strict preference** `p ≻ q` (weakly preferred one way,
-    not the other) holds exactly when the expected utility under `p` *strictly* exceeds
-    that under `q`. This is the strict companion of `IsExpectedUtilityRep`. -/
+/-- Sous une représentation, la **préférence stricte** `p ≻ q` (faiblement
+    préférée dans un sens, pas dans l'autre) vaut exactement quand l'utilité
+    espérée sous `p` *excède strictement* celle sous `q`. C'est la compagnonne
+    stricte de `IsExpectedUtilityRep`. -/
 theorem rep_strict_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p q : Lottery α) :
     StrictPref P p q ↔ expectation p u > expectation q u := by
@@ -190,10 +202,11 @@ theorem rep_strict_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep 
     have hle := (h q p).mp hqp
     linarith
 
-/-- Under a representation, **indifference** `p ~ q` (each weakly preferred to the other)
-    holds exactly when the two expected utilities coincide. Together with
-    `rep_strict_iff`, this partitions a represented preference into the three exhaustive
-    cases (strict-p / strict-q / indifferent) via the trichotomy of `ℝ`. -/
+/-- Sous une représentation, l'**indifférence** `p ~ q` (chacune faiblement
+    préférée à l'autre) vaut exactement quand les deux utilités espérées
+    coïncident. Avec `rep_strict_iff`, cela partitionne une préférence représentée
+    en les trois cas exhaustifs (strict-p / strict-q / indifférente) via la
+    trichotomie de `ℝ`. -/
 theorem rep_indifference_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p q : Lottery α) :
     (P p q ∧ P q p) ↔ expectation p u = expectation q u := by
@@ -205,8 +218,9 @@ theorem rep_indifference_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtili
   · -- E_p = E_q  ⟹  P p q ∧ P q p
     exact ⟨(h p q).mpr (by linarith), (h q p).mpr (by linarith)⟩
 
-/-- **Irreflexivity of strict preference** under a representation: no lottery is strictly
-    preferred to itself. Immediate corollary of `rep_strict_iff` (`E_p > E_p` is absurd). -/
+/-- **Irréflexivité de la préférence stricte** sous une représentation : aucune
+    loterie n'est strictement préférée à elle-même. Corollaire immédiat de
+    `rep_strict_iff` (`E_p > E_p` est absurde). -/
 theorem strict_irrefl (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p : Lottery α) : ¬ StrictPref P p p := by
   rw [rep_strict_iff u P h]
@@ -217,66 +231,68 @@ end StrictAndIndifference
 section OrderAlgebra
 
 /-!
-## The order-theoretic algebra of a represented preference
+## L'algèbre ordre-théorique d'une préférence représentée
 
-`rep_strict_iff` and `rep_indifference_iff` transport a represented preference
-onto the order of `ℝ`. Consequently the strict part `≻` inherits the structure
-of a strict order (irreflexive — already shown in `StrictAndIndifference` —,
-asymmetric, transitive), the indifference part `~` inherits that of an
-equivalence relation, and the two interleave: a strict step absorbs an adjacent
-indifferent step. Each proof below is the corresponding elementary fact about
-`<` / `=` on `ℝ`, pulled back through the representation. Together they close the
-trichotomy that `StrictAndIndifference` opens. -/
+`rep_strict_iff` et `rep_indifference_iff` transportent une préférence
+représentée sur l'ordre de `ℝ`. Par conséquent, la partie stricte `≻` hérite
+de la structure d'un ordre strict (irréflexive — déjà montrée dans
+`StrictAndIndifference` —, asymétrique, transitive), la partie indifférence
+`~` hérite de celle d'une relation d'équivalence, et les deux s'entrelacent :
+un pas strict absorbe un pas indifférent adjacent. Chaque preuve ci-dessous
+est le fait élémentaire correspondant sur `<` / `=` sur `ℝ`, remonté à travers
+la représentation. Ensemble, elles referment la trichotomie qu'ouvre
+`StrictAndIndifference`. -/
 
-/-- **Indifference matches equality of expected utility.** Restatement of
-`rep_indifference_iff` through the named relation `Indiff`; the two are the same
-conjunction definitionally, so the proof is the earlier equivalence verbatim. -/
+/-- **L'indifférence correspond à l'égalité des utilités espérées.**
+Reformulation de `rep_indifference_iff` via la relation nommée `Indiff` ; les
+deux sont la même conjonction définitionnellement, donc la preuve est
+l'équivalence antérieure verbatim. -/
 theorem rep_indiff_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p q : Lottery α) :
     Indiff P p q ↔ expectation p u = expectation q u :=
   rep_indifference_iff u P h p q
 
-/-- **Strict preference is asymmetric**: `p ≻ q` forbids `q ≻ p`, because
-`E_p > E_q` excludes `E_q > E_p`. -/
+/-- **La préférence stricte est asymétrique** : `p ≻ q` interdit `q ≻ p`, car
+`E_p > E_q` exclut `E_q > E_p`. -/
 theorem strict_asymm (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q : Lottery α} (hpq : StrictPref P p q) : ¬ StrictPref P q p := by
   rw [rep_strict_iff u P h] at hpq ⊢
   intro hqp
   linarith
 
-/-- **Strict preference is transitive**: `p ≻ q` and `q ≻ r` give `p ≻ r`,
-chaining `E_p > E_q > E_r`. With `strict_irrefl` and `strict_asymm`, `≻` is a
-strict order. -/
+/-- **La préférence stricte est transitive** : `p ≻ q` et `q ≻ r` donnent
+`p ≻ r`, en enchaînant `E_p > E_q > E_r`. Avec `strict_irrefl` et
+`strict_asymm`, `≻` est un ordre strict. -/
 theorem strict_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q r : Lottery α} (hpq : StrictPref P p q) (hqr : StrictPref P q r) :
     StrictPref P p r := by
   rw [rep_strict_iff u P h] at hpq hqr ⊢
   linarith
 
-/-- **Indifference is reflexive**: every lottery is indifferent to itself
-(`E_p = E_p`). -/
+/-- **L'indifférence est réflexive** : toute loterie est indifférente à
+elle-même (`E_p = E_p`). -/
 theorem indiff_refl (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p : Lottery α) : Indiff P p p := by
   rw [rep_indiff_iff u P h]
 
-/-- **Indifference is symmetric**: `p ~ q` gives `q ~ p` (equality is
-symmetric). -/
+/-- **L'indifférence est symétrique** : `p ~ q` donne `q ~ p` (l'égalité est
+symétrique). -/
 theorem indiff_symm (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q : Lottery α} (hpq : Indiff P p q) : Indiff P q p := by
   rw [rep_indiff_iff u P h] at hpq ⊢
   linarith
 
-/-- **Indifference is transitive**: `p ~ q` and `q ~ r` give `p ~ r`
-(`E_p = E_q = E_r`). With reflexivity and symmetry, `~` is an equivalence
-relation on lotteries. -/
+/-- **L'indifférence est transitive** : `p ~ q` et `q ~ r` donnent `p ~ r`
+(`E_p = E_q = E_r`). Avec la réflexivité et la symétrie, `~` est une relation
+d'équivalence sur les loteries. -/
 theorem indiff_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q r : Lottery α} (hpq : Indiff P p q) (hqr : Indiff P q r) :
     Indiff P p r := by
   rw [rep_indiff_iff u P h] at hpq hqr ⊢
   linarith
 
-/-- **A strict step absorbs a following indifferent step**: `p ≻ q` and `q ~ r`
-give `p ≻ r` (`E_p > E_q = E_r`). -/
+/-- **Un pas strict absorbe un pas indifférent suivant** : `p ≻ q` et `q ~ r`
+donnent `p ≻ r` (`E_p > E_q = E_r`). -/
 theorem strict_indiff_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q r : Lottery α} (hpq : StrictPref P p q) (hqr : Indiff P q r) :
     StrictPref P p r := by
@@ -284,8 +300,8 @@ theorem strict_indiff_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilit
   rw [rep_indiff_iff u P h] at hqr
   linarith
 
-/-- **An indifferent step absorbs a following strict step**: `p ~ q` and `q ≻ r`
-give `p ≻ r` (`E_p = E_q > E_r`). -/
+/-- **Un pas indifférent absorbe un pas strict suivant** : `p ~ q` et `q ≻ r`
+donnent `p ≻ r` (`E_p = E_q > E_r`). -/
 theorem indiff_strict_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     {p q r : Lottery α} (hpq : Indiff P p q) (hqr : StrictPref P q r) :
     StrictPref P p r := by
@@ -293,10 +309,11 @@ theorem indiff_strict_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilit
   rw [rep_strict_iff u P h] at hqr ⊢
   linarith
 
-/-- **Trichotomy**: under a representation any two lotteries fall into at least
-one of `p ≻ q`, `q ≻ p`, `p ~ q`. Exhaustiveness is the trichotomy of `<` on
-`E_p, E_q`; the three cases are moreover mutually exclusive (`strict_asymm`
-rules out the reverse strict, and a strict preference forces `E_p ≠ E_q`). -/
+/-- **Trichotomie** : sous une représentation, deux loteries quelconques
+tombent dans au moins l'un des cas `p ≻ q`, `q ≻ p`, `p ~ q`. L'exhaustivité
+est la trichotomie de `<` sur `E_p, E_q` ; les trois cas sont de plus
+mutuellement exclusifs (`strict_asymm` écarte la stricte inverse, et une
+préférence stricte force `E_p ≠ E_q`). -/
 theorem rep_trichotomy (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
     (p q : Lottery α) :
     StrictPref P p q ∨ StrictPref P q p ∨ Indiff P p q := by
@@ -308,22 +325,24 @@ theorem rep_trichotomy (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep 
 end OrderAlgebra
 
 /-!
-## Existence direction — OPEN milestone
+## Sens d'existence — JALON OUVERT
 
-The converse — **every rational preference admits an expected-utility
-representation** — is the substantive half of the von Neumann–Morgenstern
-theorem (Herstein & Milnor, 1953). Its proof proceeds by:
+La réciproque — **toute préférence rationnelle admet une représentation en
+utilité espérée** — est la moitié substantielle du théorème de von
+Neumann–Morgenstern (Herstein & Milnor, 1953). Sa preuve procède par :
 
-1. Establishing that the preference is represented by a linear functional on
-   the simplex of lotteries (independence gives linearity along mixture lines,
-   continuity extends it to the interior).
-2. Showing that this linear functional is an expectation `E_p[u]` for some
-   `u : α → ℝ`, recovered from the functional's values on point masses.
+1. Établir que la préférence est représentée par une fonctionnelle linéaire
+   sur le simplexe des loteries (l'indépendance donne la linéarité le long
+   des lignes de mélange, la continuité l'étend à l'intérieur).
+2. Montrer que cette fonctionnelle linéaire est une espérance `E_p[u]` pour
+   un certain `u : α → ℝ`, récupéré des valeurs de la fonctionnelle sur les
+   masses de Dirac.
 
-This requires a non-trivial separation / linear-algebra argument and is left as
-the natural next milestone. It is deliberately **not** stated as a `sorry`-backed
-theorem: the present library is fully `sorry`-free, delivering the sound
-converse, the four axioms under a representation, and affine uniqueness.
+Cela requiert un argument non trivial de séparation / d'algèbre linéaire et
+est laissé comme prochain jalon naturel. Il est délibérément **non** énoncé
+comme un théorème adossé à `sorry` : la bibliothèque présente est entièrement
+sans `sorry`, livrant la réciproque saine, les quatre axiomes sous une
+représentation, et l'unicité affine.
 -/
 
 end Utility

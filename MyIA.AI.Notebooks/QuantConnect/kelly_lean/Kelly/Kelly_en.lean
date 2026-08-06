@@ -291,4 +291,16 @@ theorem kelly_growth_eq_zero_iff (β : Bet) :
   · -- f* = 0: then g(f*) = g(0) = 0
     rw [h]; exact growth_zero β
 
+/-- **Optimal growth is non-negative**: `g(f*) ≥ 0` everywhere. Since betting nothing
+    (`f = 0`, feasible) leaves capital unchanged (`g(0) = 0` by `growth_zero`) and `f*`
+    maximizes `g` (`kelly_optimal`), the optimum is bounded below by zero. Equality
+    `g(f*) = 0` holds exactly at the fair bet `f* = 0` (see `kelly_growth_eq_zero_iff`).
+    This corollary is stated in prose in §9 and isolated here as a named lemma, for
+    direct use by consumers (no re-derivation). -/
+theorem kelly_growth_nonneg (β : Bet) : 0 ≤ growth β (kellyFrac β) := by
+  have hfeas0 : Feasible β 0 := ⟨by rw [div_lt_iff₀ β.hb_pos]; linarith, by linarith⟩
+  have ho := kelly_optimal β 0 hfeas0
+  rw [growth_zero] at ho
+  exact ho
+
 end KellyLean_en

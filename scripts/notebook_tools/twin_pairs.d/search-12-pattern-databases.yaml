@@ -1,0 +1,15 @@
+- name: "Search-12 Pattern Databases"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-01"
+      by: po-2024
+      python_sha: 0b7a8f8777f3e2fdcff5540f0da1647af51f1e7d
+      csharp_sha: 2f13a4af6c57fcef3a4121a9b9ca7dd11aba3bc6
+  known_differences:
+    - "Socle pedagogique commun : taquin 4x4 (15-puzzle), heuristique Manhattan, puis construction d'une Pattern Database (PDB) pour un sous-ensemble de tuiles afin d'estimer h* plus precisement que Manhattan."
+    - "Idiomes framework : Python = `collections.deque` (BFS sur l'espace des patterns) + `numpy`/`matplotlib` (matrices + visualisation du plateau). C# = pur BCL `System.Collections.Generic` + `System.Linq` (`Dictionary`, `Queue`, `Array.IndexOf`), sans dependance externe."
+    - "Asymetrie visualisation : cote Python, matplotlib rend le plateau/la PDB graphiquement ; cote C#, le rendu est textuel (pas d'equivalent numpy/matplotlib en BCL standard). Algorithme et donnees (GOAL, Manhattan, Successors) verifies firsthand identiques des deux cotes."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8207 (doc-honesty prose (PDB speedup ~1 ordre, pas 2)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

@@ -1,6 +1,6 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
-[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [AgenticDataScience (Google ADK) →](AgenticDataScience/README.md)
+[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [Track2-GoogleADK (Google ADK) →](Track2-GoogleADK/README.md)
 
 Formation complète en Data Science Python avec intégration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complémentaires : LangChain (3 jours) et Google ADK (4 jours).
 
@@ -90,12 +90,12 @@ DataScienceWithAgents/
 │   ├── 2.7-Modeles-Non-Parametriques.ipynb
 │   └── 2.8-Theorie-PAC.ipynb
 │
-├── PythonAgentsForDataScience/ # Track LangChain (7 labs)
-│   ├── Day1/Labs/              # Revision
-│   ├── Day2/Labs/              # Agents RFP et CV
-│   └── Day3/Labs/              # Data + Agents
+├── Track1-LangChain/ # Track LangChain (7 labs)
+│   ├── Day1-Foundations/Labs/              # Revision
+│   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
+│   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── AgenticDataScience/         # Track Google ADK (10 labs)
+└── Track2-GoogleADK/         # Track Google ADK (10 labs)
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering
@@ -127,31 +127,31 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
-## Workshop 3 Jours (PythonAgentsForDataScience)
+## Workshop 3 Jours (Track1-LangChain)
 
 ### Day 1 - Révision Python
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](PythonAgentsForDataScience/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](PythonAgentsForDataScience/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](PythonAgentsForDataScience/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](PythonAgentsForDataScience/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](PythonAgentsForDataScience/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
-## Track AgenticDataScience (Days 4-7)
+## Track Track2-GoogleADK (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
@@ -159,33 +159,33 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](AgenticDataScience/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
 ### Day 5 - DS-STAR (Labs 10-12)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 10 | [File-Analyzer](AgenticDataScience/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](AgenticDataScience/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](AgenticDataScience/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+| 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
+| 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
+| 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](AgenticDataScience/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](AgenticDataScience/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](AgenticDataScience/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](AgenticDataScience/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](AgenticDataScience/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+| 16 | [Data-Science-Agent](Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
 
-### Technologies AgenticDataScience
+### Technologies Track2-GoogleADK
 
 | Catégorie | Technologies |
 |-----------|--------------|
@@ -194,7 +194,7 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
 | **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
 
-Documentation complète : [AgenticDataScience/README.md](AgenticDataScience/README.md)
+Documentation complète : [Track2-GoogleADK/README.md](Track2-GoogleADK/README.md)
 
 ## Technologies
 
@@ -267,7 +267,7 @@ Le package `python-dotenv` charge automatiquement ce fichier. Ne JAMAIS committe
 
 ### Les agents ADK ne se connectent pas au provider (Labs 8+)
 
-Vérifier la configuration dans le fichier `.env` d'AgenticDataScience :
+Vérifier la configuration dans le fichier `.env` d'Track2-GoogleADK :
 
 ```bash
 # Provider recommandé (clé gratuite)
@@ -293,7 +293,7 @@ pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
 pip install langchain langchain-openai langchain-experimental python-dotenv
 
 # Labs 8-17 (ADK)
-pip install -r AgenticDataScience/requirements.txt
+pip install -r Track2-GoogleADK/requirements.txt
 ```
 
 ### Comment passer de LangChain a Google ADK ?

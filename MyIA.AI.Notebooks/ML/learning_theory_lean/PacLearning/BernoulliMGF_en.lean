@@ -349,6 +349,18 @@ theorem bernoulliMGFDeriv_zero (μ : ℝ) : bernoulliMGFDeriv μ 0 = 0 := by
     ring
   simp only [bernoulliMGFDeriv, zero_div, hq, sub_self]
 
+/-- `g(0) = 0`: the zero-anchor of the gap `g = bernoulliMGFGap`. Named sibling of
+`bernoulliMGFDeriv_zero` (`g₁(0) = 0`) — the author had named the derivative-at-zero
+anchor but not the gap-at-zero one, even though it is derived identically by the two
+monotonicity lemmas (`bernoulliMGFGap_nonneg_of_nonneg` and `_of_nonpos`) that start
+from `g(0) = 0`. -/
+theorem bernoulliMGFGap_zero (μ : ℝ) : bernoulliMGFGap μ 0 = 0 := by
+  have h1 : (1 - μ : ℝ) + μ = 1 := by ring
+  show (0 : ℝ) ^ 2 / 8 - (Real.log ((1 - μ) + μ * Real.exp 0) - 0 * μ) = 0
+  simp only [Real.exp_zero, mul_one, zero_mul, sub_zero]
+  rw [h1, Real.log_one]
+  ring
+
 /-- `deriv g = g₁` (funext + HasDerivAt.deriv). -/
 theorem deriv_bernoulliMGFGap (μ : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ ≤ 1) :
     deriv (bernoulliMGFGap μ) = bernoulliMGFDeriv μ := by
@@ -379,12 +391,7 @@ theorem bernoulliMGFGap_nonneg_of_nonneg (μ : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ 
         (bernoulliMGFDeriv_monotone μ hμ hμ2) h0x
       rw [bernoulliMGFDeriv_zero] at h1
       exact h1
-  have h0 : bernoulliMGFGap μ 0 = 0 := by
-    have h1 : (1 - μ : ℝ) + μ = 1 := by ring
-    show (0 : ℝ) ^ 2 / 8 - (Real.log ((1 - μ) + μ * Real.exp 0) - 0 * μ) = 0
-    simp only [Real.exp_zero, mul_one, zero_mul, sub_zero]
-    rw [h1, Real.log_one]
-    ring
+  have h0 : bernoulliMGFGap μ 0 = 0 := bernoulliMGFGap_zero μ
   have hIn : (0 : ℝ) ∈ Set.Ici 0 := Set.mem_Ici.mpr (le_refl _)
   have htIn : t ∈ Set.Ici 0 := Set.mem_Ici.mpr ht
   have := hmono hIn htIn ht
@@ -410,12 +417,7 @@ theorem bernoulliMGFGap_nonneg_of_nonpos (μ : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ 
         (bernoulliMGFDeriv_monotone μ hμ hμ2) hx0
       rw [bernoulliMGFDeriv_zero] at h1
       linarith
-  have h0 : bernoulliMGFGap μ 0 = 0 := by
-    have h1 : (1 - μ : ℝ) + μ = 1 := by ring
-    show (0 : ℝ) ^ 2 / 8 - (Real.log ((1 - μ) + μ * Real.exp 0) - 0 * μ) = 0
-    simp only [Real.exp_zero, mul_one, zero_mul, sub_zero]
-    rw [h1, Real.log_one]
-    ring
+  have h0 : bernoulliMGFGap μ 0 = 0 := bernoulliMGFGap_zero μ
   have hIn : (0 : ℝ) ∈ Set.Iic 0 := Set.mem_Iic.mpr (le_refl _)
   have htIn : t ∈ Set.Iic 0 := Set.mem_Iic.mpr ht
   have hle := hmono htIn hIn ht

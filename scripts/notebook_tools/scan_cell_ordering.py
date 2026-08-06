@@ -113,7 +113,19 @@ def find_notebooks(family: str | None = None) -> list[Path]:
         return []
     out = []
     for p in root.rglob("*.ipynb"):
-        if any(part in EXCLUDE_DIRS for part in p.parts):
+        # #8858-class guard: ``root.rglob`` yields ABSOLUTE paths, so
+        # filtering on ``p.parts`` (absolute components) would match the
+        # repo's own parent if it sits under an EXCLUDE_DIRS-name dir (e.g.
+        # a checkout cloned at ``archive/repo/``). That matches EVERY path
+        # and silences the whole scan — worse than a false positive for a
+        # cell-ordering CI guard. Filter on the path RELATIVE to ``root``
+        # (the in-repo SKIP_DIRS semantics), with a fallback to ``p.parts``
+        # when ``p`` is not under ``root``.
+        try:
+            rel_parts = p.relative_to(root).parts
+        except ValueError:
+            rel_parts = p.parts
+        if any(part in EXCLUDE_DIRS for part in rel_parts):
             continue
         out.append(p)
     return sorted(out)

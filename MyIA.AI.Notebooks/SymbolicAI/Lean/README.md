@@ -4,7 +4,7 @@
 series: SymbolicAI-Lean
 pedagogical_count: 28
 breakdown: Lean=28
-maturity: PRODUCTION=23, BETA=5
+maturity: BETA=27, DRAFT=1
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)

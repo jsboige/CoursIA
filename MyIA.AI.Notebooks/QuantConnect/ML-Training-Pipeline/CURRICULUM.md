@@ -19,6 +19,8 @@ Anti-bias multi-asset training pipeline for quantitative trading research.
 > - **The only surviving edges are vol-forecasting + a learned action policy**: the 4 V2 KEEPERS above (M12 HAR-RV-J → QC production `HAR-RV-J-Kelly` #83; M15 LSTM h=32 4-seed hardened; S3 HMM; S4 v2 Ridge) + **L4 Decision Transformer** (24/26, the sole direction BEAT via learned buy/hold/sell — multi-seed extension BG ai-01).
 > - **Production candidate = S3+S4 v2 monthly rebalance + vol-targeting 10 % risk overlay** (Sharpe ~1.12), NOT direction-ML.
 >
+> **Note (2026-07-25, PR #8546) — HMM-alpha (S3 family) qualification:** the `hmm_alpha` research verdict had been rendered on a heuristic `edge >= 2σ` criterion, unlike its siblings (M3/M4/M11e/M12/M15) which use the canonical Diebold-Mariano test. A rigorous DM re-validation (9 configs × 5 seeds [0,1,7,42,99] × 5 walk-forward folds × 2 cost scenarios, re-using `m11c_sharpe_test.ledoit_wolf_sharpe_diff_se` for comparability) found **2 BEATS / 7 INCONCLUSIVE** — and the 2 BEATS are narrow: SOL 4-state t=8.17 robust but against a low bar (SOL B&H Sharpe=-0.08, flat → edge is regime-specific); ETH 3-state t=2.60 fragile (collapses to p=0.35 at 50bps transaction-cost stress, per-fold Sharpe -0.30, fold-0 outlier). **The FINAL VERDICT above holds** — this hardens its base (the heuristic had overstated confidence) but does not resurrect direction-ML. Read this before touching the HMM track.
+>
 > The "IN PROGRESS" statuses on Stages 1/3/3a below are retained as historical record but are **DONE — NEGATIVE**; their "Next" bullets describe documented dead ends, not open work.
 
 **Principle**: No single-asset, single-regime training. All stages use diversified data

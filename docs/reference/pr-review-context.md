@@ -52,3 +52,46 @@ PRs micro qui inflate le compteur "PRs livrées" sans valeur réelle (#806 +2 li
 - Review state filter : cf [.claude/rules/verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)
 - [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md)
 - CLAUDE.md section B (Reviews PR 5 points obligatoires)
+
+---
+
+## Incidents fondateurs des critères A-H
+
+Détail déporté de [`.claude/rules/pr-review-discipline.md`](../../.claude/rules/pr-review-discipline.md).
+
+### B.3 — le gate `proof-integrity` était structurellement aveugle au `native_decide` (corrigé #8740, issue #8738)
+
+Le parser lisait la sortie de `#print axioms` **ligne par ligne**. Les noms d'axiomes natifs (`<theoreme>._native.native_decide.ax_1_1`, ~58 caractères) débordent la largeur de pretty-print de Lean et forcent un retour à la ligne — la déclaration entière était alors **silencieusement ignorée**.
+
+Le gate était donc aveugle à la classe **exactement la plus dangereuse** : `native_decide` réduit par le noyau natif *sans preuve*, ce qui vide le théorème de son contenu tout en affichant un vert. **Conséquence de review : un `proof-integrity SUCCESS` daté d'avant le 2026-07-28 ne prouve rien sur `native_decide`** — ne pas l'accepter comme preuve.
+
+Reproduction locale du check :
+
+```bash
+cd agent_tests/
+python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>').check_axioms('<Module>', fail_on_sorry=True))"
+```
+
+### B.3 — pourquoi la whitelist interdit les wildcards
+
+`allow-axioms` liste les axiomes tolérés **un par un**. C'est un mécanisme à cliquet : tout nouveau `native_decide` introduit produit un nom **absent de la liste**, donc le gate rougit. Un motif générique (`*native_decide*`) détruirait cette propriété — le gate ne pourrait plus jamais rougir sur la classe qu'il est censé attraper, et un gate qui ne peut plus rougir n'est pas un gate.
+
+### D.5 — #8479 MusicGen : l'alignement qui enshrine un nombre périssable
+
+Notebook MusicGen 02-3 : le RTF documenté `0.5-2x` a été « aligné » en `0.21-0.24x` **sur un run non-optimisé**, alors qu'une re-exécution Stop-&-Repair était **déjà due** sur ce notebook (cellule cassée).
+
+Deux fautes cumulées : (a) la valeur ré-alignée est un **nombre de perf** sur un notebook **re-exécutable localement** — elle devait venir d'une re-exec fraîche, pas d'un markdown-align sur l'ancien output ; (b) une re-exec étant déjà due, l'alignement devait y être **foldé**, pas livré en PR markdown séparée. Enshriner un nombre qui changera au prochain passage kernel *est* la dérive que C.4 interdit.
+
+### D — #5214 : l'advisory .NET lu comme un permis d'outputs vides
+
+PRs Tweety-3 C# (#5194 / #5199 / #5202) mergées avec des notebooks à `execution_count: null` **et** `outputs: []`, au motif de l'advisory .NET.
+
+L'advisory dit que la **CI** ne peut pas Papermill-exécuter du .NET Interactive (pas de kernel en CI). Il ne dit rien sur l'exécution **locale**, qui est disponible sur chaque worker (`dotnet-interactive`, règle F). Une cellule .NET committée doit donc porter `execution_count != null` = preuve d'exécution locale. `scripts/notebook_tools/validate_pr_notebooks.py` FAIL désormais dessus (verdict H.5 `STRUCTURAL_ONLY`), et ne tolère `null` que là où l'exécution locale est réellement impossible : QC Cloud (besoin QuantBook), Lean (advisory propre).
+
+### E — #5345 Probas : l'intro corrigée, la liste laissée périmée
+
+Plainte user 2026-07-04. La PR corrigeait l'intro et les compteurs d'un README de série tout en laissant, cent lignes plus bas, une **liste de notebooks PyMC obsolète** et un **arbre de structure périmé**.
+
+D'où la clause « audit fichier ENTIER » : le format slim `+5/−5` du rollout README ne dispense pas de l'audit — il le **plafonne à tort**. Quand une série a subi un changement structurel, la passe DOIT être fichier-entier.
+
+Audit associé au même mandat : Tweety / GameTheory / Search = **stale-body sévère** ; SymbolicLearning / SemanticWeb / SmartContracts = ciblé ; Sudoku = trivial.

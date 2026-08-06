@@ -62,7 +62,7 @@ Plans d'apprentissage par école (ECE, ESGF, EPITA, EPF), scope pédagogique.
 
 Perspective unificatrice sur les séries du dépôt, à la Grothendieck.
 
-### [Lean](../lean/README.md)
+### [Lean](lean/coordinator-workflow.md)
 
 Prover iteration history, intractable diagnosis, LLM endpoints.
 
@@ -74,6 +74,6 @@ Backtests, MCP Docker, structure, livre référence (*Hands-On AI Trading*).
 
 Si vous venez d'arriver et cherchez à **apprendre** (pas à contribuer) :
 
-1. [PARCOURS.md](../parcours.qmd) — trois parcours certifiés selon votre niveau
-2. [README.md](../README.md) — vue d'ensemble du dépôt
-3. [Catalogue](../COURSE_CATALOG.generated.md) — inventaire exhaustif et à jour
+1. [PARCOURS](../../parcours.qmd) — trois parcours certifiés selon votre niveau
+2. [README.md](../../README.md) — vue d'ensemble du dépôt
+3. [Catalogue](../../COURSE_CATALOG.generated.md) — inventaire exhaustif et à jour

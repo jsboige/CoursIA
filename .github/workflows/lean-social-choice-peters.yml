@@ -21,6 +21,9 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/lean-toolchain'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main

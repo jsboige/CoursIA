@@ -9,7 +9,7 @@ B3/S23 step, plus computational primitives (eaters, multi-period glider
 composition). This module is part of Epic #1647 (Life-as-Computation).
 
 Design choices:
-- All predicates return `Bool` for `native_decide` compatibility.
+- All predicates return `Bool` for computability via `decide`.
 - The `eater1` (fishhook) is the simplest signal-absorbing primitive,
   the first building block of Spartan logic gates.
 - Consistency theorems `evolveHashlife n g = evolve n g` verify the
@@ -46,25 +46,46 @@ both algorithms agree on canonical small patterns.
 For level-2 inputs, `evolveHashlife` routes through `step4x4` (the
 quadtree base case). For larger inputs, it falls back to `step`. In both
 cases, the result should match `evolve n g`.
+
+### Computability by reflection (`decide`, zero axiom) — #8869 resolved by #9536
+
+These theorems are proved by `decide` in the kernel (zero axiom added). The
+prior diagnosis (c.8126, #8749) concluded the `MacroCell` layer was
+**intrinsically** opaque (and that `Int` arithmetic was non-reducible); it was
+**refuted** by sub-expression bisect (c.847, 2026-08-05). The only stuck point
+was `MacroCell.ceilLog2` (`WellFounded` recursion on `(k+2+1)/2`, not
+structurally smaller → opaque to the kernel reducer), one level deeper than the
+implicated `MacroCell` / `Int` layer. PR #9536 (merged) rewrites
+`ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1` (Mathlib structural
+recursion, kernel-reducible, same values, spec re-proved via
+`Nat.lt_pow_succ_log_self` + `omega`). After this fix, these theorems pass
+`decide` (kernel, zero axiom), removing the `native_decide` axioms from the
+trusted computing base. Native `#eval` witnesses in section 5.
 -/
 
-/-- Hashlife and reference agree on `block` after 1 generation. -/
-theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
+/-- Hashlife and reference agree on `block` after 1 generation.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by decide
 
-/-- Hashlife and reference agree on `block` after 4 generations. -/
-theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
+/-- Hashlife and reference agree on `block` after 4 generations.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by decide
 
-/-- Hashlife and reference agree on `blinker_h` after 2 generations. -/
-theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
+/-- Hashlife and reference agree on `blinker_h` after 2 generations.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by decide
 
-/-- Hashlife and reference agree on `glider` after 4 generations. -/
-theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
+/-- Hashlife and reference agree on `glider` after 4 generations.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by decide
 
-/-- Hashlife and reference agree on `beacon` after 2 generations. -/
-theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
+/-- Hashlife and reference agree on `beacon` after 2 generations.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by decide
 
-/-- Hashlife and reference agree on `toad` after 2 generations. -/
-theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
+/-- Hashlife and reference agree on `toad` after 2 generations.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by decide
 
 /-! ## Section 2: Eater 1 (Fishhook) — the simplest computational sink
 
@@ -86,6 +107,23 @@ X.X.
 ..X.
 ..XX
 ```
+
+### `isStillLife eater1` — proven by `decide` in the kernel (zero axioms)
+
+After the `mergeSort -> insertionSort` swap (#8895, 2026-07-30), `isStillLife eater1`
+reduces under `decide`: the static check (still life, no evolution) exercises only the
+`sortDedup` sort on a fixed grid, now decide-reducible. `#print axioms
+Conway.Life.eater1_still_life` is empty (zero axioms) — a purely computational kernel
+proof. (The #8749 probe of 2026-07-29, prior to #8895, correctly observed the
+obstruction under `mergeSort`; it has since been lifted.)
+
+As with the `evolveHashlife n g = evolve n g` equivalences of Section 1, this
+theorem is proved by `decide` in the kernel (zero axiom). Historically,
+`eater1_still_life` became `decide`-reducible with the `mergeSort -> insertionSort`
+swap (#8895), whereas the Section 1 equivalences additionally required rewriting
+`ceilLog2` via `Nat.log 2` (#9536): as long as it was a `WellFounded` recursion
+opaque to the reducer, they remained `native_decide`. The historical pre-#9536
+contrast is documented in Section 1.
 -/
 
 /-- The **eater 1** (fishhook), a 7-cell still life. -/
@@ -99,8 +137,10 @@ def eater1 : Grid :=
 #eval s!"step(eater1) = {step eater1}"
 #eval s!"isStillLife eater1 = {isStillLife eater1}"
 
-/-- The eater 1 is a still life. -/
-theorem eater1_still_life : isStillLife eater1 = true := by native_decide
+/-- The eater 1 is a still life. Proven by `decide` in the kernel
+    (zero axioms, `#print axioms` empty) — `isStillLife` on a fixed grid,
+    decide-reducible post-#8895 (criterion 2 of #8869). -/
+theorem eater1_still_life : isStillLife eater1 = true := by decide
 
 /-! ## Section 3: Glider composition via multi-period evolution
 
@@ -111,38 +151,74 @@ glider wires.
 
 We verify for k = 1 (already in Life.lean), k = 2, and k = 3.
 The k = 2 case (8 generations) also verifies via `evolveHashlife`.
+
+### Computability by reflection (`decide`, zero axiom) — #8869 resolved by #9536
+
+These theorems are proved by `decide` in the kernel (zero axiom added). The
+prior diagnosis (c.8126, #8749) concluded the `MacroCell` layer was
+**intrinsically** opaque (and that `Int` arithmetic was non-reducible); it was
+**refuted** by sub-expression bisect (c.847, 2026-08-05). The only stuck point
+was `MacroCell.ceilLog2` (`WellFounded` recursion on `(k+2+1)/2`, not
+structurally smaller → opaque to the kernel reducer), one level deeper than the
+implicated `MacroCell` / `Int` layer. PR #9536 (merged) rewrites
+`ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1` (Mathlib structural
+recursion, kernel-reducible, same values, spec re-proved via
+`Nat.lt_pow_succ_log_self` + `omega`). After this fix, these theorems pass
+`decide` (kernel, zero axiom), removing the `native_decide` axioms from the
+trusted computing base. Native `#eval` witnesses in section 5.
 -/
 
-/-- After 8 generations (2 periods), the glider has shifted by (2, -2). -/
-theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by native_decide
+/-- After 8 generations (2 periods), the glider has shifted by (2, -2).
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by decide
 
-/-- After 12 generations (3 periods), the glider has shifted by (3, -3). -/
-theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by native_decide
+/-- After 12 generations (3 periods), the glider has shifted by (3, -3).
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by decide
 
-/-- Hashlife and reference agree on glider after 8 generations (2 periods). -/
-theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by native_decide
+/-- Hashlife and reference agree on glider after 8 generations (2 periods).
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by decide
 
 /-! ## Section 4: MacroCell round-trip verification
 
 Structural sanity check: the `Grid → MacroCell → Grid` round-trip
 preserves live cells for canonical patterns. This verifies the quadtree
 encoding/decoding at the MacroCell layer (independent of step/evolve).
+
+### Computability by reflection (`decide`, zero axiom) — #8869 resolved by #9536
+
+These theorems are proved by `decide` in the kernel (zero axiom added). The
+prior diagnosis (c.8126, #8749) concluded the `MacroCell` layer was
+**intrinsically** opaque (and that `Int` arithmetic was non-reducible); it was
+**refuted** by sub-expression bisect (c.847, 2026-08-05). The only stuck point
+was `MacroCell.ceilLog2` (`WellFounded` recursion on `(k+2+1)/2`, not
+structurally smaller → opaque to the kernel reducer), one level deeper than the
+implicated `MacroCell` / `Int` layer. PR #9536 (merged) rewrites
+`ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1` (Mathlib structural
+recursion, kernel-reducible, same values, spec re-proved via
+`Nat.lt_pow_succ_log_self` + `omega`). After this fix, these theorems pass
+`decide` (kernel, zero axiom), removing the `native_decide` axioms from the
+trusted computing base. Native `#eval` witnesses in section 5.
 -/
 
-/-- Block survives the MacroCell round-trip. -/
+/-- Block survives the MacroCell round-trip. `decide` in the kernel, zero axiom
+    — reducible after the `ceilLog2` fix (#9536, #8869). -/
 theorem block_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset block
-     mc.toGrid off == block) = true := by native_decide
+     mc.toGrid off == block) = true := by decide
 
-/-- Glider survives the MacroCell round-trip. -/
+/-- Glider survives the MacroCell round-trip. `decide` in the kernel, zero axiom
+    — reducible after the `ceilLog2` fix (#9536, #8869). -/
 theorem glider_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset glider
-     mc.toGrid off == glider) = true := by native_decide
+     mc.toGrid off == glider) = true := by decide
 
-/-- Eater 1 survives the MacroCell round-trip. -/
+/-- Eater 1 survives the MacroCell round-trip. `decide` in the kernel, zero axiom
+    — reducible after the `ceilLog2` fix (#9536, #8869). -/
 theorem eater1_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset eater1
-     mc.toGrid off == eater1) = true := by native_decide
+     mc.toGrid off == eater1) = true := by decide
 
 /-! ## Section 5: Diagnostic #eval witnesses
 
@@ -174,26 +250,48 @@ def glider_meets_eater : Grid :=
 `evolveHashlifeFast` uses the recursive Hashlife algorithm to jump
 forward by `2^level` generations in a single MacroCell step. These
 theorems verify correctness of the fast path against the reference
-`evolve` for canonical patterns. -/
+`evolve` for canonical patterns.
 
-/-- `evolveHashlifeFast` agrees with reference on block after 4 gens. -/
-theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
+### Computability by reflection (`decide`, zero axiom) — #8869 resolved by #9536
 
-/-- `evolveHashlifeFast` agrees with reference on glider after 4 gens. -/
-theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
+These theorems are proved by `decide` in the kernel (zero axiom added). The
+prior diagnosis (c.8126, #8749) concluded the `MacroCell` layer was
+**intrinsically** opaque (and that `Int` arithmetic was non-reducible); it was
+**refuted** by sub-expression bisect (c.847, 2026-08-05). The only stuck point
+was `MacroCell.ceilLog2` (`WellFounded` recursion on `(k+2+1)/2`, not
+structurally smaller → opaque to the kernel reducer), one level deeper than the
+implicated `MacroCell` / `Int` layer. PR #9536 (merged) rewrites
+`ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1` (Mathlib structural
+recursion, kernel-reducible, same values, spec re-proved via
+`Nat.lt_pow_succ_log_self` + `omega`). After this fix, these theorems pass
+`decide` (kernel, zero axiom), removing the `native_decide` axioms from the
+trusted computing base. Native `#eval` witnesses in section 5.
+-/
+
+/-- `evolveHashlifeFast` agrees with reference on block after 4 gens.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by decide
+
+/-- `evolveHashlifeFast` agrees with reference on glider after 4 gens.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by decide
 
 /-- `evolveHashlifeFast` agrees with reference on glider after 8 gens
-    (2 full periods, displacement (2, -2)). -/
-theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
+    (2 full periods, displacement (2, -2)). `decide` in the kernel, zero axiom — reducible
+    after the `ceilLog2` fix (#9536, #8869). -/
+theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by decide
 
-/-- `evolveHashlifeFast` agrees with reference on blinker after 2 gens. -/
-theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
+/-- `evolveHashlifeFast` agrees with reference on blinker after 2 gens.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by decide
 
-/-- `evolveHashlifeFast` agrees with reference on beacon after 2 gens. -/
-theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
+/-- `evolveHashlifeFast` agrees with reference on beacon after 2 gens.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by decide
 
-/-- `evolveHashlifeFast` agrees with reference on toad after 2 gens. -/
-theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
+/-- `evolveHashlifeFast` agrees with reference on toad after 2 gens.
+    (`decide` in the kernel, zero axiom — reducible after the `ceilLog2` fix #9536, #8869.) -/
+theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by decide
 
 -- #eval witnesses for larger jumps (validates the recursive path)
 #eval evolveHashlifeFast 16 block == evolve 16 block

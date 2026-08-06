@@ -1,0 +1,14 @@
+- name: "Tweety-9 Preferences"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-9-Preferences-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c2f0fd49cc676439ac5d626abd51f39dca5680a0
+      csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
+  known_differences:
+    - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"`). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."

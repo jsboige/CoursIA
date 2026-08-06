@@ -8,7 +8,30 @@ Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. 
 |--------|--------|------|--------|
 | **T1** | `extract_cells_to_csv.py` | Extrait les cellules des notebooks vers le CSV (langue pivot `fr`) | Livré |
 | **T2** | `check_translation_sync.py` | Détecte le drift (source modifiée / trad éditée / cellule supprimée) | Livré (non-bloquant, CI) |
-| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+
+## Issue #6949 — Status de clôture (2026-07-22, c.757)
+
+**Issue #6949 — fork Argumentum vers CoursIA (T1/T2 + T3 gated) — CLOSED (livrable court-terme expédié).**
+
+Les deux PRs annoncées dans le scope de l'issue (#6949 § « 2 PRs ») sont MERGED sur `main` :
+
+| PR | Commit merge | Livrable |
+|----|--------------|----------|
+| [#6976](https://github.com/jsboige/CoursIA/pull/6976) | `84ba7ac70` | `scripts/translation/translate_csv.py` — moteur T3 fork Argumentum, **14 tests**, `ENABLED=False` + `--dry-run` (double garde, activation après GO user) |
+| [#6980](https://github.com/jsboige/CoursIA/pull/6980) | `fb9bff827` | `docs/translation/argumentum-fork-mapping.md` + README T3 status — justification fork vs laisser, mapping schéma Argumentum → CoursIA, lessons gpt-5.5 |
+
+Travaux d'harmonisation shipped post-issue (PRs additionnelles non-comptées dans le scope original mais traçables à #6949) :
+
+- [#7615](https://github.com/jsboige/CoursIA/pull/7615) — provider-keys test env-hermetic (secrets hygiene, leçon pool args).
+- [#7714](https://github.com/jsboige/CoursIA/pull/7714) — verdict `WRONG_SCRIPT` (5e classe Argumentum alignée, c.734).
+- [#7731](https://github.com/jsboige/CoursIA/pull/7731) — verdict `FR_CONTAM` (4e classe Argumentum alignée, c.738).
+
+**Hors-scope explicite** (gated) :
+- **Activation T3** (`ENABLED=True` + premier run `--apply`) — mandat user requis, déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650). Le moteur reste **gated** intentionnellement : la pre-flight account/mandat (coût API, choix LLM en prod, stratégie de quota) sort du périmètre d'une PR de code.
+- **T4 — re-import CSV → notebooks traduits** (papermill `--language <lang>`) — travail post-activation, dépendant du retour d'expérience du premier run T3 réel.
+
+Cible de revue cross-doc (à matérialiser au merge de la PR de clôture c.757) : `docs/translation/argumentum-fork-mapping.md` porte la même déclaration de clôture.
 
 ## Schéma CSV (ratified #4957 §1)
 
@@ -49,6 +72,7 @@ Détecte le drift entre les notebooks courants et le CSV. **Non-bloquant** (mode
 | `TRAD_DRIFT` | une traduction a été éditée à la main sans repercussion sur le CSV |
 | `MISSING_LANG` | le notebook `xxx_<lang>.ipynb` n'existe plus alors qu'un hash était déposé |
 | `ORPHAN_ROW` | la ligne CSV référence un `cell_id` absent du notebook source (cellule supprimée) |
+| `FR_CONTAM` | la traduction `xxx_<lang>.ipynb` est **identique au source fr** (non traduite, français leaké) — Argumentum 5-classes (4e), garde `len>=4` (#6949) |
 
 ```bash
 # Vérifier un CSV (exit 1 si drift)
@@ -59,6 +83,8 @@ python scripts/translation/check_translation_sync.py translations/ --check
 ```
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte que du `SRC_DRIFT` éventuel ; l'absence de traductions déposées n'est pas un drift (c'est l'état attendu pré-T3). Le pivot (`fr`) étant le notebook source lui-même, sa cohérence est couverte par `SRC_DRIFT` — pas de faux `MISSING_LANG` sur le pivot.
+
+**Harmonisation taxonomie Argumentum (#6949)** : ce script couvre désormais 4 des 5 classes de drift du fork `multilingual-drift-audit.py` — `MISSING`/`ORPHAN` (MISSING_LANG/ORPHAN_ROW), `WRONG_SCRIPT` (script Unicode attendu absent, c.734 #7714), `FR_CONTAM` (c.738). La 5e classe `COGNATE` (noms propres / faux-amis légitimement répétés, `kind == "name"`, **informationnelle** — hors `total_drift` dans le fork) est **N/A** par construction : notre modèle est cell-based (pas de distinction name/prose).
 
 ## CI
 

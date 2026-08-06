@@ -1,0 +1,20 @@
+- name: "GameTheory-2 NormalForm"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-02"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 183d8f84edcf34e6018de795ebc2540dfa3f74d0
+      csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: fa96d68a9947500b129304d808ac4df725cccbff
+      csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
+      content_python_sha: 8c3dda2e627c98d4fbeaed4085054ba37534670891bf9a17c2429d4a1f5af05f
+      content_csharp_sha: 5f3321677f3c599e1b146b6f02b509579f7cb8bc5b7f19f8b16590da20c7f5e5
+  known_differences:
+    - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
+    - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."
+    - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib). Meme concepts, abstraction differente (lib vs from-scratch)."

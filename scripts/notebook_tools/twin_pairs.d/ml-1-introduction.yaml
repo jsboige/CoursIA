@@ -1,0 +1,15 @@
+- name: "ML-1 Introduction"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-31"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 736ca5bc84443703871b0889ec8fe8413b5246c3
+      csharp_sha: 0e5a5f450b7d111d2ae1bb4507dde72790604527
+      reason: "rebaseline python apres 2 fixes (#8052) : (1) cellule 21 '(environ 76 min)' mais output cellule 20 = 75.1 minutes (arrondit a 75) ; (2) cellule 34 resume 'Trois familles abordees' mais n'enumere que 2 familles (regression + classification) -- 'familles' est une transposition de 'exemples' (cellule 0 dit 'trois exemples guides'). Fix value + count. Python-only, csharp_sha unchanged, parite semantique preservee."
+  known_differences:
+    - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
+    - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."
+    - "Meme concept demontre des deux cotes (pipeline regression de base) ; asymetrie d'idiome MLContext-vs-estimator, pas d'ecart algorithmique."

@@ -106,14 +106,15 @@ theorem gNoRep_restriction :
         gRep.u2 ⟨0, by decide⟩ ⟨0, by decide⟩ a1 a2 := by
   decide
 
-/-! ### Credibility refinement
+/-! ### Raffinement de crédibilité
 
-Normal-form BNE admits non-credible period-2 threats (e.g. in the
-benchmark, "rational fights period 2 / entrant stays out" is a Nash
-profile paying the incumbent 7 — but the threat would never be carried
-out). Sequential rationality in the *last* period is a finite,
-decidable condition on plans: each type's period-2 response must be a
-stage best reply. -/
+Le BNE en forme normale admet des menaces non crédibles de période 2
+(par exemple dans le benchmark, « le rationnel se bat en période 2 /
+l'entrant reste dehors » est un profil de Nash qui paie l'incumbent 7
+— mais la menace ne serait jamais exécutée). La rationalité
+séquentielle en *dernière* période est une condition finie et
+décidable sur les plans : la réponse de période 2 de chaque type doit
+être une meilleure réponse de stade. -/
 
 /-- Crédibilité dans le jeu de réputation : le type rationnel accommode -/
 @[reducible] def credRep (s1 : Strategy1 gRep) : Prop :=
@@ -151,11 +152,11 @@ theorem repS2_eta (s2 : Strategy2 gRep) :
   | zero => rfl
   | succ j => exact j.elim0
 
-/-! ### Equilibrium analysis of the reputation game
+/-! ### Analyse d'équilibre du jeu de réputation
 
-Target profile: rational plays plan 2 = (Fight, Accommodate), tough
-plays plan 3 = (Fight, Fight), entrant plays plan 1 = (Out after
-Fight, In after Accommodate). -/
+Profil cible : le rationnel joue le plan 2 = (Fight, Accommodate), le
+dur joue le plan 3 = (Fight, Fight), l'entrant joue le plan 1 = (Out
+après Fight, In après Accommodate). -/
 
 /-- Le profil de fusion est un BNE du jeu de réputation. -/
 theorem gRep_bne :

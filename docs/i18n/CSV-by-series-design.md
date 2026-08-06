@@ -288,8 +288,8 @@ python scripts/i18n/render.py \
 - EPIC #1650 — traduction multilingue (Phase 0.5 = préservation `.en.md`)
 - EPIC #4980 — Lean i18n (convention FR canonique + `.en.md` mirror, pilote #4998 MERGED)
 - `.claude/rules/readme-french-first.md` — règle HARD doc primaire FR
-- `docs/harness/reference/procedures-recurrentes.md` §workflow PR (10 étapes)
-- `docs/anti-regression-detail.md` — protocole suppression de code (anti-régression)
+- `docs/reference/procedures-recurrentes.md` §workflow PR (10 étapes)
+- `docs/reference/anti-regression-detail.md` — protocole suppression de code (anti-régression)
 
 ---
 

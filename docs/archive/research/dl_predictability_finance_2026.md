@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — Mission #779 Epic NN #754 CLOSED (2026-05-20), pivot implémenté (HMM regime detection #7342, regime-conditional Kelly #7346, TSMOM baseline #7350). Document conservé comme référence méthodologique historique — cité par `train_volatility_regime.py:5` comme fondement canonique de l'approche "DL strength = variance, not direction mean". Source triage : issuecomment-5044005971 (#7422).
+
 # What Can Deep Learning Actually Predict on Financial Data?
 
 **Mission #779** | SOTA DL Predictability Analysis for Epic NN #754 Pivot

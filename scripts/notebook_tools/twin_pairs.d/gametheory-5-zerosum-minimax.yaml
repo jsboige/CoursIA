@@ -1,0 +1,14 @@
+- name: "GameTheory-5 ZeroSum-Minimax"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: db8ae4743bf4e902074bd3e65e27f38e46305d30
+      csharp_sha: 94f0d6b6640128cda025b0988435209110697c9e
+  known_differences:
+    - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."
+    - "Idiomes framework : Python = `scipy.optimize.linprog` (solveur LP mature pour le minimax). C# = **Simplexe from-scratch** `SimplexMax` (methode de Dantzig + regle de Bland anti-cyclage) + `SolveMatrixGame` qui reduit le jeu matriciel a un LP et lit sigma dans les variables duales."
+    - "Asymetrie notable : le C# REIMPLEMENTE l'algorithme du simplexe a la main (valeur pedagogique : comprendre Dantzig + Bland) plutot que d'invoquer scipy.linprog. parity_level = semantic (meme theoreme minimax, meme reduction LP ; le solveur LP est from-scratch cote C# vs lib cote Python)."

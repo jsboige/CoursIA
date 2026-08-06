@@ -40,3 +40,53 @@ Deux des 6 PNG de ce dossier sont des **doublons exacts** (SHA1 identique) avec 
 | `vid1-animatediff.png` (01-Foundation) | `video5-animatediff.png` (racine Video) | `579190cc435421941a730c423a4442730074b46f` (byte-identique) | **Doublon intentionnel** même logique : `01-Foundation/README.md` l'illustre dans la section « AnimateDiff introduction », racine `Video/README.md` l'illustre dans la section « AnimateDiff orchestration ». |
 
 **Note de fond** : doctrine #5780 (figures amendée 2026-07-09) demande que **chaque figure soit placée dans la section du README où le notebook correspondant est discuté** — ce qui produit mécaniquement des doublons quand un même notebook est référencé à la fois dans la racine de la famille et dans une sous-série. **C'est by design**, pas un défaut d'audit. Le présent disclosure évite la fausse alerte future « doublon = bug ».
+
+
+---
+
+
+## Sections `Description visuelle` (doctrine #5780 amendée, détecteur `detect_manifest_field.py`)
+
+Ajout tranche-14 (c.734, 2026-07-21) : chaque figure reçoit un champ `**Description visuelle** :` au format canonique pour satisfaire le détecteur FR (`scripts/notebook_tools/detect_manifest_field.py`). Insertion pure — la table de provenance (l. 11-18) et la table d'audit G.1 (l. 24-31) sont préservées intactes. RGB signatures obtenues par `PIL.ImageStat.Stat` sur downsample 80×80, audit G.1 visuel c.351 (2026-07-10) reconduit pour chaque figure.
+
+## vid1-ops.png
+
+- **Source** : notebook `01-1-Video-Operations-Basics.ipynb (cellule 8, output 3)`
+- **Description visuelle** : Mosaïque horizontale de 5 frames (1200×221 px) d'une vidéo de test, fond vert-dominant (mean RGB 160/178/146) ; chaque frame porte un cercle blanc à une position différente (droite, bas, centre-gauche, haut, droite) à t=0.00s → 4.96s. Titre `Apercu de la video de test` superposé en haut à gauche. stddev élevé (84/88/97) reflète la variation chromatique des 5 frames distinctes. Conforme audit G.1 c.351 (VRAI 2026-07-10).
+- **Alt-text (FR)** : Opérations vidéo de base — aperçu des frames
+- **Poids** : 27,9 KB
+
+## vid1-gpt5.png
+
+- **Source** : notebook `01-2-GPT-5-Video-Understanding.ipynb (cellule 8, output 2)`
+- **Description visuelle** : Mosaïque horizontale de 5 scènes (1200×221 px) d'une vidéo à analyser par GPT-5, fond warm-neutral équilibré (mean RGB 167/170/166, stddev 84/73/72). Chaque scène porte une forme géométrique distincte (cercle, carré, triangle, cercle, 5 cercles jaunes) sur fond orange/bleu/vert/rose/bleu nuit. Sous-titres `Scene 1 — Intro` → `Scene 5 — Conclusion` et titre `Apercu des 5 scenes`. Conforme audit G.1 c.351 (VRAI 2026-07-10).
+- **Alt-text (FR)** : Compréhension vidéo GPT-5 — analyse
+- **Poids** : 19,8 KB
+
+## vid1-qwen-vl.png
+
+- **Source** : notebook `01-3-Qwen-VL-Video-Analysis.ipynb (cellule 10, output 2)`
+- **Description visuelle** : Mosaïque horizontale de 5 scènes pédagogiques (1200×221 px), fond dark-neutral uniforme (mean RGB 121/118/118, stddev 78/79/79 — variation faible par scène). Scènes `Introduction` / `Chapitre 1` / `Demo` / `Resultats` / `Conclusion` sur fonds bleu nuit / brun / vert forêt / olive / violet, point jaune central marqueur d'attention. Conforme audit G.1 c.351 (VRAI 2026-07-10).
+- **Alt-text (FR)** : Analyse vidéo Qwen-VL — annotation
+- **Poids** : 23,8 KB
+
+## vid1-esrgan.png
+
+- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 8, output 3)`
+- **Description visuelle** : Grille comparative 2×4 (1200×503 px) `Reference HR vs Input LR`, fond dark blue-violet (mean RGB 85/77/99, stddev 80/75/65). Ligne haute : HR (Référence) 320×240 avec quadrillage blanc superposé, 4 frames aux indices 0/12/24/35. Ligne basse : LR (Input) 320×240 même séquence. Cercle rouge et 4 points verts en surimpression pour guidage visuel. Conforme audit G.1 c.351 (VRAI 2026-07-10). Doublon intentionnel déclaré avec `video4-esrgan.png` (racine Video, SHA1 `620f78d3...`).
+- **Alt-text (FR)** : Enhancement ESRGAN — upscale
+- **Poids** : 140,9 KB
+
+## vid1-esrgan2.png
+
+- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 16, output 1)`
+- **Description visuelle** : Grille horizontale 5 panneaux (1200×230 px) d'interpolation linéaire Frame A → Frame B, fond medium-purple (mean RGB 108/101/120, stddev 93/92/80 — variation chromatique la plus élevée des 6 figures). Panneaux : `Frame A` / `Interp 1` / `Interp 2` / `Interp 3` / `Frame B` montrant un cercle rouge se déplaçant entre 2 positions, Frames 1/36 → 6/36. Fantômes visibles aux frames intermédiaires (signature de l'interpolation linéaire). Conforme audit G.1 c.351 (VRAI 2026-07-10).
+- **Alt-text (FR)** : Enhancement ESRGAN — panorama
+- **Poids** : 85,2 KB
+
+## vid1-animatediff.png
+
+- **Source** : notebook `01-5-AnimateDiff-Introduction.ipynb (cellule 10, output 3)`
+- **Description visuelle** : Mosaïque 4×2 (8 frames, 500×252 px) d'animation générée par AnimateDiff à partir du prompt `A serene lake at sunset with mountains in the background`, style painterly/pastel (mean RGB 135/128/118, stddev 61/61/69 — variation modérée, signature du style pastel). Labels `Frame 1/16` → `Frame 16/16` sur les 8 frames sélectionnées (indices `np.linspace(0, 15, 8)` = [0, 2, 4, 6, 8, 10, 12, 15], corrigé 2026-07-16 vs ancien README erroné 882 ≫ 16). Conforme audit G.1 c.351 (VRAI 2026-07-10). Doublon intentionnel déclaré avec `video5-animatediff.png` (racine Video, SHA1 `579190cc...`).
+- **Alt-text (FR)** : Génération AnimateDiff — animation
+- **Poids** : 195,7 KB

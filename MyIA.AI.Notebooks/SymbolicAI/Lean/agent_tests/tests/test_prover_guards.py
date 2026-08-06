@@ -2054,16 +2054,27 @@ def test_fx7_count_real_sorries_massively_undercounts_comment_prose():
 
 
 def test_fx7_no_legacy_substring_counter_in_prover_source():
-    """FX-7 regression guard: no prover source module may reintroduce the
-    legacy `.count("sorry")` substring counter on file content — every gate,
-    snapshot, and report must go through count_real_sorries so deltas stay
-    consistent. The only allowed mention is the historical docstring in
-    lean_utils.py describing the retired counter."""
+    """FX-7 regression guard (#9402 widened): no agent_tests PRODUCTION module
+    may reintroduce the legacy `.count("sorry")` substring counter on file
+    content — every gate, snapshot, and report must go through
+    count_real_sorries so deltas stay consistent. The original guard scanned
+    only `prover/*.py` (non-recursive), which let residual substring counters
+    survive in `prover/baselines/run_baselines.py`, the root `run_prover_bg.py`
+    `_peek_sorry_count`, and `multi_agent_proof.py` — the very blind spot #9402
+    documents. This scan covers the whole agent_tests tree EXCLUDING tests/
+    (fixtures legitimately cite the substring form to document the retired
+    counter). The only allowed production mention is the historical docstring
+    in lean_utils.py (marked # FX-7-ALLOW)."""
     from pathlib import Path
 
-    prover_dir = Path(__file__).resolve().parent.parent / "prover"
+    agent_tests = Path(__file__).resolve().parent.parent
     legacy = []
-    for py in sorted(prover_dir.glob("*.py")):
+    for py in sorted(agent_tests.rglob("*.py")):
+        # Skip the test suite — fixtures legitimately cite the legacy substring
+        # form to document/verify the retired counter.
+        rel_parts = py.relative_to(agent_tests).parts
+        if "tests" in rel_parts:
+            continue
         for ln, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
             if '.count("sorry")' in line:
                 # lean_utils.py keeps ONE historical mention in the
@@ -2072,11 +2083,57 @@ def test_fx7_no_legacy_substring_counter_in_prover_source():
                 # allow survives a docstring reformat (NanoClaw #4936 △ Mineur).
                 if py.name == "lean_utils.py" and "# FX-7-ALLOW" in line:
                     continue
-                legacy.append(f"{py.name}:{ln}: {line.strip()}")
+                legacy.append(f"{py.relative_to(agent_tests)}:{ln}: {line.strip()}")
     assert not legacy, (
         "FX-7 violated — legacy substring `.count(\"sorry\")` reintroduced:\n"
         + "\n".join(legacy)
     )
+
+
+def test_peek_sorry_count_counts_real_tokens_not_prose(tmp_path):
+    """#9402: the `_peek_sorry_count` function that feeds the pre/post DELTA
+    forensic signal in run_prover_bg must return the REAL (comment-stripped,
+    word-bounded) token count, not the raw substring count. A prose-dense file
+    where every 'sorry' mention lives in comments/docstrings must read 0, and a
+    file mixing prose + real tokens must read only the real ones. Reverting
+    `_peek_sorry_count` to the raw substring counter reds this test."""
+    import sys
+
+    agent_tests = Path(__file__).resolve().parent.parent
+    if str(agent_tests) not in sys.path:
+        sys.path.insert(0, str(agent_tests))
+    import run_prover_bg  # noqa: E402
+
+    # Prose only: header docstring + line comment mention 'sorry' repeatedly,
+    # but there is NO real sorry token. Substring would over-count; real = 0.
+    prose_only = tmp_path / "prose_only.lean"
+    prose_only.write_text(
+        "/-!\n"
+        "This file used to be sorry everywhere; we removed sorry after sorry\n"
+        "until only sorry mentions in this docstring remained (sorry, sorry).\n"
+        "-/\n"
+        "-- NB: the word sorry in this line comment is NOT an obligation.\n"
+        "theorem t : True := by trivial\n",
+        encoding="utf-8",
+    )
+    assert run_prover_bg._peek_sorry_count(str(prose_only)) == 0
+    # Sanity: the raw substring counter WOULD have over-counted here.
+    assert prose_only.read_text(encoding="utf-8").count("sorry") >= 5
+
+    # Mixed: 2 real sorry tokens buried under the same prose. Real = 2.
+    mixed = tmp_path / "mixed.lean"
+    mixed.write_text(
+        "/-! Header mentions sorry many times (sorry sorry sorry). -/\n"
+        "-- a line comment saying sorry too\n"
+        "theorem a : True := by sorry\n"
+        "theorem b : True := by\n"
+        "  exact sorry\n",
+        encoding="utf-8",
+    )
+    assert run_prover_bg._peek_sorry_count(str(mixed)) == 2
+
+    # Missing file: the OSError contract returns -1 (unchanged behavior).
+    assert run_prover_bg._peek_sorry_count(str(tmp_path / "absent.lean")) == -1
 
 
 # --- FX-6b (#1453): sorry_is_in_statement + in-statement entry refusal ------
@@ -2889,32 +2946,42 @@ def test_candidates_list_prefers_workspace_relative_entry():
         )
 
 
-def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch):
-    """If _WORKSPACE_ROOT is None, the legacy drive-letter list still resolves.
+def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch, tmp_path):
+    """If _WORKSPACE_ROOT is None, the candidate list still resolves to the
+    first existing entry — the safety-net a harness copy dropped outside the
+    CoursIA layout (no MyIA.AI.Notebooks/ ancestor) relies on.
 
-    Defends the safety-net path: a harness copy dropped outside the
-    CoursIA layout (e.g. into a standalone dir without MyIA.AI.Notebooks/
-    ancestor) must keep working via the original candidates.
+    Regenerated post-#4365 (#8698): the lake is now ``game_theory_lean``
+    (CooperativeGames was absorbed, cf ``config.py`` _COOPERATIVE_GAMES_CANDIDATES
+    which now points at GameTheory/game_theory_lean). The prior form asserted
+    against hardcoded ``C:\\dev\\CoursIA\\...cooperative_games_lean`` paths that
+    (a) named an absorbed lake and (b) only existed on hosts with a stale
+    sibling checkout — so the test passed or failed depending on the operator's
+    machine, not on the resolver code. It now stands up its own layout under
+    ``tmp_path`` and proves the resolver skips a non-existent decoy.
     """
     import prover.config as cfg
-    from pathlib import Path
 
-    # Pretend no workspace root was found.
+    # Real candidate the fallback can resolve to, plus a decoy that must be
+    # skipped — proves "first EXISTING entry wins", not just "first entry".
+    real = tmp_path / "game_theory_lean"
+    real.mkdir()
+    decoy = tmp_path / "absent_lean"
+
+    # Pretend no workspace root was found (harness outside CoursIA layout).
     monkeypatch.setattr(cfg, "_WORKSPACE_ROOT", None)
-    # Remove the workspace-relative first entry from the candidate list so
-    # resolution falls back to the drive-letter list (mirrors what
-    # _workspace_root()==None would produce).
-    monkeypatch.setattr(cfg, "_COOPERATIVE_GAMES_CANDIDATES", [
-        Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-        Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    ])
+    monkeypatch.setattr(cfg, "_COOPERATIVE_GAMES_CANDIDATES", [decoy, real])
+
     cfg.COOPERATIVE_GAMES_DIR = next(
         (p for p in cfg._COOPERATIVE_GAMES_CANDIDATES if p.exists()),
         cfg._COOPERATIVE_GAMES_CANDIDATES[0],
     )
-    # On this Windows host, C:\dev\CoursIA exists — the legacy path resolves.
+    assert cfg.COOPERATIVE_GAMES_DIR == real, (
+        "legacy fallback must skip absent candidates and resolve to the first "
+        "existing one"
+    )
     assert cfg.COOPERATIVE_GAMES_DIR.exists(), (
-        "legacy drive-letter fallback must still resolve to a real path"
+        "legacy fallback must resolve to a real path"
     )
 
 
@@ -3851,4 +3918,162 @@ def test_empty_response_guard_injects_fallback(monkeypatch):
     kwargs = agent._trace.log.call_args.kwargs
     assert kwargs["role"] == "empty_response_guard"
     assert "injected fallback" in kwargs["content"]
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1453 forensic (cycle-98) — _build_check_or_revert feeds the fail streak
+# ──────────────────────────────────────────────────────────────────────────
+# compile() maintains _consecutive_compile_fail (inc on fail at tools.py:2067,
+# reset on success at 2021), but _build_check_or_revert() — the dominant
+# file_replace_* path (~75 vs ~5 compile() calls per forensic trace) — did NOT
+# touch it. Result: 14 invisible build_check fails burned 1352s in a single
+# TacticAgent turn on Voting L338, because the counter stayed at 0 and neither
+# the workflow yield-guard (FAIL_STREAK_HARDCAP=12, read between turns) nor any
+# intra-turn guard could see the streak. The fix: every build_check fail
+# (crash / veto / hard-revert) bumps the streak, every success resets it, and
+# an intra-turn BUILD_FAIL_STORM entry-guard stops editing once the cap is hit.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _fail_verifier_factory(raw_output=(
+        "Fake.lean:5:3: error: unknown identifier 'bar'\n"
+)):
+    """A verifier whose verify_project_file always reports a NON-sorry error.
+
+    The raw_output carries a real compile error (unknown identifier) so
+    _build_check_or_revert reaches the hard-revert branch (not the sorry-only
+    acceptance branch) — exercising the dominant forensic failure path.
+    """
+
+    class _FailVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": False, "errors": raw_output,
+                    "raw_output": raw_output}
+
+    return lambda *a, **k: _FailVerifier()
+
+
+def _success_verifier_factory():
+
+    class _OkVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": True, "errors": "", "raw_output": ""}
+
+    return lambda *a, **k: _OkVerifier()
+
+
+def _patch_verifier(monkeypatch, factory):
+    import prover.verifier as vmod
+    monkeypatch.setattr(vmod, "get_verifier", factory)
+
+
+def _pad(body, sorry_line_target):
+    """Pad a body with comments so the file-size guard (>50% delta) never fires.
+
+    Mirrors the tactic_tools fixture padding.
+    """
+    head = "\n".join(f"-- comment line {i}" for i in range(50))
+    tail = "\n".join(f"-- trailing line {i}" for i in range(50))
+    return head + "\n" + body + tail + "\n"
+
+
+def test_build_check_revert_increments_fail_streak(monkeypatch, tmp_path):
+    """A build_check fail (hard-revert branch) must bump _consecutive_compile_fail.
+
+    Regression fence for the #1453 cycle-98 forensic: before the fix, the
+    dominant file_replace path left the counter at 0 even after many reverts,
+    so the workflow/intra-turn guards were blind to the fail storm.
+    """
+    fake = tmp_path / "Fake.lean"
+    inner = "theorem t : True := by\n  sorry\n"
+    body = _pad(inner, 5)
+    fake.write_text(body, encoding="utf-8")
+    sorry_line = next(i + 1 for i, ln in enumerate(body.split("\n"))
+                      if "sorry" in ln)
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(filepath=str(fake), sorry_line=sorry_line,
+                        indentation=2, indent_str="  ", full_file=body)
+    tt = TacticTools(state, str(fake), sctx)
+
+    _patch_verifier(monkeypatch, _fail_verifier_factory())
+
+    # current on disk == original => sorry unchanged => NOT the veto branch =>
+    # the hard-revert branch (the one the forensic trace hit 14x).
+    result = tt._build_check_or_revert(original_content=body, operation="test")
+
+    assert result is not None and result.get("reverted") is True, result
+    assert tt._consecutive_compile_fail == 1, "revert must bump the fail streak"
+    assert state.consecutive_compile_fail == 1, "streak must mirror to shared state"
+    # File was reverted to the original.
+    assert fake.read_text(encoding="utf-8") == body
+
+
+def test_build_check_success_resets_fail_streak(monkeypatch, tmp_path):
+    """A successful build_check must reset _consecutive_compile_fail to 0.
+
+    Mirrors compile():2021. Without the reset, a single success after a long
+    storm would leave the streak high enough to trip the entry-guard on the
+    next (normal) edit.
+    """
+    fake = tmp_path / "Fake.lean"
+    body = "import Mathlib.Tactic\ntheorem t : True := by\n  trivial\n"
+    fake.write_text(body, encoding="utf-8")
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(filepath=str(fake), sorry_line=3,
+                        indentation=2, indent_str="  ", full_file=body)
+    tt = TacticTools(state, str(fake), sctx)
+
+    # Pre-arm a streak as if prior edits had failed.
+    tt._consecutive_compile_fail = 5
+    state.consecutive_compile_fail = 5
+
+    _patch_verifier(monkeypatch, _success_verifier_factory())
+
+    result = tt._build_check_or_revert(original_content=body, operation="test")
+
+    assert result is None, "successful build_check must return None"
+    assert tt._consecutive_compile_fail == 0, "success must reset the fail streak"
+    assert state.consecutive_compile_fail == 0, "reset must mirror to shared state"
+
+
+def test_build_fail_storm_guard_blocks_editing_at_cap(tactic_tools):
+    """Once the streak hits the cap, file_replace_sorry returns BUILD_FAIL_STORM.
+
+    This is the intra-turn guard the forensic asked for: the workflow guard
+    only reads the counter BETWEEN turns, so within one turn an agent could
+    churn many more fails. The entry-guard short-circuits before any edit.
+    """
+    import json
+    tt = tactic_tools
+    cap = tt._fail_streak_threshold
+    tt._consecutive_compile_fail = cap
+    before = Path(tt._filepath).read_text(encoding="utf-8")
+
+    out = json.loads(
+        tt.file_replace_sorry(tt._test_sorry_line, "trivial", build_check=False)
+    )
+
+    assert "error" in out
+    assert "BUILD_FAIL_STORM" in out["error"]
+    assert str(cap) in out["error"]
+    # No edit landed, no further fail counted: file + counter unchanged.
+    assert Path(tt._filepath).read_text(encoding="utf-8") == before
+    assert tt._consecutive_compile_fail == cap
+
+
+def test_build_fail_storm_guard_passes_below_cap(tactic_tools):
+    """Below the cap the guard must let the edit through (no false positive)."""
+    import json
+    tt = tactic_tools
+    tt._consecutive_compile_fail = tt._fail_streak_threshold - 1
+
+    out = json.loads(
+        tt.file_replace_sorry(tt._test_sorry_line, "trivial", build_check=False)
+    )
+
+    # No BUILD_FAIL_STORM error (the edit went through; build_check=False so it
+    # reports success without touching the verifier).
+    err = out.get("error", "")
+    assert "BUILD_FAIL_STORM" not in err
 

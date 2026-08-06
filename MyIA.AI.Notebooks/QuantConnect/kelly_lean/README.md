@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-kelly_lean
+pedagogical_count: 1
+breakdown: kelly_lean=1
+maturity: BETA=1
+-->
+
 # kelly_lean — optimalité du critère de Kelly (log-croissance)
 
 Mini-projet Lean 4 (avec Mathlib, toolchain `v4.31.0-rc1`) prouvant l'**optimalité du

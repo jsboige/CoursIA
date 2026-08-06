@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Étude sur le framework agentique ADK et l'exemple MLE-STAR
 
 **Date:** 2025-08-04

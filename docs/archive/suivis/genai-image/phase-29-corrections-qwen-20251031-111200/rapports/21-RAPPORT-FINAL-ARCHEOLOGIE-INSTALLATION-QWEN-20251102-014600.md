@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # 📋 RAPPORT 21 - MISSION SDDD GROUNDING ARCHÉOLOGIQUE INSTALLATION CUSTOM NODES QWEN
 
 **Date** : 2025-11-02 01:46 UTC+1  

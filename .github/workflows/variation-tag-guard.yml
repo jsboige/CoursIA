@@ -1,0 +1,322 @@
+name: Variation Tag Guard
+
+# Rend VISIBLE la conformite du tag `Grain: <TIER>/<GENRE>` exige par
+# .claude/rules/variation-protocol.md (mandat user 2026-07-21, anti-monoculture).
+#
+# ADVISORY, jamais bloquant : ce job sort toujours en exit 0. Il n'existe pas
+# pour punir un worker, mais pour que le coordinateur ne puisse plus merger
+# une PR sans tag *sans le voir*. Le protocole designe le tag comme condition
+# de merge et confie la lecture a ai-01 ; une condition qui repose sur la
+# seule vigilance humaine derive silencieusement (constat : plusieurs merges
+# NO-TAG malgre la regle publiee). Un signal automatique la rend auditable.
+#
+# Passage en bloquant : seulement apres une periode ou la flotte est conforme,
+# et par decision explicite — pas par durcissement unilateral de ce fichier.
+#
+# Ce que le guard verifiait jusqu'ici : la PRESENCE d'une ligne `Grain:` et la
+# validite du TIER. Deux omissions constatees a la main sur un seul cycle de
+# coordination (c.61) :
+#
+#   1. GENRE hors-liste. `tooling` x3, `test-coverage`, `refs`, `ci` ont tous
+#      obtenu un `Check Grain tag conformity` SUCCESS. (`tooling` a depuis ete
+#      canonise par la regle §1 sur la foi de ces 5 usages, avec `research-code` :
+#      un genre observe assez souvent est une lacune de l'enumeration, pas une
+#      faute du worker. Les trois autres restent des alias a replier.) Or
+#      G-VAR-3 compare des
+#      GENRES consecutifs : un genre absent de l'enumeration §1 rend cette
+#      comparaison arbitraire — deux tranches d'une meme vague peuvent porter
+#      deux etiquettes inventees et ne jamais declencher l'adjacence.
+#   2. `lane` absente. §3 l'exige explicitement ("un grain qui ne dit pas de
+#      quelle lane il vient est structurellement incomptable") parce que
+#      G-VAR-2 est un cap PAR LANE ET PAR JOUR. Le guard ne la regardait pas.
+#      Constate sur deux PR d'un meme rollout, aucune des deux signalee.
+#
+# Relever a la main ce qu'un organe devrait dire est le reflexe a supprimer :
+# ce fichier APPLIQUE la §1 telle qu'ecrite, il ne la modifie pas — aucun
+# fichier de `.claude/rules/` n'est touche, donc pas de sign-off requis.
+#
+# Un label distinct par classe de defaut (plutot qu'un label fourre-tout) rend
+# la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
+# ouvrir les logs du job.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-variation-tag:
+    name: Check Grain tag conformity
+    runs-on: ubuntu-latest
+    steps:
+      # #9485 : le parsing du tag est desormais porte par scripts/grain_tag.py
+      # (extracteur partage avec variation_light_cap.py). Sparse-checkout de ce
+      # module -- rien d'autre dans l'arbre n'est lu par ce job.
+      - name: Checkout the shared tag extractor (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/grain_tag.py
+      - name: Inspect PR body for Grain tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GH_REPO reste positionne malgre le checkout (sparse laisse un repo
+          # git valide, donc gh deduit le cible) : inoffensif, et protege contre
+          # toute regression du contexte gh (#8786 -- un `|| true` muet avait
+          # masque une panne de contexte ou zero PR etait labellisee).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` (visible dans le log du job, ligne `shell:`).
+          # L'errexit est donc **actif**, et `set -uo pipefail` ne l'annule pas —
+          # il ajoute `-u` et `-o pipefail`, il ne retire pas `-e`. Ne pas lire
+          # l'absence de `-e` sur cette ligne comme « rien ne peut faire echouer
+          # le job » : toute commande non protegee qui sort non-zero tue le step
+          # et transforme cet advisory en check rouge.
+          #
+          # Ce qui garde l'advisory vrai n'est donc PAS l'absence de `-e`, c'est
+          # que chaque commande faillible ci-dessous est soit dans une condition
+          # (`if`/`elif`/`case`, exempts d'errexit), soit suffixee `|| true`.
+          # Verifie firsthand : les 8 cas de test passent sous `bash -e` — la
+          # premiere passe, menee sous `bash -c` sans `-e`, testait le mauvais
+          # interpreteur. C'est exactement la faille nommee par #8894 (« un test
+          # unitaire ne peut pas observer l'interpreteur d'un autre job »).
+          #
+          # Et surtout : **jamais `|| true` sur la capture d'un code de retour**.
+          # `rc=$?` apres `cmd || true` lit le `0` de `true`, pas celui de `cmd` —
+          # cela desarme le controle en permanence, strictement pire que le bug
+          # d'errexit qu'on croyait corriger. Idiome correct si besoin un jour :
+          # `out=$(cmd) && rc=0 || rc=$?`.
+
+          # Hors scope : bots (catalogue auto-regenere) et forks (PRs etudiantes,
+          # cf .claude/rules/student-pr-reviews.md — review bienveillante, aucun
+          # critere interne ne s'y applique).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Extraction du tag via l'extracteur PARTAGE scripts/grain_tag.py.
+          # #9485 : le grep bash 'Grain:' ici et le regex Python 'Grain:\s*' dans
+          # variation_light_cap.py divergeaient -- les deux exigeaient les
+          # deux-points et rataient la forme titre `## Grain` + tag sur la ligne
+          # suivante (38% des merges du 2026-08-05 invisibles au cap G-VAR-2).
+          # Desormais une SEULE source de lecture (grain_tag.parse_grain_tag),
+          # qui tolere les formes observees (Grain:, ## Grain, **Grain** :,
+          # `Grain` sans deux-points) SANS tolerer l'absence de substance
+          # (TIER/GENRE introuvable -> present=False -> variation-tag-missing).
+          # Le bash n'est plus que la plomberie de labels : il consomme le JSON
+          # {present, tier, genre, lane, tier_valid, genre_valid} et applique
+          # les memes labels qu'avant (la nomenclature §1 ne change pas).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+          python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt > /tmp/tag.json 2>/dev/null || true
+
+          # Chaque extraction est tolerante a un fichier tag.json absent ou vide
+          # (un python3 manquant en CI, un body vide) : fallback = defauts surs
+          # qui declenchent les labels, jamais un faux vert.
+          _field() { python3 -c "import json; print(json.load(open('/tmp/tag.json')).get('$1'))" 2>/dev/null || echo "None"; }
+          PRESENT=$(_field present)
+          TIER=$(_field tier)
+          GENRE=$(_field genre)
+          LANE=$(_field lane)
+          TIER_VALID=$(_field tier_valid)
+          GENRE_VALID=$(_field genre_valid)
+
+          DEFECTS=""
+          note_defect() { DEFECTS="$DEFECTS $1"; }
+
+          if [ "$PRESENT" = "True" ]; then
+            echo "Tag lu : TIER=$TIER GENRE=$GENRE lane=$LANE"
+
+            # Enumeration §1 et tiers DEEP|MED|LIGHT internes a grain_tag.py
+            # (la source unique -- sinon le guard et l'organe re-divergeraient).
+            if [ "$TIER_VALID" != "True" ]; then
+              echo "::warning::TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT -- le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
+              note_defect variation-tag-malformed
+            fi
+            if [ "$GENRE_VALID" != "True" ]; then
+              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+              note_defect variation-tag-genre-offlist
+            fi
+            if [ -z "$LANE" ] || [ "$LANE" = "None" ]; then
+              echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
+              note_defect variation-tag-lane-missing
+            fi
+          else
+            # Substance absente (TIER/GENRE introuvable) : l'unique cas ou la
+            # tolerance s'arrete. Les formes titre/bold/no-colon sont couvertes
+            # ci-dessus ; si present=False, il n'y a reellement pas de tag.
+            echo "::warning::Aucun tag 'Grain: <TIER>/<GENRE>' lisible dans le body (formes lues : Grain:, ## Grain, **Grain** :). variation-protocol.md exige 'Grain: <TIER>/<GENRE> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>'."
+            note_defect variation-tag-missing
+          fi
+
+          # Traduction en labels. Chaque classe de defaut a son propre label pour
+          # que sa nature se lise dans `gh pr list --json labels`. Les labels
+          # correspondant a un defaut ABSENT sont retires : un label colle par un
+          # push anterieur ne doit pas survivre a la correction.
+          #
+          # stderr LAISSE PASSER sur les `create`/`add` : `|| true` garde le job
+          # non bloquant, mais masquer l'erreur est ce qui avait rendu la panne
+          # de contexte `gh` invisible (#8786). Un garde dont l'echec est muet
+          # n'est pas un garde. Sur les `remove`, `2>/dev/null` reste justifie :
+          # retirer un label absent est l'issue ATTENDUE au cas nominal.
+          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing; do
+            case "$LABEL" in
+              variation-tag-missing)          COLOR="FBCA04"; DESC="PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" ;;
+              variation-tag-malformed)       COLOR="FEF2C0"; DESC="Tag Grain present mais TIER != DEEP|MED|LIGHT" ;;
+              variation-tag-genre-offlist)   COLOR="FEF2C0"; DESC="GENRE hors de l'enumeration variation-protocol §1" ;;
+              variation-tag-lane-missing)    COLOR="FEF2C0"; DESC="Tag Grain sans 'lane <machine:workspace>' (cap G-VAR-2 incomptable)" ;;
+            esac
+            case " $DEFECTS " in
+              *" $LABEL "*)
+                gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
+                gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+                ;;
+              *)
+                gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+                ;;
+            esac
+          done
+
+          if [ -z "$DEFECTS" ]; then
+            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree."
+          else
+            echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
+          fi
+          exit 0
+
+  # G-VAR-2 est le seul gate du protocole qui ne se decide pas DANS la PR : il
+  # demande de savoir ce que la lane a DEJA merge aujourd'hui (au plus une LIGHT
+  # par lane et par jour, toutes categories LIGHT confondues). Compte a la main
+  # par le coordinateur jusqu'ici, qui a merge une 2e LIGHT deux fois en un
+  # cycle (#8964). Ce job rend le fait VISIBLE (advisory, exit 0).
+  #
+  # La logique de parsing + comptage vit dans scripts/variation_light_cap.py
+  # (testable, agnostique separateur/casse #8938, bodies lus en TEXTE ENTIER --
+  # le bug ligne-a-ligne avait rendu "18/38 sans tag" au lieu de "2/38"). Le job
+  # n'est que la plomberie CI : dataset des mergees du jour + label + commentaire.
+  #
+  # #8970 : le compteur lit le tier DECLARE, mais le protocole dit que le tag
+  # declare n'est pas auto-executable -- le coordinateur RE-qualifie au merge
+  # (up LIGHT->MED, down DEEP->LIGHT). Cette requalification est porte par un
+  # LABEL `grain-requalified:<TIER>` applique au merge (machine-readable, body
+  # intact, cheap : --json labels ajoute le champ a la MEME requete, pas de
+  # quota supplementaire). Le label OVERRIDE le tier declare pour le comptage,
+  # dans les deux sens. Sans lui, le compteur flaggait du travail legitiment
+  # re-qualifie (1 FP/2 flags sur la vague 2026-07-30 : #8930 LIGHT->MED).
+  check-light-cap:
+    name: G-VAR-2 light cap (cross-PR)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the cap detector (sparse)
+        uses: actions/checkout@v4
+        with:
+          # variation_light_cap.py importe grain_tag.py (#9485 : extracteur
+          # partage) -- les deux modules sont checkout ensemble.
+          sparse-checkout: |
+            scripts/variation_light_cap.py
+            scripts/grain_tag.py
+      - name: Cross-PR LIGHT cap (G-VAR-2)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Meme garde-fou anti-spam que le job de tag : bots et forks hors
+          # scope (PRs etudiantes, .claude/rules/student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Jour courant en UTC : G-VAR-2 se compte par jour UTC (reset 00:00Z).
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Les PR deja mergees aujourd'hui = le jeu de comptage. La PR courante
+          # est OUVERTE (le job tourne sur opened/edited/synchronize/reopened,
+          # pas sur le merge) donc elle n'est PAS dans ce set -- c'est ce qui
+          # rend la 2e LIGHT detectable. On recupere aussi les LABELS pour
+          # honorer la requalification #8970 (grain-requalified:<TIER> qui
+          # override le tier declare) : ajouter le champ `labels` a la MEME
+          # requete ne consomme pas de quota supplementaire.
+          gh pr list --state merged --search "merged:$TODAY" \
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+
+          # Le body circule par fichier : printf '%s' ne reinterprete rien
+          # (newlines, quotes, $), contrairement a un passage en arg CLI.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Labels de la PR courante : une requalification peut etre pre-appliquee
+          # sur la PR ouverte (cas down-qualification, ou up-qualification
+          # anticipee). On les passe au detecteur pour que son verdict soit
+          # symetrique a celui porte sur les mergees. `gh pr view --json labels`
+          # renvoie [{name,...}] -- le script l'aplatit.
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # ADVISORY : le script sort toujours en 0. Si le TIER EFFECTIF n'est
+          # pas LIGHT (declare LIGHT re-qualifie up, ou declare non-LIGHT sans
+          # down-qualif) ou la lane absente, il renvoie cap_reached=false et le
+          # label est retire (un label colle par un push anterieur ne survit pas).
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --check-pr "$PR_NUMBER" \
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json > /tmp/status.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/status.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "False")
+
+          # Label distinct (lisible dans gh pr list --json labels). advisory,
+          # donc create/add/remove tolerent l'echec sans tuer le job (|| true).
+          gh label create variation-light-cap-reached \
+            --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
+            --color B60205 --force 2>/dev/null || true
+
+          if [ "$CAP" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
+            LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            # Commentaire idempotent : un marqueur HTML invisible evite le spam
+            # a chaque synchronize. On ne poste que si aucun commentaire ne le
+            # porte deja.
+            MARK="<!-- gvar2-light-cap -->"
+            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+              BODY="${MARK}
+          **G-VAR-2 light cap reached** (advisory, non bloquant).
+          La lane \`${LANE}\` a deja merge une LIGHT aujourd'hui (${CB}).
+          G-VAR-2 plafonne a **une LIGHT par lane et par jour, toutes categories LIGHT confondees**
+          (guard, doc, refs, ... partagent un seul budget). La decision de merge reste au coordinateur."
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
+          else
+            # Cas nominal : on retire un label obsolete colle par un push anterieur.
+            gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+          fi
+          exit 0

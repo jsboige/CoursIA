@@ -1,0 +1,14 @@
+- name: "CSP-5 Optimization"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+  known_differences:
+    - "Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d'optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite, patterns de coupe optimaux, allocation lineaire sous contraintes de risque)."
+    - "Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l'echelle). C# = **Choco-solver via IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l'assembleur IKVM."
+    - "Asymetrie de couverture : Python plus etendu (56 vs 19 cellules) -- ajoute la visualisation du bin packing (`plot_bin_packing`), un benchmark comparatif heuristique First-Fit-Decreasing vs CP-SAT (complexite pratique vs garantie d'optimalite), une section dediee au Dominance Breaking, et 2 exemples guides (Multi-Knapsack, Bin Packing avec conflits). Le C# se concentre sur la resolution des 4 problemes cles via Choco + 3 exercices d'approfondissement, avec une cellule de comparaison OR-Tools CP-SAT vs Choco. Meme socle algorithmique (combinatorial optimization), leviers de demonstration differents (viz riche + benchmark empirique cote Python vs resolutions Choco compactes cote C#)."

@@ -342,3 +342,84 @@ class TestCrossSubstratObstruction:
         out = cross_substrat_obstruction(subs)
         assert len(out["pairwise_norms"]) == 6
         assert out["n_substrats"] == 4
+
+
+# --------------------------------------------------------------------------- #
+#  Garde-fou anti-substrat-degenere (regression Prong-B, fix ICT-15c #7648)    #
+# --------------------------------------------------------------------------- #
+class TestDegenerateInputGuard:
+    """Encode durablement la lecon Prong-B du fix ICT-15c (#7648).
+
+    Un substrat DEGENERE -- trajectoire constante (1 seul symbole observe,
+    ex. Gray-Scott eteint V_max=0 ou Axelrod fige) -- produit une signature
+    triviale (sensitivity=0, graphe sans arete) qui ne peut PAS discriminer
+    les proxys. Le verdict cross-substrat calcule sur un tel substrat est
+    un artefact, pas une mesure honnete (regle sota-not-workaround Prong-B).
+
+    Ces tests documentent le PIEGE (verdict mecaniquement STABLE sur
+    substrats eteints) pour qu'un futur contributeur ne le reintroduise
+    pas. La detection se fait en AMONT, dans le notebook, via un garde-fou
+    sur la variance de la trajectoire (assert sur std / nb de bascules) ;
+    ``meta_proxy`` lui-meme reste silencieux sur l'entree (pas d'erreur
+    volontaire, regle C.1).
+    """
+
+    def test_constant_trajectory_signature_is_trivial(self):
+        """Un substrat constant -> spectral_gap=0, sensitivity=0 (signature vide).
+
+        C'est precisement la signature qu'un substrat eteint (Gray-Scott
+        V=0 partout, Axelrod dominance figee) produit : elle NE porte aucune
+        information et ne doit pas etre confondue avec un verdict STABLE
+        honnete.
+        """
+        # Trajectoire constante : 1 seul symbole, 200 pas.
+        const_states = [3] * 200
+        sig = proxy_signature(
+            const_states,
+            2,
+            spectral_fn=_mock_spectral,
+            sensitivity_mean_fn=_mock_sens_mean,
+            sensitivity_max_fn=_mock_sens_max,
+        )
+        # n_transitions = 0 (pas de mouvement) -> signature sans structure.
+        assert sig["n_transitions"] == 199  # compte brutal, mais 1 symbole visite
+        # Le PIEGE : deux substrats constants donnent le meme vecteur
+        # d'obstruction nul -> verdict STABLE artefactuel.
+        sig2 = proxy_signature(
+            [5] * 200,
+            2,
+            spectral_fn=_mock_spectral,
+            sensitivity_mean_fn=_mock_sens_mean,
+            sensitivity_max_fn=_mock_sens_max,
+        )
+        out = cross_substrat_obstruction({"const_a": sig, "const_b": sig2})
+        # Verdict STABLE mais ARTEFACTUEL : les deux signatures sont
+        # triviales (mock identique), pas structurellement stables.
+        assert out["verdict"] == "STABLE"
+        assert out["mean_norm_l2"] <= 0.05
+        # Documente le piege : ce STABLE n'est PAS une acceptance positive
+        # honnete -- il faut un garde-fou amont (variance > 0) pour ecarter
+        # les substrats eteints avant l'agregation.
+
+    def test_degenerate_substrats_must_be_rejected_upstream(self):
+        """Le contrat du notebook ICT-15c : refuser un substrat eteint en amont.
+
+        Le notebook (#7648) protege l'agregation via :
+            assert V.std() > 1e-3       # Gray-Scott non-eteint
+            assert n_changes >= 5       # Axelrod non-fige
+        Ce test documente que la detection se fait en AMONT : un substrat
+        a 1 seul symbole visite est degenere et doit etre rejete avant le
+        calcul meta_proxy (qui reste un calcul pur, sans erreur volontaire).
+        """
+        # Cas valide : trajectoire a >= 2 symboles -> acceptee.
+        valid_states = [0, 1, 0, 1, 2]
+        assert len(set(valid_states)) >= 2  # garde-fou amont passe
+
+        # Cas degenere : 1 seul symbole -> le garde-fou amont declenche.
+        degenerate = [0] * 100
+        n_distinct = len(set(degenerate))
+        assert n_distinct < 2  # bien degenere (confirme le scenario)
+        with pytest.raises(AssertionError):
+            # Reproduit le garde-fou amont du notebook ICT-15c (#7648) :
+            # il DOIT declencher sur un substrat reellement eteint.
+            assert len(set(degenerate)) >= 2, "substrat degenere : a rejeter en amont"

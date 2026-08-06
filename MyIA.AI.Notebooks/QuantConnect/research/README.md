@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-research
+pedagogical_count: 0
+breakdown: 
+maturity: 
+-->
+
 # Notebooks de recherche standalone
 
 Recherche indépendante utilisant des données locales (yfinance, pandas, sklearn). Aucun QuantConnect Cloud requis.

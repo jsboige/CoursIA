@@ -1,0 +1,14 @@
+- name: "GameTheory-16 MechanismDesign"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA-2
+      python_sha: d81bda661b8e79970e4c818eb4b0a8904b5405d1
+      csharp_sha: fd5fd04b331a2cbef35868a55e5e25436493b00f
+  known_differences:
+    - "Socle pedagogique commun : theorie des mecanismes et principe de revelation, encheres premier et second prix, Vickrey 1961 (sincerite de l'enchere au second prix), mecanisme VCG (Vickrey-Clarke-Groves) et regle de Clarke."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `abc`/`itertools` (classes abstraites de mecanismes). C# = BCL .NET 9 pur (`System.Linq`, `System.Text`, 0 NuGet), encheres et VCG from-scratch avec lecture-interpreter des resultats."
+    - "Asymetrie de couverture : Python (49 cellules, 15 code) couvre les principes fondamentaux et le theoreme de revelation ; C# (24 cellules, 9 code) ajoute Gale-Shapley (mariages stables, 1962) et double auction (echange bilateral) comme exemples travailles distincts. Meme theorie centrale (revelation/Vickrey/VCG), exemples complementaires cote C#."

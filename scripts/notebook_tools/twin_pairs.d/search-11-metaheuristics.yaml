@@ -1,0 +1,20 @@
+- name: "Search-11 Metaheuristics"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-01"
+      by: po-2024
+      python_sha: 037f3e5c663a9448b1009878f454be67951f9217
+      csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
+      reason: "Measure/value fix (Python cell 21 « Interpretation : ABC sur Rosenbrock »): 3 value claims output-proven FALSE. The committed cell 20 output gives Solution ~[0.46,0.23,..] ~ [0,..,0] with Objectif 8.134688 (output itself prints «Optimal attendu: [1,..,1], f=0»), yet c21 claimed «solution proche de [1,..,1]» (near optimum) and table row «Vecteur proche de [1,..,1]» -- both backwards. Point 1 claimed «ABC adaptee a Rosenbrock», contradicted by c31 benchmark (ABC Rosenbrock 135.7250) and c34 synthesis «Catastrophique sur Rosenbrock (135,7)». Realigned all 3 to outputs (solution near [0,..,0] far from optimum f=8.13; «ABC peine sur Rosenbrock» with both §5 demo ~8.13 and §8 benchmark 135.7 cited). Markdown-only, 0 re-exec, no output change. C# twin has NO ABC (PSO/SA/GA/TSP from-scratch only, see known_differences), csharp unchanged."
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 029307e5c05c6b5bfaa05d2c668c1116952a4a73
+      csharp_sha: b41a4e251e8bd06d6d2a51f14f5bbf96b48684f1
+  known_differences:
+    - "Socle commun : metaheuristiques d'optimisation (PSO Particle Swarm, SA Simulated Annealing), fonctions de benchmark, benchmark comparatif, analyse de parametres, exemple guide."
+    - "Bibliotheque vs from-scratch : Python invoque MEALPy (librairie metaheuristique, 40+ algorithmes) pour PSO/ABC/SA/BRO ; C# implemente PSO/SA/GA from-scratch (System.Random, pas de NuGet metaheuristique)."
+    - "Asymetrie de couverture algorithmique : Python couvre PSO + ABC (Artificial Bee Colony) + SA + BRO (Brownian) via MEALPy ; C# couvre PSO + SA + GA (Genetic Algorithm) + un exemple TSP (recuit simule). GA et TSP sont propres au C# ; ABC et BRO sont propres au Python."
+    - "Stochasticite : les deux cotes sont sedeables mais non deterministes (optimisation stochastique) -- parite conceptuelle (meme famille d'algorithmes, memes fonctions de benchmark), pas bitwise."

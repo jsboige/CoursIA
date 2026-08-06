@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport d'Audit de Configuration - ComfyUI Qwen
 **Date** : 2025-11-10  
 **Sous-tâche** : Audit de Configuration Complet et Correction  

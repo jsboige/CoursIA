@@ -1,0 +1,15 @@
+- name: "Planners-1 Introduction"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-02"
+      by: myia-po-2024:CoursIA-2
+      python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
+      csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
+      reason: "rebaseline python apres 1 fix structurel (#8052) : le titre ### 4.2 Implementation avec unified-planning apparaissait DEUX FOIS -- cellule 7 (intro) et cellule 9 (re-ouvert, byte-identique), avec seulement le code de verification de version (cellule 8) entre les deux ; la section 4 avait donc 4.1, 4.2, 4.2 (dup), 4.3. Fix = suppression du titre duplique de la cellule 9 (cellule 7 l'avait deja), la phrase d'introduction distincte de la cellule 9 est conservee (elle devient un pont entre la verification de version cellule 8 et le code de modelisation cellule 10, tous sous ### 4.2 ouvert a la cellule 7). Python-only (le jumeau C# from-scratch BCL n'a pas d'unified-planning, 0 titre ### 4.2), csharp_sha unchanged, parite semantique preservee (0 re-exec, 0 output/code modifie)."
+  known_differences:
+    - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
+    - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet)."
+    - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only correction cote Python (cell[0] nav label + cell[35] list item + link text : 'PDDL-Syntax' -> 'PDDL-Basics', conforme au titre reel du notebook suivant Planners-2-PDDL-Basics). Paraphite-preservant : aucun output/code modifie, axe de parite semantic (concept planification) intact."

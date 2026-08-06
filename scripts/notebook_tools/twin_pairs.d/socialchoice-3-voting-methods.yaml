@@ -1,0 +1,17 @@
+- name: "SocialChoice-3 Voting-Methods"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 7d3ea48c681d137b25725c50e9c4d78678fd6ba8
+      csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+  known_differences:
+    - "2026-07-25 (po-2024) #8052 case-A : median-voter preference order -- cell#29 (devenu #29 apres #8566) table disait pic=5 => '4 > 6 > 2 > 0 > 8 > 10' mais l'output code (Electeur 4 pic=5: [4,6,2,8,0,10]) prouve '4 > 6 > 2 > 8 > 0 > 10' (single_peaked_preference sort stable par |x-5|). Markdown-only 1-line swap, no re-exec. csharp_sha inchange. python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-25 (po-2024) #8564 : IIA verdict honnetete + contre-exemple Copeland -- cell#23 imprimait `=> respecte IIA` des que le compteur Monte-Carlo tombait a 0, mais Copeland (Condorcet-consistante) VIOLE IIA (theoreme). Fix : verdict existentiel seul (0/100 => 'aucune violation observee, n'etablit pas respecte IIA' ; >0 => 'VIOLE IIA (N contre-exemples)'). Ajout cellule contre-exemple constructif (profil cyclique 4 alts A>B>C>D / B>C>D>A / C>D>A>B : A bat B pairwise, Copeland classe B>A avec C,D vs A>B sans -- inversion = IIA violée prouvee). markdown cell#24 (devenu #26) corrigé ('Copeland respecte IIA car pairwise' etait faux). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-25 (po-2024) #8559 : determinism rebaseline -- plurality/borda/copeland tie-break etait `sorted(set(...), key=lambda x:-score)` (stable-sort + hash-dependent set iteration = PYTHONHASHSEED non-determinisme, 4 outcome buckets sur 41 seeds). Fix : tuple tiebreak `key=lambda x:(-score, x)` (lexicographique). Outputs regeneres (cell#12 rules -> A>B>C deterministe ; cell#23 Arrow MC -> 12/3/0 deterministe). markdown cell#13/#14/#16 aligne a la nouvelle verite (symmetric profile donne meme classement A>B>C ; departage alphabétique). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
+    - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
+    - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."

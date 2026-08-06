@@ -1,0 +1,15 @@
+- name: "SL-4 InductiveLogicProgramming"
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb
+  parity_level: surface
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5989c12479280ccd887129b7fd6bd98ae98c0734
+      csharp_sha: ea011ad638e69c982deb3f508e45841b3d71a75a
+  known_differences:
+    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface car le jumeau Python INVOQUE un vrai moteur ILP SOTA (SWI-Prolog via pyswip + reference a Popper 'Learning From Failures') tandis que le C# reimplémente FOIL from-scratch (pas de moteur Prolog). Meme concept pedagogique, machineries differentes."
+    - "Asymetrie de couverture : Python (48 cellules, 19 code) couvre clauses Horn + unification, FOIL top-down, resolution inverse bottom-up, application FOIL pas-a-pas, ILP et Knowledge Graphs, + section dediee au vrai moteur Popper (LFF) ; C# (25 cellules, 10 code) couvre clauses Horn + unification, briques FOIL, probleme des ancetres, evaluation de clauses candidates, resolution inverse, FOIL pas-a-pas, mini KG."
+    - "Engine idiom : Python = SWI-Prolog (moteur Prolog reel pour l'unification et la resolution) ; C# = unification et FOIL codés a la main (System.Collections, pas de NuGet Prolog)."
+    - "Popper (LFF) est presente en prose Python mais pas implante cote C# -- le C# se limite au FOIL from-scratch."

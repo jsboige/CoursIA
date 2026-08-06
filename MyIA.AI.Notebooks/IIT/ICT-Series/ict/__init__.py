@@ -86,6 +86,16 @@ from . import sensitivity
 from . import meta_proxy
 from . import reversibility_budget
 from . import argumentation
+from . import inhibited_action
+from . import learned_valence
+from . import pregnance_animat
+from . import cech_obstruction
+from . import signaling_convention
+from . import symbol_invention
+from . import collective_adoption
+from . import inhibited_invention
+from . import concept_inoculation
+from . import bridge_testing
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -99,4 +109,14 @@ __all__ = [
     "spectral", "sensitivity", "meta_proxy",
     "reversibility_budget",
     "argumentation",
+    "inhibited_action",
+    "learned_valence",
+    "pregnance_animat",
+    "cech_obstruction",
+    "signaling_convention",
+    "symbol_invention",
+    "collective_adoption",
+    "inhibited_invention",
+    "concept_inoculation",
+    "bridge_testing",
 ]

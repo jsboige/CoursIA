@@ -1,0 +1,29 @@
+- name: "Sudoku-18 Comparison"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-03"
+      by: myia-po-2023:CoursIA
+      python_sha: 36401a556e3553e4dd2a7fc52d4222251f8d6c2e
+      csharp_sha: 7e11e158decc0f844680740fe09cdcfed43a9535
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 36401a556e3553e4dd2a7fc52d4222251f8d6c2e
+      csharp_sha: 60eda1c910b9a3a4367e029fd308fb8a2983adda
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 40c4b0bd5db068bd716e75b0c0dbdae8a76212ef
+      csharp_sha: 60eda1c910b9a3a4367e029fd308fb8a2983adda
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 2c87f7e9feec1dc9f7db8040f02b3f1f833249a1
+      csharp_sha: c56831ed09f83e2780d74f265412674b12861dad
+      content_python_sha: 089d67e706104ba025aab3198eea12853ee328a341ef3285c384c8ab700c2ee6
+      content_csharp_sha: faf8913e82d7880e76d8b9c5f2912e634d7fedca50f1e60f89a6f7e158621915
+  known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par de-hardcodage de la version numpy depuis le markdown (classe ENV #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
+    - "Socle pedagogique commun : comparaison synthese de TOUS les solveurs de la serie Sudoku (backtracking, dancing links, genetic, OR-Tools, Z3, BDD, probabiliste), meme concept (tableau de benchmark croise : temps de resolution / robustesse / complexite), meme arc conclusif (Fin de serie)."
+    - "Parite structurelle forte : Python et C# ont exactement la meme structure (25 cellules code / 43 markdown chacun), memes en-tetes de navigation ('Fin de serie'), memes solveurs compares. Les deux cotes instrumentent les memes familles de solveurs."
+    - "Idiomes framework : chaque cote invoque les solveurs disponibles dans son ecosysteme (Python = ortools/z3/numpy/stdlib ; C# = Infer.NET/Choco/Z3/BDD/stdlib). La comparaison croisee est le livrable pedagogique commun."

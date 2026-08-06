@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 47
 breakdown: DataScienceWithAgents=28, ML.Net=19
-maturity: PRODUCTION=41, BETA=5, ALPHA=1
+maturity: BETA=42, ALPHA=5
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
@@ -57,7 +57,7 @@ Six figures illustrent les trois fils de la série : les fondations Python (Pand
 
 ### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
 
-Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
+Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML) — son **leaderboard AutoML** (cell 12-13) rend visible la discrimination entre entraîneurs : sur données quadratiques, `LightGbmRegression` gagne avec un RMSE de 90 262 contre 30,5 millions pour `FastTreeRegression`, soit un écart de **plus de 300×** qu'aucun tableau `Console.WriteLine` ne fait ressortir. Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
 ### Track B : Data Science with Agents (Python, 28 notebooks, ~21h)
 
@@ -124,8 +124,8 @@ ML/
 ├── DataScienceWithAgents/            # Data Science Python + AI Agents
 │   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
-│   ├── PythonAgentsForDataScience/   # Track LangChain (Labs 1-7)
-│   └── AgenticDataScience/           # Track Google ADK (Labs 8-17)
+│   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
+│   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-17)
 │
 └── learning_theory_lean/                  # Lake Lean 4 — convergence du perceptron (Novikoff)
 ```
@@ -154,10 +154,10 @@ pip install langchain langchain-openai langchain-experimental
 # + variable d'environnement OPENAI_API_KEY dans un fichier .env
 ```
 
-### Installation AgenticDataScience Labs (Days 4-7)
+### Installation Track2-GoogleADK Labs (Days 4-7)
 
 ```bash
-pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
+pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/requirements.txt
 cp .env.example .env  # puis configurer les clés API
 ```
 
@@ -175,7 +175,7 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 1-Py | [ML-1-Introduction-Python](ML.Net/ML-1-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
 | 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
 | 2-Py | [ML-2-Data&Features-Python](ML.Net/ML-2-Data&Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
-| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entraînement |
+| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML + **leaderboard visuel** (Plotly) | Entraînement |
 | 3-Py | [ML-3-Entrainement-Python](ML.Net/ML-3-Entrainement-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
 | 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
 | 4-Py | [ML-4-Evaluation-Python](ML.Net/ML-4-Evaluation-Python.ipynb) | **Jumeau Python** : cross-validation + métriques + PFI ⇄ `cross_val_score` + `permutation_importance` (scikit-learn) | Parité .NET⇄Python |
@@ -190,6 +190,20 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 9 | [ML-9-Anomaly-Detection](ML.Net/ML-9-Anomaly-Detection.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
 | 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
 | TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
+
+#### AutoML : quand le leaderboard bat le `Console.WriteLine` ([#7642](https://github.com/jsboige/CoursIA/pull/7642), [#7707](https://github.com/jsboige/CoursIA/pull/7707), [#7839](https://github.com/jsboige/CoursIA/pull/7839))
+
+Le notebook **ML-3** AutoML produit, sur données non linéaires (`y = 100·x² + bruit`), **10 essais terminés** en 30 secondes, couvrant **5 entraîneurs distincts**. Sans visualisation, l'étudiant doit comparer 10 nombres à la main pour repérer le gagnant — exercice rébarbatif qui masque l'apport pédagogique de l'AutoML. La cellule 13 ([`NotebookMonitor.CompletedTrials`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.ml.automl.runtime.notebookmonitor) + `Plotly.NET.Interactive`) trace un **leaderboard** qui rend la discrimination visible :
+
+| Entraîneur | Essais | Meilleur RMSE |
+|---|---|---|
+| `LightGbmRegression` | 3 | **90 262** ← gagnant |
+| `FastForestRegression` | 4 | 5 932 134 |
+| `LbfgsPoissonRegressionRegression` | 1 | 6 303 500 |
+| `SdcaRegression` | 1 | 11 323 122 |
+| `FastTreeRegression` | 1 | 30 523 762 ← perdant |
+
+L'écart entre le pire et le meilleur essai est de **338×** — un fait pédagogique majeur, **invisible sans graphique**. La lecture honnête du classement nuance aussi le stéréotype « non-linéaire bat linéaire » : `FastTreeRegression` (lui aussi non-linéaire, à base d'arbres) finit **dernier** (30 M), pire que `SdcaRegression` linéaire (11 M). L'AutoML a donné **3 essais** à `LightGbmRegression` mais **un seul** à `FastTreeRegression` — moins d'occasions de bien le régler. La leçon : la *famille* d'algorithme ne garantit pas le succès, c'est l'association **bon algorithme + bons hyper-paramètres** que l'AutoML cherche conjointement. Cette nuance illustre l'**anti-fabrication** [#3801 Prong-B](https://github.com/jsboige/CoursIA/issues/3801) : la cellule trace un graphique à partir des vrais résultats `experiment.RunAsync()`, pas une simulation ASCII ni un workaround dégradé.
 
 ### Trois figures du track ML.NET (scikit-learn, statsmodels)
 
@@ -215,13 +229,13 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 #### Trois figures du track Data Science (Pandas, Seaborn, ADK)
 
-[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb)
+[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 *Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
 
-[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+[![Visualisation matplotlib (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480, tracée en matplotlib pur avec le style seaborn-v0_8-whitegrid.](assets/readme/lab5-viz.png)](DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
 *Lab5 — matplotlib pur : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style `seaborn-v0_8-whitegrid` (un **style matplotlib**, pas un import `seaborn`) appliqué à un DataFrame Pandas.*
 
-[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — tri décroissant spontané de l'agent, Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
 *Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, à partir de la requête « Crée un graphique à barres montrant le revenu par produit. Utilise matplotlib. » (cellule 17). Le **tri décroissant** (`sort_values(ascending=False)`) n'était pas demandé : l'agent l'a ajouté spontanément, ce qui rend l'insight (Gadget Y bat Widget A de ~70%) immédiatement lisible — petit pas vers le « diagramme qui parle de lui-même ».*
 
 ### Socle ML canonique (02-ML-Cours)
@@ -242,7 +256,7 @@ Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning
 
 Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous. Le notebook 2.9 (grokking) est un **épilogue avancé** qui rend visible un phénomène empirique (la généralisation *après* surapprentissage complet) souvent cité dans la littérature récente (Power et al., 2022), positionné hors du parcours fundamentals par PR #7280.
 
-### Workshop 3 Jours (PythonAgentsForDataScience)
+### Workshop 3 Jours (Track1-LangChain)
 
 | Jour | Lab | Nom | Objectif |
 |------|-----|-----|----------|
@@ -254,7 +268,7 @@ Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 
 | **Day 3** | 6 | First Agent | Construire un agent simple (LLM + Tools) |
 | **Day 3** | 7 | Data Analysis Agent | Agent pour interroger des DataFrames |
 
-### Track AgenticDataScience (Days 4-7)
+### Track Track2-GoogleADK (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider (Gemini 3.1, vLLM, OpenAI).
 
@@ -271,7 +285,7 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Day 7** | 16 | Data Science Agent | Agent BigQuery/BQML |
 | **Day 7** | 17 | Final Project | Projet intégré |
 
-Documentation complète : [DataScienceWithAgents/AgenticDataScience/README.md](DataScienceWithAgents/AgenticDataScience/README.md)
+Documentation complète : [DataScienceWithAgents/Track2-GoogleADK/README.md](DataScienceWithAgents/Track2-GoogleADK/README.md)
 
 ## Théorie formelle (Lean)
 
@@ -345,7 +359,7 @@ Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont 
 
 1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervisé/non supervisé
 2. **DataScienceWithAgents** (Day 1-7) : découvrir les agents IA et le RAG
-3. **AgenticDataScience** (Day 4-7) : agents avancés avec Google ADK
+3. **Track2-GoogleADK** (Day 4-7) : agents avancés avec Google ADK
 
 Les deux sous-séries sont indépendantes et peuvent être suivies dans n'importe quel ordre.
 
@@ -357,7 +371,7 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 | `OPENAI_API_KEY` manquant (Labs 2-3) | Créer un fichier `.env` à la racine avec `OPENAI_API_KEY=sk-...` |
 | PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommandé mais pas obligatoire |
 | `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
-| erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon répertoire |
+| erreur `No module named 'google.adk'` | Installer le track Track2-GoogleADK : `pip install -r requirements.txt` dans le bon répertoire |
 | Plots ne s'affichent pas | Vérifier `ipywidgets` installé + extension Jupyter activée |
 
 ## Concepts clés

@@ -1,3 +1,10 @@
+<!-- CATALOG-STATUS
+series: QuantConnect-ML-Training-Pipeline
+pedagogical_count: 2
+breakdown: ML-Training-Pipeline=2
+maturity: BETA=1, TEMPLATE=1
+-->
+
 # Pipeline d'entraînement ML pour la prévision financière
 
 Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
@@ -57,7 +64,7 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | `m12_har_rv_j_research.ipynb` | HAR-RV-J : décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | (c) |
 | `m15_lstm_rv_research.ipynb` | Log-LSTM RV : mémoire séquentielle pour la variance réalisée | (c) |
 
-Classification complète : [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
+Classification complète : [docs/qc/qc-strategies-status.md](../../../docs/qc/qc-strategies-status.md)
 
 ## Curriculum V2 — Keepers validés (2026-05-16, gate FERMEE)
 

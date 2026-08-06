@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 36 : Inventaire Scripts Tests API ComfyUI
 **Phase 29 - Validation Tests API**  
 **Date** : 2025-11-02 17:34:22 UTC+1  

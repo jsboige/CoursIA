@@ -1,0 +1,14 @@
+- name: "SW-6 RDFS"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6-CSharp-RDFS.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 9e4785fc0879d45754e3e40fd0ae418ca2462993
+      csharp_sha: f7a8a4f6cd60d8ce6484a1eac41072fe304e60f5
+  known_differences:
+    - "Socle commun : raisonnement RDFS (subClassOf, subPropertyOf, inference de hierarchies)."
+    - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Ontology` OntologyGraph + `VDS.RDF.Query`). Python = `rdflib` + `owlrl` (moteur de closure RDFS/OWL-RL, derive les triplets inferes). Approche legerement differente : C# expose le modele ontologique oriente-objet ; Python deroule la closure de raisonnement explicitement."
+    - "Re-baseline 2026-07-31 (myia-po-2024:CoursIA-2, cycle c.1066) : SHA Python avance fd60c05c -> 4ac2c822 (Exercice 2 cell[34] : 'meme si seul rex est declare ... comme Dog' -> 'meme si rex et buddy sont declares ... comme Dog' ; cell[16] output liste Dog : ['buddy','rex'] + cell[17] table 'buddy (Dog)', le 'seul' etait contredit par la propre cellule). Drift verifie parite-preserving : prose markdown seule, aucune cellule de code touchee (n'affecte pas l'axe de parite semantic)."

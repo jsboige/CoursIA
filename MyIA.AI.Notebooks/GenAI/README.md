@@ -380,5 +380,5 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 series: GenAI
 pedagogical_count: 141
 breakdown: Audio=30, SemanticKernel=20, Texte=20, Image=17, Video=17, Open-WebUI=7, PostTraining=7, 00-GenAI-Environment=6, Vibe-Coding=6, FineTuning=5, CaseStudies=4, RAG-et-Memoire-Semantique=1, root=1
-maturity: PRODUCTION=97, BETA=34, ALPHA=5, TEMPLATE=3, DRAFT=2
+maturity: BETA=125, ALPHA=10, DRAFT=3, TEMPLATE=3
 -->

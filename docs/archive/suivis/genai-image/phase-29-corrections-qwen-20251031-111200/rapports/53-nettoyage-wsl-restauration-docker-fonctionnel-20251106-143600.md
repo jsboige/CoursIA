@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport de Nettoyage WSL et Restauration Docker Fonctionnel
 
 **Date** : 2025-11-06 14:36:00 UTC  

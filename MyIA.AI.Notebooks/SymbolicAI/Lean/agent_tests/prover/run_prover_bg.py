@@ -10,6 +10,7 @@ Supports both demo-based (from prover/__init__.py DEMOS) and direct file/line ta
 import argparse
 import asyncio
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -148,6 +149,73 @@ def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
     return "no_progress"
 
 
+# P2b (#7477 forensic): the launcher must aim at the line the DEMO description
+# *intends*, not a stale `line` INT field. Descriptions embed two
+# human-authored markers that `line` can drift away from after edits shift
+# line numbers:
+#   - "CURRENT TARGET = ... L<N>"  -> the intended target line
+#   - "DO NOT TARGET <token>"      -> regions/lines to avoid
+# Founding forensic (DEMO 62): a baseline run burned its whole remaining
+# budget on a DO-NOT-TARGET line (NW L2970) while the description said
+# CURRENT TARGET = ne (L2973). #6871 re-pointed the `line` field nw->ne by
+# hand — but nothing prevents the stale-`line` class of bug from recurring.
+# This reconciles the two before the run starts: warn always, and redirect
+# `line` to the description's CURRENT TARGET on an unambiguous disagreement
+# (the description is the human-authored intent, kept current — cf #6871).
+# Conservative by design: warn-only on ambiguity, never hard-fail (the
+# operator can still override via --file/--line); a no-op on every DEMO whose
+# description carries no marker.
+_DO_NOT_TARGET_RE = re.compile(r"DO\s*NOT\s*TARGET\s+([A-Za-z0-9_-]+)", re.IGNORECASE)
+_CURRENT_TARGET_RE = re.compile(
+    r"CURRENT\s+TARGET\s*=\s*.*?(?:L|line\s+?)(\d{2,6})", re.IGNORECASE
+)
+
+
+def _resolve_target_line(demo, line):
+    """P2b (#7477): reconcile ``demo['line']`` with the description's intent.
+
+    Returns ``(resolved_line, warnings)`` where ``warnings`` is a list of
+    human-readable strings (empty when the target is clean). ``resolved_line``
+    is the line the launcher should aim at: the description's CURRENT TARGET
+    when it parses to a single line that disagrees with the ``line`` field,
+    otherwise the original ``line`` unchanged. Never raises.
+    """
+    warnings = []
+    description = (demo or {}).get("description") or ""
+    if not description:
+        return line, warnings
+
+    # DO NOT TARGET tokens — informational only. These are region names (NW,
+    # ne) or line labels, NOT line numbers; the token<->line association lives
+    # in free-text prose and is too fragile to map mechanically, so we surface
+    # the tokens for the operator without acting on them.
+    do_not_target = _DO_NOT_TARGET_RE.findall(description)
+    if do_not_target:
+        warnings.append(
+            "description marks DO NOT TARGET: " + ", ".join(do_not_target)
+        )
+
+    # CURRENT TARGET line — the authoritative intended target.
+    current_matches = _CURRENT_TARGET_RE.findall(description)
+    if len(current_matches) == 1:
+        current_line = int(current_matches[0])
+        if line is not None and current_line != line:
+            warnings.append(
+                f"description CURRENT TARGET line {current_line} differs from "
+                f"demo line field {line} — redirecting to {current_line} "
+                f"(description is the human-authored intent; cf #6871)"
+            )
+            return current_line, warnings
+    elif len(current_matches) > 1:
+        # Ambiguous parse (multiple CURRENT TARGET lines) — do not guess.
+        warnings.append(
+            f"description has {len(current_matches)} CURRENT TARGET line "
+            f"matches {current_matches} — ambiguous, not redirecting"
+        )
+
+    return line, warnings
+
+
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
@@ -169,6 +237,14 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         filepath = demo["file"]
         line = demo.get("line")
         name = demo["name"]
+        # P2b (#7477): reconcile the target line with the description intent
+        # before acquiring the tree lock. A stale `line` field (post-edit line
+        # drift) silently aims the whole run at a DO-NOT-TARGET region and the
+        # burn is invisible until iteration_cap. Warn always, redirect on an
+        # unambiguous CURRENT TARGET disagreement.
+        line, _target_warnings = _resolve_target_line(demo, line)
+        for _w in _target_warnings:
+            print(f"[TARGET-GUARD] {_w}")
     elif filepath:
         demo = {"file": filepath, "name": f"custom_{Path(filepath).stem}_L{line}",
                 "line": line, "goal": goal}

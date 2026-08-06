@@ -1,0 +1,14 @@
+- name: "SocialChoice-1 Arrow-Impossibility"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: b23da83abdc8fe436d3c7883147671432a451dcd
+      csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
+  known_differences:
+    - "Socle pedagogique commun : theoreme d'impossibilite d'Arrow (1951) — formalisation d'un profil de preferences social, les 3 axiomes (Unanimite/Pareto, Independence of Irrelevant Alternatives/IIA, Non-dictature), et demonstration qu'aucune agregation ne peut satisfaire les 3 simultanement. Les deux twins couvrent les axiomes + une approche de refutation (encodage SAT / enumeration force-brute montrant la contradiction)."
+    - "Idiomes framework : Python = demonstrations riches (41 cellules, preuve formelle en 4 etapes d'apres Geanakoplos 2005, visualisation de la synthese des resultats). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 4 using, 30 cellules (regles de vote from-scratch + structure de la preuve + refutation par enumeration complete force-brute)."
+    - "Asymetrie pedagogique : Python developpe la preuve formelle structuree (Geanakoplos 2005) + visualisation ; le C# demontre la non-satisfaisabilite par enumeration exhaustive en BCL pure sans dependance externe. Meme socle theorique (Arrow 1951, theoreme d'impossibilite), leviers de demonstration differents."

@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scan_md_hierarchy import scan_notebook, _has_collapsed_markdown  # noqa: E402
+from scan_md_hierarchy import scan_notebook, _has_collapsed_markdown, main  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -259,3 +259,97 @@ def test_titled_step_not_hint():
     """`## Étape 3 : Titre` is a real section header, not a bare aside."""
     cells = [_md("# Titre\n"), _md("## Étape 3 : Installation\n")]
     assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_titled_step_no_colon_not_hint():
+    """`### Step 1 Import configuration...` (no colon) is a real section header.
+
+    Regression guard for c.754 / #3966 follow-up: the original TITLED_STEP_RE
+    required a colon (`Step 1: Title`), which false-positived on `Step N
+    <descriptive verb phrase>` (no colon) section headers — the same
+    pedagogical pattern, just without punctuation. G.1 firsthand on
+    GenAI/SemanticKernel/dotnet/notebooks/00-AI-settings.ipynb cells 1/3/5/7
+    confirmed `### Step 1 Import configuration packages and classes` is a
+    tutorial section header (prose body underneath), same as `### Step 4:
+    Save Configuration to settings.json`.
+    """
+    cells = [_md("# Titre\n"), _md("### Step 1 Import configuration packages and classes\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_bare_step_aside_still_hint():
+    """`## Étape 3` (bare number, no title) remains a bare aside, still flagged.
+
+    Regression guard: extending TITLED_STEP_RE to also match the no-colon
+    variant must not relax the bare-aside rule. A bare `## Étape 3` has no
+    title after the number and stays HINT-AS-HEADING.
+    """
+    cells = [_md("# Titre\n"), _md("## Étape 3\n")]
+    assert "HINT-AS-HEADING" in _kinds(_write_nb(cells))
+
+
+def test_titled_step_no_colon_with_glued_colon_not_hint():
+    """`### Step 1:Import...` (glued colon, no space) also matches — GFM-style."""
+    cells = [_md("# Titre\n"), _md("### Step 1:Import configuration\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+# ---------------------------------------------------------------------------
+# CLI contract — an EMPTY scan is never reported as a CLEAN scan
+#
+# The scanner used to print `=== 0/0 notebooks flagged ===` and exit 0 whenever
+# it had been handed nothing to look at: no argument at all, a mistyped path, a
+# flag swallowed as a positional. That output reads as an all-clear while
+# nothing was scanned. Same defect class as the vacuous `scanner reports 0`
+# acceptance criterion of #3968 (see HINT_RE in the scanner).
+# ---------------------------------------------------------------------------
+
+def _run(argv: list[str]) -> int:
+    """Run main(argv), returning its exit code (argparse errors -> SystemExit)."""
+    try:
+        return main(argv)
+    except SystemExit as exc:  # argparse.error() / --help
+        return exc.code
+
+
+def test_no_argument_is_an_error_not_an_all_clear():
+    assert _run([]) == 2
+
+
+def test_mistyped_path_is_an_error_not_an_all_clear():
+    """A path that designates nothing must fail, not scan zero notebooks."""
+    assert _run(["MyIA.AI.Notebook"]) == 2  # missing final 's'
+
+
+def test_directory_without_notebooks_is_an_error():
+    with tempfile.TemporaryDirectory() as empty:
+        assert _run([empty]) == 2
+
+
+def test_clean_notebook_exits_zero():
+    nb = _write_nb([_md("# Titre\n"), _md("Du texte ordinaire.\n")])
+    assert _run([nb]) == 0
+
+
+def test_findings_stay_non_fatal_by_default():
+    """Census mode: the CI reads the summary line and must not be broken."""
+    nb = _write_nb([_md("# Titre\n"), _md("### Indices\n")])
+    assert _run([nb]) == 0
+
+
+def test_fail_on_findings_exits_one():
+    nb = _write_nb([_md("# Titre\n"), _md("### Indices\n")])
+    assert _run([nb, "--fail-on-findings"]) == 1
+
+
+def test_fail_on_findings_still_zero_when_clean():
+    nb = _write_nb([_md("# Titre\n"), _md("Du texte ordinaire.\n")])
+    assert _run([nb, "--fail-on-findings"]) == 0
+
+
+def test_summary_is_the_last_stdout_line(capsys):
+    """The CI census does `... | tail -1`: the summary must stay last."""
+    nb = _write_nb([_md("# Titre\n"), _md("### Indices\n")])
+    _run([nb])
+    assert capsys.readouterr().out.rstrip().splitlines()[-1] == (
+        "=== 1/1 notebooks flagged ===")

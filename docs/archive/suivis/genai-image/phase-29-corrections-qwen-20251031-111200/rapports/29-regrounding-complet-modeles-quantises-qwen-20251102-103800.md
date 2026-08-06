@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # RAPPORT SDDD : Regrounding Archéologique Complet des Modèles Quantisés Qwen
 **Phase 29 - ÉTAPE 24E**
 

@@ -8,12 +8,13 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 - **Sorry count**: 0 production (all 4 calibration targets proved; previous "4 sorry" claim matched docstring text inside `/-- ... -/` blocks, not actual `sorry` terms)
 - **Build**: `lake build Calibration` -- SUCCESS
 - **Dependencies**: Mathlib4
-- **i18n coverage (EPIC #4980)**: lake fully bilingual FR/EN — 3 `.lean` modules shipped as FR canonical + 3 `*_en.lean` mirror siblings on `main` (`Calibration/Doomsday_en.lean`, `Calibration/Nash_en.lean`, `Calibration/Nim_en.lean`, added by PR #5543 step 2). Convention EPIC #4980 Option A: docstrings `/-- ... -/` and `-- ...` comments differ between FR and EN, signatures and proofs remain byte-identical.
+- **i18n coverage (EPIC #4980)**: lake fully bilingual FR/EN — 4 `.lean` modules shipped as FR canonical + 4 `*_en.lean` mirror siblings on `main`: the **root aggregator** `Calibration.lean` (FR-only-by-design, imports-only, no sibling equivalent) plus 3 leaf modules `Calibration/{Doomsday,Nash,Nim}_en.lean` paired with a `Calibration_en.lean` root on the EN side. Convention EPIC #4980 Option A: docstrings `/-- ... -/` and `-- ...` comments differ between FR and EN, signatures and proofs remain byte-identical. The **root aggregator** on either side carries no proof code (imports-only) *by design*.
 
 ## Modules
 
 | File | `_en` | sorry | Description |
 |------|-------|-------|-------------|
+| `Calibration.lean` | `Calibration_en.lean` | 0 | **Root aggregator** (FR-only-by-design, imports-only: `Nash` + `Nim` + `Doomsday`); no proof code, EN sibling is the `Calibration_en.lean` mirror |
 | `Calibration/Doomsday.lean` | `Doomsday_en.lean` | 0 | Doomsday algorithm (day-of-week computation, anchor calendar) |
 | `Calibration/Nash.lean` | `Nash_en.lean` | 0 | Prover calibration targets on the 2×2 Prisoner's Dilemma (C/D/E/F) |
 | `Calibration/Nim.lean` | `Nim_en.lean` | 0 | Nim game theory (winning-strategy Nim-sum) |

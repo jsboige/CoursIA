@@ -24,29 +24,29 @@
 
 namespace Conway
 
-/-- A FRACTRAN instruction: fraction num/den stored as two Nats.
-  den must be positive (ensured by construction). -/
+/-- Une instruction FRACTRAN : fraction num/den stockée comme deux Nat.
+  den doit être positif (garanti par construction). -/
 structure Frac where
   num : Nat
   den : Nat
   h : den > 0
   deriving Repr
 
-/-- Create a Frac from two Nats, proving den > 0 via decision -/
+/-- Crée un Frac à partir de deux Nat, en prouvant den > 0 par décision -/
 def frac (n d : Nat) (h : d > 0) : Frac := ⟨n, d, h⟩
 
-/-- Check if n * (num/den) is a whole number -/
+/-- Vérifie si n * (num/den) est un nombre entier -/
 def fracMulNat (n : Nat) (f : Frac) : Bool :=
   n * f.num % f.den == 0
 
-/-- One FRACTRAN step: find first applicable fraction, or halt -/
+/-- Une étape FRACTRAN : trouve la première fraction applicable, ou s'arrête -/
 def fractranStep : List Frac → Nat → Option Nat
   | [], _ => none
   | f :: rest, n =>
     if fracMulNat n f then some (n * f.num / f.den)
     else fractranStep rest n
 
-/-- Run FRACTRAN for k steps (or until halt) -/
+/-- Exécute FRACTRAN pendant k étapes (ou jusqu'à l'arrêt) -/
 def fractranRun (prog : List Frac) (n : Nat) : Nat → List Nat
   | 0 => [n]
   | k + 1 =>
@@ -54,21 +54,21 @@ def fractranRun (prog : List Frac) (n : Nat) : Nat → List Nat
     | some n' => n :: fractranRun prog n' k
     | none => [n]
 
-/-- Helper: list of Nat pairs → list of Frac -/
+/-- Auxiliaire : liste de paires de Nat → liste de Frac -/
 def mkFracs : List (Nat × Nat) → List Frac
   | [] => []
   | (n, d) :: rest =>
     if h : d > 0 then ⟨n, d, h⟩ :: mkFracs rest
     else mkFracs rest -- skip invalid fractions
 
-/-- Conway's prime-generating FRACTRAN program (14 fractions).
-  From n=2, powers of 2 in the output are 2^p for each prime p. -/
+/-- Programme FRACTRAN générateur de nombres premiers de Conway (14 fractions).
+  À partir de n=2, les puissances de 2 dans la sortie sont 2^p pour chaque nombre premier p. -/
 def primeProgram : List Frac := mkFracs [
   (17, 91), (78, 85), (19, 51), (23, 38), (29, 33),
   (77, 19), (95, 23), (77, 19), (1, 17), (11, 13),
   (13, 11), (15, 2), (1, 7), (55, 1)]
 
--- Run a few steps of the prime generator from n=2
+-- Exécute quelques étapes du générateur de nombres premiers à partir de n=2
 #eval fractranRun primeProgram 2 20
 
 end Conway

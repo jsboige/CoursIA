@@ -1,0 +1,15 @@
+- name: Probas-18 Change-Point
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: f295cceb90dc134cb19ebda5860bb121a77e2174
+      csharp_sha: 95033cfe1c4ee9b1562c17faaddbe482f92d5e38
+  known_differences:
+  - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

@@ -1,0 +1,18 @@
+- name: App-6 Minesweeper
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - python_sha: 20ead2ac4fe55a2ec0d7dc3ad3434113aa3b8bab
+      csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 9a419818be0202ee8388220cf718cdacddbf45c1
+      csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
+      content_python_sha: 978d28eba04e9e4b4a0ad721fabcd6fbdf4065369283ba1161fbd9af8bc5f361
+      content_csharp_sha: 67526f92dd60d122ab1a83fbd913a601453037c2ff6e312733849351dc5b7f87
+  known_differences:
+    - "Socle pedagogique commun : Demineur (CSP : contraintes sommes exactes, library python-constraint) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = library python-constraint (ExactSum) + OR-Tools ; C# = BCL pure (System.*), 0 NuGet."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

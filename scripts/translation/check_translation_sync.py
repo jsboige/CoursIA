@@ -18,6 +18,15 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  etait depose dans le CSV
     ORPHAN_ROW   la ligne CSV reference un cell_id absent du notebook source
                  (cellule supprimee)
+    FR_CONTAM    la traduction xxx_<lang>.ipynb est IDENTIQUE au source fr
+                 (non traduite, francais leaké dans la colonne en/es/pt/...).
+                 Miroir Argumentum multilingual-drift-audit.py : val == fr_val,
+                 garde len >= 4 (#6949 harmonisation 5-classes, 4e classe).
+
+    Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
+    faux-amis legitiment repetes, kind == "name", informationnelle — hors
+    total_drift dans le fork) n'a pas d'equivalent ici : notre modele est
+    cell-based (pas de distinction name/prose), donc N/A par construction.
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte
 que du SRC_DRIFT eventuel ; l'absence de traductions deposees n'est pas un drift
@@ -38,6 +47,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -45,6 +55,24 @@ from pathlib import Path
 PIVOT_LANG = "fr"
 TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
 ALL_LANGS = [PIVOT_LANG] + TARGET_LANGS
+
+# Plages Unicode du script attendu pour les langues cibles non-Latines.
+# Une cellule text_<lang> deposee dont le contenu ne porte AUCUN caractere de
+# son script attendu (en ignorant ASCII = ponctuation/chiffres/espaces/markup
+# markdown) est un WRONG_SCRIPT : typiquement un copier-coller de FR ou d'EN
+# dans la colonne text_ar / text_zh / text_ru / text_fa. Detection deterministe,
+# zero faux-positif (une vraie traduction arabe/chinoise/russe CONTIENT au moins
+# un caractere de son script). Les langues Latines (en/es/pt) ne sont PAS couvertes
+# ici : la contamination FR de ces langues est la classe heuristique FR_CONTAM
+# (taxonomie Argumentum 5-classes), hors scope de ce check deterministe (#6949).
+# Source des plages : Unicode UCD (Arabic 0600-06FF, Cyrillic 0400-04FF,
+# CJK Unified Ideographs 4E00-9FFF, etc.).
+LANG_SCRIPT_RANGES: dict[str, list[tuple[int, int]]] = {
+    "ar": [(0x0600, 0x06FF), (0x0750, 0x077F), (0x08A0, 0x08FF)],  # Arabic block
+    "fa": [(0x0600, 0x06FF), (0x0750, 0x077F), (0xFB50, 0xFDFF), (0xFE70, 0xFEFF)],  # Arabic + Presentation forms (Persian)
+    "zh": [(0x4E00, 0x9FFF), (0x3400, 0x4DBF), (0xF900, 0xFAFF), (0x3000, 0x303F)],  # CJK Unified + Ext A + CJK symbols/punct
+    "ru": [(0x0400, 0x04FF), (0x0500, 0x052F), (0x2DE0, 0x2DFF), (0xA640, 0xA69F)],  # Cyrillic + ext + supplement
+}
 
 
 def normalize(text: str) -> str:
@@ -55,6 +83,47 @@ def normalize(text: str) -> str:
 
 def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
+
+
+def _has_expected_script(lang: str, text: str) -> bool:
+    """True si text contient au moins un caractere du script attendu pour lang.
+
+    Langues Latines (en/es/pt, absentes de LANG_SCRIPT_RANGES) : retourne True
+    (pas de verdict WRONG_SCRIPT -- la contamination FR de ces langues est la
+    classe heuristique FR_CONTAM, hors scope). Texte vide : True (rien a checker,
+    etat attendu pre-T3). Sinon on scanne les caracteres non-ASCII : s'il en
+    existe au moins un dans une plage attendue de lang, c'est OK ; si AUCUN
+    caractere non-ASCII n'appartient au script attendu, retourne False -> WRONG_SCRIPT.
+
+    Une traduction legitime arabe/chinoise/russe contient du code ou des nombres
+    (ASCII) MAIS doit aussi contenir au moins un caractere du script cible.
+    """
+    ranges = LANG_SCRIPT_RANGES.get(lang)
+    if not ranges or not text:
+        return True
+    for ch in text:
+        cp = ord(ch)
+        if cp < 0x0080:  # ASCII : ponctuation, chiffres, espaces, markup markdown (*_#-`).
+            continue
+        if any(lo <= cp <= hi for lo, hi in ranges):
+            return True
+    return False
+
+
+def _is_fr_contam(src_text: str, lang_text: str) -> bool:
+    """FR_CONTAM (taxonomie Argumentum 5-classes, 4e) : une traduction dont le
+    texte normalisé EST IDENTIQUE au source français (non traduite — le français
+    a fuité tel quel dans la colonne ``en``/``es``/``pt``/...).
+
+    Miroir fidèle de ``multilingual-drift-audit.py`` (fork Argumentum @7e72f3e) :
+    ``val == fr_val`` post-normalisation, garde ``len(val) >= 4`` pour supprimer
+    les correspondances triviales (token unique, chiffre, ponctuation, markup).
+    Déterministe, zéro liste de mots — l'égalité exacte post-normalisation
+    suffit. Les faux-amis cognates (noms propres legitiment repetes) relevent
+    de la 5e classe COGNATE (informationnelle, hors de notre modele cell-based).
+    """
+    norm_lang = normalize(lang_text)
+    return norm_lang == normalize(src_text) and len(norm_lang) >= 4
 
 
 def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
@@ -72,6 +141,28 @@ def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
     return cells
 
 
+def load_notebook_cell_texts(nb_path: Path) -> dict[str, str] | None:
+    """Retourne {cell_id: texte_source} pour un notebook, ou None si illisible.
+
+    Miroir de ``load_notebook_cells`` mais conserve le texte brut (non haché) —
+    sert au verdict ``FR_CONTAM`` qui compare le texte traduit au texte source
+    (garde ``len >= 4``). Chargeur lazy : appelé uniquement quand un candidat
+    FR_CONTAM est détecté via égalité de hash (sha256 collision-free), pour
+    éviter de charger les textes de tout notebook sauf candidat.
+    """
+    try:
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    texts: dict[str, str] = {}
+    for cell in nb.get("cells", []):
+        cid = cell.get("id")
+        if not cid or cell.get("cell_type") not in ("markdown", "code"):
+            continue
+        texts[cid] = "".join(cell.get("source", []))
+    return texts
+
+
 def translated_notebook_path(source_path: str, lang: str, repo_root: Path) -> Path:
     """`dir/foo.ipynb` + lang `en` -> `dir/foo_en.ipynb` (#1650 convention notebooks)."""
     p = repo_root / source_path
@@ -84,6 +175,8 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     with csv_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
         source_cache: dict[str, dict[str, str] | None] = {}
+        source_text_cache: dict[str, dict[str, str] | None] = {}
+        trad_text_cache: dict[str, dict[str, str] | None] = {}
         for row in reader:
             nb_rel = row.get("notebook", "")
             cell_id = row.get("cell_id", "")
@@ -117,10 +210,19 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                      "detail": f"source modifié (csv={csv_src_hash} <> actuel={current_src}) -> retraduction requise"}
                 )
 
-            # TRAD_DRIFT / MISSING_LANG par langue cible.
+            # TRAD_DRIFT / MISSING_LANG / WRONG_SCRIPT par langue cible.
             # Le pivot (fr) EST le notebook source (xxx.ipynb, pas xxx_fr.ipynb) :
             # sa cohérence est déjà vérifiée par SRC_DRIFT ci-dessus -> on le skippe.
             for lang in TARGET_LANGS:
+                # WRONG_SCRIPT : le contenu depose text_<lang> est-il dans le bon
+                # script ? (detection Unicode deterministe ; Latin langs exclus.)
+                trad_text = row.get(f"text_{lang}", "")
+                if trad_text and not _has_expected_script(lang, trad_text):
+                    anomalies.append(
+                        {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                         "verdict": "WRONG_SCRIPT",
+                         "detail": f"text_{lang} depose sans aucun caractere du script attendu (copier-coller FR/EN dans la mauvaise colonne ?)"}
+                    )
                 csv_hash = row.get(f"hash_{lang}", "")
                 if not csv_hash:
                     continue  # rien déposé = attendu pre-T3, pas un drift.
@@ -146,7 +248,97 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                          "verdict": "TRAD_DRIFT",
                          "detail": f"traduction {lang} éditée (csv={csv_hash} <> actuel={trad_cells[cell_id]})"}
                     )
+
+                # FR_CONTAM (Argumentum 5-classes, 4e, #6949) : la traduction
+                # est-elle IDENTIQUE au source fr (non traduite) ? Pre-check par
+                # égalité de hash (sha256 collision-free -> hash égal = texte
+                # identique) pour ne charger les textes que sur candidat, puis
+                # _is_fr_contam confirme via la garde len >= 4 (miroir fork).
+                if trad_cells[cell_id] == current_src:
+                    if nb_rel not in source_text_cache:
+                        source_text_cache[nb_rel] = load_notebook_cell_texts(repo_root / nb_rel)
+                    if trad_path not in trad_text_cache:
+                        trad_text_cache[trad_path] = load_notebook_cell_texts(trad_path)
+                    src_txts = source_text_cache[nb_rel] or {}
+                    trad_txts = trad_text_cache[trad_path] or {}
+                    if _is_fr_contam(src_txts.get(cell_id, ""), trad_txts.get(cell_id, "")):
+                        anomalies.append(
+                            {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                             "verdict": "FR_CONTAM",
+                             "detail": f"traduction {lang} identique au source fr (non traduite)"}
+                        )
     return anomalies
+
+
+def csv_fill_stats(csv_path: Path) -> dict[str, dict[str, int]]:
+    """Taux de remplissage par langue cible d'un CSV de synchro (#6949 point 1).
+
+    Rend visible le signal honnête que le compte de drift seul masque : un
+    ``SRC_DRIFT=0`` sur une table où ``text_en..text_pt`` sont vides se lit à
+    tort comme « à jour », alors qu'aucune traduction n'a été déposée (discipline
+    #6949 : un compteur nu se périmé ; un compteur avec son dénominateur se
+    contredit tout seul).
+
+    Compte, pour chaque langue cible (``TARGET_LANGS`` + le pivot ``fr``), les
+    cellules où ``text_<lang>`` est non-vide, sur le dénominateur des lignes
+    bien formées (``notebook`` + ``cell_id`` renseignés). Lecture CSV seule,
+    aucun chargement de notebook (I/O minime) — les ``ORPHAN_ROW`` rares
+    restent dans le dénominateur (signal honnête : « sur les N cellules que ce
+    CSV référence, X% sont traduites »).
+
+    Retourne ``{lang: {"filled": int, "total": int}}`` (total = dénominateur
+    commun, identique pour toutes les langues).
+    """
+    stats: dict[str, dict[str, int]] = {}
+    total = 0
+    filled: dict[str, int] = {lang: 0 for lang in ALL_LANGS}
+    with csv_path.open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if not row.get("notebook") or not row.get("cell_id"):
+                continue
+            total += 1
+            for lang in ALL_LANGS:
+                if row.get(f"text_{lang}", "").strip():
+                    filled[lang] += 1
+    for lang in ALL_LANGS:
+        stats[lang] = {"filled": filled[lang], "total": total}
+    return stats
+
+
+def _fill_pct(filled: int, total: int) -> float:
+    """Pourcentage floored à 1 décimale — jamais arrondi vers le haut.
+
+    Discipline #6949 (ai-01 c.33) : un compteur ne doit pas affirmer faussement
+    la complétude. ``round(99.996, 1)`` vaut ``100.0`` pour ``24469/24470``, ce
+    qui réintroduit, un ordre de grandeur plus bas, le défaut que cet outil
+    dénonce (un ``SRC_DRIFT=0`` lu comme « à jour »). On floor donc : ``100.0``
+    n'apparaît que si ``filled == total`` exactement ; sinon le pct reste sous
+    le seuil de complétude. ``filled``/``total`` bruts restent disponibles à
+    côté du pct pour la précision exacte.
+    """
+    if not total:
+        return 0.0
+    return math.floor((100.0 * filled / total) * 10) / 10
+
+
+def _format_fill_line(stats: dict[str, dict[str, int]]) -> str:
+    """Ligne lisible stderr : 'en=0.0% es=0.0% ... — AUCUNE traduction déposée'.
+
+    N'inclut que les langues cibles (le pivot ``fr`` est à 100% par construction,
+    l'afficher n'apporte rien). Le suffixe ``AUCUNE traduction déposée`` est
+    ajouté quand toutes les cibles sont à 0% — il rend explicite que le compte de
+    drift est non-informatif sur une table vide.
+    """
+    total = next(iter(stats.values()))["total"] if stats else 0
+    parts = []
+    for lang in TARGET_LANGS:
+        s = stats.get(lang, {"filled": 0, "total": 0})
+        pct = _fill_pct(s["filled"], s["total"])
+        parts.append(f"{lang}={pct:.1f}%")
+    line = f"REMPLISSAGE TRADUCTION ({total} cellules, {len(TARGET_LANGS)} langues cibles) : " + " ".join(parts)
+    if total and all(stats[lang]["filled"] == 0 for lang in TARGET_LANGS):
+        line += " — AUCUNE traduction déposée (le compte de drift est non-informatif tant que 0%)"
+    return line
 
 
 def iter_csvs(target: Path) -> list[Path]:
@@ -182,16 +374,54 @@ def main() -> int:
         return 0
 
     all_anomalies: list[dict] = []
+    fill_by_csv: dict[str, dict[str, dict[str, int]]] = {}
     for csv_path in csvs:
         all_anomalies.extend(check_csv(csv_path, repo_root))
+        fill_by_csv[str(csv_path)] = csv_fill_stats(csv_path)
+
+    # Agrégation du taux de remplissage (#6949 point 1) : somme des filled/total
+    # sur tous les CSV, pour un signal global honnête. Le pivot fr est à 100% par
+    # construction (c'est le notebook source) — on l'inclut dans le JSON pour
+    # auditabilité mais on ne l'affiche pas (cf ``_format_fill_line``).
+    global_fill: dict[str, dict[str, int]] = {
+        lang: {"filled": 0, "total": 0} for lang in ALL_LANGS
+    }
+    for stats in fill_by_csv.values():
+        for lang in ALL_LANGS:
+            global_fill[lang]["filled"] += stats[lang]["filled"]
+            global_fill[lang]["total"] += stats[lang]["total"]
+
+    def _with_pct(stats: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
+        out: dict[str, dict[str, object]] = {}
+        for lang in ALL_LANGS:
+            s = stats.get(lang, {"filled": 0, "total": 0})
+            out[lang] = {
+                "filled": s["filled"],
+                "total": s["total"],
+                "pct": _fill_pct(s["filled"], s["total"]),
+            }
+        return out
+
+    fill_report = {
+        "global": _with_pct(global_fill),
+        "by_csv": {path: _with_pct(stats) for path, stats in fill_by_csv.items()},
+    }
 
     # Rapport lisible (stderr) + JSON (stdout, consommable CI).
     report = {
         "csvs_checked": len(csvs),
         "anomalies": all_anomalies,
         "anomaly_count": len(all_anomalies),
+        "fill_rate": fill_report,
     }
     print(json.dumps(report, ensure_ascii=False, indent=2))
+
+    # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
+    # pour qu'un SRC_DRIFT=0 sur une table 0% traduite ne se lise plus comme
+    # « à jour » (discipline #6949 : compteur nu se périmé ; avec dénominateur,
+    # se contredit tout seul).
+    if global_fill[PIVOT_LANG]["total"]:
+        print(_format_fill_line(global_fill), file=sys.stderr)
 
     if not all_anomalies:
         print(f"OK : {len(csvs)} CSV vérifié(s), 0 drift.", file=sys.stderr)

@@ -35,19 +35,19 @@ toc: false
 ## Structure du dépôt
 
 ```
-MyIA.AI.Notebooks/         # Séries pédagogiques par thème (12 séries niveau 1)
+MyIA.AI.Notebooks/         # Séries pédagogiques par thème (13 séries niveau 1)
   Search/                  # Algorithmes de recherche + métaheuristiques
   Sudoku/                  # Résolution multi-paradigme
   ML/                      # Machine Learning (.NET C#)
   RL/                      # Reinforcement Learning (Python)
   GameTheory/              # Théorie des jeux + Lean (Arrow, Sen)
-  GenAI/                   # IA générative multimodale (image, audio, texte)
+  GenAI/                   # IA générative multimodale (image, audio, texte, Semantic Kernel, Vibe Coding)
   Probas/                  # Probabilités (Infer.NET, PyMC)
   SymbolicAI/              # Lean, Tweety, SemanticWeb, Planning
-  QuantConnect/            # Trading algorithmique (27 notebooks + 50 stratégies)
+  QuantConnect/            # Trading algorithmique (105 notebooks + 50 stratégies)
   CaseStudies/             # Études de cas transverses
   IIT/                     # Integrated Information Theory (PyPhi)
-  SemanticKernel/          # SDK Microsoft Semantic Kernel
+  cross-series/            # Applications transverses multi-domaines (Python)
 docs/                      # Documentation projet (règles, harnais, références)
 ```
 

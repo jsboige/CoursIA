@@ -18,12 +18,13 @@ régression du prouveur.
 - **Compte de sorry** : 0 en production (les 4 cibles de calibration sont prouvées ; un ancien compte de « 4 sorry » correspondait à du texte de docstring à l'intérieur de blocs `/-- ... -/`, pas à des termes `sorry` réels)
 - **Build** : `lake build Calibration` -- SUCCESS
 - **Dépendances** : Mathlib4
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 3 modules `.lean` livrés en FR canonique + 3 siblings `*_en.lean` miroirs sur `main` (`Calibration/Doomsday_en.lean`, `Calibration/Nash_en.lean`, `Calibration/Nim_en.lean`, ajoutés par PR #5543 étape 2). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 4 modules `.lean` livrés en FR canonique + 4 siblings `*_en.lean` miroirs sur `main` : le **racine agrégateur** `Calibration.lean` (FR-only-by-design, imports-only, sans sibling) et les 3 feuilles `Calibration/{Doomsday,Nash,Nim}_en.lean` + racine `Calibration_en.lean` côté EN. Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques. Le **racine agrégateur** FR/EN est *by design* ne porte pas de déclaration (rôle imports-only).
 
 ## Modules
 
 | Fichier | `_en` | sorry | Description |
 |---------|-------|-------|-------------|
+| `Calibration.lean` | `Calibration_en.lean` | 0 | **Racine agrégateur** (FR-only-by-design, imports-only : `Nash` + `Nim` + `Doomsday`) ; pas de code de preuve, jumeau EN frère `Calibration_en.lean` |
 | `Calibration/Doomsday.lean` | `Doomsday_en.lean` | 0 | Algorithme Doomsday (calcul du jour de la semaine, anchor calendar) |
 | `Calibration/Nash.lean` | `Nash_en.lean` | 0 | Cibles de calibration du prouveur sur le Dilemme du Prisonnier 2×2 (C/D/E/F) |
 | `Calibration/Nim.lean` | `Nim_en.lean` | 0 | Théorie du jeu de Nim (stratégie gagnante Nim-somme) |

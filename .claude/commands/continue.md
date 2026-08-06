@@ -6,9 +6,10 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, choisir 
 
 ### Phase 1 : Contexte (30s)
 
-1. Lire `MEMORY.md` (auto-memory) pour l'etat des sessions precedentes
-2. `git checkout main && git pull --ff-only` — repartir d'un main courant (les branches feature se rebasent frais, cf [catalog-pr-hygiene](../rules/catalog-pr-hygiene.md))
-3. `git status` — si l'arbre partage est sale (WIP d'une autre session), travailler en **worktree isole** : `git worktree add ../CoursIA-<sujet> -b feature/<sujet> origin/main`. Ne jamais stasher/toucher le WIP d'autrui.
+1. Etablir si la session précédente a été interrompue pour une raison fortuite (crash de l'environnement, saturation du crédit de tokens etc.), et quelles étapes restent à finaliser avant d'entreprendre une nouvelle session propre.
+2. Lire `MEMORY.md` (auto-memory) pour l'etat des sessions precedentes
+3. `git checkout main && git pull --ff-only` — repartir d'un main courant (les branches feature se rebasent frais, cf [catalog-pr-hygiene](../rules/catalog-pr-hygiene.md))
+4. `git status` — si l'arbre partage est sale (WIP d'une autre session), travailler en **worktree isole** : `git worktree add ../CoursIA-<sujet> -b feature/<sujet> origin/main`. Ne jamais stasher/toucher le WIP d'autrui.
 
 ### Phase 1.5 : Tour RooSync (obligatoire, AVANT de travailler)
 

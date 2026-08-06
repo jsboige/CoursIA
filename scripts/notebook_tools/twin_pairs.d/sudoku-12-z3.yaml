@@ -1,0 +1,28 @@
+- name: "Sudoku-12 Z3"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: b96f422f56c22836ef891e82a3f2df25d59453f1
+      csharp_sha: 89dec9e761a784698299ac2fd1498107f08ebab2
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: dc50ea9dcff0391b2f094da547ee7b50cf2fc791
+      csharp_sha: 89dec9e761a784698299ac2fd1498107f08ebab2
+      content_python_sha: 5a3f81362d1d616b3767f7f25cd96f6a8135fb803ff112d2ed329f6224c4499a
+      content_csharp_sha: 099683fd28d6afec1ed10897a481c81acf29cad19a40daf15ec5f619a509c04a
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: dc50ea9dcff0391b2f094da547ee7b50cf2fc791
+      csharp_sha: c530a89b8df71604c27ca91dce06474c3eb6514b
+      content_python_sha: 5a3f81362d1d616b3767f7f25cd96f6a8135fb803ff112d2ed329f6224c4499a
+      content_csharp_sha: 186940554bb8437fb9cf557e7a219dd8008388451347c6757e85669ffbc8c0b9
+  known_differences:
+    - "Socle pedagogique commun : resolution de Sudoku par SMT (Satisfiability Modulo Theories) avec le vrai solveur Z3 (Microsoft Research) -- modelisation des contraintes Sudoku comme formules logiques (BitVec, contraintes all-different sur lignes/colonnes/carres), resolution par le solveur SMT. Les deux cotes utilisent le VRAI Z3 SOTA (meme moteur sous-jacent), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, BitVec, Solver."
+    - "Divergence de binding : le C# accede a Z3 via Microsoft.Z3 (NuGet, bindings .NET natifs, 19 cellules code) ; le Python accede a Z3 via pyz3 (import z3, bindings Python, 11 cellules). C'est le meme solveur Z3 avec deux bindings idiomatiques -- c'est la definition meme de parity_level semantic (meme moteur, API idiomatique differente). Note : le Python reference aussi ortools (OR-Tools, alternative CP-SAT) en complement."
+    - "Idiomes framework : C# = Microsoft.Z3 (NuGet) + System.*, 19 cellules code ; Python = pyz3 + ortools, 11 cellules code. Vrai Z3 SMT solver des deux cotes (SOTA veritable, pas de workaround), bindings langage differents."
+    - "#9434 drainage Python (2026-08-05) : cellules markdown 12 + 16 figeaient des temps absolus machine-dependants (340.86 ms, 271.18/68.65/462.26/71.84/222.89/61.95/389.18/117.54/237.59/105.18 ms) = frozen dups des outputs live des cellules code 11 (Z3Solver) et 15 (Z3BitVectorSolver + time). Drainage markdown-only : ms absolus remplaces par qualitatif + pointeur vers la cellule de benchmark live ; speedup structurel conserve (~2-6x, observationnel, cf #9434 App-11 precedent). Correction G.9 : la note originale disait 'C# non touche (estimations de duree, pas des frozen dups)' -- c'etait INEXACT, les timings C# (166,5 ms, 1367 ms...) sont eux aussi des frozen dups des outputs TestSolvers (cellule 19)."
+    - "#9434 drainage C# (2026-08-06) : cellules markdown 24 (Interpretation des resultats) + 29 (Conclusion) figeaient les memes temps absolus machine-dependants (166,5/273,8 ms, 273,2 ms, 182,5 ms, 1367 ms, 294,5 a 470,9 ms) = frozen dups des outputs TestSolvers. Drainage markdown-only (twin du pattern Python #9507) : ms absolus remplaces par qualitatif + pointeur vers la cellule de banc d'essai live ; speedup structurel conserve (~3 a 5x, ordre de grandeur stable cross-machine). Parite Python/C# retablie : les deux twins refletent desormais le meme registre de mesure (live, pas prose figee). 2 claims machine residuels legitimes (TN) : '3 s max par grille' = budget de config, '~40 minutes' = duree pedagogique totale (ni l'un ni l'autre n'est une mesure de performance)."

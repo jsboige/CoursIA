@@ -67,3 +67,23 @@ repos:
         pass_filenames: true
         files: '\.ipynb$'
         stages: [pre-commit]
+
+      - id: markdown-rendering-guard
+        name: Block NEW oversized markdown-rendering defects (frontmatter / setext)
+        description: |
+          Fails the commit if a staged notebook introduces a markdown cell that
+          renders as an oversized, unformatted text block: YAML frontmatter dumped
+          into a rendered cell (`---\ntitle:...\ncost:\n  ...\n---`, promoted to a
+          setext-H2 supersize by markdown-it) or prose accidentally underlined by
+          `---`/`===`. These look fine in a source diff but ugly on first open, and
+          an agent cannot render markdown in its head to catch them. Baselined
+          against ~480 pre-existing violations (scripts/notebook_tools/
+          markdown_rendering_baseline.json) so only NEW error-level defects block;
+          burn the baseline down with --update-baseline after a remediation batch.
+          Whole-tree scan (pass_filenames:false) so cross-cell context is intact.
+          See the cost-frontmatter exemplar #8323 and #8056.
+        entry: python scripts/notebook_tools/detect_markdown_rendering.py --check --baseline scripts/notebook_tools/markdown_rendering_baseline.json
+        language: system
+        pass_filenames: false
+        files: '\.ipynb$'
+        stages: [pre-commit]

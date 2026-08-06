@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # GenAI Services Inventory — po-2023 (May 2026)
 
 **Machine**: po-2023 | **Date**: 2026-05-01 | **Track**: A0 GenAI Services Audit

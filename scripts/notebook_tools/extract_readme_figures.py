@@ -17,7 +17,9 @@ Deux modes (alignes sur le body de l'EPIC) :
   - :func:`extract_figure` - extrait UNE figure d'une cellule donnee vers
     ``assets/readme/<nom>.png``, l'optimise (PIL si dispo : redimensionnement
     <= 1200px + compression), puis append l'entree ``MANIFEST.md`` (notebook
-    source + index de cellule + alt-text FR obligatoire).
+    source + index de cellule + alt-text FR accessibilite + **description
+    visuelle** distincte du sujet du notebook — ce que la figure MONTRE,
+    verbatim apres lecture du PNG).
 
 Regles HARD (#5654, non-negociables pour les PRs filles) :
 
@@ -30,7 +32,14 @@ Regles HARD (#5654, non-negociables pour les PRs filles) :
   - **Provenance tracee** : chaque ``assets/readme/`` contient un
     ``MANIFEST.md`` (fichier -> notebook source + cellule, source 1). Une image
     sans provenance = ``CHANGES_REQUESTED``.
-  - **Alt-text FR descriptif** obligatoire (accessibilite).
+  - **Alt-text FR** obligatoire (accessibilite, lecteurs d'ecran).
+  - **Description visuelle** obligatoire (doctrine #5780 amendee) : champ
+    distinct du ``alt_text_fr``, qui decrit ce que la figure MONTRE reellement
+    (type de graphique, axes, objet rendu), pas le sujet du notebook. Force la
+    separation caption/image-source vs image-affichee et empeche les legendes
+    sur-vendeuses type « les 4 moteurs ILP » pour une courbe de perte unique.
+    Le contributeur DOIT ouvrir le PNG (``Read`` sur l'image) avant de remplir
+    ce champ.
   - **Jamais de re-execution de notebook juste pour une figure** (C.3) : on
     extrait des outputs DEJA committes. Si la figure souhaitee n'existe pas,
     c'est un enrichissement de notebook (PR separee) d'abord.
@@ -283,6 +292,7 @@ def _optimize_with_pil(raw: bytes, max_dim: int) -> tuple:
 
 def extract_figure(nb_path, cell_index: int, output_index: int,
                    output_path, alt_text_fr: str,
+                   description_visuelle: str,
                    max_dim: int = MAX_DIM_DEFAULT,
                    max_bytes: int = MAX_BYTES_DEFAULT,
                    serie_root=None) -> dict:
@@ -291,10 +301,23 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
     Lit le PNG a l'index ``(cell_index, output_index)`` du notebook, l'optimise
     (PIL : downscale <= ``max_dim`` + compression, dans la limite de
     ``max_bytes``), l'ecrit dans ``output_path``, puis append l'entree
-    ``MANIFEST.md`` a cote (provenance source 1 : notebook + cellule + alt-text).
+    ``MANIFEST.md`` a cote (provenance source 1 : notebook + cellule +
+    alt-text FR + description visuelle — doctrine #5780 amendee).
 
-    ``alt_text_fr`` est obligatoire (regle HARD accessibilite #5654) ; une
-    chaine vide leve :class:`ValueError`.
+    Deux champs textuels obligatoires **distincts** (forcement separe, voir
+    doctrine #5780 amendee) :
+
+    - ``alt_text_fr`` : accessibilite, destine aux lecteurs d'ecran. Court,
+      fonctionnel (« Carte de chaleur des poids du reseau »).
+    - ``description_visuelle`` : ce que la figure MONTRE reellement, observe
+      apres ouverture du PNG (``Read`` tool sur l'image). Type de graphique,
+      axes, objet rendu, couleurs distinctives. Doit etre HONNETE —
+      verifiee contre l'image, pas inventee depuis le sujet du notebook.
+      Empêche les legends sur-vendeuses type « les 4 moteurs cote a cote »
+      pour une courbe de perte unique.
+
+    Les deux champs sont obligatoires et leves :class:`ValueError` si vide
+    (memes regles que pour ``alt_text_fr`` seul avant #5780).
 
     ``serie_root`` (optionnel) : si fourni, le chemin relatif du notebook dans
     le manifest est calcule depuis cette racine (plus lisible). Sinon, chemin
@@ -312,10 +335,16 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
         }
 
     Leve :class:`ValueError` si la cellule/output n'existe pas ou ne porte pas
-    de PNG, ou si ``alt_text_fr`` est vide.
+    de PNG, ou si l'un des deux champs textuels est vide.
     """
     if not alt_text_fr or not alt_text_fr.strip():
-        raise ValueError("alt_text_fr obligatoire (accessibilite, regle #5654)")
+        raise ValueError(
+            "alt_text_fr obligatoire (accessibilite, regle #5654)")
+    if not description_visuelle or not description_visuelle.strip():
+        raise ValueError(
+            "description_visuelle obligatoire (doctrine #5780 : "
+            "ce que la figure MONTRE reellement, distinct du sujet du "
+            "notebook). Ouvrir le PNG (Read) avant de remplir ce champ.")
     nb_path = Path(nb_path)
     nb = _load_notebook(nb_path)
     cells = nb.get("cells", [])
@@ -347,15 +376,17 @@ def extract_figure(nb_path, cell_index: int, output_index: int,
         "used_pil": used_pil,
         "over_weight": len(optimized) > max_bytes,
     }
-    _append_manifest(out_path.parent, entry, alt_text_fr, serie_root)
+    _append_manifest(
+        out_path.parent, entry, alt_text_fr, description_visuelle, serie_root)
     return entry
 
 
 def _append_manifest(assets_dir, entry: dict, alt_text_fr: str,
+                     description_visuelle: str,
                      serie_root=None) -> None:
     """Append une entree de provenance au ``MANIFEST.md`` de ``assets_dir``.
 
-    Format source 1 (extraction de notebook) :
+    Format source 1 (extraction de notebook) — doctrine #5780 amendee :
 
     ::
 
@@ -363,10 +394,16 @@ def _append_manifest(assets_dir, entry: dict, alt_text_fr: str,
 
         - **Source** : notebook `<relpath>` (cellule N, output M)
         - **Alt-text (FR)** : <alt_text_fr>
+        - **Description visuelle** : <description_visuelle>
         - **Poids** : NN KB (PIL optimise / raw)
 
     Idempotent : si une entree pour le meme fichier existe deja (meme nom de
     section), elle est remplacee (evite les doublons sur re-extraction).
+
+    La ``description_visuelle`` est le champ distinct de l'alt-text (doctrine
+    #5780 amendee) : elle decrit ce que la figure MONTRE reellement, pas le
+    sujet du notebook source. Force la separation caption/image-source vs
+    image-affichee et interdit les legendes sur-vendeuses.
     """
     assets_dir = Path(assets_dir)
     assets_dir.mkdir(parents=True, exist_ok=True)
@@ -388,6 +425,7 @@ def _append_manifest(assets_dir, entry: dict, alt_text_fr: str,
         f"- **Source** : notebook `{src_display}` "
         f"(cellule {entry['cell_index']}, output {entry['output_index']})\n"
         f"- **Alt-text (FR)** : {alt_text_fr}\n"
+        f"- **Description visuelle** : {description_visuelle}\n"
         f"- **Poids** : {weight_kb:.1f} KB ({optimized_tag})\n"
     )
     existing = manifest.read_text(encoding="utf-8") if manifest.exists() else ""

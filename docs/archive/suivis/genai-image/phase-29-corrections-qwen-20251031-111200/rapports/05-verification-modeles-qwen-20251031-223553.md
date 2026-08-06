@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # RAPPORT DE VÉRIFICATION DES MODÈLES QWEN
 Généré le 2025-10-31 22:35:53
 

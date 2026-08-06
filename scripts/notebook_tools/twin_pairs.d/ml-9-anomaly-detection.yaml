@@ -1,0 +1,16 @@
+- name: "ML-9 Anomaly-Detection"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
+      csharp_sha: f249f653b3d7572d14f7c5cb1ec12a3da74a4cb8
+      reason: "rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c31 COUNT off-by-one 10->9 (cell 27 loop t=1..9); both twins fixed, parity preserved"
+  known_differences:
+    - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
+    - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
+    - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
+    - "Difference d'abstraction : ML.NET fournit un trainer ANOMALIE complet (scoring + seuillage integres) ; sklearn fournit le decomposeur PCA et laisse le pipeline de scoring a l'utilisateur. Meme fondement mathematique (PCA randomized), niveau d'abstraction different."

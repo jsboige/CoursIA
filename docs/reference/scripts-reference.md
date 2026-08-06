@@ -102,6 +102,7 @@ python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cel
 | `pip_leak_delta.py` | **Guard delta pip-leak** : compare deux scans JSON d'`audit_pip_install_cells.py` et fail si la PR introduit des leaks HIGH *nouveaux* (pas un fail absolu `--check` — le repo porte encore des HIGH hérités drainés un-PR-par-notebook). CI-ready (exit 1 sur delta > 0) |
 | `detect_fabricated_outputs.py` | Détecteur **sorties textuelles FABRIQUÉES** committes comme résultats d'exécution (Prong-A, registre #3801) : placeholder textuel (`Row N`) ou dataframe backtest-entièrement-à-0.0 en lieu et place du vrai résultat. Companion image-axis de `detect_blank_figures.py` |
 | `strip_fabricated_quantbook_outputs.py` | Strip des sorties text/PNG fabriquées des `quantbook.ipynb` (cf #6891, Side A). Les 8 quantbooks QC non-ré-exécutables via MCP portaient des outputs fabriqués ; cet outil les retire proprement (exception quantbook QC, cf secrets-hygiene §6) |
+| `detect_quantbook_window_divergence.py` | Détecteur **période annoncée ≠ période calculée** dans les quantbooks (#8772, classe doc-honesty #8052/#8364). Deux signaux : (A) lookback ENTIER passé à `qb.History(...)` — qui s'ancre sur `qb.Time` = `StartDate`, donc **recule** depuis la période déclarée — sans qu'aucune ligne n'imprime la fenêtre obtenue ; (B) `SetStartDate` placé dans un `try:` qui a échoué, la sortie committée venant du repli yfinance ancré à l'heure d'exécution. Args découpés par scanner à parenthèses équilibrées (une regex `\([^)]*\)` casse sur `History(list(...), 365*5, ...)`). **Écarte** les cellules de référence `class X(QCAlgorithm)` (ancrage glissant = effet voulu), les appels sur `self`, et les arguments ambigus. **Le fix attendu est de DIVULGUER, pas de re-fenêtrer** : re-fenêtrer avant #8734 échangerait un défaut de doc contre un défaut de données (forward-fill constant) |
 | `detect_bare_cross_dir_load.py` | Détecte un `#load "X.cs"` **bare** (nom nu, sans séparateur) dont le `.cs` n'existe PAS dans le dossier du notebook — anti-pattern du rollout SVG inline (#6927) où le kernel résout un `#load` relatif et échoue silencieusement / charge le mauvais fichier |
 | `check_notebook_navlinks.py` | Vérifie les liens de navigation relatifs **cassés dans les cellules markdown des `.ipynb`** (« précédent / suivant »). `check_docs_links.py` couvre uniquement les fichiers markdown (CLAUDE.md, docs/, README) ; cet outil couvre le markdown *intérieur* des notebooks |
 | `check_plotly_static_risk.py` | Détecte les cellules Plotly-CDN dans les `.ipynb` = **blanc en static rendering** (cf #6927). Le pattern canonique `record PlotlyHtml + Formatter.Register` émet un `<script src="https://cdn.plot.ly/...">` externe qui rend en kernel live mais pas sur GitHub/nbviewer |
@@ -129,7 +130,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `detect_link_target_regression.py` | Détecteur de **régression des accents dans les TARGETS de liens markdown** `[texte](cible)` (registre #2876). Un cure ad-hoc par regex globale `\b(mot)\b` peut accentuer la cible d'un lien → 404 ; cet outil garde les targets intacts |
 | `restore_accents_canonical.py` | **CURE canonique** (PR #7186). Markdown-only STRICT by construction : skip code/outputs/link-targets, préserve casse + structure (paragraph breaks). 4 bright-lines + 1 structurelle. Référence complète : [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md) |
 | `check_identifier_regression.py` | **GATE identifiants code** (PR #7157, MERGÉ). Détecte l'over-reach (cure qui accentue un identifiant). `_STRIP_RE` retire commentaires+chaînes avant comparaison base(main) vs head(branche). CI-ready (exit 1) |
-| `check_caps_regression.py` / `detect_caps_regression.py` | **GATE caps** (PR #7197 / #7198, arbitrage ai-01). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
+| `detect_caps_regression.py` | **GATE caps** (PR #7198 MERGÉ ; #7197 CLOSED, son contenu absorbé en git-ref mode par PR #8917bd71b). Détecte une cure qui minuscule l'initiale capitalisée (H1/H2/table-header/début-phrase/all-caps). Scan line-aligned positionnel (clé anti-FP) |
 
 **Workflow PR accents** : générer via `restore_accents_canonical.py` (passe les gates by construction), jamais via un script ad-hoc. Périmètre, défense-in-depth (3 rôles), 4 classes de défauts, bright-lines, méthodologie : cf [accent-cure-defense-in-depth.md](accent-cure-defense-in-depth.md).
 
@@ -141,6 +142,35 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `weekly_digest.py` | Digest hebdomadaire d'activité |
 | `fix_audio_dependencies.py`, `optimize_dvs.py` | Dépendances audio / optimisation |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
+
+## Audit, coûts & fidélité — `scripts/audit/`
+
+Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit sémantique claims↔outputs (#8052). Complémentaire de `scripts/notebook_tools/` (qui cible exécution / lint / catalogue) : cette famille cible les **axes transverses** (coût, fidélité prose↔sortie, sorry Lean, registre datasets). Deux familles : **checkers** read-only gatables en CI (exit-code gatable), **populateurs** qui écrivent `nb.metadata['cost']`.
+
+### Checkers (read-only, gatables CI)
+
+| Script | Usage |
+|--------|-------|
+| `check_cost_metadata.py` | Cohérence matrice de coût (#8056) : lit `nb.metadata['cost']` (canonique) avec fallback legacy YAML `---cost---` ; flague `gpu_required:false` mais imports CUDA / `torch.cuda` |
+| `check_dataset_registry.py` | Cohérence registre datasets (#8055 tr.2) : verdicts `DRIFT` / `MISSING` / `CARD_REQUIRED` / `OK` (litmus : EXTRACT, pas DECIDE), sortie YAML |
+| `check_denominators.py` | Détecteur léger de divergence entre 3 sources (disque / forensic / catalogue), #8050 ; `--strict` → exit 1 sur drift |
+| `check_editorial_review.py` | Cohérence registre editorial-review (YAML ↔ catalogue) : 6 validations dont `reviewer != owner_logique`, `evidence_pr` en état `MERGED` |
+| `check_lean_notebook_sorry.py` | Tally `sorry` par notebook Lean (#8051, kernel `lean4-wsl`) : strip commentaires puis compte `sorry` word-bounded — alimente l'axe scientific_review |
+| `extract_claims_vs_outputs.py` | Audit sémantique cellule-par-cellule (#8052 P0) : compare prose markdown (claims) vs sorties code (outputs) ; 5 classes de mismatch |
+
+### Populateurs (écrivent `nb.metadata['cost']`)
+
+| Script | Usage |
+|--------|-------|
+| `populate_cost_metadata.py` | Populate `metadata['cost']` pour ~69 notebooks QC QuantBook sans coût (#8056) ; `qcc_tokens_est = max(400, n_code_cells×70)` |
+| `populate_gametheory_cost.py` | Populate coût GameTheory (48 NBs, CPU-pure : nashpy + numpy + matplotlib) |
+| `populate_semantickernel_cost.py` | Populate coût GenAI / SemanticKernel (26 NBs, API-heavy : gpt-4o / Azure) |
+
+### Réparation d'assets (Stop & Repair)
+
+| Script | Usage |
+|--------|-------|
+| `regen_img1_dalle3.py` | Réparation asset DALL-E legacy via **vraie regen** DALL-E 3 (#8624, Stop & Repair L948) — jamais hand-edit d'output |
 
 ## Maintenance & environnement — `scripts/`
 
@@ -156,6 +186,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `scripts/lean/smoke_test_epita_is.py` | Smoke-test kernels Lean EPITA-IS |
 | `scripts/lean/check_i18n_siblings.py` | **Checker i18n sibling-pair** (EPIC #4980) : vérifie la byte-identity du **body** (signatures, preuves, tactiques) entre un `Foo.lean` FR-canonical et son miroir `Foo_en.lean`. Seules les docstrings/commentaires diffèrent. Sorties `OK` / `OK-CONSUMER` / `DRIFT` / `ORPHAN` = point de départ d'investigation, jamais un grain verbatim (3 formes légitimes, cf [i18n-sibling-patterns.md](../lean/i18n-sibling-patterns.md)) |
 | `scripts/lean/po2026_recover_build.py` | **Recette récupération `lake build`** po-2026 (codification #6771, self-repair règle F) : cold-rebuild unreliable → script documenté dans [po2026-local-build-troubleshooting.md](../archive/po2026-local-build-troubleshooting.md) (archivé c.700, canonique = script 309L). Valide firsthand sur knot_lean |
+| `scripts/lean/check_mathlib_cache.py` | **Vérifie qu'un cache Mathlib est réellement atteignable** pour chaque lake, en traversant les junctions (`realpath` + `os.walk`) — `find` renvoie **0** sur un cache sain de 8124 oleans et `os.path.islink()` renvoie **False** sur une junction, combinaison qui fabrique un faux verdict « cache purgé » (5 cycles de lane Lean perdus, 2026-07-29). Statuts `ok`/`partial`/`cold`/`absent`, dédoublonne les lakes partageant un cache physique. Advisory (exit 0) ; `--strict` exit 1. La preuve décisive reste un `lake build` réel |
 | `scripts/lean/setup_shared_mathlib.ps1` | Mutualisation checkouts Mathlib via junctions NTFS (#2611) : `-Mode Scan` (inventaire groupes), `Apply` (cache `.mathlib-cache/` + junctions, `-Build` vérifie, `-RemoveBackups` libère l'espace), `Rollback` (restaure les checkouts physiques). Précondition : lake-manifest.json identique sur TOUTES les deps transitives + même lean-toolchain. Ne jamais `lake update` un projet junctionné |
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
@@ -172,7 +203,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 
 ## Tests — `scripts/tests/` + `scripts/notebook_tools/tests/`
 
-`scripts/tests/` regroupe **51 fichiers** de test (1303 tests) ; `scripts/notebook_tools/tests/` en regroupe **81** (2049 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **3354 tests au total** (snapshot `pytest --collect-only` 2026-07-20). Couverture de `scripts/tests/` par domaine :
+`scripts/tests/` regroupe **56 fichiers** de test (1701 tests) ; `scripts/notebook_tools/tests/` en regroupe **82** (3199 tests — couvre les modules notebook_tools : CLI, helpers, skeleton, lint, catalogue, qualité C.1/C.2/C.3, leak detection, forensic, execution, enrich, reporting), soit **4900 tests au total** (snapshot `pytest --collect-only` 2026-07-21). Couverture de `scripts/tests/` par domaine :
 
 | Domaine | Fichiers | Modules couverts |
 | ------- | -------- | --------------- |
@@ -190,6 +221,6 @@ Modules genai-stack non testes (intentionnellement) : commands/docker.py (subpro
 ## Voir aussi
 
 - [docs/common-commands.md](common-commands.md) — setup env, validation notebooks, slash commands
-- [docs/kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
+- [kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
 - [docs/genai/genai-services.md](../genai/genai-services.md) — scripts genai-stack, mappings notebooks
 - [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) — Papermill WSL

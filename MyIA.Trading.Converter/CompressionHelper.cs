@@ -178,7 +178,7 @@ namespace MyIA.Trading.Converter
         private static Stream DecompressSingleFileSharpCompress(this Stream entryStream, out string fileName)
         {
             fileName = string.Empty;
-            using var reader = ReaderFactory.Open(entryStream);
+            using var reader = ReaderFactory.OpenReader(entryStream, new ReaderOptions());
             while (reader.MoveToNextEntry())
             {
                 if (!reader.Entry.IsDirectory)
@@ -286,7 +286,7 @@ namespace MyIA.Trading.Converter
         {
             var objArchiveType = GetArchiveTypeFromSevenZipFormat(format);
             var objCompressionType = GetCompressionTypeFromSevenZipFormat(format);
-            using var writer = WriterFactory.Open(archiveFileStream, objArchiveType, new WriterOptions(objCompressionType));
+            using var writer = WriterFactory.OpenWriter(archiveFileStream, objArchiveType, new WriterOptions(objCompressionType));
             writer.Write(fileName, entryStream);
         }
 

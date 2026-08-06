@@ -3,6 +3,8 @@
 Provenance de chaque figure (convention d'indexation **all-cells** du module `extract_readme_figures.py` : `cellule` = indice de cellule dans le notebook, `output` = indice de sortie de cette cellule). Sources vérifiées sur `origin/main`, extraites de [`research.ipynb`](../../research.ipynb) (notebook de recherche local).
 
 > **Audit vision po-2026 c.450 (2026-07-15, doctrine #5780)** — **amendé c.454 (correction ai-01 merge-gate)** : les 6 PNG ci-dessous ont été ouverts un par un via l'outil `Read` (vision MiniMax M3, puis contrôle Opus ai-01 au merge-gate) et comparés à leur alt-text d'origine (champ `Sujet`). Verdict par figure dans la section *Contenu réel vérifié*. Les alt-texts d'origine étaient **TITLES-driven** (auto-extraction à partir des commentaires de cellule, sans lecture visuelle) et **omettaient** les valeurs Sharpe concrètes, le verdict « v3e LO+short_mom+DXY<SMA50 S=1.69 = winner incontestable » (synthese), et les verdicts winner/perdant par config. **Note importante (amendement c.454)** : une première version de cet audit (c.450) avait affirmé à tort que les attributions cell×output h1↔h4 étaient « inversées » et l'avait imputé à un bug de `extract_readme_figures.py`. Le contrôle vision Opus firsthand au merge-gate (ai-01, msg-20260715T092419) a établi que les **attributions d'origine étaient CORRECTES** (h1←cell 5 = baseline, h4←cell 14 = impact des paires) — la lecture visuelle MiniMax avait inversé le mapping fichier→contenu. **Amendement c.454 : descriptions enrichies ré-attachées à leur fichier réel, attributions cell restaurées, récit « inversion/bug pipeline » retiré.** Les noms de fichiers (`h1-momentum`, `h4-4pairs`) restent trompeurs vs le contenu (h1 = baseline, h4 = 5-curve impact), mais c'est une singularité de nommage, pas une erreur d'attribution. Défaut fondateur type systemic 1:1 doctrinal documenté par L490 : **6/6 cas TITLES-driven** sur 6 figures = pattern massif. Cause racinaire = auto-extraction des alt-texts à partir des commentaires de cellule sans lecture visuelle.
+>
+> **Migration c.791 (2026-07-22, doctrine #5780 amendée post-#7771)** : format canonical `## <filename>.png` + champ `**Description visuelle** :` adjacent pour les 7 figures (`detect_manifest_field.py --check` exit 0 obligatoire). Tells visuels c.778-L1 vérifiés firsthand vision MiniMax M3 + PIL RGB stats 100×50 redimensionnée : **6/7 seaborn-darkgrid** (mean RGB 228-235, std 15-33, bg blanc 13-19% = L778-L1 tell dominant, palette `#EAEAF2` académiques, profil `seaborn.set_theme()` par défaut hors `plt.subplots()`) + **1/7 heatmap divergente** tell L779-L1 (forex-corr-cumreturns mean RGB (227,198,198) R>B+30 + std G/B 64-68, colormap RdBu_r dense corrélation). Out-of-scope c.792+ : 1 MANIFEST QC project non-ML restant (EMA-Cross-Index 6f) — distinct en genre (momentum index) vs c.791 carry trading, G-VAR-3 ✓ cross-genre pivot post-c.789 momentum crypto.
 
 | Figure | Fichier | Dimensions | Poids | Source (cellule · output) | Sujet *(c.450/c.454 reformulé CONTENT-driven)* |
 |--------|---------|------------|-------|---------------------------|-----------------------------------------|
@@ -18,19 +20,21 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 ## Contenu réel vérifié par figure (audit visuel MiniMax M3 c.450, contrôle Opus ai-01 c.454)
 
-### `forex-h1-momentum.png` — Mono-panel Baseline FX Momentum L/S
+## forex-h1-momentum.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (1156×500, `plt.subplots(figsize=(14, 7))`) « Baseline: FX Momentum L/S (current config) » 2018-2026 (axe X temporel, axe Y = 0.88 → 1.02). **Une seule courbe bleue** (Baseline) — performance du setup actuel sans filtre additionnel. Pic ~1.022 mi-2019, creux ~0.88 mi-2021, recovery lente vers ~0.95 fin 2025.
-
-**Lecture** : la baseline seule a un profil de performance **négatif** sur la période (termine ~0.95 = -4.87 % sur 8 ans). Maximum local en 2019, drawdown majeur 2020-2021 (COVID + bear FX), stagnation 2022-2024, recovery partielle 2025. C'est la **référence de base** à laquelle les filtres (h5, h6) et configs (synthese) sont comparés.
+- **Source** : notebook `research.ipynb` (cellule 5, output 1)
+- **Description visuelle** : Mono-panel seaborn-darkgrid (1156×500, 58 Ko, PIL mean RGB (233,235,243) std (22,15,10), bg blanc 19% = **L778-L1 tell seaborn-darkgrid** dominant — palette `#EAEAF2` typique `sns.set_theme()`, mean R<G<B contraste léger fond gris-bleuté). Axe Y = 0.88 → 1.02 (label « Valeur portfolio »), axe X temporel 2018 → 2026. Titre « Baseline: FX Momentum L/S (current config) ». **Une seule courbe bleue tab:blue** (Baseline) — performance du setup actuel sans filtre additionnel. Pic local ~1.022 mi-2019, creux majeur ~0.88 mi-2021 (drawdown COVID + bear FX), stagnation 2022-2024, recovery lente vers ~0.95 fin 2025 — termine en territoire négatif (~-4.87 % sur 8 ans). Légende unique « Baseline » en haut-droite.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (1156×500, `plt.subplots(figsize=(14, 7))`) « Baseline: FX Momentum L/S (current config) » 2018-2026 (axe X temporel, axe Y = 0.88 → 1.02). **Une seule courbe bleue** (Baseline) — performance du setup actuel sans filtre additionnel. Pic ~1.022 mi-2019, creux ~0.88 mi-2021, recovery lente vers ~0.95 fin 2025.
 
 **Contenu réel vérifié** (audit visuel + contrôle Opus ai-01 c.454) : figure mono-panel simple, 1 seule courbe bleue, légende « Baseline: FX Momentum L/S (current config) », axes X 2018-2026. **Alt-text précédent** « Le momentum FX pur fonctionne-t-il (2018-2026) ? » était **TITLES-driven ET INCOMPLET** (question méthodologique sans le verdict Sharpe -0.156 ni le profil négatif). Attribution cell[5] ✓ confirmée : cell[5] imprime « === BASELINE (strategie actuelle) === sharpe: -0.156, total_return: -4.87 % ». Le nom de fichier `forex-h1-momentum` est trompeur (ce PNG est la baseline, pas un test momentum pur), mais l'attribution cell×output d'origine est **correcte**.
 
 - **Poids** : 58 Ko (PNG lossless natif, source 1156×500, mono-panel simple)
 
-### `forex-h3-longshort.png` — Mono-panel Long-Only vs Long/Short (downscale)
+## forex-h3-longshort.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (800×397, downscale depuis 1389×690 natif, `plt.subplots(figsize=(14, 7))`) « Long-Only vs Long/Short » 2018-2026 (axe Y = 0.85 → 1.025). 6 equity curves de configurations L/S avec Sharpe par config :
+- **Source** : notebook `research.ipynb` (cellule 11, output 0)
+- **Description visuelle** : Mono-panel seaborn-darkgrid downscale (800×397, 187 Ko, source 1389×690, PIL mean RGB (228,225,229) std (25,27,33), bg blanc 14% = **L778-L1 tell seaborn-darkgrid** dominant). Axe Y = 0.85 → 1.025 (label « Valeur »), axe X 2018 → 2026. Titre « Long-Only vs Long/Short ». 6 equity curves `tab:blue/orange/green/red/violet/brown` distinguées par couleur (palette matplotlib standard) : **L3/S3 full L/S violet winner** clairement au-dessus à ~1.01 fin 2026 ; **L2/S0 long-only 2 vert** perdant à ~0.92 ; toutes les autres configs intermédiaires. Légende bas-gauche explicite avec Sharpe par config.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (800×397, downscale depuis 1389×690 natif, `plt.subplots(figsize=(14, 7))`) « Long-Only vs Long/Short » 2018-2026 (axe Y = 0.85 → 1.025). 6 equity curves de configurations L/S avec Sharpe par config :
 - **L3/S3 full L/S** (S=0.01) violet — **seul Sharpe positif**
 - **L2/S2 current** (S=-0.16) bleu
 - **L3/S0 long-only 3** (S=-0.17) orange
@@ -44,9 +48,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 187 Ko (PNG lossless downscale, source 800×397)
 
-### `forex-h4-4pairs.png` — Mono-panel Impact du choix de paires
+## forex-h4-4pairs.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (800×397, downscale depuis 1389×690 natif) « Impact du choix de paires » 2018-2026 (axe Y = 0.88 → 1.02). 5 equity curves superposées avec Sharpe par configuration dans la légende :
+- **Source** : notebook `research.ipynb` (cellule 14, output 0)
+- **Description visuelle** : Mono-panel seaborn-darkgrid downscale (800×397, 170 Ko, source 1389×690, PIL mean RGB (229,227,232) std (25,23,28), bg blanc 13% = **L778-L1 tell seaborn-darkgrid** dominant). Axe Y = 0.88 → 1.02 (label « Valeur »), axe X 2018 → 2026. Titre « Impact du choix de paires ». 5 equity curves superposées tab:blue/orange/green/red/violet : **4 diversified orange winner** au-dessus à ~1.02 fin 2026 (seul Sharpe positif S=0.069), **3 commodity rouge pire** à ~0.94 (S=-0.40 worst), autres configs intermédiaires. **Creux 2022 majeur** visible (toutes configs chutent vers 0.88-0.92). Légende bas-gauche explicite avec Sharpe par config.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (800×397, downscale depuis 1389×690 natif) « Impact du choix de paires » 2018-2026 (axe Y = 0.88 → 1.02). 5 equity curves superposées avec Sharpe par configuration dans la légende :
 - **All 7** (S=-0.156) bleu — univers complet (= baseline)
 - **4 diversified** (S=0.069) orange — **seul Sharpe positif**, MaxDD -6.34 % le moins creux
 - **4 major** (S=-0.017) vert
@@ -59,9 +65,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 170 Ko (PNG lossless downscale, source 800×397)
 
-### `forex-h5-dxy.png` — Mono-panel Impact des filtres SPY vs DXY
+## forex-h5-dxy.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (1389×690, `plt.subplots(figsize=(14, 7))`) « Impact des filtres (SPY vs DXY) » 2018-2026 (axe Y = 0.87 → 1.02). 5 equity curves avec Sharpe par filtre :
+- **Source** : notebook `research.ipynb` (cellule 17, output 0)
+- **Description visuelle** : Mono-panel seaborn-darkgrid (1389×690, 163 Ko, PIL mean RGB (232,230,235) std (20,21,24), bg blanc 13% = **L778-L1 tell seaborn-darkgrid** dominant — variance chromatique plus faible que h3/h4 car moins de courbes denses). Axe Y = 0.87 → 1.02 (label « Valeur »), axe X 2018 → 2026. Titre « Impact des filtres (SPY vs DXY) ». 5 equity curves tab:blue/orange/green/red/violet avec **sauts verticaux** marqués (filtres DXY/SMA = exits anticipés) : **No filter bleu baseline** à ~0.93 fin 2026, **DXY<SMA50 rouge pire** à ~0.89 (S=-0.46 worst, sort ~2023), **SPY>SMA200 orange** à ~0.92 (S=-0.31), **DXY<SMA200 vert** à ~0.95 (S=-0.20 best filter mais perdant vs baseline), **SPY+DXY violet** à ~0.94 (S=-0.25). Légende haut-droite explicite avec Sharpe par filtre.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (1389×690, `plt.subplots(figsize=(14, 7))`) « Impact des filtres (SPY vs DXY) » 2018-2026 (axe Y = 0.87 → 1.02). 5 equity curves avec Sharpe par filtre :
 - **No filter** (S=-0.16) bleu baseline
 - **SPY > SMA200** (S=-0.31) orange
 - **DXY < SMA200** (S=-0.20) vert
@@ -74,9 +82,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 163 Ko (PNG lossless natif, source 1389×690)
 
-### `forex-h6-vol.png` — Mono-panel Impact du filtre de volatilité
+## forex-h6-vol.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (1389×690) « Impact du filtre de volatilite » 2018-2026 (axe Y = 0.88 → 1.04). 4 equity curves :
+- **Source** : notebook `research.ipynb` (cellule 20, output 0)
+- **Description visuelle** : Mono-panel seaborn-darkgrid (1389×690, 163 Ko, PIL mean RGB (231,231,235) std (22,20,24), bg blanc 13% = **L778-L1 tell seaborn-darkgrid** dominant). Axe Y = 0.88 → 1.04 (label « Valeur »), axe X 2018 → 2026. Titre « Impact du filtre de volatilite ». 4 equity curves tab:blue/orange/green/red : **No filter bleu baseline** à ~0.95 fin 2026 (perdant vs vol filtres), **Vol<median orange winner marginal** à ~1.01 (S=0.04), **Vol<P75 vert** à ~1.00 (S=0.02), **SPY+Vol<P75 rouge plat** à ~0.96 (S=-0.18 = annulation filtres combinés). Pic mi-2020 à ~1.04 visible (protection bear). Légende haut-droite explicite avec Sharpe par filtre.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (1389×690) « Impact du filtre de volatilite » 2018-2026 (axe Y = 0.88 → 1.04). 4 equity curves :
 - **No filter** (S=-0.16) bleu baseline
 - **Vol < median** (S=0.04) orange **winner**
 - **Vol < P75** (S=0.02) vert
@@ -88,9 +98,11 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 - **Poids** : 163 Ko (PNG lossless natif, source 1389×690)
 
-### `forex-synthese.png` — Mono-panel Comparaison des configurations candidates (WINNER v3e S=1.69)
+## forex-synthese.png
 
-**Alt-text (FR)** *(CONTENT-driven)* : **Mono-panel** (1389×690) « Comparaison des configurations candidates » 2018-2026 (axe Y = 0.9 → 1.35). **6 equity curves de configurations v3x** avec Sharpe :
+- **Source** : notebook `research.ipynb` (cellule 23, output 0)
+- **Description visuelle** : Mono-panel seaborn-darkgrid (1389×690, 138 Ko, PIL mean RGB (233,233,238) std (15,15,16), bg blanc 13% = **L778-L1 tell seaborn-darkgrid** dominant avec **std ultra-stable** (15-16) — la dominance écrasante de v3e brown en haut étire l'axe Y et comprime la variance chromatique moyenne). Axe Y = 0.9 → 1.35 (label « Valeur »), axe X 2018 → 2026. Titre « Comparaison des configurations candidates ». 6 equity curves v3x tab:blue/orange/green/red/violet/brown : **v3e 3 pairs LO+short_mom+DXY<SMA50 marron winner incontestable** à ~1.33 fin 2026 (S=1.69), **v3a Long-only 4 div + DXY filter orange 2nd** à ~1.11 (S=0.50), **v3d Top-1 long 4 pairs + DXY+SPY violet 3rd** à ~1.04 (S=-0.19), **v3c Minimal LS 4 div no filter rouge** à ~0.99 (S=-0.03), **Baseline current bleu perdant** à ~0.92 (S=-0.31), **v3b Long-only 5 pairs + SPY+vol filter vert** à ~0.93 (S=-0.32). Légende haut-gauche explicite avec Sharpe par config.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Mono-panel** (1389×690) « Comparaison des configurations candidates » 2018-2026 (axe Y = 0.9 → 1.35). **6 equity curves de configurations v3x** avec Sharpe :
 - **Baseline current** (S=-0.31) bleu — perdant
 - **v3a Long-only 4 div + DXY filter** (S=0.50) orange
 - **v3b Long-only 5 pairs + SPY+vol filter** (S=-0.32) vert
@@ -103,6 +115,16 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 **Contenu réel vérifié** : figure mono-panel simple, 6 courbes, légendes haut-gauche, axes X 2018-2026. **Alt-text précédent** « Meilleure configuration » était **TITLES-driven** (énonçait la conclusion sans rendre compte des Sharpe par config ni de l'écart v3e vs 2ème). Attribution cell[23] ✓ confirmée (`set_title('Comparaison des configurations candidates')`).
 
 - **Poids** : 138 Ko (PNG lossless natif, source 1389×690)
+
+## forex-corr-cumreturns.png
+
+- **Source** : notebook `research.ipynb` (cellule 3, output 1)
+- **Description visuelle** : Dual-panel côte à côte (1200×465, 60 Ko, source 1520×590 downscale + palette 256, PIL mean RGB (227,198,198) std (35,64,68), bg blanc 19% = **L779-L1 tell heatmap divergente** dominant — **mean R>B+30 + std G=64/B=68** signature chromatique heatmap dense colormap RdBu_r). Format `plt.subplots(1, 2, figsize=(16, 6))`. **Gauche — heatmap corrélation 7×7** : axes EURUSD/GBPUSD/AUDUSD/NZDUSD/USDCAD/USDJPY/USDCHF (axes X+Y labellés), colormap RdBu_r divergente saturée (rouge-orange dominant pour corrélations positives 0.5-1.0, diagonale sombre = 1.0, faible teinte bleutée USDJPY↔commodity currencies). Quasi-uniformément rouge-orange → « corrélation élevée = signal momentum dilué par redondance ». **Droite — 7 equity curves cumulated returns par devise** 2015-2025 (axe X), axe Y 0.7 → 1.2 dispersion, palette tab10 : **USDJPY rose leader** à ~1.18, **USDCHF brown** à ~1.05, **AUDUSD green** à ~0.95, **GBPUSD orange perdant** à ~0.70, autres intermédiaires. Légende bas-gauche explicite.
+- **Alt-text (FR)** *(c.450/c.454 reformulé CONTENT-driven)* : **Deux sous-graphiques côte à côte** (1200×465, source 1520×590 downscale + palette 256, format `plt.subplots(1, 2, figsize=(16, 6))`). **Gauche — « Correlation des rendements FX normalises »** : heatmap 7×7 EURUSD/GBPUSD/AUDUSD/NZDUSD/USDCAD/USDJPY/USDCHF colormap RdBu_r divergente — quasi-uniformément rouge-orange (corrélations 0.5-1.0) → « corrélation élevée = signal momentum dilué par redondance ». **Droite — « Rendement cumule normalise (devise vs USD) »** 2015-2025 : 7 equity curves par devise, dispersion 0.70 (GBPUSD orange perdant) à ~1.18 (USDJPY rose leader). **Verdict** : univers très directionnel-dollar mais avec une **forte redondance** qui limite le gain marginal d'une position top-2.
+
+**Contenu réel vérifié** : figure composite dual-panel 1×2, heatmap divergente à gauche (RdBu_r) + 7 equity curves à droite. **Note (c.743)** : figure extraite c.743 via `nbformat.read + base64.b64decode`, **absente du dépôt avant cette PR** (MANIFEST c.450 l'avait documentée comme « NON PRÉSENTE dans assets/ » = silent gap C731, hors-scope à l'époque). Cette figure sert de **diagnostic structurel** dans le README — elle motive les filtres testés ensuite (h1-h6). L'attribution cell[3]·out[1] est **correcte**.
+
+- **Poids** : 60 Ko (PNG lossless downscale + palette 256, source 1520×590)
 
 ## Découverte additionnelle c.450 — figure dual-panel cell[3] extraite c.743
 
@@ -125,6 +147,6 @@ c.450 avait documenté cette figure comme **NON PRÉSENTE dans `assets/readme/`*
 | 5 | `forex-h6-vol.png` | « Filtre de volatilité (régime) » | **TITLES-driven** (filtre sans verdict) | Enrichi avec Sharpe par config + verdict « seul filtre positif Vol<median S=0.04 » |
 | 6 | `forex-synthese.png` | « Meilleure configuration » | **TITLES-driven** (conclusion sans Sharpe) | Enrichi avec Sharpe par config v3a→v3e + verdict v3e S=1.69 winner 3.4× le 2ème |
 
-**Score** : **0/6 ACCURATE** — **6 corrections réelles**. **Ratio systemic 6:6 = 100% defect rate** doctrinal, cohérent avec EMA-Cross-Index c.449 (6:6), EMA-Cross-Crypto c.448 (5:5), AllWeather c.447 (5:1), DualMomentum c.438 (4:4). Cause racinaire = auto-extraction des alt-texts à partir des commentaires de cellule, sans lecture visuelle du PNG ni vérification croisée code source. **Sous-pattern ForexCarry = figures mono-panel simples** (6/6), contrairement aux dual-panel d'AllWeather c.447, EMA-Cross-Crypto c.448, EMA-Cross-Index c.449 — le défaut n'est pas ici structural (multi-panel) mais lié aux alt-texts génériques TITLES-driven.
+**Score** : **0/6 ACCURATE** — **6 corrections réelles**. **Ratio systemic 6:6 = 100% defect rate** doctrinal, cohérent avec EMA-Cross-Index c.449 (6:6), EMA-Cross-Crypto c.448 (5:5), AllWeather c.447 (5:1), DualMomentum c.438 (4:4). Cause racinaire = auto-extraction des alt-texts à partir des commentaires de cellule, sans lecture visuelle du PNG ni vérification croisée code source. **Sous-pattern ForexCarry = figures mono-panel seaborn-darkgrid** (6/6), contrairement aux dual-panel d'AllWeather c.447, EMA-Cross-Crypto c.448, EMA-Cross-Index c.449 — le défaut n'est pas ici structural (multi-panel) mais lié aux alt-texts génériques TITLES-driven + heatmap divergente cell[3] non documentée originellement.
 
 **Amendement c.454 (correction ai-01 merge-gate)** : une première version de cet audit affirmait à tort que les attributions cell×output h1↔h4 étaient inversées (« 2 attributions cell×output erronées ») et l'imputait à un bug de `extract_readme_figures.py`. Le contrôle vision Opus firsthand au merge-gate (ai-01) a établi que les **attributions d'origine étaient CORRECTES** — la lecture visuelle MiniMax avait inversé le mapping fichier→contenu. **Leçons** : (1) le sweep MiniMax est précieux mais faillible sur le mapping fichier→contenu ; (2) quand on affirme « inversion » avec forte confiance, s'ancrer sur CE QUE REND CHAQUE FICHIER (Read PNG un par un), pas sur la sémantique du nom de fichier ; (3) une lane GLM aveugle aurait mergé l'erreur — d'où le gate Opus qui lit les figures au merge. Corrigé c.454 : descriptions enrichies ré-attachées à leur fichier réel, attributions cell restaurées (h1←cell5, h4←cell14), récit « inversion/bug pipeline » retiré. L'enrichissement Sharpe/verdicts est conservé (il était correct).

@@ -23,7 +23,7 @@ Sans ces 4 preuves : la PR n'est PAS validee. Peu importe qui la signe. La verif
 
 ## H.2 — Tous les agents installent l'env complet (HARD)
 
-Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir executer N'IMPORTE QUEL notebook du repo. Inventaire minimum (cf [docs/kernels-runtime.md](kernels-runtime.md)) :
+Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir executer N'IMPORTE QUEL notebook du repo. Inventaire minimum (cf [kernels-runtime.md](kernels-runtime.md)) :
 
 - Python 3.10+ + envs Conda dédiés (`coursia-ml-training`, `epita_symbolic_ai`, `mcp-jupyter`)
 - .NET 9.0 SDK + `dotnet-interactive` Jupyter kernels (.NET notebooks Sudoku/SymbolicAI/ML/Probas/Search/SmartContract)
@@ -132,5 +132,5 @@ Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 - [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — Rules C.1/C.2/C.3 notebook
 - [docs/regles-vigilance-detail.md](regles-vigilance-detail.md) — Règles G.1-G.9 anti-complaisance
 - [docs/env-python-reparation.md](env-python-reparation.md) — Réparation env Python (regle F)
-- [docs/kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
+- [kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
 - [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md) — Matrice exec_status des notebooks

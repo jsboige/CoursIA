@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-22** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Plan de Formation : Data Science Agentique (Edition 2026)
 
 Ce parcours forme des developpeurs a la data science moderne ou l'IA generative et les agents autonomes sont au coeur du workflow. Il couvre les fondamentaux Python, la maitrise multi-modale (image, audio, video, texte), l'orchestration d'agents (Semantic Kernel, Claude Code, Roo Code), et l'application au trading algorithmique via QuantConnect.
@@ -122,12 +124,12 @@ Emplacement : `MyIA.AI.Notebooks/GenAI/Playwright-OWUI/` (5 modules, 30+ tests)
 
 ## Ressources complementaires
 
-- Documentation services GenAI : `docs/genai-services.md`
-- Configuration Claude Code : `docs/claude-code-config.md`
-- Infrastructure QuantConnect : `docs/quantconnect.md`
+- Documentation services GenAI : `docs/genai/genai-services.md`
+- Configuration Claude Code : `docs/reference/claude-code-config.md`
+- Infrastructure QuantConnect : `docs/qc/quantconnect.md`
 - Validation notebooks : `python scripts/notebook_tools/notebook_tools.py validate <path>`
 - Validation GenAI stack : `/validate-genai`
 
 ---
 
-*Document mis a jour mai 2026. Pour l'historique de la version originale (ADK DeepMind 2023), voir `docs/_archives/02-etude-adk-deepmind.md`.*
+*Document mis a jour mai 2026. Pour l'historique de la version originale (ADK DeepMind 2023), voir `docs/archive/02-etude-adk-deepmind.md`.*

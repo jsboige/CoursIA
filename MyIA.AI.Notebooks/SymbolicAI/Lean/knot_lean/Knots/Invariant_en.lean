@@ -49,7 +49,7 @@ inductive TriColor where
   deriving BEq, DecidableEq, Repr
 
 /-- `TriColor` is a three-element type, hence a `Fintype`: needed to decide, by
-finite enumeration (`native_decide`), the existential
+finite enumeration (`decide`), the existential
 `∃ coloring : Fin n → TriColor, …` in `figureEight_not_tricolorable`. Without this
 instance, `Fintype (Fin n → TriColor)` (via `Pi.fintype`) fails to synthesize and
 `decide`/`native_decide` fail before any reduction. -/
@@ -198,7 +198,7 @@ def Knot.isTricolorable (k : Knot) : Prop :=
 /-! ### Decidability of tricolorability (finite enumeration)
 
 Tricolorability of a finite diagram is decidable: each predicate layer receives a
-named `Decidable` instance, so that synthesis at the use site (`native_decide` in
+named `Decidable` instance, so that synthesis at the use site (`decide` in
 `figureEight_not_tricolorable`) stays shallow. Without this decomposition, a single
 monolithic synthesis must chain `List.decidableBAll`, several `And.decidable`, the
 `DecidableEq TriColor` of the coloring `dite`s, and the `Fintype (Fin n →
@@ -297,7 +297,13 @@ This is the key theorem that makes it a knot invariant.
 theorem tricolorable_invariant :
     ∀ (d₁ d₂ : KnotDiagram),
       ReidemeisterEquiv d₁ d₂ →
-      IsTricolorable d₁ ↔ IsTricolorable d₂ := by
+        (IsTricolorable d₁ ↔ IsTricolorable d₂) := by
+  -- NB: the inner `↔` MUST be parenthesised. Lean parses `A → B ↔ C` as
+  -- `(A → B) ↔ C` (→ binds tighter than ↔), which would make this an `Iff`
+  -- between a *function type* and a Prop — not the transfer function intended
+  -- here and described in the section docstring above. The parens restore the
+  -- intended shape `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot`
+  -- applies below.
   exact sorry
   -- BLOCKED (forward transfer, Phase 5 PR2). `ReidemeisterStep.r1` was rewired
   -- (Stage 2, #2874) to the GEOMETRICALLY CONNECTED move `Reidemeister1Connected`,
@@ -404,8 +410,8 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       ¬ IsTricolorable d₁ ∧
       IsTricolorable d₂ := by
   -- Witness pair.
-  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial },
-           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial },
+  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 },
+           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 },
            ?_, ?_, ?_⟩
   -- (a) Reidemeister1 d₁ d₂: a single free-ρ R1 twist, witness c = ⟨3,4,3,4⟩.
   --     d₁ = {[⟨1,2,1,2⟩], numEdges = 2}; d₂ = {[⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges = 4}.
@@ -430,7 +436,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
       rfl
   -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
   --     edges to the same colour, contradicting the ≥2-colours requirement.
-  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
     rintro ⟨coloring, hcond, hedges, htwo⟩
     -- The sole crossing ⟨1,2,1,2⟩ is in d₁.crossings; apply the Fox condition to it.
     have hfox := hcond (⟨1, 2, 1, 2⟩ : PDCrossing)
@@ -457,7 +463,7 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     exact hne (by rw [hAll i, hAll j])
   -- (c) d₂ IS tricolorable: edges 1,2 (Fin index 0,1) = red, edges 3,4 (index 2,3) = blue;
   --     Fox is all-equal within each crossing, ≥2 colours used.
-  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
     refine' ⟨fun i : Fin 4 => if i.val ≤ 1 then TriColor.red else TriColor.blue, ?_, ?_, ?_⟩
     · -- Fox at every crossing of d₂.
       intro c hc
@@ -506,8 +512,8 @@ Why `Reidemeister1' d₁ d₂` fails:
 the counter-example by construction. -/
 theorem pr1_counterexample_excluded_under_rho_determined :
     ¬ Reidemeister1'
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Unfold Reidemeister1': wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery ∨ surgery)).
   rintro ⟨_hwf₁, _hwf₂, a, _hrange₁, _hrange₂, _ρ, hsurg⟩
   rcases hsurg with ht | ht
@@ -516,9 +522,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality ht by congruence, then the RHS
     -- ({ d₁ with crossings := X }).crossings reduces to X = d₁.crossings ++ [⟨a,a,3,4⟩].
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings ++ [⟨a, a, 3, 4⟩] :=
       congrArg (·.crossings) ht
     -- The RHS reduces to [⟨1,2,1,2⟩] ++ [⟨a,a,3,4⟩]; second elements: ⟨3,4,3,4⟩ = ⟨a,a,3,4⟩.
@@ -532,9 +538,9 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     -- Project .crossings off the record equality by congruence (term-mode, robust
     -- against literal-form mismatch that blocks `subst`/`rw`).
     have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
           : KnotDiagram).crossings ++ [⟨a, a, 5, 6⟩] :=
       congrArg (·.crossings) ht
     -- Length contradiction: LHS has length 1, RHS has length 3.
@@ -566,8 +572,8 @@ is currently twist-only and needs an untwist arm + `.symm` before the equivalenc
 `reidemeister_equiv_symm` can carry it. See #2874.) -/
 theorem pr1_counterexample_excluded_under_connected :
     ¬ Reidemeister1Connected
-        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
-        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
   -- Reidemeister1Connected unfolds as wf₁ ∧ wf₂ ∧ (∃ i a Y' ρ, bounds ∧ edges ∧
   -- proper-arc ∧ isRenameOf ∧ surgery). The surgery is single-arm (twist only):
   -- d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++ [⟨a,3,4,4⟩], numEdges := 4 }.
@@ -578,14 +584,14 @@ theorem pr1_counterexample_excluded_under_connected :
   -- let omega combine `hbnd : i.val < e` with `hlen : e = 1` directly.
   have hi : i.val = 0 := by
     have hlen :
-        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
           : KnotDiagram).crossings).length = 1 := by rfl
     have hbnd := i.isLt
     omega
   have hfield :
-      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
         : KnotDiagram).crossings =
-      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
         : KnotDiagram).crossings.set i.val Y') ++ [⟨a, 3, 4, 4⟩] :=
     congrArg (·.crossings) hsurg
   rw [hi] at hfield
@@ -629,11 +635,11 @@ supplied by hand, with each crossing's Fox condition discharged by `decide`.
 
 /-- The witness `d₁` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD1Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
 
 /-- The witness `d₂` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
 def witnessD2Connected : KnotDiagram :=
-  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial }
+  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
 
 /-- `witnessD1Connected` is tricolorable (Path B): both crossings are
     `⟨1,2,3,4⟩`, each reading `(red, blue, green)` on the Fox strands
@@ -1002,19 +1008,24 @@ continuity conjunct), this is the canonical distinguishing witness: the earlier
 permissive model admitted a spurious tricoloring `(0,0,0,1,0,0,1,2)` (README
 §Path B), which the arc constraint now excludes.
 
-Proof by finite enumeration (`native_decide`): the coloring space
+Proof by finite enumeration (kernel `decide`): the coloring space
 `Fin 8 → TriColor` (3⁸ = 6561) is exhausted, and for each the arc-continuity +
 Fox conjunction at all 4 crossings is refuted — either arc-continuity breaks, or
-Fox forces monochrome (contradicting "≥ 2 colors"). We use `native_decide` (not
-`decide`): the existential ranges over the function type `Fin 8 → TriColor`, whose
-`Decidable` instance rests on `Fintype.piFinset`; the kernel does not reduce that
-enumeration (`decide` fails with "did not reduce to 'isTrue' or 'isFalse'"),
-whereas the native evaluator handles it in a few ms — the same tool used by the
-finite-calibration lemmas in `conway_lean/Angel.lean`. Path-B non-regression
+Fox forces monochrome (contradicting "≥ 2 colors"). We use `decide` (not
+`native_decide`): the existential ranges over the function type `Fin 8 → TriColor`,
+whose `Decidable` instance rests on `Fintype.piFinset`. The kernel reduction of
+this enumeration exceeds the default recursion depth (failure
+`maximum recursion depth has been reached`), so the limit is raised via
+`set_option maxRecDepth 100000` — `decide` then terminates in ~33s. This is
+strictly preferable to `native_decide`: the **kernel verifies** the result rather
+than delegating to the C compiler / runtime (the TCB stays Lean, not
+`native_decide.ax`), and `#print axioms` now reports only
+`[propext, Classical.choice, Quot.sound]`. See #8723. Path-B non-regression
 witness (#2874). -/
 theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
-  native_decide
+  set_option maxRecDepth 100000 in
+  decide
 
 /-! ## 5. Corollary: the trefoil is not the unknot
 
@@ -1024,12 +1035,23 @@ but the unknot doesn't, they are different knots.
 
 theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   intro h
-  -- If trefoil ≈ unknot, then trefoil tricolorable ↔ unknot tricolorable
-  -- But trefoil IS tricolorable and unknot IS NOT → contradiction
-  -- Sketch: have := (tricolorable_invariant trefoilDiagram unknotDiagram h).mp
-  --            trefoil_tricolorable
-  --         exact unknot_not_tricolorable this
-  exact sorry
+  -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
+  -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
+  -- The sketch that was left as `sorry` now type-checks: `tricolorable_invariant`
+  -- exists (sorry-bearing) and the two pieces are proven, so the corollary
+  -- composes them — its soundness rests SOLELY on the invariant's transfer sorry,
+  -- with no independent sorry of its own (standalone-tactic sorry 5 → 4). When
+  -- the Reidemeister transfer lands, this closes with zero rewiring.
+  --
+  -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
+  -- `def`s that delta-reduce on demand to the `KnotDiagram` level
+  -- (`ReidemeisterEquiv`, `IsTricolorable`); the `have` annotations force that
+  -- reduction, re-anchoring `h`/`trefoil_tricolorable`/`unknot_not_tricolorable`
+  -- at the diagram level the invariant speaks of.
+  have hreid : ReidemeisterEquiv trefoilDiagram unknotDiagram := h
+  have htc : IsTricolorable trefoilDiagram := trefoil_tricolorable
+  have hnunk : ¬ IsTricolorable unknotDiagram := unknot_not_tricolorable
+  exact hnunk ((tricolorable_invariant trefoilDiagram unknotDiagram hreid).mp htc)
   -- BLOCKED (Phase 4 update): the natural route (tricolorable_invariant +
   -- trefoil_tricolorable + unknot_not_tricolorable) is gated by
   -- tricolorable_invariant (this file), whose remaining blocker is the transfer
@@ -1103,12 +1125,12 @@ non-empty structural lemma about `Reidemeister1Connected` that is reusable in
 both directions.
 
 **No new sorries are introduced.** The backward theorem is intentionally not
-stated here as a tactic-stub placeholder because the Knots-CI prose-header
-sorries baseline is locked at 25 (see `lean-knot.yml`) and a research stub
-would push it to 26. The proof obligation is therefore documented as a
+stated here as a tactic-stub placeholder because the Knots-CI sorries
+baseline is locked at 17 (see `lean-knot.yml`, `real` mode) and a research stub
+would push it to 18. The proof obligation is therefore documented as a
 comment-only contract and the next BG-prover / dedicated cycle will state the
 theorem at the same time it proves it (the lemma + body land in one commit,
-keeping the sorries baseline at 25 throughout).
+keeping the sorries baseline at 17 throughout).
 
 ### 8.1. Proof obligation (informal contract)
 

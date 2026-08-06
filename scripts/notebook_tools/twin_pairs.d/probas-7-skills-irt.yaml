@@ -1,0 +1,28 @@
+- name: Probas-7 Skills-IRT
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-7-Skills-IRT.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: f1f4080df62766027a4583aaee04b435dd931374
+      csharp_sha: b878dadd1b0836b518e89e16642e88265d490669
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 11375befea475f214935935283ae3a1da08ec3eb
+      csharp_sha: b878dadd1b0836b518e89e16642e88265d490669
+      content_python_sha: 5107358535723f2ea0404f53a1330f63aac57b82dbcc72a3dcd5bc163b09ba05
+      content_csharp_sha: 6e4dfa8286e5f4e8d94d4d02d009e36716f45fc260909ad86c7f80fa177fb831
+  known_differences:
+  - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie creee par #8530 -- le backfill attribution MBML
+    Ch.2 n''avait touche que le twin C# (Infer-7), laissant PyMC-7 sans rattachement au chapitre alors que son jumeau
+    l''avait. Ajout cote PyMC d''une cellule "Origine pedagogique : MBML Ch.2" (distillation PyMC du Ch.2 Assessing
+    People''s Skills), pedigree Rasch/Lord/Birnbaum/Junker-Sijtsma renvoye aux sections 2/4 existantes (non duplique).
+    Les DEUX jumeaux portent desormais le rattachement MBML Ch.2 (parite retriever, asymetrie resolue). Edition
+    markdown-only, +14/-1, 0 code 0 output. python_sha rebaseline ; csharp_sha inchange (Infer-7 non touche).'
+  - '2026-07-25 (po-2024) #8530 : csharp_sha rebaseline suite a enrichissement du twin C# Infer-7 -- ajout attribution source MBML Ch.2 (Junker-Sijtsma, modele DINA) sur le twin C# uniquement (distillation-source attribution #8081). python twin (PyMC-7) inchange. Procedural : la PR introduisait DRIFT au gate #8057 car le blob C# avait evolue sans refresh du SHA registre.'
+  - 'Socle pedagogique commun : Item Response Theory (modeles de competences / IRT) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

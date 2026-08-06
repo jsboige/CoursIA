@@ -919,24 +919,24 @@ print(f""unified-planning version : {up.__version__}"")
 #     print(f""Plan   : {result.plan}"")
 
 pass  # Remplacer par votre implementation",,,,,,,,c452d33324feb027,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,79014e5f,markdown,fr,34e93354dc7ec677,"# Planners-1-Introduction-Csharp : la planification automatique from-scratch
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,79014e5f,markdown,fr,860a2e7b34e18307,"# Planners-1-Introduction-Csharp : la planification automatique from-scratch
 
 **Navigation** : [<< Setup](../00-Environment/Planners-0-Setup.ipynb) | [Twin Python unified-planning](Planners-1-Introduction.ipynb) | [PDDL Basics >>](Planners-2-PDDL-Basics.ipynb)
 
-**Twin C#** du notebook Python [Planners-1-Introduction](Planners-1-Introduction.ipynb) (Python + lib `unified-planning`). Cette **premiere tranche = les fondations** : le modele **STRIPS** (Fikes & Nilsson, 1971), l'espace d'etats, et un **planificateur BFS from-scratch** qui resout le probleme canonique de l'interrupteur. Implementation **BCL .NET seule, 0 NuGet**.
+**Twin C#** du notebook Python [Planners-1-Introduction](Planners-1-Introduction.ipynb) (Python + lib `unified-planning`). Cette **première tranche = les fondations** : le modèle **STRIPS** (Fikes & Nilsson, 1971), l'espace d'etats, et un **planificateur BFS from-scratch** qui resout le problème canonique de l'interrupteur. Implementation **BCL .NET seule, 0 NuGet**.
 
 ## Complementarite (#3801 Prong B)
 
 | Twin | Outil | Valeur |
 |------|-------|--------|
 | Python (unified-planning) | lib `up.shortcuts` (modelisation + solveur 1 appel) | resoudre vite des problemes PDDL reels |
-| **This (.NET from-scratch)** | implementation C# main : STRIPS + BFS + state-space | **comprendre** la semantique STRIPS et la recherche dans l'espace d'etats |
+| **This (.NET from-scratch)** | implementation C# main : STRIPS + BFS + state-space | **comprendre** la sémantique STRIPS et la recherche dans l'espace d'etats |
 
-Pas d'equivalent NuGet maintenu et didactique a `unified-planning` en .NET → from-scratch = la valeur pedagogique. On code chaque brique (predicat, operateur, transition, recherche) pour comprendre **comment** un planificateur fonctionne, pas seulement comment l'invoquer.
+Pas d'equivalent NuGet maintenu et didactique a `unified-planning` en .NET → from-scratch = la valeur pedagogique. On code chaque brique (predicat, opérateur, transition, recherche) pour comprendre **comment** un planificateur fonctionne, pas seulement comment l'invoquer.
 
 **Stack technique** : BCL .NET seule, **0 NuGet**. Kernel `.net-csharp` (.NET Interactive).
-",,,,,,,,34e93354dc7ec677,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,e868c323,markdown,fr,ef8db02169c2ca64,"## 1. Qu'est-ce que la planification ?
+",,,,,,,,860a2e7b34e18307,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,e868c323,markdown,fr,167bff4182882a13,"## 1. Qu'est-ce que la planification ?
 
 La **planification automatique** est la branche de l'IA qui genere des **sequences d'actions** pour atteindre un objectif. Etant donne :
 - un **etat initial** (le monde tel qu'il est),
@@ -946,30 +946,30 @@ La **planification automatique** est la branche de l'IA qui genere des **sequenc
 le planificateur cherche automatiquement une suite d'actions qui mene de l'etat initial au but. La question n'est pas « que predire ? » (apprentissage) mais « **que faire ?** ».
 
 **Contraste** :
-- **Recherche (Search series)** : on explore un graphe donne. La planification **construit** ce graphe (l'espace d'etats) a partir de la semantique des actions.
+- **Recherche (Search series)** : on explore un graphe donne. La planification **construit** ce graphe (l'espace d'etats) a partir de la sémantique des actions.
 - **CSP (Constraint series)** : on satisfait des contraintes sur des variables. La planification cherche une **sequence** (l'ordre compte).
 
 La planification est une technologie eprouvee : elle pilote des robots, optimise la logistique, et a dirige des engins spatiaux autonomes (Remote Agent sur Deep Space 1).
-",,,,,,,,ef8db02169c2ca64,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,81beaf48,markdown,fr,037604ca87e19a45,"## 2. Le modele STRIPS
+",,,,,,,,167bff4182882a13,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,81beaf48,markdown,fr,fb77e2633fecb50d,"## 2. Le modèle STRIPS
 
-**STRIPS** (STanford Research Institute Problem Solver, Fikes & Nilsson 1971) est le formalisme canonique. L'etat du monde = un **ensemble de predicats** (faits vrais). Une action (appelee **operateur**) comporte :
+**STRIPS** (STanford Research Institute Problem Solver, Fikes & Nilsson 1971) est le formalisme canonique. L'etat du monde = un **ensemble de predicats** (faits vrais). Une action (appelee **opérateur**) comporte :
 
 - un **nom** (ex: `allumer(lampe)`),
 - des **preconditions** : predicats qui doivent etre vrais pour que l'action soit applicable,
-- des **effets** : predicats **ajoutes** (deviennent vrais) et **retires** (deviennent faux) apres l'action.
+- des **effets** : predicats **ajoutes** (deviennent vrais) et **retires** (deviennent faux) après l'action.
 
 La **transition** : si l'etat courant contient toutes les preconditions, l'action est applicable. L'etat resultant = (etat courant − effets de retrait) ∪ effets d'ajout.
 
 ### Formalisme
 
-Soit un operateur $o = (pre(o), add(o), del(o))$. Pour un etat $S$ :
+Soit un opérateur $o = (pre(o), add(o), del(o))$. Pour un etat $S$ :
 
 - **applicable** ssi $pre(o) \subseteq S$
 - **successeur** : $S' = (S \setminus del(o)) \cup add(o)$
 
-Un **plan** = sequence d'operateurs $o_1, o_2, \dots, o_n$ telle que chaque $o_i$ est applicable dans l'etat atteint apres $o_1, \dots, o_{i-1}$, et le but est atteint a la fin.
-",,,,,,,,037604ca87e19a45,,,,,,,
+Un **plan** = sequence d'opérateurs $o_1, o_2, \dots, o_n$ telle que chaque $o_i$ est applicable dans l'etat atteint après $o_1, \dots, o_{i-1}$, et le but est atteint a la fin.
+",,,,,,,,fb77e2633fecb50d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,32e1d7ab,markdown,fr,75d506385eb5c4bb,"## 3. Setup et helpers invariant
 
 Helper de formatage invariant (evite la collision virgule-decimale FR dans les sorties).
@@ -983,10 +983,10 @@ static string FI(double x, string fmt = ""F4"") => x.ToString(fmt, CultureInfo.I
 
 Console.WriteLine(""Setup OK — kernel .net-csharp, BCL seule."");
 ",,,,,,,,72a9e89eba3e9417,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,c0a5c9b7,markdown,fr,13166105620a64c3,"## 4. Implementation du modele STRIPS from-scratch
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,c0a5c9b7,markdown,fr,b1fe993c2c2c7396,"## 4. Implementation du modèle STRIPS from-scratch
 
-On represente l'**etat** comme un `HashSet<string>` de predicats (ex: `{""lampe_allumee"", ""lampe_fonctionne""}`). Un **operateur** est une classe avec preconditions, ajouts, retraits. La transition applique l'operateur si applicable.
-",,,,,,,,13166105620a64c3,,,,,,,
+On represente l'**etat** comme un `HashSet<string>` de predicats (ex: `{""lampe_allumee"", ""lampe_fonctionne""}`). Un **opérateur** est une classe avec preconditions, ajouts, retraits. La transition applique l'opérateur si applicable.
+",,,,,,,,b1fe993c2c2c7396,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,f82f1d12,code,fr,6923f0c6a7e809b7,"// Modele STRIPS from-scratch (BCL .NET seule).
 // Un etat = HashSet<string> (ensemble de predicats vrais).
 
@@ -1014,15 +1014,15 @@ static bool GoalReached(HashSet<string> goal, HashSet<string> s) => goal.IsSubse
 
 Console.WriteLine(""Modele STRIPS compile : Operator + IsApplicable + Apply + GoalReached."");
 ",,,,,,,,6923f0c6a7e809b7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,5f179450,markdown,fr,e3ce514e8c5a2969,"## 5. Exemple simple — l'interrupteur
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,5f179450,markdown,fr,8b236ab93228dd0b,"## 5. Exemple simple — l'interrupteur
 
-Le probleme canonique de l'interrupteur (cf twin Python) :
+Le problème canonique de l'interrupteur (cf twin Python) :
 - **Etat initial** : la lampe est eteinte.
 - **Actions** : `allumer` (pre: lampe en bon etat ; add: lampe allumee), `eteindre` (add: lampe eteinte, del: lampe allumee).
 - **But** : la lampe est allumee.
 
-Ce probleme trivial sert de **sanity check** : un planificateur BFS doit trouver le plan `[allumer]`.
-",,,,,,,,e3ce514e8c5a2969,,,,,,,
+Ce problème trivial sert de **sanity check** : un planificateur BFS doit trouver le plan `[allumer]`.
+",,,,,,,,8b236ab93228dd0b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,b8d20167,code,fr,54c2ce1fdefb593e,"// Exemple de l'interrupteur (sanity check).
 
 var allumer = new Operator {
@@ -1049,20 +1049,20 @@ var apres = Apply(allumer, initial);
 Console.WriteLine(""Apres 'allumer' : {"" + string.Join("", "", apres.OrderBy(x => x)) + ""}"");
 Console.WriteLine(""But atteint apres 'allumer' ? "" + GoalReached(goal, apres));
 ",,,,,,,,54c2ce1fdefb593e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,1d1c8dc6,markdown,fr,17c2a97d6c0f4366,"### Interpretation — l'interrupteur
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,1d1c8dc6,markdown,fr,15f72a6f3d3e37b3,"### Interpretation — l'interrupteur
 
-L'etat initial ne contient pas le but (`lampe_allumee` absent). L'action `allumer` est applicable car sa precondition `lampe_fonctionne` est satisfaite. Apres application, `lampe_allumee` est ajoutee → le but est atteint. Sanity OK : le plan `[allumer]` resout le probleme.
+L'etat initial ne contient pas le but (`lampe_allumee` absent). L'action `allumer` est applicable car sa precondition `lampe_fonctionne` est satisfaite. Après application, `lampe_allumee` est ajoutee → le but est atteint. Sanity OK : le plan `[allumer]` resout le problème.
 
-C'est exactement ce que ferait `unified-planning` (twin Python) en un appel — mais ici on **voit** chaque etape (precondition, ajout, retrait).
-",,,,,,,,17c2a97d6c0f4366,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,84c1ff43,markdown,fr,d9571c1029782b53,"## 6. Le planificateur BFS from-scratch
+C'est exactement ce que ferait `unified-planning` (twin Python) en un appel — mais ici on **voit** chaque étape (precondition, ajout, retrait).
+",,,,,,,,15f72a6f3d3e37b3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,84c1ff43,markdown,fr,1e9be359d2ddb517,"## 6. Le planificateur BFS from-scratch
 
-Un planificateur = une **recherche dans l'espace d'etats**. L'espace d'etats = graphe ou les noeuds sont les etats et les aretes sont les operateurs applicables. On cherche un chemin de l'etat initial a un etat-but.
+Un planificateur = une **recherche dans l'espace d'etats**. L'espace d'etats = graphe ou les noeuds sont les etats et les aretes sont les opérateurs applicables. On cherche un chemin de l'etat initial a un etat-but.
 
 **BFS (Breadth-First Search)** = parcours en largeur. Garantit le **plan le plus court** (en nombre d'actions). Pour un petit espace d'etats, BFS suffit. Pour de grands espaces, on aurait besoin d'heuristiques (A*, relaxations — cf Planners-5).
 
-Implementation : une file d'etats a explorer, un dictionnaire `etat -> (operateur, etat parent)` pour reconstruire le plan une fois le but atteint.
-",,,,,,,,d9571c1029782b53,,,,,,,
+Implementation : une file d'etats a explorer, un dictionnaire `etat -> (opérateur, etat parent)` pour reconstruire le plan une fois le but atteint.
+",,,,,,,,1e9be359d2ddb517,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,c896af4e,code,fr,a2e24e2f39b2b10d,"// Planificateur BFS from-scratch — trouve le plan le plus court.
 
 static List<string>? PlanBFS(HashSet<string> initial, HashSet<string> goal, List<Operator> ops, int maxExpansions = 100000) {
@@ -1113,10 +1113,10 @@ class StateComparer : IEqualityComparer<string> {
 
 Console.WriteLine(""Planificateur BFS compile."");
 ",,,,,,,,a2e24e2f39b2b10d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,38f56513,markdown,fr,fa9f21a53f66346c,"### Plan sur l'interrupteur
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,38f56513,markdown,fr,771e67192298b52a,"### Plan sur l'interrupteur
 
-Lançons BFS sur le probleme de l'interrupteur. Il doit trouver `[allumer]` (1 action, le plus court).
-",,,,,,,,fa9f21a53f66346c,,,,,,,
+Lançons BFS sur le problème de l'interrupteur. Il doit trouver `[allumer]` (1 action, le plus court).
+",,,,,,,,771e67192298b52a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,1ef47fda,code,fr,24039877d6e5d108,"// Plan sur l'interrupteur.
 var ops = new List<Operator> { allumer, eteindre };
 var plan = PlanBFS(initial, goal, ops);
@@ -1126,12 +1126,12 @@ if (plan != null) {
     Console.WriteLine(""Aucun plan trouve."");
 }
 ",,,,,,,,24039877d6e5d108,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,9dbe5489,markdown,fr,eeff35cec2243d48,"## 7. Probleme plus riche — multi-interrupteurs (non-trivial)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,9dbe5489,markdown,fr,1f0d48b224f66ef1,"## 7. Problème plus riche — multi-interrupteurs (non-trivial)
 
-L'interrupteur seul est trivial (1 action). Pour **mettre en valeur** le planificateur (cf #3801 Prong B — probleme non-trivial), considerons **N interrupteurs** a allumer dans un ordre quelconque, mais avec une contrainte : une **maitresse** (master switch) doit etre allumee avant de pouvoir allumer les autres (precondition chainee). Le but = tous les interrupteurs allumes.
+L'interrupteur seul est trivial (1 action). Pour **mettre en valeur** le planificateur (cf #3801 Prong B — problème non-trivial), considerons **N interrupteurs** a allumer dans un ordre quelconque, mais avec une contrainte : une **maitresse** (master switch) doit etre allumee avant de pouvoir allumer les autres (precondition chainee). Le but = tous les interrupteurs allumes.
 
-Ce probleme a une **structure** (la maitresse d'abord) que BFS doit decouvrir — ce n'est pas un graphe a cout uniforme trivial.
-",,,,,,,,eeff35cec2243d48,,,,,,,
+Ce problème a une **structure** (la maitresse d'abord) que BFS doit decouvrir — ce n'est pas un graphe a cout uniforme trivial.
+",,,,,,,,1f0d48b224f66ef1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,13ecf78f,code,fr,da08688f59c14059,"// N interrupteurs + maitresse (probleme non-trivial).
 int N = 3;
 var multiOps = new List<Operator>();
@@ -1178,16 +1178,16 @@ if (multiPlan != null) {
     Console.WriteLine(""Aucun plan trouve."");
 }
 ",,,,,,,,da08688f59c14059,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,fbe69b49,markdown,fr,9eea922cf61d55e4,"### Interpretation — multi-interrupteurs
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,fbe69b49,markdown,fr,19f72d6683a4f5a6,"### Interpretation — multi-interrupteurs
 
-BFS decouvre automatiquement la **structure du probleme** :
+BFS decouvre automatiquement la **structure du problème** :
 - Il faut **d'abord** allumer la maitresse (seule action applicable sans precondition).
 - **Puis** allumer chaque interrupteur (precondition `master_on` satisfaite).
 
 Le plan a `N+1` actions : `allumer_master` puis `allumer_sw1`, `allumer_sw2`, ..., `allumer_swN` (l'ordre des `sw*` est arbitraire — BFS trouve l'un des plans optimaux). C'est exactement le genre de plan que `unified-planning` produirait, mais ici on **voit** la recherche explorer l'espace d'etats.
 
-**Pourquoi c'est non-trivial** : sans precondition chainee, le probleme serait degenere (toutes les actions independantes). La maitresse force un **ordre partiel** que le planificateur doit decouvrir — c'est ce qui met BFS en valeur (cf #3801 Prong B, probleme non-degenere).
-",,,,,,,,9eea922cf61d55e4,,,,,,,
+**Pourquoi c'est non-trivial** : sans precondition chainee, le problème serait degenere (toutes les actions independantes). La maitresse force un **ordre partiel** que le planificateur doit decouvrir — c'est ce qui met BFS en valeur (cf #3801 Prong B, problème non-degenere).
+",,,,,,,,19f72d6683a4f5a6,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,904a4deb,markdown,fr,b0f47c575f759b44,"## 8. Explosion combinatoire de l'espace d'etats
 
 Avec $n$ predicats (faits booléens), il y a jusqu'a $2^n$ etats possibles. Pour 10 predicats = 1024 etats, pour 20 = 1 million, pour 50 = $10^{15}$... C'est le **fleau de la combinatoire** qui motive les heuristiques (A*, relaxations — cf Planners-5).
@@ -1206,33 +1206,33 @@ Console.WriteLine();
 Console.WriteLine("">>> 50 predicats = ~1e15 etats : aucun planificateur aveugle (BFS) ne peut explorer."");
 Console.WriteLine("">>> D'ou les HEURISTIQUES (A*, relaxations) pour guider la recherche (cf Planners-5)."");
 ",,,,,,,,bf53c0e5df0f3f4d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,af408776,markdown,fr,3a179e4ace763b78,"## 9. Types de planification
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,af408776,markdown,fr,4e9d776505290f9f,"## 9. Types de planification
 
 La planification se declinent en plusieurs variantes (cf twin Python) :
 
 | Type | Caractéristique | Exemple |
 |------|-----------------|---------|
-| **Classique** | etats discrets, actions instantanées, deterministes | empiler des blocs, logistique |
+| **Classique** | etats discrets, actions instantanées, déterministes | empiler des blocs, logistique |
 | **Temporelle** | actions avec durée, chevauchement | ordonnancement de tâches |
 | **HTN** (Hierarchical Task Network) | décomposition de tâches abstraites | planification militaire, cuisine |
 | **Neuro-symbolique** | LLM + planificateur formel | agent LLM avec vérification |
 
 Ce notebook couvre les **fondations classiques** (STRIPS + BFS). Les notebooks suivants (PDDL, heuristiques, etc.) approfondissent.
-",,,,,,,,3a179e4ace763b78,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,18c2fd01,markdown,fr,55b144658a7f09dd,"## 10. Exercices
+",,,,,,,,4e9d776505290f9f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,18c2fd01,markdown,fr,4bd2ba5e85835d44,"## 10. Exercices
 
-Trois exercices pour aller plus loin. Chaque stub est conforme a la regle C.1 (pas d'erreur volontaire — le notebook s'execute de bout en bout meme exercices non completes).
-",,,,,,,,55b144658a7f09dd,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,a6429234,markdown,fr,7824072f644d2585,"### Exercice 1 — Le monde des blocs (blocks world)
+Trois exercices pour aller plus loin. Chaque stub est conforme a la règle C.1 (pas d'erreur volontaire — le notebook s'execute de bout en bout même exercices non completes).
+",,,,,,,,4bd2ba5e85835d44,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,a6429234,markdown,fr,74d16b6d7ac29781,"### Exercice 1 — Le monde des blocs (blocks world)
 
 **Enonce** : Modelisez le **monde des blocs** : 3 blocs A, B, C. Etat initial : A sur la table, B sur A, C sur la table. But : C sur B sur A (pyramide). Actions : `deplacer(x, y, z)` (pre: x sur y, bras libre ; add: x sur z ; del: x sur y).
 
-**Etape 1** : Definissez les operateurs (avec les predicats `sur(x,y)`, ` Bras_libre`, `sur_table(x)`).
-**Etape 2** : Codez l'etat initial et le but.
-**Etape 3** : Lancez `PlanBFS` et observez le plan.
+**Étape 1** : Definissez les opérateurs (avec les predicats `sur(x,y)`, ` Bras_libre`, `sur_table(x)`).
+**Étape 2** : Codez l'etat initial et le but.
+**Étape 3** : Lancez `PlanBFS` et observez le plan.
 
-**Indice** : attention aux precondition `Bras_libre` — un seul bloc peut etre deplace a la fois. C'est un probleme classique (Sussman anomaly) plus riche que l'interrupteur.
-",,,,,,,,7824072f644d2585,,,,,,,
+**Indice** : attention aux precondition `Bras_libre` — un seul bloc peut etre deplace a la fois. C'est un problème classique (Sussman anomaly) plus riche que l'interrupteur.
+",,,,,,,,74d16b6d7ac29781,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,081734da,code,fr,47fa4909b414ba15,"// Exercice 1 — Monde des blocs (A sur table, B sur A, C sur table -> C sur B sur A).
 // TODO etudiant : definissez les operateurs deplacer + etat initial + but, lancez PlanBFS.
 Console.WriteLine(""Exercice 1 a completer : monde des blocs (blocks world)."");
@@ -1249,39 +1249,39 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csha
 // TODO etudiant : PriorityQueue g+h, h = |goal - S|, comparez explorations vs BFS.
 Console.WriteLine(""Exercice 2 a completer : A* avec heuristique de but non-satisfait."");
 ",,,,,,,,5b0724617e856f6a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,161351c5,markdown,fr,3e2813ad88040485,"### Exercice 3 — Echec : probleme non-realisable
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,161351c5,markdown,fr,fafbd33fd3d2132c,"### Exercice 3 — Echec : problème non-realisable
 
-**Enonce** : Creez un probleme **sans solution** (ex: but = lampe allumee, mais `lampe_fonctionne` absent de l'etat initial et aucune action ne l'etablit). Observez le comportement de `PlanBFS` (retourne `null` apres `maxExpansions`).
+**Enonce** : Créez un problème **sans solution** (ex: but = lampe allumee, mais `lampe_fonctionne` absent de l'etat initial et aucune action ne l'etablit). Observez le comportement de `PlanBFS` (retourne `null` après `maxExpansions`).
 
 **Questions** : (a) Combien d'etats BFS explore-t-il avant d'abandonner ? (b) Comment detecter l'**insatisfiabilite** plus tot (ex: analyse des preconditions — un fait du but non atteignable par aucun effet d'ajout) ?
 
-**Indice** : `maxExpansions` borne l'exploration. Un fait du but qui n'apparait dans aucun `Add` d'operateur est **mort** — detection statique possible.
-",,,,,,,,3e2813ad88040485,,,,,,,
+**Indice** : `maxExpansions` borne l'exploration. Un fait du but qui n'apparait dans aucun `Add` d'opérateur est **mort** — detection statique possible.
+",,,,,,,,fafbd33fd3d2132c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,da8af1e3,code,fr,89733c9e4e314ae0,"// Exercice 3 — Probleme non-realisable (but avec fait non-atteignable).
 // TODO etudiant : etat initial sans lampe_fonctionne, but lampe_allumee, observez null.
 Console.WriteLine(""Exercice 3 a completer : probleme non-realisable + detection statique."");
 ",,,,,,,,89733c9e4e314ae0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,55c58a24,markdown,fr,976019b31ba33038,"## Conclusion — Tranche 1 fondations
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,55c58a24,markdown,fr,db25549b7934e573,"## Conclusion — Tranche 1 fondations
 
 **Ce que nous avons appris** :
 
 | Concept | Definition |
 |---------|------------|
 | **Planification** | Generer une sequence d'actions pour atteindre un but |
-| **STRIPS** | Formalisme : etat = predicats, operateur = pre/add/del |
+| **STRIPS** | Formalisme : etat = predicats, opérateur = pre/add/del |
 | **Transition** | $(S \setminus del) \cup add$ si $pre \subseteq S$ |
 | **BFS planner** | Recherche en largeur dans l'espace d'etats (plan le plus court) |
 | **Explosion combinatoire** | $2^n$ etats pour $n$ predicats → motive les heuristiques |
 
-**Lecon cles** : un planificateur = une **recherche dans l'espace d'etats construit a partir de la semantique des actions**. Le twin Python `unified-planning` invoque un solveur ; ce twin from-scratch **construit** le solveur (modele STRIPS + BFS). Les deux sont complementaires : comprendre vs resoudre vite.
+**Lecon cles** : un planificateur = une **recherche dans l'espace d'etats construit a partir de la sémantique des actions**. Le twin Python `unified-planning` invoque un solveur ; ce twin from-scratch **construit** le solveur (modèle STRIPS + BFS). Les deux sont complementaires : comprendre vs resoudre vite.
 
 **Suite** : PDDL (Planners-2 — le langage standard pour decrire ces problemes), heuristiques (Planners-5 — A*, relaxations pour combattre l'explosion combinatoire).
 
 ---
 
 *Implementation from-scratch, BCL .NET seule, 0 NuGet. Twin du notebook Python unified-planning [Planners-1-Introduction](Planners-1-Introduction.ipynb). Marathon #4956 (premier jumeau C# de la serie Planners).*
-",,,,,,,,976019b31ba33038,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-0,markdown,fr,5b97e652b3efe6b0,"# Planners-1-Introduction a la Planification Automatique
+",,,,,,,,db25549b7934e573,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-0,markdown,fr,5cb2fc0dea6a37b0,"# Planners-1-Introduction a la Planification Automatique
 
 **Navigation** : [Index](../../README.md) | [<< Setup](../00-Environment/Planners-0-Setup.ipynb) | [PDDL Syntax >>](Planners-2-PDDL-Basics.ipynb)
 
@@ -1291,11 +1291,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipyn
 
 A la fin de ce notebook, vous saurez :
 
-1. **Definir** ce qu'est la planification automatique en IA
-2. **Identifier** les composantes d'un probleme de planification (etat, action, but)
+1. **Définir** ce qu'est la planification automatique en IA
+2. **Identifier** les composantes d'un problème de planification (etat, action, but)
 3. **Comprendre** les hypothese STRIPS pour la planification classique
-4. **Distinguer** les differents types de planification
-5. **Modeliser** un probleme simple avec unified-planning
+4. **Distinguer** les différents types de planification
+5. **Modeliser** un problème simple avec unified-planning
 
 ### Prerequis
 
@@ -1303,8 +1303,8 @@ A la fin de ce notebook, vous saurez :
 - Notebook Setup (Planners-0-Setup) execute
 - Connaissances basiques en algorithmique (graphes, recherche)
 
-### Duree estimee : 30 minutes",,,,,,,,5b97e652b3efe6b0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-1,markdown,fr,28612aef8aff6354,"---
+### Duree estimee : 30 minutes",,,,,,,,5cb2fc0dea6a37b0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-1,markdown,fr,e03b65b54b083256,"---
 
 ## 1. Qu'est-ce que la Planification ?
 
@@ -1314,14 +1314,14 @@ La **planification automatique** est une branche fondamentale de l'intelligence 
 
 > **Planification** : Processus de determination d'une sequence d'actions qui menera un agent d'un **etat initial** $I$ vers un **etat but** $G$, en respectant les contraintes du **domaine** $D$.
 
-Un probleme de planification est formellement defini comme un triplet :
+Un problème de planification est formellement défini comme un triplet :
 
 $$\mathcal{P} = \langle I, G, D \rangle$$
 
 ou :
 - $I$ : Etat initial du monde
 - $G$ : Condition de but (etat ou ensemble d'etats cibles)
-- $D$ : Theorie du domaine (actions disponibles, predicats, types)
+- $D$ : Théorie du domaine (actions disponibles, predicats, types)
 
 ### 1.2 Le triptyque Etat-Action-But
 
@@ -1333,14 +1333,14 @@ La planification repose sur trois concepts fondamentaux :
 | **Action** | Transition entre etats (preconditions + effets) | Se deplacer, prendre un objet |
 | **But** | Condition a satisfaire | Livrer le colis a destination |
 
-La resolution d'un probleme de planification produit un **plan** :
+La resolution d'un problème de planification produit un **plan** :
 
 $$\pi = \langle a_1, a_2, \ldots, a_n \rangle$$
 
-Une sequence d'actions telle que l'execution de $\pi$ depuis $I$ atteint $G$.",,,,,,,,28612aef8aff6354,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-2,markdown,fr,6015e7e214f1c05b,"### 1.3 Illustration : Le probleme du voyageur
+Une sequence d'actions telle que l'exécution de $\pi$ depuis $I$ atteint $G$.",,,,,,,,e03b65b54b083256,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-2,markdown,fr,9aa9889ef20ca7dd,"### 1.3 Illustration : Le problème du voyageur
 
-Considerons un probleme classique : un voyageur doit aller de Paris a Tokyo.
+Considerons un problème classique : un voyageur doit aller de Paris a Tokyo.
 
 ```
 Etat initial: a(Paris) ^ billet(Paris, Tokyo)
@@ -1352,21 +1352,21 @@ Actions:
 
 **Plan solution** : `[prendre_avion(Paris, Tokyo)]`
 
-Ce probleme simple illustre la structure fondamentale de tout probleme de planification.",,,,,,,,6015e7e214f1c05b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-3,markdown,fr,356c31ce4efcc31f,"---
+Ce problème simple illustre la structure fondamentale de tout problème de planification.",,,,,,,,9aa9889ef20ca7dd,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-3,markdown,fr,fabda97552f3b195,"---
 
-## 2. Le Modele STRIPS
+## 2. Le Modèle STRIPS
 
-**STRIPS** (Stanford Research Institute Problem Solver, 1971) est le modele fondateur de la planification classique. Il definit un cadre formel pour representer les problemes de planification.
+**STRIPS** (Stanford Research Institute Problem Solver, 1971) est le modèle fondateur de la planification classique. Il définit un cadre formel pour representer les problemes de planification.
 
 ### 2.1 Hypotheses de la planification STRIPS
 
-Le modele STRIPS repose sur plusieurs hypotheses restrictives :
+Le modèle STRIPS repose sur plusieurs hypotheses restrictives :
 
 | Hypothese | Description | Consequence |
 |-----------|-------------|-------------|
-| **Statique** | L'environnement ne change que par les actions de l'agent | Pas d'evenements externes |
-| **Deterministe** | Chaque action a un effet unique et predictible | Pas d'incertitude sur les effets |
+| **Statique** | L'environnement ne change que par les actions de l'agent | Pas d'événements externes |
+| **Déterministe** | Chaque action a un effet unique et predictible | Pas d'incertitude sur les effets |
 | **Observable** | L'agent connait parfaitement l'etat courant | Pas d'information cachee |
 | **Discret** | Les etats et actions sont denombrables | Manipulation finie |
 | **Instantane** | Les actions n'ont pas de duree | Pas de temporalite |
@@ -1375,20 +1375,20 @@ Ces hypotheses permettent d'utiliser des algorithmes de recherche classiques pou
 
 ### 2.2 Structure d'une action STRIPS
 
-Une action STRIPS est definie par quatre composantes :
+Une action STRIPS est définie par quatre composantes :
 
 $$a = \langle \text{name}, \text{params}, \text{precond}, \text{effects} \rangle$$
 
 ```
 Action: pick-up(x)
-  Parametres:  ?x - Block
+  Paramètres:  ?x - Block
   Preconditions: clear(x), ontable(x), handempty
   Effets:      holding(x), ¬ontable(x), ¬clear(x), ¬handempty
 ```
 
 **Notation** :
 - Les **preconditions** sont des litteraux positifs qui doivent etre vrais
-- Les **effets** comprennent une liste additive (+) et une liste soustractive (-)",,,,,,,,356c31ce4efcc31f,,,,,,,
+- Les **effets** comprennent une liste additive (+) et une liste soustractive (-)",,,,,,,,fabda97552f3b195,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-4,markdown,fr,b9af327eda334b0e,"### 2.3 Formalisme mathematique
 
 Dans le formalisme STRIPS, un etat est un ensemble de predicats (faits vrais). Une action $a$ est applicable dans un etat $s$ si :
@@ -1402,9 +1402,9 @@ $$s' = (s \setminus \text{del}(a)) \cup \text{add}(a)$$
 ou :
 - $\text{del}(a)$ : effets negatifs (litteraux retires)
 - $\text{add}(a)$ : effets positifs (litteraux ajoutes)",,,,,,,,b9af327eda334b0e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-5,markdown,fr,278992ab73044697,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-5,markdown,fr,9a64473d12df4350,"---
 
-## 3. Domaine et Probleme de Planification
+## 3. Domaine et Problème de Planification
 
 En planification automatique, on distingue deux niveaux de description :
 
@@ -1413,21 +1413,21 @@ En planification automatique, on distingue deux niveaux de description :
 Le **domaine** decrit les aspects generiques et reutilisables :
 - Les **types** d'objets (Block, Location, Robot...)
 - Les **predicats** (relations entre objets)
-- Les **actions** (schemas d'actions parametres)
+- Les **actions** (schemas d'actions paramètres)
 
-Le domaine est **invariant** : il peut etre reutilise pour differents problemes.
+Le domaine est **invariant** : il peut etre reutilise pour différents problemes.
 
-### 3.2 Le Probleme (Problem)
+### 3.2 Le Problème (Problem)
 
-Le **probleme** decrit une instance specifique :
+Le **problème** decrit une instance spécifique :
 - Les **objets** concrets (block_a, location_paris...)
 - L'**etat initial** (configuration de depart)
 - Le **but** (objectif a atteindre)
 
-### 3.3 Schema de separation Domaine/Probleme
+### 3.3 Schema de separation Domaine/Problème
 
 ```
-DOMAINE (generique)           PROBLEME (instance)
+DOMAINE (generique)           PROBLÈME (instance)
 ==================           ===================
 Types: Block                 Objets: a, b, c
 Predicats:                   Etat initial:
@@ -1440,8 +1440,8 @@ Actions:                     But:
 
 Cette separation permet de :
 - Reutiliser un domaine pour plusieurs problemes
-- Comparer differents planificateurs sur les memes instances
-- Structurer clairement la modelisation",,,,,,,,278992ab73044697,,,,,,,
+- Comparer différents planificateurs sur les mêmes instances
+- Structurer clairement la modelisation",,,,,,,,9a64473d12df4350,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-6,markdown,fr,5c502f33c645820f,"---
 
 ## 4. Exemple Simple : L'Interrupteur
@@ -1463,9 +1463,9 @@ Commencons par un exemple minimaliste : un interrupteur qui peut etre allume ou 
 - `turn_off(s)` : eteindre l'interrupteur
   - Preconditions : `on(s)`
   - Effets : `off(s)`, `not(on(s))`",,,,,,,,5c502f33c645820f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-7,markdown,fr,05742e5d0b3d08e6,"### 4.2 Implementation avec unified-planning
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-7,markdown,fr,62b71f47de80f0c7,"### 4.2 Implementation avec unified-planning
 
-Utilisons la bibliotheque `unified-planning` pour modeliser ce probleme simple.",,,,,,,,05742e5d0b3d08e6,,,,,,,
+Utilisons la bibliotheque `unified-planning` pour modeliser ce problème simple.",,,,,,,,62b71f47de80f0c7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-8,code,fr,965ae4271b3c1768,"# Verification de unified-planning
 try:
     import unified_planning as up
@@ -1476,9 +1476,9 @@ except ImportError as e:
     print(f""ERREUR: unified-planning non installe: {e}"")
     print(""Executez le notebook Planners-0-Setup.ipynb pour l'installation."")
     UP_OK = False",,,,,,,,965ae4271b3c1768,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,2n35tcj4m9u,markdown,fr,e65a2af379e50dc3,"### 4.2 Implementation avec unified-planning
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,2n35tcj4m9u,markdown,fr,79868e0855a15044,"### 4.2 Implementation avec unified-planning
 
-Modelisation du probleme de l'interrupteur en utilisant l'API unified-planning avec un environnement explicite et des parametres d'action typés.",,,,,,,,e65a2af379e50dc3,,,,,,,
+Modelisation du problème de l'interrupteur en utilisant l'API unified-planning avec un environnement explicite et des paramètres d'action typés.",,,,,,,,79868e0855a15044,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-9,code,fr,7b3dbbc11dcbd79d,"# Modelisation du probleme de l'interrupteur
 if UP_OK:
     from unified_planning.environment import Environment
@@ -1567,7 +1567,7 @@ Le code montre comment modéliser un problème de planification avec `unified-pl
 - Les effets négatifs sont gérés en mettant le fluent à `False`
 
 > **Note pédagogique** : Ce pattern de modélisation (type → fluents → actions → état → but) est réutilisable pour tous les problèmes de planification classique.",,,,,,,,e4bb860d9e8a4cb4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-10,markdown,fr,c42152fe7c460ace,### 4.3 Resolution du probleme,,,,,,,,c42152fe7c460ace,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-10,markdown,fr,b93919a9e1f49387,### 4.3 Resolution du problème,,,,,,,,b93919a9e1f49387,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-11,code,fr,e7dd9020cdb23293,"# Resolution avec un planificateur
 if UP_OK:
     from unified_planning.engines import PlanGenerationResultStatus
@@ -1603,20 +1603,20 @@ if UP_OK:
         print(f""Erreur lors de la resolution: {e}"")
         print(""\nNote: Assurez-vous que 'up-pyperplan' est installe:"")
         print(""  pip install 'unified-planning[pyperplan]'"")",,,,,,,,e7dd9020cdb23293,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,43273863,markdown,fr,a7887fbe126d7795,"### Architecture : deux couches pour planifier
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,43273863,markdown,fr,67bdce6991bd2aef,"### Architecture : deux couches pour planifier
 
 La resolution ci-dessus a fonctionne parce que **deux briques distinctes** etaient presentes. C'est un point structurant de la planification automatique.
 
-| Composant | Role | Statut ici |
+| Composant | Rôle | Statut ici |
 |-----------|------|------------|
 | `unified-planning` | Bibliotheque de modelisation (types, fluents, actions, but) | Installe (v1.3.0) |
 | `pyperplan` | Planificateur effectif (recherche le plan) | Installe, utilise ci-dessus |
 | Fast Downward | Planificateur C++ performant (alternative) | Disponible |
 
 **Pourquoi deux couches ?**
-- `unified-planning` est une **interface** : elle decrit le probleme mais ne le resout pas.
+- `unified-planning` est une **interface** : elle decrit le problème mais ne le resout pas.
 - Le calcul du plan est delegue a un **planificateur** branche via `OneshotPlanner(name=...)`.
-- Si aucun planificateur n'est installe, `unified-planning` leve une erreur -- on installe alors la dependance :
+- Si aucun planificateur n'est installe, `unified-planning` leve une erreur -- on installe alors la dépendance :
 
 ```bash
 pip install 'unified-planning[pyperplan]'
@@ -1624,43 +1624,43 @@ pip install 'unified-planning[pyperplan]'
 
 > **Point cle pedagogique** : La planification automatique necessite deux couches : (1) une bibliotheque de modelisation (unified-planning, PDDL) et (2) un planificateur effectif (pyperplan, Fast Downward, LAMA). C'est analogue a avoir une bibliotheque d'algebre lineaire (NumPy) et un solveur (scipy.linalg.solve).
 
-**Note** : Les notebooks suivants utilisent aussi Fast Downward, plus robuste et performant sur les gros problemes.",,,,,,,,a7887fbe126d7795,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-12,markdown,fr,0e9d92c098bfb1f5,"### Interpretation du resultat
+**Note** : Les notebooks suivants utilisent aussi Fast Downward, plus robuste et performant sur les gros problemes.",,,,,,,,67bdce6991bd2aef,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-12,markdown,fr,3b7a8782553885d3,"### Interpretation du résultat
 
 Le planificateur trouve la solution attendue :
 
-| Etape | Action | Etat resultant |
+| Étape | Action | Etat resultant |
 |-------|--------|---------------|
 | Initial | - | `off(s)` |
 | 1 | `turn_on(s)` | `on(s)` |
 
 **Observations** :
-- Le probleme est trivial mais illustre le processus de planification
+- Le problème est trivial mais illustre le processus de planification
 - L'action `turn_on` est la seule applicable dans l'etat initial
 - Le plan ne contient qu'une seule action (optimal)
 
-> **Note** : Ce probleme simple montre le flux complet : modelisation -> resolution -> plan.",,,,,,,,0e9d92c098bfb1f5,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-13,markdown,fr,06fb402c054b29d3,"---
+> **Note** : Ce problème simple montre le flux complet : modelisation -> resolution -> plan.",,,,,,,,3b7a8782553885d3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-13,markdown,fr,57c4f66ca41dbc35,"---
 
 ## 5. Types de Planification
 
-La planification classique STRIPS est le point de depart, mais il existe de nombreuses extensions pour des scenarios plus complexes.
+La planification classique STRIPS est le point de depart, mais il existe de nombreuses extensions pour des scénarios plus complexes.
 
 ### 5.1 Taxonomie des paradigmes de planification
 
 | Paradigme | Extensions | Applications typiques |
 |-----------|------------|----------------------|
 | **Classique** | STRIPS, PDDL | Casse-tetes, logistique |
-| **Numerique** | Variables continues | Gestion de ressources |
+| **Numérique** | Variables continues | Gestion de ressources |
 | **Temporelle** | Duree, parallelisme | Ordonnancement, planification de projets |
-| **Hierarchique (HTN)** | Methodes, taches abstraites | Planification strategique |
+| **Hiérarchique (HTN)** | Méthodes, tâches abstraites | Planification stratégique |
 | **Probabiliste (MDP/POMDP)** | Incertitude, observations partielles | Robotique, dialogue |
 | **Multi-agents** | Agents cooperatifs/competitifs | Jeux, negociation |
 
 ### 5.2 Planification classique vs. extensions
 
 **Planification classique** :
-- Hypotheses STRIPS (deterministe, observable, statique)
+- Hypotheses STRIPS (déterministe, observable, statique)
 - Recherche dans un graphe d'etats
 - Heuristiques admissibles pour l'optimalite
 
@@ -1668,20 +1668,20 @@ La planification classique STRIPS est le point de depart, mais il existe de nomb
 
 1. **Planification temporelle** : Les actions ont une duree et peuvent se chevaucher
    - Representation : PDDL 2.1+
-   - Exemple : Ordonnancement de taches avec contraintes de precedence
+   - Exemple : Ordonnancement de tâches avec contraintes de precedence
 
 2. **Planification avec ressources** : Gestion de ressources limitees (carburant, battery)
-   - Representation : PDDL numerique
+   - Representation : PDDL numérique
    - Exemple : Robot avec batterie limitant ses deplacements
 
-3. **Planification hierarchique (HTN)** : Decomposition de taches abstraites
-   - Representation : Methodes et reseau de taches
-   - Exemple : Planifier un voyage (reserver -> preparer -> partir)",,,,,,,,06fb402c054b29d3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,5f6a31ee,markdown,fr,08272052e6de9148,"---
+3. **Planification hiérarchique (HTN)** : Decomposition de tâches abstraites
+   - Representation : Méthodes et reseau de tâches
+   - Exemple : Planifier un voyage (reserver -> preparer -> partir)",,,,,,,,57c4f66ca41dbc35,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,5f6a31ee,markdown,fr,a86e04b1e9587be7,"---
 
 ## 5. Types de Planification
 
-La planification classique STRIPS est le point de départ, mais il existe de nombreuses extensions pour des scenarios plus complexes.
+La planification classique STRIPS est le point de départ, mais il existe de nombreuses extensions pour des scénarios plus complexes.
 
 ### 5.1 Taxonomie des paradigmes de planification
 
@@ -1690,19 +1690,19 @@ La planification classique STRIPS est le point de départ, mais il existe de nom
 | **Classique** | STRIPS, PDDL | Casse-têtes, logistique |
 | **Numérique** | Variables continues | Gestion de ressources |
 | **Temporelle** | Durée, parallélisme | Ordonnancement, planification de projets |
-| **Hierarchique (HTN)** | Méthodes, tâches abstraites | Planification stratégique |
+| **Hiérarchique (HTN)** | Méthodes, tâches abstraites | Planification stratégique |
 | **Probabiliste (MDP/POMDP)** | Incertitude, observations partielles | Robotique, dialogue |
 | **Multi-agents** | Agents coopératifs/compétitifs | Jeux, négociation |
 
-**Note pédagogique** : Ce notebook couvre la planification classique STRIPS. Les paradigmes temporel, HTN et neuro-symbolique seront abordés dans les notebooks suivants de cette série.",,,,,,,,08272052e6de9148,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-14,markdown,fr,2caa8d9eb00d4e01,"### 5.3 Visualisation des paradigmes
+**Note pédagogique** : Ce notebook couvre la planification classique STRIPS. Les paradigmes temporel, HTN et neuro-symbolique seront abordés dans les notebooks suivants de cette série.",,,,,,,,a86e04b1e9587be7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-14,markdown,fr,4a03464db772f364,"### 5.3 Visualisation des paradigmes
 
 ```mermaid
 graph TD
     A[Planification] --> B[Classique]
     A --> C[Temporelle]
-    A --> D[Numerique]
-    A --> E[Hierarchique]
+    A --> D[Numérique]
+    A --> E[Hiérarchique]
     A --> F[Probabiliste]
     A --> G[Multi-agents]
     
@@ -1713,36 +1713,36 @@ graph TD
     D --> D1[Ressources]
     D --> D2[Continu]
     E --> E1[HTN]
-    E --> E2[Methodes]
+    E --> E2[Méthodes]
     F --> F1[MDP]
     F --> F2[POMDP]
     G --> G1[Cooperatif]
     G --> G2[Competitif]
-```",,,,,,,,2caa8d9eb00d4e01,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-15,markdown,fr,c65b4d9d3bb4d6b7,"---
+```",,,,,,,,4a03464db772f364,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-15,markdown,fr,4e6244503d951c22,"---
 
 ## 6. Contexte Historique
 
 La planification automatique a une riche histoire dans le domaine de l'IA.
 
-### 6.1 Chronologie des developpements majeurs
+### 6.1 Chronologie des développements majeurs
 
-| Periode | Developpement | Impact |
+| Periode | Développement | Impact |
 |---------|---------------|--------|
-| **1969-1971** | STRIPS (Fikes & Nilsson) | Modele fondateur |
+| **1969-1971** | STRIPS (Fikes & Nilsson) | Modèle fondateur |
 | **1971-1975** | NOAH, NONLIN | Planification non-lineaire |
 | **1990s** | Graphplan, SATPlan | Algorithmes efficaces |
 | **1998** | PDDL standardise | Langage commun pour IPC |
 | **2000s** | LAMA, Fast Downward | Heuristiques puissantes |
 | **2010s** | Integration RL/Neural | Planification neuro-symbolique |
-| **2020s** | LLM + Planning | Planification avec modeles de langage |
+| **2020s** | LLM + Planning | Planification avec modèles de langage |
 
 ### 6.2 L'IPC (International Planning Competition)
 
-L'IPC est organise tous les 2-3 ans depuis 1998. Elle a joue un role majeur dans l'avancement de la planification :
+L'IPC est organise tous les 2-3 ans depuis 1998. Elle a joue un rôle majeur dans l'avancement de la planification :
 
 - **Benchmarks standardises** : Domaines classiques (Blocks, Logistics, Gripper...)
-- **Comparaison objective** : Mesure de performances sur les memes instances
+- **Comparaison objective** : Mesure de performances sur les mêmes instances
 - **Innovation** : Nouvelles heuristiques et algorithmes
 
 ### 6.3 Outils modernes
@@ -1752,8 +1752,8 @@ L'IPC est organise tous les 2-3 ans depuis 1998. Elle a joue un role majeur dans
 | **Fast Downward** | Optimal/Satisficing | Heuristiques LM-cut, FF |
 | **LAMA** | Portfolio | Gagnant IPC multiple |
 | **unified-planning** | Bibliotheque Python | Interface unifiee |
-| **OR-Tools CP-SAT** | Programmation par contraintes | Planification + optimisation |",,,,,,,,c65b4d9d3bb4d6b7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-16,markdown,fr,13b0fd372e15682e,"---
+| **OR-Tools CP-SAT** | Programmation par contraintes | Planification + optimisation |",,,,,,,,4e6244503d951c22,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-16,markdown,fr,83f8c270ce2acb7e,"---
 
 ## 7. Espace d'Etats et Recherche
 
@@ -1761,7 +1761,7 @@ La planification peut etre vue comme une recherche dans un **graphe d'etats**.
 
 ### 7.1 Graphe d'etats
 
-Un probleme de planification definit implicitement un graphe :
+Un problème de planification définit implicitement un graphe :
 
 - **Noeuds** : Etats accessibles
 - **Aretes** : Actions (transitions entre etats)
@@ -1775,11 +1775,11 @@ $$|S| = O(2^n)$$
 
 ou $n$ est le nombre de predicats (faits) possibles.
 
-**Exemple** : Pour un probleme avec 50 predicats binaires :
+**Exemple** : Pour un problème avec 50 predicats binaires :
 - Nombre d'etats possibles : $2^{50} \approx 10^{15}$
 - Exploration exhaustive impossible
 
-C'est pourquoi les **heuristiques** sont essentielles pour guider la recherche.",,,,,,,,13b0fd372e15682e,,,,,,,
+C'est pourquoi les **heuristiques** sont essentielles pour guider la recherche.",,,,,,,,83f8c270ce2acb7e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-17,code,fr,0a2ee5d9d097f1f3,"# Illustration de l'explosion combinatoire
 import math
 
@@ -1837,11 +1837,11 @@ Heuristiques classiques que nous explorerons dans les notebooks suivants :
 - $h^{max}$ : Heuristique maximum
 - $h^{FF}$ : Heuristique Fast Forward
 - $h^{LM-cut}$ : Heuristique Landmark-Cut",,,,,,,,2977aa4886782ece,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,76ce4db3,markdown,fr,b26dcffbeeca565f,"### Exemple guide 1 : Planification de livraison
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,76ce4db3,markdown,fr,f896c1e3dc6daefa,"### Exemple guide 1 : Planification de livraison
 
-Appliquons le pattern de modelisation (types -> fluents -> actions -> etat initial -> but) a un probleme de livraison plus realiste. Un robot doit recuperer un colis au depot et le livrer a une destination, en se deplacant entre deux lieux.
+Appliquons le pattern de modelisation (types -> fluents -> actions -> etat initial -> but) a un problème de livraison plus realiste. Un robot doit recuperer un colis au depot et le livrer a une destination, en se deplacant entre deux lieux.
 
-**Probleme** :
+**Problème** :
 - **Lieux** : depot, destination
 - **Robot** : commence au depot, mains vides
 - **Colis** : se trouve au depot
@@ -1849,8 +1849,8 @@ Appliquons le pattern de modelisation (types -> fluents -> actions -> etat initi
 
 **Actions necessaires** :
 - Se deplacer entre les lieux
-- Prendre le colis (si on est au meme endroit)
-- Deposer le colis (si on le porte)",,,,,,,,b26dcffbeeca565f,,,,,,,
+- Prendre le colis (si on est au même endroit)
+- Deposer le colis (si on le porte)",,,,,,,,f896c1e3dc6daefa,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,470aedd3,code,fr,9eb1ff7dbfc9ba9f,"# Exemple guide 1 : Planification de livraison avec unified-planning
 if UP_OK:
     from unified_planning.environment import Environment
@@ -1944,11 +1944,11 @@ if UP_OK:
         print(""="" * 50)
 else:
     print(""unified-planning non disponible"")",,,,,,,,9eb1ff7dbfc9ba9f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,4bb5e2e9,markdown,fr,b4a1d8c5f6c66970,"### Interpretation : Plan de livraison
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,4bb5e2e9,markdown,fr,644b3e5e994068b9,"### Interpretation : Plan de livraison
 
-Le planificateur produit un plan en 3 actions, qui est optimal pour ce probleme :
+Le planificateur produit un plan en 3 actions, qui est optimal pour ce problème :
 
-| Etape | Action | Effet |
+| Étape | Action | Effet |
 |-------|--------|-------|
 | 1 | `pick(rob, pkg, depot)` | Le robot prend le colis au depot |
 | 2 | `move(rob, depot, dest)` | Le robot se deplace vers la destination |
@@ -1961,17 +1961,17 @@ Le planificateur produit un plan en 3 actions, qui est optimal pour ce probleme 
 **Points cles de la modelisation** :
 1. **Separation type/objet** : Les types `Location`, `Robot`, `Package` sont generiques ; les objets concrets (`depot`, `rob`, `pkg`) sont l'instance
 2. **Actions parametrees** : `move`, `pick`, `drop` sont des schemas reutilisables pour tout couple d'objets
-3. **Fluent `carrying`** : Encode la relation ""le robot porte le colis"" -- necessaire pour eviter de prendre deux fois le meme colis
+3. **Fluent `carrying`** : Encode la relation ""le robot porte le colis"" -- necessaire pour eviter de prendre deux fois le même colis
 4. **`default_initial_value=False`** : Tous les predicats sont faux par defaut, seuls les etats vrais sont declares explicitement
 
-> **Note technique** : Le modele ne declare que les objets strictement necessaires au but (`depot`, `dest`, `rob`, `pkg`). Un modele plus riche pourrait inclure des lieux supplementaires (entrepot, garage...) que le planificateur **ignorerait** car non pertinents pour atteindre le but -- le plan optimal resterait `pick -> move -> drop`. Cette instance reste minimale par souci de lisibilite : le code instancie exactement les 4 objets (`depot`, `dest`, `rob`, `pkg`) que le but `package_at(pkg, dest)` mobilise.",,,,,,,,b4a1d8c5f6c66970,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-19,markdown,fr,fc0f265d5af45b33,"---
+> **Note technique** : Le modèle ne declare que les objets strictement necessaires au but (`depot`, `dest`, `rob`, `pkg`). Un modèle plus riche pourrait inclure des lieux supplementaires (entrepot, garage...) que le planificateur **ignorerait** car non pertinents pour atteindre le but -- le plan optimal resterait `pick -> move -> drop`. Cette instance reste minimale par souci de lisibilite : le code instancie exactement les 4 objets (`depot`, `dest`, `rob`, `pkg`) que le but `package_at(pkg, dest)` mobilise.",,,,,,,,644b3e5e994068b9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-19,markdown,fr,3ccd2b9316f4b46f,"---
 
 ## 8. Exercices
 
-### Exercice 1 : Analyse d'un probleme simple
+### Exercice 1 : Analyse d'un problème simple
 
-Soit le probleme suivant :
+Soit le problème suivant :
 - **Etat initial** : `a(Paris)`, `billet(Paris, Lyon)`
 - **But** : `a(Lyon)`
 - **Actions** :
@@ -1981,21 +1981,21 @@ Soit le probleme suivant :
 **Questions** :
 1. Combien d'actions sont applicables dans l'etat initial ?
 2. Quel est le plan optimal ?
-3. Combien d'etats sont accessibles au maximum ?",,,,,,,,fc0f265d5af45b33,,,,,,,
+3. Combien d'etats sont accessibles au maximum ?",,,,,,,,3ccd2b9316f4b46f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-20,code,fr,bcc141a136123875,"# Espace pour votre reponse a l'exercice 1
 # Hint: Utilisez unified-planning pour verifier votre solution
 
 # Votre code ici...
 print(""Exercice a completer"")
 ",,,,,,,,bcc141a136123875,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-21,markdown,fr,b10e402b06cf532a,"### Exercice 2 : Modification du probleme de l'interrupteur
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-21,markdown,fr,bd1a117e0937a5f3,"### Exercice 2 : Modification du problème de l'interrupteur
 
-Etendez le probleme de l'interrupteur avec :
+Etendez le problème de l'interrupteur avec :
 1. Deux interrupteurs `s1` et `s2`
 2. Un but : les deux interrupteurs doivent etre allumes
 3. Etat initial : `s1` allume, `s2` eteint
 
-Trouvez le plan optimal avec unified-planning.",,,,,,,,b10e402b06cf532a,,,,,,,
+Trouvez le plan optimal avec unified-planning.",,,,,,,,bd1a117e0937a5f3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-22,code,fr,1c835401dc6b8e8c,"# Exercice 2 : Deux interrupteurs
 # Etendez le modele de l'interrupteur (probleme ""light-switch"" plus haut) a DEUX
 # interrupteurs s1 et s2.
@@ -2006,17 +2006,17 @@ if UP_OK:
     # A vous de jouer.
     print(""Exercice 2 a completer"")
 ",,,,,,,,1c835401dc6b8e8c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,ex-pl1-multi-md,markdown,fr,8fa2b1345aa32291,"### Exercice 3 : Planification multi-interrupteurs
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,ex-pl1-multi-md,markdown,fr,ded0a3347dc32281,"### Exercice 3 : Planification multi-interrupteurs
 
-Generalisez le probleme de l'interrupteur a **N interrupteurs** controlant une seule lampe.
+Generalisez le problème de l'interrupteur a **N interrupteurs** controlant une seule lampe.
 
-**Objectif** : Ecrire une fonction qui genere un probleme UP avec N interrupteurs, ou la lampe est allumee si au moins un interrupteur est sur ON.
+**Objectif** : Ecrire une fonction qui genere un problème UP avec N interrupteurs, ou la lampe est allumee si au moins un interrupteur est sur ON.
 
 **Indices** :
-- # Etape 1 : Creer N fluents booleens `switch_i` et un fluent `light`
-- # Etape 2 : Definir une action `toggle_i` pour chaque interrupteur
-- # Etape 3 : Le but est `light = True`
-- # Etape 4 : Verifier que le plan trouve a au plus N actions",,,,,,,,8fa2b1345aa32291,,,,,,,
+- # Étape 1 : Créer N fluents booléens `switch_i` et un fluent `light`
+- # Étape 2 : Définir une action `toggle_i` pour chaque interrupteur
+- # Étape 3 : Le but est `light = True`
+- # Étape 4 : Verifier que le plan trouve a au plus N actions",,,,,,,,ded0a3347dc32281,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,ex-pl1-multi-code,code,fr,9b059abccaddf1ca,"if UP_OK:
     from unified_planning.shortcuts import *
     from unified_planning.engines import PlanGenerationResultStatus
@@ -2030,20 +2030,20 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipyn
     print(f""Plan pour 3 interrupteurs: {plan}"")
     print(""Exercice a completer"")
 ",,,,,,,,9b059abccaddf1ca,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,a95338d8,markdown,fr,cc13ee0efa270049,"**Indice** : un seul probleme avec deux objets `Switch`, un but conjonctif (les deux interrupteurs allumes). Les actions `turn_on` / `turn_off` definies plus haut sont generiques et se reutilisent telles quelles.",,,,,,,,cc13ee0efa270049,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-23,markdown,fr,df2fa10a39474720,"### Exercice 4 : Reflexion sur les hypotheses STRIPS
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,a95338d8,markdown,fr,09d7aa8eea8e8a3f,"**Indice** : un seul problème avec deux objets `Switch`, un but conjonctif (les deux interrupteurs allumes). Les actions `turn_on` / `turn_off` définies plus haut sont generiques et se reutilisent telles quelles.",,,,,,,,09d7aa8eea8e8a3f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-23,markdown,fr,228514ceb2818603,"### Exercice 4 : Reflexion sur les hypotheses STRIPS
 
-Pour chaque scenario ci-dessous, identifiez quelle hypothese STRIPS est violee et expliquez pourquoi :
+Pour chaque scénario ci-dessous, identifiez quelle hypothese STRIPS est violee et expliquez pourquoi :
 
-| Scenario | Hypothese violee | Pourquoi ? |
+| Scénario | Hypothese violee | Pourquoi ? |
 |----------|-----------------|------------|
 | Un robot qui se deplace et dont la batterie diminue progressivement | ? | ? |
-| Un jeu ou les des determinent le resultat d'une action | ? | ? |
+| Un jeu ou les des determinent le résultat d'une action | ? | ? |
 | Un environnement avec d'autres agents qui agissent simultanement | ? | ? |
 | Une voiture autonome qui ne connait pas l'etat du traffic | ? | ? |
 
-Completez le tableau. Les hypotheses STRIPS a considerer sont rappelees en section 2.1 : statique, deterministe, observable, discret, instantane.",,,,,,,,df2fa10a39474720,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-24,markdown,fr,fcb20940e2de2eb2,"---
+Completez le tableau. Les hypotheses STRIPS a considerer sont rappelees en section 2.1 : statique, déterministe, observable, discret, instantane.",,,,,,,,228514ceb2818603,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-24,markdown,fr,7b757291cfae1cb6,"---
 
 ## 9. Resume et Points Cles
 
@@ -2056,19 +2056,19 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipyn
 | **Action** | Transition avec preconditions et effets (add/del) |
 | **Plan** | Sequence d'actions executable |
 | **Domaine** | Schema general (types, predicats, actions) |
-| **Probleme** | Instance specifique (objets, init, but) |
+| **Problème** | Instance spécifique (objets, init, but) |
 
 ### 9.2 Hypotheses STRIPS
 
 | Hypothese | Description |
 |-----------|-------------|
 | Statique | Environnement ne change que par les actions de l'agent |
-| Deterministe | Effets uniques et predictibles |
+| Déterministe | Effets uniques et predictibles |
 | Observable | Etat courant parfaitement connu |
 | Discret | Etats et actions denombrables |
 | Instantane | Actions sans duree |
 
-### 9.3 Prochaines etapes
+### 9.3 Prochaines étapes
 
 Dans les notebooks suivants, nous approfondirons :
 
@@ -2079,7 +2079,7 @@ Dans les notebooks suivants, nous approfondirons :
 
 ---
 
-**Notebook suivant** : [Planners-2-PDDL-Syntax](Planners-2-PDDL-Basics.ipynb)",,,,,,,,fcb20940e2de2eb2,,,,,,,
+**Notebook suivant** : [Planners-2-PDDL-Syntax](Planners-2-PDDL-Basics.ipynb)",,,,,,,,7b757291cfae1cb6,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,32f61567,markdown,fr,8131b0dd7e073151,"# Planners-2-PDDL-Basics-Csharp
 
 **Navigation** : [Index](../../README.md) | [<< Introduction C#](Planners-1-Introduction-Csharp.ipynb) | [State Space C# >>](Planners-3-State-Space-Csharp.ipynb) |
@@ -2736,7 +2736,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Cshar
 - [Fast Downward](https://www.fast-downward.org/) — Le solveur planification de référence (utilisé via `unified-planning` côté Python).
 - Russell, S., & Norvig, P. — *Artificial Intelligence: A Modern Approach* (4e éd.), ch. « Planning and Acting in the Real World ».
 ",,,,,,,,7f536e0d271b074d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,1e73cc76,markdown,fr,31c32f03bf0c5900,"# Planners-2-PDDL-Basics
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,1e73cc76,markdown,fr,a0e760ed00966c48,"# Planners-2-PDDL-Basics
 
 **Navigation** : [Index](../../README.md) | [<< Introduction](Planners-1-Introduction.ipynb) | [State Space >>](Planners-3-State-Space.ipynb)
 
@@ -2745,8 +2745,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 A la fin de ce notebook, vous saurez :
 1. Lire et comprendre la syntaxe PDDL (Planning Domain Definition Language)
 2. Ecrire un fichier domaine PDDL avec predicats et actions
-3. Ecrire un fichier probleme PDDL avec objets, etat initial et but
-4. Utiliser `unified-planning` pour manipuler des modeles PDDL en Python
+3. Ecrire un fichier problème PDDL avec objets, etat initial et but
+4. Utiliser `unified-planning` pour manipuler des modèles PDDL en Python
 5. Comprendre les schemas d'action et leur instanciation
 
 ### Prerequis
@@ -2754,38 +2754,38 @@ A la fin de ce notebook, vous saurez :
 - Connaissances basiques en logique propositionnelle
 - Avoir suivi le notebook [Planners-0-Setup](../00-Environment/Planners-0-Setup.ipynb)
 
-### Duree estimee : 40 minutes",,,,,,,,31c32f03bf0c5900,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c4e8063c,markdown,fr,faf87ac71fe1afe1,"---
+### Duree estimee : 40 minutes",,,,,,,,a0e760ed00966c48,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c4e8063c,markdown,fr,bcfd8f4037effe49,"---
 
 ## 1. Introduction a PDDL
 
-**PDDL** (Planning Domain Definition Language) est le langage standard pour decrire des problemes de planification automatique. Developpe en 1998 pour la premiere competition internationale de planification (IPC), il est base sur le modele STRIPS avec des extensions.
+**PDDL** (Planning Domain Definition Language) est le langage standard pour decrire des problemes de planification automatique. Developpe en 1998 pour la première competition internationale de planification (IPC), il est base sur le modèle STRIPS avec des extensions.
 
 ### Pourquoi PDDL ?
 
 | Avantage | Description |
 |----------|------------|
 | **Standardisation** | Format commun pour tous les planificateurs |
-| **Separation** | Domaine (reutilisable) vs Probleme (specifique) |
+| **Separation** | Domaine (reutilisable) vs Problème (spécifique) |
 | **Expressivite** | Typage, predicats, actions parametrees |
-| **Extensibilite** | Nombreuses extensions (temporel, numerique, etc.) |
+| **Extensibilite** | Nombreuses extensions (temporel, numérique, etc.) |
 
 ### Architecture PDDL
 
-Un probleme de planification en PDDL se compose de **deux fichiers** :
+Un problème de planification en PDDL se compose de **deux fichiers** :
 
-1. **Domaine** (`domain.pddl`) : Definit les types, predicats et actions disponibles
-2. **Probleme** (`problem.pddl`) : Definit les objets, l'etat initial et le but",,,,,,,,faf87ac71fe1afe1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,61da6810,markdown,fr,45de66176923d47e,"### 1.1 STRIPS : La base de PDDL
+1. **Domaine** (`domain.pddl`) : Définit les types, predicats et actions disponibles
+2. **Problème** (`problem.pddl`) : Définit les objets, l'etat initial et le but",,,,,,,,bcfd8f4037effe49,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,61da6810,markdown,fr,bc354818697d942c,"### 1.1 STRIPS : La base de PDDL
 
-PDDL est base sur le modele **STRIPS** (Stanford Research Institute Problem Solver, 1971). Dans STRIPS, une action est definie par :
+PDDL est base sur le modèle **STRIPS** (Stanford Research Institute Problem Solver, 1971). Dans STRIPS, une action est définie par :
 
 | Composante | Description |
 |------------|-------------|
 | **Nom** | Identifiant de l'action |
-| **Parametres** | Variables instanciees lors de l'execution |
+| **Paramètres** | Variables instanciees lors de l'exécution |
 | **Preconditions** | Conditions necessaires pour executer l'action |
-| **Effets** | Changements apres l'execution (ajouts et suppressions) |
+| **Effets** | Changements après l'exécution (ajouts et suppressions) |
 
 #### Exemple STRIPS : Monde des blocs
 
@@ -2811,14 +2811,14 @@ unstack(X, Y)
   D: on(X,Y) ^ gripping()
 ```
 
-> **Notation** : P = Preconditions, A = Ajouts (Add), D = Suppressions (Delete)",,,,,,,,45de66176923d47e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,9d73442c,markdown,fr,705a3d48b8f434b2,"---
+> **Notation** : P = Preconditions, A = Ajouts (Add), D = Suppressions (Delete)",,,,,,,,bc354818697d942c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,9d73442c,markdown,fr,5dce3061ebb988ad,"---
 
 ## 2. Structure d'un fichier domaine PDDL
 
-Le fichier **domaine** definit la structure du monde : types d'objets, predicats (proprietes) et actions possibles.
+Le fichier **domaine** définit la structure du monde : types d'objets, predicats (proprietes) et actions possibles.
 
-### Syntaxe generale
+### Syntaxe générale
 
 ```pddl
 (define (domain nom-du-domaine)
@@ -2831,8 +2831,8 @@ Le fichier **domaine** definit la structure du monde : types d'objets, predicats
     :effect <effets>)
   ...
 )
-```",,,,,,,,705a3d48b8f434b2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c3f7db7c,markdown,fr,6babd17e814f8c99,"### 2.1 En-tete et requirements
+```",,,,,,,,5dce3061ebb988ad,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c3f7db7c,markdown,fr,c59ea3922605087b,"### 2.1 En-tete et requirements
 
 ```pddl
 (define (domain logistics)
@@ -2844,13 +2844,13 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 | Requirement | Description |
 |-------------|-------------|
 | `:strips` | Support de base STRIPS (requis) |
-| `:typing` | Types d'objets hierarchiques |
+| `:typing` | Types d'objets hiérarchiques |
 | `:negative-preconditions` | Preconditions avec `not` |
 | `:disjunctive-preconditions` | Preconditions avec `or` |
 | `:equality` | Test d'egalite `=` entre objets |
 | `:conditional-effects` | Effets conditionnels `when` |
-| `:adl` | Combinaison de plusieurs requirements |",,,,,,,,6babd17e814f8c99,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,16fb8924,markdown,fr,87bf3f528ae1dc09,"### 2.2 Types d'objets
+| `:adl` | Combinaison de plusieurs requirements |",,,,,,,,c59ea3922605087b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,16fb8924,markdown,fr,35cebbc62a02b6c8,"### 2.2 Types d'objets
 
 ```pddl
 (:types 
@@ -2862,8 +2862,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 
 **Syntaxe** : `sous-type1 sous-type2 - type-parent`
 
-Les types permettent de contraindre les parametres des actions et de reduire l'espace de recherche.",,,,,,,,87bf3f528ae1dc09,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,f1a412c5,markdown,fr,f1f81197ffa63da2,"### 2.3 Predicats
+Les types permettent de contraindre les paramètres des actions et de reduire l'espace de recherche.",,,,,,,,35cebbc62a02b6c8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,f1a412c5,markdown,fr,baceadc5cf04142b,"### 2.3 Predicats
 
 Les **predicats** representent les proprietes et relations du monde. Ils peuvent etre vrais ou faux dans un etat donne.
 
@@ -2879,7 +2879,7 @@ Les **predicats** representent les proprietes et relations du monde. Ils peuvent
 **Notation** :
 - `?var` : Variable (commence par `?`)
 - `?var - Type` : Variable avec type
-- Les predicats sans parametres sont des propositions atomiques",,,,,,,,f1f81197ffa63da2,,,,,,,
+- Les predicats sans paramètres sont des propositions atomiques",,,,,,,,baceadc5cf04142b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,85660f8a,markdown,fr,a9cb76707970b291,"### 2.4 Actions
 
 Les **actions** (ou schemas d'action) definissent les transitions possibles entre etats.
@@ -2962,15 +2962,15 @@ LOGISTICS_DOMAIN = """"""
 
 print(""Domaine PDDL defini : logistics-simple"")
 print(""Actions disponibles : load, unload, drive"")",,,,,,,,3344f932f0098c60,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,e955d826,markdown,fr,be80af9716c14a09,"### Interpretation : Domaine Logistics
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,e955d826,markdown,fr,aaa256d106e6d6ca,"### Interpretation : Domaine Logistics
 
-**Sortie obtenue** : Le domaine PDDL est defini avec 3 actions et 4 predicats.
+**Sortie obtenue** : Le domaine PDDL est défini avec 3 actions et 4 predicats.
 
-| Element | Type | Signification |
+| Élément | Type | Signification |
 |---------|------|---------------|
-| **Types** | location, package, vehicle, truck | Hierarchie d'objets |
+| **Types** | location, package, vehicle, truck | Hiérarchie d'objets |
 | **Predicats** | at-loc, at-veh, in, empty | Etats du monde |
-| **Actions** | load, unload, drive | Operations possibles |
+| **Actions** | load, unload, drive | Opérations possibles |
 
 **Structure des actions** :
 - `load(p, v, l)` : Charge le colis p dans le vehicule v au lieu l
@@ -2985,27 +2985,27 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
   - Preconditions: vehicule au lieu de depart
   - Effets: vehicule au lieu d'arrivee, plus au lieu de depart
 
-> **Note technique** : Le domaine est reutilisable pour tous les problemes de logistique (nombre de colis, lieux, vehicules variable).",,,,,,,,be80af9716c14a09,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,43748612,markdown,fr,f0f9543d07465162,"### Interpretation du domaine Logistics
+> **Note technique** : Le domaine est reutilisable pour tous les problemes de logistique (nombre de colis, lieux, vehicules variable).",,,,,,,,aaa256d106e6d6ca,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,43748612,markdown,fr,1ae1dc2cc13b5df8,"### Interpretation du domaine Logistics
 
-| Element | Description |
+| Élément | Description |
 |---------|-------------|
 | **Types** | `location`, `package`, `vehicle`, `truck` (sous-type de vehicle) |
 | **Predicats** | `at-loc`, `at-veh`, `in`, `empty` |
-| **load** | Charge un colis dans un vehicule (meme lieu, vehicule vide) |
+| **load** | Charge un colis dans un vehicule (même lieu, vehicule vide) |
 | **unload** | Decharge un colis d'un vehicule |
 | **drive** | Deplace un vehicule entre deux lieux |
 
-> **Note** : Chaque action a des **preconditions** (conditions necessaires) et des **effets** (changements appliques).",,,,,,,,f0f9543d07465162,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,5bd3f42f,markdown,fr,8ce72c41251d5198,"---
+> **Note** : Chaque action a des **preconditions** (conditions necessaires) et des **effets** (changements appliques).",,,,,,,,1ae1dc2cc13b5df8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,5bd3f42f,markdown,fr,cee09879a512767e,"---
 
-## 4. Structure d'un fichier probleme PDDL
+## 4. Structure d'un fichier problème PDDL
 
-Le fichier **probleme** definit une instance specifique du domaine.",,,,,,,,8ce72c41251d5198,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0903d59e,markdown,fr,5e5260afec1d2d6d,"### 4.1 Syntaxe generale
+Le fichier **problème** définit une instance spécifique du domaine.",,,,,,,,cee09879a512767e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0903d59e,markdown,fr,a3dc81ed92b9d9df,"### 4.1 Syntaxe générale
 
 ```pddl
-(define (problem nom-du-probleme)
+(define (problem nom-du-problème)
   (:domain nom-du-domaine)
   (:objects <objets...>)
   (:init <etat-initial...>)
@@ -3018,8 +3018,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 | `:domain` | Reference au domaine utilise |
 | `:objects` | Instances concretes des types |
 | `:init` | Predicats vrais a l'etat initial |
-| `:goal` | Condition a atteindre |",,,,,,,,5e5260afec1d2d6d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,8c7c0b5b,markdown,fr,a8e82997051850ab,"### 4.2 Declaration des objets
+| `:goal` | Condition a atteindre |",,,,,,,,a3dc81ed92b9d9df,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,8c7c0b5b,markdown,fr,95fb7bdf27d3a3cc,"### 4.2 Declaration des objets
 
 ```pddl
 (:objects
@@ -3034,10 +3034,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 )
 ```
 
-**Syntaxe** : `obj1 obj2 obj3 - type` (plusieurs objets du meme type)",,,,,,,,a8e82997051850ab,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,107f350f,markdown,fr,77ec4923f94da200,"### 4.3 Etat initial
+**Syntaxe** : `obj1 obj2 obj3 - type` (plusieurs objets du même type)",,,,,,,,95fb7bdf27d3a3cc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,107f350f,markdown,fr,73361437d7fc6096,"### 4.3 Etat initial
 
-L'etat initial definit les predicats qui sont **vrais** au debut. Tous les autres sont supposes **faux** (hypothese du monde ferme).
+L'etat initial définit les predicats qui sont **vrais** au debut. Tous les autres sont supposes **faux** (hypothese du monde ferme).
 
 ```pddl
 (:init
@@ -3053,10 +3053,10 @@ L'etat initial definit les predicats qui sont **vrais** au debut. Tous les autre
 )
 ```
 
-> **Hypothese du monde ferme** : Tout predicat non mentionne dans `:init` est suppose faux.",,,,,,,,77ec4923f94da200,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,d3736c14,markdown,fr,1799d974c07c5264,"### 4.4 But
+> **Hypothese du monde ferme** : Tout predicat non mentionne dans `:init` est suppose faux.",,,,,,,,73361437d7fc6096,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,d3736c14,markdown,fr,ae17df078ca31333,"### 4.4 But
 
-Le but definit l'etat a atteindre. C'est une formule logique (generalement une conjonction).
+Le but définit l'etat a atteindre. C'est une formule logique (généralement une conjonction).
 
 ```pddl
 (:goal (and 
@@ -3065,10 +3065,10 @@ Le but definit l'etat a atteindre. C'est une formule logique (generalement une c
 ))
 ```
 
-**Le planificateur** doit trouver une sequence d'actions qui rend tous les predicats du but vrais.",,,,,,,,1799d974c07c5264,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7af03fc1,markdown,fr,8efa31ffef56aa33,"---
+**Le planificateur** doit trouver une sequence d'actions qui rend tous les predicats du but vrais.",,,,,,,,ae17df078ca31333,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7af03fc1,markdown,fr,2b769fd1dc35491e,"---
 
-## 5. Exemple complet : Probleme Logistics",,,,,,,,8efa31ffef56aa33,,,,,,,
+## 5. Exemple complet : Problème Logistics",,,,,,,,2b769fd1dc35491e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,19ac429a,code,fr,fa06551b4082a023,"# Definition du probleme PDDL - Logistics
 LOGISTICS_PROBLEM = """"""
 (define (problem logistics-simple-1)
@@ -3114,17 +3114,17 @@ print(""  - truck1 au depot (vide)"")
 print(""\nBut :"")
 print(""  - box1 au store"")
 print(""  - box2 au warehouse"")",,,,,,,,fa06551b4082a023,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,3c675d90,markdown,fr,a243800c52a6942a,"### Interpretation : Probleme Logistics
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,3c675d90,markdown,fr,ce3b36513e044aa7,"### Interpretation : Problème Logistics
 
-**Sortie obtenue** : Le probleme est instancie avec 6 objets (3 lieux, 2 colis, 1 camion).
+**Sortie obtenue** : Le problème est instancie avec 6 objets (3 lieux, 2 colis, 1 camion).
 
-| Element | Valeur | Signification |
+| Élément | Valeur | Signification |
 |---------|--------|---------------|
 | Objets | depot, warehouse, store, box1, box2, truck1 | Instances concrètes |
 | Etat initial | box1,box2@depot, truck1@depot(vide) | Tout au depot |
-| But | box1@store, box2@warehouse | Livraison specifique |
+| But | box1@store, box2@warehouse | Livraison spécifique |
 
-**Complexite du probleme** :
+**Complexite du problème** :
 - **Espace d'etats** : Chaque colis peut etre a 3 lieux ou dans 1 camion = 4^2 = 16 etats de colis
 - **Position camion** : 3 lieux possibles
 - **Total** : ~48 etats (sans compter l'etat vide/plein du camion)
@@ -3134,8 +3134,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 - Le camion ne peut porter qu'un colis a la fois (predicat `empty`)
 - Il faut revenir au depot pour charger le deuxieme colis
 
-> **Note technique** : C'est un probleme de ""transport"" classique. La difficulte vient de la coordination entre les deplacements du vehicule et les chargements/dechargements des colis.",,,,,,,,a243800c52a6942a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,4ce8d8af,markdown,fr,aa5f0408acb45f5b,"### Visualisation du probleme
+> **Note technique** : C'est un problème de ""transport"" classique. La difficulte vient de la coordination entre les deplacements du vehicule et les chargements/dechargements des colis.",,,,,,,,ce3b36513e044aa7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,4ce8d8af,markdown,fr,9b3ce84715cb553f,"### Visualisation du problème
 
 | Objet | Type | Etat initial | But |
 |-------|------|--------------|-----|
@@ -3150,12 +3150,12 @@ Une solution possible :
 4. `drive(truck1, store, depot)`
 5. `load(box2, truck1, depot)`
 6. `drive(truck1, depot, warehouse)`
-7. `unload(box2, truck1, warehouse)`",,,,,,,,aa5f0408acb45f5b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0c539d91,markdown,fr,6dce66b62c2ba802,"---
+7. `unload(box2, truck1, warehouse)`",,,,,,,,9b3ce84715cb553f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0c539d91,markdown,fr,81c0dcd88b303f90,"---
 
 ## 6. PDDL avec unified-planning
 
-La bibliotheque **unified-planning** permet de manipuler des modeles PDDL directement en Python, sans ecrire de fichiers PDDL manuellement.",,,,,,,,6dce66b62c2ba802,,,,,,,
+La bibliotheque **unified-planning** permet de manipuler des modèles PDDL directement en Python, sans ecrire de fichiers PDDL manuellement.",,,,,,,,81c0dcd88b303f90,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,3b60f6eb,code,fr,427483679f783717,"# Verification de unified-planning
 try:
     import unified_planning as up
@@ -3166,7 +3166,7 @@ except ImportError:
     print(""ERREUR: unified-planning non installe"")
     print(""Installez avec: pip install unified-planning"")
     UP_AVAILABLE = False",,,,,,,,427483679f783717,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,049b8db3,markdown,fr,6a55717d5e401bb7,"### Interpretation : Verification unified-planning
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,049b8db3,markdown,fr,3323fa612f6b7a6b,"### Interpretation : Verification unified-planning
 
 **Sortie obtenue** : unified-planning version 1.3.0 est correctement installe.
 
@@ -3177,9 +3177,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 **Points cles** :
 1. Cette version supporte tous les planificateurs modernes
 2. L'API raccourcie (`from unified_planning.shortcuts import *`) simplifie la modelisation
-3. Les types, fluents et actions peuvent etre definis programmatiquement
+3. Les types, fluents et actions peuvent etre définis programmatiquement
 
-> **Note technique** : unified-planning est le fruit d'un effort europeen (AI Plan4EU) pour standardiser l'interface de planification en Python.",,,,,,,,6a55717d5e401bb7,,,,,,,
+> **Note technique** : unified-planning est le fruit d'un effort europeen (AI Plan4EU) pour standardiser l'interface de planification en Python.",,,,,,,,3323fa612f6b7a6b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,fda5f898,markdown,fr,593c4c3e38ef1d60,### 6.1 Definition des types et predicats,,,,,,,,593c4c3e38ef1d60,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,99117f74,code,fr,e9da2548cf01e558,"if UP_AVAILABLE:
     from collections import OrderedDict
@@ -3199,9 +3199,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
     
     print(""Types definis : Location, Package, Vehicle, Truck"")
     print(""Predicats definis : at_loc, at_veh, in, empty"")",,,,,,,,e9da2548cf01e558,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c209a094,markdown,fr,3b20f62fcba15d1f,"### Interpretation : Definition des types et predicats
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,c209a094,markdown,fr,f7571a4fc4169372,"### Interpretation : Definition des types et predicats
 
-**Sortie obtenue** : La hierarchie de types et les predicats sont correctement definis.
+**Sortie obtenue** : La hiérarchie de types et les predicats sont correctement définis.
 
 | Concept Python | Concept PDDL | Exemple |
 |----------------|--------------|---------|
@@ -3214,9 +3214,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 1. Les types definissent la structure des objets du monde
 2. Les fluents (predicats) representent les etats changeants
 3. L'heritage `Truck -> Vehicle` permet de reutiliser les actions vehicule pour les camions
-4. `OrderedDict` assure l'ordre des parametres (important pour unified-planning 1.3+)
+4. `OrderedDict` assure l'ordre des paramètres (important pour unified-planning 1.3+)
 
-> **Note technique** : Contrairement a PDDL texte ou les parametres sont nommes par convention (`?p - package`), unified-planning requiert des noms explicites dans le dictionnaire de signature.",,,,,,,,3b20f62fcba15d1f,,,,,,,
+> **Note technique** : Contrairement a PDDL texte ou les paramètres sont nommes par convention (`?p - package`), unified-planning requiert des noms explicites dans le dictionnaire de signature.",,,,,,,,f7571a4fc4169372,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,41e9a61f,markdown,fr,9c9c5441d6e2091c,### 6.2 Definition des actions,,,,,,,,9c9c5441d6e2091c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,1425c0ce,code,fr,aa30c1aace79096f,"if UP_AVAILABLE:
     from collections import OrderedDict
@@ -3258,11 +3258,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
     print(f""  - load: {load.name}({', '.join(str(p) for p in load.parameters)})"")
     print(f""  - unload: {unload.name}({', '.join(str(p) for p in unload.parameters)})"")
     print(f""  - drive: {drive.name}({', '.join(str(p) for p in drive.parameters)})"")",,,,,,,,aa30c1aace79096f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ba53494b,markdown,fr,40942fb736e11081,"### Interpretation : Definition des actions
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ba53494b,markdown,fr,87611bc6ad154668,"### Interpretation : Definition des actions
 
-**Sortie obtenue** : Trois actions sont definies avec leurs parametres, preconditions et effets.
+**Sortie obtenue** : Trois actions sont définies avec leurs paramètres, preconditions et effets.
 
-| Action | Parametres | Preconditions | Effets |
+| Action | Paramètres | Preconditions | Effets |
 |--------|------------|---------------|--------|
 | `load` | package, vehicle, location | package@location, vehicle@location, vehicle vide | package in vehicle, plus @location, vehicle plus vide |
 | `unload` | package, vehicle, location | package in vehicle, vehicle@location | package@location, plus in vehicle, vehicle vide |
@@ -3274,12 +3274,12 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 - `add_effect(fluent(...), True/False)` → `:effect (and (...) (not (...)))`
 
 **Points cles** :
-1. Les parametres sont recuperes via `action.parameter('name')`
+1. Les paramètres sont recuperes via `action.parameter('name')`
 2. `add_effect(fluent, False)` ajoute une negation `(not fluent)`
 3. Les preconditions sont implicitement en ET (conjonction)
 
-> **Note technique** : La methode `parameter()` retourne une `Expression` qui peut etre utilisee directement dans les fluents. C'est plus elegant que de manipuler des chaines de caracteres.",,,,,,,,40942fb736e11081,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,b8d6dfa0,markdown,fr,e2eaba989974958f,### 6.3 Creation du probleme complet,,,,,,,,e2eaba989974958f,,,,,,,
+> **Note technique** : La méthode `parameter()` retourne une `Expression` qui peut etre utilisee directement dans les fluents. C'est plus elegant que de manipuler des chaînes de caractères.",,,,,,,,87611bc6ad154668,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,b8d6dfa0,markdown,fr,22247d8b3940387d,### 6.3 Creation du problème complet,,,,,,,,22247d8b3940387d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,1c986e82,code,fr,b2a1f353fc0d5950,"if UP_AVAILABLE:
     # Creation du probleme
     problem = Problem('logistics-example')
@@ -3313,30 +3313,30 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
     print(f""Objets: {[o.name for o in problem.all_objects]}"")
     print(f""Actions: {[a.name for a in problem.actions]}"")
     print(f""Buts: {[str(g) for g in problem.goals]}"")",,,,,,,,b2a1f353fc0d5950,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,a70ab68f,markdown,fr,c38deb2007c99d7c,"### Interpretation : Probleme complet
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,a70ab68f,markdown,fr,9020bf037468d89d,"### Interpretation : Problème complet
 
-**Sortie obtenue** : Le probleme est complet avec 6 objets, 3 actions et 2 buts.
+**Sortie obtenue** : Le problème est complet avec 6 objets, 3 actions et 2 buts.
 
-| Element | Valeur | Signification |
+| Élément | Valeur | Signification |
 |---------|--------|---------------|
 | Objets | depot, warehouse, store, box1, box2, truck1 | Instances du monde |
-| Actions | load, unload, drive | Operations disponibles |
+| Actions | load, unload, drive | Opérations disponibles |
 | Buts | at_loc(box1, store), at_loc(box2, warehouse) | Objectifs |
 
-**Etapes de creation** :
-1. **Creation du probleme** : `Problem('logistics-example')`
+**Étapes de creation** :
+1. **Creation du problème** : `Problem('logistics-example')`
 2. **Ajout des objets** : Instanciation des types
 3. **Etat initial** : Valeurs initiales des fluents (True/False)
 4. **Buts** : Conditions a atteindre (conjonction de fluents)
-5. **Actions** : Ajout des schemas d'action definis plus haut
+5. **Actions** : Ajout des schemas d'action définis plus haut
 
 **Verification** :
 - Tous les objets sont correctement types
 - L'etat initial est coherent (un colis ne peut etre qu'a un seul endroit)
 - Les buts sont realisables (pas de contradiction)
 
-> **Note technique** : Le probleme peut maintenant etre passe a n'importe quel planificateur supporte par unified-planning (pyperplan, Fast Downward, ENHSP, etc.).",,,,,,,,c38deb2007c99d7c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7fae2bfb,markdown,fr,51a339975044a9b6,### 6.4 Resolution du probleme,,,,,,,,51a339975044a9b6,,,,,,,
+> **Note technique** : Le problème peut maintenant etre passe a n'importe quel planificateur supporte par unified-planning (pyperplan, Fast Downward, ENHSP, etc.).",,,,,,,,9020bf037468d89d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7fae2bfb,markdown,fr,7513026211ba2dfa,### 6.4 Resolution du problème,,,,,,,,7513026211ba2dfa,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,bfb011ec,code,fr,104418343c9441f2,"if UP_AVAILABLE:
     from unified_planning.engines import PlanGenerationResultStatus
     from unified_planning.shortcuts import get_environment
@@ -3370,11 +3370,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
         print(""  5. load(box2, truck1, depot)"")
         print(""  6. drive(truck1, depot, warehouse)"")
         print(""  7. unload(box2, truck1, warehouse)"")",,,,,,,,104418343c9441f2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,5e74a1eb,markdown,fr,19124b5a494ac265,"### Interpretation de la solution
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,5e74a1eb,markdown,fr,be78682bc18aec35,"### Interpretation de la solution
 
 Le planificateur trouve une sequence d'actions qui transforme l'etat initial en etat but :
 
-| Etape | Action | Etat apres |
+| Étape | Action | Etat après |
 |-------|--------|------------|
 | 0 | (initial) | box1,box2@depot, truck1@depot |
 | 1 | load(box1, truck1, depot) | box1 in truck1 |
@@ -3385,7 +3385,7 @@ Le planificateur trouve une sequence d'actions qui transforme l'etat initial en 
 | 6 | drive(truck1, depot, warehouse) | truck1@warehouse |
 | 7 | unload(box2, truck1, warehouse) | box2@warehouse (but 2 OK) |
 
-> **Note** : Ce plan de 7 actions est **optimal en longueur**. Le camion de capacite 1 (predicat `empty`) ne transporte qu'un colis a la fois : chaque colis impose donc un aller-retour (load -> drive -> unload, puis drive de retour pour aller chercher le suivant), soit 7 actions au minimum -- aucun plan plus court n'existe. pyperplan renvoie l'un des plans optimaux equivalents (l'ordre de traitement de box1/box2 peut varier d'une execution a l'autre).",,,,,,,,19124b5a494ac265,,,,,,,
+> **Note** : Ce plan de 7 actions est **optimal en longueur**. Le camion de capacite 1 (predicat `empty`) ne transporte qu'un colis a la fois : chaque colis impose donc un aller-retour (load -> drive -> unload, puis drive de retour pour aller chercher le suivant), soit 7 actions au minimum -- aucun plan plus court n'existe. pyperplan renvoie l'un des plans optimaux equivalents (l'ordre de traitement de box1/box2 peut varier d'une exécution a l'autre).",,,,,,,,be78682bc18aec35,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,211821ab,markdown,fr,3d3f75c49164c28c,"---
 
 ## 7. Extensions PDDL avances
@@ -3445,11 +3445,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 | `:equality` | Test `=` | `(not (= ?x ?y))` |
 | `:conditional-effects` | `when` dans effets | `(when (cond) (effect))` |
 | `:adl` | ADL complet | Combine plusieurs requirements |",,,,,,,,a15c82adee33370c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,9e82c6fd,markdown,fr,0681c6e9d89447e9,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,9e82c6fd,markdown,fr,04ad352450b0513a,"---
 
 ## 8. Exemple : Domaine du Gripper
 
-Le **Gripper** est un probleme classique : un robot avec deux pinces doit deplacer des balles entre deux pieces.",,,,,,,,0681c6e9d89447e9,,,,,,,
+Le **Gripper** est un problème classique : un robot avec deux pinces doit deplacer des balles entre deux pieces.",,,,,,,,04ad352450b0513a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7a4db137,code,fr,930234f5197d8d7e,"# Domaine PDDL du Gripper (classique)
 GRIPPER_DOMAIN = """"""
 (define (domain gripper-strips)
@@ -3508,11 +3508,11 @@ GRIPPER_DOMAIN = """"""
 
 print(""Domaine Gripper defini"")
 print(""Actions: move, pick, drop"")",,,,,,,,930234f5197d8d7e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,22d8bf02,markdown,fr,a36f8359b6ecc4df,"### Interpretation : Domaine Gripper
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,22d8bf02,markdown,fr,196bfa2acb379a10,"### Interpretation : Domaine Gripper
 
-**Sortie obtenue** : Le domaine Gripper est defini avec 3 actions et 7 predicats (3 de typage + 4 relationnels).
+**Sortie obtenue** : Le domaine Gripper est défini avec 3 actions et 7 predicats (3 de typage + 4 relationnels).
 
-| Element | Description |
+| Élément | Description |
 |---------|-------------|
 | **Types** | room (lieu), ball (balle), gripper (pince) |
 | **Predicats de typage** | room, ball, gripper (declarations des sortes d'objets) |
@@ -3526,11 +3526,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 
 **Actions detaillees** :
 - `move(from, to)` : Deplace le robot d'une piece a l'autre
-- `pick(ball, room, gripper)` : Prend une balle avec une pince (doit etre dans la meme piece)
+- `pick(ball, room, gripper)` : Prend une balle avec une pince (doit etre dans la même piece)
 - `drop(ball, room, gripper)` : Pose une balle dans une piece
 
-> **Note technique** : Ce domaine illustre l'importance de bien modeliser les ressources (les 2 pinces). Une mauvaise modelisation serait d'avoir un seul predicat `free` sans preciser quelle pince.",,,,,,,,a36f8359b6ecc4df,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,opks33hg4ue,markdown,fr,f22e7ac4fd1a1087,"Definition du probleme PDDL correspondant au domaine Gripper, instanciant les objets concrets, l'etat initial et le but a atteindre.",,,,,,,,f22e7ac4fd1a1087,,,,,,,
+> **Note technique** : Ce domaine illustre l'importance de bien modeliser les ressources (les 2 pinces). Une mauvaise modelisation serait d'avoir un seul predicat `free` sans preciser quelle pince.",,,,,,,,196bfa2acb379a10,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,opks33hg4ue,markdown,fr,63460d4333b6d6c7,"Definition du problème PDDL correspondant au domaine Gripper, instanciant les objets concrets, l'etat initial et le but a atteindre.",,,,,,,,63460d4333b6d6c7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,2873108b,code,fr,890543ab1b142d1a,"# Probleme PDDL du Gripper
 GRIPPER_PROBLEM = """"""
 (define (problem strips-gripper2)
@@ -3570,11 +3570,11 @@ print(""  - ball1, ball2 dans rooma"")
 print(""  - Pinces left, right libres"")
 print(""\nBut:"")
 print(""  - ball1 et ball2 dans roomb"")",,,,,,,,890543ab1b142d1a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,054a298d,markdown,fr,923999c9477f8e13,"### Interpretation : Probleme Gripper
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,054a298d,markdown,fr,9024ff08f614ee99,"### Interpretation : Problème Gripper
 
-**Sortie obtenue** : Le probleme est instancie avec 6 objets et 11 predicats initiaux.
+**Sortie obtenue** : Le problème est instancie avec 6 objets et 11 predicats initiaux.
 
-| Element | Valeur | Signification |
+| Élément | Valeur | Signification |
 |---------|--------|---------------|
 | Objets | 2 rooms, 2 balls, 2 grippers | Instances du monde |
 | Etat initial | Robot + balles dans rooma, pinces libres | Tout au depart |
@@ -3585,17 +3585,17 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 - `at ball1 rooma`, `at ball2 rooma` : Balles dans rooma
 - `free left`, `free right` : Les deux pinces sont libres
 
-**Strategie optimale** :
+**Stratégie optimale** :
 1. Prendre ball1 avec la pince gauche
 2. Prendre ball2 avec la pince droite
 3. Se deplacer vers roomb
 4. Poser ball1
 5. Poser ball2
 
-> **Observation** : Le robot peut porter les 2 balles en meme temps ! Un planificateur qui n'utilise pas cette capacite ferait 7 actions au lieu de 5 (prendre, deplacer, poser, revenir, reprendre, deplacer, poser).",,,,,,,,923999c9477f8e13,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,aa5c31a3,markdown,fr,5d7c032b36a0b257,"### Analyse du probleme Gripper
+> **Observation** : Le robot peut porter les 2 balles en même temps ! Un planificateur qui n'utilise pas cette capacite ferait 7 actions au lieu de 5 (prendre, deplacer, poser, revenir, reprendre, deplacer, poser).",,,,,,,,9024ff08f614ee99,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,aa5c31a3,markdown,fr,5c85b37cb093ec42,"### Analyse du problème Gripper
 
-| Element | Valeur |
+| Élément | Valeur |
 |---------|--------|
 | **Objets** | 2 rooms, 2 balls, 2 grippers |
 | **Etat initial** | Robot + balles dans rooma |
@@ -3609,13 +3609,13 @@ Une solution optimale :
 4. `drop(ball1, roomb, left)`
 5. `drop(ball2, roomb, right)`
 
-> **Observation** : Le robot peut porter deux balles simultanement car il a deux pinces !",,,,,,,,5d7c032b36a0b257,,,,,,,
+> **Observation** : Le robot peut porter deux balles simultanement car il a deux pinces !",,,,,,,,5c85b37cb093ec42,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,85acd2ba,markdown,fr,8c036611b3a105cf,"---
 
 ## 9. Exercices",,,,,,,,8c036611b3a105cf,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0371e8a6,markdown,fr,e26ff85b3ff2bfc1,"### Exercice 9.1 - Etendre le probleme Gripper
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0371e8a6,markdown,fr,91841b72a94a4330,"### Exercice 9.1 - Etendre le problème Gripper
 
-Le probleme Gripper de la section 8 transporte **2 balles** entre **2 pieces**. A vous de jouer : ecrivez le **probleme PDDL** (le domaine `gripper-strips` reste inchange) pour la variante suivante :
+Le problème Gripper de la section 8 transporte **2 balles** entre **2 pieces**. A vous de jouer : ecrivez le **problème PDDL** (le domaine `gripper-strips` reste inchange) pour la variante suivante :
 
 - **3 pieces** : `rooma`, `roomb`, `roomc`
 - **3 balles** : `ball1`, `ball2`, `ball3`, toutes initialement dans `rooma`
@@ -3624,7 +3624,7 @@ Le probleme Gripper de la section 8 transporte **2 balles** entre **2 pieces**. 
 
 Completez le squelette de la cellule suivante en reutilisant la structure de `GRIPPER_PROBLEM` (sections `:objects`, `:init`, `:goal`).
 
-> **Indice** : le robot ne possede que 2 pinces mais doit livrer dans 2 pieces differentes. Une partie du transport necessitera donc un aller-retour. Reportez-vous a l'encadre methodologique ci-dessous pour la demarche.",,,,,,,,e26ff85b3ff2bfc1,,,,,,,
+> **Indice** : le robot ne possede que 2 pinces mais doit livrer dans 2 pieces différentes. Une partie du transport necessitera donc un aller-retour. Reportez-vous a l'encadre methodologique ci-dessous pour la demarche.",,,,,,,,91841b72a94a4330,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,92639339,code,fr,8fcc9442da95d420,"# Exercice 9.1 : Probleme Gripper a 3 pieces / 3 balles
 # Le domaine gripper-strips (defini plus haut) reste INCHANGE : seul le
 # probleme change. Completez la chaine PDDL ci-dessous en vous inspirant
@@ -3651,14 +3651,14 @@ GRIPPER_PROBLEM_3 = """"""
 # minimum pour ce but reparti sur 2 pieces destination ?
 
 print(""Exercice a completer"")",,,,,,,,8fcc9442da95d420,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0332270c,markdown,fr,605f4a3d75a69410,"**Indice : Pour aborder les exercices**
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,0332270c,markdown,fr,9ee33e66ccafe0f8,"**Indice : Pour aborder les exercices**
 
 **Conseils pour reussir** :
 
-1. **Commencez par identifier les types** : Quels sont les objets du probleme ? (ex: bloc, lieu, robot)
+1. **Commencez par identifier les types** : Quels sont les objets du problème ? (ex: bloc, lieu, robot)
 2. **Listez les predicats** : Quelles proprietes sont importantes ? (ex: position, etat)
-3. **Definissez les actions** : Quelles operations sont possibles ? (preconditions + effets)
-4. **Instanciez le probleme** : Quels objets concrets ? Quel etat initial ? Quel but ?
+3. **Definissez les actions** : Quelles opérations sont possibles ? (preconditions + effets)
+4. **Instanciez le problème** : Quels objets concrets ? Quel etat initial ? Quel but ?
 
 **Methodologie** :
 - Dessinez l'etat initial et le but sur papier
@@ -3670,9 +3670,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 - Oublier de declarer un type dans `:types`
 - Confondre preconditions et effets
 - Oublier les effets negatifs `(not ...)`
-- Creer des actions inutiles ou redondantes
+- Créer des actions inutiles ou redondantes
 
----",,,,,,,,605f4a3d75a69410,,,,,,,
+---",,,,,,,,9ee33e66ccafe0f8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,11a9e346,markdown,fr,e38e2a186f210eff,"### Exemple guide : Domaine Robot-Entrepot
 
 Avant de passer a l'Exercice 9.2, voici un exemple complet de definition d'un domaine PDDL simplifie. Le contexte est proche : un robot dans un entrepot peut **saisir** un objet et le **deposer** sur une etagere.
@@ -3739,19 +3739,19 @@ print(""  Effets        : objet sur etagere + robot libre + robot ne tient plus 
 print()
 print(""> Chaque effet negatif (not ...) est indispensable pour que le planificateur"")
 print(""  comprenne que l'etat du monde change apres l'action."")",,,,,,,,97f566d2fa1c7a7c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-robot-md,markdown,fr,89c6b3baa972cb08,"### Exercice 9.2 - Domaine PDDL Robot-Cuisine
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-robot-md,markdown,fr,663dfa45b40f68d9,"### Exercice 9.2 - Domaine PDDL Robot-Cuisine
 
 Ecrivez un domaine PDDL pour un robot dans une cuisine.
 
 **Contexte** : Un robot peut `prendre` un ingredient et le `poser` dans un plat.
 
-**Objectif** : Completer la chaine PDDL ci-dessous avec 2 actions et leurs preconditions/effets.
+**Objectif** : Completer la chaîne PDDL ci-dessous avec 2 actions et leurs preconditions/effets.
 
 **Indices** :
-- # Etape 1 : Definir les types `ingredient`, `location`, `plat`
-- # Etape 2 : Action `prendre` : preconditions = ingredient a la location, robot libre
-- # Etape 3 : Action `poser` : preconditions = robot tient ingredient ; effets = ingredient dans le plat
-- # Etape 4 : Verifier la syntaxe PDDL (parentheses, types, predicats)",,,,,,,,89c6b3baa972cb08,,,,,,,
+- # Étape 1 : Définir les types `ingredient`, `location`, `plat`
+- # Étape 2 : Action `prendre` : preconditions = ingredient a la location, robot libre
+- # Étape 3 : Action `poser` : preconditions = robot tient ingredient ; effets = ingredient dans le plat
+- # Étape 4 : Verifier la syntaxe PDDL (parentheses, types, predicats)",,,,,,,,663dfa45b40f68d9,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-robot-code,code,fr,bc5aedd27456ff4b,"# Exercice 9.2 : Domaine PDDL Robot-Cuisine
 ROBOT_CUISINE_DOMAIN = """"""(define (domain robot-cuisine)
   (:requirements :strips :typing)
@@ -3770,17 +3770,17 @@ ROBOT_CUISINE_DOMAIN = """"""(define (domain robot-cuisine)
 print(f""Domaine Robot-Cuisine:\n{ROBOT_CUISINE_DOMAIN}"")
 print(""Exercice a completer"")
 ",,,,,,,,bc5aedd27456ff4b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-up-gripper-md,markdown,fr,e4958218d3a8ad35,"### Exercice 9.3 - Reconstruire le domaine Gripper avec unified_planning
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-up-gripper-md,markdown,fr,8de01901947e4546,"### Exercice 9.3 - Reconstruire le domaine Gripper avec unified_planning
 
 Au lieu d'ecrire du PDDL textuel, reconstruisez le domaine Gripper avec l'API Python `unified_planning`.
 
-**Objectif** : Definir les types, predicats, actions et un probleme, puis resoudre.
+**Objectif** : Définir les types, predicats, actions et un problème, puis resoudre.
 
 **Indices** :
-- # Etape 1 : Types = `room`, `ball`, `gripper`
-- # Etape 2 : Predicats = `at_room(ball, room)`, `free(gripper)`, `carry(ball, gripper)`
-- # Etape 3 : Actions = `pick`, `drop`, `move`
-- # Etape 4 : Probleme = 2 balles en roomA, but = 2 balles en roomB",,,,,,,,e4958218d3a8ad35,,,,,,,
+- # Étape 1 : Types = `room`, `ball`, `gripper`
+- # Étape 2 : Predicats = `at_room(ball, room)`, `free(gripper)`, `carry(ball, gripper)`
+- # Étape 3 : Actions = `pick`, `drop`, `move`
+- # Étape 4 : Problème = 2 balles en roomA, but = 2 balles en roomB",,,,,,,,8de01901947e4546,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,ex-pl2-up-gripper-code,code,fr,c8963e3a8a38a008,"if UP_AVAILABLE:
     from unified_planning.shortcuts import *
     from unified_planning.engines import PlanGenerationResultStatus
@@ -3791,7 +3791,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
     print(f""Domaine Gripper UP: {gripper_domain}"")
     print(""Exercice a completer"")
 ",,,,,,,,c8963e3a8a38a008,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,117f0a06,markdown,fr,a7fca8c40128968b,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,117f0a06,markdown,fr,1c9cb25e32eb4987,"---
 
 ## 10. Resume
 
@@ -3800,11 +3800,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 | Concept | Description |
 |---------|-------------|
 | **PDDL** | Langage standard pour la planification automatique |
-| **Domaine** | Definit types, predicats et actions (reutilisable) |
-| **Probleme** | Definit objets, etat initial et but (specifique) |
+| **Domaine** | Définit types, predicats et actions (reutilisable) |
+| **Problème** | Définit objets, etat initial et but (spécifique) |
 | **Predicats** | Proprietes/relations binaires (vrai/faux) |
 | **Actions** | Transitions avec preconditions et effets |
-| **STRIPS** | Modele de base (add/delete lists) |
+| **STRIPS** | Modèle de base (add/delete lists) |
 
 ### Structure PDDL
 
@@ -3817,13 +3817,13 @@ domain.pddl          problem.pddl
 (:action ...)       (:goal ...)
 ```
 
-### Prochaines etapes
+### Prochaines étapes
 
 Dans le notebook suivant **Planners-3-State-Space**, nous explorerons :
 - La representation des espaces d'etats
 - La recherche dans un graphe d'etats
-- Les algorithmes de recherche (BFS, DFS, A*)",,,,,,,,a7fca8c40128968b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7dbd503c,markdown,fr,ca7ea5a55d2a418e,"---
+- Les algorithmes de recherche (BFS, DFS, A*)",,,,,,,,1c9cb25e32eb4987,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,7dbd503c,markdown,fr,0a0ba2225f9b5b1a,"---
 
 ## 11. Conclusion
 
@@ -3835,8 +3835,8 @@ Ce notebook a couvre les fondamentaux de PDDL, le langage standard de la planifi
 |------------|--------|----------|
 | Lire un domaine PDDL | OK | Exemples Logistics, Gripper |
 | Ecrire un domaine PDDL | OK | Exercices |
-| Lire un probleme PDDL | OK | Exemples Logistics, Gripper |
-| Ecrire un probleme PDDL | OK | Exercices |
+| Lire un problème PDDL | OK | Exemples Logistics, Gripper |
+| Ecrire un problème PDDL | OK | Exercices |
 | Modeliser avec unified-planning | OK | Exemple Logistics complet |
 
 ### Concepts fondamentaux
@@ -3844,20 +3844,20 @@ Ce notebook a couvre les fondamentaux de PDDL, le langage standard de la planifi
 | Concept | Description | Exemple |
 |---------|-------------|---------|
 | **Domaine** | Types, predicats, actions (reutilisable) | `logistics-simple` |
-| **Probleme** | Objets, etat initial, but (specifique) | `logistics-simple-1` |
+| **Problème** | Objets, etat initial, but (spécifique) | `logistics-simple-1` |
 | **Predicat** | Propriete binaire (vrai/faux) | `(at ?obj ?loc)` |
 | **Action** | Transition avec preconditions et effets | `load`, `unload`, `drive` |
-| **STRIPS** | Modele de base (add/delete lists) | Preconditions + effets |
+| **STRIPS** | Modèle de base (add/delete lists) | Preconditions + effets |
 
-### Prochaines etapes
+### Prochaines étapes
 
 1. **Planners-3-State-Space** : Comprendre comment les planificateurs explorent l'espace d'etats
 2. **Planners-4-Heuristics** : Decouvrir les heuristiques pour accelerer la recherche
 3. **Planners-5-Fast-Downward** : Utiliser un planificateur industriel
 
-> **Point cle** : PDDL separe le **quoi** (domaine, actions generales) du **comment** (probleme, instance specifique). Cette separation permet de reutiliser un domaine pour plusieurs problemes.
+> **Point cle** : PDDL separe le **quoi** (domaine, actions générales) du **comment** (problème, instance spécifique). Cette separation permet de reutiliser un domaine pour plusieurs problemes.
 
----",,,,,,,,ca7ea5a55d2a418e,,,,,,,
+---",,,,,,,,0a0ba2225f9b5b1a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb,9b9f3486,markdown,fr,c21138637c0bfc07,"---
 
 ## Ressources
@@ -3870,7 +3870,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
 ---
 
 **Notebook suivant** : [Planners-3-State-Space](Planners-3-State-Space.ipynb)",,,,,,,,c21138637c0bfc07,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,483916e0,markdown,fr,31dd02ee5d3bc5bc,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,483916e0,markdown,fr,44e66d7b3cccf574,"---
 
 **Navigation** : [<< Planners-1 Introduction C#](Planners-1-Introduction-Csharp.ipynb) | [Index](../../README.md) | [Planners-2 PDDL Basics >>](Planners-2-PDDL-Basics.ipynb)
 
@@ -3878,7 +3878,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Cshar
 
 # Planners-3 : Recherche dans l'Espace d'Etats — twin C# (BFS / DFS / Greedy / A*)
 
-> **Twin C#** de [Planners-3-State-Space](Planners-3-State-Space.ipynb) (Python + networkx). **Tranche 2** du marathon Planners (#4956) : apres Planners-1 (STRIPS + BFS), la progression **search nu -> A*** avec heuristiques, admissibilite et coherence.
+> **Twin C#** de [Planners-3-State-Space](Planners-3-State-Space.ipynb) (Python + networkx). **Tranche 2** du marathon Planners (#4956) : après Planners-1 (STRIPS + BFS), la progression **search nu -> A*** avec heuristiques, admissibilite et coherence.
 
 ## Complementarite (#3801 Prong B)
 
@@ -3889,19 +3889,19 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Cshar
 
 Pas d'equivalent NuGet didactique idiomatique pour ce niveau -> from-scratch = la valeur. BCL .NET seule, 0 NuGet.
 
-**Le point cle (#3801 Prong B, cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en etapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Cout/Nœuds).",,,,,,,,31dd02ee5d3bc5bc,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,337fe2e8,markdown,fr,a0cdcceb3620b4ed,"## Objectifs d'apprentissage
+**Le point cle (#3801 Prong B, cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en étapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Cout/Nœuds).",,,,,,,,44e66d7b3cccf574,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,337fe2e8,markdown,fr,45305fbd955f7ee4,"## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
-1. **Representer** un probleme comme un graphe d'etats (etats + successeurs + couts).
+1. **Representer** un problème comme un graphe d'etats (etats + successeurs + couts).
 2. **Implementer** BFS, DFS, Greedy Best-First et A* from-scratch (.NET 9 `PriorityQueue`).
 3. **Distinguer** optimalite-en-pas (BFS) vs optimalite-en-cout (A*).
 4. **Justifier** l'admissibilite d'une heuristique (Manhattan sur grille).
 
 ## 1. Representation d'un espace d'etats
 
-Un probleme de recherche = (etat initial, test-but, fonction successeurs). Ici une **grille 2D** : un etat = une position `(x, y)` ; les successeurs = les 4 voisins (deplacements N/S/E/O). Le cout d'un pas depend du **terrain** (cas le plus general).
-",,,,,,,,a0cdcceb3620b4ed,,,,,,,
+Un problème de recherche = (etat initial, test-but, fonction successeurs). Ici une **grille 2D** : un etat = une position `(x, y)` ; les successeurs = les 4 voisins (deplacements N/S/E/O). Le cout d'un pas depend du **terrain** (cas le plus general).
+",,,,,,,,45305fbd955f7ee4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,efde04f7,code,fr,f861ce625401077c,"// Modele : etat = position (x, y) sur une grille. Le cout d'un pas depend du terrain d'arrivee.
 using System;
 using System.Collections.Generic;
@@ -3923,9 +3923,9 @@ static int CoutCase(GridState s, HashSet<GridState> marais, int coutMarais) =>
 Console.WriteLine($""Modele grille : GridState = record (x,y) ; ACTIONS = {ACTIONS.Length} cardinales."");
 Console.WriteLine(""Terrain pondere : cout marais > cout normal (sinon, cas degenere ou BFS=A*)."");
 ",,,,,,,,f861ce625401077c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,3c860517,markdown,fr,49c0738e7d320912,"## 2. BFS — recherche en largeur (optimal en nombre de pas)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,3c860517,markdown,fr,b14ca9e2f22201e2,"## 2. BFS — recherche en largeur (optimal en nombre de pas)
 
-BFS explore en largeur (file FIFO). Sur un graphe a **cout uniforme**, BFS garantit le chemin le plus court en **nombre d'etapes**. Il explore beaucoup de nœuds (pas d'heuristique pour guider).",,,,,,,,49c0738e7d320912,,,,,,,
+BFS explore en largeur (file FIFO). Sur un graphe a **cout uniforme**, BFS garantit le chemin le plus court en **nombre d'étapes**. Il explore beaucoup de nœuds (pas d'heuristique pour guider).",,,,,,,,b14ca9e2f22201e2,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,6afbde6f,code,fr,4a4640e455da2c33,"// BFS generique : file FIFO, closed set pour eviter les revisites. Garantit le chemin en PAS minimum.
 // getSuccessors renvoie (voisin, cout) — le cout est ignore par BFS (qui compte les pas).
 static (List<GridState> path, int stepsCost, int nodesExpanded) BFS(
@@ -3965,9 +3965,9 @@ static List<GridState> Reconstruct(Dictionary<GridState, GridState?> cameFrom, G
 
 Console.WriteLine(""BFS : file FIFO + closed set. Optimal en NOMBRE DE PAS (cout uniforme)."");
 ",,,,,,,,4a4640e455da2c33,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,2ffde62f,markdown,fr,25888d75077543df,"## 3. DFS — recherche en profondeur (ni optimal ni complet sans limite)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,2ffde62f,markdown,fr,4df26372fb27278e,"## 3. DFS — recherche en profondeur (ni optimal ni complet sans limite)
 
-DFS plonge au maximum avant de revenir en arriere (pile LIFO). Ni optimal ni complet sans limite de profondeur. Interet pedagogique : contraster avec BFS.",,,,,,,,25888d75077543df,,,,,,,
+DFS plonge au maximum avant de revenir en arriere (pile LIFO). Ni optimal ni complet sans limite de profondeur. Intérêt pedagogique : contraster avec BFS.",,,,,,,,4df26372fb27278e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,8d398b7d,code,fr,c26ceb35d582f96d,"// DFS generique : pile LIFO + closed set. Ni optimal ni complet sans limite, mais contraste avec BFS.
 static (List<GridState> path, int nodesExpanded) DFS(
     GridState initial, GridState goal, Func<GridState, IEnumerable<(GridState n, int cost)>> getSuccessors,
@@ -4027,9 +4027,9 @@ static (List<GridState> path, int stepsCost, int nodesExpanded) GreedyBestFirst(
 
 Console.WriteLine(""Manhattan = |dx|+|dy| (admissible sur grille). Greedy : priorite = h(n) seul (non optimal)."");
 ",,,,,,,,faa4a4f0ea8e5eff,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c813a1ab,markdown,fr,897ab98eec481895,"## 5. A* — cout cumule g + heuristique h (optimal si h admissible)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c813a1ab,markdown,fr,9fcfe25293047b47,"## 5. A* — cout cumule g + heuristique h (optimal si h admissible)
 
-A* combine le **cout deja parcouru** `g(n)` et l'**estimation restante** `h(n)` : `f(n) = g(n) + h(n)`. Avec une heuristique **admissible** (h ne surestime jamais), A* est **optimal en cout**. C'est l'algorithme de reference.",,,,,,,,897ab98eec481895,,,,,,,
+A* combine le **cout déjà parcouru** `g(n)` et l'**estimation restante** `h(n)` : `f(n) = g(n) + h(n)`. Avec une heuristique **admissible** (h ne surestime jamais), A* est **optimal en cout**. C'est l'algorithme de reference.",,,,,,,,9fcfe25293047b47,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,26192bce,code,fr,d5890b5efe38dd46,"// A* : f = g + h. Suit g (cout cumule reel). Optimal en COUT si h admissible. .NET 9 PriorityQueue.
 static (List<GridState> path, int cost, int nodesExpanded) AStar(
     GridState initial, GridState goal, Func<GridState, IEnumerable<(GridState n, int cost)>> getSuccessors,
@@ -4061,9 +4061,9 @@ static (List<GridState> path, int cost, int nodesExpanded) AStar(
 
 Console.WriteLine(""A* : f = g + h. Optimal en COUT si h admissible. PriorityQueue<GridState,int> (.NET 9)."");
 ",,,,,,,,d5890b5efe38dd46,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,827d081f,markdown,fr,7bcbb07373e9c112,"## 6. Sanity — grille uniforme (cas degenere BFS = A*)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,827d081f,markdown,fr,6f6acad6d7467a09,"## 6. Sanity — grille uniforme (cas degenere BFS = A*)
 
-D'abord le cas degenere : grille 11x11, cout uniforme 1, sans obstacle. Sans poids, BFS et A* trouvent le **meme** chemin (cout = nombre de pas). Verifions.",,,,,,,,7bcbb07373e9c112,,,,,,,
+D'abord le cas degenere : grille 11x11, cout uniforme 1, sans obstacle. Sans poids, BFS et A* trouvent le **même** chemin (cout = nombre de pas). Verifions.",,,,,,,,6f6acad6d7467a09,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,5585495d,code,fr,dcfd7eddd41a4337,"// Sanity : grille 11x11 uniforme (cout 1 partout). Cas degenere ou BFS = A*.
 const int W = 11, H = 11;
 var start = new GridState(0, 5);
@@ -4157,13 +4157,13 @@ foreach (var s in Enumerable.Range(0, W).SelectMany(x => Enumerable.Range(0, H).
 Console.WriteLine($""Manhattan est consistante sur la grille ponderee : {consistant}"");
 Console.WriteLine(""(h(n) <= cout(n->n') + h(n') pour tout arc ; garantit qu'A* ne rouvre pas un nœud ferme)"");
 ",,,,,,,,fe634097696efdff,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,e8148772,markdown,fr,b09a128a52493bb1,"## 9. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,e8148772,markdown,fr,674bf265da465695,"## 9. Exercices
 
 **Exercice 1 — Grille avec obstacles.** Ajoutez un ensemble de cases bloquees (cout infini / non traversables) et resolvez : BFS/Greedy doivent les contourner, A* idem. *Indice* : filtrez les successeurs bloques dans la fonction `succPondere`.
 
 **Exercice 2 — Heuristique euclidienne.** Implementez une heuristique euclidienne `sqrt(dx^2+dy^2)` (arrondie). Est-elle admissible sur grille 4-connexe ? Pourquoi ? *Indice* : la distance euclidienne minore-t-elle le nombre de pas Manhattan ?
 
-**Exercice 3 — A* avec cout variable different.** Changez le cout du marais (10 -> 5, puis 20). Observez le seuil ou A* decide de **contourner** vs **traverser**. Quel est le cout critique ? *Indice* : comparez cout(chemin droit) = 10*coutMarais vs cout(contournement) = 16.",,,,,,,,b09a128a52493bb1,,,,,,,
+**Exercice 3 — A* avec cout variable différent.** Changez le cout du marais (10 -> 5, puis 20). Observez le seuil ou A* decide de **contourner** vs **traverser**. Quel est le cout critique ? *Indice* : comparez cout(chemin droit) = 10*coutMarais vs cout(contournement) = 16.",,,,,,,,674bf265da465695,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,cbc21146,code,fr,a7876effe0261d03,"// EXERCICE 1 : grille avec obstacles (cases bloquees, cout infini).
 // TODO etudiant : definir un HashSet<GridState> d'obstacles et filtrer succPondere.
 // Indice : dans la clause .Where, ajouter !obstacles.Contains(n).
@@ -4194,9 +4194,9 @@ foreach (int c in new[] { 2, 3, 4, 5, 10, 20 })
     Console.WriteLine($""  cout_marais={c,2} -> (etudiant : A* fait combien de pas ?)"");
 }
 ",,,,,,,,fcccc893793c63ee,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c6f67abc,markdown,fr,b0539e769a212dd7,"## Conclusion — du search nu a A*
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c6f67abc,markdown,fr,bbc04c81fe210264,"## Conclusion — du search nu a A*
 
-Ce twin C# parcourt la meme progression que le twin Python :
+Ce twin C# parcourt la même progression que le twin Python :
 - **BFS** : optimal en PAS (cout uniforme), explore beaucoup.
 - **DFS** : ni optimal ni complet, contraste pedagogique.
 - **Greedy Best-First** : guide par h seul, rapide mais non optimal.
@@ -4204,8 +4204,8 @@ Ce twin C# parcourt la meme progression que le twin Python :
 
 **Le point cle (#3801 Prong B)** : sur terrain uniforme, BFS = A* (cas degenere). Sur **terrain pondere**, seul A* minimise le cout reel (16 pas / cout 16 en contournant le marais, vs BFS 10 pas / cout 55 en traversant). C'est la ou la capacite d'A* est visible dans la sortie — pas un exemple trivial.
 
-> Retour au [twin Python](Planners-3-State-Space.ipynb) — qui demontre la meme chose visuellement (heatmap + chemins superposes).",,,,,,,,b0539e769a212dd7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-0,markdown,fr,87878bf19431ef47,"# Planners-3-State-Space - Recherche dans l'Espace d'Etats
+> Retour au [twin Python](Planners-3-State-Space.ipynb) — qui demontre la même chose visuellement (heatmap + chemins superposes).",,,,,,,,bbc04c81fe210264,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-0,markdown,fr,60edc89c9c029482,"# Planners-3-State-Space - Recherche dans l'Espace d'Etats
 
 **Navigation** : [Index](../../README.md) | [<< PDDL Basics](Planners-2-PDDL-Basics.ipynb) | [Fast Downward >>](../02-Classical/Planners-4-Fast-Downward.ipynb)
 
@@ -4215,7 +4215,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 
 A la fin de ce notebook, vous saurez :
 
-1. **Representer** un probleme de planification comme un graphe d'etats
+1. **Representer** un problème de planification comme un graphe d'etats
 2. **Implementer** les algorithmes de recherche non informee (BFS, DFS)
 3. **Comprendre** les algorithmes informes (Greedy, A*) et leur optimalite
 4. **Designer** des heuristiques admissibles et coherentes
@@ -4225,14 +4225,14 @@ A la fin de ce notebook, vous saurez :
 
 - Python 3.9+ installe
 - Notebooks Planners-1 et Planners-2 compris
-- Connaissances basiques en theorie des graphes
+- Connaissances basiques en théorie des graphes
 
-### Duree estimee : 35 minutes",,,,,,,,87878bf19431ef47,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-1,markdown,fr,e41c27d0c52bf5bc,"---
+### Duree estimee : 35 minutes",,,,,,,,60edc89c9c029482,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-1,markdown,fr,3fd3135a4c941446,"---
 
 ## 1. Introduction a la Recherche dans l'Espace d'Etats
 
-La planification automatique peut etre formulee comme un probleme de **recherche dans un graphe** :
+La planification automatique peut etre formulee comme un problème de **recherche dans un graphe** :
 
 - Les **noeuds** representent les etats du monde
 - Les **aretes** representent les actions (transitions)
@@ -4240,7 +4240,7 @@ La planification automatique peut etre formulee comme un probleme de **recherche
 
 ### 1.1 Definition formelle
 
-Un probleme de recherche d'etat est un tuple $\langle S, A, T, I, G \rangle$ ou :
+Un problème de recherche d'etat est un tuple $\langle S, A, T, I, G \rangle$ ou :
 
 | Composante | Description |
 |------------|-------------|
@@ -4256,12 +4256,12 @@ Le nombre d'etats possibles croit de maniere **exponentielle** avec le nombre de
 
 $$|S| = O(2^n)$$
 
-C'est pourquoi les **heuristiques** sont essentielles pour guider la recherche vers les etats prometteurs.",,,,,,,,e41c27d0c52bf5bc,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-2,markdown,fr,280babe9373cf117,"---
+C'est pourquoi les **heuristiques** sont essentielles pour guider la recherche vers les etats prometteurs.",,,,,,,,3fd3135a4c941446,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-2,markdown,fr,b56f0f29974916d9,"---
 
 ## 2. Representation d'un Espace d'Etats
 
-Commencons par definir un espace d'etats simple et le visualiser avec `networkx`.",,,,,,,,280babe9373cf117,,,,,,,
+Commencons par définir un espace d'etats simple et le visualiser avec `networkx`.",,,,,,,,b56f0f29974916d9,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-3,code,fr,995a6be8d6cfc31c,"# Imports necessaires
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -4272,9 +4272,9 @@ from dataclasses import dataclass, field
 
 print(""Imports reussis"")
 print(f""networkx version: {nx.__version__}"")",,,,,,,,995a6be8d6cfc31c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-4,markdown,fr,5940fce3fb5dd961,"### 2.1 Exemple simple : Navigation dans une grille
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-4,markdown,fr,102ec09e9a495352,"### 2.1 Exemple simple : Navigation dans une grille
 
-Considerons un probleme de navigation dans une grille 3x3. Le robot doit aller de la position (0,0) a la position (2,2).",,,,,,,,5940fce3fb5dd961,,,,,,,
+Considerons un problème de navigation dans une grille 3x3. Le robot doit aller de la position (0,0) a la position (2,2).",,,,,,,,102ec09e9a495352,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-5,code,fr,a4b0173992d39323,"# Definition de l'espace d'etats pour la navigation
 @dataclass(frozen=True)
 class GridState:
@@ -4395,9 +4395,9 @@ ax.text(-0.5, -0.8, ""Vert = Initial | Rouge = But"", fontsize=11)
 
 plt.tight_layout()
 plt.show()",,,,,,,,31a6a62481062a1f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-9,markdown,fr,d21d6d9c85dbb5fc,"### Interpretation de la visualisation
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-9,markdown,fr,26f5394c4d5ec354,"### Interpretation de la visualisation
 
-| Element | Representation |
+| Élément | Representation |
 |---------|---------------|
 | **Noeuds** | Etats (positions dans la grille) |
 | **Aretes** | Actions (deplacements) |
@@ -4407,7 +4407,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 **Observations** :
 - Le graphe contient 9 etats (3x3 = 9 positions)
 - Chaque etat a au maximum 4 successeurs (haut, bas, gauche, droite)
-- Le plus court chemin de (0,0) a (2,2) a une longueur de 4",,,,,,,,d21d6d9c85dbb5fc,,,,,,,
+- Le plus court chemin de (0,0) a (2,2) a une longueur de 4",,,,,,,,26f5394c4d5ec354,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-10,markdown,fr,e3f9be70dd97f12a,"---
 
 ## 3. Recherche Non Informee
@@ -4529,9 +4529,9 @@ if dfs_cost > bfs_cost:
     print(f""\nDFS a trouve une solution SOUS-OPTIMALE ({dfs_cost} > {bfs_cost})"")
 else:
     print(f""\nDFS a trouve une solution optimale"")",,,,,,,,e198d8696d52f417,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,1e5261cd,markdown,fr,008d5aad6145fe22,"### Interpretation : BFS garantit l'optimalite, DFS non
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,1e5261cd,markdown,fr,91a9e3a92728df59,"### Interpretation : BFS garantit l'optimalite, DFS non
 
-**Resultat obtenu** : sur le meme probleme, BFS trouve un chemin de cout 4 tandis que DFS en trouve un de cout 8.
+**Résultat obtenu** : sur le même problème, BFS trouve un chemin de cout 4 tandis que DFS en trouve un de cout 8.
 
 | Metrique | BFS | DFS |
 |----------|-----|-----|
@@ -4540,9 +4540,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 | Noeuds explores | 9 | 9 |
 
 **Points cles** :
-- BFS explore par couches de profondeur : la premiere solution trouvee est toujours la plus courte en nombre d'actions (cout uniforme)
+- BFS explore par couches de profondeur : la première solution trouvee est toujours la plus courte en nombre d'actions (cout uniforme)
 - DFS plonge dans une direction sans considérer la distance au but : il a visite tout le perimetre avant d'atteindre (2,2)
-- Les 9 noeuds explores sont identiques : sur cette grille 3x3, les deux algorithmes visitent l'integralite de l'espace, mais l'ordre de visite differe fondamentalement",,,,,,,,008d5aad6145fe22,,,,,,,
+- Les 9 noeuds explores sont identiques : sur cette grille 3x3, les deux algorithmes visitent l'integralite de l'espace, mais l'ordre de visite differe fondamentalement",,,,,,,,91a9e3a92728df59,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-16,markdown,fr,8ca301002c4d1355,"---
 
 ## 4. Recherche Informee
@@ -4618,9 +4618,9 @@ print(f""Chemin trouve: {' -> '.join(str(s) for s in greedy_path)}"")
 print(f""Cout total: {greedy_cost}"")
 print(f""Noeuds explores: {greedy_nodes}"")
 print(f""Longueur du chemin: {len(greedy_path) - 1} actions"")",,,,,,,,03b565d46ad1e862,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,a19716d6,markdown,fr,55b5fa592e608489,"### Interpretation : Efficacite de Greedy Best-First
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,a19716d6,markdown,fr,6b389a97307fb53f,"### Interpretation : Efficacite de Greedy Best-First
 
-**Resultat obtenu** : Greedy explore 5 noeuds seulement (contre 9 pour BFS) tout en trouvant le chemin optimal.
+**Résultat obtenu** : Greedy explore 5 noeuds seulement (contre 9 pour BFS) tout en trouvant le chemin optimal.
 
 | Algorithme | Noeuds explores | Cout | Optimal ? |
 |------------|-----------------|------|-----------|
@@ -4631,7 +4631,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 **Points cles** :
 - Greedy suit directement la direction du but (h decroissante), ignorant le cout accumule
 - Sur cette grille sans obstacles, l'heuristique guide parfaitement vers le but
-- En presence d'obstacles, Greedy peut s'enliser dans un cul-de-sac ou trouver un chemin sous-optimal",,,,,,,,55b5fa592e608489,,,,,,,
+- En presence d'obstacles, Greedy peut s'enliser dans un cul-de-sac ou trouver un chemin sous-optimal",,,,,,,,6b389a97307fb53f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-20,markdown,fr,6b4ff8caf68fb53a,"### 4.3 Algorithme A*
 
 A* combine le cout accumule $g(n)$ et l'heuristique $h(n)$ :
@@ -4692,7 +4692,7 @@ print(f""Chemin trouve: {' -> '.join(str(s) for s in astar_path)}"")
 print(f""Cout total: {astar_cost}"")
 print(f""Noeuds explores: {astar_nodes}"")
 print(f""Longueur du chemin: {len(astar_path) - 1} actions"")",,,,,,,,8fa62a5abec2283c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-22,markdown,fr,cc4585955d361220,"### Interpretation des resultats A*
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-22,markdown,fr,f4463939ad573f07,"### Interpretation des résultats A*
 
 Pour cet exemple simple, tous les algorithmes trouvent le chemin optimal (cout = 4). Cependant :
 
@@ -4702,7 +4702,7 @@ Pour cet exemple simple, tous les algorithmes trouvent le chemin optimal (cout =
 | **Greedy** | h(n) | Non | Rapide mais peut sous-optimiser |
 | **A*** | g(n) + h(n) | Oui (h admissible) | Guide vers le but efficacement |
 
-L'avantage d'A* devient evident sur des problemes plus grands.",,,,,,,,cc4585955d361220,,,,,,,
+L'avantage d'A* devient evident sur des problemes plus grands.",,,,,,,,f4463939ad573f07,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-23,markdown,fr,9edae4bf67c88c7e,"---
 
 ## 5. Proprietes des Heuristiques
@@ -4772,9 +4772,9 @@ else:
     print(f""\nResultat: {len(inconsistencies)} violations detectees"")
     for state, next_state, h_n, cost, h_next in inconsistencies[:3]:
         print(f""  {state}->{next_state}: h(n)={h_n} > c+ h(n')={cost}+{h_next}={cost+h_next}"")",,,,,,,,a3dd8d0adac90084,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,b7a761cb,markdown,fr,f8a0c1632e7c2d1e,"### Interpretation : Verification de la coherence (inegalite triangulaire)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,b7a761cb,markdown,fr,f58bedd7b29e72ed,"### Interpretation : Verification de la coherence (inegalite triangulaire)
 
-**Resultat obtenu** : la distance de Manhattan ne viole jamais la condition $h(n) \leq c(n, n') + h(n')$ sur la grille 3x3.
+**Résultat obtenu** : la distance de Manhattan ne viole jamais la condition $h(n) \leq c(n, n') + h(n')$ sur la grille 3x3.
 
 | Propriete | Condition | Consequence pour A* |
 |-----------|-----------|---------------------|
@@ -4783,17 +4783,17 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 
 **Points cles** :
 - La coherence implique l'admissibilite (mais pas la reciproque)
-- Avec une heuristique coherente, A* ne re-explore jamais un noeud deja visite, ce qui garantit une complexite en temps polynomiale par rapport au nombre d'etats
-- Manhattan est coherente en 4-connectivite car chaque pas unitaire ne change la distance que de 1 au maximum",,,,,,,,f8a0c1632e7c2d1e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-27,markdown,fr,c4477d57faf30c1e,"### 5.3 Heuristiques admissibles vs non admissibles
+- Avec une heuristique coherente, A* ne re-explore jamais un noeud déjà visite, ce qui garantit une complexite en temps polynomiale par rapport au nombre d'etats
+- Manhattan est coherente en 4-connectivite car chaque pas unitaire ne change la distance que de 1 au maximum",,,,,,,,f58bedd7b29e72ed,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-27,markdown,fr,0660953dbad26347,"### 5.3 Heuristiques admissibles vs non admissibles
 
-| Heuristique | Admissible | Resultat A* |
+| Heuristique | Admissible | Résultat A* |
 |-------------|------------|-------------|
 | **Manhattan** | Oui | Optimal |
 | **Euclidean** | Oui | Optimal (distance vol d'oiseau) |
 | **Zero** | Oui | Optimal (equivalent a Dijkstra) |
 | **Double Manhattan** | Non | Sous-optimal possible |
-| **Carre de Manhattan** | Non | Sous-optimal certain",,,,,,,,c4477d57faf30c1e,,,,,,,
+| **Carre de Manhattan** | Non | Sous-optimal certain",,,,,,,,0660953dbad26347,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-28,code,fr,085ab062cc2ac32b,"# Comparaison d'heuristiques admissibles et non admissibles
 
 # Heuristique non admissible: double de Manhattan
@@ -4823,9 +4823,9 @@ for name, h_func, is_adm in heuristics:
     print(f""{name:<20} {adm_str:<12} {cost:<8} {nodes}"")
 
 print(""\nObservation: Double Manhattan peut trouver une solution sous-optimale."")",,,,,,,,085ab062cc2ac32b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,84b24b6e,markdown,fr,7ab7d572be062aa9,"### Interpretation : Impact de l'heuristique sur l'efficacite d'A*
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,84b24b6e,markdown,fr,0d6267085115c3ef,"### Interpretation : Impact de l'heuristique sur l'efficacite d'A*
 
-**Resultat obtenu** : trois heuristiques testees sur le meme probleme donnent des resultats contrastes.
+**Résultat obtenu** : trois heuristiques testees sur le même problème donnent des résultats contrastes.
 
 | Heuristique | Admissible | Noeuds explores | Cout trouve | Optimal ? |
 |-------------|-----------|-----------------|-------------|-----------|
@@ -4834,14 +4834,14 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 | Double Manhattan | Non | 5 | 4 | Oui (chanceux) |
 
 **Points cles** :
-- Manhattan et Zero explorent le meme nombre de noeuds (12) ici car la grille est petite ; l'ecart grandit sur des problemes plus grands
+- Manhattan et Zero explorent le même nombre de noeuds (12) ici car la grille est petite ; l'ecart grandit sur des problemes plus grands
 - Double Manhattan est plus rapide (5 noeuds) mais **non optimal en general** : sur cette instance simple, le hasard a produit le chemin optimal
-- Une heuristique non admissible peut etre utilisee quand la vitesse prime sur l'optimalite (planning temps reel)",,,,,,,,7ab7d572be062aa9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-29,markdown,fr,b56ac35908db1c66,"---
+- Une heuristique non admissible peut etre utilisee quand la vitesse prime sur l'optimalite (planning temps reel)",,,,,,,,0d6267085115c3ef,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-29,markdown,fr,8693576b90f94399,"---
 
-## 6. Exemple Pratique : Probleme du 8-Puzzle
+## 6. Exemple Pratique : Problème du 8-Puzzle
 
-Le **8-puzzle** est un probleme classique de planification. Il consiste a deplacer des tuiles numerotees pour atteindre une configuration cible.",,,,,,,,b56ac35908db1c66,,,,,,,
+Le **8-puzzle** est un problème classique de planification. Il consiste a deplacer des tuiles numerotees pour atteindre une configuration cible.",,,,,,,,8693576b90f94399,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-30,code,fr,4771e42ffff1c901,"from typing import Tuple
 import copy
 
@@ -4970,7 +4970,7 @@ print(""-"" * 65)
 print(""* BFS est optimal uniquement si tous les pas ont le meme cout. Sur un terrain"")
 print(""  pondere (couts variables), seul A* (ou Dijkstra) garantit le cout minimal :"")
 print(""  voir l'exemple guide ci-dessous."")",,,,,,,,8bf5d74933b9335d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-35,markdown,fr,9172fb5c8f3d2804,"### 7.2 Points cles a retenir
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-35,markdown,fr,be43613a2f135c20,"### 7.2 Points cles a retenir
 
 | Concept | Definition |
 |---------|------------|
@@ -4986,24 +4986,24 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 Dans le contexte de la planification :
 - Les **etats** sont des ensembles de predicats (faits vrais)
 - Les **actions** sont les transitions entre etats
-- Les **heuristiques** sont souvent calculees a partir du relaxation du probleme
+- Les **heuristiques** sont souvent calculees a partir du relaxation du problème
 
 Les planificateurs modernes comme **Fast Downward** utilisent des variantes sophistiquees d'A* avec des heuristiques comme :
 - $h^{add}$ : Heuristique additive
 - $h^{max}$ : Heuristique maximum
 - $h^{FF}$ : Heuristique Fast Forward
-- $h^{LM-cut}$ : Heuristique bas sur les landmarks",,,,,,,,9172fb5c8f3d2804,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,a9e53547,markdown,fr,1dfb864a765e1ba2,"---
+- $h^{LM-cut}$ : Heuristique bas sur les landmarks",,,,,,,,be43613a2f135c20,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,a9e53547,markdown,fr,e4cb26f2a99d1145,"---
 
 ## 7.4 Exemple guide : Grille 5x5 avec obstacles -- BFS vs A*
 
-Avant de passer aux exercices, appliquons les algorithmes BFS et A* sur un probleme plus riche : une grille 5x5 contenant plusieurs obstacles. Cet exemple montre concretement comment l'heuristique de Manhattan confere a A* un avantage decisif en termes de noeuds explorees.
+Avant de passer aux exercices, appliquons les algorithmes BFS et A* sur un problème plus riche : une grille 5x5 contenant plusieurs obstacles. Cet exemple montre concretement comment l'heuristique de Manhattan confere a A* un avantage decisif en termes de noeuds explorees.
 
 **Ce que nous allons faire** :
-1. Definir une grille 5x5 avec 6 obstacles formant un mur partiel
+1. Définir une grille 5x5 avec 6 obstacles formant un mur partiel
 2. Construire et visualiser le graphe d'etats avec les obstacles
-3. Lancer BFS et A* sur ce meme probleme
-4. Comparer le nombre de noeuds explores et les chemins trouves",,,,,,,,1dfb864a765e1ba2,,,,,,,
+3. Lancer BFS et A* sur ce même problème
+4. Comparer le nombre de noeuds explores et les chemins trouves",,,,,,,,e4cb26f2a99d1145,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,3f7c5620,code,fr,fff7f08c92bf78aa,"# Exemple guide : terrain pondere -- BFS/Greedy minimisent les PAS, A* le COUT
 # C'est LE differenciateur d'optimalite : BFS trouve un chemin court en etapes,
 # mais ce n'est PAS le chemin le moins couteux. Seul A* (cout cumule g + h) le trouve.
@@ -5083,9 +5083,9 @@ print(f""\nBFS et Greedy minimisent le nombre de PAS ({len(bfs_path_w) - 1}) : u
 print(f""en etapes, mais cher (cout {bfs_cost_w}) car il traverse le marais tout droit."")
 print(f""A* minimise le COUT reel : {len(astar_path_w) - 1} pas (plus long en etapes) mais cout {astar_cost_w},"")
 print(""car il contourne le marais. Seul A* trouve le chemin le moins couteux."")",,,,,,,,fff7f08c92bf78aa,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,ef4f71d1,markdown,fr,e803ac3ad8a8db0a,"### Interpretation : le terrain pondere revele l'optimalite (BFS != A\*)
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,ef4f71d1,markdown,fr,26ddf300dc7f2522,"### Interpretation : le terrain pondere revele l'optimalite (BFS != A\*)
 
-Sur une grille a **cout uniforme** (chaque pas coute 1), BFS est deja optimal : le chemin avec le moins de pas est aussi le moins couteux, et A\* ne peut pas faire mieux. Le differenciateur entre les algorithmes **n'apparait pas**. C'est pourquoi on introduit ici un **terrain pondere** : un marais central ou chaque case coute 10 au lieu de 1.
+Sur une grille a **cout uniforme** (chaque pas coute 1), BFS est déjà optimal : le chemin avec le moins de pas est aussi le moins couteux, et A\* ne peut pas faire mieux. Le differenciateur entre les algorithmes **n'apparait pas**. C'est pourquoi on introduit ici un **terrain pondere** : un marais central ou chaque case coute 10 au lieu de 1.
 
 | Algorithme | Critere minimise | Pas | **Cout** | Traverse le marais |
 |------------|------------------|-----|----------|--------------------|
@@ -5095,11 +5095,11 @@ Sur une grille a **cout uniforme** (chaque pas coute 1), BFS est deja optimal : 
 
 **La lecon centrale -- l'optimalite :**
 
-- **BFS minimise le nombre de pas, pas le cout.** Il trouve un chemin *court en etapes* (10 pas) mais *cher* (cout 55), parce qu'il fonce tout droit dans le marais. **BFS ne trouve pas le chemin le moins couteux** -- c'est exactement ce qui le distingue d'A\*.
-- **Greedy se laisse berner de la meme facon.** Guide par la seule distance a vol d'oiseau (`h`), il vise le but en ligne droite et traverse le marais lui aussi (cout 55). Ignorer le cout deja parcouru (`g`) le rend sous-optimal.
-- **A\* minimise le cout reel** (`f = g + h`). Il accepte un chemin *plus long en etapes* (16 pas) pour *contourner* le marais et atteindre le cout minimal (16). Avec une heuristique de Manhattan **admissible** (elle ne surestime jamais le cout reel, car chaque pas coute au moins 1), A\* garantit le chemin optimal.
+- **BFS minimise le nombre de pas, pas le cout.** Il trouve un chemin *court en étapes* (10 pas) mais *cher* (cout 55), parce qu'il fonce tout droit dans le marais. **BFS ne trouve pas le chemin le moins couteux** -- c'est exactement ce qui le distingue d'A\*.
+- **Greedy se laisse berner de la même facon.** Guide par la seule distance a vol d'oiseau (`h`), il vise le but en ligne droite et traverse le marais lui aussi (cout 55). Ignorer le cout déjà parcouru (`g`) le rend sous-optimal.
+- **A\* minimise le cout reel** (`f = g + h`). Il accepte un chemin *plus long en étapes* (16 pas) pour *contourner* le marais et atteindre le cout minimal (16). Avec une heuristique de Manhattan **admissible** (elle ne surestime jamais le cout reel, car chaque pas coute au moins 1), A\* garantit le chemin optimal.
 
-**Pourquoi c'est le bon exemple.** Tant que tous les pas coutent pareil, « le plus court chemin » et « le moins de pas » sont la meme chose : on ne voit jamais la difference entre les algorithmes. Des qu'un terrain a des couts variables -- distances reelles, temps, energie -- seul un algorithme qui raisonne sur le **cout cumule** (A\*, Dijkstra) trouve l'optimum. C'est precisement la situation des heuristiques PDDL du notebook Planners-5, ou chaque action a son propre cout.",,,,,,,,e803ac3ad8a8db0a,,,,,,,
+**Pourquoi c'est le bon exemple.** Tant que tous les pas coutent pareil, « le plus court chemin » et « le moins de pas » sont la même chose : on ne voit jamais la différence entre les algorithmes. Des qu'un terrain a des couts variables -- distances reelles, temps, energie -- seul un algorithme qui raisonne sur le **cout cumule** (A\*, Dijkstra) trouve l'optimum. C'est précisément la situation des heuristiques PDDL du notebook Planners-5, ou chaque action a son propre cout.",,,,,,,,26ddf300dc7f2522,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-36,markdown,fr,a0624763026264c9,"---
 
 ## 8. Exercices",,,,,,,,a0624763026264c9,,,,,,,
@@ -5130,11 +5130,11 @@ def euclidean_distance(state: GridState, goal: GridState) -> float:
 
 # Testez l'admissibilite et la coherence
 print(""Exercice a completer : heuristique euclidienne, admissibilite et coherence"")",,,,,,,,49fe26a2ee3951df,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-41,markdown,fr,befc0d2b28fc6c92,"### Exercice 3 : 8-Puzzle avec unified-planning
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-41,markdown,fr,819d5463424c4bf8,"### Exercice 3 : 8-Puzzle avec unified-planning
 
-Utilisez `unified-planning` pour modeliser et resoudre le probleme du 8-puzzle.
+Utilisez `unified-planning` pour modeliser et resoudre le problème du 8-puzzle.
 
-**Indice** : Definissez des predicats pour la position des tuiles et des actions pour les mouvements.",,,,,,,,befc0d2b28fc6c92,,,,,,,
+**Indice** : Definissez des predicats pour la position des tuiles et des actions pour les mouvements.",,,,,,,,819d5463424c4bf8,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-42,code,fr,3afde590682cf452,"# Exercice 3 : 8-Puzzle avec unified-planning
 try:
     from unified_planning.shortcuts import *
@@ -5142,19 +5142,19 @@ try:
     # Votre implementation ici...
 except ImportError:
     print(""unified-planning non installe. Voir Planners-0-Setup.ipynb"")",,,,,,,,3afde590682cf452,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,ba8eea14ba14,markdown,fr,9b48ef24ae006ac1,"### Exercice 4 : Heuristique Manhattan pour BlocksWorld
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,ba8eea14ba14,markdown,fr,6fe3a2d75a00fa3e,"### Exercice 4 : Heuristique Manhattan pour BlocksWorld
 
-Implementer une heuristique Manhattan pour le probleme BlocksWorld.
+Implementer une heuristique Manhattan pour le problème BlocksWorld.
 
 **Indice** : Comptez le nombre de blocs mal places par rapport au but.
-",,,,,,,,9b48ef24ae006ac1,,,,,,,
+",,,,,,,,6fe3a2d75a00fa3e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,ab3448fb73bb,code,fr,4b84dd866e2ff495,"# Exercice 4 : Heuristique Manhattan pour BlocksWorld
 # TODO etudiant : Implementer une heuristique Manhattan pour le probleme BlocksWorld
 # Indice : Comptez le nombre de blocs mal places par rapport au but
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Heuristique Manhattan pour BlocksWorld"")
 ",,,,,,,,4b84dd866e2ff495,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-43,markdown,fr,3737dc8418109d02,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-43,markdown,fr,8de8c874a687af3b,"---
 
 ## 9. Conclusion
 
@@ -5162,11 +5162,11 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
 
 Dans ce notebook, vous avez appris :
 
-1. **Representer** un probleme comme un graphe d'etats avec networkx
+1. **Representer** un problème comme un graphe d'etats avec networkx
 2. **Implementer** BFS (optimal en cout uniforme) et DFS (economique en memoire)
 3. **Utiliser** A* avec des heuristiques admissibles pour une recherche optimale guidee
 4. **Verifier** l'admissibilite et la coherence des heuristiques
-5. **Appliquer** ces concepts au probleme du 8-puzzle
+5. **Appliquer** ces concepts au problème du 8-puzzle
 
 ### Connexion avec Fast Downward
 
@@ -5186,7 +5186,7 @@ Dans le prochain notebook **Planners-4-Fast-Downward**, nous explorerons :
 
 ---
 
-**Notebook suivant** : [Planners-4-Fast-Downward](../02-Classical/Planners-4-Fast-Downward.ipynb)",,,,,,,,3737dc8418109d02,,,,,,,
+**Notebook suivant** : [Planners-4-Fast-Downward](../02-Classical/Planners-4-Fast-Downward.ipynb)",,,,,,,,8de8c874a687af3b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,f4bc7eae,markdown,fr,984ef1811dea022c,"# Planners-4-Fast-Downward (C#)
 
 ## Architecture Fast Downward, SAS+, A\*, GBFS et Enforced Hill Climbing

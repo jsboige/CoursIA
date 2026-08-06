@@ -12,9 +12,12 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling 1589→1200 ≈ 1.32, sauf fig creative.png 1240→1200 ≈ 1.03 car source déjà rès-petite).
 
+> **Migration canonical c.763 (2026-07-22, jsboige:CoursIA-2)** : ajout du champ **`Description visuelle`** (gist compact de ce qui est *visible* en un coup d'œil, distinct du `Contenu réel vérifié` détaillé et du `Alt-text (FR)` accessibilité). Format aligné sur c.751 (GenAI/Audio) + modèle rollout #5780. 6/6 figures migrées, audit vision MiniMax M3 firsthand + PIL RGB mean+std à 80×80 (cf. PR body). **Audit fondateur c.485 préservé verbatim** ci-dessus ; cette migration est purement additive (pas de suppression de contenu).
+
 ## vid4-educational.png
 
 - **Source** : notebook `04-1-Educational-Video-Generation.ipynb` (cellule 9, output 2) — génération automatique de slides pédagogiques à partir d'un script textuel
+- **Description visuelle** : Quatre rectangles bleu nuit côte-à-côte sous le titre noir gras « Apercu des premiers slides ». Slide 1 met en valeur son titre « Introduction au Machine Learning » dans un bandeau bleu plus clair (le seul slide avec emphase visuelle). Slides 2/3/4 portent respectivement 4/3/4 puces textuelles alignées à gauche sur fond uniforme. Palette dominante bleu nuit (RGB 80×80 mean ≈ 117/124/150, variance modérée), texte blanc. Densité d'information textuelle croissante gauche→droite (slide 1 = quasi-vierge avec titre/sous-titre uniquement, slide 4 = 4 étapes pipeline remplies).
 - **Contenu réel vérifié** : PNG 1200×252, panorama horizontal de **4 slides successifs** sous le titre « Apercu des premiers slides » :
   - **Slide 1** : fond bleu nuit, titre « Introduction au Machine Learning », sous-titre « Concepts fondamentaux et applications ».
   - **Slide 2** : fond bleu nuit, titre « Qu'est-ce que le Machine Learning ? », 4 bullet points (Apprentissage à partir de données, Amélioration avec l'expérience, Généralisation à de nouveaux cas, Alternative à la programmation explicite).
@@ -27,6 +30,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 ## vid4-creative.png
 
 - **Source** : notebook `04-2-Creative-Video-Workflows.ipynb` (cellule 9, output 2) — effets audio-réactifs synchronisés sur beats musicaux
+- **Description visuelle** : Six vignettes en grille 2×3 sous le titre gras « Effets synchronises sur les beats (120 BPM) ». Chaque vignette contient un **petit carré bleu cyan** (côté gauche) et un **cercle orange** (côté droit) en mouvement. Rangée du haut = « Original » aux frames 0/12/24 (les couleurs du carré et du cercle restent saturées). Rangée du bas = « Avec effet » sur les mêmes frames (le carré devient pastel bleu clair, le cercle jaune pastel). Fond dégradé diagonale bleu-violet → rose. Palette dominante violet/magenta (RGB 80×80 mean ≈ 179/150/211, fort B), contraste fort entre les 2 formes géométriques simples et le fond.
 - **Contenu réel vérifié** : PNG 1200×573, grille 2×3 sous le titre « Effets synchronisés sur les beats (120 BPM) » :
   - Rangée du haut = « Original (beat 1, frame 0) » / « Original (beat 2, frame 12) » / « Original (beat 3, frame 24) » — formes géométriques simples (carré cyan + cercle orange) sur fond bleu/violet → rose.
   - Rangée du bas = « Avec effet » sur les mêmes timesteps — formes décalées + couleurs plus pastelisées.
@@ -38,6 +42,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 ## vid4-creative2.png
 
 - **Source** : notebook `04-2-Creative-Video-Workflows.ipynb` (cellule 15, output 2) — collage 4 styles visuels sur même séquence vidéo
+- **Description visuelle** : Douze vignettes en grille 3 colonnes × 2 lignes (3 timestamps × 4 styles) sous le titre gras « Collage video 2x2 : Original / Aquarelle / Dessin / Teal & Orange ». Chaque colonne correspond à un timestamp t=0.0/3.0/6.0s ; chaque ligne montre 2 vignettes de styles différents (Original/Aquarelle sur la première moitié verticale, Dessin/Teal & Orange en bas). Le carré cyan + cercle orange réapparaissent dans toutes les vignettes, mais changent **radicalement de palette selon la colonne** : bleu/violet à t=0s, vert olive/rouge brique à t=3s (effet aquarelle), retour bleu/violet décalé à t=6s. Variance colorimétrique élevée (RGB 80×80 std ≈ 80/92/91 — la figure la plus *multi-palette* des 6).
 - **Contenu réel vérifié** : PNG 1200×313, sous-titre « Collage video 2x2 : Original / Aquarelle / Dessin / Teal & Orange », 3 colonnes × 2 lignes :
   - **t=0.0s** : 4 vignettes carrées sur fond bleu/violet en haut, 4 vignettes sur fond blanc/bleu en bas (style Teal & Orange).
   - **t=3.0s** : variante avec fond vert/olive/rouge brique (style Aquarelle en bas à droite, dessin simplifié au centre).
@@ -49,6 +54,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 ## vid4-sora.png
 
 - **Source** : notebook `04-3-Sora-API-Cloud-Video.ipynb` (cellule 9, output 3) — simulation Sora API sur 2 thèmes (Nature/Urbain) à 4 timesteps
+- **Description visuelle** : Huit vignettes en grille 2×4 sous le titre gras « Generation Text -> Video (Sora API) ». Rangée du haut = « Nature » à t=0.0/1.6/3.3/5.0s ; rangée du bas = « Urbain » aux mêmes timesteps. Chaque vignette contient un **disque jaune** (le « soleil stylisé ») centré sur un **horizon herbe vert** et un **ciel dégradé violet/bleu**. La rangée du bas diffère surtout par le prompt injecté en haut (Tokyo/rue vs montagne/lac), mais le rendu géométrique reste quasiment identique à la rangée du haut (soleil + horizon + ciel) — d'où l'aspect « simulation disciplinée ». Filigrane « Sora API - Simulation » lisible en bas-gauche de chaque vignette. Palette globale vert/bleu/violet équilibrée (RGB 80×80 mean ≈ 125/146/144, B≈R≈144, écart-type modéré).
 - **Contenu réel vérifié** : PNG 1200×422, sous le titre global « Generation Text -> Video (Sora API) », grille 2×4 :
   - Rangée du haut = thème « Nature » à t=0.0s / t=1.6s / t=3.3s / t=5.0s — soleil stylisé jaune sur ciel dégradé + horizon herbe vert, prompt « Prompt: A realistic mountain lake at sunset, reflecting sky » en haut de chaque frame, filigrane « Sora API - Simulation » + sphère 3D en bas à gauche.
   - Rangée du bas = thème « Urbain » aux mêmes timesteps — soleil + horizon herbe (prompts qui ne correspondent PAS au prompt affiché, simplification géométrique), filigrane identique.
@@ -59,6 +65,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 ## vid4-sora2.png
 
 - **Source** : notebook `04-3-Sora-API-Cloud-Video.ipynb` (cellule 11, output 2) — effet Ken Burns sur image source
+- **Description visuelle** : Cinq vignettes côte-à-côte sous le titre gras « Image -> Video (effet Ken Burns) » montrant un **zoom progressif** sur la même scène : **montagnes triangulaires vert foncé** + **soleil jaune** + **horizon herbe vert** + **ciel bleu**. Frame 0 « Image source » = cadrage large (montagnes + soleil en haut, herbe en bas). Frames 1→4 = zoom graduel (t=0.0s/1.6s/3.3s/5.0s), montagnes de plus en plus grandes, soleil de plus en plus proche. La **statique de la composition interne** (aucun objet ne bouge) contraste avec l'**évolution du cadrage** (camera se rapproche) — c'est précisément ce qui définit l'effet Ken Burns. Palette globale vert/bleu (RGB 80×80 mean ≈ 153/167/173, G domine), variance modérée.
 - **Contenu réel vérifié** : PNG 1200×200, sous le titre « Image -> Video (effet Ken Burns) », séquence horizontale 5 frames :
   - Frame 0 « Image source » : montagne triangulaire + soleil + horizon, cadrage large.
   - Frame 1 « t = 0.0s » : zoom léger (cadre plus serré, montagnes plus grandes, soleil plus proche).
@@ -72,6 +79,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 ## vid4-pipeline.png
 
 - **Source** : notebook `04-4-Production-Video-Pipeline.ipynb` (cellule 9, output 2) — 5 scènes vidéo produites par le pipeline bout-en-bout
+- **Description visuelle** : Cinq vignettes côte-à-côte sous le titre gras « Images des scenes du pipeline », chaque vignette correspondant à une **scène titrée** (« Scene 1: Introduction » → « Scene 5: Perspectives »). Toutes les vignettes partagent la **même structure visuelle** : constellation de bulles de tailles variées reliées par des lignes filaires, sur fond coloré distinct. Palette varies nettement par scène : bleu vif, marron/ocre, vert forêt, violet, bleu nuit (RGB 80×80 std ≈ 102/101/95 — la variance la plus forte des 6, signature d'une mosaïque multi-couleurs). Étiquette blanche en bas de chaque vignette reprend le titre de la scène. Lecture séquentielle gauche→droite raconte la progression narrative du pipeline.
 - **Contenu réel vérifié** : PNG 1200×236, sous le titre « Images des scenes du pipeline », séquence horizontale 5 scènes :
   - **Scene 1: Introduction** (fond bleu) — constellation de bulles bleues + lignes filaires reliant plusieurs nœuds.
   - **Scene 2: Origines historiques** (fond marron) — bulles ocres + constellation filaire géométrique.

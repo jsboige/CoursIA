@@ -126,6 +126,18 @@ def generate_parcours_page(
     """Generate markdown page for a single parcours."""
     config = PARCOURS[parcours_id]
     lines = [
+        "<!--",
+        "  FICHIER GENERE — ne pas editer a la main.",
+        "  Cette page de parcours est derivee du catalogue de notebooks par",
+        "  scripts/notebook_tools/generate_parcours.py, puis regeneree chaque jour",
+        "  sur `main` par .github/workflows/catalog-cron.yml. Toute edition manuelle",
+        "  sera silencieusement ecrasee au prochain passage du cron. Pour corriger",
+        "  une derive (comptes, enumerations), corriger la SOURCE (le catalogue /",
+        "  les metadonnees de notebook) ou le generateur — jamais cette page.",
+        "  Cf .claude/rules/catalog-pr-hygiene.md (les artefacts generes",
+        "  appartiennent a l'automatisation).",
+        "-->",
+        "",
         f"# {config['title']}",
         "",
         f"**{config['subtitle']}**",
@@ -239,7 +251,11 @@ def main():
         else:
             PARCOURS_DIR.mkdir(parents=True, exist_ok=True)
             out_path = PARCOURS_DIR / f"{pid}.md"
-            out_path.write_text(page, encoding="utf-8")
+            # newline="\n" forces LF: on Windows, Path.write_text's default
+            # text mode translates "\n" -> "\r\n", polluting the committed LF
+            # files (docs/curriculum/*.md are LF per .gitattributes) with a
+            # 100%+ line churn on every regen. Force LF so regen is byte-clean.
+            out_path.write_text(page, encoding="utf-8", newline="\n")
             print(f"  {pid}: {out_path} ({len(filtered)} notebooks)")
 
     if not args.dry_run and not args.parcours:

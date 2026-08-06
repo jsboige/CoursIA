@@ -63,13 +63,13 @@ namespace Life
 
 open MacroCell
 
-/-! ## Hashing MacroCells
+/-! ## Hachage des `MacroCell`
 
-A structural content hash. Equal cells (by the derived `DecidableEq`,
-which induces the `BEq` in scope) get equal hashes by construction, so
-`LawfulHashable` is automatic. -/
+Un hachage structurel du contenu. Deux cellules égales (selon le `DecidableEq`
+dérivé, qui induit le `BEq` en portée) reçoivent des hachages égaux par
+construction, donc `LawfulHashable` est automatique. -/
 
-/-- Structural 64-bit content hash of a `MacroCell`. -/
+/-- Hachage structurel 64-bit du contenu d'une `MacroCell`. -/
 def MacroCell.contentHash : MacroCell → UInt64
   | .leaf b => if b then 1 else 0
   | .node nw ne sw se =>
@@ -78,16 +78,16 @@ def MacroCell.contentHash : MacroCell → UInt64
 
 instance : Hashable MacroCell := ⟨MacroCell.contentHash⟩
 
-/-! ## The memoization cache and its invariant -/
+/-! ## Le cache de mémoïsation et son invariant -/
 
-/-- Memoization cache: `(fuel, cell) ↦ hashlifeResultAux fuel cell`. -/
+/-- Cache de mémoïsation : `(fuel, cell) ↦ hashlifeResultAux fuel cell`. -/
 abbrev MemoCache := Std.HashMap (Nat × MacroCell) MacroCell
 
-/-- The empty cache. -/
+/-- Le cache vide. -/
 def MemoCache.empty : MemoCache := ∅
 
-/-- Cache correctness: every binding records the true (unmemoized)
-    Hashlife result for its key. -/
+/-- Correction du cache : chaque liaison enregistre le vrai résultat
+    Hashlife (non mémoïsé) pour sa clé. -/
 def CacheOK (m : MemoCache) : Prop :=
   ∀ fuel c r, m[(fuel, c)]? = some r → r = hashlifeResultAux fuel c
 
@@ -95,7 +95,7 @@ theorem cacheOK_empty : CacheOK MemoCache.empty := by
   intro fuel c r h
   simp [MemoCache.empty] at h
 
-/-- Inserting a correct binding preserves cache correctness. -/
+/-- Insérer une liaison correcte préserve la correction du cache. -/
 theorem CacheOK.insert {m : MemoCache} (hm : CacheOK m) {fuel : Nat}
     {c r : MacroCell} (hr : r = hashlifeResultAux fuel c) :
     CacheOK (m.insert (fuel, c) r) := by
@@ -111,13 +111,14 @@ theorem CacheOK.insert {m : MemoCache} (hm : CacheOK m) {fuel : Nat}
   next _ =>
     exact hm f d r' h
 
-/-! ## Unfold lemma for the well-formed arm
+/-! ## Lemme d'unfold pour le bras bien formé
 
-`hashlifeResultAux` uses a pattern alias `c@(node ...)` in its source,
-whose alias fvar blocks syntactic rewriting. This lemma restates the
-well-formed arm with explicit patterns and zeta-expanded `let`s; it is
-true by `rfl` (iota + zeta reduction). Grandchild naming: `a* = nw.*`,
-`b* = ne.*`, `c* = sw.*`, `d* = se.*`, each in `nw ne sw se` order. -/
+`hashlifeResultAux` utilise un alias de motif `c@(node ...)` dans sa
+définition, dont la fvar alias bloque la réécriture syntaxique. Ce lemme
+reformule le bras bien formé avec des motifs explicites et des `let`
+expansés par zéta ; il se prouve par `rfl` (réduction iota + zéta).
+Nommage des petits-enfants : `a* = nw.*`, `b* = ne.*`, `c* = sw.*`,
+`d* = se.*`, chacun dans l'ordre `nw ne sw se`. -/
 
 private theorem hashlifeResultAux_succ_node (fuel : Nat)
     (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell) :
@@ -151,16 +152,16 @@ private theorem hashlifeResultAux_succ_node (fuel : Nat)
           (hashlifeResultAux fuel (node c2 d1 c4 d3))
           (hashlifeResultAux fuel (node d1 d2 d3 d4)))) := rfl
 
-/-! ## The memoized recursion, fused with its correctness proof
+/-! ## La récursion mémoïsée, fusionnée avec sa preuve de correction
 
-`hashlifeResultMemoAux fuel c m hm` returns `(value, cache')` together
-with proofs that `value = hashlifeResultAux fuel c` and `CacheOK cache'`.
-Structural recursion on `fuel`. -/
+`hashlifeResultMemoAux fuel c m hm` renvoie `(value, cache')` muni des
+preuves que `value = hashlifeResultAux fuel c` et `CacheOK cache'`.
+Récursion structurelle sur `fuel`. -/
 
 set_option maxHeartbeats 800000 in
-/-- Memoized counterpart of `hashlifeResultAux`, carrying its own
-    correctness certificate. The cache is threaded left-to-right through
-    the 13 recursive calls of the well-formed arm. -/
+/-- Contrepartie mémoïsée de `hashlifeResultAux`, portant son propre
+    certificat de correction. Le cache est FILÉ de gauche à droite à
+    travers les 13 appels récursifs du bras bien formé. -/
 def hashlifeResultMemoAux : (fuel : Nat) → (c : MacroCell) →
     (m : MemoCache) → CacheOK m →
     {p : MacroCell × MemoCache //
@@ -247,25 +248,25 @@ def hashlifeResultMemoAux : (fuel : Nat) → (c : MacroCell) →
                (node y1 y2 y3 y4) (leaf z)).level - 1),
       m), rfl, hm⟩
 
-/-- Memoized Hashlife from the empty cache: same result as
+/-- Hashlife mémoïsé depuis le cache vide : même résultat que
     `hashlifeResult c = hashlifeResultAux c.level c`. -/
 def hashlifeResultRunMemo (c : MacroCell) : MacroCell :=
   (hashlifeResultMemoAux c.level c MemoCache.empty cacheOK_empty).1.1
 
-/-- The memoized version agrees with the unmemoized Phase 3b reference.
-    Immediate from the fused certificate. -/
+/-- La version mémoïsée coïncide avec la référence non mémoïsée de Phase 3b.
+    Immédiat depuis le certificat fusionné. -/
 theorem hashlifeResultMemo_correct (c : MacroCell) :
     hashlifeResultRunMemo c = hashlifeResultAux c.level c :=
   (hashlifeResultMemoAux c.level c MemoCache.empty cacheOK_empty).2.1
 
-/-! ## Memoized fast evolution
+/-! ## Évolution rapide mémoïsée
 
-`evolveHashlifeFastMemoAux` mirrors `evolveHashlifeFastAux`, routing the
-Hashlife jump through `hashlifeResultMemoAux` and threading the cache
-across successive jumps. Same fused-certificate style. -/
+`evolveHashlifeFastMemoAux` reflète `evolveHashlifeFastAux`, en routant le
+saut Hashlife via `hashlifeResultMemoAux` et en filant le cache à travers
+les sauts successifs. Même style de certificat fusionné. -/
 
-/-- Memoized counterpart of `evolveHashlifeFastAux`, carrying its own
-    correctness certificate. Structural recursion on `fuel`. -/
+/-- Contrepartie mémoïsée d'`evolveHashlifeFastAux`, portant son propre
+    certificat de correction. Récursion structurelle sur `fuel`. -/
 def evolveHashlifeFastMemoAux : (fuel n : Nat) → (g : Grid) →
     (m : MemoCache) → CacheOK m →
     {p : Grid × MemoCache //
@@ -302,21 +303,21 @@ def evolveHashlifeFastMemoAux : (fuel n : Nat) → (g : Grid) →
     else
       ⟨(evolve (n + 1) g, m), by rw [heq, if_neg hcond], hm⟩
 
-/-- Evolve `g` by `n` generations using memoized Hashlife. Same
-    semantics as `evolveHashlifeFast` (see the bridge theorem below). -/
+/-- Fait évoluer `g` de `n` générations via Hashlife mémoïsé. Mêmes
+    sémantiques qu'`evolveHashlifeFast` (cf. le théorème-pont ci-dessous). -/
 def evolveHashlifeFastMemo (n : Nat) (g : Grid) : Grid :=
   (evolveHashlifeFastMemoAux n n g MemoCache.empty cacheOK_empty).1.1
 
-/-- Bridge to Phase 3b: the memoized fast path agrees with the
-    unmemoized one. Immediate from the fused certificate. -/
+/-- Pont vers la Phase 3b : le chemin rapide mémoïsé coïncide avec le
+    non mémoïsé. Immédiat depuis le certificat fusionné. -/
 theorem evolveHashlifeFastMemo_eq_evolveHashlifeFast (n : Nat) (g : Grid) :
     evolveHashlifeFastMemo n g = evolveHashlifeFast n g :=
   (evolveHashlifeFastMemoAux n n g MemoCache.empty cacheOK_empty).2.1
 
-/-! ## The empty grid is a fixed point
+/-! ## La grille vide est un point fixe
 
-Needed by `Conway.Life.Pillars` while the pillar patterns are still
-placeholder empty grids (RLE loading pending). -/
+Requis par `Conway.Life.Pillars` tant que les motifs de piliers sont
+encore des grilles vides placeholders (chargement RLE en attente). -/
 
 theorem step_empty : step ([] : Grid) = [] := by
   simp [step, candidates, sortDedup]
@@ -343,11 +344,11 @@ theorem evolveHashlifeFastMemo_empty (n : Nat) :
   rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast]
   exact evolveHashlifeFast_empty n
 
-/-! ## Sanity checks
+/-! ## Vérifications de cohérence
 
-The memoized functions must agree with their references on the
-canonical patterns (these are compiled evaluations, complementing the
-kernel-checked theorems above). -/
+Les fonctions mémoïsées doivent coïncider avec leurs références sur les
+motifs canoniques (ce sont des évaluations compilées, qui complètent les
+théorèmes vérifiés par le noyau ci-dessus). -/
 
 #eval hashlifeResultRunMemo (gridToMacroCell glider)
         == hashlifeResult (gridToMacroCell glider)          -- expect true

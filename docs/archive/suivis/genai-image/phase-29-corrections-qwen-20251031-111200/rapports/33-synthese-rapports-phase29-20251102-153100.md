@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-23** — PM transiente, valeur = historique uniquement. INDEX-only (no external inbound refs on `origin/main`). See #7422 triage.
+
 # Rapport 33 - Synthèse des 31 Rapports Phase 29
 
 **Date** : 2025-11-02 15:31:00  

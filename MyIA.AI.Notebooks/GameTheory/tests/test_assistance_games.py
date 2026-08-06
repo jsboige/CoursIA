@@ -39,9 +39,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from cooperative_games.assistance_games import (  # noqa: E402
     AssistanceGame,
     OffSwitchGameResult,
+    OffSwitchMetaUncertainResult,
     PaperclipGameResult,
     off_switch_analysis,
     off_switch_game,
+    off_switch_metauncertain,
+    off_switch_margin_analysis,
+    off_switch_margin_report,
     paperclip_game_equilibrium,
     paperclip_payoff_analysis,
     paperclip_print_analysis,
@@ -250,6 +254,63 @@ class TestOffSwitchAnalysis:
         assert "RESIST" in out or "DANGER" in out
 
 
+# ── Off-Switch Game — safe design via META-UNCERTAINTY ─────────────────────
+
+
+class TestOffSwitchMetaUncertain:
+    """off_switch_metauncertain: the safe design where the effective override
+    threshold RISES toward 1.0 (never resist) as meta-uncertainty grows, so the
+    dangerous resistance band [threshold, 1.0] collapses to zero width."""
+
+    def test_returns_correct_dataclass(self):
+        r = off_switch_metauncertain(0.8, 0.3)
+        assert isinstance(r, OffSwitchMetaUncertainResult)
+
+    def test_sigma_zero_recovers_danger_default(self):
+        # sigma=0 -> effective threshold = base 0.9 (same as off_switch_game).
+        r = off_switch_metauncertain(0.95, 0.0)
+        assert r.effective_threshold == pytest.approx(0.9)
+        assert r.robot_defers is False  # 0.95 >= 0.9 -> resists (danger)
+
+    def test_sigma_one_never_resists(self):
+        # Full meta-uncertainty -> threshold -> 1.0 -> always defers (safe).
+        r = off_switch_metauncertain(0.999, 1.0)
+        assert r.effective_threshold == pytest.approx(1.0)
+        assert r.robot_defers is True
+        assert r.resistance_margin == pytest.approx(0.0)
+
+    def test_threshold_rises_monotonically_with_sigma(self):
+        effs = [off_switch_metauncertain(0.5, s).effective_threshold
+                for s in np.linspace(0, 1, 11)]
+        assert all(effs[i + 1] >= effs[i] for i in range(len(effs) - 1))
+        assert effs[0] == pytest.approx(0.9)
+        assert effs[-1] == pytest.approx(1.0)
+
+    def test_resistance_margin_collapses_to_zero(self):
+        margins = [off_switch_metauncertain(0.5, s).resistance_margin
+                   for s in np.linspace(0, 1, 11)]
+        assert margins[0] == pytest.approx(0.1)   # 1 - 0.9
+        assert margins[-1] == pytest.approx(0.0)
+        assert all(margins[i + 1] <= margins[i] for i in range(len(margins) - 1))
+
+    def test_meta_uncertainty_flips_overconfident_robot_to_defer(self):
+        # The exact danger case of cell 27 (0.95, resists at sigma=0) becomes
+        # SAFE once the robot is meta-uncertain about its objective.
+        assert off_switch_metauncertain(0.95, 0.0).robot_defers is False
+        assert off_switch_metauncertain(0.95, 1.0).robot_defers is True
+
+    def test_clamps_out_of_range_sigma(self):
+        a = off_switch_metauncertain(0.9, -0.5)
+        b = off_switch_metauncertain(0.9, 5.0)
+        assert a.effective_threshold == pytest.approx(0.9)   # clamped to 0
+        assert b.effective_threshold == pytest.approx(1.0)   # clamped to 1
+
+    def test_does_not_modify_base_function(self):
+        # Anti-regression: the base off_switch_game is byte-untouched (0.9 default).
+        assert off_switch_game(0.95).robot_defers is False
+        assert off_switch_game(0.60).robot_defers is True
+
+
 # ── AssistanceGame (cooperative game with Shapley) ──────────────────────────
 
 
@@ -330,3 +391,91 @@ class TestAssistanceGame:
         res = ag.analyze_assistance_value()
         # humans_alone=0 -> pct branche sur 0
         assert res["assistance_gain_pct"] == 0.0
+
+
+# ── Off-Switch margin analysis (additive pedagogical complement) ────────────
+
+
+class TestOffSwitchMarginAnalysis:
+    """Complement pedagogique : marge WAIT-ACT = 1 - p qui tend vers 0
+    quand p -> 1. Le seuil override_threshold = 0.9 vit dans la zone ou
+    marge = 10% (choix de securite delibere, cf commit 467e9a1f7).
+    """
+
+    def test_margin_identity_one_minus_p(self):
+        # Identity: margin = 1 - p partout sur la grille de sweep.
+        a = off_switch_margin_analysis(override_threshold=0.9, n_points=501)
+        np.testing.assert_allclose(a["margin"], 1.0 - a["confidence"], atol=1e-12)
+
+    def test_wait_equals_confidence(self):
+        # E[U|WAIT] = p.
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        np.testing.assert_allclose(a["wait"], a["confidence"], atol=1e-12)
+
+    def test_act_equals_two_p_minus_one(self):
+        # E[U|ACT] = 2p - 1.
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        np.testing.assert_allclose(a["act"], 2.0 * a["confidence"] - 1.0, atol=1e-12)
+
+    def test_arrays_aligned_length(self):
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        n = len(a["confidence"])
+        assert n == len(a["wait"]) == len(a["act"]) == len(a["margin"]) == len(a["defers"])
+        assert n == 1001  # defaut
+
+    def test_threshold_margin_exact(self):
+        # A p = override_threshold = 0.9, marge = 0.1.
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        assert a["threshold_margin"] == pytest.approx(0.1)
+
+    def test_threshold_margin_with_custom(self):
+        # Seuil 0.5 -> marge au seuil = 0.5.
+        a = off_switch_margin_analysis(override_threshold=0.5)
+        assert a["threshold_margin"] == pytest.approx(0.5)
+
+    def test_margin_vanishes_at_p_one(self):
+        # Limite : a p=1, marge = 0 exactement.
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        assert a["margin"][-1] == pytest.approx(0.0, abs=1e-12)
+
+    def test_margin_is_one_at_p_zero(self):
+        # Limite basse : a p=0, marge = 1 (robot tres incertain, WAIT >> ACT).
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        assert a["margin"][0] == pytest.approx(1.0)
+
+    def test_defers_strict_inequality_at_threshold(self):
+        # p < override_threshold (strict) -> defers True. p = 0.9, threshold = 0.9 -> defers False.
+        a = off_switch_margin_analysis(override_threshold=0.9)
+        # p=0.9 est dans la grille (linspace inclut 1.0 et 0.0).
+        idx = int(np.argmin(np.abs(a["confidence"] - 0.9)))
+        assert a["defers"][idx] == False  # noqa: E712 (numpy bool)
+        # p=0.89 -> defers True.
+        idx89 = int(np.argmin(np.abs(a["confidence"] - 0.89)))
+        assert a["defers"][idx89] == True  # noqa: E712
+
+    def test_echoed_threshold_in_return(self):
+        a = off_switch_margin_analysis(override_threshold=0.7)
+        assert a["override_threshold"] == pytest.approx(0.7)
+
+
+class TestOffSwitchMarginReport:
+    """off_switch_margin_report produit un rapport lisible."""
+
+    def test_report_contains_key_phrases(self):
+        out = off_switch_margin_report()
+        assert "OFF-SWITCH GAME" in out
+        assert "WAIT-ACT MARGIN" in out
+        assert "Override threshold" in out
+
+    def test_report_table_has_header_and_rows(self):
+        out = off_switch_margin_report()
+        # Header + au moins 1 ligne par echantillon (defaut 6).
+        assert "p" in out and "WAIT" in out and "ACT" in out and "margin" in out
+        # Verifie qu'au moins un sample est affiche.
+        assert "0.500" in out  # sample par defaut
+
+    def test_report_threshold_explanation(self):
+        # L'interpretation explique pourquoi le seuil est a 0.9 et pas 0.5 ou 1.0.
+        out = off_switch_margin_report(override_threshold=0.9)
+        assert "0.90" in out or "0.9" in out
+        assert "deliberately" in out or "deliberate" in out or "safety" in out.lower()

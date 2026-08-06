@@ -1,0 +1,15 @@
+- name: "Planners-5 Heuristics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2026:CoursIA
+      python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
+      csharp_sha: 38fbe3dd8890dae8c1e0772807baed5762eb1eda
+  known_differences:
+    - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
+    - "Python : unified-planning + fast-downward heuristics. C# : from-scratch delete-relaxation BCL."
+    - "po-2025 a verifie firsthand (c.678) la parite conceptuelle : les deux cotes gerent la degenerescence via une instance discriminante (h^add > h*)."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8336+#8340 (Prong-B heuristic-guided benchmark ajoute aux DEUX cotes (enrichissement parallele)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
