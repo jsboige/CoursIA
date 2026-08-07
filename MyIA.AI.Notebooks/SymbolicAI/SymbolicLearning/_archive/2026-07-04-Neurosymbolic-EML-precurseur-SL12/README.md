@@ -49,8 +49,8 @@ par **apprentissage direct d'une porte logique parmi 16**.
 
 ```bash
 # Depuis la racine du dépôt :
-git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Explore.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
-git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
+git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Explore.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
+git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
 # Référencer cette archive comme superseded-by dans la PR de restauration
 ```
 
