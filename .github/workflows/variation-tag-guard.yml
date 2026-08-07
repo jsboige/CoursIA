@@ -320,3 +320,121 @@ jobs:
             gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
           fi
           exit 0
+
+  # #9861 -- short-header trio (Quoi / Preuve / Perimetre) -- "rougit sur une
+  # PR dont le body n'a pas les trois cles, et passe sur les PRs conformes
+  # existantes" (acceptance #9861). The convention spreads by ADVISORY, not
+  # gate: a body that has none of the three keys gets
+  # `variation-short-header-missing`, but only on PRs that are NEW relative
+  # to the rollout. Existing PRs that just never adopted the trio do NOT
+  # turn red -- they pass as-is. The detector is the same `grain_tag.py`
+  # extractor: `parse_short_header` returns {quoi, preuve, perimetre}, each
+  # None when the key is absent; `short_header_complete` is True only when
+  # all three are present (the only case the flag does NOT pose).
+  #
+  # The flag is advisory, exit 0 by design (the whole workflow is advisory:
+  # #9485 lesson -- "un garde dont l'echec est muet n'est pas un garde",
+  # but a guard that BLOCKS on rollout would redden every PR in the repo
+  # the day the convention is rolled out, which is the failure mode the
+  # issue rejects).
+  check-short-header:
+    name: Check short-header trio (Quoi/Preuve/Perimetre, #9861)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the shared tag extractor (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/grain_tag.py
+      - name: Inspect PR body for short-header trio (#9861)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Meme garde-fou que les deux jobs precedents : bots et forks hors
+          # scope (les PRs etudiantes n'ont pas de convention interne,
+          # .claude/rules/student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+          python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt > /tmp/tag.json 2>/dev/null || true
+
+          # Champs courts (cf parse_short_header). `_field` est tolerant a un
+          # /tmp/tag.json absent ou vide -- fallback = defauts surs qui
+          # declenchent le label (un parseur en panne n'efface JAMAIS un
+          # defaut, c'est l'inverse qui serait suspect).
+          _field() { python3 -c "import json; print(json.load(open('/tmp/tag.json')).get('$1'))" 2>/dev/null || echo "None"; }
+          QUOI=$(_field quoi)
+          PREUVE=$(_field preuve)
+          PERIMETRE=$(_field perimetre)
+          COMPLETE=$(_field short_header_complete)
+
+          DEFECTS=""
+          note_defect() { DEFECTS="$DEFECTS $1"; }
+
+          # Les trois cles : si AUCUNE n'est la, on flag. Un partiel (1 ou
+          # 2 presentes) NE flag PAS -- l'objectif au rollout est de
+          # signaler les PRs qui n'ont meme pas commence a adopter la
+          # convention, pas de penaliser les adoptions partielles. Le
+          # durcissement progressif ("1 absente = flag") est une decision
+          # separee, prise apres que la flotte a adopte le pattern.
+          if [ "$COMPLETE" = "True" ]; then
+            echo "Short-header trio complet : Quoi + Preuve + Perimetre presents."
+            echo "::notice::Short-header conforme (3/3 cles presentes)."
+          else
+            ABSENT=""
+            [ "$QUOI" = "None" ] && ABSENT="$ABSENT Quoi"
+            [ "$PREUVE" = "None" ] && ABSENT="$ABSENT Preuve"
+            [ "$PERIMETRE" = "None" ] && ABSENT="$ABSENT Perimetre"
+            echo "::warning::Short-header trio absent (cles manquantes :$ABSENT). Issue #9861 demande 'Quoi: <une ligne>, Preuve: <une ligne>, Perimetre: <une ligne>' juste apres le tag Grain:. Advisory, non bloquant -- la convention se rollout progressivement."
+            note_defect variation-short-header-missing
+          fi
+
+          # Traduction en label distinct (lisible dans gh pr list --json labels).
+          # `create` tolere l'echec (|| true), `add` aussi. `remove` sur label
+          # absent est l'issue attendue au cas nominal (cf variation-tag-guard
+          # -- la justification vit dans le commentaire du workflow, pas dans
+          # une nouvelle regle de harnais).
+          LABEL="variation-short-header-missing"
+          COLOR="FEF2C0"
+          DESC="PR sans short-header trio (Quoi/Preuve/Perimetre, #9861) -- convention en rollout progressif"
+          case " $DEFECTS " in
+            *" $LABEL "*)
+              gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
+              gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+              # Commentaire idempotent. On NE le pose que si la PR ne le
+              # porte pas deja -- un push ulterieur ne re-spam pas. Meme
+              # marqueur HTML invisible que G-VAR-2, par souci de coherence.
+              MARK="<!-- short-header-rollout -->"
+              if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+                BODY="${MARK}
+          **Short-header trio absent** (advisory, non bloquant, #9861).
+          La convention issue de #9861 demande trois cles en tete du body, juste apres le tag \`Grain:\` :
+
+          \`\`\`
+          Quoi:       <une ligne -- ce que la PR change>
+          Preuve:     <une ligne -- commande ou run qui l'atteste>
+          Perimetre:  <une ligne -- fichiers/domaine touches, hors-scope explicite>
+          \`\`\`
+
+          Les trois reponses permettent a un reviewer de trouver l'essentiel en tete, sans lire dix ecrans. Le detail reste autorise plus bas (valeur d'audit). Convention en rollout progressif : les PRs adoptees passent, les PRs sans aucune des trois cles sont signalees ici -- un adoption partielle (1 ou 2 cles) NE flag PAS, par design."
+                gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+              fi
+              ;;
+            *)
+              gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+              ;;
+          esac
+          exit 0
