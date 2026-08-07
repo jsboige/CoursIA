@@ -11,6 +11,12 @@
       content_python_sha: ed6df31d1b8a604a09f90f3eed68582f3aed580dcdd4799d2ce271c65cbc36d2
       content_csharp_sha: 7825ba3d7cd28b56c619bf8aaa6bcb928460e23e2e00253df6b681ef84676704
       note: "Creation of the Python twin (was C#-only). From-scratch CVRP metaheuristiques ported faithfully from C# BCL to numpy; verified against OR-Tools (SOTA, +1.8% gap)."
+    - date: "2026-08-07"
+      by: myia-po-2025:CoursIA
+      python_sha: 27d583eda3d011d29c3b4abff7edacae4142db37
+      csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+      content_python_sha: 7b3ac2bd16317384a44a2965860a6666d2b86ff3b381b465be66425eaf21bc77
+      content_csharp_sha: 8e1f8399d09acc50e84819fa887de8680bbb4102d5e0ba5b9caa0504fbfc09b5
   known_differences:
     - "Socle pedagogique commun : CVRP (Capacitated VRP) metaheuristiques from-scratch — VRPInstance + VRPSolution, Nearest-Neighbor, Cheapest-Insertion, 2-opt intra-route, Recuit Simule (relocate + 2-opt, Metropolis), instance canonique 15 clients/6 vehicules, 3 exercices (Clarke-Wright Savings, OR-opt, VRPTW)."
     - "Idiomes framework : Python = numpy pur pour le from-scratch (meme algorithmes que le C# BCL), PLUS matplotlib pour la visualisation graphique des tournees (avantage Python vs ASCII C#), PLUS pont OR-Tools en cellule finale (verification SOTA). C# = pur BCL .NET (System.*, 0 NuGet), visualisation ASCII."
