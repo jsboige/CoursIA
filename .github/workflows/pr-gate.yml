@@ -1,0 +1,77 @@
+name: PR gate
+
+# The single check that can be made *required* on `main` without deadlocking
+# the repository. See issue #9819 and the module docstring of scripts/pr_gate.py.
+#
+# Background, measured firsthand 2026-08-07:
+#
+#   gh api repos/jsboige/CoursIA/branches/main/protection  -> no required_status_checks
+#   gh api repos/jsboige/CoursIA/rulesets                  -> []
+#
+# Nothing is required. A PR with a red build reports `UNSTABLE` (mergeable),
+# never `BLOCKED`, so the only gate is a human reading `gh pr checks` at ~180
+# merges/day. That failed on 2026-08-07: #9762 merged with
+# `ci / Lean CI (grothendieck_lean) -> fail`, and `main` stayed red ~5 hours.
+#
+# Why not simply require the Lean check instead: GitHub counts a check that
+# never started as **pending forever** -- a workflow skipped by its `paths:`
+# filter never reports `skipped`. Requiring any path-filtered check would make
+# every PR that does not touch that path permanently unmergeable. This workflow
+# has NO `paths:` filter for exactly that reason: it must reach a verdict on
+# every PR, including PRs that trigger no other CI at all.
+#
+# Enabling it is a repository-settings change and therefore owner-only:
+#   Settings > Branches > main > Require status checks > add "PR gate"
+# Until that flip, this job is informative rather than blocking -- which is
+# precisely the half that does not need the owner, delivered so the flip is a
+# one-click action instead of a design problem.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Head SHA to aggregate (defaults to the current ref)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    # This string is the required-check name. Keep it stable: renaming it
+    # silently detaches the branch-protection rule, leaving a rule that
+    # references a check nobody produces -- pending forever, the very deadlock
+    # this workflow exists to avoid.
+    name: PR gate
+    runs-on: ubuntu-latest
+    # Above the script's own 90 min budget, so the script prints its verdict
+    # instead of the runner killing it mid-poll (a runner-killed job reports
+    # `cancelled`, which is far less legible than "timed out waiting for X").
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Aggregate check verdicts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/pr_gate.py \
+            --repo "${{ github.repository }}" \
+            --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            --self-name "PR gate" \
+            --timeout-min 90 \
+            --poll-sec 30 \
+            --settle-polls 2
