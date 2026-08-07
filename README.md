@@ -334,7 +334,9 @@ pip install jupyter ipykernel python-dotenv
 python -m ipykernel install --user --name=coursia --display-name "Python (CoursIA)"
 
 # 4. Kernel .NET Interactive (notebooks C#)
-dotnet tool install --global Microsoft.dotnet-interactive
+# Préciser --version : le dernier build publié casse #!import (15 notebooks C#).
+# Version vérifiée compatible : cf docs/reference/kernels-runtime.md
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 dotnet restore MyIA.CoursIA.sln
 
@@ -356,7 +358,7 @@ s'installent directement via leur `requirements.txt`.
 
 | Série | Notebook de mise en route | Préparation dédiée |
 |-------|---------------------------|--------------------|
-| GenAI | `GenAI/00-GenAI-Environment/` (Environment-Setup, Docker-Services, API-Endpoints, Validation) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
+| GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
 | GameTheory | `GameTheory/GameTheory-1-Setup.ipynb` | `scripts/setup_wsl_openspiel.sh`, `setup_wsl_lean4.sh`, `setup_lean4_kernel.ps1` |
 | Sudoku | `Sudoku/Sudoku-0-Environment-Csharp.ipynb` | kernel .NET Interactive |
 | Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Infer/scripts/setup_environment.ps1` |
@@ -409,10 +411,10 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 | Kernel | Séries | Installation |
 |--------|--------|--------------|
 | `python3` | Tous les notebooks Python | `pip install ipykernel` |
-| `.net-csharp` | Sudoku, Search, Probas, ML | `dotnet tool install -g Microsoft.dotnet-interactive` |
+| `.net-csharp` | Sudoku, Search, Probas, ML | `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701` |
 | `lean4` / `lean4-wsl` | Lean, GameTheory (notebooks Lean) | Via `elan` + wrapper WSL |
 
-Limitations connues : les notebooks C# avec `#!import` nécessitent une exécution cellule par cellule (incompatible Papermill). Lean 4 requiert WSL sous Windows.
+Limitations connues : les notebooks C# avec `#!import` nécessitent une exécution cellule par cellule (incompatible Papermill). Lean 4 requiert WSL sous Windows. Le détail des versions compatibles (dotnet-interactive, Lean/elAN) et leur historique figure dans [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md).
 
 ---
 
