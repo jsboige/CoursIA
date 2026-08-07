@@ -432,16 +432,17 @@ Limitations connues : les notebooks C# avec `#!import` nécessitent une exécuti
 
 Pour les notebooks GenAI avancés utilisant des modèles locaux (Qwen Image Edit, ComfyUI Video, etc.), une infrastructure Docker avec support GPU est fournie.
 
-Services disponibles : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper, MusicGen, Kokoro TTS, Demucs.
+Services disponibles (sous `docker-configurations/services/`, 19 dossiers) : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper (STT, 2 services), MusicGen, TTS (multi-engine : Kokoro, FishAudio, autres, via `tts-api`), Demucs.
 
 La pile s'orchestre via le CLI `genai.py` plutôt que des commandes `docker` lancées à la main :
 
 ```bash
 cp docker-configurations/services/comfyui-qwen/.env.example docker-configurations/services/comfyui-qwen/.env
-python scripts/genai-stack/genai.py docker status      # état des services
-python scripts/genai-stack/genai.py docker start all   # démarrer
-python scripts/genai-stack/genai.py docker stop all    # arrêter
-python scripts/genai-stack/genai.py gpu                # vérifier la VRAM disponible
+python scripts/genai-stack/genai.py docker status [--remote]  # état des services
+python scripts/genai-stack/genai.py docker start all [--build] # démarrer (+rebuild images si demandé)
+python scripts/genai-stack/genai.py docker stop all           # arrêter
+python scripts/genai-stack/genai.py docker restart <service>  # redémarrer un service
+python scripts/genai-stack/genai.py gpu [--detailed]          # vérifier la VRAM disponible
 ```
 
 Configuration détaillée dans `docker-configurations/`.
