@@ -478,29 +478,26 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
   (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
      (ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges),
      c.isSlotPermOf (d₁.crossings.get i) ∧
-     (d₂ = { d₁ with crossings := d₁.crossings.set i.val c } ∨
-      d₁ = { d₂ with crossings := d₂.crossings.set i.val c }) ∧
+     (d₂.crossings = d₁.crossings.set i.val c ∨
+      d₁.crossings = d₂.crossings.set i.val c) ∧
      d₁.wf = true ∧ d₂.wf = true)
 
 /-- `Reidemeister3Determined` est un renforcement de `Reidemeister3` : un
     glissement slot-déterminé est, en particulier, un mouvement R3 (à `c`
     libre). Le croisement témoin `c` et le renommage `ρ` sont fournis
-    directement ; l'équation de chirurgie est inchangée (`set i.val c` avec
-    `i.val` le `Nat` sous-jacent). -/
+    directement. L'équation de chirurgie est maintenant une **égalité de
+    champ** `d₂.crossings = d₁.crossings.set i.val c` (cohérente avec
+    `Reidemeister3` post-migration field-eqs, plus de `with`-surgery).
+    Le témoin `numEdges` de R3D est garanti par `he` du destructuring. -/
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
-  · -- `hsurg : d₂ = {d₁ with crossings := d₁.crossings.set i.val c}` est
-    -- une égalité de record `with`-surgery. Pour l'injecter dans R3 (qui
-    -- attend une égalité de champ `d₂.crossings = d₁.crossings.set i.val c`
-    -- post-migration field-eq), on extrait la composante `crossings` via
-    -- `congrArg` sur le foncteur d'accès au champ. Le témoin `numEdges`
-    -- de R3D est déjà garanti par `he : d₁.numEdges = d₂.numEdges` du
-    -- destructuring, donc le seul champ à projeter est `crossings`.
-    exact ⟨hl, he, i.val, c, ρ, Or.inl (congrArg (fun d => d.crossings) hsurg),
-           hwf₁, hwf₂⟩
-  · exact ⟨hl, he, i.val, c, ρ, Or.inr (congrArg (fun d => d.crossings) hsurg),
-           hwf₁, hwf₂⟩
+  · -- `hsurg : d₂.crossings = d₁.crossings.set i.val c` est déjà une
+    -- égalité de champ : on l'injecte directement dans R3 via `Or.inl`
+    -- (plus de projection `congrArg` nécessaire, R3D et R3 partagent
+    -- désormais la même signature field-eq).
+    exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
 
 /-- `Reidemeister3Determined` n'est PAS vide : un glissement slot-déterminé
     concret `d₁ → d₂` avec `wf = true` des deux côtés. Témoin : `d₁` a deux
@@ -520,8 +517,13 @@ theorem reidemeister3Determined_satisfiable :
     -- `isSlotPermOf` is a raw `def` (no Decidable instance), so unfold it first to
     -- the underlying `List.Perm` on `List Nat`, which IS decidable.
     exact by unfold PDCrossing.isSlotPermOf; decide
-  · -- surgery, left arm: d₂ = {d₁ with crossings := d₁.crossings.set 0 ⟨1,3,2,4⟩}
-    exact Or.inl rfl
+  · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
+    -- `d₁.crossings` et `d₂.crossings` sont concrets (`simp only [List.set]`
+    -- unfold les deux et réduit `set 0` sur la liste `[_, _]` au but
+    -- defeq `[c', b] = [c', b]`). Pas besoin de `DecidableEq (List PDCrossing)`
+    -- (instance absente ; `decide` échouerait avec `failed to synthesize
+    -- Decidable`).
+    exact Or.inl (by simp only [List.set])
   · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
     exact by decide
   · -- d₂.wf = true (multiset unchanged by the slot swap)
