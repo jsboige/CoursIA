@@ -178,6 +178,23 @@ jobs:
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
 
+    - name: Add swap space
+      # Hosted ubuntu-latest runners have 16 GB RAM. Full (cache-miss) elaboration
+      # of a large local module — conway_lean HashlifeCorrectness.lean, 7300+ lines —
+      # exceeds that: the VM OOMs and the provisioner tears the runner down mid-build
+      # ("The runner has received a shutdown signal", exit 143, ~4 min after the
+      # Mathlib cache download completes). Observed 3x on PR #9798 (runs 31139*,
+      # 31141*, 31147588612, 2026-08-07) while the sibling PR #9806 — same lake,
+      # cache HIT on the big module — passed in ~6 min: the discriminant is the
+      # actions/cache miss, not the code. Swap absorbs the elaboration peak; on
+      # incremental (cache-hit) runs this step costs ~5 s and the swap is idle.
+      run: |
+        sudo fallocate -l 16G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
+
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
