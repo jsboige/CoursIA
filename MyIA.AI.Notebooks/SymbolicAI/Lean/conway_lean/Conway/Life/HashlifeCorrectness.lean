@@ -5590,6 +5590,304 @@ private theorem p4_se_membership_arm
     rw [hbridge]
     omega
 
+/-- **NW membership arm, reciprocal direction (mpr assembly).**
+    Mirror of `p4_nw_membership_arm` for the `mpr` case of
+    `p4_succ_membership`: FROM the global cell-state `hmem` (the RHS
+    membership under `evolve 2^k`) plus the NW-quadrant router bounds
+    `hp1..hp4` (from `quad_partition_bounds`), TO the node-quadrant
+    membership at anchor `(2^k, 2^k)`. All ingredients are the mp arm's,
+    consumed backwards: `p4_nw_shift_lemma.mpr` needs (a) the shift window
+    (from `hp1..hp4`, since `2^((k-1)+1) = 2^k`) and (b) the supercell
+    `isAlive` at the shifted point — obtained from `hmem` by folding
+    `evolve 2^k` into the double half-step (`evolve_half_step`) and crossing
+    `p4_nw_supercell_agree` RIGHT-to-LEFT (`rw [← …]`; the agreement is a
+    Bool equation, hence reversible — a sorried agreement stays usable in
+    `rw`, so this wiring is textually sorry-free for all four quadrants). -/
+private theorem p4_nw_membership_arm_rev
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R4 R5 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (hR1_w : R1.wf = true) (hR2_w : R2.wf = true)
+    (hR4_w : R4.wf = true) (hR5_w : R5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int)
+    (hmem : p ∈ evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))
+    (hp1 : (2^k : Int) ≤ p.1) (hp2 : p.1 < (2^k : Int) + 2^k)
+    (hp3 : (2^k : Int) ≤ p.2) (hp4 : p.2 < (2^k : Int) + 2^k) :
+    p ∈ (hashlifeResultAux (k + 1) (node R1 R2 R4 R5)).toGrid
+        ((2^k : Int), (2^k : Int)) := by
+  -- Fuel-align (k+1) → (k-1)+2 on the GOAL, then enter through the shift
+  -- lemma's `.mpr` (whnf-clean over opaque `R_i`, fresh budget).
+  rw [show (k + 1) = (k - 1) + 2 from by omega]
+  have he : (k - 1) + 1 = k := by omega
+  have hw : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+            (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1) := by
+    rw [he]
+    exact ⟨hp1, by omega, hp3, by omega⟩
+  refine (p4_nw_shift_lemma k hk1 R1 R2 R4 R5
+      hR1_l hR2_l hR4_l hR5_l hR1_w hR2_w hR4_w hR5_w ih p).mpr ⟨?_, hw⟩
+  -- Residual: the supercell isAlive at the shifted point. Fold it back into
+  -- `hmem` via the supercell agreement (Bool equation, consumed R-to-L) +
+  -- the half-step composition, then the isAlive/mem bridge.
+  have hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) :=
+    ih _ (k - 1) (by omega) hn1_w (by rw [hn1_l]; omega)
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn2_w (by rw [hn2_l]; omega)
+  have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+    ih _ (k - 1) (by omega) hn4_w (by rw [hn4_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn5_w (by rw [hn5_l]; omega)
+  rw [← p4_nw_supercell_agree k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        R1 R2 R4 R5 hR1 hR2 hR4 hR5
+        hn1_l hn2_l hn4_l hn5_l hn1_w hn2_w hn4_w hn5_w
+        hR1_l hR2_l hR4_l hR5_l hcc1 hcc2 hcc4 hcc5 p hw]
+  rw [← evolve_half_step k hk1]
+  rw [isAlive_true_iff_mem_local]
+  exact hmem
+
+set_option maxHeartbeats 4000000 in
+/-- **NE membership arm, reciprocal direction (mpr assembly — mirror of
+    `p4_ne_membership_arm`).** Same opaque-binder + `hout_nw` level-anchor
+    pattern as the mp arm. The inline `congrArg` bridge normalizes the GOAL's
+    anchor `2^k + 2^hout_nw.level` to the literal `2^k + 2^k` with zero
+    residual context equations (heartbeat lesson: leftover `hpow`/`hbridge`
+    hypotheses with `2^hout_nw.level` atoms poison every downstream `omega`
+    preprocessing pass — cumulative whnf exhaustion, cf. the mp arm). 4M
+    budget: same wide signature (16 binders + 5 R + `hn1..hn7`). -/
+private theorem p4_ne_membership_arm_rev
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R1 R2 R3 R5 R6 : MacroCell)
+    (hR1 : R1 = hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+    (hR2 : R2 = hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+    (hR3 : R3 = hashlifeResultAux (k + 1) (node ne_nw ne_ne ne_sw ne_se))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR6 : R6 = hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+    (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
+    (hn2_l : (node nw_ne ne_nw nw_se ne_sw).level = k + 1)
+    (hn3_l : (node ne_nw ne_ne ne_sw ne_se).level = k + 1)
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn6_l : (node ne_sw ne_se se_nw se_ne).level = k + 1)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn1_w : (node nw_nw nw_ne nw_sw nw_se).wf = true)
+    (hn2_w : (node nw_ne ne_nw nw_se ne_sw).wf = true)
+    (hn3_w : (node ne_nw ne_ne ne_sw ne_se).wf = true)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn6_w : (node ne_sw ne_se se_nw se_ne).wf = true)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (hR1_l : R1.level = k) (hR2_l : R2.level = k) (hR3_l : R3.level = k)
+    (hR5_l : R5.level = k) (hR6_l : R6.level = k)
+    (hR1_w : R1.wf = true) (hR2_w : R2.wf = true) (hR3_w : R3.wf = true)
+    (hR5_w : R5.wf = true) (hR6_w : R6.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int)
+    (hout_nw : MacroCell)
+    (hout_nw_l : hout_nw.level = k)
+    (hmem : p ∈ evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))
+    (hp1 : (2^k : Int) ≤ p.1) (hp2 : p.1 < (2^k : Int) + 2^k)
+    (hp3 : (2^k : Int) + 2^k ≤ p.2) (hp4 : p.2 < (2^k : Int) + 2*2^k) :
+    p ∈ (hashlifeResultAux (k + 1) (node R2 R3 R5 R6)).toGrid
+        ((2^k : Int), (2^k + (2^hout_nw.level : Int))) := by
+  -- Bridge the GOAL's anchor to the literal form (inline, no residual
+  -- equations), fuel-align, then the NE shift lemma's `.mpr`.
+  rw [show (2^k + (2^hout_nw.level : Int)) = (2^k + (2^k : Int)) from by
+    rw [congrArg (fun n => (2^n : Int)) hout_nw_l]]
+  rw [show (k + 1) = (k - 1) + 2 from by omega]
+  have he : (k - 1) + 1 = k := by omega
+  have hw : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
+            ((2^k + (2^k : Int))) ≤ p.2 ∧
+              p.2 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) := by
+    rw [he]
+    exact ⟨hp1, by omega, hp3, by omega⟩
+  refine (p4_ne_shift_lemma k hk1 R2 R3 R5 R6
+      hR2_l hR3_l hR5_l hR6_l hR2_w hR3_w hR5_w hR6_w ih p).mpr ⟨?_, hw⟩
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn2_w (by rw [hn2_l]; omega)
+  have hcc3 : centralCorrect (node ne_nw ne_ne ne_sw ne_se) (k - 1) :=
+    ih _ (k - 1) (by omega) hn3_w (by rw [hn3_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    ih _ (k - 1) (by omega) hn6_w (by rw [hn6_l]; omega)
+  rw [← p4_ne_supercell_agree k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        R2 R3 R5 R6 hR2 hR3 hR5 hR6
+        hn1_l hn2_l hn3_l hn4_l hn5_l hn6_l hn7_l
+        hn1_w hn2_w hn3_w hn4_w hn5_w hn6_w hn7_w
+        hR2_l hR3_l hR5_l hR6_l hcc2 hcc3 hcc5 hcc6 p hw]
+  rw [← evolve_half_step k hk1]
+  rw [isAlive_true_iff_mem_local]
+  exact hmem
+
+set_option maxHeartbeats 1000000 in
+/-- **SW membership arm, reciprocal direction (mpr assembly — mirror of
+    `p4_sw_membership_arm`, NW-SE reflection of the NE rev arm).**
+    `p4_sw_supercell_agree` is still sorried (po-2023 perimeter, #6724) but
+    remains usable in `rw` — the wiring here is textually sorry-free and
+    completes at the axiom level the day the SW wall closes. -/
+private theorem p4_sw_membership_arm_rev
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R4 R5 R7 R8 : MacroCell)
+    (hR4 : R4 = hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR7 : R7 = hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
+    (hR8 : R8 = hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+    (hn4_l : (node nw_sw nw_se sw_nw sw_ne).level = k + 1)
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn7_l : (node sw_nw sw_ne sw_sw sw_se).level = k + 1)
+    (hn8_l : (node sw_ne se_nw sw_se se_sw).level = k + 1)
+    (hn4_w : (node nw_sw nw_se sw_nw sw_ne).wf = true)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
+    (hn8_w : (node sw_ne se_nw sw_se se_sw).wf = true)
+    (hR4_l : R4.level = k) (hR5_l : R5.level = k)
+    (hR7_l : R7.level = k) (hR8_l : R8.level = k)
+    (hR4_w : R4.wf = true) (hR5_w : R5.wf = true)
+    (hR7_w : R7.wf = true) (hR8_w : R8.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int)
+    (hout_nw : MacroCell)
+    (hout_nw_l : hout_nw.level = k)
+    (hmem : p ∈ evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))
+    (hp1 : (2^k : Int) + 2^k ≤ p.1) (hp2 : p.1 < (2^k : Int) + 2*2^k)
+    (hp3 : (2^k : Int) ≤ p.2) (hp4 : p.2 < (2^k : Int) + 2^k) :
+    p ∈ (hashlifeResultAux (k + 1) (node R4 R5 R7 R8)).toGrid
+        ((2^k : Int) + (2^hout_nw.level : Int), (2^k : Int)) := by
+  rw [show ((2^k : Int) + (2^hout_nw.level : Int)) = (2^k + (2^k : Int)) from by
+    rw [congrArg (fun n => (2^n : Int)) hout_nw_l]]
+  rw [show (k + 1) = (k - 1) + 2 from by omega]
+  have he : (k - 1) + 1 = k := by omega
+  have hw : ((2^k + (2^k : Int))) ≤ p.1 ∧
+              p.1 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) ∧
+            (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1) := by
+    rw [he]
+    exact ⟨hp1, by omega, hp3, by omega⟩
+  refine (p4_sw_shift_lemma k hk1 R4 R5 R7 R8
+      hR4_l hR5_l hR7_l hR8_l hR4_w hR5_w hR7_w hR8_w ih p).mpr ⟨?_, hw⟩
+  have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+    ih _ (k - 1) (by omega) hn4_w (by rw [hn4_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn5_w (by rw [hn5_l]; omega)
+  have hcc7 : centralCorrect (node sw_nw sw_ne sw_sw sw_se) (k - 1) :=
+    ih _ (k - 1) (by omega) hn7_w (by rw [hn7_l]; omega)
+  have hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn8_w (by rw [hn8_l]; omega)
+  rw [← p4_sw_supercell_agree k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        R4 R5 R7 R8 hR4 hR5 hR7 hR8
+        hR4_l hR5_l hR7_l hR8_l hcc4 hcc5 hcc7 hcc8 p]
+  rw [← evolve_half_step k hk1]
+  rw [isAlive_true_iff_mem_local]
+  exact hmem
+
+set_option maxHeartbeats 1000000 in
+/-- **SE membership arm, reciprocal direction (mpr assembly — mirror of
+    `p4_se_membership_arm`, diagonal reflection of the NW rev arm).**
+    Both SE anchor coordinates carry `2^hout_nw.level`; the single inline
+    bridge `rw` rewrites both occurrences at once (same as the mp arm).
+    `p4_se_supercell_agree` rests on the sorried `p4_se_overlap_wall`
+    (po-2023 perimeter) but stays usable in `rw` — wiring sorry-free. -/
+private theorem p4_se_membership_arm_rev
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (R5 R6 R8 R9 : MacroCell)
+    (hR5 : R5 = hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+    (hR6 : R6 = hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+    (hR8 : R8 = hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+    (hR9 : R9 = hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
+    (hn5_l : (node nw_se ne_sw sw_ne se_nw).level = k + 1)
+    (hn6_l : (node ne_sw ne_se se_nw se_ne).level = k + 1)
+    (hn8_l : (node sw_ne se_nw sw_se se_sw).level = k + 1)
+    (hn9_l : (node se_nw se_ne se_sw se_se).level = k + 1)
+    (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
+    (hn6_w : (node ne_sw ne_se se_nw se_ne).wf = true)
+    (hn8_w : (node sw_ne se_nw sw_se se_sw).wf = true)
+    (hn9_w : (node se_nw se_ne se_sw se_se).wf = true)
+    (hR5_l : R5.level = k) (hR6_l : R6.level = k)
+    (hR8_l : R8.level = k) (hR9_l : R9.level = k)
+    (hR5_w : R5.wf = true) (hR6_w : R6.wf = true)
+    (hR8_w : R8.wf = true) (hR9_w : R9.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j)
+    (p : Int × Int)
+    (hout_nw : MacroCell)
+    (hout_nw_l : hout_nw.level = k)
+    (hmem : p ∈ evolve (2^k)
+        ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).toGrid
+          (0, 0)))
+    (hp1 : (2^k : Int) + 2^k ≤ p.1) (hp2 : p.1 < (2^k : Int) + 2*2^k)
+    (hp3 : (2^k : Int) + 2^k ≤ p.2) (hp4 : p.2 < (2^k : Int) + 2*2^k) :
+    p ∈ (hashlifeResultAux (k + 1) (node R5 R6 R8 R9)).toGrid
+        ((2^k : Int) + (2^hout_nw.level : Int),
+         (2^k : Int) + (2^hout_nw.level : Int)) := by
+  rw [show ((2^k : Int) + (2^hout_nw.level : Int)) = (2^k + (2^k : Int)) from by
+    rw [congrArg (fun n => (2^n : Int)) hout_nw_l]]
+  rw [show (k + 1) = (k - 1) + 2 from by omega]
+  have he : (k - 1) + 1 = k := by omega
+  have hw : ((2^k + (2^k : Int))) ≤ p.1 ∧
+              p.1 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) ∧
+            ((2^k + (2^k : Int))) ≤ p.2 ∧
+              p.2 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) := by
+    rw [he]
+    exact ⟨hp1, by omega, hp3, by omega⟩
+  refine (p4_se_shift_lemma k hk1 R5 R6 R8 R9
+      hR5_l hR6_l hR8_l hR9_l hR5_w hR6_w hR8_w hR9_w ih p).mpr ⟨?_, hw⟩
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    ih _ (k - 1) (by omega) hn6_w (by rw [hn6_l]; omega)
+  have hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1) :=
+    ih _ (k - 1) (by omega) hn8_w (by rw [hn8_l]; omega)
+  have hcc9 : centralCorrect (node se_nw se_ne se_sw se_se) (k - 1) :=
+    ih _ (k - 1) (by omega) hn9_w (by rw [hn9_l]; omega)
+  rw [← p4_se_supercell_agree k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        R5 R6 R8 R9 hR5 hR6 hR8 hR9
+        hR5_l hR6_l hR8_l hR9_l hcc5 hcc6 hcc8 hcc9 p]
+  rw [← evolve_half_step k hk1]
+  rw [isAlive_true_iff_mem_local]
+  exact hmem
+
+set_option maxHeartbeats 1000000 in
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
@@ -6001,10 +6299,151 @@ noncomputable def p4_succ_membership
         hout_nw_l
         hse
   case mpr =>
-    intro _hrhs
-    -- quad_partition_bounds routes p to its quadrant; then the reciprocal chain
-    -- G2+G1+G3 gives the corresponding disjunct.
-    sorry
+    intro hrhs
+    -- RHS → global membership + the four window bounds; `quad_partition_bounds`
+    -- routes p to its quadrant; each reciprocal arm (shift `.mpr` ∘
+    -- supercell-agree consumed R-to-L ∘ half-step fold) then delivers the
+    -- corresponding `mem_toGrid_node` disjunct.
+    rw [mem_restrictGridTo] at hrhs
+    obtain ⟨hmem, hb1, hb2, hb3, hb4⟩ := hrhs
+    have hbridge : ((2 ^ (k + 1) : Nat) : Int) = 2 ^ k + 2 ^ k := by
+      push_cast; rw [pow_succ]; ring
+    rw [hbridge] at hb2 hb4
+    have hpos : (0 : Int) ≤ 2 ^ k := le_of_lt (pow_pos (by norm_num) k)
+    have hroute := (quad_partition_bounds (2^k : Int) (2^k : Int) hpos p).mp
+      ⟨hb1, by omega, hb3, by omega⟩
+    -- Shared towers, built ONCE for the four branches (the mp branches each
+    -- rebuilt their own subset; here the router owns them): the 32 grandchild
+    -- facts, the 9 wave-1 results r1..r9 (canonical reference `p4_wave2_ih`
+    -- L2629-2633), and the outer-NW supercell level anchor.
+    obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
+            hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
+            hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
+            hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ := hfacts
+    -- n1 = node nw_nw nw_ne nw_sw nw_se
+    have hn1 := node_wf_level_of_four hnw_nw_l hnw_ne_l hnw_sw_l hnw_se_l
+                                      hnw_nw_w hnw_ne_w hnw_sw_w hnw_se_w
+    have r1 := wave1_result_facts k hk1 (node nw_nw nw_ne nw_sw nw_se) hn1.2 hn1.1
+    -- n2 = node nw_ne ne_nw nw_se ne_sw
+    have hn2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
+                                      hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
+    have r2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hn2.2 hn2.1
+    -- n3 = node ne_nw ne_ne ne_sw ne_se
+    have hn3 := node_wf_level_of_four hne_nw_l hne_ne_l hne_sw_l hne_se_l
+                                      hne_nw_w hne_ne_w hne_sw_w hne_se_w
+    have r3 := wave1_result_facts k hk1 (node ne_nw ne_ne ne_sw ne_se) hn3.2 hn3.1
+    -- n4 = node nw_sw nw_se sw_nw sw_ne
+    have hn4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
+                                      hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
+    have r4 := wave1_result_facts k hk1 (node nw_sw nw_se sw_nw sw_ne) hn4.2 hn4.1
+    -- n5 = node nw_se ne_sw sw_ne se_nw (center bridge)
+    have hn5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+                                      hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
+    have r5 := wave1_result_facts k hk1 (node nw_se ne_sw sw_ne se_nw) hn5.2 hn5.1
+    -- n6 = node ne_sw ne_se se_nw se_ne
+    have hn6 := node_wf_level_of_four hne_sw_l hne_se_l hse_nw_l hse_ne_l
+                                      hne_sw_w hne_se_w hse_nw_w hse_ne_w
+    have r6 := wave1_result_facts k hk1 (node ne_sw ne_se se_nw se_ne) hn6.2 hn6.1
+    -- n7 = node sw_nw sw_ne sw_sw sw_se
+    have hn7 := node_wf_level_of_four hsw_nw_l hsw_ne_l hsw_sw_l hsw_se_l
+                                      hsw_nw_w hsw_ne_w hsw_sw_w hsw_se_w
+    have r7 := wave1_result_facts k hk1 (node sw_nw sw_ne sw_sw sw_se) hn7.2 hn7.1
+    -- n8 = node sw_ne se_nw sw_se se_sw
+    have hn8 := node_wf_level_of_four hsw_ne_l hse_nw_l hsw_se_l hse_sw_l
+                                      hsw_ne_w hse_nw_w hsw_se_w hse_sw_w
+    have r8 := wave1_result_facts k hk1 (node sw_ne se_nw sw_se se_sw) hn8.2 hn8.1
+    -- n9 = node se_nw se_ne se_sw se_se
+    have hn9 := node_wf_level_of_four hse_nw_l hse_ne_l hse_sw_l hse_se_l
+                                      hse_nw_w hse_ne_w hse_sw_w hse_se_w
+    have r9 := wave1_result_facts k hk1 (node se_nw se_ne se_sw se_se) hn9.2 hn9.1
+    -- Outer-NW supercell (same syntactic let as the mp NE/SW/SE branches):
+    -- the NE/SW/SE disjunct anchors carry `2^out_nw.level`, bridged in the
+    -- rev arms via `congrArg` on `hout_nw_l`.
+    let out_nw : MacroCell :=
+      hashlifeResultAux (k + 1)
+        (node (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+              (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+              (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+              (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw)))
+    have hout_nw_l : out_nw.level = k :=
+      (wave1_result_facts k hk1
+        (node (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+              (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+              (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+              (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw)))
+        (node_wf_level_of_four r1.1 r2.1 r4.1 r5.1
+          (wf_of_cellWf r1.2) (wf_of_cellWf r2.2)
+          (wf_of_cellWf r4.2) (wf_of_cellWf r5.2)).right
+        (node_wf_level_of_four r1.1 r2.1 r4.1 r5.1
+          (wf_of_cellWf r1.2) (wf_of_cellWf r2.2)
+          (wf_of_cellWf r4.2) (wf_of_cellWf r5.2)).left).1
+    rcases hroute with hq | hq | hq | hq
+    · -- NW quadrant (router disjunct 1 = mem_toGrid_node disjunct 1)
+      left
+      norm_cast
+      exact p4_nw_membership_arm_rev k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+        (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+        (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+        (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+        rfl rfl rfl rfl
+        hn1.1 hn2.1 hn4.1 hn5.1
+        hn1.2 hn2.2 hn4.2 hn5.2
+        r1.1 r2.1 r4.1 r5.1
+        (wf_of_cellWf r1.2) (wf_of_cellWf r2.2) (wf_of_cellWf r4.2) (wf_of_cellWf r5.2)
+        ih p hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
+    · -- NE quadrant
+      right; left
+      norm_cast
+      exact p4_ne_membership_arm_rev k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+        (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+        (hashlifeResultAux (k + 1) (node ne_nw ne_ne ne_sw ne_se))
+        (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+        (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+        rfl rfl rfl rfl rfl
+        hn1.1 hn2.1 hn3.1 hn4.1 hn5.1 hn6.1 hn7.1
+        hn1.2 hn2.2 hn3.2 hn4.2 hn5.2 hn6.2 hn7.2
+        r1.1 r2.1 r3.1 r5.1 r6.1
+        (wf_of_cellWf r1.2) (wf_of_cellWf r2.2) (wf_of_cellWf r3.2)
+        (wf_of_cellWf r5.2) (wf_of_cellWf r6.2)
+        ih p out_nw hout_nw_l hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
+    · -- SW quadrant
+      right; right; left
+      norm_cast
+      exact p4_sw_membership_arm_rev k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+        (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+        (hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
+        (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+        rfl rfl rfl rfl
+        hn4.1 hn5.1 hn7.1 hn8.1
+        hn4.2 hn5.2 hn7.2 hn8.2
+        r4.1 r5.1 r7.1 r8.1
+        (wf_of_cellWf r4.2) (wf_of_cellWf r5.2) (wf_of_cellWf r7.2) (wf_of_cellWf r8.2)
+        ih p out_nw hout_nw_l hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
+    · -- SE quadrant
+      right; right; right
+      norm_cast
+      exact p4_se_membership_arm_rev k hk1
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+        (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+        (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+        (hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
+        rfl rfl rfl rfl
+        hn5.1 hn6.1 hn8.1 hn9.1
+        hn5.2 hn6.2 hn8.2 hn9.2
+        r5.1 r6.1 r8.1 r9.1
+        (wf_of_cellWf r5.2) (wf_of_cellWf r6.2) (wf_of_cellWf r8.2) (wf_of_cellWf r9.2)
+        ih p out_nw hout_nw_l hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals

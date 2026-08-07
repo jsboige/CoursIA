@@ -8,22 +8,21 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-08-07 post-#6724 NE quadrant, standalone-tactic
-# mode, baseline=6): conway has 6 real tactic sorries.
+# Sorry profile (re-verified 2026-08-07 post-#6724 P4 mpr assembly, standalone-
+# tactic mode, baseline=5): conway has 5 real tactic sorries.
 # The standalone-tactic filter also counts the Lean case-bullet form `· sorry`
 # (fixed in lean-build.yml, See #2747) and EXCLUDES `*_en.lean` i18n siblings
 # (byte-identical mirrors of the FR file — counting both double-inflates,
 # C513-L1 #6429). Prose mentions ("Each sorry is a target", "Left as sorry",
-# "remain sorry-gated") are excluded by the sole-token check. Breakdown of the 6:
-#   - HashlifeCorrectness.lean: 5 =
+# "remain sorry-gated") are excluded by the sole-token check. Breakdown of the 5:
+#   - HashlifeCorrectness.lean: 4 =
 #       p4_sw_overlap_wall (1)        -- SW mirror of the NW overlap wall (#9132)
 #       p4_sw_supercell_agree (1)     -- SW supercell-agree scaffold (#9132)
 #       p4_se_overlap_wall (1)        -- SE mirror of the NW overlap wall
-#       p4_succ_membership (1)        -- succ-level membership (P4 assembly)
 #       p5_large_n_jumpN (1)          -- downstream P4-gated
-#     7 -> 6 (this PR, See #6724): p4_ne_supercell_agree PROVED (strengthened
-#     signature) + NE membership arm wired at the succ call site — a proof,
-#     not a deletion (anti-regression §D).
+#     6 -> 5 (this PR, See #6724): p4_succ_membership mpr PROVED (four _rev
+#     membership arms + quad_partition_bounds router at the succ call site) —
+#     a proof, not a deletion (anti-regression §D).
 #   - HashlifeMarginFragment.lean: 1  -- documented framework sorry
 #     (hashlife_correct_margin, Livrable B #9568, acceptance-B state)
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
@@ -36,9 +35,9 @@ name: Lean Conway CI
 # lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
 # that would destroy the "new native_decide = new red" property required to
 # triage any future introduction one-by-one). fail-on-sorry=true (the
-# 6 acknowledged tactic sorries (5 in HashlifeCorrectness.lean + 1 documented
+# 5 acknowledged tactic sorries (4 in HashlifeCorrectness.lean + 1 documented
 # framework sorry in HashlifeMarginFragment.lean) are governed by the
-# lean-build.yml `sorry-baseline: "6"`, not by this gate — no double-cover).
+# lean-build.yml `sorry-baseline: "5"`, not by this gate — no double-cover).
 #
 # Reprise rationale (ai-01 DM HIGH msg-20260728T231209-43cuju, c.950):
 #   1. allow-axioms MUST list the 19 explicit names — wildcard forbidden
@@ -87,7 +86,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "6"
+      sorry-baseline: "5"
       sorry-filter-mode: standalone-tactic
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
