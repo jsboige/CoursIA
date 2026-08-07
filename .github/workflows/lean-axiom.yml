@@ -91,6 +91,20 @@ jobs:
         key: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-
 
+    - name: Add swap space
+      # Same OOM guard as lean-build.yml (see the comment there): a cache-miss
+      # build of a large local module (conway_lean HashlifeCorrectness.lean)
+      # exceeds the 16 GB of hosted runners and the VM is torn down with exit 143.
+      # This workflow rebuilds the lake too (its cache key differs from
+      # lean-build's, so it can miss independently) — observed on PR #9798 where
+      # BOTH proof-integrity jobs died at exit 143 alongside the build job.
+      run: |
+        sudo fallocate -l 16G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
+
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
