@@ -354,8 +354,8 @@ def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ c₁ c₂ : PDCrossing,
      ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
-       d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 })
+       (d₂.crossings = d₁.crossings ++ [c₁, c₂] ∧ d₂.numEdges = d₁.numEdges + 4) ∨
+       (d₁.crossings = d₂.crossings ++ [c₁, c₂] ∧ d₁.numEdges = d₂.numEdges + 4))
 
 /-- R2 is symmetric: same construction as R1 (transport along `Nat.min_comm`/
 `Nat.max_comm`). -/
