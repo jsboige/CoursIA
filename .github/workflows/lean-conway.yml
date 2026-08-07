@@ -86,7 +86,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "5"
+      sorry-baseline: "2"
       sorry-filter-mode: standalone-tactic
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
