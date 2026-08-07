@@ -1,10 +1,21 @@
-- name: App-18b HyperparameterTuning (Python from-scratch twin)
+- name: App-18b HyperparameterTuning Python
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb
   parity_level: semantic
+  audits:
+    - date: "2026-08-07"
+      by: myia-po-2025:CoursIA-2
+      python_sha: ae96f24d97bed41242a4c5455e8462e4995c54c2
+      csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
+    - date: "2026-08-07"
+      by: myia-po-2025:CoursIA-2
+      python_sha: ae96f24d97bed41242a4c5455e8462e4995c54c2
+      csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
+      content_python_sha: 333e1d707b7612894943c664f6faa41e0946e11aa31e09acea146c45887d4719
+      content_csharp_sha: 8ea2f1d19f52fe1e6313e8f8ef858ed072d086e6cb05e45a2ac6570590da7710
   known_differences:
-    - "Socle pedagogique commun : tuning d'hyperparametres k-NN (k, distancePower, weightBlend) avec objectif CV 5-fold. Les deux twins implementent les 5 methodes canoniques (Grid, Random, Bayesian Opt GP+EI, GA, PSO) avec parite semantique sur les concepts."
+    - "Socle pedagogique commun : tuning d'hyperparametres k-NN (k, distancePower, weightBlend) avec objectif CV 3-fold. Les deux twins implementent les 5 methodes canoniques (Grid, Random, Bayesian Opt GP+EI, GA, PSO) avec parite semantique sur les concepts."
     - "Idiomes framework : Python = numpy pur + scipy.stats.norm (fallback gracieux si absent) + Optuna comme pont SOTA ; C# = BCL pure (Math, Linq, Random), 0 NuGet."
     - "Asymetrie pedagogique : Python propose un pont Optuna (cellule 12) comme verification SOTA-OK [EPIC #3801] ; le C# reste en BCL pure sans dependance externe. Les 3 exercices (IterationsToThreshold, UCB acquisition, PopulationDiversity) sont identiques dans les deux jumeaux."
     - "Mode de resolution : from-scratch numpy des 5 methodes vs from-scratch BCL pure. Parite pedagogique des algorithmes, idiomes framework distincts."
