@@ -58,7 +58,7 @@ GenAI
 ├── FineTuning/ - Fine-tuning LoRA, adapters
 ├── PostTraining/ - Chaîne SOTA : SFT, DPO, GRPO, RLVR
 ├── CaseStudies/ - Études de cas étudiants
-├── Open-WebUI/ - Plateforme OWUI + série QA Playwright E2E
+├── Plateformes-Conversationnelles/ - OWUI (tour + QA Playwright E2E) + AI-Engine WordPress
 ├── Vibe-Coding/ - Claude-Code + Roo-Code + Claw-Systems + Claudish
 └── RAG-et-Memoire-Semantique/ - Qdrant, embeddings, grounding SDDD
 
