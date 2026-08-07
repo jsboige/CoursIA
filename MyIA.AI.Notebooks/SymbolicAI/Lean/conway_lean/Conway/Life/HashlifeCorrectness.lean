@@ -5960,18 +5960,52 @@ real conclusion
 with the proof body still `sorry` (L2855) pending the P4 unlock. The obstacle
 remains structural-on-P4, not local-on-P5. -/
 
-/-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
-    `evolveHashlifeFast n g` makes one Hashlife jump of `2^(k-2)` generations
-    (certified equal to `evolve (2^(k-2))` by P4, `hashlifeResult_central_correct`),
-    then recurses on `n - 2^(k-2)`. The light-cone lemma P2
-    (`step_light_cone`, proven) guarantees the jump does not leak boundary
-    cells into the live region, and `box_assez_grand` is preserved through the
-    recursion. Difficulty: P5.2 (research-level; **blocked until P4
-    inductive step proven**). -/
+/-- **P5.2 on the FIXED frame — VACUOUS, and therefore closed structurally
+    (c.95, ai-01). This lemma carries no operational content.**
+
+    The intent was: when `n ≥ 2^(k-2)`, `evolveHashlifeFast n g` makes one
+    Hashlife jump of `2^(k-2)` generations (certified by P4,
+    `hashlifeResult_central_correct`), then recurses on `n - 2^(k-2)`.
+
+    **Correction of an earlier claim in this file.** The header above and the
+    docstring this replaces both described the lemma as "blocked until P4". That
+    was wrong, and the contradiction was already sitting two declarations below:
+    `p5_inductive_step` discharges *exactly* this case with `False.elim`. On the
+    fixed frame the two hypotheses are jointly unsatisfiable on non-empty grids
+    — `BoxAssezGrand g n` caps `n ≤ 2` (`boxAssezGrand_nonempty_le_two`) while
+    `hbig` forces `n ≥ 8` (`jumpSize_gridLevel_ge_eight`), whence
+    `p5_large_n_hyps_unsat`. No P4 result can ever be needed here, because the
+    branch is unreachable. The empty-grid case is separately trivial.
+
+    So the `sorry` that stood here was a **decoy**: it advertised open research
+    where there was none, and it could never have been closed by the P4 work it
+    pointed at. Replacing it with the explicit vacuity discharge is a *reduction
+    in misleading surface*, not a proof of anything — the sorry count drops by
+    one while the mathematical content stays at zero, and that has to be said
+    out loud rather than banked as progress.
+
+    **The genuine large-`n` target is `p5_large_n_jumpN`** (n-aware frame,
+    non-vacuous at `n ≥ 8`, witnessed by `boxAssezGrandN_block_8` /
+    `boxAssezGrandN_glider_8`), which remains an open P4-gated sorry. Read that
+    one, not this one. -/
 theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n)
     (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
     evolveHashlifeFast n g = evolve n g := by
-  sorry
+  -- **NOT a P4 unlock.** See the docstring: on the fixed frame this statement
+  -- is vacuous, and the discharge below is purely structural.
+  by_cases hg : g = []
+  · -- Empty grid: both sides reduce to `[]` (same unfolding as
+    -- `p5_inductive_step`'s empty arm; `hbig` is never used).
+    subst hg
+    unfold evolveHashlifeFast
+    cases n with
+    | zero => simp [evolveHashlifeFastAux, evolve]
+    | succ k =>
+      simp [evolveHashlifeFastAux, gridToMacroCellWithOffset, gridFrame,
+            buildFromGrid, MacroCell.level]
+  · -- Non-empty grid: `BoxAssezGrand g n` caps `n ≤ 2` while `hbig` forces
+    -- `n ≥ 8`. The hypotheses are contradictory.
+    exact (p5_large_n_hyps_unsat g n hg h hbig).elim
 
 /-- **P5.3** (glue): the full induction on `n`, with a case split on
     `n < 2^(k-2)` (P5.1) vs `n ≥ 2^(k-2)` (P5.2). Stays `sorry` until both
@@ -6105,6 +6139,23 @@ theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := by native_decide
     (propositional form). -/
 theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 
+/-- **P5.2 genuine large-`n` jump (N2, P4-gated) — the sole remaining open
+    target of the P5 layer.** When `n ≥ jumpSize k` on the n-aware frame,
+    `evolveHashlifeFast` makes one Hashlife jump of `2^(k-2)` generations
+    (certified by P4 `hashlifeResult_central_correct`) then recurses
+    on `n - 2^(k-2)`, with the light cone staying inside the `gridFrameN` margin
+    (`window_cheb_cone_in_domain`, now in `Conway.Life.ConeGeometry`). This is
+    the real P5.2 target — **open named sorry, P4-gated** (`p4_succ_membership`,
+    ai-01 turf), NOT closed by vacuity.
+
+    **Moved above `hashlife_correctN` (c.95)** so the latter can consume it: the
+    N-frame statement is now *derived* from this jump plus the padding-free
+    small-`n` fallback, instead of carrying an independent sorry of its own. -/
+theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
+    (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
+    evolveHashlifeFast n g = evolve n g := by
+  sorry
+
 /-- **N2 restatement — the genuine large-`n` correctness statement (EPIC #3846,
     gate W2).** Under the n-aware padding hypothesis `BoxAssezGrandN g n`
     (satisfiable for *every* `n`, unlike `BoxAssezGrand g n` capped at `n ≤ 2`),
@@ -6112,44 +6163,41 @@ theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 
     Unlike the fixed-frame `hashlife_correct` (vacuously true at large `n`),
     this statement is **non-vacuous** at `n ≥ 8` (witnessed by
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` above). The proof,
-    however, is **not yet available**: the genuine large-`n` Hashlife jump
-    (`p5_large_n_jumpN` below) is P4-gated. We state the theorem honestly with a
-    named sorry rather than disguise it via a vacuity argument (ai-01 garde-fou
-    2: a gated-meaningful sorry is honest progress, a vacuous-worthless proof is
-    not). -/
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` above).
+
+    **Reduction (c.95, ai-01).** The theorem no longer carries a sorry of its
+    own. Splitting on the jump guard discharges it entirely:
+    - `n < jumpSize` : `p5_small_n_fallback`, which takes **no padding
+      hypothesis whatsoever** — it holds on any frame, the n-aware one included;
+    - `n ≥ jumpSize` : `p5_large_n_jumpN`, the genuine P4-gated jump.
+
+    This is a structural reduction, **not** a vacuity closure: the whole
+    remaining content of the N-frame statement is now localized in the single
+    named sorry `p5_large_n_jumpN`. Before this change the two carried
+    independent sorries, and a reader could not tell whether `hashlife_correctN`
+    required work *beyond* the jump. It does not. -/
 theorem hashlife_correctN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n) :
     evolveHashlifeFast n g = evolve n g := by
-  sorry
+  by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
+  · exact p5_small_n_fallback n g hsmall
+  · exact p5_large_n_jumpN n g h (Nat.not_lt.mp hsmall)
 
 /-- **N3 small-`n` bridge (issue #3846, ai-01 greenlight msg-zx9es2).** On the
     small-`n` regime (`n ≤ 2`), the n-aware spec `BoxAssezGrandN g n` coincides
     with the fixed-frame `BoxAssezGrand g n` (`box_assez_grandN_le_two_eq`), so
     the already-proven `hashlife_correct` discharges the N-version conclusion
-    without re-proving it on the n-aware frame. This localizes the remaining
-    `hashlife_correctN` sorry to the **large-`n` arm** (`n ≥ jumpSize`, the
-    genuine P5.2 jump, P4-gated) — honest structural progress, not a vacuity
-    closure: the witnessed `n ≤ 2` patterns are now genuinely proven under the
-    n-aware hypothesis, while the large-`n` regime stays an open named sorry
-    pending the P4 unlock. -/
+    without re-proving it on the n-aware frame.
+
+    Kept after the c.95 reduction of `hashlife_correctN`: it remains an
+    *independent* route to the `n ≤ 2` arm, one that goes through the
+    **fixed-frame** theorem and never touches `p5_large_n_jumpN` — so it stays
+    sorry-free even if the jump is later restated or re-scoped. -/
 theorem hashlife_correctN_le_two (n : Nat) (g : Grid) (hn : n ≤ 2)
     (h : BoxAssezGrandN g n) : evolveHashlifeFast n g = evolve n g := by
   apply hashlife_correct n g
   show box_assez_grand g n = true
   rw [← box_assez_grandN_le_two_eq n g hn]
   exact h
-
-/-- **P5.2 genuine large-`n` jump (N2, P4-gated).** When `n ≥ jumpSize k` on the
-    n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of `2^(k-2)`
-    generations (certified by P4 `hashlifeResult_central_correct`) then recurses
-    on `n - 2^(k-2)`, with the light cone staying inside the `gridFrameN` margin
-    (`window_cheb_cone_in_domain`, now in `Conway.Life.ConeGeometry`). This is
-    the real P5.2 target — **open named sorry, P4-gated** (`p4_succ_membership`,
-    ai-01 turf), NOT closed by vacuity. -/
-theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
-    (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
-    evolveHashlifeFast n g = evolve n g := by
-  sorry
 
 /-! ## Sanity witnesses (native_decide)
 
