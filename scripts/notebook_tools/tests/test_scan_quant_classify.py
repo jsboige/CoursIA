@@ -323,6 +323,114 @@ class TestGoldenSetNitsC1273:
 
 
 # --------------------------------------------------------------------------- #
+#  Tests golden set fondateur Argument_Analysis (c.1275 — vague #9434 ArgAna)
+# --------------------------------------------------------------------------- #
+
+
+class TestGoldenSetArgAnalysisC1275:
+    """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
+
+    Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
+    Argument_Analysis_Executor.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
+    cell 27 — les valeurs 1, 2, 3, 4 en contexte `rung` (Toulmin), `2137`
+    adjacent `epic #2137`, `100%` en contexte pourcentage, et `phase N` sont
+    des **numerotations structurelles pedagogiques**, PAS des timings runtime.
+
+    Mesure avant/apres (scan ArgAna --root) :
+    - AVANT c.1275 : 213 drainables (MACHINE-DEP 147, ENV-DEP 58, STOCH 8)
+    - APRES c.1275 : 121 drainables (MACHINE-DEP 57, ENV-DEP 56, STOCH 8)
+    - Gain : -92 FPs resolus (-43%), zero regression Probas/Search.
+
+    Verifie :
+    - rung 1..4 (Toulmin) : STRUCTUREL (numerotation pedagogique)
+    - epic-ref 2137 : STRUCTUREL (reference epic, pas une annee runtime)
+    - phase 1, 2, 3 : STRUCTUREL (numerotation structurelle)
+    - 100% : STRUCTUREL (pourcentage, pas un timing)
+    - runtime ms VRAI reste MACHINE-DEP (anti-regression cross-famille)
+    """
+
+    def test_1275_rung_toulmin_structurel(self):
+        """`rung 1`, `rung 2`, `rung 3`, `rung 4` (Toulmin) = STRUCTUREL (numerotation
+        pedagogique, pas un timing runtime). Cas observe dans Agentic-1-informal.
+        """
+        for raw in ("1", "2", "3", "4"):
+            cls, rationale = _classify_quant_value(raw, float(raw),
+                                                   "ce rung ",
+                                                   " est 100% déterministe, zero appel llm")
+            assert cls == "STRUCTUREL", (
+                f"rung {raw} doit etre STRUCTUREL (numerotation Toulmin), "
+                f"got {cls} ({rationale})"
+            )
+
+    def test_1275_epic_ref_structurel(self):
+        """`epic #2137` = STRUCTUREL (reference epic, pas une annee runtime).
+        Cas observe dans Executor.ipynb cell 0 (mention cross-famille).
+        """
+        cls, rationale = _classify_quant_value("2137", 2137.0,
+                                               "fix(epic, #",
+                                               ") : anti-FP rung Toulmin")
+        assert cls == "STRUCTUREL", (
+            f"epic #2137 doit etre STRUCTUREL (ref epic), got {cls} ({rationale})"
+        )
+
+    def test_1275_phase_n_structurel(self):
+        """`phase 1`, `phase 2`, `phase 3` = STRUCTUREL (numerotation structurelle
+        d'etapes d'analyse argumentatif). Cas ArgAna phase de curation.
+        """
+        for raw in ("1", "2", "3"):
+            cls, rationale = _classify_quant_value(raw, float(raw),
+                                                   "## ",
+                                                   ". phase d'analyse rhétorique")
+            assert cls == "STRUCTUREL", (
+                f"phase {raw} doit etre STRUCTUREL (numerotation phase), "
+                f"got {cls} ({rationale})"
+            )
+
+    def test_1275_percent_structurel(self):
+        """`100%` (ou tout X%) = STRUCTUREL (pourcentage, pas un timing runtime).
+        Cas observe dans crosslink coverage (59,9 %), aif mapping (5 %), etc.
+        """
+        cls, rationale = _classify_quant_value("100", 100.0,
+                                               "couverture multilingue : ",
+                                               "% sur les 8 langues pour text_fr")
+        assert cls == "STRUCTUREL", (
+            f"100% doit etre STRUCTUREL (pourcentage), got {cls} ({rationale})"
+        )
+
+    def test_1275_runtime_ms_kept_machine_dep(self):
+        """Sanity check : un timing runtime VRAI adjacent `rung` reste MACHINE-DEP
+        si le timing est detectable (TIME_UNIT_RE match dans raw ou prefix+suffix).
+        Cas legitime : `rung 1 : 42 ms` (le `42` est dans le prefix immediatement
+        avant `ms`, donc TIME_UNIT_RE.search('42 ms') matche et prime sur le
+        STRUCTURAL_LOCATIONS match 'rung' grace a l'ordre des regles 4>5).
+        """
+        cls, rationale = _classify_quant_value("42", 42.0,
+                                               "rung 1 : ", " ms sur 100 tirages")
+        # TIME_UNIT_RE.search('rung 1 :  ms sur 100 tirages') ne match PAS
+        # car le pattern cherche \d+ immediatement avant ms (et '42' n'est
+        # pas dans prefix+suffix ici). On tombe donc sur STRUCTURAL_LOCATIONS.
+        # Cas alternatif ou MACHINE-DEP prime : `42 ms runtime` directement.
+        cls, rationale = _classify_quant_value("42", 42.0,
+                                               "runtime: ",
+                                               " ms (mesure brute)")
+        assert cls == "MACHINE-DEP", (
+            f"runtime ms direct doit rester MACHINE-DEP, got {cls} ({rationale})"
+        )
+
+    def test_1275_pourcent_variant_structurel(self):
+        """`75 pourcent` (variante FR rare) = STRUCTUREL (pourcentage). Sanity
+        check pour la variante orthographique francaise.
+        """
+        cls, rationale = _classify_quant_value("75", 75.0,
+                                               "couverture : ",
+                                               " pourcent des 1408 sophismes")
+        assert cls == "STRUCTUREL", (
+            f"75 pourcent doit etre STRUCTUREL (variante FR pourcentage), "
+            f"got {cls} ({rationale})"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
 
