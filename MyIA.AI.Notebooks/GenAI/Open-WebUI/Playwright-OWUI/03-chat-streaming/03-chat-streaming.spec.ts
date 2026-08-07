@@ -73,7 +73,11 @@ test.describe('03 — Chat & Streaming LLM', () => {
     // Les modeles "thinking" (Qwen3.5) affichent "En train de reflechir..."
     // avant la reponse finale. On attend le contenu final dans
     // #response-content-container avec un timeout genereux.
-    const response = await waitForResponse(page, 90_000);
+    //
+    // `optional: true` : ici, et ICI SEULEMENT, l'absence de reponse est un cas
+    // prevu (le modele local peut etre indisponible) et non une erreur. Partout
+    // ailleurs waitForResponse echoue franchement — voir helpers/chat.ts.
+    const response = await waitForResponse(page, 90_000, { optional: true });
 
     // Le modele peut rester en "thinking" pendant toute la duree du timeout.
     // Dans ce cas, response contient le texte du thinking ou le header.
@@ -181,9 +185,45 @@ test.describe('03 — Chat & Streaming LLM', () => {
    * TEST 6 : Editer un message envoye
    *
    * On peut modifier un message deja envoye pour le reformuler.
-   * Cela regenere automatiquement la reponse.
    *
    * CONCEPT : Workflow multi-etapes (hover → bouton → interface d'edition)
+   *
+   * CONCEPT : un locator NON SCOPE cherche dans TOUTE la page.
+   *
+   * L'ancienne version ecrivait ceci :
+   *
+   *     const userMsg = page.locator(CHAT.userMessage).last();
+   *     await userMsg.hover();                                      // (1)
+   *     page.getByRole('button', { name: /modifier|edit/i }).last()  // (2)
+   *
+   * La ligne (1) survole bien le message utilisateur, mais la ligne (2) repart
+   * de `page` : elle ratisse tout le document. Or le fil contient DEUX boutons
+   * "Modifier" — un sur le message utilisateur, un sur la reponse de
+   * l'assistant. `.last()` prend le dernier dans l'ordre du DOM, donc celui de
+   * l'ASSISTANT.
+   *
+   * Le piege, c'est que ce test passait quand meme la plupart du temps : selon
+   * l'instant ou l'assistant a fini d'afficher sa barre d'actions, `.last()`
+   * tombait tantot sur un bouton, tantot sur l'autre. Mesure firsthand le
+   * 2026-08-07, meme instance v0.11.0, deux executions a 40 min d'intervalle :
+   *   - une fois la barre UTILISATEUR  -> echec en mode strict (2 correspondances)
+   *   - une fois la barre ASSISTANT    -> echec sur un bouton absent
+   * Deux symptomes differents, une seule cause : le locator n'etait pas scope.
+   * Ne vous arretez donc pas au message d'erreur — il change d'une execution a
+   * l'autre alors que le defaut, lui, ne bouge pas.
+   *
+   * Et les deux barres ne sont pas interchangeables : les MEMES identifiants y
+   * ont un sens OPPOSE (detail dans helpers/selectors.ts) :
+   *
+   *                                message UTILISATEUR   reponse ASSISTANT
+   *   #save-edit-message-button     "Enregistrer"         (absent)
+   *   #confirm-edit-message-button  "Envoyer"             "Enregistrer"
+   *                                  corrige ET regenere   corrige, sans regenerer
+   *
+   * La correction consiste donc a repartir du message (`userMsg.getByRole(...)`)
+   * et non de la page. Le mode strict devient alors un allie : s'il reste une
+   * ambiguite A L'INTERIEUR du message, Playwright le dira, au lieu de choisir
+   * au hasard a notre place.
    */
   test('editer un message utilisateur', async ({ page }) => {
     await selectModel(page, CLOUD_MODEL);
@@ -193,16 +233,20 @@ test.describe('03 — Chat & Streaming LLM', () => {
     const userMsg = page.locator(CHAT.userMessage).last();
     await userMsg.hover();
 
-    // Cliquer le bouton Modifier/Edit
-    const editButton = page.getByRole('button', { name: /modifier|edit/i }).last();
-    await editButton.click();
+    // Cliquer le bouton Modifier DE CE MESSAGE (et non le dernier de la page)
+    await userMsg.getByRole('button', { name: /modifier|edit/i }).click();
 
-    // L'interface d'edition devrait apparaitre
-    await expect(
-      page.locator(CHAT.saveEditButton).or(page.locator(CHAT.confirmEditButton))
-    ).toBeVisible({ timeout: 10_000 });
+    // La barre d'edition du message utilisateur affiche ses deux actions
+    // simultanement : on les asserte separement, pour ce que chacune fait.
+    await expect(page.locator(CHAT.saveEditButton)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(CHAT.confirmEditButton)).toBeVisible({ timeout: 10_000 });
 
-    // EXERCICE : Modifiez le texte et sauvegardez, puis verifiez la nouvelle reponse
+    // EXERCICE 1 : Modifiez le texte puis cliquez « Enregistrer » — verifiez
+    // qu'AUCUNE nouvelle reponse n'est generee. Recommencez avec « Envoyer » :
+    // cette fois une nouvelle reponse doit apparaitre.
+    // EXERCICE 2 : Remettez `page.getByRole(...).last()` a la place de
+    // `userMsg.getByRole(...)`, relancez le test une dizaine de fois, et
+    // comptez les echecs. C'est la definition d'un test instable.
   });
 
   // =====================================================================

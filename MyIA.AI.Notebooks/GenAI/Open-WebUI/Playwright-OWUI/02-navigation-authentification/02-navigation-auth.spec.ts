@@ -15,7 +15,7 @@
  * les cookies et tokens de session.
  */
 import { test, expect } from '@playwright/test';
-import { MODEL, AUTH } from '../helpers/selectors';
+import { MODEL, AUTH, SETTINGS } from '../helpers/selectors';
 import { dismissModals } from '../helpers/chat';
 
 test.describe('02 — Navigation & Authentification', () => {
@@ -71,16 +71,52 @@ test.describe('02 — Navigation & Authentification', () => {
   /**
    * TEST 3 : Naviguer vers les reglages admin
    *
-   * La page /admin/settings contient la configuration globale
-   * de l'instance Open WebUI.
+   * CONCEPT : un test qui passe n'est pas forcement un test JUSTE.
+   *
+   * Jusqu'a la v0.10, /admin/settings etait une PAGE, avec un lien "Reglages"
+   * dans sa navigation. On assertait donc :
+   *
+   *     page.getByRole('link', { name: /réglages|settings/i }).first()
+   *
+   * La v0.11 a refondu l'interface : les reglages sont devenus des ONGLETS
+   * (role=tab) dans une fenetre unique, et /admin/settings REDIRIGE vers /.
+   *
+   * Le piege : cette ancienne assertion continuait de passer par moments.
+   * Mesure firsthand (2026-08-07, instance de cours en v0.11.0) :
+   *
+   *     t=4.3s  goto termine, url=/admin/settings, 0 correspondance
+   *     t=7.5s  <a href="/admin/settings">Reglages</a> APPARAIT (vestige)
+   *     t=10.7s l'app redirige vers /, le lien DISPARAIT
+   *
+   * L'ancienne assertion attrapait donc une fenetre transitoire d'environ 3
+   * secondes : verte sur une machine, rouge sur une autre (c'est exactement ce
+   * qui s'est produit entre deux suites lancees contre le MEME serveur).
+   * C'est un FAUX VERT — la pire categorie de test, car il ne signale rien.
+   *
+   * La regle : asserter l'etat STABILISE, jamais un etat de passage.
+   * Ici, on attend la redirection puis on cible un onglet d'administration.
+   *
+   * PIEGE (mode strict) : l'onglet "General" existe dans les deux groupes
+   * (utilisateur ET admin) -> 2 correspondances -> "strict mode violation".
+   * On vise "Authentification", qui n'existe que cote admin.
    */
   test('acceder aux reglages admin', async ({ page }) => {
     await page.goto('/admin/settings');
 
-    // Le lien "Reglages" / "Settings" devrait etre actif dans la navigation
+    // 1. Attendre l'etat STABILISE : la v0.11 redirige vers / en ouvrant la
+    //    fenetre de reglages. On tolere l'absence de redirection (versions
+    //    anterieures) pour que le test reste lisible sur une instance v0.10.
+    await page.waitForURL((url) => !url.pathname.startsWith('/admin/settings'), {
+      timeout: 30_000,
+    }).catch(() => {});
+
+    // 2. Asserter un onglet propre a l'administration (1 seule correspondance).
     await expect(
-      page.getByRole('link', { name: /réglages|settings/i }).first()
+      page.getByRole('tab', { name: SETTINGS.adminAuthTab })
     ).toBeVisible({ timeout: 15_000 });
+
+    // EXERCICE : verifiez que getByRole('tab', { name: /^général$/i }) renvoie
+    // DEUX elements, et expliquez pourquoi .first() est alors obligatoire.
   });
 
   /**

@@ -139,12 +139,45 @@ export async function sendMessage(page: Page, message: string): Promise<void> {
  *
  * Pendant la phase "thinking" (Qwen, Claude) : le container peut
  * afficher du texte de reflexion. On attend que le vrai contenu arrive.
+ *
+ * ---------------------------------------------------------------------------
+ * CONCEPT : ne JAMAIS avaler un timeout en silence.
+ *
+ * Ce helper contenait un `.catch(() => {})` sur l'attente du contenu. Quand la
+ * reponse n'arrivait pas, l'erreur etait donc jetee a la poubelle, et la
+ * fonction repartait sur son fallback : le texte complet de la bulle
+ * assistant... c'est-a-dire, quand elle est vide, juste le nom du modele
+ * (« gpt-5.1 »). Le test recevait une chaine non vide et continuait comme si
+ * de rien n'etait — pour echouer trois lignes plus loin, sur une assertion
+ * sans rapport avec la vraie cause.
+ *
+ * Autrement dit : le symptome s'affichait loin de l'origine. C'est la premiere
+ * chose a eliminer quand on diagnostique une suite instable (cf. le guide
+ * TRIAGE-INFRA-VS-TEST.md : « un test doit echouer pour la BONNE raison »).
+ *
+ * Le probleme est reel et mesure : le 2026-08-07 sur l'instance de cours en
+ * v0.11.0, environ une requete sur six revient en HTTP 200 sans que le
+ * contenu ne s'affiche jamais (aucune erreur console, bouton « Stop » qui
+ * reste affiche), alors que le meme modele appele directement en API repond
+ * en 1,7 s. C'est un souci d'INFRASTRUCTURE, pas de test — mais encore
+ * fallait-il que le test le dise clairement.
+ *
+ * @param optional  true = tolerer l'absence de reponse et rendre ce qui est
+ *                  affiche (utilise par le test « modele local », ou
+ *                  l'indisponibilite est un cas prevu et non une erreur).
+ *                  Par defaut false : on echoue, avec un message explicite.
+ * ---------------------------------------------------------------------------
  */
-export async function waitForResponse(page: Page, timeoutMs = 120_000): Promise<string> {
+export async function waitForResponse(
+  page: Page,
+  timeoutMs = 120_000,
+  { optional = false }: { optional?: boolean } = {},
+): Promise<string> {
   // Attendre que le message assistant apparaisse
   await expect(page.locator(CHAT.assistantMessage).last()).toBeVisible({ timeout: 30_000 });
 
   // Attendre le contenu complet via polling
+  let timedOut = false;
   await page.waitForFunction(
     () => {
       const containers = document.querySelectorAll('#response-content-container');
@@ -153,7 +186,19 @@ export async function waitForResponse(page: Page, timeoutMs = 120_000): Promise<
     },
     undefined,
     { timeout: timeoutMs, polling: 1000 },
-  ).catch(() => {});
+  ).catch(() => {
+    timedOut = true;
+  });
+
+  if (timedOut && !optional) {
+    throw new Error(
+      `Aucune reponse de l'assistant apres ${Math.round(timeoutMs / 1000)}s : `
+      + '#response-content-container est reste vide. '
+      + "Verifiez l'instance AVANT de suspecter le test — si l'API repond mais "
+      + "que l'interface reste bloquee sur « Stop », le probleme est cote "
+      + 'infrastructure (voir TRIAGE-INFRA-VS-TEST.md).',
+    );
+  }
 
   // Petit delai pour le rendu final Svelte
   await page.waitForTimeout(500);
@@ -164,7 +209,9 @@ export async function waitForResponse(page: Page, timeoutMs = 120_000): Promise<
   const content = await contentContainer.innerText({ timeout: 5_000 }).catch(() => '');
   if (content.trim()) return content.trim();
 
-  // Fallback : texte complet du message assistant
+  // Fallback : texte complet du message assistant.
+  // ATTENTION : sur une bulle vide, cela rend le nom du modele, pas une reponse.
+  // On ne l'atteint donc que dans le cas `optional`.
   return await page.locator(CHAT.assistantMessage).last().innerText();
 }
 
