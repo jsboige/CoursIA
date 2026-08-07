@@ -131,7 +131,7 @@ theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
     {ι : Type*} (S : ι → Sieve X) :
     Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
   ext Z g
-  simp [Sieve.pullback]
+  simp [Sieve.pullback, iSup, Set.mem_range]
 
 /-!
 ## Pullback preserves `ofObjects`
