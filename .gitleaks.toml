@@ -3,6 +3,15 @@
 
 title = "CoursIA Secret Scanner"
 
+# Extend gitleaks' built-in default ruleset (700+ detectors: AWS, GitHub,
+# Google, Stripe, ...). WITHOUT this directive the config below carries no
+# [[rules]] of its own, so gitleaks matched nothing — the secret scanner was a
+# silent no-op both in the pre-commit hook and in CI (secret-scan.yml sets
+# GITLEAKS_CONFIG=.gitleaks.toml). The allowlist below still applies on top of
+# the defaults (verified: secrets detected + base64-blob FP suppressed). See #9888.
+[extend]
+useDefault = true
+
 [allowlist]
 description = "Global allowlist for known false positives"
 paths = [
