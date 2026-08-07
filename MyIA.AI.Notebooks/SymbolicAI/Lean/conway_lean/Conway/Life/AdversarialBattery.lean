@@ -144,5 +144,70 @@ def cexBlockNWcorner2 : MacroCell :=
     2 niveaux de nœuds au-dessus des feuilles). -/
 theorem cexBlockNWcorner2_level2 : cexBlockNWcorner2.level = 2 := by decide
 
+/-! ## Crible des réénoncés bornés NW (grain A.4, #9568-A / EPIC #6724)
+
+Le mur NW `p4_nw_overlap_wall` a été tué (c.91, #9565) parce que le
+quantificateur `p : Int × Int` y était **libre** : rien ne contraignait `p` à la
+fenêtre centrale que le supercell représente, et un bloc 2×2 au coin absolu NW
+falsifiait l'énoncé depuis `p = r = (0,0)` (LHS `true`, RHS `false` — `(-1,-1)`
+structurellement hors de la fenêtre non-négative de `toGrid`). La direction de
+réparation (bloc de réfutation dans `HashlifeCorrectness`) est de **borner `p` à
+la fenêtre centrale du parent**, `2^k ≤ p.i < 2^(k+1)` sur chaque axe, puis de
+transporter par un lemme de localité Chebyshev.
+
+Cette section crible cette restriction bornée sur les témoins NW du bestiaire.
+Elle confirme par `decide` (noyau pur, zéro axiome, `native_decide` interdit —
+réductibilité acquise via la réécriture `ceilLog2` #9536) trois faits
+structurels qui qualifient le candidat borné de **survivant** (la restriction
+élimine le contre-exemple) : (1) les cellules vivantes du témoin `cexBlockNWcorner2`
+sont toutes HORS de la fenêtre centrale — la trace du contre-exemple #9565 ;
+(2) un point central typique y est bien dedans (la fenêtre n'est pas vacuoire) ;
+(3) le coin absolu NW `(0,0)` (l'instanciation `p` du contre-exemple) en est
+exclu — c'est ce fait qui rend l'énoncé non-borné faux et l'énoncé borné viable.
+
+**Verdict du crible** : candidat borné = **survivant**. Le gel de l'énoncé
+canonique ( borne exacte + transport Chebyshev + énoncé universel figé) reste
+chez ai-01 ; ce module fournit seulement les témoins `decide`-vérifiés et les
+faits structurels que le gel doit satisfaire. -/
+
+/-- Une cellule `p` est dans la **fenêtre centrale** de niveau `k` (le centre du
+    parent de niveau `k + 1`) ssi chaque coordonnée tombe dans `[2^k, 2^(k+1))`.
+    C'est la restriction qui répare la vacuité du `p` libre dans le mur NW. -/
+def inCentralWindow (k : Nat) (p : Int × Int) : Prop :=
+  (2^k : Int) ≤ p.1 ∧ p.1 < (2^(k+1) : Int) ∧
+  (2^k : Int) ≤ p.2 ∧ p.2 < (2^(k+1) : Int)
+
+instance inCentralWindow.decidable (k : Nat) (p : Int × Int) :
+    Decidable (inCentralWindow k p) := by
+  unfold inCentralWindow; infer_instance
+
+/-- **Crible A.4 — le bloc NW saigne hors de la fenêtre centrale.** Les cellules
+    vivantes de `cexBlockNWcorner2` (bloc 2×2 au quadrant NW d'une fenêtre 4×4)
+    vivent en `{(0,0), (0,1), (1,0), (1,1)}`, toutes HORS de la fenêtre centrale
+    `[2, 4)²` (niveau `k = 1`). C'est la trace structurelle du contre-exemple
+    #9565 : le bloc est « off-centre », exactement la pathologie qui tuait le mur
+    `p4_nw_overlap_wall` non-borné. Tout réénoncé borné doit donc, pour ce
+    témoin, soit restreindre sa conclusion à la fenêtre centrale (vide de
+    cellules vivantes ici), soit exclure le témoin par hypothèse. -/
+theorem cexBlockNWcorner2_cells_outside_central :
+    ∀ p ∈ cexBlockNWcorner2.toGrid (0, 0), ¬ inCentralWindow 1 p := by
+  decide
+
+/-- **Crible A.4 — la fenêtre centrale est non-vacuoire.** Le point `(2, 2)`
+    (coin NW de la fenêtre centrale `[2, 4)²` au niveau `k = 1`) est bien
+    central. Confirme que la restriction bornée n'est pas vide : la fenêtre
+    centrale contient des points réels, donc l'énoncé borné a une portée
+    substantive, pas une élimination triviale de tous les `p`. -/
+theorem central_point_in_window : inCentralWindow 1 (2, 2) := by
+  decide
+
+/-- **Crible A.4 — le coin absolu NW est exclu par la borne.** Le point `(0, 0)`
+    (coin absolu NW, l'instanciation `p = r` du contre-exemple #9565) n'est PAS
+    central au niveau `k = 1`. C'est ce fait qui rend l'énoncé non-borné faux
+    (le `p` libre permet d'y instancier) et l'énoncé borné survivant (la
+    restriction `2^k ≤ p.i` l'exclut par construction). -/
+theorem nw_corner_outside_central : ¬ inCentralWindow 1 (0, 0) := by
+  decide
+
 end Life
 end Conway
