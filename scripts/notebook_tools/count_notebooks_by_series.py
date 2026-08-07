@@ -65,39 +65,52 @@ def count_notebooks_in_dir(
 
 
 def extract_readme_count(readme_path: Path) -> int | None:
-    """Try to extract a notebook count from a README file.
+    """Extract the AUTHORITATIVE series notebook count from a README.
 
-    Looks for patterns like "N notebooks", "N notebooks Python",
-    table rows with "Notebooks" label, or blockquote stats.
-    Returns the first plausible match (> 0).
+    Scope-aware (#9835): anchored on the generated ``<!-- CATALOG-STATUS -->``
+    marker (``pedagogical_count``, maintained daily by ``catalog-cron.yml``),
+    which is the canonical per-series total. Falls back to an explicitly-anchored
+    prose "Total" only when the marker is absent -- never the first number that
+    matches anywhere in the file. That first-match behaviour compared notebooks
+    to sub-section headers (e.g. SymbolicAI's "28 notebooks Lean" while the
+    series has 226) and to exercise counts (IIT: 53 notebooks vs "3 exercices").
+
+    A count of exercises is NOT a count of notebooks: the former prose-fallback
+    ``(\\d+)\\s+exercices`` is removed. A series with no marker and no explicit
+    Total returns None ("no count") -- an honest silence, not a number caught at
+    random.
     """
     if not readme_path.exists():
         return None
 
     text = readme_path.read_text(encoding="utf-8")
 
-    # Specific patterns ordered by reliability
-    patterns = [
-        # Blockquote: > **28 notebooks Python**
-        r"\*\*(\d+)\s*notebooks",
-        # Table row: | Notebooks | 28 |
-        r"\|\s*Notebooks?\s*\|\s*(\d+)",
-        # Inline: "28 notebooks Python"
-        r"(\d+)\s+notebooks?\s+Python",
-        # Inline: "N notebooks"
-        r"(\d+)\s+notebooks",
+    # Primary anchor: the generated CATALOG-STATUS marker (canonical,
+    # cron-maintained, per-series). See #9835.
+    marker = re.search(r"<!--\s*CATALOG-STATUS\b(.*?)-->", text, re.S)
+    if marker:
+        m = re.search(r"pedagogical_count:\s*(\d+)", marker.group(1))
+        if m:
+            val = int(m.group(1))
+            if val > 0:
+                return val
+
+    # Fallback (marker absent): an explicitly-anchored series-total in prose.
+    # Require an explicit "Total" anchor -- NOT the first "N notebooks" anywhere
+    # (often a sub-section header, e.g. "28 notebooks Lean"). See #9835.
+    for pattern in (
         # Table row: | Total | 84 |
         r"\|\s*Total\s*\|\s*(\d+)",
-        # French: "N exercices"
-        r"(\d+)\s+exercices",
-    ]
-
-    for pattern in patterns:
+        # Explicit "N notebooks total"
+        r"(\d+)\s+notebooks?\s+total",
+    ):
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             val = int(match.group(1))
             if val > 0:
                 return val
+
+    # No marker, no explicit total -> honest silence (not a random number).
     return None
 
 
