@@ -290,8 +290,15 @@ def scan(root: Path) -> dict[str, Any]:
                 conforme_samples.append(rec["path"])
 
     total = sum(verdicts.values())
+    # ``root.relative_to(REPO_ROOT)`` plante pour les chemins hors-repo
+    # (tests pytest dans tmp_path). On retombe sur le chemin absolu pour ne
+    # pas faire echouer le scan sur une sortie JSON de pure documentation.
+    try:
+        root_str = str(root.relative_to(REPO_ROOT))
+    except ValueError:
+        root_str = str(root)
     return {
-        "root": str(root.relative_to(REPO_ROOT)),
+        "root": root_str,
         "total": total,
         "verdicts": verdicts,
         "d2_rate_pct": round(verdicts["D2+"] / total * 100, 1) if total else 0.0,
@@ -365,6 +372,24 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(args.root)
     if not root.is_absolute():
         root = REPO_ROOT / root
+
+    # Une racine inexistante doit echouer distinctement d'un succes (exit 0)
+    # ou d'un D2+ detecte (exit 1). Convention argparse : exit 2 = erreur
+    # d'usage (chemin invalide). Sans cette garde, un job Actions avec un
+    # chemin mal tape passerait exit 1 (D2+) sur 0 fichier scanne -- ce qui
+    # a deja faussé un audit Phase 0 (cf review ai-01 sur #9783).
+    if not root.exists():
+        print(
+            f"error: chemin introuvable: {root}",
+            file=sys.stderr,
+        )
+        return 2
+    if not root.is_dir():
+        print(
+            f"error: chemin pas un repertoire: {root}",
+            file=sys.stderr,
+        )
+        return 2
 
     report = scan(root)
 

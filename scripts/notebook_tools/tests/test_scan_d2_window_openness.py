@@ -56,6 +56,7 @@ from scan_d2_window_openness import (  # noqa: E402
     RE_SET_START_DATE,
     _extract_code_and_outputs,
     classify_notebook,
+    main,
 )
 
 
@@ -442,3 +443,57 @@ class TestExtractCodeAndOutputs:
         }
         _, outputs = _extract_code_and_outputs(nb)
         assert "42" in outputs
+
+
+# =============================================================================
+# Tests de la CLI (exit codes --check)
+# =============================================================================
+
+
+class TestMainExitCodes:
+    """Verrouille les exit codes du CLI : convention argparse 0/1/2.
+
+    Revue ai-01 sur #9783 (msg-20260807T011857-k20fjp) : un chemin invalide
+    qui retourne exit=1 (D2+) sur 0 fichier scanne = faux signal en CI. Le
+    fix retourne exit=2 avec message clair sur stderr, distinct du succes
+    (exit=0) et d'un D2+ reel (exit=1).
+    """
+
+    def test_check_returns_2_on_nonexistent_path(self, tmp_path, capsys):
+        """Le cas qui a faussé l'audit Phase 0 : chemin inexistant
+        doit retourner exit=2, PAS exit=1 (D2+ fictif)."""
+        bidon = tmp_path / "chemin" / "qui" / "nexiste" / "pas"
+        rc = main(["--check", str(bidon)])
+        assert rc == 2, f"attendu exit=2 sur chemin inexistant, recu {rc}"
+        captured = capsys.readouterr()
+        assert "chemin introuvable" in captured.err
+        assert str(bidon) in captured.err
+
+    def test_check_returns_2_on_file_not_directory(self, tmp_path, capsys):
+        """Un fichier (pas un repertoire) doit aussi retourner exit=2."""
+        fichier = tmp_path / "un_fichier.txt"
+        fichier.write_text("pas un repertoire")
+        rc = main(["--check", str(fichier)])
+        assert rc == 2
+        captured = capsys.readouterr()
+        assert "pas un repertoire" in captured.err
+
+    def test_check_returns_0_on_clean_subdir(self, tmp_path, capsys):
+        """Un sous-dossier vide (sans notebook) -> exit=0 succes."""
+        rc = main(["--check", str(tmp_path)])
+        assert rc == 0
+        captured = capsys.readouterr()
+        # Pas de message d'erreur
+        assert captured.err == ""
+
+    def test_default_root_is_myia_notebooks(self, tmp_path):
+        """Le default root est MyIA.AI.Notebooks/ (cohérent avec le body PR).
+
+        On vérifie la RELATION (DEFAULT_ROOT.parent == REPO_ROOT) plutôt que le
+        nom littéral du répertoire parent, car le nom varie selon le contexte
+        (worktree local = ``CoursIA-2-c1331x14-d2-scan`` vs clone CI =
+        ``CoursIA``). Voir leçon c.1331+17.
+        """
+        from scan_d2_window_openness import DEFAULT_ROOT, REPO_ROOT
+        assert DEFAULT_ROOT.name == "MyIA.AI.Notebooks"
+        assert DEFAULT_ROOT.parent.resolve() == REPO_ROOT.resolve()
