@@ -150,7 +150,7 @@ attendues.
   — tableau structuré
 - [`livresagites-parcours.md`](livresagites-parcours.md) — cas
   d'usage concret
-- Epic [#4433](../../../../../docs/genai/genai-services.md) —
+- Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
   mandat user à l'origine de ce dossier
