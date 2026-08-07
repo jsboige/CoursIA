@@ -43,6 +43,39 @@ Ce module operationalise la question :
 
 Numpy uniquement. GPU-free (mandat user 2026-07-04). Toutes les
 fonctions sont deterministes (numpy seul, pas d'aléatoire cache).
+
+Issue #9764 -- historique du correctif (c.9706 -> #9770)
+-----------------------------------------------------
+
+Le constat lateral rapporte par #7290 (PR #9740) -- ``mean == max ==
+k - 1`` sur 15/15 paires (graine, k) du substrat S1 ``SelfSortingArray``
+-- etait **reel**, mais **PAS** une degenerescence du wiring
+(f identite + W symmetrise). La cause mesuree par #9770 (po-2025) est
+**le plancher de lissage de Laplace** dans :func:`ict.spectral.transition_graph` :
+``laplace_smoothing=1e-9`` met un coefficient strictement positif sur
+**toutes** les entrees de la matrice de transition, donc
+``W[x].any()`` etait vrai pour tout couple ``(x, y)``, donc
+``local_sensitivity`` lisait le voisinage dans un graphe complet.
+
+Le contre-exemple minimal (cycle 0->1->2 sur alphabet 6, ``f(x)=x``)
+donnait la sensibilite ``[5, 5, 5, 5, 5, 5]`` alors que les etats
+3, 4 et 5 etaient **jamais visites** et le degre observe est 1 : aucun
+choix de ``f`` ne pouvait corriger cela -- c'etait un defaut, pas un
+domaine de validite a documenter.
+
+La reparation (PR #9770, MERGED 2026-08-06T23:11Z) introduit la
+primitive :func:`ict.spectral.observed_adjacency` et fait lire a
+:func:`local_sensitivity` le voisinage **effectivement observe**
+(transitions reellement presentes dans la trajectoire) plutot que le
+graphe pondere lisse. Le lissage reste legitime pour les usages
+**spectraux** (Laplacien, gap), ou une ligne nulle casse la
+diagonalisation ; il est simplement inadapte a un **comptage de
+voisins**.
+
+Le present module documente cette trajectoire pour qu'un lecteur
+futur ne tente pas de reproduire la recommandation obsolete « employer
+une f non injective » -- elle ne corrigeait rien puisque le defaut
+frappait des noeuds que ``f`` n'atteignait jamais.
 """
 
 from __future__ import annotations

@@ -184,6 +184,7 @@ Le harnais réel fonctionne comme une **flotte** d'agents qui se coordonnent san
 
 ### Références croisées
 
+- Pour aller plus loin sur ce qui précède (anatomie d'un cycle worker `/continue`, garde-fous auto-chargés, situation dans le parcours pédagogique) : [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md)
 - Architecture des MCPs (processus, cycle de vie, redémarrage Python) : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md)
 - Spécialisations infrastructure (machines, GPUs, dispatch par mission) : [docs/reference/cluster-agents.md](../../../docs/reference/cluster-agents.md)
 - Mémoire sémantique (Qdrant, embeddings, indexation, notebook Hands-On) : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/)
@@ -198,6 +199,7 @@ Le répertoire `docs/` contient :
 | Document | Description |
 |----------|-------------|
 | [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique à l'IA générative |
+| [CLUSTER-ORCHESTRATION.md](docs/CLUSTER-ORCHESTRATION.md) | Orchestration cluster (coordinateur/workers, MCPs maison, RooSync) — le vibe-coding à l'échelle d'une flotte |
 | [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
 | [activites/](docs/activites/) | Activités pédagogiques |
