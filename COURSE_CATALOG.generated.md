@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-08-06 04:56
-Total notebooks: 855
+Generated: 2026-08-07 04:27
+Total notebooks: 857
 
 ## Status Summary
 
-- **READY**: 708
+- **READY**: 710
 - **DEMO**: 145
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,7 +13,7 @@ Total notebooks: 855
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 780
+- **BETA**: 782
 - **TEMPLATE**: 4
 - **ALPHA**: 46
 - **DRAFT**: 25
@@ -841,7 +841,7 @@ Total notebooks: 855
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
 
-### IIT (51 notebooks) — READY:51 | ALPHA:1, BETA:46, DRAFT:4
+### IIT (53 notebooks) — READY:53 | ALPHA:1, BETA:48, DRAFT:4
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -856,46 +856,48 @@ Total notebooks: 855
 | 9 | ICT-14 — Énergie libre et surprise du représentant | Python 3 | READY | BETA | 30min | po-2025 |
 | 10 | ICT-14b — Inférence active : l'expected free energ | Python 3 | READY | DRAFT | 30min | po-2025 |
 | 11 | ICT-15 — Integrated Complexity : convergence Φ / F | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 12 | ICT-15b -- Exploitation empirique de la sensibilit | Python 3 | READY | DRAFT | 30min | po-2025 |
-| 13 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | DRAFT | 45min | po-2025 |
-| 14 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 30min | po-2025 |
-| 15 | ICT-15d — Cochaîne de Čech pondérée : obstruction  | Python 3 | READY | BETA | 30min | po-2025 |
-| 16 | ICT-15e -- Bridge #2 : recouvrabilite *est* agenti | Python 3 | READY | BETA | 30min | po-2025 |
-| 17 | ICT-15f -- Pont #1-bis : la famille decouplee tran | Python 3 | READY | BETA | 30min | po-2025 |
-| 18 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
-| 19 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | DRAFT | 30min | po-2025 |
-| 20 | Grokking et compression-progress : la jambe K à l' | Python 3 | READY | BETA | 30min | po-2025 |
-| 21 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
-| 22 | ICT-18b — Budget de réversibilité : la jambe « fin | Python 3 | READY | BETA | 30min | po-2025 |
-| 23 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | BETA | 30min | po-2025 |
-| 24 | ICT-19 — Raffinement et résolution des stubs (tran | Python 3 | READY | BETA | 30min | po-2025 |
-| 25 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | BETA | 30min | po-2025 |
-| 26 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | BETA | 30min | po-2025 |
-| 27 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
-| 28 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
-| 29 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
-| 30 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
-| 31 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
-| 32 | ICT-26 — Convention de signalisation (expérience A | Python 3 | READY | BETA | 30min | po-2025 |
-| 33 | ICT-27 — Invention de symboles (expérience B, stra | Python 3 | READY | BETA | 30min | po-2025 |
-| 34 | ICT-28 — Adoption collective et seuil de performat | Python 3 | READY | BETA | 30min | po-2025 |
-| 35 | ICT-29 — Inoculation d'un concept (expérience D, s | Python 3 | READY | BETA | 30min | po-2025 |
-| 36 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 37 | ICT-30 — Invention inhibée (expérience E, strate 7 | Python 3 | READY | BETA | 30min | po-2025 |
-| 38 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
-| 39 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
-| 40 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
-| 41 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 42 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 43 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 44 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
-| 45 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
-| 46 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
-| 47 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
-| 48 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 49 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 50 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 51 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 12 | ICT-15b -- Sensitivity Canonicity (Huang 2019 tran | Python 3 | READY | DRAFT | 45min | po-2025 |
+| 13 | ICT-15c — Méta-proxy d'obstruction : structure des | Python 3 | READY | ALPHA | 30min | po-2025 |
+| 14 | ICT-15d — Cochaîne de Čech pondérée : obstruction  | Python 3 | READY | BETA | 30min | po-2025 |
+| 15 | ICT-15e -- Bridge #2 : recouvrabilite *est* agenti | Python 3 | READY | BETA | 30min | po-2025 |
+| 16 | ICT-15f -- Pont #1-bis : la famille decouplee tran | Python 3 | READY | BETA | 30min | po-2025 |
+| 17 | ICT-15g -- Exploitation empirique de la sensibilit | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 18 | ICT-15g -- Pont #1-bis (chantier 2/3) : le regime  | Python 3 | READY | BETA | 30min | po-2025 |
+| 19 | ICT-15h -- Pont #1-bis : le paysage 2D anisotrope  | unknown | READY | BETA | 30min | po-2025 |
+| 20 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
+| 21 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 22 | ICT-17b — Grokking et compression-progress : la ja | Python 3 | READY | BETA | 30min | po-2025 |
+| 23 | ICT-18 -- Fleche du temps et reversibilisation (st | Python 3 | READY | BETA | 30min | po-2025 |
+| 24 | ICT-18b — Budget de réversibilité : la jambe « fin | Python 3 | READY | BETA | 30min | po-2025 |
+| 25 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs | Python 3 | READY | BETA | 30min | po-2025 |
+| 26 | ICT-19b — Raffinement et résolution des stubs (tra | Python 3 | READY | BETA | 30min | po-2025 |
+| 27 | ICT-2 — Le tri comme morphogenèse minimale (self-s | Python 3 | READY | BETA | 30min | po-2025 |
+| 28 | ICT-20 — FeatureCatastrophes : *calibration de mét | Python 3 | READY | BETA | 30min | po-2025 |
+| 29 | ICT-21 — SAETrajectoires : le substrat S4 entre au | Python 3 | READY | BETA | 45min | po-2025 |
+| 30 | ICT-22 — LLMSubstrat : le transformer comme quatri | Python 3 | READY | BETA | 30min | po-2025 |
+| 31 | ICT-23 — PersonaCatastrophe : la fronce de Thom ap | Python 3 | READY | BETA | 15min | po-2025 |
+| 32 | ICT-24 — WorkspaceIgnition : l'axe Global Workspac | Python 3 | READY | BETA | 30min | po-2025 |
+| 33 | ICT-25 — InoculationRL : GRPO à récompense *hackab | Python 3 | READY | BETA | 30min | po-2025 |
+| 34 | ICT-26 — Convention de signalisation (expérience A | Python 3 | READY | BETA | 30min | po-2025 |
+| 35 | ICT-27 — Invention de symboles (expérience B, stra | Python 3 | READY | BETA | 30min | po-2025 |
+| 36 | ICT-28 — Adoption collective et seuil de performat | Python 3 | READY | BETA | 30min | po-2025 |
+| 37 | ICT-29 — Inoculation d'un concept (expérience D, s | Python 3 | READY | BETA | 30min | po-2025 |
+| 38 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 39 | ICT-30 — Invention inhibée (expérience E, strate 7 | Python 3 | READY | BETA | 30min | po-2025 |
+| 40 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
+| 41 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 42 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
+| 43 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 44 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 45 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 46 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
+| 47 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
+| 48 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
+| 49 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
+| 50 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 51 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 52 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 53 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
 ### RL (17 notebooks) — DEMO:1, READY:16 | BETA:17
 
@@ -926,4 +928,4 @@ Total notebooks: 855
 - **GPU**: 93 notebooks
 - **Cloud**: 105 notebooks
 - **WSL**: 43 notebooks
-- **Local**: 542 notebooks
+- **Local**: 544 notebooks
