@@ -127,6 +127,21 @@ MIN_STATS_HIT = 3  # au moins 3 colonnes parmi 4 = signal dataframe resultat
 # Pattern valeur numerique nulle : 0.0, 0, -0.0, +0.0, 0.00, etc.
 ZERO_VALUE_RE = re.compile(r"^\s*[+\-]?0+(?:\.0+)?\s*$")
 
+# Pattern "optimal"/"optimum" + un nombre : claim qu'une valeur est l'optimum
+# prouve. "CP-SAT optimal: 2 bins", "optimal: 11", "l'optimum est 5". Le mot
+# (optima + l/m optionnel) suivi de quelques caracteres non-chiffres puis d'un
+# nombre. Le mot LITTERAL "optimal" est la claim de preuve -- c'est lui qui rend
+# impossible qu'une heuristique batte cette valeur (un optimum est, par
+# definition, insurpassable).
+OPTIMAL_NUM_RE = re.compile(r"optim(?:al|um)\D{0,25}\d+", re.IGNORECASE)
+
+# Pattern "Gap: -<nombre>" : un ecart NEGATIF entre une quantite comparee
+# (heuristique) et une reference. Un gap negatif affirme que la quantite
+# comparee est STRICTEMENT INFERIEURE a la reference. Legitime si la reference
+# est un simple "feasible bound" (CP-SAT timeout, statut FEASIBLE), MAIS
+# impossible si la reference est declaree "optimal" (voir OPTIMAL_NUM_RE).
+NEG_GAP_RE = re.compile(r"(?im)^\s*Gap\s*:?\s*-+\d")
+
 
 def _cell_text_outputs(cell: dict) -> list[str]:
     """Return concatenated text/plain content of all cell outputs as a list of lines."""
@@ -211,6 +226,42 @@ def _has_zero_stats_dataframe(lines: list[str]) -> bool:
     return (zero_tokens / total_tokens) >= 0.9
 
 
+def _has_heuristic_beats_optimal(lines: list[str]) -> dict | None:
+    """Detecte une sortie logiquement IMPOSSIBLE : une heuristique *battant* un
+    optimum declare.
+
+    Une cellule qui imprime "X optimal: N" (claim d'optimum prouve) PUIS
+    "Gap: -P%" (la quantite comparee est strictement inferieure a N) affirme une
+    contradiction : un optimum ne peut pas etre battu, par definition. Soit la
+    valeur n'etait pas optimale (statut FEASIBLE/timeout lu comme OPTIMAL), soit
+    la quantite comparee est calculee sur un autre probleme/jeu de donnees, soit
+    la sortie est stale (source corrigee apres la derniere execution).
+
+    Incidents fondateurs #3544 + #9932 : CSP-4 (SPT heuristic 10 < CP-SAT
+    optimal 11) et CSP-5 (FFD heuristic 1 < CP-SAT optimal 2) portaient chacun ce
+    pattern. Cellule regression-prone : la sortie n'est pas regeneree quand le
+    vecteur d'entrees amont est restructure.
+
+    FP-resistance : le pattern exige le mot LITTERAL "optimal"/"optimum" + un
+    nombre ET un "Gap: -" dans la MEME sortie de cellule. Un "Gap: -X%" legitime
+    (amelioration vs une baseline NON decrite comme optimale) n'utilise pas le
+    mot "optimal" et n'est pas flagge. Verifie sur le corpus Search : la
+    combinaison est 1 occurrence (CSP-5, le cas buggy), 0 faux positif.
+
+    Retourne un dict {"optimal_match": ..., "gap_match": ...} si detecte, sinon
+    None. Les valeurs matchees sont conservees pour le contexte du rapport.
+    """
+    blob = "\n".join(lines)
+    m_opt = OPTIMAL_NUM_RE.search(blob)
+    m_gap = NEG_GAP_RE.search(blob)
+    if m_opt and m_gap:
+        return {
+            "optimal_match": m_opt.group(0).strip(),
+            "gap_match": m_gap.group(0).strip(),
+        }
+    return None
+
+
 def detect_cell(cell: dict) -> list[dict]:
     """Return findings (one per fabrication signal) for a code cell."""
     if cell.get("cell_type") != "code":
@@ -225,6 +276,9 @@ def detect_cell(cell: dict) -> list[dict]:
         findings.append({"signal": "row_n_placeholder", "count": n_rows})
     if _has_zero_stats_dataframe(lines):
         findings.append({"signal": "zero_stats_dataframe"})
+    hbo = _has_heuristic_beats_optimal(lines)
+    if hbo:
+        findings.append({"signal": "heuristic_beats_optimal", **hbo})
     return findings
 
 
@@ -274,7 +328,7 @@ def _human_report(results: list[dict]) -> str:
         "",
     ]
     if not affected:
-        lines.append("No fabricated text outputs detected (Row N / zero-stats dataframe check).")
+        lines.append("No fabricated text outputs detected (Row N / zero-stats dataframe / heuristic-beats-optimal check).")
         if errored:
             lines.append("")
             lines.append(f"NOTE: {len(errored)} notebook(s) unreadable (see --json for details).")
