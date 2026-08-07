@@ -1,0 +1,49 @@
+name: Pre-commit Hooks Parity
+
+# Advisory parity check between declared (.pre-commit-config.yaml) and
+# installed pre-commit hooks on the runner. See issue #9888.
+# NOT blocking: a missing local hook is the worker's state to repair,
+# surfaced as a warning so the silent gap doesn't reappear.
+# Pattern follows the existing secret-scan.yml structure (advisory job,
+# permissions: contents read only).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monthly self-check on main so a drift on the runner is visible
+    # even if no PR triggered it. Cron cadence matches catalog-cron.
+    - cron: "17 5 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  hooks-parity:
+    name: Declared vs installed pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pyyaml (check_hooks_parity.py dependency)
+        run: pip install pyyaml
+
+      - name: Run parity check
+        id: parity
+        run: |
+          python scripts/check_hooks_parity.py
+        continue-on-error: true
+
+      - name: Annotate if mismatched
+        if: steps.parity.outcome == 'failure'
+        run: |
+          echo "::warning::pre-commit hooks parity mismatch — see job log. Repair on local machine via: python scripts/setup_hooks.py --install"

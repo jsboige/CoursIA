@@ -8,7 +8,13 @@ repos:
     hooks:
       - id: gitleaks
         name: Secret scanner (gitleaks)
-        args: ['detect', '--no-git', '--redact']
+        # v8.21.2 CLI: `detect` is the default subcommand in pre-commit's
+        # wrapper (it sets --source . --staged implicitly); `--no-git` was
+        # removed in v8 (git-mode is the default and only mode). `--redact`
+        # still works. The pre-commit wrapper exposes the binary args via
+        # `args:` — so this is the legacy v7 invocation no one noticed
+        # because the hook never ran (the org-wide silent gap #9888).
+        args: ['--redact']
 
   # Local hooks: notebook hygiene + structural integrity. These run on the
   # worker's machine without external dependencies. See
