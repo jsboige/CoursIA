@@ -250,9 +250,9 @@ def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
      a ∈ d₁.edges ∧
      (∃ (j : Fin d₁.crossings.length), j ≠ i ∧ (d₁.crossings.get j).hasEdge a) ∧
      Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1) ∧
-     d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++
-                       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
-                    numEdges := d₁.numEdges + 2 })
+     d₂.crossings = d₁.crossings.set i.val Y' ++
+       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] ∧
+     d₂.numEdges = d₁.numEdges + 2)
 
 /-- `Reidemeister1Connected` is NOT vacuous (contrast with `Reidemeister1'`):
     a concrete connected twist `d₁ → d₂` with `wf = true` on both sides.
@@ -283,7 +283,7 @@ theorem reidemeister1Connected_satisfiable :
     --   j=0 ≠ i=1, witnessed explicitly; `hasEdge` unfolded + `decide`.
     exact ⟨by decide, by decide, by decide,
            ⟨⟨0, by decide⟩, by decide, by unfold PDCrossing.hasEdge; decide⟩,
-           by unfold PDCrossing.isRenameOf; decide, rfl⟩
+           by unfold PDCrossing.isRenameOf; decide, ⟨rfl, rfl⟩⟩
 
 /-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
 
@@ -300,18 +300,16 @@ by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
     a connected splice. -/
 theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  have hne := congrArg (·.numEdges) hsurg
-  simpa using hne
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, _h_cross, h_num⟩ := h
+  exact h_num
 
 /-- A connected R1 twist adds exactly one crossing (the curl `C`); the existing
     endpoint crossing `Y` is relabelled in place (`List.set` preserves length),
     not duplicated. -/
 theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  have hcl := congrArg (fun d => d.crossings.length) hsurg
-  simpa [List.length_set, List.length_append] using hcl
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  rw [h_cross]; simp [List.length_set, List.length_append]
 
 /-- The arc `a` receiving the twist is a genuine edge of `d₁` (connectivity
     hypothesis): the new crossing `C = ⟨a, b, c, c⟩` shares edge `a` with `d₁`,
@@ -336,9 +334,8 @@ theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
       i < d₁.crossings.length ∧
       d₂.crossings = d₁.crossings.set i Y' ++
         [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
-  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  refine ⟨i.val, Y', a, i.isLt, ?_⟩
-  simpa using congrArg (·.crossings) hsurg
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  exact ⟨i.val, Y', a, i.isLt, h_cross⟩
 
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 

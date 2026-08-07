@@ -5,7 +5,7 @@
 > **Parcours découverte.** Ce dossier présente **AI-Engine**, l'extension
 > WordPress de Jordy Meow, comme **presqu'équivalent d'Open WebUI** côté
 > *site de contenu*. La question n'est pas « quel produit choisir en
-> абсолю » — les deux ciblent des usages différents — mais « quand l'un
+> absolu » — les deux ciblent des usages différents — mais « quand l'un
 > est plus adapté que l'autre » pour un projet donné.
 
 ---
@@ -22,10 +22,13 @@ installé. Plutôt que de poser Open WebUI *à côté* de WordPress, on peut
 comme point de comparaison pour les fonctionnalités communes (chat,
 RAG, outils MCP, personas).
 
-Le projet **livresagités** (WordPress user) sert de **terrain de démo**
-concret pour illustrer les cas d'usage. Aucune donnée privée de ce site
-n'est reproduite ici : les parcours sont décrits à un niveau
-architectural, jamais avec des contenus réels.
+Le projet **livresagités** — une installation WordPress de maison
+d'édition, avec workflow de manuscrits, comité de lecture et catalogue
+WooCommerce — sert de **terrain d'observation** concret. Aucune donnée
+de ce site n'est reproduite ici : ce dossier ne transmet que des
+structures et des comptages, sans contenu, sans nom, et sans capture
+d'écran (voir la note de méthode du
+[parcours détaillé](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)).
 
 ---
 
@@ -107,12 +110,21 @@ MCP** d'Open WebUI.
 
 ### 6. [Cas d'usage livresagités](livresagites-parcours.md)
 
-Le projet WordPress **livresagités** (user) sert de **terrain
-concret** : blog éditorial autour du livre, avec usage réel d'AI-Engine
-pour assistance éditoriale (résumé, traduction), RAG sur corpus de
-livres (recommandations), MCP pour automatiser la modération. Aucun
-contenu privé n'est reproduit — uniquement l'architecture du
-parcours et les types d'appels effectués.
+Le projet WordPress **livresagités** sert de **terrain d'observation
+réel** : une maison d'édition, et non un blog — dépôt de manuscrits,
+comité de lecture, catalogue e-commerce. Le parcours détaille
+l'architecture en modules d'AI-Engine, la séparation du RAG en
+**six environnements d'embeddings** distincts (un contrôle d'accès,
+pas une commodité), et surtout le catalogue MCP réellement exposé :
+**88 outils**, dont 64 natifs génériques et **24 outils métier**. Cet
+écart porte la leçon d'architecture la plus transposable du dossier —
+*un serveur MCP utile expose les verbes du métier, pas les tables de
+la base*.
+
+Aucun contenu du site n'est reproduit, et le dossier ne contient
+aucune capture d'écran : la
+[note de méthode](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
+explique pourquoi une capture de `wp-admin` n'est pas assainissable.
 
 ---
 
@@ -121,13 +133,18 @@ parcours et les types d'appels effectués.
 Comme pour les autres parcours de la série Open-WebUI :
 
 - **Aucun secret exposé** : pas d'URL d'admin, pas de clé d'API, pas
-  de token MCP, pas de credentials WordPress. Toutes les captures
-  reposent sur un **tenant de démonstration dédié**, des comptes
-  non-administrateur, des données fictives, et le masquage des
-  champs sensibles.
+  de token MCP, pas de credentials WordPress.
+- **Aucune capture d'écran**, ce qui est le moyen le plus sûr de
+  tenir la ligne précédente. Un écran de `wp-admin` expose son
+  contexte — compte connecté, domaines, extensions installées —
+  indépendamment de la page affichée, et une capture retouchée n'est
+  pas vérifiable par le lecteur. La
+  [note de méthode](livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)
+  détaille l'arbitrage et ce qu'illustrer proprement supposerait.
 - **Aucun contenu privé livresagités** : le cas d'usage est décrit à
-  un niveau architectural (types d'appels, schémas de données), pas
-  avec les contenus réels du site.
+  un niveau architectural (structures, comptages, familles d'outils),
+  jamais avec les contenus réels du site — ni texte de manuscrit, ni
+  nom de personne, ni titre d'ouvrage.
 - **Documentation de patterns, pas de credentials** : les exemples
   PHP dans ce dossier utilisent des *constantes de substitution*
   (`YOUR_OPENAI_API_KEY`, `YOUR_VECTOR_STORE_ID`), jamais des
