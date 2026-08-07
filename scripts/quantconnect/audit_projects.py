@@ -43,30 +43,26 @@ MIN_SHARPE = -0.5  # Below this = structurally broken
 
 
 def load_projects(json_path: str) -> list[dict]:
-    """Load project list from MCP JSON output."""
-    try:
-        with open(json_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(f"ERROR: File not found: {json_path}", file=sys.stderr)
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"ERROR: Invalid JSON in {json_path}: {e}", file=sys.stderr)
-        sys.exit(1)
+    """Load project list from MCP JSON output.
+
+    Raises:
+        FileNotFoundError: if json_path does not exist.
+        json.JSONDecodeError: if the file contents are not valid JSON.
+    """
+    with open(json_path, encoding="utf-8") as f:
+        data = json.load(f)
     return data.get("projects", [])
 
 
 def load_catalog(catalog_path: str) -> dict[int, dict]:
-    """Load catalog enrichment data keyed by project ID."""
-    try:
-        with open(catalog_path, encoding="utf-8") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(f"ERROR: Catalog not found: {catalog_path}", file=sys.stderr)
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"ERROR: Invalid JSON in catalog {catalog_path}: {e}", file=sys.stderr)
-        sys.exit(1)
+    """Load catalog enrichment data keyed by project ID.
+
+    Raises:
+        FileNotFoundError: if catalog_path does not exist.
+        json.JSONDecodeError: if the file contents are not valid JSON.
+    """
+    with open(catalog_path, encoding="utf-8") as f:
+        data = json.load(f)
     catalog = {}
     for entry in data.get("projects", []):
         pid = entry.get("projectId", 0)
@@ -328,7 +324,7 @@ def generate_report(
     return "\n".join(lines)
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description="QC Cloud Projects Audit")
     parser.add_argument("--from-json", required=True, help="Path to projects JSON from MCP")
     parser.add_argument("--catalog", help="Path to catalog enrichment JSON (backtest data)")
@@ -337,14 +333,23 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
 
-    projects = load_projects(args.from_json)
+    try:
+        projects = load_projects(args.from_json)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
+
     if not projects:
         print(f"ERROR: No projects found in {args.from_json}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     catalog = None
     if args.catalog:
-        catalog = load_catalog(args.catalog)
+        try:
+            catalog = load_catalog(args.catalog)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
 
     report = generate_report(projects, catalog)
 
@@ -362,6 +367,8 @@ def main():
     else:
         print(report)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
