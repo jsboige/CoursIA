@@ -2,25 +2,24 @@
 
 Stratégie momentum BTCUSDT combinant MACD (tendance) et ADX (force) avec seuils adaptatifs par percentile (implémentation C#).
 
-## Performance (lecture vérifiée frais réels — NO-BEATS)
+## Performance (fenêtre figée reproductible — NO-BEATS, edge non-stationnaire)
 
-Backtest frais Binance réels, 2019-04-01 → 2026-08 (2684 jours tradeables, 52 ordres), projet de vérification Cloud `CSharp-BTC-MACD-ADX-verify` (34901074) :
+**Fix #9803 (EPIC #9768, D2 fondateur).** `Main.cs` ne fixait **aucun `SetEndDate`** : la fenêtre s'allongeait à chaque exécution (Sharpe 0.225 → 0.123 d'avril à août 2026 par le seul ajout de 101 jours de bourse). Désormais `SetEndDate(2025, 12, 31)` — borne « dernière année civile complète », défendable par sa **règle** (pas par son résultat). Le backtest est **reproductible**.
 
-| Métrique | Valeur vérifiée (frais réels) | Catalogue (max de balayage) |
-|----------|-------------------------------|----------------------|
-| **Sharpe** | **0.123** | 0.787 |
-| **CAGR** | **0.037 %** (quasi-plat sur 7 ans) | — |
-| **Max Drawdown** | **72.7 %** | — |
-| **Profit net** | **0.274 %** | — |
-| **PSR** | **0.814 %** (bruit, seuil 95 %) | — |
+### Mesure à deux bornes (frais Binance réels, params committés Window=40 / percentiles 10/90)
 
-**Verdict : NO-BEATS.** Le Sharpe 0.123 — avec un PSR de 0.8 %, statistiquement indissociable du bruit — mesure le code réellement committé. La stratégie sous-performe massivement le buy & hold BTC (~500 %+ sur la même période) avec un drawdown catastrophique de 72.7 %.
+| Fenêtre | Sharpe | CAGR | Profit net | MaxDD | PSR | Ordres | Jours |
+|---------|--------|------|------------|-------|-----|--------|-------|
+| 2019-04-01 → **2024-12-31** (sensibilité) | **0.611** | 17.54 % | 153.7 % | 72.7 % | 12.9 % | 40 | 2102 |
+| 2019-04-01 → **2025-12-31** (figée, canonical) | **0.238** | 3.96 % | 30.0 % | 72.7 % | 2.1 % | 47 | 2467 |
 
-**D'où vient le 0.787 du catalogue ?** Pas d'une absence de frais : le modèle Binance (`SetBrokerageModel(BrokerageName.Binance, AccountType.Cash)`) est présent depuis la **première révision** du fichier et l'était donc déjà dans ce run. Le 0.787 est le **maximum d'un balayage à 8 variantes** lancé le 2026-04-27 sur le projet Cloud `30751067`, dont les paramètres gagnants (`adx-period=35`, `window=60`, percentiles 15/85) **n'ont jamais été réécrits dans `Main.cs`** : les paramètres committés mesuraient **0.225** le même jour, sur les mêmes données. Le catalogue publie donc un nombre qui n'a jamais décrit ce code. Forensic complet : [#9768](https://github.com/jsboige/CoursIA/issues/9768).
+**La trouvaille = la non-stationnarité, chiffrée.** Une seule année (2025) fait chuter le Sharpe de **0.611 à 0.238 (−61 %)**, le profit net de 154 % à 30 %, le PSR de 12.9 % à 2.1 %. L'edge était **concentré sur 2019-2024** ; 2025 le détruit. C'est la quantification concrète du verdict non-stationnaire que l'EPIC #9768 nommait sans encore le mesurer (addendum user 2026-08-07 : « l'edge était concentré et non-stationnaire »). Le choix de borne n'est **pas neutre** — d'où la mesure aux deux.
 
-**Le chiffre ci-dessus se périmera.** `Main.cs` ne fixe **aucun `SetEndDate`** : la fenêtre s'allonge à chaque exécution. Entre avril et août 2026, les mêmes paramètres sont passés de 0.225 à 0.123 par le seul ajout de 101 jours de bourse (2583 → 2684 jours tradeables). Toute comparaison à ce nombre doit citer sa date de mesure.
+**Verdict : NO-BEATS, confirmé et désormais reproductible.** Sharpe 0.238 sur la fenêtre figée — PSR 2.1 %, statistiquement indissociable du bruit, sous-performe massivement le buy & hold BTC sur la même période, drawdown catastrophique de 72.7 %. Geler la fenêtre n'a pas sauvé la stratégie : elle reste non robuste, et la chute 2025 prouve qu'elle ne l'était pas davantage avant.
 
-Ce verdict corrobore [`RESEARCH_FINDINGS.md`](RESEARCH_FINDINGS.md) (2026-02-17) : l'approche adaptative à seuils percentile ne tient pas ses promesses — toutes les hypothèses H1-H5 rejetées, Sharpe -0.035 pour les paramètres originaux (Window=140). Les paramètres optimisés actuels (`Main.cs` : Window=40, percentiles 10/90) n'inversent pas la conclusion : 0.123 reste non robuste.
+**D'où vient le 0.787 du catalogue ?** Le modèle Binance (`SetBrokerageModel(BrokerageName.Binance, AccountType.Cash)`) est présent depuis la **première révision**. Le 0.787 est le **maximum d'un balayage à 8 variantes** lancé le 2026-04-27 sur le projet Cloud `30751067`, dont les paramètres gagnants (`adx-period=35`, `window=60`, percentiles 15/85) **n'ont jamais été réécrits dans `Main.cs`**. Le catalogue publie donc un nombre qui n'a jamais décrit ce code. Forensic complet : [#9768](https://github.com/jsboige/CoursIA/issues/9768).
+
+Ce verdict corrobore [`RESEARCH_FINDINGS.md`](RESEARCH_FINDINGS.md) (2026-02-17) : l'approche adaptative à seuils percentile ne tient pas ses promesses — toutes les hypothèses H1-H5 rejetées, Sharpe -0.035 pour les paramètres originaux (Window=140). Les paramètres optimisés actuels (`Main.cs` : Window=40, percentiles 10/90) n'inversent pas la conclusion : 0.238 reste non robuste.
 
 ## Stratégie
 

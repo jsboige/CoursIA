@@ -361,6 +361,12 @@ namespace QuantConnect.Algorithm.CSharp
             // OPTIMISÉ: Période étendue pour test robustesse 2019-2025
             // Note: 500-day warmup needs data from ~Nov 2017 (Binance BTCUSDT available)
             SetStartDate(2019, 4, 1);
+            // Freeze the backtest window (#9803, EPIC #9768 D2 fondateur): without a real
+            // SetEndDate the window drifted with each run (Sharpe 0.225 -> 0.123 over 101
+            // extra trading days, 2026-04-27 -> 2026-08-06). Borne = "derniere annee civile
+            // complete" : defensible par sa REGLE (pas par son resultat). Voir #9803 pour la
+            // decision de design (2025-12-31 vs 2024-12-31) et la mesure de sensibilite.
+            SetEndDate(2025, 12, 31);
 
         }
 
