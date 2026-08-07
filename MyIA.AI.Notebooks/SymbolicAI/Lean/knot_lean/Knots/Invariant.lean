@@ -477,9 +477,12 @@ theorem tricolorable_invariant_fails_under_pr1_model :
            injection h with hval
            exact Fin.ext hval⟩
       exact ρ
-    · -- surgery (twist arm): d₂ = { d₁ with crossings := d₁.crossings ++ [⟨3,4,3,4⟩], numEdges := d₁.numEdges + 2 }.
+    · -- surgery (twist arm): field-equalities on a 2-field record
+      --     d₂.crossings = d₁.crossings ++ [⟨3,4,3,4⟩] ∧ d₂.numEdges = d₁.numEdges + 2.
+      --     Both conjuncts are defeq on the literal witness pair (concretely,
+      --     [⟨1,2,1,2⟩,⟨3,4,3,4⟩] = [⟨1,2,1,2⟩] ++ [⟨3,4,3,4⟩] and 4 = 2 + 2).
       left
-      rfl
+      exact ⟨rfl, rfl⟩
   -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
   --     edges to the same colour, contradicting the ≥2-colours requirement.
   · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }

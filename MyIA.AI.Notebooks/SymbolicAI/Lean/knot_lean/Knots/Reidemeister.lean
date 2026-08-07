@@ -88,8 +88,8 @@ def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ c : PDCrossing,
      ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
-       d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 })
+       (d₂.crossings = d₁.crossings ++ [c] ∧ d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [c] ∧ d₁.numEdges = d₂.numEdges + 2))
 
 /-- R1 est symétrique : échanger `d₁`/`d₂` permute les deux bras de la
 disjonction de chirurgie ; le renommage dirigé par `min`/`max` est invariant
@@ -152,9 +152,14 @@ def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
 theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
   -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
+  -- The surgery is `with`-form on a 2-field record; after `obtain rfl := hsurg`,
+  -- field projections reduce to literals, so `⟨rfl, rfl⟩` discharges the
+  -- field-equality pair.
   obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
-  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
-  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
+  · obtain rfl := hsurg
+    exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl ⟨rfl, rfl⟩⟩
+  · obtain rfl := hsurg
+    exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr ⟨rfl, rfl⟩⟩
 
 /-! ## R1 (option C, chirurgie connectée) — Phase 5 PR1.5c
 
