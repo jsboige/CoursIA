@@ -164,7 +164,19 @@ jobs:
       # and could not tell which tolerates the 8 acknowledged sorries from which
       # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
       display-name: conway_lean (audit)
-      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.Spaceships_en,Conway.Life.RLE,Conway.Life.HashlifeMemo,Conway.Life.HashlifeMarginDemo,Conway.Life.GridCanonical,Conway.Life.GridCanonical_en"
+      # #9863 (Phase 3b, PR A of split): `Conway.Life.HashlifeCorrectness` is
+      # now an aggregator over 9 sub-modules under `Conway.Life.HashlifeCorrectness.*`
+      # (Padding, Locality, Bridges, Decomposition, Walls.{Common,NW,NE,SW,SE}).
+      # The 38 native_decide axioms live in the AGGREGATOR (top-level P5 + P4
+      # witnesses + sanity witnesses -- the only file that consumes them via
+      # `decide`); the 9 sub-modules carry 0 native_decide axioms (their proof
+      # bodies are byte-identical to the original monolith, displacement only).
+      # All 10 module paths appear in `target-modules` so the audit enumerates
+      # the new sub-modules too (gating hidden native_decide there). The
+      # allow-axioms list stays byte-identical (depends ONLY on
+      # `Conway.Life.*` namespace prefix after `Conway.Life.`, NOT on intermediate
+      # namespaces or file paths -- #4980 i18n convention carries through).
+      target-modules: "Conway.Life.HashlifeCorrectness,Conway.Life.HashlifeCorrectness.Padding,Conway.Life.HashlifeCorrectness.Locality,Conway.Life.HashlifeCorrectness.Bridges,Conway.Life.HashlifeCorrectness.Decomposition,Conway.Life.HashlifeCorrectness.Walls.Common,Conway.Life.HashlifeCorrectness.Walls.NW,Conway.Life.HashlifeCorrectness.Walls.NE,Conway.Life.HashlifeCorrectness.Walls.SW,Conway.Life.HashlifeCorrectness.Walls.SE,Conway.Life.MacroCell,Conway.Life.Hashlife,Conway.Life.MacroCell_en,Conway.Life.Hashlife_en,Conway.Life.Oscillators,Conway.Life.Spaceships,Conway.Life.Spaceships_en,Conway.Life.RLE,Conway.Life.HashlifeMemo,Conway.Life.HashlifeMarginDemo,Conway.Life.GridCanonical,Conway.Life.GridCanonical_en"
       # allow-axioms: the 38 native_decide axioms that HashlifeCorrectness ACTUALLY
       # depends on (empirical footprint revealed by THIS audit job's first CI run).
       # These are DISTINCT from the blocking gate's 19-name list above: that list
