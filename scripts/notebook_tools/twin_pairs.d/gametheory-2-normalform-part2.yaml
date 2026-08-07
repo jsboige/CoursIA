@@ -1,0 +1,18 @@
+- name: "GameTheory-2 NormalForm Part 2 (Support Enumeration)"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Part2-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-07"
+      by: myia-po-2025:CoursIA
+      python_sha: 13c27d9afd12ca9f9f5dc96c00aa761d8d5bb87c
+      csharp_sha: 7114fe6997be2bbd13cad0ef5a6a76652811ebb2
+      content_python_sha: f056046ef0738dc6d23a032924e3909beaf637bdaf579d8d7f12f8a4da4a4b83
+      content_csharp_sha: 44929716cc04a288e3329bebf148508bb2a213994a41fd2e56e7d6dc701ec48f
+      note: "Creation of the Python twin (was C#-only). From-scratch support enumeration ported faithfully from C# BCL; verified against nashpy (4/4 games CORRESPOND)."
+  known_differences:
+    - "Socle pedagogique commun : support enumeration des equilibres de Nash mixtes NxN (indifference + Gauss pivot partiel + best-response), sur 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies) + 3 exercices (BoS, RPSLS, complexite)."
+    - "Idiomes framework : Python = `numpy` pur pour le from-scratch (meme algorithme que le C#), PLUS `nashpy` comme verification independante (pont SOTA, cell 8). C# = pur BCL .NET (System.*, pas de lib tiers), nashpy n'existe pas en .NET."
+    - "Pont de verification asymetrique : le twin Python dispose de `nashpy` (lib de reference) comme juge de paix — le from-scratch est verifie contre le vrai outil SOTA (verdict SOTA-OK #3801). Le twin C# n'a pas d'equivalent .NET, sa verification est la parite algorithmique avec le Python."
+    - "Resultats numeriquement identiques : RPS uniforme (1/3,1/3,1/3), RPS biaise Paper=0.500, Prisonnier (Defect,Defect), Matching Pennies (0.5,0.5) — confirmes firsthand dans les deux twins."
