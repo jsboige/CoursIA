@@ -347,7 +347,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | Entraînement MNIST 20x20 | Précision : ~85-92% (référence GPU, 5000 iters) ; le notebook exécute une config CPU réduite (N_ITERS=2000) -> ~79% |
 | Inspection | Distribution des 16 portes apprises par les neurones |
 | `CompiledLogicNet` | Export C compilé, ~1M images/s sur 1 core CPU (RECOVERABLE-MACHINE, gcc) |
-| Note historique | Remplace la veille `Neurosymbolic-EML/` (atome NAND continu, parité-3 dégénéré) — voir `_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` |
+| Note historique | Remplace la veille `Neurosymbolic-EML/` (atome NAND continu, parité-3 dégénéré) — voir `_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` |
 
 **Référence** : Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022 ([arXiv 2210.08277](https://arxiv.org/abs/2210.08277)).
 

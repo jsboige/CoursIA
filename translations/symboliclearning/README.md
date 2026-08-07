@@ -33,4 +33,4 @@ python scripts/translation/check_translation_sync.py translations/symboliclearni
 
 ## Hors scope
 
-- `SymbolicAI/SymbolicLearning/_archives/`, `assets/`, `reference/`, `tests/`, `vendor/` — supports non pédagogiques (exclus par le glob `SL-*.ipynb` top-level).
+- `SymbolicAI/SymbolicLearning/_archive/`, `assets/`, `reference/`, `tests/`, `vendor/` — supports non pédagogiques (exclus par le glob `SL-*.ipynb` top-level).

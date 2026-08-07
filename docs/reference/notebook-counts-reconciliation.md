@@ -43,7 +43,7 @@ EXCLUDE_DIRS = {
 ARTIFACT_SUFFIXES = ("_output.ipynb",)
 ```
 
-**Effet** : 946 disque → 944 forensic (2 notebooks `_archives/` exclus : `SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb`, `EML-NAND-Explore.ipynb`).
+**Effet** : 946 disque → 944 forensic (2 notebooks `_archives/` exclus : `SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb`, `EML-NAND-Explore.ipynb`).
 
 ### 3. Catalogue (`scripts/notebook_tools/generate_catalog.py`)
 **Filtre ligne 39** :
@@ -122,7 +122,7 @@ Les 83 notebooks curés-manquants ne sont **pas** des exclusions explicites ; il
 - `Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb`
 
 ### Drift SymbolicAI (2 — faux positifs)
-- `SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-{Compose,Explore}.ipynb`
+- `SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-{Compose,Explore}.ipynb`
 - Ces 2 sont **dans `_archives/`**, donc exclus par forensic ET catalogue — faux positifs de mon diff (le diff n'inclut pas `_archives` dans la table ci-dessus, mais le `git ls-files` les remonte quand même).
 
 ### Drift TOP (1)

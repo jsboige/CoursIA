@@ -28,7 +28,7 @@ un « continuous analogue of NAND gates ». La conjecture était qu'un substrat 
 |-------------|--------------------------------------|
 | **Verdict empirique Note-1** (MSE 0.010, exactitude 0.250, θ* retenu) | Cellules code de `EML-NAND-Explore.ipynb` (champs `outputs`) — préservées telles quelles |
 | **Verdict empirique Note-2** (architectures A/B/C, 10 multistarts, table de mixité) | Cellules code de `EML-NAND-Compose.ipynb` (champs `outputs`) — préservées telles quelles |
-| **Raison du pivot vers difflogic** | [SL-12-DifferentiableLogicGateNetworks.ipynb](../SL-12-DifferentiableLogicGateNetworks.ipynb) **cell[2]** (markdown) — cite explicitement la préquelle archivée et la remplace |
+| **Raison du pivot vers difflogic** | [SL-12-DifferentiableLogicGateNetworks.ipynb](../../SL-12-DifferentiableLogicGateNetworks.ipynb) **cell[2]** (markdown) — cite explicitement la préquelle archivée et la remplace |
 | **Référence arXiv** | `EML-NAND-Explore.ipynb` cell[0] — lien `arXiv 2606.23179` préservé |
 | **Issue de suivi** | #4653 sera fermée avec ce lien d'archive |
 
@@ -49,8 +49,8 @@ par **apprentissage direct d'une porte logique parmi 16**.
 
 ```bash
 # Depuis la racine du dépôt :
-git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Explore.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
-git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
+git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Explore.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
+git mv MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/EML-NAND-Compose.ipynb MyIA.AI.Notebooks/SymbolicAI/Neurosymbolic-EML/
 # Référencer cette archive comme superseded-by dans la PR de restauration
 ```
 
