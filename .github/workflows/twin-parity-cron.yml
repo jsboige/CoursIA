@@ -12,6 +12,15 @@ name: Twin Parity Cron (CI-derived SHA, #9399 volet b)
 # ok_legacy / ok_content / drift_blob / drift_content /
 # drift_legacy_after_content / missing_python / missing_csharp / no_audit.
 #
+# `drift_legacy_after_content` (blob SHA bouge, content_sha identique) est
+# INFORMATIF et ne rougit PAS : `_content_sha` hache les cellules ET leurs
+# outputs en n'excluant que `nb["metadata"]`, donc ce cas ne peut signifier que
+# du churn de metadata carnet (cost / papermill / kernelspec) -- precisement le
+# faux positif que le volet c elimine. Ne PAS le re-inclure dans le total
+# bloquant : le 2026-08-07 il rougissait main pour Sudoku-8/14 BDD avec un
+# `::error ...::<none>` sans nom de paire, et son remede prescrit (`--update`)
+# refusait en no-op par design. Le gate rougit sur `n_blocking_drift`.
+#
 # Distinction outil-erreur vs constat-drift : exigence c.1240 + L948/L949.
 # Si stdout JSON est parsable mais contient des drift, on ROUGE (exit 1)
 # mais on emet un `::error` avec le NOM des paires touchees (actionnable).
