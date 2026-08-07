@@ -149,6 +149,10 @@ def main():
         "--check-readme", action="store_true",
         help="Compare actual counts with README declarations",
     )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Assertion (issue #9857): exit 1 if tool pedagogical count diverges from catalogue",
+    )
     args = parser.parse_args()
 
     pedagogical = not args.all
@@ -167,6 +171,39 @@ def main():
         counts = count_notebooks_in_dir(series_dir, pedagogical=pedagogical)
         if counts["total"] > 0 or args.series:
             results[series_dir.name] = counts
+
+    if args.check:
+        # Assertion #9857 : l'outil (pedagogique) et le catalogue (curé) doivent
+        # converger. Les deux appliquent le même EXCLUDE_PEDAGOGICAL, donc tout
+        # écart signale soit un drift de curation (notebook fraîchement ajouté,
+        # non curé — résolu par catalog-cron < 24h) soit un changement structurel.
+        # Détail chemin-par-chemin : scripts/audit/check_denominators.py --strict.
+        tool_total = sum(r["total"] for r in results.values())
+        catalog_path = REPO_ROOT / "COURSE_CATALOG.generated.json"
+        try:
+            with open(catalog_path, encoding="utf-8") as f:
+                catalog = json.load(f)
+        except FileNotFoundError:
+            print(f"ERREUR: catalogue introuvable: {catalog_path}", file=sys.stderr)
+            return 2
+        catalog_count = len(catalog) if isinstance(catalog, list) else len(
+            catalog.get("notebooks", []) if isinstance(catalog, dict) else []
+        )
+
+        print("CHECK -- convergence catalogue / outil")
+        print(f"  Outil (pedagogical) : {tool_total}")
+        print(f"  Catalogue (curated) : {catalog_count}")
+        if tool_total == catalog_count:
+            print(f"  Statut              : OK -- convergent ({tool_total} == {catalog_count})")
+            return 0
+        delta = tool_total - catalog_count
+        if delta > 0:
+            direction = "outil > catalogue : drift de curation (notebook fraichement ajoute, non cure -- resolu par catalog-cron < 24h)"
+        else:
+            direction = "catalogue > outil : notebook cure mais exclu par chemin outil (ex. examples/ promu au catalogue)"
+        print(f"  DIVERGENCE          : {abs(delta)} -- {direction}")
+        print("  -> investiguer : py scripts/audit/check_denominators.py --strict")
+        return 1
 
     if args.check_readme:
         print(f"\n{'Series':<15} {'Actual':>7} {'README':>7} {'Status':<10}")
@@ -223,4 +260,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
