@@ -50,8 +50,14 @@ class TestLoadProjects:
         assert result == []
 
     def test_missing_file(self):
-        with pytest.raises(SystemExit):
+        with pytest.raises(FileNotFoundError):
             load_projects("/nonexistent/path.json")
+
+    def test_invalid_json(self, tmp_path):
+        p = tmp_path / "garbage.json"
+        p.write_text("{invalid json,", encoding="utf-8")
+        with pytest.raises(json.JSONDecodeError):
+            load_projects(str(p))
 
 
 # --- load_catalog ---
@@ -71,6 +77,16 @@ class TestLoadCatalog:
         p.write_text(json.dumps({}), encoding="utf-8")
         result = load_catalog(str(p))
         assert result == {}
+
+    def test_missing_file(self):
+        with pytest.raises(FileNotFoundError):
+            load_catalog("/nonexistent/catalog.json")
+
+    def test_invalid_json(self, tmp_path):
+        p = tmp_path / "garbage.json"
+        p.write_text("{invalid json,", encoding="utf-8")
+        with pytest.raises(json.JSONDecodeError):
+            load_catalog(str(p))
 
 
 # --- get_catalog_sharpe / get_catalog_bt_count ---
