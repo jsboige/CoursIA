@@ -38,6 +38,7 @@ Ces documents sont conserves pour reference mais ne sont plus actifs. Ne pas mod
 | Repertoire | Contenu | INDEX |
 |-------------|---------|-------|
 | investigation-mcp-nuget/ | 26 fichiers d'investigation MCP Jupyter / NuGet / .NET Interactive | [INDEX.md](investigation-mcp-nuget/INDEX.md) |
+| audit/ | 1 fichier (l-coupling-audit-2026-07-23.md, 151 l.) — audit L-coupling refresh c.821, INDEX-only (no external inbound refs), originellement migré de `docs/audit/` (PR #8210, c.821) puis re-routé de `docs/_archives/audit/` (plenary rename c.9698 tranche final #9535 item 10). Doctrine promote c.8087-c.8092 : L721/L740/L898 → proactive-coordination.md, L576/L677-L4 → git-workflow.md, L750 → lean-merge-discipline.md. Archivé 2026-07-24 (c.8104e, See #7422 triage) | — |
 | genai/ | 13+ fichiers infrastructure GenAI detaillee | [README.md](genai/README.md) |
 | suivis/genai-image/ | 8 fichiers + 4 repertoires de phases (ComfyUI/Qwen) | [INDEX.md](suivis/genai-image/INDEX.md) |
 | curriculum-renumbering-phase1/ | 6 fichiers (Texte, Video, Infer, PyMC, Search, Planners) — analyses phase-1 #5081 verdict NO-RENUMBER archivées 2026-07-19 (c.676 GenAI Texte+Video) + 2026-07-20 (c.748 Probas/Infer, Probas/PyMC, Search) + 2026-07-20 (c.695 Planners, dernier dispatch phase-1, owner-dispatch po-2026 anti-contamination L420) | — |

@@ -175,12 +175,16 @@ def test_huang_short_trajectory_is_inconclusive():
 
 
 def test_huang_3cycle_default_proxy_is_consistent():
-    """Sur le 3-cycle (f=x%2), s_max=2 (noeud 1) et le proxy par defaut
-    (degre moyen) donne un threshold ~1.0 : s_max >= threshold ->
-    ``consistent``. Cas propre (ratio ~2, clairement au-dessus de 1)."""
+    """Sur le 3-cycle (f=x%2), s_max=2 (noeud 1). Le proxy par defaut est
+    le degre structurel moyen sur les noeuds visites : le 3-cycle est
+    2-regulier, donc deg_proxy=2.0 et threshold=sqrt(2)~1.414. s_max >=
+    threshold -> ``consistent`` (#9771 : l'ancien proxy mesurait la masse
+    de ligne de la TPM lisse, ~1.0 par construction, et ne dependait pas
+    de la topologie)."""
     h = s.huang_conjecture_test(
         [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2], 3, lambda x: x % 2
     )
+    assert h["deg_proxy"] == pytest.approx(2.0)  # 3-cycle = 2-regulier
     assert h["verdict"] == "consistent"
     assert h["s_max"] == 2
     assert h["s_max"] >= h["threshold"]
@@ -250,3 +254,67 @@ def test_huang_n_transitions_is_len_minus_one():
     h = s.huang_conjecture_test(states, 2, lambda x: x)
     assert h["n_transitions"] == len(states) - 1
     assert h["n_transitions"] == 9
+
+
+# --------------------------------------------------------------------------- #
+#  Non-regression #9771 : le proxy par defaut doit dependre de la topologie     #
+# --------------------------------------------------------------------------- #
+# Defaut d'origine : deg_proxy = np.mean(W.sum(axis=1)) sur la TPM symmetrisee
+# lissee = masse de probabilite par ligne (~1.0 par construction). Le seuil ne
+# dependait PAS de la topologie. Corrige : degre structurel moyen sur les noeuds
+# visites (2E/V_visite), qui generalise la dimension n de l'hypercube Q_n.
+
+
+def test_huang_threshold_varies_with_topology():
+    """Acceptance #9771 : le threshold par defaut VARIE avec la topologie.
+
+    Trois trajectoires sur le meme alphabet (k=6), fonctions d'etat injectives
+    (s_max = degre max observe) :
+      - cycle-6 (2-regulier)        : deg_proxy=2.0, threshold=sqrt(2)~1.414
+      - cycle-3 sur alphabet 6      : deg_proxy=2.0 (3 noeuds visites, 2-reg)
+      - etoile K(1,5)               : deg_proxy~1.667 (1 hub deg5 + 5 feuilles)
+    L'ancien proxy valait ~1.0 sur les trois."""
+    import math
+    cyc6 = [i % 6 for i in range(6 * 6)]
+    cyc3 = [i % 3 for i in range(3 * 12)]
+    star = [0, 1, 0, 2, 0, 3, 0, 4, 0, 5] * 4
+    h_cyc6 = s.huang_conjecture_test(cyc6, 6, lambda x: x)
+    h_cyc3 = s.huang_conjecture_test(cyc3, 6, lambda x: x)
+    h_star = s.huang_conjecture_test(star, 6, lambda x: x)
+    # Les deg_proxy sont des degres reels, distincts d'une masse ~1.0.
+    assert h_cyc6["deg_proxy"] == pytest.approx(2.0)
+    assert h_cyc3["deg_proxy"] == pytest.approx(2.0)
+    assert h_star["deg_proxy"] == pytest.approx(10.0 / 6.0)  # 2E/V = 10/6
+    # Le threshold varie avec la structure : cycle-6 (2-reg) vs etoile
+    # (degre moyen 1.667) donnent des seuils distincts, et aucun n'est le
+    # plancher ~1.0 de l'ancien proxy (masse de ligne de la TPM lisse).
+    assert h_cyc6["threshold"] == pytest.approx(math.sqrt(2.0))
+    assert h_star["threshold"] != pytest.approx(h_cyc6["threshold"])
+    assert h_cyc6["threshold"] > 1.01
+    assert h_star["threshold"] > 1.01
+
+
+def test_huang_default_proxy_dilution_guard():
+    """Les etats jamais visites (degre structurel 0) ne diluent PAS deg_proxy.
+
+    Un cycle-3 sur un alphabet de 6 visite 3 noeuds (2-reguliers) et laisse 3
+    etats inexplorer. Si on divisait par V_total=6, deg_proxy vaudrait
+    6 aretes / 6 = 1.0 (l'ancien artefact). On divise par V_visite=3 ->
+    deg_proxy = 2.0, le vrai degre moyen du graphe observe."""
+    cyc3 = [i % 3 for i in range(3 * 12)]
+    h = s.huang_conjecture_test(cyc3, 6, lambda x: x)
+    assert h["deg_proxy"] == pytest.approx(2.0)  # PAS 1.0 (dilution evitee)
+    assert h["n_visited"] == 3
+
+
+def test_huang_new_proxy_makes_demi_cycle_inconsistent():
+    """Le nouveau proxy est PLUS exigeant : une fonction a sensibilite faible
+    sur un graphe de degre eleve devient ``inconsistent``.
+
+    f = indicatrice de la moitie d'un 6-cycle : s_max = 1 (un seul voisin
+    bascule aux frontieres), mais deg_proxy = 2.0 -> threshold = sqrt(2) > 1.
+    L'ancien proxy (threshold ~1.0) rendait ce cas ``consistent``."""
+    cyc6 = [i % 6 for i in range(6 * 6)]
+    h = s.huang_conjecture_test(cyc6, 6, lambda x: 1 if x in (0, 1, 2) else 0)
+    assert h["s_max"] == 1
+    assert h["verdict"] == "inconsistent"  # 1 < sqrt(2) : la conjecture echoue
