@@ -23,14 +23,17 @@ cluster-specifique qui meriterait un audit dedie.
 Cet outil transforme l'audit manuel (forensic au cas par cas) en un
 **detecteur deterministe** utilisable en CI :
 
-  - Scan recursive de `MyIA.AI.Notebooks/**/*.ipynb`.
-  - Pour chaque notebook, evalue 3 criteres :
+  - Scan recursive de `MyIA.AI.Notebooks/**/*.ipynb` (Phase 1) **et**
+    `MyIA.AI.Notebooks/QuantConnect/projects/**/main.py` + `Main.cs`
+    (Phase 2 -- deployables QC, FP-2 fix : commentaires strippes avant
+    regex pour eviter le faux negatif documente sur `CSharp-BTC-MACD-ADX`).
+  - Pour chaque fichier, evalue 3 criteres :
       1. **presence de l'ancre** (`SetEndDate(...)` Python, `SetEndDate(...)` C#,
          ou variante insensible a la casse avec parentheses non vides) ;
       2. **presence d'un appel `SetStartDate`** (sinon la notion de fenetre
          n'a pas de sens et on ne peut pas accuser D2) ;
-      3. **role du notebook** : recherche (`.ipynb`) vs deployable (`main.py`,
-         hors scope ici -- l'audit Phase 0 a montre 0 % sur `main.py`).
+      3. **role du fichier** : recherche (`.ipynb`) vs deployable (`main.py` /
+         `Main.cs`, scope Phase 2).
   - Verdict par notebook : `D2+` (les deux appels StartDate ET absence de
     EndDate) ou `CONFORME` (EndDate present) ou `NEUTRE` (pas de StartDate,
     notion de fenetre non-pertinente).
@@ -110,6 +113,10 @@ Voir aussi
   distinct de D2 (fenetre ouverte)
 - `MEMORY.md` section "Lecons durables" -- c.1331+13-L1 ★★ (grep -L MSYS
   non fiable : on utilise ici pathlib natif, pas grep, donc immune).
+- c.1331+16 -- Phase 2 : extension scope aux sources `.cs`/`.py` deployees
+  sur QC Cloud, avec fix FP-2 (commentaires strippes avant regex). Le
+  cas-graine `CSharp-BTC-MACD-ADX/Main.cs` passe de faux CONFORME a
+  veridique D2+.
 """
 from __future__ import annotations
 
@@ -210,8 +217,8 @@ def classify_notebook(path: Path) -> dict[str, Any]:
     """Classifie un notebook selon le verdict D2+/CONFORME/NEUTRE.
 
     Returns:
-        dict avec les cles : path, verdict, has_set_start, has_set_end,
-        has_qc_context, error (le cas echeant).
+        dict avec les cles : path, file_type, verdict, has_set_start,
+        has_set_end, has_qc_context, error (le cas echeant).
     """
     # ``path.relative_to(REPO_ROOT)`` plante pour les notebooks hors-repo
     # (tests pytest dans tmp_path, scan d'un chemin absolu exterieur). On
@@ -222,6 +229,7 @@ def classify_notebook(path: Path) -> dict[str, Any]:
         path_str = str(path)
     rec: dict[str, Any] = {
         "path": path_str,
+        "file_type": "ipynb",
         "verdict": "UNKNOWN",
         "has_set_start": False,
         "has_set_end": False,
@@ -259,6 +267,94 @@ def classify_notebook(path: Path) -> dict[str, Any]:
 
 
 # -----------------------------------------------------------------------------
+# Sources QC (.cs / .py)
+# -----------------------------------------------------------------------------
+
+def _strip_comments(source: str, file_type: str) -> str:
+    """Neutralise les commentaires avant regex, par type de fichier.
+
+    Pourquoi ce stripping :
+      - C# : ``// commentaire`` (fin de ligne) + ``/* commentaire */`` (bloc).
+      - Python : ``# commentaire`` (fin de ligne, PAS de bloc natif).
+
+    On NE supprime pas -- on REMPLACE par des espaces de meme longueur, pour
+    que les numeros de ligne ne soient pas decales (utile si on voulait un
+    jour reporter une position). Pour l'instant le verdict binaire n'en a
+    pas besoin, mais l'invariant est preserve.
+
+    Note : on ne parse PAS les chaines (``"...\\n// not a comment"``). Un
+    commentaire a l'interieur d'une string litterale passerait au travers.
+    Faux negatif assume sur corpus QC reel -- aucun cas mesure.
+    """
+    if file_type == "cs":
+        # // ... \n
+        out = re.sub(r"//[^\n]*", lambda m: " " * len(m.group(0)), source)
+        # /* ... */ (non-greedy, multi-line)
+        out = re.sub(
+            r"/\*.*?\*/",
+            lambda m: " " * len(m.group(0)),
+            out,
+            flags=re.DOTALL,
+        )
+        return out
+    elif file_type == "py":
+        # # ... \n  (le caractere # n'a pas d'autre role syntaxique en Python)
+        return re.sub(r"#[^\n]*", lambda m: " " * len(m.group(0)), source)
+    else:
+        raise ValueError(f"file_type inconnu: {file_type}")
+
+
+def classify_source(path: Path, file_type: str) -> dict[str, Any]:
+    """Classifie une source QC (.cs ou .py) selon le verdict D2+/CONFORME/NEUTRE.
+
+    Meme logique que ``classify_notebook``, mais :
+      - on strippe les commentaires AVANT la recherche regex (FP-2 fix pour
+        les ``// SetEndDate(...)`` commentes -- le cas-graine
+        ``CSharp-BTC-MACD-ADX/Main.cs`` contient 14 ``//SetStartDate`` /
+        ``//SetEndDate`` commentes + 1 ``SetStartDate(2019, 4, 1)`` reel).
+      - on ne regarde PAS les outputs (un .py/.cs n'en a pas ; le verdict
+        porte sur le code execute).
+    """
+    try:
+        path_str = str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        path_str = str(path)
+    rec: dict[str, Any] = {
+        "path": path_str,
+        "file_type": file_type,
+        "verdict": "UNKNOWN",
+        "has_set_start": False,
+        "has_set_end": False,
+        "has_qc_context": False,
+        "error": None,
+    }
+    try:
+        raw_text = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError) as e:
+        rec["error"] = f"{type(e).__name__}: {e}"
+        return rec
+
+    code = _strip_comments(raw_text, file_type)
+    rec["has_qc_context"] = bool(RE_QC_CONTEXT.search(code))
+    rec["has_set_start"] = bool(RE_SET_START_DATE.search(code))
+    rec["has_set_end"] = bool(RE_SET_END_DATE.search(code))
+
+    if not rec["has_qc_context"] and not rec["has_set_start"]:
+        rec["verdict"] = "NEUTRE"
+    elif rec["has_set_end"]:
+        rec["verdict"] = "CONFORME"
+    elif rec["has_set_start"] and rec["has_qc_context"]:
+        rec["verdict"] = "D2+"
+    elif rec["has_set_start"]:
+        # SetStartDate sans contexte QC detecte -- peut etre un faux positif
+        # (autre framework). On classe NEUTRE avec note.
+        rec["verdict"] = "NEUTRE"
+    else:
+        rec["verdict"] = "NEUTRE"
+    return rec
+
+
+# -----------------------------------------------------------------------------
 # Scan
 # -----------------------------------------------------------------------------
 
@@ -269,17 +365,81 @@ def iter_notebooks(root: Path) -> list[Path]:
     return sorted(root.rglob("*.ipynb"))
 
 
+def iter_sources(root: Path) -> list[tuple[Path, str]]:
+    """Liste les sources QC strategiques sous ``root``.
+
+    Cible :
+      - ``MyIA.AI.Notebooks/QuantConnect/projects/**/main.py`` (Python)
+      - ``MyIA.AI.Notebooks/QuantConnect/projects/**/Main.cs`` (C#)
+
+    Pourquoi restreint a ``projects/`` : c'est la OU vivent les deployables
+    (strategies committees, code execute sur QC Cloud). Les notebooks
+    ``.ipynb`` vivent ailleurs (ML-Training-Pipeline, kelly_lean, etc.) et
+    sont deja couverts par ``iter_notebooks``. Les scripts ``scripts/*.py``
+    internes au tooling ne sont pas strategiques -- le scan du tooling QC
+    est realise par d'autres outils (``detect_quantbook_window_divergence``).
+
+    Returns:
+        liste de tuples ``(chemin, file_type)`` ou ``file_type in {"py", "cs"}``.
+    """
+    if not root.exists():
+        return []
+    # ``root`` designe generalement le repo lui-meme (DEFAULT_ROOT =
+    # ``<repo>/MyIA.AI.Notebooks`` quand ``iter_notebooks`` est appele avec
+    # DEFAULT_ROOT). Pour rester robuste aux deux cas on essaie d'abord
+    # ``<root>/MyIA.AI.Notebooks/QuantConnect/projects`` puis fallback sur
+    # ``<root>/QuantConnect/projects``.
+    candidates = [
+        root / "MyIA.AI.Notebooks" / "QuantConnect" / "projects",
+        root / "QuantConnect" / "projects",
+    ]
+    qc_projects = next((c for c in candidates if c.exists()), None)
+    if qc_projects is None:
+        return []
+    out: list[tuple[Path, str]] = []
+    for p in sorted(qc_projects.rglob("main.py")):
+        out.append((p, "py"))
+    for p in sorted(qc_projects.rglob("Main.cs")):
+        out.append((p, "cs"))
+    return out
+
+
 def scan(root: Path) -> dict[str, Any]:
-    """Scan complet, retourne un rapport structure."""
-    notebooks = iter_notebooks(root)
+    """Scan complet, retourne un rapport structure.
+
+    Combine :
+      - ``.ipynb`` (notebooks de recherche) -- ``iter_notebooks``
+      - ``main.py`` / ``Main.cs`` (deployables QC) -- ``iter_sources``
+
+    Les verdicts sont agregees dans le meme compteur. Les echantillons
+    distinguent les deux populations par le prefixe du chemin (deploiement =
+    ``MyIA.AI.Notebooks/QuantConnect/projects/``).
+    """
     verdicts: dict[str, int] = {"D2+": 0, "CONFORME": 0, "NEUTRE": 0, "UNKNOWN": 0}
+    by_type: dict[str, dict[str, int]] = {}
     d2_samples: list[str] = []
     conforme_samples: list[str] = []
     errors: list[dict[str, str]] = []
 
-    for nb_path in notebooks:
+    for nb_path in iter_notebooks(root):
         rec = classify_notebook(nb_path)
         verdicts[rec["verdict"]] = verdicts.get(rec["verdict"], 0) + 1
+        by_type.setdefault("ipynb", {}).setdefault(rec["verdict"], 0)
+        by_type["ipynb"][rec["verdict"]] += 1
+        if rec["error"]:
+            errors.append({"path": rec["path"], "error": rec["error"]})
+        elif rec["verdict"] == "D2+":
+            if len(d2_samples) < 10:
+                d2_samples.append(rec["path"])
+        elif rec["verdict"] == "CONFORME":
+            if len(conforme_samples) < 10:
+                conforme_samples.append(rec["path"])
+
+    for path, file_type in iter_sources(root):
+        rec = classify_source(path, file_type)
+        verdicts[rec["verdict"]] = verdicts.get(rec["verdict"], 0) + 1
+        by_type.setdefault(file_type, {}).setdefault(rec["verdict"], 0)
+        by_type[file_type][rec["verdict"]] += 1
         if rec["error"]:
             errors.append({"path": rec["path"], "error": rec["error"]})
         elif rec["verdict"] == "D2+":
@@ -301,6 +461,7 @@ def scan(root: Path) -> dict[str, Any]:
         "root": root_str,
         "total": total,
         "verdicts": verdicts,
+        "by_type": by_type,
         "d2_rate_pct": round(verdicts["D2+"] / total * 100, 1) if total else 0.0,
         "d2_samples": d2_samples,
         "conforme_samples": conforme_samples,
@@ -315,14 +476,28 @@ def scan(root: Path) -> dict[str, Any]:
 def _format_text(report: dict[str, Any]) -> str:
     v = report["verdicts"]
     total = report["total"]
+    by_type = report.get("by_type", {})
     lines = [
-        f"QC-Notebooks D2+ (fenetre non figee) : {v.get('D2+', 0)}/{total} "
+        f"Total D2+ (fenetre non figee)       : {v.get('D2+', 0)}/{total} "
         f"({report['d2_rate_pct']} %)",
-        f"QC-Notebooks conformes (EndDate OK)   : {v.get('CONFORME', 0)}/{total}",
-        f"QC-Notebooks sans SetStartDate (N/A)  : {v.get('NEUTRE', 0)}/{total}",
-        f"QC-Notebooks illisibles              : {v.get('UNKNOWN', 0)}/{total}",
+        f"Total CONFORME (EndDate OK)         : {v.get('CONFORME', 0)}/{total}",
+        f"Total NEUTRE (sans SetStartDate)    : {v.get('NEUTRE', 0)}/{total}",
+        f"Total UNKNOWN (illisibles)          : {v.get('UNKNOWN', 0)}/{total}",
         "---",
+        "Repartition par type de fichier :",
     ]
+    for ftype, counts in sorted(by_type.items()):
+        sub_total = sum(counts.values())
+        sub_d2 = counts.get("D2+", 0)
+        sub_rate = round(sub_d2 / sub_total * 100, 1) if sub_total else 0.0
+        lines.append(
+            f"  {ftype:6s} : {sub_total} fichiers, "
+            f"D2+ {sub_d2}/{sub_total} ({sub_rate} %), "
+            f"CONFORME {counts.get('CONFORME', 0)}, "
+            f"NEUTRE {counts.get('NEUTRE', 0)}, "
+            f"UNKNOWN {counts.get('UNKNOWN', 0)}"
+        )
+    lines.append("---")
     if report["d2_samples"]:
         lines.append("Echantillon D2+ (10 premiers) :")
         lines.extend(f"  {p}" for p in report["d2_samples"])

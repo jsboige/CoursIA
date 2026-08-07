@@ -604,8 +604,20 @@ def detect_d5(revisions: list[NotebookRevision]) -> list[ForensicFinding]:
 
 
 def _build_revisions(notebook: str, repo: str) -> list[NotebookRevision]:
-    """Construit la liste des NotebookRevision pour un notebook."""
+    """Construit la liste des NotebookRevision pour un notebook (chrono, ancien->recent).
+
+    ``get_revisions`` reflete l'ordre natif de ``git log`` (recent -> ancien),
+    mais les detecteurs D3/D4/D5 comparent chaque commit a ``revisions[i-1]``
+    en supposant que c'est son **predecesseur chronologique** (l'etat herite).
+    En ordre recent->ancien, ``revisions[i-1]`` est le voisin *plus recent* --
+    la derive d'un commit posterieur est alors attribuee a tort a un commit
+    anterieur innocent (FP massifs : ~90% sur les familles maturees, EPIC #9768
+    Phase 0). On retourne donc la liste en chrono (ancien -> recent) pour que
+    ``revisions[i-1]`` designe bien le vrai predecesseur. (get_revisions n'a
+    qu'un seul appelant : ce point d'etranglement.)
+    """
     revs_meta = get_revisions(notebook, repo)
+    revs_meta = list(reversed(revs_meta))  # ancien -> recent
     revs: list[NotebookRevision] = []
     for sha, subject in revs_meta:
         try:
