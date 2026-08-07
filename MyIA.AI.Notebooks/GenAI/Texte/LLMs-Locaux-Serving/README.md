@@ -27,7 +27,7 @@ Ce backend est le **fournisseur de modèles locaux** du cluster. Il complète le
 |--------|------|------|
 | Notebooks Texte (LocalLlama, Quantization, Production Patterns) | *Démontrent* l'usage d'un LLM local | [9](../9_Production_Patterns.ipynb) · [10](../10_LocalLlama.ipynb) · [11](../11_Quantization.ipynb) |
 | [Claudish](../../Vibe-Coding/Claudish/README.md) | Route le tier « Haiku » des assistants de code vers… ce backend vLLM | wire Anthropic → OpenAI |
-| [Open WebUI](../../Open-WebUI/README.md) | Expose le modèle aux utilisateurs finaux (multi-tenant) | UI + RAG |
+| [Open WebUI](../../Plateformes-Conversationnelles/Open-WebUI/README.md) | Expose le modèle aux utilisateurs finaux (multi-tenant) | UI + RAG |
 | Ce backend (cette section) | **Sert le modèle qui alimente les trois précédents** | endpoints OpenAI-compat |
 
 Autrement dit : quand un notebook Texte interroge un « LLM local », quand Claudish route une requête de code vers son tier gratuit, ou quand un étudiant chatte dans Open WebUI, c'est *ce serveur* qui répond.

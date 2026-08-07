@@ -30,10 +30,17 @@ Le dépôt compte ~95 forks étudiants. Réécrire l'historique casserait chacun
 déjà committés (cf. §3) restent dans l'historique. La politique est **entièrement tournée
 vers l'avenir** — on surveille ce qui entre, on ne défait pas ce qui est fait.
 
-## 3. Mesure réelle (plus gros blobs, ordre décroissant)
+## 3. Mesure réelle
 
-Mesuré firsthand via `git rev-list --objects --all | git cat-file --batch-check` (équivalent
-fonctionnel à `git-sizer` pour le classement par blob, sans dépendance Go) :
+Deux angles, deux méthodes : **ce qui est committé** (blobs dans le dépôt) et **ce qui est
+dans `.git/` localement** (artefacts d'administration, dépendants de la machine). Ne pas
+mélanger.
+
+### 3.1 Blobs du dépôt (le poids partageable)
+
+Mesurable firsthand via `git rev-list --objects --all | git cat-file --batch-check` (équivalent
+fonctionnel à `git-sizer` pour le classement par blob, sans dépendance Go). Top 5 décroissant
+(mesure ai-01 2026-08-07, reproduit par le PR #9912) :
 
 | Taille | Blob | Statut | Décision |
 |--------|------|--------|----------|
@@ -47,22 +54,55 @@ Le pack agrégé (~1,2 GiB bare) reflète : (a) les blobs vendored légitimes, (
 des notebooks-avec-outputs (chaque révision d'un notebook riche compte), (c) quelques
 incidents passés (le `model.pt`) désormais nettoyés de l'arbre courant.
 
-> **Note locale** : `git count-objects -vH` peut afficher `size-pack` plus élevé et des
-> `warning: garbage found: .git/objects/pack/tmp_pack_*` sur un clone de travail. Ces
-> `tmp_pack_*` sont du **garbage local** à la machine (un `git gc` les élimine), pas un
-> problème du dépôt distant. Ne pas les confondre avec le sujet.
+> **Comment lire `git count-objects -vH`.** `size-pack` est la taille cumulée des `.pack`
+> dans `objects/pack/` — c'est la mesure **distante** (ce que tout clone télécharge). Le
+> `packs: N` indique le nombre de `.pack` non coalescés : un chiffre élevé signifie que
+> `git gc` n'a pas encore été lancé localement depuis longtemps, pas une dette du dépôt
+> distant. Les `tmp_pack_*` signalés en `warning: garbage found` sont du **garbage local**
+> à la machine (un `git gc` les élimine), pas un problème du dépôt distant — ne pas les
+> confondre avec le sujet.
+
+### 3.2 `.git/` local (artefacts d'administration, par machine)
+
+`du -sh .git/` agrège **six composantes** qu'il faut distinguer — confondre `.git/` avec « le
+poids du dépôt » est une erreur fréquente (la PR #9912 mesurait ai-01 et en oubliait deux).
+Mesure ai-01 2026-08-07 (méthode : `du -sh .git/<composante>` par sous-dossier, hors
+`du -sh .git/*` qui timeoute sur les 200+ worktrees) :
+
+| Composante | Ordre de grandeur | Ce que c'est | Qui le produit |
+|------------|-------------------|--------------|----------------|
+| `.git/modules/` | ~4,0 GiB | submodules (§5.1) — clones des dépôts référencés par `.gitmodules` | un `git submodule update --init --recursive` |
+| `.git/worktrees/` | ~1,7 GiB | worktrees éphémères créés par les agents workers | `git worktree add ../CoursIA-<sujet>` (cf. CLAUDE.md §A et `git-workflow.md`) |
+| `.git/objects/` | ~1,6 GiB | le store d'objets (≈ `size-pack` + delta + dangling) | tout `git fetch` / `git commit` |
+| `.git/wt-*` (résiduels) | ~950 MiB | worktrees laissés par un crash ou un worktree mal démonté | agents sans `git worktree remove` propre |
+| `.git/lfs/` | ~73 MiB | cache LFS (objets téléchargés mais pas encore promus) | un `git lfs fetch` |
+| `.git/logs/` | ~7 MiB | historique des refs (reflog) | tout mouvement de HEAD |
+| **Total `.git/`** | **~8,2 GiB** | — | — |
+
+> **Ces chiffres sont datés 2026-08-07 sur ai-01.** Ils servent à illustrer l'ordre de grandeur
+> et la **proportion** de chaque composante — pas un absolu à reporter. Un `git gc` peut faire
+> varier `objects/` ; un `git worktree prune` peut faire chuter `wt-*` ; un worker actif qui
+> ouvre un worktree fait croître `worktrees/`. **La méthode compte, le chiffre périme.**
 >
-> **`du -sh .git` n'est pas la taille du dépôt.** Sur une machine de dev, `du -sh .git`
-> additionne des composantes **locales** qu'un cloneur ne paie jamais : (a) `size-pack`
-> (le pack parent — accrète plusieurs fichiers `.pack` sur un clone longévif, non coalescés
-> tant qu'un `git gc` n'a pas tourné), (b) `size-garbage` (`tmp_pack_*` orphelins, cf.
-> ci-dessus), et (c) **`.git/modules/`** — les object stores des 8 submodules (cf. §5.1),
-> checkoutés localement mais absents du pack parent. Mesure firsthand sur une machine du
-> cluster : `size-pack ~2 GiB` + `size-garbage ~890 MiB` + `.git/modules ~270 MiB`, soit un
-> `du -sh .git` dépassant largement le pack distant (~1,2 GiB bare, cf. en-tête) — un écart
-> qui n'est **pas** une régression de taille, juste la somme de ces trois composantes locales.
-> La source de vérité pour la taille du dépôt est le pack distant (ce qu'un `git clone` nu
-> récupère), jamais `du -sh .git` sur une machine de travail.
+> **L'angle mort du commentaire #9912** : les deux composantes **produites par le harnais**
+> (`worktrees/` 1,7 GiB et `wt-*` résiduels 950 MiB) étaient absentes de la décomposition
+> initiale — qui parlait de « 1,45 GiB size-pack ». `du -sh .git/*` timeout sur les machines
+> avec beaucoup de worktrees (200+ chez ai-01) : la mesure agrégée n'est récupérable que
+> composante par composante, ou via `git worktree list` pour le décompte.
+
+### 3.3 Maintenance (locale, à la demande)
+
+Quelques gestes d'hygiène **sans valeur de fond**, à exécuter quand l'espace disque devient
+gênant sur la machine :
+
+- `git worktree prune` — nettoie `.git/wt-*` (worktrees non référencés par `git worktree list`).
+- `git gc --aggressive --prune=now` — recompacte `.git/objects/` ; coûteux en CPU, à éviter
+  pendant une session de travail.
+- `git submodule deinit -f <submodule>` puis `git worktree remove` — pour libérer `modules/`
+  si un submodule n'est plus utilisé localement (ne touche pas le dépôt distant).
+
+Ces gestes **ne réduisent pas la taille du dépôt partageable** (§3.1) : pour cela, la voie est
+LFS au prochain ajout (§5), pas la rétro-conversion de l'existant (§2.2).
 
 ## 4. Ce qui ne doit JAMAIS entrer
 

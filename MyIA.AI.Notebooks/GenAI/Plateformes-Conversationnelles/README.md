@@ -1,0 +1,70 @@
+# Plateformes conversationnelles — choisir son interface GenAI
+
+[← Documentation GenAI](../README.md)
+
+> **Catégorie fonctionnelle.** Ce dossier regroupe les **plateformes GenAI
+> réelles** — des produits déployables, pas des démonstrations jouet — qui
+> apportent une couche de conversation (chat, RAG, outils, agents) par-dessus
+> des modèles de langage. Toutes les autres sous-séries de `GenAI/` sont
+> nommées par **fonction** (`Image`, `Audio`, `Texte`, `RAG-et-Memoire-Semantique`…) ;
+> celle-ci suit la même convention : elle est nommée par ce qu'elle *fait*
+> (héberger des plateformes conversationnelles), pas par un produit.
+
+---
+
+## Pourquoi une catégorie plutôt qu'un produit
+
+Les plateformes conversationnelles ne se réduisent pas à Open WebUI. Selon le
+terrain — un serveur auto-hébergé, un site WordPress existant, une boutique
+WooCommerce — l'interface GenAI la plus adaptée diffère. Cette catégorie
+présente **deux plateformes** comme **sœurs**, chacune détaillée dans son propre
+dossier ; le [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+vit **au niveau catégorie** parce qu'un comparatif ne doit pas être rangé à
+l'intérieur de l'un des deux objets qu'il compare.
+
+## Les deux plateformes
+
+| Plateforme | Terrain | Angle | Dossier |
+|------------|---------|-------|---------|
+| **Open WebUI** | Serveur auto-hébergé, multi-tenant | Comment *utiliser* et *tester* une plateforme GenAI de bout en bout | [`Open-WebUI/`](Open-WebUI/README.md) |
+| **AI-Engine (WordPress)** | Site de contenu WordPress existant | Ajouter la couche GenAI *dans* un CMS plutôt qu'à côté | [`AI-Engine-WordPress/`](AI-Engine-WordPress/README.md) |
+
+### [Open WebUI](Open-WebUI/README.md)
+
+Interface de chat LLM open-source, auto-hébergée, multi-tenant : authentification
+et rôles, streaming, RAG sur bases de connaissances, outils et serveurs MCP,
+génération d'images, synthèse et reconnaissance vocale. Deux parcours la
+couvrent : un **tour guidé** de la plateforme et une **série QA Playwright**
+qui la teste de bout en bout.
+
+➡️ **[Ouvrir le dossier Open-WebUI](Open-WebUI/README.md)**
+
+### [AI-Engine (WordPress)](AI-Engine-WordPress/README.md)
+
+L'extension WordPress de Jordy Meow, présentée comme **presqu'équivalente d'Open
+WebUI côté site de contenu**. Plutôt que de poser Open WebUI *à côté* d'un
+WordPress existant, AI-Engine ajoute la couche GenAI directement dans le CMS —
+chatbots, Copilot pour l'éditeur Gutenberg, AI Forms, RAG sur le contenu du
+site, et **WordPress comme serveur MCP**. Le projet **livresagités** sert de
+terrain d'observation (sans contenu privé reproduit).
+
+➡️ **[Ouvrir le dossier AI-Engine-WordPress](AI-Engine-WordPress/README.md)**
+
+---
+
+## Comparatif
+
+Le tableau structuré [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+synthétise les différences fonctionnelles (chat, RAG, multi-provider, MCP,
+extensions). Il ne **classe pas** un produit au-dessus de l'autre — OWUI et
+AI-Engine ciblent des usages différents et cohabitent souvent — mais aide à
+décider **quand l'un est plus adapté que l'autre** pour un projet donné.
+
+---
+
+## Étendre la catégorie
+
+La catégorie est nommée pour accueillir sans réécriture un troisième membre :
+une interface comme **LibreChat**, **AnythingLLM** ou **Flowise** trouverait sa
+place ici comme nouveau dossier sœur, avec le comparatif mis à jour au niveau
+catégorie.

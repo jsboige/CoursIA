@@ -799,7 +799,12 @@ def main():
         total_files += 1
         total_found += found
         total_fixed += fixed
-        rel = os.path.relpath(p, repo_root)
+        try:
+            rel = os.path.relpath(p, repo_root)
+        except ValueError:
+            # Windows: p et repo_root sur des volumes differents (D: vs C:).
+            # Aucun chemin relatif n'existe alors ; l'absolu reste affichable.
+            rel = os.path.abspath(p)
         if do_apply:
             tag = "FIXED" if fixed == found else ("PARTIAL" if fixed else "SKIP")
             print("[%s] %s  (%d leak line(s), %d fixed)" % (tag, rel, found, fixed))

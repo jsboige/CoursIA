@@ -48,7 +48,7 @@ STUB_PATTERNS = [
 ]
 
 EXERCISE_HEADER_RE = re.compile(
-    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*)\s*[:.]?\s*(.*)',
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*(?:\.\d+)*)\s*[:.]?\s*(.*)',
     re.MULTILINE | re.IGNORECASE,
 )
 

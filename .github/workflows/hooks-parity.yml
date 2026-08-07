@@ -22,13 +22,15 @@ on:
       - "scripts/check_hooks_parity.py"
       - "scripts/setup_hooks.py"
 
-# Advisory: surfaces the warning without breaking the rest of the CI run.
-continue-on-error: true
-
 jobs:
   parity:
     name: parity gate
     runs-on: ubuntu-latest
+    # Advisory: surfaces the warning without breaking the rest of the CI run.
+    # `continue-on-error` is only valid on a job or a step -- at the workflow
+    # root it is an unknown key, which Actions rejects with a startup_failure
+    # (0 jobs created, no log to read). See the PR body for the diagnosis.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
