@@ -21,6 +21,13 @@ needs user sign-off; this is the mechanism that the rule will call):
     pick elsewhere. Exit 0 means the way is clear (optionally: your own lane
     already claimed, you are resuming).
 
+  - **--stale-threshold HOURS** (check mode): treat OTHER lanes' claims older
+    than HOURS as STALE -- the guard no longer blocks on them, it prints a
+    `STALE_CLAIM <lane> <age>h` warning instead. This unblocks a lane when a
+    prior claimer died (killed session, re-image, exhausted credit) without a
+    release. Age is the server `createdAt`, never the body. The new claimant
+    MUST still post its own `[CLAIMED]`; the stale claim is not a silent bypass.
+
   - **--claim "<intention>"**: post a `[CLAIMED] lane <machine:workspace>`
     comment. GitHub server-stamps it UTC -- the body carries NO timestamp, so
     Defaut 2 (local time wearing a `Z` suffix) is impossible by construction.
@@ -50,6 +57,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
@@ -221,11 +229,59 @@ def _fmt_utc(iso: str | None) -> str:
 
 # --- modes -------------------------------------------------------------------
 
-def _run_check(payload: dict, my_lane: str) -> int:
+def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
+    """Age of a claim in hours, from the server `createdAt` field.
+
+    Returns None when `created_at` is missing or unparseable -- conservatively
+    treated as NOT stale (we cannot prove an age, so we do not silently lift a
+    block on a claim we cannot date). `now` is injected for testability.
+    """
+    if not created_at:
+        return None
+    parsed = _parse_iso_utc(created_at)
+    if parsed is None:
+        return None
+    return (now - parsed).total_seconds() / 3600.0
+
+
+def _parse_iso_utc(iso: str) -> datetime | None:
+    """Parse a GitHub server `createdAt` (ISO 8601 UTC, trailing 'Z').
+
+    Tolerates a fractional second component and an explicit +00:00 offset.
+    Returns None on any parse failure rather than raising.
+    """
+    try:
+        s = iso.strip()
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except (ValueError, TypeError):
+        return None
+
+
+def _run_check(payload: dict, my_lane: str, stale_threshold=None,
+               now: datetime | None = None) -> int:
     events = _sort_events(payload)
     active, unattributed = compute_active_claims(events)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
+
+    # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
+    # (age from the server createdAt, NEVER the body) is treated as STALE -- it
+    # no longer blocks, but a warning is printed and the new claimant MUST post
+    # their own [CLAIMED] (this is not a silent bypass). Without the flag
+    # (default None), behaviour is unchanged: every active claim blocks.
+    stale_others: dict[str, ClaimEvent] = {}
+    if stale_threshold is not None:
+        now = now or datetime.now(timezone.utc)
+        for ln, ev in others.items():
+            age = _claim_age_hours(ev.created_at, now)
+            if age is not None and age >= stale_threshold:
+                stale_others[ln] = ev
+        others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
 
     summary = {
         "issue": payload.get("number"),
@@ -233,6 +289,7 @@ def _run_check(payload: dict, my_lane: str) -> int:
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
+        "stale_claims": sorted(stale_others),
         "active_claims": {
             ln: {
                 "claimed_at": ev.created_at,
@@ -247,6 +304,16 @@ def _run_check(payload: dict, my_lane: str) -> int:
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
+    # Stale warnings -- non-blocking, but loud enough to prompt a fresh claim.
+    for ln, ev in sorted(stale_others.items()):
+        age = _claim_age_hours(ev.created_at, now)
+        age_h = f"{age:.1f}" if age is not None else "?"
+        print(
+            f"STALE_CLAIM {ln} ({age_h}h >= {stale_threshold:g}h threshold) -- "
+            f"reprise autorisee, poster un nouveau [CLAIMED].",
+            file=sys.stderr,
+        )
+
     # Human verdict after the JSON.
     if others:
         who = ", ".join(
@@ -259,7 +326,12 @@ def _run_check(payload: dict, my_lane: str) -> int:
             file=sys.stderr,
         )
         return 1
-    note = " (resuming your own active claim)" if mine else ""
+    parts = []
+    if mine:
+        parts.append("resuming your own active claim")
+    if stale_others:
+        parts.append(f"{len(stale_others)} stale claim(s) bypassed")
+    note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
     return 0
 
@@ -280,6 +352,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
                    help="read `gh issue view` JSON from FILE (offline/test mode)")
+    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=None,
+                   help="treat OTHER lanes' claims older than HOURS as stale: "
+                        "warn and do not block (age from server createdAt, never "
+                        "the body). The new claimant must still post its own "
+                        "[CLAIMED] -- this is not a silent bypass. Without the "
+                        "flag every active claim blocks (current behaviour).")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
                      help="post a [CLAIMED] comment for your lane")
@@ -317,7 +395,7 @@ def main(argv: list[str] | None = None) -> int:
     except (RuntimeError, json.JSONDecodeError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    return _run_check(payload, args.lane)
+    return _run_check(payload, args.lane, stale_threshold=args.stale_threshold)
 
 
 if __name__ == "__main__":
