@@ -751,8 +751,10 @@ def main():
                        help="dry-run scan a file or dir; list leak outputs")
     group.add_argument("--scan-all", action="store_true",
                        help="dry-run scan repo-wide")
-    group.add_argument("--apply", metavar="PATH",
-                       help="fix a file in place (strip leaks)")
+    group.add_argument("--apply", metavar="PATH", nargs="+",
+                       help="fix file(s) in place (strip leaks); accepts one or more "
+                            "paths so the pre-commit hook (which appends every staged "
+                            ".ipynb) does not hit argparse on >=2 files")
     group.add_argument("--apply-all", action="store_true",
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
@@ -773,17 +775,22 @@ def main():
     nb_root = os.path.join(repo_root, "MyIA.AI.Notebooks")
 
     do_apply = args.apply is not None or args.apply_all
-    target = args.apply if args.apply else (args.scan if args.scan else nb_root)
 
     paths = []
     if args.scan_all or args.apply_all:
         paths = list(iter_notebooks(nb_root))
-    elif os.path.isdir(target):
-        paths = list(iter_notebooks(target))
-    elif os.path.isfile(target):
-        paths = [target]
     else:
-        parser.error("path not found: %s" % target)
+        # --apply is nargs="+" (a list; a pre-commit hook appends the staged
+        # notebooks here). --scan is a single path. Default to the notebook root.
+        targets = args.apply if args.apply else ([args.scan] if args.scan else [nb_root])
+        for target in targets:
+            if os.path.isdir(target):
+                paths.extend(iter_notebooks(target))
+            elif os.path.isfile(target):
+                paths.append(target)
+            else:
+                parser.error("path not found: %s" % target)
+        paths = list(dict.fromkeys(paths))  # de-dup while preserving order
 
     total_files = 0
     total_found = 0
