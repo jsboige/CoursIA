@@ -51,7 +51,7 @@ from typing import Callable, Dict, Sequence
 
 import numpy as np
 
-from .spectral import observed_adjacency, transition_graph
+from .spectral import observed_adjacency
 
 __all__ = [
     "local_sensitivity",
@@ -235,40 +235,30 @@ def huang_conjecture_test(
         :func:`local_sensitivity`.
       - ``proxy_degree_fn`` : callable optionnel ``(states, n_symbols)
         -> float`` estimant ``deg_proxy(f)``. Si ``None`` (defaut), on
-        utilise ``np.mean(W.sum(axis=1))`` sur le graphe **pondere**.
+        utilise le **degre structurel moyen sur les noeuds visites** --
+        cf. ci-dessous.
 
-    .. warning:: **Le proxy par defaut est faible, et ce n'est pas un degre.**
+    .. note:: **Le proxy par defaut : degre moyen structurel (2E/V_visite).**
 
-       ``W.sum(axis=1)`` est la **masse de probabilite** par ligne de la
-       TPM symmetrisee, pas un nombre de voisins. ``P`` etant
-       stochastique par ligne, cette masse vaut **1.0 par construction**,
-       independamment de la topologie. Mesure sur trois cycles :
+       La conjecture transpose Huang 2019 sur l'hypercube ``Q_n``. Or
+       ``Q_n`` est **regulier** : le degre par sommet, ``2E/V`` et la
+       dimension ``n`` y coincident. La generalisation naturelle de « la
+       dimension » a un graphe de transition empirique quelconque est donc
+       le degre moyen ``2E/V``, calcule sur l'**adjacence structurelle**
+       (:func:`ict.spectral.observed_adjacency`), pas sur la TPM ponderee.
 
-       ==========================  ==========  ==================
-       trajectoire                 deg_proxy   degre observe moyen
-       ==========================  ==========  ==================
-       cycle-4 (k=4)               1.000000    2.0
-       cycle-5 (k=5)               1.000000    2.0
-       cycle-3 sur alphabet 6      0.916667    1.0
-       ==========================  ==========  ==================
+       On divise par ``V_visite`` (les etats effectivement traverses),
+       **jamais** par ``V_total`` : les etats jamais observes ont degre
+       structurel 0 ; les inclure dans la moyenne la dilue et trivialise
+       la borne (``deg_proxy -> 0`` des qu'une partie de l'alphabet est
+       inexplorer).
 
-       ``deg_proxy`` ne bouge pas quand le degre change. Donc
-       ``threshold = sqrt(deg_proxy) ~ 1.0`` quasiment toujours, et le
-       verdict est ``consistent`` des que ``s_max >= 1`` -- c'est-a-dire
-       des que ``f`` n'est pas constante.
-
-       La docstring anterieure decrivait ce proxy comme « le degre moyen
-       du voisinage » et « l'operationalisation la plus conservatrice
-       (elle borne la sensibilite par le degre local) » : les deux
-       affirmations sont fausses. Un degre se lit ``(W > 0).sum(axis=1)``,
-       pas ``W.sum(axis=1)``.
-
-       Ce point n'est **pas corrige ici** : changer ``deg_proxy``
-       changerait les verdicts et releve d'un sujet distinct (une PR = un
-       sujet). Il est documente pour que personne ne lise un verdict
-       ``consistent`` comme une confirmation de la conjecture. Passer un
-       ``proxy_degree_fn`` explicite reste le moyen de tester une vraie
-       borne.
+       Version anterieure (issue #9771) : le proxy etait
+       ``np.mean(W.sum(axis=1))`` sur la TPM symmetrisee lisse, soit la
+       **masse de probabilite** par ligne (~1.0 par construction,
+       independamment de la topologie). Le seuil etait alors ~1.0 en
+       permanence et le verdict ``consistent`` pour toute ``f`` non
+       constante -- il ne discriminait rien.
 
     Retourne un dict avec ``s_max``, ``deg_proxy``, ``threshold`` (le
     second membre de l'inegalite), ``ratio`` (``s_max / threshold``),
@@ -281,18 +271,18 @@ def huang_conjecture_test(
     s_max = int(np.max(s))
 
     if proxy_degree_fn is None:
-        # Proxy par defaut : masse de ligne moyenne du graphe pondere.
-        # Ce N'EST PAS un degre (cf. avertissement de la docstring) : la
-        # valeur vaut ~1.0 par construction. Conserve tel quel -- le
-        # changer changerait les verdicts, sujet distinct.
-        # Les labels sont encodes AVANT l'appel : transition_graph fait un
-        # int(s) et plantait sur des labels chaines (issue #9764).
-        W = transition_graph(
-            _encode_labels(states, n_symbols),
-            n_symbols,
-            laplace_smoothing=laplace_smoothing,
-        )
-        deg_proxy = float(np.mean(W.sum(axis=1)))
+        # Proxy par defaut : degre structurel MOYEN sur les noeuds visites,
+        # soit 2*E / V_visite. Generalise la dimension n de l'hypercube Q_n
+        # (regulier : degre par sommet = 2E/V = n) a un graphe empirique
+        # quelconque. On divise par V_visite : les etats jamais observes ont
+        # degre structurel 0 et dilueraient la moyenne (issue #9771).
+        # L'ancien proxy np.mean(W.sum(axis=1)) sur la TPM symmetrisee lissee
+        # mesurait la masse de probabilite (~1.0 par construction) -- pas un
+        # degre, et ne discriminait aucune topologie.
+        A = observed_adjacency(_encode_labels(states, n_symbols), n_symbols)
+        deg_per_node = A.sum(axis=1)
+        visited = deg_per_node > 0
+        deg_proxy = float(deg_per_node[visited].mean()) if visited.any() else 0.0
     else:
         deg_proxy = float(proxy_degree_fn(states, n_symbols))
 
