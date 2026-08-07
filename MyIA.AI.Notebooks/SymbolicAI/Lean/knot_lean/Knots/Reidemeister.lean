@@ -407,8 +407,8 @@ ici comme une injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (avec dimensio
 def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
   ∃ i c, ∃ ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges,
-    (d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
-     d₁ = { d₂ with crossings := d₂.crossings.set i c }) ∧
+    (d₂.crossings = d₁.crossings.set i c ∨
+     d₁.crossings = d₂.crossings.set i c) ∧
     d₁.wf = true ∧ d₂.wf = true
 
 /-- R3 est symétrique par construction : la disjonction de chirurgie est
@@ -490,8 +490,17 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
-  · exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
-  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
+  · -- `hsurg : d₂ = {d₁ with crossings := d₁.crossings.set i.val c}` est
+    -- une égalité de record `with`-surgery. Pour l'injecter dans R3 (qui
+    -- attend une égalité de champ `d₂.crossings = d₁.crossings.set i.val c`
+    -- post-migration field-eq), on extrait la composante `crossings` via
+    -- `congrArg` sur le foncteur d'accès au champ. Le témoin `numEdges`
+    -- de R3D est déjà garanti par `he : d₁.numEdges = d₂.numEdges` du
+    -- destructuring, donc le seul champ à projeter est `crossings`.
+    exact ⟨hl, he, i.val, c, ρ, Or.inl (congrArg (fun d => d.crossings) hsurg),
+           hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr (congrArg (fun d => d.crossings) hsurg),
+           hwf₁, hwf₂⟩
 
 /-- `Reidemeister3Determined` n'est PAS vide : un glissement slot-déterminé
     concret `d₁ → d₂` avec `wf = true` des deux côtés. Témoin : `d₁` a deux
