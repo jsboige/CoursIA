@@ -393,13 +393,11 @@ jobs:
           if [ "$COMPLETE" = "True" ]; then
             echo "Short-header trio complet : Quoi + Preuve + Perimetre presents."
             echo "::notice::Short-header conforme (3/3 cles presentes)."
-          else
-            ABSENT=""
-            [ "$QUOI" = "None" ] && ABSENT="$ABSENT Quoi"
-            [ "$PREUVE" = "None" ] && ABSENT="$ABSENT Preuve"
-            [ "$PERIMETRE" = "None" ] && ABSENT="$ABSENT Perimetre"
-            echo "::warning::Short-header trio absent (cles manquantes :$ABSENT). Issue #9861 demande 'Quoi: <une ligne>, Preuve: <une ligne>, Perimetre: <une ligne>' juste apres le tag Grain:. Advisory, non bloquant -- la convention se rollout progressivement."
+          elif [ "$QUOI" = "None" ] && [ "$PREUVE" = "None" ] && [ "$PERIMETRE" = "None" ]; then
+            echo "::warning::Short-header trio totalement absent (ni Quoi, ni Preuve, ni Perimetre). Issue #9861 demande 'Quoi: <une ligne>, Preuve: <une ligne>, Perimetre: <une ligne>' juste apres le tag Grain:. Advisory, non bloquant -- la convention se rollout progressivement."
             note_defect variation-short-header-missing
+          else
+            echo "Short-header trio partiel (1 ou 2 cles presentes) -- pas flagge au rollout (adoption partielle toleree)."
           fi
 
           # Traduction en label distinct (lisible dans gh pr list --json labels).
