@@ -466,13 +466,9 @@ Un workflow GitHub Actions valide automatiquement les notebooks à chaque pull r
 
 ## Outils Claude Code
 
-Le dépôt inclut une configuration Claude Code avec des agents spécialisés et des commandes slash pour la maintenance des notebooks.
+Le dépôt embarque une configuration Claude Code complète pour la maintenance et l'enrichissement des notebooks : **21 sous-agents** spécialisés (notebooks, QuantConnect, Lean/preuves, GenAI, README/slides, training ML, coordination multi-machines…) et **16 commandes slash** (`/verify-notebooks`, `/enrich-notebooks`, `/build-notebook`, `/coordinate`, `/review-student-prs`…).
 
-**Commandes principales** : `/verify-notebooks`, `/enrich-notebooks`, `/cleanup-notebooks`, `/build-notebook`, `/execute-notebook`, `/validate-genai`, `/qc-iterative-improve`
-
-**Agents spécialisés** : notebook-enricher, notebook-validator, notebook-executor, qc-strategy-analyzer, qc-strategy-improver, readme-updater, et d'autres.
-
-Configuration dans `.claude/agents/` et `.claude/skills/`.
+Le roster exhaustif — agents, skills, scripts dédiés et mapping side-tracks Epic — est tenu à jour dans [`docs/reference/subagents-reference.md`](docs/reference/subagents-reference.md). Cette liste canonique prime sur tout inventaire figé dans le README, qui se périmerait à chaque ajout. Configuration physique : `.claude/agents/` et `.claude/skills/`.
 
 ---
 
