@@ -119,13 +119,27 @@ Les sections précédentes ([Claude Code](#claude-code---ateliers), [Roo Code](#
 
 [`roo-state-manager`](https://github.com/jsboige/roo-extensions) est un MCP maison qui regroupe **15 outils** d'orchestration inter-agents et de mémoire collective. La doc pérenne détaille le rôle de chacun : [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) (6 coordination + 4 mémoire/recherche + 5 infrastructure). Pour le cycle de vie et le diagnostic des serveurs MCP eux-mêmes, voir [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
 
-| Catégorie | Rôle | Quelques outils représentatifs (sur 34) |
-|-----------|------|------------------------------------------|
-| **Dashboards** | Canal principal de coordination entre agents (3 types : `global`, `machine`, `workspace`). | `roosync_dashboard`, `roosync_dashboard_update` |
-| **Messagerie inter-agents** | DM point-à-point qui survit à la condensation du dashboard. | `roosync_messages`, `roosync_messages_inbox` |
-| **Conversation browser** | Navigation dans l'historique des sessions d'agents (liste d'abord, puis view/tree). | `conversation_browser`, `conversation_browser_view` |
-| **Indexation sémantique** | Qdrant — indexation du code, des décisions, des incidents, retrouvables par le sens. | `roosync_search`, `roosync_indexing` |
-| **Recherche codebase** | Recherche sémantique dans le code par concept (pas par mot-clé). | `codebase_search` |
+Les 15 outils, dans les trois catégories de `HARNESS-OVERVIEW.md` :
+
+| Catégorie | Outil | Rôle |
+|-----------|-------|------|
+| **Coordination** (6) | `roosync_dashboard` | Canal principal entre agents — 3 types : `global`, `machine`, `workspace`. |
+| | `roosync_messages` | DM point-à-point ; survit à la condensation du dashboard. |
+| | `roosync_inventory` | Inventaire machines, heartbeats, santé du cluster. |
+| | `roosync_config` | Collecte / publication / application de configuration entre machines. |
+| | `roosync_baseline` | Versionnage et restauration d'une configuration de référence. |
+| | `roosync_compare_config` | Diff de configuration entre deux machines. |
+| **Mémoire & recherche** (4) | `codebase_search` | Recherche sémantique dans le code par concept, pas par mot-clé. |
+| | `roosync_search` | Recherche sémantique ou plein-texte dans l'historique des tâches. |
+| | `conversation_browser` | Navigation dans les sessions d'agents (lister d'abord, puis voir / arborer / résumer). |
+| | `roosync_indexing` | Index Qdrant, cache, archivage — la mémoire collective elle-même. |
+| **Infrastructure** (5) | `roosync_diagnose` | Diagnostic d'environnement, cycle de vie d'agent, santé du harnais. |
+| | `roosync_mcp_management` | Gestion des serveurs MCP (lecture / écriture de config, rebuild, reload). |
+| | `roosync_storage_management` | Inspection du stockage et maintenance (reconstruction de cache, réparation BOM). |
+| | `read_vscode_logs` | Lecture des logs Extension Host / Renderer — le diagnostic de dernier recours. |
+| | `export_data` | Export XML / JSON / CSV / Markdown d'une tâche, conversation ou projet. |
+
+**Un point de modèle mental** qui trompe souvent quand on découvre MCP : dans cet écosystème, **une action n'est pas un outil**. `roosync_dashboard` est *un* outil dont le comportement est piloté par un paramètre (`action: "read" | "append" | "write" | …`) ; il n'existe pas de `roosync_dashboard_update` à côté. C'est un choix de conception délibéré — regrouper une famille d'actions derrière un outil paramétré garde la surface d'outils lisible pour l'agent (15 descriptions à charger, pas 60), au prix d'un schéma d'entrée plus riche. Un agent qui invente `<outil>_<action>` par analogie échoue à l'appel : la liste ci-dessus est exhaustive.
 
 Ces outils sont le **câblage** sans lequel les agents travailleraient en silos : un dashboard workspace, c'est ce qui fait qu'un worker sur une machine sait ce que le coordinateur attend de lui, et inversement. Le détail de l'architecture (processus, cycle de vie, configuration `mcp_settings.json`, redémarrage Python avec nettoyage `.pyc`) est dans [architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
 
