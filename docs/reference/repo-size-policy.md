@@ -51,6 +51,18 @@ incidents passés (le `model.pt`) désormais nettoyés de l'arbre courant.
 > `warning: garbage found: .git/objects/pack/tmp_pack_*` sur un clone de travail. Ces
 > `tmp_pack_*` sont du **garbage local** à la machine (un `git gc` les élimine), pas un
 > problème du dépôt distant. Ne pas les confondre avec le sujet.
+>
+> **`du -sh .git` n'est pas la taille du dépôt.** Sur une machine de dev, `du -sh .git`
+> additionne des composantes **locales** qu'un cloneur ne paie jamais : (a) `size-pack`
+> (le pack parent — accrète plusieurs fichiers `.pack` sur un clone longévif, non coalescés
+> tant qu'un `git gc` n'a pas tourné), (b) `size-garbage` (`tmp_pack_*` orphelins, cf.
+> ci-dessus), et (c) **`.git/modules/`** — les object stores des 8 submodules (cf. §5.1),
+> checkoutés localement mais absents du pack parent. Mesure firsthand sur une machine du
+> cluster : `size-pack ~2 GiB` + `size-garbage ~890 MiB` + `.git/modules ~270 MiB`, soit un
+> `du -sh .git` dépassant largement le pack distant (~1,2 GiB bare, cf. en-tête) — un écart
+> qui n'est **pas** une régression de taille, juste la somme de ces trois composantes locales.
+> La source de vérité pour la taille du dépôt est le pack distant (ce qu'un `git clone` nu
+> récupère), jamais `du -sh .git` sur une machine de travail.
 
 ## 4. Ce qui ne doit JAMAIS entrer
 
