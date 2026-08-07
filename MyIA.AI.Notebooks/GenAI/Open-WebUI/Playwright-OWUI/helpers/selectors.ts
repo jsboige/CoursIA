@@ -67,7 +67,26 @@ export const CHAT = {
   assistantMessage: '.chat-assistant',
   // Bouton de statut (apparait apres la generation)
   statusToggle: 'button[aria-label="Toggle status history"]',
-  // Boutons d'edition
+  // Boutons d'edition d'un message deja envoye.
+  //
+  // v0.11 (VERIFIE firsthand 2026-08-07, recoupe avec le code source :
+  // UserMessage.svelte L304-330 et ResponseMessage.svelte L780-806).
+  //
+  // ATTENTION : les deux types de message n'ont PAS la meme barre d'edition,
+  // et les MEMES identifiants n'y ont pas le meme sens.
+  //
+  //                              message UTILISATEUR    reponse ASSISTANT
+  //   #save-edit-message-button   « Enregistrer »        (absent)
+  //   #close-edit-message-button  « Annuler »            « Annuler »
+  //   #confirm-edit-message-button « Envoyer »           « Enregistrer »
+  //                                 (corrige ET regenere)  (corrige, NE regenere PAS)
+  //   « Enregistrer comme copie »  (absent)              present
+  //
+  // Autrement dit #confirm-edit-message-button DECLENCHE une generation sur un
+  // message utilisateur et n'en declenche AUCUNE sur une reponse. Un identifiant
+  // ne suffit donc pas a exprimer l'intention : il faut d'abord SE PLACER sur le
+  // bon message (voir module 03, ou un `.last()` non scope tombait au hasard sur
+  // l'une ou l'autre barre selon l'execution).
   saveEditButton: '#save-edit-message-button',
   closeEditButton: '#close-edit-message-button',
   confirmEditButton: '#confirm-edit-message-button',
@@ -91,8 +110,7 @@ export const SIDEBAR = {
 // VERIFIE firsthand contre v0.10.2 fr-FR (2026-07, lors de la generation des
 // captures du Tour). Le bouton avatar (bas de la sidebar) porte l'aria-label
 // localise "Menu utilisateur" (fr) / "User menu" (en) et n'a pas d'ID stable.
-// Les entrees du menu (Reglages, Conversations archivees, Deconnexion...) sont
-// des <button> cibles par leur libelle via getByRole('button', { name }).
+// Le bouton lui-meme est INCHANGE en v0.11 (reverifie 2026-08-07).
 export const ACCOUNT = {
   // Bouton avatar ouvrant le menu utilisateur.
   menuButton:
@@ -102,7 +120,40 @@ export const ACCOUNT = {
   settingsEntry: /r[ée]glages|param[èe]tres|settings/i,
   // Autres entrees du menu (multilingue)
   logout: /d[ée]connexion|log ?out|sign ?out/i,
+  // ATTENTION v0.11 : "Conversations archivees" n'est PLUS une entree du menu,
+  // c'est un ONGLET (role=tab) de la fenetre Reglages — voir SETTINGS ci-dessous.
+  // On garde le libelle ici, mais ciblez-le avec getByRole('tab', ...).
   archivedChats: /conversations archiv[ée]es|archived chats/i,
+} as const;
+
+// --- Fenetre Reglages (v0.11) ---
+// VERIFIE firsthand contre v0.11.0 fr-FR (2026-08-07, instance de cours).
+//
+// CE QUI A CHANGE : la v0.11 a refondu toute l'interface. Les reglages ne sont
+// plus des PAGES avec une navigation en liens : ce sont des ONGLETS (role=tab)
+// dans une fenetre unique. `/admin/settings` n'est plus une route stable — elle
+// redirige vers `/` en ouvrant cette fenetre sur la section admin.
+//
+// 28 onglets releves, en DEUX groupes :
+//   - utilisateur : General, Interface utilisateur, Notifications, Keyboard,
+//     Integrations, Personnalisation, Audio, Controles des donnees,
+//     Consommation de tokens, Conversations archivees, Compte, A propos
+//   - admin       : General, Authentification, Connexions, Modeles, Sub-agents,
+//     Interface utilisateur, Audio, Images, Evaluations, Analytique,
+//     Integrations, Documents, Recherche Web, Execution de code, Pipelines,
+//     Base de donnees
+//
+// PIEGE (mode strict) : "General", "Interface utilisateur", "Audio" et
+// "Integrations" existent dans LES DEUX groupes -> 2 correspondances -> erreur
+// "strict mode violation". Pour affirmer qu'on est bien dans la section ADMIN,
+// visez un onglet qui n'existe QUE la : Authentification, Base de donnees...
+export const SETTINGS = {
+  // Onglets propres a l'administration (1 seule correspondance chacun)
+  adminAuthTab: /authentification|authentication/i,
+  adminDatabaseTab: /base de donn[ée]es|database/i,
+  adminConnectionsTab: /connexions|connections/i,
+  // Onglet present dans les deux groupes -> exige .first() (piege pedagogique)
+  ambiguousGeneralTab: /^g[ée]n[ée]ral$|^general$/i,
 } as const;
 
 // =====================================================================
