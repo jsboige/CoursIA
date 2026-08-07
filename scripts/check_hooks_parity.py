@@ -123,19 +123,54 @@ def _local_hook_pairs() -> list[tuple[str, str | None]]:
     return pairs
 
 
-def _validate_config() -> tuple[bool, str]:
-    """Run ``pre-commit validate-config`` and return (ok, stderr)."""
+def _pre_commit_launchable() -> list[str] | None:
+    """Return the argv prefix that launches pre-commit, or ``None``.
+
+    Tries (in order):
+      1. ``pre-commit`` on PATH (the canonical install — most workers get it
+         via ``pip install --user`` and put it on PATH).
+      2. ``python -m pre_commit`` (the fallback — ``pre-commit install``
+         writes a hook that calls ``INSTALL_PYTHON -mpre_commit`` first, so
+         a machine where the module is installed but the binary is missing
+         from PATH still has a working H.3 harness; this gate should not
+         KO such a machine — incident ai-01 reproduit sur #9903).
+
+    Returns a list suitable for ``subprocess.run([*prefix, ...], ...)``.
+    Returns ``None`` only when neither path resolves to a working
+    ``--version`` invocation (so a single ``--version`` probe distinguishes
+    "pre-commit absent" from "pre-commit present but unlaunchable", the
+    latter being a real env bug the worker must repair).
+    """
     precommit = shutil.which("pre-commit")
-    if precommit is None:
-        return False, "pre-commit not on PATH"
+    if precommit:
+        try:
+            subprocess.run(
+                [precommit, "--version"], capture_output=True, text=True,
+                check=False, timeout=10,
+            )
+            return [precommit]
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+            pass  # shutil.which lied (Windows PATH mismatch) or hung; fall through
     try:
         proc = subprocess.run(
-            [precommit, "validate-config", str(CONFIG_PATH)],
+            [sys.executable, "-m", "pre_commit", "--version"],
+            capture_output=True, text=True, check=False, timeout=10,
+        )
+        if proc.returncode == 0:
+            return [sys.executable, "-m", "pre_commit"]
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+    return None
+
+
+def _validate_config(launch: list[str]) -> tuple[bool, str]:
+    """Run ``<launch> validate-config`` and return (ok, stderr)."""
+    try:
+        proc = subprocess.run(
+            [*launch, "validate-config", str(CONFIG_PATH)],
             capture_output=True, text=True, check=False,
         )
     except FileNotFoundError:
-        # shutil.which can succeed on Windows even when CreateProcess can't
-        # actually launch the binary (PATH mismatch in subprocess).
         return False, "pre-commit not launchable from subprocess"
     return proc.returncode == 0, (proc.stderr or proc.stdout or "").strip()
 
@@ -167,19 +202,39 @@ def _run_checks() -> list[tuple[str, str, str]]:
         out.append(("config declared", "ERR", str(e)))
         return out
 
-    # Gate 2: pre-commit on PATH
-    precommit_path = shutil.which("pre-commit")
-    if precommit_path:
-        out.append(("pre-commit on PATH", "OK", precommit_path))
+    # Gate 2: pre-commit launchable (PATH or `python -m pre_commit`).
+    # The previous gate did `shutil.which("pre-commit")` only, and KO'd
+    # machines where the module is installed but the binary is missing
+    # from PATH -- which is precisely the configuration the pre-commit
+    # install hook produces (`INSTALL_PYTHON -mpre_commit`). Reported by
+    # ai-01 against #9903: a worker can have H.3 wired and still trip
+    # this gate, learning to ignore it.
+    precommit_launch = _pre_commit_launchable()
+    if precommit_launch:
+        out.append((
+            "pre-commit launchable",
+            "OK",
+            " ".join(precommit_launch),  # human-friendly join
+        ))
     else:
-        out.append(("pre-commit on PATH", "KO", "install with: pip install --user pre-commit"))
+        out.append((
+            "pre-commit launchable",
+            "KO",
+            "install with: pip install --user pre-commit "
+            "(or ensure `python -m pre_commit` works)",
+        ))
 
-    # Gate 3: gitleaks on PATH
-    gitleaks_path = shutil.which("gitleaks")
-    if gitleaks_path:
-        out.append(("gitleaks on PATH", "OK", gitleaks_path))
-    else:
-        out.append(("gitleaks on PATH", "KO", "install with: pip install --user gitleaks"))
+    # Gate 3 (formerly "gitleaks on PATH") has been removed. gitleaks is
+    # declared as an external hook (``repo: https://github.com/gitleaks/...``)
+    # and pre-commit downloads it into its own cache on first run -- it
+    # never has to be on the system PATH. The previous gate KO'd every
+    # correctly-configured machine, with a hint (``pip install --user
+    # gitleaks``) that does nothing because gitleaks is a Go binary, not
+    # a PyPI package. An advisory gate that cries KO on a healthy state
+    # is the worst kind: workers learn to ignore it. The real test of
+    # gitleaks reachability is Gate 5 (``validate-config``) plus the
+    # actual hook run on commit -- both of which go through pre-commit's
+    # download path. See #9903 follow-up.
 
     # Gate 4: hook installed
     if HOOK_PATH.exists():
@@ -188,8 +243,8 @@ def _run_checks() -> list[tuple[str, str, str]]:
         out.append((".git/hooks/pre-commit installed", "KO", "run: pre-commit install"))
 
     # Gate 5: validate-config
-    if precommit_path:
-        ok, detail = _validate_config()
+    if precommit_launch:
+        ok, detail = _validate_config(precommit_launch)
         out.append(("pre-commit validate-config", "OK" if ok else "KO", detail or "(silent)"))
     else:
         out.append(("pre-commit validate-config", "SKIP", "pre-commit not installed"))
