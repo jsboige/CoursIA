@@ -94,7 +94,7 @@ private theorem p4_se_shift_lemma
   exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
     (2^k + (2^k : Int)) (2^k + (2^k : Int)) p hcc
 
-
+set_option maxHeartbeats 4000000 in
 /-- **SE overlap wall (PROUVÉ — miroir DIAGONAL de `p4_nw_overlap_wall` /
     `p4_ne_overlap_wall`, indices `{5,6,8,9}`).**
     Le mur SE : la grille parent une-fois half-steppée coïncide, sur la boîte

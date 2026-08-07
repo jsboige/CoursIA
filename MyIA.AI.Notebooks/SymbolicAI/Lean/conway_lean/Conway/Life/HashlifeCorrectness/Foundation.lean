@@ -1556,7 +1556,7 @@ private theorem wf_node_elim {nw ne sw se : MacroCell}
     cell to carry a known level `k`. Reusable wherever a well-formed node's
     quadrant levels must be pinned to an absolute value rather than a spine
     offset. -/
-private theorem wf_node_quad_level {nw ne sw se : MacroCell} {n : Nat}
+theorem wf_node_quad_level {nw ne sw se : MacroCell} {n : Nat}
     (hlevel : (node nw ne sw se).level = n + 1)
     (hwf : (node nw ne sw se).wf = true) :
     nw.level = n ∧ ne.level = n ∧ sw.level = n ∧ se.level = n ∧
@@ -2936,7 +2936,7 @@ réelle sur celle annoncée). Aucun lemme d'empreinte n'existe dans
 `MacroCell.lean` (vérifié par grep) : les voici, privés à ce fichier. -/
 
 /-- Navette booléenne : une équivalence des `= true` donne l'égalité `Bool`. -/
-private theorem p4_bool_eq_of_iff : ∀ (a b : Bool), (a = true ↔ b = true) → a = b := by
+theorem p4_bool_eq_of_iff : ∀ (a b : Bool), (a = true ↔ b = true) → a = b := by
   decide
 
 /-- Borne inférieure d'empreinte (sans `wf`) : tout point énuméré par
@@ -3010,13 +3010,13 @@ private theorem p4_toCellsAux_lt (c : MacroCell) :
       omega
 
 /-- Corollaire `toGrid` de la borne inférieure (sans `wf`). -/
-private theorem p4_mem_toGrid_origin_le (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
+theorem p4_mem_toGrid_origin_le (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
     (hx : x ∈ c.toGrid (r0, c0)) : r0 ≤ x.1 ∧ c0 ≤ x.2 := by
   rw [mem_toGrid] at hx
   exact p4_toCellsAux_origin_le c r0 c0 x hx
 
 /-- Corollaire `toGrid` de la borne supérieure (avec `wf`). -/
-private theorem p4_mem_toGrid_lt (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
+theorem p4_mem_toGrid_lt (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
     (hwf : c.wf = true) (hx : x ∈ c.toGrid (r0, c0)) :
     x.1 < r0 + (2 ^ c.level : Int) ∧ x.2 < c0 + (2 ^ c.level : Int) := by
   rw [mem_toGrid] at hx
