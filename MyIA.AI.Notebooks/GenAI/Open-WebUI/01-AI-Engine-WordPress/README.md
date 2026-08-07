@@ -1,0 +1,156 @@
+# AI-Engine (WordPress) — extension GenAI côté contenu
+
+[← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [Tour OWUI](../00-Tour-Plateforme/README.md) | [QA Playwright-OWUI](../Playwright-OWUI/README.md)
+
+> **Parcours découverte.** Ce dossier présente **AI-Engine**, l'extension
+> WordPress de Jordy Meow, comme **presqu'équivalent d'Open WebUI** côté
+> *site de contenu*. La question n'est pas « quel produit choisir en
+> абсолю » — les deux ciblent des usages différents — mais « quand l'un
+> est plus adapté que l'autre » pour un projet donné.
+
+---
+
+## Pourquoi un troisième parcours dans la série Open-WebUI ?
+
+La [série Open-WebUI](../README.md) documente la plateforme **Open WebUI** :
+auto-hébergée, multi-tenant, centrée *chat LLM*. Mais ce n'est pas la
+seule interface GenAI réaliste : beaucoup de sites de contenu (blogs,
+forums, boutiques WooCommerce, sites éditoriaux) ont déjà un WordPress
+installé. Plutôt que de poser Open WebUI *à côté* de WordPress, on peut
+**ajouter la couche GenAI directement dans WordPress** via l'extension
+**AI-Engine**. C'est ce que ce parcours explore — en gardant Open WebUI
+comme point de comparaison pour les fonctionnalités communes (chat,
+RAG, outils MCP, personas).
+
+Le projet **livresagités** (WordPress user) sert de **terrain de démo**
+concret pour illustrer les cas d'usage. Aucune donnée privée de ce site
+n'est reproduite ici : les parcours sont décrits à un niveau
+architectural, jamais avec des contenus réels.
+
+---
+
+## À qui s'adresse ce parcours ?
+
+- À toute personne qui **a déjà un site WordPress** et veut y ajouter
+  des fonctionnalités GenAI sans empiler une plateforme séparée.
+- À toute personne qui **évalue Open WebUI** et veut savoir si une
+  alternative WordPress couvre (partiellement) ses besoins.
+- À toute personne curieuse de voir **comment MCP s'intègre nativement
+  dans un CMS** — AI-Engine transforme WordPress en *serveur MCP*, ce
+  qui en fait un terrain pédagogique de choix pour le protocole.
+
+Aucun prérequis technique pour les sections 1 à 4 ; la section 5
+(MCP server) suppose une familiarité superficielle avec Model Context
+Protocol.
+
+## Comment lire ce parcours
+
+Chaque section suit le même rythme :
+
+1. **Ce que c'est** — la fonctionnalité en deux phrases.
+2. **Comment ça marche** — l'architecture et la séquence d'appels.
+3. **Comparaison OWUI** — l'équivalent (ou l'absence d'équivalent) côté
+   Open WebUI.
+4. **Référence livresagités** — un cas d'usage réel, sans PII.
+
+Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+synthétise les différences fonctionnelles en tableau ; un fichier
+[`livresagites-parcours.md`](livresagites-parcours.md) détaille le cas
+d'usage livresagités bout-en-bout (sans contenu privé).
+
+---
+
+## Sections
+
+### 1. [Vue d'ensemble](comparatif-owui-vs-ai-engine.md)
+
+AI-Engine en deux pages : ce que c'est, qui l'utilise, pourquoi on en
+parle à côté d'Open WebUI. Statistiques publiques (100K+ installations
+actives, 4.9/5 étoiles, version 3.7.0 août 2026, license GPL).
+
+### 2. [Fonctionnalités GenAI cœur](comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
+
+Chatbots, Workspace (plein écran dans wp-admin), Copilot pour l'éditeur
+WordPress, AI Forms (text/image/audio/file avec logique conditionnelle),
+génération d'image et de vision. Comparaison avec les surfaces
+équivalentes d'Open WebUI (chat, canaux, prompts).
+
+### 3. [Multi-provider et self-hosting](comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
+
+AI-Engine supporte **neuf providers distants** (OpenAI, Anthropic,
+Google, Mistral, xAI/Grok, Perplexity, OpenRouter, Replicate, Azure)
+plus un connecteur **Custom OpenAI-compatible** pour les moteurs
+auto-hébergés (Ollama, LM Studio, vLLM, llama.cpp, LocalAI). Côté
+Open WebUI, c'est la même philosophie avec OpenAI-compatible + Ollama
+natif ; la différence est qu'AI-Engine ne fournit pas son propre
+moteur local — il s'appuie sur l'écosystème WordPress existant.
+
+### 4. [RAG et embeddings](comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
+
+Cinq vector stores supportés (Chroma, Qdrant, Pinecone, OpenAI Vector
+Store, **Internal WordPress DB**). PDF import avec chunking
+automatique, filtres de synchro (catégories, langues, Polylang),
+trois modes de recherche (Simple, Context-Aware, Smart).
+Comparaison avec la pile RAG native d'Open WebUI (Knowledge,
+documents, hybrid search).
+
+### 5. [MCP server natif](comparatif-owui-vs-ai-engine.md#mcp-server-natif)
+
+AI-Engine transforme WordPress en **serveur MCP** : des outils
+permission-aware (post, comment, media, theme, plugin, WooCommerce,
+Polylang, requêtes SQL, SEO) exposés à des agents comme Claude,
+Claude Code, ChatGPT et OpenClaw. OAuth supporté pour les clients
+desktop. AI-Engine peut aussi **consommer** des serveurs MCP
+externes. C'est l'une de ses spécificités les plus marquantes côté
+intégration agentique — un terrain de comparaison avec les **Tools /
+MCP** d'Open WebUI.
+
+### 6. [Cas d'usage livresagités](livresagites-parcours.md)
+
+Le projet WordPress **livresagités** (user) sert de **terrain
+concret** : blog éditorial autour du livre, avec usage réel d'AI-Engine
+pour assistance éditoriale (résumé, traduction), RAG sur corpus de
+livres (recommandations), MCP pour automatiser la modération. Aucun
+contenu privé n'est reproduit — uniquement l'architecture du
+parcours et les types d'appels effectués.
+
+---
+
+## Sécurité — pas de secret dans les supports
+
+Comme pour les autres parcours de la série Open-WebUI :
+
+- **Aucun secret exposé** : pas d'URL d'admin, pas de clé d'API, pas
+  de token MCP, pas de credentials WordPress. Toutes les captures
+  reposent sur un **tenant de démonstration dédié**, des comptes
+  non-administrateur, des données fictives, et le masquage des
+  champs sensibles.
+- **Aucun contenu privé livresagités** : le cas d'usage est décrit à
+  un niveau architectural (types d'appels, schémas de données), pas
+  avec les contenus réels du site.
+- **Documentation de patterns, pas de credentials** : les exemples
+  PHP dans ce dossier utilisent des *constantes de substitution*
+  (`YOUR_OPENAI_API_KEY`, `YOUR_VECTOR_STORE_ID`), jamais des
+  valeurs réelles.
+
+Les fichiers `.env` réels ne sont jamais commités (`*.env` est
+gitignoré) — seuls les `*.env.example` documentent les variables
+attendues.
+
+---
+
+## Voir aussi
+
+- [README de la série Open-WebUI](../README.md) — point d'entrée
+- [Tour OWUI](../00-Tour-Plateforme/README.md) — pendant « chat
+  LLM » centré
+- [QA Playwright-OWUI](../Playwright-OWUI/README.md) — pendant «
+  assurance qualité » de bout en bout
+- [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+  — tableau structuré
+- [`livresagites-parcours.md`](livresagites-parcours.md) — cas
+  d'usage concret
+- Epic [#4433](../../../../../docs/genai/genai-services.md) —
+  refonte pédagogique GenAI (ce parcours en est une extension)
+- Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
+  mandat user à l'origine de ce dossier

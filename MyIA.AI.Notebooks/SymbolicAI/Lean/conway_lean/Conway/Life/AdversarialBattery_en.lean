@@ -147,5 +147,71 @@ def cexBlockNWcorner2 : MacroCell :=
     2 node levels above the leaves). -/
 theorem cexBlockNWcorner2_level2 : cexBlockNWcorner2.level = 2 := by decide
 
+/-! ## Crible of bounded NW re-statements (grain A.4, #9568-A / EPIC #6724)
+
+The NW wall `p4_nw_overlap_wall` was killed (c.91, #9565) because the binder
+`p : Int × Int` was **free** there: nothing constrained `p` to the central window
+the supercell represents, and a 2×2 block at the absolute NW corner falsified the
+statement from `p = r = (0,0)` (LHS `true`, RHS `false` — `(-1,-1)` structurally
+outside the non-negative window of `toGrid`). The repair direction (refutation
+block in `HashlifeCorrectness`) is to **bound `p` to the parent's central
+window**, `2^k ≤ p.i < 2^(k+1)` on each axis, then transport via a Chebyshev
+locality lemma.
+
+This section cribs that bounded restriction on the NW witnesses of the bestiaire.
+It confirms by `decide` (pure kernel, zero axiom, `native_decide` forbidden —
+reducibility acquired via the `ceilLog2` rewrite #9536) three structural facts
+that qualify the bounded candidate as a **survivor** (the restriction removes the
+counter-example): (1) the live cells of `cexBlockNWcorner2` all lie OUTSIDE the
+central window — the trace of counter-example #9565; (2) a typical central point
+lies inside it (the window is non-vacuous); (3) the absolute NW corner `(0,0)`
+(the `p` instantiation of the counter-example) is excluded — this is what makes
+the unbounded statement false and the bounded one viable.
+
+**Crible verdict**: bounded candidate = **survivor**. Freezing the canonical
+statement (exact bound + Chebyshev transport + fixed universal statement) stays
+with ai-01; this module only provides the `decide`-verified witnesses and
+structural facts the freeze must satisfy. -/
+
+/-- A cell `p` lies in the **central window** of level `k` (the centre of the
+    level `k + 1` parent) iff each coordinate falls in `[2^k, 2^(k+1))`. This is
+    the restriction that repairs the vacuity of the free `p` in the NW wall. -/
+def inCentralWindow (k : Nat) (p : Int × Int) : Prop :=
+  (2^k : Int) ≤ p.1 ∧ p.1 < (2^(k+1) : Int) ∧
+  (2^k : Int) ≤ p.2 ∧ p.2 < (2^(k+1) : Int)
+
+instance inCentralWindow.decidable (k : Nat) (p : Int × Int) :
+    Decidable (inCentralWindow k p) := by
+  unfold inCentralWindow; infer_instance
+
+/-- **Crible A.4 — the NW block bleeds outside the central window.** The live
+    cells of `cexBlockNWcorner2` (2×2 block in the NW quadrant of a 4×4 window)
+    live at `{(0,0), (0,1), (1,0), (1,1)}`, all OUTSIDE the central window
+    `[2, 4)²` (level `k = 1`). This is the structural trace of counter-example
+    #9565: the block is "off-centre", exactly the pathology that killed the
+    unbounded wall `p4_nw_overlap_wall`. Any bounded re-statement must therefore,
+    for this witness, either restrict its conclusion to the central window (empty
+    of live cells here) or exclude the witness by hypothesis. -/
+theorem cexBlockNWcorner2_cells_outside_central :
+    ∀ p ∈ cexBlockNWcorner2.toGrid (0, 0), ¬ inCentralWindow 1 p := by
+  decide
+
+/-- **Crible A.4 — the central window is non-vacuous.** The point `(2, 2)` (NW
+    corner of the central window `[2, 4)²` at level `k = 1`) is indeed central.
+    Confirms the bounded restriction is not empty: the central window contains
+    real points, so the bounded statement has substantive scope, not a trivial
+    elimination of all `p`. -/
+theorem central_point_in_window : inCentralWindow 1 (2, 2) := by
+  decide
+
+/-- **Crible A.4 — the absolute NW corner is excluded by the bound.** The point
+    `(0, 0)` (absolute NW corner, the `p = r` instantiation of counter-example
+    #9565) is NOT central at level `k = 1`. This is what makes the unbounded
+    statement false (the free `p` allows instantiating there) and the bounded
+    statement a survivor (the restriction `2^k ≤ p.i` excludes it by
+    construction). -/
+theorem nw_corner_outside_central : ¬ inCentralWindow 1 (0, 0) := by
+  decide
+
 end Life_en
 end Conway_en

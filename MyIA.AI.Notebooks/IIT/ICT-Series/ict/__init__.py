@@ -96,6 +96,7 @@ from . import collective_adoption
 from . import inhibited_invention
 from . import concept_inoculation
 from . import bridge_testing
+from . import phat_self_reference
 from . import salience_valence_dissociation
 
 __all__ = [
@@ -120,5 +121,6 @@ __all__ = [
     "inhibited_invention",
     "concept_inoculation",
     "bridge_testing",
+    "phat_self_reference",
     "salience_valence_dissociation",
 ]

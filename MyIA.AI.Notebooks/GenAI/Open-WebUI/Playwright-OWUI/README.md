@@ -58,6 +58,7 @@ Playwright-OWUI/
 ├── playwright.config.ts
 ├── WHATS-NEW-v0.9.1.md               # Nouveautés v0.9.1 (historique)
 ├── WHATS-NEW-v0.10.md                # Nouveautés v0.10 (côté étudiant)
+├── TRIAGE-INFRA-VS-TEST.md           # Guide transversal : app, test ou infra ?
 └── README.md                         # Ce fichier
 ```
 
@@ -232,6 +233,13 @@ npm run report
 Ces pièges ont été découverts lors de la validation initiale de la suite de tests.
 Ils sont documentés ici car ils sont représentatifs de vrais problèmes
 rencontrés lors du test E2E d'applications web modernes.
+
+> **Avant de corriger un test rouge, identifiez la cause.** Les quatre pièges
+> ci-dessous relèvent du test lui-même — mais une suite peut aussi rougir sans
+> qu'aucun test ni aucune ligne de code n'ait de problème. Le guide
+> **[TRIAGE-INFRA-VS-TEST.md](./TRIAGE-INFRA-VS-TEST.md)** apprend à distinguer
+> une régression applicative, une dérive de sélecteur et une panne
+> d'infrastructure, à partir de trois incidents réels de la flotte.
 
 ### 1. Modal "Quoi de neuf" (Changelog)
 

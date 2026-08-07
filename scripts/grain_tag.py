@@ -90,6 +90,26 @@ def parse_grain_tag(body: str | None) -> dict | None:
     }
 
 
+def extract_lane(body: str | None) -> str | None:
+    """Extract the `<machine>:<workspace>` lane token from any text.
+
+    Same reader as `parse_grain_tag` (the single lane extractor, #9485): shared
+    by the Grain tag, the G-VAR-2 organ, and -- via `check_lane_claim` (#9774) --
+    by the lane-claim guard. A `[CLAIMED] lane myia-po-2024:CoursIA -- ...`
+    comment is not a Grain tag (it carries no `Grain TIER/GENRE`), so it cannot
+    go through `parse_grain_tag`; this wrapper reuses the exact same compiled
+    `_LANE_RE` so the two contexts never drift on what a lane token is.
+
+    Returns the `machine:workspace` string, or None when the body carries no
+    `lane <machine:workspace>` token.
+    """
+    if not body:
+        return None
+    flat = body.translate(_NOISE)
+    m = _LANE_RE.search(flat)
+    return m.group(1) if m else None
+
+
 # --- CLI (guard consumer) ---------------------------------------------------
 
 # The §1 enumeration is the guard's business (which labels to pose), not the

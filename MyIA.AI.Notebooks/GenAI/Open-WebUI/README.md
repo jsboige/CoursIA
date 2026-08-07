@@ -27,12 +27,13 @@ garantit la qualité*.
 
 ---
 
-## Les deux parcours
+## Les trois parcours
 
 | Parcours | Angle | Format | État |
 |----------|-------|--------|------|
 | **[Tour de la plateforme](00-Tour-Plateforme/README.md)** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🟡 Narratif disponible — captures live à venir (Epic #4433) |
 | **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (6 modules) | ✅ Disponible |
+| **[AI-Engine (WordPress)](01-AI-Engine-WordPress/README.md)** | « Quel presqu'équivalent d'OWUI côté site WordPress ? » | Markdown comparatif + cas d'usage livresagités (sans PII) | ✅ Disponible (issue #9734) |
 
 ### [Tour de la plateforme](00-Tour-Plateforme/README.md)
 
@@ -54,6 +55,26 @@ avec Playwright : découverte et sélecteurs, navigation & authentification, cha
 puis les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé).
 
 ➡️ **[Ouvrir la série Playwright-OWUI](Playwright-OWUI/README.md)**
+
+### [AI-Engine — extension GenAI WordPress](01-AI-Engine-WordPress/README.md)
+
+Un parcours comparatif qui présente **AI-Engine** (extension WordPress de
+Jordy Meow, 100K+ installations actives, GPL, v3.7.0 août 2026) comme
+**presqu'équivalent d'Open WebUI côté site de contenu**. Plutôt que de poser
+OWUI *à côté* d'un WordPress existant, AI-Engine ajoute la couche GenAI
+directement dans WordPress — chatbots intégrables, Copilot pour l'éditeur
+Gutenberg, AI Forms, RAG sur le contenu du site, et **WordPress comme
+serveur MCP** (post, comment, media, WooCommerce, Polylang, requêtes SQL,
+SEO). Le projet **livresagités** sert de **terrain de démo réel**, à un
+niveau architectural uniquement (aucun contenu privé du site n'est
+reproduit — tenant de démonstration, données fictives, masquage).
+
+Le [`comparatif-owui-vs-ai-engine.md`](01-AI-Engine-WordPress/comparatif-owui-vs-ai-engine.md)
+synthétise les différences en tableau ; le
+[`livresagites-parcours.md`](01-AI-Engine-WordPress/livresagites-parcours.md)
+détaille trois cas d'usage (Copilot éditeur, RAG corpus, MCP server).
+
+➡️ **[Ouvrir le parcours AI-Engine-WordPress](01-AI-Engine-WordPress/README.md)**
 
 ---
 
