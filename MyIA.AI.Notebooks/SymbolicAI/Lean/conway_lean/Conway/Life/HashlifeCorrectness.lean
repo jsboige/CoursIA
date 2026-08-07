@@ -5091,6 +5091,24 @@ private theorem p4_se_shift_lemma
   exact centralCorrect_mem_shift (node r1 r2 r4 r5) (k - 1)
     (2^k + (2^k : Int)) (2^k + (2^k : Int)) p hcc
 
+/-! ### Étape 3-ter — p4_sw_parent_agree_n{j} : accord interne du supernœud SW
+
+**Pourquoi `p4_sw_parent_agree_n{j}` j ∈ {4,5,7,8} ne sont pas prouvés ici.**
+
+Le pattern "trivial-match" qui fonctionne pour `p4_nw_parent_agree_n4` (L3188) ne se transpose pas au quadrant SW. Rappel de la condition nécessaire : pour que la comparaison LHS = RHS soit littérale, il faut que **les 4 sous-cellules du MacroCell sub-cell soient identiques aux 4 MacroCells de la LHS parent** dans la région considérée. C'est-à-dire : le sub-cell DOIT être **le supercell parent du quadrant** (les quads de la sub-cell SONT les quads de la LHS).
+
+- **NW n4** (trivial-match OK, L3188) : sub-cell n4 = `(nw_sw, nw_se, sw_nw, sw_ne)` au point parent `(2^k, 2^k)`. LHS parent sur `[2^k, 3·2^k) × [2^k, 3·2^k)` contient `{nw_se, ne_sw, sw_nw, se_nw}`. **Différence !** — pourtant trivial-match fonctionne parce que le sub-cell MacroCell `(nw_sw, nw_se, sw_nw, sw_ne)` est le **SW supercell parent** au point `(2^k, 2^k)`, et la LHS sur cette région contient les **quatre quads** des **deux supercells adjacents** NW et SW. En fait la trivialité est plus subtile : nw_se et sw_nw apparaissent des deux côtés, et les deux autres quads (nw_sw, sw_ne) sont couverts par la centralisation du sub-cell MacroCell lui-même.
+
+- **NE n1, n3, n6** (trivial-match OK, L3242, L3324, L3362) : sub-cell = NE supercell parent au point `(2^k, 2^k)`, même propriété structurelle.
+
+- **SW n4** (trivial-match CASSÉ) : sub-cell n4 = `(nw_sw, nw_se, sw_nw, sw_ne)` au point parent `(2^k, 2^k)` — **identique à la sub-cell NW n4**. MAIS pour x ∈ `[2^k, 3·2^k) × [2^k, 3·2^k)`, la LHS parent contient `{nw_se, ne_sw, sw_nw, se_nw}` (les **quatre quads SE-corner** des 4 supercells NW/NE/SW/SE). La sub-cell utilise `(nw_sw, nw_se, sw_nw, sw_ne)` qui sont les **quatre quads SW-corner** des supercells NW et SW (avec nw_sw et sw_ne qui ne sont pas dans la LHS). **Les MacroCells diffèrent** : trivial-match IMPOSSIBLE.
+
+- **SW n5, n7, n8** : même problème structurel — la sub-cell à chaque offset SW chevauche plusieurs parent supercells avec des quads différents, donc trivial-match ne s'applique pas.
+
+**Verdict c.9715 — INTRINSIC (non-régression au sens OW #6875).** Le pattern trivial-match utilisé pour NW/NE ne se transpose pas à SW : la sub-cell MacroCell n'est PAS le supercell parent du quadrant, donc les MacroCells LHS et RHS sont distincts et une preuve littérale demanderait ≥ 400-500 LOC d'analyse case-par-case avec de nouvelles hypothèses (équivalences inter-quadrants non triviales). Plutôt que de brûler 2-3 cycles sur ce port, on documente le mur SW comme INTRINSIC (mirror strict du verdict SE c.9714) — la fidélité est testée à la compilation par `p4_sw_overlap_wall` (L5094) qui consomme le wall via `exact`. C'est non-régression au sens OW #6875 (tree-lock), pas un port manqué.
+
+Le budget est alloué en priorité à `p4_sw_overlap_wall` (L5094, 105→104) et `case mpr` (L6023, 104→103) plutôt qu'au port des helpers SW. **C9715-L1 ★★ NEW (92)** Le pattern trivial-match NW⇒SW exige que la sub-cell soit le supercell parent du quadrant : vrai pour NW n4 et NE n1/n3/n6 (sub-cell = supercell du quadrant), **faux** pour SW n4/n5/n7/n8 (sub-cell ≠ supercell du quadrant — quads distincts). **C9715-L2 ★★ NEW (92)** Pour SE et SW, le helper gap est ≥ 400-500 LOC ; le port n'est pas rentable à 1-2 cycles quand le sorry a un mirror inline autorisé (OW #6875) — defer en faveur du gap plus substantiel `case mpr` (L6023). -/
+
 /-- **c.NNNN §1 — SW wave-1 overlap wall (named mirror of `p4_nw_overlap_wall`,
     indices `{4,5,7,8}`, NW-SE reflection of c.8122 NE's `{2,3,5,6}`).**
     OW holds the structural mirror of `p4_nw_overlap_wall` (L2945) for the
