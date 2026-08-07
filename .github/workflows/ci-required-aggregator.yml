@@ -1,0 +1,90 @@
+name: CI Required Aggregator
+
+# Gate de coagulation CI : agrège les check-runs d'une PR en un seul verdict
+# PASS/FAIL requis au merge. Voir #9819 pour le diagnostic fondateur
+# (incident #9762 : `ci / Lean CI (grothendieck_lean)` rouge au merge,
+# `proof-integrity` rouge au merge, `gh pr merge` a passé quand même parce
+# que `required_status_checks` est vide sur `main`).
+#
+# Pourquoi un aggregator check-runs via API et pas un `needs:` cross-workflow :
+# GitHub Actions ne permet PAS à un workflow d'avoir un job qui `needs:` les
+# jobs d'un AUTRE workflow via workflow_call. Les seules options étaient :
+#   - regrouper les jobs des N workflows en UN seul workflow (invasif),
+#   - `workflow_run` trigger (complexe, lent, et ne déclenche pas de check),
+#   - ce pattern : UN workflow qui poll l'API `checks.listForRef`.
+# Ce pattern est le moins invasif et le plus rapide à itérer.
+#
+# La logique de classification/verdict vit dans `scripts/ci/aggregate_checks.py`
+# (stdlib only, 0 dépendance externe) — testable via pytest. Le workflow ne
+# fait que (a) fetch les check-runs via l'API, (b) pipe NDJSON au script,
+# (c) refléter le verdict (exit 1 = setFailed).
+#
+# Ce workflow n'altère PAS `required_status_checks` (étape 2 owner-only dans
+# #9819, gated user explicite). Il tourne, rapporte PASS/FAIL, et attend le
+# flip repo setting pour bloquer le merge. Tant qu'il n'est pas enregistré
+# comme `required_status_check`, il ne bloque rien -- observation seule.
+
+on:
+  pull_request:
+    branches: [main]
+
+# Lecture seule sur contents, lecture+écriture checks pour ajouter un
+# check_run récapitulatif (optionnel, met fin au débat "où est le verdict").
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  aggregate-checks:
+    name: Aggregate upstream check-runs
+    runs-on: ubuntu-latest
+    # Le job regarde ce que les AUTRES workflows ont produit. Si pas de
+    # check-runs à observer (PR ouverte depuis peu, ou self-only PR), on
+    # laisse le job fail-safe : core.setFailed avec un message explicite.
+    # Pas de skip silencieux -- "un aggregator qui ne peut pas rougir n'est
+    # pas un aggregator" (cf #9819 acceptance criterion 1).
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch upstream check-runs
+        id: fetch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # Récupère tous les check-runs pour ce SHA, paginé.
+          # On utilise `gh api` (déjà authentifié via GITHUB_TOKEN) plutôt que
+          # github-script pour rester proche d'un script shell testable localement.
+          ALL_RUNS="[]"
+          PAGE=1
+          while :; do
+            PAGE_DATA=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs?per_page=100&page=${PAGE}")
+            PAGE_RUNS=$(echo "${PAGE_DATA}" | jq -c '.check_runs')
+            PAGE_COUNT=$(echo "${PAGE_RUNS}" | jq 'length')
+            ALL_RUNS=$(jq -c -s 'add' <(echo "${ALL_RUNS}") <(echo "${PAGE_RUNS}"))
+            echo "Fetched page ${PAGE}: ${PAGE_COUNT} check-runs (total so far: $(echo "${ALL_RUNS}" | jq 'length'))"
+            if [ "${PAGE_COUNT}" -lt 100 ]; then
+              break
+            fi
+            PAGE=$((PAGE + 1))
+          done
+          echo "${ALL_RUNS}" > check_runs.json
+          echo "Total check-runs saved to check_runs.json: $(jq 'length' check_runs.json)"
+
+      - name: Aggregate verdict
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # NDJSON : un check-run par ligne (format robuste consommé par
+          # aggregate_checks.main() — accepte aussi JSON array / API envelope).
+          jq -c '.[]' check_runs.json | python scripts/ci/aggregate_checks.py
