@@ -571,7 +571,7 @@ theorem pr1_counterexample_excluded_under_connected :
   -- Reidemeister1Connected unfolds as wf₁ ∧ wf₂ ∧ (∃ i a Y' ρ, bounds ∧ edges ∧
   -- proper-arc ∧ isRenameOf ∧ surgery). The surgery is single-arm (twist only):
   -- d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++ [⟨a,3,4,4⟩], numEdges := 4 }.
-  rintro ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _ha1, ha2, _ha_edges, _hproper, _hren, hsurg⟩
+  rintro ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _ha1, ha2, _ha_edges, _hproper, _hren, h_cross, _h_num⟩
   -- `i : Fin d₁.crossings.length = Fin 1`, so `i.val = 0`. omega cannot reduce the
   -- structure literal's `.crossings.length` on its own, so discharge the length by
   -- `rfl` (separate hyp — `rw` into `i.isLt` fails: `i`'s type depends on it) and
@@ -587,7 +587,7 @@ theorem pr1_counterexample_excluded_under_connected :
         : KnotDiagram).crossings =
       (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
         : KnotDiagram).crossings.set i.val Y') ++ [⟨a, 3, 4, 4⟩] :=
-    congrArg (·.crossings) hsurg
+    h_cross
   rw [hi] at hfield
   -- RHS reduces to [⟨1,2,1,2⟩].set 0 Y' ++ [⟨a,3,4,4⟩] = [Y', ⟨a,3,4,4⟩].
   -- The second element gives ⟨3,4,3,4⟩ = ⟨a,3,4,4⟩ (cons injectivity).
@@ -774,14 +774,12 @@ private theorem mem_set_self {α : Type*} : ∀ (n : Nat) (l : List α) (v : α)
 theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htri : IsTricolorable d₁) :
     IsTricolorable d₂ := by
-  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, h_cross, h_num⟩ := h
   -- Edge-count and crossing-list consequences of the surgery equation.
-  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
-    simpa using congrArg (·.numEdges) hsurg
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := h_num
   have hd₂cross : d₂.crossings =
       d₁.crossings.set i.val Y' ++
-        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
-    simpa using congrArg (·.crossings) hsurg
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := h_cross
   obtain ⟨col₁, hfox₁, hge2, h2col⟩ := htri
   -- Extension colouring: preserved edges keep their colour, the two new edges
   -- (indices `d₁.numEdges` and `d₁.numEdges+1`, i.e. labels `b`, `c`) carry
@@ -1219,8 +1217,8 @@ forthcoming `tricolorable_backward` to bound colour-index arithmetic. -/
 theorem Reidemeister1Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) :
     d₂.numEdges = d₁.numEdges + 2 := by
-  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg⟩ := h
-  simpa using congrArg (·.numEdges) hsurg
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, _h_cross, h_num⟩ := h
+  exact h_num
 
 /-! ## 9. Backward transfer — decomposition analysis (Epic #2874, Phase 5)
 
@@ -1470,14 +1468,12 @@ to unblock the §2 placeholder `tricolorable_invariant`. See #2874.
 theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htri₂ : IsTricolorable d₂) :
     IsTricolorable d₁ := by
-  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, h_cross, h_num⟩ := h
   -- Surgery shape (mirrors `tricolorable_forward`).
-  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
-    simpa using congrArg (·.numEdges) hsurg
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := h_num
   have hd₂cross : d₂.crossings =
       d₁.crossings.set i.val Y' ++
-        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
-    simpa using congrArg (·.crossings) hsurg
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := h_cross
   obtain ⟨col₂, hfox₂, hge2₂, h2col₂⟩ := htri₂
   -- Naïve restriction: `col₁` embeds `d₁`'s edge indices into `d₂` (the +2
   -- fresh edges sit above `Fin d₁.numEdges`). Mirrors `tricolorable_forward`'s
