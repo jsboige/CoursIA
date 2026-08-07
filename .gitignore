@@ -21,6 +21,10 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Negation: scripts/release/ is intentional tooling (release notes generator, #9856),
+# not a Visual Studio Release/ build artefact. Without this, the [Rr]elease/
+# pattern above (which matches anywhere in the tree) would silently exclude it.
+!scripts/release/
 x64/
 x86/
 [Aa][Rr][Mm]/
