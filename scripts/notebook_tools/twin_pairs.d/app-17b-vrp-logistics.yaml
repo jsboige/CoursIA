@@ -1,0 +1,18 @@
+- name: App-17b VRP Logistics (metaheuristiques from-scratch)
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-07"
+      by: myia-po-2025:CoursIA
+      python_sha: 55e06e9198f6ecc30a2d65a2ad3baab8e4bb70b5
+      csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+      content_python_sha: ed6df31d1b8a604a09f90f3eed68582f3aed580dcdd4799d2ce271c65cbc36d2
+      content_csharp_sha: 7825ba3d7cd28b56c619bf8aaa6bcb928460e23e2e00253df6b681ef84676704
+      note: "Creation of the Python twin (was C#-only). From-scratch CVRP metaheuristiques ported faithfully from C# BCL to numpy; verified against OR-Tools (SOTA, +1.8% gap)."
+  known_differences:
+    - "Socle pedagogique commun : CVRP (Capacitated VRP) metaheuristiques from-scratch — VRPInstance + VRPSolution, Nearest-Neighbor, Cheapest-Insertion, 2-opt intra-route, Recuit Simule (relocate + 2-opt, Metropolis), instance canonique 15 clients/6 vehicules, 3 exercices (Clarke-Wright Savings, OR-opt, VRPTW)."
+    - "Idiomes framework : Python = numpy pur pour le from-scratch (meme algorithmes que le C# BCL), PLUS matplotlib pour la visualisation graphique des tournees (avantage Python vs ASCII C#), PLUS pont OR-Tools en cellule finale (verification SOTA). C# = pur BCL .NET (System.*, 0 NuGet), visualisation ASCII."
+    - "Pont de verification asymetrique : le twin Python invoque OR-Tools (bibliotheque SOTA de Google) comme juge de paix — le from-scratch est mesure a +1.8% de la reference (verdict SOTA-OK #3801). Le twin C# n'a pas d'equivalent .NET from-scratch-vs-lib, sa verification est la parite algorithmique avec le Python."
+    - "Resultats numeriquement coherents : monotonie de l'amelioration verifiee dans les deux twins (SA <= 2-opt <= Greedy). Python NN=415.63, SA=410.59, OR-Tools=403.38 ; C# valeurs du meme ordre de grandeur."
