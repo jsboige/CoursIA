@@ -282,8 +282,8 @@ CoursIA/
     ML/                        Machine Learning (C#, Python)
     RL/                        Reinforcement Learning (Python)
     GenAI/                     IA Générative (Python)
-      Image/ Audio/ Video/ Texte/ SemanticKernel/ FineTuning/ PostTraining/
-      Open-WebUI/ Vibe-Coding/ RAG-et-Memoire-Semantique/ CaseStudies/
+      00-GenAI-Environment/ Image/ Audio/ Video/ Texte/ SemanticKernel/ FineTuning/ PostTraining/
+      Open-WebUI/ Vibe-Coding/ RAG-et-Memoire-Semantique/ CaseStudies/ tutorials/
     QuantConnect/              Trading algorithmique (Python)
       Python/                  Notebooks pédagogiques
       projects/                Stratégies backtestées
@@ -296,11 +296,14 @@ CoursIA/
 
   scripts/                     Validation, exécution, analyse
   docs/                        Documentation pérenne (procédures, inventaires, leçons consolidées)
-  tools/                       Outils transverses (audit, qualité, maintenance)
+  translations/                Données de traduction multilingue (dataset Argumentum, #6949)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
   GradeBookApp/                Notation étudiants
+  GradeBookApp.Tests/          Tests du moteur de notation
   MyIA.AI.Shared/              Bibliothèque C# partagée
+  MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
+  MyIA.Trading.Converter/      Conversion de formats de données de trading
 ```
 
 ---
