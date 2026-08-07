@@ -1,0 +1,143 @@
+name: Fabricated text output gate
+
+# Purpose
+# -------
+# Per-PR gate for committed TEXT outputs that are FABRICATED placeholders
+# masquerading as real cell results: a `text/plain` cell output that prints a
+# Pandas default-index dataframe ("Row 0", "Row 1", ...) never filled in, a
+# backtest-stats dataframe with all-zero values, or a heuristic that *beats* a
+# proven optimum. Such outputs are committed where the cell source builds a real
+# result, so the PR's literal pedagogical goal (a number that came out of the
+# real engine) is unmet even though the notebook is well-formed and CI passes.
+# This is the Prong-A axe-2 defect class of registre #3801 (a substitution
+# output committed as if it were the real engine's output).
+#
+# This gate is the textual counterpart of degenerate-figure-gate.yml (#6918,
+# axe 1 = the 1x1 / tiny-payload PNG). The two are complementary and
+# non-overlapping: the figure gate catches degenerate RASTER placeholders; this
+# one catches degenerate TEXT placeholders. A notebook can suffer either or
+# both (incident #6891 quantbooks carried blank-PNG AND "Row N" text).
+#
+# Detector: scripts/notebook_tools/detect_fabricated_outputs.py (#3801, axe 2),
+# run in --check mode (exit 0 clean, exit 1 on defect, exit 2 on read error) on
+# every notebook CHANGED by the PR. Three deterministic signal classes:
+#   - row_n_placeholder      : >= 3 consecutive "Row N" labels (Pandas default
+#                              index of an unfilled dataframe). Hardened against
+#                              LLM-output / prose FP (Sudoku-17 incident): a
+#                              single isolated "Row N" mention is NOT flagged --
+#                              only the consecutive-index sequence is.
+#   - zero_stats_dataframe   : >= 3 of {Sharpe, CAGR, MaxDD, NetProfit} columns
+#                              with all-zero values (a backtest that did not run).
+#   - heuristic_beats_optimal: "optimal: N" + "Gap: -P%" in the same cell output
+#                              (a heuristic cannot beat a proven optimum =
+#                              mathematical impossibility). Bug class of #3544
+#                              (CSP-4 SPT) and #9932 (CSP-5 FFD).
+#
+# Diff-scoped ratchet (not clean-baseline-absolute): the gate only inspects
+# notebooks CHANGED by a PR. As of the gate's introduction (2026-08-07) the full
+# 971-notebook pedagogical tree is CLEAN (0 findings) -- verified firsthand, so
+# the ratchet has ZERO grandfathered debt and blocks any NEW fabricated output
+# immediately, anywhere. Should a fabricated output land on `main` out-of-band
+# (a merge that bypassed this gate), it sits dormant until its notebook is next
+# touched, at which point the gate correctly enforces the fix.
+#
+# FP profile (honest): the row_n signal was hardened in this same change to
+# eliminate a confirmed false positive (Sudoku-17-LLM-Python cell[14]: an LLM
+# zero-shot trace referencing Sudoku rows in prose). Post-hardening the corpus
+# sweep is 0/971. The heuristic_beats_optimal signal is FP-safe by construction
+# (the literal "optimal" + negative-gap combination is exclusively the buggy
+# case). The zero_stats_dataframe signal requires the canonical column set AND
+# all-zero values, a combination rare outside a non-running backtest.
+#
+# See EPIC #3801 (registre axe-2 SOTA / Prong-A), issues #6891 (founding
+# incident: 8 quantbooks blank-PNG + Row N), #3544 + #9932 (heuristic-beats-
+# optimal bug class), and the sibling degenerate-figure-gate.yml (#6918).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_fabricated_outputs.py'
+      - '.github/workflows/fabricated-output-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fabricated-output:
+    name: "No fabricated text output in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # No extra dependencies: detect_fabricated_outputs.py is pure stdlib
+      # (argparse, json, re, pathlib) + a same-directory import of notebook_walk.
+      # The script's own dir is on sys.path[0], so the sibling import resolves
+      # exactly as it does for detect_blank_figures.py in the figure gate.
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Fabricated output gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Fabricated output gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## Fabricated text output gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            # The `&& rc=0 || rc=$?` tail is load-bearing. The step runs under
+            # `bash -e`, where a bare `out=$(cmd)` that exits non-zero aborts
+            # the step IMMEDIATELY -- before `rc=$?` is read -- making the
+            # rc=1 / rc=2 branches unreachable dead code. A real finding then
+            # surfaces as a bare `exit 1` naming no notebook, indistinguishable
+            # from the detector crashing. Membership in an `&&`/`||` list
+            # exempts the assignment from errexit; the explicit `fail` flag
+            # decides the step's outcome instead. NOT `|| true`: that would make
+            # `$?` read 0 from `true` itself, so rc would always be 0 and the
+            # gate could never fire at all. (Same invariant as the figure gate.)
+            out=$(python scripts/notebook_tools/detect_fabricated_outputs.py --check "$nb" 2>&1) && rc=0 || rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Fabricated output::$nb commits a fabricated text output (Row-N placeholder / zero-stats dataframe / heuristic-beats-optimal) masquerading as a real cell result."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Fabricated output gate::$nb could not be read (rc=2); see detector log."
+            fi
+          done <<< "$CHANGED"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX (Stop&Repair): re-execute the cell in the REAL environment (QC Cloud research for QuantBook, local kernel for Python) and commit the real output. Never scrub/delete the output to hide it (secrets-hygiene rule 6). See issue #6891 for the founding incident and EPIC #3801 for the detector register." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Fabricated output gate::Checked $checked changed notebook(s); no fabricated text output."

@@ -118,6 +118,21 @@ from pathlib import Path
 # suivi d'espace ou fin de ligne (pour eviter "Row 123" en milieu de phrase).
 ROW_N_RE = re.compile(r"(?m)^\s*Row\s+\d+(?=\s|$)")
 
+# Une occurrence isolee de "Row N" n'est PAS un signal de fabrication : c'est
+# souvent de la prose (sortie LLM "Row 1 remaining:...", texte pedagogique
+# "la Row 2 contient..."). La signature d'un dataframe Pandas NON REMPLI est une
+# SEQUENCE d'indices consecutifs (Row 0, Row 1, Row 2, ...) -- l'index par
+# defaut qu'emet Pandas pour un dataframe sans index nomme. On exige donc une
+# serie d'au moins MIN_ROW_SEQUENCE entiers consecutifs pour flagger.
+#
+# Incident fondateur (FP) : Sudoku-17-LLM-Python cell[14] -- la trace de
+# resolution zero-shot d'un LLM contient "Row 1 remaining: R1C4..." et "Row 2
+# is complete: 1 7 4...". Deux mentions isolees de prose, non un dataframe.
+# Sous l'ancienne regle "any single match", c'etait un faux positif. Exiger une
+# sequence de >= 3 l'elimine (2 mentions isolees < 3, et non consecutives au
+# sens d'un index 0..k-1 remontant).
+MIN_ROW_SEQUENCE = 3
+
 # Noms de colonnes canoniques d'un dataframe "resultat backtest".
 # Si au moins 3 de ces 4 apparaissent dans la sortie ET que les valeurs sont
 # toutes a 0.0 / 0 (dataframe present mais stats nulles = backtest pas tourne).
@@ -155,9 +170,31 @@ def _cell_text_outputs(cell: dict) -> list[str]:
 
 
 def _has_row_n(lines: list[str]) -> bool:
-    """True if any line is a 'Row N' placeholder (litteral row not filled)."""
+    """True if the output contains a SEQUENCE of >= MIN_ROW_SEQUENCE consecutive
+    'Row N' labels -- the Pandas default-index signature of an unfilled dataframe.
+
+    Une occurrence isolee (ou deux) de "Row N" dans la prose n'est PAS un
+    dataframe placeholder : sortie LLM ("Row 1 remaining: ..."), texte
+    pedagogique, reference a une ligne de grille (Sudoku). La signature d'un
+    dataframe NON REMPLI est l'index par defaut de Pandas : Row 0, Row 1, ...,
+    Row k-1 (une suite d'entiers consecutifs). On exige donc >= MIN_ROW_SEQUENCE
+    entiers formant une suite consecutive.
+
+    FP elimine : Sudoku-17-LLM-Python cell[14] (trace LLM, 2 mentions isolees
+    "Row 1 remaining" / "Row 2 is complete") etait un faux positif sous l'ancienne
+    regle "any single match". Corpus-wide post-durcissement : 0 finding (verifie
+    sur les 971 notebooks pedagogiques).
+    """
     blob = "\n".join(lines)
-    return bool(ROW_N_RE.search(blob))
+    nums = sorted({int(m.group(0).split()[-1]) for m in ROW_N_RE.finditer(blob)})
+    if len(nums) < MIN_ROW_SEQUENCE:
+        return False
+    # Plus longue suite d'entiers consecutifs (signature index Pandas 0..k-1).
+    longest = run = 1
+    for prev, cur in zip(nums, nums[1:]):
+        run = run + 1 if cur == prev + 1 else 1
+        longest = max(longest, run)
+    return longest >= MIN_ROW_SEQUENCE
 
 
 def _has_zero_stats_dataframe(lines: list[str]) -> bool:
