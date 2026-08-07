@@ -39,4 +39,4 @@ Diagnostic de la sensibilité : étendre la fenêtre de 6→9 ans fait chuter le
 
 ---
 
-*Performance vérifiée sous frais réels IBKR (See #1621 Phase 4 / #1630). Le catalogue pré-frais (Sharpe 1.736) surestime la stratégie de +63 % ; la lecture frais-réels long-terme (Sharpe 1.066, PSR 34.9 %) est robuste mais window-sensitive — ne se généralise pas de la sous-fenêtre 2018-2024 (PSR 82.3 %) à la décennie complète. Version anglaise préservée dans [`README.en.md`](README.en.md).*
+*Performance vérifiée sous frais réels IBKR (See #1621 Phase 4 / #1630). Le Sharpe 1.736 du catalogue est une valeur **pré-alignement de fenêtre** (cf. verdict ci-dessus), pas un chiffre hors frais : ce qui change entre 1.736 et 1.066 est la période de mesure. Il surestime la stratégie de +63 % ; la lecture frais-réels long-terme (Sharpe 1.066, PSR 34.9 %) est robuste mais window-sensitive — ne se généralise pas de la sous-fenêtre 2018-2024 (PSR 82.3 %) à la décennie complète. Version anglaise préservée dans [`README.en.md`](README.en.md).*
