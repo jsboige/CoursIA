@@ -15,6 +15,7 @@ Usage:
     python scripts/setup_hooks.py              # install (idempotent)
     python scripts/setup_hooks.py --check      # machine state relevé (no changes)
     python scripts/setup_hooks.py --check-parity  # declared hooks vs executable
+    python scripts/setup_hooks.py --self-test  # functional: stage fake secret, verify gitleaks detects
 
 Design notes:
   - Invokes pre-commit as ``python -m pre_commit`` (no PATH dependency: pip
@@ -23,6 +24,14 @@ Design notes:
     NOT placed on the system PATH (pre-commit's design). The hook works
     regardless -- the proof is that a fake secret is refused at commit, not
     that ``command -v gitleaks`` resolves. See acceptance #2 of #9888.
+  - ``--check`` verifies STRUCTURE (hook file present, module installed);
+    ``--self-test`` verifies FUNCTION (gitleaks actually detects a staged
+    secret). The two differ: the config once shipped without
+    ``[extend] useDefault = true``, so gitleaks matched NOTHING -- structurally
+    "installed", functionally a silent no-op (the root defect of #9888).
+    ``--self-test`` stages a probe, runs gitleaks on the staged content, expects
+    a nonzero exit (leaks found), then cleans up. It is the regression guard
+    for that exact bug class.
 """
 
 from __future__ import annotations
@@ -249,6 +258,75 @@ def cmd_check_parity(repo: Path, python: str) -> int:
     return 0 if rc == 0 else 1
 
 
+# Probe secret for --self-test. Assembled from parts so NO contiguous literal
+# appears in source -- GitHub push protection blocks commits carrying a literal
+# Stripe key pattern even when the value is fake (it cannot tell). The assembled
+# value IS a valid stripe-key pattern that gitleaks flags once written to the
+# probe file. NOT a canonical EXAMPLE key: those are allowlisted by gitleaks'
+# defaults and would mask a silent no-op (the root defect of #9888).
+_SELFTEST_SECRET = "sk_live_" + "51Hqk2l3f4g5h6j7k" + "8l9n0mN1o2pQ3r4s"
+
+
+def cmd_self_test(repo: Path, python: str) -> int:
+    """Functional verification: does gitleaks actually DETECT a staged secret?
+
+    ``--check`` verifies STRUCTURE (hook file present, pre-commit installed)
+    but not FUNCTION. The gitleaks config once shipped without
+    ``[extend] useDefault = true``, so gitleaks matched NOTHING -- structurally
+    "installed", functionally a silent no-op (the root defect of #9888). This
+    mode stages a known-detectable secret, runs gitleaks against the staged
+    content, and expects a nonzero exit (leaks found = detection works). It then
+    cleans up (unstage + delete the probe). No commit is ever made.
+
+    Exit 0 if gitleaks detected the staged secret (harness FUNCTIONAL); exit 1
+    if it did not (silent no-op -- check ``.gitleaks.toml`` ``[extend]
+    useDefault = true``).
+    """
+    if not _pre_commit_available(python):
+        print("setup_hooks: pre-commit not available -- run `setup_hooks.py` first.",
+              file=sys.stderr)
+        return 1
+
+    probe = repo / "_gitleaks_selftest_probe.py"
+    secret = _SELFTEST_SECRET  # assembled at runtime (no literal in source)
+    probe.write_text(
+        f"# setup_hooks --self-test probe (auto-deleted, never committed)\n"
+        f'token = "{secret}"\n',
+        encoding="utf-8",
+    )
+    try:
+        # gitleaks runs as `protect --staged` with pass_filenames:false, so it
+        # scans STAGED content only. `pre-commit run gitleaks --files <x>` is
+        # IGNORED (--files never reaches the hook) -- staging is the only path.
+        _run(["git", "add", "--", str(probe)], repo)
+        rc, out = _run([python, "-m", "pre_commit", "run", "gitleaks"], repo)
+        leaks = out.count("RuleID:")
+        if rc != 0 and leaks > 0:
+            print(f"setup_hooks: SELF-TEST PASS -- gitleaks detected {leaks} staged leak(s).")
+            print("  Harness is FUNCTIONAL (detection works, not just structure).")
+            return 0
+        print(
+            f"setup_hooks: SELF-TEST FAIL -- gitleaks rc={rc}, {leaks} leak(s) reported.",
+            file=sys.stderr,
+        )
+        print(
+            "  A staged secret was NOT detected. Check .gitleaks.toml carries "
+            "`[extend] useDefault = true` (without it gitleaks is a silent no-op, "
+            "the root defect of #9888).",
+            file=sys.stderr,
+        )
+        if out:
+            print(f"  gitleaks output (truncated):\n{out[:400]}", file=sys.stderr)
+        return 1
+    finally:
+        # Cleanup: unstage + delete probe. Never leave the secret staged/on disk.
+        _run(["git", "reset", "-q", "--", str(probe)], repo)
+        try:
+            probe.unlink()
+        except OSError:
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description="Idempotent installer for the CoursIA pre-commit harness (#9888)."
@@ -259,12 +337,16 @@ def main(argv: list[str] | None = None) -> int:
                    help="Print machine-state relevé (no changes). Exit 1 if harness inactive.")
     p.add_argument("--check-parity", action="store_true",
                    help="Compare declared hooks vs executable state.")
-    # Allow a plain `--check`/`--check-parity` without implying install.
+    p.add_argument("--self-test", action="store_true",
+                   help="Functional check: stage a fake secret, verify gitleaks detects it, clean up.")
+    # Allow a plain `--check`/`--check-parity`/`--self-test` without implying install.
     args = p.parse_args(argv)
 
     repo = find_repo_root()
     python = sys.executable
 
+    if args.self_test:
+        return cmd_self_test(repo, python)
     if args.check_parity:
         return cmd_check_parity(repo, python)
     if args.check:
