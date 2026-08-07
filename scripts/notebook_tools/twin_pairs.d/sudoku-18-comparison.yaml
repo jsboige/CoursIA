@@ -22,6 +22,12 @@
       csharp_sha: c56831ed09f83e2780d74f265412674b12861dad
       content_python_sha: 089d67e706104ba025aab3198eea12853ee328a341ef3285c384c8ab700c2ee6
       content_csharp_sha: faf8913e82d7880e76d8b9c5f2912e634d7fedca50f1e60f89a6f7e158621915
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA
+      python_sha: 8421084259817fa3e8e31689e17c48f63a2ded8d
+      csharp_sha: e2930154a7fb9e89d03a184fff98e21de29cf10b
+      content_python_sha: 5ddf99abf166728218bc7125d2e01782b0d0b2484713c0e2c408b8e7abcda38b
+      content_csharp_sha: aefc3116c2efdf15ea3f514fbbb477e9a183b798257d67ca245796631fb0b496
   known_differences:
     - "Rebaseline 2026-08-05 : cote Python deplace par de-hardcodage de la version numpy depuis le markdown (classe ENV #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : comparaison synthese de TOUS les solveurs de la serie Sudoku (backtracking, dancing links, genetic, OR-Tools, Z3, BDD, probabiliste), meme concept (tableau de benchmark croise : temps de resolution / robustesse / complexite), meme arc conclusif (Fin de serie)."
