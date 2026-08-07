@@ -241,13 +241,26 @@ def _classify(
     # A notebook sitting directly at the top of MyIA.AI.Notebooks/ belongs to no
     # series; every taught series lives in a family directory. `GradeBook.ipynb`
     # (the grading engine) is the only such file today. Gate on the NORMALIZED
-    # `parts` (form-invariant), NOT on `path.is_absolute()`: a relative path --
+    # path (form-invariant), NOT on `path.is_absolute()`: a relative path --
     # exactly what `check_pr_exercises.py --stdin` receives from
     # `git diff --name-only` -- silently skipped the rule, so the PR gate and the
     # fleet scan returned different verdicts for the same file, and the liar was
-    # the one posing labels (#8835). `parts` (= `_scope_parts`) already resolves
-    # both forms to the identical tuple, so every directory rule must consume it.
-    if len(parts) == 1:
+    # the one posing labels (#8835).
+    #
+    # Anchor this check on NOTEBOOKS_DIR specifically, NOT on the scan `root`
+    # consumed by `_scope_parts`: that helper relativizes to the scan tree, so
+    # when a family directory is itself the scan target, EVERY notebook in it
+    # becomes relative-depth-1 and the whole family is false-classified as
+    # tooling. The corpus then empties silently and `--check` passes trivially
+    # (false green) -- observed on `Sudoku/`, `IIT/`, etc. scanned alone (#2161
+    # false-negative). The other directory rules (archive / `_` / legacy /
+    # `groupe-`) correctly key off `parts` because they reason about the path
+    # INSIDE the scan tree; this one alone reasons about NOTEBOOKS_DIR topology.
+    try:
+        notebooks_parts = path.resolve().relative_to(NOTEBOOKS_DIR.resolve()).parts
+    except (ValueError, OSError):
+        notebooks_parts = ()  # outside NOTEBOOKS_DIR entirely -> not top-level
+    if len(notebooks_parts) == 1:
         return ("tooling", None)
 
     if SETUP_STEM_RE.search(stem) or any(SETUP_DIR_RE.search(p) for p in parts[:-1]):
