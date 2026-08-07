@@ -1,5 +1,11 @@
 # Réconciliation des dénominateurs notebooks — forensic / catalogue / disque
 
+> **Étendu par [notebook-counters.md](notebook-counters.md)** (#9857, 2026-08-07) qui
+> ajoute la quatrième source (l'« outil » `count_notebooks_by_series`), établit la
+> source canonique pour les affirmations publiques, et outille la divergence
+> catalogue↔outil dans `check_denominators.py`. Le présent fichier reste valable
+> pour le relevé forensic disque/forensic/catalogue/snapshot au SHA indiqué.
+
 **Date** : 2026-07-23
 **SHA** : `be59980739c60e6e484b8ff7ef78a03df7bb70e7` (main HEAD)
 **Lane** : po-2023 (c.761)
