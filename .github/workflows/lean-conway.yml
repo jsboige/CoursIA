@@ -35,9 +35,11 @@ name: Lean Conway CI
 # lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
 # that would destroy the "new native_decide = new red" property required to
 # triage any future introduction one-by-one). fail-on-sorry=true (the
-# 5 acknowledged tactic sorries (4 in HashlifeCorrectness.lean + 1 documented
-# framework sorry in HashlifeMarginFragment.lean) are governed by the
-# lean-build.yml `sorry-baseline: "5"`, not by this gate — no double-cover).
+# 2 acknowledged tactic sorries (1 frozen P5 in HashlifeCorrectness.lean +
+# 1 documented framework sorry in HashlifeMarginFragment.lean) are governed by
+# the lean-build.yml `sorry-baseline: "2"`, not by this gate — no double-cover).
+# Lowered 5→2 by PR B of #9863: the 3 SW+SE wall sorries (p4_sw_overlap_wall,
+# p4_se_overlap_wall + supercell/g3_bridge) are discharged — ported from #9840.
 #
 # Reprise rationale (ai-01 DM HIGH msg-20260728T231209-43cuju, c.950):
 #   1. allow-axioms MUST list the 19 explicit names — wildcard forbidden
@@ -86,7 +88,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "5"
+      sorry-baseline: "2"
       sorry-filter-mode: standalone-tactic
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was

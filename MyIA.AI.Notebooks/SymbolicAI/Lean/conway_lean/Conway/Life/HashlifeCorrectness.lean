@@ -81,12 +81,11 @@ set_option maxHeartbeats 1000000 in
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
     subsumed by the closed lemmas `evolve_add` (L2353) + `evolve_half_step`
-    (L2370) and the wave-assembly residual carried in this proof body's own
-    `sorry`. Once the residual closes, this function produces the
+    (L2370). This function produces the
     `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes.
 
-    **Pointwise-proof balisage (c.147)** — the residual `sorry` after `intro p`
-    is the pointwise form of the P4.4 sub-cell coverage (S3) + assemble (S4)
+    **Pointwise-proof balisage (c.147 — all three pieces now closed)** —
+    the pointwise form of the P4.4 sub-cell coverage (S3) + assemble (S4)
     argument, decomposed here into three named pieces:
     - **G1 (geometric, tractable)** — RHS reduction: `p ∈ restrictGridTo
       (evolve 2^k g) 2^k 2^(k+1)` splits via `mem_restrictGridTo` into window
@@ -101,9 +100,10 @@ set_option maxHeartbeats 1000000 in
       `evolve 2^k = evolve 2^(k-1) ∘ evolve 2^(k-1)`, now closed): the local
       sub-cell computation equals the global `evolve 2^k` on the centered window.
 
-    Of these, `evolve_half_step` (the G3 half-step composition) is closed;
-    G1/G2/G3 themselves remain `sorry` because they compose `hashlifeResultAux`
-    results (the whnf-hard core, reserved for dedicated multi-cycle effort). -/
+    All three are now closed: G1 by window arithmetic, G2/G3 by the four
+    quadrant membership arms (`p4_{nw,ne,sw,se}_membership_arm(_rev)`)
+    resting on the proven windowed overlap walls (NW/NE precedents, then
+    SW/SE). -/
 noncomputable def p4_succ_membership
     (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) (hk1 : 1 ≤ k)
     (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
@@ -333,6 +333,10 @@ noncomputable def p4_succ_membership
       have hn2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
                                         hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
       have r2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hn2.2 hn2.1
+      -- n3 = node ne_nw ne_ne ne_sw ne_se (NE quadrant cell — structural
+      -- witness for the strengthened SW wall, cf. `hn3` in `p4_sw_overlap_wall`)
+      have hn3 := node_wf_level_of_four hne_nw_l hne_ne_l hne_sw_l hne_se_l
+                                        hne_nw_w hne_ne_w hne_sw_w hne_se_w
       -- n4 = node nw_sw nw_se sw_nw sw_ne (SW-of-NW, the THIRD wave-1 child of `out_nw`)
       have hn4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
                                         hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
@@ -387,8 +391,8 @@ noncomputable def p4_succ_membership
         (hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
         (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
         rfl rfl rfl rfl
-        hn4.1 hn5.1 hn7.1 hn8.1
-        hn4.2 hn5.2 hn7.2 hn8.2
+        hn1.1 hn2.1 hn3.1 hn4.1 hn5.1 hn7.1 hn8.1
+        hn1.2 hn2.2 hn3.2 hn4.2 hn5.2 hn7.2 hn8.2
         r4.1 r5.1 r7.1 r8.1
         (wf_of_cellWf r4.2) (wf_of_cellWf r5.2) (wf_of_cellWf r7.2) (wf_of_cellWf r8.2)
         ih
@@ -426,6 +430,10 @@ noncomputable def p4_succ_membership
       have hn2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
                                         hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
       have r2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hn2.2 hn2.1
+      -- n3 = node ne_nw ne_ne ne_sw ne_se (NE quadrant cell — structural
+      -- witness for the strengthened SE wall, cf. `hn3` in `p4_se_overlap_wall`)
+      have hn3 := node_wf_level_of_four hne_nw_l hne_ne_l hne_sw_l hne_se_l
+                                        hne_nw_w hne_ne_w hne_sw_w hne_se_w
       -- n4 = node nw_sw nw_se sw_nw sw_ne (SW-of-NW, third wave-1 child of `out_nw`)
       have hn4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
                                         hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
@@ -438,6 +446,10 @@ noncomputable def p4_succ_membership
       have hn6 := node_wf_level_of_four hne_sw_l hne_se_l hse_nw_l hse_ne_l
                                         hne_sw_w hne_se_w hse_nw_w hse_ne_w
       have r6 := wave1_result_facts k hk1 (node ne_sw ne_se se_nw se_ne) hn6.2 hn6.1
+      -- n7 = node sw_nw sw_ne sw_sw sw_se (SW quadrant cell — structural
+      -- witness for the strengthened SE wall, cf. `hn7` in `p4_se_overlap_wall`)
+      have hn7 := node_wf_level_of_four hsw_nw_l hsw_ne_l hsw_sw_l hsw_se_l
+                                        hsw_nw_w hsw_ne_w hsw_sw_w hsw_se_w
       -- n8 = node sw_ne se_nw sw_se se_sw (S bridge — SW-of-SE)
       have hn8 := node_wf_level_of_four hsw_ne_l hse_nw_l hsw_se_l hse_sw_l
                                         hsw_ne_w hse_nw_w hsw_se_w hse_sw_w
@@ -478,8 +490,8 @@ noncomputable def p4_succ_membership
         (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
         (hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
         rfl rfl rfl rfl
-        hn5.1 hn6.1 hn8.1 hn9.1
-        hn5.2 hn6.2 hn8.2 hn9.2
+        hn1.1 hn2.1 hn3.1 hn4.1 hn5.1 hn6.1 hn7.1 hn8.1 hn9.1
+        hn1.2 hn2.2 hn3.2 hn4.2 hn5.2 hn6.2 hn7.2 hn8.2 hn9.2
         r5.1 r6.1 r8.1 r9.1
         (wf_of_cellWf r5.2) (wf_of_cellWf r6.2) (wf_of_cellWf r8.2) (wf_of_cellWf r9.2)
         ih
@@ -612,8 +624,8 @@ noncomputable def p4_succ_membership
         (hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
         (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
         rfl rfl rfl rfl
-        hn4.1 hn5.1 hn7.1 hn8.1
-        hn4.2 hn5.2 hn7.2 hn8.2
+        hn1.1 hn2.1 hn3.1 hn4.1 hn5.1 hn7.1 hn8.1
+        hn1.2 hn2.2 hn3.2 hn4.2 hn5.2 hn7.2 hn8.2
         r4.1 r5.1 r7.1 r8.1
         (wf_of_cellWf r4.2) (wf_of_cellWf r5.2) (wf_of_cellWf r7.2) (wf_of_cellWf r8.2)
         ih p out_nw hout_nw_l hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
@@ -628,8 +640,8 @@ noncomputable def p4_succ_membership
         (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
         (hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
         rfl rfl rfl rfl
-        hn5.1 hn6.1 hn8.1 hn9.1
-        hn5.2 hn6.2 hn8.2 hn9.2
+        hn1.1 hn2.1 hn3.1 hn4.1 hn5.1 hn6.1 hn7.1 hn8.1 hn9.1
+        hn1.2 hn2.2 hn3.2 hn4.2 hn5.2 hn6.2 hn7.2 hn8.2 hn9.2
         r5.1 r6.1 r8.1 r9.1
         (wf_of_cellWf r5.2) (wf_of_cellWf r6.2) (wf_of_cellWf r8.2) (wf_of_cellWf r9.2)
         ih p out_nw hout_nw_l hmem hq.1 hq.2.1 hq.2.2.1 hq.2.2.2
