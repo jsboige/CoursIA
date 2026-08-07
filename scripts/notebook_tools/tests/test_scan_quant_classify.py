@@ -163,6 +163,74 @@ class TestGoldenSet8052:
 
 
 # --------------------------------------------------------------------------- #
+#  Tests golden set Probas bayesien (c.1272 — vague #9434 Probas)
+# --------------------------------------------------------------------------- #
+
+
+class TestGoldenSetProbasBayesian:
+    """Golden set fondateur bayesien (c.1272 vague #9434 Probas).
+
+    Cas observes firsthand dans Infer-101 cell 19/22/44/55 et
+    Infer-2-Gaussian-Mixtures — les valeurs en `min` sont des PARAMETRES
+    de modeles bayesiens (moyennes/variances/post/precision/composantes),
+    PAS des timings runtime.
+    """
+
+    def test_1272_infer101_observations_min_bayesian(self):
+        """Infer-101 cell 19: observations (13, 17, 16 min) = data points, pas runtime."""
+        cls, _ = _classify_quant_value("17", 17.0,
+                                       "avec les observations (13, ", ", 16 min), l'inference bayesienne met a ")
+        # data-list markers `{` ou `observations)` → STRUCTUREL
+        assert cls == "STRUCTUREL", (
+            f"data-list en contexte bayesien doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_1272_infer101_gamma_precision_bayesian(self):
+        """Infer-101 cell 22: gamma(2.24, 0.24) = parametre gamma bayesien, pas runtime."""
+        cls, _ = _classify_quant_value("0.24", 0.24,
+                                       "precision `gamma(2.24, ", "`) | ~ 3.29 min^2 |")
+        assert cls == "STRUCTUREL", (
+            f"gamma(...) precision bayesienne doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_1272_infer101_ecart_type_min_squared(self):
+        """Infer-101 cell 22/44: ecart type `2.15 min` ou `4.14 min` = parametre bayesien."""
+        cls, _ = _classify_quant_value("2.15", 2.15,
+                                       "variance totale predictive | 1.32 + 3.29 ~ 4.61 min^2 -> ecart type ",
+                                       " min |")
+        assert cls == "STRUCTUREL", (
+            f"ecart type min en variance bayesienne doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_1272_infer101_trajet_donnees_observees(self):
+        """Infer-101 cell 55: 7 valeurs <= 20 min, 3 valeurs >= 25 min = donnees observees."""
+        cls, _ = _classify_quant_value("20", 20.0,
+                                       "ond aux données observees (7 valeurs <= ",
+                                       " min, 3 valeurs >= 25 min dans les 10 observations).")
+        assert cls == "STRUCTUREL", (
+            f"donnees observees doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_1272_infer2_gaussian_mixture_components(self):
+        """Infer-2 cell 75: trajets rapides {8, 10, 11, 12} = composantes Gaussian, pas runtime."""
+        cls, _ = _classify_quant_value("10", 10.0,
+                                       "les trajets rapides ", ", 11, 12} sont les composantes du Gaussian Mixture")
+        assert cls == "STRUCTUREL", (
+            f"composante Gaussian Mixture doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_1272_infer101_comparaison_runtime_kept(self):
+        """Sanity check: timing runtime VRAI (pas data-list, pas bayesien) reste MACHINE-DEP."""
+        cls, _ = _classify_quant_value("42", 42.0,
+                                       "durée d'exécution : ",
+                                       " ms (100 tirages sur le dataset de 1000 observations)")
+        # Pas de data-list marker → MACHINE-DEP préservé
+        assert cls == "MACHINE-DEP", (
+            f"timing runtime reel doit rester MACHINE-DEP, got {cls}"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
 
