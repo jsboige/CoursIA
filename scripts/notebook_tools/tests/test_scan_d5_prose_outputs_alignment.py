@@ -163,6 +163,60 @@ class TestExtractProseNumbers:
         assert 2.31 in nums
 
 
+class TestReferenceIdentifiers:
+    """Filtre DOI / arXiv (EPIC #9768 Phase 0, c.1291).
+
+    Les identifiants de reference (DOI 10.XXXX/..., arXiv YYMM.NNNNN) sont la
+    classe dominante de FP firsthand sur Probas/Infer.NET (~40 findings/notebook)
+    et les labs ML.NET. Ils doivent etre filtres ; un vrai resultat doit passer.
+    """
+
+    def test_doi_registrant_prefix_filtered(self):
+        # 10.1145 / 10.1109 : prefix registrant DOI, jamais une mesure.
+        nums = mod._extract_prose_numbers("Voir DOI 10.1145 pour le detail.")
+        assert 10.1145 not in nums
+        nums = mod._extract_prose_numbers("Reference IEEE 10.1109 du papier.")
+        assert 10.1109 not in nums
+
+    def test_doi_url_suffix_filtered(self):
+        # Le suffixe 564376.564421 suit immediatement le registrant (URL DOI).
+        nums = mod._extract_prose_numbers("Paper : 10.1145/564376.564421 (ACM).")
+        assert 564376.564421 not in nums
+        assert 10.1145 not in nums
+
+    def test_arxiv_id_filtered(self):
+        # arXiv:2402.0103 -- annee plausible 24.
+        nums = mod._extract_prose_numbers("Decrit dans arXiv:2402.0103.")
+        assert 2402.0103 not in nums
+
+    def test_arxiv_bare_year_plausible_filtered(self):
+        # Bare YYMM.NNNNN avec annee plausible (23) meme sans prefixe « arXiv ».
+        nums = mod._extract_prose_numbers("Methode de 2309.07864 appliquee ici.")
+        assert 2309.07864 not in nums
+
+    def test_legit_decimal_preserved(self):
+        # Un rating 1923.7 (1 decimale) n'est PAS un arXiv ID -> preserve.
+        nums = mod._extract_prose_numbers("Elo estime : 1923.7 points.")
+        assert 1923.7 in nums
+
+    def test_legit_4digit_decimal_outside_arxiv_range_preserved(self):
+        # 1234.56789 : annee 12 hors plage arXiv (19-30) -> preserve.
+        nums = mod._extract_prose_numbers("Mesure precise : 1234.56789 unite.")
+        assert 1234.56789 in nums
+
+    def test_legit_number_after_doi_with_space_preserved(self):
+        # Un vrai resultat apres un DOI, separe par une espace, n'est pas un
+        # suffixe d'URL -> preserve (anti-regression du filtre suffixe).
+        nums = mod._extract_prose_numbers("DOI 10.1145/564376.564421 ; ratio 0.82.")
+        assert 0.82 in nums
+        assert 564376.564421 not in nums
+
+    def test_real_marginal_preserved(self):
+        # 0.647 (la marginale exacte P(W=T) d'Infer-4) doit rester extraite.
+        nums = mod._extract_prose_numbers("La proba exacte est P(W=T) = 0.647.")
+        assert 0.647 in nums
+
+
 # --------------------------------------------------------------------------- #
 #  Extraction outputs
 # --------------------------------------------------------------------------- #

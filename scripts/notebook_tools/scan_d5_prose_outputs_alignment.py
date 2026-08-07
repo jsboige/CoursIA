@@ -79,6 +79,48 @@ EXCLUDE_PATTERNS = (
     re.compile(r"^[A-Z]+\d+$"),            # PRJ42, ABC123 -- discutable, mais limite
 )
 
+
+# Identifiants de reference (DOI / arXiv) : classes dominantes de faux positifs
+# observees firsthand en EPIC #9768 Phase 0 (po-2025, c.1291) sur les familles
+# riches en citations -- Probas/Infer.NET (~40 findings/notebook) et ML.NET labs.
+# Ces identifiants sont parses comme des floats par FR_DECIMAL_RE mais ne sont
+# jamais des mesures calculees.
+#   (a) prefix registrant DOI : 10.1109, 10.1145, 10.1002 ... (10. + >=4 chiffres)
+#   (b) suffixe d'URL DOI     : le nombre suit immediatement un prefixe
+#       registrant sur la meme ligne (10.1145/564376.564421 -> 564376.564421)
+#   (c) arXiv ID              : YYMM.NNNNN (annee plausible 19-30) ou contexte
+#       explicite « arXiv: » (2402.0103, 2309.07864)
+_DOI_PREFIX_RE = re.compile(r"^10\.\d{4,}$")          # (a) 10.1109 / 10.1145
+_DOI_SUFFIX_RE = re.compile(r"10\.\d{4,}/\S*$")        # (b) prefix-line = URL DOI
+_ARXIV_ID_RE = re.compile(r"^\d{4}\.\d{4,5}$")         # (c) 2402.0103 (4-5 decimales)
+_ARXIV_HINT_RE = re.compile(r"arxiv", re.IGNORECASE)   # (c) contexte explicite
+
+
+def _is_reference_identifier(raw: str, line_prefix: str) -> bool:
+    """Vrai si `raw` est un identifiant de reference (DOI / arXiv), pas une mesure.
+
+    `line_prefix` = texte de la meme ligne precedant le token (lowercase),
+    deja calcule par l'appelant pour les autres filtres semantiques.
+    """
+    # (a) prefix registrant DOI (10.1109, 10.1145) -- impossible comme mesure.
+    if _DOI_PREFIX_RE.match(raw):
+        return True
+    # (c) arXiv ID YYMM.NNNNN : on n'exclut qu'a annee plausible (19-30) ou si
+    # le contexte cite explicitement arXiv, pour ne pas tuer un resultat legit
+    # type 1234.56789 (annee 12 hors plage).
+    if _ARXIV_ID_RE.match(raw):
+        yy = int(raw[:2])
+        if 19 <= yy <= 30 or _ARXIV_HINT_RE.search(line_prefix):
+            return True
+    # (b) suffixe d'URL DOI : le prefix contient un registrant suivi de `/` puis
+    # de non-whitespace jusqu'a ce token (ex. « ...10.1145/ » avant 564376...).
+    # Un nombre legit apres un DOI separes par une espace n'est pas atteint
+    # (la regex exige \S* jusqu'a la fin du prefix, sans espace intercalaire).
+    if _DOI_SUFFIX_RE.search(line_prefix):
+        return True
+    return False
+
+
 # Ligne de titre markdown ATX (CommonMark) : 0-3 espaces puis 1-6 `#` puis un
 # espace ou fin de ligne. Les hints `## `/`### `/`#### ` ci-dessous couvraient
 # H2-H6 mais laissaient fuiter les titres H1 (`# SC-8-...`, `# MGS-9`,
@@ -218,6 +260,11 @@ def _extract_prose_numbers(text: str) -> list[float]:
         if _ATX_HEADING_LINE_RE.match(text[line_start:m.start() + len(raw)]):
             continue
         if any(h in prefix for h in SEMANTIC_FALSE_POSITIVE_HINTS):
+            continue
+        # Filtre DOI / arXiv : identifiants de reference (jamais des mesures).
+        # EPIC #9768 Phase 0 (c.1291) -- classe dominante de FP sur les familles
+        # riches en citations (Probas/Infer.NET, ML.NET labs).
+        if _is_reference_identifier(raw, prefix):
             continue
         v = _parse_fr_number(raw)
         if v is None:
