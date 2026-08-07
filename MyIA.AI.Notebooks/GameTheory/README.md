@@ -691,6 +691,7 @@ Tous les notebooks incluent :
 GameTheory/
 ├── GameTheory-1-Setup.ipynb                        # 17 notebooks principaux (Python, fil rouge 1→17)
 ├── GameTheory-2-NormalForm.ipynb
+├── GameTheory-2-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
 ├── GameTheory-2-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
 ├── GameTheory-2-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
 ├── GameTheory-3-Topology2x2.ipynb
