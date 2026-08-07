@@ -1,4 +1,4 @@
-/-! # HashlifeCorrectness.Foundation
+/-  # HashlifeCorrectness.Foundation
 
 P1 (Padding), P2 (Locality / light cone), P3 (Padding correctness),
 P4 structural inputs + decomposition scaffolding (L88-3591 of the pre-split module).

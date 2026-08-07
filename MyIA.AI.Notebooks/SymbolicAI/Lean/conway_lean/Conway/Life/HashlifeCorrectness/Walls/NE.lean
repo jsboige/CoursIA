@@ -1,4 +1,4 @@
-/-! # HashlifeCorrectness.Walls.NE
+/-  # HashlifeCorrectness.Walls.NE
 
 P4 NE quadrant: overlap wall + G3 bridge + supercell agreement + shift lemma +
 membership arm (.mp) and its reciprocal (.mpr). Mirror of NW.

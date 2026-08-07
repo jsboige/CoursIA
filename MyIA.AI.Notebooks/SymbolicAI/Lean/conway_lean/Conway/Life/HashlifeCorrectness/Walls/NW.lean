@@ -1,4 +1,4 @@
-/-! # HashlifeCorrectness.Walls.NW
+/-  # HashlifeCorrectness.Walls.NW
 
 P4 (a) overlap wall + counterexamples + G3 bridge + supercell agreement +
 membership arm (.mp) and its reciprocal (.mpr). Contains the original crux (a).

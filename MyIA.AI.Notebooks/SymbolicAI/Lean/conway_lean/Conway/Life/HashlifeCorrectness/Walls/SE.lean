@@ -1,4 +1,4 @@
-/-! # HashlifeCorrectness.Walls.SE
+/-  # HashlifeCorrectness.Walls.SE
 
 P4 SE quadrant: shift lemma + overlap wall + G3 bridge + supercell agreement +
 membership arm (.mp) and its reciprocal (.mpr). Diagonal mirror of NW.

@@ -1,4 +1,4 @@
-/-! # HashlifeCorrectness.Walls.SW
+/-  # HashlifeCorrectness.Walls.SW
 
 P4 SW quadrant: shift lemma + overlap wall + supercell agreement + membership arm (.mp)
 and its reciprocal (.mpr). NW-SE reflection of NE.
