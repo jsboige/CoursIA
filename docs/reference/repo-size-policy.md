@@ -79,6 +79,32 @@ désignée au-dessus du seuil advisory (§6) :
 Le seuil advisory (§6) est là pour **déclencher la conversation** : un blob > seuil dans une
 PR ouvre la question « LFS ou justification pédagogique ? », sans bloquer le merge.
 
+### 5.1 Submodules : usage réel et angle mort du check §6
+
+Le dépôt utilise **8 submodules** (inscrits dans `.gitmodules`), répartis en deux familles :
+
+- **Libs vendored externes** : `foundry-lib/lib/{forge-std, openzeppelin-contracts,
+  account-abstraction}` (SmartContracts Solidity), `Argumentum` (ArgumentumGames) —
+  dépendances externes pointées par commit, non recopiées comme blobs.
+- **Dépôts propres** : `MetaGeneticSharp` (jsboige), `Z3.Linq`, `Automata`, `semantic-fleet`
+  (MyIntelligenceAgency) — sous-projets factorisés hors du monorepo.
+
+Les submodules sont l'**alternative structurelle** à LFS pour externaliser le poids hors de
+l'arbre : un gitlink pèse quelques octets, quel que soit le poids du dépôt référencé. C'est
+précisément ce qui crée leur angle mort.
+
+- **Angle mort du check §6** : un submodule n'est **pas** un blob du dépôt parent — c'est une
+  référence de commit (`gitlink`). Le scan `git diff --diff-filter=A` de `repo-size-advisory.yml`
+  ne le voit donc **jamais**, quel que soit le poids du dépôt référencé. L'introduction d'un
+  submodule pointant vers un dépôt de plusieurs GiB ne déclencherait aucun warning advisory.
+- **Décision** : les 8 submodules actuels sont des dépendances stables (libs vendored + sous-
+  projets propres), légitimes au même titre que les blobs vendored de §3. L'ajout d'un
+  **nouveau** submodule doit être **documenté dans la PR** avec le poids du dépôt référencé et
+  la raison (vendored légitime vs sous-projet propre vs déplacement LFS-like) — le check §6 ne
+  peut pas le mesurer, donc c'est la revue humaine qui porte la garde. Critère de refus : un
+  submodule dont l'unique motivation est « cacher du poids » plutôt qu'une réelle factorisation
+  ou dépendance externe stable.
+
 ## 6. Check advisory (jamais bloquant)
 
 Un workflow CI (`.github/workflows/repo-size-advisory.yml`) signale, sur chaque PR, les blobs
