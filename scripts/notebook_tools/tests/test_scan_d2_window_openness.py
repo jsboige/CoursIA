@@ -55,7 +55,10 @@ from scan_d2_window_openness import (  # noqa: E402
     RE_SET_END_DATE,
     RE_SET_START_DATE,
     _extract_code_and_outputs,
+    _strip_comments,
     classify_notebook,
+    classify_source,
+    iter_sources,
     main,
 )
 
@@ -491,9 +494,304 @@ class TestMainExitCodes:
 
         On vérifie la RELATION (DEFAULT_ROOT.parent == REPO_ROOT) plutôt que le
         nom littéral du répertoire parent, car le nom varie selon le contexte
-        (worktree local = ``CoursIA-2-c1331x14-d2-scan`` vs clone CI =
-        ``CoursIA``). Voir leçon c.1331+17.
+        (worktree local = ``CoursIA-2-c1331x16-d2-scan-cspy`` vs clone CI =
+        ``CoursIA`` vs clone CoursIA-2 = ``CoursIA-2``). Voir leçon c.1331+17.
         """
         from scan_d2_window_openness import DEFAULT_ROOT, REPO_ROOT
         assert DEFAULT_ROOT.name == "MyIA.AI.Notebooks"
         assert DEFAULT_ROOT.parent.resolve() == REPO_ROOT.resolve()
+
+
+# -----------------------------------------------------------------------------
+# Phase 2 (#9768 follow-up) : extension scope .cs / .py avec FP-2 fix
+# -----------------------------------------------------------------------------
+
+
+class TestStripComments:
+    """Couvre ``_strip_comments(source, file_type)`` (FP-2 fix).
+
+    Le stripping est INDISPENSABLE pour les .cs/.py : sans lui, les
+    ``// SetEndDate(...)`` commentes seraient pris pour des appels reels
+    et le verdict serait CONFORME a tort. Cf c.1331+15 « Note Phase 2 ».
+    """
+
+    def test_strip_csharp_line_comments(self):
+        src = (
+            "namespace Foo;\n"
+            "// SetEndDate(2024, 12, 31); // commentaire\n"
+            "class Bar { }\n"
+        )
+        out = _strip_comments(src, "cs")
+        # Le commentaire a ete neutralise (remplace par espaces de meme longueur)
+        assert "SetEndDate" not in out
+        assert "namespace Foo;" in out  # code reel preserve
+        assert "class Bar { }" in out
+
+    def test_strip_csharp_block_comments(self):
+        src = (
+            "/* SetEndDate(2024, 12, 31);\n"
+            "   multi-line block comment */\n"
+            "int x = 1;\n"
+        )
+        out = _strip_comments(src, "cs")
+        assert "SetEndDate" not in out
+        assert "int x = 1;" in out
+
+    def test_strip_csharp_preserves_string_literals(self):
+        """Limite assumee : on ne parse PAS les chaines.
+
+        Un ``"// not a comment"`` dans une string passerait au strip. Ce
+        test VERROUILLE la limite documentee : un commentaire a
+        l'interieur d'une string est considere comme un commentaire
+        (faux negatif assume sur corpus QC reel).
+        """
+        src = 'string s = "// SetEndDate(2024);";\n'
+        out = _strip_comments(src, "cs")
+        # Comportement actuel : le // dans la string est detruit (faux negatif)
+        # Le test VERROUILLE ce comportement documente pour qu'un futur
+        # changement soit intentionnel.
+        assert "SetEndDate(2024);" not in out
+
+    def test_strip_python_line_comments(self):
+        src = (
+            "# SetEndDate(2024, 12, 31)\n"
+            "x = 1\n"
+            "# commentaire de fin\n"
+        )
+        out = _strip_comments(src, "py")
+        assert "SetEndDate" not in out
+        assert "x = 1" in out
+
+    def test_strip_unknown_file_type_raises(self):
+        with pytest.raises(ValueError, match="file_type inconnu"):
+            _strip_comments("anything", "rb")  # ruby? unknown
+
+
+class TestClassifySourceTruePositives:
+    """Un .cs ou .py avec SetStartDate mais sans SetEndDate = D2+."""
+
+    def test_cs_main_cs_with_only_set_start_date(self, tmp_path):
+        # Reproduction fidele de la structure CSharp-BTC-MACD-ADX/Main.cs
+        # (lignes 329-363 du fichier reel, simplifiees).
+        p = tmp_path / "Main.cs"
+        p.write_text(
+            "namespace QuantConnect.Algorithm.CSharp;\n"
+            "using QuantConnect;\n"
+            "class MyAlgo : QCAlgorithm {\n"
+            "    public override void Initialize() {\n"
+            "        // SetEndDate(2024, 12, 31); // commente\n"
+            "        SetStartDate(2019, 4, 1);  // REEL\n"
+            "    }\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "cs")
+        assert rec["verdict"] == "D2+"
+        assert rec["file_type"] == "cs"
+        assert rec["has_set_start"] is True
+        assert rec["has_set_end"] is False
+        assert rec["error"] is None
+
+    def test_py_main_py_with_only_set_start_date(self, tmp_path):
+        p = tmp_path / "main.py"
+        p.write_text(
+            "from AlgorithmImports import *\n"
+            "qb = QuantBook()\n"
+            "qb.SetStartDate(2020, 1, 1)  # REEL\n"
+            "# qb.SetEndDate(2024, 12, 31)  # commente\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "py")
+        assert rec["verdict"] == "D2+"
+        assert rec["file_type"] == "py"
+        assert rec["has_set_start"] is True
+        assert rec["has_set_end"] is False
+
+
+class TestClassifySourceTrueNegatives:
+    """Un .cs ou .py avec SetEndDate = CONFORME."""
+
+    def test_cs_with_set_end_date(self, tmp_path):
+        p = tmp_path / "Main.cs"
+        p.write_text(
+            "namespace QuantConnect.Algorithm.CSharp;\n"
+            "class MyAlgo : QCAlgorithm {\n"
+            "    public override void Initialize() {\n"
+            "        SetStartDate(2017, 10, 1);\n"
+            "        SetEndDate(2025, 1, 1);\n"
+            "    }\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "cs")
+        assert rec["verdict"] == "CONFORME"
+
+    def test_py_with_set_end_date(self, tmp_path):
+        p = tmp_path / "main.py"
+        p.write_text(
+            "from AlgorithmImports import *\n"
+            "qb = QuantBook()\n"
+            "qb.SetStartDate(2020, 1, 1)\n"
+            "qb.SetEndDate(2024, 12, 31)\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "py")
+        assert rec["verdict"] == "CONFORME"
+
+
+class TestClassifySourceNeutrals:
+    """Pas de SetStartDate ou pas de contexte QC = NEUTRE."""
+
+    def test_cs_no_dates(self, tmp_path):
+        p = tmp_path / "Main.cs"
+        p.write_text(
+            "namespace Foo;\n"
+            "class Bar { }\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "cs")
+        assert rec["verdict"] == "NEUTRE"
+
+    def test_py_no_qc_context(self, tmp_path):
+        """Un main.py non-QC (pas de QuantBook / SetStartDate) = NEUTRE."""
+        p = tmp_path / "main.py"
+        p.write_text(
+            "import pandas as pd\n"
+            "df = pd.DataFrame({'x': [1, 2, 3]})\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "py")
+        assert rec["verdict"] == "NEUTRE"
+
+
+class TestClassifySourceFP2Fix:
+    """FP-2 : le cas-graine ``CSharp-BTC-MACD-ADX/Main.cs``.
+
+    Avant le stripping, la regex trouvait 14 ``//SetEndDate(...)``
+    commentes + 1 ``SetStartDate(2019, 4, 1)`` reel, donc classait
+    CONFORME a tort. Apres stripping, on ne voit plus que le SetStartDate
+    reel = D2+ veridique.
+    """
+
+    def test_canonical_btc_macd_adx_classified_d2(self, tmp_path):
+        """Reproduction du cas-graine : 14 commentaires + 1 SetStartDate reel."""
+        p = tmp_path / "Main.cs"
+        # Generation des 14 commentaires alternes SetStartDate/SetEndDate
+        commented_lines = []
+        for i in range(7):
+            commented_lines.append(f"            // SetStartDate({2000 + i}, 1, 1);")
+            commented_lines.append(f"            // SetEndDate({2010 + i}, 12, 31);")
+        p.write_text(
+            "namespace QuantConnect.Algorithm.CSharp;\n"
+            "using QuantConnect;\n"
+            "class MyAlgo : QCAlgorithm {\n"
+            "    public override void Initialize() {\n"
+            + "\n".join(commented_lines)
+            + "\n"
+              "            SetStartDate(2019, 4, 1);  // LE SEUL REEL\n"
+              "    }\n"
+              "}\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "cs")
+        # Verdict attendu : D2+ (1 SetStartDate reel sans EndDate reel)
+        assert rec["verdict"] == "D2+", (
+            f"FP-2 fix broken: le cas-graine devrait etre D2+, "
+            f"obtenu {rec['verdict']} (has_set_start={rec['has_set_start']}, "
+            f"has_set_end={rec['has_set_end']}). "
+            f"Avant fix : CONFORME (les commentaires //SetEndDate etaient pris pour appels reels)."
+        )
+        assert rec["has_set_start"] is True
+        assert rec["has_set_end"] is False  # commentaire neutralise
+
+    def test_only_commented_dates_is_neutral(self, tmp_path):
+        """Si TOUTES les dates sont commentees (ni SetStartDate ni SetEndDate
+        REEL), le verdict doit etre NEUTRE -- pas de notion de fenetre.
+
+        Note : un QC context est detecte (l'algo herite de QCAlgorithm)
+        mais sans SetStartDate, le verdict NEUTRE prevaut.
+        """
+        p = tmp_path / "Main.cs"
+        p.write_text(
+            "namespace QuantConnect.Algorithm.CSharp;\n"
+            "class MyAlgo : QCAlgorithm {\n"
+            "    public override void Initialize() {\n"
+            "        // SetStartDate(2020, 1, 1);\n"
+            "        // SetEndDate(2024, 12, 31);\n"
+            "    }\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        rec = classify_source(p, "cs")
+        # has_set_start est False (commentaire neutralise) -> NEUTRE
+        assert rec["verdict"] == "NEUTRE"
+
+
+class TestIterSources:
+    """Couvre ``iter_sources(root)`` -- decouverte des main.py/Main.cs."""
+
+    def test_iter_sources_finds_main_py(self, tmp_path):
+        """La fonction doit trouver les main.py sous QuantConnect/projects/."""
+        # Construire un mini-arbre
+        proj = tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Strategy-A"
+        proj.mkdir(parents=True)
+        (proj / "main.py").write_text("pass\n", encoding="utf-8")
+        # Aussi un sous-dossier avec un main.py
+        sub = proj / "sub"
+        sub.mkdir()
+        (sub / "main.py").write_text("pass\n", encoding="utf-8")
+
+        results = iter_sources(tmp_path)
+        py_files = [p for p, ft in results if ft == "py"]
+        assert len(py_files) == 2
+        assert all(p.name == "main.py" for p in py_files)
+
+    def test_iter_sources_finds_main_cs(self, tmp_path):
+        proj = tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "CSharp-BTC-MACD-ADX"
+        proj.mkdir(parents=True)
+        (proj / "Main.cs").write_text("// header\n", encoding="utf-8")
+
+        results = iter_sources(tmp_path)
+        cs_files = [p for p, ft in results if ft == "cs"]
+        assert len(cs_files) == 1
+        assert cs_files[0].name == "Main.cs"
+
+    def test_iter_sources_skips_when_no_projects_dir(self, tmp_path):
+        """Si pas de QuantConnect/projects/, retourne []."""
+        (tmp_path / "MyIA.AI.Notebooks").mkdir()
+        results = iter_sources(tmp_path)
+        assert results == []
+
+    def test_iter_sources_skips_non_target_files(self, tmp_path):
+        """Un .cs qui n'est pas Main.cs n'est pas scanne."""
+        proj = tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Strategy-X"
+        proj.mkdir(parents=True)
+        (proj / "Helper.cs").write_text("class Helper { }\n", encoding="utf-8")
+        (proj / "main.py").write_text("pass\n", encoding="utf-8")
+        results = iter_sources(tmp_path)
+        # Seul main.py est detecte
+        assert len(results) == 1
+        assert results[0][1] == "py"
+
+
+class TestScanMergedPopulations:
+    """Couvre l'agregation ``scan()`` -- notebooks + sources."""
+
+    def test_scan_includes_source_files(self, tmp_path):
+        """scan() doit inclure les .cs/.py dans le total."""
+        proj = tmp_path / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "CSharp-BTC-MACD-ADX"
+        proj.mkdir(parents=True)
+        (proj / "Main.cs").write_text(
+            "namespace Q;\nclass X : QCAlgorithm {\n"
+            "  public override void Initialize() { SetStartDate(2019, 4, 1); }\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        report = __import__("scan_d2_window_openness").scan(tmp_path)
+        assert report["total"] >= 1
+        # Le D2+ de Main.cs doit apparaitre
+        d2_paths = report["d2_samples"]
+        assert any("CSharp-BTC-MACD-ADX" in p and "Main.cs" in p for p in d2_paths)
+        # by_type doit contenir 'cs'
+        assert "cs" in report["by_type"]
+        assert report["by_type"]["cs"]["D2+"] >= 1
