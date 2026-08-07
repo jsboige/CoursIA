@@ -3420,6 +3420,26 @@ private theorem p4_ne_parent_agree_n6 (k : Nat)
     · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
     · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))
 
+/-! ### Étape 3-bis — `p4_se_parent_agree_n{j}` : accord interne du supernœud SE
+
+[NON PORTÉ c.9714 — décision après lecture directe de la signature du mur SE
+(L5329-5353) + miroir NE (L4470-4499, inline sorry accepté via OW #6875) :
+le quadrant SE = `[2^k + 2^(k-1), 2·2^k + 2^(k-1))²` n'est PAS le miroir
+verbatim de NW `[0, 2^k)²` — l'extraction sous-cellule demande une shift
+différente `(2^k + 2^(k-1), 2^k + 2^(k-1))` sur LES DEUX coordonnées plus
+un offset `2^(k-1)`. Helper gap estimé ~400-500 LOC pour les 4
+`p4_se_parent_agree_n{j}` j ∈ {5,6,8,9}.
+
+**Verdict c.9714 — INTRINSIC (non-régression au sens OW #6875)** : accepter
+le sorry résiduel dans `p4_se_overlap_wall` (L5329) **identique** au pattern
+NE inline sorry (L4499) — la fidélité est testée à la compilation par
+`p4_se_g3_bridge` qui consomme la wall via `exact` (L5444). Pas une
+régression, c'est le miroir strict de la décision NE antérieure. Le helper
+gap serait un nouveau genre de lemme (pas un port) ; budget c.9714
+prioritaire pour SW (`p4_sw_overlap_wall` L5126) et `case mpr` (L6023) qui
+ont chacun la même structure à prouver. C9713-L1 ★★ : miroir verbatim =
+hallucination trap ; C9713-L2 ★★ : design pivot honnête > progrès fabriqué.] -/
+
 /-! ### Étape 4 (préparation) — caractérisation par quadrant du supernœud résultat
 
 Le supernœud `node R1 R2 R4 R5` (niveau `k+1`) est caractérisé quadrant par
