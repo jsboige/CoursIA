@@ -17,6 +17,10 @@ execution is also impossible or unsafe, reusing the canonical predicates from
     GradeBook.ipynb, where empty outputs are the compliant state; running it
     locally would leak student PII, #8830).
 
+A code cell whose source is empty or only comments (Python ``#`` / C-family
+``//``) is also skipped: it is a transition/explanation cell, not an
+executable one -- flagging it would be a false positive.
+
 .NET Interactive is deliberately NOT tolerated: ``dotnet-interactive`` runs on
 every worker, so a committed .NET cell MUST carry a real execution_count (cf.
 the Tweety-3 incident, PRs #5194/#5199/#5202 merged at null+empty).
@@ -25,8 +29,10 @@ Usage -- pre-commit (``pass_filenames: true``):
     python scripts/notebook_tools/check_null_exec.py <staged.ipynb> [...]
 
 Standalone:
-    python scripts/notebook_tools/check_null_exec.py --all     # whole-repo scan
-    python scripts/notebook_tools/check_null_exec.py --check   # CI parity (exit 1)
+    python scripts/notebook_tools/check_null_exec.py --all      # whole-repo scan
+    python scripts/notebook_tools/check_null_exec.py --check    # CI parity (exit 1)
+    python scripts/notebook_tools/check_null_exec.py --explain  # rule summary
+    python scripts/notebook_tools/check_null_exec.py --verbose <nb.ipynb>  # per-nb
 
 See #9888 (inert pre-commit harness) and
 docs/reference/regles-validation-detail.md (H.3 -- "verification pre-commit
@@ -75,6 +81,35 @@ def _is_null_unexecuted(cell: dict) -> bool:
     return not outputs
 
 
+def _cell_source_str(cell: dict) -> str:
+    """Normalize a cell's ``source`` (list or str, per nbformat) to a string."""
+    src = cell.get("source", "")
+    if isinstance(src, list):
+        return "".join(src)
+    return src or ""
+
+
+def _is_skippable_comment_only(source: str) -> bool:
+    """True if cell ``source`` is empty or only Python ``#`` / C-family ``//``
+    comment lines.
+
+    Such a cell is a transition/explanation cell mis-authored as code, not an
+    executable one -- flagging its null execution would be a false positive
+    (mirrors ``check_c2_compliance.py``'s tolerance).
+    """
+    stripped = source.strip()
+    if not stripped:
+        return True
+    for line in stripped.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("#") or s.startswith("//"):
+            continue
+        return False
+    return True
+
+
 def scan_notebook(nb_path: Path) -> list[str]:
     """Return a list of violation messages for ``nb_path`` (empty if clean).
 
@@ -111,6 +146,8 @@ def scan_notebook(nb_path: Path) -> list[str]:
 
     violations: list[str] = []
     for idx, cell in _code_cells(data):
+        if _is_skippable_comment_only(_cell_source_str(cell)):
+            continue
         if _is_null_unexecuted(cell):
             violations.append(
                 f"{rel_path}: cell {idx} code "
@@ -149,24 +186,51 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="CI parity mode: whole-repo scan, exit 1 if any violation.",
     )
+    parser.add_argument(
+        "--explain",
+        action="store_true",
+        help="Print the rule summary and exit (no scan).",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Emit a per-notebook OK/FAIL line on stderr.",
+    )
     args = parser.parse_args(argv)
+
+    if args.explain:
+        print(__doc__)
+        return 0
 
     targets = _collect_targets(args)
     if not targets:
         return 0
 
-    all_violations: list[str] = []
+    # Scan each notebook, keeping per-notebook results for --verbose.
+    per_notebook: list[tuple[Path, list[str]]] = []
     for nb_path in targets:
-        all_violations.extend(scan_notebook(nb_path))
+        per_notebook.append((nb_path, scan_notebook(nb_path)))
+    all_violations = [v for _, vs in per_notebook for v in vs]
+
+    if args.verbose:
+        for nb_path, vs in per_notebook:
+            if vs:
+                print(f"FAIL {nb_path}", file=sys.stderr)
+                for v in vs:
+                    print(f"  - {v}", file=sys.stderr)
+            else:
+                print(f"OK   {nb_path}", file=sys.stderr)
 
     if all_violations:
-        print(
-            f"H.3 pre-commit: {len(all_violations)} un-executed cell(s) "
-            f"refused (execution_count=null + outputs=[]):",
-            file=sys.stderr,
-        )
-        for v in all_violations:
-            print(f"  - {v}", file=sys.stderr)
+        if not args.verbose:
+            print(
+                f"H.3 pre-commit: {len(all_violations)} un-executed cell(s) "
+                f"refused (execution_count=null + outputs=[]):",
+                file=sys.stderr,
+            )
+            for v in all_violations:
+                print(f"  - {v}", file=sys.stderr)
         print(
             "Re-execute the notebook locally and re-stage, or (QC Cloud / "
             "lean) the notebook is auto-tolerated -- check the kernel.",
@@ -174,8 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    scanned = len(targets)
-    print(f"H.3 pre-commit: {scanned} notebook(s) OK (no null+empty code cell).")
+    if not args.verbose:
+        scanned = len(targets)
+        print(f"H.3 pre-commit: {scanned} notebook(s) OK (no null+empty code cell).")
     return 0
 
 
