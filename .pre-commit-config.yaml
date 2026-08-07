@@ -1,14 +1,21 @@
 # Pre-commit hooks for CoursIA
-# Install: pip install pre-commit && pre-commit install
+# Install (idempotent, recommended): python scripts/setup_hooks.py
+#   or manually: pip install pre-commit && pre-commit install
 # Run manually: pre-commit run --all-files
+# Machine relevé / parity: python scripts/setup_hooks.py --check | --check-parity
 
 repos:
+  # gitleaks: scans STAGED content before it enters history. Uses the hook's
+  # canonical v8.21.2 entry (`gitleaks protect --verbose --redact --staged`,
+  # pass_filenames: false) -- do NOT override `args` with the old `detect
+  # --no-git` form: that appends to the canonical entry and gitleaks rejects
+  # the combined flags (#9888). `protect` scans uncommitted changes (fast,
+  # correct for pre-commit); `detect` would scan full git history (slow).
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2
     hooks:
       - id: gitleaks
         name: Secret scanner (gitleaks)
-        args: ['detect', '--no-git', '--redact']
 
   # Local hooks: notebook hygiene + structural integrity. These run on the
   # worker's machine without external dependencies. See
@@ -85,5 +92,24 @@ repos:
         entry: python scripts/notebook_tools/detect_markdown_rendering.py --check --baseline scripts/notebook_tools/markdown_rendering_baseline.json
         language: system
         pass_filenames: false
+        files: '\.ipynb$'
+        stages: [pre-commit]
+
+      - id: check-null-exec
+        name: H.3 — refuse un-executed notebooks (execution_count=null + outputs=[])
+        description: |
+          Fails the commit if a staged notebook has a code cell with
+          execution_count == null AND empty outputs — a C.2/H.3 violation: a
+          committed notebook must prove it ran. This is the pre-commit half of
+          the CI gate validate_pr_notebooks.py (same tolerance predicates: lean
+          kernels, QC Cloud via _is_qc_cloud, and metadata.pii_no_output). It
+          catches the worker who edits a notebook and forgets to re-execute it
+          BEFORE the push — before a secret or a false output reaches history.
+          See #9888 (inert pre-commit) and regles-validation-detail.md H.3
+          ("verification pre-commit obligatoire"). Repo-wide --check exit 0 on
+          current main (all null-exec notebooks are legitimately tolerated).
+        entry: python scripts/notebook_tools/check_null_exec.py
+        language: system
+        pass_filenames: true
         files: '\.ipynb$'
         stages: [pre-commit]
