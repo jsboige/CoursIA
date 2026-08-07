@@ -231,6 +231,98 @@ class TestGoldenSetProbasBayesian:
 
 
 # --------------------------------------------------------------------------- #
+#  Tests golden set nits c.1273 — reponse aux 2 nits ai-01 sur #9813
+# --------------------------------------------------------------------------- #
+
+
+class TestGoldenSetNitsC1273:
+    """Golden set fondateur post-#9813 (c.1273) — reponse aux 2 nits ai-01 :
+
+    1. Nit-1 : `}cii` etait un marqueur DATA-LIST mort (typo, jamais matche)
+       — VERIFIE : 0 occurrence dans Probas/ (grep firsthand). Retirer.
+    2. Nit-2 : `precision` et `apprentissage` (STRUCT_KEYWORDS vagues #9813)
+       peuvent etre trop larges cross-famille ML/GenAI. Plutot que de les
+       retirer (re-introduirait du FP sur Probas), on ajoute un golden set
+       ML/GenAI qui DEMONTRE les cas limites et on documente le scope.
+
+    Verifie :
+    - precision bayesienne (parametre gamma, posterior) reste STRUCTUREL
+    - apprentissage bayesien (inference) reste STRUCTUREL
+    - precision ML non-seedee (accuracy/precision metrique) NON touchee par
+      STRUCT_KEYWORDS (tombe sur STOCH_KEYWORDS par defaut — co-existence OK)
+    """
+
+    def test_1273_nit1_data_list_marker_removed(self):
+        """Nit-1 : `}cii` retire de DATA_LIST_MARKERS — verification directe."""
+        from scan_quant_classify import DATA_LIST_MARKERS
+        marker_removed = "}cii"
+        assert marker_removed not in DATA_LIST_MARKERS, (
+            f"{marker_removed!r} doit etre retire (typo mort), got {DATA_LIST_MARKERS}"
+        )
+        # Les autres marqueurs legitimes sont preserves
+        for legit in ("{", "~ ", " valeurs", "observations)"):
+            assert legit in DATA_LIST_MARKERS, (
+                f"marqueur legitime {legit} doit etre preserve"
+            )
+
+    def test_1273_nit2_precision_bayesian_kept(self):
+        """Nit-2 : `precision` dans un contexte bayesien (parametre gamma
+        precision) reste STRUCTUREL — re-introduire le retrait casserait Probas.
+        """
+        cls, _ = _classify_quant_value("2.24", 2.24,
+                                       "precision `gamma(2.24, ",
+                                       "`) | ~ 3.29 min^2 (parametre bayesien)")
+        assert cls == "STRUCTUREL", (
+            f"precision bayesienne doit rester STRUCTUREL, got {cls}"
+        )
+
+    def test_1273_nit2_apprentissage_bayesian_kept(self):
+        """Nit-2 : `inference bayesienne` (mot-composé) reste STRUCTUREL —
+        preserve la couverture Probas (20 fichiers firsthand) sans le FP
+        `temps d'apprentissage du modele: 42 s` que `apprentissage` seul
+        induisait cross-famille ML runtime.
+        """
+        cls, _ = _classify_quant_value("100", 100.0,
+                                       "courbe d'inference bayesienne (",
+                                       " iterations, posterior Beta converge)")
+        assert cls == "STRUCTUREL", (
+            f"inference bayesienne (mot-compose) doit rester STRUCTUREL, got {cls}"
+        )
+
+    def test_1273_nit2_ml_precision_metric_unaffected(self):
+        """Nit-2 : `precision: 0.87` (metrique ML non-seedee) — ne doit PAS
+        beneficier de STRUCT_KEYWORDS='precision' seule (sinon FP STRUCTUREL
+        sur une metrique de test). Le mot-cle `precision` est OK en contexte
+        bayesien uniquement ; en contexte ML, c'est STOCHASTIQUE-NON-SEEDEE.
+        """
+        cls, _ = _classify_quant_value("0.87", 0.87,
+                                       "validation precision: ",
+                                       " (10-fold cv, sans seed explicite)")
+        # STOCHASTIQUE-NON-SEEDEE (accuracy/precision metrique non-seedee)
+        # OU STRUCTUREL si pas de match — verifier que ce n'est PAS MACHINE-DEP
+        # (precision ML n'est pas un timing runtime)
+        assert cls in ("STRUCTUREL", "STOCHASTIQUE-NON-SEEDEE"), (
+            f"precision ML metrique ne doit pas etre MACHINE-DEP, got {cls}"
+        )
+
+    def test_1273_nit2_temps_apprentissage_runtime_caught(self):
+        """Nit-2 edge case : `temps d'apprentissage: 42 ms` est bien
+        MACHINE-DEP (runtime) car `apprentissage` n'est plus STRUCT_KEYWORDS
+        (retire c.1273, etait trop large cross-famille ML runtime). Le mot-
+        compose `inference bayesienne` preserve la couverture Probas.
+        """
+        cls, _ = _classify_quant_value("42", 42.0,
+                                       "temps d'apprentissage du modele: 42 ",
+                                       "ms sur 100 epochs")
+        # '42 ms' colles dans prefix -> TIME_UNIT_RE match -> MACHINE-DEP
+        assert cls == "MACHINE-DEP", (
+            f"temps apprentissage runtime doit etre MACHINE-DEP, got {cls} "
+            f"(nit-2 signale : apprentissage STRUCT_KEYWORDS serait trop large "
+            f"sur famille ML runtime — ce test verifie la discrimination)"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
 

@@ -122,12 +122,16 @@ STRUCT_KEYWORDS = (
     "d'observation", "données observees", "donnees observees",
     "arithmétique", "arithmetique", "bayésien", "bayesien",
     "prédictive", "predictive", "aplatissement", "kurtosis",
-    "apprentissage", "inference bayesienne", "inférence bayésienne",
+    # Note c.1273 : `apprentissage` retire (nit-2 ai-01) — trop large cross-famille
+    # (FP : `temps d'apprentissage du modele: 42 s` = runtime). Le mot-composé
+    # `inference bayesienne` reste, qui preserve la couverture Probas (20 fichiers).
+    "inference bayesienne", "inférence bayésienne",
 )
 
 # Mots-cles DATA-LIST (anti-FP) : une liste `{8, 10, 11, 12}` ou `[13, 17, 16]`
-# en contexte bayesien = data points, pas runtime.
-DATA_LIST_MARKERS = ("{", "}cii", "~ ", " valeurs", "observations)")
+# en contexte bayesien = data points, pas runtime. Note c.1273 : `}cii` était
+# un marqueur mort (typo, ne matche jamais) — retiré suite nit ai-01 #9813.
+DATA_LIST_MARKERS = ("{", "~ ", " valeurs", "observations)")
 
 # Mots-cles SEED — si présents, le stochastique est seede et donc STRUCTUREL.
 SEED_KEYWORDS = ("seed=", "random_state=", "np.random.seed", "torch.manual_seed",
