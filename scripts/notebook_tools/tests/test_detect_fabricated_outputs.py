@@ -349,12 +349,17 @@ class TestHasHeuristicBeatsOptimal:
 
     def test_detect_cell_stacks_with_row_n(self):
         # A cell can carry both a Row-N placeholder AND an impossible gap.
+        # The Row-N placeholder is the Pandas default-index signature of an
+        # unfilled dataframe (>= MIN_ROW_SEQUENCE consecutive integers, see
+        # #9935) -- a single isolated "Row 1" is LLM prose, not a placeholder.
         cell = code_cell(outputs=[
             text_output(
                 "CP-SAT optimal: 2 bins\n"
                 "FFD heuristic:  1 bins\n"
                 "Gap: -50.0%\n"
                 "Row 1   0.5\n"
+                "Row 2   0.3\n"
+                "Row 3   0.7\n"
             ),
         ])
         signals = {f["signal"] for f in detect_cell(cell)}
