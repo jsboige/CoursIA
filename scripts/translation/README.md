@@ -84,6 +84,8 @@ python scripts/translation/check_translation_sync.py translations/ --check
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte que du `SRC_DRIFT` éventuel ; l'absence de traductions déposées n'est pas un drift (c'est l'état attendu pré-T3). Le pivot (`fr`) étant le notebook source lui-même, sa cohérence est couverte par `SRC_DRIFT` — pas de faux `MISSING_LANG` sur le pivot.
 
+**Advisory resync-only** (`scripts/translation/check_resync_only.py`, #6949 second half) : un PR qui ne touche QUE `translations/**/*.csv` ET n'ajoute aucun contenu `text_<lang>`/`hash_<lang>` (lang ∈ {en,es,ar,fa,zh,ru,pt}) est signalé `::notice` non-bloquant (cf [ruling coordinateur 2026-07-28](https://github.com/jsboige/CoursIA/issues/6949#issuecomment-2328497962) — « plus de PR resync-only jusqu'au GO moteur »). Le pivot `text_fr`/`hash_fr` reste autorisé (but légitime du resync).
+
 **Harmonisation taxonomie Argumentum (#6949)** : ce script couvre désormais 4 des 5 classes de drift du fork `multilingual-drift-audit.py` — `MISSING`/`ORPHAN` (MISSING_LANG/ORPHAN_ROW), `WRONG_SCRIPT` (script Unicode attendu absent, c.734 #7714), `FR_CONTAM` (c.738). La 5e classe `COGNATE` (noms propres / faux-amis légitimement répétés, `kind == "name"`, **informationnelle** — hors `total_drift` dans le fork) est **N/A** par construction : notre modèle est cell-based (pas de distinction name/prose).
 
 ## CI
