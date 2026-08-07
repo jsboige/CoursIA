@@ -165,8 +165,23 @@ class TestZeroValueRegex:
 class TestHasRowN:
     """`_has_row_n(lines)` returns True when Row N placeholders are present."""
 
-    def test_single_row_n_detected(self):
-        assert _has_row_n(["Row 1     0.5   0.1"])
+    def test_single_row_n_not_flagged(self):
+        # A single isolated "Row N" is prose (LLM output, pedagogy, grid
+        # reference), NOT a dataframe placeholder. Hardened post Sudoku-17 FP
+        # (c.XIX): exige >= MIN_ROW_SEQUENCE entiers consecutifs.
+        assert not _has_row_n(["Row 1     0.5   0.1"])
+
+    def test_row_n_llm_prose_not_flagged(self):
+        # Sudoku-17-LLM-Python cell[14] incident : LLM zero-shot trace references
+        # Sudoku rows in prose. Two isolated mentions = NOT a Pandas index sequence.
+        assert not _has_row_n([
+            "Row 1 remaining: R1C4, R1C5 are {1,8}.",
+            "Row 2 is complete: 1 7 4 9 6 3 8 2 5.",
+        ])
+
+    def test_row_n_two_isolated_not_flagged(self):
+        # Two mentions with non-consecutive integers = NOT a sequence.
+        assert not _has_row_n(["Row 1 some prose", "Row 5 other prose"])
 
     def test_multiple_row_n_detected(self):
         assert _has_row_n(
@@ -370,8 +385,13 @@ class TestDetectCell:
         assert detect_cell(cell) == []
 
     def test_code_cell_with_row_n_returns_finding(self):
+        # Hardened (c.XIX): requires >= MIN_ROW_SEQUENCE consecutive Row N.
         cell = code_cell(outputs=[
-            display_data_output("Row 1     0.530    7.2%  -12.7%"),
+            display_data_output("\n".join([
+                "Row 1     0.530    7.2%  -12.7%",
+                "Row 2     0.612    8.1%  -15.3%",
+                "Row 3     0.701    9.0%  -10.1%",
+            ])),
         ])
         findings = detect_cell(cell)
         assert len(findings) == 1
@@ -396,6 +416,7 @@ class TestDetectCell:
             display_data_output("\n".join([
                 "Row 1   0.530    7.2%  -12.7%",
                 "Row 2   0.612    8.1%  -15.3%",
+                "Row 3   0.701    9.0%  -10.1%",
                 "",
                 "       Sharpe  CAGR  MaxDD",
                 "A       0.0    0.0   0.0",
@@ -438,7 +459,11 @@ class TestScanNotebook:
     def test_fabricated_notebook_returns_hits(self, tmp_path):
         nb = {
             "cells": [
-                code_cell(outputs=[display_data_output("Row 1     0.530    7.2%")]),
+                code_cell(outputs=[display_data_output("\n".join([
+                    "Row 1     0.530    7.2%",
+                    "Row 2     0.612    8.1%",
+                    "Row 3     0.701    9.0%",
+                ]))]),
                 code_cell(outputs=[display_data_output("\n".join([
                     "Sharpe  CAGR  MaxDD",
                     "0.0     0.0   0.0",
@@ -489,14 +514,22 @@ class TestMainExitCodes:
         assert result == 0
 
     def test_fabricated_notebook_check_exit_1(self, tmp_path):
-        nb = {"cells": [code_cell(outputs=[display_data_output("Row 1     0.530")])], "metadata": {"kernelspec": {"name": "python3"}}}
+        nb = {"cells": [code_cell(outputs=[display_data_output("\n".join([
+            "Row 1     0.530",
+            "Row 2     0.612",
+            "Row 3     0.701",
+        ]))])], "metadata": {"kernelspec": {"name": "python3"}}}
         nb_path = tmp_path / "fab.ipynb"
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         result = main(["--root", str(tmp_path), "--check", str(nb_path)])
         assert result == 1
 
     def test_json_output_is_machine_readable(self, tmp_path, capsys):
-        nb = {"cells": [code_cell(outputs=[display_data_output("Row 1     0.530")])], "metadata": {"kernelspec": {"name": "python3"}}}
+        nb = {"cells": [code_cell(outputs=[display_data_output("\n".join([
+            "Row 1     0.530",
+            "Row 2     0.612",
+            "Row 3     0.701",
+        ]))])], "metadata": {"kernelspec": {"name": "python3"}}}
         nb_path = tmp_path / "fab.ipynb"
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         main(["--root", str(tmp_path), "--json", str(nb_path)])
