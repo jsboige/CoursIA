@@ -81,7 +81,7 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
 | RL | 17 | 17 | 17 | 0 | — |
 | Search | 117 | 117 | 113 | **−4** | `archive/` (2 EXCLUDE) + `Part4-Metaheuristics/MGS-7c/7d` (2 non-curés) |
 | Sudoku | 36 | 36 | 36 | 0 | — |
-| SymbolicAI | 222 | 222 | 220 | **−2** | `archive/Tweety.ipynb` + `Planners/archive/Fast-Downward-Legacy.ipynb` (EXCLUDE_PEDAGOGICAL) |
+| SymbolicAI | 222 | 222 | 220 | **−2** | `_archive/Tweety.ipynb` + `Planners/_archive/Fast-Downward-Legacy.ipynb` (EXCLUDE_PEDAGOGICAL) |
 | **TOTAL** | **946** | **944** | **830** | **−114** | 31 EXCLUDE_PEDAGOGICAL + 83 drift catalogue |
 
 ---

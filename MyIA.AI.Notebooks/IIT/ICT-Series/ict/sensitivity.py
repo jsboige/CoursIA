@@ -43,6 +43,39 @@ Ce module operationalise la question :
 
 Numpy uniquement. GPU-free (mandat user 2026-07-04). Toutes les
 fonctions sont deterministes (numpy seul, pas d'aléatoire cache).
+
+Issue #9764 -- historique du correctif (c.9706 -> #9770)
+-----------------------------------------------------
+
+Le constat lateral rapporte par #7290 (PR #9740) -- ``mean == max ==
+k - 1`` sur 15/15 paires (graine, k) du substrat S1 ``SelfSortingArray``
+-- etait **reel**, mais **PAS** une degenerescence du wiring
+(f identite + W symmetrise). La cause mesuree par #9770 (po-2025) est
+**le plancher de lissage de Laplace** dans :func:`ict.spectral.transition_graph` :
+``laplace_smoothing=1e-9`` met un coefficient strictement positif sur
+**toutes** les entrees de la matrice de transition, donc
+``W[x].any()`` etait vrai pour tout couple ``(x, y)``, donc
+``local_sensitivity`` lisait le voisinage dans un graphe complet.
+
+Le contre-exemple minimal (cycle 0->1->2 sur alphabet 6, ``f(x)=x``)
+donnait la sensibilite ``[5, 5, 5, 5, 5, 5]`` alors que les etats
+3, 4 et 5 etaient **jamais visites** et le degre observe est 1 : aucun
+choix de ``f`` ne pouvait corriger cela -- c'etait un defaut, pas un
+domaine de validite a documenter.
+
+La reparation (PR #9770, MERGED 2026-08-06T23:11Z) introduit la
+primitive :func:`ict.spectral.observed_adjacency` et fait lire a
+:func:`local_sensitivity` le voisinage **effectivement observe**
+(transitions reellement presentes dans la trajectoire) plutot que le
+graphe pondere lisse. Le lissage reste legitime pour les usages
+**spectraux** (Laplacien, gap), ou une ligne nulle casse la
+diagonalisation ; il est simplement inadapte a un **comptage de
+voisins**.
+
+Le present module documente cette trajectoire pour qu'un lecteur
+futur ne tente pas de reproduire la recommandation obsolete « employer
+une f non injective » -- elle ne corrigeait rien puisque le defaut
+frappait des noeuds que ``f`` n'atteignait jamais.
 """
 
 from __future__ import annotations
@@ -51,13 +84,50 @@ from typing import Callable, Dict, Sequence
 
 import numpy as np
 
-from .spectral import transition_graph
+from .spectral import observed_adjacency
 
 __all__ = [
     "local_sensitivity",
     "sensitivity_distribution",
     "huang_conjecture_test",
 ]
+
+
+# --------------------------------------------------------------------------- #
+#  Encodage des labels (mutualise)                                              #
+# --------------------------------------------------------------------------- #
+def _encode_labels(states: Sequence, n_symbols: int) -> list:
+    """Encode les labels de ``states`` en entiers ``0..n_symbols-1``.
+
+    Ordre d'attribution : **premiere apparition** dans la trajectoire.
+    L'encodage est donc **compact** -- les ``n_visited`` noeuds
+    effectivement visites occupent exactement les ids ``0..n_visited-1``,
+    et les ids restants correspondent aux noeuds jamais visites. Cette
+    propriete est utilisee par :func:`sensitivity_distribution`.
+
+    On accepte exactement ``n_symbols`` labels distincts ; un depassement
+    (= un 11eme label alors que ``n_symbols=10``) declenche une
+    ``ValueError`` explicite.
+
+    Mutualise entre :func:`local_sensitivity` et
+    :func:`huang_conjecture_test` : cette derniere passait auparavant les
+    labels **bruts** a :func:`ict.spectral.transition_graph`, qui fait un
+    ``int(s)`` -- donc ``ValueError: invalid literal for int()`` sur des
+    labels chaines, alors que :func:`local_sensitivity` les acceptait.
+    L'invariance par label est une propriete du module : elle doit valoir
+    pour les trois fonctions publiques (issue #9764).
+    """
+    label_to_id: Dict[object, int] = {}
+    ids: list = []
+    for s in states:
+        if s not in label_to_id:
+            if len(label_to_id) >= n_symbols:
+                raise ValueError(
+                    f"More unique states (>={n_symbols + 1}) than n_symbols ({n_symbols})"
+                )
+            label_to_id[s] = len(label_to_id)
+        ids.append(label_to_id[s])
+    return ids
 
 
 # --------------------------------------------------------------------------- #
@@ -73,9 +143,30 @@ def local_sensitivity(
     """Sensibilite locale ``s_x(f)`` pour chaque noeud du graphe.
 
     Pour chaque etat ``x`` du vocabulaire, on evalue la fonction d'etat
-    ``f(x)`` et on compte le nombre de **voisins** ``y`` (au sens du
-    graphe de transition) ou ``f(y) != f(x)``. Le voisinage est
-    determine par :func:`ict.spectral.transition_graph` (TPM symmetrisee).
+    ``f(x)`` et on compte le nombre de **voisins** ``y`` ou
+    ``f(y) != f(x)``. Le voisinage est celui de
+    :func:`ict.spectral.observed_adjacency` : ``y`` est voisin de ``x``
+    si et seulement si la transition ``x -> y`` ou ``y -> x`` a ete
+    **effectivement observee** dans la trajectoire.
+
+    .. note:: **Correctif #9764.**
+
+       Le voisinage etait auparavant lu dans
+       :func:`ict.spectral.transition_graph` via ``W[x] > 0``. Or ``W``
+       est **lissee par defaut** (``laplace_smoothing=1e-9``), donc dense
+       hors diagonale : tout noeud y etait declare voisin de tout noeud.
+       Consequence mesuree : avec une fonction d'etat **injective** (p.
+       ex. ``f(x) = x``), la sensibilite valait mecaniquement
+       ``n_symbols - 1`` en **chaque** noeud -- y compris en des noeuds
+       **jamais visites** -- d'ou ``mean == max == n_symbols - 1`` et
+       ``std == 0``. Le proxy mesurait la **taille du vocabulaire**, pas
+       la sensibilite. Le contre-exemple minimal est un cycle sur 3
+       symboles d'un alphabet de 6 : la mesure renvoyait ``[5]*6`` au
+       lieu de ``[2, 2, 2, 0, 0, 0]``.
+
+       Le lissage reste correct pour les usages **spectraux** (Laplacien,
+       gap), ou une ligne nulle casserait la diagonalisation. Il est
+       simplement inadapte a un **comptage de voisins**.
 
     Parametres :
       - ``states`` : sequence d'etats de la trajectoire (memes labels que
@@ -86,34 +177,29 @@ def local_sensitivity(
         booleennes, mais peut etre a valeurs dans ``{0, ..., m-1}`` pour
         des fonctions multi-valentes -- le basculement est alors defini
         comme ``f(y) != f(x)``).
-      - ``laplace_smoothing`` : transmis a la construction du graphe.
+      - ``laplace_smoothing`` : **n'affecte plus le voisinage** (cf. note
+        ci-dessus). Conserve pour la compatibilite de signature, et
+        toujours transmis au graphe **pondere** de
+        :func:`huang_conjecture_test` (calcul de ``deg_proxy``).
 
     Retourne un vecteur numpy de forme ``(n_symbols,)`` ou
-    ``s_x[i] = s_x_i(f)``.
+    ``s_x[i] = s_x_i(f)``. Un noeud jamais visite a une sensibilite de 0
+    (aucun voisin observe), et ``s_x[i] <= `` degre observe de ``i``.
     """
-    # Encodage des labels en entiers 0..n_symbols-1. On accepte
-    # exactement n_symbols labels distincts ; un depassement (= un
-    # 11eme label alors que n_symbols=10) declenche l'erreur.
-    label_to_id: Dict[object, int] = {}
-    ids: list = []
-    for s in states:
-        if s not in label_to_id:
-            if len(label_to_id) >= n_symbols:
-                raise ValueError(
-                    f"More unique states (>={n_symbols + 1}) than n_symbols ({n_symbols})"
-                )
-            label_to_id[s] = len(label_to_id)
-        ids.append(label_to_id[s])
+    ids = _encode_labels(states, n_symbols)
 
-    W = transition_graph(ids, n_symbols, laplace_smoothing=laplace_smoothing)
+    # Voisinage STRUCTUREL : transitions effectivement observees. Ne pas
+    # utiliser transition_graph ici -- son lissage la rend dense et tout
+    # noeud y serait voisin de tout noeud (issue #9764).
+    A = observed_adjacency(ids, n_symbols)
 
     # Valeurs de f sur tous les noeuds du vocabulaire.
     f_vals = np.array([state_function(i) for i in range(n_symbols)], dtype=int)
 
-    # Pour chaque noeud x : compter les voisins y ou W[x, y] > 0 et f(y) != f(x).
+    # Pour chaque noeud x : compter les voisins observes y ou f(y) != f(x).
     sensitivity = np.zeros(n_symbols, dtype=int)
     for x in range(n_symbols):
-        neighbors = np.where(W[x] > 0)[0]
+        neighbors = np.where(A[x])[0]
         f_x = f_vals[x]
         sensitivity[x] = int(np.sum(f_vals[neighbors] != f_x))
     return sensitivity
@@ -137,29 +223,23 @@ def sensitivity_distribution(
     """
     s = local_sensitivity(states, n_symbols, state_function, laplace_smoothing=laplace_smoothing)
 
-    visited = set()
-    for st in states:
-        # Encodage rapide (memes regles que local_sensitivity).
-        # Note : on ne peut pas reutiliser le label_to_id ici sans le
-        # reconstruire, donc on encode separement. Acceptable car
-        # ``states`` est borne par la trajectoire (<= 10^5 tokens
-        # typiquement).
-        visited.add(st)
-
-    visited_ids: list = []
-    label_to_id: Dict[object, int] = {}
-    for st in visited:
-        if st not in label_to_id:
-            label_to_id[st] = len(label_to_id)
-        visited_ids.append(label_to_id[st])
-
-    s_visited = s[visited_ids] if visited_ids else s
+    # Les noeuds visites occupent exactement les ids 0..n_visited-1 :
+    # _encode_labels attribue les ids par ordre de PREMIERE APPARITION,
+    # donc l'encodage est compact et les ids >= n_visited correspondent aux
+    # noeuds jamais visites. Le prefixe suffit, sans reconstruire le mapping.
+    #
+    # La version anterieure calculait la meme chose de facon opaque (elle
+    # iterait sur un `set` pour re-attribuer des ids, ce qui redonne
+    # toujours `range(n_visited)`). Resultat identique -- verifie -- mais
+    # on pouvait raisonnablement le lire comme une erreur d'indexation.
+    n_visited = len(set(states))
+    s_visited = s[:n_visited] if n_visited else s
     return {
         "max": float(np.max(s_visited)) if s_visited.size else 0.0,
         "mean": float(np.mean(s_visited)) if s_visited.size else 0.0,
         "std": float(np.std(s_visited)) if s_visited.size else 0.0,
         "p95": float(np.percentile(s_visited, 95)) if s_visited.size else 0.0,
-        "n_visited": int(len(visited_ids)),
+        "n_visited": int(n_visited),
     }
 
 
@@ -188,9 +268,30 @@ def huang_conjecture_test(
         :func:`local_sensitivity`.
       - ``proxy_degree_fn`` : callable optionnel ``(states, n_symbols)
         -> float`` estimant ``deg_proxy(f)``. Si ``None`` (defaut), on
-        utilise le degre moyen du voisinage ``np.mean(W.sum(axis=1))``
-        comme proxy -- c'est l'operationalisation **la plus
-        conservatrice** (elle borne la sensibilite par le degre local).
+        utilise le **degre structurel moyen sur les noeuds visites** --
+        cf. ci-dessous.
+
+    .. note:: **Le proxy par defaut : degre moyen structurel (2E/V_visite).**
+
+       La conjecture transpose Huang 2019 sur l'hypercube ``Q_n``. Or
+       ``Q_n`` est **regulier** : le degre par sommet, ``2E/V`` et la
+       dimension ``n`` y coincident. La generalisation naturelle de « la
+       dimension » a un graphe de transition empirique quelconque est donc
+       le degre moyen ``2E/V``, calcule sur l'**adjacence structurelle**
+       (:func:`ict.spectral.observed_adjacency`), pas sur la TPM ponderee.
+
+       On divise par ``V_visite`` (les etats effectivement traverses),
+       **jamais** par ``V_total`` : les etats jamais observes ont degre
+       structurel 0 ; les inclure dans la moyenne la dilue et trivialise
+       la borne (``deg_proxy -> 0`` des qu'une partie de l'alphabet est
+       inexplorer).
+
+       Version anterieure (issue #9771) : le proxy etait
+       ``np.mean(W.sum(axis=1))`` sur la TPM symmetrisee lisse, soit la
+       **masse de probabilite** par ligne (~1.0 par construction,
+       independamment de la topologie). Le seuil etait alors ~1.0 en
+       permanence et le verdict ``consistent`` pour toute ``f`` non
+       constante -- il ne discriminait rien.
 
     Retourne un dict avec ``s_max``, ``deg_proxy``, ``threshold`` (le
     second membre de l'inegalite), ``ratio`` (``s_max / threshold``),
@@ -203,9 +304,18 @@ def huang_conjecture_test(
     s_max = int(np.max(s))
 
     if proxy_degree_fn is None:
-        # Proxy par defaut : degre moyen du voisinage (= mean degree of W).
-        W = transition_graph(states, n_symbols, laplace_smoothing=laplace_smoothing)
-        deg_proxy = float(np.mean(W.sum(axis=1)))
+        # Proxy par defaut : degre structurel MOYEN sur les noeuds visites,
+        # soit 2*E / V_visite. Generalise la dimension n de l'hypercube Q_n
+        # (regulier : degre par sommet = 2E/V = n) a un graphe empirique
+        # quelconque. On divise par V_visite : les etats jamais observes ont
+        # degre structurel 0 et dilueraient la moyenne (issue #9771).
+        # L'ancien proxy np.mean(W.sum(axis=1)) sur la TPM symmetrisee lissee
+        # mesurait la masse de probabilite (~1.0 par construction) -- pas un
+        # degre, et ne discriminait aucune topologie.
+        A = observed_adjacency(_encode_labels(states, n_symbols), n_symbols)
+        deg_per_node = A.sum(axis=1)
+        visited = deg_per_node > 0
+        deg_proxy = float(deg_per_node[visited].mean()) if visited.any() else 0.0
     else:
         deg_proxy = float(proxy_degree_fn(states, n_symbols))
 

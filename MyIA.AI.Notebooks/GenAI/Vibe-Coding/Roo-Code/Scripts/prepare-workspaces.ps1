@@ -4,7 +4,8 @@ param (
     [string]$Workshop
 )
 
-$baseDemosPath = Join-Path $PSScriptRoot -ChildPath "." # ateliers/demo-roo-code
+# Racine des ateliers : le script vit dans Scripts/, les demos sont un niveau au-dessus
+$baseDemosPath = Split-Path -Parent $PSScriptRoot
 $userWorkspacesBase = Join-Path $baseDemosPath -ChildPath "workspaces"
 $userWorkspacePath = Join-Path $userWorkspacesBase -ChildPath $UserName
 
@@ -55,7 +56,7 @@ if ($Workshop) {
 
 foreach ($demoRoot in $demoRootPaths) {
     # Ignorer les répertoires qui sont eux-mêmes des ressources
-    if ($demoRoot.Name -eq "ressources" -or $demoRoot.Name -like "ressourcesX") {
+    if ($demoRoot.Name -eq "ressources") {
         continue
     }
 
@@ -63,13 +64,13 @@ foreach ($demoRoot in $demoRootPaths) {
     $sourceItems = Get-ChildItem -Path $demoRoot.FullName -ErrorAction SilentlyContinue | Where-Object {
         ($_.Name -eq "README.md") -or
         ($_.Name -eq "docs") -or
-        ($_.Name -eq "ressources") -or
-        ($_.Name -like "ressources*")
+        ($_.Name -eq "ressources")
     }
 
     if ($sourceItems.Count -gt 0) {
         # Détermine le chemin relatif de la démo par rapport à $baseDemosPath
-        $relativePath = $demoRoot.FullName.Substring($baseDemosPath.Length).TrimStart('/')
+        # TrimStart sur les deux separateurs : FullName utilise '\' sur Windows, '/' sur POSIX
+        $relativePath = $demoRoot.FullName.Substring($baseDemosPath.Length).TrimStart('\', '/')
 
         # Construit le chemin de destination pour cette démo dans le workspace de l'utilisateur
         $destinationDemoPath = Join-Path $userWorkspacePath -ChildPath $relativePath

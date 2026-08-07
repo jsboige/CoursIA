@@ -14,6 +14,12 @@
       csharp_sha: 128acc9dee64fc2ff748dcce9e0eb727dc6d2ecd
       content_python_sha: 083b91ec0c2c25c38241a86f0faaa5fdf8bd2488540c9838a6ff45a46a210fec
       content_csharp_sha: e7df187588d26824821ca62f5cc6bfc972b38ad951f71726901172328820c875
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 934b533de1507708f0834c6476d28595664af3d6
+      csharp_sha: 128acc9dee64fc2ff748dcce9e0eb727dc6d2ecd
+      content_python_sha: 4054bed7f80cb66082d73482a50d27bedc27bdc44902298b154261f008f5c257
+      content_csharp_sha: e7df187588d26824821ca62f5cc6bfc972b38ad951f71726901172328820c875
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires impartiaux (positions P/N, jeu de Nim, nim-sum / theoreme de Bouton 1901, fonction mex (minimum excludant), valeurs de Grundy, theoreme de Sprague-Grundy, jeux de soustraction). Mathematique pure sans solveur tiers (les deux cotes implementent mex + Grundy + nim-sum from-scratch)."
     - "Idiomes framework : Python = `numpy` + `matplotlib` (rendu visuel des sequences de valeurs de Grundy / partition P-N sur les tas de Nim). C# = **BCL .NET pur 0 NuGet** (noms: `GameNode`/`GrundyValue`/`Mex`/`NimSum` from-scratch, XOR bit-a-bit sur `int` pour le nim-sum) -- aucun package tiers, fidele a la contrainte 0-NuGet de la serie."

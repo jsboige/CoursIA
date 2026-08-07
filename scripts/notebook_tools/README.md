@@ -26,7 +26,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 | **Extraction & parsing** | `notebook_tools.py`, `notebook_helpers.py`, `notebook_lint.py`, `extract_notebook_skeleton.py`, `count_exercises.py`, `count_notebooks_by_series.py`, `expand_catalog_markers.py`, `golden_set.yml`, `golden_set.lock.txt` | CLI multi-famille + helpers parsing + golden set |
 | **C# / .NET persistence** | `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) |
 | **Leak-fix batch (legacy)** | `_fix_leaks_batch{1,2_probas,3_sudoku,4_remaining}.py`, `restructure_sw_2613.py` | Migration SW (#2613) + de-leak batchs legacy 2026 |
-| **Divers** | `_alpha_diag.py`, `cell_order_ci.py`, `fix_audio_dependencies.py`, `fix_string_cells.py`, `flatten_import_notebook.py`, `generate_16e.py`, `generate_parcours.py`, `optimize_dvs.py`, `epita_prcon_autograde.py`, `sudoku_validate_outputs.py` | Cibles specifiques (diagnostics, EPITA autograde, parcours 16e) |
+| **Divers** | `_alpha_diag.py`, `cell_order_ci.py`, `fix_audio_dependencies.py`, `flatten_import_notebook.py`, `generate_16e.py`, `generate_parcours.py`, `optimize_dvs.py`, `epita_prcon_autograde.py`, `sudoku_validate_outputs.py` | Cibles specifiques (diagnostics, EPITA autograde, parcours 16e) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
 

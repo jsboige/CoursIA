@@ -76,8 +76,9 @@ Honnetement methodologique (a reporter dans le notebook)
    d'ignitions. Perte : on rate les positions OU les deux lentilles sont
    allumees avec un decalage <= ``persistence``. Gain : primitive reutilisee
    ``colocalize_lenses`` est deja cablee et testee (9 tests, PR #7286). Le
-   notebook ICT-26 confrontera cette approximation a une version stricte par
-   fenetre glissante.
+   notebook ICT-26 (SignalingConvention, livré via PR #8881 MERGED, EPIC
+   #7746) confronte cette approximation a une version stricte par fenetre
+   glissante.
 3. **Triade sur GPU-free**. Toutes les fixtures couche 16 sont deja
    extraites (cf traces/), donc ce module n'importe pas torch et n'invoque
    pas le modele. La 3ᵉ lentille (raw-logit sur l'autre moitie B-A1) reste
