@@ -167,6 +167,23 @@ class TestAuditOutOfScope:
         }
         assert audit_project_config("SomeProject", cfg) == []
 
+    def test_migrated_legacy_algorithm_language_with_cloud_id(self):
+        """Migration cible (issue #6891 etape 2):
+        `algorithm-language: Python` + `cloud-id` (integer) + pas de name/id/parameters
+        = legacy_cloud_id_holders (informationnel), pas de violation.
+
+        Couvre les 4 projets migres : DualMomentum, MeanReversion,
+        Trend-Following, VolTarget-Momentum. Avant migration, ils utilisaient
+        `language: Py` ; apres migration, ils gardent `cloud-id` legitime et
+        le validator les classe comme cloud-id holders (early-return L174).
+        """
+        cfg = {
+            "cloud-id": 28692516,
+            "algorithm-language": "Python",
+            "organization-id": "d600793ee4caecb03441a09fc2d00f7f",
+        }
+        assert audit_project_config("DualMomentum", cfg) == []
+
 
 # --- audit_all: integration ---
 
