@@ -477,17 +477,31 @@ Le roster exhaustif — agents, skills, scripts dédiés et mapping side-tracks 
 
 ## Outils et dépendances externes
 
-Les dépendances principales par série :
+Les dépendances principales par série (vérifiées contre les `requirements.txt` par série — voir `MyIA.AI.Notebooks/<famille>/requirements.txt`) :
 
 | Outil | Séries | Provenance |
 |-------|--------|-----------|
-| Z3 SMT Solver | Sudoku, Search, SymbolicAI | `requirements.txt` de la série |
-| OR-Tools | Sudoku, Search, Planners | `requirements.txt` de la série |
-| Tweety + JDK | Tweety, Argument_Analysis | JDK auto-télécharge ; reste dans `requirements.txt` |
-| Lean 4 + Mathlib | Lean, GameTheory | `elan` (WSL) ; diagnostic via `validate_lean_setup.py` |
-| OpenSpiel | GameTheory | `requirements.txt` GameTheory |
-| Infer.NET | Probas | NuGet (kernel .NET Interactive) |
-| PyPhi | IIT | `requirements.txt` IIT |
+| Z3 SMT Solver | Sudoku, Search, SymbolicAI (Tweety, Z3-API, SMT), GameTheory | `z3-solver>=4.13` dans `requirements.txt` |
+| OR-Tools (CP-SAT) | Sudoku, Search, Planners | `ortools>=9.8` dans `requirements.txt` |
+| Unified Planning | Planners | `unified-planning>=1.1` ; Fast-Downward via WSL/Docker |
+| Tweety + JDK | Tweety, Argument_Analysis | `jpype1>=1.4` ; JARs auto-téléchargés via `download_tweety_tools.py` |
+| Lean 4 + Mathlib | Lean, GameTheory (`game_theory_lean/`) | `elan` (WSL) ; diagnostic via `validate_lean_setup.py` |
+| Lean 7-9 multi-agent (Semantic Kernel + LLM) | Lean | `semantic-kernel>=1.39.0`, `openai>=1.0.0`, `anthropic>=0.20.0` |
+| OpenSpiel | GameTheory | `open_spiel>=1.4` dans `requirements.txt` GameTheory |
+| Nash equilibrium (nashpy) | GameTheory | `nashpy>=0.0.40` |
+| Axelrod (IPD tournaments + Moran) | GameTheory | `axelrod>=4.0.0` (GameTheory-6) |
+| PySAT | GameTheory, Tweety | `python-sat>=0.1.8` (Glucose3, Minisat22, Cadical103) |
+| Metaheuristics (DEAP, PyGAD, Mealpy) | Search, Sudoku | `deap>=1.4`, `pygad>=3.3`, `mealpy>=3.0` ; `simanneal>=0.5` (Sudoku) |
+| Infer.NET | Probas | NuGet (kernel .NET Interactive) — 20 notebooks C# |
+| Pyro-PPL + PyTorch | Probas | `pyro-ppl>=1.8`, `torch>=2.0` (Pyro_RSA_Hyperbole + backends Pyro) |
+| PyMC + ArviZ | Probas | `pymc>=5.0`, `arviz>=0.14` (PyMC/ series + HMM Trading Alpha) |
+| scikit-learn, hmmlearn, yfinance | Probas (PyMC-HMM-Trading-Alpha), QuantConnect | `scikit-learn>=1.2`, `hmmlearn>=0.3`, `yfinance>=0.2` |
+| Probabilistic programming (JAX, NumPyro) | Sudoku (Sudoku-15) | `jax>=0.4`, `numpyro>=0.12` |
+| RL (Stable-Baselines3, Gymnasium, PettingZoo) | RL | `stable-baselines3[extra]>=2.0`, `gymnasium>=0.29`, `pettingzoo[classic]>=1.24`, `highway-env>=1.8` |
+| QuantConnect LEAN | QuantConnect | `quantconnect-lean>=2.5.14000` + MCP `qc-mcp` |
+| ComfyUI + Stack GenAI (Qwen Image Edit, SD Forge, Video) | GenAI/Image, GenAI/Video | Stack Docker dans `docker-configurations/services/` (Qwen ~29 Go VRAM, ComfyUI Video ~12 Go, SD Forge ~10 Go) |
+| Audio GenAI (Whisper, TTS multi-engine, MusicGen, Demucs) | GenAI/Audio | `TTS>=0.22`, `faster-whisper>=0.10`, `librosa>=0.10`, `transformers>=4.35`, `diffusers>=0.24` ; services `whisper-api` + `tts-api` (Kokoro, FishAudio, autres) |
+| PyPhi | IIT | `pyphi==1.2.0` (épinglé Python ≤3.9 + NumPy<2) dans `requirements.txt` IIT |
 
 ---
 
