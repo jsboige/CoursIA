@@ -61,6 +61,15 @@ synthétise les différences fonctionnelles en tableau ; un fichier
 [`livresagites-parcours.md`](livresagites-parcours.md) détaille le cas
 d'usage livresagités bout-en-bout (sans contenu privé).
 
+Un notebook exécutable [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb)
+complète le parcours par la question qu'il laisse ouverte : **quel modèle
+brancher derrière un chatbot public ?** Il teste cinq propriétés
+discriminantes contre n'importe quel endpoint compatible OpenAI — ancrage,
+refus hors-contexte, respect du format, stabilité de langue, discipline
+d'appel d'outil — et remplace « je l'ai essayé, il répond bien » par un
+tableau reproductible. Configuration : copier [`.env.example`](.env.example)
+vers `.env`.
+
 ---
 
 ## Sections
@@ -167,6 +176,8 @@ attendues.
   — tableau structuré
 - [`livresagites-parcours.md`](livresagites-parcours.md) — cas
   d'usage concret
+- [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb) —
+  banc d'évaluation reproductible, cinq propriétés discriminantes
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
