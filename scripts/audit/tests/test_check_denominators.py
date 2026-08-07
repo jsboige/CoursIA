@@ -163,3 +163,47 @@ def test_executed_suffix_phantom_pattern(tmp_path, capsys, monkeypatch):
     assert rc == 1
     assert "ICT-15c-Real-executed.ipynb" in out
     assert "ICT-15c-Real.ipynb" not in out.split("PHANTOM")[1]  # real file not flagged as phantom
+
+
+def test_catalog_outil_documented_divergence_passes(tmp_path, capsys, monkeypatch):
+    """#9857: catalogue vs outil peut diverger légitimement — le catalogue exclut
+    _archive/_archives/output (plus large) que l'outil. Un notebook dans _archive/
+    est compté par l'outil mais pas le catalogue : c'est une divergence DOCUMENTÉE
+    (catalog_extra_exclusions), pas un drift → --strict doit passer (exit 0)."""
+    mod, root = _run(
+        tmp_path,
+        ["GenAI/Keep.ipynb"],                          # in catalogue + on disk
+        extra_on_disk=["ML/_archive/Archived.ipynb"],  # outil counts it, catalogue excludes via _archive
+    )
+    monkeypatch.setattr(
+        sys, "argv",
+        ["check_denominators.py", "--root", str(root),
+         "--catalog", str(tmp_path / "COURSE_CATALOG.generated.json"), "--strict"],
+    )
+    rc = mod.main()
+    out = capsys.readouterr().out
+    # ML/_archive/Archived.ipynb is outil-only (outil has no _archive keyword) but
+    # documented (matches catalog_extra_exclusions) -> not undocumented -> exit 0.
+    assert rc == 0, "documented catalogue-vs-outil divergence (_archive) must not fail --strict"
+    assert "DIVERGENCE catalogue vs outil" in out
+
+
+def test_catalog_outil_undocumented_divergence_fails(tmp_path, capsys, monkeypatch):
+    """#9857: un notebook compté par l'outil, absent du catalogue, ET ne matchant
+    aucune exclusion documentée (_archive/_archives/output) -> divergence NON
+    documentée -> --strict doit rougir (exit 1). C'est le signal que les deux
+    compteurs ont dérivé hors des catégories prévues."""
+    mod, root = _run(
+        tmp_path,
+        ["GenAI/Keep.ipynb"],                       # in catalogue + on disk
+        extra_on_disk=["ML/Uncuried.ipynb"],        # outil counts it, not in catalogue, no exclusion keyword
+    )
+    monkeypatch.setattr(
+        sys, "argv",
+        ["check_denominators.py", "--root", str(root),
+         "--catalog", str(tmp_path / "COURSE_CATALOG.generated.json"), "--strict"],
+    )
+    rc = mod.main()
+    out = capsys.readouterr().out
+    assert rc == 1, "undocumented catalogue-vs-outil divergence must fail --strict"
+    assert "ML/Uncuried.ipynb" in out
