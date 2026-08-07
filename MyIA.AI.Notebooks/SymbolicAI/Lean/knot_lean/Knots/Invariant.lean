@@ -477,9 +477,12 @@ theorem tricolorable_invariant_fails_under_pr1_model :
            injection h with hval
            exact Fin.ext hval⟩
       exact ρ
-    · -- surgery (twist arm): d₂ = { d₁ with crossings := d₁.crossings ++ [⟨3,4,3,4⟩], numEdges := d₁.numEdges + 2 }.
+    · -- surgery (twist arm): field-equalities on a 2-field record
+      --     d₂.crossings = d₁.crossings ++ [⟨3,4,3,4⟩] ∧ d₂.numEdges = d₁.numEdges + 2.
+      --     Both conjuncts are defeq on the literal witness pair (concretely,
+      --     [⟨1,2,1,2⟩,⟨3,4,3,4⟩] = [⟨1,2,1,2⟩] ++ [⟨3,4,3,4⟩] and 4 = 2 + 2).
       left
-      rfl
+      exact ⟨rfl, rfl⟩
   -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
   --     edges to the same colour, contradicting the ≥2-colours requirement.
   · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
@@ -564,39 +567,30 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     ¬ Reidemeister1'
         { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
         { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 } := by
-  -- Unfold Reidemeister1': wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery ∨ surgery)).
+  -- **Migration #8696 fenêtre 2/9** : post-migration field-equalities, la
+  -- surgery est `(h_cross ∧ h_num)` au lieu de `with`-surgery record. Le
+  -- `congrArg (·.crossings) ht` disparaît — `h_cross` EST directement
+  -- l'égalité de champs qu'on veut. Sur les literals concrets, le `simp` puis
+  -- `injection` puis `omega` ferment les deux branches (TWIST/UNTWIST).
   rintro ⟨_hwf₁, _hwf₂, a, _hrange₁, _hrange₂, _ρ, hsurg⟩
-  rcases hsurg with ht | ht
-  · -- TWIST arm: d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a,a,3,4⟩], numEdges := 4 }.
-    -- d₁.numEdges = 2, so the appended crossing is ⟨a, a, 3, 4⟩.
-    -- Project .crossings off the record equality ht by congruence, then the RHS
-    -- ({ d₁ with crossings := X }).crossings reduces to X = d₁.crossings ++ [⟨a,a,3,4⟩].
-    have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
-          : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
-          : KnotDiagram).crossings ++ [⟨a, a, 3, 4⟩] :=
-      congrArg (·.crossings) ht
-    -- The RHS reduces to [⟨1,2,1,2⟩] ++ [⟨a,a,3,4⟩]; second elements: ⟨3,4,3,4⟩ = ⟨a,a,3,4⟩.
+  -- `hsurg` is `(⟨h_cross, h_num⟩ | ⟨h_cross, h_num⟩)` — re-destructure each
+  -- branch's internal 2-conj to recover the field-equality on `.crossings`.
+  rcases hsurg with ⟨h_cross, _h_num⟩ | ⟨h_cross, _h_num⟩
+  · -- TWIST arm: d₂.crossings = d₁.crossings ++ [⟨a,a,3,4⟩] ∧ d₂.numEdges = 4.
+    --   d₁.numEdges = 2, so appended crossing is ⟨a, a, 3, 4⟩. h_cross IS
+    --   the field equality on `.crossings` directly (no projection needed).
     have h2nd : (⟨3, 4, 3, 4⟩ : PDCrossing) = ⟨a, a, 3, 4⟩ := by
-      simpa [List.append] using hfield
+      simpa [List.append] using h_cross
     -- Injectivity of PDCrossing (4 fields): e1 gives 3 = a, e2 gives 4 = a.
     injection h2nd with h_e1 h_e2 h_e3 h_e4
     omega
-  · -- UNTWIST arm: d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a,a,5,6⟩], numEdges := 6 }.
-    -- d₂.numEdges = 4, so appended crossing = ⟨a, a, 5, 6⟩.
-    -- Project .crossings off the record equality by congruence (term-mode, robust
-    -- against literal-form mismatch that blocks `subst`/`rw`).
-    have hfield :
-        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2 }
-          : KnotDiagram).crossings =
-        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4 }
-          : KnotDiagram).crossings ++ [⟨a, a, 5, 6⟩] :=
-      congrArg (·.crossings) ht
+  · -- UNTWIST arm: d₁.crossings = d₂.crossings ++ [⟨a,a,5,6⟩] ∧ d₁.numEdges = 6.
+    --   d₂.numEdges = 4, so appended crossing = ⟨a, a, 5, 6⟩. h_cross IS
+    --   the field equality on `.crossings` directly.
     -- Length contradiction: LHS has length 1, RHS has length 3.
     -- `simp at h` reduces the list lengths to concrete numbers (`1` and `3`),
     -- then closes the goal by deriving `False` from the contradiction `1 = 3`.
-    have h := congrArg List.length hfield
+    have h := congrArg List.length h_cross
     simp at h
 
 /-! ## 3c-bis. Le temoin #2938 est AUSSI exclu sous `Reidemeister1Connected` (option C)
