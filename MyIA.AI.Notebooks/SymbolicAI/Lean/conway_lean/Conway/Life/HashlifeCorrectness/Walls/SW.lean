@@ -172,7 +172,7 @@ set_option maxHeartbeats 1000000 in
     Same `hout_nw` opaque-binder pattern as the NE arm: the SW outer offset
     `(2^k + 2^k, 2^k)` is anchored on `2^out_nw.level` (the outer NW
     supercell's level — the same reference for all four quadrants). -/
-private theorem p4_sw_membership_arm
+theorem p4_sw_membership_arm
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
@@ -278,7 +278,7 @@ set_option maxHeartbeats 1000000 in
     `p4_sw_supercell_agree` is still sorried (po-2023 perimeter, #6724) but
     remains usable in `rw` — the wiring here is textually sorry-free and
     completes at the axiom level the day the SW wall closes. -/
-private theorem p4_sw_membership_arm_rev
+theorem p4_sw_membership_arm_rev
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)

@@ -229,7 +229,7 @@ set_option maxHeartbeats 1000000 in
     Same `hout_nw` opaque-binder pattern as the NE/SW arms: both SE offsets
     are anchored on `2^out_nw.level` (the outer NW supercell's level — the
     common reference for all four quadrants). -/
-private theorem p4_se_membership_arm
+theorem p4_se_membership_arm
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
@@ -336,7 +336,7 @@ set_option maxHeartbeats 1000000 in
     bridge `rw` rewrites both occurrences at once (same as the mp arm).
     `p4_se_supercell_agree` rests on the sorried `p4_se_overlap_wall`
     (po-2023 perimeter) but stays usable in `rw` — wiring sorry-free. -/
-private theorem p4_se_membership_arm_rev
+theorem p4_se_membership_arm_rev
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)

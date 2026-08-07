@@ -375,7 +375,7 @@ set_option maxHeartbeats 4000000 in
     `isAlive_true_iff_mem` + `evolve_half_step` + `p4_ne_supercell_agree`
     fold the membership into `hsup.1`; the four coordinate bounds discharge
     from the shift window (`2^((k-1)+1) = 2^k ≤ 2^(k+1)`) by omega. -/
-private theorem p4_ne_membership_arm
+theorem p4_ne_membership_arm
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
@@ -493,7 +493,7 @@ set_option maxHeartbeats 4000000 in
     hypotheses with `2^hout_nw.level` atoms poison every downstream `omega`
     preprocessing pass — cumulative whnf exhaustion, cf. the mp arm). 4M
     budget: same wide signature (16 binders + 5 R + `hn1..hn7`). -/
-private theorem p4_ne_membership_arm_rev
+theorem p4_ne_membership_arm_rev
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)

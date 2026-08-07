@@ -1573,7 +1573,7 @@ private theorem wf_node_quad_level {nw ne sw se : MacroCell} {n : Nat}
     every double-nine sub-cell `n_i` is a `node` of four grandchildren of `c`,
     so once the grandchildren are pinned (by `wf_node_depth2_grandchildren`
     below), this helper closes each sub-cell's `level = k + 1 ∧ wf = true`. -/
-private theorem node_wf_level_of_four {g1 g2 g3 g4 : MacroCell} {n : Nat}
+theorem node_wf_level_of_four {g1 g2 g3 g4 : MacroCell} {n : Nat}
     (h1 : g1.level = n) (h2 : g2.level = n) (h3 : g3.level = n) (h4 : g4.level = n)
     (hw1 : g1.wf = true) (hw2 : g2.wf = true) (hw3 : g3.wf = true) (hw4 : g4.wf = true) :
     (node g1 g2 g3 g4).level = n + 1 ∧ (node g1 g2 g3 g4).wf = true := by
@@ -2109,7 +2109,7 @@ private theorem node16_level (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     obtain of 16 gc's) whnf-diverges (the c.142 pathology). Applying this helper
     there keeps the level term inferred, never re-elaborated — the opaque-binder
     pattern of c.139/c.143. -/
-private theorem node16_level_ne_two (k : Nat) (hk1 : 1 ≤ k)
+theorem node16_level_ne_two (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hnw : nw_nw.level = k) :
@@ -2435,7 +2435,7 @@ private theorem p4_wave1_ih_step
     whnf-reduce (calling the preservation lemma inline, with `n` spelled out as a
     `node` of grandchildren, makes the elaborator whnf the conclusion's nested
     `hashlifeResultAux` term — divergent). -/
-private theorem wave1_result_facts (k : Nat) (hk1 : 1 ≤ k) (n : MacroCell)
+theorem wave1_result_facts (k : Nat) (hk1 : 1 ≤ k) (n : MacroCell)
     (hn_wf : n.wf = true) (hn_lvl : n.level = k + 1) :
     (hashlifeResultAux (k + 1) n).level = k ∧ cellWf (hashlifeResultAux (k + 1) n) := by
   have hcn := cellWf_of_wf n hn_wf
@@ -2451,7 +2451,7 @@ private theorem wave1_result_facts (k : Nat) (hk1 : 1 ≤ k) (n : MacroCell)
     then bridged to `.wf = true` for the central-correctness `ih` (which is on
     `.wf`). `q_nw` is taken as representative (the three other super-cells are
     isomorphic, queued). -/
-private theorem p4_wave2_ih_step
+theorem p4_wave2_ih_step
     (k : Nat) (hk1 : 1 ≤ k)
     (r1 r2 r4 r5 : MacroCell)
     (hr1_l : r1.level = k) (hr2_l : r2.level = k)
@@ -2779,7 +2779,7 @@ private theorem window_cone_in_domain (k : Nat) (p q : Int × Int)
 
     **Corps** : `p4_wave2_ih_step` (ih sur la super-cellule opaque) →
     `centralCorrect_mem_shift` (réancrage offset, G2 congruence). Sorry-free. -/
-private theorem p4_nw_shift_lemma
+theorem p4_nw_shift_lemma
     (k : Nat) (hk1 : 1 ≤ k)
     (r1 r2 r4 r5 : MacroCell)
     (hr1_l : r1.level = k) (hr2_l : r2.level = k)
@@ -2806,7 +2806,7 @@ private theorem p4_nw_shift_lemma
     verbatim, but LightCone is DOWNSTREAM of this file (`LightCone.lean` imports
     `Conway.Life.HashlifeCorrectness`), so importing it here would be a cycle.
     `private` keeps it file-local — no clash with LightCone's public theorem. -/
-private theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
+theorem isAlive_true_iff_mem_local (g : Grid) (p : Int × Int) :
     isAlive g p = true ↔ p ∈ g := by
   rw [isAlive]; exact List.elem_iff
 
@@ -2882,7 +2882,7 @@ private theorem step_box_local_mirror (g₁ g₂ : Grid) (p : Int × Int)
     même vivacité en `p`. Analogue étroit de `step_light_cone` (L931, cône
     Manhattan `2·u` — le facteur 2 perdu est exactement ce qui faisait déborder
     le mur NW hors de la fenêtre du supercell). -/
-private theorem evolve_box_agree_local (u : Nat) (g₁ g₂ : Grid) (p : Int × Int)
+theorem evolve_box_agree_local (u : Nat) (g₁ g₂ : Grid) (p : Int × Int)
     (h_box : ∀ q, chebDist p q ≤ u → isAlive g₁ q = isAlive g₂ q) :
     isAlive (evolve u g₁) p = isAlive (evolve u g₂) p := by
   induction u generalizing p with
@@ -3025,7 +3025,7 @@ private theorem p4_mem_toGrid_lt (c : MacroCell) (r0 c0 : Int) (x : Int × Int)
 /-- Ré-ancrage ponctuel : évaluer la grille d'une cellule posée en `(a, b)`
     revient à évaluer la grille posée à l'origine au point translaté.
     Version booléenne de `mem_toGrid_shift`. -/
-private theorem p4_isAlive_toGrid_shift (c : MacroCell) (a b : Int) (r : Int × Int) :
+theorem p4_isAlive_toGrid_shift (c : MacroCell) (a b : Int) (r : Int × Int) :
     isAlive (c.toGrid (a, b)) r = isAlive (c.toGrid (0, 0)) (r.1 - a, r.2 - b) := by
   apply p4_bool_eq_of_iff
   rw [isAlive_true_iff_mem_local, isAlive_true_iff_mem_local]
@@ -3042,7 +3042,7 @@ par `hn1..hn5` (`ne_ne, ne_se, sw_sw, sw_se, se_ne, se_sw, se_se`) ne sont
 exclus QUE par borne inférieure — aucun `wf` du parent n'est requis. -/
 
 /-- Accord parent / `n1` (non translaté) sur `[0, 2·2^k)²`. -/
-private theorem p4_nw_parent_agree_n1 (k : Nat)
+theorem p4_nw_parent_agree_n1 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3072,7 +3072,7 @@ private theorem p4_nw_parent_agree_n1 (k : Nat)
     exact Or.inl h
 
 /-- Accord parent / `n2` translaté de `(0, 2^k)` sur `[0, 2·2^k) × [2^k, 3·2^k)`. -/
-private theorem p4_nw_parent_agree_n2 (k : Nat)
+theorem p4_nw_parent_agree_n2 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3126,7 +3126,7 @@ private theorem p4_nw_parent_agree_n2 (k : Nat)
     · exact Or.inr (Or.inl (Or.inr (Or.inr (Or.inl h))))
 
 /-- Accord parent / `n4` translaté de `(2^k, 0)` sur `[2^k, 3·2^k) × [0, 2·2^k)`. -/
-private theorem p4_nw_parent_agree_n4 (k : Nat)
+theorem p4_nw_parent_agree_n4 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3180,7 +3180,7 @@ private theorem p4_nw_parent_agree_n4 (k : Nat)
     · exact Or.inr (Or.inr (Or.inl (Or.inr (Or.inl h))))
 
 /-- Accord parent / `n5` translaté de `(2^k, 2^k)` sur `[2^k, 3·2^k)²`. -/
-private theorem p4_nw_parent_agree_n5 (k : Nat)
+theorem p4_nw_parent_agree_n5 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3262,7 +3262,7 @@ private theorem p4_nw_parent_agree_n5 (k : Nat)
     `[0, 2·2^k) × [2·2^k, 4·2^k)`. Le rectangle est exactement l'empreinte du
     quadrant NE du parent : seul l'enfant NE survit, les trois autres quadrants
     sont exclus par bornes. -/
-private theorem p4_ne_parent_agree_n3 (k : Nat)
+theorem p4_ne_parent_agree_n3 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3300,7 +3300,7 @@ private theorem p4_ne_parent_agree_n3 (k : Nat)
     SE du parent ; à l'intérieur, seuls `ne_sw`/`ne_se` (moitié basse du NE) et
     `se_nw`/`se_ne` (moitié haute du SE) survivent — exactement les quatre
     enfants de `n6`. -/
-private theorem p4_ne_parent_agree_n6 (k : Nat)
+theorem p4_ne_parent_agree_n6 (k : Nat)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
     (hn1_l : (node nw_nw nw_ne nw_sw nw_se).level = k + 1)
@@ -3371,7 +3371,7 @@ leurs propres bornes (les conjonctions de `centralCorrect_mem_shift`), via
 `hA : 2^(k-1+1) = 2^k` (qui exige `1 ≤ k`). -/
 
 /-- Quadrant NW du supernœud : `R1` seul survit sur `[0, 2^k)²`. -/
-private theorem p4_nw_rside_char_nw (k : Nat) (hk1 : 1 ≤ k)
+theorem p4_nw_rside_char_nw (k : Nat) (hk1 : 1 ≤ k)
     (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
     (hR1 : R1 = hashlifeResultAux (k + 1) c1)
     (hR2 : R2 = hashlifeResultAux (k + 1) c2)
@@ -3410,7 +3410,7 @@ private theorem p4_nw_rside_char_nw (k : Nat) (hk1 : 1 ≤ k)
     refine Or.inl ⟨H, ?_, ?_, ?_, ?_⟩ <;> omega
 
 /-- Quadrant NE du supernœud : `R2` seul survit sur `[0, 2^k) × [2^k, 2·2^k)`. -/
-private theorem p4_nw_rside_char_ne (k : Nat) (hk1 : 1 ≤ k)
+theorem p4_nw_rside_char_ne (k : Nat) (hk1 : 1 ≤ k)
     (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
     (hR1 : R1 = hashlifeResultAux (k + 1) c1)
     (hR2 : R2 = hashlifeResultAux (k + 1) c2)
@@ -3450,7 +3450,7 @@ private theorem p4_nw_rside_char_ne (k : Nat) (hk1 : 1 ≤ k)
     refine Or.inr (Or.inl ⟨H, ?_, ?_, ?_, ?_⟩) <;> omega
 
 /-- Quadrant SW du supernœud : `R4` seul survit sur `[2^k, 2·2^k) × [0, 2^k)`. -/
-private theorem p4_nw_rside_char_sw (k : Nat) (hk1 : 1 ≤ k)
+theorem p4_nw_rside_char_sw (k : Nat) (hk1 : 1 ≤ k)
     (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
     (hR1 : R1 = hashlifeResultAux (k + 1) c1)
     (hR2 : R2 = hashlifeResultAux (k + 1) c2)
@@ -3490,7 +3490,7 @@ private theorem p4_nw_rside_char_sw (k : Nat) (hk1 : 1 ≤ k)
     refine Or.inr (Or.inr (Or.inl ⟨H, ?_, ?_, ?_, ?_⟩)) <;> omega
 
 /-- Quadrant SE du supernœud : `R5` seul survit sur `[2^k, 2·2^k)²`. -/
-private theorem p4_nw_rside_char_se (k : Nat) (hk1 : 1 ≤ k)
+theorem p4_nw_rside_char_se (k : Nat) (hk1 : 1 ≤ k)
     (c1 c2 c4 c5 R1 R2 R4 R5 : MacroCell)
     (hR1 : R1 = hashlifeResultAux (k + 1) c1)
     (hR2 : R2 = hashlifeResultAux (k + 1) c2)

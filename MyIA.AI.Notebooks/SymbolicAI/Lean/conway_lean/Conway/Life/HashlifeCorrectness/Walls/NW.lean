@@ -875,7 +875,7 @@ private theorem p4_nw_supercell_agree
     (`2^k = 2^(k-1) ∘ 2^(k-1)`) + `p4_nw_supercell_agree` fold the membership
     into `hsup.1`; the four coordinate bounds discharge from the shift window
     (`2^((k-1)+1) = 2^k ≤ 2^(k+1)`) by omega. -/
-private theorem p4_nw_membership_arm
+theorem p4_nw_membership_arm
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
@@ -973,7 +973,7 @@ private theorem p4_nw_membership_arm
     `p4_nw_supercell_agree` RIGHT-to-LEFT (`rw [← …]`; the agreement is a
     Bool equation, hence reversible — a sorried agreement stays usable in
     `rw`, so this wiring is textually sorry-free for all four quadrants). -/
-private theorem p4_nw_membership_arm_rev
+theorem p4_nw_membership_arm_rev
     (k : Nat) (hk1 : 1 ≤ k)
     (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
      sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
