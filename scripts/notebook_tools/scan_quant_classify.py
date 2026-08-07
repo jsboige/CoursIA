@@ -104,6 +104,9 @@ STOCH_KEYWORDS = (
 )
 
 # Mots-cles STRUCTUREL (a garder) — preuve pedagogique.
+# v2: ajout mots-cles bayesiens pour eviter FP sur parametres de modeles
+# probabilistes (moyennes/variances/post/precision/gamma(2.24, 0.24) ne sont
+# PAS des timings runtime — cf #9434 c.1272 vague Probas).
 STRUCT_KEYWORDS = (
     "théorique", "theorique", "théoriquement", "structurel", "structurel",
     "ordre de grandeur", "combinaisons", "combinatorial", "combinatoire",
@@ -112,7 +115,19 @@ STRUCT_KEYWORDS = (
     "posterior", "postérieur", "vraisemblance", "likelihood",
     "moyenne", "variance", "espérance", "esperance", "expected value",
     "formule", "formula", "théorème", "theoreme",
+    # Bayesien (c.1272): distinguetiming runtime d'unite de parametre
+    "écart-type", "ecart-type", "écart type", "ecart type",
+    "precision", "gamma(", "normal(", "gaussian(", "gauss(",
+    "composante", "trajets", "trajet", "min^2", "min²",
+    "d'observation", "données observees", "donnees observees",
+    "arithmétique", "arithmetique", "bayésien", "bayesien",
+    "prédictive", "predictive", "aplatissement", "kurtosis",
+    "apprentissage", "inference bayesienne", "inférence bayésienne",
 )
+
+# Mots-cles DATA-LIST (anti-FP) : une liste `{8, 10, 11, 12}` ou `[13, 17, 16]`
+# en contexte bayesien = data points, pas runtime.
+DATA_LIST_MARKERS = ("{", "}cii", "~ ", " valeurs", "observations)")
 
 # Mots-cles SEED — si présents, le stochastique est seede et donc STRUCTUREL.
 SEED_KEYWORDS = ("seed=", "random_state=", "np.random.seed", "torch.manual_seed",
@@ -213,15 +228,27 @@ def _classify_quant_value(
             return ("ENV-DEP", f"mot-cle env: {kw!r}")
 
     # 4. MACHINE-DEP (unites temporelles + mots-cles perf)
-    if TIME_UNIT_RE.search(raw) or TIME_UNIT_RE.search(prefix + suffix):
+    #    v2 (c.1272): si data-list marker present dans le contexte, ce n'est
+    #    PAS un timing runtime — ce sont des data points bayesiens.
+    in_data_list = any(marker in full_context for marker in DATA_LIST_MARKERS)
+    if not in_data_list and (TIME_UNIT_RE.search(raw) or TIME_UNIT_RE.search(prefix + suffix)):
         return ("MACHINE-DEP", f"unite temporelle detectee: {raw!r}")
     for kw in MACHINE_DEP_KEYWORDS:
         if kw in full_context:
             return ("MACHINE-DEP", f"mot-cle machine-dep: {kw!r}")
 
     # 5. STOCHASTIQUE-NON-SEEDEE
+    #    v2 (c.1272): `moyenne`/`mean`/`variance` en contexte NON-stochastique
+    #    (mean value of N, valeur centrale, etc.) ne sont PAS stochastique.
+    #    On accepte seulement si le contexte est clairement non-parametrique.
+    NONSTOCH_MODIFIERS = ("chapitre", "référence", "reference", "du livre", "du manuel", "symbole", "example")
     for kw in STOCH_KEYWORDS:
         if kw in full_context:
+            # Anti-FP: si kw est `mean`/`moyenne`/`variance` ET un modificateur
+            # non-stochastique est present, c'est une valeur de référence, pas
+            # une mesure stochastique.
+            if kw in ("moyenne", "mean", "variance") and any(mod in full_context for mod in NONSTOCH_MODIFIERS):
+                continue
             return ("STOCHASTIQUE-NON-SEEDEE", f"mot-cle stochastique: {kw!r}")
 
     # 6. STRUCTUREL par defaut (classe residuelle)
