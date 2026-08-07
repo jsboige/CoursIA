@@ -52,6 +52,7 @@ from scan_d1_d3_d4_d5 import (  # noqa: E402
     detect_d3,
     detect_d4,
     detect_d5,
+    _build_revisions,
     forensic_scan,
     render_text,
     main,
@@ -540,6 +541,89 @@ class TestDetectD5:
             _rev("bbb", "docs: empty", [], non_substantial=True),
         ]
         assert detect_d5(revs) == []
+
+
+# ============================================================================ #
+#  Regression : orientation chronologique des revisions (EPIC #9768 Phase 0)
+# ============================================================================ #
+
+
+class TestRevisionOrdering:
+    """Lock le contrat d'orientation chrono (ancien -> recent) des revisions.
+
+    Contexte : ``get_revisions`` renvoie l'ordre natif ``git log`` (recent ->
+    ancien), mais detect_d3/d4/d5 comparent chaque commit a
+    ``revisions[i-1]`` en supposant son **predecesseur chronologique**. Avant le
+    fix, _build_revisions passait l'ordre recent->ancien aux detecteurs ->
+    ``revisions[i-1]`` etait le voisin *plus recent* -> la derive d'un commit
+    posterieur etait attribuee a tort a un restore/rename/docs anterieur (FP
+    ~90% sur familles maturees ; ex Search-8 commit 8ee54921 "restore accents"
+    flaggue D3 alors qu'il a change 0 output). Ces tests reproduisent le
+    mecanisme du FP et echouent si l'orientation est re-inversee.
+    """
+
+    def test_d3_no_fp_when_restore_matches_predecessor(self):
+        # Ordre CHRONO (ancien -> recent) tel que produit par _build_revisions
+        # post-fix. Le restore (b) retablit fidelement l'etat de son
+        # predecesseur (a) : memes nombres -> PAS un D3+, meme si un commit
+        # posterieur (c) a change les nombres par ailleurs.
+        revs = [
+            _rev("aaa", "feat: initial", [800.0, 800.0]),          # ancien
+            _rev("bbb", "restore: rollback outputs", [800.0, 800.0]),  # = predecesseur
+            _rev("ccc", "feat: re-exec with new seed", [12.0, 44.0]),  # recent, different
+        ]
+        assert detect_d3(revs) == []
+
+    def test_d5_no_fp_when_docs_matches_predecessor(self):
+        # Un commit docs non-substantiel qui NE change PAS les outputs vs son
+        # predecesseur -> PAS un D5, meme si un commit posterieur a change les
+        # medianes (l'attribution doit porter sur le bon commit).
+        revs = [
+            _rev("aaa", "feat: content", [10.0, 10.0, 10.0]),
+            _rev("bbb", "docs(readme): typo", [10.0, 10.0, 10.0], non_substantial=True),
+            _rev("ccc", "feat: re-exec", [800.0, 800.0, 800.0]),
+        ]
+        assert detect_d5(revs) == []
+
+    def test_d3_still_flags_genuine_partial_restore(self):
+        # Garde-fou anti-surcorrection : un restore qui NE retablit PAS l'etat
+        # du predecesseur reste un vrai D3+.
+        revs = [
+            _rev("aaa", "feat: initial", [800.0, 800.0]),
+            _rev("bbb", "restore: rollback outputs", [12.0, 44.0]),  # != predecesseur
+        ]
+        findings = detect_d3(revs)
+        assert len(findings) == 1
+        assert findings[0].sha == "bbb"
+
+    def test_build_revisions_returns_oldest_first(self, tmp_path: Path):
+        # Test d'integration sur mini-repo : verifie que _build_revisions
+        # retourne les commits en ordre chronologique (ancien -> recent), pas
+        # l'ordre natif git log (recent -> ancien). C'est le contrat dont
+        # dependent detect_d3/d4/d5. Echoue si le reversed() est retire.
+        import subprocess
+        repo = tmp_path / "mini"
+        repo.mkdir()
+        for cmd in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.email", "t@t"],
+            ["git", "config", "user.name", "T"],
+        ):
+            subprocess.run(cmd, cwd=str(repo), check=True)
+        nb_path = repo / "nb.ipynb"
+        # Trois commits distincts (contenu different a chaque fois pour que git
+        # cree bien 3 commits, sinon "nothing to commit" les collapse en 1).
+        for i, msg in enumerate(
+            ("feat: oldest commit", "feat: middle commit", "feat: newest commit")
+        ):
+            nb_path.write_text(json.dumps({"cells": [], "version": i}))
+            subprocess.run(["git", "add", "nb.ipynb"], cwd=str(repo), check=True)
+            subprocess.run(["git", "commit", "-q", "-m", msg], cwd=str(repo), check=True)
+        revs = _build_revisions("nb.ipynb", str(repo))
+        assert len(revs) == 3
+        # Ordre attendu : ancien -> recent (independant de l'ordre git log).
+        assert revs[0].subject == "feat: oldest commit"
+        assert revs[-1].subject == "feat: newest commit"
 
 
 # ============================================================================ #
