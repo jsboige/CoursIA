@@ -1,0 +1,617 @@
+"""Detecteur v3 -- coherence prose <-> outputs intra-revision (D5), full-corpus.
+
+Suite logique de l'EPIC #9768 (Phase 1 outillage #9791 + Phase 0 audit #9787).
+Le detecteur D5 de :mod:`scan_d1_d3_d4_d5` compare les outputs **entre revisions
+consecutives** -- d'ou la dependance a l'historique git et l'impossibilite de
+signaler les drifts dont les outputs n'ont jamais bouge (cf. le cas fondateur
+ICT-1-PhiTrajectories commit ``7de14792c`` / issue #9416, prose « un pic a
+2,31, le reste a 0,19 » qui omettait le 3ᵉ niveau 0.6875 deja present dans
+les outputs ``cell[7]`` depuis toujours).
+
+Ce module leve cette limitation en travaillant **intra-revision** :
+il extrait les nombres de la prose (cellules markdown) et des outputs
+(cellules code) du **meme** notebook tel qu'il est sur disque (HEAD par
+defaut, ou n'importe quelle revision), puis signale deux classes de
+desalignement :
+
+1. **MISSING_FROM_OUTPUTS** : un nombre est affirme dans la prose mais n'a
+   aucun correspondant dans les outputs de la revision, a tolerance
+   relative 5% / absolue 1e-6 pres. Ex. : « Phi = 0.69 » alors que les
+   outputs ne contiennent que 0.1875 et 2.3125.
+2. **MISSING_FROM_PROSE_ENUMERATION** : la prose enumere une liste de
+   niveaux (ou valeurs distinctes) en indiquant un compte N, mais les
+   outputs exhibent strictement plus de niveaux distincts a tolerance
+   raisonnable. C'est la classe #9416 -- **la plus dangereuse**, parce que
+   la prose parait complete et l'omission est invisible a un lecteur qui
+   ne recompte pas les outputs.
+
+Pas de dependance externe. NumPy n'est PAS requis. CLI ``--check`` avec
+exit codes argparse 0/1/2 distincts (succes / finding / usage -- lecon
+po-2024 #9783 : un chemin inexistant ne PEUT PAS retourner 1).
+
+Cf. issue #9790 pour le scope exact et le cas fondateur.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Iterable
+
+
+# --------------------------------------------------------------------------- #
+#  Configuration
+# --------------------------------------------------------------------------- #
+
+# Formes numeriques reconnues dans la prose francaise ET anglaise :
+# - decimale anglaise : 0.69, 1,234.56, 1e-3
+# - decimale francaise : 0,69 ; 1 234,56 ; 1,5e-3
+# On accepte virgule ET point comme separateurs ; l'ambiguite « 1,234 » est
+# resolue par contexte (presence d'un second separateur desambiguisant).
+FR_DECIMAL_RE = re.compile(
+    r"""
+    (?<![A-Za-z0-9_])              # pas au milieu d'un identifier
+    -?
+    (?:
+        \d{1,3}(?:[\s ]\d{3})*(?:[.,]\d+)?    # 1 234,56 ou 1,234.56
+      | \d+[.,]\d+                                  # 0.69 ou 0,69
+      | \d+                                         # 1234
+    )
+    (?:[eE][-+]?\d+)?
+    (?![A-Za-z0-9_])                # pas au milieu d'un identifier
+    """,
+    re.VERBOSE,
+)
+
+
+# Bruits a filtrer systematiquement : annees, numeros de PR / issue, versions.
+# On filtre en post-processing -- le filtre strict etait trop fragile en c.1264.
+EXCLUDE_PATTERNS = (
+    re.compile(r"^\d{4}$"),                # annees 1900-2099 (detectees par 4 chiffres seuls)
+    re.compile(r"^#\d+$"),                 # numeros d'issue/PR : #9416
+    re.compile(r"^v\d+$"),                 # versions semver simplifiees
+    re.compile(r"^cell\[\d+\]$"),          # indices cell[N]
+    re.compile(r"^[A-Z]+\d+$"),            # PRJ42, ABC123 -- discutable, mais limite
+)
+
+
+# Faux positifs semantiques : regex strictes (mot complet + caractere de
+# liaison) pour eviter de matcher au milieu d'une phrase legit.
+# Format : hint = substring qui DOIT etre immediatement suivi du nombre matche.
+SEMANTIC_FALSE_POSITIVE_HINTS = (
+    "## ", "### ", "#### ",            # titres markdown (ligne commence par titres)
+    "year ", "annee ",                  # contexte temporel
+    "PR #", "issue #", "cf. #", "see #",   # references croisees (suivi de #)
+    "§ ", "section ", "chapter ",      # structure
+    "depuis ", "after ", "before ",    # contexte temporel
+)
+
+
+# Tolerances pour le matching prose <-> outputs.
+RELATIVE_TOLERANCE = 0.05     # 5%
+ABSOLUTE_TOLERANCE = 1e-6
+
+# Bornes physiques pour eviter les nombres triviaux ou astronomiques.
+MIN_NUMBER_VALUE = 1e-9
+MAX_NUMBER_VALUE = 1e15
+
+
+# --------------------------------------------------------------------------- #
+#  Dataclasses
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class AlignmentFinding:
+    """Un cas de desalignement detecte."""
+    notebook: str
+    cell_index: int                  # index de la cellule markdown fautive
+    cell_kind: str                   # toujours 'markdown' ici
+    category: str                    # 'MISSING_FROM_OUTPUTS' ou 'MISSING_FROM_PROSE_ENUMERATION'
+    prose_text: str                  # extrait du markdown (tronque)
+    prose_number: float
+    closest_output_number: float | None
+    tolerance_used: str             # 'relative' ou 'absolute' ou 'none'
+    details: str = ""
+
+
+@dataclass
+class NotebookAlignment:
+    """Resultat d'analyse d'un notebook."""
+    path: str
+    total_findings: int
+    findings: list[AlignmentFinding]
+    n_prose_numbers: int = 0
+    n_output_numbers: int = 0
+    n_markdown_cells: int = 0
+    n_code_cells: int = 0
+    error: str | None = None
+
+    @property
+    def is_pathological(self) -> bool:
+        return self.total_findings > 0 and self.error is None
+
+
+# --------------------------------------------------------------------------- #
+#  Extraction de nombres
+# --------------------------------------------------------------------------- #
+
+
+def _parse_fr_number(text: str) -> float | None:
+    """Parse un token numerique au format FR ou EN vers float.
+
+    Heuristique : si le token contient un point ET une virgule, le dernier
+    des deux est le separateur decimal ; les autres sont des separateurs de
+    milliers et doivent etre retires. Sinon, la presence d'un des deux
+    suffit comme decimal.
+    """
+    t = text.replace(" ", "").replace(" ", "")  # espaces insécables
+    if not t:
+        return None
+    has_dot = "." in t
+    has_comma = "," in t
+    if has_dot and has_comma:
+        # dernier séparateur = décimal
+        if t.rfind(".") > t.rfind(","):
+            t = t.replace(",", "")
+        else:
+            t = t.replace(".", "").replace(",", ".")
+    elif has_comma:
+        t = t.replace(",", ".")
+    # Exposant e déjà ASCII
+    try:
+        v = float(t)
+    except ValueError:
+        return None
+    if abs(v) < MIN_NUMBER_VALUE or abs(v) > MAX_NUMBER_VALUE:
+        return None
+    return v
+
+
+def _extract_prose_numbers(text: str) -> list[float]:
+    """Extrait les nombres d'un texte markdown en filtrant les faux positifs semantiques."""
+    if not text:
+        return []
+    out: list[float] = []
+    for m in FR_DECIMAL_RE.finditer(text):
+        raw = m.group(0)
+        # Filtre bruit : années, numéros d'issue, etc.
+        if any(p.match(raw) for p in EXCLUDE_PATTERNS):
+            continue
+        # Filtre semantique : on regarde **la meme ligne** (avant-dernier
+        # newline), pas les 60 chars precedents. Un header `## 4.2` sur
+        # la ligne N ne doit pas filtrer un nombre legit sur la ligne N+1.
+        # Les hints sont concis (chacun demarre par un mot complet) pour
+        # eviter de matcher au milieu d'un titre.
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        prefix = text[line_start:m.start()].lower()
+        if any(h in prefix for h in SEMANTIC_FALSE_POSITIVE_HINTS):
+            continue
+        v = _parse_fr_number(raw)
+        if v is None:
+            continue
+        out.append(v)
+    return out
+
+
+def _extract_output_numbers(output: dict) -> list[float]:
+    """Extrait les nombres d'un dict output Jupyter (text/plain ou data)."""
+    nums: list[float] = []
+    if not isinstance(output, dict):
+        return nums
+    # 1. 'text' peut etre str OU list[str] (format Jupyter stream).
+    t = output.get("text")
+    if isinstance(t, str):
+        nums.extend(_extract_prose_numbers(t))
+    elif isinstance(t, list):
+        for item in t:
+            if isinstance(item, str):
+                nums.extend(_extract_prose_numbers(item))
+    # 2. data['text/plain'] (liste ou string)
+    data = output.get("data")
+    if isinstance(data, dict):
+        tp = data.get("text/plain")
+        if isinstance(tp, str):
+            nums.extend(_extract_prose_numbers(tp))
+        elif isinstance(tp, list):
+            for item in tp:
+                if isinstance(item, str):
+                    nums.extend(_extract_prose_numbers(item))
+    # 3. data['text/latex'] ou similaire -- on laisse pour l'instant.
+    return nums
+
+
+# --------------------------------------------------------------------------- #
+#  Alignement prose <-> outputs
+# --------------------------------------------------------------------------- #
+
+
+def _is_close(a: float, b: float) -> bool:
+    """Vrai si a == b à tolérance relative 5% / absolue 1e-6 près."""
+    if a == b:
+        return True
+    diff = abs(a - b)
+    if diff <= ABSOLUTE_TOLERANCE:
+        return True
+    base = max(abs(a), abs(b))
+    if base == 0:
+        return False
+    return diff / base <= RELATIVE_TOLERANCE
+
+
+def _closest_output(prose_val: float, output_vals: list[float]) -> float | None:
+    """Trouve la valeur de output la plus proche de prose_val, si dans la tolérance."""
+    if not output_vals:
+        return None
+    best = min(output_vals, key=lambda v: abs(v - prose_val))
+    if _is_close(prose_val, best):
+        return best
+    return None
+
+
+# --------------------------------------------------------------------------- #
+#  Détection d'énumération prose (MISSING_FROM_PROSE_ENUMERATION)
+# --------------------------------------------------------------------------- #
+#
+# Catégorie #9416 : la prose déclare une liste de N niveaux/valeurs distincts
+# (via un mot-clé d'énumération : « N niveaux : a, b, c », « les3 valeurs sont »,
+# « on observe3 phases »), mais les outputs exhibent strictement plus de niveaux
+# distincts à tolérance raisonnable. L'omission est invisible au lecteur qui
+# ne recompte pas les outputs.
+#
+# Limites assumées :
+# - On ne parse que les énumérations **explicites** (mot-clé d'annonce avant la
+#   liste). Une prose vague (« il y a plusieurs pics ») n'est pas attrapée — la
+#   catégorie #2 reste un point de départ d'investigation.
+# - La tolérance de groupement est RELATIVE_TOLERANCE (5%) pour rester cohérent
+#   avec MISSING_FROM_OUTPUTS ; on n'invente pas une métrique distincte.
+#
+# Heuristique regex :
+#   - Mot-clé d'annonce : `(N|niveau|niveaux|valeur|valeurs|état|états|
+#     phase|phases|pic|pics|cluster|clusters|classe|classes|catégorie|
+#     catégories|étape|étapes|graphe|graphes)`.
+#   - Séparateur d'annonce : `:` ou `sont` ou `observ(e|ent|ons)` ou
+#     `correspondent à` ou ` vaut `.
+#   - Suite : nombres FR/EN séparés par virgules (accepte «, », « , », « ; »).
+
+
+# Heuristique d'annonce d'une énumération : soit (a) un mot-clé fort
+# (« N niveaux : », « les 3 valeurs sont »), soit (b) une formulation
+# naturelle « un/une <mot> à X, ... le reste à Y » qui déclare implicitement
+# 2 groupes. (b) attrape le cas fondateur ICT-1 (#9416) sans surcharger.
+#
+# NB : on utilise un lookbehind pour ne PAS consommer le chiffre qui suit
+# « à/a » -- sinon on mange la 1ère valeur de l'énumération.
+_ENUMERATION_KEYWORDS_RE = re.compile(
+    r"""
+    (?:
+        \d+\s+
+        (?:niveaux|valeurs|états|phases|pics|clusters|classes|
+            catégories|étapes|graphes|sommets|options)
+      | les\s+\d+\s+\w+
+      | on\s+observ(?:e|ent|ons)\s+\d+\s+\w+
+      | il\s+y\s+a\s+\d+\s+\w+
+      | (?<!\d)(?:un|une|le|la|des)\s+(?:pic|pics|cluster|clusters|groupe|
+            groupes|paquet|paquets|état|états|niveau|niveaux|phase|phases|
+            valeur|valeurs|classe|classes|catégorie|catégories)\s+[àa]
+    )
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+
+
+def _detect_prose_enumeration(text: str) -> list[float] | None:
+    """Si `text` annonce une liste de N valeurs, retourne la liste parsee.
+
+    Retourne None si le pattern d'annonce n'est pas trouvé (la cellule ne
+    déclare pas une énumération, donc la catégorie #9416 ne s'applique pas).
+
+    Cas couverts :
+    (a) « N niveaux : a, b, c » -- la liste suit le mot-clé d'annonce.
+    (b) « un pic à X, le reste à Y » -- formulation naturelle à 2 valeurs :
+        on extrait TOUS les nombres de la phrase, dans l'ordre (l'auteur
+        déclare implicitement qu'il n'y en a que 2 dans cette formulation).
+
+    Heuristique de portee : on s'arrete au prochain signe de « fin
+    d'enumeration » ou 200 chars. C'est CLAIREMENT plus restrictif que le
+    paragraphe entier, sinon la cellule Conclusion d'ICT-1 (avec son cycle
+    2-3-3 et l'attracteur 1) declencherait prose=6 distincts alors que
+    l'auteur n'en annonce que 2.
+
+    Filtre LaTeX : `$2{,}31$` ne doit pas être découpé en 3 tokens (`2`,
+    `31`). On retire les délimiteurs LaTeX `{,}` (et la TeX thin space)
+    ainsi que les dollars `$...$` avant l'extraction.
+    """
+    latex_clean = text.replace("{,}", ".").replace("{\\,}", ".").replace("{\\;}", ".")
+    # Strip $...$ delimiters (apres fusion des separateurs).
+    latex_clean = re.sub(r"\$([^$]*)\$", r" \1 ", latex_clean)
+    m = _ENUMERATION_KEYWORDS_RE.search(latex_clean)
+    if not m:
+        return None
+    # On extrait les nombres UNIQUEMENT APRES le mot-cle d'annonce.
+    # Le `N` dans « les 3 valeurs » est avant le mot-cle et doit etre ignore.
+    after = latex_clean[m.end():m.end()+200]
+    # Cas (a)/(b) : on prend la PHRASE courante a partir du mot-cle.
+    sentence = after.split("\n", 1)[0]
+    nums = _extract_prose_numbers(sentence)
+    return nums if len(nums) >= 2 else None
+
+
+def _distinct_levels(values: list[float], tol: float = RELATIVE_TOLERANCE) -> int:
+    """Compte le nombre de valeurs distinctes dans `values` à tolérance près.
+
+    Algorithme : tri O(n log n) puis groupement linéaire. Deux valeurs sont
+    « même niveau » si leur ratio <= tol (et > 0).
+    """
+    if not values:
+        return 0
+    s = sorted(values)
+    count = 1
+    for v in s[1:]:
+        base = max(abs(s[count - 1]), abs(v))
+        if base == 0:
+            # 0 == 0 -> même niveau.
+            continue
+        if abs(v - s[count - 1]) / base > tol:
+            count += 1
+    return count
+
+
+def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
+    """Analyse l'alignement prose <-> outputs pour un notebook."""
+    p = Path(path)
+    try:
+        nb = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return NotebookAlignment(
+            path=str(path), total_findings=0, findings=[],
+            error=f"{type(exc).__name__}: {exc}",
+        )
+    cells = nb.get("cells") or []
+    n_md = sum(1 for c in cells if c.get("cell_type") == "markdown")
+    n_code = sum(1 for c in cells if c.get("cell_type") == "code")
+    output_vals: list[float] = []
+    prose_vals_per_cell: list[tuple[int, str, list[float]]] = []
+    for i, c in enumerate(cells):
+        ctype = c.get("cell_type")
+        source = c.get("source") or []
+        if isinstance(source, list):
+            text = "".join(source)
+        else:
+            text = str(source)
+        if ctype == "code":
+            for out in (c.get("outputs") or []):
+                output_vals.extend(_extract_output_numbers(out))
+        elif ctype == "markdown":
+            nums = _extract_prose_numbers(text)
+            if nums:
+                prose_vals_per_cell.append((i, text, nums))
+    # Alignement : pour chaque cellule markdown, pour chaque nombre,
+    # cherche le plus proche dans output_vals.
+    findings: list[AlignmentFinding] = []
+    for cell_idx, text, nums in prose_vals_per_cell:
+        # Tronque le texte pour le rapport (60 premiers chars non vides).
+        snippet = text.strip().splitlines()
+        snippet = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
+        for v in nums:
+            closest = _closest_output(v, output_vals)
+            if closest is None:
+                # Determine la tolerance affichee.
+                tol = "none"
+                findings.append(AlignmentFinding(
+                    notebook=str(path),
+                    cell_index=cell_idx,
+                    cell_kind="markdown",
+                    category="MISSING_FROM_OUTPUTS",
+                    prose_text=snippet,
+                    prose_number=v,
+                    closest_output_number=None,
+                    tolerance_used=tol,
+                ))
+    # Tour 2 : MISSING_FROM_PROSE_ENUMERATION (#9416).
+    # Pour chaque cellule markdown qui annonce une énumération de N niveaux,
+    # compare N au nombre de niveaux distincts dans output_vals.
+    if output_vals:
+        output_levels = _distinct_levels(output_vals)
+        for cell_idx, text, nums in prose_vals_per_cell:
+            enum = _detect_prose_enumeration(text)
+            if not enum:
+                continue
+            prose_levels = _distinct_levels(enum)
+            if prose_levels == 0 or output_levels <= prose_levels:
+                continue
+            # Trouve la valeur output « orpheline » la plus loin de la liste prose.
+            orphan = None
+            orphan_dist = -1.0
+            for ov in output_vals:
+                closest_p = min(enum, key=lambda p: abs(p - ov))
+                base = max(abs(closest_p), abs(ov))
+                if base == 0:
+                    continue
+                dist = abs(ov - closest_p) / base
+                if dist > orphan_dist:
+                    orphan_dist = dist
+                    orphan = ov
+            snippet = text.strip().splitlines()
+            snippet = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
+            findings.append(AlignmentFinding(
+                notebook=str(path),
+                cell_index=cell_idx,
+                cell_kind="markdown",
+                category="MISSING_FROM_PROSE_ENUMERATION",
+                prose_text=snippet,
+                prose_number=float(prose_levels),
+                closest_output_number=orphan if orphan is not None else None,
+                tolerance_used="enumeration-vs-outputs",
+                details=(
+                    f"prose enumere {prose_levels} niveaux distincts, "
+                    f"outputs exhibent {output_levels} niveaux distincts "
+                    f"(orphan={orphan:.4g}, dist={orphan_dist:.1%})"
+                ),
+            ))
+    return NotebookAlignment(
+        path=str(path),
+        total_findings=len(findings),
+        findings=findings,
+        n_prose_numbers=sum(len(v) for _, _, v in prose_vals_per_cell),
+        n_output_numbers=len(output_vals),
+        n_markdown_cells=n_md,
+        n_code_cells=n_code,
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Walk full-corpus
+# --------------------------------------------------------------------------- #
+
+
+DEFAULT_INCLUDE_GLOBS = ("*.ipynb",)
+DEFAULT_EXCLUDE_DIRS = (
+    "_archive", "_archives", "archive", "archives",
+    "node_modules", ".git", "__pycache__",
+)
+
+
+def iter_notebooks(
+    root: Path,
+    include_globs: tuple[str, ...] = DEFAULT_INCLUDE_GLOBS,
+    exclude_dirs: tuple[str, ...] = DEFAULT_EXCLUDE_DIRS,
+) -> Iterable[Path]:
+    """Yield notebook paths under root, honoring exclusion dirs."""
+    if not root.exists():
+        return
+    for dirpath, dirnames, filenames in os.walk(root):
+        # Prune excluded dirs in-place so os.walk skips them.
+        dirnames[:] = [d for d in dirnames if d not in exclude_dirs]
+        for fn in filenames:
+            if any(fn.endswith(g.lstrip("*")) for g in include_globs):
+                yield Path(dirpath) / fn
+
+
+def scan_corpus(
+    root: str | os.PathLike,
+    include_globs: tuple[str, ...] = DEFAULT_INCLUDE_GLOBS,
+    exclude_dirs: tuple[str, ...] = DEFAULT_EXCLUDE_DIRS,
+) -> list[NotebookAlignment]:
+    """Scan a corpus root, return list of NotebookAlignment."""
+    root_path = Path(root)
+    results: list[NotebookAlignment] = []
+    for nb_path in iter_notebooks(root_path, include_globs, exclude_dirs):
+        results.append(analyze_notebook(nb_path))
+    return results
+
+
+# --------------------------------------------------------------------------- #
+#  Reporting
+# --------------------------------------------------------------------------- #
+
+
+def render_text_report(results: list[NotebookAlignment]) -> str:
+    """Format results as markdown text."""
+    total_findings = sum(r.total_findings for r in results)
+    n_pathological = sum(1 for r in results if r.is_pathological)
+    by_cat: dict[str, int] = {}
+    for r in results:
+        for f in r.findings:
+            by_cat[f.category] = by_cat.get(f.category, 0) + 1
+    lines: list[str] = []
+    lines.append(f"Total notebooks analyses : {len(results)}")
+    lines.append(f"Notebooks avec >= 1 finding : {n_pathological}")
+    lines.append(f"Total findings : {total_findings}")
+    if by_cat:
+        lines.append("Repartition par categorie :")
+        for k, v in sorted(by_cat.items()):
+            lines.append(f"  - {k} : {v}")
+    lines.append("")
+    lines.append("## Notebooks avec findings")
+    lines.append("")
+    lines.append("| Notebook | Findings | n_prose | n_outputs | Top finding |")
+    lines.append("|---|---|---|---|---|")
+    for r in sorted(results, key=lambda x: -x.total_findings):
+        if r.total_findings == 0:
+            continue
+        top = r.findings[0]
+        snippet = f"{top.category}: {top.prose_number:.4g} (cell[{top.cell_index}])"
+        lines.append(
+            f"| `{os.path.basename(r.path)}` | {r.total_findings} | "
+            f"{r.n_prose_numbers} | {r.n_output_numbers} | {snippet} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+# --------------------------------------------------------------------------- #
+#  CLI
+# --------------------------------------------------------------------------- #
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--root", default="MyIA.AI.Notebooks",
+        help="Racine du corpus a scanner (defaut: MyIA.AI.Notebooks).",
+    )
+    parser.add_argument(
+        "--notebook", help="Cible un notebook precis (sinon full-corpus).",
+    )
+    parser.add_argument(
+        "--json-out", help="Ecrire le rapport JSON a ce chemin.",
+    )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Mode CI : exit 1 si >= 1 finding, exit 2 si usage/erreur.",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=0,
+        help="Limiter le nombre de notebooks analyses (0 = pas de limite).",
+    )
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    root = Path(args.root)
+    if not root.exists():
+        print(f"ERREUR: racine '{root}' inexistante.", file=sys.stderr)
+        return 2
+    if args.notebook:
+        nb_path = Path(args.notebook)
+        if not nb_path.exists():
+            print(f"ERREUR: notebook '{nb_path}' inexistant.", file=sys.stderr)
+            return 2
+        results = [analyze_notebook(nb_path)]
+    else:
+        results = scan_corpus(root)
+        if args.limit > 0:
+            results = results[:args.limit]
+    if args.json_out:
+        Path(args.json_out).write_text(json.dumps([
+            {
+                "path": r.path,
+                "total_findings": r.total_findings,
+                "n_prose_numbers": r.n_prose_numbers,
+                "n_output_numbers": r.n_output_numbers,
+                "n_markdown_cells": r.n_markdown_cells,
+                "n_code_cells": r.n_code_cells,
+                "findings": [
+                    {
+                        "cell_index": f.cell_index,
+                        "category": f.category,
+                        "prose_number": f.prose_number,
+                        "closest_output_number": f.closest_output_number,
+                        "prose_text": f.prose_text,
+                    }
+                    for f in r.findings
+                ],
+                "error": r.error,
+            }
+            for r in results
+        ], indent=2, ensure_ascii=False), encoding="utf-8")
+    print(render_text_report(results))
+    if args.check and any(r.is_pathological for r in results):
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
