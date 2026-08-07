@@ -9,11 +9,12 @@ Usage:
     python count_notebooks_by_series.py --check-readme      # Compare with README counts
 
 Excluded by default (pedagogical mode):
-    - .ipynb_checkpoints/
+    - .ipynb_checkpoints/, obj/, bin/, __pycache__/, .git/  (directory names only;
+      NOT matched against filename -- a notebook named "Foo-CombinatorialGames.ipynb"
+      must still be counted, see #9851)
     - research notebooks (path contains "research")
     - archive/backup notebooks (path contains "archive" or "_output")
     - partner course student examples (partner-course-*/examples/)
-    - obj/, bin/
 """
 
 import argparse
@@ -25,7 +26,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
+# EXCLUDE_ALWAYS: directory names only, matched EXACTLY against directory
+# segments of the notebook path (NEVER against the filename -- a notebook named
+# "Foo-CombinatorialGames.ipynb" must still be counted, see #9851 for the bug
+# history where substring matching excluded 5 GameTheory root notebooks).
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
+
+# EXCLUDE_PEDAGOGICAL: path-substring by NAMING CONVENTION. These are intentional
+# pedagogical exclusions: papermill _output artifacts, QC research quantbooks,
+# archives, partner-course student examples. Substring match on the relative
+# path is the documented behaviour here -- do NOT change to exact match.
 EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 SERIES_ORDER = [
@@ -47,8 +57,13 @@ def count_notebooks_in_dir(
 
     for nb_path in sorted(directory.rglob("*.ipynb")):
         parts = nb_path.relative_to(directory).parts
+        # Directory segments only -- never the filename -- for EXCLUDE_ALWAYS
+        # (bin/ obj/ __pycache__/ .git/ .ipynb_checkpoints/ are directories).
+        # See #9851: substring-on-all-parts silently dropped "CombinatorialGames"
+        # notebooks (5 in GameTheory, false positive on "bin" substring).
+        dir_parts = parts[:-1]
 
-        if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
+        if any(exc in dir_parts for exc in EXCLUDE_ALWAYS):
             continue
 
         if pedagogical and any(

@@ -119,6 +119,94 @@ class TestCountNotebooksInDir:
         result = count_notebooks_in_dir(tmp_path, pedagogical=True)
         assert result["total"] == 0
 
+    # --- #9851: EXCLUDE_ALWAYS must match DIRECTORY segments only,
+    #     never the filename. A notebook named "Foo-CombinatorialGames.ipynb"
+    #     at the series root must be counted (the bug dropped 5 GameTheory
+    #     notebooks because "bin" is a substring of "CombinatorialGames").
+
+    def test_filename_with_bin_counted(self, tmp_path):
+        """#9851 root fix: 'Foo-CombinatorialGames.ipynb' at root IS counted.
+        The substring "bin" in the filename must NOT trigger EXCLUDE_ALWAYS."""
+        (tmp_path / "GameTheory-8-CombinatorialGames.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+        assert result["by_subfolder"].get("_root") == 1
+
+    def test_filename_with_obj_counted(self, tmp_path):
+        """Sibling case: 'ObjectDetection.ipynb' at root IS counted.
+        The substring "obj" in the filename must NOT trigger EXCLUDE_ALWAYS."""
+        (tmp_path / "ObjectDetection.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_filename_with_pycache_counted(self, tmp_path):
+        """Sibling case: 'pycache_utils.ipynb' at root IS counted."""
+        (tmp_path / "pycache_utils.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_bin_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER bin/ is still excluded.
+        EXCLUDE_ALWAYS still matches 'bin' when 'bin' is a directory segment."""
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "compiled_output.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "real.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+        assert "bin" not in result["by_subfolder"]
+
+    def test_obj_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER obj/ is still excluded."""
+        obj_dir = tmp_path / "obj"
+        obj_dir.mkdir()
+        (obj_dir / "build.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 0
+
+    def test_checkpoints_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER .ipynb_checkpoints/ is excluded."""
+        cp = tmp_path / ".ipynb_checkpoints"
+        cp.mkdir()
+        (cp / "lesson-checkpoint.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "lesson.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_gametheory_synthetic_regression(self, tmp_path):
+        """#9851 acceptance: synthetic GameTheory-like layout reproduces the
+        real-world bug. 5 root notebooks with 'bin' in their filenames MUST
+        be counted; bin/ subdir notebook MUST be excluded."""
+        # 5 root notebooks whose filenames contain 'bin' substring
+        for name in [
+            "GameTheory-8-CombinatorialGames.ipynb",
+            "GameTheory-8-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-8b-Lean-CombinatorialGames.ipynb",
+            "GameTheory-8c-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-8c-CombinatorialGames-Python.ipynb",
+        ]:
+            (tmp_path / name).write_text("{}", encoding="utf-8")
+        # 7 sub-series notebooks (SocialChoice)
+        social_choice = tmp_path / "SocialChoice"
+        social_choice.mkdir()
+        for i in range(7):
+            (social_choice / f"sc-{i}.ipynb").write_text("{}", encoding="utf-8")
+        # 1 noise: a real bin/ subdir (intentionally excluded)
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "compiled.ipynb").write_text("{}", encoding="utf-8")
+
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 12, (
+            f"5 root + 7 SocialChoice = 12; got {result['total']} "
+            f"(the bin/ subdir is the ONLY expected exclusion)"
+        )
+        assert result["by_subfolder"].get("_root") == 5
+        assert result["by_subfolder"].get("SocialChoice") == 7
+        assert "bin" not in result["by_subfolder"]
+
 
 # --- extract_readme_count ---
 
