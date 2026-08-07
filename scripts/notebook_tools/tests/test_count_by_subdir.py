@@ -76,8 +76,22 @@ class TestCmdCountBySubdir:
         assert "Applications" in out
         assert "Part1-Foundations" in out
 
-    def test_real_repo_check_readme_search_ok(self):
-        """Search hub is currently OK (actual == declared). Locks the gate."""
+    def test_real_repo_check_readme_search_runs(self):
+        """--check-readme runs on the Search hub and emits a status table.
+
+        NOTE (#9826): this test NO LONGER asserts OK/MISMATCH against the
+        committed README prose. The prose count drifts after every notebook
+        merge (it is never auto-regenerated -- unlike the CATALOG-STATUS
+        marker refreshed daily by catalog-cron), so a freshness assertion
+        reddened ``main`` for up to 24h after each merge and mis-attributed
+        the failure to unrelated ``scripts/**`` PRs (the job is path-filtered
+        and never ran on the causal notebook PR). Prose-count freshness is
+        now the job of ``prose-counts-guard.yml`` (advisory today, strict
+        after #9377 stock resorption) -- the dedicated §E gate that runs ON
+        notebook/README PRs at the source. This test guards the FUNCTIONALITY
+        (check-readme produces a Search row + table header), not the
+        FRESHNESS of a committed artifact.
+        """
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = cmd_count_by_subdir(
@@ -86,8 +100,8 @@ class TestCmdCountBySubdir:
         assert rc == 0
         out = buf.getvalue()
         assert "Search" in out
-        assert "OK" in out
-        assert "MISMATCH" not in out  # Search is documented aligned.
+        assert "Actual" in out  # table header present (functionality works)
+        assert "Total" in out
 
     def test_real_repo_check_readme_all(self):
         """--check-readme across all 10 series produces a table with at least
@@ -108,14 +122,21 @@ class TestCmdCountBySubdir:
         assert rc == 0
         payload = json.loads(buf.getvalue())
         assert "Search" in payload
-        assert payload["Search"]["total"] >= 100  # Search = 115 currently
+        assert payload["Search"]["total"] >= 100  # Search pedagogical count (grows over time)
         assert "by_subfolder" in payload["Search"]
         # Subfolder keys are documented folder names.
         for sub in ["Applications", "Part1-Foundations", "Part4-Metaheuristics"]:
             assert sub in payload["Search"]["by_subfolder"]
 
     def test_real_repo_json_check_readme_enriched(self):
-        """--check-readme --json emits enriched entries with readme_declared + status."""
+        """--check-readme --json emits enriched entries with the contract keys.
+
+        NOTE (#9826): does NOT assert ``readme_declared == total`` (prose-
+        freshness gate removed -- see ``prose-counts-guard.yml`` for the §E
+        mechanism). Asserts the JSON CONTRACT: the entry exposes
+        ``status``, ``readme_declared``, ``total``, ``by_subfolder`` with
+        ``status`` in the documented enum, whatever the current drift state.
+        """
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = cmd_count_by_subdir(
@@ -130,8 +151,12 @@ class TestCmdCountBySubdir:
         payload = json.loads(out[json_start:])
         assert "Search" in payload
         search_entry = payload["Search"]
-        assert search_entry["status"] == "OK"
-        assert search_entry["readme_declared"] == search_entry["total"]
+        # Contract: enriched entry shape (NOT the freshness values).
+        assert "status" in search_entry
+        assert "readme_declared" in search_entry
+        assert "total" in search_entry
+        assert "by_subfolder" in search_entry
+        assert search_entry["status"] in {"OK", "MISMATCH", "no count"}
 
     def test_real_repo_all_includes_research(self):
         """--all produces a different (>=) total than the default."""
