@@ -134,32 +134,40 @@ L'équivalence remodelée et le lemme de transfert (PR2) seront construits sur
     nouveau croisement a la forme `⟨a, a, n+1, n+2⟩` : le brin anciennement
     labelisé `a` est le brin bouclé, et `{n+1, n+2}` sont les deux arêtes
     fraîches de la boucle. L'arc `a` vit dans `[1, numEdges]` du diagramme le
-    plus petit (labels PD 1-indexés, cohérents avec `KnotDiagram.wf`). -/
+    plus petit (labels PD 1-indexés, cohérents avec `KnotDiagram.wf`).
+
+    **Migration #8696 fenêtre 2/9** : la chirurgie `with`-surgery
+    `d₂ = { d₁ with ... }` est remplacée par une conjonction d'égalités de
+    champs `(d₂.crossings = ... ∧ d₂.numEdges = ...)` — pattern uniforme avec
+    `Reidemeister1` (fenêtre 1/9). Bénéfice : la def **contraint** un
+    diagramme donné (au lieu de construire un témoin hypothétique), ce qui
+    rend le champ d'invariant `wf` portable (cf acceptance #8696 §4). -/
 def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ a : Nat,
      1 ≤ a ∧ a ≤ min d₁.numEdges d₂.numEdges ∧
      (∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       (d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩],
-                            numEdges := d₁.numEdges + 2 } ∨
-        d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩],
-                            numEdges := d₂.numEdges + 2 })))
+       (d₂.crossings = d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩] ∧
+        d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩] ∧
+        d₁.numEdges = d₂.numEdges + 2)))
 
 /-- `Reidemeister1'` est un renforcement de `Reidemeister1` : toute boucle
     ρ-déterminée est, en particulier, un mouvement R1 (libre) avec `wf` des deux
     côtés. Le nouveau croisement `⟨a, a, n+1, n+2⟩` est le témoin de
-    l'existentiel indépendant `∃ c` dans `Reidemeister1`. -/
+    l'existentiel indépendant `∃ c` dans `Reidemeister1`.
+
+    **Migration #8696 fenêtre 2/9** : post-migration field-equalities, le bridge
+    est trivial : chaque branche de la disjonction est `(h_cross ∧ h_num)`,
+    donc `rfl` sur `h_cross` ET `h_num` simultanément suffit à fermer
+    `Or.inl/inr ⟨rfl, rfl⟩` vers la cible R1 (qui est aussi en field-eqs). -/
 theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
-  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
-  -- The surgery is `with`-form on a 2-field record; after `obtain rfl := hsurg`,
-  -- field projections reduce to literals, so `⟨rfl, rfl⟩` discharges the
-  -- field-equality pair.
+  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, ⟨h_cross,h_num⟩ | ⟨h_cross,h_num⟩))`.
+  -- After field-eqs migration, `hsurg` is a 2-conj consumed by `⟨rfl, rfl⟩`.
   obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
-  · obtain rfl := hsurg
-    exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl ⟨rfl, rfl⟩⟩
-  · obtain rfl := hsurg
-    exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr ⟨rfl, rfl⟩⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
 
 /-! ## R1 (option C, chirurgie connectée) — Phase 5 PR1.5c
 

@@ -124,32 +124,40 @@ The re-modeled equivalence and transfer lemma (PR2) will be built on
     new crossing has shape `⟨a, a, n+1, n+2⟩`: the strand formerly labelled
     `a` is the strand being curled, and `{n+1, n+2}` are the two fresh
     edges of the curl. The arc `a` lives in `[1, numEdges]` of the smaller
-    diagram (1-indexed PD labels, matching `KnotDiagram.wf`). -/
+    diagram (1-indexed PD labels, matching `KnotDiagram.wf`).
+
+    **Migration #8696 window 2/9**: the `with`-surgery
+    `d₂ = { d₁ with ... }` is replaced by a conjunction of field equalities
+    `(d₂.crossings = ... ∧ d₂.numEdges = ...)` — uniform pattern with
+    `Reidemeister1` (window 1/9). Benefit: the def **constrains** a given
+    diagram (instead of constructing a hypothetical witness), making the
+    `wf` invariant field portable (cf acceptance #8696 §4). -/
 def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ a : Nat,
      1 ≤ a ∧ a ≤ min d₁.numEdges d₂.numEdges ∧
      (∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       (d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩],
-                            numEdges := d₁.numEdges + 2 } ∨
-        d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩],
-                            numEdges := d₂.numEdges + 2 })))
+       (d₂.crossings = d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩] ∧
+        d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩] ∧
+        d₁.numEdges = d₂.numEdges + 2)))
 
 /-- `Reidemeister1'` is a strengthening of `Reidemeister1`: any ρ-determined
     curl is, in particular, a (free) R1 move with `wf` on both sides. The
     new crossing `⟨a, a, n+1, n+2⟩` is the witness for the independent
-    existential `∃ c` in `Reidemeister1`. -/
+    existential `∃ c` in `Reidemeister1`.
+
+    **Migration #8696 window 2/9**: post field-equalities migration, the
+    bridge is trivial: each branch of the disjunction is `(h_cross ∧ h_num)`,
+    so passing `hsurg` directly as the field-equality pair to `Or.inl/inr`
+    discharges the goal (the target R1 is also in field-eqs). -/
 theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
-  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
-  -- The surgery is `with`-form on a 2-field record; after `obtain rfl := hsurg`,
-  -- field projections reduce to literals, so `⟨rfl, rfl⟩` discharges the
-  -- field-equality pair.
+  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, ⟨h_cross,h_num⟩ | ⟨h_cross,h_num⟩))`.
+  -- After field-eqs migration, `hsurg` is a 2-conj consumed directly.
   obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
-  · obtain rfl := hsurg
-    exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl ⟨rfl, rfl⟩⟩
-  · obtain rfl := hsurg
-    exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr ⟨rfl, rfl⟩⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
 
 /-! ## R1 (option C, connected surgery) — Phase 5 PR1.5c
 
