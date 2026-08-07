@@ -1,6 +1,6 @@
 # Tour de la plateforme Open WebUI
 
-[← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [Série QA Playwright-OWUI](../Playwright-OWUI/README.md)
+[← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [↑ Open-WebUI](../README.md) | [Série QA Playwright-OWUI](../Playwright-OWUI/README.md)
 
 > **Parcours découverte.** Ce tour guidé présente, fonctionnalité par
 > fonctionnalité, *à quoi sert Open WebUI et comment on l'utilise*. Il est le
@@ -301,7 +301,7 @@ et l'URL de capture vivent dans un `.env` **non commité** ; seuls les
   [série QA Playwright-OWUI](../Playwright-OWUI/README.md) : vous y écrirez des
   tests end-to-end qui vérifient automatiquement chacune de ces surfaces.
 - Pour **comprendre l'infrastructure** qui sert les modèles de cette plateforme,
-  voir le chapitre [LLMs locaux & serving](../../Texte/LLMs-Locaux-Serving/README.md).
+  voir le chapitre [LLMs locaux & serving](../../../Texte/LLMs-Locaux-Serving/README.md).
 
 ---
 

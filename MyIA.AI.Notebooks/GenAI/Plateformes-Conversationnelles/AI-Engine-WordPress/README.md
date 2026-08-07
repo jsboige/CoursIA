@@ -1,6 +1,6 @@
 # AI-Engine (WordPress) — extension GenAI côté contenu
 
-[← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [Tour OWUI](../00-Tour-Plateforme/README.md) | [QA Playwright-OWUI](../Playwright-OWUI/README.md)
+[← Documentation GenAI](../../README.md) | [↑ Plateformes conversationnelles](../README.md) | [Open-WebUI](../Open-WebUI/README.md) | [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) | [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md)
 
 > **Parcours découverte.** Ce dossier présente **AI-Engine**, l'extension
 > WordPress de Jordy Meow, comme **presqu'équivalent d'Open WebUI** côté
@@ -10,9 +10,9 @@
 
 ---
 
-## Pourquoi un troisième parcours dans la série Open-WebUI ?
+## Pourquoi une plateforme voisine d'Open WebUI ?
 
-La [série Open-WebUI](../README.md) documente la plateforme **Open WebUI** :
+La série voisine **[Open-WebUI](../Open-WebUI/README.md)** documente la plateforme éponyme :
 auto-hébergée, multi-tenant, centrée *chat LLM*. Mais ce n'est pas la
 seule interface GenAI réaliste : beaucoup de sites de contenu (blogs,
 forums, boutiques WooCommerce, sites éditoriaux) ont déjà un WordPress
@@ -56,7 +56,7 @@ Chaque section suit le même rythme :
    Open WebUI.
 4. **Référence livresagités** — un cas d'usage réel, sans PII.
 
-Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+Un fichier complémentaire [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md)
 synthétise les différences fonctionnelles en tableau ; un fichier
 [`livresagites-parcours.md`](livresagites-parcours.md) détaille le cas
 d'usage livresagités bout-en-bout (sans contenu privé).
@@ -74,20 +74,20 @@ vers `.env`.
 
 ## Sections
 
-### 1. [Vue d'ensemble](comparatif-owui-vs-ai-engine.md)
+### 1. [Vue d'ensemble](../comparatif-owui-vs-ai-engine.md)
 
 AI-Engine en deux pages : ce que c'est, qui l'utilise, pourquoi on en
 parle à côté d'Open WebUI. Statistiques publiques (100K+ installations
 actives, 4.9/5 étoiles, version 3.7.0 août 2026, license GPL).
 
-### 2. [Fonctionnalités GenAI cœur](comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
+### 2. [Fonctionnalités GenAI cœur](../comparatif-owui-vs-ai-engine.md#fonctionnalités-cœur)
 
 Chatbots, Workspace (plein écran dans wp-admin), Copilot pour l'éditeur
 WordPress, AI Forms (text/image/audio/file avec logique conditionnelle),
 génération d'image et de vision. Comparaison avec les surfaces
 équivalentes d'Open WebUI (chat, canaux, prompts).
 
-### 3. [Multi-provider et self-hosting](comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
+### 3. [Multi-provider et self-hosting](../comparatif-owui-vs-ai-engine.md#multi-provider-et-self-hosting)
 
 AI-Engine supporte **neuf providers distants** (OpenAI, Anthropic,
 Google, Mistral, xAI/Grok, Perplexity, OpenRouter, Replicate, Azure)
@@ -97,7 +97,7 @@ Open WebUI, c'est la même philosophie avec OpenAI-compatible + Ollama
 natif ; la différence est qu'AI-Engine ne fournit pas son propre
 moteur local — il s'appuie sur l'écosystème WordPress existant.
 
-### 4. [RAG et embeddings](comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
+### 4. [RAG et embeddings](../comparatif-owui-vs-ai-engine.md#rag-et-embeddings)
 
 Cinq vector stores supportés (Chroma, Qdrant, Pinecone, OpenAI Vector
 Store, **Internal WordPress DB**). PDF import avec chunking
@@ -106,7 +106,7 @@ trois modes de recherche (Simple, Context-Aware, Smart).
 Comparaison avec la pile RAG native d'Open WebUI (Knowledge,
 documents, hybrid search).
 
-### 5. [MCP server natif](comparatif-owui-vs-ai-engine.md#mcp-server-natif)
+### 5. [MCP server natif](../comparatif-owui-vs-ai-engine.md#mcp-server-natif)
 
 AI-Engine transforme WordPress en **serveur MCP** : des outils
 permission-aware (post, comment, media, theme, plugin, WooCommerce,
@@ -139,7 +139,7 @@ explique pourquoi une capture de `wp-admin` n'est pas assainissable.
 
 ## Sécurité — pas de secret dans les supports
 
-Comme pour les autres parcours de la série Open-WebUI :
+Comme pour le dossier Open-WebUI voisin :
 
 - **Aucun secret exposé** : pas d'URL d'admin, pas de clé d'API, pas
   de token MCP, pas de credentials WordPress.
@@ -167,12 +167,13 @@ attendues.
 
 ## Voir aussi
 
-- [README de la série Open-WebUI](../README.md) — point d'entrée
-- [Tour OWUI](../00-Tour-Plateforme/README.md) — pendant « chat
+- [Plateformes conversationnelles](../README.md) — point d'entrée de la catégorie
+- [README d'Open-WebUI](../Open-WebUI/README.md) — dossier voisin
+- [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) — pendant « chat
   LLM » centré
-- [QA Playwright-OWUI](../Playwright-OWUI/README.md) — pendant «
+- [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md) — pendant «
   assurance qualité » de bout en bout
-- [`comparatif-owui-vs-ai-engine.md`](comparatif-owui-vs-ai-engine.md)
+- [`comparatif-owui-vs-ai-engine.md`](../comparatif-owui-vs-ai-engine.md)
   — tableau structuré
 - [`livresagites-parcours.md`](livresagites-parcours.md) — cas
   d'usage concret

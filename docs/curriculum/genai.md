@@ -117,7 +117,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 🏭 Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une | ALPHA | Non |
 
-## GenAI/Open-WebUI (7 notebooks)
+## GenAI/Plateformes-Conversationnelles/Open-WebUI (7 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
