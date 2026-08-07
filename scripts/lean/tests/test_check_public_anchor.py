@@ -280,24 +280,45 @@ def test_cli_json_is_parseable(tmp_path, capsys):
 # --------------------------------------------------------------------------
 
 
+def hashlife_modules() -> list[Path]:
+    """L'agregateur **et** ses sous-modules.
+
+    Le temoin ne peut pas viser un fichier : au split #9863 la substance a quitte
+    ``HashlifeCorrectness.lean``, devenu un agregateur d'imports, pour descendre
+    dans ``HashlifeCorrectness/{Foundation,Walls/*}.lean``. Viser le seul fichier
+    d'origine faisait tomber le temoin a ``unanchored == 0`` -- soit precisement
+    l'angle mort #8782 qu'il existe pour attraper, reproduit sur lui-meme.
+    """
+    mods = [HASHLIFE] if HASHLIFE.is_file() else []
+    tree = HASHLIFE.with_suffix("")
+    if tree.is_dir():
+        mods += sorted(tree.rglob("*.lean"))
+    return mods
+
+
 @pytest.mark.skipif(not HASHLIFE.is_file(), reason="conway_lean absent de cet arbre")
 def test_hashlife_exhibits_the_blind_spot():
-    """Temoin #8782 : le module cible par la CI porte des sorry sans ancrage.
+    """Temoin #8782 : les modules cibles par la CI portent des sorry sans ancrage.
 
     Non fige sur un compte exact (le module evolue, cf #8981) : ce qui est
     verifie, c'est que la classe de defaut est instanciee ET qu'une partie des
     sorry est bien visible du gate -- l'angle mort est partiel, pas total.
+
+    Porte sur l'**union** de l'agregateur et de ses sous-modules (cf
+    ``hashlife_modules``) : c'est la meme union que ``target-modules`` cote CI.
     """
-    r = analyze_module(HASHLIFE)
-    if r["sorry_sites"] == 0:
-        pytest.skip("module assaini depuis la mesure de reference")
-    assert r["unanchored"] > 0, "l'angle mort a disparu : mettre a jour le temoin"
-    assert any(s["verdict"] == ANCHORED_PUBLIC for s in r["sites"]), (
-        "aucun sorry public : le module aurait change de nature"
+    sites = [s for p in hashlife_modules() for s in analyze_module(p)["sites"]]
+    if not sites:
+        pytest.skip("modules assainis depuis la mesure de reference")
+    unanchored = [s for s in sites if s["verdict"] == UNANCHORED]
+    assert unanchored, "l'angle mort a disparu : mettre a jour le temoin"
+    assert any(s["verdict"] == ANCHORED_PUBLIC for s in sites), (
+        "aucun sorry public : les modules auraient change de nature"
     )
-    owners = {s["owner"] for s in r["sites"] if s["verdict"] == UNANCHORED}
-    assert all(s["owner_private"] for s in r["sites"] if s["verdict"] == UNANCHORED)
-    assert owners, "les sorry sans ancrage doivent nommer leur porteur"
+    assert all(s["owner_private"] for s in unanchored)
+    assert {s["owner"] for s in unanchored}, (
+        "les sorry sans ancrage doivent nommer leur porteur"
+    )
 
 
 if __name__ == "__main__":
