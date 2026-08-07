@@ -356,6 +356,73 @@ class TestAnalyzeNotebook:
 
 
 # --------------------------------------------------------------------------- #
+#  Gate anti-bruit dense-cell (EPIC #9768 Phase 0)
+# --------------------------------------------------------------------------- #
+
+
+class TestDenseCellOrphanGate:
+    """Lock le gate anti-bruit sur les cellules denses (>=3 nombres prose).
+
+    Contexte : le detecteur v2 emettait 21589 findings full-corpus dont
+    l'inspection firsthand montre ~99% de FP (prose = references, numeros de
+    section, dates, identifiants). Le gate n'emet MISSING_FROM_OUTPUTS pour une
+    cellule DENSE que si la majorite de ses nombres sont orphelins (ratio >=
+    MISSING_FROM_OUTPUTS_CELL_RATIO). Les cellules clairsemees (1-2 nombres)
+    sont preservees : une mesure unique manquante reste un signal valide.
+    """
+
+    def test_sparse_cell_single_missing_still_emitted(self, tmp_path):
+        # Cellule clairsemee (1 nombre) : la mesure manquante reste signalee.
+        # C'est le contrat preserve (cf test_prose_value_missing).
+        nb = tmp_path / "sparse.ipynb"
+        _make_notebook([
+            _markdown_cell("Sharpe = 0.69"),
+            _code_cell("print(0.1875)", [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        assert result.total_findings == 1
+        assert result.findings[0].category == "MISSING_FROM_OUTPUTS"
+
+    def test_dense_cell_minority_orphan_suppressed(self, tmp_path):
+        # Cellule dense (5 nombres) avec 1 orphelin sur 5 = 20% < seuil 50%.
+        # C'est du bruit (4 nombres presentes, 1 reference croisee) -> supprime.
+        nb = tmp_path / "dense_minority.ipynb"
+        _make_notebook([
+            _markdown_cell("a=0.5, b=0.6, c=0.7, d=0.8, ref=42"),
+            _code_cell("print([0.5, 0.6, 0.7, 0.8])",
+                       [{"text": "[0.5, 0.6, 0.7, 0.8]\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert mfo == [], f"dense cell with minority orphan should be suppressed, got {mfo}"
+
+    def test_dense_cell_majority_orphan_emitted(self, tmp_path):
+        # Cellule dense (5 nombres) avec 4 orphelins sur 5 = 80% >= seuil 50%.
+        # C'est de la derive authentique (la prose decrit des resultats non
+        # calcules) -> signale.
+        nb = tmp_path / "dense_majority.ipynb"
+        _make_notebook([
+            _markdown_cell("a=0.5, b=0.6, c=0.7, d=0.8, e=0.9"),
+            _code_cell("print(0.5)", [{"text": "0.5\n"}]),  # seul 0.5 present
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert len(mfo) == 4, f"4 orphans should survive the gate, got {len(mfo)}"
+
+    def test_dense_cell_threshold_boundary(self, tmp_path):
+        # Cellule dense (4 nombres) avec 2 orphelins sur 4 = 50% = seuil exact.
+        # >= seuil -> signale (frontiere inclusive).
+        nb = tmp_path / "boundary.ipynb"
+        _make_notebook([
+            _markdown_cell("a=0.5, b=0.6, c=0.7, d=0.8"),
+            _code_cell("print([0.5, 0.6])", [{"text": "[0.5, 0.6]\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert len(mfo) == 2, f"50% orphan at boundary should emit, got {len(mfo)}"
+
+
+# --------------------------------------------------------------------------- #
 #  Contre-epreuve positive ICT-1
 # --------------------------------------------------------------------------- #
 

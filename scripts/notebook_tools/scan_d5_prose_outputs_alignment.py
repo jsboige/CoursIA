@@ -100,6 +100,18 @@ ABSOLUTE_TOLERANCE = 1e-6
 MIN_NUMBER_VALUE = 1e-9
 MAX_NUMBER_VALUE = 1e15
 
+# Gate anti-bruit pour MISSING_FROM_OUTPUTS (EPIC #9768 Phase 0 : le detecteur
+# v2 emettait 21589 findings full-corpus dont l'inspection firsthand montre
+# ~99% de faux positifs -- nombres de prose qui sont des references, numeros
+# de section, dates, identifiants, et non des mesures). Comme le detecteur D1
+# (scan_d1_d3_d4_d5.py D1_ORPHAN_RATIO_THRESHOLD), on ne signale une cellule
+# que si une fraction significative de SES nombres prose sont orphelins : une
+# cellule dont 1 nombre sur 10 est absent = bruit (reference croisee) ; une
+# cellule dont 5 sur 10 sont absents = derive authentique (la prose decrit des
+# resultats non calcules).
+MISSING_FROM_OUTPUTS_CELL_RATIO = 0.50   # >=50% des nombres prose orphelins (cell dense)
+MISSING_FROM_OUTPUTS_CELL_MIN = 3        # seuil "dense" (cell >=3 nombres prose)
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -398,21 +410,34 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
         # Tronque le texte pour le rapport (60 premiers chars non vides).
         snippet = text.strip().splitlines()
         snippet = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
+        # Gate anti-bruit (EPIC #9768 Phase 0) : on collecte d'abord les
+        # orphelins de cette cellule. Pour les cellules DENSES (>= MIN nombres
+        # prose), on n'emet QUE si la majorite des nombres sont orphelins
+        # (ratio >= seuil) -- une cellule avec 1 orphelin sur 10 = reference
+        # croisee (bruit), une cellule avec 5/10 = derive authentique. Les
+        # cellules clairsemes (1-2 nombres) sont preservees : une seule
+        # mesure manquante ("Sharpe = 0.512") reste un signal valide.
+        orphans: list[float] = []
         for v in nums:
             closest = _closest_output(v, output_vals)
             if closest is None:
-                # Determine la tolerance affichee.
-                tol = "none"
-                findings.append(AlignmentFinding(
-                    notebook=str(path),
-                    cell_index=cell_idx,
-                    cell_kind="markdown",
-                    category="MISSING_FROM_OUTPUTS",
-                    prose_text=snippet,
-                    prose_number=v,
-                    closest_output_number=None,
-                    tolerance_used=tol,
-                ))
+                orphans.append(v)
+        if len(nums) >= MISSING_FROM_OUTPUTS_CELL_MIN:
+            ratio = len(orphans) / len(nums)
+            if ratio < MISSING_FROM_OUTPUTS_CELL_RATIO:
+                continue  # bruit : pas assez d'orphelins sur cette cellule dense
+        # Emet les orphelins survivants.
+        for v in orphans:
+            findings.append(AlignmentFinding(
+                notebook=str(path),
+                cell_index=cell_idx,
+                cell_kind="markdown",
+                category="MISSING_FROM_OUTPUTS",
+                prose_text=snippet,
+                prose_number=v,
+                closest_output_number=None,
+                tolerance_used="none",
+            ))
     # Tour 2 : MISSING_FROM_PROSE_ENUMERATION (#9416).
     # Pour chaque cellule markdown qui annonce une énumération de N niveaux,
     # compare N au nombre de niveaux distincts dans output_vals.
