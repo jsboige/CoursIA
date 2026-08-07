@@ -162,6 +162,34 @@ class TestExtractProseNumbers:
         assert 0.69 in nums
         assert 2.31 in nums
 
+    def test_filter_inline_latex_math(self):
+        # A number inside an inline LaTeX formula ($2^n - 1$, $v(S) \in \{0, 1\}$)
+        # is a mathematical constant/base, not a measurement from outputs.
+        # Documented FP class (c.1293): Planners-6 "$2^n - 1$" -> prose_number 2.0.
+        nums = mod._extract_prose_numbers("La formule $2^n - 1$ donne la longueur, resultat observe 0.69.")
+        assert 0.69 in nums
+        assert 2.0 not in nums
+        assert 1.0 not in nums
+
+    def test_filter_inline_latex_set_notation(self):
+        # $v(S) \in \{0, 1\}$ -- the 0 and 1 are set elements, not outputs.
+        nums = mod._extract_prose_numbers("Jeux de vote : $v(S) \\in \\{0, 1\\}$, ratio mesure 0.42.")
+        assert 0.42 in nums
+        assert 0.0 not in nums
+        assert 1.0 not in nums
+
+    def test_filter_display_math_block(self):
+        # Display math $$...$$ spanning content -- bases inside are filtered.
+        nums = mod._extract_prose_numbers("L'espace d'etats $$3^n$$ croit vite, valeur 0.77 obtenue.")
+        assert 0.77 in nums
+        assert 3.0 not in nums
+
+    def test_legit_decimal_outside_math_preserved(self):
+        # A real measurement after a math span is still captured.
+        nums = mod._extract_prose_numbers("Modele $f(x)$, score final 0.88, precedent 0.71.")
+        assert 0.88 in nums
+        assert 0.71 in nums
+
 
 # --------------------------------------------------------------------------- #
 #  Extraction outputs
@@ -228,6 +256,34 @@ class TestDetectProseEnumeration:
         assert mod._detect_prose_enumeration("La temperature est 0.69.") is None
         assert mod._detect_prose_enumeration("Plusieurs pics apparaissent.") is None
         assert mod._detect_prose_enumeration("") is None
+
+    def test_latex_decimal_span_preserved(self):
+        # $2{,}31$ is a LaTeX decimal == 2.31 -- a real value, must be kept.
+        nums = mod._detect_prose_enumeration("2 niveaux : $0{,}19$ et $2{,}31$.")
+        assert nums is not None
+        assert 0.19 in nums
+        assert 2.31 in nums
+
+    def test_latex_formula_span_filtered(self):
+        # $2^n - 1$ is a formula, not a measurement -- its base "2" must NOT
+        # be extracted as an enumerated level. FP documented c.1293 (Planners-6).
+        nums = mod._detect_prose_enumeration(
+            "La formule $2^n - 1$ donne la longueur, observe 2 niveaux : 0,19 et 2,31.")
+        assert nums is not None
+        assert 2.0 not in nums
+        assert 1.0 not in nums
+        assert 0.19 in nums
+        assert 2.31 in nums
+
+    def test_latex_set_notation_filtered(self):
+        # $v(S) \in \{0, 1\}$ -- the 0/1 are set elements, not enumerated levels.
+        # Uses a recognized enumeration keyword ("niveaux") so the parser engages.
+        nums = mod._detect_prose_enumeration(
+            "Jeux de vote : $v(S) \\in \\{0, 1\\}$, 2 niveaux : 0,42 et 0,88.")
+        assert nums is not None
+        assert 0.0 not in nums
+        assert 1.0 not in nums
+        assert 0.42 in nums
 
 
 class TestDistinctLevels:

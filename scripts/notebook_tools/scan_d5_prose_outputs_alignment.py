@@ -88,6 +88,19 @@ EXCLUDE_PATTERNS = (
 _ATX_HEADING_LINE_RE = re.compile(r"\s{0,3}#{1,6}(?:\s|$)")
 
 
+# Math inline LaTeX (cellules markdown pedagogiques) : un nombre dans une
+# formule ($2^n - 1$, $v(S) \in \{0, 1\}$, $3^n$) est une constante/base
+# mathematique, pas une mesure citee des outputs. Source documentee de FP
+# dans le corpus run #9790 : firsthand c.1293 sur Sudoku/Planners/GameTheory
+# montre que la classe residuelle dominante de MISSING_FROM_PROSE_ENUMERATION
+# est la math inline (Planners-6 cell[13] "$2^n - 1$" -> prose_number 2.0 FP ;
+# GameTheory-15b cell[28] "$v(S) \in \{0, 1\}$" -> FP). On exclut donc tout
+# nombre tombant dans un span math. Display math $$...$$ est matche en premier
+# (plus long) ; inline $...$ n'accepte ni $ ni newline interne (evite de
+# gobler un $ de monnaie isole jusqu'au prochain $ distant).
+_LATEX_MATH_SPAN_RE = re.compile(r"\$\$.*?\$\$|\$[^\$\n]*?\$", re.DOTALL)
+
+
 # Faux positifs semantiques : regex strictes (mot complet + caractere de
 # liaison) pour eviter de matcher au milieu d'une phrase legit.
 # Format : hint = substring qui DOIT etre immediatement suivi du nombre matche.
@@ -197,9 +210,15 @@ def _extract_prose_numbers(text: str) -> list[float]:
     """Extrait les nombres d'un texte markdown en filtrant les faux positifs semantiques."""
     if not text:
         return []
+    # Precompute les spans math LaTeX une fois (evite un finditer par nombre).
+    math_spans = [m.span() for m in _LATEX_MATH_SPAN_RE.finditer(text)]
     out: list[float] = []
     for m in FR_DECIMAL_RE.finditer(text):
         raw = m.group(0)
+        # Filtre math LaTeX : un nombre dans $2^n - 1$ ou $\{0, 1\}$ est une
+        # constante de formule, pas une mesure d'output (cf c.1293).
+        if any(a <= m.start() < b for a, b in math_spans):
+            continue
         # Filtre bruit : années, numéros d'issue, etc.
         if any(p.match(raw) for p in EXCLUDE_PATTERNS):
             continue
@@ -332,6 +351,24 @@ _ENUMERATION_KEYWORDS_RE = re.compile(
 )
 
 
+def _latex_math_to_text(content: str) -> str:
+    """Convertit le contenu d'un span math LaTeX en texte extractible.
+
+    Retourne le nombre (ex. ``2.31``) si le span est un decimal LaTeX pur
+    (``$2{,}31$`` apres fusion des separateurs), sinon une chaine vide : un
+    span de formule/ensemble (``$2^n - 1$``, ``$v(S) \\in \\{0, 1\\}$``) n'est
+    pas une mesure enumeree -- c'est une constante mathematique. Source de FP
+    documentee c.1293 sur Planners-6/GameTheory-15b.
+    """
+    s = content.replace("{,}", ".").replace("{\\,}", ".").replace("{\\;}", ".")
+    s = s.replace("\\", " ").replace("{", " ").replace("}", " ").strip()
+    # Entier ou decimal pur uniquement (apres fusion LaTeX). Tout le reste
+    # (exposant ^, indice _, lettres, multi-valeurs) = formule, on jette.
+    if re.fullmatch(r"-?\d+[.,]\d+|-?\d+", s):
+        return s
+    return ""
+
+
 def _detect_prose_enumeration(text: str) -> list[float] | None:
     """Si `text` annonce une liste de N valeurs, retourne la liste parsee.
 
@@ -355,8 +392,14 @@ def _detect_prose_enumeration(text: str) -> list[float] | None:
     ainsi que les dollars `$...$` avant l'extraction.
     """
     latex_clean = text.replace("{,}", ".").replace("{\\,}", ".").replace("{\\;}", ".")
-    # Strip $...$ delimiters (apres fusion des separateurs).
-    latex_clean = re.sub(r"\$([^$]*)\$", r" \1 ", latex_clean)
+    # Math LaTeX : on distingue un decimal pur ($2{,}31$ -> 2.31, a garder)
+    # d'une formule/ensemble ($2^n - 1$, $v(S) \\in \\{0, 1\\}$ -> a jeter).
+    # L'ancien strip `\\1` gardait le contenu des formules : le "2" de $2^n$
+    # etait extrait comme un niveau enumere (FP documente c.1293 : Planners-6
+    # cell[13], GameTheory-15b cell[28]). Un span qui ne se reduit pas a un
+    # nombre pur apres fusion des separateurs LaTeX n'est pas une mesure.
+    latex_clean = re.sub(r"\$\$(.*?)\$\$", lambda mm: " " + _latex_math_to_text(mm.group(1)) + " ", latex_clean)
+    latex_clean = re.sub(r"\$([^$]*)\$", lambda mm: " " + _latex_math_to_text(mm.group(1)) + " ", latex_clean)
     m = _ENUMERATION_KEYWORDS_RE.search(latex_clean)
     if not m:
         return None
