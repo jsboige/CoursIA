@@ -450,28 +450,26 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
   (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
      (ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges),
      c.isSlotPermOf (d₁.crossings.get i) ∧
-     (d₂ = { d₁ with crossings := d₁.crossings.set i.val c } ∨
-      d₁ = { d₂ with crossings := d₂.crossings.set i.val c }) ∧
+     (d₂.crossings = d₁.crossings.set i.val c ∨
+      d₁.crossings = d₂.crossings.set i.val c) ∧
      d₁.wf = true ∧ d₂.wf = true)
 
 /-- `Reidemeister3Determined` is a strengthening of `Reidemeister3`: a
     slot-determined slide is, in particular, a (free-`c`) R3 move. The witness
-    crossing `c` and renaming `ρ` are provided directly; the surgery equation is
-    unchanged (`set i.val c` with `i.val` the underlying `Nat`). -/
+    crossing `c` and renaming `ρ` are provided directly. The surgery equation
+    is now a **field equality** `d₂.crossings = d₁.crossings.set i.val c`
+    (consistent with `Reidemeister3` post field-eqs migration, no more
+    `with`-surgery). The `numEdges` witness of R3D is guaranteed by `he` from
+    destructuring. -/
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
-  · -- `hsurg : d₂ = {d₁ with crossings := d₁.crossings.set i.val c}` is a
-    -- `with`-surgery record equality. To inject it into R3 (which now expects a
-    -- field equality `d₂.crossings = d₁.crossings.set i.val c` after the
-    -- field-eqs migration), we project the `crossings` component via
-    -- `congrArg` on the field-access functor. The `numEdges` witness of R3D
-    -- is already guaranteed by `he : d₁.numEdges = d₂.numEdges` from the
-    -- destructuring, so the only field to project is `crossings`.
-    exact ⟨hl, he, i.val, c, ρ, Or.inl (congrArg (fun d => d.crossings) hsurg),
-           hwf₁, hwf₂⟩
-  · exact ⟨hl, he, i.val, c, ρ, Or.inr (congrArg (fun d => d.crossings) hsurg),
-           hwf₁, hwf₂⟩
+  · -- `hsurg : d₂.crossings = d₁.crossings.set i.val c` is already a field
+    -- equality: we inject it directly into R3 via `Or.inl` (no more
+    -- `congrArg` projection needed — R3D and R3 now share the same
+    -- field-eq signature).
+    exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
 
 /-- `Reidemeister3Determined` is NOT vacuous: a concrete slot-determined slide
     `d₁ → d₂` with `wf = true` on both sides. Witness: `d₁` has two identical
@@ -490,8 +488,13 @@ theorem reidemeister3Determined_satisfiable :
     -- `isSlotPermOf` is a raw `def` (no Decidable instance), so unfold it first to
     -- the underlying `List.Perm` on `List Nat`, which IS decidable.
     exact by unfold PDCrossing.isSlotPermOf; decide
-  · -- surgery, left arm: d₂ = {d₁ with crossings := d₁.crossings.set 0 ⟨1,3,2,4⟩}
-    exact Or.inl rfl
+  · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
+    -- `d₁.crossings` and `d₂.crossings` are concrete literals (`simp only
+    -- [List.set]` unfolds both and reduces `set 0` on `[_, _]` to the
+    -- defeq goal `[c', b] = [c', b]`). No `DecidableEq (List PDCrossing)`
+    -- instance needed (absent ; `decide` would fail with `failed to
+    -- synthesize Decidable`).
+    exact Or.inl (by simp only [List.set])
   · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
     exact by decide
   · -- d₂.wf = true (multiset unchanged by the slot swap)

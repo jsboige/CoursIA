@@ -323,7 +323,7 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0 SDK (pour notebooks C#)
+- .NET 9.0+ SDK (pour notebooks C# — .NET 10 LTS validé en local)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
 - WSL (pour Lean et certains outils SymbolicAI)
 - Docker + GPU (optionnel, pour GenAI avancé)
@@ -373,7 +373,7 @@ s'installent directement via leur `requirements.txt`.
 | Sudoku | `Sudoku/Sudoku-0-Environment-Csharp.ipynb` | kernel .NET Interactive |
 | Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
-| Lean | `SymbolicAI/Lean/Lean-1-Setup.ipynb` | `Lean/scripts/setup_wsl_python.sh`, `validate_lean_setup.py` |
+| Lean | `SymbolicAI/Lean/Lean-1-Setup.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
 | Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
 | SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb`, `SC-2-Setup-Web3py.ipynb` | `setup_env.py`, `scripts/setup_wsl_smartcontracts.sh` |
@@ -418,11 +418,15 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 
 ## Kernels Jupyter
 
-| Kernel | Séries | Installation |
-|--------|--------|--------------|
-| `python3` | Tous les notebooks Python | `pip install ipykernel` |
-| `.net-csharp` | Sudoku, Search, Probas, ML | `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701` |
-| `lean4` / `lean4-wsl` | Lean, GameTheory (notebooks Lean) | Via `elan` + wrapper WSL |
+**Critère d'inclusion** : un kernel figure ici s'il est **requis par au moins un notebook du dépôt** (`metadata.kernelspec`). Une partie est **créée par un script de setup du dépôt** (`python3-wsl` via `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `pyphi` via `IIT/scripts/setup_pyphi_env.ps1`, `smartcontracts` via `SymbolicAI/SmartContracts/scripts/setup.sh`, kernel `python3` de base), le reste est **consommée sans script dédié** (`mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`). La colonne « Installation canonique » nomme le script de setup quand il existe, sinon renvoie à `docs/reference/kernels-runtime.md`. Les artefacts d'environnement local (`conda-torch`, `miniconda3-base`, `pymc18-jsboi`, etc.) ne sont pas des prérequis de projet : ils relèvent de `jupyter kernelspec list` sur la machine de développement. Audit fichier-entier `f:` `README.md` L419-427, `t:` 2026-08-07T22:55Z (po-2025) + 2026-08-08 (po-2024), `p:` myia-po-2025 / CoursIA-2 (correction du F3 CHANGES_REQUESTED #9907) + myia-po-2024 / CoursIA (critère « iff script crée » inexact → règle « requis par notebook », See #9954).
+
+| Famille | Kernels installés par le dépôt | Séries principales | Installation canonique |
+|---------|-------------------------------|-------------------|----------------------|
+| **Python** | `python3`, `python3-wsl`, `mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`, `pyphi`, `smartcontracts` | GenAI, QuantConnect, Search, ML, IIT | `pip install ipykernel` + `python -m ipykernel install --user --name=<kernel>` (kernel de base) ; voir `docs/reference/kernels-runtime.md` pour les envs conda dédiés |
+| **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install` (cf. L331) |
+| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_kernel.ps1` + `setup_lean4_native.sh` (elan) |
+
+Pour la **liste exhaustive et à jour** (versions épinglées, historique, dépendances conda) : [`docs/reference/kernels-runtime.md`](docs/reference/kernels-runtime.md) — référence canonique, primer sur tout inventaire figé (même leçon que #9831 / #9853). Pour vérifier l'état local à tout moment : `jupyter kernelspec list`.
 
 Limitations connues : les notebooks C# avec `#!import` nécessitent une exécution cellule par cellule (incompatible Papermill). Lean 4 requiert WSL sous Windows. Le détail des versions compatibles (dotnet-interactive, Lean/elAN) et leur historique figure dans [docs/reference/kernels-runtime.md](docs/reference/kernels-runtime.md).
 

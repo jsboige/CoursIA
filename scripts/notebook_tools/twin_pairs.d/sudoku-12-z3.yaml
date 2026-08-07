@@ -20,6 +20,12 @@
       csharp_sha: c530a89b8df71604c27ca91dce06474c3eb6514b
       content_python_sha: 5a3f81362d1d616b3767f7f25cd96f6a8135fb803ff112d2ed329f6224c4499a
       content_csharp_sha: 186940554bb8437fb9cf557e7a219dd8008388451347c6757e85669ffbc8c0b9
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA
+      python_sha: dc50ea9dcff0391b2f094da547ee7b50cf2fc791
+      csharp_sha: 7fb3bedc554c5739f37fb0270ba43553b20bb8eb
+      content_python_sha: 5a3f81362d1d616b3767f7f25cd96f6a8135fb803ff112d2ed329f6224c4499a
+      content_csharp_sha: edf4ef7a6f8e4ad8a9ec28c9a040a465a8045db26a5916b86fe16e0e70efc5b6
   known_differences:
     - "Socle pedagogique commun : resolution de Sudoku par SMT (Satisfiability Modulo Theories) avec le vrai solveur Z3 (Microsoft Research) -- modelisation des contraintes Sudoku comme formules logiques (BitVec, contraintes all-different sur lignes/colonnes/carres), resolution par le solveur SMT. Les deux cotes utilisent le VRAI Z3 SOTA (meme moteur sous-jacent), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, BitVec, Solver."
     - "Divergence de binding : le C# accede a Z3 via Microsoft.Z3 (NuGet, bindings .NET natifs, 19 cellules code) ; le Python accede a Z3 via pyz3 (import z3, bindings Python, 11 cellules). C'est le meme solveur Z3 avec deux bindings idiomatiques -- c'est la definition meme de parity_level semantic (meme moteur, API idiomatique differente). Note : le Python reference aussi ortools (OR-Tools, alternative CP-SAT) en complement."

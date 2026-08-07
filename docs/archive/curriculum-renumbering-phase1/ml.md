@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-08-08** — Verdict **NO-RENUMBER** figé (cf PR [#9899](https://github.com/jsboige/CoursIA/pull/9899)). EPIC #5081 phase-1 close. Document conservé pour référence historique (daté, immutable). Voir triage table c.XXIV [issue #7422](https://github.com/jsboige/CoursIA/issues/7422#issuecomment-5223051530) + archive INDEX [`docs/archive/INDEX.md`](../INDEX.md). *Archivé par : po-2024 (lane CoursIA, c.XXIV) — consistence siblings (infer/search/planners/pymc/texte/video).*
+
 # #5081 — ML (ML.NET) : analyse de renumérotation (phase 1, docs-only)
 
 > **EPIC #5081** — Renumérotation narrative des séries. **Fille sous-série ML.NET (ML-1..ML-9).**
