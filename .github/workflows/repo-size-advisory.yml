@@ -1,0 +1,59 @@
+# Repo size advisory — signale les gros blobs ajoutes par une PR (jamais bloquant)
+#
+# Politique : docs/reference/repo-size-policy.md (grain #9860). Les notebooks sont committes
+# AVEC leurs sorties (C.2) — le poids est attendu. Ce gate est ADVISORY (exit 0, ::warning::) :
+# il rend visible un blob > seuil pour ouvrir la conversation LFS-vs-justification, sans
+# bloquer le merge. Conforme au pattern de visibilite de variation-tag-guard.yml.
+#
+# Seuil : 10 MiB, calibre sur la mesure reelle (cf. policy §3) — capture datasets/checkpoints/
+# vendored-binaries (25-63 MB) tout en respectant la queue legitime des notebooks-avec-outputs.
+# ADVISORY, jamais bloquant : ce job sort toujours en exit 0.
+name: Repo Size Advisory
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  large-blob-advisory:
+    name: Large blob advisory (>= 10 MiB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR (full history for blob diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan added blobs above threshold
+        env:
+          THRESHOLD_BYTES: 10485760  # 10 MiB
+        run: |
+          set -uo pipefail
+          # ADVISORY : on ne fail jamais, on collecte et on avertit.
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          echo "Scanning added blobs between ${BASE:0:12}..${HEAD:0:12} (threshold ${THRESHOLD_BYTES} bytes)"
+          found=0
+          # git diff --raw : ':<oldmode> <newmode> <oldsha> <newsha> <status>\t<path>'
+          # Pour un fichier ajoute (status A), oldsha est zeros, newsha est le blob SHA.
+          while IFS= read -r line; do
+            # extrait newsha (champ 4) et path (apres la tabulation)
+            newsha=$(printf '%s' "$line" | awk '{print $4}')
+            path=${line#*$'\t'}
+            [ -z "$newsha" ] || [ "$newsha" = "0000000000000000000000000000000000000000" ] && continue
+            size=$(git cat-file -s "$newsha" 2>/dev/null || echo 0)
+            if [ "$size" -gt "$THRESHOLD_BYTES" ]; then
+              mb=$(awk "BEGIN{printf \"%.1f\", $size/1048576}")
+              echo "::warning file=${path}::Blob ajoute de ${mb} MiB (> seuil advisory 10 MiB). Policy docs/reference/repo-size-policy.md : LFS candidate ou justification pedagogique requise."
+              found=1
+            fi
+          done < <(git diff --raw --diff-filter=A "${BASE}" "${HEAD}" 2>/dev/null)
+          if [ "$found" -eq 1 ]; then
+            echo "ATTENTION : un ou plusieurs blobs depassent le seuil advisory. Voir policy docs/reference/repo-size-policy.md."
+          else
+            echo "OK : aucun blob ajoute au-dela du seuil advisory."
+          fi
+          exit 0
