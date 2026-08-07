@@ -121,34 +121,45 @@ class TestExtractReadmeCount:
         assert extract_readme_count(tmp_path / "nope.md") is None
 
     def test_bold_notebooks_pattern(self, tmp_path):
+        # Bare prose number (no CATALOG-STATUS marker, no explicit Total anchor)
+        # is NO LONGER caught since #9835: it was the scope bug (sub-section
+        # headers like SymbolicAI's "**28 notebooks**" Lean read as the series
+        # total). The marker is the canonical anchor now.
         readme = tmp_path / "README.md"
         readme.write_text("# Title\n\n> **28 notebooks Python**\n", encoding="utf-8")
-        assert extract_readme_count(readme) == 28
+        assert extract_readme_count(readme) is None
 
     def test_table_notebooks_pattern(self, tmp_path):
+        # Bare "| Notebooks | N |" (no marker) no longer caught (#9835).
         readme = tmp_path / "README.md"
         readme.write_text("| Metric | Value |\n| Notebooks | 42 |\n", encoding="utf-8")
-        assert extract_readme_count(readme) == 42
+        assert extract_readme_count(readme) is None
 
     def test_inline_notebooks_python(self, tmp_path):
+        # Bare inline "N notebooks Python" (no marker) no longer caught (#9835).
         readme = tmp_path / "README.md"
         readme.write_text("This series has 15 notebooks Python.\n", encoding="utf-8")
-        assert extract_readme_count(readme) == 15
+        assert extract_readme_count(readme) is None
 
     def test_inline_notebooks_generic(self, tmp_path):
+        # Bare inline "N notebooks" (no marker) no longer caught (#9835).
         readme = tmp_path / "README.md"
         readme.write_text("The collection includes 10 notebooks.\n", encoding="utf-8")
-        assert extract_readme_count(readme) == 10
+        assert extract_readme_count(readme) is None
 
     def test_table_total_pattern(self, tmp_path):
+        # Explicitly-anchored "| Total | N |" fallback is INTACT (#9835).
         readme = tmp_path / "README.md"
         readme.write_text("| Total | 84 |\n", encoding="utf-8")
         assert extract_readme_count(readme) == 84
 
     def test_french_exercices_pattern(self, tmp_path):
+        # The "(\\d+)\\s+exercices" fallback is REMOVED (#9835 acceptance 2):
+        # an exercise count is not a notebook count. This was the IIT bug
+        # (53 notebooks vs "3 exercices").
         readme = tmp_path / "README.md"
         readme.write_text("Cette serie contient 12 exercices.\n", encoding="utf-8")
-        assert extract_readme_count(readme) == 12
+        assert extract_readme_count(readme) is None
 
     def test_no_count_returns_none(self, tmp_path):
         readme = tmp_path / "README.md"
@@ -160,7 +171,9 @@ class TestExtractReadmeCount:
         pass  # This is tested implicitly — the function checks val > 0
 
     def test_bold_pattern_priority(self, tmp_path):
-        """Bold pattern should be found before generic inline."""
+        # No longer applicable: bare prose numbers are not caught at all since
+        # #9835, so there is no "priority" between bare-prose patterns. The
+        # only priority is: CATALOG-STATUS marker > explicit Total > None.
         readme = tmp_path / "README.md"
         readme.write_text("**5 notebooks** and also mentions 99 notebooks elsewhere.", encoding="utf-8")
-        assert extract_readme_count(readme) == 5
+        assert extract_readme_count(readme) is None

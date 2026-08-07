@@ -117,7 +117,7 @@ Les sections précédentes ([Claude Code](#claude-code---ateliers), [Roo Code](#
 
 ### roo-state-manager — le MCP d'orchestration
 
-[`roo-state-manager`](https://github.com/jsboige/roo-extensions) est un MCP maison qui regroupe **34 outils** d'orchestration inter-agents et de mémoire collective. La doc pérenne détaille le rôle de chacun : [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
+[`roo-state-manager`](https://github.com/jsboige/roo-extensions) est un MCP maison qui regroupe **15 outils** d'orchestration inter-agents et de mémoire collective. La doc pérenne détaille le rôle de chacun : [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) (6 coordination + 4 mémoire/recherche + 5 infrastructure). Pour le cycle de vie et le diagnostic des serveurs MCP eux-mêmes, voir [docs/reference/architecture_mcp_roo.md](../../../docs/reference/architecture_mcp_roo.md).
 
 | Catégorie | Rôle | Quelques outils représentatifs (sur 34) |
 |-----------|------|------------------------------------------|

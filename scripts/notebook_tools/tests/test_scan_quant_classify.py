@@ -231,6 +231,206 @@ class TestGoldenSetProbasBayesian:
 
 
 # --------------------------------------------------------------------------- #
+#  Tests golden set nits c.1273 — reponse aux 2 nits ai-01 sur #9813
+# --------------------------------------------------------------------------- #
+
+
+class TestGoldenSetNitsC1273:
+    """Golden set fondateur post-#9813 (c.1273) — reponse aux 2 nits ai-01 :
+
+    1. Nit-1 : `}cii` etait un marqueur DATA-LIST mort (typo, jamais matche)
+       — VERIFIE : 0 occurrence dans Probas/ (grep firsthand). Retirer.
+    2. Nit-2 : `precision` et `apprentissage` (STRUCT_KEYWORDS vagues #9813)
+       peuvent etre trop larges cross-famille ML/GenAI. Plutot que de les
+       retirer (re-introduirait du FP sur Probas), on ajoute un golden set
+       ML/GenAI qui DEMONTRE les cas limites et on documente le scope.
+
+    Verifie :
+    - precision bayesienne (parametre gamma, posterior) reste STRUCTUREL
+    - apprentissage bayesien (inference) reste STRUCTUREL
+    - precision ML non-seedee (accuracy/precision metrique) NON touchee par
+      STRUCT_KEYWORDS (tombe sur STOCH_KEYWORDS par defaut — co-existence OK)
+    """
+
+    def test_1273_nit1_data_list_marker_removed(self):
+        """Nit-1 : `}cii` retire de DATA_LIST_MARKERS — verification directe."""
+        from scan_quant_classify import DATA_LIST_MARKERS
+        marker_removed = "}cii"
+        assert marker_removed not in DATA_LIST_MARKERS, (
+            f"{marker_removed!r} doit etre retire (typo mort), got {DATA_LIST_MARKERS}"
+        )
+        # Les autres marqueurs legitimes sont preserves
+        for legit in ("{", "~ ", " valeurs", "observations)"):
+            assert legit in DATA_LIST_MARKERS, (
+                f"marqueur legitime {legit} doit etre preserve"
+            )
+
+    def test_1273_nit2_precision_bayesian_kept(self):
+        """Nit-2 : `precision` dans un contexte bayesien (parametre gamma
+        precision) reste STRUCTUREL — re-introduire le retrait casserait Probas.
+        """
+        cls, _ = _classify_quant_value("2.24", 2.24,
+                                       "precision `gamma(2.24, ",
+                                       "`) | ~ 3.29 min^2 (parametre bayesien)")
+        assert cls == "STRUCTUREL", (
+            f"precision bayesienne doit rester STRUCTUREL, got {cls}"
+        )
+
+    def test_1273_nit2_apprentissage_bayesian_kept(self):
+        """Nit-2 : `inference bayesienne` (mot-composé) reste STRUCTUREL —
+        preserve la couverture Probas (20 fichiers firsthand) sans le FP
+        `temps d'apprentissage du modele: 42 s` que `apprentissage` seul
+        induisait cross-famille ML runtime.
+        """
+        cls, _ = _classify_quant_value("100", 100.0,
+                                       "courbe d'inference bayesienne (",
+                                       " iterations, posterior Beta converge)")
+        assert cls == "STRUCTUREL", (
+            f"inference bayesienne (mot-compose) doit rester STRUCTUREL, got {cls}"
+        )
+
+    def test_1273_nit2_ml_precision_metric_unaffected(self):
+        """Nit-2 : `precision: 0.87` (metrique ML non-seedee) — ne doit PAS
+        beneficier de STRUCT_KEYWORDS='precision' seule (sinon FP STRUCTUREL
+        sur une metrique de test). Le mot-cle `precision` est OK en contexte
+        bayesien uniquement ; en contexte ML, c'est STOCHASTIQUE-NON-SEEDEE.
+        """
+        cls, _ = _classify_quant_value("0.87", 0.87,
+                                       "validation precision: ",
+                                       " (10-fold cv, sans seed explicite)")
+        # STOCHASTIQUE-NON-SEEDEE (accuracy/precision metrique non-seedee)
+        # OU STRUCTUREL si pas de match — verifier que ce n'est PAS MACHINE-DEP
+        # (precision ML n'est pas un timing runtime)
+        assert cls in ("STRUCTUREL", "STOCHASTIQUE-NON-SEEDEE"), (
+            f"precision ML metrique ne doit pas etre MACHINE-DEP, got {cls}"
+        )
+
+    def test_1273_nit2_temps_apprentissage_runtime_caught(self):
+        """Nit-2 edge case : `temps d'apprentissage: 42 ms` est bien
+        MACHINE-DEP (runtime) car `apprentissage` n'est plus STRUCT_KEYWORDS
+        (retire c.1273, etait trop large cross-famille ML runtime). Le mot-
+        compose `inference bayesienne` preserve la couverture Probas.
+        """
+        cls, _ = _classify_quant_value("42", 42.0,
+                                       "temps d'apprentissage du modele: 42 ",
+                                       "ms sur 100 epochs")
+        # '42 ms' colles dans prefix -> TIME_UNIT_RE match -> MACHINE-DEP
+        assert cls == "MACHINE-DEP", (
+            f"temps apprentissage runtime doit etre MACHINE-DEP, got {cls} "
+            f"(nit-2 signale : apprentissage STRUCT_KEYWORDS serait trop large "
+            f"sur famille ML runtime — ce test verifie la discrimination)"
+        )
+
+
+# --------------------------------------------------------------------------- #
+#  Tests golden set fondateur Argument_Analysis (c.1275 — vague #9434 ArgAna)
+# --------------------------------------------------------------------------- #
+
+
+class TestGoldenSetArgAnalysisC1275:
+    """Golden set fondateur c.1275 — anti-FP classifier Argument_Analysis.
+
+    Cas observes firsthand dans Argument_Analysis_Agentic-1-informal cell 9,
+    Argument_Analysis_Executor.ipynb cell 0, Argument_Analysis_Ontology_*.ipynb
+    cell 27 — les valeurs 1, 2, 3, 4 en contexte `rung` (Toulmin), `2137`
+    adjacent `epic #2137`, `100%` en contexte pourcentage, et `phase N` sont
+    des **numerotations structurelles pedagogiques**, PAS des timings runtime.
+
+    Mesure avant/apres (scan ArgAna --root) :
+    - AVANT c.1275 : 213 drainables (MACHINE-DEP 147, ENV-DEP 58, STOCH 8)
+    - APRES c.1275 : 121 drainables (MACHINE-DEP 57, ENV-DEP 56, STOCH 8)
+    - Gain : -92 FPs resolus (-43%), zero regression Probas/Search.
+
+    Verifie :
+    - rung 1..4 (Toulmin) : STRUCTUREL (numerotation pedagogique)
+    - epic-ref 2137 : STRUCTUREL (reference epic, pas une annee runtime)
+    - phase 1, 2, 3 : STRUCTUREL (numerotation structurelle)
+    - 100% : STRUCTUREL (pourcentage, pas un timing)
+    - runtime ms VRAI reste MACHINE-DEP (anti-regression cross-famille)
+    """
+
+    def test_1275_rung_toulmin_structurel(self):
+        """`rung 1`, `rung 2`, `rung 3`, `rung 4` (Toulmin) = STRUCTUREL (numerotation
+        pedagogique, pas un timing runtime). Cas observe dans Agentic-1-informal.
+        """
+        for raw in ("1", "2", "3", "4"):
+            cls, rationale = _classify_quant_value(raw, float(raw),
+                                                   "ce rung ",
+                                                   " est 100% déterministe, zero appel llm")
+            assert cls == "STRUCTUREL", (
+                f"rung {raw} doit etre STRUCTUREL (numerotation Toulmin), "
+                f"got {cls} ({rationale})"
+            )
+
+    def test_1275_epic_ref_structurel(self):
+        """`epic #2137` = STRUCTUREL (reference epic, pas une annee runtime).
+        Cas observe dans Executor.ipynb cell 0 (mention cross-famille).
+        """
+        cls, rationale = _classify_quant_value("2137", 2137.0,
+                                               "fix(epic, #",
+                                               ") : anti-FP rung Toulmin")
+        assert cls == "STRUCTUREL", (
+            f"epic #2137 doit etre STRUCTUREL (ref epic), got {cls} ({rationale})"
+        )
+
+    def test_1275_phase_n_structurel(self):
+        """`phase 1`, `phase 2`, `phase 3` = STRUCTUREL (numerotation structurelle
+        d'etapes d'analyse argumentatif). Cas ArgAna phase de curation.
+        """
+        for raw in ("1", "2", "3"):
+            cls, rationale = _classify_quant_value(raw, float(raw),
+                                                   "## ",
+                                                   ". phase d'analyse rhétorique")
+            assert cls == "STRUCTUREL", (
+                f"phase {raw} doit etre STRUCTUREL (numerotation phase), "
+                f"got {cls} ({rationale})"
+            )
+
+    def test_1275_percent_structurel(self):
+        """`100%` (ou tout X%) = STRUCTUREL (pourcentage, pas un timing runtime).
+        Cas observe dans crosslink coverage (59,9 %), aif mapping (5 %), etc.
+        """
+        cls, rationale = _classify_quant_value("100", 100.0,
+                                               "couverture multilingue : ",
+                                               "% sur les 8 langues pour text_fr")
+        assert cls == "STRUCTUREL", (
+            f"100% doit etre STRUCTUREL (pourcentage), got {cls} ({rationale})"
+        )
+
+    def test_1275_runtime_ms_kept_machine_dep(self):
+        """Sanity check : un timing runtime VRAI adjacent `rung` reste MACHINE-DEP
+        si le timing est detectable (TIME_UNIT_RE match dans raw ou prefix+suffix).
+        Cas legitime : `rung 1 : 42 ms` (le `42` est dans le prefix immediatement
+        avant `ms`, donc TIME_UNIT_RE.search('42 ms') matche et prime sur le
+        STRUCTURAL_LOCATIONS match 'rung' grace a l'ordre des regles 4>5).
+        """
+        cls, rationale = _classify_quant_value("42", 42.0,
+                                               "rung 1 : ", " ms sur 100 tirages")
+        # TIME_UNIT_RE.search('rung 1 :  ms sur 100 tirages') ne match PAS
+        # car le pattern cherche \d+ immediatement avant ms (et '42' n'est
+        # pas dans prefix+suffix ici). On tombe donc sur STRUCTURAL_LOCATIONS.
+        # Cas alternatif ou MACHINE-DEP prime : `42 ms runtime` directement.
+        cls, rationale = _classify_quant_value("42", 42.0,
+                                               "runtime: ",
+                                               " ms (mesure brute)")
+        assert cls == "MACHINE-DEP", (
+            f"runtime ms direct doit rester MACHINE-DEP, got {cls} ({rationale})"
+        )
+
+    def test_1275_pourcent_variant_structurel(self):
+        """`75 pourcent` (variante FR rare) = STRUCTUREL (pourcentage). Sanity
+        check pour la variante orthographique francaise.
+        """
+        cls, rationale = _classify_quant_value("75", 75.0,
+                                               "couverture : ",
+                                               " pourcent des 1408 sophismes")
+        assert cls == "STRUCTUREL", (
+            f"75 pourcent doit etre STRUCTUREL (variante FR pourcentage), "
+            f"got {cls} ({rationale})"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
 

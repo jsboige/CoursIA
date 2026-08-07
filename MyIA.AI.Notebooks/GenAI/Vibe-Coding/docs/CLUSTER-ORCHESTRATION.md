@@ -25,7 +25,7 @@ Un atelier « découverte Claude Code » (module 01) apprend à démarrer une se
 
 ## La brique centrale : `roo-state-manager` (RooSync)
 
-`roo-state-manager` est un serveur MCP maison ([roo-extensions](https://github.com/jsboige/roo-extensions)) qui expose une trentaine d'outils de coordination. C'est le **système nerveux** du cluster : tout agent qui s'y connecte peut lire l'état de la flotte, poster son avancement, chercher dans l'historique des conversations, et synchroniser sa configuration. Les outils se regroupent en cinq familles :
+`roo-state-manager` est un serveur MCP maison ([roo-extensions](https://github.com/jsboige/roo-extensions)) qui expose **15 outils** de coordination. C'est le **système nerveux** du cluster : tout agent qui s'y connecte peut lire l'état de la flotte, poster son avancement, chercher dans l'historique des conversations, et synchroniser sa configuration. Chaque outil porte plusieurs actions (`roosync_dashboard` couvre `read`/`write`/`append`/`list`/…), ce qui explique qu'un petit nombre d'outils suffise à une surface aussi large. Le détail outil par outil vit en amont, dans [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) ; on les regroupe ici en cinq familles d'usage :
 
 | Famille | Outils représentatifs | Rôle |
 |---------|----------------------|------|

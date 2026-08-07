@@ -98,8 +98,12 @@ jobs:
       # This workflow rebuilds the lake too (its cache key differs from
       # lean-build's, so it can miss independently) — observed on PR #9798 where
       # BOTH proof-integrity jobs died at exit 143 alongside the build job.
+      # 16 G -> 32 G (2026-08-07, PR #9840): teardown recurred with the swap step
+      # green, and the peak is inside a SINGLE module — see the long note in
+      # lean-build.yml for the measurements.
       run: |
-        sudo fallocate -l 16G /mnt/lean-swap
+        df -h /mnt
+        sudo fallocate -l 32G /mnt/lean-swap
         sudo chmod 600 /mnt/lean-swap
         sudo mkswap /mnt/lean-swap
         sudo swapon /mnt/lean-swap

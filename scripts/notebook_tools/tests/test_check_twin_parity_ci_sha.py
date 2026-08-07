@@ -348,3 +348,152 @@ def test_ci_strict_and_verify_recorded_sha_are_mutually_exclusive():
     """
     with pytest.raises(SystemExit):
         ctp.main(["--ci-strict", "--verify-recorded-sha"])
+
+# --- 5. churn metadata-only : INFORMATIF, jamais bloquant ---------------------
+#
+# `_content_sha` hache les cellules ET leurs outputs, en n'excluant que
+# `nb["metadata"]`. Donc « blob SHA bouge / content_sha identique » ne peut
+# signifier QUE du churn de metadata carnet (cost, papermill, kernelspec) --
+# exactement le faux positif que le volet c a ete construit pour tuer. Le gate
+# ne doit donc PAS rougir dessus, sinon il le re-fabrique au niveau du cron.
+#
+# Incident fondateur : cron rouge sur main le 2026-08-07 pour Sudoku-8 et
+# Sudoku-14 BDD (les 2 paires nommees dans la docstring de `_content_sha`),
+# avec un `::error DRIFT DETECTED::<none>` qui ne designait aucune paire, et
+# dont le remede prescrit (`--update`) refusait en no-op par design.
+
+def test_metadata_only_churn_is_not_blocking(tmp_path):
+    """Seul `metadata.cost` bouge -> blob drift, content OK -> exit 0."""
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+
+    _commit(repo, py_rel, _nb(source=["# Title\n"], cost=0.10), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    py_blob_v1 = ctp._git_blob_sha(repo, py_rel)
+    cs_blob_v1 = ctp._git_blob_sha(repo, cs_rel)
+    py_content_v1 = ctp._content_sha(repo, py_rel)
+    cs_content_v1 = ctp._content_sha(repo, cs_rel)
+
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Search-A", py_rel, cs_rel,
+        py_blob_v1, cs_blob_v1, py_content_v1, cs_content_v1
+    )
+
+    # Re-tampon du seul bloc `metadata.cost` : les CELLULES sont intactes.
+    _commit(repo, py_rel, _nb(source=["# Title\n"], cost=0.42), "cost stamp")
+    assert ctp._git_blob_sha(repo, py_rel) != py_blob_v1, "le blob doit bouger"
+    assert ctp._content_sha(repo, py_rel) == py_content_v1, (
+        "le content_sha doit etre STABLE (metadata carnet exclue)"
+    )
+
+    rc = ctp.main([
+        "--ci-strict", "--check", "--json",
+        "--registry", str(pairs_dir),
+        "--repo-root", str(repo),
+    ])
+    assert rc == 0, (
+        f"churn metadata-only ne doit PAS rougir le gate (faux positif que le "
+        f"volet c elimine, et dont le remede --update est un no-op), rc={rc}"
+    )
+
+
+def test_metadata_only_churn_is_counted_and_named(tmp_path):
+    """Non bloquant MAIS compte et NOMME : un compteur sans nom n'est pas actionnable."""
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+
+    _commit(repo, py_rel, _nb(source=["# Title\n"], cost=0.10), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    py_blob_v1 = ctp._git_blob_sha(repo, py_rel)
+    cs_blob_v1 = ctp._git_blob_sha(repo, cs_rel)
+    py_content_v1 = ctp._content_sha(repo, py_rel)
+    cs_content_v1 = ctp._content_sha(repo, cs_rel)
+
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Search-A", py_rel, cs_rel,
+        py_blob_v1, cs_blob_v1, py_content_v1, cs_content_v1
+    )
+    _commit(repo, py_rel, _nb(source=["# Title\n"], cost=0.42), "cost stamp")
+
+    import io
+    from contextlib import redirect_stdout
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        rc = ctp.main([
+            "--ci-strict", "--json",
+            "--registry", str(pairs_dir),
+            "--repo-root", str(repo),
+        ])
+    assert rc == 0
+    out = json.loads(buf.getvalue())
+    ci = out["ci_strict"]
+    assert ci["n_drift_legacy_after_content"] == 1, (
+        f"le churn doit rester COMPTE (visibilite), got {ci}"
+    )
+    assert out["n_blocking_drift"] == 0, (
+        f"mais hors du total bloquant, got n_blocking_drift={out['n_blocking_drift']}"
+    )
+    assert out["n_total_drift"] == 1, (
+        "n_total_drift reste le total de TOUTES les anomalies (reporting)"
+    )
+    named = [p for p in out["pairs"] if p.get("metadata_only_blob_drift")]
+    assert len(named) == 1 and named[0]["name"] == "Search-A", (
+        f"la paire doit etre NOMMEE (sinon `::error ...::<none>`), got {named}"
+    )
+
+
+def test_real_content_drift_still_blocks_alongside_metadata_churn(tmp_path):
+    """Garde-fou anti-desserrage : une vraie divergence de contenu rougit toujours."""
+    repo = _git_repo(tmp_path)
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+
+    # Paire A : churn metadata-only (informatif)
+    _commit(repo, "a/py.ipynb", _nb(source=["# A\n"], cost=0.10), "a py")
+    _commit(repo, "a/cs.ipynb", _nb(source=["// A\n"]), "a cs")
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Search-A", "a/py.ipynb", "a/cs.ipynb",
+        ctp._git_blob_sha(repo, "a/py.ipynb"),
+        ctp._git_blob_sha(repo, "a/cs.ipynb"),
+        ctp._content_sha(repo, "a/py.ipynb"),
+        ctp._content_sha(repo, "a/cs.ipynb"),
+    )
+    _commit(repo, "a/py.ipynb", _nb(source=["# A\n"], cost=0.42), "a cost stamp")
+
+    # Paire B : vraie edition de prose (content_sha bouge) -> doit rougir
+    _commit(repo, "b/py.ipynb", _nb(source=["# B\n"]), "b py")
+    _commit(repo, "b/cs.ipynb", _nb(source=["// B\n"]), "b cs")
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Search-B", "b/py.ipynb", "b/cs.ipynb",
+        ctp._git_blob_sha(repo, "b/py.ipynb"),
+        ctp._git_blob_sha(repo, "b/cs.ipynb"),
+        ctp._content_sha(repo, "b/py.ipynb"),
+        ctp._content_sha(repo, "b/cs.ipynb"),
+    )
+    _commit(repo, "b/py.ipynb", _nb(source=["# B modifie\n"]), "b prose edit")
+
+    import io
+    from contextlib import redirect_stdout
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        rc = ctp.main([
+            "--ci-strict", "--check", "--json",
+            "--registry", str(pairs_dir),
+            "--repo-root", str(repo),
+        ])
+    assert rc == 1, "une divergence pedagogique reelle doit TOUJOURS rougir"
+    out = json.loads(buf.getvalue())
+    ci = out["ci_strict"]
+    assert ci["n_drift_content"] == 1, f"Search-B doit etre drift_content, got {ci}"
+    assert ci["n_drift_legacy_after_content"] == 1, (
+        f"Search-A doit rester informatif, got {ci}"
+    )
+    assert out["n_blocking_drift"] == 1, (
+        f"seule Search-B est bloquante, got {out['n_blocking_drift']}"
+    )

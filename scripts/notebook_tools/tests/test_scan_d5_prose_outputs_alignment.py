@@ -123,11 +123,30 @@ class TestExtractProseNumbers:
 
     def test_filter_section_headers(self):
         nums = mod._extract_prose_numbers("## 4.2 Resultats\nLe ratio est 0.7.")
-        # 4.2 dans titre markdown = filtre semantique ; 0.7 dans prose = garde
-        # L'implementation actuelle utilise un prefix-window de 60 chars, ce qui
-        # peut laisser passer 4.2 si le titre est tres court -- on accepte
-        # les deux comportements, on verifie juste que 0.7 est la.
+        # 4.2 sur une ligne de titre ATX = filtre (titre structural) ;
+        # 0.7 dans la prose du corps = garde.
         assert 0.7 in nums
+        assert 4.2 not in nums
+
+    def test_filter_h1_title_notebook_id(self):
+        # Gap documente dans le corpus run #9790 : les titres H1 (`# SC-8`,
+        # `# MGS-9`, `# SocialChoice 03`) fuyaient car les hints couvraient
+        # H2+ mais pas H1. Le numero d'ID du notebook est structural.
+        nums = mod._extract_prose_numbers("# SC-8-DeFi-Primitives\n\nLe solde est 0.69.")
+        assert 8 not in nums
+        assert 0.69 in nums
+
+    def test_filter_h1_title_count(self):
+        nums = mod._extract_prose_numbers("# SocialChoice 03 - Methodes\nLe ratio 0.7.")
+        assert 3 not in nums
+        assert 0.7 in nums
+
+    def test_h1_heading_does_not_filter_following_body(self):
+        # Un nombre sur la ligne SUIVANT un titre H1 (corps de paragraphe)
+        # doit etre preserve -- le filtre cible la ligne de titre, pas le
+        # paragraphe d'apres.
+        nums = mod._extract_prose_numbers("# Titre du notebook\n\nSharpe = 0.512.")
+        assert 0.512 in nums
 
     def test_filter_versions(self):
         nums = mod._extract_prose_numbers("Version v3 de l'algo, score 0.95.")

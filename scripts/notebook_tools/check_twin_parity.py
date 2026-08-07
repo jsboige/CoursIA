@@ -1465,12 +1465,30 @@ def main(argv=None) -> int:
                 if content_py_drift or content_cs_drift:
                     cat["n_drift_content"] += 1
                 elif blob_py_drift or blob_cs_drift:
-                    # Strip outille probable (volet c detecte le strip)
+                    # Churn metadata-only carnet : INFORMATIF, jamais bloquant.
+                    # `_content_sha` hache les cellules ET leurs outputs, en
+                    # n'excluant que `nb["metadata"]` (cost / papermill /
+                    # kernelspec / language_info). Donc « blob bouge, content
+                    # identique » ne peut signifier QUE du churn de metadata
+                    # carnet -- exactement le faux positif que le volet c a ete
+                    # construit pour tuer (cf docstring de `_content_sha`).
+                    # Rougir ici le re-fabriquerait au niveau du cron : incident
+                    # du 2026-08-07, cron rouge sur main pour Sudoku-8/14 BDD --
+                    # les 2 paires nommees dans cette meme docstring -- avec un
+                    # `::error ...::<none>` qui ne designait aucune paire (leur
+                    # `status` reste OK, donc `_cron_extract_drift` n'en listait
+                    # aucune). Et le remede prescrit (`--update`) est un NO-OP
+                    # par design puisque `_shas_match` compare les content_sha :
+                    # un gate que son propre remede ne peut pas eteindre.
                     cat["n_drift_legacy_after_content"] += 1
+                    entry_ci["metadata_only_blob_drift"] = True
                     entry_ci["details"].append(
-                        "blob SHA drift MAIS content_sha OK : strip outille probable "
-                        "(strip_probe_banner / strip_machine_paths / scrub_papermill) "
-                        "sans --update ulterieur. Refaire --update en dernier, cf #8957."
+                        "blob SHA drift MAIS content_sha OK : churn metadata-only "
+                        "(metadata.cost / papermill / kernelspec) -- aucune divergence "
+                        "pedagogique. INFORMATIF : ne fait pas rougir le gate. "
+                        "`--update` est un no-op par design ici (il compare les "
+                        "content_sha) ; re-tamponner le blob SHA exigerait --force et "
+                        "n'apporterait aucune information nouvelle (cf #9399 critere 2)."
                     )
                 else:
                     cat["n_ok_content"] += 1
@@ -1482,10 +1500,15 @@ def main(argv=None) -> int:
 
             ci_results.append(entry_ci)
 
-        n_total_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
-                         + cat["n_drift_legacy_after_content"]
-                         + cat["n_missing_python"] + cat["n_missing_csharp"]
-                         + cat["n_no_audit"])
+        # Anomalies BLOQUANTES (celles qui font rougir le gate).
+        # `n_drift_legacy_after_content` en est volontairement EXCLU : blob
+        # bouge + content identique == churn metadata-only, informatif (cf la
+        # classification ci-dessus). `n_total_drift` reste le total de TOUTES
+        # les anomalies, pour le reporting.
+        n_blocking_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
+                            + cat["n_missing_python"] + cat["n_missing_csharp"]
+                            + cat["n_no_audit"])
+        n_total_drift = n_blocking_drift + cat["n_drift_legacy_after_content"]
 
         if args.json:
             out = {
@@ -1497,6 +1520,7 @@ def main(argv=None) -> int:
                 "missing_total": n_missing,
                 "ci_strict": cat,
                 "n_total_drift": n_total_drift,
+                "n_blocking_drift": n_blocking_drift,
                 "pairs": ci_results,
             }
             print(json.dumps(out, ensure_ascii=False, indent=2))
@@ -1512,9 +1536,22 @@ def main(argv=None) -> int:
                     print(f"  [{r['status']}] {r['name']} ({r['family']}, {r['parity_level']})")
                     for d in r["details"]:
                         print(f"       - {d}")
+            # Les paires en churn metadata-only gardent `status == OK` (aucune
+            # divergence pedagogique) : sans cette boucle elles ne seraient
+            # nommees NULLE PART, et un compteur non nul sans nom n'est pas
+            # actionnable (c'est le `::error ...::<none>` du 2026-08-07).
+            for r in ci_results:
+                if r.get("metadata_only_blob_drift"):
+                    print(f"  [INFO metadata-only] {r['name']} "
+                          f"({r['family']}, {r['parity_level']})")
+                    for d in r["details"]:
+                        print(f"       - {d}")
 
-        # CI gate : rouge sur n'importe quel drift (le but du cron fleet-wide)
-        if args.check and n_total_drift > 0:
+        # CI gate : rouge sur les anomalies BLOQUANTES uniquement (le but du
+        # cron fleet-wide). Le churn metadata-only est compte et nomme, mais
+        # ne rougit pas -- sinon on re-fabrique le faux positif que le volet c
+        # a elimine, et sur un gate dont le remede prescrit est un no-op.
+        if args.check and n_blocking_drift > 0:
             return 1
         return 0
 

@@ -122,12 +122,34 @@ STRUCT_KEYWORDS = (
     "d'observation", "données observees", "donnees observees",
     "arithmétique", "arithmetique", "bayésien", "bayesien",
     "prédictive", "predictive", "aplatissement", "kurtosis",
-    "apprentissage", "inference bayesienne", "inférence bayésienne",
+    # Note c.1273 : `apprentissage` retire (nit-2 ai-01) — trop large cross-famille
+    # (FP : `temps d'apprentissage du modele: 42 s` = runtime). Le mot-composé
+    # `inference bayesienne` reste, qui preserve la couverture Probas (20 fichiers).
+    "inference bayesienne", "inférence bayésienne",
+)
+
+# v3 (c.1275): anti-FP Argument_Analysis — STRUCTURAL_LOCATIONS sont des
+# mots-cles SECONDAIRES (localisent un numero, n'expliquent pas pourquoi il
+# est stable). Ils sont evalues APRES MACHINE-DEP (regle 4) pour ne pas
+# absorber les timings runtime adjacents aux numerotations pedagogiques.
+# Mesure firsthand sur 213 drainables ArgAna :
+# - `rung` (Toulmin) : 79 FPs → 0 apres (raw `1`/`2`/`3`/`4` en contexte
+#   `rung` n'est PAS un timing machine-dep).
+# - `epic` / `phase` : 5 FPs → 0 apres (`raw=2137` adjacent `epic #2137`
+#   n'est PAS une annee runtime ; `phase N` est une numerotation structurelle).
+# - `%` / `pourcent` : 1 FP → 0 apres (`100%` n'est PAS un timing).
+# Scope : Argument_Analysis (SymbolicAI). Cross-famille aucune regression
+# (rung/epic/phase sont des termes pedagogiques/epistemiques qui ne matchent
+# pas dans Probas/Search/ML/GenAI/Sudoku — verifie par absence de double-compat).
+STRUCTURAL_LOCATIONS = (
+    "rung", "epic", "phase",
+    "pourcent", "%",
 )
 
 # Mots-cles DATA-LIST (anti-FP) : une liste `{8, 10, 11, 12}` ou `[13, 17, 16]`
-# en contexte bayesien = data points, pas runtime.
-DATA_LIST_MARKERS = ("{", "}cii", "~ ", " valeurs", "observations)")
+# en contexte bayesien = data points, pas runtime. Note c.1273 : `}cii` était
+# un marqueur mort (typo, ne matche jamais) — retiré suite nit ai-01 #9813.
+DATA_LIST_MARKERS = ("{", "~ ", " valeurs", "observations)")
 
 # Mots-cles SEED — si présents, le stochastique est seede et donc STRUCTUREL.
 SEED_KEYWORDS = ("seed=", "random_state=", "np.random.seed", "torch.manual_seed",
@@ -208,6 +230,13 @@ def _classify_quant_value(
     """
     full_context = (prefix + " " + suffix).lower()
 
+    # Data-list check (bayesien) : si un data-list marker est present dans
+    # le contexte, c'est un data point bayesien, pas un timing runtime —
+    # les regles MACHINE-DEP doivent skipper la detection pour ces cas.
+    # (v2 c.1272 inchange ; remonte ici pour proteger la regle MACHINE-DEP
+    # anti-FP c.1275 qui doit respecter la liste.)
+    in_data_list = any(marker in full_context for marker in DATA_LIST_MARKERS)
+
     # 0. Filtre semver : si le raw match EST un semver, c'est env-dep en soi.
     if SEMVER_RE.fullmatch(raw):
         return ("ENV-DEP", f"semver pattern match: {raw!r}")
@@ -227,17 +256,34 @@ def _classify_quant_value(
         if kw in full_context:
             return ("ENV-DEP", f"mot-cle env: {kw!r}")
 
-    # 4. MACHINE-DEP (unites temporelles + mots-cles perf)
-    #    v2 (c.1272): si data-list marker present dans le contexte, ce n'est
-    #    PAS un timing runtime — ce sont des data points bayesiens.
-    in_data_list = any(marker in full_context for marker in DATA_LIST_MARKERS)
+    # 4. MACHINE-DEP (unites temporelles) — anti-FP c.1275 isole cette regle
+    #    des mots-cles perf (run, execute, etc.) qui contiennent des
+    #    sous-chaines de STRUCTURAL_LOCATIONS (rung contient 'run', etc.).
+    #    Strategie : TIME_UNIT_RE gagne quoi qu'il arrive (meme si un mot-cle
+    #    structurel matche dans le contexte — `rung 42 ms` doit rester MACHINE-DEP
+    #    runtime, pas STRUCTUREL). v2 (c.1272): data-list exempte.
     if not in_data_list and (TIME_UNIT_RE.search(raw) or TIME_UNIT_RE.search(prefix + suffix)):
         return ("MACHINE-DEP", f"unite temporelle detectee: {raw!r}")
+
+    # 5. STRUCTURAL_LOCATIONS (c.1275) — anti-FP Argument_Analysis : mots-cles
+    #    SECONDAIRES qui localisent un numero (pas expliquent sa stabilite).
+    #    Appliques APRES TIME_UNIT_RE (anti-FP c.1275 : ne pas absorber les
+    #    timings runtime adjacents) et AVANT MACHINE_DEP_KEYWORDS (mots-cles
+    #    perf tel `run`/`run` contenu dans `rung`, `episode` dans `epic`).
+    #    Scope : Argument_Analysis. Mesure : -92 FPs resolus sans cross-famille
+    #    regression (rung/epic/phase/% ne matchent pas dans Probas/Search/ML).
+    for kw in STRUCTURAL_LOCATIONS:
+        if kw in full_context:
+            return ("STRUCTUREL", f"localisation structurelle: {kw!r}")
+
+    # 6. MACHINE-DEP (mots-cles perf) — apres STRUCTURAL_LOCATIONS pour eviter
+    #    que `run` (dans MACHINE_DEP_KEYWORDS) matche `rung` (`rung` contient
+    #    `run` en sous-chaine).
     for kw in MACHINE_DEP_KEYWORDS:
         if kw in full_context:
             return ("MACHINE-DEP", f"mot-cle machine-dep: {kw!r}")
 
-    # 5. STOCHASTIQUE-NON-SEEDEE
+    # 7. STOCHASTIQUE-NON-SEEDEE
     #    v2 (c.1272): `moyenne`/`mean`/`variance` en contexte NON-stochastique
     #    (mean value of N, valeur centrale, etc.) ne sont PAS stochastique.
     #    On accepte seulement si le contexte est clairement non-parametrique.
@@ -251,7 +297,7 @@ def _classify_quant_value(
                 continue
             return ("STOCHASTIQUE-NON-SEEDEE", f"mot-cle stochastique: {kw!r}")
 
-    # 6. STRUCTUREL par defaut (classe residuelle)
+    # 8. STRUCTUREL par defaut (classe residuelle)
     return ("STRUCTUREL", "defaut (aucun signal machine-dep/env-dep/stochastique)")
 
 

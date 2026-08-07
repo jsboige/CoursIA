@@ -79,6 +79,14 @@ EXCLUDE_PATTERNS = (
     re.compile(r"^[A-Z]+\d+$"),            # PRJ42, ABC123 -- discutable, mais limite
 )
 
+# Ligne de titre markdown ATX (CommonMark) : 0-3 espaces puis 1-6 `#` puis un
+# espace ou fin de ligne. Les hints `## `/`### `/`#### ` ci-dessous couvraient
+# H2-H6 mais laissaient fuiter les titres H1 (`# SC-8-...`, `# MGS-9`,
+# `# SocialChoice 03`), source documentee de FP dans le corpus run #9790 (taux
+# de FP ~90 %, echantillon relu main). Un nombre sur une ligne de titre est un
+# numero de section/exercice/titre, jamais une mesure calculee.
+_ATX_HEADING_LINE_RE = re.compile(r"\s{0,3}#{1,6}(?:\s|$)")
+
 
 # Faux positifs semantiques : regex strictes (mot complet + caractere de
 # liaison) pour eviter de matcher au milieu d'une phrase legit.
@@ -202,6 +210,13 @@ def _extract_prose_numbers(text: str) -> list[float]:
         # eviter de matcher au milieu d'un titre.
         line_start = text.rfind("\n", 0, m.start()) + 1
         prefix = text[line_start:m.start()].lower()
+        # Filtre titres ATX (H1-H6) : la ligne entiere du nombre est un titre
+        # markdown. Les hints `## `/`### ` filtraient deja H2+ par prefixe ;
+        # ce check regex (ancre debut de ligne) ferme le gap H1 et durcit la
+        # detection (titre = structural, jamais une mesure d'output). On
+        # examine le debut de ligne brut (le `#` n'a pas de casse).
+        if _ATX_HEADING_LINE_RE.match(text[line_start:m.start() + len(raw)]):
+            continue
         if any(h in prefix for h in SEMANTIC_FALSE_POSITIVE_HINTS):
             continue
         v = _parse_fr_number(raw)

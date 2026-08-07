@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 221 |
+| Notebooks | 223 |
 | PRODUCTION | 0 |
-| BETA | 215 |
+| BETA | 217 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -31,7 +31,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Configuration de l'environnement C# | BETA | Oui |
 
-## SymbolicAI/Argument_Analysis (21 notebooks)
+## SymbolicAI/Argument_Analysis (23 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -54,8 +54,10 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 17 | Ontologie des vertus argumentatives -- le pole miroir d | BETA | Oui |
 | 18 | Argumentation graduée — sémantiques de classement (h-Ca | BETA | Oui |
 | 19 | Restitution en 3 actes — scaffold déterministe, narrati | BETA | Non |
-| 20 | Interface de Configuration et Préparation du Texte | BETA | Oui |
-| 21 | I2 - Génération de contre-arguments par raisonnement fo | ALPHA | Oui |
+| 20 | Argument_Analysis — Le modèle de Toulmin (1958) | BETA | Oui |
+| 21 | Interface de Configuration et Préparation du Texte | BETA | Oui |
+| 22 | Argument_Analysis — Argumentation basée sur les valeurs | BETA | Oui |
+| 23 | I2 - Génération de contre-arguments par raisonnement fo | ALPHA | Oui |
 
 ## SymbolicAI/Lean (27 notebooks)
 

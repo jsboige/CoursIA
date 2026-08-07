@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
-pedagogical_count: 22
-breakdown: Argument_Analysis=22
-maturity: BETA=19, ALPHA=2, DRAFT=1
+pedagogical_count: 24
+breakdown: Argument_Analysis=24
+maturity: BETA=21, ALPHA=2, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -76,6 +76,7 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | 5 | [Agentic-5-jtms](Argument_Analysis_Agentic-5-jtms.ipynb) | Truth Maintenance System déterministe (Doyle 1979) : étiquetage IN/OUT, cascade de rétractation, détection d'odd loops — pur stdlib Python | Raisonnement non-monotone |
 | Dung | [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) | Sémantiques grounded / preferred / stable reconstruites de zéro en pur Python (cas canonique où les trois divergent) | Fondation argumentation abstraite |
 | VAF | [Value_Based_AF](Argument_Analysis_Value_Based_AF.ipynb) | Argumentation basée sur les valeurs (Bench-Capon 2003) : chaque argument promeut une valeur, chaque audience ordonne les valeurs ; une attaque ne défait sa cible que si la valeur de l'attaquant est préférée — un même graphe produit des conclusions différentes selon l'audience — pur stdlib Python | Argumentation + préférences |
+| Toulmin | [Toulmin_Model](Argument_Analysis_Toulmin_Model.ipynb) | Modèle structurel informel de Toulmin (1958) : 6 composants (claim/data/warrant/backing/qualifier/rebuttal), audit de complétude, et pont computationnel vers Dung (rebuttals → attaques, le grounded tranche le débat) — pur stdlib Python | Argumentation informelle structurée |
 | Rank | [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) | Sémantiques de classement (h-Categoriser, fardeau) en pur Python : force numérique départageant des arguments de même statut Dung | Argumentation graduée |
 | Route | [Multi_Backend_Routing](Argument_Analysis_Multi_Backend_Routing.ipynb) | Routage multi-backend « décider ou échouer bruyamment » : PL/Modal/Dung/FOL décidés par Tweety embarqué + sentinelle de contrat de livraison gardant les prouveurs externes (EProver/Mace4) — doctrine anti-théâtre / fail-loud | Raisonnement robuste |
 | Matrix | [Formal_Richness_Matrix](Argument_Analysis_Formal_Richness_Matrix.ipynb) | Matrice de richesse formelle (FP-5) : classifier ce qu'un solveur *décide réellement* (principe *wiring* ≠ *output*), 4 classes de verdict (substantive / honest-absent / unavailable / théâtre), sentinelle anti-théâtre `fabricated_true` + diagnostic laggards — pur stdlib | Évaluation honnête / anti-théâtre |
@@ -100,6 +101,7 @@ L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la d
 | **5-jtms** | Construire un moteur de croyances non-monotones (étiquetage IN/OUT, cascade de rétractation, détection d'odd loops) en pur stdlib Python, sans LLM ni solveur externe | 40 min |
 | **Dung_AF_Semantics** | Reconstruire les sémantiques grounded, preferred et stable de l'argumentation abstraite de Dung de zéro en pur Python (sans JVM) sur un cas où les trois divergent | 35 min |
 | **Value_Based_AF** | Étendre Dung par des valeurs et une audience (Bench-Capon 2003) : une attaque ne réussit que si la valeur de l'attaquant est préférée ; montrer qu'un même graphe en cycle produit trois conclusions distinctes selon l'audience — pur stdlib Python | 35 min |
+| **Toulmin_Model** | Déployer un argument en ses 6 composants Toulmin (claim/data/warrant/backing/qualifier/rebuttal), auditer sa complétude, et traduire un débat en cadre de Dung (rebuttals → attaques) pour voir quel claim survit — pur stdlib Python | 30 min |
 | **Ranking_Semantics** | Calculer la *force* numérique d'un argument (h-Categoriser par point fixe, fardeau par comparaison lexicographique) et départager des arguments que Dung déclare indistinctement rejetés — pur stdlib Python | 35 min |
 | **Restitution_3_Actes** | Séparer la *lisibilité* (confiée au LLM) de l'*honnêteté* (gardée par un scaffold déterministe) : extraction d'evidence, bande de verdict *gated* sur la couverture, gate de tissage anti-énumération (§4), renderer qui *nomme* les actes manquants, et narration LLM injectable *fail-loud* | 45 min |
 | **ArgumentProfile** | Construire la fiche agrégée d'un argument réunissant les 5 dimensions d'analyse (sophismes, qualité, contre-arguments, JTMS, formel), puis trier un débat entier par force — démontre l'indépendance des dimensions | 35 min |

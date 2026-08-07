@@ -180,7 +180,7 @@ Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues n
 
 ## Pointeurs cross-doc
 
-- Architecture RooSync (34 outils MCP roo-state-manager) : [docs/architecture_mcp_roo.md](architecture_mcp_roo.md)
+- Cycle de vie / diagnostic des serveurs MCP : [architecture_mcp_roo.md](architecture_mcp_roo.md) — inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md)
 - Règles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
 - Training BG avec checkpoints : `MyIA.AI.Notebooks/QuantConnect/shared/gpu_training.py` (classe `TrainingCheckpoint` ; 18 tests PR #7454, fixes GPU-thermal #7335/#7454/#7456 ; le wrapper outer-supervisor subprocess `scripts/training/train_with_checkpoints.py` documenté n'a jamais été créé — utiliser `gpu_training.py` directement)
