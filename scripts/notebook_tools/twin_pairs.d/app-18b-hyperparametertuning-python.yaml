@@ -1,0 +1,10 @@
+- name: App-18b HyperparameterTuning (Python from-scratch twin)
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Socle pedagogique commun : tuning d'hyperparametres k-NN (k, distancePower, weightBlend) avec objectif CV 5-fold. Les deux twins implementent les 5 methodes canoniques (Grid, Random, Bayesian Opt GP+EI, GA, PSO) avec parite semantique sur les concepts."
+    - "Idiomes framework : Python = numpy pur + scipy.stats.norm (fallback gracieux si absent) + Optuna comme pont SOTA ; C# = BCL pure (Math, Linq, Random), 0 NuGet."
+    - "Asymetrie pedagogique : Python propose un pont Optuna (cellule 12) comme verification SOTA-OK [EPIC #3801] ; le C# reste en BCL pure sans dependance externe. Les 3 exercices (IterationsToThreshold, UCB acquisition, PopulationDiversity) sont identiques dans les deux jumeaux."
+    - "Mode de resolution : from-scratch numpy des 5 methodes vs from-scratch BCL pure. Parite pedagogique des algorithmes, idiomes framework distincts."
