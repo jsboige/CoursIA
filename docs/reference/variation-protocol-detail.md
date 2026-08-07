@@ -32,6 +32,39 @@ Le ratio `max(1, grains_mergés // 3)` garde l'intention (une lane ne peut pas �
 
 Organe : [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — le budget est **calculé** (`--replay <merged.json>`), et c'est cette sortie qu'on cite dans un HOLD, jamais une estimation à l'œil.
 
+### 4.1 Vue agrégée cross-lane (per-lane, 7j)
+
+`scripts/variation_light_cap.py` répond à « *combien de LIGHT cette lane peut-elle encore merger aujourd'hui ?* » — utile au merge-gate, aveugle au cluster. La **vue d'ensemble** (où le provisionnement manque, quelles lanes en monoculture, combien de PRs sans tag) est dans [`scripts/coordination_budget.py`](../../scripts/coordination_budget.py) — sorti par #9868, vérifié sur main par #9859. Deux modes :
+
+- `--days N` (défaut 7) : live via `gh pr list --state merged --search "merged:>=YYYY-MM-DD" --json number,title,body,mergedAt,labels`.
+- `--replay <file>` : offline (test, audit historique post-mortem).
+- `--json` : sortie machine-readable (CI, post-traitement).
+- `--known-lanes a,b,c` : signale les lanes connues **idle** (sans la liste canonique, le script ne sait pas).
+
+Le script **réutilise** `parse_grain_tag` (parsing tolerant casse/décoration, voir #9485) et `effective_tier` + `light_budget` + `label_names` (voir #8970 / #8964) — pas de duplication, les bugs historiques (divergence guard/organ, requalification invisible) sont hérités gratuits. Les nombres sont **calculés**, jamais déclarés, et un tag malformé (genre `WTF/bogus`, casse mixte `gRaIn: deEp/LeAn`) **ne crashe pas** — il est signalé en anomalie avec sa PR. Le tableau par lane (DEEP / MED / LIGHT / budget / consommé / genres) est suivi d'un bloc d'anomalies : 32 sans tag, 8 sans lane, monoculture smells G-VAR-3 par lane.
+
+Sortie réelle (live, 7j, après #9734 merge) — capturée par ce PR :
+
+```
+| Lane | DEEP | MED | LIGHT | total | budget | consumed | genres |
+|------|-----:|----:|------:|------:|-------:|---------:|--------|
+| myia-po-2024:CoursIA-2 | 5 | 39 | 6 | 57 | 19 | 6 | ... |
+| myia-po-2023:CoursIA-2 | 2 | 27 | 6 | 35 | 11 | 6 | ... |
+| myia-po-2025:CoursIA | 15 | 17 | 2 | 34 | 11 | 2 | ... |
+| myia-po-2023:CoursIA | 3 | 11 | 13 | 30 | 10 | 13  (+3 over) | ... |
+| myia-po-2025:CoursIA-2 | 8 | 19 | 0 | 27 | 9 | 0 | ... |
+| myia-ai-01:CoursIA | 9 | 11 | 6 | 26 | 8 | 6 | ... |
+| myia-po-2024:CoursIA | 11 | 12 | 1 | 24 | 8 | 1 | ... |
+| myia-po-2026:CoursIA | 3 | 15 | 1 | 19 | 6 | 1 | ... |
+| myia-po-2026:CoursIA-2 | 1 | 3 | 0 | 4 | 1 | 0 | ... |
+| myia-ai-01:LivresAgit | 0 | 2 | 0 | 2 | 1 | 0 | ... |
+| myia-po-2026:CoursIA. | 0 | 2 | 0 | 2 | 1 | 0 | ... |
+```
+
+300 PRs mergés, 40 unattributed (32 sans tag + 8 sans lane). Le tag typo `myia-po-2026:CoursIA.` (point final) — le script le sépare en lane fantôme, signal de **qualité des tags** au-delà du compteur.
+
+**Pourquoi c'est utile au-delà de la conformité** : une lane à 4 LIGHT / 0 DEEP dit « *coordinateur qui n'a pas stocké de substance pour cette lane* » (variation-protocol §4 obligation de provisionnement), pas « worker paresseux ». Le compteur rend ce diagnostic **lisible** au lieu de dépendre de la mémoire du coordinateur. C'est aussi ce qui permet la §4 règle « passer 24 h ou nommer le remplaçant » — un hold prolongé se voit en agrégat avant de devenir un doublon.
+
 ## 5. Incident fondateur du GENRE — rollout `metadata.cost` #8056 (2026-07-28)
 
 Quatre tranches d'un **seul** rollout scan-générable ont porté **trois étiquettes différentes** :
