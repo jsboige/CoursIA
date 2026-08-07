@@ -266,7 +266,17 @@ def main(argv: list[str] | None = None) -> int:
     python = sys.executable
 
     if args.check_parity:
-        return cmd_check_parity(repo, python)
+        # Delegate to scripts/check_hooks_parity.py (PyYAML walker) so the
+        # declared-vs-installable pairing is YAML-aware and not regex-based.
+        # See scripts/check_hooks_parity.py for the rationale; the regex
+        # walker in cmd_check_parity() above pairs each id with the FIRST
+        # entry that follows (gitleaks -> strip_probe_banner.py), which is
+        # the bug this delegation replaces.
+        parity_script = Path(__file__).resolve().parent / "check_hooks_parity.py"
+        rc, out = _run([python, str(parity_script)], repo)
+        if out:
+            print(out, end="" if out.endswith("\n") else "\n")
+        return rc
     if args.check:
         return cmd_check(repo, python)
     return cmd_install(repo, python)
