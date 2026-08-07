@@ -202,7 +202,7 @@ Chaque modalité (Image, Audio, Video) suit la même montée en quatre niveaux -
 
 **Spécialisation des modèles** -- Au-delà de l'usage, on entraîne : [FineTuning](MyIA.AI.Notebooks/GenAI/FineTuning/README.md) (LoRA, QLoRA, SFT, DPO) pour adapter un modèle sans tout ré-entraîner, et [PostTraining](MyIA.AI.Notebooks/GenAI/PostTraining/README.md) pour les techniques d'alignement de pointe (RLHF, DPO, GRPO, RLVR).
 
-**Industrialisation** -- Les applications GenAI se testent : la série [Playwright-OWUI](MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/README.md) écrit des tests de bout en bout sur Open WebUI (navigation, streaming, RAG, outils MCP, CI/CD), pour passer de la démonstration jouet au produit déployable. Côté **mémoire des agents**, la sous-série [RAG et Mémoire Sémantique](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/README.md) documente le backend Qdrant qui ancre les agents de codage dans des faits vérifiables (historique des conversations d'agents, code des dépôts) — la couche sous les front-ends Claude Code / Roo Code / Claw-Systems.
+**Industrialisation** -- Les applications GenAI se testent : la série [Playwright-OWUI](MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/README.md) écrit des tests de bout en bout sur Open WebUI (navigation, streaming, RAG, outils MCP, CI/CD), pour passer de la démonstration jouet au produit déployable. Côté **mémoire des agents**, la sous-série [RAG et Mémoire Sémantique](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/README.md) documente le backend Qdrant qui ancre les agents de codage dans des faits vérifiables (historique des conversations d'agents, code des dépôts) — la couche sous les front-ends Claude Code / Roo Code / Claw-Systems.
 
 **[Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md)** -- Le développement assisté par agents IA, devenu compétence centrale : ateliers progressifs sur Claude Code et Roo Code, de la découverte à l'automatisation avancée (skills, sous-agents, MCP, hooks), plus deux modules d'infrastructure : les agents autonomes conteneurisés (Claw-Systems — les bots reviewers qui auditent réellement ce dépôt) et le proxy multi-provider Claudish.
 
@@ -293,7 +293,7 @@ CoursIA/
     RL/                        Reinforcement Learning (Python)
     GenAI/                     IA Générative (Python)
       00-GenAI-Environment/ Image/ Audio/ Video/ Texte/ SemanticKernel/ FineTuning/ PostTraining/
-      Open-WebUI/ Vibe-Coding/ RAG-et-Memoire-Semantique/ CaseStudies/ tutorials/
+      Plateformes-Conversationnelles/ Vibe-Coding/ RAG-et-Memoire-Semantique/ CaseStudies/ tutorials/
     QuantConnect/              Trading algorithmique (Python)
       Python/                  Notebooks pédagogiques
       projects/                Stratégies backtestées

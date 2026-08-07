@@ -47,6 +47,7 @@ from detect_fabricated_outputs import (  # noqa: E402
     ROW_N_RE,
     ZERO_VALUE_RE,
     _cell_text_outputs,
+    _has_heuristic_beats_optimal,
     _has_row_n,
     _has_zero_stats_dataframe,
     _human_report,
@@ -164,8 +165,23 @@ class TestZeroValueRegex:
 class TestHasRowN:
     """`_has_row_n(lines)` returns True when Row N placeholders are present."""
 
-    def test_single_row_n_detected(self):
-        assert _has_row_n(["Row 1     0.5   0.1"])
+    def test_single_row_n_not_flagged(self):
+        # A single isolated "Row N" is prose (LLM output, pedagogy, grid
+        # reference), NOT a dataframe placeholder. Hardened post Sudoku-17 FP
+        # (c.XIX): exige >= MIN_ROW_SEQUENCE entiers consecutifs.
+        assert not _has_row_n(["Row 1     0.5   0.1"])
+
+    def test_row_n_llm_prose_not_flagged(self):
+        # Sudoku-17-LLM-Python cell[14] incident : LLM zero-shot trace references
+        # Sudoku rows in prose. Two isolated mentions = NOT a Pandas index sequence.
+        assert not _has_row_n([
+            "Row 1 remaining: R1C4, R1C5 are {1,8}.",
+            "Row 2 is complete: 1 7 4 9 6 3 8 2 5.",
+        ])
+
+    def test_row_n_two_isolated_not_flagged(self):
+        # Two mentions with non-consecutive integers = NOT a sequence.
+        assert not _has_row_n(["Row 1 some prose", "Row 5 other prose"])
 
     def test_multiple_row_n_detected(self):
         assert _has_row_n(
@@ -260,8 +276,101 @@ class TestHasZeroStatsDataframe:
 
 
 # ---------------------------------------------------------------------------
+# 4b. TestHasHeuristicBeatsOptimal -- logically-impossible "heuristic beats optimum"
+# ---------------------------------------------------------------------------
+
+class TestHasHeuristicBeatsOptimal:
+    """`_has_heuristic_beats_optimal(lines)` flags a heuristic declared as
+    beating a proven optimum -- a logical impossibility (#3544, #9932)."""
+
+    def test_csp5_ffd_pattern_detected(self):
+        # CSP-5 incident #9932: "FFD 1 bins / Gap -50%" vs "optimal: 2 bins".
+        lines = [
+            "CP-SAT optimal: 2 bins",
+            "FFD heuristic:  1 bins",
+            "Gap: -50.0%",
+        ]
+        res = _has_heuristic_beats_optimal(lines)
+        assert res is not None
+        assert "optimal" in res["optimal_match"].lower()
+        assert "-" in res["gap_match"]
+
+    def test_csp4_spt_pattern_detected(self):
+        # CSP-4 incident #3544: "SPT heuristic 10 < CP-SAT optimal 11".
+        lines = [
+            "CP-SAT optimal: 11",
+            "SPT heuristic:  10",
+            "Gap: -9.1%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is not None
+
+    def test_optimum_spelling_also_matched(self):
+        # "optimum" (noun) + number + negative gap = same impossibility.
+        lines = ["the optimum is 5 bins", "my method: 4", "Gap: -20%"]
+        assert _has_heuristic_beats_optimal(lines) is not None
+
+    def test_positive_gap_not_detected(self):
+        # Legitimate: heuristic WORSE than optimum (positive gap). CSP-4 post-fix.
+        lines = [
+            "CP-SAT optimal: 2 bins",
+            "FFD heuristic:  3 bins",
+            "Gap: 50.0%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_negative_gap_without_optimal_word_not_detected(self):
+        # Legitimate improvement vs a NON-optimal baseline (FEASIBLE bound): a
+        # negative gap is fine when the reference is not declared "optimal".
+        lines = [
+            "best feasible bound: 5 bins",
+            "heuristic:           4 bins",
+            "Gap: -20.0%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_no_gap_line_not_detected(self):
+        # "optimal" present but no Gap line at all -- nothing to contradict.
+        lines = ["CP-SAT optimal: 2 bins", "FFD heuristic: 3 bins"]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_empty_input_not_detected(self):
+        assert _has_heuristic_beats_optimal([]) is None
+
+    def test_detect_cell_emits_finding(self):
+        # End-to-end: detect_cell routes the output and emits the signal.
+        cell = code_cell(outputs=[
+            text_output("CP-SAT optimal: 2 bins\nFFD heuristic:  1 bins\nGap: -50.0%\n"),
+        ])
+        findings = detect_cell(cell)
+        hbo = [f for f in findings if f["signal"] == "heuristic_beats_optimal"]
+        assert len(hbo) == 1
+        assert "optimal" in hbo[0]["optimal_match"].lower()
+        assert "-" in hbo[0]["gap_match"]
+
+    def test_detect_cell_stacks_with_row_n(self):
+        # A cell can carry both a Row-N placeholder AND an impossible gap.
+        # The Row-N detector was hardened (c.XIX, MIN_ROW_SEQUENCE=3): a single
+        # isolated "Row N" is not a Pandas-default-index signature, so the stack
+        # test must feed >= MIN_ROW_SEQUENCE consecutive rows to fire both signals.
+        cell = code_cell(outputs=[
+            text_output(
+                "CP-SAT optimal: 2 bins\n"
+                "FFD heuristic:  1 bins\n"
+                "Gap: -50.0%\n"
+                "Row 1   0.5\n"
+                "Row 2   0.6\n"
+                "Row 3   0.7\n"
+            ),
+        ])
+        signals = {f["signal"] for f in detect_cell(cell)}
+        assert "heuristic_beats_optimal" in signals
+        assert "row_n_placeholder" in signals
+
+
+# ---------------------------------------------------------------------------
 # 5. TestDetectCell -- cell-level routing + signal stacking
 # ---------------------------------------------------------------------------
+
 
 class TestDetectCell:
     """`detect_cell` -- code-cell routing + multi-signal stacking per cell."""
@@ -281,8 +390,13 @@ class TestDetectCell:
         assert detect_cell(cell) == []
 
     def test_code_cell_with_row_n_returns_finding(self):
+        # Hardened (c.XIX): requires >= MIN_ROW_SEQUENCE consecutive Row N.
         cell = code_cell(outputs=[
-            display_data_output("Row 1     0.530    7.2%  -12.7%"),
+            display_data_output("\n".join([
+                "Row 1     0.530    7.2%  -12.7%",
+                "Row 2     0.612    8.1%  -15.3%",
+                "Row 3     0.701    9.0%  -10.1%",
+            ])),
         ])
         findings = detect_cell(cell)
         assert len(findings) == 1
@@ -307,6 +421,7 @@ class TestDetectCell:
             display_data_output("\n".join([
                 "Row 1   0.530    7.2%  -12.7%",
                 "Row 2   0.612    8.1%  -15.3%",
+                "Row 3   0.701    9.0%  -10.1%",
                 "",
                 "       Sharpe  CAGR  MaxDD",
                 "A       0.0    0.0   0.0",
@@ -349,7 +464,11 @@ class TestScanNotebook:
     def test_fabricated_notebook_returns_hits(self, tmp_path):
         nb = {
             "cells": [
-                code_cell(outputs=[display_data_output("Row 1     0.530    7.2%")]),
+                code_cell(outputs=[display_data_output("\n".join([
+                    "Row 1     0.530    7.2%",
+                    "Row 2     0.612    8.1%",
+                    "Row 3     0.701    9.0%",
+                ]))]),
                 code_cell(outputs=[display_data_output("\n".join([
                     "Sharpe  CAGR  MaxDD",
                     "0.0     0.0   0.0",
@@ -400,14 +519,22 @@ class TestMainExitCodes:
         assert result == 0
 
     def test_fabricated_notebook_check_exit_1(self, tmp_path):
-        nb = {"cells": [code_cell(outputs=[display_data_output("Row 1     0.530")])], "metadata": {"kernelspec": {"name": "python3"}}}
+        nb = {"cells": [code_cell(outputs=[display_data_output("\n".join([
+            "Row 1     0.530",
+            "Row 2     0.612",
+            "Row 3     0.701",
+        ]))])], "metadata": {"kernelspec": {"name": "python3"}}}
         nb_path = tmp_path / "fab.ipynb"
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         result = main(["--root", str(tmp_path), "--check", str(nb_path)])
         assert result == 1
 
     def test_json_output_is_machine_readable(self, tmp_path, capsys):
-        nb = {"cells": [code_cell(outputs=[display_data_output("Row 1     0.530")])], "metadata": {"kernelspec": {"name": "python3"}}}
+        nb = {"cells": [code_cell(outputs=[display_data_output("\n".join([
+            "Row 1     0.530",
+            "Row 2     0.612",
+            "Row 3     0.701",
+        ]))])], "metadata": {"kernelspec": {"name": "python3"}}}
         nb_path = tmp_path / "fab.ipynb"
         nb_path.write_text(json.dumps(nb), encoding="utf-8")
         main(["--root", str(tmp_path), "--json", str(nb_path)])

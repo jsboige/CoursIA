@@ -1,6 +1,6 @@
 # Cas d'usage livresagités — AI-Engine en contexte éditorial
 
-[← README AI-Engine-WordPress](README.md) | [← Comparatif OWUI vs AI-Engine](comparatif-owui-vs-ai-engine.md)
+[← README AI-Engine-WordPress](README.md) | [← Comparatif OWUI vs AI-Engine](../comparatif-owui-vs-ai-engine.md)
 
 > Le projet **livresagités** est une installation WordPress de
 > **maison d'édition** : soumission de manuscrits, comité de lecture,
@@ -371,9 +371,9 @@ latence n'est publiée ici.
 ## Voir aussi
 
 - [README AI-Engine-WordPress](README.md) — point d'entrée
-- [Comparatif OWUI vs AI-Engine](comparatif-owui-vs-ai-engine.md) —
+- [Comparatif OWUI vs AI-Engine](../comparatif-owui-vs-ai-engine.md) —
   tableau structuré
-- [Tour OWUI](../00-Tour-Plateforme/README.md) — pendant Open WebUI
+- [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) — pendant Open WebUI
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
   mandat user à l'origine
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —

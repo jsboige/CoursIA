@@ -297,27 +297,41 @@ def hashlife_modules() -> list[Path]:
 
 
 @pytest.mark.skipif(not HASHLIFE.is_file(), reason="conway_lean absent de cet arbre")
-def test_hashlife_exhibits_the_blind_spot():
-    """Temoin #8782 : les modules cibles par la CI portent des sorry sans ancrage.
+def test_hashlife_blind_spot_stays_reabsorbed():
+    """Garde-regression #8782 : l'angle mort Hashlife, reabsorbe par #9897, ne doit pas revenir.
 
-    Non fige sur un compte exact (le module evolue, cf #8981) : ce qui est
-    verifie, c'est que la classe de defaut est instanciee ET qu'une partie des
-    sorry est bien visible du gate -- l'angle mort est partiel, pas total.
+    Ce test etait un *temoin* du defaut #8782 (chaines sorry privees non ancrees) :
+    il assertait que la classe de defaut etait instanciee dans Hashlife pour exercer
+    le gate ``check_public_anchor`` sur un cas reel. La fusion #9897 (-9 sorry) a
+    reabsorbe cet angle mort : un scan de tous les modules own (198 fichiers, cf
+    le corps de ce PR) ne trouve plus aucun site ``UNANCHORED`` dans tout le depot,
+    pas seulement Hashlife.
+    Sans cible, le temoin est converti en garde-regression, conformement a son propre
+    docstring originel (<< mettre a jour le temoin >>).
 
     Porte sur l'**union** de l'agregateur et de ses sous-modules (cf
     ``hashlife_modules``) : c'est la meme union que ``target-modules`` cote CI.
+
+    Deux proprietes gardees :
+
+      - **regression** : aucun site ``UNANCHORED`` ne reaparait dans Hashlife (sinon
+        le -9 sorry de #9897 est defait -> rouge, signalement d'une regression reelle).
+      - **temoin d'integration** : le gate tourne toujours sur du vrai Lean et
+        classifie le sorry residuel (au moins un site ``ANCHORED_PUBLIC`` visible),
+        pour que l'outil reste exerce sur le depot reel, pas seulement sur des fixtures.
+
+    Cf #8782, #9897, #9863 (split Hashlife).
     """
     sites = [s for p in hashlife_modules() for s in analyze_module(p)["sites"]]
     if not sites:
-        pytest.skip("modules assainis depuis la mesure de reference")
+        pytest.skip("Hashlife totalement assaini : aucun sorry residuel a surveiller")
     unanchored = [s for s in sites if s["verdict"] == UNANCHORED]
-    assert unanchored, "l'angle mort a disparu : mettre a jour le temoin"
-    assert any(s["verdict"] == ANCHORED_PUBLIC for s in sites), (
-        "aucun sorry public : les modules auraient change de nature"
+    assert not unanchored, (
+        "regression #8782 : un sorry prive non ancre a reaparu dans Hashlife -- "
+        f"porteurs={sorted({s['owner'] for s in unanchored})}"
     )
-    assert all(s["owner_private"] for s in unanchored)
-    assert {s["owner"] for s in unanchored}, (
-        "les sorry sans ancrage doivent nommer leur porteur"
+    assert any(s["verdict"] == ANCHORED_PUBLIC for s in sites), (
+        "aucun sorry public visible : le gate ne s'exerce plus sur un cas reel"
     )
 
 

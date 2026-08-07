@@ -213,6 +213,28 @@ class TestExerciseHeaderRe:
         assert m is not None
         assert m.group(1) == "5"
 
+    def test_subnumbered_exercice_captures_full_dotted(self):
+        # Regression: "Exercice 8.1" must capture "8.1" (not just "8"), so
+        # sub-numbered exercises (8.1 / 8.2 / 8.3) are distinct and not
+        # reported as duplicate "Exercice 8" findings. Real-world case:
+        # Planners-2-PDDL-Basics cells (Exercice 8.1/8.2/8.3).
+        m = EXERCISE_HEADER_RE.search("### Exercice 8.1 : Gripper a 3 balles")
+        assert m is not None
+        assert m.group(1) == "8.1"
+
+    def test_plain_number_unchanged_under_dotted_fix(self):
+        # Recall guard: a plain "Exercice 8" still captures "8" (the dotted
+        # fix must not alter single-number matching).
+        m = EXERCISE_HEADER_RE.search("### Exercice 8 : Foo")
+        assert m is not None
+        assert m.group(1) == "8"
+
+    def test_deeply_subnumbered(self):
+        # Multi-level sub-numbering (9.2.1) is captured in full.
+        m = EXERCISE_HEADER_RE.search("### Exercice 9.2.1 : Foo")
+        assert m is not None
+        assert m.group(1) == "9.2.1"
+
 
 # ---------------------------------------------------------------------------
 # SOUMIS_PAR_RE
@@ -290,6 +312,37 @@ class TestScanNotebook:
             _md("## Exercice 1 : First"),
             _code("pass"),
             _md("## Exercice 1 : Second"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert any(f["severity"] == "MEDIUM" for f in findings)
+
+    def test_subnumbered_exercises_not_duplicates(self, tmp_path):
+        # Regression: sub-numbered exercises (8.1 / 8.2 / 8.3) are DISTINCT
+        # progressive exercises, not duplicates of "Exercice 8". Before the
+        # dotted-number fix, all three captured num="8" and the scanner
+        # reported 2 spurious MEDIUM "Duplicate Exercice 8" findings.
+        # Real-world case: Planners-2-PDDL-Basics (8.1/8.2/8.3) and
+        # Planners-2 Python (9.1/9.2/9.3).
+        nb_path = _write_nb(tmp_path / "subnum.ipynb", [
+            _md("### Exercice 8.1 : Gripper a 3 balles"),
+            _code("pass"),
+            _md("### Exercice 8.2 : Robot-Cuisine"),
+            _code("pass"),
+            _md("### Exercice 8.3 : Logistics fly"),
+            _code("pass"),
+        ])
+        findings = scan_notebook(str(nb_path))
+        assert not any(f["severity"] == "MEDIUM" for f in findings)
+
+    def test_identical_subnumber_still_duplicate(self, tmp_path):
+        # Recall guard: two cells with the SAME full dotted number (e.g. two
+        # "Exercice 8.1") are still a genuine duplicate — the dotted fix only
+        # stops flagging DIFFERENT sub-numbers, never identical ones.
+        nb_path = _write_nb(tmp_path / "dupsub.ipynb", [
+            _md("### Exercice 8.1 : First"),
+            _code("pass"),
+            _md("### Exercice 8.1 : Second"),
             _code("pass"),
         ])
         findings = scan_notebook(str(nb_path))

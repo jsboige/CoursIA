@@ -31,7 +31,7 @@ Ce n'est pas un problème d'attention. C'est un problème de **cadrage** : l'age
 | 7 | « Le correctif du gate ne détecte rien » | Le correctif détectait correctement | Une valeur de test que l'outil met en liste blanche |
 | 8 | « Latence médiane 5,5 s, aucune valeur écrite à la main » | La mesure disait 7,14 s | Rien — la mesure était juste, c'est le rapport qui avait dérivé |
 
-Les incidents 1 à 4 sont anonymisés (voir *Note de méthode*). Les incidents 5 et 6 sont documentés dans le notebook [`eval-choisir-son-modele.ipynb`](../../MyIA.AI.Notebooks/GenAI/Open-WebUI/01-AI-Engine-WordPress/eval-choisir-son-modele.ipynb), section *Deux pièges rencontrés en écrivant ce notebook*. Les incidents 7 et 8 sont survenus pendant la rédaction de cette note.
+Les incidents 1 à 4 sont anonymisés (voir *Note de méthode*). Les incidents 5 et 6 sont documentés dans le notebook [`eval-choisir-son-modele.ipynb`](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/eval-choisir-son-modele.ipynb), section *Deux pièges rencontrés en écrivant ce notebook*. Les incidents 7 et 8 sont survenus pendant la rédaction de cette note.
 
 **Les incidents 1 à 4 sont consécutifs.** Chacun a été suivi d'un renforcement de la vérification — et le suivant est passé par un chemin que le renforcement ne couvrait pas. C'est le fait le plus instructif de la série : *durcir la sonde après coup ne réduit pas la classe de défaut, il en déplace la frontière.*
 

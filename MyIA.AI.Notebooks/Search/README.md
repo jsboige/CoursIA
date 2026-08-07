@@ -300,6 +300,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 8b | [App-17b-VRP-Logistics-Python](Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
+| 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 
 ---
 
@@ -525,7 +526,8 @@ Search/
 │       ├── App-17b-VRP-Logistics-Csharp.ipynb
 │       ├── App-17b-VRP-Logistics-Python.ipynb      # Twin Python du b — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools
 │       ├── App-18-HyperparameterTuning.ipynb
-│       └── App-18b-HyperparameterTuning-CSharp.ipynb
+│       ├── App-18b-HyperparameterTuning-CSharp.ipynb
+│       └── App-18b-HyperparameterTuning-Python.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 22 notebooks MGS-1..19 (+ trilogie MGS-7b/7c/7d projection N-D) (moteur, composition, composés, benchmarks, TSP, projection N-D des paysages, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module
