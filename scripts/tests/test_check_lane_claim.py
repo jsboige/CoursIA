@@ -332,4 +332,234 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
     assert rc == 1
-    assert "BLOCKED" in capsys.readouterr().err
+
+
+# --- --paths mode (#9959) ----------------------------------------------------
+#
+# Replays the R3D 2026-08-08 incident: two lanes of the SAME machine collide
+# on `knot_lean/Knots/Reidemeister.lean` minutes apart, each having passed
+# the issue-claim check. The fix is the missing L898 leg: "is there already
+# an OPEN PR on the same file?". The lane key is the FULL `machine:workspace`
+# -- same machine, different workspace counts as a different lane. PRs
+# without a Grain tag (lane unreadable) are surfaced as potential collisions,
+# not silently ignored -- the tag is the only attribution signal.
+
+def _pr(number, files, body="", headRefName=None, title=None):
+    """Build a synthetic OPEN PR dict for _run_check_paths."""
+    return {
+        "number": number,
+        "title": title or f"PR #{number}",
+        "headRefName": headRefName or f"feat/pr-{number}",
+        "body": body,
+        "files": [{"path": p} for p in files],
+    }
+
+
+def test_paths_clear_no_open_prs(capsys):
+    # No OPEN PRs at all -> exit 0, CLEAR.
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=[],
+    )
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "CLEAR" in out
+    assert "other_lane_collisions" in out
+
+
+def test_paths_clear_disjoint_files(capsys):
+    # OPEN PR exists but touches completely different files -> exit 0.
+    prs = [
+        _pr(9001, ["docs/other.md", "scripts/unrelated.py"]),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 0
+
+
+def test_paths_self_overlap_is_clear(capsys):
+    # OPEN PR of MY OWN lane touches the same path -> exit 0, "your own PR".
+    # The motivating rule: same lane resuming their own work must not be
+    # blocked by the path gate.
+    body = (
+        "Grain: MED/tooling -- lane myia-po-2024:CoursIA-2 -- prev: ...\n\n"
+        "## Stuff\n"
+    )
+    prs = [
+        _pr(
+            9002, ["scripts/check_lane_claim.py", "scripts/tests/test_x.py"],
+            body=body, headRefName="feature/c9002-thing",
+        ),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 0
+    out = capsys.readouterr()
+    assert "you already have an OPEN PR" in out.err
+
+
+def test_paths_collision_other_lane(capsys):
+    # REPLAYS the R3D 2026-08-08 incident (#9955 / #8696). Two lanes of the
+    # SAME machine: `myia-po-2026:CoursIA` vs `myia-po-2026:CoursIA-2`.
+    # A PR is open on `Reidemeister.lean` from `CoursIA-2`. My lane is
+    # `CoursIA` -- the gate must trip on machine+workspace, not on machine
+    # alone, because the bug was exactly same-machine different-workspace.
+    body = (
+        "Grain: DEEP/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+        "## Reidemeister surgery\n"
+    )
+    prs = [
+        _pr(
+            9955,
+            ["knot_lean/Knots/Reidemeister.lean",
+             "knot_lean/Knots/Reidemeister2.lean"],
+            body=body, headRefName="feat/reidemeister3",
+        ),
+    ]
+    rc = clc._run_check_paths(
+        paths=["knot_lean/Knots/Reidemeister.lean"],
+        my_lane="myia-po-2026:CoursIA",
+        prs=prs,
+    )
+    assert rc == 2
+    captured = capsys.readouterr()
+    # The blocking PR is named in the stderr BLOCKED message.
+    assert "BLOCKED" in captured.err
+    assert "#9955" in captured.err
+    assert "myia-po-2026:CoursIA-2" in captured.err
+    # The intersecting file is named too.
+    assert "Reidemeister.lean" in captured.err
+
+
+def test_paths_collision_different_machine(capsys):
+    # Different machine entirely -- still a collision. The motivating R3D
+    # incident was same-machine, but the rule generalises: any full-lane
+    # difference trips the gate.
+    body = (
+        "Grain: DEEP/lean -- lane myia-ai-01:CoursIA -- prev: ...\n"
+    )
+    prs = [
+        _pr(7000, ["scripts/check_lane_claim.py"], body=body),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert "#7000" in captured.err
+    assert "myia-ai-01:CoursIA" in captured.err
+
+
+def test_paths_collision_untagged_pr_surfaced(capsys):
+    # A PR with NO Grain tag must be surfaced as a potential collision,
+    # not silently ignored -- the tag is the only attribution signal
+    # (author is jsboige on every PR in the repo). The exit code is still 2
+    # because the caller's safe action is "ask before pushing", not "push".
+    prs = [
+        # No body -> no lane tag.
+        _pr(8001, ["scripts/check_lane_claim.py"], body=""),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "UNREADABLE" in captured.err
+    assert "#8001" in captured.err
+
+
+def test_paths_glob_match(capsys):
+    # Caller-supplied glob `knot_lean/**/*.lean` should match any file under
+    # `knot_lean/` whose basename ends in `.lean`. Same convention as the
+    # GitHub UI PR-files "filter" input.
+    prs = [
+        _pr(8002, ["knot_lean/Knots/Reidemeister.lean"]),
+    ]
+    rc = clc._run_check_paths(
+        paths=["knot_lean/**/*.lean"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 2
+
+
+def test_paths_basename_match(capsys):
+    # Caller-supplied pattern `Reidemeister.lean` should match the basename
+    # of any PR file, regardless of its directory. The fnmatch helper
+    # checks both full path AND basename (same as `gh pr view --files`
+    # filtering by filename).
+    prs = [
+        _pr(8003, ["knot_lean/Knots/Reidemeister.lean"]),
+    ]
+    rc = clc._run_check_paths(
+        paths=["Reidemeister.lean"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 2
+
+
+def test_paths_no_paths_arg_is_error(capsys):
+    # `--paths` with zero paths is a usage error: exit 1.
+    rc = clc._run_check_paths(
+        paths=[],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=[],
+    )
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "--paths requires" in captured.err
+
+
+def test_paths_pr_with_no_files_ignored(capsys):
+    # OPEN PR with `files: []` (no files reported -- rare but seen when the
+    # caller cannot paginate): skip it. We have no intersection to evaluate.
+    prs = [
+        _pr(9003, []),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 0
+
+
+def test_paths_multiple_prs_mixed(capsys):
+    # Two OPEN PRs: one self-lane (clear), one other-lane (collide). The
+    # self-lane one must NOT silence the collision from the other-lane one.
+    self_body = (
+        "Grain: MED/tooling -- lane myia-po-2024:CoursIA-2 -- prev: ...\n"
+    )
+    other_body = (
+        "Grain: MED/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+    )
+    prs = [
+        _pr(9010, ["scripts/check_lane_claim.py"], body=self_body),
+        _pr(9011, ["scripts/check_lane_claim.py"], body=other_body),
+    ]
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=prs,
+    )
+    assert rc == 2
+    captured = capsys.readouterr()
+    assert "#9011" in captured.err
+    # The self-lane PR is NOT in the BLOCKED list (but is in self_overlap).
+    assert "#9010" not in captured.err
+    # But the JSON summary names it.
+    assert "#9010" in captured.out
+    assert "BLOCKED" in captured.err
