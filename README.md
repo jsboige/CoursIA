@@ -501,6 +501,13 @@ Conventions : PEP 8 pour Python, conventions standard pour C#, pas d'emojis dans
 
 Ce projet est sous licence MIT - voir [LICENSE](LICENSE).
 
+## Confidentialité
+
+Le dépôt est public et **ne contient aucune donnée étudiante** (copies, notes, identités).
+Les pipelines et données de notation vivent sur un stockage privé hors dépôt ; seul le
+[moteur de notation générique](GradeBookApp/) est public, vide de données. Détails et
+posture PII : [PRIVACY.md](PRIVACY.md).
+
 ---
 
 Repository : [github.com/jsboige/CoursIA](https://github.com/jsboige/CoursIA)
