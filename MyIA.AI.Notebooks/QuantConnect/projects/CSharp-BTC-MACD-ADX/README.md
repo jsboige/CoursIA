@@ -44,4 +44,4 @@ partner-course-quant-trading/examples/CSharp-BTC-MACD-ADX (archivé après stand
 
 ---
 
-*Performance vérifiée sous frais Binance réels, fenêtre 2019-04 → 2026-08 (See #1621 Phase 4 / #1630). Le Sharpe 0.787 du catalogue ne décrit pas ce code : c'est le maximum d'un balayage de paramètres jamais committé ([#9768](https://github.com/jsboige/CoursIA/issues/9768)). La lecture du code committé (Sharpe 0.123, PSR 0.8 %, MaxDD 72.7 %) est non robuste et ne bat pas le buy & hold. Version anglaise préservée dans [`README.en.md`](README.en.md).*
+*Performance vérifiée sous frais Binance réels, fenêtre figée 2019-04-01 → 2025-12-31 (reproductible, #9803). Le Sharpe 0.787 du catalogue ne décrit pas ce code : c'est le maximum d'un balayage de paramètres jamais committé ([#9768](https://github.com/jsboige/CoursIA/issues/9768)). La lecture du code committé (Sharpe **0.238**, PSR **2.1 %**, MaxDD 72.7 %) est non robuste et ne bat pas le buy & hold — voir la section Performance ci-dessus pour la mesure de sensibilité au choix de borne (Sharpe 0.611 si la fenêtre s'arrête fin 2024). Version anglaise préservée dans [`README.en.md`](README.en.md).*
