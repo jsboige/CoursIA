@@ -11,6 +11,7 @@ These tests replay that exact trap and assert the tool is not fooled.
 Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -221,3 +222,114 @@ def test_check_surfaces_unattributed(capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert '"unattributed_markers": 1' in out
+
+
+# --- --stale-threshold (#9812) ----------------------------------------------
+# A claim older than the threshold (age from server createdAt, never the body)
+# is treated as STALE: it no longer blocks, but a STALE_CLAIM warning is printed
+# and the claimant must still post its own [CLAIMED]. Without the flag, every
+# active claim blocks (behaviour unchanged).
+
+NOW = datetime(2026, 8, 7, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def test_claim_age_hours_basic():
+    # 48h ago at the fixed NOW.
+    age = clc._claim_age_hours("2026-08-05T12:00:00Z", NOW)
+    assert age is not None and abs(age - 48.0) < 1e-6
+
+
+def test_claim_age_hours_none_on_unparseable():
+    assert clc._claim_age_hours(None, NOW) is None
+    assert clc._claim_age_hours("not a date", NOW) is None
+
+
+def test_parse_iso_utc_tolerates_fractional_and_offset():
+    assert clc._parse_iso_utc("2026-08-07T12:00:00Z") is not None
+    assert clc._parse_iso_utc("2026-08-07T12:00:00.123Z") is not None
+    assert clc._parse_iso_utc("2026-08-07T12:00:00+00:00") is not None
+    assert clc._parse_iso_utc("garbage") is None
+
+
+def test_stale_threshold_unblocks_old_claim(capsys):
+    # Other lane claimed 48h ago; threshold 24h -> CLEAR with stale warning.
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+        "2026-08-05T12:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert '"stale_claims"' in captured.out
+    assert '"blocked": false' in captured.out
+
+
+def test_stale_threshold_fresh_claim_still_blocks(capsys):
+    # Other lane claimed 2h ago; threshold 24h -> still BLOCKED.
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+        "2026-08-07T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+
+
+def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
+    # Two other lanes: one stale (48h), one fresh (1h). The fresh one blocks.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA -- old",
+                "2026-08-05T12:00:00Z"),
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- fresh",
+                "2026-08-07T11:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    assert rc == 1
+    captured = capsys.readouterr()
+    # The stale one is warned about, the fresh one blocks.
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2023:CoursIA" in captured.out
+
+
+def test_stale_threshold_boundary_is_stale(capsys):
+    # Exactly 24h old, threshold 24h: >= means STALE (boundary goes to stale).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- exactly at boundary",
+        "2026-08-06T12:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    assert rc == 0
+    assert "STALE_CLAIM" in capsys.readouterr().err
+
+
+def test_no_stale_flag_blocks_old_claim_unchanged(capsys):
+    # Criterion 1: without the flag, an old claim still blocks (current behaviour).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
+        "2026-08-01T00:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "STALE_CLAIM" not in captured.err
+    assert "BLOCKED" in captured.err
+
+
+def test_stale_threshold_unparseable_not_treated_stale(capsys):
+    # A claim whose createdAt is unparseable cannot be dated -> NOT stale
+    # (conservative: we cannot prove an age, so we do not lift the block).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- undated",
+        "not-an-iso-date",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    assert rc == 1
+    assert "BLOCKED" in capsys.readouterr().err
