@@ -99,6 +99,58 @@ class TestShouldSkip:
         assert _should_skip(p) is True
 
 
+class TestShouldSkipArchiveVariants:
+    """Lock the archive-skip design decision (EPIC #9535 item 10, incident #9814).
+
+    `_archive/` (notebook archives) is DELIBERATELY NOT skipped: its READMEs
+    link to active notebooks, and a broken link there is a real defect. This
+    was proven when renaming a folder `_archives/` -> `_archive/` de-skipped
+    it and surfaced a structurally-broken `../../` link (PR #9814). These
+    tests prevent a future contributor from masking such bugs by "harmonizing"
+    `_archive` into SKIP_DIRS without checking link health first.
+    """
+
+    def test_archive_readme_not_skipped(self):
+        """A README inside `_archive/` is scanned (not skipped).
+
+        These archive READMEs point to active notebooks; validating them
+        catches real broken links (incident #9814)."""
+        p = (REPO_ROOT / "MyIA.AI.Notebooks" / "Search" / "_archive"
+             / "README.md")
+        assert _should_skip(p) is False
+
+    def test_archive_subdir_readme_not_skipped(self):
+        """A README in a nested `_archive/<date>/` is also scanned."""
+        p = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SymbolicLearning"
+             / "_archive" / "2026-07-04-Neurosymbolic-EML-precurseur-SL12"
+             / "README.md")
+        assert _should_skip(p) is False
+
+    def test_docs_archive_skipped(self):
+        """`docs/archive/` (historical reports) IS skipped -- out of scope."""
+        p = REPO_ROOT / "docs" / "archive" / "old-report.md"
+        assert _should_skip(p) is True
+
+    def test_stale_archives_entry_removed_from_skip_dirs(self):
+        """The stale `_archives` (with 's') entry is no longer in SKIP_DIRS.
+
+        All `_archives/` folders were renamed to `_archive/` (EPIC #9535
+        item 10, last one by #9814), so the entry was dead. Removing it keeps
+        SKIP_DIRS honest -- nothing claims to skip a folder that no longer
+        exists."""
+        from check_docs_links import SKIP_DIRS
+        assert "_archives" not in SKIP_DIRS
+        assert "_archive" not in SKIP_DIRS  # deliberately NOT skipped
+        assert "archive" in SKIP_DIRS        # docs historical archives still skipped
+
+    def test_real_archive_readmes_are_scanned(self):
+        """Integration: at least one real `_archive/` README is in the scan."""
+        files = find_scan_files()
+        rel = {str(f.relative_to(REPO_ROOT)).replace("\\", "/") for f in files}
+        archive_readmes = [p for p in rel if "/_archive/" in p and p.endswith("README.md")]
+        assert len(archive_readmes) >= 1, "Expected _archive/ READMEs to be scanned"
+
+
 class TestScanFile:
     """Test link extraction from markdown content."""
 
