@@ -14,6 +14,12 @@
       csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
       content_python_sha: 6563b2715a604c74b61ec57af8eea6f1c85324dcb5e8a36d5f96add0b913b8a4
       content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: "2026-08-07"
+      by: myia-po-2024:CoursIA
+      python_sha: d27169c3774d2a6a4bb35623f899e8471a7fec49
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: 73ea8ab67732803ec72eeed8eb2e0183eb48c5e48d6be6bdf062fd406e250be6
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
   known_differences:
     - "Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d'optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite, patterns de coupe optimaux, allocation lineaire sous contraintes de risque)."
     - "Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l'echelle). C# = **Choco-solver via IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l'assembleur IKVM."
