@@ -354,8 +354,8 @@ def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ c₁ c₂ : PDCrossing,
      ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
-       d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 })
+       (d₂.crossings = d₁.crossings ++ [c₁, c₂] ∧ d₂.numEdges = d₁.numEdges + 4) ∨
+       (d₁.crossings = d₂.crossings ++ [c₁, c₂] ∧ d₁.numEdges = d₂.numEdges + 4))
 
 /-- R2 is symmetric: same construction as R1 (transport along `Nat.min_comm`/
 `Nat.max_comm`). -/
@@ -385,8 +385,8 @@ injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (with equal dimensions).
 def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
   ∃ i c, ∃ ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges,
-    (d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
-     d₁ = { d₂ with crossings := d₂.crossings.set i c }) ∧
+    (d₂.crossings = d₁.crossings.set i c ∨
+     d₁.crossings = d₂.crossings.set i c) ∧
     d₁.wf = true ∧ d₂.wf = true
 
 /-- R3 is symmetric by construction: the surgery disjunction is symmetric, the
@@ -461,8 +461,17 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
-  · exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
-  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
+  · -- `hsurg : d₂ = {d₁ with crossings := d₁.crossings.set i.val c}` is a
+    -- `with`-surgery record equality. To inject it into R3 (which now expects a
+    -- field equality `d₂.crossings = d₁.crossings.set i.val c` after the
+    -- field-eqs migration), we project the `crossings` component via
+    -- `congrArg` on the field-access functor. The `numEdges` witness of R3D
+    -- is already guaranteed by `he : d₁.numEdges = d₂.numEdges` from the
+    -- destructuring, so the only field to project is `crossings`.
+    exact ⟨hl, he, i.val, c, ρ, Or.inl (congrArg (fun d => d.crossings) hsurg),
+           hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr (congrArg (fun d => d.crossings) hsurg),
+           hwf₁, hwf₂⟩
 
 /-- `Reidemeister3Determined` is NOT vacuous: a concrete slot-determined slide
     `d₁ → d₂` with `wf = true` on both sides. Witness: `d₁` has two identical
