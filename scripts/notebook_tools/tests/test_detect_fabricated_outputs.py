@@ -47,6 +47,7 @@ from detect_fabricated_outputs import (  # noqa: E402
     ROW_N_RE,
     ZERO_VALUE_RE,
     _cell_text_outputs,
+    _has_heuristic_beats_optimal,
     _has_row_n,
     _has_zero_stats_dataframe,
     _human_report,
@@ -260,8 +261,96 @@ class TestHasZeroStatsDataframe:
 
 
 # ---------------------------------------------------------------------------
+# 4b. TestHasHeuristicBeatsOptimal -- logically-impossible "heuristic beats optimum"
+# ---------------------------------------------------------------------------
+
+class TestHasHeuristicBeatsOptimal:
+    """`_has_heuristic_beats_optimal(lines)` flags a heuristic declared as
+    beating a proven optimum -- a logical impossibility (#3544, #9932)."""
+
+    def test_csp5_ffd_pattern_detected(self):
+        # CSP-5 incident #9932: "FFD 1 bins / Gap -50%" vs "optimal: 2 bins".
+        lines = [
+            "CP-SAT optimal: 2 bins",
+            "FFD heuristic:  1 bins",
+            "Gap: -50.0%",
+        ]
+        res = _has_heuristic_beats_optimal(lines)
+        assert res is not None
+        assert "optimal" in res["optimal_match"].lower()
+        assert "-" in res["gap_match"]
+
+    def test_csp4_spt_pattern_detected(self):
+        # CSP-4 incident #3544: "SPT heuristic 10 < CP-SAT optimal 11".
+        lines = [
+            "CP-SAT optimal: 11",
+            "SPT heuristic:  10",
+            "Gap: -9.1%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is not None
+
+    def test_optimum_spelling_also_matched(self):
+        # "optimum" (noun) + number + negative gap = same impossibility.
+        lines = ["the optimum is 5 bins", "my method: 4", "Gap: -20%"]
+        assert _has_heuristic_beats_optimal(lines) is not None
+
+    def test_positive_gap_not_detected(self):
+        # Legitimate: heuristic WORSE than optimum (positive gap). CSP-4 post-fix.
+        lines = [
+            "CP-SAT optimal: 2 bins",
+            "FFD heuristic:  3 bins",
+            "Gap: 50.0%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_negative_gap_without_optimal_word_not_detected(self):
+        # Legitimate improvement vs a NON-optimal baseline (FEASIBLE bound): a
+        # negative gap is fine when the reference is not declared "optimal".
+        lines = [
+            "best feasible bound: 5 bins",
+            "heuristic:           4 bins",
+            "Gap: -20.0%",
+        ]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_no_gap_line_not_detected(self):
+        # "optimal" present but no Gap line at all -- nothing to contradict.
+        lines = ["CP-SAT optimal: 2 bins", "FFD heuristic: 3 bins"]
+        assert _has_heuristic_beats_optimal(lines) is None
+
+    def test_empty_input_not_detected(self):
+        assert _has_heuristic_beats_optimal([]) is None
+
+    def test_detect_cell_emits_finding(self):
+        # End-to-end: detect_cell routes the output and emits the signal.
+        cell = code_cell(outputs=[
+            text_output("CP-SAT optimal: 2 bins\nFFD heuristic:  1 bins\nGap: -50.0%\n"),
+        ])
+        findings = detect_cell(cell)
+        hbo = [f for f in findings if f["signal"] == "heuristic_beats_optimal"]
+        assert len(hbo) == 1
+        assert "optimal" in hbo[0]["optimal_match"].lower()
+        assert "-" in hbo[0]["gap_match"]
+
+    def test_detect_cell_stacks_with_row_n(self):
+        # A cell can carry both a Row-N placeholder AND an impossible gap.
+        cell = code_cell(outputs=[
+            text_output(
+                "CP-SAT optimal: 2 bins\n"
+                "FFD heuristic:  1 bins\n"
+                "Gap: -50.0%\n"
+                "Row 1   0.5\n"
+            ),
+        ])
+        signals = {f["signal"] for f in detect_cell(cell)}
+        assert "heuristic_beats_optimal" in signals
+        assert "row_n_placeholder" in signals
+
+
+# ---------------------------------------------------------------------------
 # 5. TestDetectCell -- cell-level routing + signal stacking
 # ---------------------------------------------------------------------------
+
 
 class TestDetectCell:
     """`detect_cell` -- code-cell routing + multi-signal stacking per cell."""
