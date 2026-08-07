@@ -87,3 +87,28 @@ repos:
         pass_filenames: false
         files: '\.ipynb$'
         stages: [pre-commit]
+
+      - id: h3-null-exec
+        name: H.3 null-exec — refuse staging un-executed notebook cells
+        description: |
+          Fails the commit if a staged notebook has a code cell whose
+          execution_count is None AND outputs is empty. Per CLAUDE.md §H.3 (and
+          regles-validation-detail.md §H.3), a committed cell with no execution
+          record is either a forgotten re-exec (C.2 violation) or a cell-type
+          misuse (it should be markdown). Either way, refuse the commit and
+          force a re-execution / cell-type fix.
+
+          Carve-outs (NOT a violation):
+          - empty source / comment-only source (Python `#` or C-family `//`)
+            - mirrors check_c2_compliance.py skip rule
+          - notebook metadata `pii_no_output: true` (legitimate empty outputs
+            for PII redaction) — same key as the upstream PR gate
+          - cell with `execution_count` populated OR non-empty `outputs`
+
+          File-scoped (pass_filenames:true) — the whole-tree audit lives in
+          `check_c2_compliance.py`; this hook is the fast local gate. See #9888.
+        entry: python scripts/notebook_tools/check_null_exec.py --check
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
