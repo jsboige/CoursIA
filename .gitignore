@@ -755,6 +755,15 @@ videos/
 /.playwright-mcp/
 /calib/
 
+# Playwright test artifacts — storage-state.json holds session cookies/tokens
+# (SECRET) and the rest is regenerable. Prevents credential leak on commit.
+**/storage-state*.json
+**/playwright-report/
+**/test-results/
+**/playwright/.cache/
+**/playwright/.auth/
+**/blob-report/
+
 # Slidev pre-fix vs post-fix screenshot pairs (regenerable via Playwright)
 slides/*/analysis/_*.png
 
