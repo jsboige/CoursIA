@@ -193,6 +193,25 @@ MAX_NUMBER_VALUE = 1e15
 MISSING_FROM_OUTPUTS_CELL_RATIO = 0.50   # >=50% des nombres prose orphelins (cell dense)
 MISSING_FROM_OUTPUTS_CELL_MIN = 3        # seuil "dense" (cell >=3 nombres prose)
 
+# FP class 2 (#9995) : cellules stub d'exercice. La prose d'enonce qui precede
+# immediatement un stub decrit le PROBLEME (maison 200 000 EUR, P=2%, prime
+# 5 000) -- ses nombres sont des DONNEES, pas des MESURES, et le stub n'a pas
+# de sortie reelle ("Exercice a completer") donc ne peut rien verifier contre.
+# Falsifiable both-directions : un stub n'a pas de sortie reelle -> ne peut
+# pas deriver. Un stub qui produirait des nombres n'est PAS un stub (ses nombres
+# sont des sorties reelles). Verifie firsthand : DecPyMC-1 cell[25]->[26],
+# Pyro_RSA_Hyperbole cell[15]->[16] (corpus Probas : 112/1023 = 11% FP).
+_STUB_OUTPUT_RE = re.compile(
+    r"(?:exercice|exercise|exerc[cí]icio).{0,20}(?:compl[eé]t|termin[eé])"
+    r"|à compléter|a completer|non compl[eé]t"
+    r"|\bTODO\b",
+    re.IGNORECASE,
+)
+_STUB_SOURCE_RE = re.compile(
+    r"#\s*TODO|raise NotImplementedError|return None\s*(?:#.*)?$|\bpass\b\s*(?:#.*)?$",
+    re.MULTILINE,
+)
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -342,6 +361,46 @@ def _extract_output_numbers(output: dict) -> list[float]:
                     nums.extend(_extract_prose_numbers(item))
     # 3. data['text/latex'] ou similaire -- on laisse pour l'instant.
     return nums
+
+
+def _is_stub_code_cell(cell: dict) -> bool:
+    """Vrai si une cellule code est un stub d'exercice (placeholder, pas de resultat reel).
+
+    Critere falsifiable (FP class 2, #9995) : la cellule ne produit AUCUN nombre
+    (pas de sortie numerique reelle) ET son output texte est une phrase-placeholder
+    pedagogique ("Exercice a completer", "TODO") OU sa source porte un marqueur
+    stub (`# TODO etudiant`, `pass`, `return None`). Un stub qui produirait quand
+    meme des nombres n'est pas un stub : ses nombres sont des sorties reelles que
+    le detecteur doit pouvoir verifier.
+    """
+    if cell.get("cell_type") != "code":
+        return False
+    out_text_parts: list[str] = []
+    has_numbers = False
+    for out in (cell.get("outputs") or []):
+        if not isinstance(out, dict):
+            continue
+        if _extract_output_numbers(out):
+            has_numbers = True
+        t = out.get("text")
+        if isinstance(t, str):
+            out_text_parts.append(t)
+        elif isinstance(t, list):
+            out_text_parts.extend(x for x in t if isinstance(x, str))
+        data = out.get("data")
+        if isinstance(data, dict):
+            tp = data.get("text/plain")
+            if isinstance(tp, str):
+                out_text_parts.append(tp)
+            elif isinstance(tp, list):
+                out_text_parts.extend(x for x in tp if isinstance(x, str))
+    if has_numbers:
+        return False
+    out_text = "\n".join(out_text_parts)
+    if _STUB_OUTPUT_RE.search(out_text):
+        return True
+    source = "".join(cell.get("source") or [])
+    return bool(_STUB_SOURCE_RE.search(source))
 
 
 # --------------------------------------------------------------------------- #
@@ -537,6 +596,13 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
     # cherche le plus proche dans output_vals.
     findings: list[AlignmentFinding] = []
     for cell_idx, text, nums in prose_vals_per_cell:
+        # FP class 2 (#9995) : prose d'enonce d'exercice precedant immediatement
+        # un stub. La cellule code suivante est un placeholder ("Exercice a
+        # completer") sans sortie numerique -> les nombres de l'enonce sont les
+        # donnees du probleme, pas des mesures a verifier. On saute l'emission
+        # de MISSING_FROM_OUTPUTS pour cette cellule d'enonce.
+        if cell_idx + 1 < len(cells) and _is_stub_code_cell(cells[cell_idx + 1]):
+            continue
         # Tronque le texte pour le rapport (60 premiers chars non vides).
         snippet = text.strip().splitlines()
         snippet = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
