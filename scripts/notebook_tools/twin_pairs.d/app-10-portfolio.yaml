@@ -14,6 +14,18 @@
       csharp_sha: 0e679cb6c2a1b3ea821e9a0e72db238e39ebcef8
       content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
       content_csharp_sha: d65d9189296d1821c2e871ed3d2968488cdbb693c831729755d9b7fcccab9084
+    - date: "2026-08-08"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+      csharp_sha: 443cb79d128f63e03a41ae99400f5da630084db2
+      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+      content_csharp_sha: 2b4046cb859f06d956bc016cac81878b798c0ff8622d659c1ec76882a80d1121
+    - date: "2026-08-08"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+      csharp_sha: 0855da6aca816a8dcec54ff4f62088655ce54cb2
+      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+      content_csharp_sha: f3309247124d8c6f0541f2da2624c997d48d86b81e617dbcceed2145af641809
   known_differences:
     - "Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp C#) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = cvxpy convex optimization + math.comb ; C# = GeneticSharp NuGet (GA)."
