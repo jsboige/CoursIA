@@ -596,14 +596,15 @@ affaibli (anti-régression D).
     (disjonction de gauche) satisfaite, et `c2 = c4` (continuité over-strand)
     trivialement. Les bornes de bonne formation sont arithmétiques.
 
-    **Mur nommé (c.986)** : la fermeture finale (bornes `1 ≤ c.ek ≤ d₂.numEdges`
-    + continuité + Fox sur les couleurs réduites) est laissée en `sorry`. Les 3
-    réductions de couleur (`hcol1`/`hcol2`/`hcol3`) sont ÉTABLIES ci-dessous
-    (elles transportent les 3 lemmes-pivots). Le blocage résiduel est la
-    fermeture arithmétique après `simp only [triColorConditionAt, hcol*]` — la
-    structure résiduelle contient des coercitions `Fin`/`Nat` qu'`omega` ne
-    traverse pas (contre-exemple `↑d₁.numEdges`, `↑a`). Point d'entrée prochain
-    cycle : normaliser les coercitions avant `omega` (pattern `show` c.983). -/
+    **Résolu (c.987)** : la fermeture finale (bornes + continuité + Fox) est
+    ÉTABLIE. Les 3 réductions de couleur (`hcol1`/`hcol2`/`hcol3`) transportent
+    les 3 lemmes-pivots ; après `simp only [triColorConditionAt]` (SANS déplier
+    `colorAtNat`, non marqué `@[simp]`) puis `simp only [_hcol1,_hcol2,_hcol3]`,
+    le résidu est `(8 bornes Nat) ∧ True ∧ (True ∧ True ∨ atome-opaque)`. La
+    leçon c.987 : l'obstruction n'était PAS arithmétique (les bornes sont du Nat
+    pur) — le contre-exemple omega `↑a, ↑d₁.numEdges` (c.986) était trompeur ;
+    omega échouait sur la disjonction `True ∨ (TriColor ≠ opaque)` qu'il ne
+    réduit pas. `refine ⟨?_, ?_⟩` isole les 8 bornes (omega) du bloc couleurs. -/
 theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
     (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
     (coloring₁ : TriColoring d₁) :
@@ -623,10 +624,26 @@ theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
     have he_hi : d₁.numEdges + 2 ≤ d₂.numEdges := by omega
     exact tricolorForwardExtension.colorAtNat_freshEdge_eq hnum2 a ha1 ha2 coloring₁
       (d₁.numEdges + 2) he_lo he_hi
-  -- MUR (c.986) : fermeture arithmétique + réflexivité après `simp`. Coercitions
-  -- `Fin`/`Nat` non normalisées qu'`omega` ne traverse pas (7 itérations tentées :
-  -- `simp only` + `omega`/`rfl`/`constructor`/`And.intro`/`refine`/`all_goals`).
-  exact sorry
+  -- Fermeture (résolu c.987) : `simp only [triColorConditionAt]` déplie la
+  -- condition SANS déplier `colorAtNat` (non marqué `@[simp]`), donc les `_hcol`
+  -- matchent la forme non-dépliée — c'était le piège c.986 (le `simp only` mixte
+  -- `triColorConditionAt, hcol*` dépliait `colorAtNat` avant le match des hcol).
+  -- Après les 2 `simp only`, les 4 slots réduits à `d₁.colorAtNat coloring₁ a` :
+  -- continuité `c2=c4` → `True`, Fox gauche `(=a ∧ =a)` → `True ∧ True`, Fox
+  -- droite `(≠a ∧ …)` reste comme atome `TriColor ≠` opaque. Le résidu est donc
+  -- `(8 bornes Nat) ∧ True ∧ (True ∨ atome-opaque)`. `omega` échoue sur le
+  -- `True ∨ opaque` (omega ne réduit pas la disjonction sur atome non-arithmétique)
+  -- — d'où le contre-exemple trompeur `↑a, ↑d₁.numEdges` de c.986 (les bornes
+  -- sont du Nat pur, l'obstruction est propositionnelle, pas arithmétique).
+  -- Fix : `refine ⟨?_, ?_⟩` isole les 8 bornes (omega) du bloc couleurs
+  -- `True ∧ (True ∧ True ∨ _)`, clos par ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩.
+  simp only [triColorConditionAt]
+  simp only [_hcol1, _hcol2, _hcol3]
+  refine ⟨?_, ?_⟩
+  · -- 8 bornes de bonne formation (Nat pur, hnum2/ha1/ha2)
+    omega
+  · -- continuité (True) + Fox Or.inl (True ∨ opaque-≠)
+    exact ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩
 
 /-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
     connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
