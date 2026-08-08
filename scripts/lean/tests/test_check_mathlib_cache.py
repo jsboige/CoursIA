@@ -24,6 +24,7 @@ from check_mathlib_cache import (  # noqa: E402
     count_oleans,
     declares_mathlib,
     find_lakes,
+    main,
 )
 
 
@@ -224,3 +225,83 @@ class TestAnalyseLake:
         lake = _make_lake(tmp_path, "MyLake", body='require mathlib from git')
         r = analyse_lake(lake, {})
         assert str(lake) == r["lake"]
+
+    def test_junction_flagged_in_result(self, tmp_path):
+        """Le cas fondateur (.10066 tranche 4) : une junction/symlink vers un
+        cache sain doit populater ``result["junction"]`` ET laisser ``analyse_lake``
+        compter les oleans du store reel (pas 0). Sur POSIX, ``os.symlink`` joue
+        le role de la junction Windows ; le test du contrat (flag + traverse
+        via realpath) suffit, le mecanisme de la junction etant absorbe par
+        ``os.path.realpath()`` (commentaire canonique : ``islink()`` est False
+        sur une junction Windows, c'est la divergence de chemin qui revele).
+        """
+        store = tmp_path / "store"
+        store.mkdir(parents=True)
+        for i in range(MATHLIB_OLEAN_FLOOR + 1):
+            _write(store / f"f{i}.olean")
+
+        lake = _make_lake(tmp_path, "L", body='require mathlib from git')
+        mlib = lake / ".lake" / "packages" / "mathlib"
+        mlib.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            mlib.symlink_to(store, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            pytest.skip("symlinks not supported on this platform")
+
+        r = analyse_lake(lake, {})
+        assert r["status"] == "ok", r
+        assert r["oleans"] == MATHLIB_OLEAN_FLOOR + 1, r
+        assert r["junction"] is True, r
+
+
+# ---------------------------------------------------------------------------
+# main() — exit codes, --strict, JSON output
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# main() — exit codes, --strict, JSON output
+# ---------------------------------------------------------------------------
+
+class TestMain:
+    def test_advisory_exits_zero_with_cold_lake(self, tmp_path):
+        """Sort 0 par defaut meme avec un lake froid (advisory)."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        _write(repo / ".git" / "HEAD", "ref: refs/heads/main")
+        lake = _make_lake(repo, "alpha", body='require mathlib from git')
+        (lake / ".lake" / "packages" / "mathlib").mkdir(parents=True)
+
+        assert main(["--repo-path", str(repo)]) == 0
+
+    def test_strict_exits_one_with_cold_lake(self, tmp_path):
+        """Avec --strict, un lake froid force la sortie 1."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        _write(repo / ".git" / "HEAD", "ref: refs/heads/main")
+        lake = _make_lake(repo, "alpha", body='require mathlib from git')
+        (lake / ".lake" / "packages" / "mathlib").mkdir(parents=True)
+
+        assert main(["--repo-path", str(repo), "--strict"]) == 1
+
+    def test_json_out_writes_results(self, tmp_path):
+        """Si --json-out, ecrit le rapport JSON (results[{status}] coherents)."""
+        import json
+
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        _write(repo / ".git" / "HEAD", "ref: refs/heads/main")
+        lake = _make_lake(repo, "alpha", body='require mathlib from git')
+        (lake / ".lake" / "packages" / "mathlib").mkdir(parents=True)
+
+        out = tmp_path / "out.json"
+        argv = ["--repo-path", str(repo), "--json-out", str(out)]
+        assert main(argv) == 0
+        assert main(argv + ["--strict"]) == 1
+
+        payload = json.loads(out.read_text(encoding="utf-8"))
+        assert [r["status"] for r in payload["results"]] == ["cold"], payload
+
+    def test_bad_repo_path_exits_2(self, tmp_path):
+        """Un --repo-path qui n'est pas une racine git (.git absent) -> exit 2."""
+        assert main(["--repo-path", str(tmp_path / "nope")]) == 2
