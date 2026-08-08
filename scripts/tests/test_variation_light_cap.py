@@ -466,3 +466,400 @@ def test_budget_is_per_lane_not_global():
             _pr(8, quiet, "LIGHT", "2026-07-31T08:00:00Z")]
     rows = vlc.replay(prs)
     assert {r["number"] for r in rows if r["cap_reached"]} == {8}  # quiet lane: budget 1
+
+
+# --- G-VAR-2/3 by GENRE (#10020) --------------------------------------------
+#
+# The tier is an auto-declaration; the genre is the corroborable axis. Issue
+# #10020 §Acceptance requires:
+#   1. Replay the 16-grain po-2025:CoursIA-2 day set and signal GENRE-RUN on
+#      the 5 readme consecutive (the cap is silent because 0 LIGHT declared).
+#   2. >= 2 falsification tests: a lane with varied DEEP/MED genres raises no
+#      signal, and a lane with a single LIGHT does not raise CAP-EXCEEDED.
+#   3. The four signals are independent (a TIER-INFLATION can trip without
+#      GENRE-RUN, and vice versa).
+#   4. GENRE-MISMATCH corroboration from diff paths is opt-in via --files;
+#      a missing input is not a false positive.
+#   5. Aliases normalise (translation -> docs, lean-ci -> guard, etc.).
+
+# Reference day set: po-2025:CoursIA-2 2026-08-08 (16 grains, 0 LIGHT declared,
+# 5 readme consecutive, 2 docs, 1 guard via alias). The fixture mirrors the
+# dataset verified firsthand via `gh pr list --search 'merged:2026-08-08'`
+# on the issue acceptance lane.
+_P_2025_C2 = "myia-po-2025:CoursIA-2"
+
+
+def _tag_pr(n, tier, genre, lane=_P_2025_C2, at=None, labels=None):
+    """Helper for #10020 fixtures: build a PR with a fuller Grain tag."""
+    if at is None:
+        at = f"2026-08-08T{n % 24:02d}:00:00Z"
+    body = f"Grain: {tier}/{genre} -- lane {lane} -- prev: MED/x #{n - 1}"
+    d = {"number": n, "body": body, "mergedAt": at}
+    if labels is not None:
+        d["labels"] = labels
+    return d
+
+
+# The 16-grain po-2025:CoursIA-2 2026-08-08 day set. Mirrors the actual
+# merged PRs (see acceptance: issue #10020 §Le defaut, mesure). 5 readme
+# consecutive (#9960, #9965, #9966, #9969, #9977) all declared MED; the
+# TIER-axis is silent, the GENRE-axis must scream.
+_PO2025_DAY = [
+    _tag_pr(9960, "MED", "readme", at="2026-08-08T07:00:00Z"),
+    _tag_pr(9965, "MED", "readme", at="2026-08-08T08:00:00Z"),
+    _tag_pr(9966, "MED", "readme", at="2026-08-08T09:00:00Z"),
+    _tag_pr(9969, "MED", "readme", at="2026-08-08T10:00:00Z"),
+    _tag_pr(9977, "MED", "readme", at="2026-08-08T11:00:00Z"),
+    _tag_pr(9985, "DEEP", "notebook-python", at="2026-08-08T12:00:00Z"),
+    _tag_pr(9986, "MED", "docs", at="2026-08-08T13:00:00Z"),
+    _tag_pr(9987, "MED", "translation", at="2026-08-08T14:00:00Z"),  # alias -> docs
+    _tag_pr(9989, "MED", "refactor", at="2026-08-08T15:00:00Z"),
+    _tag_pr(9993, "MED", "tooling", at="2026-08-08T16:00:00Z"),
+    _tag_pr(9996, "MED", "tooling", at="2026-08-08T17:00:00Z"),
+    _tag_pr(9999, "MED", "notebook-python", at="2026-08-08T18:00:00Z"),
+    _tag_pr(10004, "MED", "secrets", at="2026-08-08T19:00:00Z"),
+    _tag_pr(10008, "MED", "tooling", at="2026-08-08T20:00:00Z"),
+    _tag_pr(10010, "MED", "lean-ci", at="2026-08-08T21:00:00Z"),  # alias -> guard
+    _tag_pr(10016, "MED", "tooling", at="2026-08-08T22:00:00Z"),
+]
+
+
+def test_canonicalize_genre_aliases():
+    # The exact aliases issue #10020 §1 names (and the observed po-2025 ones).
+    assert vlc.canonicalize_genre("translation") == "docs"
+    assert vlc.canonicalize_genre("docs-translation") == "docs"
+    assert vlc.canonicalize_genre("lean-ci") == "guard"
+    assert vlc.canonicalize_genre("cjk-ci") == "guard"
+    assert vlc.canonicalize_genre("audit-tooling") == "tooling"
+    assert vlc.canonicalize_genre("test-coverage") == "test"
+    assert vlc.canonicalize_genre("data") == "ledger"
+    # No alias -> identity.
+    assert vlc.canonicalize_genre("readme") == "readme"
+    assert vlc.canonicalize_genre("DOCS") == "DOCS".lower()  # case-insensitive
+    # Empty/None -> None.
+    assert vlc.canonicalize_genre(None) is None
+    assert vlc.canonicalize_genre("") is None
+    # Compound form not in the map -> the head is preserved (this is the
+    # edge case where the family is genuinely informative; the alias map
+    # covers the observed ones, anything else is left alone to be flagged
+    # by the broader genre-offlist guard).
+    assert vlc.canonicalize_genre("lean-tooling") == "tooling"
+
+
+def test_light_genres_set_is_locked():
+    # The G-VAR-3 lockout genres. Adding a genre here is a deliberate,
+    # auditable change to the protocol, not a tunable.
+    assert vlc.LIGHT_GENRES == frozenset({"docs", "readme", "guard", "ledger", "test"})
+
+
+def test_effective_genre_aliases_via_body():
+    # The full Pipeline: declared genre -> canonical via parse_grain_tag then
+    # canonicalize_genre. Same extraction as the CI guard (shared via #9485).
+    body = "Grain: MED/translation -- lane myia-po-2025:CoursIA-2"
+    assert vlc.effective_genre(body, []) == "docs"
+    body = "Grain: MED/lean-ci -- lane myia-po-2025:CoursIA-2"
+    assert vlc.effective_genre(body, []) == "guard"
+    # No tag -> None (the smoke test for the unassessable case).
+    assert vlc.effective_genre("", []) is None
+    assert vlc.effective_genre("no tag", []) is None
+
+
+def test_lane_genre_tally_po2025_day():
+    # 16 grains, 5 readme + 2 docs (9986 + 9987 alias) + 4 tooling +
+    # 2 notebook-python + 1 refactor + 1 secrets + 1 guard (10010 alias).
+    # light_genre = 5 + 2 + 1 = 8, light_declared = 0, cap = max(1, 16//3) = 5.
+    tally = vlc.lane_genre_tally(_PO2025_DAY, _P_2025_C2)
+    assert tally["lane_grains"] == 16
+    assert tally["light_declared"] == 0
+    assert tally["light_genre"] == 8
+    assert tally["cap"] == 5
+    # The by_genre histogram: readme=5, tooling=4, notebook-python=2,
+    # docs=2 (canonical, including 9987 translation), refactor=1, secrets=1,
+    # guard=1 (canonical, from 10010 lean-ci).
+    assert tally["by_genre"]["readme"] == 5
+    assert tally["by_genre"]["tooling"] == 4
+    assert tally["by_genre"]["docs"] == 2
+    assert tally["by_genre"]["guard"] == 1
+    assert tally["by_genre"]["notebook-python"] == 2
+
+
+def test_genre_runs_po2025_signals_genre_run():
+    # The acceptance case: 5 readme consecutive (#9960 -> #9977) AND
+    # 2 docs consecutive (#9986, #9987 -- the second via the
+    # `translation` -> `docs` alias). The alias normalisation is what
+    # made the second run INVISIBLE to the human eye on the day
+    # (the alert only mentioned the readme streak); the detector finds
+    # BOTH, which is the whole point of the organ -- the human missed
+    # the alias-normalised adjacency, the detector cannot.
+    runs = vlc.genre_runs(_PO2025_DAY, _P_2025_C2)
+    long_runs = [r for r in runs if r["count"] >= 2]
+    by_genre = {r["genre"]: r for r in long_runs}
+    assert "readme" in by_genre
+    assert by_genre["readme"]["count"] == 5
+    assert by_genre["readme"]["numbers"] == [9960, 9965, 9966, 9969, 9977]
+    assert "docs" in by_genre
+    assert by_genre["docs"]["count"] == 2
+    assert by_genre["docs"]["numbers"] == [9986, 9987]
+    # Total runs (incl. singles): readme (5) + docs (1: 9986) + docs (1: 9987)
+    # + refactor skipped + guard (1: 10010). The detector counts a stretch
+    # as a single run; the 9986 -> 9987 pair is a single run of length 2.
+    assert len(long_runs) == 2
+
+
+def test_compute_signals_po2025_inflation_and_cap_exceeded():
+    # The full panel of signals for the issue's reference case.
+    sig = vlc.compute_signals(_PO2025_DAY, _P_2025_C2)
+    # light_genre=8 > light_declared=0 + 1 = 1 -> TIER-INFLATION
+    assert sig["signals"]["TIER-INFLATION"] is True
+    # 5 readme consecutive -> GENRE-RUN
+    assert sig["signals"]["GENRE-RUN"] is True
+    # light_genre=8 > cap=5 -> CAP-EXCEEDED-BY-GENRE
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
+    # No candidate files provided -> GENRE-MISMATCH inactive.
+    assert sig["signals"]["GENRE-MISMATCH"] is False
+    assert sig["inferred_genre_from_paths"] is None
+
+
+# --- FALSIFICATION TESTS (issue #10020 §Acceptance, #10016 model) ---------
+#
+# The detector must stay SILENT in non-monoculture cases. Two cases are
+# pinned: (a) varied DEEP/MED genres, (b) a single LIGHT grain (within the
+# floor budget).
+
+def test_signal_silence_on_varied_deep_med_lane():
+    # 9 grains of varied tiers/genres -- the OPPOSITE of monoculture. No
+    # signal should fire. This is the far-from-the-bound case the detector
+    # could over-shoot (always emitting TIER-INFLATION whenever any
+    # discrepancy exists); it must not.
+    lane = "myia-po-2024:CoursIA-2"
+    prs = [
+        _tag_pr(1, "DEEP", "lean", lane=lane, at="2026-08-08T01:00:00Z"),
+        _tag_pr(2, "DEEP", "qc", lane=lane, at="2026-08-08T02:00:00Z"),
+        _tag_pr(3, "MED", "notebook-python", lane=lane, at="2026-08-08T03:00:00Z"),
+        _tag_pr(4, "MED", "refactor", lane=lane, at="2026-08-08T04:00:00Z"),
+        _tag_pr(5, "DEEP", "training", lane=lane, at="2026-08-08T05:00:00Z"),
+        _tag_pr(6, "MED", "tooling", lane=lane, at="2026-08-08T06:00:00Z"),
+        _tag_pr(7, "DEEP", "genai", lane=lane, at="2026-08-08T07:00:00Z"),
+        _tag_pr(8, "MED", "tooling", lane=lane, at="2026-08-08T08:00:00Z"),
+        _tag_pr(9, "DEEP", "notebook-dotnet", lane=lane, at="2026-08-08T09:00:00Z"),
+    ]
+    sig = vlc.compute_signals(prs, lane)
+    assert sig["signals"]["TIER-INFLATION"] is False
+    assert sig["signals"]["GENRE-RUN"] is False
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is False
+    assert sig["tally"]["light_genre"] == 0  # no LIGHT-genre grains
+    assert sig["tally"]["light_declared"] == 0
+
+
+def test_signal_silence_on_single_light_lane():
+    # 1 LIGHT grain (the floor budget): the cap is exactly 1, the budget is
+    # NOT exceeded. GENRE-RUN needs >= 2 consecutive. TIER-INFLATION needs
+    # > declared + 1 = at least 2 LIGHT-genre with 0 LIGHT-declared. The
+    # detector is silent here -- the budget is permissive on purpose, the
+    # single-grain case was never the problem.
+    lane = "myia-po-2023:CoursIA"
+    prs = [_tag_pr(1, "LIGHT", "guard", lane=lane, at="2026-08-08T01:00:00Z")]
+    sig = vlc.compute_signals(prs, lane)
+    assert sig["signals"]["TIER-INFLATION"] is False  # 1 == 0 + 1 (borderline)
+    assert sig["signals"]["GENRE-RUN"] is False
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is False
+    assert sig["tally"]["light_genre"] == 1
+    assert sig["tally"]["light_declared"] == 1
+    assert sig["tally"]["cap"] == 1
+
+
+def test_signal_tier_inflation_two_genre_light_no_light_declared():
+    # The boundary case: 2 LIGHT-genre grains, 0 LIGHT-declared. The +1
+    # tolerance absorbs a single mismatch (the 1 LIGHT-genre from a MED
+    # declaration would not be inflation; this is the everyday case).
+    # The 2nd mismatch is the line: TIER-INFLATION fires.
+    lane = "myia-po-2023:CoursIA"
+    prs = [
+        _tag_pr(1, "MED", "readme", lane=lane, at="2026-08-08T01:00:00Z"),
+        _tag_pr(2, "MED", "docs", lane=lane, at="2026-08-08T02:00:00Z"),
+    ]
+    sig = vlc.compute_signals(prs, lane)
+    assert sig["signals"]["TIER-INFLATION"] is True
+    # GENRE-RUN needs >= 2 consecutive SAME genre; readme+docs is not same.
+    assert sig["signals"]["GENRE-RUN"] is False
+    # 2 LIGHT-genre vs cap=1 -> CAP-EXCEEDED.
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
+
+
+def test_signal_genre_run_ignores_declared_tier():
+    # Two readme consecutive, all DEEP declared. The G-VAR-3 ban by GENRE
+    # must fire even though the lane never declared LIGHT (the exact
+    # scenario the issue's defect described).
+    lane = "myia-po-2023:CoursIA"
+    prs = [
+        _tag_pr(1, "DEEP", "readme", lane=lane, at="2026-08-08T01:00:00Z"),
+        _tag_pr(2, "DEEP", "readme", lane=lane, at="2026-08-08T02:00:00Z"),
+    ]
+    sig = vlc.compute_signals(prs, lane)
+    assert sig["signals"]["GENRE-RUN"] is True
+    assert sig["signals"]["TIER-INFLATION"] is True  # 2 LIGHT-genre, 0 LIGHT-declared
+    # The runs panel names the actual numbers.
+    assert sig["long_runs"][0]["count"] == 2
+    assert sig["long_runs"][0]["numbers"] == [1, 2]
+
+
+def test_signal_genre_mismatch_from_paths(tmp_path, capsys):
+    # A PR declared `tooling` whose diff is two README.md files (and
+    # nothing else). GENRE-MISMATCH must fire: the inferred genre is
+    # `readme`, the declared canonical genre is `tooling`.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/tooling -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/tooling -- lane myia-po-2023:CoursIA", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--body-file", str(bpath),
+        "--files", "README.md,docs/README.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-MISMATCH"] is True
+    assert out["inferred_genre_from_paths"] == "readme"
+    assert out["candidate_genre_canonical"] == "tooling"
+
+
+def test_signal_genre_mismatch_inactive_without_files(tmp_path, capsys):
+    # GENRE-MISMATCH is OPT-IN: a --files argument is the only signal
+    # provenance. A missing --files is INACTIVE (no claim), not a false
+    # positive.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/tooling -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/tooling -- lane myia-po-2023:CoursIA", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--body-file", str(bpath),
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-MISMATCH"] is False
+    assert out["inferred_genre_from_paths"] is None
+
+
+def test_signal_genre_mismatch_active_for_docs_paths(tmp_path, capsys):
+    # Files under docs/ -> inferred `docs` (not `readme`). When the
+    # declared canonical genre is also `docs`, no MISMATCH; `tooling`
+    # declared against a docs-only diff MISMATCHES.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/tooling -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/tooling -- lane myia-po-2023:CoursIA", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--body-file", str(bpath),
+        "--files", "docs/reference/x.md,docs/reference/y.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-MISMATCH"] is True
+    assert out["inferred_genre_from_paths"] == "docs"
+
+
+def test_genre_from_paths_mixed_non_md_is_tooling():
+    # A diff that touches BOTH a markdown file and a code file is
+    # `tooling` (code-change-dominant). The corroboration is conservative:
+    # the GENRE-MISMATCH signal only fires when ALL paths are md-only.
+    assert vlc._genre_from_paths(["README.md", "scripts/foo.py"]) == "tooling"
+    assert vlc._genre_from_paths(["scripts/foo.py"]) == "tooling"
+    assert vlc._genre_from_paths([]) is None
+    assert vlc._genre_from_paths(None) is None
+
+
+def test_signal_genre_mismatch_inactive_when_no_body(tmp_path, capsys):
+    # --genre-signals without a body can still emit TIER-INFLATION /
+    # GENRE-RUN / CAP-EXCEEDED-BY-GENRE (those work on the merged set
+    # alone), but GENRE-MISMATCH needs a candidate genre -> INACTIVE.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/readme -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+        {"number": 2, "body": "Grain: MED/readme -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T02:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+        "--files", "README.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-RUN"] is True
+    assert out["signals"]["GENRE-MISMATCH"] is False  # no candidate body
+    assert out["candidate_genre_canonical"] is None
+
+
+def test_genre_signals_requires_lane(tmp_path):
+    # --genre-signals without --lane is a usage error -- the lane is the
+    # denominator of every tally; without it the panel is undefined.
+    import pytest as _pytest
+    mpath = tmp_path / "merged.json"
+    mpath.write_text("[]", encoding="utf-8")
+    with _pytest.raises(SystemExit):
+        vlc.main(["--replay", str(mpath), "--genre-signals"])
+
+
+def test_genre_signals_exit_zero_always(tmp_path, capsys):
+    # The advisory posture: exit 0 for ANY signal combination. The
+    # coordinator reads the JSON; the consumer is merge-time, not
+    # workflow-time. `tee | grep` would have eaten this; the JSON stays
+    # intact.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/readme -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+        {"number": 2, "body": "Grain: MED/readme -- lane myia-po-2023:CoursIA",
+         "mergedAt": "2026-08-08T02:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA",
+    ])
+    assert rc == 0
+
+
+def test_po2025_replay_signals_genre_run_via_cli(tmp_path, capsys):
+    # End-to-end acceptance against the CLI: the 16-grain day set
+    # produces the four signals via the new --genre-signals mode. The
+    # json output is parseable, exit 0, GENRE-RUN True.
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(_PO2025_DAY), encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", _P_2025_C2,
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-RUN"] is True
+    assert out["signals"]["TIER-INFLATION"] is True
+    assert out["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
+    # The long_run carries the 5 readme numbers from the issue acceptance.
+    assert out["long_runs"][0]["count"] == 5
+    assert out["long_runs"][0]["numbers"] == [9960, 9965, 9966, 9969, 9977]
