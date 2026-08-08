@@ -66,10 +66,21 @@ now and later, with no per-workflow wiring to maintain.
    then skips polling entirely and reports PASS. The "verdict on every PR"
    invariant is preserved (GitHub sees a real success line) without ever
    deciding the student's CI.
+8. **Delivery canary.** A settled check set containing NONE of the always-on
+   workflows means CI was never created for the PR -- the 2026-08-06 (#9858)
+   partial-delivery failure mode, where `pr-gate` ran and stabilised on a near-
+   empty bouquet while the rest of CI sat uncreated. The always-on roster is
+   DERIVED from `.github/workflows` (jobs whose workflow fires on `pull_request`
+   with no `paths:` filter), never hardcoded; the canary fires only at settle
+   time and judges on observed NAMES so advisory always-on jobs (diverted out of
+   `ok` by rule 6) still count as delivered. An empty set is no longer a pass:
+   it is indistinguishable from a partial delivery, and rule 1 says refuse.
 
-Exit codes: 0 = every settled check is non-failing (or there are none),
-            or the PR is from a fork (out-of-scope per #10072).
-            1 = at least one failure, or the state could not be established.
+Exit codes: 0 = every settled check is non-failing AND the platform delivered
+            its always-on bouquet (or the PR is from a fork, out-of-scope per
+            #10072).
+            1 = at least one failure, the state could not be established, or the
+            platform never delivered the PR (#9858 canary).
 
 Run locally against any PR head:
 
@@ -83,7 +94,13 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import Iterable, Sequence
+
+try:  # Used only by the rule-8 delivery canary (derive_always_on_jobs).
+    import yaml  # type: ignore
+except ImportError:  # pragma: no cover - environment problem, canary self-disables
+    yaml = None  # type: ignore
 
 # A check that reached one of these has produced a verdict we accept.
 CONCLUSION_OK = frozenset({"success", "neutral", "skipped"})
@@ -112,6 +129,158 @@ ADVISORY_MARKER = "advisory"
 def is_advisory(name: str) -> bool:
     """True when the check declares itself non-blocking by name (rule 6)."""
     return ADVISORY_MARKER in (name or "").lower()
+
+
+# Where the always-on workflow jobs are derived from (rule 8 canary). Resolved
+# relative to the repo root: this script lives in scripts/, so its parent is the
+# repository root that holds .github/workflows.
+DEFAULT_WORKFLOWS_DIR = str(Path(__file__).resolve().parent.parent / ".github" / "workflows")
+
+
+def _norm(name: str) -> str:
+    """Normalise a check/job name for the delivery canary: lowercase, collapse
+    whitespace. Matching is on observed NAMES (the input to `classify`), never on
+    the bucket a check landed in, because some always-on jobs are themselves
+    advisory (rule 6) and would be diverted out of `ok`.
+    """
+    return " ".join((name or "").lower().split())
+
+
+def derive_always_on_jobs(
+    workflows_dir: str = DEFAULT_WORKFLOWS_DIR, self_name: str = DEFAULT_SELF_NAME
+) -> frozenset[str]:
+    """Job names produced by workflows that run on EVERY pull_request (no
+    `paths:` filter), excluding this gate's own job.
+
+    These are the canary: a healthy PR always surfaces at least one of them, so
+    a settled check set containing NONE means the platform never delivered the
+    PR -- the 2026-08-06 (#9858) partial-delivery failure mode, where `pr-gate`
+    ran and stabilised while the rest of CI was never created.
+
+    The list is DERIVED, never hardcoded (rule 8 / acceptance criterion 1): a
+    baked-in list rots the moment a workflow is added, and a rotten canary is
+    worse than none because it blocks with false confidence. Reading the trigger
+    from the workflows themselves is what keeps it honest.
+
+    Returns an empty set when the directory is missing, YAML is unavailable, or a
+    file fails to parse -- the caller treats an empty set as "canary disabled"
+    rather than "nothing is ever-on", because weaponising an unreadable state
+    against every PR would deadlock the repository (rule 1's bias-to-fail applies
+    to an unreadable VERDICT, not to an unreadable canary roster).
+    """
+    if yaml is None:
+        return frozenset()
+    root = Path(workflows_dir)
+    if not root.is_dir():
+        return frozenset()
+
+    self_norm = _norm(self_name)
+    jobs: set[str] = set()
+    for yml in sorted(root.glob("*.yml")):
+        try:
+            data = yaml.safe_load(yml.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        if not isinstance(data, dict):
+            continue
+
+        triggers = data.get("on", data.get(True))  # PyYAML may parse `on:` as True
+        pr = _pull_request_trigger(triggers)
+        if pr is None:
+            continue
+        # `pr` is truthy when pull_request fires; a dict with `paths`/`paths-ignore`
+        # means the workflow is path-filtered and does NOT run on every PR.
+        if isinstance(pr, dict) and ("paths" in pr or "paths-ignore" in pr):
+            continue
+
+        for jname in _workflow_job_names(data):
+            if _norm(jname) == self_norm:
+                continue  # never let the gate canary itself
+            jobs.add(jname)
+
+    return frozenset(jobs)
+
+
+def _pull_request_trigger(triggers: object) -> object:
+    """Extract the `pull_request` trigger value from a workflow `on:` field.
+
+    Returns None when pull_request is absent, otherwise the trigger's value
+    (True/a list/a dict). Shields `derive_always_on_jobs` from the three YAML
+    shapes `on:` can take (scalar, sequence, mapping).
+    """
+    if isinstance(triggers, str):
+        return True if triggers == "pull_request" else None
+    if isinstance(triggers, list):
+        return "pull_request" if "pull_request" in triggers else None
+    if isinstance(triggers, dict):
+        return triggers.get("pull_request")
+    return None
+
+
+def _workflow_job_names(data: dict) -> list[str]:
+    """The check-run names a workflow produces: each job's `name:` or its key.
+
+    GitHub renders an Actions job's check-run `name` as the job's own `name`
+    field (or the job key when `name:` is absent). Workflows with a top-level
+    `name:` and a single job render as that job name; matrix/reusable jobs keep
+    the job name verbatim. Matching on these derived names is therefore faithful
+    to what the API returns under `check-runs[].name`.
+    """
+    names: list[str] = []
+    for jkey, jval in (data.get("jobs") or {}).items():
+        if isinstance(jval, dict):
+            names.append(jval.get("name") or jkey)
+    return names
+
+
+def platform_delivered(checks: Sequence[dict], always_on_jobs: frozenset[str]) -> bool:
+    """True when at least one always-on job is represented among observed checks.
+
+    The delivery canary (rule 8). Judges on observed NAMES -- the raw input to
+    `classify` -- and deliberately NOT on the `ok` bucket: at least two
+    always-on jobs are themselves advisory (e.g. the repo-size advisory, the
+    short-header advisory trio) and `classify` diverts a non-green advisory out
+    of `ok` into `advisory`. Judging `ok` would therefore flag a healthy PR whose
+    only always-on happened to be a red advisory. Judging names sidesteps the
+    trap: a delivered advisory job is still present by name.
+
+    A check matches an always-on job when the normalised names are equal, or when
+    the observed name ends with " / <job>" (GitHub's "<workflow> / <job>"
+    rendering for multi-job workflows).
+    """
+    observed = {_norm(c.get("name") or "") for c in checks}
+    for job in always_on_jobs:
+        target = _norm(job)
+        if not target:
+            continue
+        for name in observed:
+            if name == target or name.endswith(" / " + target):
+                return True
+    return False
+
+
+def _canary_verdict(
+    checks: Sequence[dict], always_on_jobs: frozenset[str]
+) -> tuple[int, str] | None:
+    """Rule 8: refuse to PASS when the platform did not deliver.
+
+    Returns (1, message) when the canary fires, None when it is disabled (empty
+    roster) or satisfied (delivery observed). Only consulted at settle time by
+    `wait_and_decide`, so it inherits the `settle_polls` grace period -- a
+    freshly-opened PR has that many consecutive quiet polls worth of runway for
+    Actions to create its check-runs before the canary draws a conclusion.
+    """
+    if not always_on_jobs:
+        return None
+    if platform_delivered(checks, always_on_jobs):
+        return None
+    sample = ", ".join(sorted(always_on_jobs)[:3])
+    tail = " ..." if len(always_on_jobs) > 3 else ""
+    return 1, (
+        "FAIL -- platform did not deliver: no always-on check observed "
+        f"(expected one of: {sample}{tail}). A settled set with none of the "
+        "always-on workflows means CI was never created for this PR (#9858)."
+    )
 
 
 class GateError(RuntimeError):
@@ -286,6 +455,7 @@ def wait_and_decide(
     timeout_min: float,
     poll_sec: float,
     settle_polls: int,
+    always_on_jobs: "frozenset[str] | None" = None,
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
@@ -295,6 +465,11 @@ def wait_and_decide(
     Stability is `settle_polls` consecutive polls with nothing pending -- a
     single quiet poll is not enough, because a workflow queued milliseconds ago
     has not surfaced yet and would be invisible.
+
+    `always_on_jobs` arms the delivery canary (rule 8). None or empty disables
+    it (the gate then behaves exactly as before this rule). Only consulted at
+    settle time, so a freshly-opened PR keeps the `settle_polls` grace period for
+    Actions to create its check-runs.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -315,6 +490,15 @@ def wait_and_decide(
         else:
             quiet_streak += 1
             if quiet_streak >= settle_polls:
+                # Rule 8 canary: refuse to pass when the platform never
+                # delivered the always-on bouquet (#9858 partial-delivery hole).
+                # `checks` is the raw observation (names, pre-bucket) so advisory
+                # always-on jobs still count as delivered.
+                canary = _canary_verdict(checks, always_on_jobs or frozenset())
+                if canary is not None:
+                    _report_advisory(advisory)
+                    print(f"[pr-gate] {canary[1]}", flush=True)
+                    return canary
                 _report_advisory(advisory)
                 print(f"[pr-gate] settled: {len(ok)} check(s) green", flush=True)
                 return verdict(pending, bad, settled=True)
@@ -351,6 +535,16 @@ def main(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help="PR comes from a fork (student work). Short-circuit to PASS.",
     )
+    parser.add_argument(
+        "--workflows-dir",
+        default=DEFAULT_WORKFLOWS_DIR,
+        help="Directory of GitHub workflow YAMLs for the rule-8 delivery canary.",
+    )
+    parser.add_argument(
+        "--no-canary",
+        action="store_true",
+        help="Disable the rule-8 delivery canary (escape hatch only).",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.is_fork:
@@ -364,6 +558,18 @@ def main(argv: Iterable[str] | None = None) -> int:
         )
         return 0
 
+    always_on_jobs: "frozenset[str] | None" = None
+    if not args.no_canary:
+        always_on_jobs = derive_always_on_jobs(args.workflows_dir, args.self_name)
+        if not always_on_jobs:
+            # Disabled, not fatal (see derive_always_on_jobs): an unreadable
+            # canary roster must not block every PR.
+            print(
+                f"[pr-gate] delivery canary disabled: no always-on jobs derived "
+                f"from {args.workflows_dir}",
+                flush=True,
+            )
+
     try:
         code, message = wait_and_decide(
             args.repo,
@@ -372,6 +578,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             args.timeout_min,
             args.poll_sec,
             args.settle_polls,
+            always_on_jobs,
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass.
