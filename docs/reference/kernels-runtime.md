@@ -24,6 +24,15 @@ La **seule** limite reelle est l'**injection de parametres** : Papermill n'a pas
 
 Deux limites voisines, **distinctes** de celle-ci, restent vraies : le restore `#r "nuget:"` est bloque cluster-wide en Papermill headless (cf [dotnet-plotly-zero-restore.md](dotnet-plotly-zero-restore.md)), et la **CI** ne peut pas re-executer ces notebooks faute de kernel installe sur le runner — d'ou l'exigence d'execution **locale** avant commit ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D).
 
+**Borne du blocage `#r "nuget:"`** (mesure firsthand 2026-08-08 sur origin/main) : 485 notebooks `.net-csharp` au total ; **221** contiennent au moins un `#r "nuget:"` (le blocage s'applique, exécution cluster-wide impossible hors GitHub Actions + machine avec accès NuGet) ; **264** n'en contiennent aucun et sont donc exécutables headless via Papermill MAINTENANT (moyennant le pin dotnet-interactive ci-dessus). La reproduction :
+
+```bash
+grep -lr '#r "nuget:' MyIA.AI.Notebooks --include='*.ipynb' | wc -l   # 221 (po-2025, 2026-08-08)
+grep -lr  '"name": "\.net-csharp"' MyIA.AI.Notebooks --include='*.ipynb' | wc -l   # 485
+```
+
+Le réflexe avant d'invoquer le blocage en body de PR : `grep -c '#r "nuget:' <notebook>` → 0 = RECOVERABLE-LOCAL, exécuter pour de vrai (le blocage a souvent été invoqué pour des fichiers qui n'en contiennent aucun — incident fondateur PR #10021).
+
 ### Version : 1.0.617701, pas « >= 1.0.700 »
 
 | Version | Etat | Preuve |
@@ -127,12 +136,12 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | Kernel | Type | Executable via |
 |--------|------|----------------|
 | python3 | Python (conda base) | Papermill |
-| .net-csharp | .NET 9.0 | MCP Jupyter cell-by-cell |
-| .net-fsharp | .NET | MCP Jupyter cell-by-cell |
-| .net-powershell | .NET | MCP Jupyter cell-by-cell |
+| .net-csharp | .NET 9.0 | Papermill (via `notebook_tools.py execute`, voir §.NET ci-dessus) ou `dotnet_executor.py` |
+| .net-fsharp | .NET | Papermill (même chaîne, kernel `.net-fsharp`) — non re-mesuré sur po-2025 |
+| .net-powershell | .NET | Papermill (même chaîne, kernel `.net-powershell`) — non re-mesuré sur po-2025 |
 | conda-torch | Python (torch) | Papermill |
-| lean4 | Lean 4 (v4.29.1 Windows) | MCP Jupyter cell-by-cell |
-| lean4-wsl | Lean 4 (v4.11.0 WSL) | MCP Jupyter cell-by-cell |
+| lean4 | Lean 4 (v4.29.1 Windows) | `nbconvert --execute --ExecutePreprocessor.kernel_name=lean4` (non re-mesuré sur po-2025 : mesurer ou laisser en l'état) |
+| lean4-wsl | Lean 4 (v4.11.0 WSL) | `nbconvert --execute --ExecutePreprocessor.kernel_name=lean4-wsl` (validé L175) |
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
 
@@ -145,7 +154,13 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 # WSL notebooks : wsl_papermill.py
 python scripts/notebook_tools/wsl_papermill.py execute <nb>
 
-# .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
+# .NET : Papermill via notebook_tools (kernel .net-csharp)
+python scripts/notebook_tools/notebook_tools.py execute <nb> --kernel .net-csharp
+# OU en direct cell-by-cell :
+python scripts/notebook_tools/dotnet_executor.py <nb>
+
+# Lean : nbconvert kernel-spécifique
+jupyter nbconvert --execute --inplace --ExecutePreprocessor.kernel_name=lean4-wsl <nb>
 ```
 
 #### MCP jupyter-papermill HANG (bug #835) : bascule directe timeout-wrappée, JAMAIS bloquer (HARD)
