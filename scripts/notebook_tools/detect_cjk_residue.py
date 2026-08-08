@@ -129,7 +129,7 @@ ALLOWED: dict[str, str] = {
         "documente les patterns de fuite en exemple (spec du detecteur)",
     # Translation-sync test: a deliberate `"你好 world 123"` fixture proving the
     # script detector sees CJK in a mixed Latin string. Mixed by design.
-    "scripts/tests/test_check_translation_sync.py":
+    "scripts/translation/tests/test_check_translation_sync.py":
         "fixture de test volontaire (string CJK+Latin pour piner le detecteur de script)",
     # Translations READMEs: the CJK (完整, etc.) is preserved VERBATIM by the
     # deterministic extractor (a sha256-16 anchor would drift otherwise). The
