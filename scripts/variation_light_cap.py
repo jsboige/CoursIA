@@ -358,7 +358,19 @@ def main(argv: list[str] | None = None) -> int:
                     raw = json.loads(lpath.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
                     raw = []
-            # accept [str] or [{name}] (label_names handles objects via a dict)
+            # `gh pr view --json labels` writes an **object** {"labels":[...]}
+            # to disk; `gh pr list --json labels` writes an **array** [{...}].
+            # The CI workflow calls the former (variation-tag-guard.yml line 276),
+            # so the object form is the production case. Pre-#9971, the script
+            # re-wrapped `raw` as {"labels": raw} -- which turned the object
+            # into {"labels": {"labels":[...]}}, and `label_names` walked the
+            # OUTER keys instead of the items. The re-qualification label was
+            # invisible, so the advisory gate returned the wrong verdict
+            # (effective=tier_declared, not effective=requalified). Unwrap the
+            # object form first; the three remaining shapes fall through to the
+            # existing array/object/string handling in `label_names`.
+            if isinstance(raw, dict):
+                raw = raw.get("labels", [])
             cur_labels = label_names({"labels": raw})
         # Effective tier (#8970): a requalification label overrides the declared
         # one. Only an EFFECTIVE LIGHT is assessed against the cap.

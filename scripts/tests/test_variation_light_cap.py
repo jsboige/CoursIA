@@ -341,6 +341,63 @@ def test_tagged_light_still_assessed_normally(tmp_path, capsys):
     assert res["lane"] == "myia-po-2023:CoursIA"
 
 
+# --- #9971: --labels-file must accept the THREE shapes the workflow can write ---
+
+# The workflow writes `gh pr view --json labels` output to /tmp/pr_labels.json.
+# That command returns an OBJECT {"labels":[{name,...}]} -- not the array `gh pr
+# list --json` produces. The CI comment (variation-tag-guard.yml, lines 273-275)
+# used to claim "le script l'aplatit" but the script never did -- it re-wrapped
+# the dump as {"labels": {"labels": [...]}}, label_names iterated over the
+# OUTER keys, and the re-qualification label was invisible. Acceptance: the
+# three shapes below must all reach the same verdict (#1 already worked, #2/#3
+# did NOT pre-fix).
+def test_labels_file_object_form_honors_requalif(tmp_path, capsys):
+    # #9971 acceptance case: body declares MED, the *object* shape a
+    # `gh pr view --json labels` write to disk carries a `grain-requalified:LIGHT`
+    # label -> effective tier MUST be LIGHT, and the verdict MUST carry
+    # lane/budget/spent (NOT the "not LIGHT (effective MED)" short-circuit).
+    body = "Grain: MED/tooling -- lane myia-po-2023:CoursIA"
+    rc, res = _check_pr(
+        tmp_path, [], body,
+        labels={"labels": [{"name": "grain-requalified:LIGHT"}]},
+        capsys=capsys,
+    )
+    assert rc == 0
+    # Pre-fix: res = {"cap_reached": false, "reason": "not LIGHT (effective MED)"}
+    # Post-fix: the label is honored, the effective tier is LIGHT, the verdict
+    # computes lane/budget/spent.
+    assert "lane" in res and "budget" in res and "spent" in res
+    assert res["cap_reached"] is False  # no merged LIGHT yet, budget 1, spent 0
+
+
+def test_labels_file_array_of_objects_honors_requalif(tmp_path, capsys):
+    # The "gh pr list --json labels" shape (what the script's own `_lane_of`
+    # already flattens): an array of {name,...} objects. Must keep working.
+    body = "Grain: MED/tooling -- lane myia-po-2023:CoursIA"
+    rc, res = _check_pr(
+        tmp_path, [], body,
+        labels=[{"name": "grain-requalified:LIGHT"}],
+        capsys=capsys,
+    )
+    assert rc == 0
+    assert "lane" in res and "budget" in res and "spent" in res
+    assert res["cap_reached"] is False
+
+
+def test_labels_file_array_of_strings_honors_requalif(tmp_path, capsys):
+    # The bare-string shape (the existing `label_names` test already covers this
+    # path through the helper). Confirms it survives the JSON-load change.
+    body = "Grain: MED/tooling -- lane myia-po-2023:CoursIA"
+    rc, res = _check_pr(
+        tmp_path, [], body,
+        labels=["grain-requalified:LIGHT"],
+        capsys=capsys,
+    )
+    assert rc == 0
+    assert "lane" in res and "budget" in res and "spent" in res
+    assert res["cap_reached"] is False
+
+
 def test_unattributed_lists_untagged_prs():
     prs = [
         {"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-05T01:00:00Z"},

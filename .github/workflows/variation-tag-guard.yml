@@ -272,7 +272,10 @@ jobs:
           # sur la PR ouverte (cas down-qualification, ou up-qualification
           # anticipee). On les passe au detecteur pour que son verdict soit
           # symetrique a celui porte sur les mergees. `gh pr view --json labels`
-          # renvoie [{name,...}] -- le script l'aplatit.
+          # renvoie un **objet** {"labels":[{name,...}]} (note : PAS un tableau
+          # comme `gh pr list --json labels`) -- variation_light_cap.py (#9971)
+          # extrait le `.labels` avant d'aplatir. Le fallback `[]` couvre le
+          # cas ou la commande echoue (PR fork, token limite).
           gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
             printf '[]' > /tmp/pr_labels.json
 
