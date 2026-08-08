@@ -410,6 +410,38 @@ theorem tricolorable_invariant :
   -- the corrected trivial construction above is the next cycle's implementation
   -- target. FORBIDDEN: weakening the statement (anti-regression D).
 
+/-- Construction de l'extension triviale « toutes-égales » d'un tricoloriage à
+    travers une torsion R1 connectée (option C). C'est la matérialisation en
+    code de la construction caractérisée ci-dessus (c.981).
+
+    **Pourquoi l'arc `a` est un paramètre explicite, et non extrait de `h`.**
+    `Reidemeister1Connected d₁ d₂` est un `Prop`, et l'arc splice `a` y est
+    existentiellement quantifié (`∃ a, …`). Le recursor `Exists.casesOn`
+    n'élimine que vers `Prop`, or le but `TriColoring d₂` est un `Type` : on ne
+    peut donc PAS extraire `a` (donnée) de `h` pour construire un terme de
+    `Type`. La solution est de passer `a` (et la borne `ha2 : a ≤ d₁.numEdges`)
+    comme paramètres explicites — données, pas témoins extraits d'un `Prop`. Le
+    théorème de transfert `tricolorable_forward_r1` (but `Prop`), lui, obtient
+    `a` de `h` via `obtain` (élimination `Prop → Prop`, autorisée) puis appelle
+    cette `def`.
+
+    La construction : `coloring₂` agree avec `coloring₁` sur le préfixe
+    `[0, d₁.numEdges)` (transport via l'inclusion `Fin n ↪ Fin (n+2)` implicite
+    dans `hnum2 : d₂.numEdges = n+2`), et les deux slots frais
+    `{d₁.numEdges, d₁.numEdges+1}` prennent la couleur `ca = coloring₁` de l'arc
+    splice `a`. Le théorème cible affirmera que c'est un tricoloriage valide de
+    `d₂` (nouveau crossing `⟨a,b,c,c⟩` → Fox toutes-égales ; `Y'` préservé). -/
+def tricolorForwardExtension {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) : TriColoring d₂ := by
+  -- `a-1` est un indice `Fin d₁.numEdges` valide (de `ha1` et `ha2` : `0 ≤ a-1 < numEdges`).
+  have hca : a - 1 < d₁.numEdges := by omega
+  -- Couleur de l'arc splice.
+  let ca : TriColor := coloring₁ ⟨a - 1, hca⟩
+  show Fin d₂.numEdges → TriColor
+  rw [hnum2]
+  exact fun k => if hk : k.val < d₁.numEdges then coloring₁ ⟨k.val, hk⟩ else ca
+
 /-! ## 3. Le trefoil est tricolorable
 
 Le trefoil (3_1) peut etre colorie avec 3 couleurs, chaque croisement voyant
