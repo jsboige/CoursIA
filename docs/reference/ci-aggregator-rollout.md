@@ -10,10 +10,13 @@
 > par nom de check (le dernier run gagne, résout le cas
 > `Quarto Pages Deploy cancelled sur 401a68cd8`).
 >
-> **Ce document couvre l'Étape 2** : le flip `required_status_checks`
-> owner-only (la partie qui ne dépend pas du repo setting mais du
-> user), la whitelist complète des gates à protéger, et le
-> protocole de durcissement après stabilisation.
+> **Étape 2 — flip `required_status_checks` — APPLIQUÉ le 2026-08-08.**
+> La protection est **live** (vérifiée firsthand, §« Vérifier ») :
+> `required_status_checks.contexts = ["PR gate"]`, `strict = false`,
+> `enforce_admins = false`. Le contexte `PR gate` est requis en
+> vigueur — toute PR (y compris celle-ci) le subit. Ce document est
+> désormais le **record + vérification + rollback** de ce flip, plus
+> la whitelist des gates protégés et le protocole de durcissement.
 
 ## Pourquoi le flip du repo setting n'est PAS dans #9822
 
@@ -35,41 +38,107 @@ On a un merge qui passe par jour sans friction, et l'absence de
 gate a déjà coûté 5 heures (main rouge 00:22-05:21Z le 2026-08-07,
 incident #9762).
 
-## La commande exacte (user-only)
+## La commande exacte (user-only) — APPLIQUÉE le 2026-08-08
 
 Préférence : **token-scoped**, exécutée dans la session user
 (Visual Studio Code, compte `jsboige`), pas via CI.
 
+**Pourquoi un `PUT` sur `/protection` (pas un `PATCH` sur la
+sous-ressource).** La sous-ressource
+`.../protection/required_status_checks` n'existe que si les
+required status checks sont **déjà actifs** — tant qu'ils ne le
+sont pas, un `GET` renvoie `404 Required status checks not
+enabled`, et un `PATCH` n'a rien à mettre à jour. Le **premier**
+passage doit donc `PUT` l'objet de protection **complet** (les 4
+clés de tête sont obligatoires, `null`-ables). Une fois la
+sous-ressource créée, un `PATCH` suffit pour l'ajuster.
+
 ```bash
-# 1. S'assurer d'être sur le bon compte
+# 1. S'assurer d'être sur le bon compte (compte owner, scope repo+workflow)
 gh auth status
 
-# 2. Flipper les required_status_checks sur main
-#    (PATCH sur l'endpoint dédié, pas sur /protection general)
-gh api \
-  --method PATCH \
-  -H "Accept: application/vnd.github+json" \
-  /repos/jsboige/CoursIA/branches/main/protection/required_status_checks \
-  -f strict=true \
-  -F contexts[]=PR gate
+# 2. Activer required_status_checks sur main.
+#    PAS de slash de tête sur l'endpoint : MSYS/gitbash réécrit
+#    /repos/... en chemin de fichier ("C:/Program Files/Git/repos/...").
+#    Le JSON --input - rend les 4 clés sans ambigüité de -f/-F.
+gh api --method PUT repos/jsboige/CoursIA/branches/main/protection --input - <<'JSON'
+{
+  "required_status_checks": { "strict": false, "contexts": ["PR gate"] },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+JSON
 
-# 3. Vérifier
+# 3. Vérifier ( firsthand, état mesuré au 2026-08-08 )
 gh api repos/jsboige/CoursIA/branches/main/protection \
-  --jq '.required_status_checks'
-# Attendu: { "contexts": ["PR gate"], "strict": true }
+  --jq '{contexts: .required_status_checks.contexts, strict: .required_status_checks.strict, enforce_admins: .enforce_admins.enabled}'
+# Attendu: {"contexts": ["PR gate"], "strict": false, "enforce_admins": false}
 ```
 
-**`strict: true`** = la PR doit se re-baser sur `main` pour
-considérer les checks à jour (sans ça, un SHA stale avec checks
-verts passe ; c'est le mode laxiste par défaut de GitHub).
+**`strict: false`** (valeur appliquée). `strict: true` exigerait
+que la PR se re-base sur `main` pour considérer les checks à jour ;
+le choix initial est `false` (mode laxiste par défaut de GitHub),
+à durcir vers `true` au Cycle 3 si 0 incident (§« Protocole »).
 
-**`contexts[]=PR gate`** = le **name** du job dans
-`.github/workflows/pr-gate.yml`, **case-sensitive**. Si le nom
-diffère dans le YAML, ajuster. Pour vérifier :
+**`enforce_admins: false` (valeur appliquée) — décision rendue.** Le
+choix entre `true` et `false` se décide par **qui merge au
+quotidien**, pas par préférence. Mesuré firsthand : l'identité de
+routine `myia-ai-01` a les droits `push` mais **pas** `admin` —
+donc à `false` elle reste **intégralement soumise** au gate (elle
+ne peut pas merger rouge : le gate garde ses dents là où 100 % des
+merges de routine passent). Seul `jsboige` (admin) conserve une
+sortie de secours. À `true`, en revanche, **personne** ne pourrait
+merger — y compris la PR qui réparerait un gate cassé — ce qui
+fabrique précisément le blocage que le user a exclu de son Go
+(« *Si ça sécurise et tu as toujours un chemin propre de merging,
+Go. Si on se retrouve dans une situation de blocage, no-Go* »).
+`false` satisfait les deux moitiés ; `true` satisfait la première
+et produit la seconde. Application chirurgicale par
+`DELETE .../protection/enforce_admins` (et **non** un `PUT` sur
+`/protection`, qui rejouerait l'objet entier et réinitialiserait
+les clés absentes du corps — dont `allow_force_pushes`, qui porte
+l'interdit de force-push sur `main`).
+
+**`contexts: ["PR gate"]`** = le **name** du job dans
+`.github/workflows/pr-gate.yml`, **case-sensitive**. Le nom du
+contexte requis doit rester byte-identique au nom du job YAML :
+renommer le job détache silencieusement la règle de protection, et
+une règle qui pointe un check que personne ne produit est
+*pending forever* (le deadlock même que le gate existe pour
+éviter). Pour vérifier le nom côté PR :
 
 ```bash
 gh pr checks <PR_NUMBER> --json name,bucket | jq '.[] | select(.name | contains("PR gate"))'
 ```
+
+## Rollback — revenir à l'état d'avant le flip
+
+Le retour propre est la **suppression** de la sous-ressource, pas
+un `contexts: []` (qui laisse la sous-ressource active et vide — un
+état différent de l'initial `404 Required status checks not
+enabled`) :
+
+```bash
+gh api --method DELETE repos/jsboige/CoursIA/branches/main/protection/required_status_checks
+# Vérifier le retour à l'état initial:
+gh api repos/jsboige/CoursIA/branches/main/protection/required_status_checks
+# Attendu: HTTP 404 {"message":"Required status checks not enabled"}
+```
+
+Si le besoin est seulement de **retirer un contexte** (garder la
+protection, enlever `PR gate`), un `PATCH` sur la sous-ressource
+(désormais existante) suffit :
+
+```bash
+gh api --method PATCH repos/jsboige/CoursIA/branches/main/protection/required_status_checks \
+  -f strict=false -f 'contexts[]=<autre contexte>'
+```
+
+Le rollback n'est pas une opération anodine : sans required status
+check, une PR rouge redevient mergeable (retour à l'état
+#9762/#9858). À n'utiliser que sur incident prouvé, pas sur
+inconfort.
 
 ## Auto-test : ce PR modifie `pr-gate.yml`, donc le gate se juge lui-même
 
@@ -127,10 +196,11 @@ trois cycles d'observation minimum :
 2. **Cycle 2 (J+1 → J+7)** : si un edge case apparaît (ex. SHA
    pré-merge sans check-runs), ouvrir une issue `#9819.<edge>`
    et **ne pas** désactiver le required.
-3. **Cycle 3 (J+7 → J+30)** : si 0 incident, on peut envisager
-   `strict: true` (déjà le cas par défaut dans la commande
-   ci-dessus) — mais la valeur sûre tant qu'aucun incident
-   n'a été observé est `strict: false`.
+3. **Cycle 3 (J+7 → J+30)** : si 0 incident, durcir vers
+   `strict: true` (la PR doit alors se re-baser sur `main` pour
+   que ses checks soient considérés à jour). La valeur appliquée
+   au flip est `strict: false` (mode laxiste par défaut de GitHub) ;
+   `strict: true` est le durcissement optionnel post-stabilisation.
 
 ## Cas dégradé : le gate est OK structurellement mais le check-run n'est pas vu
 
