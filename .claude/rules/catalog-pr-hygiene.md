@@ -41,4 +41,3 @@ Cette discipline est ce qui fait **baisser le compte d'issues** sans interventio
 - [.claude/rules/git-workflow.md](git-workflow.md) — branches `feature/`, no force push, no direct main push
 - [.claude/rules/proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup, atomique
 - [.claude/rules/pr-review-discipline.md](pr-review-discipline.md) — §A composites trop larges
-- `~/.claude/projects/d--CoursIA/memory/stale-catalog-silent-revert.md` — incident fondateur
