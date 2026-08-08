@@ -87,8 +87,12 @@ jobs:
         # are DUPLICATES of the FR file's, not new debt. Counting both double-inflates
         # the total above baseline (e.g. knot_lean: Reidemeister.lean(2) +
         # Reidemeister_en.lean(2) => 19 > baseline 17, a false FAIL — C513-L1, #6429).
-        # FR<->EN divergence is caught separately by the i18n drift CI, so nothing is
-        # hidden. This exclusion only ever LOWERS a count, never breaks a green lake.
+        # FR<->EN body divergence is caught separately by the dedicated job
+        # `.github/workflows/lean-i18n-drift.yml` (#10007), which invokes
+        # `scripts/lean/check_i18n_siblings.py --all` and FAILs on real drift /
+        # orphan / non-whitelisted unbuilt. The exemption list lives there,
+        # NAMED (PetersTour_en, #7081 INTRINSIC). This exclusion only ever LOWERS
+        # a count here, never breaks a green lake.
         for f in $(find . -name '*.lean' ! -name '*_en.lean' -not -path './.lake/*'); do
           if [ -f "$f" ]; then
             case "$MODE" in
