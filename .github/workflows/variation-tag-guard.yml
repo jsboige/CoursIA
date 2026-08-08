@@ -554,3 +554,110 @@ jobs:
           # aggregates all check-runs and will report this as BLOCKED, so
           # the PR is non-mergeable until the body is fixed.
           exit 1
+
+  # #10093 -- the BLOCKING gate against `prev:` close-keyword genres. The
+  # four jobs above (tag advisory, light cap, short-header, tag-required)
+  # read the PR BODY. This one reads the COMMIT MESSAGES too: the incident
+  # was a commit carrying `prev: MED/fix #10067` whose `fix #10067` tail
+  # GitHub parsed as an auto-close, closing PR #10067 (the translation core
+  # deliverable) at the squash-merge of #10063 -- unintended, silent, no
+  # keyword in #10063's body (its body tag was `MED/tooling`, sane).
+  #
+  # Why BLOCKING: the failure is DESTRUCTIVE and happens AT MERGE TIME
+  # (the squash commit message is what GitHub parses). An advisory label
+  # would not stop the merge. Only a required check turning `PR gate` red
+  # before merge prevents the auto-close -- same shape as the
+  # `check-variation-tag-required` job.
+  #
+  # Why scan commits: the offending tag was in a COMMIT, not the body. A
+  # body-only gate would have seen nothing. The decision logic lives in
+  # `scripts/ci/variation_prev_guard.py` (testable, same pattern as
+  # `variation_tag_required.py`); the YAML is plomberie.
+  #
+  # The job name carries the `-required` suffix on purpose: PR #10036's
+  # `is_advisory()` classifier in `scripts/pr_gate.py` must NOT silence
+  # this job (cf. check-variation-tag-required). The 14 canonical genres
+  # contain no closing keyword, so a closing-keyword `prev:` genre is
+  # ALWAYS a misuse -- the worker meant refactor/guard/tooling, never fix.
+  # A standalone `Fixes #N` (intended close) is NOT flagged: the
+  # discriminator is the `prev:` prefix, not the keyword alone.
+  check-prev-close-keyword-required:
+    name: 'Require prev: non-closing (block on close-keyword genre, #10093)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the prev-guard helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/variation_prev_guard.py
+            scripts/grain_tag.py
+      - name: 'Scan body + commit messages for prev: close-keyword'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages as a JSON array of strings. `messageBody` is the
+          # full commit message (subject + body), which is what GitHub parses
+          # for auto-close keywords. Empty/missing file -> no commits to scan
+          # (the helper tolerates it).
+          gh pr view "$PR_NUMBER" --json commits --jq '[.[].messageBody]' \
+            > /tmp/commits.json 2>/dev/null || printf '[]' > /tmp/commits.json
+
+          # The helper scans body + commits for `prev:` close-keyword genres
+          # and exits 0 (pass) or 1 (block). stderr surfaced for debug.
+          python3 scripts/ci/variation_prev_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No `prev:` close-keyword genre in body or commits -- job passes."
+            exit 0
+          fi
+
+          # Block path. Idempotent comment via the HTML marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::prev: close-keyword genre detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-prev-close-keyword -->
+          **\`prev:\` genre mots-clé fermant -- bloquant (#10093).**
+
+          ${REASON}
+
+          Une \`prev:\` dont le genre est \`fix\`/\`close\`/\`resolve\` (ou une inflexion) fait que GitHub interprète \`<genre> #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans un message de commit -- c'est exactement ce qui a fermé #10067 (sans la merger) au squash-merge de #10063. Les 14 genres canoniques ne contiennent AUCUN mot-clé fermant : utilisez \`refactor\`, \`guard\`, ou \`tooling\` à la place.
+
+          Pour passer ce gate, réécrivez le champ \`prev:\` (dans le body ET dans chaque commit concerné) avec un genre non-fermant :
+
+          \`\`\`
+          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
+          \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
