@@ -142,6 +142,62 @@ _LANE_RE = re.compile(
     r"lane\s*:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
 )
 
+# `prev` (case-insensitive), optional colon, whitespace, then the SAME
+# TIER/GENRE pair as the leading tag. The `prev:` field traces genre
+# adjacency (variation-protocol.md §1) and carries a PR reference right
+# after the genre (`prev: MED/refactor #1234 (c.42)`). #10093 -- GitHub
+# parses a `prev:` whose GENRE is a closing keyword (`fix #1234`) as an
+# auto-close instruction when the text lands in a commit message: a
+# squash-merge of #10063 closed #10067 (unintended) this way. The 14
+# canonical genres contain NO closing keyword, so a closing-keyword genre
+# in `prev:` is ALWAYS a misuse (use `refactor`/`guard`/`tooling`).
+_PREV_RE = re.compile(
+    r"prev\s*:?\s*([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
+)
+
+# GitHub auto-close keywords (case-insensitive) -- the exact set GitHub
+# recognises in commit messages + PR bodies + PR titles
+# (https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue).
+# A `prev:` genre drawn from this set makes the `genre #N` tail an
+# unintended close instruction. Source of truth for the close-keyword gate.
+CLOSING_KEYWORDS = frozenset({
+    "close", "closes", "closed",
+    "fix", "fixes", "fixed",
+    "resolve", "resolves", "resolved",
+})
+
+
+def find_prev_close_keywords(text: str | None) -> list[dict]:
+    r"""Return `prev:` fields whose genre is a GitHub closing keyword (#10093).
+
+    Scans any text (a PR body OR a commit message) for `prev: <TIER>/<genre>`
+    where `<genre>` is one of the 9 GitHub auto-close keywords
+    (`CLOSING_KEYWORDS`). Each hit is a `prev:` whose `genre #N` tail GitHub
+    parses as a close instruction when the text lands in a commit message --
+    the silent-PR-closure failure mode of #10093.
+
+    The 14 canonical genres (variation-protocol.md §1) contain NO closing
+    keyword, so a closing-keyword genre in `prev:` is ALWAYS a misuse: the
+    worker meant `refactor`, `guard`, `tooling`, etc. -- never `fix`. This
+    function does NOT flag a standalone ``Fixes #123`` (an intended close):
+    it only flags the genre slot of a `prev:` field, where a closing word
+    is structurally wrong, not intended.
+
+    Same noise discipline as ``parse_grain_tag``: bold/backticks/blockquotes
+    stripped, title hashes stripped on recognised key lines. Returns a list
+    of ``{"tier", "genre"}`` dicts (one per offending `prev:` field, empty
+    when the text is clean).
+    """
+    if not text:
+        return []
+    flat = _strip_title_hashes(text.translate(_NOISE))
+    hits = []
+    for m in _PREV_RE.finditer(flat):
+        genre = m.group(2).lower()
+        if genre in CLOSING_KEYWORDS:
+            hits.append({"tier": m.group(1).upper(), "genre": genre})
+    return hits
+
 
 def parse_grain_tag(body: str | None) -> dict | None:
     """Extract {tier, genre, lane} from a PR body, form-tolerant.
@@ -304,6 +360,10 @@ def main(argv: list[str] | None = None) -> int:
     # The guard reads both and applies separate labels.
     sh = parse_short_header(body)
     short_complete = all(sh[k] is not None for k in ("quoi", "preuve", "perimetre"))
+    # `prev:` close-keyword scan (#10093): runs on the body the same way the
+    # blocking job runs on commit messages. Reported as a field so the
+    # advisory job can label without re-implementing the scan.
+    prev_hits = find_prev_close_keywords(body)
     if g is None:
         # No TIER/GENRE anywhere: the one substance the protocol will not
         # relax. The guard poses `variation-tag-missing`. Short-header is
@@ -312,7 +372,8 @@ def main(argv: list[str] | None = None) -> int:
                           "lane": None, "tier_valid": False, "genre_valid": False,
                           "quoi": sh["quoi"], "preuve": sh["preuve"],
                           "perimetre": sh["perimetre"],
-                          "short_header_complete": short_complete}))
+                          "short_header_complete": short_complete,
+                          "prev_close_keyword_hits": prev_hits}))
         return 0
     tier_valid = g["tier"] in TIERS
     genre_valid = g["genre"] in GENRES
@@ -327,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
         "preuve": sh["preuve"],
         "perimetre": sh["perimetre"],
         "short_header_complete": short_complete,
+        "prev_close_keyword_hits": prev_hits,
     }, ensure_ascii=False))
     return 0
 

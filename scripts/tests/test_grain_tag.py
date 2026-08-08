@@ -243,3 +243,74 @@ def test_short_header_first_hit_wins_per_key():
     )
     sh = gt.parse_short_header(body)
     assert sh["quoi"] == "first answer (canonical)"
+
+
+# --- prev: close-keyword detection (#10093) ---------------------------------
+#
+# find_prev_close_keywords() scans any text (body OR commit message) for a
+# `prev: <TIER>/<genre>` whose genre is a GitHub closing keyword. The #10093
+# incident: a commit `prev: MED/fix #10067` made GitHub auto-close #10067 at
+# squash-merge. The 14 canonical genres contain no closing keyword, so a
+# closing-keyword genre in prev: is ALWAYS a misuse.
+
+def test_prev_close_keyword_fix_detected():
+    # The exact #10093 incident line: `prev: MED/fix #10067`.
+    hits = gt.find_prev_close_keywords(
+        "Grain: MED/fix -- lane myia-po-2024:CoursIA-2 -- prev: MED/fix #10067 (c.1331+50)"
+    )
+    assert len(hits) == 1
+    assert hits[0] == {"tier": "MED", "genre": "fix"}
+
+
+def test_prev_close_keyword_all_inflections():
+    # Every GitHub closing keyword in the genre slot is flagged.
+    for kw in ("fix", "fixes", "fixed", "close", "closes", "closed",
+               "resolve", "resolves", "resolved"):
+        hits = gt.find_prev_close_keywords(f"prev: LIGHT/{kw} #42")
+        assert len(hits) == 1, f"expected hit for genre={kw}"
+        assert hits[0]["genre"] == kw
+
+
+def test_prev_canonical_genres_pass():
+    # The 14 canonical genres contain NO closing keyword -> all pass.
+    for genre in ("lean", "qc", "training", "genai", "notebook-python",
+                  "notebook-dotnet", "docs", "guard", "refactor", "ledger",
+                  "readme", "test", "tooling", "research-code"):
+        hits = gt.find_prev_close_keywords(f"prev: MED/{genre} #100")
+        assert hits == [], f"canonical genre {genre} must NOT be flagged"
+
+
+def test_prev_close_keyword_backtick_wrapped():
+    # Backticks around the prev: value are stripped (same noise discipline as
+    # parse_grain_tag) -- a `prev: `MED/fix #9457`` still triggers.
+    hits = gt.find_prev_close_keywords("prev: `MED/fix #9457`.")
+    assert len(hits) == 1
+    assert hits[0] == {"tier": "MED", "genre": "fix"}
+
+
+def test_prev_close_keyword_no_prev_field():
+    # A body without any prev: field -> no hits (the leading tag's genre is
+    # NOT scanned, only the prev: slot).
+    hits = gt.find_prev_close_keywords(
+        "Grain: MED/fix -- lane myia-po-2024:CoursIA-2\n\nFixes #100."
+    )
+    # `MED/fix` is the LEADING tag genre (not prev:), and `Fixes #100` is an
+    # intended close (no prev: prefix) -> neither is flagged. Only the prev:
+    # genre slot is in scope.
+    assert hits == []
+
+
+def test_prev_close_keyword_empty_and_none():
+    assert gt.find_prev_close_keywords(None) == []
+    assert gt.find_prev_close_keywords("") == []
+    assert gt.find_prev_close_keywords("no grain tag here at all") == []
+
+
+def test_prev_close_keyword_multiple_prevs():
+    # Two offending prev: fields in one text -> two hits.
+    hits = gt.find_prev_close_keywords(
+        "prev: MED/fix #100\nGrain: LIGHT/close -- prev: LIGHT/closes #200"
+    )
+    assert len(hits) == 2
+    genres = {h["genre"] for h in hits}
+    assert genres == {"fix", "closes"}
