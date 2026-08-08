@@ -419,28 +419,76 @@ theorem tricolorable_invariant :
     existentiellement quantifié (`∃ a, …`). Le recursor `Exists.casesOn`
     n'élimine que vers `Prop`, or le but `TriColoring d₂` est un `Type` : on ne
     peut donc PAS extraire `a` (donnée) de `h` pour construire un terme de
-    `Type`. La solution est de passer `a` (et la borne `ha2 : a ≤ d₁.numEdges`)
-    comme paramètres explicites — données, pas témoins extraits d'un `Prop`. Le
-    théorème de transfert `tricolorable_forward_r1` (but `Prop`), lui, obtient
-    `a` de `h` via `obtain` (élimination `Prop → Prop`, autorisée) puis appelle
-    cette `def`.
+    `Type`. La solution est de passer `a` (et les bornes) comme paramètres
+    explicites — données, pas témoins extraits d'un `Prop`. Le théorème de
+    transfert `tricolorable_forward_r1` (but `Prop`), lui, obtient `a` de `h`
+    via `obtain` (élimination `Prop → Prop`, autorisée) puis appelle cette
+    `def`.
+
+    **Pourquoi le corps ne fait PAS de `rw [hnum2]` (révision c.983).** La
+    première version (c.982) faisait `show Fin d₂.numEdges → TriColor; rw
+    [hnum2]; exact fun k => …`. Comme `rw` est une tactique (pas de l'égalité
+    définitionnelle), le terme résultant n'était PAS réductible par defeq :
+    appliquer l'extension à un `k : Fin d₂.numEdges` ne se réduisait pas, ce qui
+    bloquait le lemme de conservation de couleur (le pivot du transfert). Le
+    corps présent prend `k : Fin d₂.numEdges` DIRECTEMENT et décide sur
+    `k.val < d₁.numEdges`, sans réécrire le type porteur : il est donc
+    defeq-réductible, et `simp only [tricolorForwardExtension]` / `unfold`
+    fonctionnent. `hnum2` reste un paramètre (le théorème appelant l'utilise
+    pour arguer que les slots `≥ d₁.numEdges` sont exactement les 2 arêtes
+    fraîches), mais le corps ne le référence pas — c'est intentionnel.
 
     La construction : `coloring₂` agree avec `coloring₁` sur le préfixe
     `[0, d₁.numEdges)` (transport via l'inclusion `Fin n ↪ Fin (n+2)` implicite
-    dans `hnum2 : d₂.numEdges = n+2`), et les deux slots frais
-    `{d₁.numEdges, d₁.numEdges+1}` prennent la couleur `ca = coloring₁` de l'arc
+    dans `hnum2`), et tous les slots frais `{n, n+1}` (où `n = d₁.numEdges`,
+    donc exactement 2 via `hnum2`) prennent la couleur `ca = coloring₁` de l'arc
     splice `a`. Le théorème cible affirmera que c'est un tricoloriage valide de
     `d₂` (nouveau crossing `⟨a,b,c,c⟩` → Fox toutes-égales ; `Y'` préservé). -/
 def tricolorForwardExtension {d₁ d₂ : KnotDiagram}
     (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
     (coloring₁ : TriColoring d₁) : TriColoring d₂ := by
-  -- `a-1` est un indice `Fin d₁.numEdges` valide (de `ha1` et `ha2` : `0 ≤ a-1 < numEdges`).
   have hca : a - 1 < d₁.numEdges := by omega
-  -- Couleur de l'arc splice.
-  let ca : TriColor := coloring₁ ⟨a - 1, hca⟩
-  show Fin d₂.numEdges → TriColor
-  rw [hnum2]
-  exact fun k => if hk : k.val < d₁.numEdges then coloring₁ ⟨k.val, hk⟩ else ca
+  exact fun k => if hk : k.val < d₁.numEdges then coloring₁ ⟨k.val, hk⟩ else coloring₁ ⟨a - 1, hca⟩
+
+/-- Lemme-pivot de conservation de couleur : pour toute arête `e ∈ [1, d₁.numEdges]`
+    (une arête authentique de `d₁`), l'extension lit la MÊME couleur que
+    `coloring₁`. C'est le fondement du cas « crossing inchangé » du transfert
+    avant : un crossing de `d₁` dont l'index ≠ `i` n'est pas touché par la
+    chirurgie `List.set`, donc ses conditions de Fox sous `coloring₂` se
+    réduisent à celles sous `coloring₁` via ce lemme (point par point sur ses 4
+    slots PD). -/
+theorem tricolorForwardExtension.colorAtNat_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (e : Nat) (he1 : 1 ≤ e) (he2 : e ≤ d₁.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) e =
+      d₁.colorAtNat coloring₁ e := by
+  -- Aucun des deux `numEdges` n'est nul (`1 ≤ e ≤ d₁.numEdges` ⟹ `d₁.numEdges ≥ 1`).
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- Réduis les deux modulos à `e-1` (car `e-1 < d₁.numEdges ≤ d₂.numEdges`).
+  have hfin2 : ((e - 1) % d₂.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  have hfin1 : ((e - 1) % d₁.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` des deux côtés (branches `numEdges = 0` mortes via `dif_neg`)
+  -- ET réduit les modulos. **`simp only` et non `rw`** : le modulo `(e-1)%n` apparaît
+  -- dans le champ VALEUR du `Fin ⟨(e-1)%n, ⋯⟩` ET dans le champ PREUVE (`⋯ : (e-1)%n < n`),
+  -- donc le réécriture crée un motive dépendant qui échoue sur `rw` (Lean: "motive is
+  -- not type correct"). `simp` dispose des lemmes `congr` de `Fin` qui propagent la
+  -- réécriture à travers le champ preuve — c'est la solution prescrite par le message
+  -- d'erreur lui-même ("use 'simp' ... which have strategies for ... dependencies").
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hfin2, hfin1]
+  -- But : `tricolorForwardExtension … ⟨e-1, _⟩ = coloring₁ ⟨e-1, _⟩`.
+  -- L'indice `⟨e-1, _⟩ : Fin d₂.numEdges` ; sa coercion `↑⟨e-1, ⋯⟩` est
+  -- defeq à `e-1` (`Fin.val_mk`). On `show` donc le but avec `(e-1)` à la
+  -- place de la coercion — ce qui aligne le test du `if` sur `e-1 < d₁.numEdges`
+  -- (vrai car `e ≤ d₁.numEdges`) — PUIS `if_pos` force la branche « then ».
+  -- **`show` ne souffre pas du problème de motive** (c'est une égalité
+  -- définitionnelle établie par le noyau, pas une réécriture par congruence).
+  unfold tricolorForwardExtension
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨e - 1, by omega⟩
+  -- `dif_pos` (pas `if_pos`) : le `if` est un `dite` dépendant — la preuve `hk`
+  -- est utilisée dans la branche « then » (`coloring₁ ⟨e-1, hk⟩`).
+  rw [dif_pos (by omega : (e - 1 : Nat) < d₁.numEdges)]
 
 /-! ## 3. Le trefoil est tricolorable
 
