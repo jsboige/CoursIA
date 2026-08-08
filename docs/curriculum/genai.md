@@ -20,9 +20,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 135 |
+| Notebooks | 136 |
 | PRODUCTION | 0 |
-| BETA | 125 |
+| BETA | 126 |
 | ALPHA | 10 |
 
 ## GenAI (1 notebooks)
@@ -117,17 +117,18 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 🏭 Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une | ALPHA | Non |
 
-## GenAI/Plateformes-Conversationnelles/Open-WebUI (7 notebooks)
+## GenAI/Plateformes-Conversationnelles (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 2 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 3 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 4 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 5 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 6 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 7 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
+| 1 | Choisir le modèle derrière son chatbot — une mini-évalu | BETA | Non |
+| 2 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 3 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 4 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 5 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 6 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 7 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 8 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
 
 ## GenAI/PostTraining (7 notebooks)
 

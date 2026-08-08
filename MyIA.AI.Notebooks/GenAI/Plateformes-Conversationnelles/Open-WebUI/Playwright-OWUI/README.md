@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Open-WebUI
-pedagogical_count: 7
-breakdown: Open-WebUI=7
-maturity: BETA=6, ALPHA=1
+pedagogical_count: 0
+breakdown: 
+maturity: 
 -->
 
 [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../../Vibe-Coding/README.md)

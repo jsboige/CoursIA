@@ -1,42 +1,42 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-07**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-08**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**863** notebooks référencés au catalogue.
+**867** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 716 | 83.0% |
-| DEMO | 145 | 16.8% |
+| READY | 720 | 83.0% |
+| DEMO | 145 | 16.7% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 549 |
+| **local** (exécutable sans GPU/cloud/WSL) | 552 |
 | WSL requis | 43 |
 | GPU requis | 93 |
 | Cloud requis (QC / GenAI Docker) | 106 |
-| API key requise | 135 |
+| API key requise | 136 |
 
 ## Distribution par série
 
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| GameTheory | 55 | 0 | 0 | 55 | 100% |
-| GenAI | 57 | 82 | 2 | 141 | 40% |
+| GameTheory | 56 | 0 | 0 | 56 | 100% |
+| GenAI | 58 | 82 | 2 | 142 | 41% |
 | IIT | 53 | 0 | 0 | 53 | 100% |
 | ML | 45 | 3 | 0 | 48 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 58 | 48 | 0 | 106 | 55% |
 | RL | 16 | 1 | 0 | 17 | 94% |
-| Search | 116 | 0 | 0 | 116 | 100% |
+| Search | 118 | 0 | 0 | 118 | 100% |
 | Sudoku | 35 | 2 | 0 | 37 | 95% |
 | SymbolicAI | 217 | 9 | 0 | 226 | 96% |
 
@@ -44,9 +44,9 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 560 |
+| Python 3 | 563 |
 | .NET (C#) | 229 |
-| Python 3 (ipykernel) | 20 |
+| Python 3 (ipykernel) | 21 |
 | Lean 4 (WSL) | 18 |
 | Python (GameTheory WSL + OpenSpiel) | 10 |
 | Python 3 (WSL) | 7 |
