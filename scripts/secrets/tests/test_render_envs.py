@@ -22,6 +22,10 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import render_envs  # noqa: E402  -- module object, for integration tests that
+#   monkeypatch module globals (MASTER_ENV, TARGET_ENVS, SERVICES_ROOT) and call
+#   bootstrap()/sync()/main()/bootstrap_missing_envs(). Ported from the deleted
+#   legacy scripts/tests/test_render_envs.py shadow (#10066 consolidation).
 from render_envs import (  # noqa: E402
     _LINE_RE,
     _source_priority,
@@ -29,6 +33,23 @@ from render_envs import (  # noqa: E402
     parse_kv,
     read_env,
 )
+
+
+# --------------------------------------------------------------------------- #
+# Helpers: build a tmp env tree whose paths carry the parts _source_priority
+# inspects ("docker-configurations" + "services" => priority 0 / canonical).
+# Ported from the deleted legacy shadow.
+# --------------------------------------------------------------------------- #
+def _svc_env(tree: Path, svc: str) -> Path:
+    """A service .env path that registers as CANONICAL (priority 0)."""
+    p = tree / "docker-configurations" / "services" / svc / ".env"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _svc_dir(tree: Path, svc: str) -> Path:
+    """A service dir under SERVICES_ROOT-shaped tmp tree (no .env pre-created)."""
+    return tree / "docker-configurations" / "services" / svc
 
 
 # ---------------------------------------------------------------------------
@@ -239,3 +260,385 @@ class TestLineRegex:
     def test_accepts_underscore_leading_key(self):
         m = _LINE_RE.match("_PRIVATE_KEY=value")
         assert m is not None and m.group(1) == "_PRIVATE_KEY"
+
+
+# =========================================================================== #
+# INTEGRATION TESTS — ported verbatim from the deleted legacy
+# scripts/tests/test_render_envs.py shadow (#10066 consolidation). These cover
+# the module's STATE MACHINES (bootstrap/sync/main CLI) + constants + the
+# compose-referenced-keys parser, none of which the pure-unit suite above
+# touched. The module collision (both files shared basename
+# ``test_render_envs`` -> sys.modules cached the legacy, shadowing the canon)
+# meant the canon's 41 unit tests were DEAD in CI whenever both ran; deleting
+# the legacy after porting these 29 unique tests resurrects the 41 AND unifies
+# integration coverage in the canonical home (70 effective vs 51 before).
+# References use the ``render_envs`` module object (imported above) so
+# monkeypatching module globals drives the real state machines.
+# =========================================================================== #
+
+
+# --------------------------------------------------------------------------- #
+# Constants
+# --------------------------------------------------------------------------- #
+class TestConstants:
+    def test_secret_keys_is_frozenset(self):
+        assert isinstance(render_envs.SECRET_KEYS, frozenset)
+
+    def test_known_secret_keys_present(self):
+        for k in ("HF_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN"):
+            assert k in render_envs.SECRET_KEYS
+
+    def test_aliases_mapping(self):
+        assert render_envs.ALIASES == {
+            "HUGGINGFACE_TOKEN": "HF_TOKEN",
+            "GITHUB_ACCESS_TOKEN": "GITHUB_TOKEN",
+        }
+
+
+# --------------------------------------------------------------------------- #
+# bootstrap: state machine (monkeypatch MASTER_ENV + TARGET_ENVS)
+# --------------------------------------------------------------------------- #
+class TestBootstrap:
+    def test_master_exists_aborts_one_shot(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        master.write_text("EXISTING=keep\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [])
+        assert render_envs.bootstrap() == 1
+        # existing master is NOT overwritten
+        assert "EXISTING=keep" in master.read_text(encoding="utf-8")
+
+    def test_clean_gather_writes_sorted(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        a = _svc_env(tmp_path, "svcA")
+        a.write_text("OPENAI_API_KEY=fake-openai\nPORT=8080\n", encoding="utf-8")
+        b = _svc_env(tmp_path, "svcB")
+        b.write_text("HF_TOKEN=fake-hf\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [a, b])
+
+        assert render_envs.bootstrap() == 0
+        text = master.read_text(encoding="utf-8")
+        # Only SECRET_KEYS are gathered; PORT is service config -> excluded.
+        assert "HF_TOKEN=fake-hf" in text
+        assert "OPENAI_API_KEY=fake-openai" in text
+        assert "PORT" not in text
+        # Sorted alphabetically (HF_TOKEN before OPENAI_API_KEY).
+        assert text.index("HF_TOKEN=") < text.index("OPENAI_API_KEY=")
+
+    def test_client_drift_service_wins(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        svc = _svc_env(tmp_path, "svc")
+        svc.write_text("HF_TOKEN=canonical-val\n", encoding="utf-8")
+        client = tmp_path / "notebooks" / ".env"
+        client.parent.mkdir(parents=True, exist_ok=True)
+        client.write_text("HF_TOKEN=stale-val\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [svc, client])
+
+        assert render_envs.bootstrap() == 0
+        # Service (priority 0) outranks client (priority 1).
+        assert "HF_TOKEN=canonical-val" in master.read_text(encoding="utf-8")
+
+    def test_hard_conflict_same_priority_aborts(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        a = _svc_env(tmp_path, "svcA")
+        a.write_text("HF_TOKEN=val-one\n", encoding="utf-8")
+        b = _svc_env(tmp_path, "svcB")
+        b.write_text("HF_TOKEN=val-two\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [a, b])
+
+        assert render_envs.bootstrap() == 2
+        # Aborted -> master NOT written.
+        assert not master.exists()
+
+    def test_alias_mismatch_aborts(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        svc = _svc_env(tmp_path, "svc")
+        svc.write_text("HF_TOKEN=canonical\nHUGGINGFACE_TOKEN=different\n",
+                       encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [svc])
+
+        assert render_envs.bootstrap() == 2
+        assert not master.exists()
+
+
+# --------------------------------------------------------------------------- #
+# sync: state machine
+# --------------------------------------------------------------------------- #
+class TestSync:
+    def _setup(self, tmp_path, monkeypatch, master_text, env_files):
+        master = tmp_path / "master.env"
+        if master_text is not None:
+            master.write_text(master_text, encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        targets = []
+        for name, body in env_files:
+            p = _svc_env(tmp_path, name)
+            p.write_text(body, encoding="utf-8")
+            targets.append(p)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", targets)
+        return targets
+
+    def test_no_master_returns_1(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [])
+        assert render_envs.sync(check_only=False) == 1
+
+    def test_drift_check_only_no_write_exit1(self, tmp_path, monkeypatch):
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=new-val\n",
+            [("svc", "HF_TOKEN=old-val\n")],
+        )
+        assert render_envs.sync(check_only=True) == 1
+        # No write performed in check mode.
+        assert "HF_TOKEN=old-val" in targets[0].read_text(encoding="utf-8")
+
+    def test_drift_sync_writes_exit0(self, tmp_path, monkeypatch):
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=new-val\n",
+            [("svc", "HF_TOKEN=old-val\n")],
+        )
+        assert render_envs.sync(check_only=False) == 0
+        assert "HF_TOKEN=new-val" in targets[0].read_text(encoding="utf-8")
+
+    def test_no_drift_exit0(self, tmp_path, monkeypatch):
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=stable\n",
+            [("svc", "HF_TOKEN=stable\n")],
+        )
+        assert render_envs.sync(check_only=False) == 0
+        assert "HF_TOKEN=stable" in targets[0].read_text(encoding="utf-8")
+
+    def test_non_secret_key_untouched(self, tmp_path, monkeypatch):
+        # A KEY present in service .env but ABSENT from master must be left
+        # untouched (master only governs its own declared keys).
+        targets = self._setup(
+            tmp_path, monkeypatch,
+            "HF_TOKEN=new-val\n",
+            [("svc", "HF_TOKEN=old-val\nCUSTOM_PORT=9999\n")],
+        )
+        assert render_envs.sync(check_only=False) == 0
+        text = targets[0].read_text(encoding="utf-8")
+        assert "HF_TOKEN=new-val" in text
+        assert "CUSTOM_PORT=9999" in text  # preserved
+
+
+# --------------------------------------------------------------------------- #
+# main(): argparse routing
+# --------------------------------------------------------------------------- #
+class TestMain:
+    def test_default_runs_sync_check_false(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [])
+        monkeypatch.setattr(sys, "argv", ["render_envs.py"])
+        # No master -> sync returns 1.
+        assert render_envs.main() == 1
+
+    def test_check_flag_routes_to_check_only(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        master.write_text("HF_TOKEN=new\n", encoding="utf-8")
+        svc = _svc_env(tmp_path, "svc")
+        svc.write_text("HF_TOKEN=old\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [svc])
+        monkeypatch.setattr(sys, "argv", ["render_envs.py", "--check"])
+        # Drift in check mode -> exit 1, no write.
+        assert render_envs.main() == 1
+        assert "HF_TOKEN=old" in svc.read_text(encoding="utf-8")
+
+    def test_bootstrap_flag_routes_to_bootstrap(self, tmp_path, monkeypatch):
+        master = tmp_path / "master.env"
+        master.write_text("EXISTING=x\n", encoding="utf-8")
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [])
+        monkeypatch.setattr(sys, "argv", ["render_envs.py", "--bootstrap"])
+        # master exists -> bootstrap one-shot abort -> 1.
+        assert render_envs.main() == 1
+
+    def test_mutually_exclusive_flags_exit_2(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [])
+        monkeypatch.setattr(sys, "argv",
+                            ["render_envs.py", "--bootstrap", "--check"])
+        with pytest.raises(SystemExit) as exc:
+            render_envs.main()
+        assert exc.value.code == 2
+
+    def test_bootstrap_missing_flag_no_master_returns_1(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
+        monkeypatch.setattr(render_envs, "SERVICES_ROOT", tmp_path / "svc")
+        monkeypatch.setattr(sys, "argv", ["render_envs.py", "--bootstrap-missing"])
+        # master missing -> bootstrap_missing_envs returns None -> exit 1.
+        assert render_envs.main() == 1
+
+    def test_bootstrap_missing_exclusive_with_check(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
+        monkeypatch.setattr(render_envs, "SERVICES_ROOT", tmp_path / "svc")
+        monkeypatch.setattr(sys, "argv",
+                            ["render_envs.py", "--bootstrap-missing", "--check"])
+        with pytest.raises(SystemExit) as exc:
+            render_envs.main()
+        assert exc.value.code == 2
+
+
+# --------------------------------------------------------------------------- #
+# --bootstrap-missing: close the .env blind spot (#9351)
+# --------------------------------------------------------------------------- #
+class TestBootstrapMissing:
+    def _setup_tree(self, tmp_path):
+        """Build a tmp tree mirroring SERVICES_ROOT shape. Return (services_root, master)."""
+        services_root = tmp_path / "docker-configurations" / "services"
+        services_root.mkdir(parents=True)
+        master = tmp_path / "master.env"
+        return services_root, master
+
+    def test_no_master_returns_none(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        # master does NOT exist
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        assert result is None
+
+    def test_creates_env_when_compose_references_secret_key(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        master.write_text("WHISPER_API_KEY=canonical-wsk\nOPENAI_API_KEY=canonical-oai\n",
+                          encoding="utf-8")
+        svc = _svc_dir(tmp_path, "whisper-api")
+        svc.mkdir(parents=True)
+        (svc / "docker-compose.yml").write_text(
+            "services:\n  whisper-api:\n    environment:\n      - API_KEY=${WHISPER_API_KEY:-}\n",
+            encoding="utf-8",
+        )
+        # No .env yet.
+        assert not (svc / ".env").exists()
+
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        assert result == ["whisper-api"]
+        env_text = (svc / ".env").read_text(encoding="utf-8")
+        # Only the referenced key is written (OPENAI_API_KEY is in master but
+        # not in the compose file, so it is NOT emitted).
+        assert "WHISPER_API_KEY=canonical-wsk" in env_text
+        assert "OPENAI_API_KEY" not in env_text
+        # Header comment is present so future maintainers know the provenance.
+        assert "Auto-generated by render_envs.py --bootstrap-missing" in env_text
+
+    def test_skips_service_without_compose(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        master.write_text("WHISPER_API_KEY=canonical-wsk\n", encoding="utf-8")
+        svc = _svc_dir(tmp_path, "no-compose")
+        svc.mkdir(parents=True)
+        # NO docker-compose.yml in this dir.
+
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        assert result == []
+        assert not (svc / ".env").exists()
+
+    def test_skips_compose_with_no_secret_refs(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        master.write_text("WHISPER_API_KEY=canonical-wsk\n", encoding="utf-8")
+        svc = _svc_dir(tmp_path, "no-refs")
+        svc.mkdir(parents=True)
+        (svc / "docker-compose.yml").write_text(
+            "services:\n  foo:\n    environment:\n      - PORT=8080\n",
+            encoding="utf-8",
+        )
+
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        assert result == []
+        assert not (svc / ".env").exists()
+
+    def test_existing_env_left_untouched(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        master.write_text("WHISPER_API_KEY=master-canonical\n", encoding="utf-8")
+        svc = _svc_dir(tmp_path, "already")
+        svc.mkdir(parents=True)
+        (svc / "docker-compose.yml").write_text(
+            "services:\n  foo:\n    environment:\n      - API_KEY=${WHISPER_API_KEY:-}\n",
+            encoding="utf-8",
+        )
+        existing = svc / ".env"
+        existing.write_text("WHISPER_API_KEY=local-override\n# curated by hand\n",
+                            encoding="utf-8")
+
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        # Not in write list -- sync() owns existing .env.
+        assert result == []
+        # Local override preserved (no overwrite).
+        assert "local-override" in existing.read_text(encoding="utf-8")
+
+    def test_hybrid_compose_also_scanned(self, tmp_path, monkeypatch):
+        services_root, master = self._setup_tree(tmp_path)
+        master.write_text("WHISPER_API_KEY=canonical-wsk\n", encoding="utf-8")
+        svc = _svc_dir(tmp_path, "hybrid")
+        svc.mkdir(parents=True)
+        # No docker-compose.yml, but a docker-compose-hybrid.yml.
+        (svc / "docker-compose-hybrid.yml").write_text(
+            "services:\n  foo:\n    environment:\n      - API_KEY=${WHISPER_API_KEY:-}\n",
+            encoding="utf-8",
+        )
+
+        result = render_envs.bootstrap_missing_envs(
+            services_root=services_root, master_path=master,
+            secret_keys=render_envs.SECRET_KEYS,
+        )
+        assert result == ["hybrid"]
+        assert "WHISPER_API_KEY=canonical-wsk" in (svc / ".env").read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- #
+# _compose_referenced_keys: parser helper
+# --------------------------------------------------------------------------- #
+class TestComposeReferencedKeys:
+    def test_extracts_dollar_brace(self, tmp_path):
+        p = tmp_path / "c.yml"
+        p.write_text("API_KEY=${WHISPER_API_KEY:-}\nPORT=8080\n", encoding="utf-8")
+        keys = render_envs._compose_referenced_keys(
+            p, frozenset({"WHISPER_API_KEY", "OPENAI_API_KEY"}),
+        )
+        assert keys == {"WHISPER_API_KEY"}
+
+    def test_strips_default_value(self, tmp_path):
+        p = tmp_path / "c.yml"
+        p.write_text("API_KEY=${WHISPER_API_KEY:-fallback}\n", encoding="utf-8")
+        keys = render_envs._compose_referenced_keys(
+            p, frozenset({"WHISPER_API_KEY"}),
+        )
+        assert keys == {"WHISPER_API_KEY"}
+
+    def test_filters_non_secret_keys(self, tmp_path):
+        p = tmp_path / "c.yml"
+        p.write_text("API_KEY=${WHISPER_API_KEY:-}\nFOO=${PORT:-8080}\n",
+                    encoding="utf-8")
+        keys = render_envs._compose_referenced_keys(
+            p, frozenset({"WHISPER_API_KEY", "PORT"}),
+        )
+        # Both are technically "secret keys" in this caller's frozenset;
+        # the helper does no filtering by SECRET_KEYS semantics, that's the
+        # caller's responsibility. Pin actual behavior here.
+        assert keys == {"WHISPER_API_KEY", "PORT"}
+
+    def test_missing_file_returns_empty(self, tmp_path):
+        keys = render_envs._compose_referenced_keys(
+            tmp_path / "absent.yml", frozenset({"WHISPER_API_KEY"}),
+        )
+        assert keys == set()
