@@ -595,6 +595,64 @@ theorem triColorConditionAt_unchanged {d₁ d₂ : KnotDiagram}
   -- 8 d₂ bounds: c.ek ≤ d₁.numEdges (hcond.1) ≤ d₂.numEdges (hnum2)
   omega
 
+/-- **Case (a) — renamed slot `Y'`** of the `∀ c ∈ d₂.crossings` case-split in the
+    wrapper `tricolorable_forward_r1`. The crossing `Y'` is the renamed version
+    of `c` under the connected R1 twist: one slot `a` (belonging to `c`) becomes
+    `b = d₁.numEdges + 1`, witnessed by the hypothesis `isRenameOf Y' c a b`.
+    For each of the 4 slots, `isRenameOf` gives the disjunction
+    `(Y'.ek = c.ek) ∨ (Y'.ek = b ∧ c.ek = a)`; in both branches the transport
+    `d₂.colorAtNat coloring₂ Y'.ek = d₁.colorAtNat coloring₁ c.ek` holds:
+    unchanged slot → `colorAtNat_eq`, renamed slot `b` → `colorAtNat_fresh_eq`
+    (= `coloring₁ a` = `coloring₁ c.ek` via `c.ek = a`). The 4 colours of `Y'`
+    in `d₂` thus equal those of `c` in `d₁`; continuity (`c2 = c4`) and Fox are
+    transported as-is from `hcond`. The bounds `Y'.ek ∈ [1, d₂.numEdges]` follow
+    from the disjunction (unchanged slot: `c.ek ≤ d₁.numEdges ≤ d₂.numEdges`;
+    slot `b`: `b = d₁.numEdges + 1 ≤ d₂.numEdges = d₁.numEdges + 2`) by `omega`. -/
+theorem triColorConditionAt_renamed {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (Y' c : PDCrossing)
+    (hrename : Y'.isRenameOf c a (d₁.numEdges + 1))
+    (hcond : triColorConditionAt d₁ coloring₁ c) :
+    triColorConditionAt d₂ (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) Y' := by
+  -- Unfold the 4×disjunction conjunction of `isRenameOf` into 4 slot hypotheses.
+  obtain ⟨hs1, hs2, hs3, hs4⟩ := hrename
+  -- Unfold the bounds of `c` in `d₁` (used by `colorAtNat_eq` for the unchanged slot).
+  simp only [triColorConditionAt] at hcond
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hcond.1
+  -- Transport the 4 colours. Each `rcases hs_k` lives in the local scope of the
+  -- `have` (does not exhaust `hs_k`, reused below for bounding):
+  --   unchanged slot (Y'.ek = c.ek) → `colorAtNat_eq` ;
+  --   renamed slot (Y'.ek = b ∧ c.ek = a) → `colorAtNat_fresh_eq` (= coloring₁ a
+  --   = coloring₁ c.ek via `c.ek = a`).
+  have hk1 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) Y'.e1 =
+      d₁.colorAtNat coloring₁ c.e1 := by
+    rcases hs1 with he | ⟨heb, hec⟩
+    · rw [he]; exact tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e1 hc11 hc12
+    · rw [heb, hec]; exact tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  have hk2 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) Y'.e2 =
+      d₁.colorAtNat coloring₁ c.e2 := by
+    rcases hs2 with he | ⟨heb, hec⟩
+    · rw [he]; exact tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e2 hc21 hc22
+    · rw [heb, hec]; exact tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  have hk3 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) Y'.e3 =
+      d₁.colorAtNat coloring₁ c.e3 := by
+    rcases hs3 with he | ⟨heb, hec⟩
+    · rw [he]; exact tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e3 hc31 hc32
+    · rw [heb, hec]; exact tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  have hk4 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) Y'.e4 =
+      d₁.colorAtNat coloring₁ c.e4 := by
+    rcases hs4 with he | ⟨heb, hec⟩
+    · rw [he]; exact tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e4 hc41 hc42
+    · rw [heb, hec]; exact tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  -- Goal: bounds Y' + (continuity + Fox). The 4 `hk_k` bring the colours of
+  -- `Y'` in `d₂` back to those of `c` in `d₁` → continuity + Fox = `hcond.2`.
+  simp only [triColorConditionAt]
+  simp only [hk1, hk2, hk3, hk4]
+  refine ⟨?_, hcond.2⟩
+  -- 8 bounds `1 ≤ Y'.ek ≤ d₂.numEdges`: each slot is `c.ek` (≤ d₁.numEdges
+  -- ≤ d₂.numEdges) or `b = d₁.numEdges + 1` (≤ d₂.numEdges = d₁.numEdges + 2).
+  omega
+
 /-- **Forward direction** of tricolorability invariance under connected R1 twist.
     Witness = trivial extension. See the blocking note above for the current wall
     (the `∀ c ∈ d₂.crossings` conjunction). -/
