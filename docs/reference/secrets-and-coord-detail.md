@@ -97,7 +97,7 @@ Workflow batch merge quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent :
 gh auth status   # doit montrer myia-ai-01
 
 # 2. Audit pre-merge G.6 + merge DIRECTEMENT sous myia-ai-01
-gh pr merge <N> --squash --delete-branch   # x N PRs
+gh pr merge <N> --squash   # x N PRs
 
 # 3. Post dashboard ack (liste merges + commits hash)
 ```
