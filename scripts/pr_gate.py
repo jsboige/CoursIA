@@ -46,7 +46,20 @@ now and later, with no per-workflow wiring to maintain.
 4. **Self-exclusion.** The gate never waits for itself.
 5. **Legacy commit statuses count too.** Some integrations post statuses, not
    check runs; both are unioned.
-6. **Fork PRs short-circuit to PASS.** Issue #10072 -- student PRs from a
+6. **Advisory checks are reported, never blocking.** A job whose name says
+   `advisory` is by construction a signal-carrier: its verdict belongs in a
+   label, not in a merge decision (7 of the 53 jobs in `.github/workflows`
+   are named that way, 5 of them spelling out "label, non-blocking"). Because
+   this gate aggregates *whatever CI exists*, letting an advisory failure
+   through would silently promote every advisory guard into a hard gate --
+   the exact opposite of what its author declared. Measured on 2026-08-08:
+   #10063 and #10080 were both `BLOCKED` with `PR gate -> FAILURE`, and in
+   #10063's case the advisory job had merely crashed on an unbound shell
+   variable before emitting any verdict at all. An advisory check therefore
+   never enters `pending` (a hung one must not hold the repo) nor `bad`; it
+   is listed separately and printed, so the signal stays visible in the log
+   while the decision stays clean.
+7. **Fork PRs short-circuit to PASS.** Issue #10072 -- student PRs from a
    fork have no internal convention to police, and `.claude/rules/student-pr-
    reviews.md` explicitly allows admin merges on red CI for that class of PR.
    The workflow passes `--is-fork` for `head.repo.fork == true`; the script
@@ -87,6 +100,19 @@ STATUS_PENDING = frozenset({"queued", "in_progress", "waiting", "pending", "requ
 
 DEFAULT_SELF_NAME = "PR gate"
 
+# Substring that marks a check as advisory (see rule 6). Matched
+# case-insensitively anywhere in the check name, because GitHub renders a job as
+# "<workflow> / <job>" and the marker sits in the job half. This is the
+# convention already in use across `.github/workflows` -- e.g. "CJK residue
+# advisory (label, non-blocking)" -- so no separate registry has to be kept in
+# sync with the workflows.
+ADVISORY_MARKER = "advisory"
+
+
+def is_advisory(name: str) -> bool:
+    """True when the check declares itself non-blocking by name (rule 6)."""
+    return ADVISORY_MARKER in (name or "").lower()
+
 
 class GateError(RuntimeError):
     """Raised when the check state cannot be established. Always fatal."""
@@ -115,16 +141,22 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
 
 def classify(
     checks: Sequence[dict], self_name: str = DEFAULT_SELF_NAME
-) -> tuple[list[str], list[str], list[str]]:
-    """Split settled checks into (pending, bad, ok) name lists.
+) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Split settled checks into (pending, bad, ok, advisory) name lists.
 
     `self_name` is excluded so the gate never waits on itself. Matching is a
     prefix test because GitHub renders a job inside a workflow as
     "<workflow> / <job>", and the gate is required under its workflow name.
+
+    Advisory checks (rule 6) are diverted into their own list -- annotated with
+    what they actually reported -- and never reach `pending` or `bad`. They are
+    kept separate rather than merged into `ok` so a caller can print "advisory
+    X failed" instead of silently rewriting a failure into a pass.
     """
     pending: list[str] = []
     bad: list[str] = []
     ok: list[str] = []
+    advisory: list[str] = []
 
     for check in dedupe_latest(checks):
         name = check.get("name") or "<unnamed>"
@@ -133,6 +165,14 @@ def classify(
 
         status = (check.get("status") or "").lower()
         conclusion = (check.get("conclusion") or "").lower()
+
+        if is_advisory(name):
+            if conclusion not in CONCLUSION_OK:
+                state = conclusion or status or "no verdict"
+                advisory.append(f"{name} ({state})")
+            else:
+                ok.append(name)
+            continue
 
         if status in STATUS_PENDING or not conclusion:
             pending.append(name)
@@ -145,7 +185,18 @@ def classify(
             # adds later must not silently become a pass.
             bad.append(f"{name} (unknown conclusion '{conclusion}')")
 
-    return sorted(pending), sorted(bad), sorted(ok)
+    return sorted(pending), sorted(bad), sorted(ok), sorted(advisory)
+
+
+def _report_advisory(advisory: Sequence[str]) -> None:
+    """Print non-green advisory checks. Never affects the exit code (rule 6).
+
+    Printing is the whole point: the gate must not be the reason an advisory
+    signal disappears. The label posted by the advisory workflow itself remains
+    the durable carrier -- this line only keeps it visible in the gate's own log.
+    """
+    for entry in advisory:
+        print(f"[pr-gate] advisory (not blocking): {entry}", flush=True)
 
 
 def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[int, str]:
@@ -252,10 +303,11 @@ def wait_and_decide(
 
     while True:
         checks = fetch(repo, sha)
-        pending, bad, ok = classify(checks, self_name)
+        pending, bad, ok, advisory = classify(checks, self_name)
 
         if bad:
             # Fail fast: a failure cannot be undone by waiting longer.
+            _report_advisory(advisory)
             return verdict(pending, bad, settled=True)
 
         if pending:
@@ -263,10 +315,12 @@ def wait_and_decide(
         else:
             quiet_streak += 1
             if quiet_streak >= settle_polls:
+                _report_advisory(advisory)
                 print(f"[pr-gate] settled: {len(ok)} check(s) green", flush=True)
                 return verdict(pending, bad, settled=True)
 
         if now() >= deadline:
+            _report_advisory(advisory)
             return verdict(pending, bad, settled=False)
 
         print(
