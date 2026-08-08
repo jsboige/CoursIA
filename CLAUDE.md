@@ -52,7 +52,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Reporting dashboard** : poster au minimum début/livraison/fin de session. > 30 min sans post = signe d'isolement. Posts `[INFO]` courts > silence.
 
-**Git** : pas de push direct sur `main`, pas de force push (`--force` / `--force-with-lease`) ni `reset --hard` sans validation user. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
+**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
 ### B. Reviews PR (5 points obligatoires)
 

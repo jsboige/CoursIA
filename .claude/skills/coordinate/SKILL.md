@@ -59,7 +59,7 @@ Regles completes : [coordinator-discipline.md](../../rules/coordinator-disciplin
 
 ## Regles importantes
 
-- **Jamais de force push** — cf [git-workflow.md](../../rules/git-workflow.md)
+- **Force push** : jamais sur `main` ; autorisé sur une branche de PR à lane unique — cf [git-workflow.md](../../rules/git-workflow.md)
 - **Coordination via RooSync uniquement** — aucun fichier de coordination/rapport dans git
 - **Deux dashboards workspace, coordonnes independamment** — `workspace-CoursIA` et `workspace-CoursIA-2` sont co-egaux ; lire et poster un contenu lane-specific sur CHACUN a chaque cycle, jamais de broadcast miroir, jamais "le mien vs celui des workers".
 - **Issues + PRs** — chaque tache = issue, chaque livraison = PR avec review

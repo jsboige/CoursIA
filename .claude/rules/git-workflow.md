@@ -28,13 +28,22 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 ## Safety Rules
 
-### 🚨 CRITICAL - NEVER FORCE PUSH
+### Force push — interdit sur `main`, autorisé sur une branche de PR à lane unique
 
-**INCIDENT 2026-03-13** : Force push sur main a potentiellement écrasé des commits
-- **Règle** : `git push --force` et `--force-with-lease` sont INTERDITS
-- **Exception** : Uniquement urgence extrême avec validation explicite du user AU PRÉALABLE
-- **Alternative** : Créer feature branch, cherry-pick, revert, ou nouveaux commits
-- **Si PR nécessaire** : Créer feature branch FROM main, ne JAMAIS reset main
+**Décision user 2026-08-08** (verbatim) : « *Je ne suis pas fan des force-pushs, on a déjà perdu pas mal de contenu dans le passé à cause de ça, et il existe généralement une alternative à base de merge. Mais pour une branche de feature qui n'est pas manipulée par plusieurs agents de front, ça n'est pas la même histoire. Donc en gros si on interdit sur main et on permet sur des branches de PRs, ça me va.* »
+
+L'ancienne rédaction interdisait `--force` **partout**, urgence-user comprise. Elle est remplacée par un **périmètre**, parce que les deux cas n'ont pas la même conséquence : sur `main` un force-push écrase du contenu partagé et déjà consommé par ~95 forks étudiants (incident **2026-03-13**, commits potentiellement perdus) ; sur une branche de feature qu'une seule lane manipule, il ne réécrit que le travail non mergé de cette lane.
+
+| Cible | Règle | Ce qui la porte |
+|---|---|---|
+| **`main`** | **INTERDIT**, sans exception d'urgence | `allow_force_pushes: false` dans la protection de branche — GitHub **refuse** le push. Ce n'est pas qu'une consigne (vérifiable : `gh api repos/jsboige/CoursIA/branches/main/protection -q .allow_force_pushes`) |
+| **Branche de PR (`feature/*`, `fix/*`, `docs/*`) à lane unique** | **AUTORISÉ**, `--force-with-lease` préféré | aucune protection côté plateforme : c'est la discipline de lane qui répond |
+| **Branche manipulée par plusieurs agents de front** | **INTERDIT** | un `[CLAIMED]` d'une autre lane sur l'issue vaut « plusieurs agents » → [lane-claim-protocol.md](lane-claim-protocol.md) |
+
+- **L'alternative merge d'abord, quand elle existe** : `git merge origin/main`, `gh pr update-branch`, cherry-pick, revert, nouveaux commits. Le force-push est le dernier recours, jamais le réflexe de rebase par défaut.
+- **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
+- **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
+- **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
 
 ---
 
