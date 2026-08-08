@@ -10,7 +10,6 @@ name: CI Required Aggregator
 # GitHub Actions ne permet PAS à un workflow d'avoir un job qui `needs:` les
 # jobs d'un AUTRE workflow via workflow_call. Les seules options étaient :
 #   - regrouper les jobs des N workflows en UN seul workflow (invasif),
-#   - `workflow_run` trigger (complexe, lent, et ne déclenche pas de check),
 #   - ce pattern : UN workflow qui poll l'API `checks.listForRef`.
 # Ce pattern est le moins invasif et le plus rapide à itérer.
 #
@@ -19,13 +18,20 @@ name: CI Required Aggregator
 # fait que (a) fetch les check-runs via l'API, (b) pipe NDJSON au script,
 # (c) refléter le verdict (exit 1 = setFailed).
 #
-# Double trigger pour eviter le faux-negatif "12 PENDING sur la 1ère run" :
+# Triple trigger pour eviter le faux-negatif "12 PENDING sur la 1ère run" :
 #   1. `pull_request` (open/synchronize/reopen) -> verdict frais a chaque push
-#   2. `check_run` (completed) -> re-run quand un upstream check settle
-# Sans (2), la 1ère run tire un snapshot souvent-incomplet (in_progress upstream)
-# et verdicts BLOCKED-PENDING indefiniment jusqu'au prochain push. Le (2) fait
-# que l'aggregator re-tourne et donne un verdict final MERGE-CLEAN des que tous
-# les upstream checks sont completes.
+#   2. `workflow_run` (completed) -> re-run quand un upstream workflow settle
+#   3. `check_run` (completed) -> re-run quand un upstream check settle
+# Sans (2) ou (3), la 1ère run tire un snapshot souvent-incomplet
+# (in_progress upstream) et verdicts BLOCKED-PENDING indefiniment jusqu'au
+# prochain push. Le (2)+(3) fait que l'aggregator re-tourne et donne un
+# verdict final MERGE-CLEAN des que tous les upstream checks sont completes.
+#
+# Note : `check_run` peut etre inconsistants selon les orgs/repos (les events
+# sont livres par workflow-subscription, et un workflow neuf peut avoir un
+# delai de quelques minutes avant la 1ère livraison). `workflow_run` est le
+# fallback canonique documente par GitHub pour le cross-workflow trigger.
+# On garde les DEUX pour maximiser les chances de re-fire.
 #
 # Ce workflow n'altère PAS `required_status_checks` (étape 2 owner-only dans
 # #9819, gated user explicite). Il tourne, rapporte PASS/FAIL, et attend le
@@ -36,6 +42,9 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
   check_run:
     types: [completed]
 
@@ -54,7 +63,7 @@ jobs:
     # garde uniquement le run le plus recent (celui qui voit le SHA le plus
     # a jour, et qui observe le check_run qui vient de finir).
     concurrency:
-      group: ci-aggregator-${{ github.event.pull_request.number || github.event.check_run.pull_requests[0].number }}
+      group: ci-aggregator-${{ steps.resolve.outputs.pr_number || github.run_id }}
       cancel-in-progress: true
     # Le job regarde ce que les AUTRES workflows ont produit. Si pas de
     # check-runs à observer (PR ouverte depuis peu, ou self-only PR), on
@@ -68,29 +77,39 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # Resolution uniforme entre `pull_request` et `check_run` :
-          #   - pull_request : on a direct github.event.pull_request.{number,head.sha}
-          #   - check_run : on resout via l'API en matchant head_sha
+          # Resolution uniforme entre pull_request / check_run / workflow_run :
+          #   - pull_request : direct via github.event.pull_request.{number,head.sha}
+          #   - check_run : head_sha direct, PR via /commits/{sha}/pulls
+          #   - workflow_run : head_branch + head_sha via github.event.workflow_run,
+          #                    PR via /commits/{sha}/pulls (plus robuste que
+          #                    pull_requests[] qui peut etre vide)
           if [ -n "${{ github.event.pull_request.number }}" ]; then
             echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
             echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
             echo "trigger=pull_request"
-          else
-            HEAD_SHA="${{ github.event.check_run.head_sha }}"
-            # Trouve la PR associee a ce SHA via search API (fallback robuste
-            # au cas ou check_run.pull_requests serait vide).
-            PR_DATA=$(gh api -H "Accept: application/vnd.github+json" \
-              "/repos/${{ github.repository }}/commits/${HEAD_SHA}/pulls" \
-              | jq -c '[.[] | select(.state == "open")] | .[0]')
-            PR_NUMBER=$(echo "${PR_DATA}" | jq '.number // empty')
-            if [ -z "${PR_NUMBER}" ]; then
-              echo "::error::No open PR found for head_sha=${HEAD_SHA}"
-              exit 1
-            fi
-            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
-            echo "trigger=check_run"
+            exit 0
           fi
+          # pull_request absent : on est sur check_run ou workflow_run
+          if [ -n "${{ github.event.check_run.head_sha }}" ]; then
+            HEAD_SHA="${{ github.event.check_run.head_sha }}"
+            echo "trigger=check_run"
+          elif [ -n "${{ github.event.workflow_run.head_sha }}" ]; then
+            HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "trigger=workflow_run"
+          else
+            echo "::error::Unknown event type: cannot resolve head_sha"
+            exit 1
+          fi
+          PR_DATA=$(gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/commits/${HEAD_SHA}/pulls" \
+            | jq -c '[.[] | select(.state == "open")] | .[0]')
+          PR_NUMBER=$(echo "${PR_DATA}" | jq '.number // empty')
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "::warning::No open PR found for head_sha=${HEAD_SHA} (workflow may have run on main directly, skipping)"
+            exit 0
+          fi
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v4
