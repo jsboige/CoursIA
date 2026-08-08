@@ -1,0 +1,230 @@
+name: Translation Sync
+
+# Purpose
+# -------
+# Autonomous CI that keeps translations synchronized with notebook sources on
+# every PR (grain C of #10038, the mandat-user deliverable). When a PR modifies
+# an in-scope notebook (any language — the mandate requires symmetry), this
+# workflow:
+#   T1  re-extracts the changed cells -> refreshes src_hash in the sync CSV
+#       (extract_cells_to_csv.py --update preserves existing translations)
+#   T2  detects drift (check_translation_sync.py: SRC_DRIFT = source moved)
+#   T3  translates CHANGED CELLS ONLY (translate_csv.py --apply). Indexed by
+#       src_hash -> only cells whose source actually changed are re-submitted,
+#       never the whole CSV. This is the cost-marginal property (D4): N changed
+#       cells => N API calls, not the full corpus.
+#   T4  re-renders the *_<lang>.ipynb of active languages (render_notebook.py)
+#   then commits the derived files (CSV + rendered notebooks) to the PR branch
+#   as github-actions[bot]. The reviewer reads the SOURCE-LANGUAGE diff only;
+#   the derived translations are not reviewed (same contract as the catalog,
+#   cf catalog-drift.yml / catalog-guard.yml, decision #2632).
+#
+# Fork handling: same-repo PRs only (a bot cannot push to a fork branch). Fork
+# PRs are skipped here; the read-only translation-drift.yml still surfaces drift
+# as a notice for them. Publishing the patch as an artifact for forks is a
+# documented future enhancement (not required by the core mandate).
+#
+# Coupling / honest current state:
+#   - T3 (translate_csv.py) is GATED by ENABLED=False until grain D (#10043)
+#     activates it. Until then the T3 step is a NO-OP: T1 refreshes src_hash,
+#     T2 detects drift, T4 re-renders EXISTING translations, but no NEW
+#     translations are produced. The pipeline becomes fully functional the
+#     moment D lands (ENABLED=True) — no change to this workflow required.
+#   - The translation API key comes from GitHub secrets (never a literal, never
+#     logged — secrets-hygiene §1-3): secrets.OPENAI_API_KEY (primary) /
+#     secrets.OPENROUTER_API_KEY (fallback). A repo admin must add the secret.
+#
+# Catalog precedent (#2744 retired auto-commit-on-PR): that design was abandoned
+# because bot commits silently REVERTED curated catalog fields (maturity,
+# issue_pr_associee). Translations differ: (a) the CSV carries no curated fields
+# beyond post-edited text_<lang>, and (b) src_hash indexing means a bot only
+# touches cells whose SOURCE changed — a curated post-edit (CJK, proper noun)
+# of an UNCHANGED cell is never overwritten. This is the grain-C body's argument
+# (#10042) and it is sound under the incremental T3 contract.
+#
+# See #10038, #10042, #4957, #1650, #6949.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'translations/**'
+      - 'scripts/translation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # bot commit to the PR branch
+  pull-requests: write
+
+jobs:
+  translation-sync:
+    name: "Translation auto-sync (bot)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only: a bot cannot push to a fork's branch. workflow_dispatch
+    # (manual maintainer trigger) always allowed.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+
+    steps:
+      - name: Checkout PR head (with token for bot commit)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install translation toolchain deps
+        run: pip install nbformat
+
+      - name: Configure git for bot commits
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ------------------------------------------------------------------
+      # T1 — re-extract changed notebooks to refresh src_hash in their CSVs.
+      # --update preserves existing text_<lang>/hash_<lang> columns (no clobber
+      # of curated post-edits), only refreshes src_hash for changed cells.
+      # ------------------------------------------------------------------
+      - name: T1 re-extract (refresh src_hash for changed notebooks)
+        id: t1
+        run: |
+          set -euo pipefail
+          if [ ! -d translations ]; then
+            echo "::notice title=Translation sync::No translations/ directory yet (pre-T1 phase). Skipping."
+            echo "has_translations=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_translations=true" >> "$GITHUB_OUTPUT"
+          # Changed *.ipynb on this PR (any language — symmetry per mandate).
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED_NB=$(git diff --name-only "$BASE...HEAD" -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED_NB" ]; then
+            echo "No in-scope notebooks changed. Running a drift check only."
+          else
+            echo "Changed notebooks:"
+            echo "$CHANGED_NB" | sed 's/^/  - /'
+            # --update refreshes src_hash in existing CSVs without clobbering T3 columns.
+            for nb in $CHANGED_NB; do
+              [ -f "$nb" ] || continue
+              python scripts/translation/extract_cells_to_csv.py "$nb" --update --repo-root . || {
+                echo "::warning title=T1 extract::Failed to re-extract $nb (may be out-of-scope / code-only). Continuing.";
+              }
+            done
+          fi
+
+      # ------------------------------------------------------------------
+      # T2 — detect drift across all CSVs (SRC_DRIFT = source moved since last
+      # sync). The JSON report tells us which cells/CSVs need re-translation.
+      # ------------------------------------------------------------------
+      - name: T2 detect drift
+        id: t2
+        if: steps.t1.outputs.has_translations == 'true'
+        run: |
+          set -euo pipefail
+          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null || true)"
+          if [ -z "$REPORT" ]; then
+            echo "drift_count=0" >> "$GITHUB_OUTPUT"
+            echo "No drift detected (or no filled translations to drift against)."
+            exit 0
+          fi
+          COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin).get("anomaly_count",0))' 2>/dev/null || echo 0)"
+          echo "drift_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Drift anomalies: $COUNT"
+          echo "$REPORT"
+
+      # ------------------------------------------------------------------
+      # T3 — translate CHANGED CELLS ONLY. GATED by ENABLED=False in
+      # translate_csv.py until grain D (#10043) activates it. The env carries
+      # the API key from GitHub secrets (never a literal). Until D lands this is
+      # a no-op (the script prints [GATED] and exits 0); the pipeline structure
+      # is correct and activates unchanged when D lands.
+      # ------------------------------------------------------------------
+      - name: T3 translate changed cells (gated on #10043)
+        if: steps.t1.outputs.has_translations == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+          echo "T3 status: translate_csv.py ENABLED flag = governed by grain D (#10043)."
+          # Apply across all CSVs. translate_csv.py only translates cells whose
+          # text_<lang> is empty (the cost-marginal property): unchanged cells
+          # with existing translations are never re-submitted.
+          find translations -name '*.csv' -print0 | while IFS= read -r -d '' csv; do
+            echo "T3 processing: $csv"
+            python scripts/translation/translate_csv.py --csv "$csv" --apply || {
+              echo "::notice title=T3 translate::GATED or failed for $csv (ENABLED=False until #10043, or missing API key). No-op, continuing.";
+            }
+          done
+          echo "T3 done. If ENABLED=False (pre-D), no new translations were produced — T4 re-renders existing ones only."
+
+      # ------------------------------------------------------------------
+      # T4 — re-render the *_<lang>.ipynb of active languages from each CSV.
+      # render_notebook.py takes --csv --notebook (source FR) --lang --out.
+      # The source notebook path is read from the CSV's 'notebook' column.
+      # ------------------------------------------------------------------
+      - name: T4 render translated notebooks
+        if: steps.t1.outputs.has_translations == 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, pathlib, subprocess, sys
+          active_langs = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+          troot = pathlib.Path("translations")
+          if not troot.exists():
+              sys.exit(0)
+          for csv_path in troot.rglob("*.csv"):
+              # Collect distinct source notebooks referenced by this CSV.
+              notebooks = set()
+              with open(csv_path, newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                  nb = (row.get("notebook") or "").strip()
+                  if nb:
+                    notebooks.add(nb)
+              for nb in sorted(notebooks):
+                if not pathlib.Path(nb).exists():
+                  print(f"T4 skip (source missing): {nb}")
+                  continue
+                stem = pathlib.Path(nb).stem
+                outdir = pathlib.Path(nb).parent
+                for lang in active_langs:
+                  out = outdir / f"{stem}_{lang}.ipynb"
+                  r = subprocess.run(
+                    ["python", "scripts/translation/render_notebook.py",
+                     "--csv", str(csv_path), "--notebook", nb,
+                     "--lang", lang, "--out", str(out)],
+                    capture_output=True, text=True)
+                  if r.returncode != 0:
+                    print(f"T4 render {nb} -> {lang}: non-zero (may have 0 translated cells). {r.stderr[:160]}")
+          print("T4 render pass complete.")
+          PY
+
+      # ------------------------------------------------------------------
+      # Commit derived files to the PR branch as github-actions[bot]. Only if
+      # the pipeline produced changes (CSV src_hash refresh, new translations
+      # post-D, re-rendered notebooks). translation-guard.yml exempts the bot.
+      # ------------------------------------------------------------------
+      - name: Commit derived translations (bot)
+        run: |
+          set -euo pipefail
+          git add translations 'MyIA.AI.Notebooks/**/*_en.ipynb' 'MyIA.AI.Notebooks/**/*_ru.ipynb' \
+              'MyIA.AI.Notebooks/**/*_pt.ipynb' 'MyIA.AI.Notebooks/**/*_es.ipynb' \
+              'MyIA.AI.Notebooks/**/*_ar.ipynb' 'MyIA.AI.Notebooks/**/*_fa.ipynb' \
+              'MyIA.AI.Notebooks/**/*_zh.ipynb' 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "::notice title=Translation sync::No derived-translation changes to commit."
+          else
+            CHANGED_COUNT=$(git diff --cached --name-only | wc -l)
+            echo "Committing $CHANGED_COUNT derived-translation file(s) to PR branch."
+            COMMIT_MSG="chore(translation): auto-sync derived translations [bot] (T1+T3+T4, See #10038 #10042; T3 gated on #10043)"
+            git commit -m "$COMMIT_MSG" || echo "commit failed (possibly empty or race) — continuing"
+            git push || echo "::warning title=Translation sync::push failed (token scope or race). Derived files left uncommitted on the runner."
+          fi
