@@ -190,7 +190,8 @@ def test_run_translations_no_env_keys_raises(monkeypatch, tmp_path):
 # 5. Safety gates via main() CLI.
 # ---------------------------------------------------------------------------
 def test_main_apply_gated_when_disabled(monkeypatch, tmp_path, capsys):
-    # ENABLED=False (module default). --apply must be a no-op.
+    # Gate closed (ENABLED=False, env-controlled via TRANSLATE_ENABLED, grain D
+    # #10043). --apply must be a no-op.
     monkeypatch.setattr(tc, "ENABLED", False)
     monkeypatch.setenv("OPENAI_API_KEY", "fake-key-for-testing")
     p = tmp_path / "x.csv"
@@ -202,7 +203,7 @@ def test_main_apply_gated_when_disabled(monkeypatch, tmp_path, capsys):
     # No mutation, no API: text_en still empty.
     assert tc.load_csv(str(p))[0]["text_en"] == ""
     err = capsys.readouterr().err
-    assert "GATED" in err and "ENABLED=False" in err
+    assert "GATED" in err and "TRANSLATE_ENABLED inactif" in err
 
 
 def test_main_dry_run_default_no_mutation(monkeypatch, tmp_path, capsys):
