@@ -70,11 +70,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: "Unit tests for scan_md_table_syntax"
-        run: |
-          python -m pytest scripts/notebook_tools/tests/test_scan_md_table_syntax.py -v
-
       - name: "Advisory scan -- markdown table syntax pathologies"
+        # Unit tests for `scan_md_table_syntax` are owned by
+        # `.github/workflows/scripts-tests.yml` (covers
+        # `scripts/notebook_tools/tests/` and installs pytest). This
+        # workflow only runs the scanner; the test gate is canonical
+        # in scripts-tests so pytest deps are consistent across the
+        # full scripts/ suite.
         # This step is INTENTIONALLY exit 0. The detector runs on the whole
         # repo (advisory) and writes findings to the log; the gate is not
         # promoted to required until the burn-down reduces the existing
