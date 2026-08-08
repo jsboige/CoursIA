@@ -36,6 +36,7 @@ on:
       - 'README*'
       - 'scripts/notebook_tools/scan_md_table_syntax.py'
       - 'scripts/notebook_tools/tests/test_scan_md_table_syntax.py'
+      - 'scripts/ci/markdown_table_summary.py'
       - '.github/workflows/markdown-table-guard.yml'
   push:
     branches: [ main ]
@@ -45,6 +46,8 @@ on:
       - 'README*'
       - 'scripts/notebook_tools/scan_md_table_syntax.py'
       - 'scripts/notebook_tools/tests/test_scan_md_table_syntax.py'
+      - 'scripts/ci/markdown_table_summary.py'
+      - '.github/workflows/markdown-table-guard.yml'
   workflow_dispatch:
 
 permissions:
@@ -94,60 +97,7 @@ jobs:
             echo "Empty scan (no notebook/markdown found) -- this is a configuration issue, not a clean scan."
             exit 0
           fi
-          flagged=$(grep -c '"pathology"' /tmp/md-table-findings.json 2>/dev/null || echo 0)
-          total=$(grep -o '"total": [0-9]*' /tmp/md-table-findings.json | grep -o '[0-9]*' || echo 0)
-          echo "=== ${flagged} findings across ${total} files (advisory) ==="
-          if [ "$flagged" != "0" ] && [ -n "$flagged" ]; then
-            echo ""
-            echo "Top 20 findings (full JSON in /tmp/md-table-findings.json):"
-            # Pretty-print the first 20 findings, grouped by pathology.
-            python -c "
-import json, sys, collections
-data = json.load(open('/tmp/md-table-findings.json'))
-findings = data['findings']
-by_pathology = collections.Counter(f['pathology'] for f in findings)
-print('Distribution by pathology:')
-for p, c in by_pathology.most_common():
-    print(f'  {p:20s}  {c}')
-print('')
-print('First 20 findings:')
-for f in findings[:20]:
-    where = f'cell {f[\"cell\"]} ' if f['cell'] >= 0 else ''
-    print(f'  [{f[\"pathology\"]}] {f[\"file\"]}:{where}L{f[\"line\"]}  {f[\"snippet\"][:80]}')
-" || true
-          fi
+          python scripts/ci/markdown_table_summary.py
           # Always exit 0 -- advisory only. Promotion to required_status_check
           # is a coordinated decision after the burn-down.
           exit 0
-
-      - name: "Job summary -- advisory annotation"
-        if: always()
-        run: |
-          if [ -f /tmp/md-table-findings.json ]; then
-            python -c "
-import json
-data = json.load(open('/tmp/md-table-findings.json'))
-total = data['total']
-flagged = data['flagged']
-findings = data['findings']
-if flagged == 0:
-    print(f'## markdown-table-guard (advisory): 0/{total} files flagged.')
-    print('')
-    print('No COL_MISMATCH / NO_SEP / NO_BLANK_BEFORE / NO_BLANK_AFTER defects detected.')
-else:
-    import collections
-    by_pathology = collections.Counter(f['pathology'] for f in findings)
-    by_file = collections.Counter(f['file'] for f in findings)
-    print(f'## markdown-table-guard (advisory): {flagged}/{total} files flagged, {len(findings)} findings.')
-    print('')
-    print('### Distribution by pathology')
-    for p, c in by_pathology.most_common():
-        print(f'- **{p}**: {c}')
-    print('')
-    print('### Top files')
-    for f, c in by_file.most_common(15):
-        print(f'- `{f}`: {c}')
-    print('')
-    print('See the job log for full findings. This guard is advisory only.')
-" >> "$GITHUB_STEP_SUMMARY"
-          fi
