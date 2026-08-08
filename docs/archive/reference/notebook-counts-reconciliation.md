@@ -1,6 +1,8 @@
 # Réconciliation des dénominateurs notebooks — forensic / catalogue / disque
 
-> **Étendu par [notebook-counters.md](notebook-counters.md)** (#9857, 2026-08-07) qui
+> **Archivé le 2026-08-08** : déplacé vers `docs/archive/reference/` (était `docs/reference/`). **Raison** : snapshot forensic daté 2026-07-23, SHA-pinned (`bba4511d8c`), superseded pour usage live par [`notebook-counters.md`](../../reference/notebook-counters.md). **Mode** : preservation move (contenu inchangé, header de préservation + correction des liens relatifs internes/externes). **Sub-issue** : triage `docs/reference/` (40 files, c.9872+28, myia-po-2023, [#7422](https://github.com/jsboige/CoursIA/issues/7422)) ; **issue dédiée** : [#9983](https://github.com/jsboige/CoursIA/issues/9983). **Statut** : record historique uniquement, **plus mis à jour**.
+>
+> **Étendu par [notebook-counters.md](../../reference/notebook-counters.md)** (#9857, 2026-08-07) qui
 > ajoute la quatrième source (l'« outil » `count_notebooks_by_series`), établit la
 > source canonique pour les affirmations publiques, et outille la divergence
 > catalogue↔outil dans `check_denominators.py`. Le présent fichier reste valable
