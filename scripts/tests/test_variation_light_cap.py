@@ -781,14 +781,97 @@ def test_signal_genre_mismatch_active_for_docs_paths(tmp_path, capsys):
     assert out["inferred_genre_from_paths"] == "docs"
 
 
-def test_genre_from_paths_mixed_non_md_is_tooling():
-    # A diff that touches BOTH a markdown file and a code file is
-    # `tooling` (code-change-dominant). The corroboration is conservative:
-    # the GENRE-MISMATCH signal only fires when ALL paths are md-only.
-    assert vlc._genre_from_paths(["README.md", "scripts/foo.py"]) == "tooling"
-    assert vlc._genre_from_paths(["scripts/foo.py"]) == "tooling"
+def test_genre_from_paths_mixed_non_md_is_none():
+    # #10102 §Acceptance 1: a non-`*.md` path is an ABSENT signal
+    # (input partially-decidable). Returning `tooling` would MISMATCH
+    # every honest code-PR declaration (`lean`, `notebook-python`, ...),
+    # inverting the rule. Empty list and `None` stay `None`.
+    assert vlc._genre_from_paths(["README.md", "scripts/foo.py"]) is None
+    assert vlc._genre_from_paths(["scripts/foo.py"]) is None
     assert vlc._genre_from_paths([]) is None
     assert vlc._genre_from_paths(None) is None
+
+
+def test_genre_from_paths_claude_md_is_docs():
+    # #10102 §Acceptance 2: `*.md` under `.claude/` (harness prose: rules
+    # + skills) classifies as `docs`, not `readme`. Reproduces #10090,
+    # which declared `docs` over `.claude/rules/*.md` and was wrongly
+    # flagged MISMATCH by the prior heuristic.
+    assert vlc._genre_from_paths([".claude/rules/x.md"]) == "docs"
+    assert vlc._genre_from_paths(
+        [".claude/rules/a.md", ".claude/skills/skill/SKILL.md"]
+    ) == "docs"
+    assert vlc._genre_from_paths([".claude/agents/foo.md"]) == "docs"
+
+
+def test_genre_from_paths_docs_prefix_is_docs():
+    # #10102 §Acceptance 1 + #10020 carryover: `docs/**/*.md` -> `docs`.
+    assert vlc._genre_from_paths(["docs/reference/x.md"]) == "docs"
+    assert vlc._genre_from_paths(
+        ["docs/reference/x.md", "docs/genai/y.md"]
+    ) == "docs"
+
+
+def test_genre_from_paths_readme_is_readme():
+    # #10102 §Acceptance: `README*.md` (and other `*.md` outside the
+    # two namespaces) -> `readme` (catch-all preserves prior behaviour
+    # for plain `*.md` files).
+    assert vlc._genre_from_paths(["README.md"]) == "readme"
+    assert vlc._genre_from_paths(["MyIA.AI.Notebooks/X/README.md"]) == "readme"
+    assert vlc._genre_from_paths(["plain.md"]) == "readme"
+
+
+def test_genre_from_paths_pr_10090_no_longer_mismatch(tmp_path, capsys):
+    # #10102 §Acceptance 3: non-regression reproducing #10090.
+    # 3 `*.md` (1 under `docs/`, 2 under `.claude/`), declared `docs`
+    # -> inferred `docs` -> no MISMATCH. Prior heuristic flagged it.
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/docs -- lane myia-po-2023:CoursIA-2",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/docs -- lane myia-po-2023:CoursIA-2", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA-2",
+        "--body-file", str(bpath),
+        "--files",
+        "docs/reference/x.md,.claude/rules/y.md,.claude/rules/z.md",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-MISMATCH"] is False
+    assert out["inferred_genre_from_paths"] == "docs"
+
+
+def test_genre_from_paths_code_pr_no_mismatch_signal(tmp_path, capsys):
+    # #10102 §Acceptance 1 + 4: a code PR (declared `tooling`) with a
+    # non-md diff no longer emits GENRE-MISMATCH. Prior heuristic
+    # flagged it (the bug).
+    merged_obj = [
+        {"number": 1, "body": "Grain: MED/tooling -- lane myia-po-2023:CoursIA-2",
+         "mergedAt": "2026-08-08T01:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged_obj), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(
+        "Grain: MED/tooling -- lane myia-po-2023:CoursIA-2", encoding="utf-8"
+    )
+    rc = vlc.main([
+        "--replay", str(mpath), "--genre-signals",
+        "--lane", "myia-po-2023:CoursIA-2",
+        "--body-file", str(bpath),
+        "--files", "scripts/variation_light_cap.py,scripts/foo.py",
+    ])
+    out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc == 0
+    assert out["signals"]["GENRE-MISMATCH"] is False
+    assert out["inferred_genre_from_paths"] is None
 
 
 def test_signal_genre_mismatch_inactive_when_no_body(tmp_path, capsys):

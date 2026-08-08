@@ -581,35 +581,64 @@ def _genre_from_paths(files: list[str] | None) -> str | None:
 
     Issue #10020 §Corroboration: "si tous les fichiers du diff sont des
     `*.md` (hors `docs/**` de fond), le genre effectif est `readme`/`docs`
-    quel que soit le genre declare". Implemented as:
+    quel que soit le genre declare". Issue #10102 §Acceptance extends:
+    `*.md` under `.claude/` (harness prose: rules + skills) is also `docs`,
+    and a non-`*.md` path is treated as an ABSENT signal (the heuristic
+    cannot arbitrate a code PR's declared genre -- it can only fire when
+    ALL paths are md-decidable). Implemented as:
 
-      * all paths absent or empty   -> None (no signal)
-      * any non-`*.md` path present -> `tooling` (code change dominant)
-      * all paths under `docs/`     -> `docs`
-      * all paths `*.md` (but NOT under `docs/`) -> `readme`
+      * all paths absent or empty              -> None (no signal)
+      * any non-`*.md` path present            -> None (input partially-
+                                                   decidable; the
+                                                   heuristic does not
+                                                   arbitrate a code PR)
+      * all paths under `docs/`                 -> `docs`
+      * all paths under `.claude/`              -> `docs` (harness prose:
+                                                   rules + skills)
+      * all paths `*.md` (elsewhere, incl.
+        `README*.md`)                          -> `readme` (catch-all,
+                                                   preserves prior
+                                                   behaviour for plain
+                                                   `*.md` outside the
+                                                   two namespaces)
 
-    The function is conservative on the partial-evidence case (a diff that
-    touches BOTH a `*.md` and a `*.py` is `tooling`, NOT `readme`): the
-    GENRE-MISMATCH signal is only raised when ALL paths are
-    `*.md`-equivalent. A PR with no diff paths at all returns `None`
-    (no claim possible), which means GENRE-MISMATCH is INACTIVE for that
-    PR -- not silently `readme`. CI workflows that do not pass `--files`
-    see no GENRE-MISMATCH signal: a missing input is a missing signal,
-    never a false positive.
+    The GENRE-MISMATCH signal is therefore raised only when the heuristic
+    can decide: the diff is 100% `*.md` AND the declared canonical genre
+    is outside `{docs, readme}`. A PR with no diff paths at all, OR with
+    any non-`*.md` path, returns `None`: the signal is INACTIVE for that
+    PR -- not silently `tooling` (which would invert the rule by
+    rewarding mis-tagging, see #10102 §Mecanisme). CI workflows that do
+    not pass `--files`, or that pass a mixed diff, see no GENRE-MISMATCH
+    signal: a partially-decidable input is a missing signal, never a
+    false positive.
     """
     if not files:
         return None
     # Normalise Windows backslashes to forward slashes for the prefix test.
     norm = [f.replace("\\", "/") for f in files]
-    md_only = all(f.endswith(".md") for f in norm)
-    if not md_only:
-        # Any non-md file present -> this is a code-change PR, not a
-        # doc-only PR. The `tooling` call is what `GENRE-MISMATCH` would
-        # contrast a `readme` declaration against; it is a coarse
-        # distinction (not `lean`/`notebook-python`/...), which is the
-        # point of the corroboration heuristic.
-        return "tooling"
-    if all(f.startswith("docs/") for f in norm):
+    if not all(f.endswith(".md") for f in norm):
+        # Any non-md file present -> the heuristic cannot arbitrate the
+        # PR's declared genre (any of `lean`/`notebook-python`/`qc`/
+        # `training`/`test`/`refactor`/`guard`/`ledger`/`research-code` is
+        # plausible). Returning `tooling` would MISMATCH every honest
+        # declaration of those genres, which is the bug #10102 fixes.
+        return None
+    # All-md. Disambiguate by prefix:
+    #   docs/**/*.md        -> docs
+    #   .claude/**/*.md     -> docs (harness prose: rules + skills. cf
+    #                           #10090, where the tag `docs` was the
+    #                           most honest of the two.)
+    #   any path under
+    #     docs/ OR .claude/ -> docs (the union of the two namespaces
+    #                           covers the same FAMILY of work --
+    #                           documentation contributing to the
+    #                           ecosystem of rules, skills, public docs;
+    #                           a diff that mixes both is still docs, not
+    #                           readme readme).
+    #   anything else (md)  -> readme (catch-all, preserves prior
+    #                           behaviour for plain `*.md` outside the
+    #                           two namespaces; includes `README*.md`).
+    if all(f.startswith("docs/") or f.startswith(".claude/") for f in norm):
         return "docs"
     return "readme"
 
