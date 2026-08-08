@@ -46,13 +46,22 @@ now and later, with no per-workflow wiring to maintain.
 4. **Self-exclusion.** The gate never waits for itself.
 5. **Legacy commit statuses count too.** Some integrations post statuses, not
    check runs; both are unioned.
+6. **Fork PRs short-circuit to PASS.** Issue #10072 -- student PRs from a
+   fork have no internal convention to police, and `.claude/rules/student-pr-
+   reviews.md` explicitly allows admin merges on red CI for that class of PR.
+   The workflow passes `--is-fork` for `head.repo.fork == true`; the script
+   then skips polling entirely and reports PASS. The "verdict on every PR"
+   invariant is preserved (GitHub sees a real success line) without ever
+   deciding the student's CI.
 
-Exit codes: 0 = every settled check is non-failing (or there are none).
+Exit codes: 0 = every settled check is non-failing (or there are none),
+            or the PR is from a fork (out-of-scope per #10072).
             1 = at least one failure, or the state could not be established.
 
 Run locally against any PR head:
 
     python scripts/pr_gate.py --repo jsboige/CoursIA --sha <head-sha> --timeout-min 1
+    python scripts/pr_gate.py --repo jsboige/CoursIA --sha <head-sha> --is-fork
 """
 from __future__ import annotations
 
@@ -276,7 +285,30 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--timeout-min", type=float, default=90.0)
     parser.add_argument("--poll-sec", type=float, default=30.0)
     parser.add_argument("--settle-polls", type=int, default=2)
+    # Issue #10072 -- fork PRs short-circuit to PASS. Student PRs come from a
+    # fork and have no internal convention to police; `enforce_admins: true` on
+    # main's required checks would otherwise deadlock their admin merge. This
+    # flag is the orchestrator's signal that "this PR is a fork; do not judge
+    # its CI, only produce a verdict". The script still reports PASS so GitHub
+    # can transition the check from pending to success (the workflow's own
+    # invariant: "verdict on every PR").
+    parser.add_argument(
+        "--is-fork",
+        action="store_true",
+        help="PR comes from a fork (student work). Short-circuit to PASS.",
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
+
+    if args.is_fork:
+        # Rule 1 ("bias to fail") does not apply here: the workflow deliberately
+        # chose to opt out. Document the bypass in the log so a reader of the
+        # CI log sees why no aggregation happened.
+        print(
+            "[pr-gate] fork PR -- out of scope (issue #10072); "
+            "reporting PASS without polling.",
+            flush=True,
+        )
+        return 0
 
     try:
         code, message = wait_and_decide(

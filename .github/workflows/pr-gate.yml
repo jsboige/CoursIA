@@ -67,11 +67,30 @@ jobs:
       - name: Aggregate check verdicts
         env:
           GH_TOKEN: ${{ github.token }}
+          # Issue #10072 -- student PRs from forks must remain mergeable under
+          # the benevolent-policy rule of .claude/rules/student-pr-reviews.md
+          # ("Template vide + CI rouges = OK. Merge admin via gh auth switch -u
+          # jsboige"). `enforce_admins: true` on main's required checks would
+          # block that admin merge, and the gate would then deadlock PRs from
+          # the ~95 student forks. The same exemption already exists in
+          # variation-tag-guard.yml (L73-78) and translation-sync.yml (analog);
+          # this script exposes --is-fork so the verdict is reported as PASS
+          # without ever polling, keeping the "verdict on every PR" invariant.
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
+          # Pass --is-fork only when IS_FORK is the literal string "true".
+          # GitHub serialises booleans as "true"/"false" (always set), so the
+          # `:+` default-expansion is not enough; we test the value explicitly.
+          if [ "$IS_FORK" = "true" ]; then
+            IS_FORK_ARG="--is-fork"
+          else
+            IS_FORK_ARG=""
+          fi
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
             --timeout-min 90 \
             --poll-sec 30 \
-            --settle-polls 2
+            --settle-polls 2 \
+            $IS_FORK_ARG
