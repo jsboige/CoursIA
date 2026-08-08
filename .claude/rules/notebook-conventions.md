@@ -101,10 +101,13 @@ Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-d�
 |--------|---------|----------|
 | **Structurel** | `2^225` combinaisons → speedup `~2.8e24x` ; nombre de contraintes ; complexité | **GARDER** — stable d'une machine à l'autre, c'est du contenu pédagogique réel |
 | **Machine-dépendant** | temps absolus (`~21 s`, `24-127 ms`) | **RETIRER** — renvoi à la cellule de mesure ; si le coût relatif porte le propos, l'écrire en **rapport** (cf ci-dessous) |
+| **Donnée en unité de temps (data-unit)** | moyenne de trajet `15.33 min` (Infer-101) ; durée de contenu `30 sec` ; estimation pédagogique `Durée : ~2 h` | **GARDER** — c'est une *donnée* déterministe (statistique, longueur de contenu, estimation humaine), pas un runtime ; ne dérive pas à la re-exécution |
 | **Env-dépendant (observé)** | table de versions `NumPy 2.4.2` écrite à la main | **RETIRER** quand une cellule imprime déjà la version (source unique = l'output) |
 | **Env-dépendant (exigé)** | `Python 3.10+`, `.NET 9.0` | **GARDER** — c'est une **décision de projet**, pas une observation ; ne dérive pas |
 | **Stochastique seedé** | fitness d'un GA à `seed=42` | **GARDER** — reproductible, donc stable |
 | **Stochastique non seedé** | utilité CFR après une itération unique | **RETIRER** ou **seeder** — jamais citer une valeur d'instance |
+
+**La frontière est la machine-dépendance, pas « nombre + unité »** (arbitrage #9434, 2026-08-06). Une valeur en `ms`/`sec`/`min` n'est pas toujours un runtime à retirer : la classe **Donnée en unité de temps** regroupe les valeurs qui portent une unité de temps mais qui sont **déterministes** — moyenne statistique de données (postérieur bayésien, moyenne de trajets), longueur d'un contenu (durée d'un clip), estimation pédagogique humaine (`Durée estimée`). Elles ne dérivent ni avec la machine ni au re-run ; les retirer détruit du contenu pédagogique réel. Le critère discriminateur : *« cette valeur changerait-elle si je ré-exécutais le notebook sur une autre machine ? »* — non pour un data-unit, oui pour un runtime. C'est cette frontière (et non la présence d'une unité de temps) que le classifieur [`scan_quant_classify.py`](../../scripts/notebook_tools/scan_quant_classify.py) + son [golden set](../../scripts/tests/golden_quantitative_claims.json) instrumentent.
 
 ### L'arbitrage §D.5 ↔ #9377 : retirer gagne
 
@@ -133,5 +136,5 @@ La prose honnête dit ce qui est réellement vrai : la valeur théorique **et** 
 
 Une seule question sur la prose modifiée : **cite-t-elle encore un nombre qui rebougera au prochain passage kernel ?** Si oui, la PR ré-épingle et §D.5 s'applique dans toute sa rigueur (re-exécution fraîche exigée). Si non, la boucle est fermée.
 
-See #9377, #8052.
+See #9377, #8052, #9434.
 
