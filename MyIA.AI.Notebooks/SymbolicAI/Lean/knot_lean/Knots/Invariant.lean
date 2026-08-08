@@ -365,6 +365,39 @@ theorem tricolorable_invariant :
   -- coloring — a twist could CREATE tricolorability from nothing. The connected
   -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
   -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
+  --
+  -- 4e-tactic characterization (c.980 deep-track, dispatch ai-01 msg-9gt1au).
+  -- The forward direction is the COLOR-EXTENSION construction. Given
+  -- `coloring₁ : TriColoring d₁` witnessing `IsTricolorable d₁` and
+  -- `h : Reidemeister1Connected d₁ d₂` (Reidemeister.lean L262), build
+  -- `coloring₂ : TriColoring d₂` (d₂.numEdges = d₁.numEdges + 2):
+  --   (1) On the shared prefix [1, d₁.numEdges], `coloring₂` agrees with
+  --       `coloring₁` (transport via `ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges+2)`).
+  --   (2) On the two fresh edges `{d₁.numEdges+1, d₁.numEdges+2}`, assign the
+  --       TWO colors ≠ `coloring₁ a` (the arc spliced — guaranteed to exist:
+  --       TriColor has exactly 3 inhabitants, so exactly 2 differ from any one).
+  -- The new crossing `⟨a, n+1, n+2, n+2⟩` (h's surgery conjunct, L271) then has
+  -- Fox colors `{coloring₁ a, c₁, c₂}` (all distinct by construction) — the
+  -- extension preserves the invariant rather than creating it.
+  --
+  -- Three proof obligations, each a characterized stuck point for next cycle:
+  --   (a) FIN TRANSPORT: `TriColoring d₁ → TriColoring d₂` across the
+  --       `Fin n ↪ Fin (n+2)` embedding — needs `ρ` lifted to the coloring
+  --       and the two fresh slots filled by a `TriColor.otherTwo a` combinator
+  --       (to be added: returns the 2 colors ≠ the input, with a `distinct`
+  --       lemma). Stuck on: the `TriColoring d` carrier shape + `colorAtNat`.
+  --   (b) FOX AT THE NEW CROSSING: reduce `triColorConditionAt d₂ coloring₂
+  --       ⟨a, n+1, n+2, n+2⟩` to `{coloring₁ a, c₁, c₂}` all-distinct — needs
+  --       the new crossing's PD labels to unfold under `h`'s surgery equation
+  --       `d₂.crossings = d₁.crossings.set i.val Y' ++ [⟨a, n+1, n+2, n+2⟩]`.
+  --       Stuck on: the renamed crossing `Y'` (isRenameOf) ALSO needs its Fox
+  --       condition re-checked (its slot-a became n+1, which is a fresh color).
+  --   (c) ≥2 COLORS: `coloring₂` uses ≥2 colors — inherited from `coloring₁`
+  --       (which uses ≥2 by `IsTriColoring`'s 3rd conjunct), UNLESS both
+  --       non-fresh edges collapse (they don't: the prefix is unchanged).
+  -- The deep track is MULTI-CYCLE (ai-01 greenlit): a characterized wall with
+  -- the construction above + the `otherTwo` combinator is the next cycle's
+  -- implementation target. FORBIDDEN: weakening the statement (anti-regression D).
 
 /-! ## 3. Le trefoil est tricolorable
 
