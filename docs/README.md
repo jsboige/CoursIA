@@ -53,7 +53,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 
 | Fichier | Description |
 |---------|-------------|
-| [reference/HEALTH_DASHBOARD.md](reference/HEALTH_DASHBOARD.md) | Tableau de santé du dépôt — snapshot dérivé du catalogue |
+| [archive/reference/HEALTH_DASHBOARD.md](archive/reference/HEALTH_DASHBOARD.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : Tableau de santé du dépôt — snapshot statique auto-généré depuis `COURSE_CATALOG.generated.json` (acceptance #4 de #4210). **Record historique** — superseded pour usage live par le marqueur `CATALOG-STATUS` dans chaque README de série (cron `catalog-cron.yml` quotidien). 77 lignes. Linked #4210 |
 | [reference/accent-cure-defense-in-depth.md](reference/accent-cure-defense-in-depth.md) | Cure des accents FR & défense contre les régressions (#2876) |
 | [reference/chatgpt-export-playwright.md](reference/chatgpt-export-playwright.md) | Explorer une longue conversation / un export ChatGPT via Playwright |
 | [reference/dotnet-plotly-zero-restore.md](reference/dotnet-plotly-zero-restore.md) | Pattern .NET Interactive — figures Plotly « zero-restore » (technique C548-L2) |
