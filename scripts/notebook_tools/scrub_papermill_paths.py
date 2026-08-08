@@ -156,11 +156,20 @@ def scrub_notebook(nb_path, apply=False):
 # 'C:\Users\<user>'. A single-separator regex misses those entirely (regression:
 # archive Fast-Downward-Legacy #3891, where traceback frames scrubbed but the
 # final exception line did not).
+#
+# Both patterns are case-insensitive (re.IGNORECASE) on `Users|home` because pip
+# prints its install roots in lowercase: 'Requirement already satisfied: openai
+# in c:\users\jsboi\appdata\roaming\python\...'. A case-sensitive 'Users' left
+# such lowercase pip roots in place (regression: 1_OpenAI_Intro cell[4], 14
+# leaks silently missed). The drive-letter class [A-Za-z] plus the segment
+# boundary (a separator before Users/home) keep the FP surface unchanged: a bare
+# 'users' word elsewhere still does not match (e.g. 'C:\SomeUsers' has no
+# separator before 'Users'), so IGNORECASE only widens coverage, not the FP set.
 _HOME_RES = [
     # Windows drive home: C:\Users\<user> or C:/Users/<user>  (single capture -> ~)
-    re.compile(r"[A-Za-z]:[\\/]+(?:Users|home)[\\/]+[^\\/]+"),
+    re.compile(r"[A-Za-z]:[\\/]+(?:Users|home)[\\/]+[^\\/]+", re.IGNORECASE),
     # POSIX-style home root as written by some MSYS/git-bash tools: /c/Users/<user>
-    re.compile(r"/[a-zA-Z]/(?:Users|home)/[^/]+"),
+    re.compile(r"/[a-zA-Z]/(?:Users|home)/[^/]+", re.IGNORECASE),
 ]
 
 # Checkout-root prefixes: a drive-absolute path into the repo checkout (any

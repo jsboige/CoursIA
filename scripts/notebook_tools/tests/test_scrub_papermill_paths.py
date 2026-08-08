@@ -275,6 +275,41 @@ def test_scrub_outputs_anonymizes_home_and_preserves_rest(tmp_path):
     assert before.replace("C:\\\\Users\\\\jsboi", "~") == after
 
 
+def test_scrub_outputs_anonymizes_lowercase_pip_home(tmp_path):
+    """A lowercase pip install root (c:\\users\\<user>) must be scrubbed.
+
+    Regression: 1_OpenAI_Intro cell[4]. pip prints its install roots in
+    lowercase ('Requirement already satisfied: openai in
+    c:\\users\\jsboi\\appdata\\roaming\\python\\...'), and the home regex's
+    'Users' alternative was case-SENSITIVE, so all 14 lowercase leaks were
+    silently missed by both --scan and --outputs --apply. Adding re.IGNORECASE
+    makes 'c:\\users' match just like 'C:\\Users'. The FP surface is unchanged
+    because a separator is still required before the Users/home segment.
+    """
+    raw = (
+        "Requirement already satisfied: openai in "
+        "c:\\users\\jsboi\\appdata\\roaming\\python\\site-packages (1.93.0)\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "%pip install openai", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+
+    after = p.read_text(encoding="utf-8")
+    # lowercase home root anonymized (was left in place by the case-sensitive bug)
+    assert "c:\\\\users\\\\jsboi" not in after
+    assert "~" in after
+    # rest of the pip message preserved (package + version + tail)
+    assert "site-packages" in after
+    assert "1.93.0" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["%pip install openai"]
+    # the ONLY change is the lowercase home-root substring -> ~
+    assert before.replace("c:\\\\users\\\\jsboi", "~") == after
+
+
 def test_scrub_outputs_anonymizes_ipykernel_pid(tmp_path):
     raw = (
         "C:\\Users\\jsboi\\AppData\\Local\\Temp\\ipykernel_85268\\3959998143.py:74: "
