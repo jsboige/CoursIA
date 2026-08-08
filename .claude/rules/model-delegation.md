@@ -1,6 +1,6 @@
 # Delegation a des sous-agents — modele explicite obligatoire (sonnet/haiku par defaut)
 
-S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy. 7 tests confirmants (HAUTE qualite) — detail des angles morts par classe de tache : `~/.claude/projects/d--CoursIA/memory/delegation-glm-haiku-quality.md`.
+S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` tool), quel que soit le role (coordinateur ai-01 ou worker po-*). Source : mandat user 2026-06-09 (« tout sous-agent doit avoir un modele explicite, sonnet ou haiku typiquement, et uniquement Opus dans des cas exceptionnels qui le justifient »), consolide avec le mandat 2026-06-07 sur la delegation read-heavy. Les angles morts observes par classe de tache sont synthetises ci-dessous (section « Angles morts connus »).
 
 ## Regle HARD — modele explicite obligatoire
 
@@ -23,7 +23,7 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
 
 6. **Local-git-only quand l'appelant tient une fenetre `gh auth`.** Un sous-agent qui appellerait `gh` pendant que l'appelant a bascule `gh auth switch -u jsboige` corromprait l'etat d'auth global (race). Donner au sous-agent des ops **`git` locales uniquement** (`git diff origin/main...origin/<branch>`, `git show`, `sha1sum`, `grep`, `Read`), pas de `gh`. L'appelant fait les ops `gh` lui-meme, hors fenetre sous-agent.
 
-7. **Evaluer la qualite et la memoriser.** Apres chaque delegation, noter dans `delegation-glm-haiku-quality.md` : type de tache, qualite (HAUTE/MOYENNE/FAIBLE), ce qui a ete exact, et l'**angle mort** observe. Les angles morts connus par classe de tache orientent quoi re-verifier soi-meme.
+7. **Evaluer la qualite et la memoriser.** Apres chaque delegation, noter dans le journal de delegation local per-machine (`<projet>/.claude/agent-memory-local/delegation-quality.md`, gitignore) : type de tache, qualite (HAUTE/MOYENNE/FAIBLE), ce qui a ete exact, et l'**angle mort** observe. Les angles morts connus par classe de tache orientent quoi re-verifier soi-meme.
 
 ## Angles morts connus (re-verifier soi-meme)
 
