@@ -35,6 +35,18 @@ needs user sign-off; this is the mechanism that the rule will call):
   - **--release [--note "..."]**: post a `[RELEASED]` comment, closing the
     active claim of this lane on the issue.
 
+  - **--paths PATH [PATH ...]** (path mode, #9959): given one or more file
+    paths/globs, list the OPEN PRs whose `files[]` intersect any of them and
+    whose Grain tag names a DIFFERENT lane. Exit 2 with the colliding PRs
+    printed by number + lane + intersection paths; exit 0 if the path is
+    clear; exit 1 if `gh` itself fails. `--paths` complements -- it does not
+    replace -- the issue-claim check above: the issue comment is still the
+    authoritative claim record (single locus, server-stamped), `--paths`
+    only adds the missing "is there already an OPEN PR on the same file?"
+    leg of L898. The motivating incident (2026-08-08 R3D, #9955 / #8696) was
+    two lanes of the SAME machine, only minutes apart, each having passed
+    the issue-claim check -- there was no other-lane issue claim to trip on.
+
 The authoritative timestamp is the comment's server `createdAt`, NEVER a stamp
 written in the body. That is the whole of the Defaut-2 fix.
 
@@ -47,7 +59,8 @@ references the issue is not auto-detected as a release -- the lane should
 `--release` (or post `[DONE]`) when its PR lands. Detecting merges is a future
 flag; the comment contract is the MVP.
 
-Exit codes: 0 ok / 1 blocked (other lane holds active claim) / 2 io-or-gh error.
+Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
+2 io-or-gh error (issue mode) OR cross-lane OPEN-PR collision (--paths mode).
 """
 from __future__ import annotations
 
@@ -211,6 +224,62 @@ def _post_comment(issue: str, body: str) -> None:
         )
 
 
+def _gh_open_prs_with_files() -> list[dict]:
+    """Fetch all open PRs (number, title, headRefName, body, files) via `gh`.
+
+    Used by `--paths` mode to intersect PR file lists with caller-provided
+    patterns. Returns a list of dicts; each PR dict is {number, title,
+    headRefName, body, files: [{path, ...}, ...], lane: str|None}. The `lane`
+    key is filled by the caller -- `_run_check_paths` -- via the shared
+    `extract_lane` reader, NOT here, so the lane-detection rule lives in
+    exactly one place (#9485 single-reader discipline).
+
+    Raises RuntimeError on `gh` failure so callers surface exit 2.
+    """
+    proc = subprocess.run(
+        [
+            "gh", "pr", "list", "--state", "open",
+            "--json", "number,title,headRefName,body,files",
+            "--limit", "200",
+        ],
+        capture_output=True, text=True, shell=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh pr list --state open failed (exit {proc.returncode}): "
+            f"{proc.stderr.strip()}"
+        )
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"gh pr list returned non-JSON (exit {proc.returncode}): {exc}"
+        )
+
+
+def _path_matches(path: str, patterns: list[str]) -> bool:
+    """Return True if `path` matches any of the caller-provided patterns.
+
+    Each pattern is a glob (fnmatch.fnmatch case-sensitive, `*` / `?` /
+    `[abc]`); plain substrings without glob meta are also matched (covers
+    the common dispatch form `path/to/file.py`). Symmetric with how GitHub
+    UI's PR-files search treats "filter" input -- a worker who filters the
+    web UI by filename and pastes the result here gets the same matches.
+
+    The fnmatch patterns are anchored to the basename of the path AND to
+    the full path, so a pattern like `*.lean` matches `knot_lean/Foo.lean`
+    AND `Foo.lean` alone. This is the same convenience offered by the
+    existing `grep`/git commands used in the cluster for "where does this
+    file live" queries.
+    """
+    from fnmatch import fnmatch
+    basename = path.rsplit("/", 1)[-1]
+    for pat in patterns:
+        if fnmatch(path, pat) or fnmatch(basename, pat):
+            return True
+    return False
+
+
 # --- formatted output --------------------------------------------------------
 
 _CLAIM_BODY_TMPL = (
@@ -340,6 +409,163 @@ def _fmt_active(ev: ClaimEvent) -> str:
     return f"{ev.author or '?'}, {_fmt_utc(ev.created_at)}"
 
 
+# --- path-mode (--paths, #9959) -----------------------------------------------
+#
+# Complements -- not replaces -- the issue-claim check. The motivating
+# incident (R3D 2026-08-08) had two lanes of the SAME machine colliding on
+# `knot_lean/Knots/Reidemeister.lean` minutes apart, each having passed the
+# issue-claim check (the other lane's issue comment was posted AFTER each
+# push but BEFORE the dispatch landed). The fix is the missing leg of L898:
+# "does an OPEN PR on this machine already touch the same files?"
+#
+# Two lanes of a SAME machine MUST trip each other. The comparison key is
+# the full `machine:workspace` string -- comparing on `machine` alone
+# would miss this case by construction, which is exactly the bug.
+
+class PathCollision:
+    """One OPEN PR that intersects the caller's paths on a different lane."""
+
+    def __init__(self, pr: dict, lane: str | None, files: list[str]) -> None:
+        self.pr = pr
+        self.number = pr.get("number")
+        self.title = pr.get("title", "")
+        self.headRefName = pr.get("headRefName", "")
+        self.lane = lane
+        self.files = files  # the PR files that intersect the patterns
+
+
+def _run_check_paths(
+    paths: list[str],
+    my_lane: str,
+    prs: list[dict] | None = None,
+) -> int:
+    """Path-mode guard: exit 2 on cross-lane OPEN-PR collision, 0 if clear.
+
+    Args:
+        paths: file paths/globs from the caller. Each PR file is matched
+            against the list (fnmatch, basename-OR-full-path), and a PR
+            counts as intersecting when at least one file matches.
+        my_lane: caller's full lane token (e.g. "myia-po-2024:CoursIA-2").
+        prs: pre-fetched list of OPEN PRs (testability seam); default None
+            triggers a real `gh pr list` call via `_gh_open_prs_with_files`.
+
+    Returns:
+        0 if no other-lane PR intersects the paths,
+        2 if at least one OPEN PR of another lane (or with an unreadable
+          lane tag) intersects -- the calling worker MUST pick another
+          grain or wait for that PR to merge/close,
+        1 only on `gh` plumbing failure (raised RuntimeError is caught in
+          `main` and turned into exit 1).
+
+    Lane comparison is on the FULL `machine:workspace` string. Same
+    machine + different workspace counts as a different lane (the
+    motivating R3D incident). Same lane is reported as a non-issue
+    ("your own PR is fine; it lands when it lands") even when the paths
+    intersect, because the caller is resuming their own work.
+    """
+    if not paths:
+        print("error: --paths requires at least one path/glob", file=sys.stderr)
+        return 1
+    if prs is None:
+        try:
+            prs = _gh_open_prs_with_files()
+        except RuntimeError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
+    collisions: list[PathCollision] = []
+    self_overlap: list[PathCollision] = []
+    for pr in prs:
+        pr_files = pr.get("files") or []
+        if not pr_files:
+            continue
+        intersecting = [
+            f.get("path", "") for f in pr_files
+            if f.get("path") and _path_matches(f["path"], paths)
+        ]
+        if not intersecting:
+            continue
+        lane = extract_lane(pr.get("body") or "")
+        coll = PathCollision(
+            pr=pr, lane=lane, files=[p for p in intersecting if p],
+        )
+        # Three-way classification:
+        #  - lane == my_lane             -> self_overlap (resuming own work)
+        #  - lane is None (no Grain tag) -> collisions (cannot attribute;
+        #                                    author is jsboige on every PR,
+        #                                    so the tag is the only signal;
+        #                                    absence = uncertainty, treated
+        #                                    as a potential collision -- not
+        #                                    silently ignored)
+        #  - lane != my_lane (tagged)    -> collisions
+        if lane == my_lane:
+            self_overlap.append(coll)
+        else:
+            collisions.append(coll)
+
+    def _serialise(c: PathCollision) -> dict:
+        return {
+            "number": c.number,
+            "title": c.title,
+            "headRefName": c.headRefName,
+            "lane": c.lane,
+            "files_intersecting": c.files,
+        }
+
+    summary = {
+        "mode": "paths",
+        "paths": list(paths),
+        "my_lane": my_lane,
+        "other_lane_collisions": [_serialise(c) for c in collisions],
+        "self_overlap": [_serialise(c) for c in self_overlap],
+        "untagged_prs": [
+            _serialise(c) for c in collisions if c.lane is None
+        ],
+    }
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    if collisions:
+        tagged = [c for c in collisions if c.lane is not None]
+        untagged = [c for c in collisions if c.lane is None]
+        msg = [
+            f"\nBLOCKED: OPEN PR(s) of other lanes touch the requested paths.",
+            "",
+        ]
+        for c in tagged:
+            inter = ", ".join(c.files)
+            msg.append(
+                f"  - #{c.number} lane={c.lane} head={c.headRefName} "
+                f"files=[{inter}] -- {c.title}"
+            )
+        for c in untagged:
+            inter = ", ".join(c.files)
+            msg.append(
+                f"  - #{c.number} lane=UNREADABLE head={c.headRefName} "
+                f"files=[{inter}] -- {c.title}\n"
+                f"    (no `Grain:` lane tag in body; cannot attribute. "
+                f"Treat as a potential collision: coordinate before pushing.)"
+            )
+        msg.append(
+            "\nDo not start -- coordinate with the owner(s), or pick "
+            "another grain that does not intersect the open PR(s)."
+        )
+        print("\n".join(msg), file=sys.stderr)
+        return 2
+
+    if self_overlap:
+        own_numbers = ", ".join(f"#{c.number}" for c in self_overlap)
+        print(
+            f"\nCLEAR for paths {paths!r} -- you already have an OPEN PR on "
+            f"the same paths ({own_numbers}). Resuming your own work is fine; "
+            f"the path gate does not block your own lane.",
+            file=sys.stderr,
+        )
+        return 0
+
+    print(f"\nCLEAR: no OPEN PR of another lane touches {paths!r}.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description=(
@@ -347,7 +573,11 @@ def main(argv: list[str] | None = None) -> int:
             "editing. Defaut-2-safe: server UTC timestamps only."
         )
     )
-    p.add_argument("issue", help="issue number (or URL)")
+    p.add_argument("issue", nargs="?", default=None,
+                   help="issue number (or URL); optional when --paths is used "
+                        "(--paths does not need an issue number, the dispatch "
+                        "cote coordinateur calls it pre-claim to detect cross- "
+                        "lane PR collisions on the same files)")
     p.add_argument("--lane", required=True,
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
@@ -358,6 +588,14 @@ def main(argv: list[str] | None = None) -> int:
                         "the body). The new claimant must still post its own "
                         "[CLAIMED] -- this is not a silent bypass. Without the "
                         "flag every active claim blocks (current behaviour).")
+    p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
+                   help="path-mode (#9959): one or more file paths/globs. "
+                        "Exits 2 if any OPEN PR of a different lane (or with "
+                        "an unreadable lane tag) has files[] intersecting. "
+                        "Exits 0 if no collision, 1 on usage/`gh` failure. "
+                        "Lane key is full `machine:workspace` (same-machine "
+                        "different-workspace counts as different lane). "
+                        "Complements the issue-claim check, does not replace.")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
                      help="post a [CLAIMED] comment for your lane")
@@ -365,7 +603,19 @@ def main(argv: list[str] | None = None) -> int:
                      metavar="NOTE", help="post a [RELEASED] comment")
     args = p.parse_args(argv)
 
-    # Posting modes: short-circuit before any read.
+    # Path mode (#9959) does NOT require an issue number -- it is the missing
+    # leg of L898 dispatched pre-claim to detect cross-lane PR collisions on
+    # the same files. Posting modes (--claim/--release) and the default check
+    # mode still require an issue. We branch on --paths first so callers do
+    # not have to fabricate a placeholder issue.
+    if args.paths is not None:
+        return _run_check_paths(args.paths, args.lane)
+
+    # Posting modes: short-circuit before any read. Both require an issue.
+    if args.issue is None:
+        print("error: an issue number is required (or use --paths PATH ...)",
+              file=sys.stderr)
+        return 1
     if args.claim is not None:
         body = _CLAIM_BODY_TMPL.format(lane=args.lane, intention=args.claim)
         try:
@@ -386,7 +636,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"posted [RELEASED] lane {args.lane} on #{args.issue}")
         return 0
 
-    # Check mode.
+    # Check mode (default).
     try:
         if args.from_json:
             payload = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
