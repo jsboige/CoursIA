@@ -16,9 +16,12 @@ Tests focus on:
   ``data`` keys untouched, JSON stays valid
 - idempotency: re-running ``strip_in_place`` on a clean file is a no-op
 - list-form (observed) and string-form data/stream values
+- CLI contract (port from tranche 8 / #10103): ``--scan`` dry-run reporter,
+  ``--scan`` exits 0 + prints summary, missing path exits 2 via argparse
 """
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -999,3 +1002,69 @@ def test_strip_mixed_categories_one_cell_redact_then_drop(tmp_path):
     # pip REDACTed (preserved with username prefix gone).
     assert any(l.startswith("<USER_PATH>\\AppData\\Roaming\\Python") for l in tp)
     assert count_leak_lines(p) == 0
+
+
+# ---------------------------------------------------------------------------
+# CLI contract tests (ported from scripts/tests/test_strip_machine_paths.py
+# shadow as part of #10066 tranche 8 / #10103 — these were the only tests
+# not covered by the canonical suite: the script's main() CLI surface).
+# ---------------------------------------------------------------------------
+
+# Path to the script under test, used as subprocess executable.
+_SMP_SCRIPT = Path(_smp.__file__).resolve()
+
+
+def _run_cli(*args):
+    """Run strip_machine_paths.py with the given CLI args, return CompletedProcess."""
+    return subprocess.run(
+        [sys.executable, str(_SMP_SCRIPT), *args],
+        capture_output=True, text=True, timeout=60,
+    )
+
+
+def test_cli_scan_clean_notebook_reports_no_defect(tmp_path):
+    """``--scan <path>`` on a clean notebook: exits 0, no [DEFECT], summary reports 0 leaks."""
+    nb = {"cells": [
+        {"cell_type": "code", "source": ["print('x')\n"], "metadata": {},
+         "execution_count": 1, "outputs": [
+            {"output_type": "stream", "name": "stderr", "text": "all good\n"}
+         ]},
+    ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    p = tmp_path / "clean.ipynb"
+    p.write_text(json.dumps(nb), encoding="utf-8")
+
+    r = _run_cli("--scan", str(p))
+    assert r.returncode == 0, r.stderr
+    assert "[DEFECT]" not in r.stdout
+    assert "0 notebook(s) carrying 0 leak" in r.stdout
+
+
+def test_cli_scan_leaky_notebook_reports_defect(tmp_path):
+    """``--scan <path>`` on a leaky notebook: exits 0 (reporter, not gate),
+    prints [DEFECT] inline + summary with leak count."""
+    user = "boblebricoleur"
+    nb = {"cells": [
+        {"cell_type": "code", "source": ["print('x')\n"], "metadata": {},
+         "execution_count": 1, "outputs": [
+            {"output_type": "stream", "name": "stderr",
+             "text": rf"C:\Users\{user}\.nuget\packages\foo\1.0.0\bar.dll\n"}
+         ]},
+    ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    p = tmp_path / "leak.ipynb"
+    p.write_text(json.dumps(nb), encoding="utf-8")
+
+    r = _run_cli("--scan", str(p))
+    assert r.returncode == 0, r.stderr
+    assert "[DEFECT]" in r.stdout
+    assert "leak.ipynb" in r.stdout
+    assert "1 notebook(s) carrying 1 leak" in r.stdout
+
+
+def test_cli_scan_missing_path_exits_two(tmp_path):
+    """``--scan <nonexistent>`` exits 2 via argparse.error (no traceback)."""
+    r = _run_cli("--scan", str(tmp_path / "nope.ipynb"))
+    assert r.returncode == 2, (
+        f"expected exit 2 (argparse error), got {r.returncode}. "
+        f"stderr={r.stderr!r}")
+    assert "Traceback" not in r.stderr
+    assert "path not found" in r.stderr.lower()
