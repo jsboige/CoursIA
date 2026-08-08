@@ -73,7 +73,7 @@ Cf [claude-code-config.md](./claude-code-config.md) pour le detail agents/skills
 
 ```bash
 python GradeBookApp/gradebook.py               # Python grading pipeline
-python GradeBookApp/run_epf_mis_2026.py         # EPF MIS multi-epreuves
+python GradeBookApp/run_grading.py              # Pipeline de notation (runner)
 ```
 
 Notation par cohorte (ECE, ESGF, ...) = privee sur GDrive `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` ; cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) pour le moteur generique.
