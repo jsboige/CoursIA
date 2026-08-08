@@ -327,6 +327,36 @@ def _classify_quant_value(
     if SEMVER_RE.fullmatch(raw):
         return ("ENV-DEP", f"semver pattern match: {raw!r}")
 
+    # -2 (c.1331): anti-FP residuel ML/DfA — guard structurel v5 (2 classes
+    #     mesurees apres v4, issue #10012). v4 (#10016) a reduit 209 -> 93 mais
+    #     la verification #4 (assert restants = vrais drainables) ECHOUE : les 93
+    #     sont ~90 % de FP dans 2 nouvelles classes non couvertes par v4.
+    #     Failure-mode SAFE : ces guards ne font qu'absorber vers STRUCTUREL
+    #     (jamais vers drainable) — un faux positif du guard = garder une vraie
+    #     valeur en STRUCTUREL = sur-correction inoffensive (pas de corruption de
+    #     contenu), tandis que le bug a fixer est la direction inverse (FP
+    #     drainable qui corromprait un drain). L'asymetrie regle #9434 tient.
+    #
+    # (e) Numbered-list-item guard : entier en DEBUT de ligne + ". mot" suit =
+    #     numerotation de liste / objectif pedagogique / auteur biblio. Mesure
+    #     ML/DfA : 7 MACHINE-DEP ("4. comprendre", "3. executor") + ~15 ENV-DEP
+    #     ("3. t. e. oliphant", "2. w. mckinney" = auteurs numerotes biblio).
+    #     Pattern strict : raw entier (les indices de liste sont des entiers ;
+    #     "0.95" est preserve) + prefix strippe vide (debut de ligne, rien avant
+    #     sur la ligne) + suffix debutant par ". " + alphanumerique.
+    if re.fullmatch(r"\d+", raw) and prefix.strip() == "" and re.match(r"\.\s+\w", suffix):
+        return ("STRUCTUREL", "liste/objectif numéroté v5 (entier début de ligne)")
+
+    # (f) Clock-arithmetic guard : "11 h + 3 h = 2 h" = arithmetique de l'horloge
+    #     (exemple math pedagogique), pas un timing runtime. Le `h` (heures) dans
+    #     une EQUATION (deux quantites-h jointes par + ou =) signale l'arithmetic,
+    #     pas une mesure. Un vrai runtime "prend 3 h" n'a qu'une quantite-h sans
+    #     operateur. Mesure ML/DfA c9 : 3 MACHINE-DEP FP (11/3/2 de l'horloge).
+    #     Pattern strict : \d+h[+=]\d+h exige DEUX quantites-h + operateur.
+    ctx_with_raw = (prefix + " " + raw + " " + suffix).lower()
+    if re.search(r"\d+\s*h\s*[+=]\s*\d+\s*h", ctx_with_raw):
+        return ("STRUCTUREL", "arithmétique horloge v5 (Nh ± = Nh, exemple math)")
+
     # -1 (c.1301+12): anti-FP ML/DfA + Search/Part1 — guard structurel v4
     #     (4 classes : editorial-duration / biblio / section-number /
     #     theoretical-reference). Capture les FPs AVANT que les mots-cles

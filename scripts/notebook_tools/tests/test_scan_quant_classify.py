@@ -617,6 +617,75 @@ class TestGoldenSetMLDfASearchPart1C1301:
 
 
 # --------------------------------------------------------------------------- #
+#  Tests v5 (c.1331) — anti-FP residuel ML/DfA (issue #10012, apres v4 #10016)
+#  2 guards : numbered-list-item (entier debut de ligne + ". mot") +
+#  clock-arithmetic (Nh ± = Nh). Failure-mode SAFE : absorbent vers STRUCTUREL.
+# --------------------------------------------------------------------------- #
+
+
+class TestV5NumberedListAndClockArithmetic:
+    """Guards v5 (c.1331) — residuel ML/DfA apres v4 (#10016 a laisse 93 FP).
+
+    Numbered-list-item : "4. comprendre", "3. executor", "2. w. mckinney"
+    (auteur biblio numerote). Mesure ML/DfA : 7 MACHINE-DEP + ~15 ENV-DEP.
+    Cross-famille : 15 FP Probas + 2 ArgAna (listes definition/etape), verifies
+    firsthand = list items, absorption CORRECT (FP removal, pas regression).
+    """
+
+    def test_v5_numbered_list_item_at_line_start(self):
+        """ML/DfA c0: "4. comprendre l'apprentissage" = objectif numéroté."""
+        cls, _ = _classify_quant_value("4", 4.0,
+                                       "", ". comprendre l'apprentissage supervisé")
+        assert cls == "STRUCTUREL", (
+            f"item de liste numéroté (début de ligne) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v5_biblio_author_numbering(self):
+        """ML/DfA c14: "3. t. e. oliphant" = auteur numéroté en biblio."""
+        cls, _ = _classify_quant_value("3", 3.0,
+                                       "", ". t. e. oliphant, numpy (2006)")
+        assert cls == "STRUCTUREL", (
+            f"auteur numéroté en biblio doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v5_non_integer_at_line_start_NOT_absorbed(self):
+        """Falsification : "0.95. The AUC..." (réel) n'est PAS absorbé (non-entier).
+
+        raw "0.95" n'est pas un entier -> le guard numbered-list skippe -> la
+        valeur tombe sur sa vraie classe (ici ENV-DEP via semver... non, 0.95
+        n'est pas semver ; via contexte aucun keyword -> STRUCTUREL defaut).
+        L'essentiel : elle n'est PAS absorbée par le guard list-item.
+        """
+        cls, rat = _classify_quant_value("0.95", 0.95,
+                                         "", ". the auc of the random classifier")
+        assert "liste/objectif" not in rat, (
+            f"0.95 (non-entier) ne doit pas declencher le guard list-item, rationale={rat!r}"
+        )
+
+    def test_v5_clock_arithmetic_absorbed(self):
+        """ML/DfA c9: "11 h + 3 h = 2 h" = arithmétique horloge, pas runtime."""
+        cls, _ = _classify_quant_value("11", 11.0,
+                                       "", " h + 3 h = 2 h) comme les angles")
+        assert cls == "STRUCTUREL", (
+            f"arithmétique horloge (Nh + Nh = Nh) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v5_single_hour_runtime_NOT_absorbed(self):
+        """Falsification : "prend 3 h" (1 seule quantite-h, runtime reel) reste MACHINE-DEP.
+
+        Note : on evite le mot "notebook" dans le contexte car STRUCTURAL_LOCATIONS_V4
+        contient "notebook " (guard section-number) qui absorberait deja la valeur —
+        on isole ici le comportement du SEUL guard v5 clock-arithmetic (qui exige
+        DEUX quantites-h jointes par un operateur, donc une heure unique ne matche pas).
+        """
+        cls, rat = _classify_quant_value("3", 3.0,
+                                         "le script prend ", " h a tourner")
+        assert cls == "MACHINE-DEP", (
+            f"runtime 'prend 3 h' (heure unique) doit rester MACHINE-DEP, got {cls} ({rat})"
+        )
+
+
+# --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
 
