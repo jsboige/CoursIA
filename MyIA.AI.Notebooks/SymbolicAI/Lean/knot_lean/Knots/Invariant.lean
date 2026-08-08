@@ -490,6 +490,46 @@ theorem tricolorForwardExtension.colorAtNat_eq {d₁ d₂ : KnotDiagram}
   -- est utilisée dans la branche « then » (`coloring₁ ⟨e-1, hk⟩`).
   rw [dif_pos (by omega : (e - 1 : Nat) < d₁.numEdges)]
 
+/-- Second lemme-pivot : l'arête FRAÎCHE `b = d₁.numEdges + 1` (créée par la
+    torsion R1) lit, sous `coloring₂`, la MÊME couleur que l'arc splice `a` lit
+    sous `coloring₁`. C'est le fondement du cas « crossing renommé Y' » du
+    transfert avant : `Y'` est le crossing d'extrémité `i` avec les occurrences
+    de l'arc `a` renommées en `b` (`isRenameOf … a b`), donc sous `coloring₂`
+    son slot renommé lit la couleur du splice (ce lemme) tandis que ses slots
+    inchangés (dans `[1, d₁.numEdges]`) préservent leur couleur via
+    `colorAtNat_eq` — les 4 couleurs lues par `Y'` sous `coloring₂` sont donc
+    EXACTEMENT celles lues par le crossing original sous `coloring₁`, et la
+    condition de Fox est préservée. -/
+theorem tricolorForwardExtension.colorAtNat_fresh_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 1) =
+      d₁.colorAtNat coloring₁ a := by
+  -- `numEdges ≥ 1` (de `1 ≤ a ≤ d₁.numEdges`), donc ni diagramme n'est dégénéré.
+  have hca : a - 1 < d₁.numEdges := by omega
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- Modulos : (b-1) % d₂.numEdges = d₁.numEdges (car b-1 = n < n+2 = d₂.numEdges) ;
+  --            (a-1) % d₁.numEdges = a-1 (car a-1 < d₁.numEdges).
+  have hmod_fresh : (d₁.numEdges + 1 - 1) % d₂.numEdges = d₁.numEdges := by
+    rw [Nat.add_sub_cancel, hnum2]
+    exact Nat.mod_eq_of_lt (by omega)
+  have hmod_a : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` des deux côtés (branches `numEdges = 0` mortes) + réduit
+  -- les modulos. Même motif que `colorAtNat_eq` : `simp only` (pas `rw`) pour
+  -- gérer le champ preuve du `Fin` (motive mal-typeé sinon).
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hmod_fresh, hmod_a]
+  -- But : extension à l'indice `⟨d₁.numEdges, _⟩` = `coloring₁ ⟨a-1, _⟩`.
+  -- L'indice `⟨d₁.numEdges, _⟩ : Fin d₂.numEdges` ; sa coercion est defeq à
+  -- `d₁.numEdges`. On `show` le but avec `d₁.numEdges` (dépouille la coercion),
+  -- ce qui aligne le test du `if` sur `d₁.numEdges < d₁.numEdges` (FAUX),
+  -- PUIS `dif_neg` force la branche « else » → `coloring₁ ⟨a-1, hca⟩`.
+  unfold tricolorForwardExtension
+  show (if hk : (d₁.numEdges : Nat) < d₁.numEdges then coloring₁ ⟨d₁.numEdges, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨a - 1, by omega⟩
+  -- `dif_neg` : `dite` dépendant, branche « else » (le test `n < n` est faux).
+  rw [dif_neg (by omega : ¬ (d₁.numEdges : Nat) < d₁.numEdges)]
+
 /-! ## 3. Le trefoil est tricolorable
 
 Le trefoil (3_1) peut etre colorie avec 3 couleurs, chaque croisement voyant
