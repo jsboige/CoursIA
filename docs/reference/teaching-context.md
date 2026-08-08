@@ -2,33 +2,38 @@
 
 Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par ecole, mapping agents cluster. Pour le **moteur de notation** : cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) (pipelines + donnees par cohorte = prives sur GDrive). Pour le **mapping cluster machines** (au-dela des roles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
 
-## Ecoles partenaires 2026
+## Date de fraicheur
 
-| Ecole | Cours | Statut session 2026 |
-|-------|-------|---------------------|
-| EPF | GenAI Bachelor 3A (MSBNS3IN03), classes MIN1/MIN2/MIS | Termine, notes transmises |
-| ECE | IA Finance Ing4 (Gr01/02/03) | Termine, notes rendues debut mai |
-| Partner | Algo Trading QuantConnect | En cours, soutenances finales fin mai, **grading debut juin** |
-| EPITA | Programmation par Contraintes | Soutenances 2 batchs **terminees**, suivi TP bonus rempli, notes projet faites |
-| EPITA | IA Symbolique | Cours en cours ; TPs notebooks rendus sur CoursIA = points bonus des projets EPITA-IS |
+Derniere actualisation : **2026-08-08** (cycle c.1331+39, sub-issue #9984 tranche 2 du triage `docs/reference/` #7422). Cycle en cours : **2026 → 2027** (rentree septembre 2026). Les statuts session 2026 sont les statuts **de cloture** (memoires des livrables passes) ; les sessions 2027 demarrent a la rentree et seront documentees au fil de l'eau (dashboard workspace CoursIA, pas ce fichier). Conventions de dates : verifiez `[last_updated]` en tete du sous-dossier GDrive `Formation/<ecole>/<annee>/` pour la version nominative.
 
-## Calendrier general 2026 (printemps)
+## Ecoles partenaires 2027
 
-Le calendrier nominatif (dates precises de soutenance par groupe etudiant) est dans `G:/Mon Drive/MyIA/Formation/<ecole>/2026/` et sur le **dashboard RooSync workspace CoursIA**, pas dans le repo public.
+| Ecole | Cours | Statut session 2026 (cloture) | Statut session 2027 |
+|-------|-------|------------------------------|---------------------|
+| EPF | GenAI Bachelor 3A (MSBNS3IN03), classes MIN1/MIN2/MIS | Termine, notes transmises | A pourvoir (rentree septembre 2026) |
+| ECE | IA Finance Ing4 (Gr01/02/03) | Termine, notes rendues debut mai | A pourvoir (planning en cours, dashboard workspace CoursIA) |
+| Partner | Algo Trading QuantConnect | Soutenances finales fin mai, **grading debut juin** termine | A pourvoir (cohort 2026-2027 sponsor QC) |
+| EPITA | Programmation par Contraintes | Soutenances 2 batchs **terminees**, suivi TP bonus rempli, notes projet faites | A pourvoir (cohort 2026-2027, dispatches `myia-po-2025:2026-Epita-Programmation-par-Contraintes` vers `2027-...` au Q3 2026) |
+| EPITA | IA Symbolique | Cours en cours (cycle printemps 2026 termine) ; TPs notebooks rendus sur CoursIA = points bonus des projets EPITA-IS | A pourvoir (cohort 2026-2027, dispatches `myia-po-2025:2026-Epita-Intelligence-Symbolique` vers `2027-...` au Q3 2026) |
 
-Les jalons annuels recurrents :
+## Calendrier general 2027 (printemps)
+
+Le calendrier nominatif (dates precises de soutenance par groupe etudiant) est dans `G:/Mon Drive/MyIA/Formation/<ecole>/2027/` et sur le **dashboard RooSync workspace CoursIA**, pas dans le repo public.
+
+Les jalons annuels recurrents (le cycle **2026** est en cloture au 2026-08-08 ; le cycle **2027** ouvre a la rentree septembre 2026) :
 
 | Periode | Activite type |
 |---------|---------------|
 | Janvier-Fevrier | Cours EPF GenAI + cours EPITA-PrCon (slides + notebooks) |
 | Mars-Avril | Cours ECE IA Finance Ing4 (Gr01/02/03 successifs) + soutenances P1 |
-| Mai | Soutenances ECE P2, soutenances EPITA-PrCon (batch 1 presentiel + batch 2 visio, terminees), debut cours EPITA-IA-Symbolique, soutenances finales partenaire |
+| Mai | Soutenances ECE P2, soutenances EPITA-PrCon (batch 1 presentiel + batch 2 visio), debut cours EPITA-IA-Symbolique, soutenances finales partenaire |
 | Juin | **Grading partenaire (debut juin)**, fin cours EPITA-IA-Symbolique + soutenances projet final |
+| Juillet-Aout | **Preparation cycle suivant** (mise a jour notebooks, validation cohortes, dispatches coordinateur) |
 | Septembre | Rentree (QC League pour anciens ECE, nouvelle promo EPF) |
 
-## EPITA - IA Symbolique : scope 2026
+## EPITA - IA Symbolique : scope 2027
 
-5 cours, 18h totales, focus exclusif sur le repertoire `MyIA.AI.Notebooks/SymbolicAI/`.
+5 cours, 18h totales (cycle 2026 invariant - en attente confirmation coordinateur pour 2027, cf dashboard workspace CoursIA `myia-po-2025:2026-Epita-Intelligence-Symbolique` des septembre 2026), focus exclusif sur le repertoire `MyIA.AI.Notebooks/SymbolicAI/`.
 
 ### Series DANS le scope (6)
 
@@ -53,7 +58,7 @@ Les jalons annuels recurrents :
 - **1 serie au minimum** choisie par l'etudiant parmi les 6 du scope
 - **Livrable principal** : 1 exercice final de notebook complete dans cette serie
 - **Workflow** : PR sur **fork du depot `jsboige/CoursIA`** (pattern PrCon : fork + PR sur notebooks)
-- **Le depot `2026-Epita-Intelligence-Symbolique`** = projets/sujets de soutenance, distinct des TPs notebooks
+- **Le depot `2026-Epita-Intelligence-Symbolique`** = projets/sujets de soutenance du cycle 2026 (clos) ; le cycle 2027 heritera d'un depot `2027-Epita-Intelligence-Symbolique` (creation coordonnee par ai-01 au Q3 2026), distinct des TPs notebooks
 - **Bonus** : +0.5 / exercice supplementaire meme serie (cap +1), +1 / exercice autre serie (cap +2), +0.5 redaction 1p markdown explicative (demarche, choix techniques, limites)
 - **Application du bonus** : c'est l'**inscription des groupes dans les fichiers de suivi adequats qui fait foi** (G drive `Notation/`), pas la PR mergee ni le keying gradebook sur la chaine sujet
 - **Collisions de TP** (2 groupes, meme exercice) : merger le **meilleur rendu** ou **cherry-pick entre les meilleurs**, puis **close les autres** avec un message expliquant qu'un seul peut etre merge (meme protocole que les TPs PrCon ; cf SW-10 #1429/#1416 -> #1499)
@@ -67,8 +72,8 @@ Le cluster CoursIA dispatche les missions par workspace dedie. **Les workspaces 
 |--------------|-------------------|---------|
 | ECE - notation P1+P2, bonus CC, compilation | `myia-ai-01:CoursIA` + `myia-po-2024:CoursIA` | - |
 | Partner QC - ML kit + soutenances + suivi | `myia-ai-01:CoursIA` + `myia-po-2024:CoursIA` | Sponsor QC, prudence sur la communication publique (tiers research org) |
-| EPITA-PrCon - review/merge PRs etudiants | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Ne **pas** envoyer de mission CoursIA via ce workspace |
-| EPITA-IS - veille + enrichissement sujets | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Ne **pas** envoyer de mission CoursIA via ce workspace |
+| EPITA-PrCon - review/merge PRs etudiants | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` (cycle 2026 clos) → `myia-po-2025:2027-Epita-Programmation-par-Contraintes` (cycle 2027, creation a coordonner ai-01 au Q3 2026) | Ne **pas** envoyer de mission CoursIA via ce workspace |
+| EPITA-IS - veille + enrichissement sujets | `myia-po-2025:2026-Epita-Intelligence-Symbolique` (cycle 2026 clos) → `myia-po-2025:2027-Epita-Intelligence-Symbolique` (cycle 2027, creation a coordonner ai-01 au Q3 2026) | Ne **pas** envoyer de mission CoursIA via ce workspace |
 | EPF - notation, archive | (workspace dedie myia-po-2025) | Cycle annuel termine |
 
 **Specificite po-2025** : 3 workspaces distincts sur la meme machine RTX 3080 Ti (backoff thermal partage). Dispatcher en precisant le workspace explicitement dans `to:`, jamais `myia-po-2025` seul.
@@ -89,7 +94,7 @@ Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-review
 
 ## Pointeurs cross-doc
 
-- Pipeline notation et bonus CC : moteur [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) ; detail par cohorte prive sur GDrive `Formation\<ecole>\<annee>\grading\`
+- Pipeline notation et bonus CC : moteur [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) ; detail par cohorte prive sur GDrive `Formation\<ecole>\2027\grading\` (cycle courant 2026-2027)
 - Mapping cluster machines (au-dela enseignement) : [docs/cluster-agents.md](cluster-agents.md)
 - Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../../.claude/rules/))
 - QuantConnect (partenaire) : [docs/qc/quantconnect.md](../qc/quantconnect.md)
