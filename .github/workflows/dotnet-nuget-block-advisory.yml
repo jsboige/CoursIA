@@ -1,0 +1,125 @@
+name: dotnet-nuget-block-advisory
+
+# Advisory organ for issue #10024 Livrable 2.
+#
+# The .NET headless `#r "nuget:"` block is REAL but BOUNDED
+# ([dotnet-headless-nuget-restore-cluster-wide-blocker]): it applies only to
+# notebooks that actually contain a `#r "nuget:"` cell. The block was repeatedly
+# invoked as a BLANKET excuse to skip re-execution or transplant outputs from
+# outside the repo -- on notebooks with ZERO `#r "nuget:"`. PR #10021 is the
+# canonical case (App-13b, 0 nuget, RECOVERABLE-MACHINE + transplanted outputs).
+#
+# This makes the anti-pattern VISIBLE on the PR.
+#
+# ADVISORY, never blocking (issue #10024 acceptance): the job ALWAYS exits 0.
+# The actionable payload is the `dotnet-block-without-nuget` LABEL, NEVER the
+# green conclusion of the job (which is green by construction). A reviewer who
+# reads only "exit 0" as "conforming" has read the wrong signal -- the same trap
+# documented in exercises-advisory.yml (PR #8820).
+#
+# Per-PR scope: runs check_pr_dotnet_nuget_block.py on the *.ipynb modified by
+# the PR + the PR body (fetched via gh). It does NOT re-implement detection
+# (acceptance: the label and the canonical tool must not diverge).
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped.
+#
+# Falsifiability ([gate-must-verify-detector-fp-before-wiring]):
+#   - .NET notebook WITH `#r nuget` + body block -> SILENT (block may be legit)
+#   - .NET notebook WITHOUT nuget + body no block -> SILENT
+#   - non-.NET notebook -> out of scope, SILENT
+# Reference RED case: PR #10021 body on App-13b (0 nuget).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.ipynb'
+      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
+      # else it cannot re-run (so cannot remove its own label) once the matching
+      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
+      - '.github/workflows/dotnet-nuget-block-advisory.yml'
+      - 'scripts/notebook_tools/check_pr_dotnet_nuget_block.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dotnet-nuget-block-advisory:
+    name: ".NET exec-block-without-nuget advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed notebooks.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without GH_REPO, `gh pr edit` / `gh pr view` cannot infer the target
+          # repo and fail silently (variation-tag-guard documented this trap).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_NAME: dotnet-block-without-nuget
+        run: |
+          set -uo pipefail
+
+          # Added/modified *.ipynb in the PR (deletions excluded).
+          git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- '*.ipynb' \
+            | grep -v $'\r$' > changed_ipynb.txt || true
+          COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
+          echo "Modified *.ipynb in this PR: $COUNT"
+
+          # Fetch the PR body (the block keywords are detected here).
+          gh pr view "$PR_NUMBER" --json body --jq '.body' > pr_body.md 2>/dev/null || true
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          ensure_label "$LABEL_NAME" \
+            "Body invokes a .NET exec block on a notebook with 0 #r nuget -- likely RECOVERABLE-LOCAL (#10024)" "F47373"
+
+          # Advisory: ALWAYS exit 0. The job never fails; the signal is the LABEL.
+          python scripts/notebook_tools/check_pr_dotnet_nuget_block.py \
+            --json --stdin --pr-body-file pr_body.md < changed_ipynb.txt > payload.json
+          cat payload.json
+
+          FLAGGED=$(python -c "import json; print(json.load(open('payload.json'))['summary']['dotnet_block_without_nuget'])")
+
+          # Illisible payload -> measure NOTHING, do not claim conformity (cf
+          # exercises-advisory.yml Blocage 3, #8819): stay silent (no label),
+          # emit a loud ::error::, exit 0.
+          if ! [ "${FLAGGED:-}" -eq "${FLAGGED:-}" ] 2>/dev/null; then
+            echo "::error::dotnet-nuget-block payload illisible -- the gate measured NOTHING; neither claimed nor denied."
+            unset_label "$LABEL_NAME"
+            exit 0
+          fi
+
+          if [ "${FLAGGED:-0}" -gt 0 ]; then
+            echo "::warning::$FLAGGED modified .NET notebook(s) with 0 #r nuget but a body invoking a .NET exec block (#10024). See the '$LABEL_NAME' label."
+            set_label "$LABEL_NAME"
+            echo "RESULT: $FLAGGED notebook(s) flagged -- labelled."
+          else
+            unset_label "$LABEL_NAME"
+            echo "RESULT: no .NET exec-block-without-nuget anti-pattern detected (verified)."
+          fi
+          exit 0
