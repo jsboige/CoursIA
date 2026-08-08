@@ -215,7 +215,7 @@ def translation_plan(rows, langs, include_code=False):
                 yield i, lang
 
 
-def run_translations(rows, langs, include_code, out_path, smoke):
+def run_translations(rows, langs, include_code, out_path, smoke, limit=None):
     """Exécute les traductions live (ENABLED doit être True). Mutate rows in place.
 
     Écrit le CSV incrémentalement après chaque cellule (resume-safe : un run
@@ -233,6 +233,8 @@ def run_translations(rows, langs, include_code, out_path, smoke):
         # 1 cellule x toutes les langues demandées (premier markdown trouvé).
         first_idx = next((i for i, _ in plan), None)
         plan = [(i, lang) for i, lang in plan if i == first_idx] if first_idx is not None else []
+    if limit:
+        plan = plan[:limit]
     total = len(plan)
     print(f"[plan] {total} traductions à produire ({len(langs)} langue(s))", file=sys.stderr)
 
@@ -288,6 +290,9 @@ def main() -> int:
                          "la traduction des commentaires de code est un refinement T3)")
     ap.add_argument("--model", default=DEFAULT_MODEL, help=f"modèle primaire (défaut {DEFAULT_MODEL})")
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL, help="endpoint primaire")
+    ap.add_argument("--limit", type=int, default=None,
+                    help="borne le plan aux N premières traductions (tranche/test bornée, #6949). "
+                         "Neutre sur la gate de sécurité (borne le plan seulement).")
     args = ap.parse_args()
 
     out_path = args.out or args.csv
@@ -307,6 +312,8 @@ def main() -> int:
     if args.smoke:
         first_idx = next((i for i, _ in plan), None)
         plan = [(i, lang) for i, lang in plan if i == first_idx] if first_idx is not None else []
+    if args.limit:
+        plan = plan[:args.limit]
 
     print(f"[plan] {len(plan)} traductions nécessaires "
           f"({len(langs)} langue(s), include_code={args.include_code})", file=sys.stderr)
@@ -332,7 +339,7 @@ def main() -> int:
               "OPENAI_API_KEY env + re-passer --apply.", file=sys.stderr)
         return 0
 
-    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke)[1] == 0 else 1
+    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke, args.limit)[1] == 0 else 1
 
 
 if __name__ == "__main__":

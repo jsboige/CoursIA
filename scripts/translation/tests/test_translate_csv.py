@@ -280,6 +280,19 @@ def test_main_smoke_restricts_to_first_cell(tmp_path, monkeypatch, capsys):
     assert "7 traductions" in err or " 7 " in err
 
 
+def test_main_limit_bounds_plan(tmp_path, monkeypatch, capsys):
+    # 5 cells markdown x 1 langue = 5 traductions ; --limit 2 borne a 2 (#6949).
+    csv_path = _write_csv(tmp_path / "in.csv", [
+        _row(f"c{i}", text_fr=f"cellule {i}") for i in range(5)
+    ])
+    monkeypatch.setattr(sys, "argv", [
+        "translate_csv.py", "--csv", str(csv_path), "--lang", "es", "--limit", "2"])
+    rc = t3.main()
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "2 traductions nécessaires" in err  # borne par --limit, pas 5
+
+
 def test_main_single_lang(tmp_path, monkeypatch, capsys):
     csv_path = _write_csv(tmp_path / "in.csv", [_row("c1", text_fr="bonjour")])
     monkeypatch.setattr(sys, "argv", ["translate_csv.py", "--csv", str(csv_path), "--lang", "es"])
