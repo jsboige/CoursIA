@@ -64,6 +64,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install canary dependency
+        # PyYAML drives the rule-8 delivery canary (derive_always_on_jobs reads
+        # .github/workflows to find jobs that run on every pull_request). If this
+        # install failed, the script's import guard self-disables the canary --
+        # safe (no block) but the #9858 hole would stay open, so install it.
+        run: pip install pyyaml
+
       - name: Aggregate check verdicts
         env:
           GH_TOKEN: ${{ github.token }}

@@ -139,9 +139,9 @@ def test_self_exclusion_is_not_a_loose_prefix():
 # --- decision table ----------------------------------------------------------
 
 
-def test_no_checks_at_all_passes():
-    """A PR that triggers no other CI has nothing to gate."""
-    assert decide([])[0] == 0
+def test_skipped_and_neutral_are_green():
+    checks = [run("A", "skipped", rid=1), run("B", "neutral", rid=2)]
+    assert decide(checks)[0] == 0
 
 
 def test_skipped_and_neutral_are_green():
@@ -166,6 +166,37 @@ def test_the_9762_shape_fails():
     code, msg = decide(checks)
     assert code == 1
     assert "Lean CI" in msg and "Proof integrity" in msg
+
+
+def test_the_9858_outage_shape_fails():
+    """Replay of the #9858 outage (Actions 2026-08-06): 175 PRs merged while
+    the per-PR gates never ran -- check-runs sat at `queued`/`in_progress` with
+    no conclusion, or reported `completed` with a null conclusion (runner died).
+
+    A gate that verdicts PASS on this shape is the exact failure mode that let
+    175 PRs through unpoliced. Both sub-cases must land in `pending` (classify:
+    `status in STATUS_PENDING or not conclusion`) and the verdict must FAIL --
+    the bias-to-fail rule (rule 1) applied to the outage, parallel to the #9762
+    replay above (which pins the failure-side, this pins the no-verdict-side).
+    """
+    # Sub-case 1: runner never picked the check up (queued / in_progress, null).
+    queued = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="queued", rid=1),
+        run("proof-integrity / Proof integrity", None, status="in_progress", rid=2),
+        run("CodeQL", "success", rid=3),
+    ]
+    code, msg = decide(queued)
+    assert code == 1, "queued/null checks (outage) must block, not pass"
+    assert "Lean CI" in msg
+
+    # Sub-case 2: runner died mid-run -- `completed` with a null conclusion.
+    died = [
+        run("ci / Lean CI (grothendieck_lean)", None, status="completed", rid=4),
+        run("proof-integrity / Proof integrity", "success", rid=5),
+    ]
+    code, msg = decide(died)
+    assert code == 1, "completed/null-conclusion (runner died) must block"
+    assert "Lean CI" in msg
 
 
 # --- wait loop ---------------------------------------------------------------
@@ -384,3 +415,134 @@ def test_advisory_failure_alone_settles_green_end_to_end():
         now=lambda: 0.0,
     )
     assert code == 0, msg
+
+
+# --- delivery canary (rule 8, PR #10036 / #9858) -----------------------------
+#
+# A settled set containing NONE of the always-on workflows means CI was never
+# created for the PR -- the 2026-08-06 (#9858) partial-delivery failure mode,
+# where pr-gate ran and stabilised on a near-empty bouquet while the rest of CI
+# sat uncreated (175 PRs merged unpoliced). The canary refuses to pass on that
+# shape. The always-on roster is DERIVED from .github/workflows (jobs whose
+# workflow fires on pull_request with no paths: filter); judging on observed
+# NAMES (not the ok bucket) so advisory always-on jobs still count as delivered.
+
+# A small, stable roster for the pure-logic tests (independent of the live
+# workflows dir, which drifts as workflows are added -- exactly why the real
+# gate derives it rather than baking it in).
+_CANARY = frozenset(
+    {"No catalog changes on feature branch", "Gitleaks secret scanner"}
+)
+
+
+def test_empty_set_means_platform_did_not_deliver():
+    """Replaces the old `test_no_checks_at_all_passes`.
+
+    An empty settled set is indistinguishable from a partial delivery, so rule 1
+    (bias to fail) says refuse rather than pass. The pure `verdict`/`decide`
+    layer still returns PASS on empty (delivery is a wait-loop concern), but the
+    armed canary makes the *gate* exit 1 -- which is what closes the #9858 hole.
+    """
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=1, poll_sec=0, settle_polls=1,
+        always_on_jobs=_CANARY,
+        sleep=lambda _s: None, fetch=lambda _r, _s: [], now=lambda: 0.0,
+    )
+    assert code == 1, msg
+    assert "did not deliver" in msg
+
+
+def test_canary_passes_when_an_always_on_is_present():
+    """A healthy PR surfaces at least one always-on check -> delivered."""
+    checks = [
+        run("No catalog changes on feature branch", "success", rid=1),
+        run("Lean CI", "success", rid=2),
+    ]
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=1, poll_sec=0, settle_polls=1,
+        always_on_jobs=_CANARY,
+        sleep=lambda _s: None, fetch=lambda _r, _s: checks, now=lambda: 0.0,
+    )
+    assert code == 0, msg
+
+
+def test_canary_counts_a_red_advisory_always_on_as_delivered():
+    """The trap (acceptance criterion 2): an advisory always-on diverted out of
+    `ok` by rule 6 must STILL count as delivered. Judging on `ok` would falsely
+    flag a healthy PR whose only always-on happened to be a red advisory.
+    """
+    assert pr_gate.platform_delivered(
+        [run("Gitleaks secret scanner", "success")], _CANARY
+    ) is True
+    # Same job, failing -- still present by NAME, so still delivered.
+    assert pr_gate.platform_delivered(
+        [run("Gitleaks secret scanner", "failure")], _CANARY
+    ) is True
+
+
+def test_canary_fires_on_partial_delivery_pr_gate_only():
+    """The #9858 partial-delivery hole: pr-gate ran, nothing else did.
+
+    pr-gate is excluded from the roster (the gate never canaries itself), so a
+    bouquet of only the gate's own check is an undelivered PR.
+    """
+    checks = [run("PR gate", "success", rid=1)]
+    assert pr_gate.platform_delivered(checks, _CANARY) is False
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=1, poll_sec=0, settle_polls=1,
+        always_on_jobs=_CANARY,
+        sleep=lambda _s: None, fetch=lambda _r, _s: checks, now=lambda: 0.0,
+    )
+    assert code == 1 and "did not deliver" in msg
+
+
+def test_canary_fires_when_only_non_always_on_checks_ran():
+    """Path-filtered checks ran but no always-on did -> platform degraded."""
+    checks = [run("ci / Lean CI (grothendieck_lean)", "success", rid=1)]
+    assert pr_gate.platform_delivered(checks, _CANARY) is False
+
+
+def test_canary_is_disabled_when_roster_is_empty():
+    """An unreadable/empty roster must not block every PR (safe-open).
+
+    derive_always_on_jobs returns empty when the dir is missing or YAML fails;
+    the gate then behaves exactly as before rule 8. Confirming that contract
+    here, against the real repo so the derivation itself is exercised.
+    """
+    jobs = pr_gate.derive_always_on_jobs(
+        "this/does/not/exist", pr_gate.DEFAULT_SELF_NAME
+    )
+    assert jobs == frozenset()
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=1, poll_sec=0, settle_polls=1,
+        always_on_jobs=None,
+        sleep=lambda _s: None, fetch=lambda _r, _s: [], now=lambda: 0.0,
+    )
+    assert code == 0, "disabled canary must not turn an empty set into a failure"
+
+
+def test_derive_always_on_reads_real_workflows_and_excludes_self():
+    """Acceptance criterion 1: the roster is derived, not hardcoded, and never
+    includes the gate's own job. Run against the live .github/workflows.
+    """
+    jobs = pr_gate.derive_always_on_jobs()
+    assert len(jobs) >= 6, "expected at least the catalog/secret/regression/" \
+        "stale-base/variation always-on jobs from the real repo"
+    assert all(pr_gate.DEFAULT_SELF_NAME not in j for j in jobs), \
+        "the gate must never canary itself"
+    # A job known to be always-on (catalog-guard, no paths filter) is present.
+    assert "No catalog changes on feature branch" in jobs
+
+
+def test_fork_short_circuit_skips_the_canary(monkeypatch):
+    """Acceptance criterion 4: a fork PR never reaches the canary.
+
+    Forks short-circuit in main() before wait_and_decide is ever called, so even
+    a would-be-firing canary cannot touch a student PR.
+    """
+    def explode(*_a, **_kw):
+        raise AssertionError("fork path must not poll or canary")
+    monkeypatch.setattr(pr_gate, "wait_and_decide", explode)
+    monkeypatch.setattr(pr_gate, "derive_always_on_jobs", explode)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--is-fork"])
+    assert code == 0
