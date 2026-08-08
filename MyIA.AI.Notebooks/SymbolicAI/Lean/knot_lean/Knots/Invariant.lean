@@ -645,6 +645,48 @@ theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
   · -- continuité (True) + Fox Or.inl (True ∨ opaque-≠)
     exact ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩
 
+/-- Lemme-pont (cas « crossing inchangé ») : un crossing `c` de `d₁` dont les
+    4 slots sont dans `[1, d₁.numEdges]` (donc non touchés par l'extension qui
+    n'ajoute des arêtes qu'au-delà de `d₁.numEdges`) satisfait la condition de
+    Fox sous `coloring₂` **ssi** il la satisfait sous `coloring₁` — car
+    `colorAtNat_eq` transporte les 4 lectures couleur sans changement. C'est le
+    sous-cas 2/3 du mur `∀ c ∈ d₂.crossings` du wrapper (crossings `d₁`
+    d'index ≠ i, non renommés). La continuité + Fox sont transportées telles
+    quelles depuis `hcond` ; seules les bornes passent de `d₁.numEdges` à
+    `d₂.numEdges` (arithmétique : `c.ek ≤ d₁.numEdges ≤ d₂.numEdges`). -/
+theorem triColorConditionAt_unchanged {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (c : PDCrossing)
+    (hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+              1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+              1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+              1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges)
+    (hcond : triColorConditionAt d₁ coloring₁ c) :
+    triColorConditionAt d₂ (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c := by
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hc_wf
+  -- Les 4 slots ∈ [1, d₁.numEdges] → colorAtNat_eq transporte sans changement.
+  have hc1 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e1 =
+      d₁.colorAtNat coloring₁ c.e1 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e1 hc11 hc12
+  have hc2 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e2 =
+      d₁.colorAtNat coloring₁ c.e2 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e2 hc21 hc22
+  have hc3 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e3 =
+      d₁.colorAtNat coloring₁ c.e3 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e3 hc31 hc32
+  have hc4 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e4 =
+      d₁.colorAtNat coloring₁ c.e4 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e4 hc41 hc42
+  -- Déplie le but (SANS déplier colorAtNat), applique les 4 transports, puis
+  -- déplie hcond : but et hcond ont alors la MÊME continuité + Fox (couleurs
+  -- d₁.colorAtNat identiques) ; seules les bornes diffèrent (d₂ vs d₁).
+  simp only [triColorConditionAt]
+  simp only [hc1, hc2, hc3, hc4]
+  simp only [triColorConditionAt] at hcond
+  refine ⟨?_, hcond.2⟩
+  -- 8 bornes d₂ : c.ek ≤ d₁.numEdges (hcond.1) ≤ d₂.numEdges (hnum2)
+  omega
+
 /-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
     connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
     pour le mur actuel (la conjonction `∀ c ∈ d₂.crossings`). -/
