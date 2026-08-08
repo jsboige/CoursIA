@@ -41,7 +41,8 @@ name: Lean Game Theory CI
 # convention (code-style.md, signatures and proofs byte-identical, only
 # docstrings differ) Folk_en.lean's sorry is the SAME obligation as Folk.lean's,
 # not new debt -- counting both double-inflates past baseline (C513-L1, #6429).
-# FR<->EN divergence is caught separately by the i18n drift CI, so nothing hides.
+# FR<->EN divergence is caught separately by the i18n sibling-drift CI
+# (.github/workflows/lean-i18n-drift.yml, cables check_i18n_siblings.py -- See #10007), so nothing hides.
 #
 # Lake build: the reusable runs `lake exe cache get || true` then `lake -R build`,
 # which builds every @[default_target] of the lakefile -- SocialChoice,

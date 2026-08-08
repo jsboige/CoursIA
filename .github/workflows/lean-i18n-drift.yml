@@ -1,0 +1,86 @@
+name: Lean i18n Sibling Drift
+
+# CI gate for the Lean i18n byte-identity invariant (EPIC #4980).
+#
+# Convention #4980 (ratified 2026-07-04, cf .claude/rules/code-style.md §Lean
+# i18n): a French-canonical ``Foo.lean`` may carry an English mirror
+# ``Foo_en.lean``. Only the docstrings (``/- ... -/``) and comments (``-- ...``)
+# differ between the two; the code body -- signatures, theorem statements,
+# proofs, tactics -- stays BYTE-IDENTICAL, modulo the lines that legitimately
+# differ (``import`` / ``open`` / ``namespace`` / ``end``).
+#
+# This workflow cables the canonical checker ``check_i18n_siblings.py``
+# (#6711/#6718) as a per-PR gate. The checker EXISTS but, before this workflow,
+# was invoked by NOTHING in automation -- the invariant (184 pairs, 0 drift on
+# main) held by reviewer vigilance alone. The per-project ``lean-build.yml``
+# sorry-scan EXCLUDES ``*_en.lean`` (counting FR+EN double-inflates, C513-L1
+# #6429) and justified that exclusion by "the i18n drift CI", which did not
+# exist -- See #10007. This workflow makes that justification true.
+#
+# Pass/fail semantics (DECIDED, not deferred -- See #10007 design points):
+#
+#  - DRIFT  -> FAIL. A sibling pair whose code body diverges beyond the allowed
+#              import/open/namespace lines. This is the real regression signal:
+#              the byte-identity invariant is broken. A DRIFT line is a STARTING
+#              POINT for investigation (the checker knows three legitimate pair
+#              forms), not a verdict to execute verbatim -- line-verify the diff
+#              + ``lake build <target>_en`` before deciding a drift is
+#              intentional. docs/lean/i18n-sibling-patterns.md has the taxonomy.
+#  - ORPHAN -> FAIL. An ``_en`` file with no FR counterpart. Either add the FR
+#              sibling or remove the stray ``_en`` file.
+#  - UNBUILT -> advisory (PRINTED, never fails). A module absent from its
+#              lakefile roots/globs is a Lake-BUILD concern (a green Lake CI
+#              would be a false pass), not an i18n-drift concern. The one
+#              current case (social_choice_lean_peters PetersTour_en, INTRINSIC
+#              Peters v4.27 vendored library, #7081) must stay GREEN -- a gate
+#              that reddens on it on day one gets disarmed. The checker reports
+#              it so a reviewer SEES it; Lake build catches the compilation gap.
+#  - OK / OK-CONSUMER -> pass silently (the two validated pair forms).
+#
+# The checker's OWN exit code conflates UNBUILT with DRIFT/ORPHAN (any -> 1),
+# so this workflow re-derives pass/fail from the output lines rather than
+# trusting the exit code. The checker is NOT softened (its default stays strict
+# for manual ``python check_i18n_siblings.py --all`` use); the CI layer makes a
+# deliberate, named, single-category exemption that is readable right here.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.lean'
+      - 'scripts/lean/check_i18n_siblings.py'
+      - '.github/workflows/lean-i18n-drift.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  i18n-drift:
+    name: i18n sibling byte-identity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check i18n sibling drift
+        run: |
+          set +e
+          # Run the canonical checker across every Lean project. Its exit code
+          # is 1 on ANY DRIFT/ORPHAN/UNBUILT; we do NOT trust that code, we
+          # re-derive the verdict from the output lines so UNBUILT (advisory)
+          # does not redden the gate. Full output is echoed so every status --
+          # including the advisory UNBUILT line and the summary -- is visible.
+          output="$(python scripts/lean/check_i18n_siblings.py --all 2>&1)"
+          echo "$output"
+          echo "---"
+          if echo "$output" | grep -qE '^(DRIFT|ORPHAN) '; then
+            echo "FAIL: Lean i18n sibling drift detected (DRIFT/ORPHAN above)."
+            echo "The FR/EN code body must stay byte-identical -- only docstrings"
+            echo "and comments differ (EPIC #4980). A DRIFT line is a starting"
+            echo "point for investigation: line-verify the diff and"
+            echo "\`lake build <target>_en\` before concluding the drift is"
+            echo "intentional. See docs/lean/i18n-sibling-patterns.md."
+            exit 1
+          fi
+          echo "OK: 0 DRIFT, 0 ORPHAN. i18n byte-identity invariant holds."
+          echo "(any UNBUILT line above is advisory -- a Lake-build concern,"
+          echo "not an i18n-drift concern; See #10007, #7081.)"
