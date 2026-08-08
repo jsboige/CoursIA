@@ -53,13 +53,13 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 
 | Fichier | Description |
 |---------|-------------|
-| [reference/HEALTH_DASHBOARD.md](reference/HEALTH_DASHBOARD.md) | Tableau de santé du dépôt — snapshot dérivé du catalogue |
+| [archive/reference/HEALTH_DASHBOARD.md](archive/reference/HEALTH_DASHBOARD.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : Tableau de santé du dépôt — snapshot statique auto-généré depuis `COURSE_CATALOG.generated.json` (acceptance #4 de #4210). **Record historique** — superseded pour usage live par le marqueur `CATALOG-STATUS` dans chaque README de série (cron `catalog-cron.yml` quotidien). 77 lignes. Linked #4210 |
 | [reference/accent-cure-defense-in-depth.md](reference/accent-cure-defense-in-depth.md) | Cure des accents FR & défense contre les régressions (#2876) |
 | [reference/chatgpt-export-playwright.md](reference/chatgpt-export-playwright.md) | Explorer une longue conversation / un export ChatGPT via Playwright |
 | [reference/dotnet-plotly-zero-restore.md](reference/dotnet-plotly-zero-restore.md) | Pattern .NET Interactive — figures Plotly « zero-restore » (technique C548-L2) |
 | [reference/notebook-formatting.md](reference/notebook-formatting.md) | Mise en forme visuelle des notebooks — directives + vérification de rendu |
 | [reference/notebook-parity-table.md](reference/notebook-parity-table.md) | Table de parité cross-série — notebooks Python ⇄ .NET |
-| [reference/notebook-counts-reconciliation.md](reference/notebook-counts-reconciliation.md) | Réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. 174 lignes. Linked #8050 |
+| [archive/reference/notebook-counts-reconciliation.md](archive/reference/notebook-counts-reconciliation.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. **Record historique** — superseded pour usage live par [`reference/notebook-counters.md`](reference/notebook-counters.md) (#9857). 174 lignes. Linked #8050 |
 | [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
 | [reference/orphan-branch-scan-l576.md](reference/orphan-branch-scan-l576.md) | Scan de branche orpheline (L576 ★★) — compound gate 3 ancres (`merge-base` + REST `commits/<sha>/pulls` + `gh pr list --search head:<branch>`) anti-FPOS du REST, decision matrix 5 lignes. Détail de référence pour la section « Orphan-branch scan » de `.claude/rules/git-workflow.md`. 105 lignes. Origine : investigation 5 branches `jsboige/*` attachées à #7086-#7091 (c.576) |
 
