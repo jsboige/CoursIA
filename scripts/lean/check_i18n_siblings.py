@@ -522,6 +522,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("paths", nargs="*", help="files or directories to scan")
     parser.add_argument("--all", action="store_true",
                         help="scan the whole repository")
+    parser.add_argument(
+        "--allow-unbuilt", action="append", default=[],
+        metavar="RELATIVE_PATH",
+        help=(
+            "Whitelist one unbuilt `_en` mirror (path relative to repo root, "
+            "repeatable). The mirror is still scanned and reported as UNBUILT, "
+            "but the exit code does NOT flip on it. Use NAMED exemptions only "
+            "(never a wildcard) — same discipline as `allow-axioms` "
+            "(pr-review-discipline §B): a gate that can never rouge is not a "
+            "gate. Reserved for INTRINSIC exceptions where `lake build` cannot "
+            "compile the mirror for an external reason (e.g. PetersTour_en "
+            "tracks Peters v4.27, #7081). A new UNBUILT entry must be "
+            "investigated and added by name; do NOT relax the checker."
+        ),
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -532,12 +547,22 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.error("provide PATH(s) or --all")
 
+    # Normalize whitelist to POSIX strings relative to repo root; accept either
+    # forward or backslashes (Windows runner + Linux runner share the same file).
+    allow_unbuilt: set[str] = set()
+    for raw in args.allow_unbuilt:
+        # `str(Path)` on Windows yields backslashes; normalize to POSIX so the
+        # whitelist round-trips identically between runner OS.
+        norm = str(Path(raw)).replace("\\", "/")
+        allow_unbuilt.add(norm)
+
     en_files = find_en_files(scan_paths)
     if not en_files:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
     passed = consumer = failed = orphan = unbuilt = half_done = 0
+    unbuilt_whitelisted = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
         if not fr.exists():
@@ -549,9 +574,16 @@ def main(argv: list[str] | None = None) -> int:
         # sit outside the build, which is exactly the failure CI misses.
         built, why = check_en_built(en, repo_root)
         if built is False:
+            # Compute the same POSIX-normalized path the CLI flag uses, so the
+            # whitelist matches regardless of OS runner.
+            rel = en.resolve().relative_to(repo_root.resolve()).as_posix()
+            whitelisted = rel in allow_unbuilt
             unbuilt += 1
-            print(f"UNBUILT {en}")
+            tag = "  [WHITELISTED]" if whitelisted else ""
+            print(f"UNBUILT {en}{tag}")
             print(f"        {why}")
+            if whitelisted:
+                unbuilt_whitelisted += 1
         status, detail = check_pair(fr, en)
         if status == "OK":
             passed += 1
@@ -576,13 +608,18 @@ def main(argv: list[str] | None = None) -> int:
     total = passed + consumer + failed + orphan
     print(f"\n{passed}/{total} pairs byte-identical"
           f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
-          f" | {unbuilt} unbuilt"
+          f" | {unbuilt} unbuilt ({unbuilt_whitelisted} whitelisted)"
           f" | {half_done} half-done (advisory)")
     # NB: half_done is ADVISORY — it does NOT flip the exit code. Some
     # legitimate scenarios produce identical bodies (shared licence header,
     # verbatim bibliographic citation, etc.) and a human must triage. The
-    # exit code remains a hard fail on real drift / orphan / unbuilt.
-    return 0 if (failed == 0 and orphan == 0 and unbuilt == 0) else 1
+    # exit code remains a hard fail on real drift / orphan / non-whitelisted
+    # unbuilt. Whitelisted unbuilt mirrors are reported as UNBUILT in the log
+    # but excluded from the exit-code computation (cliquet: the exemption is
+    # named at the call site, never wildcarded — same discipline as the
+    # `allow-axioms` whitelist in pr-review-discipline §B).
+    effective_unbuilt = unbuilt - unbuilt_whitelisted
+    return 0 if (failed == 0 and orphan == 0 and effective_unbuilt == 0) else 1
 
 
 if __name__ == "__main__":

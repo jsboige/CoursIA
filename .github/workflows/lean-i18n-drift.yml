@@ -1,0 +1,56 @@
+name: Lean i18n sibling drift
+
+# Cable the FR<->EN sibling body-identity invariant (#4980 convention) on PRs
+# that touch Lean code. Without this job, the sorries scan in lean-build.yml
+# excludes `*_en.lean` mirrors (legitimate — counting FR+EN double-inflates the
+# total above baseline, C513-L1 #6429), but nothing else in CI catches the
+# compensating drift: a French file gains a new `def` or `theorem` whose EN
+# mirror never follows. See #10007.
+#
+# The checker canonical to #4980 lives at `scripts/lean/check_i18n_siblings.py`
+# (#6711 / #6718). It is **NOT** a Lake-build step — it only proves the bodies
+# have not drifted apart (cf `lean-merge-discipline.md` §1: lake build SUCCESS
+# stays mandatory for module compilation). It exits non-zero on:
+#   - drift       — a real divergence between FR canonical and EN mirror;
+#   - orphan      — an `*_en.lean` whose FR sibling is missing;
+#   - unbuilt     — an `_en` mirror Lake never compiles (a green Lean CI is a
+#                   false pass for it — the #6749 orphan-trap, which the body
+#                   comparison alone cannot catch).
+# It runs in **advisory** mode on `HALF-DONE` pairs (FR was probably never
+# localized — #7763); the counter never flips the exit code.
+#
+# Exemptions: NAMED only, never wildcarded — same discipline as `allow-axioms`
+# in `pr-review-discipline.md` §B. The single current exemption is PetersTour_en
+# (Peters v4.27 INTRINSIC, #7081), where `lake build` cannot compile the mirror
+# for an external reason. A new UNBUILT entry must be investigated and added by
+# name; do NOT relax the checker.
+#
+# Trigger: any PR that touches `**/*.lean` or the checker / this workflow.
+# `paths` is a denylist-complement (the inverse filter is `!` lines).
+on:
+  pull_request:
+    paths:
+      - "**/*.lean"
+      - "scripts/lean/check_i18n_siblings.py"
+      - ".github/workflows/lean-i18n-drift.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  i18n-drift:
+    name: "i18n sibling drift"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: "Check FR i18n body byte-identity (allow-list PetersTour_en #7081)"
+        run: |
+          set -eu
+          python scripts/lean/check_i18n_siblings.py --all \
+            --allow-unbuilt MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/PetersTour_en.lean
