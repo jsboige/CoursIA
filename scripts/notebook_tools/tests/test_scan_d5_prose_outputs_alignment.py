@@ -737,6 +737,134 @@ class TestStubCellExerciseFilter:
 
 
 # --------------------------------------------------------------------------- #
+#  FP class 4 (#9995) : references bibliographiques (volume:page-page)
+# --------------------------------------------------------------------------- #
+
+
+class TestBibliographicReferenceFilter:
+    """FP class 4 (#9995) : references bibliographiques au format volume:page-page.
+
+    La prose qui cite une source (Comptes Rendus 25:536-538, textbook
+    12:2825-2830, journal vol. 183:301-324) contient des nombres qui ne sont
+    PAS des mesures calculees -- ce sont des identifiants de citation. Verifie
+    firsthand : 38/10895 orphelins corpus (0.35%), concentres dans
+    ML\\DataScienceWithAgents (textbook 12:2825-2830, 8+ notebooks) + Comptes
+    Rendus 25:536-538 (DecPyMC-2) + NumPy 585:357-362 + GameTheory.
+    """
+
+    def test_helper_volume_match_with_context(self):
+        # Comptes Rendus 25:536-538 -- le volume 25 est un identifiant de citation.
+        text = "Resultat publie dans Comptes Rendus 25:536-538 (2024)."
+        assert mod._is_bibliographic_reference(25.0, text) is True
+
+    def test_helper_page_match_with_context(self):
+        # Les pages 536 et 538 de la meme reference sont aussi des identifiants.
+        text = "Resultat publie dans Comptes Rendus 25:536-538 (2024)."
+        assert mod._is_bibliographic_reference(536.0, text) is True
+        assert mod._is_bibliographic_reference(538.0, text) is True
+
+    def test_helper_textbook_volume_with_keyword(self):
+        # ML textbook citation 12:2825-2830 avec mot-cle "volume".
+        text = "Theorique : voir volume 12:2825-2830 du manuel de reference."
+        assert mod._is_bibliographic_reference(12.0, text) is True
+        assert mod._is_bibliographic_reference(2825.0, text) is True
+
+    def test_helper_no_context_not_filtered(self):
+        # Falsifiabilite (anti-overfilter) : un pattern N:N-N SANS contexte
+        # biblio (intervalle d'indices, range de donnees) n'est PAS filtre.
+        # Ici "25:536-538" pourrait etre un intervalle d'indices sans contexte.
+        text = "Les indices 25:536-538 couvrent la plage de donnees."
+        assert mod._is_bibliographic_reference(25.0, text) is False
+        assert mod._is_bibliographic_reference(536.0, text) is False
+
+    def test_helper_no_pattern_not_filtered(self):
+        # Aucun pattern N:N-N dans le texte -> le nombre demeure un orphelin.
+        text = "Le ratio mesure est 0.69 et le seuil 0.5."
+        assert mod._is_bibliographic_reference(0.69, text) is False
+        assert mod._is_bibliographic_reference(25.0, text) is False
+
+    def test_helper_value_not_in_pattern_not_filtered(self):
+        # Un nombre qui n'est ni volume ni page d'un pattern biblio present ->
+        # non filtre (conservateur).
+        text = "Cf. Comptes Rendus 25:536-538 pour le detail."
+        assert mod._is_bibliographic_reference(42.0, text) is False
+        assert mod._is_bibliographic_reference(0.69, text) is False
+
+    def test_helper_decimal_not_rounded_to_volume(self):
+        # Anti-sur-filtrage (G.9, mesure corpus 2.7/Infer-16/PyMC-16) : une
+        # DECIMALE comme 12.2 ou 5.7 ne doit PAS etre filtree meme si elle
+        # s'arrondit au volume d'une ref biblio (12.2 -> 12 == vol de
+        # 12:2825-2830). Un volume/page est TOUJOURS entier ; arrondir une
+        # decimale = sur-filtrage non-falsifiable. 12.2 demeure un orphelin.
+        text = "Cf. Journal of Machine Learning Research 12:2825-2830."
+        assert mod._is_bibliographic_reference(12.2, text) is False
+        assert mod._is_bibliographic_reference(12.3, text) is False
+        # L'entier 12 (le vrai volume) EST filtre.
+        assert mod._is_bibliographic_reference(12.0, text) is True
+        text2 = "Journal of Machine Learning Research 6:1939-1959, sparse."
+        assert mod._is_bibliographic_reference(6.2, text2) is False
+        assert mod._is_bibliographic_reference(5.7, text2) is False
+        assert mod._is_bibliographic_reference(6.0, text2) is True
+
+    def test_integration_comptes_rendus_suppressed(self, tmp_path):
+        # Cas fondateur DecPyMC-2 cell[23] : prose cite "Comptes Rendus
+        # 25:536-538" -- 25, 536, 538 sont des identifiants de citation,
+        # aucun output ne peut les "verifier" -> MISSING_FROM_OUTPUTS supprime.
+        nb = tmp_path / "biblio.ipynb"
+        _make_notebook([
+            _markdown_cell("### Reference\n"
+                           "Approche classique (Comptes Rendus 25:536-538) et "
+                           "le seuil admissible 25."),
+            _code_cell("print(0.1875)", [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        # Le "25" est a la fois volume biblio ET repetition prose -- filtre.
+        # Aucun autre orphelin legitime ici.
+        biblio_filtered = [f for f in mfo if f.prose_number == pytest.approx(25.0)]
+        assert biblio_filtered == [], (
+            f"bibliographic volume 25 must be filtered, got {biblio_filtered}")
+
+    def test_integration_legit_orphan_near_biblio_preserved(self, tmp_path):
+        # Falsifiabilite : une mesure orpheline LEGITIME (0.69) dans une cellule
+        # qui contient aussi une ref biblio (25:536-538) DOIT rester signalee.
+        # Le filtre biblio ne supprime QUE les nombres de la citation, pas les
+        # vraies mesures cohabitant dans la meme cellule.
+        nb = tmp_path / "mixed.ipynb"
+        _make_notebook([
+            _markdown_cell("Le ratio observe est 0.69, cf. aussi Comptes Rendus "
+                           "25:536-538 pour le contexte theorique."),
+            _code_cell("print(0.1875)", [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        legit = [f for f in mfo if f.prose_number == pytest.approx(0.69)]
+        biblio = [f for f in mfo if f.prose_number in (25.0, 536.0, 538.0)]
+        assert len(legit) == 1, (
+            f"legit orphan 0.69 must survive the biblio filter, got {mfo}")
+        assert biblio == [], (
+            f"biblio ids 25/536/538 must be filtered, got {biblio}")
+
+    def test_integration_dense_cell_biblio_filter_post_gate(self, tmp_path):
+        # Le filtre biblio s'applique APRES le gate dense (preserve la
+        # sémantique du ratio). Cellule dense (4 nombres) avec 3 orphelins
+        # dont 2 sont biblio (25, 536) : la gate voit 3/4 = 75% >= 50% -> passe,
+        # puis le filtre biblio retire 25 et 536 -> seul le legit 0.69 survive.
+        nb = tmp_path / "dense_biblio.ipynb"
+        _make_notebook([
+            _markdown_cell("a=0.5, b=0.69, et Comptes Rendus 25:536-538."),
+            _code_cell("print([0.5])", [{"text": "[0.5]\n"}]),  # seul 0.5 present
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        # 0.69 legit orphelin survive ; 25 et 536 filtres par biblio.
+        values = sorted(f.prose_number for f in mfo)
+        assert 0.69 in values, f"legit 0.69 must survive, got {values}"
+        assert 25.0 not in values, f"biblio vol 25 must be filtered, got {values}"
+        assert 536.0 not in values, f"biblio page 536 must be filtered, got {values}"
+
+
+# --------------------------------------------------------------------------- #
 #  Contre-epreuve positive ICT-1
 # --------------------------------------------------------------------------- #
 
