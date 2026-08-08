@@ -438,3 +438,119 @@ jobs:
               ;;
           esac
           exit 0
+
+  # #10045 -- the BLOCKING half of the variation-tag guard. The job above
+  # (check-variation-tag) is advisory (exit 0) -- it posts labels but never
+  # fails the PR. The gap is that the label is the ONLY signal, and the
+  # coordinator has been measured to miss it (3/10 PRs of the 2026-08-08
+  # cycle were unattributable -- issue #10045, `#9967`/`#10027`/`#10030`).
+  # This job exits 1 when the body carries no `Grain: <TIER>/<GENRE>` or no
+  # `lane <machine:workspace>` token. Both checks pass through the SAME
+  # shared extractor (`scripts/grain_tag.py`) as the advisory job, so the
+  # two halves never diverge on what a tag is.
+  #
+  # The decision logic lives in `scripts/ci/variation_tag_required.py` so
+  # the verdict is unit-tested (the YAML harness is reviewed by hand). The
+  # `reason` field of the verdict is the single line we emit into the PR
+  # comment on failure, idempotent (`<!-- vtr-required-block -->` mark).
+  #
+  # RULES (per issue #10045 acceptance):
+  #   1. Exit 1 on missing tag OR missing lane. Exit 0 only when both
+  #      are present.
+  #   2. NO `paths:` filter -- path-filtered jobs report `pending` forever
+  #      on out-of-scope PRs (cf. pr-gate.yml L18-22), which would make
+  #      the gate perpetually red. The verdict must reach every same-repo
+  #      PR, no exceptions.
+  #   3. Forks excluded -- ~95 etudiants, cf. student-pr-reviews.md.
+  #   4. Bots excluded -- catalog auto-regen is the only `*[bot]` author
+  #      we get; its PR body has no Grain tag by construction.
+  #   5. Job name `check-variation-tag-required` carries the `-required`
+  #      suffix on purpose: PR #10036 introduces an `is_advisory()`
+  #      classifier in `scripts/pr_gate.py` that RETURNS `true` for jobs
+  #      whose name matches `/advisory|non-blocking|^skip|optional/i`.
+  #      The `-required` suffix is the explicit signal that this job is
+  #      NOT advisory and must NOT be silenced when #10036 lands.
+  #      Pinned by `test_check_name_is_not_advisory_friendly` in
+  #      `scripts/tests/test_variation_tag_required.py`.
+  check-variation-tag-required:
+    name: Require Grain tag (block on absent, #10045)
+    runs-on: ubuntu-latest
+    steps:
+      # Sparse checkout of the BLOCKING decision script + the shared tag
+      # extractor it depends on (#9485 single source of truth).
+      - name: Checkout the blocking helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/variation_tag_required.py
+            scripts/grain_tag.py
+      - name: Require Grain tag in PR body
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Bots and forks are out of scope (cf. rule 3 + 4 above). Same
+          # gating as the advisory job.
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf. student-pr-reviews.md)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim, no shell
+          # re-interpretation of $, ", or newlines (cf. existing jobs).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # The blocking helper emits one JSON line on stdout and exits
+          # 0 (pass) or 1 (block). We capture both streams; the verdict
+          # JSON is on stdout, anything Python warns about goes on stderr.
+          python3 scripts/ci/variation_tag_required.py \
+            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          # Surface the stderr warnings so a failure here is debuggable
+          # from the job log alone -- #10036 lesson: a guard whose
+          # failure is silent is not a guard.
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Grain tag + lane present -- job passes."
+            exit 0
+          fi
+
+          # Block path. The verdict JSON gives us a single-line `reason`
+          # for the PR comment (idempotent via the HTML marker).
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::Grain tag ou lane manquant : $REASON"
+
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-required-block -->
+          **Grain tag obligatoire (#10045, bloquant).**
+
+          \`${REASON}\`.
+
+          Pour passer ce gate, le body doit porter en tete une ligne de la forme :
+
+          \`\`\`
+          Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
+          \`\`\`
+
+          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
+          EOF
+          )" 2>/dev/null || true
+
+          # Exit 1 to fail the job. The "PR gate" required check on `main`
+          # aggregates all check-runs and will report this as BLOCKED, so
+          # the PR is non-mergeable until the body is fixed.
+          exit 1
