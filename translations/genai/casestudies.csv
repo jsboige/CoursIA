@@ -10,9 +10,16 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,21e84a2e
 Ce notebook couvre les concepts et techniques principaux de barbie schreck. Les objectifs pedagogiques incluent la comprehension des fondamentaux, la mise en pratique via des exercices, et analyse de resultats.
 
 **Prerequis** : notions de base en Python et en algorithmique.
-",,,,,,,,7a4235148df3407e,,,,,,,
+",,,,,,"# Словесная дуэль: Барби против Осла из Шрека
+## Введение - barbie schreck
+
+**Навигация** : [Индекс](../README.md)
+
+Этот notebook охватывает основные понятия и техники barbie schreck. Педагогические цели включают понимание фундаментальных основ, практическое применение через упражнения и анализ результатов.
+
+**Предварительные требования** : базовые знания Python и алгоритмики.",,7a4235148df3407e,,,,,,a9dea1e8bad17e7f,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,da30ce89,markdown,fr,d5b0b2b299c5a230,"Notebook utilisant Semantic Kernel pour un débat contraint avec génération d'images
-",,,,,,,,d5b0b2b299c5a230,,,,,,,
+",,,,,,"Ноутбук, использующий Semantic Kernel для ограниченных дебатов с генерацией изображений",,d5b0b2b299c5a230,,,,,,d067bc5e70ed533b,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,beaa46fc,code,fr,1a03546a3386985f,"# Import guards - availability flags for external dependencies
 
 try:
@@ -38,7 +45,8 @@ except ImportError:
 ",,,,,,,,1a03546a3386985f,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a7548b48,markdown,fr,c2bd7773dd7fa517,"## Configuration initiale
 Chargement des variables d'environnement et initialisation des services
-",,,,,,,,c2bd7773dd7fa517,,,,,,,
+",,,,,,"## Начальная конфигурация
+Загрузка переменных окружения и инициализация сервисов",,c2bd7773dd7fa517,,,,,,5aa096170a693583,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,6653c56db3079ac9,"import os
 import random
 import logging
@@ -57,7 +65,8 @@ print(""Imports et configuration OK"")
 ",,,,,,,,6653c56db3079ac9,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e9592b88,markdown,fr,f0a6763a701bca85,"## Définition des contraintes linguistiques
 Sélection aléatoire d'une contrainte pour le débat
-",,,,,,,,f0a6763a701bca85,,,,,,,
+",,,,,,"## Определение лингвистических ограничений
+Случайный выбор ограничения для дебатов",,f0a6763a701bca85,,,,,,d315fba7a653a091,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,91dea5ab52872319,"CONTRAINTES = [
     (""Rime"", ""Chaque réplique doit contenir une rime parfaite""),
     (""Shakespeare"", ""Imiter le style théâtral de Shakespeare""),
@@ -77,7 +86,16 @@ La liste `CONTRAINTES` contient actuellement trois styles (Rime, Shakespeare, Ch
 **Indices** :
 - # Etape 1 : Definir le nom et la description de chaque nouvelle contrainte
 - # Etape 2 : Ajouter les tuples `(nom, description)` a la liste `CONTRAINTES`
-- # Indice : respecter le format existant `(""Nom"", ""Description de la regle"")`",,,,,,,,9a92a9675ee164a5,,,,,,,
+- # Indice : respecter le format existant `(""Nom"", ""Description de la regle"")`",,,,,,"### Упражнение 1: Добавление пользовательских лингвистических ограничений
+
+Список `CONTRAINTES` в настоящее время содержит три стиля (Rime, Shakespeare, Chanson). Цель — расширить этот список новыми оригинальными ограничениями, чтобы разнообразить дебаты.
+
+**Цель**: добавить в список как минимум два новых ограничения, например стиль «Японское хайку» (3 строки, 5-7-5 слогов) или «Код Python» (отвечать, используя синтаксис Python).
+
+**Подсказки**:
+- # Шаг 1: Определить название и описание каждого нового ограничения
+- # Шаг 2: Добавить кортежи `(nom, description)` в список `CONTRAINTES`
+- # Подсказка: соблюдать существующий формат `(""Nom"", ""Description de la regle"")`",,9a92a9675ee164a5,,,,,,5ef3fd17d79563be,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bc6ea55e,code,fr,f432d5f6398f7544,"# Exercice 1 : Ajout de contraintes linguistiques personnalisees
 # TODO etudiant : ajouter de nouvelles contraintes a la liste
 
@@ -89,7 +107,8 @@ NOUVELLES_CONTRAINTES = []  # Etape 1 : definir les nouvelles contraintes
 print(""Exercice a completer : nouvelles contraintes"")",,,,,,,,f432d5f6398f7544,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8d4bd174,markdown,fr,088f7af9fc6e3ff5,"## Création du kernel
 Initialisation des services OpenAI pour le chat et les images
-",,,,,,,,088f7af9fc6e3ff5,,,,,,,
+",,,,,,"## Создание kernel
+Инициализация сервисов OpenAI для чата и изображений",,088f7af9fc6e3ff5,,,,,,b017ef103384bf75,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e,code,fr,e6a88241a34f1f64,"def create_kernel():
     kernel = Kernel()
     kernel.add_service(OpenAIChatCompletion(
@@ -109,7 +128,8 @@ print(""Fonction create_kernel definie"")
 ",,,,,,,,e6a88241a34f1f64,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,e3e2a2f117b776e7,"## Plugin de génération d'images
 Implémentation de la fonctionnalité de création d'illustrations
-",,,,,,,,e3e2a2f117b776e7,,,,,,,
+",,,,,,"## Плагин генерации изображений
+Реализация функциональности создания иллюстраций",,e3e2a2f117b776e7,,,,,,1008e444c53f68eb,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,644aac65,code,fr,f33dcf65e3174201,"class ImagePlugin:
     def __init__(self, kernel):
         self.text_to_image = kernel.get_service(""dalle"", OpenAITextToImage)
@@ -132,7 +152,8 @@ print(""Classe ImagePlugin definie"")
 ",,,,,,,,f33dcf65e3174201,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,82f29e01,markdown,fr,4776d7aab82815c5,"## Configuration des agents
 Création des personnages avec leurs instructions spécifiques
-",,,,,,,,4776d7aab82815c5,,,,,,,
+",,,,,,"## Настройка агентов
+Создание персонажей с их конкретными инструкциями",,4776d7aab82815c5,,,,,,dd40fa0d81347eb1,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e24e577d,code,fr,1f0f1331f3840fff,"# Création des kernels séparés
 kernel_barbie = create_kernel()
 kernel_ane = create_kernel()
@@ -174,7 +195,16 @@ Le debat oppose actuellement Barbie et l'Ane de Shrek. L'objectif est d'ajouter 
 **Indices** :
 - # Etape 1 : Creer un kernel dedie pour l'Arbitre avec `create_kernel()`
 - # Etape 2 : Definir les instructions de l'Arbitre (role, comportement attendu)
-- # Indice : s'inspirer des instructions de Barbie et l'Ane pour le format du prompt",,,,,,,,8f431d0c89d859e2,,,,,,,
+- # Indice : s'inspirer des instructions de Barbie et l'Ane pour le format du prompt",,,,,,"### Упражнение 2 : Создание третьего агента
+
+В дебате сейчас участвуют Барби и Осёл из Шрека. Цель — добавить в дебат **третьего персонажа**: **Арбитра**, который комментирует выступления двух дуэлянтов на каждом ходу.
+
+**Цель** : создать агент `ChatCompletionAgent` с именем ""Arbitre"" с отдельным kernel и системными инструкциями, которые просят его оценивать качество реплик (соблюдение ограничения, креативность, юмор).
+
+**Подсказки** :
+- # Шаг 1 : Создать отдельный kernel для Арбитра с `create_kernel()`
+- # Шаг 2 : Определить инструкции Арбитра (роль, ожидаемое поведение)
+- # Подсказка : ориентироваться на инструкции Барби и Осла для формата prompt",,8f431d0c89d859e2,,,,,,bc7018a23755617d,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,7416b1e6,code,fr,ed3e4a9e5c19b1c7,"# Exercice 2 : Creation d'un troisieme agent (Arbitre)
 # TODO etudiant : creer le kernel et l'agent Arbitre
 
@@ -186,7 +216,8 @@ arbitre = None  # TODO etudiant : creer le ChatCompletionAgent
 print(""Exercice a completer : agent Arbitre"")",,,,,,,,ed3e4a9e5c19b1c7,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8736c2ad,markdown,fr,05522f7b193f4a3c,"## Stratégie de terminaison
 Arrêt du débat après 5 échanges
-",,,,,,,,05522f7b193f4a3c,,,,,,,
+",,,,,,"## Стратегия завершения
+Остановка обсуждения после 5 обменов",,05522f7b193f4a3c,,,,,,8e0419a81d1c2c5c,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,0266617e,code,fr,5aca9c25814aee01,"# %% [code]
 from typing import ClassVar
 from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
@@ -202,7 +233,8 @@ print(""Strategie de terminaison du debate configuree"")
 ",,,,,,,,5aca9c25814aee01,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,6d3cb56eefc0affc,"## Lancement du débat
 Exécution de la conversation avec génération d'images
-",,,,,,,,6d3cb56eefc0affc,,,,,,,
+",,,,,,"## Запуск обсуждения
+Выполнение беседы с генерацией изображений",,6d3cb56eefc0affc,,,,,,22315379a5ede6d1,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,4827e23af3544bbc,"async def run_debate():
     logger.info(f""Contrainte active : {contrainte_choisie[0]}"")
     
@@ -246,7 +278,15 @@ Ce notebook a permis d explorer les aspects essentiels de barbie schreck. Les po
 - Les exercices proposent une mise en pratique progressive
 - Les resultats obtenus permettent de valider la comprehension
 
-**Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,f64cad0220e8bab5,,,,,,,
+**Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,"## Заключение
+
+Этот notebook позволил изучить основные аспекты barbie schreck. Ключевые моменты:
+
+- Основные понятия были представлены и проиллюстрированы
+- Упражнения предлагают постепенное практическое освоение
+- Полученные результаты позволяют подтвердить понимание
+
+**Чтобы пойти дальше** : углубить продвинутые аспекты темы и изучить связи с другими областями.",,f64cad0220e8bab5,,,,,,fb1a327d9893f9b6,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,f27b1648,markdown,fr,150575c6be5e2040,"### Exercice 3 : Strategie de terminaison personnalisee
 
 L'implementation actuelle arrete le debat apres un nombre fixe de tours (`MAX_TURNS = 5`). Imaginez un scenario ou le debat doit s'arreter dynamiquement selon le contenu des messages.
@@ -256,7 +296,16 @@ L'implementation actuelle arrete le debat apres un nombre fixe de tours (`MAX_TU
 **Indices** :
 - # Etape 1 : Definir une liste de mots-cles declencheurs
 - # Etape 2 : Dans `should_terminate`, verifier si le dernier message contient un mot-cle
-- # Indice : utiliser `str(history[-1].content).lower()` pour lire le dernier message",,,,,,,,150575c6be5e2040,,,,,,,
+- # Indice : utiliser `str(history[-1].content).lower()` pour lire le dernier message",,,,,,"### Упражнение 3: пользовательская стратегия завершения
+
+Текущая реализация останавливает дебаты после фиксированного числа раундов (`MAX_TURNS = 5`). Представьте сценарий, в котором дебаты должны останавливаться динамически в зависимости от содержания сообщений.
+
+**Цель**: реализовать стратегию завершения, которая определяет, когда один из двух персонажей использует конкретное слово (например, «капитулировать» или «сдаться») в своем ответе, и немедленно останавливает дебаты.
+
+**Подсказки**:
+- # Шаг 1: определить список ключевых слов-триггеров
+- # Шаг 2: в `should_terminate` проверить, содержит ли последнее сообщение ключевое слово
+- # Подсказка: использовать `str(history[-1].content).lower()` для чтения последнего сообщения",,150575c6be5e2040,,,,,,2ce0893532f86941,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,97ca931e,code,fr,c652ac2f77f73d39,"from typing import ClassVar
 from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 
@@ -278,7 +327,11 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,7a5a944
 **Navigation** : [Index](../README.md)
 
 Dans ce notebook, nous allons simuler le duel légendaire entre le Père Fouras et Laurent Jalabert en utilisant Semantic Kernel avec des agents conversationnels.
-",,,,,,,,d90def923e958323,,,,,,,
+",,,,,,"# Игра в угадайку: Пэр Фура vs Laurent Jalabert
+
+**Навигация** : [Указатель](../README.md)
+
+В этом notebook мы смоделируем легендарную дуэль между Пэром Фура и Laurent Jalabert, используя Semantic Kernel с разговорными агентами.",,d90def923e958323,,,,,,095eba477ee483ab,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,34b19aac,code,fr,dded437c58383e68,"# Import guards - availability flags for external dependencies
 
 try:
@@ -322,7 +375,7 @@ if os.path.exists(env_path):
 else:
     load_dotenv()
 ",,,,,,,,dded437c58383e68,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b793,markdown,fr,7616ae335173bb25,## Configuration des agents,,,,,,,,7616ae335173bb25,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b793,markdown,fr,7616ae335173bb25,## Configuration des agents,,,,,,## Конфигурация агентов,,7616ae335173bb25,,,,,,ad386dd3873b49b3,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,85411416,code,fr,f831efcb9bbeae84,"# Bloc 2 - Création du kernel
 MOT_A_DEVINER = ""anticonstitutionnellement""
 
@@ -336,7 +389,7 @@ def create_kernel():
     ))
     return kernel
 ",,,,,,,,f831efcb9bbeae84,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,194199e7fc3383e1,## Définition des prompts,,,,,,,,194199e7fc3383e1,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,194199e7fc3383e1,## Définition des prompts,,,,,,## Определение промптов,,194199e7fc3383e1,,,,,,0d4ea0d0b716dd96,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9bedfe8b,code,fr,7f877f1f31e39469,"# Bloc 3 - Prompts des agents
 PERE_FOURAS_PROMPT = f""""""
 Tu es le Père Fouras de Fort Boyard. 
@@ -359,7 +412,16 @@ Les prompts actuels definissent le Pere Fouras comme enigmatique et Laurent Jala
 **Indices** :
 - # Etape 1 : Rediger le prompt du Temoin (role, regles, interdictions)
 - # Etape 2 : Rediger le prompt du Detective (strategie de questionnement)
-- # Indice : le Temoin ne doit jamais reveler le mot directement, mais peut donner des indices indirects",,,,,,,,5d256513c9d21692,,,,,,,
+- # Indice : le Temoin ne doit jamais reveler le mot directement, mais peut donner des indices indirects",,,,,,"### Упражнение 1: Настроить персонажей дуэли
+
+Текущие промпты определяют Отца Фура как загадочного, а Лорана Жалабера — как проницательного. Цель — создать вариант игры с двумя другими персонажами: **Детективом** (который задаёт дедуктивные вопросы) и **Свидетелем** (который отвечает уклончиво, не раскрывая слово).
+
+**Цель**: написать системные инструкции для этих двух новых персонажей и настроить соответствующих агентов.
+
+**Подсказки**:
+- # Шаг 1: Написать промпт Свидетеля (роль, правила, запреты)
+- # Шаг 2: Написать промпт Детектива (стратегия задавания вопросов)
+- # Подсказка: Свидетель никогда не должен раскрывать слово напрямую, но может давать косвенные намёки",,5d256513c9d21692,,,,,,3295a1f8a4a7068b,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ac94f4f0,code,fr,fb5c1ca4effe98b3,"# Exercice 1 : Personnaliser les personnages du duel
 # TODO etudiant : definir les prompts et creer les agents
 
@@ -371,7 +433,7 @@ temoin = None    # TODO etudiant : creer l'agent Temoin
 detective = None  # TODO etudiant : creer l'agent Detective
 
 print(""Exercice a completer : personnages Detective et Temoin"")",,,,,,,,fb5c1ca4effe98b3,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2b,markdown,fr,8e8c10732fb2e72b,## Création des agents avec stratégies personnalisées,,,,,,,,8e8c10732fb2e72b,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2b,markdown,fr,8e8c10732fb2e72b,## Création des agents avec stratégies personnalisées,,,,,,## Создание агентов с пользовательскими стратегиями,,8e8c10732fb2e72b,,,,,,e871958e3a650083,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,83e35526,code,fr,1884ec56d5922898,"# Bloc 4 - Définition des agents
 pere_fouras = ChatCompletionAgent(
     kernel=create_kernel(),
@@ -384,7 +446,7 @@ laurent_jalabert = ChatCompletionAgent(
     name=""Laurent_Jalabert"",
     instructions=LAURENT_JALABERT_PROMPT,
 )",,,,,,,,1884ec56d5922898,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,d24ddfa7e0e49490,## Stratégie de terminaison personnalisée,,,,,,,,d24ddfa7e0e49490,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,d24ddfa7e0e49490,## Stratégie de terminaison personnalisée,,,,,,## Пользовательская стратегия завершения,,d24ddfa7e0e49490,,,,,,c5fec7e663057808,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a86ac80f,code,fr,c41a211f227072d5,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -412,7 +474,16 @@ La strategie actuelle arrete la partie uniquement si le mot est devine. Mais Lau
 **Indices** :
 - # Etape 1 : Definir une liste de phrases d'abandon typiques
 - # Etape 2 : Verifier si le dernier message contient une de ces phrases (en minuscules)
-- # Indice : combiner les deux conditions avec `or` dans `should_agent_terminate`",,,,,,,,d81293ac2973649b,,,,,,,
+- # Indice : combiner les deux conditions avec `or` dans `should_agent_terminate`",,,,,,"### Упражнение 2 : Завершение с обнаружением отказа
+
+Текущая стратегия останавливает игру только если слово угадано. Но Лоран Жалабер также может сдаться. Цель — создать гибридную стратегию, которая останавливает игру, если слово угадано **или** если Лоран выражает отказ (""je donne ma langue au chat"", ""j'abandonne"").
+
+**Цель** : реализовать `RenoncementTerminationStrategy`, которая сочетает обнаружение секретного слова с обнаружением фраз отказа.
+
+**Подсказки** :
+- # Шаг 1 : Определить список типичных фраз отказа
+- # Шаг 2 : Проверить, содержит ли последнее сообщение одну из этих фраз (в нижнем регистре)
+- # Подсказка : объединить два условия с помощью `or` в `should_agent_terminate`",,d81293ac2973649b,,,,,,95bd36831fc14824,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0e96e11d,code,fr,9a91cbf579858a4b,"from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
 from semantic_kernel.contents.chat_message_content import ChatMessageContent
 
@@ -426,7 +497,7 @@ class RenoncementTerminationStrategy(TerminationStrategy):
         return result
 
 print(""Exercice a completer : RenoncementTerminationStrategy"")",,,,,,,,9a91cbf579858a4b,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f51,markdown,fr,e28fd58700f688dc,## Configuration du groupe de discussion,,,,,,,,e28fd58700f688dc,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f51,markdown,fr,e28fd58700f688dc,## Configuration du groupe de discussion,,,,,,## Настройка дискуссионной группы,,e28fd58700f688dc,,,,,,94489997a64019af,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fc868e1b,code,fr,e3c965a025256976,"# Bloc 6 - Configuration corrigée
 chat = AgentGroupChat(
     agents=[pere_fouras, laurent_jalabert],
@@ -436,7 +507,7 @@ chat = AgentGroupChat(
     )
 )
 ",,,,,,,,e3c965a025256976,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,ecc9f3c693bb86a7,## Lancement de la partie !,,,,,,,,ecc9f3c693bb86a7,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,ecc9f3c693bb86a7,## Lancement de la partie !,,,,,,## Запуск части!,,ecc9f3c693bb86a7,,,,,,43600140a62ebbb9,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,bad1ce48,code,fr,62bb9d8c5d80b76b,"from semantic_kernel.contents import AuthorRole, ChatMessageContent
 
 # Bloc 7 - Exécution du jeu
@@ -465,7 +536,16 @@ Actuellement, la partie s'arrete simplement quand le mot est devine ou apres 20 
 **Indices** :
 - # Etape 1 : Compter les messages ou le role est celui de Laurent Jalabert
 - # Etape 2 : Verifier si le mot secret apparait dans le dernier message
-- # Indice : le score peut etre `max(0, 100 - nb_questions * 10)`",,,,,,,,ae41af7cc354dd2d,,,,,,,
+- # Indice : le score peut etre `max(0, 100 - nb_questions * 10)`",,,,,,"### Упражнение 3 : Система подсчета очков для партии
+
+В настоящее время партия просто останавливается, когда слово угадано или после 20 итераций. Цель — добавить **систему подсчета очков**, которая считает количество вопросов, заданных Laurent Jalabert, и отображает итоговый счет.
+
+**Цель** : написать функцию `evaluer_partie`, которая принимает историю сообщений и возвращает словарь, содержащий количество заданных вопросов, было ли слово найдено, и счет (меньше вопросов = лучший счет).
+
+**Подсказки** :
+- # Шаг 1 : Посчитать сообщения, где роль принадлежит Laurent Jalabert
+- # Шаг 2 : Проверить, появляется ли секретное слово в последнем сообщении
+- # Подсказка : счет может быть `max(0, 100 - nb_questions * 10)`",,ae41af7cc354dd2d,,,,,,f3277f163627f847,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,df0d3126,code,fr,c67bed915c276918,"def evaluer_partie(history_messages: list) -> dict:
     # TODO etudiant : implementer le systeme de score
     nb_questions = 0     # Etape 1 : compter les questions de Laurent
@@ -488,7 +568,15 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,238be9
 Dans ce cas d'usage, nous construisons un systeme de consultation medicale simulee ou trois agents IA cooperent : un **medecin generaliste** qui pose des questions, une **IA medicale** qui analyse les symptomes, et un **pharmacien** qui recommande des traitements. Le dialogue est orchestre par Semantic Kernel via `AgentGroupChat`, avec une strategie de terminaison automatique.
 
 > **Avertissement** : ce notebook est un exercice pedagogique. Les diagnostics et recommandations medicamenteuses sont simules et ne remplacent en aucun cas une consultation medicale reelle.
-",,,,,,,,43c47d13c7e2a626,,,,,,,
+",,,,,,"# Врач vs ChatGPT : Многоагентный медицинский чатбот
+
+**Навигация** : [Индекс](../README.md)
+
+**Оценочная длительность** : 30 минут | **Предварительные требования** : аккаунт OpenAI с API-ключом, базовые знания Python
+
+В этом практическом примере мы создаём систему симулированной медицинской консультации, в которой сотрудничают три ИИ-агента: **врач общей практики**, который задаёт вопросы, **медицинский ИИ**, который анализирует симптомы, и **фармацевт**, который рекомендует лечение. Диалог оркестрируется Semantic Kernel через `AgentGroupChat` со стратегией автоматического завершения.
+
+> **Предупреждение** : этот notebook является учебным упражнением. Диагнозы и рекомендации по лекарственным препаратам симулированы и ни в коем случае не заменяют реальную медицинскую консультацию.",,43c47d13c7e2a626,,,,,,6d638e6d69bbb696,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,a2b0c20a,code,fr,98e8009ebbbf579d,"# Import guards - availability flags for external dependencies
 
 try:
@@ -506,7 +594,7 @@ except ImportError:
     print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
 ",,,,,,,,98e8009ebbbf579d,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,4392065a,markdown,fr,e46046e0da2169a5,"## Import des bibliothèques
-",,,,,,,,e46046e0da2169a5,,,,,,,
+",,,,,,## Импорт библиотек,,e46046e0da2169a5,,,,,,e54f8107a37f8e97,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,ba9fcb5d,markdown,fr,7b7a307cbde18bdc,"Ce cas d'usage met en oeuvre une **conversation multi-agent** dans le domaine medical. Trois agents cooperent : un medecin generaliste, une IA specialisee en diagnostic et un pharmacien. Chaque agent dispose de son propre prompt systeme et de plugins dedies via des `@kernel_function`.
 
 **Objectifs pedagogiques** :
