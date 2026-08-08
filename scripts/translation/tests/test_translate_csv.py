@@ -20,6 +20,10 @@ from pathlib import Path
 
 import pytest
 
+# importlib used by test_enabled_false_by_default_fresh_reload (ported from
+# legacy shadow) to read the module's pristine ENABLED default.
+import importlib  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
 TRANSLATION_DIR = HERE.parent
 sys.path.insert(0, str(TRANSLATION_DIR))
@@ -448,3 +452,107 @@ def test_cache_zero_calls_on_unchanged_lot(tmp_path, monkeypatch):
     done2, fails2 = t3.run_translations(rows, ["es"], False, out, False, limit=10)
     assert done2 == 0 and fails2 == 0
     assert len(calls2) == 0  # cache : 0 appel provider sur lot inchangé
+
+
+# =========================================================================== #
+# Ported verbatim from the deleted legacy scripts/tests/test_translate_csv.py
+# shadow (#10066 consolidation, tranche 7). Unlike the 5 collision tranches of
+# this campaign, the two files did NOT collide here (both-together = 58 = 35+23,
+# additive, not N×2): the canon was LIVE in CI. So deleting the legacy without
+# porting would have dropped 23 real tests. Per-test intent reconciliation
+# ([[consolidate-test-files-verify-per-test-not-count]]) found 16 of the 23
+# already covered by the canon (often more granularly); these 7 are the UNIQUE
+# coverages the canon entirely lacked:
+#
+#   - normalize() never tested (canon tests cell_hash, not its normalize feeder)
+#   - run_translations write-contract (text_<lang> + hash_<lang> = cell_hash)
+#   - CRLF-vs-LF hash stability (cross-OS checkout drift guard)
+#   - anchored hash regression value (ec9615f904e04755 locks the algorithm)
+#   - ENABLED=False read via module RELOAD (pristine default, not a monkeypatch)
+#   - per-language text_/hash_ column existence (schema completeness)
+#   - source secrets-hygiene scan (no os.getenv("KEY", "<literal>") fallback)
+# =========================================================================== #
+
+
+# --------------------------------------------------------------------------
+# normalize — the cell_hash feeder (canon tested cell_hash but never normalize)
+# --------------------------------------------------------------------------
+def test_normalize_rstrips_lines_and_trailing_newline():
+    # Trailing whitespace + final newline must NOT create faux drift.
+    assert t3.normalize("line   \nsecond\t\n") == "line\nsecond"
+    assert t3.normalize("single") == "single"
+    assert t3.normalize("") == ""
+
+
+# --------------------------------------------------------------------------
+# run_translations write-contract (hash_<lang> = cell_hash(text_<lang>))
+# --------------------------------------------------------------------------
+def test_run_translations_writes_text_and_hash_coherent(monkeypatch, tmp_path):
+    """run_translations MUST write text_<lang> AND hash_<lang> = cell_hash of that
+    text. T2 reads hash_<lang> for drift-detection, so a stale/empty hash breaks
+    the pipeline. The canon tested stubs but never the write-side contract."""
+
+    def fake_call(messages, model, key, base_url, max_tokens, reasoning_effort="low", timeout=240):
+        um = next(m["content"] for m in messages if m["role"] == "user")
+        lang_name = um.split("into ")[1].split(".")[0]
+        return f"[{lang_name}] translated", 0.1, 5
+
+    monkeypatch.setattr(t3, "call_chat", fake_call)
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-key-for-testing")
+
+    rows = [_row("c1", text_fr="Bonjour le monde")]
+    csv_path = tmp_path / "x.csv"
+    _write_csv(csv_path, rows)
+    loaded = t3.load_csv(str(csv_path))
+    done, fails = t3.run_translations(loaded, ["en"], include_code=False,
+                                      out_path=str(csv_path), smoke=False)
+    assert done == 1 and fails == 0
+    result = t3.load_csv(str(csv_path))
+    assert result[0]["text_en"] == "[English] translated"
+    # hash_en MUST equal cell_hash of the written text (T2 coherence contract).
+    assert result[0]["hash_en"] == t3.cell_hash("[English] translated")
+
+
+# --------------------------------------------------------------------------
+# Hash stability + anchored regression value
+# --------------------------------------------------------------------------
+def test_cell_hash_ignores_crlf_vs_lf():
+    # CRLF vs LF must NOT create faux drift across Windows/POSIX checkouts.
+    assert t3.cell_hash("ligne un\r\nligne deux") == t3.cell_hash("ligne un\nligne deux")
+
+
+def test_cell_hash_anchored_value():
+    # Anchored regression value : locks the hash algorithm itself (16 hex sha256
+    # of the normalized text). Changing normalize/cell_hash breaks drift-detection
+    # parity with T1/T2, so this must stay stable.
+    assert t3.cell_hash("## Introduction au machine learning") == "ec9615f904e04755"
+
+
+# --------------------------------------------------------------------------
+# ENABLED=False pristine default via module RELOAD (not a possibly-patched global)
+# --------------------------------------------------------------------------
+def test_enabled_false_by_default_fresh_reload():
+    # Reload the module to read its pristine default (a prior test may have
+    # monkeypatched t3.ENABLED). The gate must ship disabled.
+    fresh = importlib.reload(t3)
+    assert fresh.ENABLED is False
+
+
+# --------------------------------------------------------------------------
+# Schema completeness — every target has a text_ and hash_ column
+# --------------------------------------------------------------------------
+def test_every_target_has_text_and_hash_column():
+    for lang in t3.TARGETS:
+        assert f"text_{lang}" in t3.CSV_COLUMNS, f"missing text_{lang}"
+        assert f"hash_{lang}" in t3.CSV_COLUMNS, f"missing hash_{lang}"
+
+
+# --------------------------------------------------------------------------
+# Source secrets-hygiene scan — never os.getenv("KEY", "<literal>")
+# --------------------------------------------------------------------------
+def test_provider_keys_have_no_literal_default_in_source():
+    # secrets-hygiene rule 1-3 : never os.getenv("KEY", "<literal>"). The key
+    # must come from env only (no inline fallback that could leak a real secret).
+    src = Path(t3.__file__).read_text(encoding="utf-8")
+    assert 'getenv("OPENAI_API_KEY"' in src
+    assert 'getenv("OPENAI_API_KEY", "' not in src  # no literal default
