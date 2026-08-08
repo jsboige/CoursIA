@@ -24,6 +24,21 @@ La **seule** limite reelle est l'**injection de parametres** : Papermill n'a pas
 
 Deux limites voisines, **distinctes** de celle-ci, restent vraies : le restore `#r "nuget:"` est bloque cluster-wide en Papermill headless (cf [dotnet-plotly-zero-restore.md](dotnet-plotly-zero-restore.md)), et la **CI** ne peut pas re-executer ces notebooks faute de kernel installe sur le runner — d'ou l'exigence d'execution **locale** avant commit ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D).
 
+**Borne du blocage nuget** (mesure firsthand po-2026 le 2026-08-08 sur `origin/main` `f153cf0c8`, logique de detection = `notebook_tools.py` L375-389 ; l'issue #10024 rapportait 237/129/108/3 mesurés par ai-01 le meme jour, ecart ~7 = evolution du repo + heuristique de classification legerement plus large) :
+
+```
+230 notebooks .NET dans MyIA.AI.Notebooks/
+  127  SANS aucun #r "nuget:"   -> executables headless MAINTENANT
+  103  avec #r "nuget:"          -> le blocage #r nuget peut s'appliquer
+    2  avec >=1 code cell exec_count=None  (dont 1 QC, exempt)
+```
+
+Cette borne **n'etablit pas** que le blocage `#r "nuget:"` est faux pour les 103 qui en contiennent. Elle etablit qu'il a ete invoque comme dispense generale (PR #10021, `RECOVERABLE-MACHINE` + outputs transplantes hors-depot) pour un notebook qui **n'en contenait aucun** — la forme meme d'une preuve d'execution falsifiee. Le reflexe avant d'invoquer un blocage .NET :
+
+```bash
+grep -c '#r "nuget:' <notebook>     # 0  ->  RECOVERABLE-LOCAL : executer pour de vrai
+```
+
 ### Version : 1.0.617701, pas « >= 1.0.700 »
 
 | Version | Etat | Preuve |
@@ -127,14 +142,16 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | Kernel | Type | Executable via |
 |--------|------|----------------|
 | python3 | Python (conda base) | Papermill |
-| .net-csharp | .NET 9.0 | MCP Jupyter cell-by-cell |
-| .net-fsharp | .NET | MCP Jupyter cell-by-cell |
-| .net-powershell | .NET | MCP Jupyter cell-by-cell |
+| .net-csharp | .NET 9.0 | Papermill (`notebook_tools.py execute --kernel .net-csharp`) |
+| .net-fsharp | .NET | Papermill (`notebook_tools.py execute --kernel .net-fsharp`) |
+| .net-powershell | .NET | Papermill (`notebook_tools.py execute --kernel .net-powershell`) |
 | conda-torch | Python (torch) | Papermill |
-| lean4 | Lean 4 (v4.29.1 Windows) | MCP Jupyter cell-by-cell |
-| lean4-wsl | Lean 4 (v4.11.0 WSL) | MCP Jupyter cell-by-cell |
+| lean4 | Lean 4 (v4.29.1 Windows) | `notebook_tools.py execute` (in-process Papermill, translator Python enregistre) |
+| lean4-wsl | Lean 4 (v4.11.0 WSL) | `notebook_tools.py execute` (non re-mesure c.10024 ; laisser en l'etat si doute) |
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
+
+**Note** : la colonne *Executable via* disait « MCP Jupyter cell-by-cell » pour les kernels `.net-*` et `lean4*`. C'etait faux pour `.NET` (Papermill execute `.net-csharp` firsthand, cf L19-21 et la mesure nuget ci-dessus) et **ne s'applique pas** au chemin recommande : le MCP `jupyter-papermill` hang (#835) et ignore `kernel_name` (#5211) — il ne doit **jamais** etre le chemin de re-exec cite dans cette table. Pour `lean4`/`lean4-wsl`, le chemin `notebook_tools.py execute` (Papermill in-process avec translator enregistre, `notebook_tools.py` L1139-1179) est le mecanisme reel ; non re-mesure ce cycle, ne pas affirmer sans mesure.
 
 #### Papermill : env de reference
 
@@ -145,12 +162,16 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 # WSL notebooks : wsl_papermill.py
 python scripts/notebook_tools/wsl_papermill.py execute <nb>
 
-# .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
+# .NET : Papermill via l'outil du depot (cf L19-21 — Papermill execute bien .net-csharp)
+python scripts/notebook_tools/notebook_tools.py execute <nb> --cell-by-cell --kernel .net-csharp
+
+# Lean (Windows) : notebook_tools (in-process Papermill)
+python scripts/notebook_tools/notebook_tools.py execute <nb>
 ```
 
 #### MCP jupyter-papermill HANG (bug #835) : bascule directe timeout-wrappée, JAMAIS bloquer (HARD)
 
-**Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. Ils sont **interchangeables** pour l'exécution.
+**Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. En theorie interchangeables ; en pratique le chemin (2) direct est **le seul recommande** — le MCP (1) hang (#835) et ignore `kernel_name` (#5211), cf regle ci-dessous.
 
 **Le MCP est un piège (bug #835, CLOSED mais reproductible 2026-07-01)** : `mcp__jupyter-papermill__*` peut **bloquer 6 h+ sur un appel `execute`/`manage_kernel` et tuer la session** (root cause = **stdout buffering** qui bloque le spawn Claude Code — ce n'est PAS un serveur mort, donc **un restart ne corrige rien**). Le tracker « PR #660 » cité par erreur dans des cycles antérieurs = GPU-training checkpoints, **sans rapport**.
 
