@@ -40,7 +40,7 @@ def run(name, conclusion, status="completed", started_at="2026-08-07T00:00:00Z",
 
 
 def decide(checks, self_name=pr_gate.DEFAULT_SELF_NAME, settled=True):
-    pending, bad, _ok = pr_gate.classify(checks, self_name)
+    pending, bad, _ok, _adv = pr_gate.classify(checks, self_name)
     return pr_gate.verdict(pending, bad, settled=settled)
 
 
@@ -72,7 +72,7 @@ def test_unreadable_api_exits_one(monkeypatch):
 
 def test_completed_without_conclusion_is_pending_not_pass():
     """`status=completed, conclusion=null` is a transient GitHub state."""
-    pending, bad, ok = pr_gate.classify([run("Odd", None)])
+    pending, bad, ok, _adv = pr_gate.classify([run("Odd", None)])
     assert pending == ["Odd"] and not bad and not ok
 
 
@@ -119,20 +119,20 @@ def test_distinct_names_are_never_merged():
 
 def test_gate_does_not_wait_for_itself():
     checks = [run("PR gate", None, status="in_progress"), run("Lean CI", "success")]
-    pending, bad, ok = pr_gate.classify(checks, "PR gate")
+    pending, bad, ok, _adv = pr_gate.classify(checks, "PR gate")
     assert pending == [] and bad == [] and ok == ["Lean CI"]
 
 
 def test_self_exclusion_matches_workflow_slash_job_rendering():
     checks = [run("PR gate / gate", None, status="queued")]
-    pending, _bad, _ok = pr_gate.classify(checks, "PR gate")
+    pending, _bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
     assert pending == []
 
 
 def test_self_exclusion_is_not_a_loose_prefix():
     """"PR gateway" is a different check and must still be judged."""
     checks = [run("PR gateway", "failure")]
-    _pending, bad, _ok = pr_gate.classify(checks, "PR gate")
+    _pending, bad, _ok, _adv = pr_gate.classify(checks, "PR gate")
     assert bad == ["PR gateway"]
 
 
@@ -238,7 +238,7 @@ def test_pending_legacy_status_blocks_settling():
         {"name": "legacy/lint", "status": "in_progress", "conclusion": "",
          "started_at": "2026-08-07T00:00:00Z", "id": 9},
     ]
-    pending, _bad, _ok = pr_gate.classify(checks)
+    pending, _bad, _ok, _adv = pr_gate.classify(checks)
     assert pending == ["legacy/lint"]
 
 
@@ -298,3 +298,89 @@ def test_non_fork_path_is_unchanged(monkeypatch):
     code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
     assert code == 0
     assert len(calls) == 1, "non-fork path must still call wait_and_decide"
+
+
+# --- advisory decoupling (rule 6, PRs #10063 / #10080) ----------------------
+
+
+def test_advisory_failure_does_not_block():
+    """The regression this file exists for: a red advisory left the gate red.
+
+    Shape taken from #10063 measured on 2026-08-08 -- the advisory job crashed
+    on an unbound shell variable, and `PR gate` went FAILURE with it.
+    """
+    checks = [
+        run("G-VAR-2/3 GENRE signals (advisory, non-blocking)", "failure"),
+        run("Lean CI", "success"),
+    ]
+    pending, bad, ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert bad == [], "an advisory failure must never reach the blocking list"
+    assert pending == []
+    assert ok == ["Lean CI"]
+    assert advisory == ["G-VAR-2/3 GENRE signals (advisory, non-blocking) (failure)"]
+    assert pr_gate.verdict(pending, bad, settled=True)[0] == 0
+
+
+def test_advisory_pending_does_not_hold_the_gate():
+    """A hung advisory must not keep the repository waiting."""
+    checks = [
+        run("CJK residue advisory (label, non-blocking)", None, status="in_progress"),
+        run("Lean CI", "success"),
+    ]
+    pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert pending == [] and bad == []
+    assert advisory == ["CJK residue advisory (label, non-blocking) (in_progress)"]
+
+
+def test_advisory_marker_is_case_insensitive():
+    checks = [run("Slidev Build ADVISORY", "failure")]
+    _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert bad == [] and len(advisory) == 1
+
+
+def test_green_advisory_counts_as_a_normal_pass():
+    """Only non-green advisory checks are singled out for reporting."""
+    checks = [run("Large blob advisory (>= 10 MiB)", "success")]
+    _pending, bad, ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert bad == [] and advisory == []
+    assert ok == ["Large blob advisory (>= 10 MiB)"]
+
+
+def test_non_advisory_failure_still_blocks():
+    """Guard against the fix becoming a blanket amnesty."""
+    checks = [
+        run("Lean CI (grothendieck_lean)", "failure"),
+        run("Exercises >= 3 advisory (label, non-blocking)", "failure"),
+    ]
+    _pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert bad == ["Lean CI (grothendieck_lean)"]
+    assert len(advisory) == 1
+    assert pr_gate.verdict([], bad, settled=True)[0] == 1
+
+
+def test_advisory_is_printed_not_swallowed(capsys):
+    """The gate must not be the reason an advisory signal disappears."""
+    pr_gate._report_advisory(["Twin parity SHA mismatch (advisory) (failure)"])
+    out = capsys.readouterr().out
+    assert "not blocking" in out
+    assert "Twin parity SHA mismatch (advisory) (failure)" in out
+
+
+def test_advisory_failure_alone_settles_green_end_to_end():
+    """Whole-loop check: the #10063 shape now reaches exit 0."""
+    checks = [
+        run("G-VAR-2/3 GENRE signals (advisory, non-blocking)", "failure"),
+        run("Lean CI", "success"),
+    ]
+    code, msg = pr_gate.wait_and_decide(
+        repo="o/r",
+        sha="deadbeef",
+        timeout_min=1,
+        poll_sec=0,
+        self_name=pr_gate.DEFAULT_SELF_NAME,
+        settle_polls=2,
+        sleep=lambda _s: None,
+        fetch=lambda _r, _s: checks,
+        now=lambda: 0.0,
+    )
+    assert code == 0, msg
