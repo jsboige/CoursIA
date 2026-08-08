@@ -621,6 +621,122 @@ class TestDenseCellOrphanGate:
 
 
 # --------------------------------------------------------------------------- #
+#  FP class 2 (#9995) : cellules stub d'exercice
+# --------------------------------------------------------------------------- #
+
+
+class TestStubCellExerciseFilter:
+    """FP class 2 (#9995) : prose d'enonce d'exercice precedant un stub.
+
+    La prose d'enonce decrit le PROBLEME (donnees : maison 200 000 EUR,
+    P=2%, prime 5 000), pas un RESULTAT. Le stub suivant ("Exercice a
+    completer") n'a pas de sortie reelle -> ne peut rien verifier contre.
+    Verifie firsthand DecPyMC-1 cell[25]->[26], Pyro_RSA_Hyperbole
+    cell[15]->[16]. Corpus Probas : 112/1023 findings = 11% FP de cette classe.
+    """
+
+    def test_exercise_stub_output_suppresses(self, tmp_path):
+        # Cas fondateur DecPyMC-1 : enonce d'exercice -> stub "a completer".
+        # Les 3 nombres de l'enonce (200000, 0.02, 5000) sont des donnees,
+        # pas des mesures -> MISSING_FROM_OUTPUTS supprime.
+        nb = tmp_path / "stub.ipynb"
+        _make_notebook([
+            _markdown_cell("### Exercice : modele d'assurance\n"
+                           "Maison de 200000 EUR, P(inondation) = 0.02, "
+                           "prime 5000 EUR/an."),
+            _code_cell("# TODO etudiant : construisez le modele\n"
+                       "result = None",
+                       [{"text": "Exercice a completer : assurance\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert mfo == [], (
+            f"exercise-setup prose before a stub must be suppressed, got {mfo}")
+
+    def test_stub_detected_via_todo_source_no_phrase(self, tmp_path):
+        # Stub marque uniquement en source (# TODO etudiant) sans la phrase
+        # "Exercice a completer" dans l'output, mais sans sortie numerique.
+        nb = tmp_path / "stub_src.ipynb"
+        _make_notebook([
+            _markdown_cell("On considere alpha = 0.15 et beta = 0.30."),
+            _code_cell("# TODO etudiant : calculer le posterior\nresult = None",
+                       [{"text": "(en attente de resolution)\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert mfo == [], (
+            f"stub marked in source (# TODO) suppresses setup prose, got {mfo}")
+
+    def test_stub_with_real_numbers_not_suppressed(self, tmp_path):
+        # Falsifiabilite (anti-overfilter) : un stub qui produit QUAND MEME des
+        # nombres n'est pas un stub -- ses nombres sont des sorties reelles.
+        # Ici le code a "# TODO" mais print un nombre -> 0.69 orphelin reste
+        # signale (le filtre ne s'applique pas car has_numbers=True).
+        nb = tmp_path / "stub_with_nums.ipynb"
+        _make_notebook([
+            _markdown_cell("Phi = 0.69"),
+            _code_cell("# TODO etudiant : afficher Phi\nprint(0.1875)",
+                       [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert len(mfo) == 1 and mfo[0].prose_number == pytest.approx(0.69), (
+            f"stub with real numeric output must NOT suppress the orphan, got {mfo}")
+
+    def test_solved_exercise_not_affected(self, tmp_path):
+        # Un exercice RESOLU (le nombre de la prose est dans l'output) -> pas de
+        # finding, independamment du filtre (le filtre ne change rien ici).
+        nb = tmp_path / "solved.ipynb"
+        _make_notebook([
+            _markdown_cell("### Exercice\nOn trouve Phi = 0.69."),
+            _code_cell("print(0.69)", [{"text": "0.69\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        assert result.total_findings == 0
+
+    def test_stub_not_immediately_following_not_suppressed(self, tmp_path):
+        # Si une cellule markdown s'intercale entre l'enonce et le stub, le
+        # signal "immediate next" ne s'applique pas -> pas de suppression
+        # (signal tight, evite le sur-filtrage). La prose orpheline reste signalee.
+        nb = tmp_path / "gap.ipynb"
+        _make_notebook([
+            _markdown_cell("Sharpe = 0.69"),
+            _markdown_cell("## Note intermediaire"),  # s'intercale
+            _code_cell("print(0.1875)", [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        assert len(mfo) == 1, (
+            f"non-adjacent stub must not suppress, got {len(mfo)}")
+
+    def test_is_stub_code_cell_helper(self):
+        # Tests unitaires du helper _is_stub_code_cell.
+        stub_out = mod._code_cell if hasattr(mod, "_code_cell") else None
+        # Stub via phrase placeholder, aucun nombre.
+        cell_stub_phrase = {
+            "cell_type": "code", "source": ["x = None"],
+            "outputs": [{"text": "Exercice a completer : posterior\n"}],
+            "execution_count": 3,
+        }
+        assert mod._is_stub_code_cell(cell_stub_phrase) is True
+        # Stub via # TODO source, aucun nombre, output non-placeholder.
+        cell_stub_src = {
+            "cell_type": "code", "source": ["# TODO etudiant\nresult = None"],
+            "outputs": [{"text": "(en attente)\n"}], "execution_count": 4,
+        }
+        assert mod._is_stub_code_cell(cell_stub_src) is True
+        # Pas un stub : produit des nombres (sortie reelle).
+        cell_real = {
+            "cell_type": "code", "source": ["# TODO\nprint(0.5)"],
+            "outputs": [{"text": "0.5\n"}], "execution_count": 5,
+        }
+        assert mod._is_stub_code_cell(cell_real) is False
+        # Pas un stub : cellule markdown (helper renvoie False).
+        assert mod._is_stub_code_cell(
+            {"cell_type": "markdown", "source": ["x"]}) is False
+
+
+# --------------------------------------------------------------------------- #
 #  Contre-epreuve positive ICT-1
 # --------------------------------------------------------------------------- #
 
