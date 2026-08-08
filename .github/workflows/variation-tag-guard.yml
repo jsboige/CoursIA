@@ -272,7 +272,9 @@ jobs:
           # sur la PR ouverte (cas down-qualification, ou up-qualification
           # anticipee). On les passe au detecteur pour que son verdict soit
           # symetrique a celui porte sur les mergees. `gh pr view --json labels`
-          # renvoie [{name,...}] -- le script l'aplatit.
+          # renvoie l'objet {"labels":[{name,...}]} (et non un tableau nu --
+          # c'est `gh pr list` qui renvoie un tableau de PRs) ; le script
+          # l'aplatit, et accepte aussi les formes tableau nu / [str] (#9971).
           gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
             printf '[]' > /tmp/pr_labels.json
 

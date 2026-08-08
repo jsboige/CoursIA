@@ -5,6 +5,7 @@ Acceptance replay over a live `gh pr list` wave is pasted in the PR body; these
 tests pin the PARSING and CAP LOGIC with synthetic cases so the organ does not
 silently rot. Run: `python -m pytest scripts/tests/test_variation_light_cap.py`.
 """
+import json
 import sys
 from pathlib import Path
 
@@ -258,6 +259,103 @@ def test_high_output_lane_still_capped_past_budget():
             _pr(9, lane, "LIGHT", "2026-07-31T09:00:00Z")]
     rows = vlc.replay(prs)
     assert {r["number"] for r in rows if r["cap_reached"]} == {9}
+
+
+# --- labels-file loading (#9971): gh pr view object form vs bare arrays -----
+
+def test_load_labels_file_object_form_gh_pr_view(tmp_path):
+    # `gh pr view --json labels` returns the OBJECT {"labels":[{name,...}]}.
+    # This is the shape the CI workflow actually writes; the double-wrap bug
+    # silently dropped every label, so a requalification was invisible.
+    p = tmp_path / "labels.json"
+    p.write_text(
+        '{"labels": [{"name": "grain-requalified:LIGHT", "color": "fff"}]}',
+        encoding="utf-8",
+    )
+    assert vlc.load_labels_file(p) == ["grain-requalified:LIGHT"]
+
+
+def test_load_labels_file_bare_array_of_objects(tmp_path):
+    # A bare [{name,...}] array -- the shape the old false comment assumed.
+    p = tmp_path / "labels.json"
+    p.write_text('[{"name": "a"}, {"name": "b"}]', encoding="utf-8")
+    assert vlc.load_labels_file(p) == ["a", "b"]
+
+
+def test_load_labels_file_bare_strings(tmp_path):
+    # A bare ["str"] array (a hand-written file).
+    p = tmp_path / "labels.json"
+    p.write_text('["a", "b"]', encoding="utf-8")
+    assert vlc.load_labels_file(p) == ["a", "b"]
+
+
+def test_load_labels_file_missing_empty_invalid(tmp_path):
+    # Missing / empty / invalid-JSON file -> no labels, no crash. The CI
+    # workflow always writes valid JSON, but a manual invocation must not fail.
+    assert vlc.load_labels_file(tmp_path / "absent.json") == []
+    empty = tmp_path / "empty.json"
+    empty.write_text("", encoding="utf-8")
+    assert vlc.load_labels_file(empty) == []
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    assert vlc.load_labels_file(bad) == []
+
+
+def test_check_pr_labels_file_object_downqualifies_to_light(tmp_path, capsys):
+    # Regression for #9971: body declares MED, the CI labels-file is in the
+    # OBJECT form `gh pr view` produces and carries grain-requalified:LIGHT.
+    # The effective tier must be LIGHT, so the verdict carries lane/budget/spent
+    # -- NOT the "reason: not LIGHT (effective MED)" verdict the double-wrap bug
+    # produced. Fails on the pre-fix code: the output had no "lane" key.
+    lpath = tmp_path / "pr_labels.json"
+    lpath.write_text(
+        json.dumps({"labels": [{"name": "grain-requalified:LIGHT"}]}),
+        encoding="utf-8",
+    )
+    bpath = tmp_path / "pr_body.txt"
+    bpath.write_text(
+        "Grain: MED/tooling -- lane myia-po-2023:CoursIA-2\n\nbody",
+        encoding="utf-8",
+    )
+    rpath = tmp_path / "merged.json"
+    rpath.write_text("[]", encoding="utf-8")  # no prior merged LIGHT in this lane
+    rc = vlc.main([
+        "--replay", str(rpath), "--check-pr", "1234",
+        "--body-file", str(bpath), "--labels-file", str(lpath),
+    ])
+    out = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    # Pre-fix verdict was {"cap_reached": false, "reason": "not LIGHT ..."} with
+    # NO "lane" key -> this assertion is what fails before the fix.
+    assert out["lane"] == "myia-po-2023:CoursIA-2"
+    assert out["cap_reached"] is False  # 1st LIGHT of the lane, within budget
+
+
+def test_check_pr_requal_deep_exits_light_cap(tmp_path, capsys):
+    # Symmetry (#8970): a grain-requalified:DEEP on a body declaring LIGHT
+    # lifts it OUT of the LIGHT cap -- the override works both ways. The
+    # object-form labels-file must carry that label (would be invisible pre-fix).
+    lpath = tmp_path / "pr_labels.json"
+    lpath.write_text(
+        json.dumps({"labels": [{"name": "grain-requalified:DEEP"}]}),
+        encoding="utf-8",
+    )
+    bpath = tmp_path / "pr_body.txt"
+    bpath.write_text(
+        "Grain: LIGHT/tooling -- lane myia-po-2023:CoursIA-2",
+        encoding="utf-8",
+    )
+    rpath = tmp_path / "merged.json"
+    rpath.write_text("[]", encoding="utf-8")
+    rc = vlc.main([
+        "--replay", str(rpath), "--check-pr", "1235",
+        "--body-file", str(bpath), "--labels-file", str(lpath),
+    ])
+    out = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    # Effective DEEP -> never spends the LIGHT budget.
+    assert out["reason"].startswith("not LIGHT")
+    assert "DEEP" in out["reason"]
 
 
 def test_denominator_counts_all_tiers_not_just_lights():
