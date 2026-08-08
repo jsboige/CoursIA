@@ -480,6 +480,15 @@ def _detect_prose_enumeration(text: str) -> list[float] | None:
     after = latex_clean[m.end():m.end()+200]
     # Cas (a)/(b) : on prend la PHRASE courante a partir du mot-cle.
     sentence = after.split("\n", 1)[0]
+    # Domain-range descriptions (« 81 valeurs (1-9) », « valeurs 1–9 ») ne sont
+    # PAS des enumerations de niveaux output : la paire `lo-hi` denote les
+    # bornes de l'espace de valeurs (domaine), pas des niveaux distincts
+    # observes. Une vraie enumeration #9416 liste des valeurs mesurees separees
+    # par des virgules/conjonctions, jamais un intervalle entier. On retire ces
+    # ranges avant extraction, sinon « 81 valeurs (1-9) » etait lu comme une
+    # enumeration de 2 niveaux (1 et 9) puis comparee aux outputs globaux ->
+    # FP systematique (confirme firsthand Sudoku-5-PSO cell[9], GameTheory).
+    sentence = re.sub(r"\b\d{1,4}\s*[-–—]\s*\d{1,4}\b", " ", sentence)
     nums = _extract_prose_numbers(sentence)
     return nums if len(nums) >= 2 else None
 
