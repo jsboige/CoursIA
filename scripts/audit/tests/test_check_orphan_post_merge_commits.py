@@ -440,6 +440,18 @@ def test_main_bad_json_exits_2(tmp_path, capsys):
     assert "JSON illisible" in capsys.readouterr().err
 
 
+def test_main_bad_repo_path_exits_2(tmp_path):
+    """Non-existent --repo-path exits 2 (ported from the deleted legacy
+    scripts/tests/ shadow, #10066 consolidation). Distinct from
+    test_main_bad_json_exits_2: this validates repo-path existence early,
+    before any PR processing -- the only legacy test with no canon equivalent."""
+    mod = _load()
+    prs = tmp_path / "empty.json"
+    prs.write_text("[]", encoding="utf-8")
+    rc = mod.main(["--repo-path", str(tmp_path / "nope"), "--from-json", str(prs)])
+    assert rc == 2
+
+
 def test_main_json_out_written(tmp_path):
     mod = _load()
     repo = _git_repo(tmp_path)
