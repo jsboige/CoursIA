@@ -4,15 +4,77 @@ Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSy
 
 ## Machines du cluster
 
-| Machine | Role principal | GPUs | VRAM totale |
-|---------|----------------|------|-------------|
-| `myia-ai-01` | **Coordinateur** + tests universels + vLLM hosting + training BG GPU 2 + prover BG forensic | 3x RTX 4090 | 72 GB (3x 24) |
-| `myia-po-2023` | Hote services GenAI Image/Audio/Video (8 Docker services) | RTX 3080 + eGPU RTX 3090 | 40 GB (16 + 24) |
-| `myia-po-2024` | QC backtest + ML training (modèles <= 10M params) | RTX 3070 | 8 GB |
-| `myia-po-2025` | Tracks intensives ML/audits + workspace EPITA (3 agents) | RTX 3080 Ti laptop | 16 GB |
-| `myia-po-2026` | Lean prover + QC MCP + service embedding + reverse proxy `xx.myia.io` | RTX 3080 | 16 GB |
+| Machine | Role principal | LAN plage / IP | GPUs | VRAM totale |
+|---------|----------------|----------------|------|-------------|
+| `myia-ai-01` | **Coordinateur** + tests universels + vLLM hosting + training BG GPU 2 + prover BG forensic | `192.168.0.x` (LAN prive, profile Private, interface `vEthernet (MyIA-AI-Gigabit)`). vLLM sur `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` sur profil Private + Public, controle d'acces = `VLLM_API_KEY`). WSL/Hyper-V internes : `172.28.0.1`, `172.28.16.1` (mesure ai-01, [#9976](https://github.com/jsboige/CoursIA/issues/9976) §3.1) | 3x RTX 4090 | 72 GB (3x 24) |
+| `myia-po-2023` | Hote services GenAI Image/Audio/Video (8 Docker services) | LAN a mesurer sur place (plage non inventoriee sur ce doc — confirmer sur la machine elle-meme via `Get-NetIPAddress -AddressFamily IPv4`). GenAI containers sur `localhost:<port>` (ex musicgen 8192) ; voir [docs/genai/genai-services.md](../genai/genai-services.md) pour le registre | RTX 3080 + eGPU RTX 3090 | 40 GB (16 + 24) |
+| `myia-po-2024` | QC backtest + ML training (modèles <= 10M params) | LAN a mesurer sur place (plage non inventoriee). QC MCP Docker `quantconnect/mcp-server` → QC Cloud | RTX 3070 | 8 GB |
+| `myia-po-2025` | Tracks intensives ML/audits + workspace EPITA (3 agents) | `172.24.44.172` (cité dans [#9976](https://github.com/jsboige/CoursIA/issues/9976) §Le fait) — **probable WSL/Hyper-V interne**, pas un LAN physiquement distinct ; confirmation en attente par mesure depuis l'hote Windows (cf §"Regle de routage" ci-dessous) | RTX 3080 Ti laptop | 16 GB |
+| `myia-po-2026` | Lean prover + QC MCP + service embedding + reverse proxy `xx.myia.io` | LAN a mesurer sur place. Service embedding : port non inventorié dans ce doc. Reverse proxy `xx.myia.io` : sous-domaines publics, joignable depuis n'importe quel hote internet | RTX 3080 | 16 GB |
 
 **Note po-2024/po-2025 swap previsionnel** : user prevoit de mettre la 3080 16GB en utilisation perenne (po-2025 mobile recoit la 3070 8GB, po-2024 fixe garde la 3080 16GB).
+
+**Note LAN (cf [#9976](https://github.com/jsboige/CoursIA/issues/9976))** : la topologie complete des plages LAN par machine n'est **pas mesuree sur place** pour po-2023 / po-2024 / po-2026 dans cette revision. La cellule "LAN a mesurer sur place" reflete cet etat — ne PAS substituer une adresse devinette. Toute nouvelle mesure doit etre sourcee firsthand via `Get-NetIPAddress` sur la machine concernee, et ajoutee a ce tableau a ce moment-la.
+
+## Topologie LAN et reachabilite endpoint
+
+Section de reference pour le routage inter-machines des endpoints partages. La precedente absence de cette table est ce qui a rendu l'incident [#9976](https://github.com/jsboige/CoursIA/issues/9976) possible : "endpoint vivant" etait vrai *depuis ai-01*, lu comme un etat du cluster, et `master.env` etait confondu avec "cle de cluster" alors qu'il est per-machine.
+
+### Endpoints partages (port → hote → joignable depuis)
+
+| Endpoint | Port | Hote qui heberge | LAN address | Joignable depuis |
+|----------|------|------------------|-------------|------------------|
+| vLLM `medium` (Qwen3.5-35B-A3B-GPTQ-Int4, TP=2 GPU 0+1) | `5002` | `myia-ai-01` | `192.168.0.47:5002` (`0.0.0.0:5002` via Docker Desktop, `remote=Any` Private + Public, cle = `VLLM_API_KEY`) | **ai-01** (mesure : `401` en 0.0026 s depuis `127.0.0.1` et `192.168.0.47`). **po-2023 / po-2024 / po-2026** : a mesurer sur place (LAN `192.168.0.x` partage probable). **po-2025** : LAN disjoint (`172.24.x`), **NON joignable** par defaut — voir §Regle de routage |
+| vLLM `mini` (OmniCoder-9B-AWQ-4bit) | `5001` | `myia-ai-01` | `192.168.0.47:5001` (deprecated, meme interface que `5002`) | idem `5002` ; port a verifier avant tout test (deprecated, peut etre ferme) |
+| GenAI `musicgen` (service local) | `8192` | `myia-po-2023` | `localhost:8192` (conteneur Docker, wake-on-demand via [genai-service.py](../../MyIA.AI.Notebooks/GenAI/shared/helpers/genai_service.py)) | **po-2023** uniquement (validation reverse-proxy publique via `xx.myia.io` par po-2026, cf [docs/genai/genai-services.md](../genai/genai-services.md)) |
+| GenAI autres services Image/Audio/Video (8 conteneurs) | `8188`-`8196` (cf [genai-services.md](../genai/genai-services.md)) | `myia-po-2023` | `localhost:<port>` + reverse-proxy `xx.myia.io` | **po-2023** localhost ; tout agent via `xx.myia.io` (auth bearer) |
+| QC MCP (`quantconnect/mcp-server`) | n/a (HTTPS sortant vers `quantconnect.com`) | `myia-po-2024` + `myia-po-2026` | n/a (API Cloud) | **po-2024** et **po-2026** (tokens MCP configures sur les 2 machines). Contrainte : MAX 10 appels API QC / minute entre **tous** les agents (cf §"QuantConnect MCP" plus bas) |
+| Lean 4 / Lake build | local (`elan toolchain`) | `myia-po-2026` (specialisation principale) | local uniquement (build sur place) | **po-2026** specialise ; **ai-01** = secours (env Lean a installer si manquant) |
+| Service embedding | non inventorié dans ce doc | `myia-po-2026` | a mesurer sur place | a mesurer ; endpoint supposé joignable cross-LAN si meme plage que po-2026 |
+| Reverse proxy `xx.myia.io` (sous-domaines GenAI publics) | `443` (HTTPS) | `myia-po-2026` (hebergement) | sous-domaines DNS publics | **tout agent** du cluster (auth bearer par sous-domaine) + internet |
+| RooSync GDrive (dashboard + messages) | n/a (HTTPS sortant) | `myia-*` (toutes les machines) | n/a | cross-machine par design |
+
+### Repere de diagnostic endpoint — ne JAMAIS agreger
+
+| Symptome depuis l'hote X | Signification | Action |
+|--------------------------|---------------|--------|
+| `HTTP 401` en < 50 ms | **Vivant** + cle requise (ou token manquant/expiré). Le service repond, il refuse l'authentification. | Verifier la cle (`master.env` de la machine X, pas une autre), PAS l'adresse |
+| `HTTP 200` (avec cle valide) | **Vivant** + authentifie. Service operationnel. | OK |
+| `connection refused` | **Mort** localement : port ferme, service eteint, ou pas de listener. Le paquet arrive au TCP layer, aucun daemon ne repond. | Demarrer le service / verifier que le port est bien bound |
+| `HTTP 000` / `timeout` / `100% packet loss` (ping) | **Non joignable depuis cet hote** : route absente, pare-feu inter-LAN, ou LAN disjoint. Le paquet ne sort pas / n'arrive pas. | **NE PAS classer comme "service mort"**. Tester depuis l'hote qui heberge l'endpoint (pas l'hote X). Si LAN disjoint, c'est une propriete de routage, pas un incident service |
+
+**Regle de routage** (decision [#9976](https://github.com/jsboige/CoursIA/issues/9976) option (a), adoptee 2026-08-08) : **aucun grain necessitant l'inference locale (`192.168.0.47:5002`) n'est dispatche vers une lane hors-LAN**. Ces lanes (`po-2025` notoirement, et toute autre confirmee non-joignable) recoivent soit des grains sans inference, soit des grains a fournisseur externe (OpenRouter, greenlight sur [#6949](https://github.com/jsboige/CoursIA/issues/6949)). Une lane qui recoit un grain d'inference locale et mesure `HTTP 000` doit le signaler comme **erreur de dispatch du coordinateur**, pas le contourner.
+
+**Securite de l'exposition `0.0.0.0:5002`** (mesure ai-01, [#9976](https://github.com/jsboige/CoursIA/issues/9976) §"La portee de securite") : la regle Docker Desktop est `remote=Any` sur les profils **Private ET Public**. Si `myia-ai-01` se retrouve un jour sur un reseau classe `Public` (partage de connexion, reseau invite, hot-spot), le port **5002 y serait joignable aussi**, protege par la seule `VLLM_API_KEY`. Pas un incident aujourd'hui (interface active `Private`, LAN de confiance), mais propriete a connaitre : **la marge d'exposition est deja consommee par defaut**, ce qui est un argument de plus contre toute re-exposition (l'option (b) est **vide cote ai-01** — rien a exposer qui ne le soit deja, mesure du [#9976](https://github.com/jsboige/CoursIA/issues/9976) §3.1).
+
+### Comment mesurer la reachabilite (template reutilisable)
+
+Depuis l'hote **X** (pas depuis l'hote qui heberge l'endpoint) :
+
+```bash
+# 1. Identifier la plage LAN de X (hote Windows)
+Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -notlike '127.*'} | Select-Object IPAddress,InterfaceAlias
+
+# 2. Tester l'endpoint avec timeout court (eviter les hangs)
+curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<LAN-IP>:<port>/v1/models
+```
+
+**Lecture du résultat** :
+- `200` : service vivant + cle valide (ou pas de cle requise).
+- `401` en < 50 ms : service vivant + cle requise. Verifier `master.env` sur la machine X.
+- `000` ou `timeout` : non joignable depuis X (route / pare-feu / LAN disjoint). **Re-tester depuis l'hote qui heberge l'endpoint** pour confirmer que le service est vivant — si `401` depuis l'hote hebergeur, le service marche et le probleme est strictement sur X.
+
+Documenter toute nouvelle mesure dans une sous-section "Mesures recentes" plus bas, avec horodatage, machine source, et resultat verbatim.
+
+### Mesures recentes (audit)
+
+| Date | Source | Cible | Mesure | Conclusion |
+|------|--------|-------|--------|------------|
+| 2026-08-08 | `myia-ai-01` | `192.168.0.47:5002` (vLLM self) | `HTTP 401` en 0.0026 s sur `127.0.0.1:5002` ; `HTTP 401` en 0.0027 s sur `192.168.0.47:5002` (issue [#9976](https://github.com/jsboige/CoursIA/issues/9976), mesure jsboige) | Endpoint vivant sur les 2 interfaces, `0.0.0.0:5002`, `remote=Any` Private + Public, cle requise |
+| 2026-08-08 | `myia-po-2025` | `192.168.0.47:5002` (vLLM) | `HTTP 000`, ping 100 % perte (issue [#9976](https://github.com/jsboige/CoursIA/issues/9976), constat firsthand po-2025) | **LAN disjoint** entre `192.168.0.x` et `172.24.44.172` (a confirmer si WSL interne ou LAN physique distinct — mesure depuis hote Windows requise, cf issue body §"Ce qui reste, et qui n'est pas un blocage") |
+| (a completer) | `myia-po-2023` | `192.168.0.47:5002` (vLLM) | a mesurer | |
+| (a completer) | `myia-po-2024` | `192.168.0.47:5002` (vLLM) | a mesurer | |
+| (a completer) | `myia-po-2026` | `192.168.0.47:5002` (vLLM) | a mesurer | |
 
 ## Workspaces RooSync (cluster CoursIA)
 
