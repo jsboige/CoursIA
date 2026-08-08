@@ -19,7 +19,27 @@ Maximize Sharpe ratio for the Sector Momentum strategy.
 1. What is the optimal lookback period for momentum calculation?
 2. Should the VIX threshold be dynamic (percentile-based)?
 3. What leverage maximizes risk-adjusted returns?
-4. How many sectors should we hold (diversification vs concentration)?",,,,,,,,6ac3774a0ad9a6a8,,,,,,,
+4. How many sectors should we hold (diversification vs concentration)?","# Deep Research: Sector Momentum Optimization
+
+## Objective
+Maximize Sharpe ratio for the Sector Momentum strategy.
+
+## Strategy Overview
+- **Assets**: 9 sector ETFs (XLK, XLF, XLV, XLY, XLP, XLE, XLB, XLU, XLRE)
+- **Signal**: Dual momentum (relative strength + absolute momentum)
+- **Rebalancing**: Monthly rotation to top-performing sectors
+- **Risk Management**: VIX filter to skip rebalancing in high volatility
+
+## Current Parameters
+- `lookback_period`: 126 days (6 months)
+- `vix_threshold`: 25 (skip rebalancing if VIX > 25)
+- `leverage`: 1.5x
+
+## Research Questions
+1. What is the optimal lookback period for momentum calculation?
+2. Should the VIX threshold be dynamic (percentile-based)?
+3. What leverage maximizes risk-adjusted returns?
+4. How many sectors should we hold (diversification vs concentration)?",,,,,,,6ac3774a0ad9a6a8,6ac3774a0ad9a6a8,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,a46828bc,code,fr,1ce0449ce0e4c709,"import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -41,7 +61,7 @@ SECTORS = {
 }
 
 print(f""Sector Universe: {len(SECTORS)} ETFs"")",,,,,,,,1ce0449ce0e4c709,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,ea7ab798,markdown,fr,2b7a930d3f5050fd,"Téléchargement des données historiques des ETFs sectoriels (XLK, XLF, XLE, XLV, XLI, etc.) via yfinance depuis 2010 pour le backtest Sector-Momentum.",,,,,,,,2b7a930d3f5050fd,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,ea7ab798,markdown,fr,2b7a930d3f5050fd,"Téléchargement des données historiques des ETFs sectoriels (XLK, XLF, XLE, XLV, XLI, etc.) via yfinance depuis 2010 pour le backtest Sector-Momentum.","Downloading historical data for sector ETFs (XLK, XLF, XLE, XLV, XLI, etc.) via yfinance since 2010 for the Sector-Momentum backtest.",,,,,,,2b7a930d3f5050fd,ec0c4ae7ad0444f3,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,faf9fe11,code,fr,8bc2370e10581b5b,"# Download data with cache
 print(""Loading sector data..."")
 sector_data = {}
@@ -56,7 +76,7 @@ vix_close = get_yf_data(""^VIX"", ""2010-01-01"", ""2025-02-18"")
 
 print(f""\nVIX: {len(vix_close)} days"")
 print(f""Sectors loaded: {len(sector_data)}"")",,,,,,,,8bc2370e10581b5b,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,6b8b3c7e,markdown,fr,b70b26af91fba9f5,"Analyse statistique du VIX (moyenne, médiane, percentiles 75/90) pour calibrer le filtre de volatilité de la stratégie Sector-Momentum.",,,,,,,,b70b26af91fba9f5,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,6b8b3c7e,markdown,fr,b70b26af91fba9f5,"Analyse statistique du VIX (moyenne, médiane, percentiles 75/90) pour calibrer le filtre de volatilité de la stratégie Sector-Momentum.","Statistical analysis of the VIX (mean, median, 75th/90th percentiles) to calibrate the volatility filter of the Sector-Momentum strategy.",,,,,,,b70b26af91fba9f5,7f4a0de96f2003ba,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,f1ef90af,code,fr,c4d02d06a381e857,"# Analyze VIX for filter optimization
 print(""VIX Statistics:"")
 print(f""  Mean: {vix_close.mean():.2f}"")
@@ -70,7 +90,7 @@ for threshold in [20, 25, 30]:
     high_vix_days = (vix_close > threshold).sum()
     pct = high_vix_days / len(vix_close) * 100
     print(f""  Days above {threshold}: {high_vix_days} ({pct:.1f}%)"")",,,,,,,,c4d02d06a381e857,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,afaaafbf,markdown,fr,1344616724b456f7,Le facteur momentum est calculé sur les rendements passés pour classer et sélectionner les actifs de la stratégie Sector-Momentum.,,,,,,,,1344616724b456f7,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,afaaafbf,markdown,fr,1344616724b456f7,Le facteur momentum est calculé sur les rendements passés pour classer et sélectionner les actifs de la stratégie Sector-Momentum.,The momentum factor is calculated on past returns to rank and select the assets of the Sector-Momentum strategy.,,,,,,,1344616724b456f7,9bee0ce483fa8f12,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,4d0544d6,code,fr,87c66ec2fe8bf1e5,"# Calculate momentum signals
 def calculate_momentum(prices, lookback=126):
     """"""
@@ -104,7 +124,7 @@ top_counts = momentum_126.dropna(how='all').idxmax(axis=1).value_counts()
 print(""\nMost frequently top sectors (126-day lookback):"")
 for sector, count in top_counts.items():
     print(f""  {SECTORS.get(sector, sector)}: {count} times"")",,,,,,,,87c66ec2fe8bf1e5,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,5aaedb66,markdown,fr,787b785edb0a2b38,"Les ratios (Sharpe, drawdown) sont calculés à partir des rendements du backtest pour évaluer la qualité de la stratégie Sector-Momentum.",,,,,,,,787b785edb0a2b38,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,5aaedb66,markdown,fr,787b785edb0a2b38,"Les ratios (Sharpe, drawdown) sont calculés à partir des rendements du backtest pour évaluer la qualité de la stratégie Sector-Momentum.","The ratios (Sharpe, drawdown) are calculated from the backtest returns to evaluate the quality of the Sector-Momentum strategy.",,,,,,,787b785edb0a2b38,b8fad967f24c3b5e,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,1c22d59e,code,fr,4d33aa2c695c831c,"# Backtest sector momentum strategy (numpy-optimized)
 def backtest_sector_momentum(sector_data, vix_data,
                               lookback=126,
@@ -188,7 +208,7 @@ print(""Current Parameters (lookback=126, vix=25, leverage=1.5):"")
 print(f""  Sharpe: {result['sharpe']:.3f}"")
 print(f""  Total Return: {result['total_return']*100:.1f}%"")
 print(f""  Max Drawdown: {result['max_drawdown']*100:.1f}%"")",,,,,,,,4d33aa2c695c831c,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,eb08467b,markdown,fr,fb3addde50cf5a94,"Les métriques de performance (Sharpe, CAGR, drawdown) sont agrégées sur les résultats de l'optimisation pour identifier les configurations Pareto-optimales.",,,,,,,,fb3addde50cf5a94,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,eb08467b,markdown,fr,fb3addde50cf5a94,"Les métriques de performance (Sharpe, CAGR, drawdown) sont agrégées sur les résultats de l'optimisation pour identifier les configurations Pareto-optimales.","Performance metrics (Sharpe, CAGR, drawdown) are aggregated over the optimization results to identify Pareto-optimal configurations.",,,,,,,fb3addde50cf5a94,39d4bf802e4aae26,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/deep_research_optimization.ipynb,080a2bd8,code,fr,940e4e54c144498e,"# Grid search for optimal parameters
 def grid_search_sector_momentum(sector_data, vix_data):
     results = []
@@ -255,7 +275,25 @@ LOOKBACK_PERIOD = <VALUE>  # From grid search
 VIX_THRESHOLD = <VALUE>  # From grid search
 LEVERAGE = <VALUE>  # From grid search
 TOP_N_SECTORS = <VALUE>  # From grid search
-```",,,,,,,,041bc7bd8eca3c76,,,,,,,
+```","## Research Findings & Recommendations
+
+### Analysis Summary
+Based on the grid search:
+
+1. **Optimal Lookback**: The sweet spot for momentum calculation period
+2. **VIX Threshold**: Balances risk reduction vs. opportunity cost
+3. **Leverage**: Higher leverage increases returns but also drawdown
+4. **Top N Sectors**: Diversification vs. concentration trade-off
+
+### Recommended Parameters
+
+```python
+# In main.py or Alpha model
+LOOKBACK_PERIOD = <VALUE>  # From grid search
+VIX_THRESHOLD = <VALUE>  # From grid search
+LEVERAGE = <VALUE>  # From grid search
+TOP_N_SECTORS = <VALUE>  # From grid search
+```",,,,,,,041bc7bd8eca3c76,041bc7bd8eca3c76,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,d9361768,markdown,fr,b870983801451c27,"# Why 7 Months of Bull Market is NOT a Valid Backtest
 
 ## Le probleme du Sharpe gonflé
@@ -276,7 +314,27 @@ La strategie Sector-Momentum affiche actuellement un **Sharpe de 2.53** sur la p
 - **Regime analysis**: momentum fonctionne en tendance, explose en reversal
 - **Leverage sensitivity**: 2x vs 1.5x vs 1x sur differents regimes
 
-**Conclusion pedagogique**: Un backtest de 7 mois en bull market n'a aucune valeur predictive.",,,,,,,,b870983801451c27,,,,,,,
+**Conclusion pedagogique**: Un backtest de 7 mois en bull market n'a aucune valeur predictive.","# Why 7 Months of Bull Market is NOT a Valid Backtest
+
+## The problem of inflated Sharpe
+
+The Sector-Momentum strategy currently shows a **Sharpe of 2.53** over the period 2024-01-01 → 2024-07-20.
+
+### Why this figure is misleading:
+
+1. **Only 7 months** - a period too short to capture different market regimes
+2. **Pure bull market** - the period coincides with the 2024 AI rally (NVDA, tech mega-caps)
+3. **2x leverage** - amplifies gains in a bull market... but is catastrophic in a bear market
+4. **Momentum factor crashes** - momentum is known to suffer violent crashes during reversals (2020 COVID, 2022 inflation)
+
+### What we are going to discover:
+
+- **2015-2025 extension**: expected Sharpe → 0.5-0.8 (70% drop)
+- **2022 bear market**: catastrophic drawdown with 2x leverage
+- **Regime analysis**: momentum works in trends, blows up in reversals
+- **Leverage sensitivity**: 2x vs 1.5x vs 1x across different regimes
+
+**Pedagogical conclusion**: A 7-month backtest in a bull market has no predictive value.",,,,,,,b870983801451c27,052692e7bb9621b4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2a44d004,code,fr,5e2740964a42538d,"# Setup et chargement des donnees (version standalone avec cache)
 import pandas as pd
 import numpy as np
@@ -330,7 +388,7 @@ for ticker in prices.columns:
     last_date = prices[ticker].last_valid_index()
     non_null = prices[ticker].notna().sum()
     print(f""  {ticker}: {first_date.date()} -> {last_date.date()} ({non_null} jours)"")",,,,,,,,5e2740964a42538d,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,a69be2f9,markdown,fr,4c7267764703dc06,Les régimes de volatilité (faible/élevée) sont identifiés pour adapter dynamiquement l'exposition de la stratégie Sector-Momentum.,,,,,,,,4c7267764703dc06,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,a69be2f9,markdown,fr,4c7267764703dc06,Les régimes de volatilité (faible/élevée) sont identifiés pour adapter dynamiquement l'exposition de la stratégie Sector-Momentum.,Volatility regimes (low/high) are identified to dynamically adapt the exposure of the Sector-Momentum strategy.,,,,,,,4c7267764703dc06,57f894736bc0f027,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,2c205053,code,fr,d578959d661356cd,"# Detection des regimes de marche et calcul du momentum hebdomadaire
 
 # SPY regime detection (simple: SMA200)
@@ -370,7 +428,7 @@ for period_name, (start, end) in regime_periods.items():
         total_return = (period_prices.iloc[-1] / period_prices.iloc[0]) - 1
         volatility = period_prices.pct_change().std() * np.sqrt(252)
         print(f""{period_name:20s}: Return {total_return:+7.1%}, Vol {volatility:5.1%}"")",,,,,,,,d578959d661356cd,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,750ead53,markdown,fr,80e12838d93d8bf6,"Les ratios (Sharpe, drawdown) sont calculés sur plusieurs fenêtres de backtest pour évaluer la robustesse de la stratégie Sector-Momentum.",,,,,,,,80e12838d93d8bf6,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,750ead53,markdown,fr,80e12838d93d8bf6,"Les ratios (Sharpe, drawdown) sont calculés sur plusieurs fenêtres de backtest pour évaluer la robustesse de la stratégie Sector-Momentum.","Ratios (Sharpe, drawdown) are calculated over several backtest windows to evaluate the robustness of the Sector-Momentum strategy.",,,,,,,80e12838d93d8bf6,5bdb9662ddae119b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,654ce44b,code,fr,3e08aeb441c6c52f,"# Backtest vectorise: Sector Momentum avec leverage variable
 
 def sector_momentum_backtest(weekly_returns, weekly_momentum, leverage=2.0, min_sectors=1):
@@ -463,7 +521,7 @@ for key, value in results_2x.items():
 print(""\n"" + ""=""*60)
 print(""OBSERVATION: Le Sharpe REEL sur 10 ans est bien inferieur a 2.53!"")
 print(""=""*60)",,,,,,,,3e08aeb441c6c52f,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,ed89bfec,markdown,fr,4ae1192f83c5f34c,La courbe de rendement cumulatif et les périodes de drawdown de la stratégie Sector-Momentum sont affichées pour l'analyse du risque.,,,,,,,,4ae1192f83c5f34c,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,ed89bfec,markdown,fr,4ae1192f83c5f34c,La courbe de rendement cumulatif et les périodes de drawdown de la stratégie Sector-Momentum sont affichées pour l'analyse du risque.,The cumulative return curve and drawdown periods of the Sector-Momentum strategy are displayed for risk analysis.,,,,,,,4ae1192f83c5f34c,db8f844a07b60dba,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,6712f99a,code,fr,eb19a2d957e1f86d,"# Analyse de sensibilite au leverage par regime
 
 leverage_levels = [1.0, 1.5, 2.0]
@@ -565,7 +623,7 @@ print(""\n"" + ""=""*80)
 print(""CONCLUSION: Le leverage 2x amplifie les gains en bull ET les pertes en bear."")
 print(""2022 bear market est particulierement devastateur avec leverage 2x."")
 print(""=""*80)",,,,,,,,eb19a2d957e1f86d,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7980c28a,markdown,fr,8bdb57c9b13641ce,Le Sharpe ratio glissant est tracé sur toute la période pour valider que la stratégie de rotation sectorielle reste performante dans le temps.,,,,,,,,8bdb57c9b13641ce,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7980c28a,markdown,fr,8bdb57c9b13641ce,Le Sharpe ratio glissant est tracé sur toute la période pour valider que la stratégie de rotation sectorielle reste performante dans le temps.,The rolling Sharpe ratio is plotted over the entire period to validate that the sector rotation strategy remains effective over time.,,,,,,,8bdb57c9b13641ce,6b4f180e47e6b03a,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,9baab11f,code,fr,8fb543dd93ccd653,"# Walk-forward validation: train 2 ans, test 6 mois
 
 print(""Walk-Forward Validation (Train 2 ans, Test 6 mois)"")
@@ -712,7 +770,60 @@ Pour ameliorer la robustesse:
 3. **Ajouter un filtre VIX**: Skip rebalancing si VIX > 25
 4. **Attendre un Sharpe realiste**: 0.5-0.8 sur 10 ans au lieu de 2.53 sur 7 mois
 
-**Lecon pedagogique**: La robustesse > performance in-sample. Toujours tester sur bear markets.",,,,,,,,dd10cc7737e6fc9d,,,,,,,
+**Lecon pedagogique**: La robustesse > performance in-sample. Toujours tester sur bear markets.","## The Cost of Leverage in Bear Markets
+
+## Pedagogical Summary
+
+### 1. The Inflated Sharpe of the 7-Month Backtest
+
+**Sharpe 2.53 (2024-01-01 → 2024-07-20)** is a statistical artifact:
+- 7 months of a pure uptrend (AI/tech rally)
+- 2x leverage amplifies gains without capturing reversal risks
+- **No exposure to bear markets, crashes, or regime shifts**
+
+### 2. The Reality Over 10 Years (2015-2025)
+
+The REAL Sharpe is probably **0.5-0.8** (a 70% drop), with:
+- **2022 bear market**: catastrophic drawdown with 2x leverage
+- **COVID crash 2020**: violent whipsaw on momentum
+- **2018 selloff**: brutal momentum reversal
+
+### 3. Leverage: A Double-Edged Sword
+
+| Regime | Leverage 1x | Leverage 1.5x | Leverage 2x |
+|--------|-------------|---------------|-------------|
+| **Bull (2023-2025)** | Sharpe 1.2 | Sharpe 1.5 | Sharpe 1.8 |
+| **Bear (2022)** | Max DD -15% | Max DD -25% | **Max DD -40%** |
+| **Crash (2020 COVID)** | Max DD -20% | Max DD -35% | **Max DD -50%** |
+
+**Conclusion**: 2x leverage is excellent in a trend, **catastrophic in a reversal**.
+
+### 4. Walk-Forward Analysis
+
+The walk-forward analysis reveals:
+- Optimal leverage varies from **1.0x to 2.0x** depending on the regime
+- **1.5x is the best compromise** across all periods
+- Train vs test Sharpe: **significant overfitting** with fixed 2x leverage
+
+### 5. Recommended Regime Filters
+
+To improve robustness:
+
+1. **VIX filter**: Skip rebalancing when VIX > 25 (high volatility)
+2. **Regime detection**: Reduce leverage to 1x when SPY < SMA200
+3. **Drawdown control**: Cut leverage in half if portfolio DD > 10%
+
+### 6. Final Recommendations
+
+**CRITICAL**: A 7-month backtest in a bull market has no predictive value.
+
+**ACTIONS**:
+1. **Extend the period**: 2015-01-01 → now (remove `set_end_date`)
+2. **Reduce leverage**: 2.0x → 1.5x in `MyPcm.py` and `DualMomentumAlphaModel.py`
+3. **Add a VIX filter**: Skip rebalancing if VIX > 25
+4. **Expect a realistic Sharpe**: 0.5-0.8 over 10 years instead of 2.53 over 7 months
+
+**Pedagogical lesson**: Robustness > in-sample performance. Always test on bear markets.",,,,,,,dd10cc7737e6fc9d,a5a9ed1b2eb271d2,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Sector-Momentum/research_robustness.ipynb,7fe018bc,code,fr,ec7423d1512e8c7b,"# Recommendations JSON pour implementation
 
 import json
@@ -795,15 +906,37 @@ Ce notebook explore une approche d'analyse technique multi-échelles pour l'acti
 
 * Mise en place de l'environnement QuantConnect et téléchargement des données horaires BTCUSDT.
 * Calcul d'une stratégie HODL simple comme référence de performance.
-* Implémentation et visualisation de l'indicateur ZigZag.",,,,,,,,11d60724eda41ca5,,,,,,,
+* Implémentation et visualisation de l'indicateur ZigZag.","# Multi-Scale Channel Analysis with ZigZag and Weighted Regression Lines
+
+This notebook explores a multi-scale technical analysis approach for the BTCUSDT asset (on Binance), based on identifying pivots via the ZigZag indicator and constructing hierarchical trend channels (Macro, Meso, Micro).
+
+**Objectives:**
+
+1.  **Extract significant pivot points** from the hourly price using a custom implementation of the ZigZag indicator.
+2.  **Develop an algorithm** to draw support and resistance lines forming channels, prioritizing lines that strictly ""contain"" recent pivots and minimizing a time-weighted squared error (`WSSE`).
+3.  **Build a hierarchy of channels** (Macro, Meso, Micro) where each level uses the pivots defining the higher level as the temporal starting point.
+4.  **Visualize** the pivots, the channels, and their evolution over time.
+5.  **Explore the sensitivity** of the algorithm to the weighting parameters (`weight_power`, `wp`) and the fraction of recent pivots (`recent_pivot_fraction`, `rpf`).
+6.  **(Optional / Future)** Define and backtest trading strategies based on price interactions with these multi-scale channels.
+
+**Initial Steps:**
+
+* Set up the QuantConnect environment and download BTCUSDT hourly data.
+* Calculate a simple HODL strategy as a performance benchmark.
+* Implement and visualize the ZigZag indicator.",,,,,,,11d60724eda41ca5,a33736c08ce61d39,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-41ab9944,markdown,fr,1497fdffcd61efcd,"> **[REFERENCE QC Cloud]**
 > Ce notebook illustre du code QuantConnect a executer dans l'IDE Cloud (https://www.quantconnect.com/research).
 > L'environnement local ne dispose pas de QuantBook ni de l'historical data feed.
 > Pour executer : cloner le projet QC associe, ouvrir `research.ipynb`, executer cellule par cellule.
-",,,,,,,,1497fdffcd61efcd,,,,,,,
+","> **[QC Cloud REFERENCE]**
+> This notebook illustrates QuantConnect code to be run in the Cloud IDE (https://www.quantconnect.com/research).
+> The local environment does not have QuantBook or the historical data feed.
+> To run: clone the associated QC project, open `research.ipynb`, run cell by cell.",,,,,,,1497fdffcd61efcd,8354b9566ed17861,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-70d7edfe,markdown,fr,26fff6db46aabbed,"## 1. Initialisation : Environnement et Données
 
-Mise en place de l'environnement QuantConnect, définition de l'actif (BTCUSDT), de la période d'analyse et téléchargement des données horaires nécessaires.",,,,,,,,26fff6db46aabbed,,,,,,,
+Mise en place de l'environnement QuantConnect, définition de l'actif (BTCUSDT), de la période d'analyse et téléchargement des données horaires nécessaires.","## 1. Initialization: Environment and Data
+
+Setting up the QuantConnect environment, defining the asset (BTCUSDT), the analysis period, and downloading the necessary hourly data.",,,,,,,26fff6db46aabbed,4f0d23ea20629652,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-99971972,code,fr,4d5d45d275be0f2d,"# Import necessary libraries from the QC framework
 from AlgorithmImports import *
 from datetime import datetime
@@ -830,7 +963,9 @@ print(bars_df.head())
 ",,,,,,,,4d5d45d275be0f2d,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-a1eca453,markdown,fr,5c40205f5ef43351,"## 2. Stratégie de Référence : HODL
 
-Calcul et visualisation de la performance d'une stratégie simple ""Buy and Hold"" (HODL) sur la période d'analyse. Ceci sert de benchmark pour évaluer toute stratégie de trading ultérieure.",,,,,,,,5c40205f5ef43351,,,,,,,
+Calcul et visualisation de la performance d'une stratégie simple ""Buy and Hold"" (HODL) sur la période d'analyse. Ceci sert de benchmark pour évaluer toute stratégie de trading ultérieure.","## 2. Benchmark Strategy: HODL
+
+Calculation and visualization of the performance of a simple ""Buy and Hold"" (HODL) strategy over the analysis period. This serves as a benchmark for evaluating any subsequent trading strategy.",,,,,,,5c40205f5ef43351,1f2ff3494e6c0960,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-fc6b143e,code,fr,ea2c56e16e1cec91,"# Assume we use the close prices from the hourly DataFrame as the HODL basis
 initial_investment = 10000  # in USDT
 first_price = bars_df['close'].iloc[0]
@@ -868,7 +1003,22 @@ Pour identifier les retournements de tendance significatifs, nous utilisons l'in
 *   Dans cet exemple, `thresholdPercent=0.05` signifie qu'une baisse de 5% depuis le dernier plus haut est nécessaire pour confirmer ce plus haut comme un pivot High, et une hausse de 5% depuis le dernier plus bas est requise pour confirmer ce plus bas comme un pivot Low.
 *   La fonction retourne une liste de pivots `(timestamp, price, type)`, garantissant une alternance stricte entre High et Low.
 
-Cette liste de pivots (`pivotList`) servira de base à la construction de nos canaux.",,,,,,,,9440b316e4b96c34,,,,,,,
+Cette liste de pivots (`pivotList`) servira de base à la construction de nos canaux.","## 3. Pivot Detection: ZigZag Indicator
+
+This section focuses on identifying significant market reversal points using the ZigZag indicator.
+
+### 3.1. Function `classic_chart_zigzag`
+
+To identify significant trend reversals, we use the ZigZag indicator. Since QuantConnect's native indicator may exhibit unexpected behavior in certain research contexts, we use a custom function here, `classic_chart_zigzag`.
+
+**How it works:**
+
+*   It identifies high points (High pivots, type -1) and low points (Low pivots, type +1) on closing prices (`close`).
+*   A pivot is confirmed only if the price retraces by a certain percentage (`thresholdPercent`) from the last recorded extreme.
+*   In this example, `thresholdPercent=0.05` means that a 5% drop from the last highest high is required to confirm that high as a High pivot, and a 5% rise from the last lowest low is required to confirm that low as a Low pivot.
+*   The function returns a list of pivots `(timestamp, price, type)`, ensuring strict alternation between High and Low.
+
+This list of pivots (`pivotList`) will serve as the basis for building our channels.",,,,,,,9440b316e4b96c34,7cd8804fe64305c7,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-b5dee86f,code,fr,d94e9180fe1ad798,"import pandas as pd
 import numpy as np
 
@@ -963,7 +1113,9 @@ pivotList = classic_chart_zigzag(bars_df[['time','close']], thresholdPercent=0.0
 ",,,,,,,,d94e9180fe1ad798,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-852b8b77,markdown,fr,7339ed85e7ae1ea8,"### 3.2. Visualisation du ZigZag
 
-Nous affichons ici les prix de clôture horaires superposés avec l'indicateur ZigZag (lignes de connexion et marqueurs de pivots High/Low) pour vérifier visuellement la pertinence des points détectés.",,,,,,,,7339ed85e7ae1ea8,,,,,,,
+Nous affichons ici les prix de clôture horaires superposés avec l'indicateur ZigZag (lignes de connexion et marqueurs de pivots High/Low) pour vérifier visuellement la pertinence des points détectés.","### 3.2. ZigZag Visualization
+
+Here we display the hourly closing prices overlaid with the ZigZag indicator (connecting lines and High/Low pivot markers) to visually verify the relevance of the detected points.",,,,,,,7339ed85e7ae1ea8,af0e98d92fecef0f,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-1b0a3954,code,fr,3b7889adb2bd943c,"def plot_manual_zigzag(bars_df, pivotList):
     import plotly.graph_objects as go
 
@@ -1037,7 +1189,14 @@ Avant de construire les canaux, une étape cruciale est de préparer les donnée
 1.  **Conversion en DataFrame :** Pour faciliter les manipulations.
 2.  **Ajout de `time_numeric` :** Conversion du timestamp en secondes depuis l'epoch Unix. **Essentiel** pour les calculs géométriques (pente, ordonnée à l'origine) qui nécessitent une coordonnée 'x' numérique et linéaire.
 3.  **Séparation High/Low :** Création de DataFrames distincts (`high_pivots`, `low_pivots`).
-4.  **Stockage pour Vérification :** Création de copies NumPy (`all_high_pivots_for_check`, `all_low_pivots_for_check`) pour des vérifications rapides de contention lors de la recherche des meilleures lignes.",,,,,,,,975febd5171baecc,,,,,,,
+4.  **Stockage pour Vérification :** Création de copies NumPy (`all_high_pivots_for_check`, `all_low_pivots_for_check`) pour des vérifications rapides de contention lors de la recherche des meilleures lignes.","### 3.3. Preparing Pivot Data for Channels
+
+Before building the channels, a crucial step is to prepare the data of the pivots extracted by the ZigZag:
+
+1.  **Conversion to DataFrame:** To make manipulation easier.
+2.  **Adding `time_numeric`:** Conversion of the timestamp into seconds since the Unix epoch. **Essential** for geometric calculations (slope, y-intercept) that require a numeric and linear 'x' coordinate.
+3.  **High/Low Separation:** Creation of separate DataFrames (`high_pivots`, `low_pivots`).
+4.  **Storage for Verification:** Creation of NumPy copies (`all_high_pivots_for_check`, `all_low_pivots_for_check`) for quick containment checks when searching for the best lines.",,,,,,,975febd5171baecc,f875053dcb909c33,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-6dd76863,code,fr,cfa6135e1c79167c,"# Convert pivot list to DataFrame
 pivots_df = pd.DataFrame(pivotList, columns=['time', 'price', 'type']) # type: +1 Low, -1 High
 
@@ -1079,7 +1238,24 @@ La fonction `find_best_channel_line_strict_weighted` est au cœur de notre const
     *   **Fraction Récente (`recent_pivot_fraction`, `rpf`) :** La WSSE n'est calculée que sur une fraction (`rpf`) des pivots les plus récents, focalisant l'optimisation sur la pertinence récente.
 3.  **Paramétrisation :** `wp` et `rpf` sont ajustables indépendamment pour chaque type de ligne et échelle.
 
-Cette approche garantit le respect de la structure globale des pivots tout en privilégiant la dynamique récente.",,,,,,,,ff3b15f40e03c4d1,,,,,,,
+Cette approche garantit le respect de la structure globale des pivots tout en privilégiant la dynamique récente.","## 4. Channel Construction: Algorithm and Parameters
+
+This section details the algorithm used to draw the support and resistance lines forming the channels, as well as the configuration of the parameters that influence this process.
+
+
+### 4.1. Main Algorithm: `find_best_channel_line_strict_weighted`
+
+The `find_best_channel_line_strict_weighted` function is at the core of our channel construction. It aims to identify the ""best"" possible support or resistance line, defined by a pair of pivots (`p1`, `p2`), based on strict criteria and weighted optimization.
+
+**Key Principles:**
+
+1.  **Strict Containment (Zero Violation):** A candidate line (support or resistance) defined by `p1` and `p2` is considered **valid** only if **all** the other relevant pivots (all Lows for a support, all Highs for a resistance) are on the ""right"" side of the line over the entire period considered. If no line satisfies this criterion, the function returns `None`.
+2.  **Minimization of Weighted Error (WSSE) over Recent Fraction:** Among all _strictly valid_ lines, the algorithm selects the one that minimizes the **Weighted Sum of Squared Errors (WSSE)**.
+    *   **Temporal Weighting (`weight_power`, `wp`):** The error of each pivot is weighted by its relative age (`wp > 0` gives more importance to recent pivots).
+    *   **Recent Fraction (`recent_pivot_fraction`, `rpf`):** The WSSE is calculated only over a fraction (`rpf`) of the most recent pivots, focusing the optimization on recent relevance.
+3.  **Parameterization:** `wp` and `rpf` are adjustable independently for each line type and scale.
+
+This approach ensures respect for the overall pivot structure while favoring recent dynamics.",,,,,,,ff3b15f40e03c4d1,a72eaeabb6d2b552,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-40187a37,code,fr,13e053cca8c15c5f,"# CELLULE 13 : Définitions des Fonctions 
 
 import numpy as np
@@ -1176,7 +1352,12 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 Ici, nous définissons les jeux de paramètres (`wp` et `rpf`) qui seront utilisés pour construire les canaux à différentes échelles.
 
 1.  **`final_config` :** Configuration unique sélectionnée (potentiellement après optimisation) pour le tracé final, les snapshots et le backtesting éventuel. Contient `wp`/`rpf` pour Support/Résistance des niveaux Macro, Méso, Micro.
-2.  **`configurations_to_explore` :** Liste de configurations générées pour tester la sensibilité de l'algorithme (ex: variation de `wp_micro_sup` et `rpf_micro_sup`). Les résultats alimenteront une visualisation comparative.",,,,,,,,839d9c54a1058212,,,,,,,
+2.  **`configurations_to_explore` :** Liste de configurations générées pour tester la sensibilité de l'algorithme (ex: variation de `wp_micro_sup` et `rpf_micro_sup`). Les résultats alimenteront une visualisation comparative.","### 4.2. Channel Parameter Configuration
+
+Here, we define the parameter sets (`wp` and `rpf`) that will be used to build the channels at different scales.
+
+1.  **`final_config`:** Single selected configuration (potentially after optimization) for the final plot, snapshots, and possible backtesting. Contains `wp`/`rpf` for Support/Resistance of the Macro, Meso, and Micro levels.
+2.  **`configurations_to_explore`:** List of configurations generated to test the algorithm's sensitivity (e.g., variation of `wp_micro_sup` and `rpf_micro_sup`). The results will feed into a comparative visualization.",,,,,,,839d9c54a1058212,998a9ae513bf95af,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-4ca70894,code,fr,a28cff20236ab5a1,"# CELLULE 14 : Définition des Configurations
 
 import itertools
@@ -1214,7 +1395,13 @@ Exécution des calculs pour déterminer les lignes de canal selon les configurat
 
 ### 5.1. Exploration des Paramètres (Calcul)
 
-Cette cellule exécute le calcul des canaux pour **toutes** les configurations définies dans `configurations_to_explore`. Les pivots résultants pour chaque ligne de chaque configuration sont stockés dans `results_df_explore`. Ceci permet une analyse comparative ultérieure.",,,,,,,,dd8142e96ee22bf9,,,,,,,
+Cette cellule exécute le calcul des canaux pour **toutes** les configurations définies dans `configurations_to_explore`. Les pivots résultants pour chaque ligne de chaque configuration sont stockés dans `results_df_explore`. Ceci permet une analyse comparative ultérieure.","## 5. Calculation and Analysis of Channels
+
+Execution of calculations to determine the channel lines according to the defined configurations, followed by analysis and visualization of the results.
+
+### 5.1. Parameter Exploration (Calculation)
+
+This cell runs the channel calculation for **all** the configurations defined in `configurations_to_explore`. The resulting pivots for each line of each configuration are stored in `results_df_explore`. This allows for subsequent comparative analysis.",,,,,,,dd8142e96ee22bf9,66b288bb09c25ae4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-b5f1fd1e,code,fr,6599bfbcea449a9e,"# CELLULE 15 : Calcul en Boucle pour l'Exploration (CORRIGÉE - Ajout time_numeric dans get_pivot_info)
 
 import pandas as pd
@@ -1369,7 +1556,9 @@ if not results_df_explore.empty:
 else: print(""results_df_explore is empty."")",,,,,,,,6599bfbcea449a9e,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-d0d21347,markdown,fr,cf5c05a99d356c9b,"### 5.2. Identification de la Configuration Cible (`final_config`)
 
-Examen des résultats de l'exploration (`results_df_explore`), potentiellement basé sur des critères visuels ou quantitatifs (non implémentés ici), pour sélectionner la configuration (`final_config`) qui semble la plus pertinente pour une analyse plus approfondie (visualisation finale, snapshots, backtesting).",,,,,,,,cf5c05a99d356c9b,,,,,,,
+Examen des résultats de l'exploration (`results_df_explore`), potentiellement basé sur des critères visuels ou quantitatifs (non implémentés ici), pour sélectionner la configuration (`final_config`) qui semble la plus pertinente pour une analyse plus approfondie (visualisation finale, snapshots, backtesting).","### 5.2. Identification of the Target Configuration (`final_config`)
+
+Examination of the exploration results (`results_df_explore`), potentially based on visual or quantitative criteria (not implemented here), to select the configuration (`final_config`) that seems most relevant for a more in-depth analysis (final visualization, snapshots, backtesting).",,,,,,,cf5c05a99d356c9b,7cee3c54a4c85b5b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-a7cfcca7,code,fr,8287ac2f10885f3e,"# CELLULE 16 : Identification Configuration Cible
 
 target_p1_date = pd.Timestamp(""2025-04-07 07:00:00"")
@@ -1466,7 +1655,20 @@ Cette section utilise Plotly pour générer une visualisation complète intégra
 
 *   Niveaux de canal distincts par couleur/style.
 *   Lignes étendues jusqu'à la fin des données.
-*   Pivots définissant chaque ligne mis en évidence (marqueurs étoiles).",,,,,,,,9a1b447679e403e9,,,,,,,
+*   Pivots définissant chaque ligne mis en évidence (marqueurs étoiles).","### 5.3. Final Visualization (Target Configuration)
+
+This section uses Plotly to generate a complete visualization integrating:
+
+*   The hourly closing **price**.
+*   The ZigZag **pivots** (High/Low).
+*   The ZigZag **connection lines**.
+*   The **Macro, Meso, and Micro channels** (support and resistance) calculated using the selected configuration (`final_config`).
+
+**Plot Characteristics:**
+
+*   Distinct channel levels by color/style.
+*   Lines extended to the end of the data.
+*   Pivots defining each line highlighted (star markers).",,,,,,,9a1b447679e403e9,9493546a0b913d4e,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-671d22d6,code,fr,2ab90b771927d88a,"import plotly.graph_objects as go
 
 def plot_channels_and_zigzag(bars_df, pivotList, channel_definitions):
@@ -1587,7 +1789,18 @@ Ce graphique utilise une grille de sous-graphiques (subplots) pour visualiser co
 *   Chaque sous-graphique **zoome automatiquement** sur une fenêtre temporelle (X) et une plage de prix (Y) déterminées par les **pivots définissant le canal Méso** de cette configuration spécifique, pour mieux voir l'impact local des paramètres.
 *   Tous les canaux (Macro, Méso, Micro) et pivots ZigZag pertinents sont affichés dans chaque sous-graphique zoomé.
 
-Aide à comprendre la **stabilité** et la **sensibilité** de l'algorithme aux variations des paramètres `wp` et `rpf`.",,,,,,,,bb1b023f6dd29064,,,,,,,
+Aide à comprendre la **stabilité** et la **sensibilité** de l'algorithme aux variations des paramètres `wp` et `rpf`.","### 5.4. Comparative Visualization (Parameter Exploration)
+
+This chart uses a grid of subplots to visualize how the **Macro, Meso, and Micro** channels vary depending on the **different configurations tested** in `configurations_to_explore`.
+
+**Grid Organization:**
+
+*   Each subplot corresponds to a tested configuration.
+*   The title indicates the variable parameters (e.g., `wp_micro_sup`, `rpf_micro_sup`).
+*   Each subplot **automatically zooms in** on a time window (X) and a price range (Y) determined by the **pivots defining the Meso channel** of that specific configuration, to better see the local impact of the parameters.
+*   All relevant channels (Macro, Meso, Micro) and ZigZag pivots are displayed in each zoomed subplot.
+
+Helps understand the **stability** and **sensitivity** of the algorithm to variations in the `wp` and `rpf` parameters.",,,,,,,bb1b023f6dd29064,e10bdfa771b0a0bc,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-c833a38a,code,fr,c084b497d6007054,"# CELLULE 28 : Visualisation 2D (Grille 4x4) Exploration - Tous Canaux, Zoom X/Y sur Pivots Meso par Config
 
 import plotly.graph_objects as go
@@ -1823,7 +2036,23 @@ Pour évaluer la robustesse et l'évolution des canaux dans le temps, nous recal
     *   Les canaux Macro, Méso et Micro sont entièrement recalculés (avec la logique de **fallback** si nécessaire pour Meso/Micro) en utilisant les paramètres de `final_config`.
 4.  **Stockage :** Les pivots et définitions de canaux résultants (`snapshot_results`) sont stockés pour chaque date.
 
-Permet de vérifier si les canaux récents étaient déjà présents ou similaires dans le passé.",,,,,,,,10b1e304046c44c4,,,,,,,
+Permet de vérifier si les canaux récents étaient déjà présents ou similaires dans le passé.","## 6. Temporal Analysis: Historical Snapshots
+
+To assess the robustness and evolution of channels over time, we recalculate the entire channel structure (Macro, Meso, Micro) as it would have been drawn at different **past dates (""snapshots"")**, using the **fixed configuration** `final_config`.
+
+### 6.1. Snapshot Calculation
+
+**Process:**
+
+1.  **Snapshot Dates:** A list of historical dates is defined (e.g., end of month).
+2.  **Fixed Configuration:** `final_config` is used for all calculations.
+3.  **Iterative Calculation:** For each snapshot date:
+    *   The price history *up to that date* is used.
+    *   The ZigZag pivots are recalculated on this truncated history.
+    *   The Macro, Meso, and Micro channels are fully recalculated (with the **fallback** logic if necessary for Meso/Micro) using the parameters from `final_config`.
+4.  **Storage:** The resulting pivots and channel definitions (`snapshot_results`) are stored for each date.
+
+This makes it possible to check whether recent channels were already present or similar in the past.",,,,,,,10b1e304046c44c4,1d6d9404ccf9f3bb,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-8cd252d6,code,fr,de2d3f7b1376659f,"# CELLULE HELPER (MODIFIÉE) : Fonction pour Calculer Tous les Canaux à une Date Donnée AVEC FALLBACK
 
 import pandas as pd
@@ -2005,7 +2234,7 @@ def calculate_all_channels_at_date(end_date_dt, full_history_df, config, zigzag_
         # traceback.print_exc()
         return None, None
 ",,,,,,,,de2d3f7b1376659f,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-633111d6,markdown,fr,420fb2f4a5a1ae6b,Les canaux multi-échelles sont recalculés itérativement sur `tqdm` pour générer les snapshots historiques de Crypto-MultiCanal.,,,,,,,,420fb2f4a5a1ae6b,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-633111d6,markdown,fr,420fb2f4a5a1ae6b,Les canaux multi-échelles sont recalculés itérativement sur `tqdm` pour générer les snapshots historiques de Crypto-MultiCanal.,The multi-scale channels are iteratively recalculated over `tqdm` to generate the historical snapshots of Crypto-MultiCanal.,,,,,,,420fb2f4a5a1ae6b,55de25a249908fd8,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-c616695c,code,fr,4ad6913ca3f7e58a,"# CELLULE 29 : Calcul des Snapshots Historiques (Révisée)
 
 import pandas as pd
@@ -2100,7 +2329,9 @@ print(f""{successful_channel_calcs} / {len(snapshot_dates)} snapshots ont pu cal
 ",,,,,,,,4ad6913ca3f7e58a,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-515442aa,markdown,fr,553050437efafbba,"### 6.2. Analyse de Stabilité des Pivots (Optionnel)
 
-Cette cellule analyse les résultats des snapshots (`snapshot_results`) pour quantifier la fréquence à laquelle les pivots définissant chaque ligne de canal (Macro, Méso, Micro - Support & Résistance) changent d'un snapshot à l'autre. Une faible fréquence de changement suggère une plus grande robustesse des canaux identifiés.",,,,,,,,553050437efafbba,,,,,,,
+Cette cellule analyse les résultats des snapshots (`snapshot_results`) pour quantifier la fréquence à laquelle les pivots définissant chaque ligne de canal (Macro, Méso, Micro - Support & Résistance) changent d'un snapshot à l'autre. Une faible fréquence de changement suggère une plus grande robustesse des canaux identifiés.","### 6.2. Pivot Stability Analysis (Optional)
+
+This cell analyzes the snapshot results (`snapshot_results`) to quantify how often the pivots defining each channel line (Macro, Meso, Micro - Support & Resistance) change from one snapshot to the next. A low change frequency suggests greater robustness of the identified channels.",,,,,,,553050437efafbba,6801a138c13b21d3,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-4b672c9a,code,fr,6fadf489a28f131e,"# CELLULE 29b (Nouvelle) : Analyse de la Stabilité des Pivots Définissant les Canaux
 
 import pandas as pd
@@ -2174,7 +2405,21 @@ Ce graphique présente les résultats de l'analyse temporelle (basée sur `final
     *   Canaux Macro, Méso et Micro déterminés à cette date.
 *   Chaque sous-graphique **zoome automatiquement** sur une fenêtre temporelle et une plage de prix définies par les **pivots des canaux Meso et Micro** (si disponibles, sinon Macro) calculés pour ce snapshot spécifique, pour mieux visualiser la structure récente.
 
-Permet d'observer comment la structure hiérarchique (calculée avec `final_config`) a **évolué au fil du temps**.",,,,,,,,b71528e6ea88a9da,,,,,,,
+Permet d'observer comment la structure hiérarchique (calculée avec `final_config`) a **évolué au fil du temps**.","### 6.3. Visualization of Snapshots (Target Configuration)
+
+This chart presents the results of the temporal analysis (based on `final_config`) as a grid of subplots.
+
+**Grid Organization:**
+
+*   Each subplot corresponds to a **snapshot date**.
+*   The title indicates the end date of the history used.
+*   Each subplot displays:
+    *   Closing prices up to the snapshot.
+    *   ZigZag pivots of the snapshot.
+    *   Macro, Meso, and Micro channels determined on that date.
+*   Each subplot **automatically zooms** into a time window and price range defined by the **pivots of the Meso and Micro channels** (if available, otherwise Macro) calculated for that specific snapshot, to better visualize the recent structure.
+
+Allows observation of how the hierarchical structure (calculated with `final_config`) has **evolved over time**.",,,,,,,b71528e6ea88a9da,0bd06fc78e6d1b4b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-9a73e99e,code,fr,d09db38319759005,"# CELLULE 30 (MODIFIÉE) : Visualisation 2D Snapshots - Zoom Meso/Micro
 
 import plotly.graph_objects as go
@@ -2363,7 +2608,11 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 
 Similaire à la visualisation précédente, mais cette cellule génère une grille de snapshots **pour plusieurs configurations de canaux sélectionnées** (définies par `indices_configs_snapshots`).
 
-Cela permet de comparer directement comment différentes configurations de `wp`/`rpf` auraient influencé l'évolution historique perçue des canaux. Chaque configuration génère son propre graphique de snapshots complet. Le zoom est également basé sur les pivots Meso/Micro (ou Macro en fallback) pour chaque snapshot de chaque configuration.",,,,,,,,8364d453b99539b1,,,,,,,
+Cela permet de comparer directement comment différentes configurations de `wp`/`rpf` auraient influencé l'évolution historique perçue des canaux. Chaque configuration génère son propre graphique de snapshots complet. Le zoom est également basé sur les pivots Meso/Micro (ou Macro en fallback) pour chaque snapshot de chaque configuration.","### 6.4. Snapshot Visualization (Multiple Configurations)
+
+Similar to the previous visualization, but this cell generates a grid of snapshots **for several selected channel configurations** (defined by `indices_configs_snapshots`).
+
+This makes it possible to directly compare how different `wp`/`rpf` configurations would have influenced the perceived historical evolution of the channels. Each configuration generates its own complete snapshot chart. The zoom is also based on the Meso/Micro pivots (or Macro as a fallback) for each snapshot of each configuration.",,,,,,,8364d453b99539b1,7a36acb0242d3aaf,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-d10b79a4,code,fr,93e2f3450c011374,"# CELLULE 30b (MODIFIÉE) : Affichage Snapshots pour Plusieurs Configs - Zoom Meso/Micro
 
 import pandas as pd
@@ -2567,7 +2816,21 @@ Cette section utilise un algorithme génétique (implémenté avec la bibliothè
 6.  **Analyse des Résultats :** Visualiser la convergence de la fitness, identifier la meilleure stratégie trouvée et re-simuler sa performance en détail.
 7.  **(Optionnel) Re-simulation Manuelle :** Permettre de tester manuellement une configuration spécifique découverte lors d'une exécution précédente ou définie par l'utilisateur.
 
-**Important :** L'historique des canaux utilisé pour l'évaluation de la fitness dans le GA est basé sur la `final_config` sélectionnée dans la section précédente. La performance du GA dépend donc directement de la pertinence de cette configuration de canaux fixe.",,,,,,,,32e8facd2024ff44,,,,,,,
+**Important :** L'historique des canaux utilisé pour l'évaluation de la fitness dans le GA est basé sur la `final_config` sélectionnée dans la section précédente. La performance du GA dépend donc directement de la pertinence de cette configuration de canaux fixe.","## 8. Optimization by Genetic Algorithm (GA)
+
+This section uses a genetic algorithm (implemented with the DEAP library) to explore the parameter space of trading strategies based on the precomputed multi-scale channels. The objective is to identify combinations of rules and parameters that maximize a performance metric (here, final equity) over the simulation period.
+
+**Key Steps:**
+
+1.  **Definition of the Parameter Space:** Specify the different options for each strategy parameter (channel level, signal type, trend filter, risk management, SL/TP, etc.).
+2.  **Creation of Individuals (Chromosomes):** Define a function that transforms a combination of parameters (an individual) into a complete strategy structure (rules, actions).
+3.  **Fitness Function:** Implement a function (`evaluate_strategy`) that simulates a given strategy on the price and channel history (computed with `final_config`) and returns a fitness value (final equity).
+4.  **DEAP Configuration:** Set up the genetic operators (selection, crossover, mutation) and the DEAP tools to manage the population and evolution.
+5.  **Running the GA:** Launch the optimization process over several generations.
+6.  **Analysis of Results:** Visualize the convergence of the fitness, identify the best strategy found, and re-simulate its performance in detail.
+7.  **(Optional) Manual Re-simulation:** Allow manual testing of a specific configuration discovered during a previous run or defined by the user.
+
+**Important:** The channel history used for evaluating fitness in the GA is based on the `final_config` selected in the previous section. The performance of the GA therefore depends directly on the relevance of this fixed channel configuration.",,,,,,,32e8facd2024ff44,9dd429f219b34fb4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-1300680f,markdown,fr,4988ef8d7ac0d16c,"### 8.1. Préparation de l'Environnement GA
 
 Cette sous-section configure les éléments nécessaires au fonctionnement de l'algorithme génétique.
@@ -2576,7 +2839,15 @@ Cette sous-section configure les éléments nécessaires au fonctionnement de l'
 *   **Création de Stratégie (`create_strategy_from_params`) :** Une fonction qui prend une combinaison de paramètres (un ""individu"" ou ""chromosome"" pour le GA) et la traduit en un ensemble de règles de trading structurées.
 *   **Fonctions Helpers (`get_channel_value_at_time`, `check_conditions`, `calculate_position_size`, `apply_fees`) :** Fonctions utilitaires pour la simulation (calcul de valeur de canal, vérification des conditions de trade, calcul de taille de position, application des frais). La fonction `apply_fees` tente d'utiliser le modèle de frais de QuantConnect ou un fallback simple.
 *   **Calcul de l'Historique des Canaux Fixes (`channel_history_df`) :** **Étape cruciale**. Recalcule l'état des canaux Macro/Meso/Micro (en utilisant la `final_config` sélectionnée précédemment) à intervalles réguliers sur toute la période de simulation. Ce DataFrame historique sera utilisé par la fonction de fitness pour déterminer l'état des canaux à chaque pas de temps sans avoir à les recalculer pour chaque individu du GA, optimisant ainsi considérablement le processus.
-*   **Configuration DEAP :** Initialise les outils de la bibliothèque DEAP, définissant comment les individus sont créés, évalués (via `evaluate_strategy`), croisés (`mate`), mutés (`mutate`), et sélectionnés (`select`) pour les générations suivantes.",,,,,,,,4988ef8d7ac0d16c,,,,,,,
+*   **Configuration DEAP :** Initialise les outils de la bibliothèque DEAP, définissant comment les individus sont créés, évalués (via `evaluate_strategy`), croisés (`mate`), mutés (`mutate`), et sélectionnés (`select`) pour les générations suivantes.","### 8.1. GA Environment Setup
+
+This subsection configures the elements required for the genetic algorithm to run.
+
+*   **Parameter Space (`param_space`) :** Defines the possible choices for each hyperparameter of the trading strategy (e.g., which channel to use, signal type, SL/TP parameters, etc.).
+*   **Strategy Creation (`create_strategy_from_params`) :** A function that takes a combination of parameters (an ""individual"" or ""chromosome"" for the GA) and translates it into a set of structured trading rules.
+*   **Helper Functions (`get_channel_value_at_time`, `check_conditions`, `calculate_position_size`, `apply_fees`) :** Utility functions for the simulation (channel value calculation, trade condition checking, position size calculation, fee application). The `apply_fees` function attempts to use QuantConnect's fee model or a simple fallback.
+*   **Calculating the Fixed Channel History (`channel_history_df`) :** **Crucial step**. Recalculates the state of the Macro/Meso/Micro channels (using the previously selected `final_config`) at regular intervals over the entire simulation period. This historical DataFrame will be used by the fitness function to determine the channel state at each time step without having to recalculate them for each GA individual, thereby significantly optimizing the process.
+*   **DEAP Configuration:** Initializes the tools of the DEAP library, defining how individuals are created, evaluated (via `evaluate_strategy`), crossed over (`mate`), mutated (`mutate`), and selected (`select`) for the following generations.",,,,,,,4988ef8d7ac0d16c,60be2708d4a526e0,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-47535ea1,code,fr,7d713804e3466711,"# CELLULE 7.1.1 : Espace Paramétrique pour le GA
 
 import itertools
@@ -2613,7 +2884,7 @@ print(f""Espace paramétrique défini avec {len(param_keys)} paramètres."")
 # for key in param_keys:
 #     total_combinations_possible *= len(param_space[key])
 # print(f""Nombre total de combinaisons possibles dans cet espace : {total_combinations_possible:,}"")",,,,,,,,7d713804e3466711,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-e8bd1b31,markdown,fr,4b65f1cffd18865f,Définition de create_strategy_from_params pour convertir une combinaison du param_space en dictionnaire de stratégie (chromosome) utilisé par l'algorithme génétique.,,,,,,,,4b65f1cffd18865f,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-e8bd1b31,markdown,fr,4b65f1cffd18865f,Définition de create_strategy_from_params pour convertir une combinaison du param_space en dictionnaire de stratégie (chromosome) utilisé par l'algorithme génétique.,Definition of create_strategy_from_params to convert a combination from param_space into a strategy dictionary (chromosome) used by the genetic algorithm.,,,,,,,4b65f1cffd18865f,7e133d8062431969,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-a7e5b901,code,fr,ba40b11f60c8bf7a,"# CELLULE NOUVELLE : Fonction pour Créer une Stratégie (Chromosome) depuis les Paramètres
 
 print(""Définition de la fonction de création de stratégie..."")
@@ -2722,7 +2993,7 @@ def create_strategy_from_params(param_combination, param_keys):
 
 print(""Fonction de création de stratégie définie."")
 ",,,,,,,,ba40b11f60c8bf7a,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-2e7e7f2e,markdown,fr,1b7f5a9b421c342f,Mise à jour des fonctions helper de simulation pour inclure channel_trend dans l'évaluation des signaux de canal.,,,,,,,,1b7f5a9b421c342f,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-2e7e7f2e,markdown,fr,1b7f5a9b421c342f,Mise à jour des fonctions helper de simulation pour inclure channel_trend dans l'évaluation des signaux de canal.,Update of the simulation helper functions to include channel_trend in the evaluation of channel signals.,,,,,,,1b7f5a9b421c342f,f13464d0a92fbbfa,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-c14c7b18,code,fr,e15ced93f760f896,"# CELLULE 7.1.3 : Définition des Fonctions Helper pour Simulation GA (Syntaxe Finale Corrigée v9)
 
 import pandas as pd
@@ -3006,7 +3277,7 @@ def apply_fees(order, symbol_security_obj, fee_model_obj):
         return 0.0
 
 print(""Fonctions helper pour la simulation GA définies/mises à jour (Syntaxe v9 Finale, Lisibilité Améliorée)."")",,,,,,,,e15ced93f760f896,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-2cc350f5,markdown,fr,774148a2ab31115c,Simulation des stratégies de trading sur canaux fixes : application des règles bounce/breakout sur l'historique BTC horaire.,,,,,,,,774148a2ab31115c,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-2cc350f5,markdown,fr,774148a2ab31115c,Simulation des stratégies de trading sur canaux fixes : application des règles bounce/breakout sur l'historique BTC horaire.,Simulation of trading strategies on fixed channels: application of bounce/breakout rules to hourly BTC history.,,,,,,,774148a2ab31115c,231b67890939d35e,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-879b12b7,code,fr,18bfe513924f0540,"# CELLULE 7.1.4 : Calcul de l'Historique des Canaux (basé sur final_config) (DÉBUT MODIFIÉ)
 
 import pandas as pd
@@ -3081,7 +3352,7 @@ if loop_bars_all.empty:
 print(f""Période de simulation pour le GA: {loop_bars_all['time'].min()} à {loop_bars_all['time'].max()}"")
 
 ",,,,,,,,18bfe513924f0540,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-80a1e29e,markdown,fr,fe9bbc889ae181c3,"Configuration du framework DEAP (POPULATION_SIZE=50, GENERATIONS=20) : création des opérateurs génétiques et de la fonction de fitness pour optimiser les canaux ZigZag.",,,,,,,,fe9bbc889ae181c3,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-80a1e29e,markdown,fr,fe9bbc889ae181c3,"Configuration du framework DEAP (POPULATION_SIZE=50, GENERATIONS=20) : création des opérateurs génétiques et de la fonction de fitness pour optimiser les canaux ZigZag.","Configuration of the DEAP framework (POPULATION_SIZE=50, GENERATIONS=20): creation of genetic operators and the fitness function to optimize ZigZag channels.",,,,,,,fe9bbc889ae181c3,373f95d851f9b59b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-43ce40f5,code,fr,86b906f1b09189f0,"# CELLULE GA-1 : Setup de l'Algorithme Génétique avec DEAP (CORRIGÉE v2 + LOGGING)
 
 import random
@@ -3348,7 +3619,18 @@ Cette cellule lance l'algorithme génétique DEAP configuré précédemment.
     *   Les meilleurs individus sont sélectionnés.
     *   Des opérateurs de croisement et de mutation sont appliqués pour créer la nouvelle génération.
 *   **Suivi :** Des statistiques (min, max, avg fitness) sont collectées à chaque génération. Le meilleur individu trouvé (`hof`) est conservé.
-*   **Résultat :** Affiche la meilleure fitness (équité finale) atteinte et les paramètres de la stratégie correspondante.",,,,,,,,64b0f51c97c31585,,,,,,,
+*   **Résultat :** Affiche la meilleure fitness (équité finale) atteinte et les paramètres de la stratégie correspondante.","### 8.2. Running the Genetic Algorithm
+
+This cell runs the previously configured DEAP genetic algorithm.
+
+*   **GA Parameters:** `POPULATION_SIZE`, `GENERATIONS`, `CXPB` (crossover probability), `MUTPB` (mutation probability) control the evolution process.
+*   **Initialization:** An initial population of individuals (random strategies) is created.
+*   **Evolution (`algorithms.eaSimple`):** The main GA loop is executed. At each generation:
+    *   The fitness of each individual is evaluated (strategy simulation).
+    *   The best individuals are selected.
+    *   Crossover and mutation operators are applied to create the new generation.
+*   **Tracking:** Statistics (min, max, avg fitness) are collected at each generation. The best individual found (`hof`) is retained.
+*   **Result:** Displays the best fitness (final equity) achieved and the parameters of the corresponding strategy.",,,,,,,64b0f51c97c31585,9525c14eb827c5ec,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-a8a01359,code,fr,fc4f8b8baf7c2fd1,"# CELLULE GA-2 : Exécution de l'Algorithme Génétique (Avec Logging)
 
 logger.info(""Lancement de l'algorithme génétique..."")
@@ -3409,7 +3691,15 @@ Après l'exécution de l'algorithme génétique, cette cellule analyse les résu
 2.  **Re-simulation de la Meilleure Stratégie :** La stratégie correspondant au meilleur individu trouvé par le GA (stocké dans `hof[0]`) est simulée à nouveau, cette fois en enregistrant plus de détails (courbe d'équité, liste des trades).
 3.  **Calcul des Métriques de Performance :** Pour la meilleure stratégie, des métriques clés sont calculées et affichées (Équité Finale, PnL Total, Win Rate, Max Drawdown, Nombre de Trades, Frais Totaux).
 4.  **Affichage de la Courbe d'Équité :** La courbe de performance de la meilleure stratégie est tracée.
-5.  **Rappel des Paramètres :** Les paramètres exacts de la meilleure stratégie trouvée sont affichés.",,,,,,,,a4a770e89d59197f,,,,,,,
+5.  **Rappel des Paramètres :** Les paramètres exacts de la meilleure stratégie trouvée sont affichés.","### 8.3. Analysis of GA Results
+
+After running the genetic algorithm, this cell analyzes the results:
+
+1.  **Convergence Visualization:** A chart shows the evolution of maximum and average fitness over the generations. This makes it possible to check whether the algorithm has converged toward a stable solution.
+2.  **Re-simulation of the Best Strategy:** The strategy corresponding to the best individual found by the GA (stored in `hof[0]`) is simulated again, this time recording more details (equity curve, list of trades).
+3.  **Calculation of Performance Metrics:** For the best strategy, key metrics are calculated and displayed (Final Equity, Total PnL, Win Rate, Max Drawdown, Number of Trades, Total Fees).
+4.  **Display of the Equity Curve:** The performance curve of the best strategy is plotted.
+5.  **Parameter Recap:** The exact parameters of the best strategy found are displayed.",,,,,,,a4a770e89d59197f,2c0c7a82bcbb5fc8,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-ef5a3021,code,fr,459e330ecf80cdec,"# CELLULE GA-3 : Analyse des Résultats de l'AG (CORRIGÉE - Erreur action_details)
 
 import matplotlib.pyplot as plt
@@ -3629,7 +3919,14 @@ Cette cellule permet de tester ou de vérifier la performance d'une configuratio
 *   **Définition Manuelle des Paramètres :** L'utilisateur définit explicitement un dictionnaire (`params_run1` dans l'exemple) contenant tous les paramètres de la stratégie à simuler.
 *   **Création de la Stratégie :** La fonction `create_strategy_from_params` est utilisée pour construire la structure de la stratégie à partir des paramètres manuels.
 *   **Simulation :** La même logique de simulation que celle utilisée dans la fonction de fitness du GA est exécutée pour cette stratégie spécifique, en enregistrant la courbe d'équité et les trades.
-*   **Analyse et Affichage :** Les métriques de performance et la courbe d'équité pour cette simulation manuelle sont calculées et affichées, permettant une comparaison avec les résultats du GA ou d'autres benchmarks.",,,,,,,,6f3bc2633c7972aa,,,,,,,
+*   **Analyse et Affichage :** Les métriques de performance et la courbe d'équité pour cette simulation manuelle sont calculées et affichées, permettant une comparaison avec les résultats du GA ou d'autres benchmarks.","### 8.4. Manual Re-simulation of a Specific Configuration
+
+This cell makes it possible to test or verify the performance of a specific strategy configuration outside the GA optimization process.
+
+*   **Manual Parameter Definition:** The user explicitly defines a dictionary (`params_run1` in the example) containing all the parameters of the strategy to be simulated.
+*   **Strategy Creation:** The `create_strategy_from_params` function is used to build the strategy structure from the manual parameters.
+*   **Simulation:** The same simulation logic as that used in the GA fitness function is executed for this specific strategy, recording the equity curve and the trades.
+*   **Analysis and Display:** The performance metrics and the equity curve for this manual simulation are calculated and displayed, allowing comparison with the GA results or other benchmarks.",,,,,,,6f3bc2633c7972aa,6bf55c037d212091,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research.ipynb,cell-3c55d06c,code,fr,bf294e36591a01c7,"# CELLULE 7.4 : Re-simulation d'une Configuration Spécifique (Syntaxe Placeholder MinimalSecurity CORRIGÉE v8)
 
 import matplotlib.pyplot as plt
@@ -3931,10 +4228,29 @@ Ce notebook explore une approche d'analyse technique multi-échelles pour l'acti
 
 * Mise en place de l'environnement QuantConnect et téléchargement des données horaires BTCUSDT.
 * Calcul d'une stratégie HODL simple comme référence de performance.
-* Implémentation et visualisation de l'indicateur ZigZag.",,,,,,,,11d60724eda41ca5,,,,,,,
+* Implémentation et visualisation de l'indicateur ZigZag.","# Multi-Scale Channel Analysis with ZigZag and Weighted Regression Lines
+
+This notebook explores a multi-scale technical analysis approach for the BTCUSDT asset (on Binance), based on identifying pivots via the ZigZag indicator and constructing hierarchical trend channels (Macro, Meso, Micro).
+
+**Objectives:**
+
+1.  **Extract significant pivot points** from the hourly price using a custom implementation of the ZigZag indicator.
+2.  **Develop an algorithm** to draw support and resistance lines forming channels, prioritizing lines that strictly ""contain"" recent pivots and minimizing a time-weighted squared error (`WSSE`).
+3.  **Build a channel hierarchy** (Macro, Meso, Micro) where each level uses the pivots defining the higher level as the temporal starting point.
+4.  **Visualize** the pivots, the channels, and their evolution over time.
+5.  **Explore the sensitivity** of the algorithm to the weighting parameters (`weight_power`, `wp`) and the recent pivot fraction (`recent_pivot_fraction`, `rpf`).
+6.  **(Optional / Future)** Define and backtest trading strategies based on price interactions with these multi-scale channels.
+
+**Initial Steps:**
+
+* Setting up the QuantConnect environment and downloading hourly BTCUSDT data.
+* Calculating a simple HODL strategy as a performance benchmark.
+* Implementing and visualizing the ZigZag indicator.",,,,,,,11d60724eda41ca5,70164bac7114897f,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-fa09888a,markdown,fr,26fff6db46aabbed,"## 1. Initialisation : Environnement et Données
 
-Mise en place de l'environnement QuantConnect, définition de l'actif (BTCUSDT), de la période d'analyse et téléchargement des données horaires nécessaires.",,,,,,,,26fff6db46aabbed,,,,,,,
+Mise en place de l'environnement QuantConnect, définition de l'actif (BTCUSDT), de la période d'analyse et téléchargement des données horaires nécessaires.","## 1. Initialization: Environment and Data
+
+Setting up the QuantConnect environment, defining the asset (BTCUSDT), the analysis period, and downloading the necessary hourly data.",,,,,,,26fff6db46aabbed,4f0d23ea20629652,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-28b91773,code,fr,4d5d45d275be0f2d,"# Import necessary libraries from the QC framework
 from AlgorithmImports import *
 from datetime import datetime
@@ -3961,7 +4277,9 @@ print(bars_df.head())
 ",,,,,,,,4d5d45d275be0f2d,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-950844b4,markdown,fr,5c40205f5ef43351,"## 2. Stratégie de Référence : HODL
 
-Calcul et visualisation de la performance d'une stratégie simple ""Buy and Hold"" (HODL) sur la période d'analyse. Ceci sert de benchmark pour évaluer toute stratégie de trading ultérieure.",,,,,,,,5c40205f5ef43351,,,,,,,
+Calcul et visualisation de la performance d'une stratégie simple ""Buy and Hold"" (HODL) sur la période d'analyse. Ceci sert de benchmark pour évaluer toute stratégie de trading ultérieure.","## 2. Baseline Strategy: HODL
+
+Calculation and visualization of the performance of a simple ""Buy and Hold"" (HODL) strategy over the analysis period. This serves as a benchmark for evaluating any subsequent trading strategy.",,,,,,,5c40205f5ef43351,553ed368d6d5ff62,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-515d860e,code,fr,28d2f7c5c461ccd7,"# Assume we use the close prices from the hourly DataFrame as the HODL basis
 initial_investment = 10000  # in USDT
 first_price = bars_df['close'].iloc[0]
@@ -3999,7 +4317,22 @@ Pour identifier les retournements de tendance significatifs, nous utilisons l'in
 *   Dans cet exemple, `thresholdPercent=0.05` signifie qu'une baisse de 5% depuis le dernier plus haut est nécessaire pour confirmer ce plus haut comme un pivot High, et une hausse de 5% depuis le dernier plus bas est requise pour confirmer ce plus bas comme un pivot Low.
 *   La fonction retourne une liste de pivots `(timestamp, price, type)`, garantissant une alternance stricte entre High et Low.
 
-Cette liste de pivots (`pivotList`) servira de base à la construction de nos canaux.",,,,,,,,9440b316e4b96c34,,,,,,,
+Cette liste de pivots (`pivotList`) servira de base à la construction de nos canaux.","## 3. Pivot Detection: ZigZag Indicator
+
+This section focuses on identifying significant market reversal points using the ZigZag indicator.
+
+### 3.1. Function `classic_chart_zigzag`
+
+To identify significant trend reversals, we use the ZigZag indicator. Since QuantConnect’s native indicator may exhibit unexpected behavior in certain research contexts, we use a custom function here, `classic_chart_zigzag`.
+
+**How it works:**
+
+*   It identifies highs (High pivots, type -1) and lows (Low pivots, type +1) on closing prices (`close`).
+*   A pivot is confirmed only if the price retraces by a certain percentage (`thresholdPercent`) from the last recorded extreme.
+*   In this example, `thresholdPercent=0.05` means that a 5% drop from the most recent high is required to confirm that high as a High pivot, and a 5% rise from the most recent low is required to confirm that low as a Low pivot.
+*   The function returns a list of pivots `(timestamp, price, type)`, ensuring strict alternation between High and Low.
+
+This list of pivots (`pivotList`) will serve as the basis for constructing our channels.",,,,,,,9440b316e4b96c34,a80b7afc913b726e,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-04b83b12,code,fr,94187c4184785904,"import pandas as pd
 import numpy as np
 
@@ -4094,7 +4427,9 @@ pivotList = classic_chart_zigzag(bars_df[['time','close']], thresholdPercent=0.0
 ",,,,,,,,94187c4184785904,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-38585393,markdown,fr,7339ed85e7ae1ea8,"### 3.2. Visualisation du ZigZag
 
-Nous affichons ici les prix de clôture horaires superposés avec l'indicateur ZigZag (lignes de connexion et marqueurs de pivots High/Low) pour vérifier visuellement la pertinence des points détectés.",,,,,,,,7339ed85e7ae1ea8,,,,,,,
+Nous affichons ici les prix de clôture horaires superposés avec l'indicateur ZigZag (lignes de connexion et marqueurs de pivots High/Low) pour vérifier visuellement la pertinence des points détectés.","### 3.2. ZigZag Visualization
+
+Here we display the hourly closing prices overlaid with the ZigZag indicator (connection lines and High/Low pivot markers) to visually verify the relevance of the detected points.",,,,,,,7339ed85e7ae1ea8,6efb9a8bca853169,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-87453a6f,code,fr,3b7889adb2bd943c,"def plot_manual_zigzag(bars_df, pivotList):
     import plotly.graph_objects as go
 
@@ -4168,7 +4503,14 @@ Avant de construire les canaux, une étape cruciale est de préparer les donnée
 1.  **Conversion en DataFrame :** Pour faciliter les manipulations.
 2.  **Ajout de `time_numeric` :** Conversion du timestamp en secondes depuis l'epoch Unix. **Essentiel** pour les calculs géométriques (pente, ordonnée à l'origine) qui nécessitent une coordonnée 'x' numérique et linéaire.
 3.  **Séparation High/Low :** Création de DataFrames distincts (`high_pivots`, `low_pivots`).
-4.  **Stockage pour Vérification :** Création de copies NumPy (`all_high_pivots_for_check`, `all_low_pivots_for_check`) pour des vérifications rapides de contention lors de la recherche des meilleures lignes.",,,,,,,,975febd5171baecc,,,,,,,
+4.  **Stockage pour Vérification :** Création de copies NumPy (`all_high_pivots_for_check`, `all_low_pivots_for_check`) pour des vérifications rapides de contention lors de la recherche des meilleures lignes.","### 3.3. Preparing Pivot Data for Channels
+
+Before building the channels, a crucial step is to prepare the data of the pivots extracted by the ZigZag:
+
+1.  **Conversion to DataFrame:** To facilitate manipulation.
+2.  **Adding `time_numeric`:** Conversion of the timestamp into seconds since the Unix epoch. **Essential** for geometric calculations (slope, y-intercept) that require a numeric and linear 'x' coordinate.
+3.  **High/Low Separation:** Creation of separate DataFrames (`high_pivots`, `low_pivots`).
+4.  **Storage for Verification:** Creation of NumPy copies (`all_high_pivots_for_check`, `all_low_pivots_for_check`) for quick containment checks when searching for the best lines.",,,,,,,975febd5171baecc,d4bb565692df5a56,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-733f98ea,code,fr,cfa6135e1c79167c,"# Convert pivot list to DataFrame
 pivots_df = pd.DataFrame(pivotList, columns=['time', 'price', 'type']) # type: +1 Low, -1 High
 
@@ -4210,7 +4552,24 @@ La fonction `find_best_channel_line_strict_weighted` est au cœur de notre const
     *   **Fraction Récente (`recent_pivot_fraction`, `rpf`) :** La WSSE n'est calculée que sur une fraction (`rpf`) des pivots les plus récents, focalisant l'optimisation sur la pertinence récente.
 3.  **Paramétrisation :** `wp` et `rpf` sont ajustables indépendamment pour chaque type de ligne et échelle.
 
-Cette approche garantit le respect de la structure globale des pivots tout en privilégiant la dynamique récente.",,,,,,,,ff3b15f40e03c4d1,,,,,,,
+Cette approche garantit le respect de la structure globale des pivots tout en privilégiant la dynamique récente.","## 4. Channel Construction: Algorithm and Parameters
+
+This section details the algorithm used to draw the support and resistance lines forming the channels, as well as the configuration of the parameters that influence this process.
+
+
+### 4.1. Main Algorithm: `find_best_channel_line_strict_weighted`
+
+The function `find_best_channel_line_strict_weighted` is at the heart of our channel construction. It aims to identify the ""best"" possible support or resistance line, defined by a pair of pivots (`p1`, `p2`), based on strict criteria and weighted optimization.
+
+**Key Principles:**
+
+1.  **Strict Containment (Zero Violation):** A candidate line (support or resistance) defined by `p1` and `p2` is considered **valid** only if **all** other relevant pivots (all Lows for a support, all Highs for a resistance) lie on the ""right"" side of the line over the entire period considered. If no line satisfies this criterion, the function returns `None`.
+2.  **Minimization of Weighted Error (WSSE) over Recent Fraction:** Among all _strictly valid_ lines, the algorithm selects the one that minimizes the **Weighted Sum of Squared Errors (WSSE)**.
+    *   **Temporal Weighting (`weight_power`, `wp`):** The error of each pivot is weighted by its relative age (`wp > 0` gives more importance to recent pivots).
+    *   **Recent Fraction (`recent_pivot_fraction`, `rpf`):** The WSSE is calculated only over a fraction (`rpf`) of the most recent pivots, focusing the optimization on recent relevance.
+3.  **Parameterization:** `wp` and `rpf` are adjustable independently for each type of line and scale.
+
+This approach ensures respect for the overall pivot structure while prioritizing recent dynamics.",,,,,,,ff3b15f40e03c4d1,4a7214d3d917855f,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-14d8fe45,code,fr,13e053cca8c15c5f,"# CELLULE 13 : Définitions des Fonctions 
 
 import numpy as np
@@ -4307,7 +4666,12 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 Ici, nous définissons les jeux de paramètres (`wp` et `rpf`) qui seront utilisés pour construire les canaux à différentes échelles.
 
 1.  **`final_config` :** Configuration unique sélectionnée (potentiellement après optimisation) pour le tracé final, les snapshots et le backtesting éventuel. Contient `wp`/`rpf` pour Support/Résistance des niveaux Macro, Méso, Micro.
-2.  **`configurations_to_explore` :** Liste de configurations générées pour tester la sensibilité de l'algorithme (ex: variation de `wp_micro_sup` et `rpf_micro_sup`). Les résultats alimenteront une visualisation comparative.",,,,,,,,839d9c54a1058212,,,,,,,
+2.  **`configurations_to_explore` :** Liste de configurations générées pour tester la sensibilité de l'algorithme (ex: variation de `wp_micro_sup` et `rpf_micro_sup`). Les résultats alimenteront une visualisation comparative.","### 4.2. Channel Parameter Configuration
+
+Here, we define the parameter sets (`wp` and `rpf`) that will be used to build channels at different scales.
+
+1.  **`final_config`:** Unique configuration selected (potentially after optimization) for the final plot, snapshots, and any eventual backtesting. Contains `wp`/`rpf` for Support/Resistance at the Macro, Meso, and Micro levels.
+2.  **`configurations_to_explore`:** List of configurations generated to test the algorithm’s sensitivity (e.g., variation of `wp_micro_sup` and `rpf_micro_sup`). The results will feed into a comparative visualization.",,,,,,,839d9c54a1058212,8f39e2244b9d10be,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-00fcdc83,code,fr,a376be8be97bfc19,"# CELLULE 14 : Définition des Configurations
 
 import itertools
@@ -4344,7 +4708,13 @@ Exécution des calculs pour déterminer les lignes de canal selon les configurat
 
 ### 5.1. Exploration des Paramètres (Calcul)
 
-Cette cellule exécute le calcul des canaux pour **toutes** les configurations définies dans `configurations_to_explore`. Les pivots résultants pour chaque ligne de chaque configuration sont stockés dans `results_df_explore`. Ceci permet une analyse comparative ultérieure.",,,,,,,,dd8142e96ee22bf9,,,,,,,
+Cette cellule exécute le calcul des canaux pour **toutes** les configurations définies dans `configurations_to_explore`. Les pivots résultants pour chaque ligne de chaque configuration sont stockés dans `results_df_explore`. Ceci permet une analyse comparative ultérieure.","## 5. Calculation and Analysis of Channels
+
+Running the calculations to determine the channel lines according to the defined configurations, followed by analysis and visualization of the results.
+
+### 5.1. Parameter Exploration (Calculation)
+
+This cell runs the channel calculation for **all** the configurations defined in `configurations_to_explore`. The resulting pivots for each line of each configuration are stored in `results_df_explore`. This enables subsequent comparative analysis.",,,,,,,dd8142e96ee22bf9,c5a2e8c581c476d4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-40999ed5,code,fr,6599bfbcea449a9e,"# CELLULE 15 : Calcul en Boucle pour l'Exploration (CORRIGÉE - Ajout time_numeric dans get_pivot_info)
 
 import pandas as pd
@@ -4499,7 +4869,9 @@ if not results_df_explore.empty:
 else: print(""results_df_explore is empty."")",,,,,,,,6599bfbcea449a9e,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-ba96dc65,markdown,fr,cf5c05a99d356c9b,"### 5.2. Identification de la Configuration Cible (`final_config`)
 
-Examen des résultats de l'exploration (`results_df_explore`), potentiellement basé sur des critères visuels ou quantitatifs (non implémentés ici), pour sélectionner la configuration (`final_config`) qui semble la plus pertinente pour une analyse plus approfondie (visualisation finale, snapshots, backtesting).",,,,,,,,cf5c05a99d356c9b,,,,,,,
+Examen des résultats de l'exploration (`results_df_explore`), potentiellement basé sur des critères visuels ou quantitatifs (non implémentés ici), pour sélectionner la configuration (`final_config`) qui semble la plus pertinente pour une analyse plus approfondie (visualisation finale, snapshots, backtesting).","### 5.2. Identification of the Target Configuration (`final_config`)
+
+Review of the exploration results (`results_df_explore`), potentially based on visual or quantitative criteria (not implemented here), to select the configuration (`final_config`) that seems most relevant for further analysis (final visualization, snapshots, backtesting).",,,,,,,cf5c05a99d356c9b,e7667e7f03686152,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-e2331e01,code,fr,8287ac2f10885f3e,"# CELLULE 16 : Identification Configuration Cible
 
 target_p1_date = pd.Timestamp(""2025-04-07 07:00:00"")
@@ -4596,7 +4968,20 @@ Cette section utilise Plotly pour générer une visualisation complète intégra
 
 *   Niveaux de canal distincts par couleur/style.
 *   Lignes étendues jusqu'à la fin des données.
-*   Pivots définissant chaque ligne mis en évidence (marqueurs étoiles).",,,,,,,,9a1b447679e403e9,,,,,,,
+*   Pivots définissant chaque ligne mis en évidence (marqueurs étoiles).","### 5.3. Final Visualization (Target Configuration)
+
+This section uses Plotly to generate a complete visualization integrating:
+
+*   The hourly closing **price**.
+*   The ZigZag **pivots** (High/Low).
+*   The ZigZag **connection lines**.
+*   The **Macro, Meso, and Micro channels** (support and resistance) calculated using the selected configuration (`final_config`).
+
+**Plot Characteristics:**
+
+*   Channel levels distinguished by color/style.
+*   Lines extended to the end of the data.
+*   Pivots defining each line highlighted (star markers).",,,,,,,9a1b447679e403e9,9f0340b5b97bb66e,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-563c980b,code,fr,2ab90b771927d88a,"import plotly.graph_objects as go
 
 def plot_channels_and_zigzag(bars_df, pivotList, channel_definitions):
@@ -4717,7 +5102,18 @@ Ce graphique utilise une grille de sous-graphiques (subplots) pour visualiser co
 *   Chaque sous-graphique **zoome automatiquement** sur une fenêtre temporelle (X) et une plage de prix (Y) déterminées par les **pivots définissant le canal Méso** de cette configuration spécifique, pour mieux voir l'impact local des paramètres.
 *   Tous les canaux (Macro, Méso, Micro) et pivots ZigZag pertinents sont affichés dans chaque sous-graphique zoomé.
 
-Aide à comprendre la **stabilité** et la **sensibilité** de l'algorithme aux variations des paramètres `wp` et `rpf`.",,,,,,,,bb1b023f6dd29064,,,,,,,
+Aide à comprendre la **stabilité** et la **sensibilité** de l'algorithme aux variations des paramètres `wp` et `rpf`.","### 5.4. Comparative Visualization (Parameter Exploration)
+
+This chart uses a grid of subplots to visualize how the **Macro, Meso, and Micro** channels vary according to the **different configurations tested** in `configurations_to_explore`.
+
+**Grid Organization:**
+
+*   Each subplot corresponds to a tested configuration.
+*   The title indicates the variable parameters (e.g., `wp_micro_sup`, `rpf_micro_sup`).
+*   Each subplot **automatically zooms in** on a time window (X) and a price range (Y) determined by the **pivots defining the Meso channel** of that specific configuration, to better see the local impact of the parameters.
+*   All relevant channels (Macro, Meso, Micro) and ZigZag pivots are displayed in each zoomed subplot.
+
+Helps to understand the **stability** and **sensitivity** of the algorithm to variations in the `wp` and `rpf` parameters.",,,,,,,bb1b023f6dd29064,c4367cc11def7173,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-05bade95,code,fr,c084b497d6007054,"# CELLULE 28 : Visualisation 2D (Grille 4x4) Exploration - Tous Canaux, Zoom X/Y sur Pivots Meso par Config
 
 import plotly.graph_objects as go
@@ -4953,7 +5349,23 @@ Pour évaluer la robustesse et l'évolution des canaux dans le temps, nous recal
     *   Les canaux Macro, Méso et Micro sont entièrement recalculés (avec la logique de **fallback** si nécessaire pour Meso/Micro) en utilisant les paramètres de `final_config`.
 4.  **Stockage :** Les pivots et définitions de canaux résultants (`snapshot_results`) sont stockés pour chaque date.
 
-Permet de vérifier si les canaux récents étaient déjà présents ou similaires dans le passé.",,,,,,,,10b1e304046c44c4,,,,,,,
+Permet de vérifier si les canaux récents étaient déjà présents ou similaires dans le passé.","## 6. Temporal Analysis: Historical Snapshots
+
+To assess the robustness and evolution of channels over time, we recalculate the entire channel structure (Macro, Meso, Micro) as they would have been drawn at different **past dates (""snapshots"")**, using the **fixed configuration** `final_config`.
+
+### 6.1. Snapshot Calculation
+
+**Process:**
+
+1.  **Snapshot Dates:** A list of historical dates is defined (e.g., month-end).
+2.  **Fixed Configuration:** `final_config` is used for all calculations.
+3.  **Iterative Calculation:** For each snapshot date:
+    *   The price history *up to that date* is used.
+    *   The ZigZag pivots are recalculated on this truncated history.
+    *   The Macro, Meso, and Micro channels are fully recalculated (with the **fallback** logic if needed for Meso/Micro) using the parameters of `final_config`.
+4.  **Storage:** The resulting pivots and channel definitions (`snapshot_results`) are stored for each date.
+
+This makes it possible to check whether recent channels were already present or similar in the past.",,,,,,,10b1e304046c44c4,99b7895881c0bf1c,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-1a295536,code,fr,de2d3f7b1376659f,"# CELLULE HELPER (MODIFIÉE) : Fonction pour Calculer Tous les Canaux à une Date Donnée AVEC FALLBACK
 
 import pandas as pd
@@ -5135,7 +5547,7 @@ def calculate_all_channels_at_date(end_date_dt, full_history_df, config, zigzag_
         # traceback.print_exc()
         return None, None
 ",,,,,,,,de2d3f7b1376659f,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-6dbc73c3,markdown,fr,f57e472298424531,L'environnement QuantConnect est configuré et les données horaires BTCUSD sont téléchargées pour l'analyse multi-canal.,,,,,,,,f57e472298424531,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-6dbc73c3,markdown,fr,f57e472298424531,L'environnement QuantConnect est configuré et les données horaires BTCUSD sont téléchargées pour l'analyse multi-canal.,The QuantConnect environment is configured and the hourly BTCUSD data is downloaded for multi-channel analysis.,,,,,,,f57e472298424531,5a0745101873802c,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-b7957a76,code,fr,4ad6913ca3f7e58a,"# CELLULE 29 : Calcul des Snapshots Historiques (Révisée)
 
 import pandas as pd
@@ -5230,7 +5642,9 @@ print(f""{successful_channel_calcs} / {len(snapshot_dates)} snapshots ont pu cal
 ",,,,,,,,4ad6913ca3f7e58a,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-9e84ab58,markdown,fr,553050437efafbba,"### 6.2. Analyse de Stabilité des Pivots (Optionnel)
 
-Cette cellule analyse les résultats des snapshots (`snapshot_results`) pour quantifier la fréquence à laquelle les pivots définissant chaque ligne de canal (Macro, Méso, Micro - Support & Résistance) changent d'un snapshot à l'autre. Une faible fréquence de changement suggère une plus grande robustesse des canaux identifiés.",,,,,,,,553050437efafbba,,,,,,,
+Cette cellule analyse les résultats des snapshots (`snapshot_results`) pour quantifier la fréquence à laquelle les pivots définissant chaque ligne de canal (Macro, Méso, Micro - Support & Résistance) changent d'un snapshot à l'autre. Une faible fréquence de changement suggère une plus grande robustesse des canaux identifiés.","### 6.2. Pivot Stability Analysis (Optional)
+
+This cell analyzes the snapshot results (`snapshot_results`) to quantify how often the pivots defining each channel line (Macro, Meso, Micro - Support & Resistance) change from one snapshot to the next. A low frequency of change suggests greater robustness of the identified channels.",,,,,,,553050437efafbba,6f7613fe8a10f317,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-fa79f27d,code,fr,6fadf489a28f131e,"# CELLULE 29b (Nouvelle) : Analyse de la Stabilité des Pivots Définissant les Canaux
 
 import pandas as pd
@@ -5304,7 +5718,21 @@ Ce graphique présente les résultats de l'analyse temporelle (basée sur `final
     *   Canaux Macro, Méso et Micro déterminés à cette date.
 *   Chaque sous-graphique **zoome automatiquement** sur une fenêtre temporelle et une plage de prix définies par les **pivots des canaux Meso et Micro** (si disponibles, sinon Macro) calculés pour ce snapshot spécifique, pour mieux visualiser la structure récente.
 
-Permet d'observer comment la structure hiérarchique (calculée avec `final_config`) a **évolué au fil du temps**.",,,,,,,,b71528e6ea88a9da,,,,,,,
+Permet d'observer comment la structure hiérarchique (calculée avec `final_config`) a **évolué au fil du temps**.","### 6.3. Snapshot Visualization (Target Configuration)
+
+This chart presents the results of the temporal analysis (based on `final_config`) as a grid of subplots.
+
+**Grid Organization:**
+
+*   Each subplot corresponds to a **snapshot date**.
+*   The title indicates the end date of the history used.
+*   Each subplot displays:
+    *   Closing prices up to the snapshot.
+    *   ZigZag pivots from the snapshot.
+    *   Macro, Meso, and Micro channels determined on that date.
+*   Each subplot **automatically zooms** in on a time window and price range defined by the **pivots of the Meso and Micro channels** (if available, otherwise Macro) calculated for that specific snapshot, to better visualize the recent structure.
+
+Allows observing how the hierarchical structure (calculated with `final_config`) has **evolved over time**.",,,,,,,b71528e6ea88a9da,4e2157fc72d4bd48,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-bac6f11a,code,fr,d09db38319759005,"# CELLULE 30 (MODIFIÉE) : Visualisation 2D Snapshots - Zoom Meso/Micro
 
 import plotly.graph_objects as go
@@ -5493,7 +5921,11 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 
 Similaire à la visualisation précédente, mais cette cellule génère une grille de snapshots **pour plusieurs configurations de canaux sélectionnées** (définies par `indices_configs_snapshots`).
 
-Cela permet de comparer directement comment différentes configurations de `wp`/`rpf` auraient influencé l'évolution historique perçue des canaux. Chaque configuration génère son propre graphique de snapshots complet. Le zoom est également basé sur les pivots Meso/Micro (ou Macro en fallback) pour chaque snapshot de chaque configuration.",,,,,,,,8364d453b99539b1,,,,,,,
+Cela permet de comparer directement comment différentes configurations de `wp`/`rpf` auraient influencé l'évolution historique perçue des canaux. Chaque configuration génère son propre graphique de snapshots complet. Le zoom est également basé sur les pivots Meso/Micro (ou Macro en fallback) pour chaque snapshot de chaque configuration.","### 6.4. Visualization of Snapshots (Multiple Configurations)
+
+Similar to the previous visualization, but this cell generates a grid of snapshots **for several selected channel configurations** (defined by `indices_configs_snapshots`).
+
+This makes it possible to directly compare how different `wp`/`rpf` configurations would have influenced the perceived historical evolution of the channels. Each configuration generates its own complete snapshot chart. The zoom is also based on the Meso/Micro pivots (or Macro as a fallback) for each snapshot of each configuration.",,,,,,,8364d453b99539b1,96ad1ed36273ee20,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-fe5736d3,code,fr,93e2f3450c011374,"# CELLULE 30b (MODIFIÉE) : Affichage Snapshots pour Plusieurs Configs - Zoom Meso/Micro
 
 import pandas as pd
@@ -5693,7 +6125,17 @@ Après avoir développé et analysé la construction des canaux multi-échelles,
 
 1.  Définir une configuration de base pour la stratégie (quels canaux utiliser, paramètres de risque simples).
 2.  Implémenter une boucle de simulation \""manuelle\"" pour tester l'idée générale sur **plusieurs configurations de *construction de canaux***.
-3.  Comparer les performances (courbes d'équité) résultant de l'utilisation de différentes configurations de canaux dans la même logique de trading simpliste.",,,,,,,,de5c116a63cd1a39,,,,,,,
+3.  Comparer les performances (courbes d'équité) résultant de l'utilisation de différentes configurations de canaux dans la même logique de trading simpliste.","## 7. Backtesting (Simplified Example)
+
+After developing and analyzing the construction of multi-scale channels, this section presents a **simplified** example of backtesting a trading strategy that attempts to exploit these channels.
+
+**Warning:** The current implementation of the strategy is **rudimentary** and serves primarily as an illustration. It requires significant redesign to integrate more refined decision logic (distinct bounce/breakout, order types, advanced risk management, combination of multi-scale signals).
+
+**Objective of this section (current version):**
+
+1.  Define a basic configuration for the strategy (which channels to use, simple risk parameters).
+2.  Implement a \""manual\"" simulation loop to test the general idea on **several *channel construction* configurations**.
+3.  Compare the performance (equity curves) resulting from the use of different channel configurations within the same simplistic trading logic.",,,,,,,de5c116a63cd1a39,bb94182de2579680,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-c96189e6,markdown,fr,2a2ab0b19b9f9eae,"### 7.1. Configuration de la Simulation
 
 Ces cellules définissent les paramètres utilisés dans la boucle de simulation simplifiée.
@@ -5711,7 +6153,24 @@ Ces cellules définissent les paramètres utilisés dans la boucle de simulation
 *   **`configs_to_simulate` :** Stocke les dictionnaires de configuration complets.
 *   **`simulation_results` :** Initialise un dictionnaire pour stocker les résultats (courbe d'équité, trades) de chaque simulation.
 
-**Important :** La simulation itère sur `configs_to_simulate`, utilisant chaque configuration pour recalculer les canaux *et* appliquer la *même* logique de trading simpliste (`strategy_params`). Cela compare l'impact de la *construction des canaux* sur le résultat, pas différentes *stratégies de trading*.",,,,,,,,2a2ab0b19b9f9eae,,,,,,,
+**Important :** La simulation itère sur `configs_to_simulate`, utilisant chaque configuration pour recalculer les canaux *et* appliquer la *même* logique de trading simpliste (`strategy_params`). Cela compare l'impact de la *construction des canaux* sur le résultat, pas différentes *stratégies de trading*.","### 7.1. Simulation Configuration
+
+These cells define the parameters used in the simplified simulation loop.
+
+**Strategy Parameters (`algo_configuration`):**
+
+*   **`channel_params_for_strategy`:** References the `final_config` (will be *overwritten* by the configs to be tested in the loop).
+*   **`zigzag_threshold_percent_strategy`:** ZigZag threshold used.
+*   **`strategy_params`:** Very basic parameters controlling the *current* trading logic (e.g., `use_meso_signals`, `trade_on_bounce`, offsets). **Requires a major redesign for a real strategy.**
+*   **`algo_general_params`:** Theoretical recalculation frequency (`recalc_schedule`), history period (`lookback_days_algo`).
+
+**Selection of Configurations to Simulate (`configs_to_simulate`):**
+
+*   **`indices_a_tester`:** Allows selecting specifically which *channel construction* configurations (from `configurations_to_explore`) will be used for the comparative simulation.
+*   **`configs_to_simulate`:** Stores the complete configuration dictionaries.
+*   **`simulation_results`:** Initializes a dictionary to store the results (equity curve, trades) of each simulation.
+
+**Important:** The simulation iterates over `configs_to_simulate`, using each configuration to recalculate the channels *and* apply the *same* simplistic trading logic (`strategy_params`). This compares the impact of *channel construction* on the result, not different *trading strategies*.",,,,,,,2a2ab0b19b9f9eae,1849cabb2984d137,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-460ae725,code,fr,7be49f2954f21415,"# CELLULE 21 : Configuration Stratégie
 
 # --- Paramètres de Construction des Canaux ---
@@ -5757,7 +6216,7 @@ algo_configuration = {
 }
 
 print(""Configuration de l'algorithme de stratégie définie."")",,,,,,,,7be49f2954f21415,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-38972e5f,markdown,fr,0942da396346c814,Sélection des Configurations à Simuler.,,,,,,,,0942da396346c814,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-38972e5f,markdown,fr,0942da396346c814,Sélection des Configurations à Simuler.,Selection of Configurations to Simulate,,,,,,,0942da396346c814,6e273cd4474cfd3b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-d00b9e88,code,fr,ea48ed7e3cdb17e7,"# CELLULE 21b : Sélection des Configurations à Simuler
 
 # Choisir les index des configurations à tester depuis 'configurations_to_explore'
@@ -5808,7 +6267,31 @@ Cette cellule exécute la boucle de simulation pour chacune des configurations d
     *   Enregistre la courbe d'équité et les trades.
 3.  **Stockage des Résultats :** Stocke courbe d'équité, trades, équité finale et config utilisée dans `simulation_results`.
 
-**Note:** Simulation ""manuelle"" sans toutes les fonctionnalités `QCAlgorithm`.",,,,,,,,35cc3757f6264c89,,,,,,,
+**Note:** Simulation ""manuelle"" sans toutes les fonctionnalités `QCAlgorithm`.","### 7.2. Running the Comparative Simulation
+
+This cell runs the simulation loop for each of the *channel construction* configurations selected in `configs_to_simulate`.
+
+**Process for each tested configuration:**
+
+1.  **Historical Channel Calculation:**
+    *   Determines the recalculation dates (`recalc_frequency`).
+    *   For each date, calls `calculate_channels_for_simulation` (internal helper function), which:
+        *   Takes the relevant history (`lookback_days_sim`).
+        *   Calculates the ZigZag pivots.
+        *   Calculates the Macro/Meso/Micro channels using the `wp`/`rpf` parameters from the *current channel configuration*.
+    *   Stores the history of the calculated channels (`channel_history_df`).
+2.  **Bar-by-Bar Simulation:**
+    *   Iterates over the hourly data for the simulation period.
+    *   For each bar:
+        *   Retrieves the most recent active channels.
+        *   Applies a *simplified* trading logic (based on `strategy_params`): exit on opposite channel, entry on touch of active channel (support/resistance).
+        *   Calculates the position size (`risk_per_trade_pct`).
+        *   Simulates market orders and fees (`fee_model`).
+        *   Updates position, cash, equity.
+    *   Records the equity curve and trades.
+3.  **Result Storage:** Stores the equity curve, trades, final equity, and config used in `simulation_results`.
+
+**Note:** “Manual” simulation without all the `QCAlgorithm` features.",,,,,,,35cc3757f6264c89,5bf52bfce12dc1b4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-1b50d80b,code,fr,fc35860fec7242cf,"# --- AJOUT : Définition de la fonction manquante ---
 def calculate_channels_for_simulation(current_sim_time, full_history_df, lookback_days, zigzag_threshold, config):
     """"""
@@ -5918,7 +6401,7 @@ def calculate_channels_for_simulation(current_sim_time, full_history_df, lookbac
         # traceback.print_exc() # Décommenter pour le debug
         return None
 # --- FIN AJOUT ---",,,,,,,,fc35860fec7242cf,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-c960c9dd,markdown,fr,2fe13f625150a277,"La simulation des stratégies de canal (Macro, Méso, Micro) est exécutée sur les données historiques BTC pour comparer les performances.",,,,,,,,2fe13f625150a277,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-c960c9dd,markdown,fr,2fe13f625150a277,"La simulation des stratégies de canal (Macro, Méso, Micro) est exécutée sur les données historiques BTC pour comparer les performances.","The simulation of channel strategies (Macro, Meso, Micro) is run on historical BTC data to compare performance.",,,,,,,2fe13f625150a277,9fe9a874bdc544bd,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-3c1147cd,code,fr,7bc4c231fdca6437,"# CELLULE 31 & 32 combinée : Boucle de Simulation pour Plusieurs Configurations
 
 import pandas as pd
@@ -6151,7 +6634,19 @@ Cette cellule analyse et visualise les résultats stockés dans `simulation_resu
     *   Profit & Loss total approximatif.
 2.  **Graphique Comparatif :** Trace les courbes d'équité de toutes les simulations sur un seul graphique `matplotlib`, avec la configuration et l'équité finale dans la légende.
 
-Permet de comparer visuellement quelle configuration de *construction de canaux* a potentiellement mené à de meilleurs résultats avec la logique de trading *simpliste* utilisée.",,,,,,,,ac308c89c34b86b4,,,,,,,
+Permet de comparer visuellement quelle configuration de *construction de canaux* a potentiellement mené à de meilleurs résultats avec la logique de trading *simpliste* utilisée.","### 7.3. Comparative Analysis of Simulation Results
+
+This cell analyzes and visualizes the results stored in `simulation_results`.
+
+**Actions:**
+
+1.  **Summary Table:** Displays for each tested configuration:
+    *   Final equity.
+    *   Total number of trades.
+    *   Approximate total Profit & Loss.
+2.  **Comparative Chart:** Plots the equity curves of all simulations on a single `matplotlib` chart, with the configuration and final equity in the legend.
+
+Allows a visual comparison of which *channel construction* configuration may have led to better results with the *simplistic* trading logic used.",,,,,,,ac308c89c34b86b4,918619a46156de55,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-d7e8ec9e,code,fr,9e524ca604286c3c,"# CELLULE 33 : Analyse Comparative des Simulations
 
 import matplotlib.pyplot as plt
@@ -6192,7 +6687,7 @@ else:
     ax.grid(True)
     plt.tight_layout()
     plt.show()",,,,,,,,9e524ca604286c3c,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-f1c50a36,markdown,fr,0082678255b1a41d,Définition des stratégies (chromosomes) à tester : action_bounce_long et action_breakout avec stop_loss_pct et target_rr_ratio.,,,,,,,,0082678255b1a41d,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-f1c50a36,markdown,fr,0082678255b1a41d,Définition des stratégies (chromosomes) à tester : action_bounce_long et action_breakout avec stop_loss_pct et target_rr_ratio.,Definition of the strategies (chromosomes) to test: action_bounce_long and action_breakout with stop_loss_pct and target_rr_ratio.,,,,,,,0082678255b1a41d,924cc251c4f93b35,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-5f0eee34,code,fr,35a61dc9715bf98b,"# Définition des Stratégies à Tester
 
 import pandas as pd
@@ -6351,7 +6846,7 @@ if 'final_config' not in locals():
     raise NameError(""La configuration de canaux 'final_config' n'a pas été définie ou sélectionnée."")
 fixed_channel_config = final_config
 print(f""Utilisation de la configuration de canaux fixe : '{fixed_channel_config.get('label', 'N/A')}'"")",,,,,,,,35a61dc9715bf98b,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-a55df24d,markdown,fr,3febaea88c4a6f76,Définition des fonctions auxiliaires get_channel_value_at_time et simulate_trade pour la simulation de stratégie.,,,,,,,,3febaea88c4a6f76,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-a55df24d,markdown,fr,3febaea88c4a6f76,Définition des fonctions auxiliaires get_channel_value_at_time et simulate_trade pour la simulation de stratégie.,Definition of the helper functions get_channel_value_at_time and simulate_trade for strategy simulation.,,,,,,,3febaea88c4a6f76,c03db96aa3232fff,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-9b30c5ce,code,fr,bff957173d519df4,"# CELLULE HELPER (Mise à jour pour inclure channel_trend)
 
 import pandas as pd
@@ -6457,7 +6952,7 @@ def apply_fees(order, symbol_security, fee_model):
 
 print(""Fonctions helper (avec check_conditions mis à jour) définies."")
 ",,,,,,,,bff957173d519df4,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-cd0e06d9,markdown,fr,c437632040a6e6b8,La performance HODL est calculée comme benchmark et la boucle principale de simulation multi-stratégies est lancée sur les canaux.,,,,,,,,c437632040a6e6b8,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-cd0e06d9,markdown,fr,c437632040a6e6b8,La performance HODL est calculée comme benchmark et la boucle principale de simulation multi-stratégies est lancée sur les canaux.,The HODL performance is calculated as a benchmark and the main multi-strategy simulation loop is launched on the channels.,,,,,,,c437632040a6e6b8,96690fa81d2016ed,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-890a6c1a,code,fr,9c01b7710eb5bfbe,"# CELLULE PRINCIPALE : Simulation des Stratégies sur Canaux Fixes (Révisée)
 
 import pandas as pd
@@ -6781,7 +7276,7 @@ strategy_simulation_results = {} # Réinitialiser les résultats
 # # --- Fin de la Boucle sur les Stratégies ---
 # print(""\n--- Toutes les simulations de stratégies sont terminées ---"")
 ",,,,,,,,9c01b7710eb5bfbe,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-f2a82e2b,markdown,fr,9b5982d8a11b73b4,Les stratégies candidates de trading par canal sont définies avec leurs règles d'entrée/sortie basées sur les niveaux Macro/Méso/Micro.,,,,,,,,9b5982d8a11b73b4,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-f2a82e2b,markdown,fr,9b5982d8a11b73b4,Les stratégies candidates de trading par canal sont définies avec leurs règles d'entrée/sortie basées sur les niveaux Macro/Méso/Micro.,Candidate channel trading strategies are defined with their entry/exit rules based on Macro/Meso/Micro levels.,,,,,,,9b5982d8a11b73b4,474ebd3079f4d64a,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-220386a5,code,fr,98cbca168b29477b,"# # CELLULE D'ANALYSE : Analyse Comparative des Simulations par Stratégie
 
 # import matplotlib.pyplot as plt
@@ -6841,7 +7336,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 #     else:
 #         print(""\nAucune courbe d'équité à tracer."")
 ",,,,,,,,98cbca168b29477b,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-873b96d1,markdown,fr,ff855d4b6e84c136,Le helper de simulation est mis à jour pour inclure la variable `channel_trend` nécessaire aux calculs de signal multi-canal.,,,,,,,,ff855d4b6e84c136,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-873b96d1,markdown,fr,ff855d4b6e84c136,Le helper de simulation est mis à jour pour inclure la variable `channel_trend` nécessaire aux calculs de signal multi-canal.,The simulation helper is updated to include the `channel_trend` variable required for multi-channel signal calculations.,,,,,,,ff855d4b6e84c136,ae60a0c4801268c5,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-7dc1ff86,code,fr,b3bdf456c4670196,"# CELLULE 1 (RÉVISÉE) : Espace Paramétrique pour la Génération de Stratégies
 
 import itertools
@@ -6890,7 +7385,7 @@ print(f""Nombre total de combinaisons brutes générées avec l'espace révisé 
 # --- Stockage pour les stratégies générées ---
 generated_strategies = []
 ",,,,,,,,b3bdf456c4670196,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-682af53b,markdown,fr,d9ec5c7bd547c0bf,La simulation principale est lancée pour évaluer chaque stratégie de canal sur l'historique BTC avec la configuration finale retenue.,,,,,,,,d9ec5c7bd547c0bf,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-682af53b,markdown,fr,d9ec5c7bd547c0bf,La simulation principale est lancée pour évaluer chaque stratégie de canal sur l'historique BTC avec la configuration finale retenue.,The main simulation is run to evaluate each channel strategy on the BTC history with the final selected configuration.,,,,,,,d9ec5c7bd547c0bf,3371d05359c1e3ec,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-f4638ca3,code,fr,ba40b11f60c8bf7a,"# CELLULE NOUVELLE : Fonction pour Créer une Stratégie (Chromosome) depuis les Paramètres
 
 print(""Définition de la fonction de création de stratégie..."")
@@ -6999,7 +7494,7 @@ def create_strategy_from_params(param_combination, param_keys):
 
 print(""Fonction de création de stratégie définie."")
 ",,,,,,,,ba40b11f60c8bf7a,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-b88a6b20,markdown,fr,9541c025ecaff0aa,Définition de create_strategy_from_params pour convertir un chromosome DEAP en configuration de stratégie de canal.,,,,,,,,9541c025ecaff0aa,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-b88a6b20,markdown,fr,9541c025ecaff0aa,Définition de create_strategy_from_params pour convertir un chromosome DEAP en configuration de stratégie de canal.,Definition of create_strategy_from_params to convert a DEAP chromosome into a channel strategy configuration.,,,,,,,9541c025ecaff0aa,3f48fa18733b895b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-08f00ee5,code,fr,3380d4220ce78365,"# CELLULE 3 (MODIFIÉE) : Génération et Filtrage/Échantillonnage des Stratégies
 
 import random # Importer random pour l'échantillonnage
@@ -7048,7 +7543,7 @@ if strategies_to_test:
 else:
     print(""\nWARN: Aucune stratégie sélectionnée pour la simulation."")
 ",,,,,,,,3380d4220ce78365,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-68b8971e,markdown,fr,73d3e3e75043e51c,"L'espace paramétrique des stratégies de canal est défini (ratio risque/récompense, type de sortie) pour l'exploration par échantillonnage.",,,,,,,,73d3e3e75043e51c,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-68b8971e,markdown,fr,73d3e3e75043e51c,"L'espace paramétrique des stratégies de canal est défini (ratio risque/récompense, type de sortie) pour l'exploration par échantillonnage.","The parameter space of channel strategies is defined (risk/reward ratio, exit type) for sampling-based exploration.",,,,,,,73d3e3e75043e51c,316596b95b1741d4,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-e211b53b,code,fr,82c616306fda29cc,"# # CELLULE PRINCIPALE : Simulation des Stratégies Générées (CORRIGÉE pour NameError)
 
 # import pandas as pd
@@ -7237,7 +7732,7 @@ if loop_bars_all.empty:
 # # --- Fin Boucle Stratégies ---
 # print(f""\n--- Simulation terminée pour {len(strategy_simulation_results)} stratégies ---"")
 ",,,,,,,,82c616306fda29cc,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-a43fab4c,markdown,fr,17e5c9da73c3325c,La fonction de création des chromosomes de stratégie est définie pour transformer les paramètres en règles de trading exécutables.,,,,,,,,17e5c9da73c3325c,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-a43fab4c,markdown,fr,17e5c9da73c3325c,La fonction de création des chromosomes de stratégie est définie pour transformer les paramètres en règles de trading exécutables.,The function for creating strategy chromosomes is defined to transform parameters into executable trading rules.,,,,,,,17e5c9da73c3325c,eeed7abf4a67bece,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-3eb96d38,code,fr,9891bd5571faa3f7,"# # CELLULE D'ANALYSE : Analyse Comparative des Stratégies Générées
 
 # import matplotlib.pyplot as plt
@@ -7332,7 +7827,7 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-Mult
 #     else:
 #         print(""Aucun résultat de simulation de stratégie à afficher."")
 ",,,,,,,,9891bd5571faa3f7,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-e1865094,markdown,fr,327011e8952c305e,"Configuration du framework DEAP : création des types Individual/Fitness et enregistrement des opérateurs (mutation, croisement, sélection).",,,,,,,,327011e8952c305e,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-e1865094,markdown,fr,327011e8952c305e,"Configuration du framework DEAP : création des types Individual/Fitness et enregistrement des opérateurs (mutation, croisement, sélection).","Configuration of the DEAP framework: creation of the Individual/Fitness types and registration of the operators (mutation, crossover, selection).",,,,,,,327011e8952c305e,7848df5c2a6d9494,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-b65529ae,code,fr,86b906f1b09189f0,"# CELLULE GA-1 : Setup de l'Algorithme Génétique avec DEAP (CORRIGÉE v2 + LOGGING)
 
 import random
@@ -7588,7 +8083,7 @@ toolbox.register(""mutate"", mutate_individual, indpb=0.1)
 toolbox.register(""select"", tools.selTournament, tournsize=3)
 
 logger.info(""Configuration DEAP (corrigée v2 avec logging) terminée."")",,,,,,,,86b906f1b09189f0,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-6a6a24d1,markdown,fr,3f83cae7e77d72ca,"Exécution de l'algorithme génétique DEAP (POPULATION_SIZE=50, GENERATIONS=20) avec logging pour optimiser les paramètres de canal ZigZag sur BTC.",,,,,,,,3f83cae7e77d72ca,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-6a6a24d1,markdown,fr,3f83cae7e77d72ca,"Exécution de l'algorithme génétique DEAP (POPULATION_SIZE=50, GENERATIONS=20) avec logging pour optimiser les paramètres de canal ZigZag sur BTC.","Execution of the DEAP genetic algorithm (POPULATION_SIZE=50, GENERATIONS=20) with logging to optimize ZigZag channel parameters on BTC.",,,,,,,3f83cae7e77d72ca,cdfbadd57c6ed959,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-590e9d6e,code,fr,fc4f8b8baf7c2fd1,"# CELLULE GA-2 : Exécution de l'Algorithme Génétique (Avec Logging)
 
 logger.info(""Lancement de l'algorithme génétique..."")
@@ -7641,7 +8136,7 @@ else:
 # Vider le cache après l'exécution
 memoization_cache.clear()
 logger.debug(""Cache de fitness vidé."")",,,,,,,,fc4f8b8baf7c2fd1,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-58bbc426,markdown,fr,1b6d2b0b374374de,L'algorithme génétique DEAP est exécuté pour optimiser les paramètres de la stratégie de canal multi-échelle sur les données BTC.,,,,,,,,1b6d2b0b374374de,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-58bbc426,markdown,fr,1b6d2b0b374374de,L'algorithme génétique DEAP est exécuté pour optimiser les paramètres de la stratégie de canal multi-échelle sur les données BTC.,The DEAP genetic algorithm is run to optimize the parameters of the multi-scale channel strategy on the BTC data.,,,,,,,1b6d2b0b374374de,7051002e87fc4539,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb,cell-e36fe622,code,fr,459e330ecf80cdec,"# CELLULE GA-3 : Analyse des Résultats de l'AG (CORRIGÉE - Erreur action_details)
 
 import matplotlib.pyplot as plt
@@ -7868,7 +8363,21 @@ Ce notebook explore l'approche ML RandomForest pour la rotation sectorielle sur 
 5. Calibration vers main.py
 6. Conclusion et pistes d'iteration
 
-**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.",,,,,,,,9b5851f785b0e700,,,,,,,
+**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.","# Partner Course Kit - ML RandomForest Sector Rotation Research
+
+This notebook explores the RandomForest ML approach for sector rotation across 9 U.S. sector ETFs.
+
+**Objective**: Identify the best hyperparameters and features to achieve a Sharpe >= 0.75 over 2015-2024.
+
+**Research plan**:
+1. Exploration of sector data
+2. Feature engineering and importance analysis
+3. Iteration 1: RF baseline (200 trees, depth 6)
+4. Iteration 2: Optimized RF (selected features, adjusted threshold)
+5. Calibration toward main.py
+6. Conclusion and iteration paths
+
+**Note**: This notebook uses QuantBook (QuantConnect Cloud environment). Execution via QC Lab only.",,,,,,,9b5851f785b0e700,a4fc763fbd71ee50,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-41ab9944,code,fr,876b683f9b597ad2,"from AlgorithmImports import *
 qb = QuantBook()
 
@@ -7883,7 +8392,9 @@ print(f""Universe: {len(tickers)} sector ETFs + SPY"")
 print(f""Tickers: {', '.join(tickers)}"")",,,,,,,,876b683f9b597ad2,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-70d7edfe,markdown,fr,dc725301d8ceddcd,"## 1. Exploration des donnees sectorielles
 
-Telechargement de 10 ans d'historique (2015-2024) et analyse des correlations et performances relatives.",,,,,,,,dc725301d8ceddcd,,,,,,,
+Telechargement de 10 ans d'historique (2015-2024) et analyse des correlations et performances relatives.","## 1. Exploration of Sector Data
+
+Download of 10 years of historical data (2015-2024) and analysis of correlations and relative performance.",,,,,,,dc725301d8ceddcd,01206fb6375c62cf,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-99971972,code,fr,5656113db982975a,"# Download 10 years of daily data
 history = qb.history(list(symbols.values()) + [spy], 2520, Resolution.DAILY)
 print(f""Data shape: {history.shape}"")
@@ -7926,7 +8437,9 @@ print(f""Avg correlation: {corr.values[np.triu_indices_from(corr.values, k=1)].m
 print(f""Max correlation: {corr.values[np.triu_indices_from(corr.values, k=1)].max():.3f}"")",,,,,,,,e7ff60de2839bd72,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-23d474fa,markdown,fr,116ae3d54b06a2c9,"## 2. Feature Engineering et Analyse d'Importance
 
-Calcul de 14 features techniques par secteur, puis entrainement d'un RF pour analyser l'importance des features.",,,,,,,,116ae3d54b06a2c9,,,,,,,
+Calcul de 14 features techniques par secteur, puis entrainement d'un RF pour analyser l'importance des features.","## 2. Feature Engineering and Importance Analysis
+
+Calculation of 14 technical features per sector, then training of an RF to analyze feature importance.",,,,,,,116ae3d54b06a2c9,cee7ffa81bf5a6fb,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-b5dee86f,code,fr,9d8e45434741b9e3,"from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import warnings
@@ -8040,7 +8553,19 @@ Parametres :
 - max_positions = 4
 - Training window = 4 ans (1008 jours)
 
-Resultat backtest QC Cloud (2015-2024) : voir cellule suivante.",,,,,,,,13d31faf112de648,,,,,,,
+Resultat backtest QC Cloud (2015-2024) : voir cellule suivante.","## 3. Iteration 1: RF Baseline (200 trees, depth 6, 14 features)
+
+Reference configuration with the default parameters from main.py.
+
+Parameters:
+- n_estimators = 200
+- max_depth = 6
+- min_samples_leaf = 15
+- probability_threshold = 0.55
+- max_positions = 4
+- Training window = 4 years (1008 days)
+
+QC Cloud backtest result (2015-2024): see next cell.",,,,,,,13d31faf112de648,460dc63b3b449ab6,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-6dd76863,code,fr,be307edaa178f3cb,"# Quick validation: walk-forward accuracy proxy
 from sklearn.model_selection import cross_val_score
 
@@ -8064,7 +8589,12 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-M
 Hypotheses testees :
 - Suppression des features les moins importantes (< 0.05)
 - Threshold plus agressif (0.60) pour reduire le bruit
-- max_depth reduit a 4 pour limiter l'overfitting",,,,,,,,57b5d3d1cd6efcfd,,,,,,,
+- max_depth reduit a 4 pour limiter l'overfitting","## 4. Iteration 2: Optimized RF (selected features + adjusted threshold)
+
+Tested hypotheses:
+- Removal of the least important features (< 0.05)
+- More aggressive threshold (0.60) to reduce noise
+- max_depth reduced to 4 to limit overfitting",,,,,,,57b5d3d1cd6efcfd,e19f1cbe2000ee1f,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-40187a37,code,fr,eadea4cd26913bf3,"# Iteration 2: Feature selection + adjusted threshold
 top_features = importance[importance > 0.05].index.tolist()
 print(f""Selected {len(top_features)}/{len(X.columns)} features (importance > 0.05):"")
@@ -8099,7 +8629,9 @@ for ticker in tickers:
     print(f""  {ticker}: P(buy)={buy_prob:.3f} [{signal}]"")",,,,,,,,8f93bb54ceafbb55,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-4ca70894,markdown,fr,64f61ea99abe835e,"## 5. Calibration vers main.py
 
-Mapping des parametres retenus entre le notebook de recherche et le main.py final.",,,,,,,,64f61ea99abe835e,,,,,,,
+Mapping des parametres retenus entre le notebook de recherche et le main.py final.","## 5. Calibration toward main.py
+
+Mapping of the selected parameters between the research notebook and the final main.py.",,,,,,,64f61ea99abe835e,6461e241b88ad90b,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb,cell-47aed2cb,code,fr,2cd93dd5242de86b,"print(""=""*60)
 print(""CALIBRATION: research.ipynb -> main.py"")
 print(""=""*60)
@@ -8145,7 +8677,29 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-M
 - Tester un mode 3-classes (BUY/FLAT/SELL) au lieu de binaire
 - Implementer un walk-forward OOS strict (train IS, evaluate OOS)
 - Ajouter un stop-loss individualise par position (ATR-based)
-- Tester XGBoost et GradientBoosting pour comparaison",,,,,,,,9f658cc48cdfb708,,,,,,,
+- Tester XGBoost et GradientBoosting pour comparaison","## Conclusion and Iteration Paths
+
+### Results
+
+| Iteration | Features | max_depth | CV Accuracy | Edge vs Baseline | Observations |
+|-----------|----------|-----------|-------------|-----------------|-------------|
+| 1 (baseline) | 14 | 6 | To be completed | To be completed | Reference, good generalization |
+| 2 (optimized) | ~8 | 4 | To be completed | To be completed | Selected features, reduced overfitting |
+
+### Key Points
+
+1. **Sector ETFs**: average correlation ~0.7, requires strict filtering to avoid overconcentration
+2. **Features**: momentum (5/10/20/50d) and SMA ratios generally dominate importance
+3. **Bear regime**: the SPY<SMA200 filter is critical for limiting losses in bear markets
+4. **Threshold**: 0.55 is a good trade-off between selectivity and diversification
+
+### Paths for Iteration N+1
+
+- Add fundamental features (P/E ratio, dividend yield via ObjectStore)
+- Test a 3-class mode (BUY/FLAT/SELL) instead of binary
+- Implement a strict walk-forward OOS (train IS, evaluate OOS)
+- Add an individualized stop-loss per position (ATR-based)
+- Test XGBoost and GradientBoosting for comparison",,,,,,,9f658cc48cdfb708,ec7d6c724d56f680,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-cd9d09f1,markdown,fr,ed6c5865d0f75bc4,"# Partner Course Kit - Recherche ML XGBoost Sector Rotation
 
 Ce notebook explore l'approche ML XGBoost (Gradient Boosting) pour la rotation sectorielle sur 9 ETFs sectoriels americains.
@@ -8161,7 +8715,22 @@ Ce notebook explore l'approche ML XGBoost (Gradient Boosting) pour la rotation s
 6. Calibration vers main.py
 7. Conclusion et pistes d'iteration
 
-**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.",,,,,,,,ed6c5865d0f75bc4,,,,,,,
+**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.","# Partner Course Kit - ML Research XGBoost Sector Rotation
+
+This notebook explores the XGBoost ML approach (Gradient Boosting) for sector rotation across 9 U.S. sector ETFs.
+
+**Objective**: Identify the best hyperparameters and features to achieve a Sharpe >= 0.78 over 2015-2024.
+
+**Research plan**:
+1. Exploration of sector data
+2. Feature engineering (20 technical indicators)
+3. Iteration 1: GBM baseline (100 trees, depth 4, lr=0.05)
+4. Iteration 2: Optimized GBM (adjusted lr, subsample tuning)
+5. Analysis of predictions by regime (bull/bear)
+6. Calibration toward main.py
+7. Conclusion and iteration paths
+
+**Note**: This notebook uses QuantBook (QuantConnect Cloud environment). Execution via QC Lab only.",,,,,,,ed6c5865d0f75bc4,9104b385d9e0d735,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-41ab9944,code,fr,876b683f9b597ad2,"from AlgorithmImports import *
 qb = QuantBook()
 
@@ -8176,7 +8745,9 @@ print(f""Universe: {len(tickers)} sector ETFs + SPY"")
 print(f""Tickers: {', '.join(tickers)}"")",,,,,,,,876b683f9b597ad2,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-70d7edfe,markdown,fr,ab26e5c414db5fb6,"## 1. Exploration des donnees sectorielles
 
-Telechargement de 10 ans d'historique (2015-2024) et analyse des rendements croises.",,,,,,,,ab26e5c414db5fb6,,,,,,,
+Telechargement de 10 ans d'historique (2015-2024) et analyse des rendements croises.","## 1. Exploration of sector data
+
+Downloading 10 years of history (2015–2024) and analyzing cross-returns.",,,,,,,ab26e5c414db5fb6,c2935cc55975f53d,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-99971972,code,fr,ed1776aa30b73267,"# Download 10 years of daily data
 history = qb.history(list(symbols.values()) + [spy], 2520, Resolution.DAILY)
 print(f""Data shape: {history.shape}"")
@@ -8202,7 +8773,11 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 
 Le modele XGBoost utilise 20 features techniques, soit 6 de plus que le RandomForest :
 - Indicateurs standards : RSI, Bollinger, MACD, Momentum
-**Features supplementaires** : Stochastique, ATR ratio, volatilite 5j, rendements 1j/5j/20j, ratios SMA supplementaires",,,,,,,,5780b43314959316,,,,,,,
+**Features supplementaires** : Stochastique, ATR ratio, volatilite 5j, rendements 1j/5j/20j, ratios SMA supplementaires","## 2. Feature Engineering (20 indicators)
+
+The XGBoost model uses 20 technical features, i.e. 6 more than the RandomForest:
+- Standard indicators: RSI, Bollinger, MACD, Momentum
+**Additional features**: Stochastic, ATR ratio, 5-day volatility, 1-day/5-day/20-day returns, additional SMA ratios",,,,,,,5780b43314959316,51adc7d37ff7311d,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-fc6b143e,code,fr,ce16bf2e88337823,"from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
@@ -8335,7 +8910,18 @@ Parametres :
 - learning_rate = 0.05
 - min_samples_leaf = 15
 - subsample = 0.8
-- Training window = 3 ans (756 jours)",,,,,,,,2ff27241b2a78fae,,,,,,,
+- Training window = 3 ans (756 jours)","## 3. Iteration 1: GBM Baseline (100 trees, depth 4, lr=0.05)
+
+Reference configuration from main.py. Uses GradientBoostingRegressor in regression mode
+(prediction of future return rather than binary classification).
+
+Parameters:
+- n_estimators = 100
+- max_depth = 4
+- learning_rate = 0.05
+- min_samples_leaf = 15
+- subsample = 0.8
+- Training window = 3 years (756 days)",,,,,,,2ff27241b2a78fae,7e712a0646e60548,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-852b8b77,code,fr,2e6bcefe64649d08,"# Iteration 1: GBM Baseline
 gbm1 = GradientBoostingRegressor(
     n_estimators=100, max_depth=4, learning_rate=0.05,
@@ -8372,7 +8958,12 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 Hypotheses testees :
 - Learning rate plus eleve (0.1) avec plus d'estimateurs (200)
 - Suppression des features les moins importantes
-- Subsample reduit a 0.7 pour plus de regularisation",,,,,,,,99f5dc58cab77c7e,,,,,,,
+- Subsample reduit a 0.7 pour plus de regularisation","## 4. Iteration 2: Optimized GBM (adjusted lr, selected features)
+
+Tested hypotheses:
+- Higher learning rate (0.1) with more estimators (200)
+- Removal of the least important features
+- Subsample reduced to 0.7 for more regularization",,,,,,,99f5dc58cab77c7e,3071468fb18b15ea,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-6dd76863,code,fr,9c924acdd695769b,"# Iteration 2: Feature selection + adjusted learning rate
 top_features = importance[importance > 0.03].index.tolist()
 print(f""Selected {len(top_features)}/{len(X.columns)} features (importance > 0.03):"")
@@ -8412,7 +9003,10 @@ for ticker in tickers:
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-40187a37,markdown,fr,a2fa718f24172c9f,"## 5. Analyse des Predictions par Regime (Bull/Bear)
 
 Comparaison des predictions du modele en mode bull (SPY > SMA200) vs bear (SPY < SMA200).
-Le bear mode reduit le nombre de positions a 2 et exige un seuil de prediction plus eleve.",,,,,,,,a2fa718f24172c9f,,,,,,,
+Le bear mode reduit le nombre de positions a 2 et exige un seuil de prediction plus eleve.","## 5. Analysis of Predictions by Regime (Bull/Bear)
+
+Comparison of the model’s predictions in bull mode (SPY > SMA200) vs bear mode (SPY < SMA200).
+Bear mode reduces the number of positions to 2 and requires a higher prediction threshold.",,,,,,,a2fa718f24172c9f,a339f6b88af657c7,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-4ee3fae2,code,fr,d3e3af1826e9193c,"# Regime analysis: bull vs bear prediction quality
 # Reuse SPY close data from cell 3 batch history (close_prices has all symbols including SPY)
 spy_col = [c for c in close_prices.columns if 'SPY' in str(c)]
@@ -8473,7 +9067,9 @@ else:
     print(""Insufficient data for regime analysis (need >= 20 observations per regime)"")",,,,,,,,d3e3af1826e9193c,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-4ca70894,markdown,fr,9f45dadf2ade4ab0,"## 6. Calibration vers main.py
 
-Mapping des parametres retenus entre le notebook de recherche et le main.py final.",,,,,,,,9f45dadf2ade4ab0,,,,,,,
+Mapping des parametres retenus entre le notebook de recherche et le main.py final.","## 6. Calibration to main.py
+
+Mapping of the selected parameters between the research notebook and the final main.py.",,,,,,,9f45dadf2ade4ab0,78801021a3674eca,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-ML-XGBoost/research.ipynb,cell-47aed2cb,code,fr,ef2d3c7889845a5c,"print(""=""*60)
 print(""CALIBRATION: research.ipynb -> main.py"")
 print(""=""*60)
@@ -8521,7 +9117,29 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/02-M
 - Ajouter des features macro (VIX, yield curve via ObjectStore)
 - Tester XGBoost natif (xgboost library) plutot que sklearn GBM
 - Ajouter un ensemble RF + GBM pour diversification des predictions
-- Tester un stop-loss ATR-based par position",,,,,,,,6151a8640b7734a3,,,,,,,
+- Tester un stop-loss ATR-based par position","## Conclusion and Iteration Paths
+
+### Results
+
+| Iteration | Features | Trees | LR | CV R2 | RMSE | Observations |
+|-----------|----------|-------|----|-------|------|-------------|
+| 1 (baseline) | 20 | 100 | 0.05 | To complete | To complete | Reference, good generalization |
+| 2 (optimized) | ~15 | 200 | 0.1 | To complete | To complete | Selected features, more aggressive lr |
+
+### Key Points
+
+1. **Regression vs classification**: predicting future return makes it possible to differentiate sectors beyond simple positive/negative
+2. **Additional features**: Stochastic and ATR ratio provide information about the volatility regime
+3. **Bi-weekly rebalancing**: more responsive than the RF monthly rebalancing, captures regime changes more quickly
+4. **3-year training window**: trade-off between sufficient data and signal relevance
+
+### Paths for iteration N+1
+
+- Implement a strict walk-forward OOS (train IS, evaluate OOS)
+- Add macro features (VIX, yield curve via ObjectStore)
+- Test native XGBoost (xgboost library) rather than sklearn GBM
+- Add an RF + GBM ensemble for prediction diversification
+- Test an ATR-based stop-loss per position",,,,,,,6151a8640b7734a3,3018279f6063c167,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-cd9d09f1,markdown,fr,215ad166a102e61e,"# Partner Course Kit - Recherche Framework Composite (Alpha Models)
 
 Ce notebook explore l'approche QC Framework avec modele composite combinant deux alpha models :
@@ -8539,7 +9157,24 @@ Ce notebook explore l'approche QC Framework avec modele composite combinant deux
 6. Calibration du MaxDrawdown Circuit Breaker
 7. Calibration vers main.py
 
-**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.",,,,,,,,215ad166a102e61e,,,,,,,
+**Note** : Ce notebook utilise QuantBook (environnement QuantConnect Cloud). Execution via QC Lab uniquement.","# Partner Course Kit - Composite Framework Research (Alpha Models)
+
+This notebook explores the QC Framework approach with a composite model combining two alpha models:
+1. **SectorMomentum**: Long sectors with positive momentum above SMA200
+2. **Defensive**: Rotation into safe-haven assets (TLT, GLD, XLU) when SPY < SMA200
+
+**Objective**: Calibrate the 70/30 allocation between the two alpha models to achieve Sharpe >= 0.79.
+
+**Research plan**:
+1. Analysis of universes (sectors vs safe havens)
+2. Alpha Model 1 backtest: SectorMomentum only
+3. Alpha Model 2 backtest: Defensive only
+4. Correlation analysis between the two signals
+5. Optimal allocation (test 50/50, 60/40, 70/30, 80/20)
+6. MaxDrawdown Circuit Breaker calibration
+7. Calibration toward main.py
+
+**Note**: This notebook uses QuantBook (QuantConnect Cloud environment). Execution via QC Lab only.",,,,,,,215ad166a102e61e,be4847a3d3f7f548,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-41ab9944,code,fr,da4c6d50b1563841,"from AlgorithmImports import *
 qb = QuantBook()
 
@@ -8563,7 +9198,9 @@ print(f""Defensive universe: {len(defensive_tickers)} assets"")
 print(f""Total: {len(sector_tickers) + len(defensive_tickers)} unique assets (XLU shared)"")",,,,,,,,da4c6d50b1563841,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-70d7edfe,markdown,fr,ccfac2edc547bb12,"## 1. Analyse des Univers
 
-Comparaison des profils rendement/risque entre secteurs et actifs refuges.",,,,,,,,ccfac2edc547bb12,,,,,,,
+Comparaison des profils rendement/risque entre secteurs et actifs refuges.","## 1. Analysis of Universes
+
+Comparison of return/risk profiles between sectors and safe-haven assets.",,,,,,,ccfac2edc547bb12,a9048be633ffdea5,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-99971972,code,fr,3e7da397fe5b94e5,"# Download 10 years of data for all assets
 all_tickers = list(set(sector_tickers + defensive_tickers)) + ['SPY']
 all_symbols = list(sector_symbols.values()) + list(defensive_symbols.values()) + [spy]
@@ -8618,7 +9255,10 @@ print(f""Max sector-defensive correlation: {np.max(sector_def_corr):.3f}"")",,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-fc6b143e,markdown,fr,d898d1bc839e9b52,"## 2. Alpha Model 1 : SectorMomentum
 
 Strategie momentum simple : long sectors au-dessus de SMA200 avec momentum positif (126j).
-Insights hebdomadaires, confidence weighted par la force du momentum.",,,,,,,,d898d1bc839e9b52,,,,,,,
+Insights hebdomadaires, confidence weighted par la force du momentum.","## 2. Alpha Model 1: SectorMomentum
+
+Simple momentum strategy: long sectors above SMA200 with positive momentum (126d).
+Weekly insights, confidence weighted by momentum strength.",,,,,,,d898d1bc839e9b52,1eaadaa5c7c26f77,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-23d474fa,code,fr,37012a41d71320f1,"# Simulate SectorMomentum alpha signal
 lookback_mom = 126
 sma_period = 200
@@ -8649,7 +9289,10 @@ print(f""\nAvg active time: {mom_df['combined_signal_pct'].mean():.1%}"")",,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-b5dee86f,markdown,fr,17b7ae9283d05eec,"## 3. Alpha Model 2 : Defensive
 
 Rotation vers actifs refuges quand SPY < SMA200 (regime bear).
-TLT (bons du Tresor), GLD (or), XLU (utilites) sont historiquement decorreles ou negativement corrlés aux actions en bear market.",,,,,,,,17b7ae9283d05eec,,,,,,,
+TLT (bons du Tresor), GLD (or), XLU (utilites) sont historiquement decorreles ou negativement corrlés aux actions en bear market.","## 3. Alpha Model 2: Defensive
+
+Rotation into safe-haven assets when SPY < SMA200 (bear regime).
+TLT (Treasury bonds), GLD (gold), XLU (utilities) have historically been decorrelated or negatively correlated with equities in a bear market.",,,,,,,17b7ae9283d05eec,2ed228cfba6c0950,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-852b8b77,code,fr,7b35cb2f1d5904aa,"# Simulate Defensive alpha signal and bear regime frequency
 # Reuse SPY data from cell 3 batch history (close_prices already has SPY)
 spy_col = [c for c in close_prices.columns if 'SPY' in str(c)]
@@ -8680,7 +9323,9 @@ for dt in defensive_tickers:
         print(f""  {dt}: bear={bear_ret:.2%}, bull={bull_ret:.2%}, spread={bear_ret-bull_ret:.2%}"")",,,,,,,,7b35cb2f1d5904aa,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-1b0a3954,markdown,fr,64a4ca5f0f7dca5a,"## 4. Correlation entre les deux Alpha Signals
 
-Verification que les deux alpha models produisent des signaux decorreles (ideal pour la diversification).",,,,,,,,64a4ca5f0f7dca5a,,,,,,,
+Verification que les deux alpha models produisent des signaux decorreles (ideal pour la diversification).","## 4. Correlation between the Two Alpha Signals
+
+Verification that the two alpha models produce decorrelated signals (ideal for diversification).",,,,,,,64a4ca5f0f7dca5a,d5c2013b53020e05,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-e688cbc3,code,fr,4ccefc3dfb2ba3fd,"# Compute signal correlation: sector momentum returns vs defensive returns
 # Reuse spy_closes_full and bear_mask from cell 8 (computed from close_prices batch)
 bear_aligned = bear_mask
@@ -8707,7 +9352,9 @@ print(f""  Bear regime: {corr_bear:.3f}"")
 print(f""\nDiversification benefit: {'STRONG' if abs(corr_full) < 0.3 else 'MODERATE' if abs(corr_full) < 0.6 else 'WEAK'}"")",,,,,,,,4ccefc3dfb2ba3fd,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-6dd76863,markdown,fr,8a68af25b08afe9f,"## 5. Allocation Optimale
 
-Test de differentes allocations entre les deux alpha models. Le main.py utilise 70/30 (Sector/Defensive).",,,,,,,,8a68af25b08afe9f,,,,,,,
+Test de differentes allocations entre les deux alpha models. Le main.py utilise 70/30 (Sector/Defensive).","## 5. Optimal Allocation
+
+Testing different allocations between the two alpha models. The main.py uses 70/30 (Sector/Defensive).",,,,,,,8a68af25b08afe9f,da5b7d0aa17b8ffc,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-8d86ce40,code,fr,9ed14755cb901cc6,"# Simulate different allocations
 allocations = [(50, 50), (60, 40), (70, 30), (80, 20), (90, 10)]
 
@@ -8742,7 +9389,9 @@ print(alloc_df.round(4).to_string(index=False))
 print(f""\nBest allocation (by Sharpe proxy): {alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Sector%']}/{alloc_df.loc[alloc_df['Sharpe'].idxmax(), 'Def%']}"")",,,,,,,,9ed14755cb901cc6,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-40187a37,markdown,fr,dd49534e6510978c,"## 6. Calibration du MaxDrawdown Circuit Breaker
 
-Le main.py utilise un circuit breaker a 15% de drawdown maximum. Analyse de la distribution des drawdowns pour valider ce seuil.",,,,,,,,dd49534e6510978c,,,,,,,
+Le main.py utilise un circuit breaker a 15% de drawdown maximum. Analyse de la distribution des drawdowns pour valider ce seuil.","## 6. Calibration of the MaxDrawdown Circuit Breaker
+
+The main.py uses a circuit breaker at 15% maximum drawdown. Analysis of the distribution of drawdowns to validate this threshold.",,,,,,,dd49534e6510978c,6759fbec512d5d2c,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-4ee3fae2,code,fr,9dd6ac62f121ed42,"# Drawdown analysis for SPY (proxy for portfolio)
 spy_ret = returns['SPY'] if 'SPY' in returns.columns else returns.iloc[:, -1]
 cumulative = (1 + spy_ret).cumprod()
@@ -8761,7 +9410,9 @@ for threshold in [0.05, 0.10, 0.15, 0.20, 0.25]:
 print(f""\nCircuit breaker at 15%: {'appropriate' if drawdown.min() > -0.30 else 'may trigger frequently'}"")",,,,,,,,9dd6ac62f121ed42,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-4ca70894,markdown,fr,a536040471c362e6,"## 7. Calibration vers main.py
 
-Mapping des parametres retenus entre le notebook de recherche et le main.py final.",,,,,,,,a536040471c362e6,,,,,,,
+Mapping des parametres retenus entre le notebook de recherche et le main.py final.","## 7. Calibration toward main.py
+
+Mapping of the selected parameters between the research notebook and the final main.py.",,,,,,,a536040471c362e6,33b514581ded2c5a,,,,,,
 MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/research.ipynb,cell-47aed2cb,code,fr,9cc784c7433388c1,"print(""=""*60)
 print(""CALIBRATION: research.ipynb -> main.py"")
 print(""=""*60)
@@ -8812,4 +9463,29 @@ MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-F
 - Dynamiser l'allocation selon la volatilite (risk parity)
 - Ajouter des contraintes sectorielles (max exposure par secteur)
 - Implementer un risk management par position (stop-loss individuel)
-- Tester des indicateurs alternatifs (RSI, ADX) pour le signal momentum",,,,,,,,e3098d2a547d41b6,,,,,,,
+- Tester des indicateurs alternatifs (RSI, ADX) pour le signal momentum","## Conclusion and Iteration Ideas
+
+### Architecture
+
+| Component | Implementation | Parameters |
+|-----------|---------------|------------|
+| Alpha 1 | SectorMomentum | SMA200 + 126j momentum |
+| Alpha 2 | Defensive | SPY < SMA200 trigger |
+| PCM | MultiStrategyPCM | 70/30 allocation |
+| Risk | MaxDrawdownCircuitBreaker | 15% DD max |
+| Execution | ImmediateExecutionModel | Market orders |
+
+### Key Points
+
+1. **QC Framework**: clean modular architecture, each component can be tested independently
+2. **Alpha diversification**: sector momentum + defensive are naturally decorrelated
+3. **Regime detection**: the SPY/SMA200 filter automatically switches between the two modes
+4. **Circuit breaker**: protection against extreme drawdowns
+
+### Ideas for iteration N+1
+
+- Add a 3rd alpha model: mean reversion on oversold sectors
+- Dynamically adjust allocation based on volatility (risk parity)
+- Add sector constraints (max exposure per sector)
+- Implement position-level risk management (individual stop-loss)
+- Test alternative indicators (RSI, ADX) for the momentum signal",,,,,,,e3098d2a547d41b6,028264304a6e20ca,,,,,,
