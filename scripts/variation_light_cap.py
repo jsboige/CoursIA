@@ -122,6 +122,33 @@ def label_names(pr: dict) -> list[str]:
     return out
 
 
+def load_labels_file(path: Path) -> list[str]:
+    """Load the current PR's labels from a JSON file written by the CI workflow.
+
+    The workflow writes ``gh pr view --json labels`` output, which is the
+    OBJECT ``{"labels": [{name,...}]}`` -- not a bare array (#9971). ``gh pr
+    list`` returns a bare array of PR objects (each carrying ``.labels``), and
+    a hand-written file may hold a bare ``[{...}]`` or ``["str"]``. Accept all
+    three shapes so the verdict never depends on which ``gh`` subcommand fed
+    the file: previously the object form was double-wrapped into
+    ``{"labels": {"labels": [...]}}`` and ``label_names`` iterated only the key
+    string ``"labels"``, silently dropping every real label.
+    """
+    if path.exists() and path.read_text(encoding="utf-8").strip():
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            raw = []
+    else:
+        # Tolerate a missing/empty file (treat as no labels) rather than crash:
+        # the CI workflow always writes valid JSON (`gh pr view` or a `printf
+        # '[]'` fallback), but a manual invocation should not hard-fail.
+        raw = []
+    if isinstance(raw, dict):
+        raw = raw.get("labels") or []
+    return label_names({"labels": raw})
+
+
 def effective_tier(body: str | None, labels: list[str]) -> str | None:
     """The TIER that counts for G-VAR-2.
 
@@ -347,19 +374,7 @@ def main(argv: list[str] | None = None) -> int:
             p.error("--check-pr requires --body or --body-file")
         cur_labels: list[str] = []
         if args.labels_file:
-            # Tolerate a missing/empty file (treat as no labels) rather than
-            # crash: the CI workflow always writes valid JSON (`gh pr view` or
-            # a `printf '[]'` fallback), but a manual invocation should not
-            # hard-fail on an absent file.
-            lpath = Path(args.labels_file)
-            raw = []
-            if lpath.exists() and lpath.read_text(encoding="utf-8").strip():
-                try:
-                    raw = json.loads(lpath.read_text(encoding="utf-8"))
-                except json.JSONDecodeError:
-                    raw = []
-            # accept [str] or [{name}] (label_names handles objects via a dict)
-            cur_labels = label_names({"labels": raw})
+            cur_labels = load_labels_file(Path(args.labels_file))
         # Effective tier (#8970): a requalification label overrides the declared
         # one. Only an EFFECTIVE LIGHT is assessed against the cap.
         eff = effective_tier(body, cur_labels)
