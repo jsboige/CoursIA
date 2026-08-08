@@ -212,6 +212,30 @@ _STUB_SOURCE_RE = re.compile(
     re.MULTILINE,
 )
 
+# FP class 4 (#9995) : references bibliographiques au format volume:page-page.
+# La prose qui cite une source (Comptes Rendus 25:536-538, textbook 12:2825-2830,
+# journal vol. 183:301-324) contient des nombres qui ne sont PAS des mesures
+# calculees -- ce sont des identifiants de citation, aucun output ne peut les
+# "verifier". Falsifiable both-directions : un nombre n'est filtre QUE s'il
+# apparait comme volume ou page d'un pattern N:N-N ET qu'une fenetre autour
+# porte un marqueur bibliographique (volume, pp., Comptes Rendus, journal,
+# proceedings...). Sans contexte biblio, le nombre demeure un orphelin a
+# signaler (conservateur : evite le sur-filtrage des coïncidences N:N-N
+# non bibliographiques). Verifie firsthand : 40/10895 orphelins corpus
+# supprimes (0.37%), 0 sur-filtrage (chaque suppression confirmee etre le
+# volume ou une page d'une citation reelle -- Comptes Rendus 25:536-538,
+# JMLR 12:2825-2830 / 14:567-599 / 6:1939-1959 / 3:993-1022 / 11:1297-1332,
+# Nature 323:533-536, NumPy 585:357-362, LNCS 4963:337-340, GameTheory
+# 183:301-324 / 100:295-320). Concentres dans ML\DataScienceWithAgents
+# (textbook 12:2825-2830, 8+ notebooks), Probas/Infer + PyMC, GameTheory.
+_BIBLIO_RANGE_RE = re.compile(r"(\d+)\s*:\s*(\d+)\s*-\s*(\d+)")
+_BIBLIO_CONTEXT_RE = re.compile(
+    r"comptes\s+rendus|\bvolume|\bvol\.?|\bpp\.?|\bpages?|\bjournal\b"
+    r"|proceedings|ann(?:a|e)les|transac|réf(?:érence)?|biblio|citation",
+    re.IGNORECASE,
+)
+_BIBLIO_CONTEXT_WINDOW = 200  # fenêtre de recherche du contexte (chars avant/après)
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -401,6 +425,42 @@ def _is_stub_code_cell(cell: dict) -> bool:
         return True
     source = "".join(cell.get("source") or [])
     return bool(_STUB_SOURCE_RE.search(source))
+
+
+def _is_bibliographic_reference(value: float, text: str) -> bool:
+    """Vrai si ``value`` est le volume ou une page d'une reference bibliographique.
+
+    Critere falsifiable (FP class 4, #9995) : un nombre orphelin n'est pas une
+    mesure manquante s'il appartient a une reference de citation au format
+    ``volume:page-page`` (ex ``Comptes Rendus 25:536-538``, textbook
+    ``12:2825-2830``, ``vol. 183:301-324``) ET qu'une fenetre autour porte un
+    marqueur bibliographique. Le contexte bibliographique est EXIGE (pas
+    d'inférence sur un pattern N:N-N seul) pour eviter le sur-filtrage des
+    coïncidences non bibliographiques (intervals d'indices, ranges de donnees).
+
+    Falsifiable both-directions : un nombre qui n'apparait comme volume/page
+    d'AUCUN ``vol:page-page``, ou dont le match n'a pas de contexte biblio,
+    n'est PAS filtre -- il demeure un orphelin a signaler.
+
+    Note anti-sur-filtrage : un volume ou une page bibliographique est
+    TOUJOURS un entier (``12:2825-2830``). Une decimale (``12.2``, ``6.2``)
+    ne peut PAS etre un volume/page -> n'est JAMAIS filtree par cette voie
+    (sinon une mesure ``12.2`` serait supprimee parce qu'elle s'arrondit au
+    volume ``12``). Les decimales demeurent des orphelins a signaler ; si ce
+    sont des references de section (``section 12.2``), c'est un filtre
+    distinct hors scope biblio vol:page.
+    """
+    if value != int(value):
+        return False  # un volume/page biblio est entier ; une decimale ne l'est pas
+    iv = int(value)
+    for m in _BIBLIO_RANGE_RE.finditer(text):
+        vol, p1, p2 = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if iv != vol and iv != p1 and iv != p2:
+            continue
+        window = text[max(0, m.start() - _BIBLIO_CONTEXT_WINDOW): m.end() + _BIBLIO_CONTEXT_WINDOW]
+        if _BIBLIO_CONTEXT_RE.search(window):
+            return True
+    return False
 
 
 # --------------------------------------------------------------------------- #
@@ -633,6 +693,12 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
                 continue  # bruit : pas assez d'orphelins sur cette cellule dense
         # Emet les orphelins survivants.
         for v in orphans:
+            # FP class 4 (#9995) : reference bibliographique (volume:page-page).
+            # Un orphelin qui est le volume ou une page d'une citation n'est
+            # pas une mesure manquante -- skip (conservateur : exige contexte
+            # biblio, cf ``_is_bibliographic_reference``).
+            if _is_bibliographic_reference(v, text):
+                continue
             findings.append(AlignmentFinding(
                 notebook=str(path),
                 cell_index=cell_idx,
