@@ -193,14 +193,14 @@ ensemble `EXCLUDE_PEDAGOGICAL` (`research`/`archive`/`_output`/`partner-course`/
 
 Un check d'écart catalogue/outil hors des catégories documentées est prévu
 par le détecteur [`scripts/audit/check_denominators.py`](../../scripts/audit/check_denominators.py)
-(cf doc sœur [`notebook-counts-reconciliation.md`](notebook-counts-reconciliation.md),
-périmètre 2026-07-23, chiffres alors périmés — la présente doc la supersede
+(cf doc sœur [`notebook-counts-reconciliation.md`](../archive/reference/notebook-counts-reconciliation.md),
+**archivée 2026-08-08**, périmètre 2026-07-23, chiffres alors périmés — la présente doc la supersede
 pour les chiffres courants).
 
 ---
 
 ## Voir aussi
 
-- [`notebook-counts-reconciliation.md`](notebook-counts-reconciliation.md) — doc sœur (2026-07-23, `#8050`) : 4 dénominateurs (forensic/catalogue/disque/snapshot) au SHA `be59980`. **Chiffres périmés** (946/944/830) ; la présente doc la supersede pour l'état courant et les 3 sources de `#9857`.
+- [`notebook-counts-reconciliation.md`](../archive/reference/notebook-counts-reconciliation.md) — doc sœur (**archivée 2026-08-08**, 2026-07-23, `#8050`) : 4 dénominateurs (forensic/catalogue/disque/snapshot) au SHA `be59980`. **Chiffres périmés** (946/944/830) ; la présente doc la supersede pour l'état courant et les 3 sources de `#9857`.
 - [`catalog-pr-hygiene.md`](../../.claude/rules/catalog-pr-hygiene.md) — le marqueur `CATALOG-STATUS` appartient au cron, jamais édité sur une branche.
 - `#9851` — correctif du filtre `bin` substring (directory-segments only), qui a porté l'outil de 866 à 863 et aligné sur le catalogue.
