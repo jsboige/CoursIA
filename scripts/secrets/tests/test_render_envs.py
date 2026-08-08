@@ -52,6 +52,55 @@ def _svc_dir(tree: Path, svc: str) -> Path:
     return tree / "docker-configurations" / "services" / svc
 
 
+# --------------------------------------------------------------------------- #
+# Anti-recidive hermeticity guard (#10085)
+#
+# The #10085 defect: ``test_bootstrap_missing_flag_no_master_returns_1`` had an
+# INERT monkeypatch (the impl's default args were bound at import time, so
+# patching ``render_envs.MASTER_ENV`` did nothing). On every cluster machine
+# (which owns a real ``.secrets/master.env``) the test silently bootstrapped
+# the REAL ``docker-configurations/services`` tree, writing genuine key
+# material to real service ``.env`` files; CI stayed green only because it has
+# no master.env. "Vert sincere et sans valeur."
+#
+# This autouse organ makes a future inert-patch regression RED everywhere --
+# not just on machines that happen to own a master.env. It snapshots the real
+# services tree's ``*/. env`` (existence + mtime) before each test and asserts
+# no test created or rewrote a real service .env. A regression self-cleans
+# (created files are unlinked) then fails loudly with the offending paths.
+# --------------------------------------------------------------------------- #
+@pytest.fixture(autouse=True)
+def _guard_real_service_envs():
+    services_root = render_envs.REPO_ROOT / "docker-configurations" / "services"
+    if not services_root.is_dir():
+        yield
+        return
+
+    def _snapshot() -> dict[Path, int]:
+        return {p: p.stat().st_mtime_ns for p in services_root.glob("*/.env")}
+
+    before = _snapshot()
+    yield
+    after = _snapshot()
+    created = sorted(set(after) - set(before))
+    modified = {p for p in set(before) & set(after) if before[p] != after[p]}
+    # Self-clean created files so a regression leaves no polluted .env on disk;
+    # the assertion below still fails loudly with the paths.
+    for p in created:
+        try:
+            p.unlink()
+        except OSError:
+            pass
+    assert not created, (
+        "#10085 hermeticity guard: test created real service .env "
+        f"(monkeypatch was inert?); cleaned up: {created}"
+    )
+    assert not modified, (
+        "#10085 hermeticity guard: test rewrote real service .env "
+        f"(monkeypatch was inert?): {sorted(modified)}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # parse_kv
 # ---------------------------------------------------------------------------
@@ -470,12 +519,46 @@ class TestMain:
             render_envs.main()
         assert exc.value.code == 2
 
-    def test_bootstrap_missing_flag_no_master_returns_1(self, tmp_path, monkeypatch):
+    def test_bootstrap_missing_master_absent_returns_1(self, tmp_path, monkeypatch):
+        # #10085: master absent -> bootstrap_missing_envs returns None -> exit 1.
+        # The monkeypatch of MASTER_ENV / SERVICES_ROOT MUST bite (deferred
+        # resolution at call time); on an unfixed build the patch was inert and
+        # the function read the REAL master.env, so this passed in CI (no master)
+        # yet wrote real service .env files on every cluster machine -- caught
+        # by the autouse _guard_real_service_envs fixture.
         monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")
         monkeypatch.setattr(render_envs, "SERVICES_ROOT", tmp_path / "svc")
         monkeypatch.setattr(sys, "argv", ["render_envs.py", "--bootstrap-missing"])
-        # master missing -> bootstrap_missing_envs returns None -> exit 1.
         assert render_envs.main() == 1
+
+    def test_bootstrap_missing_master_present_writes_tmp_returns_0(
+        self, tmp_path, monkeypatch
+    ):
+        # #10085 hermeticity proof: master PRESENT + a service gap -> the .env
+        # must be written UNDER the patched tmp SERVICES_ROOT, proving the
+        # monkeypatch bites. On an unfixed build the patch was inert: the
+        # function read the real master, iterated the real SERVICES_ROOT, and
+        # wrote a REAL service .env (caught by the autouse guard), while CI
+        # (no real master) returned 1 and failed the == 0 assertion. Either
+        # way the unfixed build is RED; the fixed build writes to tmp and is GREEN.
+        services_root = tmp_path / "svc"
+        services_root.mkdir()
+        master = tmp_path / "master.env"
+        master.write_text("WHISPER_API_KEY=canonical-wsk\n", encoding="utf-8")
+        svc = services_root / "whisper-api"
+        svc.mkdir()
+        (svc / "docker-compose.yml").write_text(
+            "services:\n  w:\n    environment:\n      - API_KEY=${WHISPER_API_KEY:-}\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "SERVICES_ROOT", services_root)
+        monkeypatch.setattr(sys, "argv", ["render_envs.py", "--bootstrap-missing"])
+        assert render_envs.main() == 0
+        # Hermeticity: the .env landed under the PATCHED tmp services_root.
+        written = svc / ".env"
+        assert written.exists(), "bootstrap should have created the missing .env"
+        assert "WHISPER_API_KEY=canonical-wsk" in written.read_text(encoding="utf-8")
 
     def test_bootstrap_missing_exclusive_with_check(self, tmp_path, monkeypatch):
         monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path / "absent.env")

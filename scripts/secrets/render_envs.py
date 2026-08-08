@@ -369,14 +369,17 @@ def _service_compose_paths(service_dir: Path) -> list[Path]:
 
 
 def bootstrap_missing_envs(
-    services_root: Path = SERVICES_ROOT,
-    master_path: Path = MASTER_ENV,
-    secret_keys: frozenset[str] = SECRET_KEYS,
-) -> list[str]:
+    services_root: Path | None = None,
+    master_path: Path | None = None,
+    secret_keys: frozenset[str] | None = None,
+) -> list[str] | None:
     """Auto-create .env for services whose compose file references a SECRET_KEY
     but who lack a .env. Returns the list of service-dir names that were
-    newly written. Dry-run path for tests: caller can monkeypatch
-    ``services_root`` / ``master_path`` / ``secret_keys``.
+    newly written. Hermetic test paths: (a) caller passes ``services_root`` /
+    ``master_path`` / ``secret_keys`` explicitly, OR (b) caller monkeypatches
+    the module globals (``render_envs.MASTER_ENV`` / ``SERVICES_ROOT``) and
+    invokes via ``main()`` — the ``None`` defaults below defer to the LIVE
+    module globals at call time, so such monkeypatches bite.
 
     Precedence: if the service already has an .env, it is left untouched
     (sync() handles updates). If the service has NO .env but has at least one
@@ -389,6 +392,22 @@ def bootstrap_missing_envs(
     need filling), so the CLI can distinguish "no-op success" from "cannot
     run" via different exit codes.
     """
+    # Resolve module globals at CALL TIME, not import time. Binding these as
+    # default args (= SERVICES_ROOT / MASTER_ENV / SECRET_KEYS) would freeze
+    # them to their import-time values, making a test's
+    # ``monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path/...)`` INERT --
+    # the #10085 hermeticity defect: the function read the REAL master.env on
+    # every cluster machine (writing real service .env files with live key
+    # material) while CI stayed spuriously green only because it owns no
+    # master.env. The None-sentinel defers to the live module global so test
+    # monkeypatches bite; explicit callers (tests passing tmp_path) override
+    # exactly as before.
+    if services_root is None:
+        services_root = SERVICES_ROOT
+    if master_path is None:
+        master_path = MASTER_ENV
+    if secret_keys is None:
+        secret_keys = SECRET_KEYS
     if not master_path.exists():
         print(f"[X] {master_path} not found. Run with --bootstrap first.")
         return None
