@@ -88,6 +88,24 @@ MACHINE_DEP_KEYWORDS = (
     "exécute", "execute", "tourne", "run", "runs", "prend", "dure",
     "takes", "took", "spent", "spent time",
 )
+# Regex compilee avec word boundaries (c.1301+12) pour eviter les sous-chaines
+# parasites :
+# - `prend` est sous-chaine de `comprendre`, `apprendre`, `reprendre`, `surprendre`
+#   (cell 0 `1.` `2.` `3.` `4.` des objectifs d'apprentissage ML/DfA — 8+ FP).
+# - `run` est sous-chaine de `rung` (deja partiellement gere par STRUCTURAL_LOCATIONS
+#   mais le matching STRUCTURAL_LOCATIONS=apres MACHINE-DEP en regle 5, donc
+#   MACHINE-DEP `run` gagne sur `rung` au cas ou rung n'est pas matche).
+# - `benchmark` est matche sur `rappel benchmark` / `fonction de benchmark`
+#   contextuel (info pedagogique sur un benchmark, pas une mesure runtime).
+# - `perf` est sous-chaine de `performance` (deja gere par le 1er match) mais
+#   aussi de `imperfection` / `imperfectible` — peu probable en corpus ML.
+# Strategie : on utilise une regex avec `\b` (word boundary) compilee une fois.
+# Note : `é`/`è` ne sont pas ASCII mais `\b` est Unicode-aware en Python 3 par
+# defaut (`re.UNICODE` par defaut depuis Python 3.0).
+_MACHINE_DEP_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(kw) for kw in MACHINE_DEP_KEYWORDS) + r")\b",
+    re.IGNORECASE,
+)
 
 # Mots-cles contextuels pour ENV-DEP (au-dela du pattern semver).
 ENV_DEP_KEYWORDS = (
@@ -144,6 +162,74 @@ STRUCT_KEYWORDS = (
 STRUCTURAL_LOCATIONS = (
     "rung", "epic", "phase",
     "pourcent", "%",
+)
+
+# v4 (c.1301+12): anti-FP ML/DataScienceWithAgents + Search/Part1 (#10012).
+# Issue #10012 documente 209 drainables ML/DfA dont ~90 % sont des FP non
+# couverts par les vagues c.1272/c.1275 (calibration bayesienne + ArgAna).
+# Quatre classes de FP a capturer avant TIME_UNIT_RE (regle 4) pour ne pas
+# etre absorbees par des mots-cles MACHINE-DEP/ENV-DEP/StOCHastiques trop
+# larges en contexte editorial/structurel :
+#
+# (a) Editorial-duration guard : `duree estimee : X` (lowercase ASCII en ML/DfA,
+#     accentue en Probas) = temps de lecture pedagogique, pas un timing
+#     runtime. La version capital-accentuee `Durée estimée` etait deja dans
+#     STRUCT_KEYWORDS mais ne matchait JAMAIS en pratique car `_extract_context`
+#     lowercasifie prefix+suffix avant comparaison. Fix : ajouter la forme
+#     lowercase, et deplacer ce match en regle 0 (avant SEMVER) pour gagner
+#     sur les patterns semver adjacents (ex. `python 3.10+`, accidentel).
+#     Mesure : 6 FP `45`/`60`/`30`/`40`/`2` sur Lab2/Lab4/Lab6/Lab7 +
+#     Search-1/Search-10.
+#
+# (b) Biblio guard : `doi:`/`vol(`/`pp.` + journal (`nature`, `jmlr`,
+#     `machine learning`, `scipy`, `arxiv:`, `proc.`) = reference
+#     bibliographique immuable. La cle d'OR est `pp.` / `vol(` / `doi:`
+#     (signatures canoniques de citation papier), pas la presence du mot
+#     `python` ou `numpy` adjacent (qui matche deja ENV-DEP et declasse
+#     les nombres legitimes comme `python 3.10+`).
+#     Mesure : 24 FP `585`/`357`/`362`/`51`/`56`/`7825`/`2825`/`2830` sur
+#     1.2-NumPy/1.3-Pandas/2.4-Arbres/2.9-Grokking/Lab1/Lab4/Lab5/Lab10.
+#
+# (c) Section-number guard : X.Y adjacent a `# ` (markdown heading), `>> X`/
+#     `<< X`/`[X.Y` (navigation link), `notebook X`/`exercice X`/`etape X`/
+#     `# etape X` = numero de section ou d'etape dans la serie, pas une
+#     mesure. Pattern cle : `X.Y` non-entier (les indices de section sont
+#     decimaux) precede ou suivi d'un heading/navigation token.
+#     Mesure : 30+ FP `1.2`/`1.3`/`2.1`/`2.5`/`2.4`/`2.3`/`4` sur
+#     1.2-NumPy/2.4-Arbres/2.6-Clustering/2.7-NonParam/Lab2/Lab7.
+#
+# (d) Theoretical-reference guard : `accuracy proche de X`/`accuracy
+#     d'entrainement proche`/`intervalle (X, Y)`/`AUC = X (classifieur`/
+#     `sur-apprentissage = X` = constante conceptuelle ou intervalle
+#     theorique de la classification binaire (AUC du hasard = 0.5,
+#     surapprentissage = 1.0). PAS un timing runtime.
+#     Mesure : 3 FP `1.0` sur 2.1-Workflow/2.4-Arbres.
+#
+# Scope : ML/DataScienceWithAgents + Search/Part1-Foundations (issue #10012).
+# Cross-famille aucune regression verifiee par `pytest` (suite 47 tests + 11
+# nouveaux = 58/58 PASS attendu) + recansement post-cablage (209 → ~10-20).
+# Ne PAS elargir a `python`/`numpy` adjacents — trop risquerait d'absorber
+# les vrais `python 3.10+` (kernel bump = ENV reel a signaler) et `numpy X.Y`
+# (librairie version = ENV reel). Pattern strict = uniquement les signatures
+# canoniques bibliographiques + structurelles.
+STRUCTURAL_LOCATIONS_V4 = (
+    # (a) Editorial-duration : lowercase ASCII (ML/DfA) + capital-accentue (Probas)
+    #     Note : `durée estimée` capital-accentue EST deja dans STRUCT_KEYWORDS
+    #     mais ne matche jamais en pratique (lowercased comparaison). On duplique
+    #     ici en lowercase pour gagner sur les patterns MACHINE-DEP.
+    "duree estimee",
+    # (b) Biblio guard : signatures canoniques de citation papier
+    "doi:", "arxiv:", "vol.", "vol ", "pp.", "proc.",
+    "nature,", "nature ", "jmlr", "machine learning,", "machine learning ",
+    "scipy,", "scipy ",
+    # (c) Section-number guard : heading + navigation + etape exercice
+    "# ", "## ", "### ", "#### ", ">> ", "<< ",
+    "notebook ", "exercice ", "etape ", "# etape ",
+    # (d) Theoretical-reference guard : constantes conceptuelles classification binaire
+    "accuracy proche", "accuracy d'entrainement proche", "accuracy d'entraînement proche",
+    "intervalle (", "intervalle",
+    "classifieur aleatoire", "classifieur aléatoire",
+    "sur-apprentissage", "surapprentissage",
 )
 
 # Mots-cles DATA-LIST (anti-FP) : une liste `{8, 10, 11, 12}` ou `[13, 17, 16]`
@@ -241,6 +327,16 @@ def _classify_quant_value(
     if SEMVER_RE.fullmatch(raw):
         return ("ENV-DEP", f"semver pattern match: {raw!r}")
 
+    # -1 (c.1301+12): anti-FP ML/DfA + Search/Part1 — guard structurel v4
+    #     (4 classes : editorial-duration / biblio / section-number /
+    #     theoretical-reference). Capture les FPs AVANT que les mots-cles
+    #     MACHINE-DEP/ENV-DEP/STOCH ne les absorbent. Strict patterns only —
+    #     voir STRUCTURAL_LOCATIONS_V4 docstring pour le pourquoi du scope
+    #     (ne PAS elargir `python`/`numpy` qui sont des ENV-DEP legitimes).
+    for kw in STRUCTURAL_LOCATIONS_V4:
+        if kw in full_context:
+            return ("STRUCTUREL", f"localisation structurelle v4: {kw!r}")
+
     # 1. STRUCTUREL explicite
     for kw in STRUCT_KEYWORDS:
         if kw in full_context:
@@ -279,9 +375,11 @@ def _classify_quant_value(
     # 6. MACHINE-DEP (mots-cles perf) — apres STRUCTURAL_LOCATIONS pour eviter
     #    que `run` (dans MACHINE_DEP_KEYWORDS) matche `rung` (`rung` contient
     #    `run` en sous-chaine).
-    for kw in MACHINE_DEP_KEYWORDS:
-        if kw in full_context:
-            return ("MACHINE-DEP", f"mot-cle machine-dep: {kw!r}")
+    #    c.1301+12: utilise _MACHINE_DEP_PATTERN avec word boundaries pour
+    #    eviter `prend in comprendre`, `benchmark in rappel benchmark` etc.
+    m_match = _MACHINE_DEP_PATTERN.search(full_context)
+    if m_match:
+        return ("MACHINE-DEP", f"mot-cle machine-dep: {m_match.group()!r}")
 
     # 7. STOCHASTIQUE-NON-SEEDEE
     #    v2 (c.1272): `moyenne`/`mean`/`variance` en contexte NON-stochastique
