@@ -310,7 +310,55 @@ def test_scrub_outputs_anonymizes_lowercase_pip_home(tmp_path):
     assert before.replace("c:\\\\users\\\\jsboi", "~") == after
 
 
-def test_scrub_outputs_anonymizes_ipykernel_pid(tmp_path):
+def test_scrub_outputs_anonymizes_bare_posix_home(tmp_path):
+    """A bare Linux /home/<user> root printed by a WSL/POSIX-executed notebook
+    must be scrubbed (home root -> ~), with the diagnostic tail preserved.
+
+    Regression: Lean-1-Setup cell[16]. The Lean4 kernel-wrapper deployment
+    printed 'Wrapper robuste deploye: /home/jesse/.lean4-kernel-wrapper.py'
+    (a different contributor's username). The detect-only companion sees bare
+    /home/<user> but this scrubber previously only matched the MSYS drive form
+    /c/home/ (and Windows C:\\Users), so the POSIX home stayed leaked while the
+    Windows home alongside it ('Kernel enregistre: ~\\AppData\\...') was already
+    anonymized. The surgical char class stops at '/' so ONLY the home root is
+    replaced and the wrapper filename survives.
+    """
+    raw = (
+        "[+] Wrapper robuste deploye: /home/jesse/.lean4-kernel-wrapper.py\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "setup_kernel()", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+
+    after = p.read_text(encoding="utf-8")
+    # bare POSIX home root anonymized
+    assert "/home/jesse" not in after
+    assert "~/.lean4-kernel-wrapper.py" in after
+    # diagnostic tail preserved (the wrapper filename carries real info)
+    assert ".lean4-kernel-wrapper.py" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["setup_kernel()"]
+    # the ONLY change is the home-root substring -> ~
+    assert before.replace("/home/jesse", "~") == after
+
+
+def test_scrub_outputs_bare_posix_home_does_not_touch_url(tmp_path):
+    """A URL whose path starts with /home/ must NOT be mangled.
+
+    The (?<!:) lookbehind blocks a '/home/' immediately preceded by a scheme
+    colon (e.g. http://host/home/...). A URL path segment that happens to be
+    'home' is not a Linux home-directory leak and must survive untouched.
+    """
+    raw = "See docs at https://example.com/home/page for setup\n"
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "print('docs')", raw)
+    before = p.read_text(encoding="utf-8")
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 0
+    assert fixed == 0
+    assert p.read_text(encoding="utf-8") == before
     raw = (
         "C:\\Users\\jsboi\\AppData\\Local\\Temp\\ipykernel_85268\\3959998143.py:74: "
         "UserWarning: figure\n"
