@@ -1,0 +1,153 @@
+name: markdown-table-guard
+
+# Source-level CI guard for the four markdown *table syntax* pathologies that
+# render poorly on GitHub:
+#
+#   - COL_MISMATCH     -- header vs data rows have inconsistent `|` counts
+#                        (most often: a `|` left un-escaped inside a cell ->
+#                        GitHub sees a phantom column -> mis-aligned render)
+#   - NO_SEP           -- 3+ consecutive pipe-bearing lines without a
+#                        separator row (`|---|`) -> GitHub falls back to `pre`
+#                        -> the table becomes invisible
+#   - NO_BLANK_BEFORE  -- a non-blank line directly precedes a table block ->
+#                        prose fuses with the first row
+#   - NO_BLANK_AFTER   -- a non-blank line directly follows a table block ->
+#                        prose fuses with the last row
+#
+# Companion to `markdown-rendering-guard.yml` (which catches oversized
+# frontmatter and collapsed-markdown). Same source-level / render-agnostic
+# principle: each visual defect has a detectable source-level signature,
+# which a regex scanner can catch at 100% on the whole corpus.
+#
+# ADVISORY: this guard emits findings to the workflow log and annotates the PR
+# with a job summary. It does NOT block merge. Burn-down to a hard gate is
+# tracked on #10097 / #3966 (axe rendu) -- the gate will move to `required`
+# after the MGS-family burn-down lands.
+#
+# Scope: main-repo notebooks + docs + READMEs only. Submodules are separate
+# repos with their own CI.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - '**.md'
+      - 'README*'
+      - 'scripts/notebook_tools/scan_md_table_syntax.py'
+      - 'scripts/notebook_tools/tests/test_scan_md_table_syntax.py'
+      - '.github/workflows/markdown-table-guard.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - '**.md'
+      - 'README*'
+      - 'scripts/notebook_tools/scan_md_table_syntax.py'
+      - 'scripts/notebook_tools/tests/test_scan_md_table_syntax.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: markdown-table-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  table-scan:
+    name: "markdown table-syntax guard (advisory)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Unit tests for scan_md_table_syntax"
+        run: |
+          python -m pytest scripts/notebook_tools/tests/test_scan_md_table_syntax.py -v
+
+      - name: "Advisory scan -- markdown table syntax pathologies"
+        # This step is INTENTIONALLY exit 0. The detector runs on the whole
+        # repo (advisory) and writes findings to the log; the gate is not
+        # promoted to required until the burn-down reduces the existing
+        # violation count to a tractable size (cf. #10097 acceptance).
+        run: |
+          set +e
+          echo "=== markdown table-syntax scan (advisory) ==="
+          echo ""
+          # Whole-repo scan, including docs/. Skip archived directories
+          # (docs/_archives/) and Jupyter checkpoints via the script's
+          # own filtering (see _output / .ipynb_checkpoints handling).
+          python scripts/notebook_tools/scan_md_table_syntax.py \
+              MyIA.AI.Notebooks \
+              docs \
+              README.md \
+              --json > /tmp/md-table-findings.json
+          rc=$?
+          echo ""
+          if [ "$rc" = "2" ]; then
+            echo "Empty scan (no notebook/markdown found) -- this is a configuration issue, not a clean scan."
+            exit 0
+          fi
+          flagged=$(grep -c '"pathology"' /tmp/md-table-findings.json 2>/dev/null || echo 0)
+          total=$(grep -o '"total": [0-9]*' /tmp/md-table-findings.json | grep -o '[0-9]*' || echo 0)
+          echo "=== ${flagged} findings across ${total} files (advisory) ==="
+          if [ "$flagged" != "0" ] && [ -n "$flagged" ]; then
+            echo ""
+            echo "Top 20 findings (full JSON in /tmp/md-table-findings.json):"
+            # Pretty-print the first 20 findings, grouped by pathology.
+            python -c "
+import json, sys, collections
+data = json.load(open('/tmp/md-table-findings.json'))
+findings = data['findings']
+by_pathology = collections.Counter(f['pathology'] for f in findings)
+print('Distribution by pathology:')
+for p, c in by_pathology.most_common():
+    print(f'  {p:20s}  {c}')
+print('')
+print('First 20 findings:')
+for f in findings[:20]:
+    where = f'cell {f[\"cell\"]} ' if f['cell'] >= 0 else ''
+    print(f'  [{f[\"pathology\"]}] {f[\"file\"]}:{where}L{f[\"line\"]}  {f[\"snippet\"][:80]}')
+" || true
+          fi
+          # Always exit 0 -- advisory only. Promotion to required_status_check
+          # is a coordinated decision after the burn-down.
+          exit 0
+
+      - name: "Job summary -- advisory annotation"
+        if: always()
+        run: |
+          if [ -f /tmp/md-table-findings.json ]; then
+            python -c "
+import json
+data = json.load(open('/tmp/md-table-findings.json'))
+total = data['total']
+flagged = data['flagged']
+findings = data['findings']
+if flagged == 0:
+    print(f'## markdown-table-guard (advisory): 0/{total} files flagged.')
+    print('')
+    print('No COL_MISMATCH / NO_SEP / NO_BLANK_BEFORE / NO_BLANK_AFTER defects detected.')
+else:
+    import collections
+    by_pathology = collections.Counter(f['pathology'] for f in findings)
+    by_file = collections.Counter(f['file'] for f in findings)
+    print(f'## markdown-table-guard (advisory): {flagged}/{total} files flagged, {len(findings)} findings.')
+    print('')
+    print('### Distribution by pathology')
+    for p, c in by_pathology.most_common():
+        print(f'- **{p}**: {c}')
+    print('')
+    print('### Top files')
+    for f, c in by_file.most_common(15):
+        print(f'- `{f}`: {c}')
+    print('')
+    print('See the job log for full findings. This guard is advisory only.')
+" >> "$GITHUB_STEP_SUMMARY"
+          fi
