@@ -661,3 +661,141 @@ jobs:
           )" 2>/dev/null || true
 
           exit 1
+
+  # #10101 -- extend the prev-close-keyword gate (#10093) to free prose.
+  # The prev: gate scans the `prev: TIER/genre #N` slot of a `Grain:` tag
+  # for a closing keyword in the genre position; this gate scans the FULL
+  # body + commit messages for `<mot-cle> #N` (closes #100, fixes #200,
+  # ...) and discriminates PR vs issue via `gh api repos/<repo>/issues/N`.
+  # A PR hit is blocking (would auto-close the PR at squash-merge); an
+  # issue hit is silent (intended close -- catalog-pr-hygiene HARD 4).
+  # Same shape as the prev: gate next to it: the discriminator is the
+  # nature of the N, not the surface syntax.
+  check-prose-close-keyword-required:
+    name: 'Require prose non-closing-PR (block on close-keyword + PR ref, #10101)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the prose-guard helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/variation_prose_close_guard.py
+            scripts/grain_tag.py
+      - name: 'Scan body + commit messages for close-keyword + PR reference'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages as a JSON array of strings (same shape as the
+          # prev: gate; the helper tolerates empty/missing).
+          gh pr view "$PR_NUMBER" --json commits --jq '[.[].messageBody]' \
+            > /tmp/commits.json 2>/dev/null || printf '[]' > /tmp/commits.json
+
+          # First pass: inert resolver (every N = "issue") to enumerate the
+          # unique Ns the scan produced. The helper always exits 0 in this
+          # mode (issues + unknowns are silent), so we just read the JSON.
+          python3 scripts/ci/variation_prose_close_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/scan.json 2>/tmp/scan.err
+          if [ -s /tmp/scan.err ]; then
+            echo "--- scan stderr ---"
+            cat /tmp/scan.err
+          fi
+
+          # Build the resolver table {"<N>": "pr"|"issue"} for every N the
+          # scan produced. `gh api repos/<repo>/issues/N --jq .pull_request`
+          # returns `null` for issues (no `pull_request` key) and an object
+          # `{url: ...}` for PRs. A failing call yields "unknown" (the gate
+          # fails OPEN on unknown -- never block on an API blip, which would
+          # be a DoS on its own; see #10101 acceptance #4).
+          TABLE='{}'
+          NS=$(python3 -c "
+          import json
+          v = json.load(open('/tmp/scan.json'))
+          hits = v.get('hits', {})
+          seen = set()
+          for bucket in ('issues_allowed', 'unknowns'):
+              for h in hits.get(bucket, []):
+                  seen.add(str(h['number']))
+          # Also include PR hits (in case a future change fails open on
+          # PRs too, we want them resolved on the second pass).
+          for h in hits.get('pr', []):
+              seen.add(str(h['number']))
+          print(' '.join(sorted(seen)))
+          ")
+          echo "Scan produced Ns: ${NS:-<none>}"
+
+          for N in $NS; do
+            if [ -z "$N" ]; then continue; fi
+            # 10s timeout per call; the JSON `.pull_request` is `null`/`{}`.
+            RES=$(gh api "repos/${GH_REPO}/issues/${N}" --jq '.pull_request' 2>/dev/null || echo "")
+            case "$RES" in
+              "null"|"") KIND="issue" ;;
+              "{")       KIND="pr" ;;
+              *)         KIND="unknown" ;;
+            esac
+            TABLE=$(python3 -c "
+          import json, sys
+          t = json.loads('''$TABLE''')
+          t['$N'] = '$KIND'
+          print(json.dumps(t))
+          ")
+            echo "  N=$N -> $KIND"
+          done
+          echo "Resolver table: $TABLE"
+
+          # Second pass: real resolver table. The helper now discriminates
+          # PR vs issue per hit; PR hits block, issue hits are silent.
+          python3 scripts/ci/variation_prose_close_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json \
+            --resolver-table "$TABLE" > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No close-keyword prose targets a PR -- job passes."
+            exit 0
+          fi
+
+          # Block path. Idempotent comment via the HTML marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::prose close-keyword targets a PR: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-prose-close-keyword -->
+          **\`close-keyword prose + PR ref\` -- bloquant (#10101).**
+
+          ${REASON}
+
+          Une phrase comme \`Closes #100\` ou \`Fixed #200\` dans le body OU un commit message est interprétée par GitHub comme un ordre de fermeture automatique à la fusion -- **mais seulement si N référence une PR**. Un N qui référence une issue est l'auto-fermeture voulue par la discipline (catalog-pr-hygiene HARD 4) et le gate la laisse passer en silence. C'est le N, pas la syntaxe de surface, qui discrimine.
+
+          Pour passer ce gate, retirez le mot-clé fermant (\`Closes\`/\`Fixes\`/\`Resolves\`/...) ou écrivez le numéro sans \`#\` (GitHub ne le reconnaîtra pas comme référence, donc pas d'auto-fermeture). Le PR visé reste ouvert, intact.
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
