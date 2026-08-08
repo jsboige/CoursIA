@@ -240,3 +240,61 @@ def test_pending_legacy_status_blocks_settling():
     ]
     pending, _bad, _ok = pr_gate.classify(checks)
     assert pending == ["legacy/lint"]
+
+
+# --- fork exemption (issue #10072) -------------------------------------------
+#
+# A student PR from a fork is not subject to internal CI conventions
+# (cf. .claude/rules/student-pr-reviews.md). The workflow passes --is-fork
+# when head.repo.fork == true; the script must short-circuit to exit 0
+# without polling, while still NOT changing the verdict for non-fork PRs
+# whose CI is red. These two tests pin both halves of the contract.
+
+
+def test_fork_short_circuits_to_pass_without_polling(monkeypatch):
+    """`--is-fork` returns 0 and never touches the network."""
+
+    def explode_on_poll(*_args, **_kwargs):
+        raise AssertionError("fork path must not poll")
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", explode_on_poll)
+    # `fetch_checks` would also explode if called, since gh CLI is not on PATH
+    # here -- the monkeypatch above proves it never gets the chance.
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--is-fork"])
+    assert code == 0
+
+
+def test_fork_pass_holds_even_if_other_checks_would_have_failed(monkeypatch):
+    """`--is-fork` does not consult the CI state. The bypass is unconditional.
+
+    Hooks the same way the previous test does, but adds a hypothetical
+    failing check that, in the non-fork path, would have produced exit 1.
+    Useful regression: protects against a future refactor that "helpfully"
+    inspects the check state before deciding to bypass.
+    """
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (1, "FAIL -- failing checks: Lean CI"),
+    )
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--is-fork"])
+    assert code == 0
+
+
+def test_non_fork_path_is_unchanged(monkeypatch):
+    """Without `--is-fork`, the script still aggregates normally.
+
+    Regression guard: confirms the fork bypass only fires when the flag is
+    present. The fake below is a passing aggregate, so the exit code is 0;
+    the assertion that matters is that the bypass branch was NOT taken.
+    """
+    calls = []
+
+    def fake_wait(*args, **kwargs):
+        calls.append((args, kwargs))
+        return 0, "PASS -- no failing checks"
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    assert code == 0
+    assert len(calls) == 1, "non-fork path must still call wait_and_decide"
