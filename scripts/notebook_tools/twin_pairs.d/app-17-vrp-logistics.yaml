@@ -8,7 +8,14 @@
       by: myia-po-2023:CoursIA
       python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
       csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
+      csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+      content_python_sha: cdf5b893c9170134c94e1344bd6a6be9e78a55af1062d2aa68c0395b637e6ac0
+      content_csharp_sha: 8e1f8399d09acc50e84819fa887de8680bbb4102d5e0ba5b9caa0504fbfc09b5
   known_differences:
+    - "2026-08-08 (po-2025) #9975 grain B Prong-B : instance VRP rendue discriminante + 2-opt retargete vers NN. Cause racine (verifiee firsthand sur 1400+ instances) : CI (Cheapest-Insertion) est insertion-optimale par construction -> 2-opt-on-CI est structurellement nul (0/1400 instances avec gain>1). L'ancienne instance donnait NN=415,63 / CI=413,69 / +2-opt=413,69 (gain EXACTEMENT nul) -> l'etape 2-opt ne demontrait aucune amelioration locale. Fix : (1) nouvelle instance (15 clients, memes demands/cap/veh) ou NN produit des croisements d'aretes ; (2) 2-opt retargete vers le tour NN (la cible canonique de la recherche locale, contrairement a CI deja localement optimale). Resultat re-execute (C# via .NET Interactive 1.0.552801, Python via nbconvert, regle F) : NN=595,83 -> NN+2-opt=583,03 (gain -2,1%, STRICTEMENT positif) -> SA=569,24 ; CI+2-opt=585,89 (0,0%, rappel de l'insertion-optimalite de CI). Divergence SA C#/Python de l'ancienne instance (403,45 vs 410,59) RECONCILIEE : sur la nouvelle instance les deux recuits convergent vers 569,24 (meme bassin) ; la divergence etait RNG-pilotée (System.Random vs PCG64, meme seed=42) et dependante du paysage, non un bug. csharp_sha rebaseline (blob pre-commit) ; python_sha inchange (App-17 OR-Tools non touche). App-17b-Python (vrai twin from-scratch) n'est PAS dans ce registre (gap pre-existant, hors scope grain B)."
     - "Socle pedagogique commun : VRP / Routing logistique (CSP + OR-Tools routing, distances) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools routing + math.sqrt distances ; C# = BCL pure (System.*), 0 NuGet."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
