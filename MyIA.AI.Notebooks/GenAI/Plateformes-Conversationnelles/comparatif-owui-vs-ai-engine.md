@@ -9,9 +9,12 @@
 
 Les informations OWUI sont issues du [Tour OWUI](Open-WebUI/00-Tour-Plateforme/README.md)
 et de la [série QA Playwright-OWUI](Open-WebUI/Playwright-OWUI/README.md) de ce
-dépôt ; les informations AI-Engine sont issues de la fiche officielle
-du plugin sur le dépôt WordPress (août 2026, version 3.7.0) et du
-dépôt GitHub `meowapps-labs/ai-engine`.
+dépôt, ainsi que du dépôt GitHub `open-webui/open-webui`. Les informations
+AI-Engine sont issues de la [fiche officielle du plugin sur
+wordpress.org](https://wordpress.org/plugins/ai-engine/) (août 2026,
+version 3.7.0), de son code source GPL (distribué via le dépôt SVN
+`plugins.svn.wordpress.org/ai-engine/`), et du site de l'éditeur
+`meowapps.com`.
 
 ---
 
@@ -31,7 +34,7 @@ dépôt GitHub `meowapps-labs/ai-engine`.
 | **Catégorie** | Plateforme GenAI standalone (Docker, Python/FastAPI + Svelte/TS) | Extension WordPress (PHP ≥ 8.1) |
 | **Prérequis d'installation** | Docker (recommandé), Python 3.11+, backend SQL/NoSQL, frontend SPA | WordPress 6.0+, PHP 8.1+, MySQL existant |
 | **Surface de déploiement** | URL dédiée (ex. `chat.example.com`), compte-rendu autonome | Dans l'admin WP (`wp-admin`) ET en front-end (chatbots intégrables) |
-| **Coût** | Gratuit (open source), infrastructure à charge de l'org | Gratuit (GPL), WordPress à charge de l'org ; **Pro tier** ajoute embeddings, function calling, cross-site chatbots, realtime audio |
+| **Coût** | Gratuit (BSD-3), infrastructure à charge de l'org ; Cloud/Enterprise sur devis | Gratuit (GPL), WordPress à charge de l'org ; **Pro $79** ajoute Forms, embeddings, function calling, audio, MCP avancés (voir [§ Coût](#coût)) |
 | **Modèle économique** | Open source pur | Freemium (gratuit + Pro) |
 | **License** | Open source (BSD-3 conforme au dépôt GitHub `open-webui/open-webui`) | GPL (conforme au dépôt WordPress plugins) |
 | **Statistiques publiques** | Écosystème open-source mature (image officielle OCI multi-tags, déploiement massif auto-hébergé) | **100K+ installations actives**, 4.9/5 étoiles (854 avis), 14 traductions, cadence hebdomadaire |
@@ -100,6 +103,32 @@ custom. C'est un terrain pédagogique de choix pour comprendre
 
 ---
 
+## Extensibilité
+
+| Critère | Open WebUI | AI-Engine |
+|---------|-----------|-----------|
+| **Modèle d'extension** | Plugins Python côté serveur : **Filters, Actions, Pipes, Tools, Skills** | Hooks et filters WordPress (actions/filters PHP — standard WP) |
+| **Langage d'extension** | **Python** | **PHP** (dans l'écosystème WordPress) |
+| **Outils externes** | Consomme des serveurs MCP, MCPO (proxy MCP→OpenAPI), **OpenAPI tool servers** | **Expose** WordPress comme serveur MCP ; consomme aussi des serveurs MCP externes |
+| **Personnalisation sans code** | Modèles personnalisés (instructions, outils, connaissance) + presets communautaires ([Open WebUI Community](https://openwebui.com/)) | Chatbots configurables (thèmes, system prompts), AI Forms (no-code), shortcodes WordPress |
+| **Sync de données externes** | [oikb](https://github.com/open-webui/oikb) — 45+ sources (GitHub, Confluence, Jira, Slack, Notion, S3…) | Sync filters WordPress (catégories, langues, Polylang, types de contenu) |
+| **Runtime agentique embarqué** | Open Terminal (sandbox shell/code/artifacts), Open WebUI Computer | n/a (délègue aux agents externes via MCP) |
+| **Code source extensible** | Dépôt `open-webui/open-webui` (BSD-3) | Code GPL distribué via le SVN WordPress `plugins.svn.wordpress.org/ai-engine/` |
+
+OWUI et AI-Engine **étendent différemment**, et le langage le dit :
+OWUI est une plateforme **programmable en Python**, pensée pour le
+développeur qui veut brancher un middleware (Pipe), un filtre de
+modération (Filter), un outil custom (Tool) ou une action
+déclenchée par l'utilisateur (Action). AI-Engine s'étend par les
+**mécanismes natifs de WordPress** — actions, filters, shortcodes —
+et un développeur de plugin WordPress y est chez lui quand un
+développeur Python ne l'est pas. L'asymétrie MCP est à nouveau
+centrale : OWUI *consomme* des serveurs MCP, AI-Engine *expose*
+WordPress comme serveur MCP. Les deux se complètent dans un
+workflow agentique plutôt qu'ils ne s'excluent.
+
+---
+
 ## Sécurité et déploiement
 
 | Critère | Open WebUI | AI-Engine |
@@ -111,6 +140,41 @@ custom. C'est un terrain pédagogique de choix pour comprendre
 | **Conflits connus** | Peu (Docker = isolation naturelle) | ⚠️ SiteGround Optimizer, Ninja Firewall (compat frontend) |
 | **Multi-tenant isolation** | ✅ natif (groups, RBAC) | ❌ pas natif ; un site WP = un tenant |
 | **Scalabilité** | Horizontale (multi-instances Docker + LB) | Verticale (WordPress scale) |
+
+---
+
+## Coût
+
+Le coût se décompose en **trois couches** distinctes, qu'il faut
+comparer séparément sous peine de comparer des choses différentes.
+
+| Critère | Open WebUI | AI-Engine |
+|---------|-----------|-----------|
+| **Licence du cœur** | BSD-3-Clause — gratuit, open source | GPL — gratuit, open source |
+| **Édition payante** | Open WebUI Cloud / Enterprise : tarification **non publique** (« contact us ») | AI Engine Pro : **$79** ([meowapps.com](https://meowapps.com/ai-engine/), août 2026) |
+| **Ce que débloque le tier payant** | Enterprise : **gouvernance** (SSO, RBAC avancé, audit logs, data residency, on-prem/air-gapped) | Pro : **fonctionnalités** (AI Forms, embeddings, function calling, cross-site chatbots, realtime audio, MCP tools avancés, usage insights) |
+| **Base opérationnelle** | Un serveur dédié (VM + GPU optionnel pour modèles locaux) + backend SQL/NoSQL | Un hébergement WordPress (déjà acquis si le site existe) + PHP 8.1+ |
+| **Coût des jetons LLM** | À la charge du fournisseur (OpenAI, Anthropic…) — OWUI ne facture rien | À la charge du fournisseur — AI-Engine ne facture rien au-delà de la licence |
+
+**Asymétrie du tier payant.** Les deux éditions payantes ne vendent
+pas la même chose. Celle d'OWUI ajoute de la **gouvernance**
+(SSO, audit, résidence des données) — ce dont une grande organisation
+a besoin pour déployer en interne. Celle d'AI-Engine ajoute des
+**fonctionnalités** (Forms, audio, function calling) — ce dont un site
+a besoin pour aller plus loin en couverture produit. Un acheteur qui
+compare les deux sur le prix seul passe à côté de cette différence de
+nature.
+
+**Ce qui ne se chiffre pas dans un comparatif.** Le coût de calcul —
+que ce soit l'auto-hébergement (VM, GPU) ou les jetons LLM — est
+**identique en nature** pour les deux : ce sont tous deux des fronts
+devant des fournisseurs de modèles. Le coût réel d'une installation
+dépend du modèle choisi, du trafic et du volume, pas du produit qui
+sert de façade. Les tarifs d'hébergement (OVH, Scaleway, Hetzner…) et
+de jetons (OpenAI, Anthropic…) sont publics chez leurs fournisseurs et
+varient ; c'est pourquoi ce comparatif ne chiffre pas de total. La
+facture d'une installation particulière n'a, de toute façon, pas sa
+place dans un comparatif de produits.
 
 ---
 
@@ -152,10 +216,10 @@ Quelques heuristiques pratiques, **sans valeur universelle** :
 - **Comparaison non exhaustive** : OWUI évolue vite (v0.10+
   changements), AI-Engine a une cadence hebdomadaire. Vérifier les
   release notes des deux avant de décider.
-- **Coûts API non chiffrés** : les deux produits dépendent des
-  providers externes pour les modèles ; le coût dépend du volume,
-  pas du produit. AI-Engine *ne facture rien* au-delà des appels
-  API.
+- **Coût total non chiffré** : la [section Coût](#coût) compare les
+  licences et tiers payants, mais le coût de calcul (auto-hébergement
+  + jetons) dépend du modèle et du volume, pas du produit — il ne se
+  chiffre pas dans un comparatif générique.
 - **Pas de benchmark de performance** : ce comparatif décrit les
   surfaces fonctionnelles, pas les temps de réponse ou la qualité
   des réponses (qui dépendent du modèle utilisé, identique des deux
