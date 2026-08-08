@@ -530,6 +530,38 @@ theorem tricolorForwardExtension.colorAtNat_fresh_eq {d₁ d₂ : KnotDiagram}
   -- `dif_neg` : `dite` dépendant, branche « else » (le test `n < n` est faux).
   rw [dif_neg (by omega : ¬ (d₁.numEdges : Nat) < d₁.numEdges)]
 
+/-- Troisième lemme-pivot : toute arête FRAÎCHE `e ∈ (d₁.numEdges, d₂.numEdges]`
+    (les `n+1` et `n+2` créés par la torsion) lit la couleur de l'arc splice `a`.
+    Généralise `colorAtNat_fresh_eq` (cas particulier `e = d₁.numEdges + 1`).
+    C'est le fondement du cas « nouveau crossing C » du transfert avant : le
+    crossing ajouté `C = ⟨a, n+1, n+2, n+2⟩` a ses slots `{a, n+1, n+2, n+2}`
+    où `a` lit la couleur splice via `colorAtNat_eq` et `n+1, n+2, n+2` la lisent
+    via ce lemme — les 4 couleurs sont donc toutes-égales, et la condition de
+    Fox « toutes-égales » (disjonction de gauche) est satisfaite trivialement. -/
+theorem tricolorForwardExtension.colorAtNat_freshEdge_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (e : Nat)
+    (he_lo : d₁.numEdges < e) (he_hi : e ≤ d₂.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) e =
+      d₁.colorAtNat coloring₁ a := by
+  have hca : a - 1 < d₁.numEdges := by omega
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- `(e-1) % d₂.numEdges = e-1` (car `e ≤ d₂.numEdges ⟹ e-1 < d₂.numEdges`).
+  have hmod_e : (e - 1) % d₂.numEdges = e - 1 := Nat.mod_eq_of_lt (by omega)
+  -- `(a-1) % d₁.numEdges = a-1`.
+  have hmod_a : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` + réduit les modulos (`simp only`, cf. note motive c.983).
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hmod_e, hmod_a]
+  -- L'indice `⟨e-1, _⟩ : Fin d₂.numEdges` ; `e-1 ≥ d₁.numEdges` (car `e > d₁.numEdges`),
+  -- donc la coercion `↑⟨e-1, ⋯⟩ = e-1 ≥ d₁.numEdges` n'est PAS `< d₁.numEdges` ⟹
+  -- branche « else » de l'extension → `coloring₁ ⟨a-1, hca⟩`. On `show` (dépouille la
+  -- coercion) puis `dif_neg`.
+  unfold tricolorForwardExtension
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨a - 1, by omega⟩
+  rw [dif_neg (by omega : ¬ (e - 1 : Nat) < d₁.numEdges)]
+
 /-! ## 3. Le trefoil est tricolorable
 
 Le trefoil (3_1) peut etre colorie avec 3 couleurs, chaque croisement voyant
