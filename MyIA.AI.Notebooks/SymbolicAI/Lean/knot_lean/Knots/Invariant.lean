@@ -562,6 +562,74 @@ theorem tricolorForwardExtension.colorAtNat_freshEdge_eq {d₁ d₂ : KnotDiagra
         else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨a - 1, by omega⟩
   rw [dif_neg (by omega : ¬ (e - 1 : Nat) < d₁.numEdges)]
 
+/-! ### Transfert avant `tricolorable_forward_r1` — assemblage du wrapper
+
+Lemme de transfert avant (direction AVANT de `tricolorable_invariant` sur un
+mouvement R1 connecté) : si `d₁` est tricolorable et `d₂` s'obtient de `d₁` par
+une torsion R1 connectée, alors `d₂` est tricolorable.
+
+Le témoin `coloring₂` est l'extension triviale « toutes-égales » construite par
+`tricolorForwardExtension` (slots frais prennent la couleur de l'arc splice).
+Les 3 lemmes-pivots (`colorAtNat_eq`, `colorAtNat_fresh_eq`, `colorAtNat_freshEdge_eq`)
+fondent les 3 cas de crossing du `∀` sur `d₂.crossings`.
+
+**Mur caractérisé (c.985)** : la conjonction `∀ c ∈ d₂.crossings, triColorConditionAt …`
+exige de déplier l'appartenance à `List.set i Y' ++ [C]` en 3 sous-cas
+(`c = Y'` / `c` unchanged d₁ crossing index ≠ i / `c = C`), chacun consommant un
+lemme-pivot + l'hypothèse `isRenameOf`. Le `sorry` ci-dessous porte EXACTEMENT
+cette conjonction ; les 2 autres conjonctions (`numEdges ≥ 2`, `≥ 2 couleurs`)
+sont prouvées. L'énoncé n'est PAS affaibli (anti-régression D).
+-/
+
+/-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
+    connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
+    pour le mur actuel (la conjonction `∀ c ∈ d₂.crossings`). -/
+theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) (htc : IsTricolorable d₁) :
+    IsTricolorable d₂ := by
+  obtain ⟨coloring₁, hcond, hnum, hcol⟩ := htc
+  -- Déplie les composants de la torsion (bornes + équation de chirurgie).
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg, hnum2⟩ := h
+  -- Témoin : l'extension triviale. `a`/bornes passés explicites (Prop → Type
+  -- réglé en c.982, cf. `tricolorForwardExtension`).
+  refine' ⟨tricolorForwardExtension hnum2 a ha1 ha2 coloring₁, ?_, ?_, ?_⟩
+  · -- (1) MUR CARACTÉRISÉ : `∀ c ∈ d₂.crossings, triColorConditionAt d₂ coloring₂ c`.
+    --   Dépliage requis : `d₂.crossings = d₁.crossings.set i Y' ++ [⟨a,n+1,n+2,n+2⟩]`
+    --   (`hsurg`) → 3 sous-cas par membership `List.set`/append :
+    --     • `c = Y'` (slot renommé) : `colorAtNat_fresh_eq` + `colorAtNat_eq` sur
+    --       les slots inchangés + `isRenameOf hrename` → Fox préservée.
+    --     • `c` unchanged (d₁ crossing, index ≠ i) : `colorAtNat_eq` sur les 4 slots.
+    --     • `c = ⟨a,n+1,n+2,n+2⟩` (nouveau kink) : `colorAtNat_eq` (slot a) +
+    --       `colorAtNat_freshEdge_eq` (slots n+1,n+2) → Fox toutes-égales (or.inl).
+    --   3 tactiques tentées : `rw [hsurg]; rintro _ (hc|hc)`, `simp only [List.mem_append,
+    --   List.mem_set]`, dépliage manuel `obtain`. Aucune ne clôt sans un lemme-pont
+    --   nommé portant `isRenameOf` + les 4 réductions colorAtNat (cf. named-hard-wall).
+    exact sorry
+  · -- (2) `d₂.numEdges ≥ 2` : `d₂.numEdges = d₁.numEdges + 2 ≥ 2`.
+    rw [hnum2]; omega
+  · -- (3) ≥ 2 couleurs : héritées de `coloring₁` (le préfixe `[0, d₁.numEdges)` est
+    --   inchangé par l'extension, donc deux `Fin d₁.numEdges` distincts sous
+    --   `coloring₁` le restent sous `coloring₂`).
+    obtain ⟨j, k, hjk⟩ := hcol
+    refine' ⟨⟨j.val, by omega⟩, ⟨k.val, by omega⟩, ?_⟩
+    -- `coloring₂ j = coloring₁ j` et `coloring₂ k = coloring₁ k` via `colorAtNat_eq`
+    -- (les `Fin d₂.numEdges` d'indices `< d₁.numEdges` lisent `coloring₁`).
+    have hj_lt : (j : Nat) < d₁.numEdges := j.isLt
+    have hk_lt : (k : Nat) < d₁.numEdges := k.isLt
+    have hj_val : (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+        ⟨j.val, by omega⟩ = coloring₁ j := by
+      show tricolorForwardExtension hnum2 a ha1 ha2 coloring₁ ⟨j.val, by omega⟩ =
+        coloring₁ ⟨j.val, j.isLt⟩
+      unfold tricolorForwardExtension
+      rw [dif_pos hj_lt]
+    have hk_val : (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+        ⟨k.val, by omega⟩ = coloring₁ k := by
+      show tricolorForwardExtension hnum2 a ha1 ha2 coloring₁ ⟨k.val, by omega⟩ =
+        coloring₁ ⟨k.val, k.isLt⟩
+      unfold tricolorForwardExtension
+      rw [dif_pos hk_lt]
+    rw [hj_val, hk_val]; exact hjk
+
 /-! ## 3. Le trefoil est tricolorable
 
 Le trefoil (3_1) peut etre colorie avec 3 couleurs, chaque croisement voyant
