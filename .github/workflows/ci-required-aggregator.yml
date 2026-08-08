@@ -19,6 +19,14 @@ name: CI Required Aggregator
 # fait que (a) fetch les check-runs via l'API, (b) pipe NDJSON au script,
 # (c) refléter le verdict (exit 1 = setFailed).
 #
+# Double trigger pour eviter le faux-negatif "12 PENDING sur la 1ère run" :
+#   1. `pull_request` (open/synchronize/reopen) -> verdict frais a chaque push
+#   2. `check_run` (completed) -> re-run quand un upstream check settle
+# Sans (2), la 1ère run tire un snapshot souvent-incomplet (in_progress upstream)
+# et verdicts BLOCKED-PENDING indefiniment jusqu'au prochain push. Le (2) fait
+# que l'aggregator re-tourne et donne un verdict final MERGE-CLEAN des que tous
+# les upstream checks sont completes.
+#
 # Ce workflow n'altère PAS `required_status_checks` (étape 2 owner-only dans
 # #9819, gated user explicite). Il tourne, rapporte PASS/FAIL, et attend le
 # flip repo setting pour bloquer le merge. Tant qu'il n'est pas enregistré
@@ -27,6 +35,9 @@ name: CI Required Aggregator
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  check_run:
+    types: [completed]
 
 # Lecture seule sur contents, lecture+écriture checks pour ajouter un
 # check_run récapitulatif (optionnel, met fin au débat "où est le verdict").
@@ -38,12 +49,49 @@ jobs:
   aggregate-checks:
     name: Aggregate upstream check-runs
     runs-on: ubuntu-latest
+    # Annule les runs anterieurs pour la meme PR SHA -- sinon le check_run
+    # trigger peut empiler 20 runs sur une PR chargee. `cancel-in-progress`
+    # garde uniquement le run le plus recent (celui qui voit le SHA le plus
+    # a jour, et qui observe le check_run qui vient de finir).
+    concurrency:
+      group: ci-aggregator-${{ github.event.pull_request.number || github.event.check_run.pull_requests[0].number }}
+      cancel-in-progress: true
     # Le job regarde ce que les AUTRES workflows ont produit. Si pas de
     # check-runs à observer (PR ouverte depuis peu, ou self-only PR), on
     # laisse le job fail-safe : core.setFailed avec un message explicite.
     # Pas de skip silencieux -- "un aggregator qui ne peut pas rougir n'est
     # pas un aggregator" (cf #9819 acceptance criterion 1).
     steps:
+      - name: Resolve head SHA + PR number
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Resolution uniforme entre `pull_request` et `check_run` :
+          #   - pull_request : on a direct github.event.pull_request.{number,head.sha}
+          #   - check_run : on resout via l'API en matchant head_sha
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+            echo "trigger=pull_request"
+          else
+            HEAD_SHA="${{ github.event.check_run.head_sha }}"
+            # Trouve la PR associee a ce SHA via search API (fallback robuste
+            # au cas ou check_run.pull_requests serait vide).
+            PR_DATA=$(gh api -H "Accept: application/vnd.github+json" \
+              "/repos/${{ github.repository }}/commits/${HEAD_SHA}/pulls" \
+              | jq -c '[.[] | select(.state == "open")] | .[0]')
+            PR_NUMBER=$(echo "${PR_DATA}" | jq '.number // empty')
+            if [ -z "${PR_NUMBER}" ]; then
+              echo "::error::No open PR found for head_sha=${HEAD_SHA}"
+              exit 1
+            fi
+            echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+            echo "trigger=check_run"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -56,7 +104,6 @@ jobs:
         id: fetch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           # Récupère tous les check-runs pour ce SHA, paginé.
@@ -67,7 +114,7 @@ jobs:
           while :; do
             PAGE_DATA=$(gh api \
               -H "Accept: application/vnd.github+json" \
-              "/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs?per_page=100&page=${PAGE}")
+              "/repos/${{ github.repository }}/commits/${{ steps.resolve.outputs.head_sha }}/check-runs?per_page=100&page=${PAGE}")
             PAGE_RUNS=$(echo "${PAGE_DATA}" | jq -c '.check_runs')
             PAGE_COUNT=$(echo "${PAGE_RUNS}" | jq 'length')
             ALL_RUNS=$(jq -c -s 'add' <(echo "${ALL_RUNS}") <(echo "${PAGE_RUNS}"))
