@@ -32,6 +32,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from detect_markdown_rendering import (  # noqa: E402
+    _inside_fence_lines,
     _is_frontmatter_block,
     scan_cell,
 )
@@ -40,6 +41,19 @@ from detect_markdown_rendering import (  # noqa: E402
 def _md(source_lines):
     """Build a markdown cell dict from a list of source lines."""
     return {"cell_type": "markdown", "source": source_lines, "metadata": {}}
+
+
+def _cell(source: str) -> dict:
+    """A markdown cell whose source is a single string (the nbformat list form
+    is exercised implicitly via ``_as_text``; the detector handles both).
+    Ported from the deleted legacy scripts/tests/test_detect_markdown_rendering.py
+    shadow (#10066 consolidation)."""
+    return {"cell_type": "markdown", "source": source}
+
+
+def _rules(findings: list[dict]) -> set[str]:
+    """Extract the rule names from a list of findings (ported from legacy)."""
+    return {f["rule"] for f in findings}
 
 
 # --- _is_frontmatter_block --------------------------------------------------
@@ -207,6 +221,161 @@ class TestOversizedHintFenceAware:
         # the fix only adds fence-skipping, it does not change that policy).
         cell = _md(["### Astuces\n", "\n", "- Utilisez X.\n"])
         assert "oversized_hint" in self._rules(cell)
+
+
+# =========================================================================== #
+# FENCE-AWARENESS + SETEXT/FRONTMATTER RULE COVERAGE
+#
+# Ported verbatim from the deleted legacy scripts/tests/test_detect_markdown_rendering.py
+# shadow (#10066 consolidation). The canon above tests ``_is_frontmatter_block``,
+# ``scan_cell`` end-to-end, and ``oversized_hint`` fence-awareness. The legacy
+# file uniquely covered three areas the canon entirely lacked:
+#
+#   1. ``_inside_fence_lines`` — the code-fence detection helper (8 unit tests)
+#   2. ``setext_oversized`` — the rule flagging prose underlined by ``---``/``===``
+#      outside a fence, with regression guards for the ASCII-art / cryptarithme
+#      false-positive family (5 tests)
+#   3. ``frontmatter_supersize`` / ``frontmatter_rawyaml`` — the two distinct
+#      frontmatter rule names, pinned so a regression cannot merge them (2 tests)
+#
+# The module collision (both files shared basename ``test_detect_markdown_rendering``)
+# meant the canon's 17 tests were DEAD in CI whenever both ran (verified: both-
+# together 36 = 18x2, not 17+18=35). Deleting the legacy after porting these 15
+# unique tests resurrects the canon's 17 AND unifies fence/rule coverage.
+# =========================================================================== #
+
+
+class TestInsideFenceLines:
+    """Unit tests for the ``_inside_fence_lines`` helper (impl L148)."""
+
+    def test_basic_backtick(self):
+        lines = ["```", "a", "---", "b", "```", "c"]
+        assert _inside_fence_lines(lines) == {1, 2, 3}
+
+    def test_marker_lines_not_inside(self):
+        """The opening and closing marker lines themselves are NOT inside."""
+        lines = ["```", "a", "```"]
+        assert _inside_fence_lines(lines) == {1}
+
+    def test_tilde_fence(self):
+        lines = ["~~~", "x", "y", "~~~"]
+        assert _inside_fence_lines(lines) == {1, 2}
+
+    def test_unclosed_fence(self):
+        """An unclosed fence leaves every subsequent line inside (defensive)."""
+        lines = ["```", "a", "---", "b"]
+        assert _inside_fence_lines(lines) == {1, 2, 3}
+
+    def test_mixed_chars_do_not_close(self):
+        """A tilde line inside a backtick block is literal text, not a closer."""
+        lines = ["```", "~~~", "a", "```"]
+        assert _inside_fence_lines(lines) == {1, 2}
+
+    def test_indented_fence(self):
+        lines = ["   ```python", "a", "---", "   ```"]
+        assert _inside_fence_lines(lines) == {1, 2}
+
+    def test_two_separate_blocks(self):
+        lines = ["```", "a", "```", "b", "```", "c", "```"]
+        assert _inside_fence_lines(lines) == {1, 5}
+
+    def test_no_fence_returns_empty(self):
+        assert _inside_fence_lines(["a", "---", "b"]) == set()
+
+
+class TestSetextOversizedFenceAwareness:
+    """The focal regression of the legacy suite: a ``---``/``===`` line INSIDE a
+    fenced-code block is literal text (ASCII art, a cryptarithme divider) and
+    must NOT be flagged as a setext underline (impl ``setext_oversized`` rule)."""
+
+    def test_inside_code_fence_not_flagged(self):
+        """The canonical false positive: an ASCII-art divider inside a ``` block."""
+        src = (
+            "```\n"
+            "  S E N D\n"
+            "+ M O R E\n"
+            "---------\n"  # >=3 dashes -> _SETEXT_RE, but inside the fence
+            "M O N E Y\n"
+            "```\n"
+        )
+        assert "setext_oversized" not in _rules(scan_cell(_cell(src)))
+
+    def test_outside_code_fence_still_flagged(self):
+        """Regression guard: real prose underlined by --- (outside any fence)
+        IS flagged."""
+        src = (
+            "Ceci est un long paragraphe de prose pedagogique qui se termine "
+            "sans point final avant la regle.\n"
+            "---\n"
+        )
+        assert "setext_oversized" in _rules(scan_cell(_cell(src)))
+
+    def test_after_closed_fence_flagged(self):
+        """--- outside a CLOSED fence underlining real prose is still flagged."""
+        src = (
+            "```\n"
+            "code block\n"
+            "```\n"
+            "\n"
+            "Un paragraphe de prose explicatif assez long pour depasser le seuil.\n"
+            "---\n"
+        )
+        assert "setext_oversized" in _rules(scan_cell(_cell(src)))
+
+    def test_cryptarithmetic_ascii_art_not_flagged(self):
+        """The exact defect family that shipped as FP on the CSP/Sudoku
+        notebooks: a multi-line ASCII diagram inside a code fence containing a
+        ``---`` divider."""
+        src = (
+            "Voici le cryptarithme SEND + MORE = MONEY :\n\n"
+            "```\n"
+            "    S E N D\n"
+            "  + M O R E\n"
+            "  ---------\n"
+            "  M O N E Y\n"
+            "```\n"
+        )
+        assert "setext_oversized" not in _rules(scan_cell(_cell(src)))
+
+    def test_equals_rule_inside_fence_not_flagged(self):
+        """The ``===`` setext variant, inside a fence, is also literal."""
+        src = "texte\n```\npara ligne\n=====\n```\n"
+        assert "setext_oversized" not in _rules(scan_cell(_cell(src)))
+
+
+class TestFrontmatterRules:
+    """Pin the two distinct frontmatter rule names
+    (``frontmatter_supersize`` / ``frontmatter_rawyaml``) so a regression cannot
+    merge them. Ported from the deleted legacy shadow."""
+
+    def test_supersize_still_detected(self):
+        """Regression guard: a real frontmatter-supersize block IS still flagged
+        (the closing ``---`` sits directly after a text line -> setext H2
+        supersize)."""
+        src = (
+            "---\n"
+            "title: \"Un notebook\"\n"
+            "cost:\n"
+            "  api_usd_est: 0.01\n"
+            "  cpu_min: 5\n"
+            "---\n"  # directly after a text line -> setext H2 supersize
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "frontmatter_supersize" in rules
+
+    def test_rawyaml_still_detected(self):
+        """Regression guard: raw frontmatter (blank line before closing ``---``)
+        IS flagged as ``frontmatter_rawyaml``."""
+        src = (
+            "---\n"
+            "title: \"Un notebook\"\n"
+            "cost:\n"
+            "  cpu_min: 5\n"
+            "\n"
+            "---\n"
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "frontmatter_rawyaml" in rules
 
 
 if __name__ == "__main__":
