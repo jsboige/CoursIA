@@ -4,13 +4,15 @@ S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`).
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
-## Regle 1 : ai-01 merge soi-meme via `gh auth switch`
+## Regle 1 : ai-01 merge activement sous `myia-ai-01`
 
-Le compte `myia-ai-01` n'a **pas** le droit `MergePullRequest` (GraphQL) sur `jsboige/CoursIA`. Le compte `jsboige` (token scopes `repo workflow`) a les droits.
+Le compte `myia-ai-01` **a** le droit `MergePullRequest` sur `jsboige/CoursIA` — verifie firsthand cycle 2026-08-08 : 6 merges consecutifs reussis sous `myia-ai-01` sans aucun `gh auth switch` (#10087, #10086, #10055, #10015, #10061, #10080). La protection de branche (etat `required_status_check`, lecture via `gh api .../branch_protection`) renvoie `404` sous `myia-ai-01` (cf #9991) : le compte admin `jsboige` est requis pour **lire/modifier cette protection**, PAS pour merger.
 
-Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : `gh auth switch -u jsboige` → merge → `gh auth switch -u myia-ai-01` → post dashboard ack. **Pas** de "pending user merge" dans le todo. Ne pas confondre "permissions GitHub absent" avec "interdiction de merger". User feedback 2026-05-19 : "Fais un switch pour merger toi meme stp".
+Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : merger directement sous `myia-ai-01` (`gh pr merge <N> --squash --delete-branch`), puis post dashboard ack. **Pas** de "pending user merge" dans le todo. Ne pas confondre "permissions GitHub absent" avec "interdiction de merger". Reserver `gh auth switch -u jsboige` aux operations qui l'exigent reellement : lecture/ecriture de la protection de branche, et le cas des PRs etudiantes (couvert par [student-pr-reviews.md](student-pr-reviews.md)).
 
-**Exception** : PR notebook → regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
+**Note historique** : une version anterieure affirmait que `myia-ai-01` n'avait pas le droit `MergePullRequest` (constate absent le 2026-05-19 sur #1278/#1279/#1281) et prescrivait le rituel `gh auth switch -u jsboige` -> merge -> switch back. Le droit a ete accorde entre temps ; le switch mute en outre un etat **global au process `gh`** qui entre en course avec toute autre session ou sous-agent appelant `gh` (cf [model-delegation.md](model-delegation.md) regle 6) — le prescrire inutilement imposait un risque de corruption d'auth sans contrepartie.
+
+**Exception** : PR notebook -> regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
 
 ## Regle 2 : aucune demande user ne pourrit > 1 cycle
 
