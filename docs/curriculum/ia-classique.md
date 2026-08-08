@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 145 |
+| Notebooks | 147 |
 | PRODUCTION | 0 |
-| BETA | 145 |
+| BETA | 147 |
 | ALPHA | 0 |
 
-## Search/Applications (40 notebooks)
+## Search/Applications (42 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -61,14 +61,16 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 30 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
 | 31 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
 | 32 | App-17b : Vehicle Routing Problem (VRP) — Twin C# (méta | BETA | Oui |
-| 33 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
-| 34 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
-| 35 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 36 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
-| 37 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
-| 38 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
-| 39 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
-| 40 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 33 | App-17b : Vehicle Routing Problem (VRP) — Twin Python ( | BETA | Oui |
+| 34 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
+| 35 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
+| 36 | App-18b : Optimisation d'Hyperparametres (Python — From | BETA | Oui |
+| 37 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 38 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
+| 39 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
+| 40 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
+| 41 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
+| 42 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
 
 ## Search/Part1-Foundations (29 notebooks)
 
