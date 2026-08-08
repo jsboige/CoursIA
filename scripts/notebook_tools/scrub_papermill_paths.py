@@ -170,6 +170,22 @@ _HOME_RES = [
     re.compile(r"[A-Za-z]:[\\/]+(?:Users|home)[\\/]+[^\\/]+", re.IGNORECASE),
     # POSIX-style home root as written by some MSYS/git-bash tools: /c/Users/<user>
     re.compile(r"/[a-zA-Z]/(?:Users|home)/[^/]+", re.IGNORECASE),
+    # Bare Linux home root printed by WSL/POSIX-executed notebooks:
+    #   /home/<user>  -> ~  (diagnostic tail preserved)
+    # e.g. Lean4 kernel-wrapper deployment 'Wrapper robuste deploye:
+    # /home/jesse/.lean4-kernel-wrapper.py' (Lean-1-Setup, regression: the
+    # detect-only companion sees bare /home/<user> but this scrubber missed it,
+    # so a /home leak stayed in the committed output while the Windows home
+    # alongside it was anonymized). The (?<![\w.:/-]) lookbehind requires
+    # /home/ to be a PATH START (preceded by whitespace, line start, or a
+    # bracket) and blocks mid-URL paths like example.com/home/page (a domain
+    # char before the slash) -- a mutator must be more conservative than the
+    # flag-only companion, which matches the same URL and relies on human
+    # review. The username class excludes '/' so ONLY the home root is replaced
+    # and the diagnostic tail (wrapper filename) survives. macOS /Users/<user>
+    # and /root have no real instance in the corpus as of 2026-08-08, so they
+    # are not added speculatively (no FP surface without a real defect to fix).
+    re.compile(r"(?<![\w.:/-])/home/[^/\s:\"'<>|\\]+", re.IGNORECASE),
 ]
 
 # Checkout-root prefixes: a drive-absolute path into the repo checkout (any
