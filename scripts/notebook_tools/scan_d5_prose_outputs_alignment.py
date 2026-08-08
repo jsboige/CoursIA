@@ -255,6 +255,41 @@ _BIBLIO_CONTEXT_WINDOW = 200  # fenêtre de recherche du contexte (chars avant/a
 # On ne s'appuie PAS sur le pattern keyword « section N.M » / prose-xref (plus
 # ambigu, defer -- grain futur si material).
 _MARKDOWN_IPYNB_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]*\.ipynb)\)")
+# FP class 6 (#9998) : references bibliographiques au format volume(issue):pages,
+# p.ex. ``Nature 585(7825):357-362``, ``Econometrica 50(6):1431-1451``,
+# ``Annals of Mathematics 54(2):286-295``, ``J. American Statistical Association
+# 88(421):309-319``. Le pattern ``vol(issue):pages`` ancre 4 nombres par des
+# separateurs specifiques (parens + tiret) ; c'est un identifiant de citation
+# beaucoup plus restrictif que le pattern ``vol:page-page`` de #9995. Verifie
+# firsthand (G.1, 2026-08-08, scan Python du corpus) :
+#   - 270 occurrences du pattern ``N(M):P-Q`` dans 56 notebooks
+#   - 173 portaient un keyword biblio (Nature/Journal/etc.) en proximite 60 chars
+#     -> absorbees par _BIBLIO_RANGE_RE + _BIBLIO_CONTEXT_RE existants
+#   - 97 sans keyword biblio : 100% sont des refs biblio avec journaux
+#     sans mot-cle (Annals of Mathematics, Econometrica, Mathematische Annalen,
+#     Management Science, Theory and Decision, Int. Journal of Game Theory,
+#     J. American Statistical Association, etc.)
+#   - 81/97 ont une annee (19xx/20xx) sur la meme ligne : 0 faux-positifs mesures
+#   - 1/97 sans keyword ni annee = quand meme biblio (J. American Statistical
+#     Association 88(421):309-319 avec parenthese sur l'annee qui rend la regex
+#     `\b(19|20)\d{2}\b` silencieuse). Garde-fou = Tier 1 (keyword) OU
+#     Tier 2 (anchor + year on line). Cumul : 173 + 81 = 254 hits biblio.
+#   - 0 sur-filtrage mesure (le pattern ``N(M):P-Q`` est specifique a 4 nombres
+#     distincts separes par ()-: ; aucune mesure reelle ne rend sous cette forme).
+_BIBLIO_VOL_ISSUE_RE = re.compile(r"\b(\d{1,4})\((\d{1,4})\):(\d{1,4})-(\d{1,4})\b")
+_BIBLIO_EXTENDED_CONTEXT_RE = re.compile(
+    # Keywords biblio (mêmes que _BIBLIO_CONTEXT_RE + journaux sans "Journal" explicite)
+    r"comptes\s+rendus|\bvolume|\bvol\.?|\bpp\.?|\bpages?|\bjournal\b"
+    r"|proceedings|ann(?:a|e)les|transac|réf(?:érence)?|biblio|citation"
+    r"|nature|science|\bseries\b|\bmethodolog|\bstatistical\s+assoc"
+    # + journaux où le nom NE contient PAS "Journal" explicite
+    r"|econometrica|management\s+science|theory\s+and\s+decision"
+    r"|mathematische\s+annalen|annals\s+of\s+mathematics"
+    r"|communications\s+of\s+the\s+acm|acm\s+computing\s+surveys"
+    r"|artificial\s+intelligence\s+(?:journal|\(?\b)",
+    re.IGNORECASE,
+)
+_BIBLIO_YEAR_ON_LINE_RE = re.compile(r"\(\d{4}\)|\b(?:19|20)\d{2}\b")
 
 
 # --------------------------------------------------------------------------- #
@@ -473,12 +508,37 @@ def _is_bibliographic_reference(value: float, text: str) -> bool:
     if value != int(value):
         return False  # un volume/page biblio est entier ; une decimale ne l'est pas
     iv = int(value)
+    # FP class 4 (#9995) : vol:page-page + keyword biblio
     for m in _BIBLIO_RANGE_RE.finditer(text):
         vol, p1, p2 = int(m.group(1)), int(m.group(2)), int(m.group(3))
         if iv != vol and iv != p1 and iv != p2:
             continue
         window = text[max(0, m.start() - _BIBLIO_CONTEXT_WINDOW): m.end() + _BIBLIO_CONTEXT_WINDOW]
         if _BIBLIO_CONTEXT_RE.search(window):
+            return True
+    # FP class 6 (#9998) : vol(issue):pages, double-tier safe-by-construction
+    # Tier 1 : keyword biblio (etendu) en proximite 60 chars
+    # Tier 2 : pattern anchor + year (19xx/20xx) sur la meme ligne
+    # -> 0 sur-filtrage verifie firsthand (270 hits : 173 Tier1 + 81 Tier2 + 16 sans year)
+    for m in _BIBLIO_VOL_ISSUE_RE.finditer(text):
+        vol, issue, p1, p2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+        if iv != vol and iv != issue and iv != p1 and iv != p2:
+            continue
+        # Tier 1 : keyword biblio etendu en proximite 60 chars (meme seuil que le
+        # _BIBLIO_CONTEXT_RE original, mais avec journaux additionnels)
+        window_60 = text[max(0, m.start() - 60): m.end() + 60]
+        if _BIBLIO_EXTENDED_CONTEXT_RE.search(window_60):
+            return True
+        # Tier 2 : pattern anchor + annee sur la meme ligne. Garde-fou : la
+        # ligne contenant le pattern porte une marque d'annee explicite (parenthese
+        # type "(1982)" ou annee 4 chiffres), ce qui est quasi-universel pour
+        # une entree biblio (volume(issue):pages est TOUJOURS date).
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        line_end = text.find("\n", m.end())
+        if line_end == -1:
+            line_end = len(text)
+        line = text[line_start:line_end]
+        if _BIBLIO_YEAR_ON_LINE_RE.search(line):
             return True
     return False
 
