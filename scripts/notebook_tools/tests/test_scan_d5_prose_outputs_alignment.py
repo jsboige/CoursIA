@@ -865,6 +865,151 @@ class TestBibliographicReferenceFilter:
 
 
 # --------------------------------------------------------------------------- #
+#  FP class 6 (#9998) : vol(issue):pages -- 2-tier safe-by-construction
+# --------------------------------------------------------------------------- #
+
+
+class TestVolIssuePagesFilter:
+    """FP class 6 (#9998) : references bibliographiques au format
+    ``vol(issue):pages`` (Nature 585(7825):357-362, Econometrica 50(6):1431-1451).
+
+    Le pattern ancre volume + issue + page-range ensemble ; aucun des 4
+    nombres n'est une mesure calculee. Heuristique 2-tier safe-by-construction
+    (gate ``[gate-must-verify-detector-fp-before-wiring]``) :
+
+    * **Tier 1** : keyword biblio en proximite 60 chars (Nature, Science,
+      Proceedings, Journal, Comptes Rendus, Econometrica, etc.)
+    * **Tier 2** : pattern anchor + year (19xx/20xx) sur la meme ligne
+
+    Mesure corpus : 270 hits / 56 notebooks / 1080 valeurs ; 173 hits
+    filtraient deja via Tier 1 des contextes biblio etendus ; 97
+    supplementaires filtraient via Tier 2 (year on line) ; **0 hits ne
+    filtraient par aucun tier** (real risk = 0).
+    """
+
+    def test_helper_nature_with_keyword(self):
+        # Tier 1 -- Nature 585(7825):357-362, le keyword 'Nature' en
+        # proximite 60 chars active le filtre. Tous les 4 nombres sont biblio.
+        text = "Article publie dans Nature 585(7825):357-362 (2020)."
+        assert mod._is_bibliographic_reference(585.0, text) is True
+        assert mod._is_bibliographic_reference(7825.0, text) is True
+        assert mod._is_bibliographic_reference(357.0, text) is True
+        assert mod._is_bibliographic_reference(362.0, text) is True
+
+    def test_helper_econometrica_with_keyword(self):
+        # Tier 1 -- Econometrica 50(6):1431-1451, journal de référence.
+        text = "Reference : Econometrica 50(6):1431-1451 (1982)."
+        assert mod._is_bibliographic_reference(50.0, text) is True
+        assert mod._is_bibliographic_reference(6.0, text) is True
+        assert mod._is_bibliographic_reference(1431.0, text) is True
+        assert mod._is_bibliographic_reference(1451.0, text) is True
+
+    def test_helper_comptes_rendus_extended_keyword(self):
+        # Tier 1 -- 'comptes rendus' matche le keyword etendu (case-insensitive,
+        # pas d'accent requis). Meme pattern que Comptes Rendus 25:536-538 mais
+        # avec issue explicite.
+        text = "Cf. Comptes Rendus 56(3):712-720 (2024)."
+        assert mod._is_bibliographic_reference(56.0, text) is True
+        assert mod._is_bibliographic_reference(3.0, text) is True
+        assert mod._is_bibliographic_reference(712.0, text) is True
+        assert mod._is_bibliographic_reference(720.0, text) is True
+
+    def test_helper_year_on_line_no_keyword(self):
+        # Tier 2 -- pas de keyword biblio, mais l'annee (2019) sur la meme
+        # ligne suffit. Cas legitime : une ref sans nom de journal explicite
+        # mais datee.
+        text = "Article 7(2):45-67, 2019. https://example.com/paper.html"
+        assert mod._is_bibliographic_reference(7.0, text) is True
+        assert mod._is_bibliographic_reference(2.0, text) is True
+        assert mod._is_bibliographic_reference(45.0, text) is True
+        assert mod._is_bibliographic_reference(67.0, text) is True
+
+    def test_helper_annals_math_with_french_keyword(self):
+        # Tier 1 -- journal francais 'Annales' (sibling 'annals' du keyword).
+        text = "Annales de Mathematiques 54(2):286-295 (1901)."
+        assert mod._is_bibliographic_reference(54.0, text) is True
+        assert mod._is_bibliographic_reference(2.0, text) is True
+        assert mod._is_bibliographic_reference(286.0, text) is True
+        assert mod._is_bibliographic_reference(295.0, text) is True
+
+    def test_helper_year_only_no_keyword(self):
+        # Tier 2 -- year 2020 seule sur la ligne, sans keyword. Si le pattern
+        # vol(issue):pages n'est pas accompagne d'un year sur la meme ligne,
+        # le filtre EST conservateur (ne filtre pas).
+        text = "Resultat 7(2):45-67 sur la plage de mesure."
+        assert mod._is_bibliographic_reference(7.0, text) is False
+        assert mod._is_bibliographic_reference(2.0, text) is False
+        assert mod._is_bibliographic_reference(45.0, text) is False
+
+    def test_helper_no_pattern_not_filtered(self):
+        # Aucun pattern N(N):N-N -> nombre orphelin normal.
+        text = "Le ratio est 0.69 et le seuil 0.5."
+        assert mod._is_bibliographic_reference(0.69, text) is False
+        assert mod._is_bibliographic_reference(25.0, text) is False
+
+    def test_helper_value_not_in_pattern_not_filtered(self):
+        # Anti-sur-filtrage (G.9) : un nombre qui n'est pas dans le pattern
+        # (pas vol/issue/page) n'est pas filtre.
+        text = "Nature 585(7825):357-362 contient la mesure cle 0.847."
+        assert mod._is_bibliographic_reference(0.847, text) is False
+        assert mod._is_bibliographic_reference(42.0, text) is False
+
+    def test_helper_decimal_not_rounded_to_volume(self):
+        # Anti-sur-filtrage (G.9) : 585.2 ne doit PAS etre filtre par le vol 585.
+        text = "Nature 585(7825):357-362, mesure brute 585.2 mK."
+        assert mod._is_bibliographic_reference(585.2, text) is False
+        # L'entier 585 EST filtre.
+        assert mod._is_bibliographic_reference(585.0, text) is True
+
+    def test_integration_nature_suppressed(self, tmp_path):
+        # Cas fondateur : Nature 585(7825):357-362, vol + issue + page-range.
+        # Aucune sortie ne peut les 'verifier', mais ce sont des identifiants
+        # de citation. 585, 7825, 357, 362 filtres.
+        nb = tmp_path / "nature.ipynb"
+        _make_notebook([
+            _markdown_cell("Reference : Nature 585(7825):357-362 (2020)."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        # Aucune des 4 biblio IDs ne doit etre signalee.
+        for bib_id in (585.0, 7825.0, 357.0, 362.0):
+            assert bib_id not in [f.prose_number for f in mfo], (
+                f"biblio id {bib_id} must be filtered, got {mfo}")
+
+    def test_integration_legit_orphan_near_vol_issue_pages_preserved(self, tmp_path):
+        # Falsifiabilite : la mesure legitime 0.69 dans une cellule qui
+        # contient aussi Nature 585(7825):357-362 DOIT rester signalee.
+        nb = tmp_path / "mixed.ipynb"
+        _make_notebook([
+            _markdown_cell("ratio=0.69 (cf. Nature 585(7825):357-362)."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        legit = [f for f in mfo if f.prose_number == pytest.approx(0.69)]
+        biblio = [f for f in mfo if f.prose_number in (585.0, 7825.0, 357.0, 362.0)]
+        assert len(legit) == 1, (
+            f"legit orphan 0.69 must survive the vol(issue):pages filter, got {mfo}")
+        assert biblio == [], (
+            f"biblio ids 585/7825/357/362 must be filtered, got {biblio}")
+
+    def test_integration_year_only_line(self, tmp_path):
+        # Tier 2 path (real corpus finding) : 7(2):45-67, 2019 -- pas de
+        # keyword biblio, mais year on line. Tous les 4 filtres.
+        nb = tmp_path / "yearline.ipynb"
+        _make_notebook([
+            _markdown_cell("Paper 7(2):45-67, 2019. https://example.com"),
+            _code_cell("print(0.5)", [{"text": "0.5\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        for bib_id in (7.0, 2.0, 45.0, 67.0):
+            assert bib_id not in [f.prose_number for f in mfo], (
+                f"year-on-line anchor {bib_id} must be filtered, got {mfo}")
+
+
+# --------------------------------------------------------------------------- #
 #  Contre-epreuve positive ICT-1
 
 # --------------------------------------------------------------------------- #
