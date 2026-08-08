@@ -231,7 +231,9 @@ Documentation complète : [Lean/README.md](Lean/README.md)
 
 ## SemanticWeb - Web Sémantique
 
-Série de **25 notebooks** sur le Web Sémantique (12 Python + 12 C# + le notebook historique RDF.Net-Legacy, dont les jumeaux SW-8/9/10/13 et les side-tracks SW-3b/SW-6b du marathon parité #4956), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le notebook historique `RDF.Net-Legacy` + **12 Python**, dont les jumeaux SW-8/9/10/13 et les side-tracks SW-3b/SW-6b du marathon parité #4956), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+
+**Note décomposition (réconciliée c.1297)** : la prose historique « 12 Python + 12 C# + 1 historique » datait d'avant la consolidation des jumeaux C# livrés par le marathon parité #4956 (SW-8/9/10/13 + side-tracks). Disk-truth vérifié firsthand via catalogue : `RDF.Net-Legacy/RDF.Net.ipynb` est un notebook **.NET (C#)** (cf marker `kernel: '.NET (C#)'`), donc la décomposition canonique est **13 C# (incluant `RDF.Net-Legacy`) + 12 Python = 25**, alignée sur le marqueur autoritatif `CATALOG-STATUS` L8 (`SemanticWeb=25`) et sur la feuille SemanticWeb/README.md réconciliée par c.1296 (PR #9966).
 
 ### Structure détaillée
 
@@ -405,7 +407,7 @@ SymbolicAI/
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
 │
-├── SemanticWeb/               # Web semantique (25 notebooks : 12 Python + 12 C# + 1 RDF.Net-Legacy)
+├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
 │   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
@@ -605,7 +607,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 |-------|-----------|----------------|----------------|--------|
 | Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
 | Lean (proofs natifs + companions Python) | 28 | 26 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
-| SemanticWeb (C# + Python) | 25 | 24 pédagogiques (12 Python + 12 C# jumeaux) | 1 (RDF.Net-Legacy) | Très bon |
+| SemanticWeb (C# + Python) | 25 | 25 pédagogiques (13 C# incluant RDF.Net-Legacy + 12 Python) | 0 | Très bon |
 | Planners (PDDL classique + neuro-symbolique) | 23 | 22 pédagogiques (14 Python + 9 C# jumeaux) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
 | Argument Analysis (Argumentum + Agentic demo) | 22 | 18 (82%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo, dont le `_0-init` est le setup projet) | N/A (projet) |
@@ -615,7 +617,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 **Total** : 220 notebooks pédagogiques — soit 220 fichiers `.ipynb` actifs au catalogue (cf. bloc `<!-- CATALOG-STATUS -->`), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), 1 archive Planners (`archive/Fast-Downward-Legacy`) et 1 archive Tweety top-level (`archive/Tweety.ipynb`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Argument_Analysis inclut également 4 artefacts `_agent.ipynb` (papermill, versionnés) qui dérivent de 4 notebooks Agentic — ils ne sont **pas** comptés comme sources pédagogiques distinctes. Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **22 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls, post-c.728y+14 audit SymbolicAI/README §E cohérence, post-c.756 Lean-17-Knots series a/b + Lean-18-Search-AStar-Optimality ajoutés post-§E 21/07).
 
-> **Note (22/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC), **Lean 28** (18 preuves natives + 10 companions Python/WSL). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
+> **Note (22/07, révisée c.1297)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, **SemanticWeb 25 = 13 C# incluant RDF.Net-Legacy + 12 Python** [réconciliée c.1297 post-c.1296 audit], SMT/Z3-API 24 = 18 Python + 6 C# jumeaux, Planners 23 actifs = 14 Python + 9 C# jumeaux + 0-Setup, SymbolicLearning 20 = 12 Python + 8 C# jumeaux (+ 2 archives EML hors compte), Argument_Analysis 22 = 10 Agentic (5 sources + 4 artefacts `_agent.ipynb` + 1 setup) + 11 analytiques + 1 groupe I2 contre-arguments ASPIC), **Lean 28** (18 preuves natives + 10 companions Python/WSL). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 
 ### Problèmes connus (juillet 2026)
 
