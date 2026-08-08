@@ -788,3 +788,182 @@ class TestCLI:
         from scan_quant_classify import main
         rc = main(["--root", "/chemin/qui/nexiste/pas", "--check"])
         assert rc == 2, f"Expected 2 for missing root, got {rc}"
+
+
+# --------------------------------------------------------------------------- #
+#  Test d'integration corpus post-cablage v4 — c.1301+23 (issue #10012)
+# --------------------------------------------------------------------------- #
+
+
+# Chemins de corpus (relatifs a la racine du repo). Les tests dependent du
+# corpus reel sur disque (skip si absent) — ils sont tagges @pytest.mark.c1301_23.
+REPO_ROOT_CANDIDATES = (
+    Path(__file__).resolve().parents[3],  # scripts/notebook_tools/tests/ -> repo root
+    Path(__file__).resolve().parents[2],  # fallback si structure differente
+)
+
+
+def _resolve_repo_root() -> Path | None:
+    """Trouve la racine du repo (contient MyIA.AI.Notebooks/)."""
+    for cand in REPO_ROOT_CANDIDATES:
+        if (cand / "MyIA.AI.Notebooks").is_dir():
+            return cand
+    return None
+
+
+CORPUS_ML_DFA = "MyIA.AI.Notebooks/ML/DataScienceWithAgents"
+CORPUS_SEARCH_PART1 = "MyIA.AI.Notebooks/Search/Part1-Foundations"
+
+
+def _aggregate_drainable(results):
+    """Somme M+E+S sur une liste de NotebookQuantClasses."""
+    return sum(
+        r.by_class.get("MACHINE-DEP", 0)
+        + r.by_class.get("ENV-DEP", 0)
+        + r.by_class.get("STOCHASTIQUE-NON-SEEDEE", 0)
+        for r in results
+    )
+
+
+def _aggregate_total(results):
+    """Somme total_findings sur une liste de NotebookQuantClasses."""
+    return sum(r.total_findings for r in results)
+
+
+@pytest.mark.c1301_23
+class TestC130123PostCablageCorpusDelta:
+    """Mesure corpus post-cablage v4 falsifiable — issue #10012.
+
+    Issue #10012 a documente 209 drainables (ML/DataScienceWithAgents) + 378
+    drainables (Search/Part1-Foundations) en pre-cablage, dont ~90% etaient
+    des FP non couverts par les vagues c.1272 (bayesien) et c.1275 (ArgAna).
+
+    PR #10016 a cable la garde v4 : 4 classes structurelles
+    (a) editorial-duration (b) biblio (c) section-number (d) theoretical-ref
+    + word-boundary regex anti-substring.
+
+    Ce test verifie le **delta post-cablage mesure firsthand** sur le corpus
+    reel. Il sert depreuve falsifiable que le cablage a reellement reduit
+    les FP sans noyer les vrais drainables.
+
+    Bilan documente par #10016 (run 2026-08-08, origin/main @ a0c5d142f) :
+      - ML/DfA      : 209 drainables -> 93  (-55%, 116 FP retires)
+      - Search/Part1 : 378 drainables -> 213 (-44%, 165 FP retires)
+
+    IMPORTANT : les bornes sont sur **drainable (M+E+S)**, pas sur total_findings.
+    total_findings reste eleve (1747 ML/DfA, 5134 Search/Part1) parce que la
+    majorite des nombres dans les notebooks sont STRUCTUREL (numeros de section,
+    durees editoriales, refs biblio) -- c'est le resultat normal d'un scanner
+    qui distingue bien les 4 classes.
+    """
+
+    def test_c1301_23_ml_dfA_post_cablage_drainable_below_pre_cablage(self):
+        """ML/DfA post-cablage : drainable (M+E+S) strictement < 209 (pre-cablage)."""
+        root = _resolve_repo_root()
+        if root is None:
+            pytest.skip("Corpus MyIA.AI.Notebooks introuvable sur le disque.")
+        corpus = root / CORPUS_ML_DFA
+        if not corpus.is_dir():
+            pytest.skip(f"Corpus {CORPUS_ML_DFA} absent (machine sans ML).")
+
+        results = scan_corpus_quant(corpus)
+        drainable = _aggregate_drainable(results)
+        n_notebooks = len(results)
+
+        # Pre-cablage baseline documente dans #10012 + #10016 = 209 drainables.
+        # Post-cablage v4 doit reduire significativement (-55% attendu).
+        assert drainable < 209, (
+            f"ML/DfA post-cablage drainable={drainable} >= 209 (baseline pre-cablage). "
+            f"Câblage v4 n'a pas retire de FP. n_notebooks={n_notebooks}."
+        )
+        # Borne haute securite : le cablage v4 ne doit PAS avoir tout elimine.
+        assert drainable > 0, (
+            f"ML/DfA drainable={drainable} == 0 : le cablage v4 a elimine TOUT, "
+            f"y compris les vrais drainables. Re-elargir la garde."
+        )
+        delta_pct = (209 - drainable) / 209 * 100
+        print(
+            f"\n[ML/DfA] n_notebooks={n_notebooks} drainable={drainable} "
+            f"(pre-cablage=209, delta={delta_pct:.1f}%)"
+        )
+
+    def test_c1301_23_search_part1_post_cablage_drainable_below_pre_cablage(self):
+        """Search/Part1 post-cablage : drainable (M+E+S) strictement < 378 (pre-cablage)."""
+        root = _resolve_repo_root()
+        if root is None:
+            pytest.skip("Corpus MyIA.AI.Notebooks introuvable.")
+        corpus = root / CORPUS_SEARCH_PART1
+        if not corpus.is_dir():
+            pytest.skip(f"Corpus {CORPUS_SEARCH_PART1} absent.")
+
+        results = scan_corpus_quant(corpus)
+        drainable = _aggregate_drainable(results)
+        n_notebooks = len(results)
+
+        assert drainable < 378, (
+            f"Search/Part1 post-cablage drainable={drainable} >= 378 (pre-cablage). "
+            f"Câblage v4 n'a pas reduit les FP. n_notebooks={n_notebooks}."
+        )
+        assert drainable > 0, (
+            f"Search/Part1 drainable={drainable} == 0 : cablage v4 a elimine tout."
+        )
+        delta_pct = (378 - drainable) / 378 * 100
+        print(
+            f"\n[Search/Part1] n_notebooks={n_notebooks} drainable={drainable} "
+            f"(pre-cablage=378, delta={delta_pct:.1f}%)"
+        )
+
+    def test_c1301_23_ml_dfA_drainable_breakdown_minimum_mach_dep(self):
+        """ML/DfA post-cablage : au moins un MACHINE-DEP runtime survit.
+
+        Anti-regression : le cablage v4 ne doit pas avoir elimine TOUS les
+        MACHINE-DEP (sinon il aurait jete les vrais timings runtime avec les
+        FP). Mesure #10016 documente 7 MACHINE-DEP restants ; on exige >= 1.
+        """
+        root = _resolve_repo_root()
+        if root is None:
+            pytest.skip("Corpus MyIA.AI.Notebooks introuvable.")
+        corpus = root / CORPUS_ML_DFA
+        if not corpus.is_dir():
+            pytest.skip(f"Corpus {CORPUS_ML_DFA} absent.")
+
+        results = scan_corpus_quant(corpus)
+        n_mach_dep = sum(r.by_class.get("MACHINE-DEP", 0) for r in results)
+        assert n_mach_dep >= 1, (
+            f"ML/DfA MACHINE-DEP={n_mach_dep} : le cablage v4 a elimine TOUS les "
+            f"timings runtime legitimes. Re-elargir la garde."
+        )
+        print(f"\n[ML/DfA] MACHINE-DEP={n_mach_dep} (runtime timings legitimes preserves)")
+
+    def test_c1301_23_no_regression_v4_guard_kept(self):
+        """Sanity post-cablage : les vrais drainables (runtime ms, python semver) survivent.
+
+        Reutilise les memes fixtures que `test_check_drainable_returns_1` /
+        `_classify_quant_value` (deja vert en c.1301+12). On valide ici que
+        le cablage v4 n'a pas elimine les vrais drainables verifies par les
+        golden sets existants — ce test sert depreuve de non-regression.
+        """
+        # Sanity 1 : runtime ms reste MACHINE-DEP (deja valide par test_check_drainable_returns_1)
+        cls, _ = _classify_quant_value("42", 42.0,
+                                       "execution: ", " ms (passe benchmark)")
+        assert cls == "MACHINE-DEP", (
+            f"runtime 42 ms aurait du rester MACHINE-DEP apres v4, got {cls}. "
+            f"Filtre v4 trop large (elimine les vrais drainables)."
+        )
+
+        # Sanity 2 : python 3.10+ reste ENV-DEP (deja valide par test_10012_falsif_python_semver_kept)
+        cls, _ = _classify_quant_value("3.10", 3.10,
+                                       "python ", "+ (jupyter env)")
+        assert cls == "ENV-DEP", (
+            f"python 3.10+ semver aurait du rester ENV-DEP apres v4, got {cls}. "
+            f"Filtre v4 trop large."
+        )
+
+        # Sanity 3 : seed=42 accuracy reste STRUCTUREL (stochastique seede)
+        cls, _ = _classify_quant_value("0.87", 0.87,
+                                       "validation accuracy (seed=",
+                                       ", 10-fold cv)")
+        assert cls == "STRUCTUREL", (
+            f"accuracy seed=42 aurait du rester STRUCTUREL, got {cls}. "
+            f"Filtre v4 trop large."
+        )
