@@ -132,6 +132,15 @@ class TestDetectSvg:
     def test_none_for_empty_svg(self):
         assert detect_svg("<svg></svg>") is None
 
+    def test_strokewidth_negative_not_flagged(self):
+        # CRITICAL zero-FP property: \b(width|height) must NOT match strokeWidth
+        # (no word boundary between 'e' and 'w'). A negative strokeWidth is a
+        # different attribute and must not trip this detector. Ported verbatim
+        # from the legacy scripts/tests/ shadow (its only unique test) during
+        # the #10066 consolidation -- the canon did not previously lock this.
+        svg = _svg("<line x1='0' y1='0' x2='10' y2='10' strokeWidth='-2'/>")
+        assert detect_svg(svg) is None
+
     def test_finding_shape(self):
         finding = detect_svg(_svg('<rect width="-893"/>'))
         assert finding is not None
