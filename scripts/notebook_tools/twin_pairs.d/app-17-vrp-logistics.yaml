@@ -8,7 +8,14 @@
       by: myia-po-2023:CoursIA
       python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
       csharp_sha: 0e542d4ddc5b90bf79aecb9cf7d151223512ef92
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
+      csharp_sha: 95cc4fa62adcb12465706562ad1da876d915b51d
+      content_python_sha: cdf5b893c9170134c94e1344bd6a6be9e78a55af1062d2aa68c0395b637e6ac0
+      content_csharp_sha: ce1684788453bde4b35302debc9a0444c31cbe8c809bbd4583474d91eb5b9a12
   known_differences:
     - "Socle pedagogique commun : VRP / Routing logistique (CSP + OR-Tools routing, distances) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools routing + math.sqrt distances ; C# = BCL pure (System.*), 0 NuGet."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+    - "Note c.1300 (2026-08-08 myia-po-2025:CoursIA-2) : le registre suit `App-17-VRP-Logistics.ipynb` (Python original, OR-Tools routing solver, PR #4596), mais le jumeau Python metaheuristiques from-scratch reside dans `App-17b-VRP-Logistics-Python.ipynb` (PR #9846, marathon parite #4956) -- hors registre, drift pre-existant relevant d'une PR dediee cf #8264. La PR #9979 a modifie le C# twin + le Python twin metaheuristiques (reconciliation SOTA Prong B EPIC #3801, voir L989 NEW) ; rebaseline c.1300 atteste le SHA C# post-fix (le SHA Python reference reste 430afccc5 car le Python original n'a pas ete touche par cette PR)."
