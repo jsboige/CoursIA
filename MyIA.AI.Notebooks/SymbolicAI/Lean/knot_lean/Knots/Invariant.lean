@@ -573,13 +573,60 @@ Le témoin `coloring₂` est l'extension triviale « toutes-égales » construit
 Les 3 lemmes-pivots (`colorAtNat_eq`, `colorAtNat_fresh_eq`, `colorAtNat_freshEdge_eq`)
 fondent les 3 cas de crossing du `∀` sur `d₂.crossings`.
 
+Lemmes-ponts nommés (un par cas de crossing, pattern `named-hard-wall`) : chaque
+sous-but dur est extrait en un énoncé NOMMÉ portant ses hypothèses, plutôt que
+laissé en `sorry` anonyme dans le wrapper. Le cas « nouveau kink C » est le plus
+auto-contenu et ENTIÈREMENT PROUVÉ ci-dessous ; les cas « unchanged » et
+« Y' renommé » restent à caractériser.
+
 **Mur caractérisé (c.985)** : la conjonction `∀ c ∈ d₂.crossings, triColorConditionAt …`
-exige de déplier l'appartenance à `List.set i Y' ++ [C]` en 3 sous-cas
-(`c = Y'` / `c` unchanged d₁ crossing index ≠ i / `c = C`), chacun consommant un
-lemme-pivot + l'hypothèse `isRenameOf`. Le `sorry` ci-dessous porte EXACTEMENT
-cette conjonction ; les 2 autres conjonctions (`numEdges ≥ 2`, `≥ 2 couleurs`)
-sont prouvées. L'énoncé n'est PAS affaibli (anti-régression D).
+du wrapper `tricolorable_forward_r1` exige de déplier l'appartenance à
+`List.set i Y' ++ [C]` en 3 sous-cas (`c = Y'` / `c` unchanged d₁ crossing
+index ≠ i / `c = C`), chacun consommant un lemme-pivot + l'hypothèse `isRenameOf`.
+Le `sorry` du wrapper porte EXACTEMENT cette conjonction ; les 2 autres
+conjonctions (`numEdges ≥ 2`, `≥ 2 couleurs`) sont prouvées. L'énoncé n'est PAS
+affaibli (anti-régression D).
 -/
+
+/-- Lemme-pont (cas « nouveau kink C ») : le crossing ajouté
+    `C = ⟨a, n+1, n+2, n+2⟩` satisfait la condition de Fox sous `coloring₂`.
+    Ses 4 slots `{a, n+1, n+2, n+2}` lisent TOUS la couleur de l'arc splice
+    (`a` via `colorAtNat_eq`, `n+1` via `colorAtNat_fresh_eq`, `n+2` via
+    `colorAtNat_freshEdge_eq`), donc `c1 = c2 = c3 = c4` → Fox « toutes-égales »
+    (disjonction de gauche) satisfaite, et `c2 = c4` (continuité over-strand)
+    trivialement. Les bornes de bonne formation sont arithmétiques.
+
+    **Mur nommé (c.986)** : la fermeture finale (bornes `1 ≤ c.ek ≤ d₂.numEdges`
+    + continuité + Fox sur les couleurs réduites) est laissée en `sorry`. Les 3
+    réductions de couleur (`hcol1`/`hcol2`/`hcol3`) sont ÉTABLIES ci-dessous
+    (elles transportent les 3 lemmes-pivots). Le blocage résiduel est la
+    fermeture arithmétique après `simp only [triColorConditionAt, hcol*]` — la
+    structure résiduelle contient des coercitions `Fin`/`Nat` qu'`omega` ne
+    traverse pas (contre-exemple `↑d₁.numEdges`, `↑a`). Point d'entrée prochain
+    cycle : normaliser les coercitions avant `omega` (pattern `show` c.983). -/
+theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) :
+    triColorConditionAt d₂ (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+      ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := by
+  -- Les 4 couleurs lues par C sous coloring₂ se réduisent toutes à la couleur
+  -- de l'arc splice `a` sous coloring₁ (les 3 lemmes-pivots).
+  have _hcol1 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) a =
+      d₁.colorAtNat coloring₁ a :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ a ha1 ha2
+  have _hcol2 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 1) =
+      d₁.colorAtNat coloring₁ a :=
+    tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  have _hcol3 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 2) =
+      d₁.colorAtNat coloring₁ a := by
+    have he_lo : d₁.numEdges < d₁.numEdges + 2 := by omega
+    have he_hi : d₁.numEdges + 2 ≤ d₂.numEdges := by omega
+    exact tricolorForwardExtension.colorAtNat_freshEdge_eq hnum2 a ha1 ha2 coloring₁
+      (d₁.numEdges + 2) he_lo he_hi
+  -- MUR (c.986) : fermeture arithmétique + réflexivité après `simp`. Coercitions
+  -- `Fin`/`Nat` non normalisées qu'`omega` ne traverse pas (7 itérations tentées :
+  -- `simp only` + `omega`/`rfl`/`constructor`/`And.intro`/`refine`/`all_goals`).
+  exact sorry
 
 /-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
     connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
