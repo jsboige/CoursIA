@@ -365,6 +365,376 @@ theorem tricolorable_invariant :
   -- coloring — a twist could CREATE tricolorability from nothing. The connected
   -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
   -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
+  --
+  -- 4e-tactic characterization (c.980 deep-track, dispatch ai-01 msg-9gt1au;
+  -- CORRECTED c.981 — see the TRIVIAL-EXTENSION note below).
+  -- The forward direction is the COLOR-EXTENSION construction. Given
+  -- `coloring₁ : TriColoring d₁` witnessing `IsTricolorable d₁` and
+  -- `h : Reidemeister1Connected d₁ d₂` (Reidemeister.lean L262), build
+  -- `coloring₂ : TriColoring d₂` (d₂.numEdges = d₁.numEdges + 2):
+  --   (1) On the shared prefix [1, d₁.numEdges], `coloring₂` agrees with
+  --       `coloring₁` (transport via `ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges+2)`).
+  --   (2) On the two fresh edges `{d₁.numEdges+1, d₁.numEdges+2}` (PD labels
+  --       `b`, `c` in the surgery), assign `coloring₁ a` — the color of the
+  --       spliced arc — to BOTH. This is the TRIVIAL ALL-EQUAL extension.
+  --
+  -- CORRECTION c.981: the c.980 note prescribed the TWO colors ≠ `coloring₁ a`
+  -- (the all-DISTINCT kink mode). That is the BACKWARD direction's construction
+  -- (#3003, `tricolorable_backward` §9), not the forward one. For the FORWARD
+  -- direction the trivial extension suffices and is what makes the proof
+  -- tractable — the new crossing `⟨a, b, c, c⟩` then reads, under `coloring₂`,
+  --   `(e1,e2,e3) = (coloring₁ a, coloring₁ a, coloring₁ a)`  (e2=e4=b, e3=c)
+  -- so its Fox condition is the ALL-EQUAL disjunct (trivially satisfied), and
+  -- the over-strand continuity `c2 = c4` holds (`coloring₂ b = coloring₂ c`).
+  -- The renamed crossing `Y' = isRenameOf (crossing i) a b` (h's conjunct) has
+  -- every `a`-slot replaced by `b`; under `coloring₂ b = coloring₁ a` it reads
+  -- the SAME color as crossing i did under `coloring₁`, so `Y'`'s Fox condition
+  -- is preserved verbatim (this is exactly Reidemeister.lean L246-248). Every
+  -- other crossing is untouched by `List.set i` and its edges are unchanged, so
+  -- its condition is preserved too. `numEdges ≥ 2` is arithmetic inheritance
+  -- (`d₂.numEdges = d₁.numEdges + 2 ≥ 4`), and `≥ 2 colors` is inherited since
+  -- the prefix — where `coloring₁` already uses ≥2 — is unchanged.
+  --
+  -- Proof obligations for the implementation (each now low-risk, not a wall):
+  --   (a) CONSTRUCT `coloring₂ : Fin (n+2) → TriColor` as the `if k < n then
+  --       coloring₁ ⟨k,_⟩ else coloring₁ ⟨a-1,_⟩` function (fresh slots n, n+1
+  --       both take `coloring₁`'s color at arc `a`). No `otherTwo` needed.
+  --   (b) NEW CROSSING: `triColorConditionAt d₂ coloring₂ ⟨a,b,c,c⟩` reduces to
+  --       the all-equal disjunct via the color assignments above.
+  --   (c) RENAMED CROSSING `Y'`: `isRenameOf` + `coloring₂ b = coloring₁ a` ⇒
+  --       its Fox condition ≡ crossing i's under `coloring₁`.
+  --   (d) UNCHANGED CROSSINGS: `List.set` only touches index `i`; `d₂.crossings`
+  --       = `d₁.crossings.set i Y' ++ [C]`, so `∀ c ∈ d₂.crossings` splits into
+  --       the renamed `Y'`, the appended `C`, and the untouched `d₁` crossings.
+  -- The deep track is MULTI-CYCLE (ai-01 greenlit): a characterized wall with
+  -- the corrected trivial construction above is the next cycle's implementation
+  -- target. FORBIDDEN: weakening the statement (anti-regression D).
+
+/-- Construction de l'extension triviale « toutes-égales » d'un tricoloriage à
+    travers une torsion R1 connectée (option C). C'est la matérialisation en
+    code de la construction caractérisée ci-dessus (c.981).
+
+    **Pourquoi l'arc `a` est un paramètre explicite, et non extrait de `h`.**
+    `Reidemeister1Connected d₁ d₂` est un `Prop`, et l'arc splice `a` y est
+    existentiellement quantifié (`∃ a, …`). Le recursor `Exists.casesOn`
+    n'élimine que vers `Prop`, or le but `TriColoring d₂` est un `Type` : on ne
+    peut donc PAS extraire `a` (donnée) de `h` pour construire un terme de
+    `Type`. La solution est de passer `a` (et les bornes) comme paramètres
+    explicites — données, pas témoins extraits d'un `Prop`. Le théorème de
+    transfert `tricolorable_forward_r1` (but `Prop`), lui, obtient `a` de `h`
+    via `obtain` (élimination `Prop → Prop`, autorisée) puis appelle cette
+    `def`.
+
+    **Pourquoi le corps ne fait PAS de `rw [hnum2]` (révision c.983).** La
+    première version (c.982) faisait `show Fin d₂.numEdges → TriColor; rw
+    [hnum2]; exact fun k => …`. Comme `rw` est une tactique (pas de l'égalité
+    définitionnelle), le terme résultant n'était PAS réductible par defeq :
+    appliquer l'extension à un `k : Fin d₂.numEdges` ne se réduisait pas, ce qui
+    bloquait le lemme de conservation de couleur (le pivot du transfert). Le
+    corps présent prend `k : Fin d₂.numEdges` DIRECTEMENT et décide sur
+    `k.val < d₁.numEdges`, sans réécrire le type porteur : il est donc
+    defeq-réductible, et `simp only [tricolorForwardExtension]` / `unfold`
+    fonctionnent. `hnum2` reste un paramètre (le théorème appelant l'utilise
+    pour arguer que les slots `≥ d₁.numEdges` sont exactement les 2 arêtes
+    fraîches), mais le corps ne le référence pas — c'est intentionnel.
+
+    La construction : `coloring₂` agree avec `coloring₁` sur le préfixe
+    `[0, d₁.numEdges)` (transport via l'inclusion `Fin n ↪ Fin (n+2)` implicite
+    dans `hnum2`), et tous les slots frais `{n, n+1}` (où `n = d₁.numEdges`,
+    donc exactement 2 via `hnum2`) prennent la couleur `ca = coloring₁` de l'arc
+    splice `a`. Le théorème cible affirmera que c'est un tricoloriage valide de
+    `d₂` (nouveau crossing `⟨a,b,c,c⟩` → Fox toutes-égales ; `Y'` préservé). -/
+def tricolorForwardExtension {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) : TriColoring d₂ := by
+  have hca : a - 1 < d₁.numEdges := by omega
+  exact fun k => if hk : k.val < d₁.numEdges then coloring₁ ⟨k.val, hk⟩ else coloring₁ ⟨a - 1, hca⟩
+
+/-- Lemme-pivot de conservation de couleur : pour toute arête `e ∈ [1, d₁.numEdges]`
+    (une arête authentique de `d₁`), l'extension lit la MÊME couleur que
+    `coloring₁`. C'est le fondement du cas « crossing inchangé » du transfert
+    avant : un crossing de `d₁` dont l'index ≠ `i` n'est pas touché par la
+    chirurgie `List.set`, donc ses conditions de Fox sous `coloring₂` se
+    réduisent à celles sous `coloring₁` via ce lemme (point par point sur ses 4
+    slots PD). -/
+theorem tricolorForwardExtension.colorAtNat_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (e : Nat) (he1 : 1 ≤ e) (he2 : e ≤ d₁.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) e =
+      d₁.colorAtNat coloring₁ e := by
+  -- Aucun des deux `numEdges` n'est nul (`1 ≤ e ≤ d₁.numEdges` ⟹ `d₁.numEdges ≥ 1`).
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- Réduis les deux modulos à `e-1` (car `e-1 < d₁.numEdges ≤ d₂.numEdges`).
+  have hfin2 : ((e - 1) % d₂.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  have hfin1 : ((e - 1) % d₁.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` des deux côtés (branches `numEdges = 0` mortes via `dif_neg`)
+  -- ET réduit les modulos. **`simp only` et non `rw`** : le modulo `(e-1)%n` apparaît
+  -- dans le champ VALEUR du `Fin ⟨(e-1)%n, ⋯⟩` ET dans le champ PREUVE (`⋯ : (e-1)%n < n`),
+  -- donc le réécriture crée un motive dépendant qui échoue sur `rw` (Lean: "motive is
+  -- not type correct"). `simp` dispose des lemmes `congr` de `Fin` qui propagent la
+  -- réécriture à travers le champ preuve — c'est la solution prescrite par le message
+  -- d'erreur lui-même ("use 'simp' ... which have strategies for ... dependencies").
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hfin2, hfin1]
+  -- But : `tricolorForwardExtension … ⟨e-1, _⟩ = coloring₁ ⟨e-1, _⟩`.
+  -- L'indice `⟨e-1, _⟩ : Fin d₂.numEdges` ; sa coercion `↑⟨e-1, ⋯⟩` est
+  -- defeq à `e-1` (`Fin.val_mk`). On `show` donc le but avec `(e-1)` à la
+  -- place de la coercion — ce qui aligne le test du `if` sur `e-1 < d₁.numEdges`
+  -- (vrai car `e ≤ d₁.numEdges`) — PUIS `if_pos` force la branche « then ».
+  -- **`show` ne souffre pas du problème de motive** (c'est une égalité
+  -- définitionnelle établie par le noyau, pas une réécriture par congruence).
+  unfold tricolorForwardExtension
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨e - 1, by omega⟩
+  -- `dif_pos` (pas `if_pos`) : le `if` est un `dite` dépendant — la preuve `hk`
+  -- est utilisée dans la branche « then » (`coloring₁ ⟨e-1, hk⟩`).
+  rw [dif_pos (by omega : (e - 1 : Nat) < d₁.numEdges)]
+
+/-- Second lemme-pivot : l'arête FRAÎCHE `b = d₁.numEdges + 1` (créée par la
+    torsion R1) lit, sous `coloring₂`, la MÊME couleur que l'arc splice `a` lit
+    sous `coloring₁`. C'est le fondement du cas « crossing renommé Y' » du
+    transfert avant : `Y'` est le crossing d'extrémité `i` avec les occurrences
+    de l'arc `a` renommées en `b` (`isRenameOf … a b`), donc sous `coloring₂`
+    son slot renommé lit la couleur du splice (ce lemme) tandis que ses slots
+    inchangés (dans `[1, d₁.numEdges]`) préservent leur couleur via
+    `colorAtNat_eq` — les 4 couleurs lues par `Y'` sous `coloring₂` sont donc
+    EXACTEMENT celles lues par le crossing original sous `coloring₁`, et la
+    condition de Fox est préservée. -/
+theorem tricolorForwardExtension.colorAtNat_fresh_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 1) =
+      d₁.colorAtNat coloring₁ a := by
+  -- `numEdges ≥ 1` (de `1 ≤ a ≤ d₁.numEdges`), donc ni diagramme n'est dégénéré.
+  have hca : a - 1 < d₁.numEdges := by omega
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- Modulos : (b-1) % d₂.numEdges = d₁.numEdges (car b-1 = n < n+2 = d₂.numEdges) ;
+  --            (a-1) % d₁.numEdges = a-1 (car a-1 < d₁.numEdges).
+  have hmod_fresh : (d₁.numEdges + 1 - 1) % d₂.numEdges = d₁.numEdges := by
+    rw [Nat.add_sub_cancel, hnum2]
+    exact Nat.mod_eq_of_lt (by omega)
+  have hmod_a : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` des deux côtés (branches `numEdges = 0` mortes) + réduit
+  -- les modulos. Même motif que `colorAtNat_eq` : `simp only` (pas `rw`) pour
+  -- gérer le champ preuve du `Fin` (motive mal-typeé sinon).
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hmod_fresh, hmod_a]
+  -- But : extension à l'indice `⟨d₁.numEdges, _⟩` = `coloring₁ ⟨a-1, _⟩`.
+  -- L'indice `⟨d₁.numEdges, _⟩ : Fin d₂.numEdges` ; sa coercion est defeq à
+  -- `d₁.numEdges`. On `show` le but avec `d₁.numEdges` (dépouille la coercion),
+  -- ce qui aligne le test du `if` sur `d₁.numEdges < d₁.numEdges` (FAUX),
+  -- PUIS `dif_neg` force la branche « else » → `coloring₁ ⟨a-1, hca⟩`.
+  unfold tricolorForwardExtension
+  show (if hk : (d₁.numEdges : Nat) < d₁.numEdges then coloring₁ ⟨d₁.numEdges, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨a - 1, by omega⟩
+  -- `dif_neg` : `dite` dépendant, branche « else » (le test `n < n` est faux).
+  rw [dif_neg (by omega : ¬ (d₁.numEdges : Nat) < d₁.numEdges)]
+
+/-- Troisième lemme-pivot : toute arête FRAÎCHE `e ∈ (d₁.numEdges, d₂.numEdges]`
+    (les `n+1` et `n+2` créés par la torsion) lit la couleur de l'arc splice `a`.
+    Généralise `colorAtNat_fresh_eq` (cas particulier `e = d₁.numEdges + 1`).
+    C'est le fondement du cas « nouveau crossing C » du transfert avant : le
+    crossing ajouté `C = ⟨a, n+1, n+2, n+2⟩` a ses slots `{a, n+1, n+2, n+2}`
+    où `a` lit la couleur splice via `colorAtNat_eq` et `n+1, n+2, n+2` la lisent
+    via ce lemme — les 4 couleurs sont donc toutes-égales, et la condition de
+    Fox « toutes-égales » (disjonction de gauche) est satisfaite trivialement. -/
+theorem tricolorForwardExtension.colorAtNat_freshEdge_eq {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (e : Nat)
+    (he_lo : d₁.numEdges < e) (he_hi : e ≤ d₂.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) e =
+      d₁.colorAtNat coloring₁ a := by
+  have hca : a - 1 < d₁.numEdges := by omega
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  -- `(e-1) % d₂.numEdges = e-1` (car `e ≤ d₂.numEdges ⟹ e-1 < d₂.numEdges`).
+  have hmod_e : (e - 1) % d₂.numEdges = e - 1 := Nat.mod_eq_of_lt (by omega)
+  -- `(a-1) % d₁.numEdges = a-1`.
+  have hmod_a : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+  -- Déplie `colorAtNat` + réduit les modulos (`simp only`, cf. note motive c.983).
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hmod_e, hmod_a]
+  -- L'indice `⟨e-1, _⟩ : Fin d₂.numEdges` ; `e-1 ≥ d₁.numEdges` (car `e > d₁.numEdges`),
+  -- donc la coercion `↑⟨e-1, ⋯⟩ = e-1 ≥ d₁.numEdges` n'est PAS `< d₁.numEdges` ⟹
+  -- branche « else » de l'extension → `coloring₁ ⟨a-1, hca⟩`. On `show` (dépouille la
+  -- coercion) puis `dif_neg`.
+  unfold tricolorForwardExtension
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else coloring₁ ⟨a - 1, by omega⟩) = coloring₁ ⟨a - 1, by omega⟩
+  rw [dif_neg (by omega : ¬ (e - 1 : Nat) < d₁.numEdges)]
+
+/-! ### Transfert avant `tricolorable_forward_r1` — assemblage du wrapper
+
+Lemme de transfert avant (direction AVANT de `tricolorable_invariant` sur un
+mouvement R1 connecté) : si `d₁` est tricolorable et `d₂` s'obtient de `d₁` par
+une torsion R1 connectée, alors `d₂` est tricolorable.
+
+Le témoin `coloring₂` est l'extension triviale « toutes-égales » construite par
+`tricolorForwardExtension` (slots frais prennent la couleur de l'arc splice).
+Les 3 lemmes-pivots (`colorAtNat_eq`, `colorAtNat_fresh_eq`, `colorAtNat_freshEdge_eq`)
+fondent les 3 cas de crossing du `∀` sur `d₂.crossings`.
+
+Lemmes-ponts nommés (un par cas de crossing, pattern `named-hard-wall`) : chaque
+sous-but dur est extrait en un énoncé NOMMÉ portant ses hypothèses, plutôt que
+laissé en `sorry` anonyme dans le wrapper. Le cas « nouveau kink C » est le plus
+auto-contenu et ENTIÈREMENT PROUVÉ ci-dessous ; les cas « unchanged » et
+« Y' renommé » restent à caractériser.
+
+**Mur caractérisé (c.985)** : la conjonction `∀ c ∈ d₂.crossings, triColorConditionAt …`
+du wrapper `tricolorable_forward_r1` exige de déplier l'appartenance à
+`List.set i Y' ++ [C]` en 3 sous-cas (`c = Y'` / `c` unchanged d₁ crossing
+index ≠ i / `c = C`), chacun consommant un lemme-pivot + l'hypothèse `isRenameOf`.
+Le `sorry` du wrapper porte EXACTEMENT cette conjonction ; les 2 autres
+conjonctions (`numEdges ≥ 2`, `≥ 2 couleurs`) sont prouvées. L'énoncé n'est PAS
+affaibli (anti-régression D).
+-/
+
+/-- Lemme-pont (cas « nouveau kink C ») : le crossing ajouté
+    `C = ⟨a, n+1, n+2, n+2⟩` satisfait la condition de Fox sous `coloring₂`.
+    Ses 4 slots `{a, n+1, n+2, n+2}` lisent TOUS la couleur de l'arc splice
+    (`a` via `colorAtNat_eq`, `n+1` via `colorAtNat_fresh_eq`, `n+2` via
+    `colorAtNat_freshEdge_eq`), donc `c1 = c2 = c3 = c4` → Fox « toutes-égales »
+    (disjonction de gauche) satisfaite, et `c2 = c4` (continuité over-strand)
+    trivialement. Les bornes de bonne formation sont arithmétiques.
+
+    **Résolu (c.987)** : la fermeture finale (bornes + continuité + Fox) est
+    ÉTABLIE. Les 3 réductions de couleur (`hcol1`/`hcol2`/`hcol3`) transportent
+    les 3 lemmes-pivots ; après `simp only [triColorConditionAt]` (SANS déplier
+    `colorAtNat`, non marqué `@[simp]`) puis `simp only [_hcol1,_hcol2,_hcol3]`,
+    le résidu est `(8 bornes Nat) ∧ True ∧ (True ∧ True ∨ atome-opaque)`. La
+    leçon c.987 : l'obstruction n'était PAS arithmétique (les bornes sont du Nat
+    pur) — le contre-exemple omega `↑a, ↑d₁.numEdges` (c.986) était trompeur ;
+    omega échouait sur la disjonction `True ∨ (TriColor ≠ opaque)` qu'il ne
+    réduit pas. `refine ⟨?_, ?_⟩` isole les 8 bornes (omega) du bloc couleurs. -/
+theorem triColorConditionAt_newKink {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) :
+    triColorConditionAt d₂ (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+      ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := by
+  -- Les 4 couleurs lues par C sous coloring₂ se réduisent toutes à la couleur
+  -- de l'arc splice `a` sous coloring₁ (les 3 lemmes-pivots).
+  have _hcol1 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) a =
+      d₁.colorAtNat coloring₁ a :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ a ha1 ha2
+  have _hcol2 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 1) =
+      d₁.colorAtNat coloring₁ a :=
+    tricolorForwardExtension.colorAtNat_fresh_eq hnum2 a ha1 ha2 coloring₁
+  have _hcol3 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) (d₁.numEdges + 2) =
+      d₁.colorAtNat coloring₁ a := by
+    have he_lo : d₁.numEdges < d₁.numEdges + 2 := by omega
+    have he_hi : d₁.numEdges + 2 ≤ d₂.numEdges := by omega
+    exact tricolorForwardExtension.colorAtNat_freshEdge_eq hnum2 a ha1 ha2 coloring₁
+      (d₁.numEdges + 2) he_lo he_hi
+  -- Fermeture (résolu c.987) : `simp only [triColorConditionAt]` déplie la
+  -- condition SANS déplier `colorAtNat` (non marqué `@[simp]`), donc les `_hcol`
+  -- matchent la forme non-dépliée — c'était le piège c.986 (le `simp only` mixte
+  -- `triColorConditionAt, hcol*` dépliait `colorAtNat` avant le match des hcol).
+  -- Après les 2 `simp only`, les 4 slots réduits à `d₁.colorAtNat coloring₁ a` :
+  -- continuité `c2=c4` → `True`, Fox gauche `(=a ∧ =a)` → `True ∧ True`, Fox
+  -- droite `(≠a ∧ …)` reste comme atome `TriColor ≠` opaque. Le résidu est donc
+  -- `(8 bornes Nat) ∧ True ∧ (True ∨ atome-opaque)`. `omega` échoue sur le
+  -- `True ∨ opaque` (omega ne réduit pas la disjonction sur atome non-arithmétique)
+  -- — d'où le contre-exemple trompeur `↑a, ↑d₁.numEdges` de c.986 (les bornes
+  -- sont du Nat pur, l'obstruction est propositionnelle, pas arithmétique).
+  -- Fix : `refine ⟨?_, ?_⟩` isole les 8 bornes (omega) du bloc couleurs
+  -- `True ∧ (True ∧ True ∨ _)`, clos par ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩.
+  simp only [triColorConditionAt]
+  simp only [_hcol1, _hcol2, _hcol3]
+  refine ⟨?_, ?_⟩
+  · -- 8 bornes de bonne formation (Nat pur, hnum2/ha1/ha2)
+    omega
+  · -- continuité (True) + Fox Or.inl (True ∨ opaque-≠)
+    exact ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩
+
+/-- Lemme-pont (cas « crossing inchangé ») : un crossing `c` de `d₁` dont les
+    4 slots sont dans `[1, d₁.numEdges]` (donc non touchés par l'extension qui
+    n'ajoute des arêtes qu'au-delà de `d₁.numEdges`) satisfait la condition de
+    Fox sous `coloring₂` **ssi** il la satisfait sous `coloring₁` — car
+    `colorAtNat_eq` transporte les 4 lectures couleur sans changement. C'est le
+    sous-cas 2/3 du mur `∀ c ∈ d₂.crossings` du wrapper (crossings `d₁`
+    d'index ≠ i, non renommés). La continuité + Fox sont transportées telles
+    quelles depuis `hcond` ; seules les bornes passent de `d₁.numEdges` à
+    `d₂.numEdges` (arithmétique : `c.ek ≤ d₁.numEdges ≤ d₂.numEdges`). -/
+theorem triColorConditionAt_unchanged {d₁ d₂ : KnotDiagram}
+    (hnum2 : d₂.numEdges = d₁.numEdges + 2) (a : Nat) (ha1 : 1 ≤ a) (ha2 : a ≤ d₁.numEdges)
+    (coloring₁ : TriColoring d₁) (c : PDCrossing)
+    (hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+              1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+              1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+              1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges)
+    (hcond : triColorConditionAt d₁ coloring₁ c) :
+    triColorConditionAt d₂ (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c := by
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hc_wf
+  -- Les 4 slots ∈ [1, d₁.numEdges] → colorAtNat_eq transporte sans changement.
+  have hc1 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e1 =
+      d₁.colorAtNat coloring₁ c.e1 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e1 hc11 hc12
+  have hc2 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e2 =
+      d₁.colorAtNat coloring₁ c.e2 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e2 hc21 hc22
+  have hc3 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e3 =
+      d₁.colorAtNat coloring₁ c.e3 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e3 hc31 hc32
+  have hc4 : d₂.colorAtNat (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁) c.e4 =
+      d₁.colorAtNat coloring₁ c.e4 :=
+    tricolorForwardExtension.colorAtNat_eq hnum2 a ha1 ha2 coloring₁ c.e4 hc41 hc42
+  -- Déplie le but (SANS déplier colorAtNat), applique les 4 transports, puis
+  -- déplie hcond : but et hcond ont alors la MÊME continuité + Fox (couleurs
+  -- d₁.colorAtNat identiques) ; seules les bornes diffèrent (d₂ vs d₁).
+  simp only [triColorConditionAt]
+  simp only [hc1, hc2, hc3, hc4]
+  simp only [triColorConditionAt] at hcond
+  refine ⟨?_, hcond.2⟩
+  -- 8 bornes d₂ : c.ek ≤ d₁.numEdges (hcond.1) ≤ d₂.numEdges (hnum2)
+  omega
+
+/-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
+    connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
+    pour le mur actuel (la conjonction `∀ c ∈ d₂.crossings`). -/
+theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) (htc : IsTricolorable d₁) :
+    IsTricolorable d₂ := by
+  obtain ⟨coloring₁, hcond, hnum, hcol⟩ := htc
+  -- Déplie les composants de la torsion (bornes + équation de chirurgie).
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg, hnum2⟩ := h
+  -- Témoin : l'extension triviale. `a`/bornes passés explicites (Prop → Type
+  -- réglé en c.982, cf. `tricolorForwardExtension`).
+  refine' ⟨tricolorForwardExtension hnum2 a ha1 ha2 coloring₁, ?_, ?_, ?_⟩
+  · -- (1) MUR CARACTÉRISÉ : `∀ c ∈ d₂.crossings, triColorConditionAt d₂ coloring₂ c`.
+    --   Dépliage requis : `d₂.crossings = d₁.crossings.set i Y' ++ [⟨a,n+1,n+2,n+2⟩]`
+    --   (`hsurg`) → 3 sous-cas par membership `List.set`/append :
+    --     • `c = Y'` (slot renommé) : `colorAtNat_fresh_eq` + `colorAtNat_eq` sur
+    --       les slots inchangés + `isRenameOf hrename` → Fox préservée.
+    --     • `c` unchanged (d₁ crossing, index ≠ i) : `colorAtNat_eq` sur les 4 slots.
+    --     • `c = ⟨a,n+1,n+2,n+2⟩` (nouveau kink) : `colorAtNat_eq` (slot a) +
+    --       `colorAtNat_freshEdge_eq` (slots n+1,n+2) → Fox toutes-égales (or.inl).
+    --   3 tactiques tentées : `rw [hsurg]; rintro _ (hc|hc)`, `simp only [List.mem_append,
+    --   List.mem_set]`, dépliage manuel `obtain`. Aucune ne clôt sans un lemme-pont
+    --   nommé portant `isRenameOf` + les 4 réductions colorAtNat (cf. named-hard-wall).
+    exact sorry
+  · -- (2) `d₂.numEdges ≥ 2` : `d₂.numEdges = d₁.numEdges + 2 ≥ 2`.
+    rw [hnum2]; omega
+  · -- (3) ≥ 2 couleurs : héritées de `coloring₁` (le préfixe `[0, d₁.numEdges)` est
+    --   inchangé par l'extension, donc deux `Fin d₁.numEdges` distincts sous
+    --   `coloring₁` le restent sous `coloring₂`).
+    obtain ⟨j, k, hjk⟩ := hcol
+    refine' ⟨⟨j.val, by omega⟩, ⟨k.val, by omega⟩, ?_⟩
+    -- `coloring₂ j = coloring₁ j` et `coloring₂ k = coloring₁ k` via `colorAtNat_eq`
+    -- (les `Fin d₂.numEdges` d'indices `< d₁.numEdges` lisent `coloring₁`).
+    have hj_lt : (j : Nat) < d₁.numEdges := j.isLt
+    have hk_lt : (k : Nat) < d₁.numEdges := k.isLt
+    have hj_val : (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+        ⟨j.val, by omega⟩ = coloring₁ j := by
+      show tricolorForwardExtension hnum2 a ha1 ha2 coloring₁ ⟨j.val, by omega⟩ =
+        coloring₁ ⟨j.val, j.isLt⟩
+      unfold tricolorForwardExtension
+      rw [dif_pos hj_lt]
+    have hk_val : (tricolorForwardExtension hnum2 a ha1 ha2 coloring₁)
+        ⟨k.val, by omega⟩ = coloring₁ k := by
+      show tricolorForwardExtension hnum2 a ha1 ha2 coloring₁ ⟨k.val, by omega⟩ =
+        coloring₁ ⟨k.val, k.isLt⟩
+      unfold tricolorForwardExtension
+      rw [dif_pos hk_lt]
+    rw [hj_val, hk_val]; exact hjk
 
 /-! ## 3. Le trefoil est tricolorable
 
