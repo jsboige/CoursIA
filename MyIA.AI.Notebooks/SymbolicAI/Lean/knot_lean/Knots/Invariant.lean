@@ -366,38 +366,49 @@ theorem tricolorable_invariant :
   -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
   -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
   --
-  -- 4e-tactic characterization (c.980 deep-track, dispatch ai-01 msg-9gt1au).
+  -- 4e-tactic characterization (c.980 deep-track, dispatch ai-01 msg-9gt1au;
+  -- CORRECTED c.981 — see the TRIVIAL-EXTENSION note below).
   -- The forward direction is the COLOR-EXTENSION construction. Given
   -- `coloring₁ : TriColoring d₁` witnessing `IsTricolorable d₁` and
   -- `h : Reidemeister1Connected d₁ d₂` (Reidemeister.lean L262), build
   -- `coloring₂ : TriColoring d₂` (d₂.numEdges = d₁.numEdges + 2):
   --   (1) On the shared prefix [1, d₁.numEdges], `coloring₂` agrees with
   --       `coloring₁` (transport via `ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges+2)`).
-  --   (2) On the two fresh edges `{d₁.numEdges+1, d₁.numEdges+2}`, assign the
-  --       TWO colors ≠ `coloring₁ a` (the arc spliced — guaranteed to exist:
-  --       TriColor has exactly 3 inhabitants, so exactly 2 differ from any one).
-  -- The new crossing `⟨a, n+1, n+2, n+2⟩` (h's surgery conjunct, L271) then has
-  -- Fox colors `{coloring₁ a, c₁, c₂}` (all distinct by construction) — the
-  -- extension preserves the invariant rather than creating it.
+  --   (2) On the two fresh edges `{d₁.numEdges+1, d₁.numEdges+2}` (PD labels
+  --       `b`, `c` in the surgery), assign `coloring₁ a` — the color of the
+  --       spliced arc — to BOTH. This is the TRIVIAL ALL-EQUAL extension.
   --
-  -- Three proof obligations, each a characterized stuck point for next cycle:
-  --   (a) FIN TRANSPORT: `TriColoring d₁ → TriColoring d₂` across the
-  --       `Fin n ↪ Fin (n+2)` embedding — needs `ρ` lifted to the coloring
-  --       and the two fresh slots filled by a `TriColor.otherTwo a` combinator
-  --       (to be added: returns the 2 colors ≠ the input, with a `distinct`
-  --       lemma). Stuck on: the `TriColoring d` carrier shape + `colorAtNat`.
-  --   (b) FOX AT THE NEW CROSSING: reduce `triColorConditionAt d₂ coloring₂
-  --       ⟨a, n+1, n+2, n+2⟩` to `{coloring₁ a, c₁, c₂}` all-distinct — needs
-  --       the new crossing's PD labels to unfold under `h`'s surgery equation
-  --       `d₂.crossings = d₁.crossings.set i.val Y' ++ [⟨a, n+1, n+2, n+2⟩]`.
-  --       Stuck on: the renamed crossing `Y'` (isRenameOf) ALSO needs its Fox
-  --       condition re-checked (its slot-a became n+1, which is a fresh color).
-  --   (c) ≥2 COLORS: `coloring₂` uses ≥2 colors — inherited from `coloring₁`
-  --       (which uses ≥2 by `IsTriColoring`'s 3rd conjunct), UNLESS both
-  --       non-fresh edges collapse (they don't: the prefix is unchanged).
+  -- CORRECTION c.981: the c.980 note prescribed the TWO colors ≠ `coloring₁ a`
+  -- (the all-DISTINCT kink mode). That is the BACKWARD direction's construction
+  -- (#3003, `tricolorable_backward` §9), not the forward one. For the FORWARD
+  -- direction the trivial extension suffices and is what makes the proof
+  -- tractable — the new crossing `⟨a, b, c, c⟩` then reads, under `coloring₂`,
+  --   `(e1,e2,e3) = (coloring₁ a, coloring₁ a, coloring₁ a)`  (e2=e4=b, e3=c)
+  -- so its Fox condition is the ALL-EQUAL disjunct (trivially satisfied), and
+  -- the over-strand continuity `c2 = c4` holds (`coloring₂ b = coloring₂ c`).
+  -- The renamed crossing `Y' = isRenameOf (crossing i) a b` (h's conjunct) has
+  -- every `a`-slot replaced by `b`; under `coloring₂ b = coloring₁ a` it reads
+  -- the SAME color as crossing i did under `coloring₁`, so `Y'`'s Fox condition
+  -- is preserved verbatim (this is exactly Reidemeister.lean L246-248). Every
+  -- other crossing is untouched by `List.set i` and its edges are unchanged, so
+  -- its condition is preserved too. `numEdges ≥ 2` is arithmetic inheritance
+  -- (`d₂.numEdges = d₁.numEdges + 2 ≥ 4`), and `≥ 2 colors` is inherited since
+  -- the prefix — where `coloring₁` already uses ≥2 — is unchanged.
+  --
+  -- Proof obligations for the implementation (each now low-risk, not a wall):
+  --   (a) CONSTRUCT `coloring₂ : Fin (n+2) → TriColor` as the `if k < n then
+  --       coloring₁ ⟨k,_⟩ else coloring₁ ⟨a-1,_⟩` function (fresh slots n, n+1
+  --       both take `coloring₁`'s color at arc `a`). No `otherTwo` needed.
+  --   (b) NEW CROSSING: `triColorConditionAt d₂ coloring₂ ⟨a,b,c,c⟩` reduces to
+  --       the all-equal disjunct via the color assignments above.
+  --   (c) RENAMED CROSSING `Y'`: `isRenameOf` + `coloring₂ b = coloring₁ a` ⇒
+  --       its Fox condition ≡ crossing i's under `coloring₁`.
+  --   (d) UNCHANGED CROSSINGS: `List.set` only touches index `i`; `d₂.crossings`
+  --       = `d₁.crossings.set i Y' ++ [C]`, so `∀ c ∈ d₂.crossings` splits into
+  --       the renamed `Y'`, the appended `C`, and the untouched `d₁` crossings.
   -- The deep track is MULTI-CYCLE (ai-01 greenlit): a characterized wall with
-  -- the construction above + the `otherTwo` combinator is the next cycle's
-  -- implementation target. FORBIDDEN: weakening the statement (anti-regression D).
+  -- the corrected trivial construction above is the next cycle's implementation
+  -- target. FORBIDDEN: weakening the statement (anti-regression D).
 
 /-! ## 3. Le trefoil est tricolorable
 
