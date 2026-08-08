@@ -8,7 +8,14 @@
       by: myia-po-2023:CoursIA
       python_sha: 7d3ea48c681d137b25725c50e9c4d78678fd6ba8
       csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: 45c07615f01f1b52fc259c38d930acb8b8745186adcf93cbaa09eae2e1b281fd
   known_differences:
+    - "2026-08-08 (po-2025) #8052 prose precision : md[16] disait 'les trois regles donnent des classements differents' mais l'output (cell#12) montre Borda = Copeland (B>C>A), seule la Pluralite s'ecarte (A>C>B). Reworded au split 2-vs-1 reel. Markdown-only (C.2 exception). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
     - "2026-07-25 (po-2024) #8052 case-A : median-voter preference order -- cell#29 (devenu #29 apres #8566) table disait pic=5 => '4 > 6 > 2 > 0 > 8 > 10' mais l'output code (Electeur 4 pic=5: [4,6,2,8,0,10]) prouve '4 > 6 > 2 > 8 > 0 > 10' (single_peaked_preference sort stable par |x-5|). Markdown-only 1-line swap, no re-exec. csharp_sha inchange. python_sha rebaseline suite a ce changement de blob."
     - "2026-07-25 (po-2024) #8564 : IIA verdict honnetete + contre-exemple Copeland -- cell#23 imprimait `=> respecte IIA` des que le compteur Monte-Carlo tombait a 0, mais Copeland (Condorcet-consistante) VIOLE IIA (theoreme). Fix : verdict existentiel seul (0/100 => 'aucune violation observee, n'etablit pas respecte IIA' ; >0 => 'VIOLE IIA (N contre-exemples)'). Ajout cellule contre-exemple constructif (profil cyclique 4 alts A>B>C>D / B>C>D>A / C>D>A>B : A bat B pairwise, Copeland classe B>A avec C,D vs A>B sans -- inversion = IIA violée prouvee). markdown cell#24 (devenu #26) corrigé ('Copeland respecte IIA car pairwise' etait faux). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
     - "2026-07-25 (po-2024) #8559 : determinism rebaseline -- plurality/borda/copeland tie-break etait `sorted(set(...), key=lambda x:-score)` (stable-sort + hash-dependent set iteration = PYTHONHASHSEED non-determinisme, 4 outcome buckets sur 41 seeds). Fix : tuple tiebreak `key=lambda x:(-score, x)` (lexicographique). Outputs regeneres (cell#12 rules -> A>B>C deterministe ; cell#23 Arrow MC -> 12/3/0 deterministe). markdown cell#13/#14/#16 aligne a la nouvelle verite (symmetric profile donne meme classement A>B>C ; departage alphabétique). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
